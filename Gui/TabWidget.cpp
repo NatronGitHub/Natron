@@ -136,10 +136,6 @@ bool TabWidget::destroyTab(QWidget* tab) {
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
     if (isViewer) {
         _gui->removeViewerTab(isViewer,false);
-    } else if(tab->objectName() != "DAG_GUI" && tab->objectName() != "Properties_GUI") {
-        /*Otherwise delete it normally*/
-        //delete tab;
-        return true; // must be deleted
     } else {
         tab->setVisible(false);
     }
@@ -215,7 +211,7 @@ void TabWidget::addNewViewer(){
 }
 
 void TabWidget::moveNodeGraphHere(){
-    QWidget* what = dynamic_cast<QWidget*>(_gui->_nodeGraphTab->_nodeGraphArea);
+    QWidget* what = dynamic_cast<QWidget*>(_gui->_nodeGraphArea);
     _gui->moveTab(what,this);
 }
 /*Get the header name of the tab at index "index".*/
@@ -225,19 +221,14 @@ QString TabWidget::getTabName(int index) const {
 }
 
 QString TabWidget::getTabName(QWidget* tab) const{
-    for (U32 i = 0; i < _tabs.size(); ++i) {
-        if (_tabs[i] == tab) {
-            return _tabBar->tabText(i);
-        }
-    }
-    return "";
+    return tab->objectName();
 }
 
 void TabWidget::floatCurrentWidget(){
     if(!_currentWidget)
         return;
     TabWidget* newTab = new TabWidget(_gui,TabWidget::CLOSABLE);
-    newTab->appendTab(getTabName(_currentWidget), _currentWidget);
+    newTab->appendTab(_currentWidget);
     newTab->floatPane();
     removeTab(_currentWidget);
     if(_tabBar->count() == 0){
@@ -282,7 +273,8 @@ void TabWidget::splitVertically(){
 }
 
 
-bool TabWidget::appendTab(const QString& title,QWidget* widget){
+bool TabWidget::appendTab(QWidget* widget){
+    QString title = widget->objectName();
     if(_decorations!=NONE && title.isEmpty()) return false;
     
     /*registering this tab for drag&drop*/
@@ -302,7 +294,8 @@ bool TabWidget::appendTab(const QString& title,QWidget* widget){
     _floatButton->setEnabled(true);
     return true;
 }
-bool TabWidget::appendTab(const QString& title,const QIcon& icon,QWidget* widget){
+bool TabWidget::appendTab(const QIcon& icon,QWidget* widget){
+    QString title = widget->objectName();
     if(_decorations!=NONE && title.isEmpty()) return false;
     
     /*registering this tab for drag&drop*/
@@ -323,7 +316,8 @@ bool TabWidget::appendTab(const QString& title,const QIcon& icon,QWidget* widget
     return true;
 }
 
-void TabWidget::insertTab(int index,const QIcon& icon,const QString &title,QWidget* widget){
+void TabWidget::insertTab(int index,const QIcon& icon,QWidget* widget){
+    QString title = widget->objectName();
     if ((U32)index < _tabs.size()) {
         /*registering this tab for drag&drop*/
         _gui->registerTab(title.toStdString(), widget);
@@ -331,13 +325,14 @@ void TabWidget::insertTab(int index,const QIcon& icon,const QString &title,QWidg
         _tabs.insert(_tabs.begin()+index, widget);
         _tabBar->insertTab(index,icon ,title);
     }else{
-        appendTab(title, widget);
+        appendTab(widget);
     }
      _floatButton->setEnabled(true);
     
 }
 
-void TabWidget::insertTab(int index,const QString &title,QWidget* widget){
+void TabWidget::insertTab(int index,QWidget* widget){
+    QString title = widget->objectName();
     if (index < (int)_tabs.size()) {
         /*registering this tab for drag&drop*/
         _gui->registerTab(title.toStdString(), widget);
@@ -345,7 +340,7 @@ void TabWidget::insertTab(int index,const QString &title,QWidget* widget){
         _tabs.insert(_tabs.begin()+index, widget);
         _tabBar->insertTab(index,title);
     }else{
-        appendTab(title, widget);
+        appendTab(widget);
     }
     _floatButton->setEnabled(true);
 }

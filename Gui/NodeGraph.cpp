@@ -73,7 +73,6 @@ _previewsTurnedOff(false)
     
     QObject::connect(_gui->getApp(), SIGNAL(pluginsPopulated()), this, SLOT(populateMenu()));
     
-    setObjectName("DAG_GUI");
     setMouseTracking(true);
     setCacheMode(CacheBackground);
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);

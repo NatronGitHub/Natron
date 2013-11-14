@@ -158,16 +158,18 @@ public:
     
     virtual ~TabWidget();
     
-    /*Returns false if the title is empty but the TabWidget needs a decoration*/
-    bool appendTab(const QString& title,QWidget* widget);
+    /*Appends a new tab to the tab widget. The name of the tab will be the QWidget's object's name.
+     Returns false if the object's name is empty but the TabWidget needs a decoration*/
+    bool appendTab(QWidget* widget);
     
-    /*Returns false if the title is empty but the TabWidget needs a decoration*/
-    bool appendTab(const QString& title,const QIcon& icon,QWidget* widget);
+    /*Appends a new tab to the tab widget. The name of the tab will be the QWidget's object's name.
+     Returns false if the title is empty but the TabWidget needs a decoration*/
+    bool appendTab(const QIcon& icon,QWidget* widget);
     
     /*Inserts before the element at index.*/
-    void insertTab(int index,const QIcon& icon,const QString &title,QWidget* widget);
+    void insertTab(int index,const QIcon& icon,QWidget* widget);
     
-    void insertTab(int index,const QString &title,QWidget* widget);
+    void insertTab(int index,QWidget* widget);
     
     /*Removes from the TabWidget, but does not delete the widget.
      Returns NULL if the index is not in a good range.*/

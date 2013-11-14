@@ -105,7 +105,8 @@ _viewerWorkshopSplitter(0),
 _propertiesPane(0),
 _middleRightSplitter(0),
 _leftRightSplitter(0),
-_nodeGraphTab(0),
+_graphScene(0),
+_nodeGraphArea(0),
 _toolBox(0),
 _propertiesScrollArea(0),
 _propertiesContainer(0),
@@ -127,7 +128,6 @@ _projectGui(0)
 
 Gui::~Gui()
 {
-    delete _nodeGraphTab;
     delete _appInstance;
     _viewerTabs.clear();
     for(U32 i = 0; i < _toolButtons.size();++i){
@@ -175,9 +175,8 @@ void Gui::closeEvent(QCloseEvent *e) {
 
 
 NodeGui* Gui::createNodeGUI( Node* node){
-    assert(_nodeGraphTab);
-    assert(_nodeGraphTab->_nodeGraphArea);
-    NodeGui* gui = _nodeGraphTab->_nodeGraphArea->createNodeGUI(_layoutPropertiesBin,node);
+    assert(_nodeGraphArea);
+    NodeGui* gui = _nodeGraphArea->createNodeGUI(_layoutPropertiesBin,node);
     return gui;
 }
 
@@ -195,18 +194,16 @@ void Gui::createViewerGui(Node* viewer){
 }
 
 void Gui::autoConnect(NodeGui* target,NodeGui* created) {
-    assert(_nodeGraphTab);
-    assert(_nodeGraphTab->_nodeGraphArea);
+    assert(_nodeGraphArea);
     if(target) {
-        _nodeGraphTab->_nodeGraphArea->autoConnect(target, created);
+        _nodeGraphArea->autoConnect(target, created);
     }
-    _nodeGraphTab->_nodeGraphArea->selectNode(created);
+    _nodeGraphArea->selectNode(created);
 }
 
 NodeGui* Gui::getSelectedNode() const {
-    assert(_nodeGraphTab);
-    assert(_nodeGraphTab->_nodeGraphArea);
-    return _nodeGraphTab->_nodeGraphArea->getSelectedNode();
+    assert(_nodeGraphArea);
+    return _nodeGraphArea->getSelectedNode();
 }
 
 
@@ -457,8 +454,13 @@ void Gui::setupUi()
 	//======================
 	_workshopPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
     _panes.push_back(_workshopPane);
-    /*creating Tree gui*/
-    addNodeGraph();
+    
+    _graphScene = new QGraphicsScene(this);
+	_graphScene->setItemIndexMethod(QGraphicsScene::NoIndex);
+    _nodeGraphArea = new NodeGraph(this,_graphScene,_workshopPane);
+    _nodeGraphArea->setObjectName("NodeGraph");
+    _workshopPane->appendTab(_nodeGraphArea);
+    
     
 	_viewerWorkshopSplitter->addWidget(_workshopPane);
     
@@ -475,8 +477,8 @@ void Gui::setupUi()
     _propertiesPane->setObjectName("Properties_Pane");
     _panes.push_back(_propertiesPane);
 	_propertiesScrollArea = new QScrollArea(_propertiesPane);
-    _nodeGraphTab->_nodeGraphArea->setPropertyBinPtr(_propertiesScrollArea);
-    _propertiesScrollArea->setObjectName("Properties_GUI");
+    _nodeGraphArea->setPropertyBinPtr(_propertiesScrollArea);
+    _propertiesScrollArea->setObjectName("Properties");
 	_propertiesContainer=new QWidget(_propertiesScrollArea);
     _propertiesContainer->setObjectName("_propertiesContainer");
 	_layoutPropertiesBin=new QVBoxLayout(_propertiesContainer);
@@ -487,7 +489,7 @@ void Gui::setupUi()
     
 	_propertiesScrollArea->setWidget(_propertiesContainer);
 	_propertiesScrollArea->setWidgetResizable(true);
-	_propertiesPane->appendTab("Properties",_propertiesScrollArea);
+	_propertiesPane->appendTab(_propertiesScrollArea);
     
     _middleRightSplitter->addWidget(_propertiesPane);
     QSize horizontalSplitterSize = _middleRightSplitter->sizeHint();
@@ -744,7 +746,7 @@ void Gui::minimize(){
 ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
     ViewerTab* tab = new ViewerTab(this,viewer,_viewersPane);
     _viewerTabs.push_back(tab);
-    where->appendTab(viewer->getName().c_str(),tab);
+    where->appendTab(tab);
     return tab;
 }
 
@@ -755,7 +757,7 @@ void Gui::addViewerTab(ViewerTab* tab, TabWidget* where) {
     if (it == _viewerTabs.end()) {
         _viewerTabs.push_back(tab);
     }
-    where->appendTab(tab->getInternalNode()->getName().c_str(), tab);
+    where->appendTab(tab);
     
 }
 
@@ -768,8 +770,7 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
     
     if(deleteData){
         if (!initiatedFromNode) {
-            assert(_nodeGraphTab);
-            assert(_nodeGraphTab->_nodeGraphArea);
+            assert(_nodeGraphArea);
             tab->getInternalNode()->getNode()->deactivate();
         } else {
             
@@ -785,19 +786,13 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
     }
     
 }
-void Gui::addNodeGraph() {
-    assert(!_nodeGraphTab);
-    _nodeGraphTab = new NodeGraphTab(this,_workshopPane);
-    assert(_workshopPane);
-    _workshopPane->appendTab("Node graph",_nodeGraphTab->_nodeGraphArea);
-    
-}
 
 void Gui::moveTab(QWidget* what,TabWidget *where){
     TabWidget* from = dynamic_cast<TabWidget*>(what->parentWidget());
     
-    if(!from) return;
-    QString name;
+    if(!from){
+        return;
+    }
     if(from == where){
         /*We check that even if it is the same TabWidget, it really exists.*/
         bool found = false;
@@ -809,38 +804,17 @@ void Gui::moveTab(QWidget* what,TabWidget *where){
         }
         if (found) {
             return;
-        } else {
-            assert(_nodeGraphTab);
-            /*if it is not found we have to recover the name*/
-            if(what == _nodeGraphTab->_nodeGraphArea)
-                name = "Node Graph";
-            else if(what == _propertiesScrollArea)
-                name = "Properties";
-            else return;
         }
-    }else{
-        if(what == _nodeGraphTab->_nodeGraphArea)
-            name = "Node Graph";
-        else if(what == _propertiesScrollArea)
-            name = "Properties";
-        else return;
-        
+        //it wasn't found somehow
     }
+  
     from->removeTab(what);
-    where->appendTab(name, what);
+    assert(where);
+    where->appendTab(what);
 }
 
 
 
-NodeGraphTab::NodeGraphTab(Gui* gui,QWidget* parent)
-: _graphScene(0)
-, _nodeGraphArea(0)
-{
-    _graphScene = new QGraphicsScene(gui);
-	_graphScene->setItemIndexMethod(QGraphicsScene::NoIndex);
-    _nodeGraphArea = new NodeGraph(gui,_graphScene,parent);
-    
-}
 
 void Gui::splitPaneHorizontally(TabWidget* what){
     QSplitter* container = dynamic_cast<QSplitter*>(what->parentWidget());
@@ -1166,7 +1140,7 @@ void Gui::autoSave(){
 }
 
 bool Gui::isGraphWorthless() const{
-    return _nodeGraphTab->_nodeGraphArea->isGraphWorthLess();
+    return _nodeGraphArea->isGraphWorthLess();
 }
 
 int Gui::saveWarning(){
@@ -1268,38 +1242,38 @@ Natron::StandardButton Gui::questionDialog(const std::string& title,const std::s
 
 
 void Gui::selectNode(NodeGui* node){
-    _nodeGraphTab->_nodeGraphArea->selectNode(node);
+    _nodeGraphArea->selectNode(node);
 }
 
 void Gui::connectInput1(){
-    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(0);
+    _nodeGraphArea->connectCurrentViewerToSelection(0);
 }
 void Gui::connectInput2(){
-    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(1);
+    _nodeGraphArea->connectCurrentViewerToSelection(1);
 }
 void Gui::connectInput3(){
-    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(2);
+    _nodeGraphArea->connectCurrentViewerToSelection(2);
 }
 void Gui::connectInput4(){
-    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(3);
+    _nodeGraphArea->connectCurrentViewerToSelection(3);
 }
 void Gui::connectInput5(){
-    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(4);
+    _nodeGraphArea->connectCurrentViewerToSelection(4);
 }
 void Gui::connectInput6(){
-    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(5);
+    _nodeGraphArea->connectCurrentViewerToSelection(5);
 }
 void Gui::connectInput7(){
-    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(6);
+    _nodeGraphArea->connectCurrentViewerToSelection(6);
 }
 void Gui::connectInput8(){
-    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(7);
+    _nodeGraphArea->connectCurrentViewerToSelection(7);
 }
 void Gui::connectInput9(){
-    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(8);
+    _nodeGraphArea->connectCurrentViewerToSelection(8);
 }
 void Gui::connectInput10(){
-    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(9);
+    _nodeGraphArea->connectCurrentViewerToSelection(9);
 }
 
 void RenderingProgressDialog::onFrameRendered(int frame){

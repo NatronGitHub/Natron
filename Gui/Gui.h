@@ -30,6 +30,7 @@
 
 #include "Engine/Format.h"
 
+
 class QString;
 class TabWidget;
 class AppInstance;
@@ -174,20 +175,6 @@ private:
     int _lastFrame;
 };
 
-/*This class encapsulate a nodegraph GUI*/
-class NodeGraphTab{
-public:
-
-    // FIXME: these (public) data members are never deleted
-    // cppcheck message:
-    // "Class 'NodeGraphTab' is unsafe, 'NodeGraphTab::_graphScene' can leak by wrong usage."
-    QGraphicsScene* _graphScene;
-    NodeGraph *_nodeGraphArea;
-    
-    NodeGraphTab(Gui* gui,QWidget* parent);
-    virtual ~NodeGraphTab(){}
-};
-
 class Gui : public QMainWindow,public boost::noncopyable
 {
     Q_OBJECT
@@ -284,8 +271,6 @@ public:
         
 
 private:
-
-    void addNodeGraph();
     
     void restoreGuiGeometry();
     
@@ -407,7 +392,9 @@ public:
     /*GRAPH*/
     //======================
     
-    NodeGraphTab* _nodeGraphTab;
+    QGraphicsScene* _graphScene;
+    NodeGraph *_nodeGraphArea;
+
     
     /*TOOLBOX*/
     QToolBar* _toolBox;

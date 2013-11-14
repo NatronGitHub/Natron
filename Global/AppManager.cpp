@@ -222,8 +222,8 @@ void AppInstance::autoConnect(Node* target,Node* created){
 
 
 const std::vector<NodeGui*>& AppInstance::getAllActiveNodes() const{
-    assert(_gui->_nodeGraphTab->_nodeGraphArea);
-    return  _gui->_nodeGraphTab->_nodeGraphArea->getAllActiveNodes();
+    assert(_gui->_nodeGraphArea);
+    return  _gui->_nodeGraphArea->getAllActiveNodes();
     
 }
 bool AppInstance::loadProject(const QString& path,const QString& name,bool background){
@@ -399,7 +399,7 @@ QString AppInstance::autoSavesDir() {
 }
 
 void AppInstance::deselectAllNodes() const{
-    _gui->_nodeGraphTab->_nodeGraphArea->deselect();
+    _gui->_nodeGraphArea->deselect();
 }
 
 void AppInstance::errorDialog(const std::string& title,const std::string& message) const{
