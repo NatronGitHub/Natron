@@ -34,7 +34,10 @@ public:
     {
         const QHelpEvent *helpEvent = static_cast <QHelpEvent *>(e);
         if (helpEvent->type() == QEvent::ToolTip) {
-            QToolTip::showText(helpEvent->globalPos(), activeAction()->toolTip());
+            QAction* action = activeAction();
+            if(action->text() != action->toolTip()){
+                QToolTip::showText(helpEvent->globalPos(), action->toolTip());
+            }
         } else {
             QToolTip::hideText();
         }
