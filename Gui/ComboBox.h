@@ -50,9 +50,9 @@ public:
     virtual ~ComboBox(){}
     
     /*Insert a new item BEFORE the specified index.*/
-    void insertItem(int index,const QString& item,QIcon icon = QIcon(),QKeySequence = QKeySequence());
+    void insertItem(int index,const QString& item,QIcon icon = QIcon(),QKeySequence = QKeySequence(),const QString& toolTip = QString());
     
-    void addItem(const QString& item,QIcon icon = QIcon(),QKeySequence = QKeySequence());
+    void addItem(const QString& item,QIcon icon = QIcon(),QKeySequence = QKeySequence(),const QString& toolTip = QString());
         
     /*Appends a separator to the comboBox.*/
     void addSeparator();

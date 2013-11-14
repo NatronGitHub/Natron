@@ -306,12 +306,14 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::
     }
     const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
+    std::vector<std::string> helpStrings;
     for (int i = 0 ; i < properties.getDimension(kOfxParamPropChoiceOption) ; ++i) {
         std::string str = properties.getStringProperty(kOfxParamPropChoiceOption,i);
-        // TODO: use kOfxParamPropChoiceLabelOption as a label if the property exists for that option
+        std::string help = properties.getStringProperty(kOfxParamPropChoiceLabelOption,i);
         _entries.push_back(str);
+        helpStrings.push_back(help);
     }
-    _knob->populate(_entries);
+    _knob->populate(_entries,helpStrings);
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
     _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
     int def = properties.getIntProperty(kOfxParamPropDefault);

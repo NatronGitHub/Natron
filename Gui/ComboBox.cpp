@@ -110,10 +110,13 @@ void ComboBox::createMenu(){
 int ComboBox::count() const{
     return (int)_actions.size();
 }
-void ComboBox::insertItem(int index,const QString& item,QIcon icon,QKeySequence key){
+void ComboBox::insertItem(int index,const QString& item,QIcon icon,QKeySequence key,const QString& toolTip){
     assert(index >= 0);
     QAction* action =  new QAction(this);
     action->setText(item);
+    if(!toolTip.isEmpty()){
+        action->setToolTip(toolTip);
+    }
     if (!icon.isNull()) {
         action->setIcon(icon);
     }
@@ -131,7 +134,7 @@ void ComboBox::insertItem(int index,const QString& item,QIcon icon,QKeySequence 
  
 }
 
-void ComboBox::addItem(const QString& item,QIcon icon ,QKeySequence key){
+void ComboBox::addItem(const QString& item,QIcon icon ,QKeySequence key,const QString& toolTip){
     QAction* action =  new QAction(this);
     
     action->setText(item);
@@ -141,7 +144,9 @@ void ComboBox::addItem(const QString& item,QIcon icon ,QKeySequence key){
     if (!key.isEmpty()) {
         action->setShortcut(key);
     }
-    
+    if(!toolTip.isEmpty()){
+        action->setToolTip(toolTip);
+    }
     if (item.size() > _maximumTextSize) {
         _maximumTextSize = item.size();
     }

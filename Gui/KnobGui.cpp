@@ -773,8 +773,10 @@ void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row) {
 
     _comboBox = new ComboBox(layout->parentWidget());
     
+    const std::vector<std::string>& help =  dynamic_cast<ComboBox_Knob*>(_knob)->getEntriesHelp();
     for (U32 i = 0; i < _entries.size(); ++i) {
-        _comboBox->addItem(_entries[i].c_str());
+        std::string helpStr = help.empty() ? "" : help[i];
+        _comboBox->addItem(_entries[i].c_str(),QIcon(),QKeySequence(),QString(helpStr.c_str()));
     }
     if(_entries.size() > 0)
         _comboBox->setCurrentText(_entries[0].c_str());

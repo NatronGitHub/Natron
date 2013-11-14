@@ -880,12 +880,16 @@ public:
     virtual const std::string typeName(){return "ComboBox";}
     
     /*Must be called right away after the constructor.*/
-    void populate(const std::vector<std::string>& entries){
+    void populate(const std::vector<std::string>& entries,const std::vector<std::string>& entriesHelp = std::vector<std::string>()){
+        _entriesHelp = entriesHelp;
+        assert(_entriesHelp.empty() || _entriesHelp.size() == entries.size());
         _entries = entries;
         emit populated();
     }
     
     const std::vector<std::string>& getEntries() const {return _entries;}
+    
+    const std::vector<std::string>& getEntriesHelp() const {return _entriesHelp;}
     
     int getActiveEntry() const {return _value.toInt();}
     
@@ -900,6 +904,7 @@ signals:
     void populated();
 private:
     std::vector<std::string> _entries;
+    std::vector<std::string> _entriesHelp;
 };
 
 /******************************SEPARATOR_KNOB**************************************/
