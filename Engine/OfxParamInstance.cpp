@@ -310,6 +310,7 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::
     for (int i = 0 ; i < properties.getDimension(kOfxParamPropChoiceOption) ; ++i) {
         std::string str = properties.getStringProperty(kOfxParamPropChoiceOption,i);
         std::string help = properties.getStringProperty(kOfxParamPropChoiceLabelOption,i);
+
         _entries.push_back(str);
         helpStrings.push_back(help);
     }
