@@ -505,7 +505,8 @@ void NodeGraph::wheelEvent(QWheelEvent *event){
         return;
     scale(scaleFactor,scaleFactor);
     _refreshOverlays = true;
-
+    QPointF newPos = mapToScene(event->pos());
+    _lastScenePosClick = newPos;
 }
 
 
