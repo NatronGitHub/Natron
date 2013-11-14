@@ -46,6 +46,7 @@ GCC_DIAG_ON(unused-parameter);
 #include "Engine/Settings.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/Timer.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Gui.h"
 
@@ -1780,6 +1781,9 @@ void ViewerGL::setPersistentMessage(int type,const QString& message){
 }
 
 void ViewerGL::clearPersistentMessage(){
+    if(!_displayPersistentMessage){
+        return;
+    }
     _displayPersistentMessage = false;
     updateGL();
 }
