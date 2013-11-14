@@ -46,7 +46,7 @@ class Writer;
 class OfxNode;
 class TimeLine;
 class QSocketNotifier;
-
+class Timer;
 /**
  * @brief For background process only: this is a separate thread that constantly check
  * if stdin has some data available. If it has the kAbortRenderingString, it will abort
@@ -283,6 +283,10 @@ private:
     mutable QMutex _workingMutex;//!< protects _working
     bool _working; //!< true if a thread is working
 
+    mutable QMutex _timerMutex;///protects timer
+    boost::scoped_ptr<Timer> _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
+    int _timerFrameCount;
+    
     /*These member doesn't need to be protected by a mutex: 
      _lastRequestedRunArgs is modified upon a call to render() and 
      _currentRunArgs just retrieves the last value found in _lastRequestedRunArgs,
@@ -317,6 +321,13 @@ public slots:
     void toggleLoopMode(bool b);
     
     
+    /**
+     *@brief The slot called by the GUI to set the requested fps.
+     **/
+    void setDesiredFPS(double d);
+    
+
+    
     /************************************************************************************************************
      ************************************************************************************************************
      **************************************PRIVATE SLOTS*********************************************************
@@ -341,8 +352,15 @@ public slots:
      ***********************************************************************************************************/
    
     
+    
 signals:
    
+    /**
+     *@brief Signal emitted when the function waits the time due to display the frame.
+     **/
+    void fpsChanged(double d);
+    
+
     
     /**
      *@brief emitted when the engine started to render a sequence (which can be only a sequence of 1 frame).

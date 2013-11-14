@@ -118,6 +118,13 @@ void InfoViewerWidget::setFps(double v){
     QString str = QString::number(v,'f',1);
     str.append(" fps");
     _fpsLabel->setText(str);
+    if(!_fpsLabel->isVisible()){
+        _fpsLabel->show();
+    }
+}
+
+void InfoViewerWidget::hideFps(){
+    _fpsLabel->hide();
 }
 void InfoViewerWidget::showColorAndMouseInfo(){
 

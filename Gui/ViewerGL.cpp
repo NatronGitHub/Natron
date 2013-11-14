@@ -1767,8 +1767,7 @@ void ViewerGL::renderText( int x, int y, const QString &string,const QColor& col
     glOrtho(0,w,0,h,-1,1);
     glMatrixMode(GL_MODELVIEW);
     QPointF pos = toWidgetCoordinates(x, y);
-    TextRenderer* t = appPTR->getTextRenderer();
-    t->renderText(pos.x(),h-pos.y(),string,color,font);
+    _textRenderer.renderText(pos.x(),h-pos.y(),string,color,font);
     checkGLErrors();
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();

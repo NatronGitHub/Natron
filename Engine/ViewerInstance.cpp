@@ -32,11 +32,9 @@
 #include "Engine/TimeLine.h"
 #include "Engine/Cache.h"
 #include "Engine/Log.h"
-#include "Engine/Timer.h"
 
 #include "Readers/Reader.h"
 
-#define POWITER_FPS_REFRESH_RATE 10
 
 
 using namespace Natron;
@@ -55,23 +53,18 @@ Natron::OutputEffectInstance(node)
 ,_usingOpenGLMutex()
 ,_usingOpenGL(false)
 ,_interThreadInfos()
-,_timerMutex()
-,_timer(new Timer)
 {
     connectSlotsToViewerCache();
     connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
     connect(this,SIGNAL(doCachedEngine()),this,SLOT(cachedEngine()));
     connect(this,SIGNAL(doFrameStorageAllocation()),this,SLOT(allocateFrameStorage()));
     connect(this,SIGNAL(doUnmapPBO()),this,SLOT(unMapPBO()));
-    _timer->playState = RUNNING; /*activating the timer*/
     
 }
 
 ViewerInstance::~ViewerInstance(){
     if(_uiContext && _uiContext->getGui())
-        _uiContext->getGui()->removeViewerTab(_uiContext,true);
-    _timer->playState = PAUSE;
-    
+        _uiContext->getGui()->removeViewerTab(_uiContext,true);    
 }
 
 void ViewerInstance::connectSlotsToViewerCache(){
@@ -131,6 +124,9 @@ void ViewerInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
 
 
 Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
+//    timeval start;
+//    gettimeofday(&start, 0);
+    
 #ifdef NATRON_LOG
     Natron::Log::beginFunction(getName(),"renderViewer");
     Natron::Log::print(QString("Time "+QString::number(time)).toStdString());
@@ -223,6 +219,12 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
         }
     }
 
+//    timeval afterCacheGet;
+//    gettimeofday(&afterCacheGet, 0);
+//
+//     std::cout <<  "afterCacheGet " <<  afterCacheGet.tv_sec  - start.tv_sec +
+//    (afterCacheGet.tv_usec - start.tv_usec) * 1e-6f << std::endl;
+
     
     if (iscached) {
         /*Found in viewer cache, we execute the cached engine and leave*/
@@ -239,6 +241,12 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
                 _usingOpenGLCond.wait(&_usingOpenGLMutex);
             }
         }
+        
+//        timeval afterCachedRender;
+//        gettimeofday(&afterCachedRender, 0);
+//        std::cout <<  "afterCachedRender " <<  afterCachedRender.tv_sec  - start.tv_sec +
+//        (afterCachedRender.tv_usec - start.tv_usec) * 1e-6f << std::endl;
+        
 #ifdef NATRON_LOG
         Natron::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
                                                              QString::number(key.getHash())).toStdString());
@@ -261,7 +269,6 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
             _usingOpenGLCond.wait(&_usingOpenGLMutex);
         }
     }
-    
 
     {
         RectI roi(textureRect.x,textureRect.y,textureRect.r+1,textureRect.t+1);
@@ -285,6 +292,11 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
             }
             return StatFailed;
         }
+        
+//        timeval afterRenderRoi;
+//        gettimeofday(&afterRenderRoi, 0);
+//        std::cout <<  "afterRenderRoi " <<  afterRenderRoi.tv_sec  - start.tv_sec +
+//        (afterRenderRoi.tv_usec - start.tv_usec) * 1e-6f << std::endl;
         
         int rowsPerThread = std::ceil((double)rows.size()/(double)QThread::idealThreadCount());
         // group of group of rows where first is image coordinate, second is texture coordinate
@@ -310,7 +322,11 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
         QFuture<void> future = QtConcurrent::map(splitRows,
                                                  boost::bind(&ViewerInstance::renderFunctor,this,inputImage,_1,columns));
         future.waitForFinished();
-        
+//        
+//        timeval afterRenderToTexture;
+//        gettimeofday(&afterRenderToTexture, 0);
+//        std::cout <<  "afterRenderToTexture " <<  afterRenderToTexture.tv_sec  - start.tv_sec +
+//        (afterRenderToTexture.tv_usec - start.tv_usec) * 1e-6f << std::endl;
     }
     //we released the input image and force the cache to clear exceeding entries
     appPTR->clearExceedingEntriesFromNodeCache();
@@ -355,6 +371,14 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
         }
         return StatFailed;
     }
+    
+//    timeval afterFrameCached;
+//    gettimeofday(&afterFrameCached, 0);
+//    
+//    std::cout <<  "afterFrameCached " <<  afterFrameCached.tv_sec  - start.tv_sec +
+//    (afterFrameCached.tv_usec - start.tv_usec) * 1e-6f << std::endl;
+
+    
     QMutexLocker locker(&_usingOpenGLMutex);
     _usingOpenGL = true;
     emit doUpdateViewer();
@@ -399,16 +423,6 @@ void ViewerInstance::updateViewer(){
         viewer->unBindPBO();
     }
     
-    {
-        QMutexLocker timerLocker(&_timerMutex);
-        _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
-    }
-    if((_frameCount%POWITER_FPS_REFRESH_RATE)==0){
-        emit fpsChanged(_timer->actualFrameRate()); // refreshing fps display on the GUI
-        _frameCount = 1; //reseting to 1
-    }else{
-        ++_frameCount;
-    }
     // updating viewer & pixel aspect ratio if needed
     int width = viewer->width();
     int height = viewer->height();
@@ -459,11 +473,6 @@ void ViewerInstance::cachedEngine(){
 }
 
 
-
-void ViewerInstance::setDesiredFPS(double d){
-    QMutexLocker timerLocker(&_timerMutex);
-    _timer->setDesiredFrameRate(d);
-}
 
 void ViewerInstance::onCachedFrameAdded(){
     emit addedCachedFrame(getNode()->getApp()->getTimeLine()->currentFrame());

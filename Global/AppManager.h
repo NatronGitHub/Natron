@@ -59,8 +59,6 @@ class EffectInstance;
 class OfxHost;
 class Node;
 class Project;
-class TextRenderer;
-
 }
 
 
@@ -361,10 +359,7 @@ public:
 
     const Settings& getCurrentSettings() const {return *_settings;}
 
-    Natron::TextRenderer* getTextRenderer() const {return _textRenderer.get();}
-
     PluginToolButton* findPluginToolButtonOrCreate(const QString& name,const QString& iconPath);
-
 
     static void printUsage();
 
@@ -445,9 +440,6 @@ private:
     boost::scoped_ptr<Natron::Cache<Natron::Image> >  _nodeCache;
 
     boost::scoped_ptr<Natron::Cache<Natron::FrameEntry> > _viewerCache;
-
-    boost::scoped_ptr<Natron::TextRenderer> _textRenderer;
-
 
 };
 

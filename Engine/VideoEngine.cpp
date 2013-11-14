@@ -48,6 +48,10 @@
 #include "Global/AppManager.h"
 #include "Global/MemoryInfo.h"
 
+
+#define NATRON_FPS_REFRESH_RATE 10
+
+
 using namespace Natron;
 using std::make_pair;
 using std::cout; using std::endl;
@@ -74,6 +78,9 @@ VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
 , _startCount(0)
 , _workingMutex()
 , _working(false)
+, _timerMutex()
+, _timer(new Timer)
+, _timerFrameCount(0)
 , _lastRequestedRunArgs()
 , _currentRunArgs()
 , _startRenderFrameTime()
@@ -224,8 +231,11 @@ bool VideoEngine::startEngine() {
         QMutexLocker workingLocker(&_workingMutex);
         _working = true;
     }
-    if(!_currentRunArgs._sameFrame)
+    if(!_currentRunArgs._sameFrame){
         emit engineStarted(_currentRunArgs._forward);
+        _timer->playState = RUNNING; /*activating the timer*/
+
+    }
     return true;
 
 }
@@ -258,9 +268,7 @@ bool VideoEngine::stopEngine() {
         
         _currentRunArgs._frameRequestsCount = 0;
         _restart = true;
-        
-        
-        
+        _timer->playState = PAUSE;
         
         {
             QMutexLocker workingLocker(&_workingMutex);
@@ -269,6 +277,7 @@ bool VideoEngine::stopEngine() {
         _abortBeingProcessed = false;
         
     }
+    
     
     /*endRenderAction for all openFX nodes*/
     for (RenderTree::TreeIterator it = _tree.begin(); it!=_tree.end(); ++it) {
@@ -468,6 +477,20 @@ void VideoEngine::run(){
         gettimeofday(&_startRenderFrameTime, 0);
         if (_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()) {
             stat = viewer->renderViewer(currentFrame, _currentRunArgs._fitToViewer);
+            
+            if(!_currentRunArgs._sameFrame){
+                QMutexLocker timerLocker(&_timerMutex);
+                _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
+            }
+            
+            if((_timerFrameCount % NATRON_FPS_REFRESH_RATE) == 0){
+                emit fpsChanged(_timer->actualFrameRate()); // refreshing fps display on the GUI
+                _timerFrameCount = 1; //reseting to 1
+            }else{
+                ++_timerFrameCount;
+            }
+
+            
             if(stat == StatFailed){
                 viewer->disconnectViewer();
             }
@@ -753,6 +776,13 @@ bool VideoEngine::checkAndDisplayProgress(int /*y*/,int/* zoomedY*/){
 void VideoEngine::toggleLoopMode(bool b){
     _loopMode = b;
 }
+
+
+void VideoEngine::setDesiredFPS(double d){
+    QMutexLocker timerLocker(&_timerMutex);
+    _timer->setDesiredFrameRate(d);
+}
+
 
 
 bool VideoEngine::isWorking() const {

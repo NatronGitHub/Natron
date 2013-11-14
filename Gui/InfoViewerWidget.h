@@ -42,7 +42,7 @@ public slots:
     void hideColorAndMouseInfo();
     void showColorAndMouseInfo();
     void setFps(double v);
-
+    void hideFps();
     
 private:
     bool _colorAndMouseVisible;

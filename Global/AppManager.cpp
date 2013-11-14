@@ -615,7 +615,6 @@ AppManager::AppManager()
                                                _settings->_cacheSettings.maxPlayBackMemoryPercent)*getSystemTotalRAM(),1))
 ,_viewerCache(new Cache<FrameEntry>("ViewerCache",0x1,_settings->_cacheSettings.maxDiskCache
 ,_settings->_cacheSettings.maxPlayBackMemoryPercent))
-,_textRenderer(new TextRenderer)
 {
     connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString)),
             this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString)));

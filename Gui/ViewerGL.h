@@ -66,6 +66,24 @@ std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString
 #endif
 
 
+namespace Natron{
+    
+    struct TextRendererPrivate;
+    class TextRenderer {
+        
+    public:
+        
+        TextRenderer();
+        
+        virtual ~TextRenderer();
+        
+        void renderText(float x, float y, const QString &text,const QColor& color,const QFont& font);
+        
+    private:
+        typedef std::vector<std::pair<QFont,TextRendererPrivate*> > FontRenderers;
+        FontRenderers _renderers;
+    };
+}
 /**
  *@class ViewerGL
  *@brief The main viewport. This class is part of the ViewerTab GUI and handles all
@@ -254,6 +272,8 @@ class ViewerGL : public QGLWidget
     QString _persistentMessage;
     int _persistentMessageType;
     bool _displayPersistentMessage;
+    
+    Natron::TextRenderer _textRenderer;
     
 public:
     
@@ -761,24 +781,5 @@ private:
     void resetMousePos(){_zoomCtx._oldClick.setX(0); _zoomCtx._oldClick.setY(0);}
 };
 
-namespace Natron{
-    
-struct TextRendererPrivate;
-class TextRenderer {
-    
-public:
-    
-    TextRenderer();
-    
-    virtual ~TextRenderer();
-    
-    void renderText(float x, float y, const QString &text,const QColor& color,const QFont& font);
-    
-private:
-    typedef std::vector<std::pair<QFont,TextRendererPrivate*> > FontRenderers;
-    FontRenderers _renderers;
-};
-    
-}//Natron
 
 #endif // GLVIEWER_H

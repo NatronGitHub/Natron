@@ -63,8 +63,6 @@ class ViewerInstance : public QObject, public Natron::OutputEffectInstance {
     
     InterThreadInfos _interThreadInfos;
     
-    mutable QMutex _timerMutex;///protects timer
-    boost::scoped_ptr<Timer> _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
 public:
     
     
@@ -185,12 +183,6 @@ public slots:
 
     void onViewerCacheCleared();
 
-
-    /**
- *@brief The slot called by the GUI to set the requested fps.
- **/
-    void setDesiredFPS(double d);
-
     /*
  *@brief Slot called internally by the render() function when it wants to refresh the viewer if
  *the output is a viewer.
@@ -226,11 +218,6 @@ signals:
     void mustSwapBuffers();
 
     void mustRedraw();
-
-    /**
- *@brief Signal emitted when the function waits the time due to display the frame.
- **/
-    void fpsChanged(double d);
 
     /**
  *@brief Signal emitted when the engine needs to inform the main thread that it should refresh the viewer
