@@ -881,8 +881,8 @@ public:
     
     /*Must be called right away after the constructor.*/
     void populate(const std::vector<std::string>& entries,const std::vector<std::string>& entriesHelp = std::vector<std::string>()){
-        _entriesHelp = entriesHelp;
         assert(_entriesHelp.empty() || _entriesHelp.size() == entries.size());
+        _entriesHelp = entriesHelp;
         _entries = entries;
         emit populated();
     }

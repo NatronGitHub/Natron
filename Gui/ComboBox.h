@@ -16,12 +16,31 @@
 #include <QFrame>
 #include <QtGui/QKeySequence>
 #include <QtGui/QIcon>
+#include <QMenu>
 
 class QHBoxLayout;
 class QLabel;
 class QMouseEvent;
 class QAction;
-class QMenu;
+
+class MenuWithToolTips : public QMenu{
+    Q_OBJECT
+public:
+    MenuWithToolTips(QWidget* parent):QMenu(parent){}
+    
+    bool event (QEvent * e)
+    {
+        const QHelpEvent *helpEvent = static_cast <QHelpEvent *>(e);
+        if (helpEvent->type() == QEvent::ToolTip) {
+            QToolTip::showText(helpEvent->globalPos(), activeAction()->toolTip());
+        } else {
+            QToolTip::hideText();
+        }
+        return QMenu::event(e);
+    }
+};
+
+
 class ComboBox : public QFrame
 {
  private:
@@ -41,7 +60,7 @@ class ComboBox : public QFrame
     
     std::vector<int> _separators;
     std::vector<QAction*> _actions;
-    QMenu* _menu;
+    MenuWithToolTips* _menu;
 
 public:
     

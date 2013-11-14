@@ -14,7 +14,6 @@
 #include <algorithm>
 #include <QLayout>
 #include <QLabel>
-#include <QMenu>
 #include <QStyle>
 #include <QFont>
 #include <QFontMetrics>
@@ -42,7 +41,7 @@ ComboBox::ComboBox(QWidget* parent):QFrame(parent),_currentIndex(0),_maximumText
     _dropDownIcon->setPixmap(pixC);
     _mainLayout->addWidget(_dropDownIcon);
     
-    _menu = new QMenu(this);
+    _menu = new MenuWithToolTips(this);
 }
 
 
