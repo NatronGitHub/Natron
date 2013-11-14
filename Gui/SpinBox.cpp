@@ -71,7 +71,11 @@ void SpinBox::mousePressEvent(QMouseEvent* e){
     LineEdit::mousePressEvent(e);
     setFocus();
 }
-void SpinBox::wheelEvent(QWheelEvent *e){
+
+void SpinBox::wheelEvent(QWheelEvent *e) {
+    if (e->orientation() != Qt::Vertical) {
+        return;
+    }
     setFocus();
     if(isEnabled() && !isReadOnly()){
         bool ok;

@@ -1402,6 +1402,9 @@ void ViewerGL::updateColorPicker(int x,int y){
 }
 
 void ViewerGL::wheelEvent(QWheelEvent *event) {
+    if (event->orientation() != Qt::Vertical) {
+        return;
+    }
     double newZoomFactor;
     if (event->delta() > 0) {
         newZoomFactor = _zoomCtx._zoomFactor*std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());

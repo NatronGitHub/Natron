@@ -495,7 +495,10 @@ void NodeGraph::leaveEvent(QEvent *event)
 
 
 void NodeGraph::wheelEvent(QWheelEvent *event){
-    
+    if (event->orientation() != Qt::Vertical) {
+        return;
+    }
+
     double scaleFactor = pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
     qreal factor = transform().scale(scaleFactor, scaleFactor).mapRect(QRectF(0, 0, 1, 1)).width();
     if(factor < 0.07 || factor > 10)
