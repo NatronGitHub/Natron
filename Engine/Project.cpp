@@ -53,7 +53,7 @@ static QString generateStringFromFormat(const Format& f){
 
 Project::Project(AppInstance* appInstance):
 KnobHolder(appInstance)
-, _projectName("Untitled." NATRON_PROJECT_FILE_EXTENION)
+, _projectName("Untitled." NATRON_PROJECT_FILE_EXT)
 , _hasProjectBeenSavedByUser(false)
 , _ageSinceLastSave(QDateTime::currentDateTime())
 , _formatKnob(NULL)

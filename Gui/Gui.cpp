@@ -1120,7 +1120,7 @@ void Gui::newProject(){
 }
 void Gui::openProject(){
     std::vector<std::string> filters;
-    filters.push_back(NATRON_PROJECT_FILE_EXTENION);
+    filters.push_back(NATRON_PROJECT_FILE_EXT);
     SequenceFileDialog dialog(this,filters,false,
                               SequenceFileDialog::OPEN_DIALOG);
     if(dialog.exec()){
@@ -1145,15 +1145,15 @@ void Gui::saveProject(){
 }
 void Gui::saveProjectAs(){
     std::vector<std::string> filter;
-    filter.push_back(NATRON_PROJECT_FILE_EXTENION);
+    filter.push_back(NATRON_PROJECT_FILE_EXT);
     SequenceFileDialog dialog(this,filter,false,SequenceFileDialog::SAVE_DIALOG);
     QString outFile;
     if(dialog.exec()){
         outFile = dialog.filesToSave();
     }
     if (outFile.size() > 0) {
-        if (outFile.indexOf("." NATRON_PROJECT_FILE_EXTENION) == -1) {
-            outFile.append("." NATRON_PROJECT_FILE_EXTENION);
+        if (outFile.indexOf("." NATRON_PROJECT_FILE_EXT) == -1) {
+            outFile.append("." NATRON_PROJECT_FILE_EXT);
         }
         QString file = SequenceFileDialog::removePath(outFile);
         QString path = outFile.left(outFile.indexOf(file));

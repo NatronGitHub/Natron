@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     bool expectWriterNameOnNextArg = false;
     QStringList args = QCoreApplication::arguments();
     for (int i = 0 ; i < args.size(); ++i) {
-        if(args.at(i).contains("." NATRON_PROJECT_FILE_EXTENION)){
+        if(args.at(i).contains("." NATRON_PROJECT_FILE_EXT)){
             if(expectWriterNameOnNextArg){
                 manager->printUsage();
                 AppManager::quit();

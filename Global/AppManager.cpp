@@ -289,7 +289,7 @@ void AppInstance::removeAutoSaves() const{
     for(int i = 0; i < entries.size();++i) {
         const QString& entry = entries.at(i);
         QString searchStr('.');
-        searchStr.append(NATRON_PROJECT_FILE_EXTENION);
+        searchStr.append(NATRON_PROJECT_FILE_EXT);
         searchStr.append('.');
         int suffixPos = entry.indexOf(searchStr);
         if (suffixPos != -1) {
@@ -305,7 +305,7 @@ bool AppInstance::isSaveUpToDate() const{
 void AppInstance::resetCurrentProject(){
     _currentProject->setAutoSetProjectFormat(true);
     _currentProject->setHasProjectBeenSavedByUser(false);
-    _currentProject->setProjectName("Untitled." NATRON_PROJECT_FILE_EXTENION);
+    _currentProject->setProjectName("Untitled." NATRON_PROJECT_FILE_EXT);
     _currentProject->setProjectPath("");
     QString text(QCoreApplication::applicationName() + " - ");
     text.append(_currentProject->getProjectName());
@@ -318,7 +318,7 @@ bool AppInstance::findAutoSave() {
     for (int i = 0; i < entries.size();++i) {
         const QString& entry = entries.at(i);
         QString searchStr('.');
-        searchStr.append(NATRON_PROJECT_FILE_EXTENION);
+        searchStr.append(NATRON_PROJECT_FILE_EXT);
         searchStr.append('.');
         int suffixPos = entry.indexOf(searchStr);
         if (suffixPos != -1) {
@@ -371,7 +371,7 @@ bool AppInstance::findAutoSave() {
                     _currentProject->setProjectPath(path);
                 } else {
                     _currentProject->setHasProjectBeenSavedByUser(false);
-                    _currentProject->setProjectName("Untitled." NATRON_PROJECT_FILE_EXTENION);
+                    _currentProject->setProjectName("Untitled." NATRON_PROJECT_FILE_EXT);
                     _currentProject->setProjectPath("");
                 }
                 
