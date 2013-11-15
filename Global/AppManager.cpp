@@ -552,16 +552,16 @@ std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){
     if (d.isReadable())
     {
         QStringList filters;
-        filters << QString(QString("*.")+QString(POWITER_LIBRARY_EXT));
+        filters << QString(QString("*.")+QString(NATRON_LIBRARY_EXT));
         d.setNameFilters(filters);
 		QStringList fileList = d.entryList();
         for(int i = 0 ; i < fileList.size() ; ++i) {
             QString filename = fileList.at(i);
             if(filename.endsWith(".dll") || filename.endsWith(".dylib") || filename.endsWith(".so")){
                 QString className;
-                int index = filename.lastIndexOf("." POWITER_LIBRARY_EXT);
+                int index = filename.lastIndexOf("." NATRON_LIBRARY_EXT);
                 className = filename.left(index);
-                std::string binaryPath = NATRON_PLUGINS_PATH + className.toStdString() + "." + POWITER_LIBRARY_EXT;
+                std::string binaryPath = NATRON_PLUGINS_PATH + className.toStdString() + "." + NATRON_LIBRARY_EXT;
                 LibraryBinary* plugin = new LibraryBinary(binaryPath);
                 if(!plugin->isValid()){
                     delete plugin;

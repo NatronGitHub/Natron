@@ -54,7 +54,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Global/AppManager.h"
 
 
-#define POWITER_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
+#define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
 
 using namespace Natron;
 using std::cout; using std::endl;
@@ -126,7 +126,7 @@ _previewsTurnedOff(false)
     _cacheSizeText->setDefaultTextColor(QColor(200,200,200));
     
     QObject::connect(&_refreshCacheTextTimer,SIGNAL(timeout()),this,SLOT(updateCacheSizeText()));
-    _refreshCacheTextTimer.start(POWITER_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS);
+    _refreshCacheTextTimer.start(NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS);
     
     _undoStack = new QUndoStack(this);
     
