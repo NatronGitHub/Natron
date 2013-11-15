@@ -481,15 +481,15 @@ void VideoEngine::run(){
             if(!_currentRunArgs._sameFrame){
                 QMutexLocker timerLocker(&_timerMutex);
                 _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
+                if((_timerFrameCount % NATRON_FPS_REFRESH_RATE) == 0){
+                    emit fpsChanged(_timer->actualFrameRate()); // refreshing fps display on the GUI
+                    _timerFrameCount = 1; //reseting to 1
+                }else{
+                    ++_timerFrameCount;
+                }
+                
             }
             
-            if((_timerFrameCount % NATRON_FPS_REFRESH_RATE) == 0){
-                emit fpsChanged(_timer->actualFrameRate()); // refreshing fps display on the GUI
-                _timerFrameCount = 1; //reseting to 1
-            }else{
-                ++_timerFrameCount;
-            }
-
             
             if(stat == StatFailed){
                 viewer->disconnectViewer();
