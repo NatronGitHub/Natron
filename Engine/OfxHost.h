@@ -6,8 +6,8 @@
 //
 //
 
-#ifndef POWITER_ENGINE_OFXHOST_H_
-#define POWITER_ENGINE_OFXHOST_H_
+#ifndef NATRON_ENGINE_OFXHOST_H_
+#define NATRON_ENGINE_OFXHOST_H_
 
 #include <QtCore/QStringList>
 #include <QtCore/QObject>

@@ -6,8 +6,8 @@
 //
 //
 
-#ifndef POWITER_ENGINE_TIMELINE_H_
-#define POWITER_ENGINE_TIMELINE_H_
+#ifndef NATRON_ENGINE_TIMELINE_H_
+#define NATRON_ENGINE_TIMELINE_H_
 
 #include <QtCore/QObject>
 
@@ -62,4 +62,4 @@ private:
     SequenceTime _lastFrame;
     SequenceTime _currentFrame;
 };
-#endif /* defined(POWITER_ENGINE_TIMELINE_H_) */
+#endif /* defined(NATRON_ENGINE_TIMELINE_H_) */

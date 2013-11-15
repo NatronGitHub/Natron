@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_GUI_NODEGUI_H_
-#define POWITER_GUI_NODEGUI_H_
+#ifndef NATRON_GUI_NODEGUI_H_
+#define NATRON_GUI_NODEGUI_H_
 
 #include <map>
 
@@ -285,4 +285,4 @@ private:
 };
 BOOST_CLASS_VERSION(NodeGui::SerializedState, 1)
 
-#endif // POWITER_GUI_NODEGUI_H_
+#endif // NATRON_GUI_NODEGUI_H_

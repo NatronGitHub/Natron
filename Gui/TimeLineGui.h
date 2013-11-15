@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_GUI_TIMELINE_H_
-#define POWITER_GUI_TIMELINE_H_
+#ifndef NATRON_GUI_TIMELINE_H_
+#define NATRON_GUI_TIMELINE_H_
 
 #include <list>
 #include <boost/shared_ptr.hpp>
@@ -114,4 +114,4 @@ signals:
 
 };
 
-#endif /* defined(POWITER_GUI_TIMELINE_H_) */
+#endif /* defined(NATRON_GUI_TIMELINE_H_) */

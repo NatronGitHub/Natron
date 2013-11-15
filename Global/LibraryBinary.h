@@ -8,8 +8,8 @@
  *
  */
 
-#ifndef POWITER_GLOBAL_LIBRARYBINARY_H_
-#define POWITER_GLOBAL_LIBRARYBINARY_H_
+#ifndef NATRON_GLOBAL_LIBRARYBINARY_H_
+#define NATRON_GLOBAL_LIBRARYBINARY_H_
 
 #include <string>
 #include <map>
@@ -19,11 +19,11 @@
 namespace Natron{
 
 #ifdef __NATRON_OSX__
-    #define POWITER_LIBRARY_EXT "dylib"
+    #define NATRON_LIBRARY_EXT "dylib"
 #elif defined(__NATRON_LINUX__)
-    #define POWITER_LIBRARY_EXT "so"
+    #define NATRON_LIBRARY_EXT "so"
 #elif defined(__NATRON_WIN32__)
-    #define POWITER_LIBRARY_EXT "dll"
+    #define NATRON_LIBRARY_EXT "dll"
 #else
     #error "Operating system not supported by the library loader."
 #endif

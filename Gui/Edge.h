@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_GUI_EDGE_H_
-#define POWITER_GUI_EDGE_H_
+#ifndef NATRON_GUI_EDGE_H_
+#define NATRON_GUI_EDGE_H_
 
 #include <QGraphicsLineItem>
 
@@ -74,4 +74,4 @@ private:
     NodeGui* source;
 };
 
-#endif // POWITER_GUI_EDGE_H_
+#endif // NATRON_GUI_EDGE_H_

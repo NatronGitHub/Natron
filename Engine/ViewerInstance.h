@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_ENGINE_VIEWERNODE_H_
-#define POWITER_ENGINE_VIEWERNODE_H_
+#ifndef NATRON_ENGINE_VIEWERNODE_H_
+#define NATRON_ENGINE_VIEWERNODE_H_
 
 #include <string>
 #include <QtCore/QFutureWatcher>
@@ -272,4 +272,4 @@ private:
 
 };
 
-#endif // POWITER_ENGINE_VIEWERNODE_H_
+#endif // NATRON_ENGINE_VIEWERNODE_H_

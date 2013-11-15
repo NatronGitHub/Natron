@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_ENGINE_FORMAT_H_
-#define POWITER_ENGINE_FORMAT_H_
+#ifndef NATRON_ENGINE_FORMAT_H_
+#define NATRON_ENGINE_FORMAT_H_
 
 #include <string>
 #include <QtCore/QMetaType>
@@ -93,4 +93,4 @@ private:
 Q_DECLARE_METATYPE(Format);
 
 
-#endif // POWITER_ENGINE_FORMAT_H_
+#endif // NATRON_ENGINE_FORMAT_H_

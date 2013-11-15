@@ -8,8 +8,8 @@
 *
 */
 
-#ifndef POWITER_GLOBAL_ENUMS_H_
-#define POWITER_GLOBAL_ENUMS_H_
+#ifndef NATRON_GLOBAL_ENUMS_H_
+#define NATRON_GLOBAL_ENUMS_H_
 
 #define NATRON_MAX_CHANNEL_COUNT 31 // ChannelSet can handle channels 1..31, so it must be 31
 #define NATRON_MAX_VALID_CHANNEL_INDEX 6
@@ -99,4 +99,4 @@ namespace Natron{
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 
 
-#endif // POWITER_GLOBAL_ENUMS_H_
+#endif // NATRON_GLOBAL_ENUMS_H_

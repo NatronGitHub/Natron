@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef POWITER_ENGINE_ROW_H_
-#define POWITER_ENGINE_ROW_H_
+#ifndef NATRON_ENGINE_ROW_H_
+#define NATRON_ENGINE_ROW_H_
 
 #include <string>
 
@@ -21,7 +21,7 @@
 #include "Engine/ChannelSet.h"
 #include "Engine/Cache.h"
 
-#define POWITER_MAX_BUFFERS_PER_ROW 10
+#define NATRON_MAX_BUFFERS_PER_ROW 10
 
 namespace Natron{
     
@@ -181,5 +181,5 @@ namespace Natron{
     
 }
 
-#endif // POWITER_ENGINE_ROW_H_
+#endif // NATRON_ENGINE_ROW_H_
 

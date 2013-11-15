@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef POWITER_ENGINE_VIDEOENGINE_H_
-#define POWITER_ENGINE_VIDEOENGINE_H_
+#ifndef NATRON_ENGINE_VIDEOENGINE_H_
+#define NATRON_ENGINE_VIDEOENGINE_H_
 
 #include <cassert>
 #include <vector>
@@ -495,4 +495,4 @@ private:
 
 
 
-#endif /* defined(POWITER_ENGINE_VIDEOENGINE_H_) */
+#endif /* defined(NATRON_ENGINE_VIDEOENGINE_H_) */

@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef POWITER_READERS_READEXR_H_
-#define POWITER_READERS_READEXR_H_
+#ifndef NATRON_READERS_READEXR_H_
+#define NATRON_READERS_READEXR_H_
 
 #include <string>
 #include <vector>
@@ -62,4 +62,4 @@ private:
     boost::scoped_ptr<Implementation> _imp; // hide implementation details
 };
 
-#endif // POWITER_READERS_READEXR_H_
+#endif // NATRON_READERS_READEXR_H_

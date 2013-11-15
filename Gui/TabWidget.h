@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_GUI_TABWIDGET_H_
-#define POWITER_GUI_TABWIDGET_H_
+#ifndef NATRON_GUI_TABWIDGET_H_
+#define NATRON_GUI_TABWIDGET_H_
 
 #include <vector>
 #include <QFrame>
@@ -238,4 +238,4 @@ private:
 
 };
 
-#endif /* defined(POWITER_GUI_TABWIDGET_H_) */
+#endif /* defined(NATRON_GUI_TABWIDGET_H_) */

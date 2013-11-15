@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_GUI_COMBOBOX_H_
-#define POWITER_GUI_COMBOBOX_H_
+#ifndef NATRON_GUI_COMBOBOX_H_
+#define NATRON_GUI_COMBOBOX_H_
 
 #include <vector>
 #include <QFrame>

@@ -8,8 +8,8 @@
 *
 */
 
-#ifndef POWITER_GLOBAL_MEMORYINFO_H_
-#define POWITER_GLOBAL_MEMORYINFO_H_
+#ifndef NATRON_GLOBAL_MEMORYINFO_H_
+#define NATRON_GLOBAL_MEMORYINFO_H_
 
 // Memory utility functions ( infos about RAM etc...)
 

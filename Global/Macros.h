@@ -7,8 +7,8 @@
 //
 //
 
-#ifndef POWITER_GLOBAL_MACROS_H
-#define POWITER_GLOBAL_MACROS_H
+#ifndef NATRON_GLOBAL_MACROS_H
+#define NATRON_GLOBAL_MACROS_H
 
 #ifdef __APPLE__
 #define __NATRON_OSX__
@@ -42,13 +42,13 @@
 // The following was grabbed from WTF/wtf/Compiler.h (where WTF was replaced by POWITER)
 
 /* COMPILER() - the compiler being used to build the project */
-#define COMPILER(POWITER_FEATURE) (defined POWITER_COMPILER_##POWITER_FEATURE && POWITER_COMPILER_##POWITER_FEATURE)
+#define COMPILER(NATRON_FEATURE) (defined NATRON_COMPILER_##NATRON_FEATURE && NATRON_COMPILER_##NATRON_FEATURE)
 
 /* COMPILER_SUPPORTS() - whether the compiler being used to build the project supports the given feature. */
-#define COMPILER_SUPPORTS(POWITER_COMPILER_FEATURE) (defined POWITER_COMPILER_SUPPORTS_##POWITER_COMPILER_FEATURE && POWITER_COMPILER_SUPPORTS_##POWITER_COMPILER_FEATURE)
+#define COMPILER_SUPPORTS(NATRON_COMPILER_FEATURE) (defined NATRON_COMPILER_SUPPORTS_##NATRON_COMPILER_FEATURE && NATRON_COMPILER_SUPPORTS_##NATRON_COMPILER_FEATURE)
 
 /* COMPILER_QUIRK() - whether the compiler being used to build the project requires a given quirk. */
-#define COMPILER_QUIRK(POWITER_COMPILER_QUIRK) (defined POWITER_COMPILER_QUIRK_##POWITER_COMPILER_QUIRK && POWITER_COMPILER_QUIRK_##POWITER_COMPILER_QUIRK)
+#define COMPILER_QUIRK(NATRON_COMPILER_QUIRK) (defined NATRON_COMPILER_QUIRK_##NATRON_COMPILER_QUIRK && NATRON_COMPILER_QUIRK_##NATRON_COMPILER_QUIRK)
 
 /* ==== COMPILER() - the compiler being used to build the project ==== */
 
@@ -63,7 +63,7 @@
 #define CLANG_PRAGMA(PRAGMA) _Pragma(PRAGMA)
 
 /* Specific compiler features */
-#define POWITER_COMPILER_SUPPORTS_CXX_VARIADIC_TEMPLATES __has_extension(cxx_variadic_templates)
+#define NATRON_COMPILER_SUPPORTS_CXX_VARIADIC_TEMPLATES __has_extension(cxx_variadic_templates)
 
 /* There is a bug in clang that comes with Xcode 4.2 where AtomicStrings can't be implicitly converted to Strings
  in the presence of move constructors and/or move assignment operators. This bug has been fixed in Xcode 4.3 clang, so we

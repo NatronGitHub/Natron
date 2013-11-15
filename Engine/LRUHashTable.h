@@ -24,8 +24,8 @@
 //ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 //OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-#ifndef POWITER_ENGINE_LRUCACHE_H_
-#define POWITER_ENGINE_LRUCACHE_H_
+#ifndef NATRON_ENGINE_LRUCACHE_H_
+#define NATRON_ENGINE_LRUCACHE_H_
 
 #include <map>
 #include <list>
@@ -57,15 +57,15 @@
  *reduce the line of codes necessary, and it will also make it possible
  *to use STL with hashing (std::unordered_map), as it is defined in c++11
  *
- *POWITER_CACHE_USE_BOOST : define this to tell the compiler to use boost internally
+ *NATRON_CACHE_USE_BOOST : define this to tell the compiler to use boost internally
  *for caches. Otherwise it will fallback on a STL version
  *
- *POWITER_CACHE_USE_HASH : define this to tell the compiler to use hashing
+ *NATRON_CACHE_USE_HASH : define this to tell the compiler to use hashing
  *(std::unordered_map or boost::unordered_set_of) instead of a
  *tree-based version (std::map or boost::set_of).
  *
- *WARNING:  definining POWITER_CACHE_USE_HASH and not defining
- *POWITER_CACHE_USE_BOOST will require USE_VARIADIC_TEMPLATES to be
+ *WARNING:  definining NATRON_CACHE_USE_HASH and not defining
+ *NATRON_CACHE_USE_BOOST will require USE_VARIADIC_TEMPLATES to be
  *defined otherwise it will not compile. (no std::unordered_map
  *support on c++98)
  *

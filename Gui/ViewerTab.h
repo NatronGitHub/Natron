@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_GUI_VIEWERTAB_H_
-#define POWITER_GUI_VIEWERTAB_H_ 
+#ifndef NATRON_GUI_VIEWERTAB_H_
+#define NATRON_GUI_VIEWERTAB_H_ 
 
 #include <QWidget>
 
@@ -165,4 +165,4 @@ protected:
     
 };
 
-#endif // POWITER_GUI_VIEWERTAB_H_
+#endif // NATRON_GUI_VIEWERTAB_H_

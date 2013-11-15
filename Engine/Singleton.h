@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_ENGINE_SINGLETON_H_
-#define POWITER_ENGINE_SINGLETON_H_
+#ifndef NATRON_ENGINE_SINGLETON_H_
+#define NATRON_ENGINE_SINGLETON_H_
 
 #include <cstdlib> // for std::atexit()
 #include <QtCore/QMutexLocker>

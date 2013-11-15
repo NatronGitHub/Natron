@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_GUI_TEXTURE_H_
-#define POWITER_GUI_TEXTURE_H_
+#ifndef NATRON_GUI_TEXTURE_H_
+#define NATRON_GUI_TEXTURE_H_
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -107,4 +107,4 @@ namespace boost {
 
 
 
-#endif /* defined(POWITER_GUI_TEXTURE_H_) */
+#endif /* defined(NATRON_GUI_TEXTURE_H_) */

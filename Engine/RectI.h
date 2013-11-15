@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef POWITER_ENGINE_BOX_H_
-#define POWITER_ENGINE_BOX_H_
+#ifndef NATRON_ENGINE_BOX_H_
+#define NATRON_ENGINE_BOX_H_
 
 #include <cassert>
 #include <iostream>

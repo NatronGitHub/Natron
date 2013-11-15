@@ -8,8 +8,8 @@
  *
  */
 
-#ifndef POWITER_GLOBAL_APPMANAGER_H_
-#define POWITER_GLOBAL_APPMANAGER_H_
+#ifndef NATRON_GLOBAL_APPMANAGER_H_
+#define NATRON_GLOBAL_APPMANAGER_H_
 
 #include <vector>
 #include <string>
@@ -458,5 +458,5 @@ Natron::StandardButton questionDialog(const std::string& title,const std::string
 } // namespace Natron
 
 
-#endif // POWITER_GLOBAL_CONTROLER_H_
+#endif // NATRON_GLOBAL_CONTROLER_H_
 

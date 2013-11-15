@@ -8,8 +8,8 @@
  *contact: immarespond at gmail dot com
  *
  */
-#ifndef POWITER_ENGINE_OFXPARAMINSTANCE_H_
-#define POWITER_ENGINE_OFXPARAMINSTANCE_H_
+#ifndef NATRON_ENGINE_OFXPARAMINSTANCE_H_
+#define NATRON_ENGINE_OFXPARAMINSTANCE_H_
 
 #include <map>
 #include <string>
@@ -335,5 +335,5 @@ public slots:
 };
 
 
-#endif // POWITER_ENGINE_OFXPARAMINSTANCE_H_
+#endif // NATRON_ENGINE_OFXPARAMINSTANCE_H_
 

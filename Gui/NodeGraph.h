@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_GUI_NODEGRAPH_H_
-#define POWITER_GUI_NODEGRAPH_H_
+#ifndef NATRON_GUI_NODEGRAPH_H_
+#define NATRON_GUI_NODEGRAPH_H_
 
 #include <vector>
 #include <map>
@@ -294,4 +294,4 @@ private:
     QComboBox* textEdit;
     
 };
-#endif // POWITER_GUI_NODEGRAPH_H_
+#endif // NATRON_GUI_NODEGRAPH_H_

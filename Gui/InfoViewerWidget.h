@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_GUI_INFOVIEWERWIDGET_H_
-#define POWITER_GUI_INFOVIEWERWIDGET_H_
+#ifndef NATRON_GUI_INFOVIEWERWIDGET_H_
+#define NATRON_GUI_INFOVIEWERWIDGET_H_
 
 #include <QWidget>
 #include <QtCore/QPoint>
@@ -67,4 +67,4 @@ private:
     
 };
 
-#endif /* defined(POWITER_GUI_INFOVIEWERWIDGET_H_) */
+#endif /* defined(NATRON_GUI_INFOVIEWERWIDGET_H_) */

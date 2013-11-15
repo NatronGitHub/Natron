@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_READERS_READ_H_
-#define POWITER_READERS_READ_H_
+#ifndef NATRON_READERS_READ_H_
+#define NATRON_READERS_READ_H_
 
 #include <QtCore/QString>
 #include <QtGui/QRgb>
@@ -135,4 +135,4 @@ typedef Decoder* (*ReadBuilder)(void*);
 static Read* BuildRead(Reader*);
  */
 
-#endif // POWITER_READERS_READ_H_
+#endif // NATRON_READERS_READ_H_

@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_WRITERS_WRITER_H_
-#define POWITER_WRITERS_WRITER_H_
+#ifndef NATRON_WRITERS_WRITER_H_
+#define NATRON_WRITERS_WRITER_H_
 
 #include <QtCore/QFuture>
 #include <QtCore/QFutureWatcher>
@@ -96,4 +96,4 @@ private:
     Button_Knob* _renderKnob;
     Bool_Knob* _continueOnError;
 };
-#endif /* defined(POWITER_WRITERS_WRITER_H_) */
+#endif /* defined(NATRON_WRITERS_WRITER_H_) */

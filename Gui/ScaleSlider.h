@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef POWITER_GUI_SCALESLIDER_H_
-#define POWITER_GUI_SCALESLIDER_H_
+#ifndef NATRON_GUI_SCALESLIDER_H_
+#define NATRON_GUI_SCALESLIDER_H_
 
 #include <vector>
 #include <cmath> // for std::pow()
@@ -115,4 +115,4 @@ private:
 };
 
 
-#endif /* defined(POWITER_GUI_SCALESLIDER_H_) */
+#endif /* defined(NATRON_GUI_SCALESLIDER_H_) */

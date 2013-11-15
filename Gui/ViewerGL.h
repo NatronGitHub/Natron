@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef POWITER_GUI_VIEWERGL_H_
-#define POWITER_GUI_VIEWERGL_H_
+#ifndef NATRON_GUI_VIEWERGL_H_
+#define NATRON_GUI_VIEWERGL_H_
 
 #include <cmath>
 #include <vector>

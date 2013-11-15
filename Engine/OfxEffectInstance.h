@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef POWITER_ENGINE_OFXNODE_H_
-#define POWITER_ENGINE_OFXNODE_H_
+#ifndef NATRON_ENGINE_OFXNODE_H_
+#define NATRON_ENGINE_OFXNODE_H_
 
 #include <map>
 #include <string>
@@ -175,4 +175,4 @@ public:
  it would return [Toto,Superplugins,blabla].*/
 QStringList ofxExtractAllPartsOfGrouping(const QString& group,const QString& bundlePath);
 
-#endif // POWITER_ENGINE_OFXNODE_H_
+#endif // NATRON_ENGINE_OFXNODE_H_

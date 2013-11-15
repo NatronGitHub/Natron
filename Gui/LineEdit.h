@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_GUI_LINEEDIT_H_
-#define POWITER_GUI_LINEEDIT_H_
+#ifndef NATRON_GUI_LINEEDIT_H_
+#define NATRON_GUI_LINEEDIT_H_
 
 #include <QLineEdit>
 #include <QDragEnterEvent>

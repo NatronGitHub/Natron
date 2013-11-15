@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_GUI_KNOB_H_
-#define POWITER_GUI_KNOB_H_
+#ifndef NATRON_GUI_KNOB_H_
+#define NATRON_GUI_KNOB_H_
 
 #include <vector>
 #include <map>
@@ -751,4 +751,4 @@ private:
 
 
 
-#endif // POWITER_GUI_KNOB_H_
+#endif // NATRON_GUI_KNOB_H_

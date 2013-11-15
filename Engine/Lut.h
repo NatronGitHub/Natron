@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_ENGINE_LUT_H_
-#define POWITER_ENGINE_LUT_H_
+#ifndef NATRON_ENGINE_LUT_H_
+#define NATRON_ENGINE_LUT_H_
 
 
 /*
@@ -340,4 +340,4 @@ void linear_to_float_rect(float* to, const float* from,
 } // namespace Natron
 } // namespace Color
 
-#endif //POWITER_ENGINE_LUT_H_
+#endif //NATRON_ENGINE_LUT_H_

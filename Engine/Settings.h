@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_ENGINE_SETTINGS_H_
-#define POWITER_ENGINE_SETTINGS_H_
+#ifndef NATRON_ENGINE_SETTINGS_H_
+#define NATRON_ENGINE_SETTINGS_H_
 
 #include <string>
 #include <map>
@@ -105,4 +105,4 @@ public:
     WritersSettings _writersSettings;
 };
 
-#endif // POWITER_ENGINE_SETTINGS_H_
+#endif // NATRON_ENGINE_SETTINGS_H_

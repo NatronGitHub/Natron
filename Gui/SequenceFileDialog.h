@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_GUI_SEQUENCEFILEDIALOG_H_
-#define POWITER_GUI_SEQUENCEFILEDIALOG_H_
+#ifndef NATRON_GUI_SEQUENCEFILEDIALOG_H_
+#define NATRON_GUI_SEQUENCEFILEDIALOG_H_
 
 #include <vector>
 #include <string>
@@ -646,4 +646,4 @@ public:
     void openDir();
     
 };
-#endif /* defined(POWITER_GUI_SEQUENCEFILEDIALOG_H_) */
+#endif /* defined(NATRON_GUI_SEQUENCEFILEDIALOG_H_) */

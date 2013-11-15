@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_ENGINE_NODE_H_
-#define POWITER_ENGINE_NODE_H_
+#ifndef NATRON_ENGINE_NODE_H_
+#define NATRON_ENGINE_NODE_H_
 
 #include <vector>
 #include <string>
@@ -482,4 +482,4 @@ public:
     int activeInput() const {return _activeInput;}
 };
 
-#endif // POWITER_ENGINE_NODE_H_
+#endif // NATRON_ENGINE_NODE_H_

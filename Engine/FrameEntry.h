@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef POWITER_ENGINE_VIEWERCACHE_H_
-#define POWITER_ENGINE_VIEWERCACHE_H_
+#ifndef NATRON_ENGINE_VIEWERCACHE_H_
+#define NATRON_ENGINE_VIEWERCACHE_H_
 
 #include <QtCore/QObject>
 
@@ -177,4 +177,4 @@ namespace Natron{
 }
 
 
-#endif // POWITER_ENGINE_VIEWERCACHE_H_
+#endif // NATRON_ENGINE_VIEWERCACHE_H_

@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_GUI_FEEDBACKSPINBOX_H_
-#define POWITER_GUI_FEEDBACKSPINBOX_H_
+#ifndef NATRON_GUI_FEEDBACKSPINBOX_H_
+#define NATRON_GUI_FEEDBACKSPINBOX_H_
 
 #include "Gui/LineEdit.h"
 
@@ -76,4 +76,4 @@ private:
     
 };
 
-#endif /* defined(POWITER_GUI_FEEDBACKSPINBOX_H_) */
+#endif /* defined(NATRON_GUI_FEEDBACKSPINBOX_H_) */

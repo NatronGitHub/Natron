@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_WRITERS_WRITEQT_H_
-#define POWITER_WRITERS_WRITEQT_H_
+#ifndef NATRON_WRITERS_WRITEQT_H_
+#define NATRON_WRITERS_WRITEQT_H_
 
 #include "Global/Macros.h"
 #include "Writers/Encoder.h"
@@ -59,4 +59,4 @@ public:
     
 };
 
-#endif /* defined(POWITER_WRITERS_WRITEQT_H_) */
+#endif /* defined(NATRON_WRITERS_WRITEQT_H_) */

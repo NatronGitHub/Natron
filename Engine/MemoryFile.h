@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_ENGINE_MEMORYFILE_H_
-#define POWITER_ENGINE_MEMORYFILE_H_
+#ifndef NATRON_ENGINE_MEMORYFILE_H_
+#define NATRON_ENGINE_MEMORYFILE_H_
 
 // (C) Copyright 2008 CodeRage, LLC (turkanis at coderage dot com)
 // (C) Copyright 2004-2007 Jonathan Turkanis
@@ -109,4 +109,4 @@ private:
 
 
 
-#endif /* defined(POWITER_ENGINE_MEMORYFILE_H_) */
+#endif /* defined(NATRON_ENGINE_MEMORYFILE_H_) */

@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_READERS_READER_H_
-#define POWITER_READERS_READER_H_
+#ifndef NATRON_READERS_READER_H_
+#define NATRON_READERS_READER_H_
 #include <QString>
 #include <QStringList>
 #include <QtCore/QMutex>
@@ -73,7 +73,7 @@ public:
             typedef CacheContainer::key_to_value_type::iterator CacheIterator;
             typedef CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
             static std::list<value_type>&  getValueFromIterator(CacheIterator it){return it->second;}
-#endif // POWITER_CACHE_USE_BOOST
+#endif // NATRON_CACHE_USE_BOOST
 
 #else // !USE_VARIADIC_TEMPLATES
 
@@ -93,7 +93,7 @@ public:
             typedef CacheContainer::key_to_value_type::iterator CacheIterator;
             typedef CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
             static std::list<value_type>&   getValueFromIterator(CacheIterator it){return it->second.first;}
-#endif // POWITER_CACHE_USE_BOOST
+#endif // NATRON_CACHE_USE_BOOST
 
 #endif // USE_VARIADIC_TEMPLATES
         
@@ -230,4 +230,4 @@ private:
 
 
 
-#endif // POWITER_READERS_READER_H_
+#endif // NATRON_READERS_READER_H_

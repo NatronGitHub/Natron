@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_READERS_READQT_H_
-#define POWITER_READERS_READQT_H_
+#ifndef NATRON_READERS_READQT_H_
+#define NATRON_READERS_READQT_H_
 
 #include <vector>
 #include <string>
@@ -46,4 +46,4 @@ public:
     virtual void initializeColorSpace() OVERRIDE;
 };
 
-#endif /* defined(POWITER_READERS_READQT_H_) */
+#endif /* defined(NATRON_READERS_READQT_H_) */

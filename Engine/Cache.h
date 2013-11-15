@@ -457,7 +457,7 @@ public:
     typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
     typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
     static std::list<value_type>&  getValueFromIterator(CacheIterator it){return it->second;}
-#endif // POWITER_CACHE_USE_BOOST
+#endif // NATRON_CACHE_USE_BOOST
 
 #else // !USE_VARIADIC_TEMPLATES
 
@@ -477,7 +477,7 @@ public:
     typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
     typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
     static std::list<value_type>&   getValueFromIterator(CacheIterator it){return it->second.first;}
-#endif // POWITER_CACHE_USE_BOOST
+#endif // NATRON_CACHE_USE_BOOST
 
 #endif // USE_VARIADIC_TEMPLATES
 private:

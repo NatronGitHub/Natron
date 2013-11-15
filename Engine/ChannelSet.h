@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_ENGINE_CHANNELSET_H_
-#define POWITER_ENGINE_CHANNELSET_H_
+#ifndef NATRON_ENGINE_CHANNELSET_H_
+#define NATRON_ENGINE_CHANNELSET_H_
 
 #include <string>
 #include <QtCore/QMetaType>
@@ -183,4 +183,4 @@ bool hasAlpha(ChannelSet mask);
 
 Q_DECLARE_METATYPE(Natron::ChannelSet);
 
-#endif // POWITER_ENGINE_CHANNELSET_H_
+#endif // NATRON_ENGINE_CHANNELSET_H_

@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_WRITERS_WRITEEXR_H_
-#define POWITER_WRITERS_WRITEEXR_H_
+#ifndef NATRON_WRITERS_WRITEEXR_H_
+#define NATRON_WRITERS_WRITEEXR_H_
 
 #include <string>
 #include <vector>
@@ -90,4 +90,4 @@ private:
     boost::scoped_ptr<Implementation> _imp; // hide implementation details
 };
 
-#endif /* defined(POWITER_WRITERS_WRITEEXR_H_) */
+#endif /* defined(NATRON_WRITERS_WRITEEXR_H_) */

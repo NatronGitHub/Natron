@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_GUI_GUI_H_
-#define POWITER_GUI_GUI_H_
+#ifndef NATRON_GUI_GUI_H_
+#define NATRON_GUI_GUI_H_
 
 #include <map>
 #include <string>
@@ -472,4 +472,4 @@ private:
 };
 
 
-#endif // POWITER_GUI_GUI_H_
+#endif // NATRON_GUI_GUI_H_

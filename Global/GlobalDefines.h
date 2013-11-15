@@ -8,8 +8,8 @@
 *
 */
 
-#ifndef POWITER_GLOBAL_GLOBALDEFINES_H_
-#define POWITER_GLOBAL_GLOBALDEFINES_H_
+#ifndef NATRON_GLOBAL_GLOBALDEFINES_H_
+#define NATRON_GLOBAL_GLOBALDEFINES_H_
 
 #include <utility>
 #if defined(_WIN32)

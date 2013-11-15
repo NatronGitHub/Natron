@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_ENGINE_HASH64_H_
-#define POWITER_ENGINE_HASH64_H_
+#ifndef NATRON_ENGINE_HASH64_H_
+#define NATRON_ENGINE_HASH64_H_
 
 #include <vector>
 
@@ -65,5 +65,5 @@ private:
 
 void Hash64_appendQString(Hash64* hash, const QString& str);
 
-#endif // POWITER_ENGINE_Hash64_H_
+#endif // NATRON_ENGINE_Hash64_H_
 

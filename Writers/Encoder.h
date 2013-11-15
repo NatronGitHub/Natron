@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_WRITERS_WRITE_H_
-#define POWITER_WRITERS_WRITE_H_
+#ifndef NATRON_WRITERS_WRITE_H_
+#define NATRON_WRITERS_WRITE_H_
 
 #include <string>
 #include <vector>
@@ -209,4 +209,4 @@ typedef Encoder* (*WriteBuilder)(void*);
 
 
 
-#endif /* defined(POWITER_WRITERS_WRITE_H_) */
+#endif /* defined(NATRON_WRITERS_WRITE_H_) */

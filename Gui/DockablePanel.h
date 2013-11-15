@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef POWITER_GUI_SETTINGSPANEL_H_
-#define POWITER_GUI_SETTINGSPANEL_H_
+#ifndef NATRON_GUI_SETTINGSPANEL_H_
+#define NATRON_GUI_SETTINGSPANEL_H_
 
 #include <map>
 
@@ -194,4 +194,4 @@ public:
   
 };
 
-#endif // POWITER_GUI_SETTINGSPANEL_H_
+#endif // NATRON_GUI_SETTINGSPANEL_H_

@@ -8,8 +8,8 @@
 *
 */
 
-#ifndef POWITER_GLOBAL_GLINCLUDES_H_
-#define POWITER_GLOBAL_GLINCLUDES_H_
+#ifndef NATRON_GLOBAL_GLINCLUDES_H_
+#define NATRON_GLOBAL_GLINCLUDES_H_
 
 #include <GL/glew.h>
 #define QT_NO_OPENGL_ES_2
