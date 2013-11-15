@@ -223,15 +223,23 @@ Natron::Status ExrEncoder::render(boost::shared_ptr<const Natron::Image> inputIm
              We copy the scan-line (with y inverted) in the inputImage to the row.*/
             int exrY = roi.top() - y - 1;
 
-            const float* src_pixels = inputImage->pixelAt(roi.left(), exrY);
             Natron::Row row(roi.left(),y,roi.right(),Natron::Mask_RGBA);
-            foreachChannels(z, _imp->_channels){
-                float* to = row.begin(z);
-                for (int i = 0; i < roi.width(); ++i) {
-                    to[i] = src_pixels[i*4 + z -1];
+            const float* src_pixels = inputImage->pixelAt(roi.left(), exrY);
+            if(exrY < inputImage->getRoD().height()){
+                foreachChannels(z, _imp->_channels){
+                    float* to = row.begin(z);
+                    for (int i = 0; i < roi.width(); ++i) {
+                        if( i < inputImage->getRoD().width()){
+                            to[i] = src_pixels[i*4 + z -1];
+                        }else{
+                            to[i] = 0.f;
+                        }
+                    }
+                    //colorspace conversion
+                    to_float(z, to, to, row.begin(Natron::Channel_alpha), row.width());
                 }
-                //colorspace conversion
-                to_float(z, to, to, row.begin(Natron::Channel_alpha), row.width());
+            }else{
+                row.eraseAll();
             }
             
             if(_writer->aborted()){
