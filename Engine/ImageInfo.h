@@ -10,8 +10,8 @@
  *
  */
 
-#ifndef IMAGEINFO_H
-#define IMAGEINFO_H
+#ifndef NATRON_ENGINE_IMAGEINFO_H_
+#define NATRON_ENGINE_IMAGEINFO_H_
 
 #include "Engine/Format.h"
 #include "Engine/ChannelSet.h"
@@ -58,4 +58,4 @@ private:
     Natron::ChannelSet _channels; // all channels defined by the current Node ( that are allocated)
 };
 
-#endif // IMAGEINFO_H
+#endif // NATRON_ENGINE_IMAGEINFO_H_

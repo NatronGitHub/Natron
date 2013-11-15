@@ -11,8 +11,8 @@
 
 #include <QtCore/QObject>
 
-
 #include "Global/GlobalDefines.h"
+
 class TimeLine: public QObject {
     Q_OBJECT
 public:

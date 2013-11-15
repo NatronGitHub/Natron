@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef NATRON_ENGINE_VIEWERCACHE_H_
-#define NATRON_ENGINE_VIEWERCACHE_H_
+#ifndef NATRON_ENGINE_FRAMEENTRY_H_
+#define NATRON_ENGINE_FRAMEENTRY_H_
 
 #include <QtCore/QObject>
 
@@ -19,8 +19,7 @@
 #include "Engine/Cache.h"
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
-
-#include "Gui/Texture.h" // for TextureRect
+#include "Engine/TextureRect.h"
 
 class Hash64;
 
@@ -177,4 +176,4 @@ namespace Natron{
 }
 
 
-#endif // NATRON_ENGINE_VIEWERCACHE_H_
+#endif // NATRON_ENGINE_FRAMEENTRY_H_

@@ -58,6 +58,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QtCore/QSettings>
 
 #include "Global/GlobalDefines.h"
+#include "Global/QtCompat.h"
 #include "Gui/Button.h"
 #include "Gui/LineEdit.h"
 #include "Gui/ComboBox.h"
@@ -885,7 +886,7 @@ boost::shared_ptr<FileSequence>  SequenceFileDialog::frameRangesForSequence(cons
 
 void SequenceDialogProxyModel::parseFilename(QString& path,int* frameNumber,QString &extension){
     /*removing the file extension if any*/
-    extension = SequenceFileDialog::removeFileExtension(path);
+    extension = Natron::removeFileExtension(path);
     /*removing the frame number if any*/
     if (!SequenceFileDialog::removeSequenceDigits(path, frameNumber)) {
         *frameNumber = -1;
@@ -1085,16 +1086,7 @@ bool SequenceFileDialog::isASupportedFileExtension(const std::string& ext) const
     }
     return false;
 }
-QString SequenceFileDialog::removeFileExtension(QString& filename){
-    int i = filename.size() -1;
-    QString extension;
-    while(i>=0 && filename.at(i) != QChar('.')) {
-        extension.prepend(filename.at(i));
-        --i;
-    }
-    filename = filename.left(i);
-    return extension;
-}
+
 QString SequenceFileDialog::removePath(const QString& str){
     int i = str.lastIndexOf(".");
     if(i!=-1){
@@ -1549,7 +1541,7 @@ QStringList SequenceFileDialog::selectedFiles(){
         QString path = sequenceIndex.data().toString();
         path = prefix+path;
         QString originalPath = path;
-        QString ext = SequenceFileDialog::removeFileExtension(path);
+        QString ext = Natron::removeFileExtension(path);
         int i  = path.size() -1;
         while(i >= 0 && path.at(i).isDigit()) {
             --i;
@@ -1597,7 +1589,7 @@ QString SequenceFileDialog::getSequencePatternFromLineEdit(){
     /*get the extension of the first selected file*/
     if(selected.size() > 0){
         QString firstInSequence = selected.at(0);
-        QString ext = removeFileExtension(firstInSequence);
+        QString ext = Natron::removeFileExtension(firstInSequence);
         ext.prepend(".");
 
         QString lineEditText = _selectionLineEdit->text();

@@ -40,8 +40,7 @@
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
-
-#include "Gui/SequenceFileDialog.h" // for removeRecursively
+#include "Global/QtCompat.h" // for removeRecursively
 
 #include "Engine/LRUHashTable.h"
 #include "Engine/MemoryFile.h"

@@ -20,7 +20,7 @@
 #include "Global/Macros.h"
 #include "Global/AppManager.h"
 #include "Global/LibraryBinary.h"
-
+#include "Global/QtCompat.h" // for removeFileExtension
 
 #include "Engine/Node.h"
 #include "Engine/MemoryFile.h"
@@ -98,7 +98,7 @@ void Reader::getFrameRange(SequenceTime *first,SequenceTime *last){
 
 boost::shared_ptr<Decoder> Reader::decoderForFileType(const QString& fileName){
     QString fileNameCopy = fileName;
-    QString extension = SequenceFileDialog::removeFileExtension(fileNameCopy);
+    QString extension = Natron::removeFileExtension(fileNameCopy);
     Natron::LibraryBinary* decoder = appPTR->getCurrentSettings()._readersSettings.decoderForFiletype(extension.toStdString());
     if (!decoder) {
         std::string err("Couldn't find an appropriate decoder for this filetype");

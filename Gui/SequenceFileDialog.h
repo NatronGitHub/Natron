@@ -37,6 +37,7 @@
 #include <QListView>
 
 #include "Global/Macros.h"
+#include "Global/QtCompat.h"
 
 class LineEdit;
 class Button;
@@ -50,33 +51,6 @@ class QSplitter;
 class QAction;
 class SequenceFileDialog;
 class SequenceItemDelegate;
-
-
-#if QT_VERSION < 0x050000
-namespace Natron{
-    inline bool removeRecursively(const QString& dirName){
-        bool result = false;
-        QDir dir(dirName);
-        
-        if (dir.exists(dirName)) {
-            Q_FOREACH(QFileInfo info, dir.entryInfoList(QDir::NoDotAndDotDot | QDir::System | QDir::Hidden  | QDir::AllDirs | QDir::Files, QDir::DirsFirst)) {
-                if (info.isDir()) {
-                    result = removeRecursively(info.absoluteFilePath());
-                }
-                else {
-                    result = QFile::remove(info.absoluteFilePath());
-                }
-                
-                if (!result) {
-                    return result;
-                }
-            }
-            result = dir.rmdir(dirName);
-        }
-        return result;
-    }
-}
-#endif
 
 /**
  * @brief The UrlModel class is the model used by the favorite view in the file dialog. It serves as a connexion between
@@ -447,10 +421,6 @@ public:
     boost::shared_ptr<FileSequence> frameRangesForSequence(const std::string& sequenceName, const std::string& extension) const;
     
     bool isASupportedFileExtension(const std::string& ext) const;
-    
-    /*Removes the . and the extension from the filename and also
-     *returns the extension as a string.*/
-    static QString removeFileExtension(QString& filename);
     
     /**
      * @brief Tries to remove the digits prepending the file extension if the file is part of

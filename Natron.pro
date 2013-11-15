@@ -177,6 +177,7 @@ HEADERS += \
     Engine/Row.h \
     Engine/Settings.h \
     Engine/Singleton.h \
+    Engine/TextureRect.h \
     Engine/TimeLine.h \
     Engine/Timer.h \
     Engine/Variant.h \
@@ -189,6 +190,7 @@ HEADERS += \
     Global/LibraryBinary.h \
     Global/Macros.h \
     Global/MemoryInfo.h \
+    Global/QtCompat.h \
     Gui/Button.h \
     Gui/ComboBox.h \
     Gui/Edge.h \
