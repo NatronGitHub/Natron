@@ -16,31 +16,28 @@
 #include <string>
 #include <map>
 
-#include <QMutex>
-#include <QWaitCondition>
-#include <QThreadStorage>
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
 
-#include "Engine/ChannelSet.h"
 
-class Format;
-
-namespace Natron{
-class Row;
-class Image;
-class EffectInstance;
-class LibraryBinary;
-}
 class AppInstance;
 class NodeSettingsPanel;
 class Knob;
 class ViewerInstance;
 class QKeyEvent;
 class RenderTree;
+class Format;
 
 namespace Natron{
+
+class Row;
+class Image;
+class EffectInstance;
+class LibraryBinary;
+class ChannelSet;
 
 class Node : public QObject
 {
@@ -121,7 +118,7 @@ public:
      **/
     Node* input(int index) const;
     
-    const std::map<int, std::string>& getInputLabels() const { return _inputLabelsMap; }
+    const std::map<int, std::string>& getInputLabels() const;
     
     std::string getInputLabel(int inputNb) const;
     
@@ -131,7 +128,7 @@ public:
     
     const InputMap& getInputs() const {return _inputs;}
     
-    const OutputMap& getOutputs() const {return _outputs;}
+    const OutputMap& getOutputs() const;
     
     /** @brief Adds the node parent to the input inputNumber of the
      * node. Returns true if it succeeded, false otherwise.
@@ -168,13 +165,9 @@ public:
     /**
      * @brief The node unique name.
      **/
-    const std::string& getName() const { return _name ; }
+    const std::string& getName() const;
 
-    void setName(const std::string& name) {
-        _name = name;
-        emit nameChanged(name.c_str());
-    }
-
+    void setName(const std::string& name);
 
     /**
      * @brief Forwarded to the live effect instance
@@ -190,7 +183,7 @@ public:
     /*============================*/
 
     
-    AppInstance* getApp() const {return _app;}
+    AppInstance* getApp() const;
     
     /*Make this node inactive. It will appear
      as if it was removed from the graph editor
@@ -274,7 +267,7 @@ public:
     /**
      * @brief Returns true if the node is active for use in the graph editor.
      **/
-    bool isActivated() const {return _activated;}
+    bool isActivated() const;
 
     
     boost::shared_ptr<Natron::Image> getImageBeingRendered(SequenceTime time,int view) const;
@@ -319,9 +312,7 @@ public:
     
 public slots:
     
-    void onGUINameChanged(const QString& str){
-        _name = str.toStdString();
-    }
+    void onGUINameChanged(const QString& str);
 
     void doRefreshEdgesGUI(){
         emit refreshEdgesGUI();
@@ -368,73 +359,26 @@ signals:
 
     void previewImageChanged(int);
     
-    void channelsChanged(Natron::ChannelSet);
+    void channelsChanged(const Natron::ChannelSet&);
 
     void knobUndoneChange();
     
     void knobRedoneChange();
     
     void frameRangeChanged(int,int);
+
 protected:
-    AppInstance* _app; // pointer to the model: needed to access the application's default-project's format
-    std::multimap<int,Node*> _outputs; //multiple outputs per slot
     std::map<int,Node*> _inputs;//only 1 input per slot
     Natron::EffectInstance*  _liveInstance; //< the instance of the effect interacting with the GUI of this node.
-    Natron::EffectInstance* _previewInstance;//< the instance used only to render a preview image
-    RenderTree* _previewRenderTree;//< the render tree used to render the preview
-    mutable QMutex _previewMutex;
+
 private:
-    
+    struct Implementation;
+    boost::scoped_ptr<Implementation> _imp;
+
     /**
-    * @brief Used internally by findOrCreateLiveInstanceClone
-    **/
+     * @brief Used internally by findOrCreateLiveInstanceClone
+     **/
     Natron::EffectInstance*  createLiveInstanceClone();
-    
-    typedef std::map<Node*,std::pair<int,int> >::const_iterator OutputConnectionsIterator;
-    typedef OutputConnectionsIterator InputConnectionsIterator;
-    struct DeactivatedState{
-        /*The output node was connected from inputNumber to the outputNumber of this...*/
-        std::map<Node*,std::pair<int,int> > _outputsConnections;
-        
-        /*The input node was connected from outputNumber to the inputNumber of this...*/
-        std::map<Node*,std::pair<int,int> > _inputConnections;
-    };
-    
-    
-    std::map<int, std::string> _inputLabelsMap; // inputs name
-    std::string _name; //node name set by the user
-    
-    DeactivatedState _deactivatedState;
-    
-    bool _activated;
-    QMutex _nodeInstanceLock;
-    QWaitCondition _imagesBeingRenderedNotEmpty; //to avoid computing preview in parallel of the real rendering
-    
-    /*A key to identify an image rendered for this node.*/
-    struct ImageBeingRenderedKey{
-        
-        ImageBeingRenderedKey():_time(0),_view(0){}
-        
-        ImageBeingRenderedKey(int time,int view):_time(time),_view(view){}
-        
-        SequenceTime _time;
-        int _view;
-        
-        bool operator==(const ImageBeingRenderedKey& other) const {
-            return _time == other._time &&
-                    _view == other._view;
-        }
-        
-        bool operator<(const ImageBeingRenderedKey& other) const {
-            return _time < other._time ||
-                    _view < other._view;
-        }
-    };
-    
-    typedef std::multimap<ImageBeingRenderedKey,boost::shared_ptr<Natron::Image> > ImagesMap;
-    ImagesMap _imagesBeingRendered; //< a map storing the ongoing render for this node
-    Natron::LibraryBinary* _plugin;
-    std::map<RenderTree*,Natron::EffectInstance*> _renderInstances;
 };
 
 } //namespace Natron

@@ -42,77 +42,174 @@ using std::make_pair;
 using std::cout; using std::endl;
 using boost::shared_ptr;
 
+/*A key to identify an image rendered for this node.*/
+struct ImageBeingRenderedKey{
 
-Natron::Node::Node(AppInstance* app,Natron::LibraryBinary* plugin,const std::string& name)
+    ImageBeingRenderedKey():_time(0),_view(0){}
+
+    ImageBeingRenderedKey(int time,int view):_time(time),_view(view){}
+
+    SequenceTime _time;
+    int _view;
+
+    bool operator==(const ImageBeingRenderedKey& other) const {
+        return _time == other._time &&
+        _view == other._view;
+    }
+
+    bool operator<(const ImageBeingRenderedKey& other) const {
+        return _time < other._time ||
+        _view < other._view;
+    }
+};
+
+typedef std::multimap<ImageBeingRenderedKey,boost::shared_ptr<Image> > ImagesMap;
+
+typedef std::map<Node*,std::pair<int,int> >::const_iterator OutputConnectionsIterator;
+typedef OutputConnectionsIterator InputConnectionsIterator;
+
+struct DeactivatedState{
+    /*The output node was connected from inputNumber to the outputNumber of this...*/
+    std::map<Node*,std::pair<int,int> > outputsConnections;
+
+    /*The input node was connected from outputNumber to the inputNumber of this...*/
+    std::map<Node*,std::pair<int,int> > inputConnections;
+};
+
+
+struct Node::Implementation {
+    Implementation(AppInstance* app_,LibraryBinary* plugin_)
+    : app(app_)
+    , outputs()
+    , previewInstance(NULL)
+    , previewRenderTree(NULL)
+    , previewMutex()
+    , inputLabelsMap()
+    , name()
+    , deactivatedState()
+    , activated(true)
+    , nodeInstanceLock()
+    , imagesBeingRenderedNotEmpty()
+    , imagesBeingRendered()
+    , plugin(plugin_)
+    , renderInstances()
+    {
+    }
+
+    AppInstance* app; // pointer to the model: needed to access the application's default-project's format
+    std::multimap<int,Node*> outputs; //multiple outputs per slot
+    EffectInstance* previewInstance;//< the instance used only to render a preview image
+    RenderTree* previewRenderTree;//< the render tree used to render the preview
+    mutable QMutex previewMutex;
+
+    std::map<int, std::string> inputLabelsMap; // inputs name
+    std::string name; //node name set by the user
+
+    DeactivatedState deactivatedState;
+
+    bool activated;
+    QMutex nodeInstanceLock;
+    QWaitCondition imagesBeingRenderedNotEmpty; //to avoid computing preview in parallel of the real rendering
+
+
+    ImagesMap imagesBeingRendered; //< a map storing the ongoing render for this node
+    LibraryBinary* plugin;
+    std::map<RenderTree*,EffectInstance*> renderInstances;
+};
+
+Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
 : QObject()
-, _app(app)
-, _outputs()
 , _inputs()
 , _liveInstance(NULL)
-, _previewInstance(NULL)
-, _previewRenderTree(NULL)
-, _previewMutex()
-, _inputLabelsMap()
-, _name()
-, _deactivatedState()
-, _activated(true)
-, _nodeInstanceLock()
-, _imagesBeingRenderedNotEmpty()
-, _imagesBeingRendered()
-, _plugin(plugin)
-, _renderInstances()
+, _imp(new Implementation(app,plugin))
 {
-    
-    try{
+
+    try {
         std::pair<bool,EffectBuilder> func = plugin->findFunction<EffectBuilder>("BuildEffect");
         if(func.first){
-            _liveInstance = func.second(this);
-            _previewInstance = func.second(this);
+            _liveInstance         = func.second(this);
+            _imp->previewInstance = func.second(this);
         }else{ //ofx plugin
-            _liveInstance = appPTR->getOfxHost()->createOfxEffect(name,this);
-            _previewInstance = appPTR->getOfxHost()->createOfxEffect(name,this);
+            _liveInstance         = appPTR->getOfxHost()->createOfxEffect(name,this);
+            _imp->previewInstance = appPTR->getOfxHost()->createOfxEffect(name,this);
         }
-    }catch(const std::exception& e){
+    } catch(const std::exception& e) {
         throw e;
     }
     assert(_liveInstance);
-    assert(_previewInstance);
+    assert(_imp->previewInstance);
 
-    _previewInstance->setAsRenderClone();
-    _previewInstance->initializeKnobs();
-    _previewRenderTree = new RenderTree(_previewInstance);
-    _renderInstances.insert(std::make_pair(_previewRenderTree,_previewInstance));
+    _imp->previewInstance->setAsRenderClone();
+    _imp->previewInstance->initializeKnobs();
+    _imp->previewRenderTree = new RenderTree(_imp->previewInstance);
+    _imp->renderInstances.insert(std::make_pair(_imp->previewRenderTree,_imp->previewInstance));
 
 }
 
 
-Natron::Node::~Node(){
-    for (std::map<RenderTree*,EffectInstance*>::iterator it = _renderInstances.begin(); it!=_renderInstances.end(); ++it) {
+Node::~Node()
+{
+    for (std::map<RenderTree*,EffectInstance*>::iterator it = _imp->renderInstances.begin(); it!=_imp->renderInstances.end(); ++it) {
         delete it->second;
     }
     delete _liveInstance;
-    delete _previewRenderTree;
+    delete _imp->previewRenderTree;
     emit deleteWanted();
 }
 
+const std::map<int, std::string>& Node::getInputLabels() const
+{
+    return _imp->inputLabelsMap;
+}
 
-void Natron::Node::initializeKnobs(){
+const Node::OutputMap& Node::getOutputs() const
+{
+    return _imp->outputs;
+}
+
+const std::string& Node::getName() const
+{
+    return _imp->name;
+}
+
+void Node::setName(const std::string& name)
+{
+    _imp->name = name;
+    emit nameChanged(name.c_str());
+}
+
+AppInstance* Node::getApp() const
+{
+    return _imp->app;
+}
+
+bool Node::isActivated() const
+{
+    return _imp->activated;
+}
+
+void Node::onGUINameChanged(const QString& str){
+    _imp->name = str.toStdString();
+}
+
+void Node::initializeKnobs(){
     _liveInstance->initializeKnobs();
     emit knobsInitialized();
 }
 
-Natron::EffectInstance* Natron::Node::findOrCreateLiveInstanceClone(RenderTree* tree){
-    if(isOutputNode()){
+EffectInstance* Node::findOrCreateLiveInstanceClone(RenderTree* tree)
+{
+    if (isOutputNode()) {
         _liveInstance->updateInputs(tree);
         return _liveInstance;
     }
     EffectInstance* ret = 0;
-    std::map<RenderTree*,EffectInstance*>::const_iterator it = _renderInstances.find(tree);
-    if(it != _renderInstances.end()){
+    std::map<RenderTree*,EffectInstance*>::const_iterator it = _imp->renderInstances.find(tree);
+    if (it != _imp->renderInstances.end()) {
         ret =  it->second;
-    }else{
+    } else {
        ret = createLiveInstanceClone();
-        _renderInstances.insert(std::make_pair(tree, ret));
+        _imp->renderInstances.insert(std::make_pair(tree, ret));
     }
     
     assert(ret);
@@ -122,13 +219,14 @@ Natron::EffectInstance* Natron::Node::findOrCreateLiveInstanceClone(RenderTree* 
 
 }
 
-Natron::EffectInstance*  Natron::Node::createLiveInstanceClone(){
-    Natron::EffectInstance* ret = NULL;
-    if(!isOpenFXNode()){
-        std::pair<bool,EffectBuilder> func = _plugin->findFunction<EffectBuilder>("BuildEffect");
+EffectInstance*  Node::createLiveInstanceClone()
+{
+    EffectInstance* ret = NULL;
+    if (!isOpenFXNode()) {
+        std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
         assert(func.first);
         ret =  func.second(this);
-    }else{
+    } else {
         ret = appPTR->getOfxHost()->createOfxEffect(_liveInstance->className(),this);
 
     }
@@ -138,51 +236,58 @@ Natron::EffectInstance*  Natron::Node::createLiveInstanceClone(){
     return ret;
 }
 
-Natron::EffectInstance* Natron::Node::findExistingEffect(RenderTree* tree) const{
-    if(isOutputNode())
+EffectInstance* Node::findExistingEffect(RenderTree* tree) const
+{
+    if (isOutputNode()) {
         return _liveInstance;
-    std::map<RenderTree*,EffectInstance*>::const_iterator it = _renderInstances.find(tree);
-    if(it!=_renderInstances.end()){
+    }
+    std::map<RenderTree*,EffectInstance*>::const_iterator it = _imp->renderInstances.find(tree);
+    if (it!=_imp->renderInstances.end()) {
         return it->second;
-    }else{
+    } else {
         return NULL;
     }
 }
 
-void Natron::Node::createKnobDynamically(){
+void Node::createKnobDynamically()
+{
     emit knobsInitialized();
 }
 
 
-void Natron::Node::hasViewersConnected(std::list<ViewerInstance*>* viewers) const {
-    if(className() == "Viewer"){
+void Node::hasViewersConnected(std::list<ViewerInstance*>* viewers) const
+{
+    if(className() == "Viewer") {
         ViewerInstance* thisViewer = dynamic_cast<ViewerInstance*>(_liveInstance);
         assert(thisViewer);
         std::list<ViewerInstance*>::const_iterator alreadyExists = std::find(viewers->begin(), viewers->end(), thisViewer);
         if(alreadyExists == viewers->end()){
             viewers->push_back(thisViewer);
         }
-    }else{
-        for (Natron::Node::OutputMap::const_iterator it = _outputs.begin(); it != _outputs.end(); ++it) {
-            if(it->second)
+    } else {
+        for (Node::OutputMap::const_iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
+            if(it->second) {
                 it->second->hasViewersConnected(viewers);
+            }
         }
     }
 }
 
-void Natron::Node::initializeInputs(){
+void Node::initializeInputs()
+{
     int inputCount = maximumInputs();
-    for(int i = 0;i < inputCount;++i){
-        if(_inputs.find(i) == _inputs.end()){
-            _inputLabelsMap.insert(make_pair(i,_liveInstance->inputLabel(i)));
-            _inputs.insert(make_pair(i,(Natron::Node*)NULL));
+    for (int i = 0;i < inputCount;++i) {
+        if (_inputs.find(i) == _inputs.end()) {
+            _imp->inputLabelsMap.insert(make_pair(i,_liveInstance->inputLabel(i)));
+            _inputs.insert(make_pair(i,(Node*)NULL));
         }
     }
     _liveInstance->updateInputs(NULL);
     emit inputsInitialized();
 }
 
-Natron::Node* Natron::Node::input(int index) const{
+Node* Node::input(int index) const
+{
     InputMap::const_iterator it = _inputs.find(index);
     if(it == _inputs.end()){
         return NULL;
@@ -192,17 +297,19 @@ Natron::Node* Natron::Node::input(int index) const{
 }
 
 
-std::string Natron::Node::getInputLabel(int inputNb) const{
-    std::map<int,std::string>::const_iterator it = _inputLabelsMap.find(inputNb);
-    if(it == _inputLabelsMap.end()){
+std::string Node::getInputLabel(int inputNb) const
+{
+    std::map<int,std::string>::const_iterator it = _imp->inputLabelsMap.find(inputNb);
+    if (it == _imp->inputLabelsMap.end()) {
         return "";
-    }else{
+    } else {
         return it->second;
     }
 }
 
 
-bool Natron::Node::isInputConnected(int inputNb) const{
+bool Node::isInputConnected(int inputNb) const
+{
     InputMap::const_iterator it = _inputs.find(inputNb);
     if(it != _inputs.end()){
         return it->second != NULL;
@@ -212,11 +319,13 @@ bool Natron::Node::isInputConnected(int inputNb) const{
     
 }
 
-bool Natron::Node::hasOutputConnected() const{
-    return _outputs.size() > 0;
+bool Node::hasOutputConnected() const
+{
+    return _imp->outputs.size() > 0;
 }
 
-bool Natron::Node::connectInput(Natron::Node* input,int inputNumber) {
+bool Node::connectInput(Node* input,int inputNumber)
+{
     assert(input);
     InputMap::iterator it = _inputs.find(inputNumber);
     if (it == _inputs.end()) {
@@ -234,26 +343,29 @@ bool Natron::Node::connectInput(Natron::Node* input,int inputNumber) {
     }
 }
 
-void Natron::Node::connectOutput(Natron::Node* output,int outputNumber ){
+void Node::connectOutput(Node* output,int outputNumber )
+{
     assert(output);
-    _outputs.insert(make_pair(outputNumber,output));
+    _imp->outputs.insert(make_pair(outputNumber,output));
     _liveInstance->updateInputs(NULL);
 }
 
-int Natron::Node::disconnectInput(int inputNumber) {
+int Node::disconnectInput(int inputNumber)
+{
     InputMap::iterator it = _inputs.find(inputNumber);
     if (it == _inputs.end() || it->second == NULL) {
         return -1;
     } else {
         _inputs.erase(it);
-        _inputs.insert(make_pair(inputNumber, (Natron::Node*)NULL));
+        _inputs.insert(make_pair(inputNumber, (Node*)NULL));
         emit inputChanged(inputNumber);
         _liveInstance->updateInputs(NULL);
         return inputNumber;
     }
 }
 
-int Natron::Node::disconnectInput(Natron::Node* input) {
+int Node::disconnectInput(Node* input)
+{
     assert(input);
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if (it->second != input) {
@@ -261,7 +373,7 @@ int Natron::Node::disconnectInput(Natron::Node* input) {
         } else {
             int inputNumber = it->first;
             _inputs.erase(it);
-            _inputs.insert(make_pair(inputNumber, (Natron::Node*)NULL));
+            _inputs.insert(make_pair(inputNumber, (Node*)NULL));
             emit inputChanged(inputNumber);
             _liveInstance->updateInputs(NULL);
             return inputNumber;
@@ -270,12 +382,13 @@ int Natron::Node::disconnectInput(Natron::Node* input) {
     return -1;
 }
 
-int Natron::Node::disconnectOutput(Natron::Node* output) {
+int Node::disconnectOutput(Node* output)
+{
     assert(output);
-    for (OutputMap::iterator it = _outputs.begin(); it != _outputs.end(); ++it) {
+    for (OutputMap::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
         if (it->second == output) {
             int outputNumber = it->first;;
-            _outputs.erase(it);
+            _imp->outputs.erase(it);
             _liveInstance->updateInputs(NULL);
             return outputNumber;
         }
@@ -286,38 +399,41 @@ int Natron::Node::disconnectOutput(Natron::Node* output) {
 
 /*After this call this node still knows the link to the old inputs/outputs
  but no other node knows this node.*/
-void Natron::Node::deactivate(){
-
+void Node::deactivate()
+{
     //first tell the gui to clear any persistent message link to this node
     clearPersistentMessage();
 
     /*Removing this node from the output of all inputs*/
-    _deactivatedState._inputConnections.clear();
+    _imp->deactivatedState.inputConnections.clear();
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        if(it->second){
+        if (it->second) {
             int outputNb = it->second->disconnectOutput(this);
-            _deactivatedState._inputConnections.insert(make_pair(it->second, make_pair(outputNb, it->first)));
+            _imp->deactivatedState.inputConnections.insert(make_pair(it->second, make_pair(outputNb, it->first)));
             it->second = NULL;
         }
     }
-    _deactivatedState._outputsConnections.clear();
-    for (OutputMap::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
-        if(!it->second)
+    _imp->deactivatedState.outputsConnections.clear();
+    for (OutputMap::iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it) {
+        if (!it->second) {
             continue;
+        }
         int inputNb = it->second->disconnectInput(this);
-        _deactivatedState._outputsConnections.insert(make_pair(it->second, make_pair(inputNb, it->first)));
+        _imp->deactivatedState.outputsConnections.insert(make_pair(it->second, make_pair(inputNb, it->first)));
     }
     emit deactivated();
-    _activated = false;
+    _imp->activated = false;
     
 }
 
-void Natron::Node::activate(){
+void Node::activate()
+{
     for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        if(!it->second)
+        if (!it->second) {
             continue;
-        InputConnectionsIterator found = _deactivatedState._inputConnections.find(it->second);
-        if(found == _deactivatedState._inputConnections.end()){
+        }
+        InputConnectionsIterator found = _imp->deactivatedState.inputConnections.find(it->second);
+        if (found == _imp->deactivatedState.inputConnections.end()) {
             cout << "Big issue while activating this node, canceling process." << endl;
             return;
         }
@@ -325,12 +441,12 @@ void Natron::Node::activate(){
         assert(found->second.first == it->first);
         it->second->connectOutput(this,found->second.first);
     }
-    for (OutputMap::const_iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
-        if(!it->second)
+    for (OutputMap::const_iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it) {
+        if (!it->second) {
             continue;
-        
-        OutputConnectionsIterator found = _deactivatedState._outputsConnections.find(it->second);
-        if(found == _deactivatedState._outputsConnections.end()){
+        }
+        OutputConnectionsIterator found = _imp->deactivatedState.outputsConnections.find(it->second);
+        if (found == _imp->deactivatedState.outputsConnections.end()) {
             cout << "Big issue while activating this node, canceling process." << endl;
             return;
         }
@@ -338,18 +454,19 @@ void Natron::Node::activate(){
         it->second->connectInput(this,found->second.first);
     }
     emit activated();
-    _activated = true;
+    _imp->activated = true;
 }
 
 
 
-const Format& Natron::Node::getRenderFormatForEffect(const Natron::EffectInstance* effect) const{
-    if(effect == _liveInstance){
+const Format& Node::getRenderFormatForEffect(const EffectInstance* effect) const
+{
+    if (effect == _liveInstance) {
         return getApp()->getProjectFormat();
-    }else{
-        for(std::map<RenderTree*,Natron::EffectInstance*>::const_iterator it = _renderInstances.begin();
-            it!=_renderInstances.end();++it){
-            if(it->second == effect){
+    } else {
+        for (std::map<RenderTree*,EffectInstance*>::const_iterator it = _imp->renderInstances.begin();
+            it!=_imp->renderInstances.end();++it) {
+            if (it->second == effect) {
                 return it->first->getRenderFormat();
             }
         }
@@ -357,13 +474,14 @@ const Format& Natron::Node::getRenderFormatForEffect(const Natron::EffectInstanc
     return getApp()->getProjectFormat();
 }
 
-int Natron::Node::getRenderViewsCountForEffect( const Natron::EffectInstance* effect) const{
-    if(effect == _liveInstance){
+int Node::getRenderViewsCountForEffect( const EffectInstance* effect) const
+{
+    if(effect == _liveInstance) {
         return getApp()->getCurrentProjectViewsCount();
-    }else{
-        for(std::map<RenderTree*,Natron::EffectInstance*>::const_iterator it = _renderInstances.begin();
-            it!=_renderInstances.end();++it){
-            if(it->second == effect){
+    } else {
+        for (std::map<RenderTree*,EffectInstance*>::const_iterator it = _imp->renderInstances.begin();
+            it!=_imp->renderInstances.end();++it) {
+            if (it->second == effect) {
                 return it->first->renderViewsCount();
             }
         }
@@ -372,17 +490,19 @@ int Natron::Node::getRenderViewsCountForEffect( const Natron::EffectInstance* ef
 }
 
 
-Knob* Natron::Node::getKnobByDescription(const std::string& desc) const{
+Knob* Node::getKnobByDescription(const std::string& desc) const
+{
     return _liveInstance->getKnobByDescription(desc);
 }
 
 
-boost::shared_ptr<Natron::Image> Natron::Node::getImageBeingRendered(SequenceTime time,int view) const{
-    ImagesMap::const_iterator it = _imagesBeingRendered.find(ImageBeingRenderedKey(time,view));
-    if(it!=_imagesBeingRendered.end()){
+boost::shared_ptr<Image> Node::getImageBeingRendered(SequenceTime time,int view) const
+{
+    ImagesMap::const_iterator it = _imp->imagesBeingRendered.find(ImageBeingRenderedKey(time,view));
+    if (it!=_imp->imagesBeingRendered.end()) {
         return it->second;
     }
-    return boost::shared_ptr<Natron::Image>();
+    return boost::shared_ptr<Image>();
 }
 
 
@@ -393,65 +513,67 @@ static float clamp(float v, float min = 0.f, float max= 1.f){
     return v;
 }
 
-void Natron::Node::addImageBeingRendered(boost::shared_ptr<Natron::Image> image,SequenceTime time,int view ){
-    /*before rendering we add to the _imagesBeingRendered member the image*/
+void Node::addImageBeingRendered(boost::shared_ptr<Image> image,SequenceTime time,int view )
+{
+    /*before rendering we add to the _imp->imagesBeingRendered member the image*/
     ImageBeingRenderedKey renderedImageKey(time,view);
-    QMutexLocker locker(&_nodeInstanceLock);
-    _imagesBeingRendered.insert(std::make_pair(renderedImageKey, image));
+    QMutexLocker locker(&_imp->nodeInstanceLock);
+    _imp->imagesBeingRendered.insert(std::make_pair(renderedImageKey, image));
 }
 
-void Natron::Node::removeImageBeingRendered(SequenceTime time,int view ){
+void Node::removeImageBeingRendered(SequenceTime time,int view )
+{
     /*now that we rendered the image, remove it from the images being rendered*/
     
-    QMutexLocker locker(&_nodeInstanceLock);
+    QMutexLocker locker(&_imp->nodeInstanceLock);
     ImageBeingRenderedKey renderedImageKey(time,view);
-    std::pair<ImagesMap::iterator,ImagesMap::iterator> it = _imagesBeingRendered.equal_range(renderedImageKey);
+    std::pair<ImagesMap::iterator,ImagesMap::iterator> it = _imp->imagesBeingRendered.equal_range(renderedImageKey);
     assert(it.first != it.second);
-    _imagesBeingRendered.erase(it.first);
+    _imp->imagesBeingRendered.erase(it.first);
 
-    _imagesBeingRenderedNotEmpty.wakeOne(); // wake up any preview thread waiting for render to finish
+    _imp->imagesBeingRenderedNotEmpty.wakeOne(); // wake up any preview thread waiting for render to finish
 }
 
-void Natron::Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf){
+void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf)
+{
 
-    QMutexLocker locker(&_previewMutex); /// prevent 2 previews to occur at the same time since there's only 1 preview instance
+    QMutexLocker locker(&_imp->previewMutex); /// prevent 2 previews to occur at the same time since there's only 1 preview instance
 
     RectI rod;
-    _previewRenderTree->refreshTree();
-    _previewInstance->getRegionOfDefinition(time, &rod);
+    _imp->previewRenderTree->refreshTree();
+    _imp->previewInstance->getRegionOfDefinition(time, &rod);
     int h,w;
     h = rod.height() < height ? rod.height() : height;
     w = rod.width() < width ? rod.width() : width;
     double yZoomFactor = (double)h/(double)rod.height();
     double xZoomFactor = (double)w/(double)rod.width();
     {
-        QMutexLocker locker(&_nodeInstanceLock);
-        while(!_imagesBeingRendered.empty()){
-            _imagesBeingRenderedNotEmpty.wait(&_nodeInstanceLock);
+        QMutexLocker locker(&_imp->nodeInstanceLock);
+        while(!_imp->imagesBeingRendered.empty()){
+            _imp->imagesBeingRenderedNotEmpty.wait(&_imp->nodeInstanceLock);
         }
     }
 
 #ifdef NATRON_LOG
-    Natron::Log::beginFunction(getName(),"makePreviewImage");
-    Natron::Log::print(QString("Time "+QString::number(time)).toStdString());
+    Log::beginFunction(getName(),"makePreviewImage");
+    Log::print(QString("Time "+QString::number(time)).toStdString());
 #endif
 
-    Natron::Status stat =  _previewRenderTree->preProcessFrame(time);
+    Status stat =  _imp->previewRenderTree->preProcessFrame(time);
     if(stat == StatFailed){
 #ifdef NATRON_LOG
-        Natron::Log::print(QString("preProcessFrame returned StatFailed.").toStdString());
-        Natron::Log::endFunction(getName(),"makePreviewImage");
+        Log::print(QString("preProcessFrame returned StatFailed.").toStdString());
+        Log::endFunction(getName(),"makePreviewImage");
 #endif
         return;
     }
 
     RenderScale scale;
     scale.x = scale.y = 1.;
-    boost::shared_ptr<const Natron::Image> img;
-    try{
-        img = _previewInstance->renderRoI(time, scale, 0,rod);
-    }
-    catch(const std::exception& e){
+    boost::shared_ptr<const Image> img;
+    try {
+        img = _imp->previewInstance->renderRoI(time, scale, 0,rod);
+    } catch(const std::exception& e) {
         std::cout << e.what() << std::endl;
         return;
     }
@@ -475,16 +597,18 @@ void Natron::Node::makePreviewImage(SequenceTime time,int width,int height,unsig
     }
 
 #ifdef NATRON_LOG
-    Natron::Log::endFunction(getName(),"makePreviewImage");
+    Log::endFunction(getName(),"makePreviewImage");
 #endif
 }
 
-void Natron::Node::openFilesForAllFileKnobs(){
+void Node::openFilesForAllFileKnobs()
+{
     _liveInstance->openFilesForAllFileKnobs();
 }
 
-void Natron::Node::abortRenderingForEffect(Natron::EffectInstance* effect){
-    for (std::map<RenderTree*,EffectInstance*>::iterator it = _renderInstances.begin(); it!=_renderInstances.end(); ++it) {
+void Node::abortRenderingForEffect(EffectInstance* effect)
+{
+    for (std::map<RenderTree*,EffectInstance*>::iterator it = _imp->renderInstances.begin(); it!=_imp->renderInstances.end(); ++it) {
         if(it->second == effect){
             dynamic_cast<OutputEffectInstance*>(it->first->getOutput())->getVideoEngine()->abortRendering();
         }
@@ -492,120 +616,150 @@ void Natron::Node::abortRenderingForEffect(Natron::EffectInstance* effect){
 }
 
 
-bool Natron::Node::isInputNode() const{
+bool Node::isInputNode() const{
     return _liveInstance->isGenerator();
 }
 
 
-bool Natron::Node::isOutputNode() const{
+bool Node::isOutputNode() const
+{
     return _liveInstance->isOutput();
 }
 
 
-bool Natron::Node::isInputAndProcessingNode() const{
+bool Node::isInputAndProcessingNode() const
+{
     return _liveInstance->isGeneratorAndFilter();
 }
 
 
-bool Natron::Node::isOpenFXNode() const{
+bool Node::isOpenFXNode() const
+{
     return _liveInstance->isOpenFX();
 }
 
-const std::vector<Knob*>& Natron::Node::getKnobs() const{
+const std::vector<Knob*>& Node::getKnobs() const
+{
     return _liveInstance->getKnobs();
 }
 
-std::string Natron::Node::className() const{
+std::string Node::className() const
+{
     return _liveInstance->className();
 }
 
 
-std::string Natron::Node::description() const{
+std::string Node::description() const
+{
     return _liveInstance->description();
 }
 
-int Natron::Node::maximumInputs() const {
+int Node::maximumInputs() const
+{
     return _liveInstance->maximumInputs();
 }
 
-bool Natron::Node::makePreviewByDefault() const{
+bool Node::makePreviewByDefault() const
+{
     return _liveInstance->makePreviewByDefault();
 }
-void Natron::Node::togglePreview(){
+
+void Node::togglePreview()
+{
     _liveInstance->togglePreview();
 }
 
-bool Natron::Node::isPreviewEnabled() const{
+bool Node::isPreviewEnabled() const
+{
     return _liveInstance->isPreviewEnabled();
 }
 
-bool Natron::Node::aborted() const { return _liveInstance->aborted(); }
+bool Node::aborted() const
+{
+    return _liveInstance->aborted();
+}
 
-void Natron::Node::setAborted(bool b){ _liveInstance->setAborted(b); }
+void Node::setAborted(bool b)
+{
+    _liveInstance->setAborted(b);
+}
 
-void Natron::Node::drawOverlay(){ _liveInstance->drawOverlay(); }
+void Node::drawOverlay()
+{
+    _liveInstance->drawOverlay();
+}
 
-bool Natron::Node::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
+bool Node::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos)
+{
     return _liveInstance->onOverlayPenDown(viewportPos, pos);
 }
 
-bool Natron::Node::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
+bool Node::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos)
+{
     return _liveInstance->onOverlayPenMotion(viewportPos, pos);
 }
 
-bool Natron::Node::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos){
+bool Node::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos)
+{
     return _liveInstance->onOverlayPenUp(viewportPos, pos);
 }
 
-void Natron::Node::onOverlayKeyDown(QKeyEvent* e){
+void Node::onOverlayKeyDown(QKeyEvent* e)
+{
     return _liveInstance->onOverlayKeyDown(e);
 }
 
-void Natron::Node::onOverlayKeyUp(QKeyEvent* e){
+void Node::onOverlayKeyUp(QKeyEvent* e)
+{
     return _liveInstance->onOverlayKeyUp(e);
 }
 
-void Natron::Node::onOverlayKeyRepeat(QKeyEvent* e){
+void Node::onOverlayKeyRepeat(QKeyEvent* e)
+{
     return _liveInstance->onOverlayKeyRepeat(e);
 }
 
-void Natron::Node::onOverlayFocusGained(){
+void Node::onOverlayFocusGained()
+{
     return _liveInstance->onOverlayFocusGained();
 }
 
-void Natron::Node::onOverlayFocusLost(){
+void Node::onOverlayFocusLost()
+{
     return _liveInstance->onOverlayFocusLost();
 }
 
 
-bool Natron::Node::message(Natron::MessageType type,const std::string& content) const{
-    if (type == Natron::INFO_MESSAGE) {
-        Natron::informationDialog(getName(), content);
+bool Node::message(MessageType type,const std::string& content) const
+{
+    if (type == INFO_MESSAGE) {
+        informationDialog(getName(), content);
         return true;
-    }else if(type == Natron::WARNING_MESSAGE){
-        Natron::warningDialog(getName(), content);
+    } else if (type == WARNING_MESSAGE) {
+        warningDialog(getName(), content);
         return true;
-    }else if(type == Natron::ERROR_MESSAGE){
-        Natron::errorDialog(getName(), content);
+    } else if (type == ERROR_MESSAGE) {
+        errorDialog(getName(), content);
         return true;
-    }else if(type == Natron::QUESTION_MESSAGE){
-        return Natron::questionDialog(getName(), content) == Natron::Yes;
+    } else if (type == QUESTION_MESSAGE) {
+        return questionDialog(getName(), content) == Yes;
     }
     return false;
 }
 
-void Natron::Node::setPersistentMessage(Natron::MessageType type,const std::string& content){
-    if(!getApp()->isBackground()){
+void Node::setPersistentMessage(MessageType type,const std::string& content)
+{
+    if (!getApp()->isBackground()) {
         //if the message is just an information, display a popup instead.
-        if(type == Natron::INFO_MESSAGE){
+        if (type == INFO_MESSAGE) {
             message(type,content);
             return;
         }
         QString message;
         message.append(getName().c_str());
-        if(type == Natron::ERROR_MESSAGE){
+        if (type == ERROR_MESSAGE) {
             message.append(" error: ");
-        }else if(type == Natron::WARNING_MESSAGE){
+        } else if(type == WARNING_MESSAGE) {
             message.append(" warning: ");
         }
         message.append(content.c_str());
@@ -616,13 +770,14 @@ void Natron::Node::setPersistentMessage(Natron::MessageType type,const std::stri
     }
 }
 
-void Natron::Node::clearPersistentMessage(){
+void Node::clearPersistentMessage()
+{
     if(!getApp()->isBackground()){
         emit persistentMessageCleared();
     }
 }
 
-InspectorNode::InspectorNode(AppInstance* app,Natron::LibraryBinary* plugin,const std::string& name)
+InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin,const std::string& name)
 : Node(app,plugin,name)
 , _inputsCount(1)
 , _activeInput(0)
