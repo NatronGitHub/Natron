@@ -158,7 +158,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     RectI rod;
     EffectInstance* n = getAssociatedNode();
     if(n){
-        n->getRegionOfDefinition(time,&rod);
+        (void)n->getRegionOfDefinition(time,&rod);
         ret.x1 = rod.left();
         ret.x2 = rod.right();
         ret.y1 = rod.bottom();

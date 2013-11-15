@@ -541,7 +541,10 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
 
     RectI rod;
     _imp->previewRenderTree->refreshTree();
-    _imp->previewInstance->getRegionOfDefinition(time, &rod);
+    Natron::Status stat = _imp->previewInstance->getRegionOfDefinition(time, &rod);
+    if (stat == StatFailed) {
+        return;
+    }
     int h,w;
     h = rod.height() < height ? rod.height() : height;
     w = rod.width() < width ? rod.width() : width;
@@ -557,7 +560,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     Log::beginFunction(getName(),"makePreviewImage");
     Log::print(QString("Time "+QString::number(time)).toStdString());
 
-    Status stat =  _imp->previewRenderTree->preProcessFrame(time);
+    stat =  _imp->previewRenderTree->preProcessFrame(time);
     if(stat == StatFailed){
         Log::print(QString("preProcessFrame returned StatFailed.").toStdString());
         Log::endFunction(getName(),"makePreviewImage");
