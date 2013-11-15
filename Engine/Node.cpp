@@ -418,7 +418,10 @@ void Natron::Node::makePreviewImage(SequenceTime time,int width,int height,unsig
 
     RectI rod;
     _previewRenderTree->refreshTree();
-    _previewInstance->getRegionOfDefinition(time, &rod);
+    Natron::Status stat = _previewInstance->getRegionOfDefinition(time, &rod);
+    if(stat == StatFailed){
+        return;
+    }
     int h,w;
     h = rod.height() < height ? rod.height() : height;
     w = rod.width() < width ? rod.width() : width;
