@@ -188,7 +188,7 @@ class ViewerGL : public QGLWidget
      **/
     enum MOUSE_STATE{DRAGGING,UNDEFINED};
     
-    GLuint _pboIds[2]; /*!< PBO's id's used by the OpenGL context*/
+    std::vector<GLuint> _pboIds; /*!< PBO's id's used by the OpenGL context*/
     
     //   GLuint _vaoId; /*!< VAO holding the rendering VBOs for texture mapping.*/
     
@@ -209,22 +209,10 @@ class ViewerGL : public QGLWidget
     
     bool _shaderLoaded;/*!< Flag to check whether the shaders have already been loaded.*/
     
-    // FIXME: why a float to really represent an enum????
-    float _lut; /*!< a value coding the current color-space used to render.
-                 0 = NONE , 1 = sRGB , 2 = Rec 709*/
-    
-    const Natron::Color::Lut* _colorSpace;/*!< The lut used to do the viewer colorspace conversion when we can't use shaders*/
-    
-    QWaitCondition _usingColorSpaceCondition;
-    QMutex _usingColorSpaceMutex;
-    int _usingColorSpaceCounter;
     
     InfoViewerWidget* _infoViewer;/*!< Pointer to the info bar below the viewer holding pixel/mouse/format related infos*/
     
     ViewerTab* _viewerTab;/*!< Pointer to the viewer tab GUI*/
-    
-    double exposure ;/*!< Current exposure setting, all pixels are multiplied
-                      by pow(2,expousre) before they appear on the screen.*/
     
     ImageInfo _currentViewerInfos;/*!< Pointer to the ViewerInfos  used for rendering*/
     
@@ -248,12 +236,7 @@ class ViewerGL : public QGLWidget
     bool _overlay;/*!< True if the user enabled overlay dispay*/
     
     bool _hasHW;/*!< True if the user has a GLSL version supporting everything requested.*/
-    
-    char* frameData;/*!< Pointer to the buffer holding the data computed for the last frame.
-                     This buffer is the currently mapped PBO.*/
-    
-    bool _pBOmapped; /*!< True if the main PBO (_pbosId[0]) is currently mapped*/
-    
+        
     // FIXME-seeabove: why a float to really represent an enum????
     float _displayChannels;
     
@@ -294,14 +277,6 @@ public:
 
     void setTextFont(const QFont& f){*_textFont = f;}
 
-    /**
-     *@brief This function is called by the viewer node. It fills 1 scan-line in the
-     *output buffer using the buffers in parameters. Since each scan-line lies at a
-     *different offset in the output buffer, this function is thread-safe.
-     *Internally this function calls the appropriate function to fill the output buffer
-     *depending on the bit-depth currently used by the viewer.
-     */
-    void drawRow(const float *data,const std::vector<int>& columns,int zoomedY);
     
     /**
      *@brief Toggles on/off the display on the viewer. If d is false then it will
@@ -353,21 +328,7 @@ public:
      *is already this one.
      **/
     void makeCurrent();
-    
-    /**
-     *@returns Returns a value indicating the current viewer process used for rendering.
-     *0 = NONE , 1 = sRGB , 2 = Rec 709.
-     *Not that this will probably change in the future,allowing the user to add custom a viewer process.
-     **/
-    // FIXME-seeabove: why a float to really represent an enum????
-    float lutType() const {return _lut;}
-    
-    /**
-     *@returns Returns the current exposure setting, all pixels are multiplied
-     *by pow(2,exposure) before they appear on the screen.
-     **/
-    double getExposure() const {return exposure;}
-    
+        
     /**
      *@returns Returns 1.f if the viewer is using 8bit textures.
      *Returns 0.f if the viewer is using 32bit f.p textures.
@@ -489,52 +450,18 @@ public:
      **/
     void turnOffOverlay(){_overlay=false;}
     
+    
+  
     /**
-     *@brief Called by the video engine to allocate the frameData.
+     *@brief Copies the data stored in the  RAM buffer into the currently
+     *used texture. 
+     * It does:
+     * 1) glMapBuffer
+     * 2) memcpy to copy data from RAM to GPU
+     * 3) glUnmapBuffer
+     * 4) glTexSubImage2D or glTexImage2D depending whether we resize the texture or not.
      **/
-    void allocateFrameStorage(size_t dataSize);
-    
-    /**
-     *@brief Allocates the pbo represented by the pboID with dataSize bytes.
-     This function returns a pointer to the mapping created between the GPU and the RAM.
-     *@param dataSize The size in bytes that should be allocated to the PBO.
-     *@param pboID The OpenGL ID of the PBO to use.
-     *@returns Returns a pointer mapped in RAM to the PBO.
-     **/
-    void* allocateAndMapPBO(size_t dataSize,GLuint pboID);
-    
-    /**
-     *@brief Fill the buffer dst with byteCount bytes of src (simple call to memcpy)
-     **/
-    void fillPBO(const char* src,void* dst,size_t byteCount);
-    
-    void unMapPBO();
-    
-    void unBindPBO();
-    
-    /**
-     *@brief Copies the data stored in the currently mapped pbo into the currently
-     *used texture. Note that it unmaps the current PBO before actually copying data
-     *to the texture.
-     **/
-    void copyPBOToRenderTexture(const TextureRect& region);
-    
-    
-    /**
-     *@returns *Returns a pointer to the data of the current frame.
-     **/
-    const char* getFrameData() const {return frameData;}
-    
-    /**
-     *@returns Returns the OpenGL PBO located at index. Index must be either 0 or 1.
-     **/
-    GLuint getPBOId(int index) const {return _pboIds[index];}
-    
-    
-    /**
-     *@returns Returns true if a pbo is currently mapped
-     **/
-    bool hasPBOCurrentlyMapped() const {return _pBOmapped;}
+    void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region,int pboIndex);
     
     
     /**
@@ -563,12 +490,7 @@ public:
     void clearPersistentMessage();
     
     public slots:
-    /**
-     *@brief Slot used by the GUI to change the current viewer process applied to all pixels.
-     *@param str[in] A string whose name is a valid color-space.
-     *WARNING: this function may change in the future.
-     **/
-    void updateColorSpace(QString str);
+   
     
     /**
      *@brief Slot used by the GUI to zoom at the current center the viewport.
@@ -587,10 +509,6 @@ public:
      **/
     void zoomSlot(QString);
     
-    /**
-     *@brief Slot called by the GUI. It changes the current exposure settings.
-     **/
-    void updateExposure(double);
     
     void updateColorPicker(int x = INT_MAX,int y = INT_MAX);
     
@@ -675,6 +593,13 @@ signals:
     virtual void resizeGL(int width,int height);
     
 private:
+    
+    /**
+     * @brief Returns the OpenGL handle of the PBO at the given index.
+     * If PBO at the given index doesn't exist, this function will create it.
+     **/
+    GLuint getPboID(int index);
+    
     /**
      *@brief Called by the contructor. It avoids re-writing the same code for all constructors.
      **/
@@ -749,31 +674,6 @@ private:
      *@brief draws the progress bar
      **/
     void drawProgressBar();
-    
-    /**
-     *@brief Actually converting to ARGB... but it is called BGRA by
-     the texture format GL_UNSIGNED_INT_8_8_8_8_REV
-     **/
-    static U32 toBGRA(U32 r,U32 g,U32 b,U32 a);
-    
-    /**
-     *@brief This function fills the member frameData with the buffer in parameters.
-     *Since the frameData buffer holds the data "as seen" on the viewer (i.e with a scale-factor)
-     *it will apply a "Nearest neighboor" algorithm to fill the buffer. Note that during the
-     *conversion to 8bit in the viewer color-space, a dithering algorithm is used.
-     **/
-    void convertRowToFitTextureBGRA(const float* data,const std::vector<int>& columnSpan,int yOffset);
-    
-    /**
-     *@brief This function fills the member frameData with the buffer in parameters.
-     *Since the frameData buffer holds the data "as seen" on the viewer (i.e with a scale-factor)
-     *it will apply a "Nearest neighboor" algorithm to fill the buffer. This is the same function
-     *as ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
-     *int w,int yOffset,const float* alpha) except that it does not apply any dithering nor color-space
-     *since the data are stored as 32bit floating points. The color-space will be applied by the shaders.
-     **/
-    void convertRowToFitTextureBGRA_fp(const float* data,const std::vector<int>& columnSpan,int yOffset);
-    
     
     /**
      *@brief Resets the mouse position

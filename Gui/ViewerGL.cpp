@@ -431,18 +431,13 @@ void ViewerGL::initConstructor(){
     setRod(_blankViewerInfos.getRoD());
     onProjectFormatChanged(frmt);
     _displayingImage = false;
-    exposure = 1;
     setMouseTracking(true);
     _ms = UNDEFINED;
     shaderLC = NULL;
     shaderRGB = NULL;
     shaderBlack = NULL;
     _overlay = true;
-    frameData = NULL;
-    _colorSpace = Color::getLut(Color::LUT_DEFAULT_VIEWER);
-    _usingColorSpaceCounter = 0;
     _defaultDisplayTexture = 0;
-    _pBOmapped = false;
     _displayChannels = 0.f;
     _progressBarY = -1;
     _drawProgressBar = false;
@@ -469,7 +464,6 @@ void ViewerGL::initConstructor(){
 ViewerGL::ViewerGL(QGLContext* context,ViewerTab* parent,const QGLWidget* shareWidget)
     : QGLWidget(context,parent,shareWidget)
     , _shaderLoaded(false)
-    , _lut(1)
     , _viewerTab(parent)
     , _displayingImage(false)
     , _must_initBlackTex(true)
@@ -482,7 +476,6 @@ ViewerGL::ViewerGL(QGLContext* context,ViewerTab* parent,const QGLWidget* shareW
 ViewerGL::ViewerGL(const QGLFormat& format,ViewerTab* parent ,const QGLWidget* shareWidget)
     : QGLWidget(format,parent,shareWidget)
     , _shaderLoaded(false)
-    , _lut(1)
     , _viewerTab(parent)
     , _displayingImage(false)
     , _must_initBlackTex(true)
@@ -495,7 +488,6 @@ ViewerGL::ViewerGL(const QGLFormat& format,ViewerTab* parent ,const QGLWidget* s
 ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
     : QGLWidget(parent,shareWidget)
     , _shaderLoaded(false)
-    , _lut(1)
     , _viewerTab(parent)
     , _displayingImage(false)
     , _must_initBlackTex(true)
@@ -523,7 +515,9 @@ ViewerGL::~ViewerGL(){
     }
     delete _blackTex;
     delete _defaultDisplayTexture;
-    glDeleteBuffers(2, &_pboIds[0]);
+    for(U32 i = 0; i < _pboIds.size();++i){
+        glDeleteBuffers(1,&_pboIds[i]);
+    }
     glDeleteBuffers(1, &_vboVerticesId);
     glDeleteBuffers(1, &_vboTexturesId);
     glDeleteBuffers(1, &_iboTriangleStripId);
@@ -793,7 +787,7 @@ void ViewerGL::initializeGL(){
     initAndCheckGlExtensions();
     _blackTex = new Texture;
     _defaultDisplayTexture = new Texture;
-    glGenBuffersARB(2, &_pboIds[0]);
+    
     
     // glGenVertexArrays(1, &_vaoId);
     glGenBuffers(1, &_vboVerticesId);
@@ -833,6 +827,17 @@ void ViewerGL::initializeGL(){
     
     initBlackTex();
     checkGLErrors();
+}
+
+GLuint ViewerGL::getPboID(int index){
+    if(index >= (int)_pboIds.size()){
+        GLuint handle;
+        glGenBuffersARB(1,&handle);
+        _pboIds.push_back(handle);
+        return handle;
+    }else{
+        return _pboIds[index];
+    }
 }
 
 /*Little improvment to the Qt version of makeCurrent to make it faster*/
@@ -1003,9 +1008,9 @@ void ViewerGL::activateShaderLC(){
     }
     shaderLC->setUniformValue("Tex", 0);
     shaderLC->setUniformValue("yw",1.0,1.0,1.0);
-    shaderLC->setUniformValue("expMult",  (GLfloat)exposure);
+    shaderLC->setUniformValue("expMult",  (GLfloat)_viewerTab->getInternalNode()->getExposure());
     // FIXME: why a float to really represent an enum????
-    shaderLC->setUniformValue("lut", (GLfloat)_lut);
+    shaderLC->setUniformValue("lut", (GLfloat)_viewerTab->getInternalNode()->getLutType());
     // FIXME-seeabove: why a float to really represent an enum????
     shaderLC->setUniformValue("byteMode", (GLfloat)byteMode());
     
@@ -1019,9 +1024,9 @@ void ViewerGL::activateShaderRGB(){
     shaderRGB->setUniformValue("Tex", 0);
     // FIXME-seeabove: why a float to really represent an enum????
     shaderRGB->setUniformValue("byteMode", (GLfloat)byteMode());
-    shaderRGB->setUniformValue("expMult",  (GLfloat)exposure);
+    shaderRGB->setUniformValue("expMult",  (GLfloat)_viewerTab->getInternalNode()->getExposure());
     // FIXME-seeabove: why a float to really represent an enum????
-    shaderRGB->setUniformValue("lut", (GLfloat)_lut);
+    shaderRGB->setUniformValue("lut", (GLfloat)_viewerTab->getInternalNode()->getLutType());
     // FIXME-seeabove: why a float to really represent an enum????
     shaderRGB->setUniformValue("channels", (GLfloat)_displayChannels);
     
@@ -1071,28 +1076,22 @@ void ViewerGL::restoreGLState()
 }
 
 void ViewerGL::initBlackTex(){
-    // assert(_must_initBlackTex);
     fitToFormat(getDisplayWindow());
     
     TextureRect texSize(0, 0, 2047, 1555,2048,1556);
     assert_checkGLErrors();
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, _pboIds[0]);
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, getPboID(0));
     checkGLErrors();
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, texSize.w*texSize.h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
     checkGLErrors();
-    assert(!frameData);
-    //assert(!_pBOmapped);
-    frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    char* frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     checkGLErrors();
     assert(frameData);
-    _pBOmapped = true;
     U32* output = reinterpret_cast<U32*>(frameData);
     for(int i = 0 ; i < texSize.w*texSize.h ; ++i) {
-        output[i] = toBGRA(0, 0, 0, 255);
+        output[i] = ViewerInstance::toBGRA(0, 0, 0, 255);
     }
     glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
-    frameData = NULL;
-    _pBOmapped = false;
     checkGLErrors();
     _blackTex->fillOrAllocateTexture(texSize,Texture::BYTE);
     
@@ -1103,78 +1102,24 @@ void ViewerGL::initBlackTex(){
 
 
 
-void ViewerGL::drawRow(const float* data ,const std::vector<int>& columns,int zoomedY){
-    
-    while(_updatingTexture){}
-    if(byteMode()==0 && _hasHW){
-        convertRowToFitTextureBGRA_fp(data,columns,zoomedY);
-    }
-    else{
-        convertRowToFitTextureBGRA(data,columns,zoomedY);
-        
-    }
-}
-
-void ViewerGL::allocateFrameStorage(size_t dataSize){
+void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region,int pboIndex){
+    QMutexLocker locker(&_textureMutex);
     GLint currentBoundPBO;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
     if (currentBoundPBO != 0) {
-        cout << "(ViewerGL::allocateFrameStorage): Another PBO is currently mapped, glMap failed." << endl;
+        cout << "(ViewerGL::allocateAndMapPBO): Another PBO is currently mapped, glMap failed." << endl;
         return;
     }
-    assert(!frameData);
-    /*MUST map the PBO AFTER that we allocate the texture.*/
-    frameData = (char*)allocateAndMapPBO(dataSize,_pboIds[0]);
-    assert(frameData);
-    checkGLErrors();
-}
-
-void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID) {
-    //cout << "    + mapping PBO" << endl;
-    if(byteMode() != 1 && _hasHW){
-        dataSize *= sizeof(float);
-    }
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,pboID);
-    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
-    assert(!_pBOmapped);
+    
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, getPboID(pboIndex));
+    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
     GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     checkGLErrors();
     assert(ret);
-    _pBOmapped = true;
-    return ret;
-}
-
-void ViewerGL::fillPBO(const char *src, void *dst, size_t byteCount){
-    assert(dst);
-    assert(src);
-    if(byteMode() != 1 && _hasHW){
-        byteCount*=sizeof(float);
-    }
-    memcpy(dst, src, byteCount);
-}
-
-void ViewerGL::unMapPBO(){
-    GLint currentBoundPBO;
-    glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
-    if (currentBoundPBO == 0) {
-        cout << "(ViewerGL::unMapPBO) WARNING: No PBO currently mapped." << endl;
-        return;
-    }
-    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-    _pBOmapped = false;
-    if (frameData) {
-        frameData = NULL;
-    }
     
-}
-void ViewerGL::unBindPBO(){
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,0);
-}
+    memcpy(ret, (void*)ramBuffer, bytesCount);
 
-void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
-    assert(_pBOmapped);
-    QMutexLocker locker(&_textureMutex);
-    unMapPBO();
+    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();
     
     if(byteMode() == 1.f || !_hasHW){
@@ -1182,125 +1127,8 @@ void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
     }else{
         _defaultDisplayTexture->fillOrAllocateTexture(region,Texture::FLOAT);
     }
-    unBindPBO();
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,0);
     checkGLErrors();
-}
-
-void ViewerGL::convertRowToFitTextureBGRA(const float* data,const std::vector<int>& columnSpan,int yOffset){
-    /*Converting one row (float32) to 8bit BGRA portion of texture. We apply a dithering algorithm based on error diffusion.
-     This error diffusion will produce stripes in any image that has identical scanlines.
-     To prevent this, a random horizontal position is chosen to start the error diffusion at,
-     and it proceeds in both directions away from this point.*/
-    assert(frameData);
-    {
-        QMutexLocker colorSpaceLocker(&_usingColorSpaceMutex);
-        ++_usingColorSpaceCounter;
-    }
-    U32* output = reinterpret_cast<U32*>(frameData);
-    unsigned int row_width = columnSpan.size();
-    yOffset *= row_width;
-    output += yOffset;
-    
-    if(_colorSpace->linear()){
-        int start = (int)(rand() % row_width);
-        /* go fowards from starting point to end of line: */
-        for(unsigned int i = start ; i < row_width; ++i) {
-            int col = columnSpan[i]*4;
-            double  _a = data[col+3];
-            U8 a_,r_,g_,b_;
-            a_ = (U8)std::min((int)(_a*256),255);
-            r_ = (U8)std::min((int)((data[col])*_a*exposure*256),255);
-            g_ = (U8)std::min((int)((data[col+1])*_a*exposure*256),255);
-            b_ = (U8)std::min((int)((data[col+2])*_a*exposure*256),255);
-            output[i] = toBGRA(r_,g_,b_,a_);
-        }
-        /* go backwards from starting point to start of line: */
-        for(int i = start-1 ; i >= 0 ; --i){
-            int col = columnSpan[i]*4;
-            double  _a = data[col+3];
-            U8 a_,r_,g_,b_;
-            a_ = (U8)std::min((int)(_a*256),255);
-            r_ = (U8)std::min((int)((data[col])*_a*exposure*256),255);
-            g_ = (U8)std::min((int)((data[col+1])*_a*exposure*256),255);
-            b_ = (U8)std::min((int)((data[col+2])*_a*exposure*256),255);
-            output[i] = toBGRA(r_,g_,b_,a_);
-        }
-    }else{ // !linear
-        /*flaging that we're using the colorspace so it doesn't try to change it in the same time
-         if the user requested it*/
-        int start = (int)(rand() % row_width);
-        unsigned error_r = 0x80;
-        unsigned error_g = 0x80;
-        unsigned error_b = 0x80;
-        /* go fowards from starting point to end of line: */
-        _colorSpace->validate();
-        for (unsigned int i = start ; i < columnSpan.size() ; ++i) {
-            int col = columnSpan[i]*4;
-            U8 r_,g_,b_,a_;
-            double _a =  data[col+3];
-            error_r = (error_r&0xff) + _colorSpace->toFloatFast(data[col]*_a*exposure);
-            error_g = (error_g&0xff) + _colorSpace->toFloatFast(data[col+1]*_a*exposure);
-            error_b = (error_b&0xff) + _colorSpace->toFloatFast(data[col+2]*_a*exposure);
-            a_ = (U8)std::min(_a*256.,255.);
-            r_ = (U8)(error_r >> 8);
-            g_ = (U8)(error_g >> 8);
-            b_ = (U8)(error_b >> 8);
-            output[i] = toBGRA(r_,g_,b_,a_);
-        }
-        /* go backwards from starting point to start of line: */
-        error_r = 0x80;
-        error_g = 0x80;
-        error_b = 0x80;
-        
-        for (int i = start-1 ; i >= 0 ; --i) {
-            int col = columnSpan[i]*4;
-            U8 r_,g_,b_,a_;
-            double _a =  data[col+3];
-            error_r = (error_r&0xff) + _colorSpace->toFloatFast(data[col]*_a*exposure);
-            error_g = (error_g&0xff) + _colorSpace->toFloatFast(data[col+1]*_a*exposure);
-            error_b = (error_b&0xff) + _colorSpace->toFloatFast(data[col+2]*_a*exposure);
-            a_ = (U8)std::min(_a*256.,255.);
-            r_ = (U8)(error_r >> 8);
-            g_ = (U8)(error_g >> 8);
-            b_ = (U8)(error_b >> 8);
-            output[i] = toBGRA(r_,g_,b_,a_);
-        }
-    }
-    {
-        QMutexLocker colorSpaceLocker(&_usingColorSpaceMutex);
-        --_usingColorSpaceCounter;
-        _usingColorSpaceCondition.wakeAll();
-    }
-    
-}
-
-// nbbytesoutput is the size in bytes of 1 channel for the row
-void ViewerGL::convertRowToFitTextureBGRA_fp(const float* data,const std::vector<int>& columnSpan,int yOffset){
-    assert(frameData);
-    float* output = reinterpret_cast<float*>(frameData);
-    // offset in the buffer : (y)*(w) where y is the zoomedY of the row and w=nbbytes/sizeof(float)*4 = nbbytes
-    yOffset *= columnSpan.size()*sizeof(float);
-    output += yOffset;
-    int index = 0;
-    for (unsigned int i = 0 ; i < columnSpan.size(); ++i) {
-        int col = columnSpan[i]*4;
-        output[index++] = data[col];
-        output[index++] = data[col+1];
-        output[index++] = data[col+2];
-        output[index++] = data[col+3];
-    }
-    
-}
-
-
-U32 ViewerGL::toBGRA(U32 r,U32 g,U32 b,U32 a){
-    U32 res = 0x0;
-    res |= b;
-    res |= (g << 8);
-    res |= (r << 16);
-    res |= (a << 24);
-    return res;
-    
 }
 
 #if QT_VERSION < 0x050000
@@ -1558,50 +1386,7 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
 }
 
 
-void ViewerGL::updateColorSpace(QString str){
-    {
-        QMutexLocker colorSpaceLocker(&_usingColorSpaceMutex);
-        while(_usingColorSpaceCounter > 0){
-            _usingColorSpaceCondition.wait(&_usingColorSpaceMutex);
-        }
-    }
-    if (str == "Linear(None)") {
-        if(_lut != 0){ // if it wasnt already this setting
-            _colorSpace = Color::getLut(Color::LUT_DEFAULT_FLOAT);
-        }
-        _lut = 0;
-    }else if(str == "sRGB"){
-        if(_lut != 1){ // if it wasnt already this setting
-            _colorSpace = Color::getLut(Color::LUT_DEFAULT_VIEWER);
-        }
-        
-        _lut = 1;
-    }else if(str == "Rec.709"){
-        if(_lut != 2){ // if it wasnt already this setting
-            _colorSpace = Color::getLut(Color::LUT_DEFAULT_MONITOR);
-        }
-        _lut = 2;
-    }
-    if (!_displayingImage) {
-        return;
-    }
-    
-    if(byteMode()==1 || !_hasHW)
-        _viewerTab->getInternalNode()->refreshAndContinueRender();
-    else
-        updateGL();
-    
-}
-void ViewerGL::updateExposure(double d){
-    appPTR->clearNodeCache();
-    exposure = d;
-    
-    if((byteMode()==1 || !_hasHW) && _displayingImage)
-        _viewerTab->getInternalNode()->refreshAndContinueRender();
-    else
-        updateGL();
-    
-}
+
 
 void ViewerGL::disconnectViewer(){
     _viewerTab->getInternalNode()->getVideoEngine()->abortRendering(); // aborting current work
@@ -1717,28 +1502,23 @@ void ViewerGL::setDisplayChannel(const ChannelSet& channels,bool yMode){
     updateGL();
     
 }
-void ViewerGL::updateProgressOnViewer(const TextureRect& region,int y , int texY) {
-    _updatingTexture = true;
-    assert(frameData);
-    assert(_pBOmapped);
-    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-    checkGLErrors();
-    _pBOmapped = false;
-    frameData = NULL;
-    if(byteMode() == 1.f || !_hasHW){
-        _defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::BYTE);
-    }else{
-        _defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::FLOAT);
-    }
-    _drawProgressBar = true;
-    _progressBarY = y;
-    updateGL();
-    assert(!frameData);
-    frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-    checkGLErrors();
-    _pBOmapped = true;
-    
-    _updatingTexture = false;
+void ViewerGL::updateProgressOnViewer(const TextureRect& /*region*/,int /*y*/ , int /*texY*/) {
+//    _updatingTexture = true;
+//    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+//    checkGLErrors();
+//    if(byteMode() == 1.f || !_hasHW){
+//        _defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::BYTE);
+//    }else{
+//        _defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::FLOAT);
+//    }
+//    _drawProgressBar = true;
+//    _progressBarY = y;
+//    updateGL();
+//    assert(!frameData);
+//    frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+//    checkGLErrors();
+//
+//    _updatingTexture = false;
 }
 
 void ViewerGL::doSwapBuffers(){

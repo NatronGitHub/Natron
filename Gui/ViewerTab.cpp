@@ -447,14 +447,14 @@ _maximized(false)
     
     
     /*slots & signals*/
-    QObject::connect(_viewerColorSpace, SIGNAL(currentIndexChanged(QString)), viewer,SLOT(updateColorSpace(QString)));
+    QObject::connect(_viewerColorSpace, SIGNAL(currentIndexChanged(QString)), _viewerNode,SLOT(onColorSpaceChanged(QString)));
     QObject::connect(_zoomCombobox, SIGNAL(currentIndexChanged(QString)),viewer, SLOT(zoomSlot(QString)));
     QObject::connect(viewer, SIGNAL(zoomChanged(int)), this, SLOT(updateZoomComboBox(int)));
     QObject::connect(viewer,SIGNAL(frameChanged(int)),_currentFrameBox,SLOT(setValue(int)));
     QObject::connect(viewer,SIGNAL(frameChanged(int)),frameSeeker,SLOT(seekFrame(int)));
-    QObject::connect(_gainBox, SIGNAL(valueChanged(double)), viewer,SLOT(updateExposure(double)));
+    QObject::connect(_gainBox, SIGNAL(valueChanged(double)), _viewerNode,SLOT(onExposureChanged(double)));
     QObject::connect(_gainSlider, SIGNAL(positionChanged(double)), _gainBox, SLOT(setValue(double)));
-    QObject::connect(_gainSlider, SIGNAL(positionChanged(double)), viewer, SLOT(updateExposure(double)));
+    QObject::connect(_gainSlider, SIGNAL(positionChanged(double)), _viewerNode, SLOT(onExposureChanged(double)));
     QObject::connect(_gainBox, SIGNAL(valueChanged(double)), _gainSlider, SLOT(seekScalePosition(double)));
     QObject::connect(frameSeeker,SIGNAL(currentFrameChanged(int)), _currentFrameBox, SLOT(setValue(int)));
     QObject::connect(_currentFrameBox, SIGNAL(valueChanged(double)), frameSeeker, SLOT(seekFrame(double)));

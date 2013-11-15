@@ -384,7 +384,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
        
     }
     _lastScenePosClick = newPos;
-    
+    update();
     /*Now update navigator*/
     //updateNavigator();
 }

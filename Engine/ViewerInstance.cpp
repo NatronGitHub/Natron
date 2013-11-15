@@ -32,6 +32,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/Cache.h"
 #include "Engine/Log.h"
+#include "Engine/Lut.h"
 
 #include "Readers/Reader.h"
 
@@ -53,18 +54,23 @@ Natron::OutputEffectInstance(node)
 ,_usingOpenGLMutex()
 ,_usingOpenGL(false)
 ,_interThreadInfos()
+,_buffer(NULL)
+,_mustFreeBuffer(false)
+,_renderArgsMutex()
+,_exposure(1.)
+,_colorSpace(Color::getLut(Color::LUT_DEFAULT_VIEWER))
+,_lut(1)
 {
     connectSlotsToViewerCache();
     connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
-    connect(this,SIGNAL(doCachedEngine()),this,SLOT(cachedEngine()));
-    connect(this,SIGNAL(doFrameStorageAllocation()),this,SLOT(allocateFrameStorage()));
-    connect(this,SIGNAL(doUnmapPBO()),this,SLOT(unMapPBO()));
     
 }
 
 ViewerInstance::~ViewerInstance(){
     if(_uiContext && _uiContext->getGui())
-        _uiContext->getGui()->removeViewerTab(_uiContext,true);    
+        _uiContext->getGui()->removeViewerTab(_uiContext,true);
+    if(_mustFreeBuffer)
+        free(_buffer);
 }
 
 void ViewerInstance::connectSlotsToViewerCache(){
@@ -124,8 +130,6 @@ void ViewerInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
 
 
 Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
-//    timeval start;
-//    gettimeofday(&start, 0);
     
 #ifdef NATRON_LOG
     Natron::Log::beginFunction(getName(),"renderViewer");
@@ -152,13 +156,13 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
     }
     viewer->setRod(rod);
     Format dispW = getApp()->getProjectFormat();
-
+    
     viewer->setDisplayingImage(true);
     
     if(!viewer->isClippingToDisplayWindow()){
         dispW.set(rod);
     }
-
+    
     /*computing the RoI*/
     std::vector<int> rows;
     std::vector<int> columns;
@@ -172,15 +176,15 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
     TextureRect textureRect(columnSpan.first,rowSpan.first,columnSpan.second,rowSpan.second,columns.size(),rows.size());
 #ifdef NATRON_LOG
     Natron::Log::print(QString("Image rect is..."
-                                                         " xmin= "+QString::number(left)+
-                                                         " ymin= "+QString::number(bottom)+
-                                                         " xmax= "+QString::number(right)+
-                                                         " ymax= "+QString::number(top)+
-                                                         " Viewer RoI is...."+
-                                                         " xmin= "+QString::number(textureRect.x)+
-                                                         " ymin= "+QString::number(textureRect.y)+
-                                                         " xmax= "+QString::number(textureRect.r+1)+
-                                                         " ymax= "+QString::number(textureRect.t+1)).toStdString());
+                               " xmin= "+QString::number(left)+
+                               " ymin= "+QString::number(bottom)+
+                               " xmax= "+QString::number(right)+
+                               " ymax= "+QString::number(top)+
+                               " Viewer RoI is...."+
+                               " xmin= "+QString::number(textureRect.x)+
+                               " ymin= "+QString::number(textureRect.y)+
+                               " xmax= "+QString::number(textureRect.r+1)+
+                               " ymax= "+QString::number(textureRect.t+1)).toStdString());
 #endif
     if(textureRect.w == 0 || textureRect.h == 0){
 #ifdef NATRON_LOG
@@ -190,15 +194,15 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
         return StatFailed;
     }
     _interThreadInfos._textureRect = textureRect;
-        
+    
     int viewsCount = getApp()->getCurrentProjectViewsCount();
     int view = viewsCount > 0 ? _uiContext->getCurrentView() : 0;
-
+    
     FrameKey key(time,
                  hash().value(),
                  zoomFactor,
-                 viewer->getExposure(),
-                 viewer->lutType(),
+                 _exposure,
+                 _lut,
                  viewer->byteMode(),
                  view,
                  rod,
@@ -218,166 +222,106 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
             _forceRender = false;
         }
     }
-
-//    timeval afterCacheGet;
-//    gettimeofday(&afterCacheGet, 0);
-//
-//     std::cout <<  "afterCacheGet " <<  afterCacheGet.tv_sec  - start.tv_sec +
-//    (afterCacheGet.tv_usec - start.tv_usec) * 1e-6f << std::endl;
-
     
     if (iscached) {
         /*Found in viewer cache, we execute the cached engine and leave*/
-        _interThreadInfos._cachedEntry = iscached;
-        _interThreadInfos._textureRect = iscached->getKey()._textureRect;
-        {
-            if(getVideoEngine()->mustQuit()){
-                return StatFailed;
-            }
-            QMutexLocker locker(&_usingOpenGLMutex);
-            _usingOpenGL = true;
-            emit doCachedEngine();
-            while(_usingOpenGL) {
-                _usingOpenGLCond.wait(&_usingOpenGLMutex);
-            }
+        _interThreadInfos._ramBuffer = iscached->data();
+        if(getNode()->getApp()->shouldAutoSetProjectFormat()){
+            getNode()->getApp()->setProjectFormat(dispW);
+            getNode()->getApp()->setAutoSetProjectFormat(false);
         }
         
-//        timeval afterCachedRender;
-//        gettimeofday(&afterCachedRender, 0);
-//        std::cout <<  "afterCachedRender " <<  afterCachedRender.tv_sec  - start.tv_sec +
-//        (afterCachedRender.tv_usec - start.tv_usec) * 1e-6f << std::endl;
-        
+        _interThreadInfos._textureRect = iscached->getKey()._textureRect;
+        _interThreadInfos._bytesCount = _interThreadInfos._textureRect.w * _interThreadInfos._textureRect.h * 4;
+        if(iscached->getKey()._byteMode == 0){
+            _interThreadInfos._bytesCount *= sizeof(float);
+        }
+
 #ifdef NATRON_LOG
         Natron::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
-                                                             QString::number(key.getHash())).toStdString());
+                                   QString::number(key.getHash())).toStdString());
         Natron::Log::endFunction(getName(),"renderViewer");
 #endif
-        return StatOK;
-    }
-    
-    /*We didn't find it in the viewer cache, hence we allocate
-     the frame storage*/
-    
-    if(getVideoEngine()->mustQuit()){
-        return StatFailed;
-    }
-    {
-        QMutexLocker locker(&_usingOpenGLMutex);
-        _usingOpenGL = true;
-        emit doFrameStorageAllocation();
-        while(_usingOpenGL) {
-            _usingOpenGLCond.wait(&_usingOpenGLMutex);
-        }
-    }
-
-    {
-        RectI roi(textureRect.x,textureRect.y,textureRect.r+1,textureRect.t+1);
-        /*for now we skip the render scale*/
-        RenderScale scale;
-        scale.x = scale.y = 1.;
-        EffectInstance::RoIMap inputsRoi = getRegionOfInterest(time, scale, roi);
-        //inputsRoi only contains 1 element
-        EffectInstance::RoIMap::const_iterator it = inputsRoi.begin();
-
-        boost::shared_ptr<const Natron::Image> inputImage;
-        try{
-            inputImage = it->first->renderRoI(time, scale,view,it->second,byPassCache);
-        }catch(...){
-            //plugin should have posted a message
-            QMutexLocker locker(&_usingOpenGLMutex);
-            _usingOpenGL = true;
-            emit doUnmapPBO();
-            while(_usingOpenGL){
-                _usingOpenGLCond.wait(&_usingOpenGLMutex);
-            }
-            return StatFailed;
+    }else{
+        
+        /*We didn't find it in the viewer cache, hence we render
+         the frame*/
+        
+        if(_mustFreeBuffer){
+            free(_buffer);
+            _mustFreeBuffer = false;
         }
         
-//        timeval afterRenderRoi;
-//        gettimeofday(&afterRenderRoi, 0);
-//        std::cout <<  "afterRenderRoi " <<  afterRenderRoi.tv_sec  - start.tv_sec +
-//        (afterRenderRoi.tv_usec - start.tv_usec) * 1e-6f << std::endl;
+        _interThreadInfos._bytesCount = _interThreadInfos._textureRect.w * _interThreadInfos._textureRect.h * 4;
+        if(viewer->hasHardware() && !viewer->byteMode()){
+            _interThreadInfos._bytesCount *= sizeof(float);
+        }
+        boost::shared_ptr<FrameEntry> cachedFrame = appPTR->getViewerCache().newEntry(key, _interThreadInfos._bytesCount, 1);
+        if(!cachedFrame){
+            std::cout << "ViewerCache failed to allocate a new entry...allocating it in RAM instead!" << std::endl;
+            _buffer = (unsigned char*)malloc( _interThreadInfos._bytesCount);
+            _mustFreeBuffer = true;
+        }else{
+            _buffer = cachedFrame->data();
+        }
         
-        int rowsPerThread = std::ceil((double)rows.size()/(double)QThread::idealThreadCount());
-        // group of group of rows where first is image coordinate, second is texture coordinate
-        std::vector< std::vector<std::pair<int,int> > > splitRows;
-        U32 k = 0;
-        while (k < rows.size()) {
-            std::vector<std::pair<int,int> > rowsForThread;
-            bool shouldBreak = false;
-            for (int i = 0; i < rowsPerThread; ++i) {
-                if(k >= rows.size()){
-                    shouldBreak = true;
-                    break;
-                }
-                rowsForThread.push_back(make_pair(rows[k],k));
-                ++k;
+        _interThreadInfos._ramBuffer = _buffer;
+        
+        {
+            RectI roi(textureRect.x,textureRect.y,textureRect.r+1,textureRect.t+1);
+            /*for now we skip the render scale*/
+            RenderScale scale;
+            scale.x = scale.y = 1.;
+            EffectInstance::RoIMap inputsRoi = getRegionOfInterest(time, scale, roi);
+            //inputsRoi only contains 1 element
+            EffectInstance::RoIMap::const_iterator it = inputsRoi.begin();
+            
+            boost::shared_ptr<const Natron::Image> inputImage;
+            try{
+                inputImage = it->first->renderRoI(time, scale,view,it->second,byPassCache);
+            }catch(...){
+                //plugin should have posted a message
+                return StatFailed;
             }
             
-            splitRows.push_back(rowsForThread);
-            if(shouldBreak){
-                break;
+            int rowsPerThread = std::ceil((double)rows.size()/(double)QThread::idealThreadCount());
+            // group of group of rows where first is image coordinate, second is texture coordinate
+            std::vector< std::vector<std::pair<int,int> > > splitRows;
+            U32 k = 0;
+            while (k < rows.size()) {
+                std::vector<std::pair<int,int> > rowsForThread;
+                bool shouldBreak = false;
+                for (int i = 0; i < rowsPerThread; ++i) {
+                    if(k >= rows.size()){
+                        shouldBreak = true;
+                        break;
+                    }
+                    rowsForThread.push_back(make_pair(rows[k],k));
+                    ++k;
+                }
+                
+                splitRows.push_back(rowsForThread);
+                if(shouldBreak){
+                    break;
+                }
+            }
+            {
+                QMutexLocker locker(&_renderArgsMutex);
+                QFuture<void> future = QtConcurrent::map(splitRows,
+                                                         boost::bind(&ViewerInstance::renderFunctor,this,inputImage,_1,columns));
+                future.waitForFinished();
             }
         }
-        QFuture<void> future = QtConcurrent::map(splitRows,
-                                                 boost::bind(&ViewerInstance::renderFunctor,this,inputImage,_1,columns));
-        future.waitForFinished();
-//        
-//        timeval afterRenderToTexture;
-//        gettimeofday(&afterRenderToTexture, 0);
-//        std::cout <<  "afterRenderToTexture " <<  afterRenderToTexture.tv_sec  - start.tv_sec +
-//        (afterRenderToTexture.tv_usec - start.tv_usec) * 1e-6f << std::endl;
-    }
-    //we released the input image and force the cache to clear exceeding entries
-    appPTR->clearExceedingEntriesFromNodeCache();
-    
-    viewer->stopDisplayingProgressBar();
-    
-    /*we copy the frame to the cache*/
-    if(!aborted()){
-        assert(sizeof(Natron::Cache<Natron::FrameEntry>::data_t) == 1); // _dataSize is in bytes, so it has to be a byte cache
-        size_t bytesToCopy = _interThreadInfos._pixelsCount;
-        if(viewer->hasHardware() && !viewer->byteMode()){
-            bytesToCopy *= sizeof(float);
-        }
-        boost::shared_ptr<FrameEntry> cachedFrame = appPTR->getViewerCache().newEntry(key,bytesToCopy, 1);
-        if(!cachedFrame){
-            setPersistentMessage(Natron::WARNING_MESSAGE, "Failed to cache the frame rendered by the viewer.");
-            QMutexLocker locker(&_usingOpenGLMutex);
-            _usingOpenGL = true;
-            emit doUnmapPBO();
-            while(_usingOpenGL){
-                _usingOpenGLCond.wait(&_usingOpenGLMutex);
-            }
-            return StatOK;
-        }
-       
-        memcpy((char*)cachedFrame->data(),viewer->getFrameData(),bytesToCopy);
-    }else{
-        QMutexLocker locker(&_usingOpenGLMutex);
-        _usingOpenGL = true;
-        emit doUnmapPBO();
-        while(_usingOpenGL){
-            _usingOpenGLCond.wait(&_usingOpenGLMutex);
-        }
+        //we released the input image and force the cache to clear exceeding entries
+        appPTR->clearExceedingEntriesFromNodeCache();
+        
+        viewer->stopDisplayingProgressBar();
+        
     }
     
     if(getVideoEngine()->mustQuit()){
-        QMutexLocker locker(&_usingOpenGLMutex);
-        _usingOpenGL = true;
-        emit doUnmapPBO();
-        while(_usingOpenGL){
-            _usingOpenGLCond.wait(&_usingOpenGLMutex);
-        }
         return StatFailed;
     }
-    
-//    timeval afterFrameCached;
-//    gettimeofday(&afterFrameCached, 0);
-//    
-//    std::cout <<  "afterFrameCached " <<  afterFrameCached.tv_sec  - start.tv_sec +
-//    (afterFrameCached.tv_usec - start.tv_usec) * 1e-6f << std::endl;
-
     
     QMutexLocker locker(&_usingOpenGLMutex);
     _usingOpenGL = true;
@@ -389,13 +333,19 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
 }
 
 void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,
-                               const std::vector<std::pair<int,int> >& rows,
-                               const std::vector<int>& columns){
+                                   const std::vector<std::pair<int,int> >& rows,
+                                   const std::vector<int>& columns){
     if(aborted()){
         return;
     }
     for(U32 i = 0; i < rows.size();++i){
-        _uiContext->viewer->drawRow(inputImage->pixelAt(0, rows[i].first), columns, rows[i].second);
+        const float* data = inputImage->pixelAt(0, rows[i].first);
+        if(_uiContext->viewer->byteMode() == 0 && _uiContext->viewer->hasHardware()){
+            convertRowToFitTextureBGRA_fp(data,columns,rows[i].second);
+        }
+        else{
+            convertRowToFitTextureBGRA(data,columns,rows[i].second);
+        }
     }
 }
 
@@ -403,24 +353,17 @@ void ViewerInstance::wakeUpAnySleepingThread(){
     _usingOpenGL = false;
     _usingOpenGLCond.wakeAll();
 }
-void ViewerInstance::allocateFrameStorage(){
-    QMutexLocker locker(&_usingOpenGLMutex);
-    _interThreadInfos._pixelsCount = _interThreadInfos._textureRect.w * _interThreadInfos._textureRect.h * 4;
-    _uiContext->viewer->allocateFrameStorage(_interThreadInfos._pixelsCount);
-    _usingOpenGL = false;
-    _usingOpenGLCond.wakeOne();
-    
-}
+
 void ViewerInstance::updateViewer(){
     QMutexLocker locker(&_usingOpenGLMutex);
-    
     ViewerGL* viewer = _uiContext->viewer;
-    
+    viewer->makeCurrent();
     if(!aborted()){
-        viewer->copyPBOToRenderTexture(_interThreadInfos._textureRect); // returns instantly
-    }else{
-        viewer->unMapPBO();
-        viewer->unBindPBO();
+        viewer->transferBufferFromRAMtoGPU(_interThreadInfos._ramBuffer,
+                                           _interThreadInfos._bytesCount,
+                                           _interThreadInfos._textureRect,
+                                           _pboIndex);
+        _pboIndex = (_pboIndex+1)%2;
     }
     
     // updating viewer & pixel aspect ratio if needed
@@ -435,43 +378,9 @@ void ViewerInstance::updateViewer(){
     viewer->updateColorPicker();
     viewer->updateGL();
     
-    
     _usingOpenGL = false;
     _usingOpenGLCond.wakeOne();
 }
-
-void ViewerInstance::unMapPBO(){
-     QMutexLocker locker(&_usingOpenGLMutex);
-    _uiContext->viewer->unMapPBO();
-    _usingOpenGL = false;
-    _usingOpenGLCond.wakeOne();
-}
-
-void ViewerInstance::cachedEngine(){
-    QMutexLocker locker(&_usingOpenGLMutex);
-    
-    assert(_interThreadInfos._cachedEntry);
-    size_t dataSize = 0;
-    int w = _interThreadInfos._textureRect.w;
-    int h = _interThreadInfos._textureRect.h;
-    dataSize  = w * h * 4 ;
-    const RectI& dataW = _interThreadInfos._cachedEntry->getKey()._dataWindow;
-    Format dispW = _interThreadInfos._cachedEntry->getKey()._displayWindow;
-    _uiContext->viewer->setRod(dataW);
-    if(getNode()->getApp()->shouldAutoSetProjectFormat()){
-        getNode()->getApp()->setProjectFormat(dispW);
-        getNode()->getApp()->setAutoSetProjectFormat(false);
-    }
-    /*allocating pbo*/
-    void* output = _uiContext->viewer->allocateAndMapPBO(dataSize, _uiContext->viewer->getPBOId(_pboIndex));
-    assert(output); 
-    _pboIndex = (_pboIndex+1)%2;
-    _uiContext->viewer->fillPBO((const char*)_interThreadInfos._cachedEntry->data(), output, dataSize);
-
-    locker.unlock();
-    updateViewer();
-}
-
 
 
 void ViewerInstance::onCachedFrameAdded(){
@@ -611,4 +520,149 @@ bool ViewerInstance::isInputOptional(int n) const{
         return true;
 }
 
+void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vector<int>& columnSpan,int yOffset){
+    /*Converting one row (float32) to 8bit BGRA portion of texture. We apply a dithering algorithm based on error diffusion.
+     This error diffusion will produce stripes in any image that has identical scanlines.
+     To prevent this, a random horizontal position is chosen to start the error diffusion at,
+     and it proceeds in both directions away from this point.*/
+    assert(_buffer);
+    assert(!_renderArgsMutex.tryLock());
+    U32* output = reinterpret_cast<U32*>(_buffer);
+    unsigned int row_width = columnSpan.size();
+    yOffset *= row_width;
+    output += yOffset;
+    
+    if(_colorSpace->linear()){
+        int start = (int)(rand() % row_width);
+        /* go fowards from starting point to end of line: */
+        for(unsigned int i = start ; i < row_width; ++i) {
+            int col = columnSpan[i]*4;
+            double  _a = data[col+3];
+            U8 a_,r_,g_,b_;
+            a_ = (U8)std::min((int)(_a*256),255);
+            r_ = (U8)std::min((int)((data[col])*_a*_exposure*256),255);
+            g_ = (U8)std::min((int)((data[col+1])*_a*_exposure*256),255);
+            b_ = (U8)std::min((int)((data[col+2])*_a*_exposure*256),255);
+            output[i] = toBGRA(r_,g_,b_,a_);
+        }
+        /* go backwards from starting point to start of line: */
+        for(int i = start-1 ; i >= 0 ; --i){
+            int col = columnSpan[i]*4;
+            double  _a = data[col+3];
+            U8 a_,r_,g_,b_;
+            a_ = (U8)std::min((int)(_a*256),255);
+            r_ = (U8)std::min((int)((data[col])*_a*_exposure*256),255);
+            g_ = (U8)std::min((int)((data[col+1])*_a*_exposure*256),255);
+            b_ = (U8)std::min((int)((data[col+2])*_a*_exposure*256),255);
+            output[i] = toBGRA(r_,g_,b_,a_);
+        }
+    }else{ // !linear
+        /*flaging that we're using the colorspace so it doesn't try to change it in the same time
+         if the user requested it*/
+        int start = (int)(rand() % row_width);
+        unsigned error_r = 0x80;
+        unsigned error_g = 0x80;
+        unsigned error_b = 0x80;
+        /* go fowards from starting point to end of line: */
+        _colorSpace->validate();
+        for (unsigned int i = start ; i < columnSpan.size() ; ++i) {
+            int col = columnSpan[i]*4;
+            U8 r_,g_,b_,a_;
+            double _a =  data[col+3];
+            error_r = (error_r&0xff) + _colorSpace->toFloatFast(data[col]*_a*_exposure);
+            error_g = (error_g&0xff) + _colorSpace->toFloatFast(data[col+1]*_a*_exposure);
+            error_b = (error_b&0xff) + _colorSpace->toFloatFast(data[col+2]*_a*_exposure);
+            a_ = (U8)std::min(_a*256.,255.);
+            r_ = (U8)(error_r >> 8);
+            g_ = (U8)(error_g >> 8);
+            b_ = (U8)(error_b >> 8);
+            output[i] = toBGRA(r_,g_,b_,a_);
+        }
+        /* go backwards from starting point to start of line: */
+        error_r = 0x80;
+        error_g = 0x80;
+        error_b = 0x80;
+        
+        for (int i = start-1 ; i >= 0 ; --i) {
+            int col = columnSpan[i]*4;
+            U8 r_,g_,b_,a_;
+            double _a =  data[col+3];
+            error_r = (error_r&0xff) + _colorSpace->toFloatFast(data[col]*_a*_exposure);
+            error_g = (error_g&0xff) + _colorSpace->toFloatFast(data[col+1]*_a*_exposure);
+            error_b = (error_b&0xff) + _colorSpace->toFloatFast(data[col+2]*_a*_exposure);
+            a_ = (U8)std::min(_a*256.,255.);
+            r_ = (U8)(error_r >> 8);
+            g_ = (U8)(error_g >> 8);
+            b_ = (U8)(error_b >> 8);
+            output[i] = toBGRA(r_,g_,b_,a_);
+        }
+    }
+    
+}
 
+// nbbytesoutput is the size in bytes of 1 channel for the row
+void ViewerInstance::convertRowToFitTextureBGRA_fp(const float* data,const std::vector<int>& columnSpan,int yOffset){
+    assert(_buffer);
+    float* output = reinterpret_cast<float*>(_buffer);
+    // offset in the buffer : (y)*(w) where y is the zoomedY of the row and w=nbbytes/sizeof(float)*4 = nbbytes
+    yOffset *= columnSpan.size()*sizeof(float);
+    output += yOffset;
+    int index = 0;
+    for (unsigned int i = 0 ; i < columnSpan.size(); ++i) {
+        int col = columnSpan[i]*4;
+        output[index++] = data[col];
+        output[index++] = data[col+1];
+        output[index++] = data[col+2];
+        output[index++] = data[col+3];
+    }
+    
+}
+U32 ViewerInstance::toBGRA(U32 r,U32 g,U32 b,U32 a){
+    U32 res = 0x0;
+    res |= b;
+    res |= (g << 8);
+    res |= (r << 16);
+    res |= (a << 24);
+    return res;
+    
+}
+
+void ViewerInstance::onExposureChanged(double exp){
+    QMutexLocker l(&_renderArgsMutex);
+    _exposure = exp;
+    
+    if((_uiContext->viewer->byteMode() == 1  || !_uiContext->viewer->hasHardware()) && input(activeInput()) != NULL){
+        refreshAndContinueRender();
+    }else{
+        emit mustRedraw();
+    }
+    
+}
+
+void ViewerInstance::onColorSpaceChanged(const QString& colorspaceName){
+    QMutexLocker l(&_renderArgsMutex);
+    
+    if (colorspaceName == "Linear(None)") {
+        if(_lut != 0){ // if it wasnt already this setting
+            _colorSpace = Color::getLut(Color::LUT_DEFAULT_FLOAT);
+        }
+        _lut = 0;
+    }else if(colorspaceName == "sRGB"){
+        if(_lut != 1){ // if it wasnt already this setting
+            _colorSpace = Color::getLut(Color::LUT_DEFAULT_VIEWER);
+        }
+        
+        _lut = 1;
+    }else if(colorspaceName == "Rec.709"){
+        if(_lut != 2){ // if it wasnt already this setting
+            _colorSpace = Color::getLut(Color::LUT_DEFAULT_MONITOR);
+        }
+        _lut = 2;
+    }
+    
+    if((_uiContext->viewer->byteMode() == 1  || !_uiContext->viewer->hasHardware()) && input(activeInput()) != NULL){
+        refreshAndContinueRender();
+    }else{
+        emit mustRedraw();
+    }
+}

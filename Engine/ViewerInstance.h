@@ -26,6 +26,9 @@ class ViewerTab;
 class AppInstance;
 class Timer;
 namespace Natron{
+namespace Color{
+class Lut;
+}
 class FrameEntry;
 }
 
@@ -38,13 +41,13 @@ class ViewerInstance : public QObject, public Natron::OutputEffectInstance {
     
     struct InterThreadInfos{
         InterThreadInfos():
-            _cachedEntry()
+            _ramBuffer(NULL)
           , _textureRect()
-          ,_pixelsCount(0){}
+          ,_bytesCount(0){}
         
-        boost::shared_ptr<const Natron::FrameEntry> _cachedEntry;
+        unsigned char* _ramBuffer;
         TextureRect _textureRect;
-        size_t _pixelsCount;
+        size_t _bytesCount;
     };
     
     ViewerTab* _uiContext;
@@ -63,6 +66,17 @@ class ViewerInstance : public QObject, public Natron::OutputEffectInstance {
     
     InterThreadInfos _interThreadInfos;
     
+    unsigned char* _buffer;
+    bool _mustFreeBuffer;
+    
+    QMutex _renderArgsMutex; //< protects exposure,colorspace etc..
+    double _exposure ;/*!< Current exposure setting, all pixels are multiplied
+                      by pow(2,expousre) before they appear on the screen.*/
+    
+    const Natron::Color::Lut* _colorSpace;/*!< The lut used to do the viewer colorspace conversion when we can't use shaders*/
+    // FIXME: why a float to really represent an enum????
+    float _lut; /*!< a value coding the current color-space used to render.
+                 0 = NONE , 1 = sRGB , 2 = Rec 709*/
 public:
     
     
@@ -172,6 +186,18 @@ public:
 
     int activeInput() const;
 
+    float getLutType() const {return _lut;}
+
+    double getExposure() const {return _exposure;}
+
+    const Natron::Color::Lut* getLut() const {return _colorSpace;}
+
+/**
+ *@brief Actually converting to ARGB... but it is called BGRA by
+ the texture format GL_UNSIGNED_INT_8_8_8_8_REV
+ **/
+    static U32 toBGRA(U32 r,U32 g,U32 b,U32 a);
+
 protected:
 
     virtual void cloneExtras() OVERRIDE;
@@ -183,6 +209,10 @@ public slots:
 
     void onViewerCacheCleared();
 
+    void onExposureChanged(double exp);
+
+    void onColorSpaceChanged(const QString& colorspaceName);
+
     /*
  *@brief Slot called internally by the render() function when it wants to refresh the viewer if
  *the output is a viewer.
@@ -190,20 +220,6 @@ public slots:
  */
     void updateViewer();
 
-    /*
- *@brief Slot called internally by the render() function when it found a frame in cache.
- *Do not call this yourself
- **/
-    void cachedEngine();
-
-    /*
- *@brief Slot called internally by the render() function when the output is a viewer and it
- *needs to allocate the output buffer for the current frame.
- *Do not call this yourself.
- */
-    void allocateFrameStorage();
-
-    void unMapPBO();
 
 signals:
 
@@ -224,19 +240,6 @@ signals:
  **/
     void doUpdateViewer();
 
-    /**
- *@brief Signal emitted when the engine needs to pass-on to the main thread the rendering of a cached frame.
- **/
-    void doCachedEngine();
-
-    /**
- *@brief Signal emitted when the engine needs to warn the main thread that the storage for the current frame
- *should be allocated .
- **/
-    void doFrameStorageAllocation();
-
-    void doUnmapPBO();
-
 
 private:
 
@@ -244,6 +247,26 @@ private:
                        const std::vector<std::pair<int,int> >& rows,
                        const std::vector<int>& columns);
 
+
+
+
+/**
+ *@brief This function fills the member frameData with the buffer in parameters.
+ *Since the frameData buffer holds the data "as seen" on the viewer (i.e with a scale-factor)
+ *it will apply a "Nearest neighboor" algorithm to fill the buffer. Note that during the
+ *conversion to 8bit in the viewer color-space, a dithering algorithm is used.
+ **/
+    void convertRowToFitTextureBGRA(const float* data,const std::vector<int>& columnSpan,int yOffset);
+
+/**
+ *@brief This function fills the member frameData with the buffer in parameters.
+ *Since the frameData buffer holds the data "as seen" on the viewer (i.e with a scale-factor)
+ *it will apply a "Nearest neighboor" algorithm to fill the buffer. This is the same function
+ *as ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
+ *int w,int yOffset,const float* alpha) except that it does not apply any dithering nor color-space
+ *since the data are stored as 32bit floating points. The color-space will be applied by the shaders.
+ **/
+    void convertRowToFitTextureBGRA_fp(const float* data,const std::vector<int>& columnSpan,int yOffset);
 
 
 
