@@ -41,9 +41,11 @@
 
 #include <cmath>
 #include <QtGui/QRgb>
-#include "Engine/RectI.h"
+
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
+
+class RectI;
 
 namespace Natron {
 namespace Color {

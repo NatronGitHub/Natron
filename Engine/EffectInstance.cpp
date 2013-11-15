@@ -18,6 +18,7 @@
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/Log.h"
+#include "Engine/VideoEngine.h"
 
 #include "Writers/Writer.h"
 

@@ -28,6 +28,7 @@
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Knob.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/VideoEngine.h"
 
 #include "Gui/NodeGui.h"
 #include "Gui/ViewerTab.h"

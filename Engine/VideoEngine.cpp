@@ -509,7 +509,7 @@ void VideoEngine::run(){
                 int viewsCount = _tree.getOutput()->getApp()->getCurrentProjectViewsCount();
                 for(int i = 0; i < viewsCount;++i){
                     try{
-                        _tree.getOutput()->renderRoI(currentFrame, scale,i ,rod);
+                        (void)_tree.getOutput()->renderRoI(currentFrame, scale,i ,rod);
                     }catch(...){
                         stat = StatFailed;
                     }

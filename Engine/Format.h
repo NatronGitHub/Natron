@@ -13,10 +13,13 @@
 #define NATRON_ENGINE_FORMAT_H_
 
 #include <string>
-#include <QtCore/QMetaType>
-#include "Engine/RectI.h"
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
+
+#include <QtCore/QMetaType>
+
+#include "Engine/RectI.h"
+
 /*This class is used to hold the format of a frame (its resolution).
  *Some formats have a name , e.g : 1920*1080 is full HD, etc...
  *It also holds a pixel aspect ratio so the viewer can display the

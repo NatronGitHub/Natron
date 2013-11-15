@@ -18,9 +18,9 @@
 #include <boost/shared_ptr.hpp>
 
 #include "Engine/ChannelSet.h"
-#include "Engine/RectI.h"
 #include "Engine/Lut.h"
 
+class RectI;
 class Writer;
 namespace Natron{
     class Image;

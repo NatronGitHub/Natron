@@ -18,6 +18,7 @@
 #include <cstring>
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
+#include "Engine/RectI.h"
 
 using std::cout;
 using std::endl;

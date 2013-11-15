@@ -24,10 +24,8 @@
 #include "Global/Macros.h"
 
 #include "Engine/ChannelSet.h"
-#include "Engine/Format.h"
-#include "Engine/VideoEngine.h"
-#include "Engine/Hash64.h"
-#include "Engine/Variant.h"
+
+class Format;
 
 namespace Natron{
 class Row;
