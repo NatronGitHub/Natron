@@ -1014,7 +1014,10 @@ ToolButton* Gui::findOrCreateToolButton(PluginToolButton* plugin){
     if(!plugin->getIconPath().isEmpty() && QFile::exists(plugin->getIconPath())){
         icon.addFile(plugin->getIconPath());
     }else{
-        icon.addFile(PLUGIN_GROUP_DEFAULT_ICON_PATH);
+        //add the default group icon only if it has no parent
+        if(!plugin->hasParent()){
+            icon.addFile(PLUGIN_GROUP_DEFAULT_ICON_PATH);
+        }
     }
     //if the tool-button has no children, this is a leaf, we must create an action
     bool isLeaf = false;
