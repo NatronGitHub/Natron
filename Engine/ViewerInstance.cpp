@@ -194,6 +194,11 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
         return StatFailed;
     }
     _interThreadInfos._textureRect = textureRect;
+    _interThreadInfos._bytesCount = _interThreadInfos._textureRect.w * _interThreadInfos._textureRect.h * 4;
+    if(viewer->byteMode() == 0 && viewer->hasHardware()){
+        _interThreadInfos._bytesCount *= sizeof(float);
+    }
+
     
     int viewsCount = getApp()->getCurrentProjectViewsCount();
     int view = viewsCount > 0 ? _uiContext->getCurrentView() : 0;
@@ -209,41 +214,33 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
                  dispW,
                  textureRect);
     
-    boost::shared_ptr<const FrameEntry> iscached;
-    
+    boost::shared_ptr<const FrameEntry> cachedFrame;
     /*if we want to force a refresh, we by-pass the cache*/
     bool byPassCache = false;
     {
         QMutexLocker forceRenderLocker(&_forceRenderMutex);
         if(!_forceRender){
-            iscached = appPTR->getViewerCache().get(key);
+            cachedFrame = appPTR->getViewerCache().get(key);
         }else{
             byPassCache = true;
             _forceRender = false;
         }
     }
     
-    if (iscached) {
+    if (cachedFrame) {
         /*Found in viewer cache, we execute the cached engine and leave*/
-        _interThreadInfos._ramBuffer = iscached->data();
+        _interThreadInfos._ramBuffer = cachedFrame->data();
         if(getNode()->getApp()->shouldAutoSetProjectFormat()){
             getNode()->getApp()->setProjectFormat(dispW);
             getNode()->getApp()->setAutoSetProjectFormat(false);
         }
-        
-        _interThreadInfos._textureRect = iscached->getKey()._textureRect;
-        _interThreadInfos._bytesCount = _interThreadInfos._textureRect.w * _interThreadInfos._textureRect.h * 4;
-        if(iscached->getKey()._byteMode == 0){
-            _interThreadInfos._bytesCount *= sizeof(float);
-        }
-
 #ifdef NATRON_LOG
         Natron::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
                                    QString::number(key.getHash())).toStdString());
         Natron::Log::endFunction(getName(),"renderViewer");
 #endif
     }else{
-        
+    
         /*We didn't find it in the viewer cache, hence we render
          the frame*/
         
@@ -252,11 +249,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
             _mustFreeBuffer = false;
         }
         
-        _interThreadInfos._bytesCount = _interThreadInfos._textureRect.w * _interThreadInfos._textureRect.h * 4;
-        if(viewer->hasHardware() && !viewer->byteMode()){
-            _interThreadInfos._bytesCount *= sizeof(float);
-        }
-        boost::shared_ptr<FrameEntry> cachedFrame = appPTR->getViewerCache().newEntry(key, _interThreadInfos._bytesCount, 1);
+        cachedFrame = appPTR->getViewerCache().newEntry(key, _interThreadInfos._bytesCount, 1);
         if(!cachedFrame){
             std::cout << "ViewerCache failed to allocate a new entry...allocating it in RAM instead!" << std::endl;
             _buffer = (unsigned char*)malloc( _interThreadInfos._bytesCount);
@@ -322,7 +315,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
     if(getVideoEngine()->mustQuit()){
         return StatFailed;
     }
-    
+
     QMutexLocker locker(&_usingOpenGLMutex);
     _usingOpenGL = true;
     emit doUpdateViewer();
