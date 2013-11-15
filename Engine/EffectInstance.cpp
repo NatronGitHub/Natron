@@ -218,7 +218,7 @@ boost::shared_ptr<const Natron::Image> EffectInstance::getImage(int inputNb,Sequ
         if (_imp->renderArgs.hasLocalData()) {
             roi = _imp->renderArgs.localData()._roi;//if the thread was spawned by us we take the last render args
         }else{
-            n->getRegionOfDefinition(time, &roi);//we have no choice but compute the full region of definition
+            assert(n->getRegionOfDefinition(time, &roi) != Natron::StatFailed);//we have no choice but compute the full region of definition
         }
         entry = n->renderRoI(time, scale, view,roi);
     }
@@ -299,7 +299,9 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
     /*if not cached, we store the freshly allocated image in this member*/
     if(!image){
         /*before allocating it we must fill the RoD of the image we want to render*/
-        getRegionOfDefinition(time, &key._rod);
+        if(getRegionOfDefinition(time, &key._rod) == StatFailed){
+            return boost::shared_ptr<const Natron::Image>();
+        }
         int cost = 0;
         /*should data be stored on a physical device ?*/
         if(shouldRenderedDataBePersistent()){
@@ -351,7 +353,9 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
             for (RoIMap::const_iterator it2 = inputsRoi.begin(); it2!= inputsRoi.end(); ++it2) {
                 try{
                     boost::shared_ptr<const Natron::Image> inputImg = it2->first->renderRoI(time, scale,view, it2->second,byPassCache);
-                    inputImages.push_back(inputImg);
+                    if(inputImg){
+                        inputImages.push_back(inputImg);
+                    }
                 }catch(const std::exception& e){
                     throw e;
                 }

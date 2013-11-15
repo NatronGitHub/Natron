@@ -439,7 +439,7 @@ void Natron::Node::makePreviewImage(SequenceTime time,int width,int height,unsig
     Natron::Log::print(QString("Time "+QString::number(time)).toStdString());
 #endif
 
-    Natron::Status stat =  _previewRenderTree->preProcessFrame(time);
+    stat =  _previewRenderTree->preProcessFrame(time);
     if(stat == StatFailed){
 #ifdef NATRON_LOG
         Natron::Log::print(QString("preProcessFrame returned StatFailed.").toStdString());
