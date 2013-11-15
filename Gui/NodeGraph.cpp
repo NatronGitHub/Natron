@@ -766,8 +766,7 @@ _newPos(node->pos()){
     
 }
 void MoveCommand::undo(){
-    _node->setPos(_oldPos);
-    
+    _node->refreshPosition(_oldPos.x(),_oldPos.y());
     _node->refreshEdges();
     
     if(_node->scene())
@@ -776,7 +775,7 @@ void MoveCommand::undo(){
             .arg(_node->getNode()->getName().c_str()));
 }
 void MoveCommand::redo(){
-    _node->setPos(_newPos);
+    _node->refreshPosition(_newPos.x(),_newPos.y());
     _node->refreshEdges();
     setText(QObject::tr("Move %1")
             .arg(_node->getNode()->getName().c_str()));
