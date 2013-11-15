@@ -568,11 +568,14 @@ void Lut::to_byte_rect(uchar *to, const float *from,
             unsigned error_r, error_g, error_b;
             error_r = error_g = error_b = 0x80;
             int srcY = y;
-            if (invertY) {
-                srcY = srcRod.top() - y - 1;
+            if (!invertY) {
+                  srcY = srcRod.top() - y - 1;
             }
+            
+            int dstY = dstRod.top() - y - 1;
+            
             const float *src_pixels = from + (srcY * srcRod.width() * 4);
-            uchar *dst_pixels = to + (y * dstRod.width() * 4);
+            uchar *dst_pixels = to + (dstY * dstRod.width() * 4);
             /* go fowards from starting point to end of line: */
             for (int x = start; x < rect.right(); ++x) {
                 int col = x * 4;
@@ -608,8 +611,10 @@ void Lut::to_byte_rect(uchar *to, const float *from,
             if (invertY) {
                 srcY = srcRod.top() - y - 1;
             }
+            int dstY = dstRod.top() - y - 1;
+            
             const float *src_pixels = from + (srcY * srcRod.width() * 4);
-            uchar *dst_pixels = to + (y * dstRod.width() * 4);
+            uchar *dst_pixels = to + (dstY * dstRod.width() * 4);
             /* go fowards from starting point to end of line: */
             for (int x = start; x < rect.right(); ++x) {
                 int col = x * 4;
@@ -672,8 +677,9 @@ void Lut::to_float_rect(float *to, const float *from,
             if (invertY) {
                 srcY = srcRod.top() - y - 1;
             }
+            int dstY = dstRod.top() - y - 1;
             const float *src_pixels = from + (srcY * srcRod.width() * 4);
-            float *dst_pixels = to + (y * dstRod.width() * 4);
+            float *dst_pixels = to + (dstY * dstRod.width() * 4);
             /* go fowards from starting point to end of line: */
             for (int x = rect.left(); x < rect.right(); ++x) {
                 int col = x * 4;
@@ -689,8 +695,9 @@ void Lut::to_float_rect(float *to, const float *from,
             if (invertY) {
                 srcY = srcRod.top() - y - 1;
             }
+            int dstY = dstRod.top() - y - 1;
             const float *src_pixels = from + (srcY * srcRod.width() * 4);
-            float *dst_pixels = to + (y * dstRod.width() * 4);
+            float *dst_pixels = to + (dstY * dstRod.width() * 4);
             /* go fowards from starting point to end of line: */
             for (int x = rect.left(); x < rect.right(); ++x) {
                 int col = x * 4;
