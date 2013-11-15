@@ -183,7 +183,6 @@ std::string EffectInstance::inputLabel(int inputNb) const {
 }
 
 boost::shared_ptr<const Natron::Image> EffectInstance::getImage(int inputNb,SequenceTime time,RenderScale scale,int view){
-#ifdef NATRON_LOG
     Natron::Log::beginFunction(getName(),"getImage");
     Natron::Log::print(QString("Input "+QString::number(inputNb)+
                                                       " Scale ("+QString::number(scale.x)+
@@ -191,8 +190,7 @@ boost::shared_ptr<const Natron::Image> EffectInstance::getImage(int inputNb,Sequ
                                                      ") Time " + QString::number(time)
                                                       +" View " + QString::number(view)).toStdString());
     
-#endif
-    
+
     
     
     const Natron::Cache<Image>& cache = appPTR->getNodeCache();
@@ -208,10 +206,8 @@ boost::shared_ptr<const Natron::Image> EffectInstance::getImage(int inputNb,Sequ
     boost::shared_ptr<const Image > entry = cache.get(params);
     
 
-#ifdef NATRON_LOG
     Natron::Log::print(QString("The image was found in the NodeCache with the following hash key: "+
                                                          QString::number(params.getHash())).toStdString());
-#endif
     if(!entry){
         //if not found in cache render it using the last args passed to render by this thread
         RectI roi;
@@ -222,9 +218,8 @@ boost::shared_ptr<const Natron::Image> EffectInstance::getImage(int inputNb,Sequ
         }
         entry = n->renderRoI(time, scale, view,roi);
     }
-#ifdef NATRON_LOG
     Natron::Log::endFunction(getName(),"getImage");
-#endif
+
     return entry;
 }
 
@@ -279,7 +274,6 @@ void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
 boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime time,RenderScale scale,
                                                                  int view,const RectI& renderWindow,
                                                                  bool byPassCache){
-#ifdef NATRON_LOG
     Natron::Log::beginFunction(getName(),"renderRoI");
     Natron::Log::print(QString("Time "+QString::number(time)+
                                                       " Scale ("+QString::number(scale.x)+
@@ -288,8 +282,7 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
                         " ymin= " + QString::number(renderWindow.bottom()) + " xmax= " + QString::number(renderWindow.right())
                         + " ymax= " + QString::number(renderWindow.top())).toStdString());
                         
-#endif
-    
+
     /*look-up the cache for any existing image already rendered*/
     boost::shared_ptr<Image> image;
     Natron::ImageKey key = Natron::Image::makeKey(_imp->hashValue.value(), time, scale,view,RectI());
@@ -311,13 +304,10 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
         }else{
             image.reset(new Natron::Image(key._rod,scale,time));
         }
-    }
-#ifdef NATRON_LOG
-    else{
+    } else {
         Natron::Log::print(QString("The image was found in the NodeCache with the following hash key: "+
                                                      QString::number(key.getHash())).toStdString());
     }
-#endif
     _node->addImageBeingRendered(image, time, view);
     /*now that we have our image, we check what is left to render. If the list contains only
      null rects then we already rendered it all*/
@@ -327,14 +317,12 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
     if(rectsToRender.size() != 1 || !rectsToRender.begin()->isNull()){
         for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
             
-#ifdef NATRON_LOG
         Natron::Log::print(QString("Rect left to render in the image... xmin= "+
                                                           QString::number((*it).left())+" ymin= "+
                                                           QString::number((*it).bottom())+ " xmax= "+
                                                           QString::number((*it).right())+ " ymax= "+
                                                           QString::number((*it).top())).toStdString());
-#endif
-            
+
             /*we can set the render args*/
             RenderArgs args;
             args._roi = *it;
@@ -387,12 +375,9 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
                 }
             }
         }
-    }
-#ifdef NATRON_LOG
-    else{
+    } else {
         Natron::Log::print(QString("Everything is already rendered in this image.").toStdString());
     }
-#endif
 //    QString filename(getName().c_str());
 //    filename.append(QString::number(image->getHashKey()));
 //    filename.append(".png");
@@ -403,9 +388,7 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
     //we released the input images and force the cache to clear exceeding entries
     appPTR->clearExceedingEntriesFromNodeCache();
     
-#ifdef NATRON_LOG
     Natron::Log::endFunction(getName(),"renderRoI");
-#endif
     return image;
 }
 

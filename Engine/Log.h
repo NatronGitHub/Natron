@@ -9,13 +9,15 @@
  *
  */
 
-#ifndef LOG_H
-#define LOG_H
+#ifndef NATRON_ENGINE_LOG_H_
+#define NATRON_ENGINE_LOG_H_
 
 #ifdef NATRON_LOG
 
+#include "Global/Macros.h"
 #include "Engine/Singleton.h"
-namespace Natron{
+
+namespace Natron {
 
 class LogPrivate;
 class Log : public Singleton<Natron::Log>
@@ -25,7 +27,7 @@ public:
 
     Log();
 
-    virtual ~Log();
+    virtual ~Log() FINAL;
 
     /**
     * @brief Opens a new file with the name 'fileName' which
@@ -58,11 +60,30 @@ public:
     **/
     static void endFunction(const std::string& callerName,const std::string& function);
 
+    static bool enabled() { return true; }
 };
 
+}
+#else
+
+namespace Natron{
+// no-op class
+class Log
+{
+    Log() {}
+    ~Log() {};
+public:
+    static void instance() {}
+    static void open(const std::string& ) {}
+    static void beginFunction(const std::string& ,const std::string& ) {}
+    static void print(const std::string& ) {}
+    static void print(const char *, ...) {}
+    static void endFunction(const std::string& ,const std::string& ) {}
+    static bool enabled() { return false; }
+};
 }
 
 #endif
 
 
-#endif // LOG_H
+#endif // NATRON_ENGINE_LOG_H_

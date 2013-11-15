@@ -107,9 +107,7 @@ int main(int argc, char *argv[])
 
     registerMetaTypes();
     
-#ifdef NATRON_LOG
     Natron::Log::instance();//< enable logging
-#endif
     
     AppManager* manager = AppManager::instance(); //< load the AppManager singleton
 

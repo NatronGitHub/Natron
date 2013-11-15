@@ -1343,11 +1343,9 @@ void errorDialog(const std::string& title,const std::string& message){
         std::cout << "ERROR: " << message << std::endl;
     }
     
-#ifdef NATRON_LOG
     Log::beginFunction(title,"ERROR");
     Log::print(message);
     Log::endFunction(title,"ERROR");
-#endif
 }
 
 void warningDialog(const std::string& title,const std::string& message){
@@ -1358,11 +1356,9 @@ void warningDialog(const std::string& title,const std::string& message){
     }else{
         std::cout << "WARNING: "<< message << std::endl;
     }
-#ifdef NATRON_LOG
     Log::beginFunction(title,"WARNING");
     Log::print(message);
     Log::endFunction(title,"WARNING");
-#endif
 }
 
 void informationDialog(const std::string& title,const std::string& message){
@@ -1373,11 +1369,9 @@ void informationDialog(const std::string& title,const std::string& message){
     }else{
         std::cout << "INFO: "<< message << std::endl;
     }
-#ifdef NATRON_LOG
     Log::beginFunction(title,"INFO");
     Log::print(message);
     Log::endFunction(title,"INFO");
-#endif
 }
 
 Natron::StandardButton questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons,
@@ -1392,11 +1386,9 @@ Natron::StandardButton questionDialog(const std::string& title,const std::string
         std::cout << NATRON_APPLICATION_NAME " answered yes." << std::endl;
         return Natron::Yes;
     }
-#ifdef NATRON_LOG
     Log::beginFunction(title,"QUESTION");
     Log::print(message);
     Log::endFunction(title,"QUESTION");
-#endif
 }
     
 } //Namespace Natron
