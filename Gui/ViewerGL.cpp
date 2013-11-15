@@ -777,16 +777,12 @@ void ViewerGL::initializeGL(){
     glBindBuffer(GL_ARRAY_BUFFER, _vboTexturesId);
     glBufferData(GL_ARRAY_BUFFER, 32*sizeof(GLfloat), renderingTextureCoordinates, GL_STATIC_DRAW);
     
-    
     glBindBuffer(GL_ARRAY_BUFFER, _vboVerticesId);
     glBufferData(GL_ARRAY_BUFFER, 32*sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     
-    
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 28*sizeof(GLubyte), triangleStrip, GL_STATIC_DRAW);
-    
-    
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     checkGLErrors();

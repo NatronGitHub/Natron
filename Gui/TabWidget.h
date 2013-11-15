@@ -151,6 +151,8 @@ private:
     Decorations _decorations;
     bool _isFloating;
     bool _drawDropRect;
+    
+    bool _fullScreen;
 public:
     
         
@@ -202,6 +204,12 @@ public:
     
     virtual void paintEvent(QPaintEvent* event);
     
+    virtual void keyPressEvent (QKeyEvent *event);
+    
+    virtual void enterEvent(QEvent *event);
+    
+    virtual void leaveEvent(QEvent *event);
+    
 public slots:
     /*Makes current the tab at index "index". Passing an
      index out of range will have no effect.*/
@@ -212,6 +220,8 @@ public slots:
     void addNewViewer();
     
     void moveNodeGraphHere();
+    
+    void moveCurveEditorHere();
     
     void movePropertiesBinHere();
     

@@ -62,6 +62,7 @@ class SpinBox;
 class LineEdit;
 class DockablePanel;
 class PluginToolButton;
+class CurveEditor;
 
 namespace Natron{
     class Node;
@@ -225,7 +226,7 @@ public:
     
     void closePane(TabWidget* what);
     
-    void maximize(TabWidget* what,bool isViewerPane);
+    void maximize(TabWidget* what);
     
     void minimize();
     
@@ -395,6 +396,7 @@ public:
     QGraphicsScene* _graphScene;
     NodeGraph *_nodeGraphArea;
 
+    CurveEditor *_curveEditor;
     
     /*TOOLBOX*/
     QToolBar* _toolBox;

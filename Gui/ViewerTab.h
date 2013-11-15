@@ -45,9 +45,7 @@ class ViewerTab: public QWidget
     ViewerInstance* _viewerNode;// < pointer to the internal node
     
     Natron::ChannelSet _channelsToDraw;
-    
-    /*True if the viewer is currently fullscreen*/
-	bool _maximized;
+
     
 public:
     explicit ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent=0);
@@ -159,9 +157,8 @@ public slots:
 protected:
     
     bool eventFilter(QObject *target, QEvent *event);
+    
     virtual void keyPressEvent(QKeyEvent* e);
-    virtual void enterEvent(QEvent* e);
-    virtual void leaveEvent(QEvent* e);
     
 };
 

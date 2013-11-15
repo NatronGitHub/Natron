@@ -53,6 +53,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/NodeGui.h"
 #include "Gui/Button.h"
 #include "Gui/DockablePanel.h"
+#include "Gui/CurveEditor.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH"openeffects.png"
@@ -107,6 +108,7 @@ _middleRightSplitter(0),
 _leftRightSplitter(0),
 _graphScene(0),
 _nodeGraphArea(0),
+_curveEditor(0),
 _toolBox(0),
 _propertiesScrollArea(0),
 _propertiesContainer(0),
@@ -461,6 +463,9 @@ void Gui::setupUi()
     _nodeGraphArea->setObjectName("NodeGraph");
     _workshopPane->appendTab(_nodeGraphArea);
     
+    _curveEditor = new CurveEditor(this);
+    _curveEditor->setObjectName("CurveEditor");
+    _workshopPane->appendTab(_curveEditor);
     
 	_viewerWorkshopSplitter->addWidget(_workshopPane);
     
@@ -723,15 +728,20 @@ void Gui::loadStyleSheet(){
     }
 }
 
-void Gui::maximize(TabWidget* what,bool isViewerPane) {
+void Gui::maximize(TabWidget* what) {
     assert(what);
     if(what->isFloating())
         return;
     for (std::list<TabWidget*>::iterator it = _panes.begin(); it != _panes.end(); ++it) {
+        
+        //if the widget is not what we want to maximize and it is not floating , hide it
         if (*it != what && !(*it)->isFloating()) {
+            
+            // also if we want to maximize the workshop pane, don't hide the properties pane
+            if((*it) == _propertiesPane && what == _workshopPane){
+                continue;
+            }
             (*it)->hide();
-            if(!isViewerPane && (*it)->objectName() == "Properties_Pane")
-                (*it)->show();
         }
     }
 }

@@ -64,7 +64,6 @@ QGraphicsView(scene,parent),
 _gui(gui),
 _evtState(DEFAULT),
 _nodeSelected(0),
-_maximized(false),
 _propertyBin(0),
 _refreshOverlays(true),
 _previewsTurnedOff(false)
@@ -436,21 +435,13 @@ bool NodeGraph::event(QEvent* event){
 }
 
 void NodeGraph::keyPressEvent(QKeyEvent *e){
-    
+    QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
+    QCoreApplication::postEvent(parentWidget(),ev);
+
     if(e->key() == Qt::Key_R){
         _gui->getApp()->createNode("Reader");
     }else if(e->key() == Qt::Key_W){
         _gui->getApp()->createNode("Writer");
-    }else if(e->key() == Qt::Key_Space){
-        
-        if(!_maximized){
-            _maximized = true;
-            _gui->maximize(dynamic_cast<TabWidget*>(parentWidget()),false);
-        }else{
-            _maximized = false;
-            _gui->minimize();
-        }
-        
     }else if(e->key() == Qt::Key_Backspace){
         /*delete current node.*/
         if(_nodeSelected){
@@ -489,7 +480,7 @@ void NodeGraph::leaveEvent(QEvent *event)
     QGraphicsView::leaveEvent(event);
     if(smartNodeCreationEnabled){
         _nodeCreationShortcutEnabled=false;
-        setFocus();
+         setFocus();
     }
 }
 

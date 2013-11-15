@@ -51,8 +51,7 @@ using namespace Natron;
 ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(parent),
 _gui(gui),
 _viewerNode(node),
-_channelsToDraw(Mask_RGBA),
-_maximized(false)
+_channelsToDraw(Mask_RGBA)
 {
     
     installEventFilter(this);
@@ -642,16 +641,9 @@ ViewerTab::~ViewerTab()
 
 
 void ViewerTab::keyPressEvent ( QKeyEvent * event ){
-    if(event->key() == Qt::Key_Space){
-        //releaseKeyboard();
-        if(_maximized){
-            _maximized=false;
-            _gui->minimize();
-        }else{
-            _maximized=true;
-            _gui->maximize(dynamic_cast<TabWidget*>(parentWidget()),true);
-        }
-    }else if(event->key() == Qt::Key_Y){
+    
+    
+    if(event->key() == Qt::Key_Y){
         _viewerChannels->setCurrentIndex(0);
     }else if(event->key() == Qt::Key_R && event->modifiers() == Qt::ShiftModifier ){
         _viewerChannels->setCurrentIndex(1);
@@ -722,14 +714,7 @@ QSize ViewerTab::minimumSizeHint() const{
 QSize ViewerTab::sizeHint() const{
     return QWidget::sizeHint();
 }
-void ViewerTab::enterEvent(QEvent *event)
-{   QWidget::enterEvent(event);
-    setFocus();
-}
-void ViewerTab::leaveEvent(QEvent *event)
-{
-    QWidget::leaveEvent(event);
-}
+
 
 void ViewerTab::showView(int /*view*/){
     abortRendering();

@@ -32,6 +32,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Global/AppManager.h"
 #include "Gui/Gui.h"
 #include "Gui/NodeGraph.h"
+#include "Gui/CurveEditor.h"
 #include "Gui/ViewerTab.h"
 #include "Engine/ViewerInstance.h"
 
@@ -47,7 +48,9 @@ _closeButton(0),
 _currentWidget(0),
 _decorations(decorations),
 _isFloating(false),
-_drawDropRect(false){
+_drawDropRect(false),
+_fullScreen(false)
+{
     
     if(decorations!=NONE){
         setAcceptDrops(true);
@@ -183,6 +186,7 @@ void TabWidget::createMenu(){
     menu->addSeparator();
     menu->addAction(tr("New viewer"), this, SLOT(addNewViewer()));
     menu->addAction(tr("Node graph here"), this, SLOT(moveNodeGraphHere()));
+    menu->addAction(tr("Curve Editor here"), this, SLOT(moveCurveEditorHere()));
     menu->addAction(tr("Properties bin here"), this, SLOT(movePropertiesBinHere()));
     menu->exec(_leftCornerButton->mapToGlobal(QPoint(0,0)));
 }
@@ -212,6 +216,12 @@ void TabWidget::addNewViewer(){
 
 void TabWidget::moveNodeGraphHere(){
     QWidget* what = dynamic_cast<QWidget*>(_gui->_nodeGraphArea);
+    what->setParent(this);
+    _gui->moveTab(what,this);
+}
+
+void TabWidget::moveCurveEditorHere(){
+    QWidget* what = dynamic_cast<QWidget*>(_gui->_curveEditor);
     what->setParent(this);
     _gui->moveTab(what,this);
 }
@@ -478,4 +488,26 @@ void TabBar::mouseMoveEvent(QMouseEvent* event){
         drag->setPixmap(pix);
         drag->exec();
     }
+}
+
+
+void TabWidget::keyPressEvent ( QKeyEvent * event ){
+    if(event->key() == Qt::Key_Space){
+        if(_fullScreen){
+            _fullScreen = false;
+            _gui->minimize();
+        }else{
+            _fullScreen = true;
+            _gui->maximize(this);
+        }
+    }
+    
+}
+void TabWidget::enterEvent(QEvent *event)
+{   QWidget::enterEvent(event);
+    setFocus();
+}
+void TabWidget::leaveEvent(QEvent *event)
+{
+    QWidget::leaveEvent(event);
 }
