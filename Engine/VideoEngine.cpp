@@ -305,7 +305,7 @@ bool VideoEngine::stopEngine() {
         }
     }
     if(_tree.getOutput()->getApp()->isBackground()){
-        _tree.getOutput()->getApp()->notifyRenderFinished(_tree.getOutput());
+        _tree.getOutput()->getApp()->notifyRenderFinished(dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput()));
         return true;
     }
     
@@ -377,7 +377,7 @@ void VideoEngine::run(){
             
             /*if writing on disk and not a recursive call, move back the timeline cursor to the start*/
             if(!_tree.isOutputAViewer()){
-                _tree.getOutput()->setCurrentFrame(firstFrame);
+                dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput())->setCurrentFrame(firstFrame);
                 currentFrame = firstFrame;
             }else{
                 currentFrame = _timeline->currentFrame();
@@ -423,8 +423,9 @@ void VideoEngine::run(){
                     }
                 }
             }else{
-                _tree.getOutput()->setCurrentFrame(_tree.getOutput()->getCurrentFrame()+1);
-                currentFrame = _tree.getOutput()->getCurrentFrame();
+                Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
+                output->setCurrentFrame(output->getCurrentFrame()+1);
+                currentFrame = output->getCurrentFrame();
                 if(currentFrame > lastFrame){
                     if(stopEngine())
                         return;
@@ -600,7 +601,7 @@ void VideoEngine::updateTreeAndContinueRender(bool initViewer){
 }
 
 
-RenderTree::RenderTree(Natron::OutputEffectInstance* output):
+RenderTree::RenderTree(EffectInstance *output):
 _output(output)
 ,_sorted()
 ,_isViewer(false)

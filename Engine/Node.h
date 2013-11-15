@@ -386,10 +386,15 @@ protected:
     std::multimap<int,Node*> _outputs; //multiple outputs per slot
     std::map<int,Node*> _inputs;//only 1 input per slot
     Natron::EffectInstance*  _liveInstance; //< the instance of the effect interacting with the GUI of this node.
-    
+    Natron::EffectInstance* _previewInstance;//< the instance used only to render a preview image
+    RenderTree* _previewRenderTree;//< the render tree used to render the preview
+    mutable QMutex _previewMutex;
 private:
     
-    
+    /**
+    * @brief Used internally by findOrCreateLiveInstanceClone
+    **/
+    Natron::EffectInstance*  createLiveInstanceClone();
     
     typedef std::map<Node*,std::pair<int,int> >::const_iterator OutputConnectionsIterator;
     typedef OutputConnectionsIterator InputConnectionsIterator;

@@ -1127,7 +1127,7 @@ void NodeGraph::dropEvent(QDropEvent* event){
                 File_Knob* fileKnob = dynamic_cast<File_Knob*>(knobs[j]);
                 assert(fileKnob);
                 fileKnob->setValue(files[i]);
-                reader->refreshPreviewImage(fileKnob->firstFrame());
+               // reader->refreshPreviewImage(fileKnob->firstFrame());
                 break;
             }
         }

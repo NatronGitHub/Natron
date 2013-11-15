@@ -244,9 +244,6 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
                 cout << "Couldn't restore knob value ( " << v->first << " )." << endl;
             }else{
                 knob->restoreFromString(v->second);
-                if(knob->typeName() == "InputFile" && n->makePreviewByDefault()){
-                    n->refreshPreviewImage(0);
-                }
             }
             
         }

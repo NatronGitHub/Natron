@@ -49,6 +49,9 @@ Natron::Node::Node(AppInstance* app,Natron::LibraryBinary* plugin,const std::str
 , _outputs()
 , _inputs()
 , _liveInstance(NULL)
+, _previewInstance(NULL)
+, _previewRenderTree(NULL)
+, _previewMutex()
 , _inputLabelsMap()
 , _name()
 , _deactivatedState()
@@ -65,13 +68,20 @@ Natron::Node::Node(AppInstance* app,Natron::LibraryBinary* plugin,const std::str
         std::pair<bool,EffectBuilder> func = plugin->findFunction<EffectBuilder>("BuildEffect");
         if(func.first){
             _liveInstance = func.second(this);
+            _previewInstance = func.second(this);
         }else{ //ofx plugin
             _liveInstance = appPTR->getOfxHost()->createOfxEffect(name,this);
+            _previewInstance = appPTR->getOfxHost()->createOfxEffect(name,this);
         }
     }catch(const std::exception& e){
         throw e;
     }
     assert(_liveInstance);
+    assert(_previewInstance);
+
+    _previewInstance->initializeKnobs();
+    _previewRenderTree = new RenderTree(_previewInstance);
+
 }
 
 
@@ -80,6 +90,8 @@ Natron::Node::~Node(){
         delete it->second;
     }
     delete _liveInstance;
+    delete _previewInstance;
+    delete _previewRenderTree;
     emit deleteWanted();
 }
 
@@ -99,17 +111,7 @@ Natron::EffectInstance* Natron::Node::findOrCreateLiveInstanceClone(RenderTree* 
     if(it != _renderInstances.end()){
         ret =  it->second;
     }else{
-        if(!isOpenFXNode()){
-            std::pair<bool,EffectBuilder> func = _plugin->findFunction<EffectBuilder>("BuildEffect");
-            assert(func.first);
-            ret =  func.second(this);
-        }else{
-            ret = appPTR->getOfxHost()->createOfxEffect(_liveInstance->className(),this);
-            
-        }
-        assert(ret);
-        ret->initializeKnobs();
-        ret->setAsRenderClone();
+       ret = createLiveInstanceClone();
         _renderInstances.insert(std::make_pair(tree, ret));
     }
     
@@ -119,6 +121,23 @@ Natron::EffectInstance* Natron::Node::findOrCreateLiveInstanceClone(RenderTree* 
     return ret;
 
 }
+
+Natron::EffectInstance*  Natron::Node::createLiveInstanceClone(){
+    Natron::EffectInstance* ret = NULL;
+    if(!isOpenFXNode()){
+        std::pair<bool,EffectBuilder> func = _plugin->findFunction<EffectBuilder>("BuildEffect");
+        assert(func.first);
+        ret =  func.second(this);
+    }else{
+        ret = appPTR->getOfxHost()->createOfxEffect(_liveInstance->className(),this);
+
+    }
+    assert(ret);
+    ret->initializeKnobs();
+    ret->setAsRenderClone();
+    return ret;
+}
+
 Natron::EffectInstance* Natron::Node::findExistingEffect(RenderTree* tree) const{
     if(isOutputNode())
         return _liveInstance;
@@ -394,11 +413,16 @@ void Natron::Node::removeImageBeingRendered(SequenceTime time,int view ){
 }
 
 void Natron::Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf){
+
+    QMutexLocker locker(&_previewMutex); /// prevent 2 previews to occur at the same time since there's only 1 preview instance
+
     RectI rod;
-    _liveInstance->getRegionOfDefinition(time, &rod);
+    _previewInstance->clone();
+    _previewInstance->updateInputs(_previewRenderTree);
+    _previewInstance->getRegionOfDefinition(time, &rod);
     int h,w;
-    rod.height() < height ? h = rod.height() : h = height;
-    rod.width() < width ? w = rod.width() : w = width;
+    h = rod.height() < height ? rod.height() : height;
+    w = rod.width() < width ? rod.width() : width;
     double yZoomFactor = (double)h/(double)rod.height();
     double xZoomFactor = (double)w/(double)rod.width();
     {
@@ -413,7 +437,7 @@ void Natron::Node::makePreviewImage(SequenceTime time,int width,int height,unsig
     Natron::Log::print(QString("Time "+QString::number(time)).toStdString());
 #endif
 
-    Natron::Status stat =  _liveInstance->preProcessFrame(time);
+    Natron::Status stat =  _previewRenderTree->preProcessFrame(time);
     if(stat == StatFailed){
 #ifdef NATRON_LOG
         Natron::Log::print(QString("preProcessFrame returned StatFailed.").toStdString());
@@ -422,14 +446,21 @@ void Natron::Node::makePreviewImage(SequenceTime time,int width,int height,unsig
         return;
     }
 
-    _liveInstance->computeHash(std::vector<U64>());
+    _previewInstance->computeHash(std::vector<U64>());
     RenderScale scale;
     scale.x = scale.y = 1.;
-    boost::shared_ptr<const Natron::Image> img = _liveInstance->renderRoI(time, scale, 0,rod);
+    boost::shared_ptr<const Natron::Image> img;
+    try{
+        img = _previewInstance->renderRoI(time, scale, 0,rod);
+    }
+    catch(const std::exception& e){
+        std::cout << e.what() << std::endl;
+        return;
+    }
     for (int i=0; i < h; ++i) {
         double y = (double)i/yZoomFactor;
         int nearestY = (int)(y+0.5);
-        
+
         U32 *dst_pixels = buf + width*(h-1-i);
         const float* src_pixels = img->pixelAt(0, nearestY);
 
@@ -441,9 +472,10 @@ void Natron::Node::makePreviewImage(SequenceTime time,int width,int height,unsig
             float b = clamp(Color::linearrgb_to_srgb(src_pixels[nearestX*4+2]));
             float a = clamp(src_pixels[nearestX*4+3]);
             dst_pixels[j] = qRgba(r*255, g*255, b*255, a*255);
-            
+
         }
     }
+
 #ifdef NATRON_LOG
     Natron::Log::endFunction(getName(),"makePreviewImage");
 #endif

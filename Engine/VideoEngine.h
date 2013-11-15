@@ -98,7 +98,7 @@ public:
      *Once filled up, you can access the nodes in topological order with the iterators.
      *The reverse iterator will give you the opposite of the topological order.
      */
-    RenderTree(Natron::OutputEffectInstance* output);
+    RenderTree(Natron::EffectInstance* output);
     
     /**
      *@brief Clears the structure and fill it with a new tree, represented by the OutputNode.
@@ -139,7 +139,7 @@ public:
     /**
      *@brief Returns a pointer to the output node of the graph.
      */
-    Natron::OutputEffectInstance* getOutput() const {return _output;}
+    Natron::EffectInstance* getOutput() const {return _output;}
     
     
     /**
@@ -197,7 +197,7 @@ private:
     U64 cloneKnobsAndcomputeTreeHash(Natron::EffectInstance* effect,const std::vector<U64>& inputsHashs);
     
     
-    Natron::OutputEffectInstance* _output; /*!<the output of the Tree*/
+    Natron::EffectInstance* _output; /*!<the output of the Tree*/
     TreeContainer _sorted; /*!<the sorted Tree*/
     bool _isViewer; /*!< true if the outputNode is a viewer, it avoids many dynamic_casts*/
     bool _isOutputOpenFXNode; /*!< true if the outputNode is an OpenFX node*/
