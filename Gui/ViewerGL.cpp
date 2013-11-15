@@ -1313,6 +1313,8 @@ QPoint ViewerGL::toWidgetCoordinates(int x, int y){
     double right = left +  w / _zoomCtx._zoomFactor;
     return QPoint((int)(((x - left)/(right - left))*w),(int)(((y - top)/(bottom - top))*h));
 }
+
+#if 0
 /*Returns coordinates with 0,0 at top left, Natron inverts
  y as such : y= displayWindow().height() - y  to get the coordinates
  with 0,0 at bottom left*/
@@ -1332,6 +1334,7 @@ QVector3D ViewerGL::toImgCoordinates_slow(int x,int y){
     checkGLErrors();
     return QVector3D(posX,posY,posZ);
 }
+#endif
 
 QVector4D ViewerGL::getColorUnderMouse(int x,int y){
     
