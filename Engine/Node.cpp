@@ -91,7 +91,6 @@ Natron::Node::~Node(){
         delete it->second;
     }
     delete _liveInstance;
-    delete _previewInstance;
     delete _previewRenderTree;
     emit deleteWanted();
 }
