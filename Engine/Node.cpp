@@ -79,6 +79,7 @@ Natron::Node::Node(AppInstance* app,Natron::LibraryBinary* plugin,const std::str
     assert(_liveInstance);
     assert(_previewInstance);
 
+    _previewInstance->setAsRenderClone();
     _previewInstance->initializeKnobs();
     _previewRenderTree = new RenderTree(_previewInstance);
 
