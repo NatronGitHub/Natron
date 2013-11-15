@@ -255,7 +255,7 @@ public:
      * By default it merges the frame range of the inputs.
      * In case of failure the plugin should return StatFailed.
      **/
-    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) WARN_UNUSED_RETURN;
+    virtual void getFrameRange(SequenceTime *first,SequenceTime *last);
     
     
     /* @brief Overlay support:
