@@ -421,80 +421,60 @@ namespace Natron{
 } //namespace Natron
 
 
-void ViewerGL::initConstructor(){
+ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
+: QGLWidget(parent,shareWidget)
+, _pboIds()
+, _vboVerticesId(0)
+, _vboTexturesId(0)
+, _iboTriangleStripId(0)
+, _defaultDisplayTexture(0)
+, _textureMutex()
+, _blackTex(0)
+, shaderRGB(0)
+, shaderLC(0)
+, shaderBlack(0)
+, _shaderLoaded(false)
+, _infoViewer(0)
+, _viewerTab(parent)
+, _currentViewerInfos()
+, _blankViewerInfos()
+, _displayingImage(false)
+, _must_initBlackTex(true)
+, _ms(UNDEFINED)
+, _zoomCtx()
+, _resolutionOverlay()
+, _btmLeftBBOXoverlay()
+, _topRightBBOXoverlay()
+, _textRenderingColor(200,200,200,255)
+, _displayWindowOverlayColor(125,125,125,255)
+, _rodOverlayColor(100,100,100,255)
+, _textFont(new QFont("Helvetica",15))
+, _overlay(true)
+, _hasHW(true)
+, _displayChannels(0.f)
+, _drawProgressBar(false)
+, _updatingTexture(false)
+, _progressBarY(-1)
+, _clearColor(0,0,0,255)
+, _menu(new QMenu(this))
+, _clipToDisplayWindow(true)
+, _persistentMessage()
+, _persistentMessageType(0)
+, _displayPersistentMessage(false)
+, _textRenderer()
+{
+    setMouseTracking(true);
     
-    _hasHW = true;
+    populateMenu();
+
+    
     _blankViewerInfos.setChannels(Natron::Mask_RGBA);
     Format frmt(0, 0, 1920, 1080,"HD",1.0);
     _blankViewerInfos.setRoD(RectI(0, 0, 1920, 1080));
     _blankViewerInfos.setDisplayWindow(frmt);
     setRod(_blankViewerInfos.getRoD());
     onProjectFormatChanged(frmt);
-    _displayingImage = false;
-    setMouseTracking(true);
-    _ms = UNDEFINED;
-    shaderLC = NULL;
-    shaderRGB = NULL;
-    shaderBlack = NULL;
-    _overlay = true;
-    _defaultDisplayTexture = 0;
-    _displayChannels = 0.f;
-    _progressBarY = -1;
-    _drawProgressBar = false;
-    _updatingTexture = false;
-    populateMenu();
-    // initTextFont();
-    _clipToDisplayWindow = true;
-    _displayPersistentMessage = false;
-    _textRenderingColor.setRgba(qRgba(200,200,200,255));
-    _displayWindowOverlayColor.setRgba(qRgba(125,125,125,255));
-    _rodOverlayColor.setRgba(qRgba(100,100,100,255));
-    _textFont = new QFont("Helvetica",15);
-}
 
-//void ViewerGL::initTextFont(){
-//    QFile font(":/Resources/fonts/DejaVuSans.ttf");
-//    uchar* buf = font.map(0,font.size());
-//    _font = new FTTextureFont(buf,font.size());
-//    if(_font->Error())
-//        cout << "Failed to load the OpenGL text renderer font. " << endl;
-//    else
-//        _font->FaceSize(14);
-//}
-ViewerGL::ViewerGL(QGLContext* context,ViewerTab* parent,const QGLWidget* shareWidget)
-    : QGLWidget(context,parent,shareWidget)
-    , _shaderLoaded(false)
-    , _viewerTab(parent)
-    , _displayingImage(false)
-    , _must_initBlackTex(true)
-    , _clearColor(0,0,0,255)
-    , _menu(new QMenu(this))
-{
-    initConstructor();
-}
-
-ViewerGL::ViewerGL(const QGLFormat& format,ViewerTab* parent ,const QGLWidget* shareWidget)
-    : QGLWidget(format,parent,shareWidget)
-    , _shaderLoaded(false)
-    , _viewerTab(parent)
-    , _displayingImage(false)
-    , _must_initBlackTex(true)
-    , _clearColor(0,0,0,255)
-    , _menu(new QMenu(this))
-{
-    initConstructor();
-}
-
-ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
-    : QGLWidget(parent,shareWidget)
-    , _shaderLoaded(false)
-    , _viewerTab(parent)
-    , _displayingImage(false)
-    , _must_initBlackTex(true)
-    , _clearColor(0,0,0,255)
-    , _menu(new QMenu(this))
-{
-    initConstructor();
 }
 
 
