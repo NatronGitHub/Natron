@@ -25,8 +25,6 @@
 
 #include "Gui/KnobGui.h"
 
-#include "Writers/Writer.h"
-
 
 void registerMetaTypes(){
     qRegisterMetaType<Variant>();
@@ -47,22 +45,20 @@ void printBackGroundWelcomeMessage(){
     "and then re-try using the background mode." << std::endl;
 }
 
+void printUsage(){
+    std::cout << NATRON_APPLICATION_NAME << " usage: " << std::endl;
+    std::cout << "./" NATRON_APPLICATION_NAME "    <project file path>" << std::endl;
+    std::cout << "[--background] enables background mode rendering. No graphical interface will be shown." << std::endl;
+    std::cout << "[--writer <Writer node name>] When in background mode, the renderer will only try to render with the node"
+    " name following the --writer argument. If no such node exists in the project file, the process will abort."
+    "Note that if you don't pass the --writer argument, it will try to start rendering with all the writers in the project's file."<< std::endl;
+
+}
+
+
 int main(int argc, char *argv[])
 {	
 
-    QApplication app(argc, argv);
-    app.setOrganizationName(NATRON_ORGANIZATION_NAME);
-    app.setOrganizationDomain(NATRON_ORGANIZATION_DOMAIN);
-    app.setApplicationName(NATRON_APPLICATION_NAME);
-
-    registerMetaTypes();
-    
-#ifdef NATRON_LOG
-    Natron::Log::instance();//< enable logging
-#endif
-    
-    AppManager* manager = AppManager::instance(); //< load the AppManager singleton
-    
     /*Parse args to find a valid project file name. This is not fool-proof:
      any file with a matching extension will pass through...
      @TODO : use some magic number to identify uniquely the project file type.*/
@@ -70,26 +66,26 @@ int main(int argc, char *argv[])
     bool isBackGround = false;
     QStringList writers;
     bool expectWriterNameOnNextArg = false;
-    QStringList args = QCoreApplication::arguments();
+    QStringList args;
+    for(int i = 0; i < argc ;++i){
+        args.push_back(QString(argv[i]));
+    }
     for (int i = 0 ; i < args.size(); ++i) {
         if(args.at(i).contains("." NATRON_PROJECT_FILE_EXT)){
             if(expectWriterNameOnNextArg){
-                manager->printUsage();
-                AppManager::quit();
+                printUsage();
                 return 1;
             }
             projectFile = args.at(i);
         }else if(args.at(i) == "--background"){
             if(expectWriterNameOnNextArg){
-                manager->printUsage();
-                AppManager::quit();
+                printUsage();
                 return 1;
             }
             isBackGround = true;
         }else if(args.at(i) == "--writer"){
             if(expectWriterNameOnNextArg){
-                manager->printUsage();
-                AppManager::quit();
+                printUsage();
                 return 1;
             }
             expectWriterNameOnNextArg = true;
@@ -98,6 +94,25 @@ int main(int argc, char *argv[])
             expectWriterNameOnNextArg = false;
         }
     }
+
+    QCoreApplication* app = NULL;
+    if(!isBackGround){
+        app = new QApplication(argc, argv);
+    }else{
+        app = new QCoreApplication(argc,argv);
+    }
+    app->setOrganizationName(NATRON_ORGANIZATION_NAME);
+    app->setOrganizationDomain(NATRON_ORGANIZATION_DOMAIN);
+    app->setApplicationName(NATRON_APPLICATION_NAME);
+
+    registerMetaTypes();
+    
+#ifdef NATRON_LOG
+    Natron::Log::instance();//< enable logging
+#endif
+    
+    AppManager* manager = AppManager::instance(); //< load the AppManager singleton
+
     
     QLabel* splashScreen = 0;
     if(!isBackGround){
@@ -118,6 +133,7 @@ int main(int argc, char *argv[])
     }
     
     if(!manager->newAppInstance(isBackGround,projectFile,writers)){
+        printUsage();
         AppManager::quit();
         return 1;
     }
@@ -131,7 +147,9 @@ int main(int argc, char *argv[])
         return 0;
     }
     
-    return app.exec();
+    int retCode =  app->exec();
+    delete app;
+    return retCode;
 
 }
 

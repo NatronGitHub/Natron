@@ -361,8 +361,6 @@ public:
 
     PluginToolButton* findPluginToolButtonOrCreate(const QString& name,const QString& iconPath);
 
-    static void printUsage();
-
 public slots:
 
     void clearPlaybackCache();
