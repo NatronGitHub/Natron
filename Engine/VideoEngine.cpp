@@ -128,6 +128,7 @@ void VideoEngine::render(int frameCount,
     
     if(_tree.getOutput()->getApp()->isBackground() && !_processAborter){
         _processAborter = new BackgroundProcessAborter(this);
+        _processAborter->start();
     }
     
     /*If the Tree was never built and we don't want to update the Tree, force an update
