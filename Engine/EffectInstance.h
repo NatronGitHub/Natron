@@ -9,18 +9,18 @@
 *
 */
 
-#ifndef EFFECTINSTANCE_H
-#define EFFECTINSTANCE_H
+#ifndef NATRON_ENGINE_EFFECTINSTANCE_H_
+#define NATRON_ENGINE_EFFECTINSTANCE_H_
 
 #include <boost/shared_ptr.hpp>
-#include <QThreadStorage>
+#include <boost/scoped_ptr.hpp>
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/Hash64.h"
-#include "Engine/RectI.h"
-#include "Engine/Knob.h"
+#include "Engine/Knob.h" // for KnobHolder
 
+class RectI;
+class Hash64;
 class RenderTree;
 class VideoEngine;
 class RenderTree;
@@ -42,29 +42,6 @@ public:
     
     typedef std::map<EffectInstance*,RectI> RoIMap;
     
-    struct RenderArgs{
-        RectI _roi;
-        SequenceTime _time;
-        RenderScale _scale;
-        int _view;
-    };
-    
-private:
-    
-    
-    
-    Natron::Node* _node; //< the node holding this effect
-
-    bool _renderAborted; //< was rendering aborted ?
-    Hash64 _hashValue;//< The hash value of this effect
-    int _hashAge;//< to check if the hash has the same age than the project's age
-    bool _isRenderClone;//< is this instance a live instance (i.e interacting with GUI)
-    //or a render instance (i.e a snapshot of the live instance at a given time)
-    
-    Inputs _inputs;//< all the inputs of the effect. Watch out, some might be NULL if they aren't connected
-    boost::shared_ptr<QThreadStorage<RenderArgs> > _renderArgs;
-    bool _previewEnabled;
-    
 public:
     
     
@@ -76,14 +53,14 @@ public:
      **/
     explicit EffectInstance(Node* node);
     
-    virtual ~EffectInstance(){}
+    virtual ~EffectInstance();
     
     /**
      * @brief Returns a pointer to the node holding this effect.
      **/
-    Node* getNode() const { return _node; }
+    Node* getNode() const WARN_UNUSED_RETURN { return _node; }
 
-    bool isLiveInstance() const { return !_isRenderClone; }
+    bool isLiveInstance() const WARN_UNUSED_RETURN;
     
     /**
      * @brief  Used once for each "render instance". It makes a full clone of the live instance.
@@ -97,92 +74,92 @@ public:
      **/
     U64 computeHash(const std::vector<U64>& inputsHashs);
     
-    const Hash64& hash() const { return _hashValue; }
+    const Hash64& hash() const WARN_UNUSED_RETURN;
             
-    bool isHashValid() const;
+    bool isHashValid() const WARN_UNUSED_RETURN;
     
-    int hashAge() const;
+    int hashAge() const WARN_UNUSED_RETURN;
     
-    const Inputs& getInputs() const { return _inputs; }
+    const Inputs& getInputs() const WARN_UNUSED_RETURN;
     
-    Knob* getKnobByDescription(const std::string& desc) const;
+    Knob* getKnobByDescription(const std::string& desc) const WARN_UNUSED_RETURN;
     
     /**
      * @brief Forwarded to the node's name
      **/
-    const std::string& getName() const;
+    const std::string& getName() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Forwarded to the node's render format
      **/
-    const Format& getRenderFormat() const;
+    const Format& getRenderFormat() const WARN_UNUSED_RETURN;
     
     /**
      * @brief Forwarded to the node's render views count
      **/
-    int getRenderViewsCount() const;
+    int getRenderViewsCount() const WARN_UNUSED_RETURN;
     
     /**
      * @brief Returns input n. It might be NULL if the input is not connected.
      **/
-    Natron::EffectInstance* input(int n) const;
+    EffectInstance* input(int n) const WARN_UNUSED_RETURN;
     
     /**
      * @brief Forwarded to the node holding the effect
      **/
-    bool hasOutputConnected() const;
+    bool hasOutputConnected() const WARN_UNUSED_RETURN;
     
     /**
      * @brief Is this node an input node ? An input node means
      * it has no input.
      **/
-    virtual bool isGenerator() const { return false; }
+    virtual bool isGenerator() const WARN_UNUSED_RETURN { return false; }
     
     /**
      * @brief Is this node an output node ? An output node means
      * it has no output.
      **/
-    virtual bool isOutput() const { return false; }
+    virtual bool isOutput() const WARN_UNUSED_RETURN { return false; }
     
     
     /**
      * @brief Returns true if the node is capable of generating
      * data and process data on the input as well
      **/
-    virtual bool isGeneratorAndFilter() const { return false; }
+    virtual bool isGeneratorAndFilter() const WARN_UNUSED_RETURN { return false; }
     
     /**
      * @brief Is this node an OpenFX node?
      **/
-    virtual bool isOpenFX() const { return false; }
+    virtual bool isOpenFX() const WARN_UNUSED_RETURN { return false; }
     
     /**
      * @brief How many input can we have at most. (i.e: how many input arrows)
      **/
-    virtual int maximumInputs() const = 0;
+    virtual int maximumInputs() const WARN_UNUSED_RETURN = 0;
     
     /**
      * @brief Is inputNb optional ? In which case the render can be made without it.
      **/
-    virtual bool isInputOptional(int inputNb) const = 0;
+    virtual bool isInputOptional(int inputNb) const WARN_UNUSED_RETURN = 0;
     
     
     /**
      * @brief Can be derived to give a more meaningful label to the input 'inputNb'
      **/
-    virtual std::string setInputLabel(int inputNb) const;
+    virtual std::string inputLabel(int inputNb) const WARN_UNUSED_RETURN;
     
     /**
      * @brief Must be implemented to give a name to the class.
      **/
-    virtual std::string className() const = 0;
+    virtual std::string className() const WARN_UNUSED_RETURN = 0;
     
     
     /**
      * @brief Must be implemented to give a desription of the effect that this node does. This is typically
      * what you'll see displayed when the user clicks the '?' button on the node's panel in the user interface.
      **/
-    virtual std::string description() const = 0;
+    virtual std::string description() const WARN_UNUSED_RETURN = 0;
     
     /**
      * @brief Renders the image at the given time,scale and for the given view & render window.
@@ -190,20 +167,12 @@ public:
      **/
     boost::shared_ptr<const Natron::Image> renderRoI(SequenceTime time,RenderScale scale,
                                                      int view,const RectI& renderWindow,
-                                                     bool byPassCache = false);
-    
-    
-    /**
-     * @brief Returns the last args that were given to the render(...) function for the caller thread.
-     * WARNING: the calling thread MUST be a thread who called the render(...) function,otherwise an
-     * assertion will be raised.
-     **/
-    const RenderArgs& getArgsForLastRender() const;
-    
+                                                     bool byPassCache = false) WARN_UNUSED_RETURN;
+
     /**
      * @brief Returns a pointer to the image being rendered currently by renderRoI if any.
      **/
-    boost::shared_ptr<Natron::Image> getImageBeingRendered(SequenceTime time,int view) const;
+    boost::shared_ptr<Natron::Image> getImageBeingRendered(SequenceTime time,int view) const WARN_UNUSED_RETURN;
     
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and
@@ -213,7 +182,7 @@ public:
      * Note that this function can be called concurrently for the same output image but with different
      * rois, depending on the threading-affinity of the plug-in.
      **/
-    virtual Natron::Status render(SequenceTime time,RenderScale scale,const RectI& roi,int view,boost::shared_ptr<Natron::Image> output){
+    virtual Natron::Status render(SequenceTime time,RenderScale scale,const RectI& roi,int view,boost::shared_ptr<Natron::Image> output) WARN_UNUSED_RETURN {
         (void)time;
         (void)scale;
         (void)roi;
@@ -231,27 +200,27 @@ public:
      * RenderSafety::FULLY_SAFE - indicating that any instance of a plugin can have multiple renders running simultaneously
      
      **/
-    virtual RenderSafety renderThreadSafety() const = 0;
+    virtual RenderSafety renderThreadSafety() const WARN_UNUSED_RETURN = 0;
     
     /**
      * @brief Can be derived to indicate that the data rendered by the plug-in is expensive
      * and should be stored in a persistent manner such as on disk.
      **/
-    virtual bool shouldRenderedDataBePersistent() const {return false;}
+    virtual bool shouldRenderedDataBePersistent() const WARN_UNUSED_RETURN {return false;}
     
     /*@brief The derived class should query this to abort any long process
      in the engine function.*/
-    bool aborted() const { return _renderAborted; }
+    bool aborted() const WARN_UNUSED_RETURN;
     
     /**
      * @brief Called externally when the rendering is aborted. You should never
      * call this yourself.
      **/
-    void setAborted(bool b) { _renderAborted = b; }
+    void setAborted(bool b);
     
     /** @brief Returns the image computed by the input 'inputNb' at the given time and scale for the given view.
      */
-    boost::shared_ptr<const Natron::Image> getImage(int inputNb,SequenceTime time,RenderScale scale,int view);
+    boost::shared_ptr<const Natron::Image> getImage(int inputNb,SequenceTime time,RenderScale scale,int view) WARN_UNUSED_RETURN;
     
     
     /**
@@ -260,7 +229,7 @@ public:
      * the render will stop.
      * If the status is StatFailed a message should be posted by the plugin.
      **/
-    virtual Natron::Status preProcessFrame(SequenceTime time) { (void)time; return Natron::StatReplyDefault; }
+    virtual Natron::Status preProcessFrame(SequenceTime time) WARN_UNUSED_RETURN { (void)time; return Natron::StatReplyDefault; }
     
     
     /**
@@ -269,7 +238,7 @@ public:
      * By default it returns in rod the union of all inputs RoD and StatReplyDefault is returned.
      * In case of failure the plugin should return StatFailed.
      **/
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod);
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod) WARN_UNUSED_RETURN;
     
     
     /**
@@ -279,14 +248,14 @@ public:
      * from inputs in order to do a blur taking into account the size of the blurring kernel.
      * By default, it returns renderWindow for each input.
      **/
-    virtual RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow);
+    virtual RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) WARN_UNUSED_RETURN;
 
     /**
      * @brief Can be derived to get the frame range wherein the plugin is capable of producing frames.
      * By default it merges the frame range of the inputs.
      * In case of failure the plugin should return StatFailed.
      **/
-    virtual void getFrameRange(SequenceTime *first,SequenceTime *last);
+    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) WARN_UNUSED_RETURN;
     
     
     /* @brief Overlay support:
@@ -329,9 +298,9 @@ public:
     /**
      * @brief Overload this and return true if your operator should dislay a preview image by default.
      **/
-    virtual bool makePreviewByDefault() const {return false;}
+    virtual bool makePreviewByDefault() const WARN_UNUSED_RETURN {return false;}
     
-    bool isPreviewEnabled() const { return _previewEnabled; }
+    bool isPreviewEnabled() const WARN_UNUSED_RETURN;
     
     /**
      * @brief Called by the GUI when the user wants to activate preview image for this effect.
@@ -405,7 +374,7 @@ public:
     /**
      * @brief This function is called by the node holding this effect. Never call this yourself.
      **/
-    void setAsRenderClone() { _isRenderClone = true; }
+    void setAsRenderClone();
     
     /**
      * @brief This function is called by the node holding this effect. Never call this yourself.
@@ -448,7 +417,13 @@ protected:
     virtual void cloneExtras(){}
     
 private:
+    Node* _node; //< the node holding this effect
+    struct Implementation;
+    boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
     
+    struct RenderArgs;
+
+
     /**
      * @brief Must be implemented to evaluate a value change
      * made to a knob(e.g: force a new render).
@@ -459,7 +434,7 @@ private:
 
     
     
-    Natron::Status tiledRenderingFunctor(RenderArgs args,
+    Natron::Status tiledRenderingFunctor(const RenderArgs& args,
                                const RectI& roi,
                                boost::shared_ptr<Natron::Image> output);
 };
@@ -513,4 +488,4 @@ public:
 
 
 } // Natron
-#endif // EFFECTINSTANCE_H
+#endif // NATRON_ENGINE_EFFECTINSTANCE_H_

@@ -174,7 +174,7 @@ void Natron::Node::initializeInputs(){
     int inputCount = maximumInputs();
     for(int i = 0;i < inputCount;++i){
         if(_inputs.find(i) == _inputs.end()){
-            _inputLabelsMap.insert(make_pair(i,_liveInstance->setInputLabel(i)));
+            _inputLabelsMap.insert(make_pair(i,_liveInstance->inputLabel(i)));
             _inputs.insert(make_pair(i,(Natron::Node*)NULL));
         }
     }

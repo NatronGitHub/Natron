@@ -102,7 +102,7 @@ public:
 
     virtual std::string description() const OVERRIDE;
 
-    virtual std::string setInputLabel (int inputNb) const OVERRIDE;
+    virtual std::string inputLabel (int inputNb) const OVERRIDE;
 
     virtual bool isInputOptional(int inputNb) const OVERRIDE;
 

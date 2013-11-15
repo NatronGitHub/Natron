@@ -23,30 +23,90 @@
 
 using namespace Natron;
 
-EffectInstance::EffectInstance(Node* node):
-KnobHolder(node ? node->getApp() : NULL)
-, _node(node)
-, _renderAborted(false)
-, _hashValue()
-, _hashAge(0)
-, _isRenderClone(false)
-, _inputs()
-, _renderArgs()
-, _previewEnabled(false)
-{
-    //create the renderArgs only if the current thread is different than the main thread.
-    // otherwise it would create mem leaks and an error message.
-    if(QThread::currentThread() != qApp->thread()){
-        _renderArgs.reset(new QThreadStorage<RenderArgs>);
+
+
+struct EffectInstance::Implementation {
+    Implementation()
+    : renderAborted(false)
+    , hashValue()
+    , hashAge(0)
+    , isRenderClone(false)
+    , inputs()
+    , renderArgs()
+    , previewEnabled(false)
+    {
     }
+
+    bool renderAborted; //< was rendering aborted ?
+    Hash64 hashValue;//< The hash value of this effect
+    int hashAge;//< to check if the hash has the same age than the project's age
+    bool isRenderClone;//< is this instance a live instance (i.e interacting with GUI)
+    //or a render instance (i.e a snapshot of the live instance at a given time)
+
+    Inputs inputs;//< all the inputs of the effect. Watch out, some might be NULL if they aren't connected
+    QThreadStorage<RenderArgs> renderArgs;
+    bool previewEnabled;
+};
+
+struct EffectInstance::RenderArgs {
+    RectI _roi;
+    SequenceTime _time;
+    RenderScale _scale;
+    int _view;
+};
+
+EffectInstance::EffectInstance(Node* node)
+: KnobHolder(node ? node->getApp() : NULL)
+, _node(node)
+, _imp(new Implementation)
+{
+}
+
+EffectInstance::~EffectInstance()
+{
+}
+
+bool EffectInstance::isLiveInstance() const
+{
+    return !_imp->isRenderClone;
+}
+
+const Hash64& EffectInstance::hash() const
+{
+    return _imp->hashValue;
+}
+
+const EffectInstance::Inputs& EffectInstance::getInputs() const
+{
+    return _imp->inputs;
+}
+
+bool EffectInstance::aborted() const
+{
+    return _imp->renderAborted;
+}
+
+void EffectInstance::setAborted(bool b)
+{
+    _imp->renderAborted = b;
+}
+
+bool EffectInstance::isPreviewEnabled() const
+{
+    return _imp->previewEnabled;
+}
+
+void EffectInstance::setAsRenderClone()
+{
+    _imp->isRenderClone = true;
 }
 
 void EffectInstance::clone(){
-    if(!_isRenderClone)
+    if(!_imp->isRenderClone)
         return;
     cloneKnobs(*(_node->getLiveInstance()));
     cloneExtras();
-    _previewEnabled = _node->getLiveInstance()->isPreviewEnabled();
+    _imp->previewEnabled = _node->getLiveInstance()->isPreviewEnabled();
 }
 
 
@@ -61,28 +121,28 @@ namespace {
 
 bool EffectInstance::isHashValid() const {
     //The hash is valid only if the age is the same than the project's age and the hash has been computed at least once.
-    return _hashAge == getAppAge() && _hashValue.valid();
+    return _imp->hashAge == getAppAge() && _imp->hashValue.valid();
 }
 int EffectInstance::hashAge() const{
-    return _hashAge;
+    return _imp->hashAge;
 }
 
 
 U64 EffectInstance::computeHash(const std::vector<U64>& inputsHashs){
     
-    _hashAge = getAppAge();
+    _imp->hashAge = getAppAge();
     
-    _hashValue.reset();
+    _imp->hashValue.reset();
     const std::vector<Knob*>& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
-        ::Hash64_appendKnob(&_hashValue, *knobs[i]);
+        ::Hash64_appendKnob(&_imp->hashValue, *knobs[i]);
     }
     for (U32 i =0; i < inputsHashs.size(); ++i) {
-        _hashValue.append(inputsHashs[i]);
+        _imp->hashValue.append(inputsHashs[i]);
     }
-    ::Hash64_appendQString(&_hashValue, className().c_str());
-    _hashValue.computeHash();
-    return _hashValue.value();
+    ::Hash64_appendQString(&_imp->hashValue, className().c_str());
+    _imp->hashValue.computeHash();
+    return _imp->hashValue.value();
 }
 
 const std::string& EffectInstance::getName() const{
@@ -103,13 +163,13 @@ bool EffectInstance::hasOutputConnected() const{
 }
 
 Natron::EffectInstance* EffectInstance::input(int n) const{
-    if(n < (int)_inputs.size()){
-        return _inputs[n];
+    if (n < (int)_imp->inputs.size()) {
+        return _imp->inputs[n];
     }
     return NULL;
 }
 
-std::string EffectInstance::setInputLabel(int inputNb) const {
+std::string EffectInstance::inputLabel(int inputNb) const {
     std::string out;
     out.append(1,(char)(inputNb+65));
     return out;
@@ -148,8 +208,8 @@ boost::shared_ptr<const Natron::Image> EffectInstance::getImage(int inputNb,Sequ
     if(!entry){
         //if not found in cache render it using the last args passed to render by this thread
         RectI roi;
-        if(_renderArgs && _renderArgs->hasLocalData()){
-            roi = _renderArgs->localData()._roi;//if the thread was spawned by us we take the last render args
+        if (_imp->renderArgs.hasLocalData()) {
+            roi = _imp->renderArgs.localData()._roi;//if the thread was spawned by us we take the last render args
         }else{
             n->getRegionOfDefinition(time, &roi);//we have no choice but compute the full region of definition
         }
@@ -162,13 +222,13 @@ boost::shared_ptr<const Natron::Image> EffectInstance::getImage(int inputNb,Sequ
 }
 
 Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod) {
-    for(Inputs::const_iterator it = _inputs.begin() ; it != _inputs.end() ; ++it){
+    for(Inputs::const_iterator it = _imp->inputs.begin() ; it != _imp->inputs.end() ; ++it){
         if (*it) {
             RectI inputRod;
             Status st = (*it)->getRegionOfDefinition(time, &inputRod);
             if(st == StatFailed)
                 return st;
-            if(it == _inputs.begin()){
+            if (it == _imp->inputs.begin()) {
                 *rod = inputRod;
             }else{
                 rod->merge(inputRod);
@@ -180,7 +240,7 @@ Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,RectI* ro
 
 EffectInstance::RoIMap EffectInstance::getRegionOfInterest(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& renderWindow){
     RoIMap ret;
-    for(Inputs::const_iterator it = _inputs.begin() ; it != _inputs.end() ; ++it){
+    for( Inputs::const_iterator it = _imp->inputs.begin() ; it != _imp->inputs.end() ; ++it) {
         if (*it) {
             ret.insert(std::make_pair(*it, renderWindow));
         }
@@ -190,11 +250,11 @@ EffectInstance::RoIMap EffectInstance::getRegionOfInterest(SequenceTime /*time*/
 
 
 void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
-    for(Inputs::const_iterator it = _inputs.begin() ; it != _inputs.end() ; ++it){
+    for (Inputs::const_iterator it = _imp->inputs.begin() ; it != _imp->inputs.end() ; ++it) {
         if (*it) {
             SequenceTime inpFirst,inpLast;
             (*it)->getFrameRange(&inpFirst, &inpLast);
-            if(it == _inputs.begin()){
+            if (it == _imp->inputs.begin()) {
                 *first = inpFirst;
                 *last = inpLast;
             }else{
@@ -225,7 +285,7 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
     
     /*look-up the cache for any existing image already rendered*/
     boost::shared_ptr<Image> image;
-    Natron::ImageKey key = Natron::Image::makeKey(_hashValue.value(), time, scale,view,RectI());
+    Natron::ImageKey key = Natron::Image::makeKey(_imp->hashValue.value(), time, scale,view,RectI());
     if(!byPassCache){
         image = boost::const_pointer_cast<Image>(appPTR->getNodeCache().get(key));
     }
@@ -274,11 +334,8 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
             args._time = time;
             args._view = view;
             args._scale = scale;
-            if(_renderArgs){ // if this function is called on the _liveInstance object (i.e: preview)
-                             // it has no _renderArgs.
-                _renderArgs->setLocalData(args);
-            }
-            
+            _imp->renderArgs.setLocalData(args);
+
             RoIMap inputsRoi = getRegionOfInterest(time, scale, *it);
             std::list<boost::shared_ptr<const Natron::Image> > inputImages;
             /*we render each input first and store away their image in the inputImages list
@@ -349,13 +406,11 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImageBeingRendered(SequenceT
     return _node->getImageBeingRendered(time, view);
 }
 
-Natron::Status EffectInstance::tiledRenderingFunctor(RenderArgs args,
+Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
                                  const RectI& roi,
-                                 boost::shared_ptr<Natron::Image> output){
-    
-    if(_renderArgs){
-        _renderArgs->setLocalData(args);
-    }
+                                 boost::shared_ptr<Natron::Image> output)
+{
+    _imp->renderArgs.setLocalData(args);
     Natron::Status st = render(args._time, args._scale, roi,args._view, output);
     if(st != StatOK){
         return st;
@@ -411,7 +466,7 @@ void EffectInstance::openFilesForAllFileKnobs(){
 }
 
 void EffectInstance::abortRendering(){
-    if(_isRenderClone){
+    if (_imp->isRenderClone) {
         _node->abortRenderingForEffect(this);
     }else if(isOutput()){
         dynamic_cast<OutputEffectInstance*>(this)->getVideoEngine()->abortRendering();
@@ -423,13 +478,13 @@ void EffectInstance::notifyFrameRangeChanged(int first,int last){
 }
 
 void EffectInstance::togglePreview() {
-    _previewEnabled = ! _previewEnabled;
+    _imp->previewEnabled = !_imp->previewEnabled;
 }
 
-void EffectInstance::updateInputs(RenderTree* tree){
-    _inputs.clear();
+void EffectInstance::updateInputs(RenderTree* tree) {
+    _imp->inputs.clear();
     const Node::InputMap& inputs = _node->getInputs();
-    _inputs.reserve(inputs.size());
+    _imp->inputs.reserve(inputs.size());
     
     
     for (Node::InputMap::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {
@@ -438,7 +493,7 @@ void EffectInstance::updateInputs(RenderTree* tree){
             if(insp){
                 Node* activeInput = insp->input(insp->activeInput());
                 if(it->second != activeInput){
-                    _inputs.push_back((EffectInstance*)NULL);
+                    _imp->inputs.push_back((EffectInstance*)NULL);
                     continue;
                 }
             }
@@ -449,9 +504,9 @@ void EffectInstance::updateInputs(RenderTree* tree){
                 inputEffect = it->second->getLiveInstance();
             }
             assert(inputEffect);
-            _inputs.push_back(inputEffect);
+            _imp->inputs.push_back(inputEffect);
         }else{
-            _inputs.push_back((EffectInstance*)NULL);
+            _imp->inputs.push_back((EffectInstance*)NULL);
         }
     }
     
@@ -482,18 +537,10 @@ void EffectInstance::clearPersistentMessage() {
     _node->clearPersistentMessage();
 }
 
-const EffectInstance::RenderArgs& EffectInstance::getArgsForLastRender() const{
-    assert(_renderArgs->hasLocalData());
-    return _renderArgs->localData();
-}
-
-OutputEffectInstance::OutputEffectInstance(Node* node):
-Natron::EffectInstance(node)
-, _videoEngine()
+OutputEffectInstance::OutputEffectInstance(Node* node)
+: Natron::EffectInstance(node)
+, _videoEngine(node?new VideoEngine(this):0)
 {
-    if(node){
-        _videoEngine.reset(new VideoEngine(this));
-    }
 }
 
 void OutputEffectInstance::updateTreeAndRender(bool initViewer){

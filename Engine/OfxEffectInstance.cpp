@@ -233,13 +233,13 @@ std::string OfxEffectInstance::className() const {
                                         effect_->getPluginGrouping());
 }
 
-std::string OfxEffectInstance::setInputLabel(int inputNb) const {
+std::string OfxEffectInstance::inputLabel(int inputNb) const {
     
     MappedInputV copy = inputClipsCopyWithoutOutput();
     if(inputNb < (int)copy.size()){
         return copy[copy.size()-1-inputNb]->getShortLabel();
     }else{
-        return EffectInstance::setInputLabel(inputNb);
+        return EffectInstance::inputLabel(inputNb);
     }
 }
 OfxEffectInstance::MappedInputV OfxEffectInstance::inputClipsCopyWithoutOutput() const {

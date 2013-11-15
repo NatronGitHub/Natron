@@ -115,7 +115,7 @@ public:
     
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
     
-    virtual std::string setInputLabel(int inputNb) const OVERRIDE {
+    virtual std::string inputLabel(int inputNb) const OVERRIDE {
         return QString::number(inputNb+1).toStdString();
     }
     virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Natron::EffectInstance::FULLY_SAFE;}
