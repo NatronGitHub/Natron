@@ -188,7 +188,7 @@ public:
 private:
     /*called by resetAndSort(...) to fill the structure
      *upstream of the output given in parameter of resetAndSort(...)*/
-    void fillGraph(Natron::Node* n);
+    void fillGraph(Natron::EffectInstance* effect);
     /*clears out the structure*/
     void clearGraph();
     

@@ -619,7 +619,7 @@ _output(output)
 
 void RenderTree::clearGraph(){
     for(TreeContainer::const_iterator it = _sorted.begin();it!=_sorted.end();++it) {
-        (*it).first->setMarkedByTopologicalSort(false);
+        (*it).second->setMarkedByTopologicalSort(false);
     }
     _sorted.clear();
 }
@@ -631,40 +631,39 @@ void RenderTree::refreshTree(){
     
     /*unmark all nodes already present in the graph*/
     clearGraph();
-    fillGraph(_output->getNode());
+    fillGraph(_output);
 
     std::vector<U64> inputsHash;
     for(TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
-        (*it).first->setMarkedByTopologicalSort(false);
-        (*it).second = (*it).first->findOrCreateLiveInstanceClone(this);
-        
+        it->second->setMarkedByTopologicalSort(false);
+        it->second->updateInputs(this);
         U64 ret = it->second->hash().value();
         it->second->clone();
         ret = it->second->computeHash(inputsHash);
         inputsHash.push_back(ret);
     }
     
-
 }
 
 
-void RenderTree::fillGraph(Node* n){
+void RenderTree::fillGraph(EffectInstance *effect){
     
     /*call fillGraph recursivly on all the node's inputs*/
-    const Node::InputMap& inputs = n->getInputs();
+    const Node::InputMap& inputs = effect->getNode()->getInputs();
     for(Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
         if(it->second){
             /*if the node is an inspector*/
-            const InspectorNode* insp = dynamic_cast<const InspectorNode*>(n);
+            const InspectorNode* insp = dynamic_cast<const InspectorNode*>(effect->getNode());
             if (insp && it->first != insp->activeInput()) {
                 continue;
             }
-            fillGraph(it->second);
+            Natron::EffectInstance* inputEffect = it->second->findOrCreateLiveInstanceClone(this);
+            fillGraph(inputEffect);
         }
     }
-    if(!n->isMarkedByTopologicalSort()){
-        n->setMarkedByTopologicalSort(true);
-        _sorted.push_back(std::make_pair(n,(EffectInstance*)NULL));
+    if(!effect->isMarkedByTopologicalSort()){
+        effect->setMarkedByTopologicalSort(true);
+        _sorted.push_back(std::make_pair(effect->getNode(),(EffectInstance*)effect));
     }
 }
 

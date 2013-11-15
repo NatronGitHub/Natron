@@ -64,6 +64,7 @@ private:
     Inputs _inputs;//< all the inputs of the effect. Watch out, some might be NULL if they aren't connected
     boost::shared_ptr<QThreadStorage<RenderArgs> > _renderArgs;
     bool _previewEnabled;
+    mutable bool _markedByTopologicalSort;
     
 public:
     
@@ -106,6 +107,10 @@ public:
     const Inputs& getInputs() const { return _inputs; }
     
     Knob* getKnobByDescription(const std::string& desc) const;
+
+    void setMarkedByTopologicalSort(bool marked) const {_markedByTopologicalSort = marked;}
+
+    bool isMarkedByTopologicalSort() const {return _markedByTopologicalSort;}
     
     /**
      * @brief Forwarded to the node's name

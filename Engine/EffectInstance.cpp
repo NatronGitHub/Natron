@@ -33,6 +33,7 @@ KnobHolder(node ? node->getApp() : NULL)
 , _inputs()
 , _renderArgs()
 , _previewEnabled(false)
+, _markedByTopologicalSort(false)
 {
     //create the renderArgs only if the current thread is different than the main thread.
     // otherwise it would create mem leaks and an error message.
