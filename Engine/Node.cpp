@@ -55,7 +55,6 @@ Natron::Node::Node(AppInstance* app,Natron::LibraryBinary* plugin,const std::str
 , _inputLabelsMap()
 , _name()
 , _deactivatedState()
-, _markedByTopologicalSort(false)
 , _activated(true)
 , _nodeInstanceLock()
 , _imagesBeingRenderedNotEmpty()
@@ -79,8 +78,10 @@ Natron::Node::Node(AppInstance* app,Natron::LibraryBinary* plugin,const std::str
     assert(_liveInstance);
     assert(_previewInstance);
 
+    _previewInstance->setAsRenderClone();
     _previewInstance->initializeKnobs();
     _previewRenderTree = new RenderTree(_previewInstance);
+    _renderInstances.insert(std::make_pair(_previewRenderTree,_previewInstance));
 
 }
 
@@ -90,7 +91,6 @@ Natron::Node::~Node(){
         delete it->second;
     }
     delete _liveInstance;
-    delete _previewInstance;
     delete _previewRenderTree;
     emit deleteWanted();
 }
@@ -117,7 +117,7 @@ Natron::EffectInstance* Natron::Node::findOrCreateLiveInstanceClone(RenderTree* 
     
     assert(ret);
     ret->clone();
-    ret->updateInputs(tree);
+    //ret->updateInputs(tree);
     return ret;
 
 }
@@ -417,8 +417,7 @@ void Natron::Node::makePreviewImage(SequenceTime time,int width,int height,unsig
     QMutexLocker locker(&_previewMutex); /// prevent 2 previews to occur at the same time since there's only 1 preview instance
 
     RectI rod;
-    _previewInstance->clone();
-    _previewInstance->updateInputs(_previewRenderTree);
+    _previewRenderTree->refreshTree();
     _previewInstance->getRegionOfDefinition(time, &rod);
     int h,w;
     h = rod.height() < height ? rod.height() : height;
@@ -446,7 +445,6 @@ void Natron::Node::makePreviewImage(SequenceTime time,int width,int height,unsig
         return;
     }
 
-    _previewInstance->computeHash(std::vector<U64>());
     RenderScale scale;
     scale.x = scale.y = 1.;
     boost::shared_ptr<const Natron::Image> img;

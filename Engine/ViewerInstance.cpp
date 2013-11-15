@@ -187,11 +187,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
                                " ymax= "+QString::number(textureRect.t+1)).toStdString());
 #endif
     if(textureRect.w == 0 || textureRect.h == 0){
-#ifdef NATRON_LOG
-        Natron::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());
-        Natron::Log::endFunction(getName(),"renderViewer");
-#endif
-        return StatFailed;
+        return StatOK;
     }
     _interThreadInfos._textureRect = textureRect;
     _interThreadInfos._bytesCount = _interThreadInfos._textureRect.w * _interThreadInfos._textureRect.h * 4;

@@ -264,10 +264,6 @@ public:
      **/
     void makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf);
     
-    void setMarkedByTopologicalSort(bool marked) const {_markedByTopologicalSort = marked;}
-    
-    bool isMarkedByTopologicalSort() const {return _markedByTopologicalSort;}
-    
     
     /**
      * @brief
@@ -410,7 +406,6 @@ private:
     
     DeactivatedState _deactivatedState;
     
-    mutable bool _markedByTopologicalSort; //< used by the topological sort algorithm
     bool _activated;
     QMutex _nodeInstanceLock;
     QWaitCondition _imagesBeingRenderedNotEmpty; //to avoid computing preview in parallel of the real rendering

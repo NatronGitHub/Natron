@@ -35,6 +35,7 @@ struct EffectInstance::Implementation {
     , inputs()
     , renderArgs()
     , previewEnabled(false)
+    , markedByTopologicalSort(false)
     {
     }
 
@@ -47,6 +48,7 @@ struct EffectInstance::Implementation {
     Inputs inputs;//< all the inputs of the effect. Watch out, some might be NULL if they aren't connected
     QThreadStorage<RenderArgs> renderArgs;
     bool previewEnabled;
+    bool markedByTopologicalSort;
 };
 
 struct EffectInstance::RenderArgs {
@@ -66,6 +68,10 @@ EffectInstance::EffectInstance(Node* node)
 EffectInstance::~EffectInstance()
 {
 }
+
+void EffectInstance::setMarkedByTopologicalSort(bool marked) const {_imp->markedByTopologicalSort = marked;}
+
+bool EffectInstance::isMarkedByTopologicalSort() const {return _imp->markedByTopologicalSort;}
 
 bool EffectInstance::isLiveInstance() const
 {

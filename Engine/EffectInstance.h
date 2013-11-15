@@ -41,7 +41,6 @@ public:
     typedef std::vector<EffectInstance*> Inputs;
     
     typedef std::map<EffectInstance*,RectI> RoIMap;
-    
 public:
     
     
@@ -83,7 +82,11 @@ public:
     const Inputs& getInputs() const WARN_UNUSED_RETURN;
     
     Knob* getKnobByDescription(const std::string& desc) const WARN_UNUSED_RETURN;
-    
+
+    void setMarkedByTopologicalSort(bool marked) const;
+
+    bool isMarkedByTopologicalSort() const WARN_UNUSED_RETURN;
+
     /**
      * @brief Forwarded to the node's name
      **/
