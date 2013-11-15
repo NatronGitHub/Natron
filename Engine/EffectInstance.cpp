@@ -37,7 +37,7 @@ KnobHolder(node ? node->getApp() : NULL)
 {
     //create the renderArgs only if the current thread is different than the main thread.
     // otherwise it would create mem leaks and an error message.
-    if(QThread::currentThread() != qApp->thread()){
+    if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         _renderArgs.reset(new QThreadStorage<RenderArgs>);
     }
 }

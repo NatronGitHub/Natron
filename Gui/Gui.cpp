@@ -150,7 +150,7 @@ bool Gui::exit(){
     } else {
         delete this;
         AppManager::quit();
-        qApp->quit();
+        QCoreApplication::instance()->quit();
         return true;
     }
 }
@@ -1166,7 +1166,7 @@ int Gui::saveWarning(){
 
 void Gui::errorDialog(const std::string& title,const std::string& text){
     Natron::StandardButtons buttons(Natron::Yes | Natron::No);
-    if(QThread::currentThread() != qApp->thread()){
+    if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         QMutexLocker locker(&_uiUsingMainThreadMutex);
         _uiUsingMainThread = true;
         emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
@@ -1180,7 +1180,7 @@ void Gui::errorDialog(const std::string& title,const std::string& text){
 
 void Gui::warningDialog(const std::string& title,const std::string& text){
     Natron::StandardButtons buttons(Natron::Yes | Natron::No);
-    if(QThread::currentThread() != qApp->thread()){
+    if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         QMutexLocker locker(&_uiUsingMainThreadMutex);
         _uiUsingMainThread = true;
         emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
@@ -1194,7 +1194,7 @@ void Gui::warningDialog(const std::string& title,const std::string& text){
 
 void Gui::informationDialog(const std::string& title,const std::string& text){
     Natron::StandardButtons buttons(Natron::Yes | Natron::No);
-    if(QThread::currentThread() != qApp->thread()){
+    if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         QMutexLocker locker(&_uiUsingMainThreadMutex);
         _uiUsingMainThread = true;
         emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
@@ -1207,7 +1207,7 @@ void Gui::informationDialog(const std::string& title,const std::string& text){
 }
 void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB){
     
-    if(QThread::currentThread() != qApp->thread()){
+    if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         _uiUsingMainThreadMutex.lock();
     }
     if(type == 0){
@@ -1221,7 +1221,7 @@ void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron
                                                                                    (QMessageBox::StandardButtons)buttons,
                                                                                    (QMessageBox::StandardButtons)defaultB);
     }
-    if(QThread::currentThread() != qApp->thread()){
+    if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         _uiUsingMainThread = false;
         _uiUsingMainThreadCond.wakeOne();
         _uiUsingMainThreadMutex.unlock();
@@ -1230,7 +1230,7 @@ void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron
 
 Natron::StandardButton Gui::questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons,
                                             Natron::StandardButton defaultButton) {
-    if(QThread::currentThread() != qApp->thread()){
+    if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         QMutexLocker locker(&_uiUsingMainThreadMutex);
         _uiUsingMainThread = true;
         emit doDialog(3,QString(title.c_str()),QString(message.c_str()),buttons,(int)defaultButton);

@@ -433,7 +433,6 @@ AppInstance* AppManager::newAppInstance(bool background,const QString& projectNa
     }catch(const std::exception& e){
         Natron::errorDialog(NATRON_APPLICATION_NAME, e.what());
         delete instance;
-        printUsage();
         return NULL;
     }
     ++_availableID;
@@ -1177,16 +1176,6 @@ void AppInstance::startWritersRendering(const QStringList& writers){
             startRenderingFullSequence(renderers[i]);
         }
     }
-}
-
-void AppManager::printUsage(){
-    std::cout << NATRON_APPLICATION_NAME << " usage: " << std::endl;
-    std::cout << "./" NATRON_APPLICATION_NAME "    <project file path>" << std::endl;
-    std::cout << "[--background] enables background mode rendering. No graphical interface will be shown." << std::endl;
-    std::cout << "[--writer <Writer node name>] When in background mode, the renderer will only try to render with the node"
-    " name following the --writer argument. If no such node exists in the project file, the process will abort."
-    "Note that if you don't pass the --writer argument, it will try to start rendering with all the writers in the project's file."<< std::endl;
-
 }
 
 void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer){
