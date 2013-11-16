@@ -401,6 +401,7 @@ void TabWidget::makeCurrentTab(int index){
     _currentWidget = _tabs[index];
     _currentWidget->setVisible(true);
     _currentWidget->setParent(this);
+    _tabBar->setCurrentIndex(index);
 }
 
 void TabWidget::dragEnterEvent(QDragEnterEvent* event){
@@ -492,7 +493,7 @@ void TabBar::mouseMoveEvent(QMouseEvent* event){
 
 
 void TabWidget::keyPressEvent ( QKeyEvent * event ){
-    if(event->key() == Qt::Key_Space){
+    if(event->key() == Qt::Key_Space && event->modifiers() == Qt::NoModifier){
         if(_fullScreen){
             _fullScreen = false;
             _gui->minimize();

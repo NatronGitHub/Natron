@@ -467,6 +467,8 @@ void Gui::setupUi()
     _curveEditor->setObjectName("CurveEditor");
     _workshopPane->appendTab(_curveEditor);
     
+    _workshopPane->makeCurrentTab(0);
+    
 	_viewerWorkshopSplitter->addWidget(_workshopPane);
     
 	

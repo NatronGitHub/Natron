@@ -18,6 +18,7 @@ CurveEditor::CurveEditor(QWidget* parent, const QGLWidget* shareWidget)
 , _rightClickMenu(new QMenu(this))
 , _clearColor(0,0,0,255)
 {
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 }
 
 CurveEditor::~CurveEditor(){
@@ -132,5 +133,5 @@ QPoint CurveEditor::toWidgetCoordinates(int x, int y){
 }
 
 QSize CurveEditor::sizeHint() const{
-    return QSize(500,500);
+    return QSize(1000,1000);
 }

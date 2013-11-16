@@ -435,10 +435,11 @@ bool NodeGraph::event(QEvent* event){
 }
 
 void NodeGraph::keyPressEvent(QKeyEvent *e){
-    QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
-    QCoreApplication::postEvent(parentWidget(),ev);
-
-    if(e->key() == Qt::Key_R){
+    
+    if(e->key() == Qt::Key_Space){
+        QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
+        QCoreApplication::postEvent(parentWidget(),ev);
+    }else if(e->key() == Qt::Key_R){
         _gui->getApp()->createNode("Reader");
     }else if(e->key() == Qt::Key_W){
         _gui->getApp()->createNode("Writer");

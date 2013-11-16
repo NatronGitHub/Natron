@@ -177,7 +177,6 @@ _channelsToDraw(Mask_RGBA)
     
 	/*OpenGL viewer*/
 	viewer = new ViewerGL(this);
-    viewer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 	_mainLayout->addWidget(viewer);
 	/*=============================================*/
     /*info bbox & color*/

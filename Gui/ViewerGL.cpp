@@ -463,6 +463,8 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 , _displayPersistentMessage(false)
 , _textRenderer()
 {
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    
     setMouseTracking(true);
     
     populateMenu();
