@@ -12,7 +12,9 @@
 #ifndef CURVEEDITOR_H
 #define CURVEEDITOR_H
 
+
 #include "Gui/ViewerGL.h"
+
 
 class QMenu;
 class CurveEditor : public QGLWidget
@@ -45,6 +47,12 @@ class CurveEditor : public QGLWidget
     bool _dragging; /// true when the user is dragging (panning)
     QMenu* _rightClickMenu;
     QColor _clearColor;
+    QColor _baseAxisColor;
+    QColor _majorAxisColor;
+    QColor _minorAxisColor;
+    QColor _scaleColor;
+    Natron::TextRenderer _textRenderer;
+    QFont* _font;
     
 public:
     
@@ -68,6 +76,8 @@ public:
     
     virtual QSize sizeHint() const;
     
+    void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font);
+    
 private:
     
     /**
@@ -88,6 +98,10 @@ private:
      **/
     QPoint toWidgetCoordinates(int x,int y);
 
+    void drawBaseAxis();
+    
+    void drawScale();
+    
 };
 
 #endif // CURVEEDITOR_H

@@ -215,7 +215,9 @@ inline bool operator!=(const RectI& b1, const RectI& b2)
     b1.top() != b2.top();
 }
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(RectI);
-class RectD{
+
+
+class RectD {
     double _l; // left
     double _b; // bottom
     double _r; // right

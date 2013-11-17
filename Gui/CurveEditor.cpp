@@ -11,22 +11,36 @@
 
 #include "CurveEditor.h"
 
+static double AXIS_MAX = 100000;
+static double AXIS_MIN = -100000;
+
 CurveEditor::CurveEditor(QWidget* parent, const QGLWidget* shareWidget)
 : QGLWidget(parent,shareWidget)
 , _zoomCtx()
 , _dragging(false)
 , _rightClickMenu(new QMenu(this))
 , _clearColor(0,0,0,255)
+, _baseAxisColor(118,215,90,255)
+, _majorAxisColor(31,50,27,255)
+, _minorAxisColor(22,31,20,255)
+, _scaleColor(67,123,52,255)
+, _textRenderer()
+, _font(new QFont("Helvetica",10))
+
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 }
 
 CurveEditor::~CurveEditor(){
-    
+    delete _font;
 }
 
 void CurveEditor::initializeGL(){
     
+    //initialize the box position
+    _zoomCtx._left = 0. - (width()/(2.*_zoomCtx._zoomFactor));
+    _zoomCtx._bottom = 0. - (height()/(2.*_zoomCtx._zoomFactor));
+
 }
 
 void CurveEditor::resizeGL(int width,int height){
@@ -63,6 +77,70 @@ void CurveEditor::paintGL(){
     
     glClearColor(_clearColor.redF(),_clearColor.greenF(),_clearColor.blueF(),_clearColor.alphaF());
     glClear(GL_COLOR_BUFFER_BIT);
+    
+    drawBaseAxis();
+    drawScale();
+}
+
+
+void CurveEditor::drawBaseAxis(){
+    
+    glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), _baseAxisColor.alphaF());
+    glBegin(GL_LINES);
+    glVertex2f(AXIS_MIN, 0);
+    glVertex2f(AXIS_MAX, 0);
+    glVertex2f(0, AXIS_MIN);
+    glVertex2f(0, AXIS_MAX);
+    glEnd();
+    
+    //reset back the color
+    glColor4f(1., 1., 1., 1.);
+}
+
+void CurveEditor::drawScale(){
+    QPointF btmLeft = toImgCoordinates_fast(0,height()-1);
+    QPointF topRight = toImgCoordinates_fast(width()-1, 0);
+    
+    double scaleWidth = topRight.x() - btmLeft.x();
+
+    QFontMetrics fontM(*_font);
+    double scaleYpos = toImgCoordinates_fast(0, height() - 1).y();
+    double averageTextUnitWidth = (fontM.width(QString::number((int)btmLeft.x()))
+                                + fontM.width(QString::number((int)topRight.x()))) / 2.;
+    int majorTicksCount = (scaleWidth / averageTextUnitWidth) / 2; //divide by 2 to count as much spaces between ticks as there're ticks
+    double unroundedTickSize = scaleWidth/(majorTicksCount-1);
+    double x = ceil(log10(unroundedTickSize)-1);
+    double pow10x = pow(10, x);
+    double roundedTickRange = ceil(unroundedTickSize / pow10x) * pow10x;
+    
+    
+    double value = roundedTickRange *  floor(btmLeft.x() / roundedTickRange); //minimum value to display
+    while (value < roundedTickRange *  ceil(1 + topRight.x() / roundedTickRange)) {
+        //drawing all values
+        renderText(value,scaleYpos ,QString::number(value) , _scaleColor, *_font);
+        value += roundedTickRange;
+    }
+}
+
+void CurveEditor::renderText(double x,double y,const QString& text,const QColor& color,const QFont& font){
+    
+    if(text.isEmpty())
+        return;
+    
+    glMatrixMode (GL_PROJECTION);
+    glLoadIdentity();
+    double h = (double)height();
+    double w = (double)width();
+    /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
+    glOrtho(0,w,0,h,-1,1);
+    glMatrixMode(GL_MODELVIEW);
+    QPointF pos = toWidgetCoordinates(x, y);
+    _textRenderer.renderText(pos.x(),h-pos.y(),text,color,font);
+    checkGLErrors();
+    glMatrixMode (GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(_zoomCtx._lastOrthoLeft,_zoomCtx._lastOrthoRight,_zoomCtx._lastOrthoBottom,_zoomCtx._lastOrthoTop,-1,1);
+    glMatrixMode(GL_MODELVIEW);
 
 }
 
