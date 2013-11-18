@@ -11,11 +11,12 @@
 
 #include "Lut.h"
 
-#include <stdint.h>
 #include <cassert>
 #include <iostream>
 #include <map>
 #include <cstring>
+#include <limits>
+#include <boost/cstdint.hpp>
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 #include "Engine/RectI.h"
@@ -23,10 +24,6 @@
 using std::cout;
 using std::endl;
 using std::make_pair;
-
-#ifndef FLT_MAX
-# define FLT_MAX 3.40282347e+38F
-#endif
 
 using namespace Natron;
 using namespace Natron::Color;
@@ -158,10 +155,10 @@ static float index_to_float(const U16 i)
     }
     /* All NaN's and infinity turn into the largest possible legal float: */
     if (i >= 0x7f80 && i < 0x8000) {
-        return FLT_MAX;
+        return std::numeric_limits<float>::max();
     }
     if (i >= 0xff80) {
-        return -FLT_MAX;
+        return -std::numeric_limits<float>::max();
     }
     if (O32_HOST_ORDER == O32_BIG_ENDIAN) {
         tmp.us[0] = i;
