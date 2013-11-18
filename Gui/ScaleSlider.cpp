@@ -270,3 +270,175 @@ double ScaleSlider::toWidgetCoords(double pos){
     }
     return -1;
 }
+
+
+// See http://lists.gnu.org/archive/html/octave-bug-tracker/2011-09/pdfJd5VVqNUGE.pdf
+
+void ScaleSlider::LinearScale1(double xmin,double xmax,int n,double* xminp,double* xmaxp,double *dist){
+    static double vint[4] = { 1.f,2.f,5.f,10.f };
+    static double sqr[3] = { 1.414214f,3.162278f,7.071068f };
+    
+    if(xmax <= xmin || n == 0) //improper range
+        return;
+    
+    double del =  2e-5f;
+    double a = (xmax - xmin) / (double)n;
+    double al = log10(a);
+    int nal = al;
+    if(a < 1.){
+        --nal;
+    }
+    a /= pow(10.,nal);
+    int i = 0;
+    while(a > sqr[i] && i < 3){
+        ++i;
+    }
+    *dist =  vint[i] * pow(10.,nal);
+    double fm1 = xmin / *dist;
+    int m1 = fm1;
+    if(fm1 < 0.)
+        --m1;
+    double r_1 = m1 + 1. - fm1;
+    if(abs(r_1) <  del){
+        ++m1;
+    }
+    *xminp = *dist * m1;
+    double fm2 = xmax / *dist;
+    int m2 = fm2 + 1.;
+    if(fm2 <  -1.){
+        --m2;
+    }
+    r_1 = fm2 + 1. - m2;
+    if(abs(r_1) < del){
+        --m2;
+    }
+    *xmaxp = *dist * m2;
+    if(*xminp > xmin){
+        *xminp = xmin;
+    }
+    if(*xmaxp < xmax){
+        *xmaxp = xmax;
+    }
+}
+
+void ScaleSlider::LinearScale2(double xmin,double xmax,int n,double* xminp,double* xmaxp,double *dist){
+    static double vint[5] = { 1.f,2.f,5.f,10.f,20.f };
+    
+    if(xmax <= xmin || n == 0) //improper range
+        return;
+    
+    double del =  2e-5f;
+    double a = (xmax - xmin) / (double)n;
+    double al = log10(a);
+    int nal = al;
+    if(a < 1.){
+        --nal;
+    }
+    a /= pow(10.,nal);
+    int i = 0;
+    int np  = 0;
+    do{
+        while(a >= (vint[i]+del) && i < 3){
+            ++i;
+        }
+        *dist =  vint[i] *  pow(10.,nal);
+        double fm1 = xmin / *dist;
+        int m1 = fm1;
+        if(fm1 < 0.)
+            --m1;
+        double r_1 = m1 + 1. - fm1;
+        if(abs(r_1) <  del){
+            ++m1;
+        }
+        *xminp = *dist * (double)m1;
+        double fm2 = xmax / *dist;
+        int m2 = fm2 + 1.;
+        if(fm2 <  -1.){
+            --m2;
+        }
+        r_1 = fm2 + 1. - m2;
+        if(abs(r_1) < del){
+            --m2;
+        }
+        *xmaxp = *dist * (double)m2;
+        np = (m2 - m1);
+        ++i;
+    }while(np > n);
+    int nx = (n - np) / 2;
+    *xminp -= (double)nx * *dist;
+    *xmaxp = *xminp + (double)n * *dist;
+    
+    if (*xminp > xmin) {
+        *xminp = xmin;
+    }
+    if (*xmaxp < xmax) {
+        *xmaxp = xmax;
+    }
+}
+
+void ScaleSlider::LogScale1(double xmin,double xmax,int n,double* xminp,double* xmaxp,double *dist){
+    static double vint[11] = { 10.f,9.f,8.f,7.f,6.f,5.f,4.f,3.f,2.f,1.f,.5f };
+    
+    if(xmax <= xmin || n <= 1 || xmin <= 0.) //improper range
+        return;
+    
+    double del =  2e-5f;
+    double xminl = log10(xmin);
+    double xmaxl = log10(xmax);
+    double a = (xmaxl - xminl) / (double)n;
+    double al = log10(a);
+    int nal = al;
+    if(a < 1.f){
+        --nal;
+    }
+    
+    a /= pow(10.,nal);
+    int i = 0;
+    while(a >= 10. / vint[i] + del && i < 9){
+        ++i;
+    }
+    int i_1 = nal + 1;
+    int np = 0;
+    double distl;
+    do{
+        distl = pow(10.,i_1) / vint[i];
+        double fm1 = xminl / distl;
+        int m1 = fm1;
+        if(fm1 < 0.){
+            --m1;
+        }
+        double r_1 = (double)m1 + 1. - fm1;
+        if(abs(r_1) < del){
+            ++m1;
+        }
+        *xminp = distl * (double)m1;
+        double fm2 = xmaxl / distl;
+        int m2 = fm2 + 1.;
+        if (fm2 < -1.) {
+            --m2;
+        }
+        r_1 = fm2 + 1. - (double)m2;
+        if(abs(r_1) < del){
+            --m2;
+        }
+        *xmaxp = distl * (double)m2;
+        
+        np = m2 - m1;
+        ++i;
+    }while(np > n);
+    
+    int nx = (n - np) / 2;
+    *xminp -= (double)nx * distl;
+    *xmaxp = *xminp + (double)n * distl;
+    
+    *dist = pow(10.,distl);
+    *xminp = pow(10,*xminp);
+    *xmaxp = pow(10,*xmaxp);
+    
+    if(*xminp > xmin){
+        *xminp = xmin;
+    }
+    if(*xmaxp < xmax){
+        *xmaxp = xmax;
+    }
+}

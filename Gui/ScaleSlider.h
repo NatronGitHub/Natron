@@ -80,6 +80,11 @@ public:
                             double maximum, //maximum value
                             std::vector<double>* values); //values
     
+    static void LinearScale1(double xmin,double xmax,int n,double* xminp,double* xmaxp,double *dist);
+    
+    static void LinearScale2(double xmin,double xmax,int n,double* xminp,double* xmaxp,double *dist);
+    
+    static void LogScale1(double xmin,double xmax,int n,double* xminp,double* xmaxp,double *dist);
     
 signals:
     

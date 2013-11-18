@@ -11,6 +11,8 @@
 
 #include "CurveEditor.h"
 
+#include "Gui/ScaleSlider.h"
+
 static double AXIS_MAX = 100000;
 static double AXIS_MIN = -100000;
 
@@ -101,25 +103,30 @@ void CurveEditor::drawScale(){
     QPointF btmLeft = toImgCoordinates_fast(0,height()-1);
     QPointF topRight = toImgCoordinates_fast(width()-1, 0);
     
-    double scaleWidth = topRight.x() - btmLeft.x();
+    double scaleWidth = width();
 
     QFontMetrics fontM(*_font);
     double scaleYpos = toImgCoordinates_fast(0, height() - 1).y();
     double averageTextUnitWidth = (fontM.width(QString::number((int)btmLeft.x()))
                                 + fontM.width(QString::number((int)topRight.x()))) / 2.;
     int majorTicksCount = (scaleWidth / averageTextUnitWidth) / 2; //divide by 2 to count as much spaces between ticks as there're ticks
-    double unroundedTickSize = scaleWidth/(majorTicksCount-1);
-    double x = ceil(log10(unroundedTickSize)-1);
-    double pow10x = pow(10, x);
-    double roundedTickRange = ceil(unroundedTickSize / pow10x) * pow10x;
-    
-    
-    double value = roundedTickRange *  floor(btmLeft.x() / roundedTickRange); //minimum value to display
-    while (value < roundedTickRange *  ceil(1 + topRight.x() / roundedTickRange)) {
-        //drawing all values
-        renderText(value,scaleYpos ,QString::number(value) , _scaleColor, *_font);
-        value += roundedTickRange;
+//    double unroundedTickSize = scaleWidth/(majorTicksCount-1);
+//    double x = ceil(log10(unroundedTickSize)-1);
+//    double pow10x = pow(10, x);
+//    double roundedTickRange = ceil(unroundedTickSize / pow10x) * pow10x;
+//    
+//    
+//    double value = roundedTickRange *  floor(btmLeft.x() / roundedTickRange); //minimum value to display
+
+    std::cout << majorTicksCount << std::endl;
+    double xminp,xmaxp,dist;
+    ScaleSlider::LinearScale1(btmLeft.x(), topRight.x(), majorTicksCount, &xminp, &xmaxp, &dist);
+    double value = xminp;
+    for(int i = 0 ; i < majorTicksCount; ++i){
+        renderText(value,scaleYpos ,QString::number((int)value) , _scaleColor, *_font);
+        value += dist;
     }
+    
 }
 
 void CurveEditor::renderText(double x,double y,const QString& text,const QColor& color,const QFont& font){
