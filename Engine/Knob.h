@@ -457,7 +457,12 @@ public:
     
     Int_Knob(KnobHolder* holder, const std::string& description,int dimension):
     Knob(holder,description,dimension)
+    ,_disableSlider(false)
     {}
+
+    void disableSlider() { _disableSlider = true;}
+
+    bool isSliderDisabled() const {return _disableSlider;}
     
     virtual void fillHashVector();
     
@@ -612,6 +617,7 @@ signals:
 private:
 
     std::vector<int> _minimums,_maximums,_increments,_displayMins,_displayMaxs;
+    bool _disableSlider;
     
 };
 
@@ -659,7 +665,12 @@ public:
     
     Double_Knob(KnobHolder* holder, const std::string& description,int dimension):
     Knob(holder,description,dimension)
+    ,_disableSlider(false)
     {}
+
+    void disableSlider() { _disableSlider = true;}
+
+    bool isSliderDisabled() const {return _disableSlider;}
     
     virtual void fillHashVector();
     
@@ -830,6 +841,7 @@ private:
     
     std::vector<double> _minimums,_maximums,_increments,_displayMins,_displayMaxs;
     std::vector<int> _decimals;
+    bool _disableSlider;
     
 };
 

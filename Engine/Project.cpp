@@ -104,6 +104,7 @@ void Project::initializeKnobs(){
     _viewsCount = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int",this,"Number of views"));
     _viewsCount->setMinimum(1);
     _viewsCount->setValue(1);
+    _viewsCount->disableSlider();
 }
 
 
@@ -361,7 +362,7 @@ void Project::setProjectDefaultFormat(const Format& f) {
 
  
 void Project::createNewFormat(){
-    AddFormatDialog dialog(getApp()->getGui());
+    AddFormatDialog dialog(this,getApp()->getGui());
     if(dialog.exec()){
         tryAddProjectFormat(dialog.getFormat());
     }

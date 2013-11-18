@@ -86,6 +86,9 @@ void SpinBox::wheelEvent(QWheelEvent *e) {
             if(cur-_increment >= _mini)
                 cur-=_increment;
         }
+        if(cur < _mini || cur > _maxi)
+            return;
+
         QString str;
         if(_type == DOUBLE_SPINBOX)
             str.setNum(cur,'f',_decimals);
@@ -109,6 +112,8 @@ void SpinBox::keyPressEvent(QKeyEvent *e){
             clear();
             if(cur+_increment <= _maxi)
                 cur+=_increment;
+            if(cur < _mini || cur > _maxi)
+                return;
             QString str;
             if(_type == DOUBLE_SPINBOX)
                 str.setNum(cur,'f',_decimals);
@@ -120,6 +125,8 @@ void SpinBox::keyPressEvent(QKeyEvent *e){
             clear();
             if(cur-_increment >= _mini)
                 cur-=_increment;
+            if(cur < _mini || cur > _maxi)
+                return;
             QString str;
             if(_type == DOUBLE_SPINBOX)
                 str.setNum(cur,'f',_decimals);
@@ -134,14 +141,14 @@ void SpinBox::keyPressEvent(QKeyEvent *e){
                 QString txt = text();
                 int tmp;
                 QValidator::State st = _doubleValidator->validate(txt,tmp);
-                if(st == QValidator::Invalid){
+                if(st == QValidator::Invalid || txt.toDouble() < _mini || txt.toDouble() > _maxi){
                     setValue(oldValue);
                 }
             }else{
                 QString txt = text();
                 int tmp;
                 QValidator::State st = _intValidator->validate(txt,tmp);
-                if(st == QValidator::Invalid){
+                if(st == QValidator::Invalid || txt.toDouble() < _mini || txt.toDouble() > _maxi){
                     setValue(oldValue);
                 }
             }

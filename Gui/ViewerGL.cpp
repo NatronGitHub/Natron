@@ -508,7 +508,7 @@ ViewerGL::~ViewerGL(){
 }
 
 QSize ViewerGL::sizeHint() const{
-    return QSize(500,500);
+    return QSize(1000,1000);
 }
 void ViewerGL::resizeGL(int width, int height){
     if(height == 0)// prevent division by 0

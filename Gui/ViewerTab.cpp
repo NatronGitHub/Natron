@@ -134,7 +134,7 @@ _channelsToDraw(Mask_RGBA)
                          "Multiplies the image by \nthis amount before display.");
     _gainBox->setIncrement(0.1);
     _gainBox->setValue(1.0);
-    _gainBox->setMinimum(-99.0);
+    _gainBox->setMinimum(0.0);
     _secondRowLayout->addWidget(_gainBox);
     
     

@@ -65,6 +65,7 @@ class ScaleSlider : public QGLWidget
     QColor _scaleColor;
     QColor _sliderColor;
     bool _initialized;
+    bool _mustInitializeSliderPosition;
 public:
     
     ScaleSlider(double bottom, // the minimum value
@@ -120,6 +121,8 @@ public slots:
 
     void seekScalePosition(double v);
 private :
+
+    void seekInternal(double v);
 
     /**
      *@brief See toImgCoordinates_fast in ViewerGL.h
