@@ -26,6 +26,8 @@ CLANG_DIAG_ON(unused-private-field);
 #define SLIDER_WIDTH 4
 #define SLIDER_HEIGHT 20
 
+
+
 ScaleSlider::ScaleSlider(double bottom, double top, double initialPos, Natron::Scale_Type type, QWidget* parent):
 QGLWidget(parent,NULL)
 , _zoomCtx()
@@ -350,7 +352,7 @@ void ScaleSlider::LinearScale1(double xmin, double xmax, int n,
         }
     }
     // The interval size is computed.
-    *dist =  vint[i] * std::pow(10,nal);
+    *dist =  vint[i] * std::pow(10.,nal);
     double fm1 = xmin / *dist;
     int m1 = fm1;
     if (fm1 < 0.) {
@@ -405,7 +407,7 @@ void ScaleSlider::LinearScale2(double xmin, double xmax, int n,
         --nal;
     }
     // a is scaled into variable named b between 1 and 10.
-    const double b = a / std::pow(10,nal);
+    const double b = a / std::pow(10.,nal);
 
     // The closest permissible value for b is found.
     int i;
@@ -418,7 +420,7 @@ void ScaleSlider::LinearScale2(double xmin, double xmax, int n,
     int np = n + 1;
     for (; np > n && i < nvnt; ++i) {
         assert(i < nvnt);
-        *dist = vint[i] * std::pow(10,nal);
+        *dist = vint[i] * std::pow(10.,nal);
         double fm1 =  xmin / *dist;
         int m1 = fm1;
         if (fm1 < 0.) {
@@ -484,7 +486,7 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
         --nal;
     }
     // a is scaled into variable named b between 1 and 10.
-    const double b = a / std::pow(10,nal);
+    const double b = a / std::pow(10.,nal);
 #if 1
     // Fred's version
     // The closest permissible value for b is found.
@@ -499,7 +501,7 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
     double distl;
     for (; np > n; ++i) {
         assert(i < nvnt);
-        distl = std::pow(10,nal+1) / vint[i];
+        distl = std::pow(10.,nal+1) / vint[i];
         double fm1 =  xminl / distl;
         int m1 = fm1;
         if (fm1 < 0.) {
