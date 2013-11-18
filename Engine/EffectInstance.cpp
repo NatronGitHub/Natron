@@ -13,6 +13,7 @@
 
 #include <QtConcurrentMap>
 #include <QCoreApplication>
+#include <QThreadStorage>
 
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Node.h"

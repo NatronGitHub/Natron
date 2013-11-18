@@ -65,6 +65,7 @@ public:
 
 }
 #else
+#include <string>
 
 namespace Natron{
 // no-op class

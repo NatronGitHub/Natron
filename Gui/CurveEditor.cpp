@@ -13,6 +13,10 @@
 
 #include "Gui/ScaleSlider.h"
 
+#include <QMenu>
+#include <QMouseEvent>
+
+
 static double AXIS_MAX = 100000;
 static double AXIS_MIN = -100000;
 
