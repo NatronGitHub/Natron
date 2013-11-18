@@ -246,9 +246,11 @@ _hasPostedValue(false)
 }
 
 Knob::~Knob(){
-    if(_holder)
+    if(_holder){
         _holder->removeKnob(this);
+    }
     emit deleted();
+
 }
 
 void Knob::onKnobUndoneChange(){

@@ -165,15 +165,15 @@ void CurveEditor::drawScale(){
         }
 
         renderText(value,scaleYpos , s, _scaleColor, *_font);
-
-        /*also draw a line*/
-        glColor4f(_majorAxisColor.redF(), _majorAxisColor.greenF(), _majorAxisColor.blueF(), _majorAxisColor.alphaF());
-        glBegin(GL_LINES);
-        glVertex2f(value, btmLeft.y());
-        glVertex2f(value, topRight.y());
-        glEnd();
-        //reset back the color
-        glColor4f(1., 1., 1., 1.);
+//
+//        /*also draw a line*/
+//        glColor4f(_majorAxisColor.redF(), _majorAxisColor.greenF(), _majorAxisColor.blueF(), _majorAxisColor.alphaF());
+//        glBegin(GL_LINES);
+//        glVertex2f(value, btmLeft.y());
+//        glVertex2f(value, topRight.y());
+//        glEnd();
+//        //reset back the color
+//        glColor4f(1., 1., 1., 1.);
     }
     
     /*drawing Y axis*/
@@ -199,19 +199,47 @@ void CurveEditor::drawScale(){
         }
 
         renderText(scaleXpos,value, s, _scaleColor, *_font);
-        /*also draw a line*/
-        glColor4f(_majorAxisColor.redF(), _majorAxisColor.greenF(), _majorAxisColor.blueF(), _majorAxisColor.alphaF());
-        glBegin(GL_LINES);
-        glVertex2f(btmLeft.x(),value);
-        glVertex2f(topRight.x(),value);
-        glEnd();
-        //reset back the color
-        glColor4f(1., 1., 1., 1.);
+//        /*also draw a line*/
+//        glColor4f(_majorAxisColor.redF(), _majorAxisColor.greenF(), _majorAxisColor.blueF(), _majorAxisColor.alphaF());
+//        glBegin(GL_LINES);
+//        glVertex2f(btmLeft.x(),value);
+//        glVertex2f(topRight.x(),value);
+//        glEnd();
+//        //reset back the color
+//        glColor4f(1., 1., 1., 1.);
 
         value += dist;
     }
 
+    for (int x = 0; x < width();++x) {
+        double xImg = toImgCoordinates_fast(x, 0).x();
+        if(floor(xImg) != xImg)
+            continue;
+        int xImgI = xImg;
+        if((xImgI % 50) == 0){
+            glColor4f(_majorAxisColor.redF(), _majorAxisColor.greenF(), _majorAxisColor.blueF(), _majorAxisColor.alphaF());
 
+        }else if((xImgI % 10) == 0){
+            glColor4f(_minorAxisColor.redF(), _minorAxisColor.greenF(), _minorAxisColor.blueF(), _minorAxisColor.alphaF());
+
+        }
+        else if((xImgI % 5) == 0){
+            glColor4f(_minorAxisColor.redF(), _minorAxisColor.greenF(), _minorAxisColor.blueF(), _minorAxisColor.alphaF());
+
+        }
+        else if((xImgI % 1) == 0){
+            glColor4f(_minorAxisColor.redF(), _minorAxisColor.greenF(), _minorAxisColor.blueF(), _minorAxisColor.alphaF());
+
+        }
+        glBegin(GL_LINES);
+        glVertex2f(xImg, btmLeft.y());
+        glVertex2f(xImg, topRight.y());
+        glEnd();
+        
+    }
+    //reset back the color
+    glColor4f(1., 1., 1., 1.);
+    
 }
 
 void CurveEditor::renderText(double x,double y,const QString& text,const QColor& color,const QFont& font){
