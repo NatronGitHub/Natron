@@ -322,7 +322,7 @@ void ScaleSlider::LinearScale1(double xmin,double xmax,int n,double* xminp,doubl
 }
 
 void ScaleSlider::LinearScale2(double xmin,double xmax,int n,double* xminp,double* xmaxp,double *dist){
-    static double vint[5] = { 1.f,2.f,5.f,10.f,20.f };
+    static double vint[3] = {1., /*2.,*/5.,10./*,20.*/ };
     
     if(xmax <= xmin || n == 0) //improper range
         return;
