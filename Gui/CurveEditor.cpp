@@ -17,6 +17,7 @@
 #include <QMouseEvent>
 
 
+
 static double ASPECT_RATIO = 0.1;
 static double AXIS_MAX = 100000.;
 static double AXIS_MIN = -100000.;
@@ -48,6 +49,13 @@ void CurveEditor::initializeGL(){
     _zoomCtx._left = 0. - (width()/(2.*_zoomCtx._zoomFactor));
     _zoomCtx._bottom = 0. - (height()/(2.*_zoomCtx._zoomFactor)) * ASPECT_RATIO;
 
+}
+
+void CurveEditor::centerOn(double xmin,double xmax,double ymin,double ymax){
+    _zoomCtx._left = xmin;
+    _zoomCtx._bottom = ymin;
+    _zoomCtx._zoomFactor = (double)height()/(ymax -ymin) / ASPECT_RATIO;
+    updateGL();
 }
 
 void CurveEditor::resizeGL(int width,int height){
@@ -117,8 +125,8 @@ void CurveEditor::drawScale(){
     double scaleYpos = btmLeft.y();
     double averageTextUnitWidth = 0.;
 
-    averageTextUnitWidth = (fontM.width(QString::number(btmLeft.x()))
-                            + fontM.width(QString::number(topRight.x()))) / 2.;
+    averageTextUnitWidth = std::max(fontM.width(QString::number(btmLeft.x()))
+                            , fontM.width(QString::number(topRight.x())));
 
     int majorTicksCount = (scaleWidth / averageTextUnitWidth) / 2; //divide by 2 to count as much spaces between ticks as there're ticks
 

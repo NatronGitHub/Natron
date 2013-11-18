@@ -77,7 +77,9 @@ public:
     virtual QSize sizeHint() const;
     
     void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font);
-    
+
+    void centerOn(double xmin,double xmax,double ymin,double ymax);
+
 private:
     
     /**
