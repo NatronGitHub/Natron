@@ -117,23 +117,32 @@ void CurveEditor::drawScale(){
     double scaleYpos = btmLeft.y();
     double averageTextUnitWidth = 0.;
 
-    averageTextUnitWidth = (fontM.width(QString::number(btmLeft.x()))
-                            + fontM.width(QString::number(topRight.x()))) / 2.;
+    averageTextUnitWidth = fontM.width(QString("-0.00000"));
 
-    int majorTicksCount = (scaleWidth / averageTextUnitWidth) / 2; //divide by 2 to count as much spaces between ticks as there're ticks
+    //int majorTicksCount = (scaleWidth / averageTextUnitWidth) / 2; //divide by 2 to count as much spaces between ticks as there're ticks
+    int majorTicksCount = (scaleWidth / (averageTextUnitWidth+fontM.width(QString("00"))));
 
     double xminp,xmaxp,dist;
     std::vector<double> acceptedDistances;
     acceptedDistances.push_back(1.);
     acceptedDistances.push_back(5.);
     acceptedDistances.push_back(10.);
+    acceptedDistances.push_back(50.);
     ScaleSlider::LinearScale2(btmLeft.x(), topRight.x(), majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
     double value = xminp;
-    double prev = value;
-    for(int i = 0 ; i < majorTicksCount; ++i){
-        renderText(value,scaleYpos ,
-                   (value - prev < 1.) ?  QString::number(value) :  QString::number((int)value),
-                   _scaleColor, *_font);
+    for(int i = 0 ; i < majorTicksCount; ++i, value += dist) {
+        QString s;
+        if (dist < 1.) {
+            if (std::abs(value) < dist/2.) {
+                s = QString::number(0.);
+            } else {
+                s = QString::number(value);
+            }
+        } else {
+            s = QString::number(std::floor(value+0.5));
+        }
+
+        renderText(value,scaleYpos , s, _scaleColor, *_font);
 
         /*also draw a line*/
         glColor4f(_majorAxisColor.redF(), _majorAxisColor.greenF(), _majorAxisColor.blueF(), _majorAxisColor.alphaF());
@@ -143,9 +152,6 @@ void CurveEditor::drawScale(){
         glEnd();
         //reset back the color
         glColor4f(1., 1., 1., 1.);
-
-        prev = value;
-        value += dist;
     }
     
     /*drawing Y axis*/
@@ -158,9 +164,18 @@ void CurveEditor::drawScale(){
     ScaleSlider::LinearScale2(btmLeft.y(), topRight.y(), majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
     value = xminp;
     for(int i = 0 ; i < majorTicksCount; ++i){
-        renderText(scaleXpos,value ,
-                    QString::number(value)
-                                  , _scaleColor, *_font);
+        QString s;
+        if (dist < 1.) {
+            if (std::abs(value) < dist/2.) {
+                s = QString::number(0.);
+            } else {
+                s = QString::number(value);
+            }
+        } else {
+            s = QString::number(std::floor(value+0.5));
+        }
+
+        renderText(scaleXpos,value, s, _scaleColor, *_font);
         /*also draw a line*/
         glColor4f(_majorAxisColor.redF(), _majorAxisColor.greenF(), _majorAxisColor.blueF(), _majorAxisColor.alphaF());
         glBegin(GL_LINES);
