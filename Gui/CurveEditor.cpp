@@ -44,7 +44,7 @@ CurveEditor::~CurveEditor(){
 
 void CurveEditor::initializeGL(){
     
-    //initialize the box position so the origin of the system
+    //initialize the box position so the origin of the system  is in the middle
     _zoomCtx._left = 0. - (width()/(2.*_zoomCtx._zoomFactor));
     _zoomCtx._bottom = 0. - (height()/(2.*_zoomCtx._zoomFactor)) * ASPECT_RATIO;
 
@@ -85,8 +85,9 @@ void CurveEditor::paintGL(){
     glClearColor(_clearColor.redF(),_clearColor.greenF(),_clearColor.blueF(),_clearColor.alphaF());
     glClear(GL_COLOR_BUFFER_BIT);
     
-    drawBaseAxis();
     drawScale();
+
+    drawBaseAxis();
 }
 
 
@@ -122,13 +123,27 @@ void CurveEditor::drawScale(){
     int majorTicksCount = (scaleWidth / averageTextUnitWidth) / 2; //divide by 2 to count as much spaces between ticks as there're ticks
 
     double xminp,xmaxp,dist;
-    ScaleSlider::LinearScale2(btmLeft.x(), topRight.x(), majorTicksCount, &xminp, &xmaxp, &dist);
+    std::vector<double> acceptedDistances;
+    acceptedDistances.push_back(1.);
+    acceptedDistances.push_back(5.);
+    acceptedDistances.push_back(10.);
+    ScaleSlider::LinearScale2(btmLeft.x(), topRight.x(), majorTicksCount, &xminp, &xmaxp, &dist,acceptedDistances);
     double value = xminp;
     double prev = value;
     for(int i = 0 ; i < majorTicksCount; ++i){
         renderText(value,scaleYpos ,
                    (value - prev < 1.) ?  QString::number(value) :  QString::number((int)value),
                    _scaleColor, *_font);
+
+        /*also draw a line*/
+        glColor4f(_majorAxisColor.redF(), _majorAxisColor.greenF(), _majorAxisColor.blueF(), _majorAxisColor.alphaF());
+        glBegin(GL_LINES);
+        glVertex2f(value, btmLeft.y());
+        glVertex2f(value, topRight.y());
+        glEnd();
+        //reset back the color
+        glColor4f(1., 1., 1., 1.);
+
         prev = value;
         value += dist;
     }
@@ -140,14 +155,24 @@ void CurveEditor::drawScale(){
 
     majorTicksCount = (scaleHeight / fontM.height()) / 2; //divide by 2 to count as much spaces between ticks as there're ticks
 
-    ScaleSlider::LinearScale2(btmLeft.y(), topRight.y(), majorTicksCount, &xminp, &xmaxp, &dist);
+    ScaleSlider::LinearScale2(btmLeft.y(), topRight.y(), majorTicksCount, &xminp, &xmaxp, &dist,acceptedDistances);
     value = xminp;
     for(int i = 0 ; i < majorTicksCount; ++i){
         renderText(scaleXpos,value ,
                     QString::number(value)
                                   , _scaleColor, *_font);
+        /*also draw a line*/
+        glColor4f(_majorAxisColor.redF(), _majorAxisColor.greenF(), _majorAxisColor.blueF(), _majorAxisColor.alphaF());
+        glBegin(GL_LINES);
+        glVertex2f(btmLeft.x(),value);
+        glVertex2f(topRight.x(),value);
+        glEnd();
+        //reset back the color
+        glColor4f(1., 1., 1., 1.);
+
         value += dist;
     }
+
 
 }
 

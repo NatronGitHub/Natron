@@ -22,7 +22,7 @@ namespace Natron{
     
     
         
-    enum Scale_Type{LINEAR_SCALE,LOG_SCALE,EXP_SCALE};
+    enum Scale_Type{LINEAR_SCALE,LOG_SCALE};
         
     enum TIMELINE_STATE{IDLE,DRAGGING_CURSOR,DRAGGING_BOUNDARY};
 

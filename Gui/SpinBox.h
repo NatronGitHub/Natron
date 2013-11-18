@@ -49,6 +49,8 @@ protected:
     virtual void keyPressEvent(QKeyEvent* e);
     
     virtual void mousePressEvent(QMouseEvent* e);
+
+    virtual void focusOutEvent(QFocusEvent * event);
         
 signals:
     

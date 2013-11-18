@@ -69,14 +69,12 @@ void SpinBox::interpretReturn(){
 
 void SpinBox::mousePressEvent(QMouseEvent* e){
     LineEdit::mousePressEvent(e);
-    setFocus();
 }
 
 void SpinBox::wheelEvent(QWheelEvent *e) {
     if (e->orientation() != Qt::Vertical) {
         return;
     }
-    setFocus();
     if(isEnabled() && !isReadOnly()){
         bool ok;
         double cur= text().toDouble(&ok);
@@ -97,6 +95,10 @@ void SpinBox::wheelEvent(QWheelEvent *e) {
         insert(str);
         emit valueChanged(cur);
     }
+}
+
+void SpinBox::focusOutEvent(QFocusEvent * event){
+   emit valueChanged(text().toDouble());
 }
 
 void SpinBox::keyPressEvent(QKeyEvent *e){
