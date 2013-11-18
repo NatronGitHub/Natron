@@ -42,6 +42,7 @@ QGLWidget(parent,NULL)
 , _scaleColor(100,100,100,255)
 , _sliderColor(97,83,30,255)
 , _initialized(false)
+, _mustInitializeSliderPosition(true)
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 }
@@ -55,6 +56,7 @@ ScaleSlider::~ScaleSlider(){
 }
 
 void ScaleSlider::initializeGL(){
+
     seekScalePosition(_position);
     _initialized = true;
 }
@@ -66,6 +68,11 @@ void ScaleSlider::resizeGL(int width,int height){
 }
 
 void ScaleSlider::paintGL(){
+    if(_mustInitializeSliderPosition){
+        _mustInitializeSliderPosition = false;
+        seekScalePosition(_position);
+    }
+
     double w = (double)width();
     double h = (double)height();
     glMatrixMode (GL_PROJECTION);
@@ -232,12 +239,15 @@ void ScaleSlider::mouseMoveEvent(QMouseEvent *event){
     QPoint newClick =  event->pos();
     QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
 
-    seekScalePosition(newClick_opengl.x());
+    seekInternal(newClick_opengl.x());
 
 }
 
 
 void ScaleSlider::seekScalePosition(double v){
+    if(v < _minimum || v > _maximum)
+        return;
+
     _position = toWidgetCoordinates(v,0).x();
     double padding = (_maximum - _minimum) / 10.;
     double displayedRange = _maximum - _minimum + 2*padding;
@@ -249,7 +259,25 @@ void ScaleSlider::seekScalePosition(double v){
     _zoomCtx._bottom = 0;
     if(_initialized)
         updateGL();
+}
 
+void ScaleSlider::seekInternal(double v){
+
+    if(v < _minimum || v > _maximum)
+        return;
+
+    _position = toWidgetCoordinates(v,0).x();
+    double padding = (_maximum - _minimum) / 10.;
+    double displayedRange = _maximum - _minimum + 2*padding;
+    double zoomFactor = width() /displayedRange;
+    zoomFactor = (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01);
+    assert(zoomFactor>=0.01 && zoomFactor <= 1024);
+    _zoomCtx.setZoomFactor(zoomFactor);
+    _zoomCtx._left = _minimum - padding ;
+    _zoomCtx._bottom = 0;
+    if(_initialized)
+        updateGL();
+    emit positionChanged(v);
 }
 
 QPointF ScaleSlider::toImgCoordinates_fast(int x,int y){

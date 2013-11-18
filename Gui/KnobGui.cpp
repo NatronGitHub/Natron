@@ -59,6 +59,9 @@ CLANG_DIAG_ON(unused-private-field);
 
 #include "Readers/Reader.h"
 
+
+#define SLIDER_MAX_RANGE 100000
+
 using namespace Natron;
 using std::make_pair;
 
@@ -369,7 +372,7 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row){
             box->setIncrement(increments[i]);
         box->setToolTip(_knob->getHintToolTip().c_str());
         boxContainerLayout->addWidget(box);
-        if(_knob->getDimension() == 1){
+        if(_knob->getDimension() == 1 && !dynamic_cast<Int_Knob*>(_knob)->isSliderDisabled()){
             int min=0,max=99;
             if(displayMins.size() >(U32)i && displayMins[i] != INT_MIN)
                 min = displayMins[i];
@@ -379,11 +382,13 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row){
                 max = displayMaxs[i];
             else if(maximums.size() > (U32)i)
                 max = maximums[i];
-            _slider = new ScaleSlider(min,max,
-                                      _knob->value<int>(),Natron::LINEAR_SCALE,layout->parentWidget());
-            _slider->setToolTip(_knob->getHintToolTip().c_str());
-            QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
-            boxContainerLayout->addWidget(_slider);
+            if((max - min) < SLIDER_MAX_RANGE && max < INT_MAX && min > INT_MIN){
+                _slider = new ScaleSlider(min,max,
+                                          _knob->value<int>(),Natron::LINEAR_SCALE,layout->parentWidget());
+                _slider->setToolTip(_knob->getHintToolTip().c_str());
+                QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
+                boxContainerLayout->addWidget(_slider);
+            }
             
         }
         
@@ -414,7 +419,8 @@ void Int_KnobGui::updateGUI(const Variant& variant){
     }else{
         int value = variant.toInt();
         _spinBoxes[0].first->setValue(value);
-        _slider->seekScalePosition(value);
+        if(_slider)
+            _slider->seekScalePosition(value);
     }
 }
 void Int_KnobGui::onSliderValueChanged(double d){
@@ -602,7 +608,7 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
         }
         box->setToolTip(_knob->getHintToolTip().c_str());
         boxContainerLayout->addWidget(box);
-        if(_knob->getDimension() == 1){
+        if(_knob->getDimension() == 1 && !dynamic_cast<Double_Knob*>(_knob)->isSliderDisabled()){
             double min=0.,max=99.;
             if(displayMins.size() >(U32)i)
                 min = displayMins[i];
@@ -612,11 +618,13 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
                 max = displayMaxs[i];
             else if(maximums.size() > (U32)i)
                 max = maximums[i];
-            _slider = new ScaleSlider(min,max,
-                                      _knob->value<double>(),Natron::LINEAR_SCALE,layout->parentWidget());
-            _slider->setToolTip(_knob->getHintToolTip().c_str());
-            QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
-            boxContainerLayout->addWidget(_slider);
+             if((max - min) < SLIDER_MAX_RANGE && max < DBL_MAX && min > -DBL_MAX){
+                _slider = new ScaleSlider(min,max,
+                                          _knob->value<double>(),Natron::LINEAR_SCALE,layout->parentWidget());
+                _slider->setToolTip(_knob->getHintToolTip().c_str());
+                QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
+                boxContainerLayout->addWidget(_slider);
+            }
         }
         
         containerLayout->addWidget(boxContainer);
@@ -651,7 +659,8 @@ void Double_KnobGui::updateGUI(const Variant& variant){
     }else{
         double value = variant.toDouble();
         _spinBoxes[0].first->setValue(value);
-        _slider->seekScalePosition(value);
+        if(_slider)
+            _slider->seekScalePosition(value);
     }
 }
 
