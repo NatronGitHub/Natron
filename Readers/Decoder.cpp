@@ -38,40 +38,49 @@ Decoder::~Decoder(){
 }
 
 void Decoder::from_byte(Channel z, float* to, const uchar* from, const uchar* alpha, int W, int delta ){
-    if( z <= 3 && !_lut->linear()){
-        if(alpha && _premult){
-            _lut->from_byte(to, from, alpha, W,delta);
-        }else{
+    if ( z <= 3 && !_lut->linear()) {
+        if (alpha && _premult) {
+            _lut->from_byte_premult(to, from, alpha, W, delta);
+        } else {
             _lut->from_byte(to, from, W,delta);
         }
-    }else{
+    } else {
+        // FIXME: why is there no premult version?
         Color::linear_from_byte(to, from, W,delta);
     }
 }
+
 void Decoder::from_byteQt(Channel z, float* to, const QRgb* from, int W, int delta){
-    if( z <= 4 && !_lut->linear()){
-        _lut->from_byteQt(to, from, z, _premult, W , delta);
+    if( z <= 4 && !_lut->linear()) {
+        if (_premult) {
+            _lut->from_byteQt_premult(to, from, z, W, delta);
+        } else {
+            _lut->from_byteQt(to, from, z, W , delta);
+        }
     }
 }
+
 void Decoder::from_short(Channel z, float* to, const U16* from, const U16* alpha, int W, int, int delta ){
-    if( z <= 3 && !_lut->linear()){
-        if(alpha && _premult){
-            _lut->from_short(to, from, alpha, W,delta);
-        }else{
+    if ( z <= 3 && !_lut->linear()) {
+        if (alpha && _premult) {
+            _lut->from_short_premult(to, from, alpha, W, delta);
+        } else {
             _lut->from_short(to, from, W,delta);
         }
-    }else{
+    } else {
+        // FIXME: why is there no premult version?
         Color::linear_from_short(to, from, W,delta);
     }
 }
 void Decoder::from_float(Channel z, float* to, const float* from, const float* alpha, int W, int delta ){
-    if( z <= 3 && !_lut->linear()){
-        if(alpha && _premult){
-            _lut->from_float(to, from, alpha, W,delta);
-        }else{
+    if ( z <= 3 && !_lut->linear()) {
+        if (alpha && _premult) {
+            _lut->from_float_premult(to, from, alpha, W, delta);
+        } else {
             _lut->from_float(to, from, W,delta);
         }
-    }else{
+    } else {
+        // FIXME: why is there no premult version?
         Color::linear_from_float(to, from, W,delta);
     }
 }
@@ -79,9 +88,14 @@ void Decoder::from_float(Channel z, float* to, const float* from, const float* a
 void Decoder::from_byte_rect(float* to,const uchar* from,
                              const RectI& rect,const RectI& rod,
                              Natron::Color::Lut::PackedPixelsFormat inputPacking ,bool invertY ){
-    if(!_lut->linear()){
-        _lut->from_byte_rect(to,from,rect,rod,invertY,_premult,inputPacking);
-    }else{
+    if(!_lut->linear()) {
+        if (_premult) {
+            _lut->from_byte_rect_premult(to, from, rect, rod, invertY, inputPacking);
+        } else {
+            _lut->from_byte_rect(to, from, rect, rod, invertY, inputPacking);
+        }
+    } else {
+        // FIXME: why is there no premult version?
         Color::linear_from_byte_rect(to,from,rect,rod,invertY,inputPacking);
     }
 }
@@ -89,18 +103,28 @@ void Decoder::from_byte_rect(float* to,const uchar* from,
 void Decoder::from_short_rect(float* to,const U16* from,
                               const RectI& rect,const RectI& rod,
                               Natron::Color::Lut::PackedPixelsFormat inputPacking ,bool invertY ){
-    if(!_lut->linear()){
-        _lut->from_short_rect(to,from,rect,rod,invertY,_premult,inputPacking);
-    }else{
+    if (!_lut->linear()) {
+        if (_premult) {
+            _lut->from_short_rect_premult(to, from, rect, rod, invertY, inputPacking);
+        } else {
+            _lut->from_short_rect(to, from, rect, rod, invertY, inputPacking);
+        }
+    } else {
+        // FIXME: why is there no premult version?
         Color::linear_from_short_rect(to,from,rect,rod,invertY,inputPacking);
     }
 }
 void Decoder::from_float_rect(float* to,const float* from,
                               const RectI& rect,const RectI& rod,
                               Natron::Color::Lut::PackedPixelsFormat inputPacking ,bool invertY ){
-    if(!_lut->linear()){
-        _lut->from_float_rect(to,from,rect,rod,invertY,_premult,inputPacking);
-    }else{
+    if (!_lut->linear()) {
+        if (_premult) {
+            _lut->from_float_rect_premult(to, from, rect, rod, invertY, inputPacking);
+        } else {
+            _lut->from_float_rect(to, from, rect, rod, invertY, inputPacking);
+        }
+    } else {
+        // FIXME: why is there no premult version?
         Color::linear_from_float_rect(to,from,rect,rod,invertY,inputPacking);
     }
 }

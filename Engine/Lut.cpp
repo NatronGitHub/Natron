@@ -224,7 +224,7 @@ void Lut::from_byte(float *to, const uchar *from, int W, int delta) const
     }
 }
 
-void Lut::from_byte(float *to, const uchar *from, const uchar *alpha, int W, int delta) const
+void Lut::from_byte_premult(float *to, const uchar *from, const uchar *alpha, int W, int delta) const
 {
     assert(!linear());
     validate();
@@ -233,7 +233,7 @@ void Lut::from_byte(float *to, const uchar *from, const uchar *alpha, int W, int
     }
 }
 
-void Lut::from_byteQt(float *to, const QRgb *from, Natron::Channel z, bool premult, int W, int delta) const
+void Lut::from_byteQt(float *to, const QRgb *from, Natron::Channel z, int W, int delta) const
 {
     assert(!linear());
     validate();
@@ -257,17 +257,41 @@ void Lut::from_byteQt(float *to, const QRgb *from, Natron::Channel z, bool premu
     if (z == Natron::Channel_alpha) {
         linear_from_byteQt(to, from, z, W, delta);
     } else {
-        if (premult) {
-            for (int i = 0 ; i < W ; i += delta) {
-                const QRgb c = from[i];
-                int alpha = qAlpha(c);
-                to[i] = from_byte_table[((*lookup)(c)*255 + 128) / alpha] * alpha / 255.;
-            }
-        } else {
-            for (int i = 0 ; i < W ; i += delta) {
-                const QRgb c = from[i];
-                to[i] = from_byte_table[(*lookup)(c)];
-            }
+        for (int i = 0 ; i < W ; i += delta) {
+            const QRgb c = from[i];
+            to[i] = from_byte_table[(*lookup)(c)];
+        }
+    }
+}
+
+void Lut::from_byteQt_premult(float *to, const QRgb *from, Natron::Channel z, int W, int delta) const
+{
+    assert(!linear());
+    validate();
+    typedef int(*ChannelLookup)(QRgb);
+    ChannelLookup lookup;
+    if (z == Channel_alpha) {
+        lookup = qAlpha;
+    } else if (z == Channel_red) {
+        lookup = qRed;
+    }
+
+    else if (z == Channel_green) {
+        lookup = qGreen;
+    }
+
+    else if (z == Channel_blue) {
+        lookup = qBlue;
+    } else {
+        lookup = qRed;
+    }
+    if (z == Natron::Channel_alpha) {
+        linear_from_byteQt(to, from, z, W, delta);
+    } else {
+        for (int i = 0 ; i < W ; i += delta) {
+            const QRgb c = from[i];
+            int alpha = qAlpha(c);
+            to[i] = from_byte_table[((*lookup)(c)*255 + 128) / alpha] * alpha / 255.;
         }
     }
 }
@@ -284,7 +308,7 @@ void Lut::from_short(float *to, const U16 *from, int W, int bits , int delta) co
     cout << "Lut::from_short not yet implemented" << endl;
 }
 
-void Lut::from_short(float *to, const U16 *from, const U16 *alpha, int W, int bits, int delta) const
+void Lut::from_short_premult(float *to, const U16 *from, const U16 *alpha, int W, int bits, int delta) const
 {
     assert(!linear());
     validate();
@@ -294,7 +318,7 @@ void Lut::from_short(float *to, const U16 *from, const U16 *alpha, int W, int bi
     (void)W;
     (void)bits;
     (void)delta;
-    cout << "Lut::from_short not yet implemented" << endl;
+    cout << "Lut::from_short_premult not yet implemented" << endl;
 }
 
 void Lut::from_float(float *to, const float *from, int W, int delta) const
@@ -306,7 +330,7 @@ void Lut::from_float(float *to, const float *from, int W, int delta) const
     }
 }
 
-void Lut::from_float(float *to, const float *from, const float *alpha, int W, int delta) const
+void Lut::from_float_premult(float *to, const float *from, const float *alpha, int W, int delta) const
 {
     assert(!linear());
     validate();
@@ -340,54 +364,60 @@ void getOffsetsForPacking(Lut::PackedPixelsFormat format, int *r, int *g, int *b
 
 void Lut::from_byte_rect(float *to, const uchar *from,
                          const RectI &rect, const RectI &rod,
-                         bool invertY , bool premult,
+                         bool invertY ,
                          Lut::PackedPixelsFormat format) const
 {
     int rOffset, gOffset, bOffset, aOffset;
     getOffsetsForPacking(format, &rOffset, &gOffset, &bOffset, &aOffset);
     assert(!linear());
     validate();
-    if (!premult) {
-        for (int y = rect.bottom(); y < rect.top(); ++y) {
-            int srcY = y;
-            if (invertY) {
-                srcY = rod.top() - y - 1;
-            }
-            const uchar *src_pixels = from + (srcY * rod.width() * 4);
-            float *dst_pixels = to + (y * rod.width() * 4);
-            for (int x = rect.left(); x < rect.right(); ++x) {
-                int col = x * 4;
-                dst_pixels[col] = from_byte_table[(int)src_pixels[col + rOffset]];
-                dst_pixels[col + 1] = from_byte_table[(int)src_pixels[col + gOffset]];
-                dst_pixels[col + 2] = from_byte_table[(int)src_pixels[col + bOffset]];
-                dst_pixels[col + 3] = (float)src_pixels[col + aOffset] / 255.f;
-            }
+    for (int y = rect.bottom(); y < rect.top(); ++y) {
+        int srcY = y;
+        if (invertY) {
+            srcY = rod.top() - y - 1;
         }
-    } else {
-        for (int y = rect.bottom(); y < rect.top(); ++y) {
-            int srcY = y;
-            if (invertY) {
-                srcY = rod.top() - y - 1;
-            }
-            const uchar *src_pixels = from + (srcY * rod.width() * 4);
-            float *dst_pixels = to + (y * rod.width() * 4);
-            for (int x = rect.left(); x < rect.right(); ++x) {
-                int col = x * 4;
-                uchar a = src_pixels[col + aOffset];
-                dst_pixels[col] = from_byte_table[(int)src_pixels[col + rOffset] / a] * a;
-                dst_pixels[col + 1] = from_byte_table[(int)src_pixels[col + gOffset] / a] * a;
-                dst_pixels[col + 2] = from_byte_table[(int)src_pixels[col + bOffset] / a] * a;
-                dst_pixels[col + 3] = (float)a / 255.f;
-            }
+        const uchar *src_pixels = from + (srcY * rod.width() * 4);
+        float *dst_pixels = to + (y * rod.width() * 4);
+        for (int x = rect.left(); x < rect.right(); ++x) {
+            int col = x * 4;
+            dst_pixels[col] = from_byte_table[(int)src_pixels[col + rOffset]];
+            dst_pixels[col + 1] = from_byte_table[(int)src_pixels[col + gOffset]];
+            dst_pixels[col + 2] = from_byte_table[(int)src_pixels[col + bOffset]];
+            dst_pixels[col + 3] = (float)src_pixels[col + aOffset] / 255.f;
         }
     }
+}
 
-
+void Lut::from_byte_rect_premult(float *to, const uchar *from,
+                         const RectI &rect, const RectI &rod,
+                         bool invertY ,
+                         Lut::PackedPixelsFormat format) const
+{
+    int rOffset, gOffset, bOffset, aOffset;
+    getOffsetsForPacking(format, &rOffset, &gOffset, &bOffset, &aOffset);
+    assert(!linear());
+    validate();
+    for (int y = rect.bottom(); y < rect.top(); ++y) {
+        int srcY = y;
+        if (invertY) {
+            srcY = rod.top() - y - 1;
+        }
+        const uchar *src_pixels = from + (srcY * rod.width() * 4);
+        float *dst_pixels = to + (y * rod.width() * 4);
+        for (int x = rect.left(); x < rect.right(); ++x) {
+            int col = x * 4;
+            uchar a = src_pixels[col + aOffset];
+            dst_pixels[col] = from_byte_table[(int)src_pixels[col + rOffset] / a] * a;
+            dst_pixels[col + 1] = from_byte_table[(int)src_pixels[col + gOffset] / a] * a;
+            dst_pixels[col + 2] = from_byte_table[(int)src_pixels[col + bOffset] / a] * a;
+            dst_pixels[col + 3] = (float)a / 255.f;
+        }
+    }
 }
 
 void Lut::from_short_rect(float *to, const U16 *from,
                           const RectI &rect, const RectI &rod,
-                          bool invertY , bool premult,
+                          bool invertY,
                           Lut::PackedPixelsFormat format) const
 {
     (void)to;
@@ -395,55 +425,76 @@ void Lut::from_short_rect(float *to, const U16 *from,
     (void)rect;
     (void)rod;
     (void)invertY;
-    (void)premult;
     (void)format;
     cout << "Lut::from_short_rect not yet implemented." << endl;
 }
 
+void Lut::from_short_rect_premult(float *to, const U16 *from,
+                          const RectI &rect, const RectI &rod,
+                          bool invertY,
+                          Lut::PackedPixelsFormat format) const
+{
+    (void)to;
+    (void)from;
+    (void)rect;
+    (void)rod;
+    (void)invertY;
+    (void)format;
+    cout << "Lut::from_short_rect_premult not yet implemented." << endl;
+}
+
+
 void Lut::from_float_rect(float *to, const float *from,
                           const RectI &rect, const RectI &rod,
-                          bool invertY , bool premult,
+                          bool invertY ,
                           Lut::PackedPixelsFormat format) const
 {
     int rOffset, gOffset, bOffset, aOffset;
     getOffsetsForPacking(format, &rOffset, &gOffset, &bOffset, &aOffset);
     assert(!linear());
     validate();
-    if (!premult) {
-        for (int y = rect.bottom(); y < rect.top(); ++y) {
-            int srcY = y;
-            if (invertY) {
-                srcY = rod.top() - y - 1;
-            }
-            const float *src_pixels = from + (srcY * rod.width() * 4);
-            float *dst_pixels = to + (y * rod.width() * 4);
-            for (int x = rect.left(); x < rect.right(); ++x) {
-                int col = x * 4;
-                dst_pixels[col] = fromFloatFast(src_pixels[col + rOffset] * 255.f);
-                dst_pixels[col + 1] = fromFloatFast(src_pixels[col + gOffset] * 255.f);
-                dst_pixels[col + 2] = fromFloatFast(src_pixels[col + bOffset] * 255.f);
-                dst_pixels[col + 3] = src_pixels[col + aOffset];
-
-            }
+    for (int y = rect.bottom(); y < rect.top(); ++y) {
+        int srcY = y;
+        if (invertY) {
+            srcY = rod.top() - y - 1;
         }
-    } else {
-        for (int y = rect.bottom(); y < rect.top(); ++y) {
-            int srcY = y;
-            if (invertY) {
-                srcY = rod.top() - y - 1;
-            }
-            const float *src_pixels = from + (srcY * rod.width() * 4);
-            float *dst_pixels = to + (y * rod.width() * 4);
-            for (int x = rect.left(); x < rect.right(); ++x) {
-                int col = x * 4;
-                float a = src_pixels[col + aOffset];
-                dst_pixels[col] = fromFloatFast(src_pixels[col + rOffset] / a * 255.f) * a * 255.f;
-                dst_pixels[col + 1] = fromFloatFast(src_pixels[col + gOffset] / a * 255.f) * a * 255.f;
-                dst_pixels[col + 2] = fromFloatFast(src_pixels[col + bOffset] / a * 255.f) * a * 255.f;
-                dst_pixels[col + 3] = a;
-            }
-        }
+        const float *src_pixels = from + (srcY * rod.width() * 4);
+        float *dst_pixels = to + (y * rod.width() * 4);
+        for (int x = rect.left(); x < rect.right(); ++x) {
+            int col = x * 4;
+            dst_pixels[col] = fromFloatFast(src_pixels[col + rOffset] * 255.f);
+            dst_pixels[col + 1] = fromFloatFast(src_pixels[col + gOffset] * 255.f);
+            dst_pixels[col + 2] = fromFloatFast(src_pixels[col + bOffset] * 255.f);
+            dst_pixels[col + 3] = src_pixels[col + aOffset];
 
+        }
+    }
+}
+
+void Lut::from_float_rect_premult(float *to, const float *from,
+                          const RectI &rect, const RectI &rod,
+                          bool invertY,
+                          Lut::PackedPixelsFormat format) const
+{
+    int rOffset, gOffset, bOffset, aOffset;
+    getOffsetsForPacking(format, &rOffset, &gOffset, &bOffset, &aOffset);
+    assert(!linear());
+    validate();
+    for (int y = rect.bottom(); y < rect.top(); ++y) {
+        int srcY = y;
+        if (invertY) {
+            srcY = rod.top() - y - 1;
+        }
+        const float *src_pixels = from + (srcY * rod.width() * 4);
+        float *dst_pixels = to + (y * rod.width() * 4);
+        for (int x = rect.left(); x < rect.right(); ++x) {
+            int col = x * 4;
+            float a = src_pixels[col + aOffset];
+            dst_pixels[col] = fromFloatFast(src_pixels[col + rOffset] / a * 255.f) * a * 255.f;
+            dst_pixels[col + 1] = fromFloatFast(src_pixels[col + gOffset] / a * 255.f) * a * 255.f;
+            dst_pixels[col + 2] = fromFloatFast(src_pixels[col + bOffset] / a * 255.f) * a * 255.f;
+            dst_pixels[col + 3] = a;
+        }
     }
 }
 
@@ -474,7 +525,7 @@ void Lut::to_byte(uchar *to, const float *from, int W, int delta) const
     }
 }
 
-void Lut::to_byte(uchar *to, const float *from, const float *alpha, int W, int delta) const
+void Lut::to_byte_premult(uchar *to, const float *from, const float *alpha, int W, int delta) const
 {
     assert(!linear());
     validate();
@@ -517,7 +568,7 @@ void Lut::to_short(U16 *to, const float *from, int W, int bits, int delta) const
     cout << "Lut::to_short not implemented yet." << endl;
 }
 
-void Lut::to_short(U16 *to, const float *from, const float *alpha, int W, int bits, int delta) const
+void Lut::to_short_premult(U16 *to, const float *from, const float *alpha, int W, int bits, int delta) const
 {
     assert(!linear());
     validate();
@@ -528,7 +579,6 @@ void Lut::to_short(U16 *to, const float *from, const float *alpha, int W, int bi
     (void)bits;
     (void)delta;
     cout << "Lut::to_short not implemented yet." << endl;
-
 }
 
 void Lut::to_float(float *to, const float *from, int W, int delta) const
@@ -540,7 +590,7 @@ void Lut::to_float(float *to, const float *from, int W, int delta) const
     }
 }
 
-void Lut::to_float(float *to, const float *from, const float *alpha, int W, int delta) const
+void Lut::to_float_premult(float *to, const float *from, const float *alpha, int W, int delta) const
 {
     assert(!linear());
     validate();
@@ -551,100 +601,106 @@ void Lut::to_float(float *to, const float *from, const float *alpha, int W, int 
 
 void Lut::to_byte_rect(uchar *to, const float *from,
                        const RectI &rect, const RectI& srcRod,const RectI& dstRod,
-                       bool invertY , bool premult,
+                       bool invertY,
                        Lut::PackedPixelsFormat format) const
 {
     int rOffset, gOffset, bOffset, aOffset;
     getOffsetsForPacking(format, &rOffset, &gOffset, &bOffset, &aOffset);
     assert(!linear());
     validate();
-    if (!premult) {
-        for (int y = rect.bottom(); y < rect.top(); ++y) {
-            int start = rand() % rect.width() + rect.left();
-            unsigned error_r, error_g, error_b;
-            error_r = error_g = error_b = 0x80;
-            int srcY = y;
-            if (!invertY) {
-                  srcY = srcRod.top() - y - 1;
-            }
-            
-            int dstY = dstRod.top() - y - 1;
-            
-            const float *src_pixels = from + (srcY * srcRod.width() * 4);
-            uchar *dst_pixels = to + (dstY * dstRod.width() * 4);
-            /* go fowards from starting point to end of line: */
-            for (int x = start; x < rect.right(); ++x) {
-                int col = x * 4;
-                float a = src_pixels[col + 3];
-                error_r = (error_r & 0xff) + to_byte_table[hipart(src_pixels[col])];
-                error_g = (error_g & 0xff) + to_byte_table[hipart(src_pixels[col + 1])];
-                error_b = (error_b & 0xff) + to_byte_table[hipart(src_pixels[col + 2])];
-                dst_pixels[col + rOffset] = (uchar)(error_r >> 8);
-                dst_pixels[col + gOffset] = (uchar)(error_g >> 8);
-                dst_pixels[col + bOffset] = (uchar)(error_b >> 8);
-                dst_pixels[col + aOffset] = (uchar)(std::min(a * 256.f, 255.f));
-            }
-            /* go backwards from starting point to start of line: */
-            error_r = error_g = error_b = 0x80;
-            for (int x = start - 1; x >= rect.left(); --x) {
-                int col = x * 4;
-                float a = src_pixels[col + 3];
-                error_r = (error_r & 0xff) + to_byte_table[hipart(src_pixels[col])];
-                error_g = (error_g & 0xff) + to_byte_table[hipart(src_pixels[col + 1])];
-                error_b = (error_b & 0xff) + to_byte_table[hipart(src_pixels[col + 2])];
-                dst_pixels[col + rOffset] = (uchar)(error_r >> 8);
-                dst_pixels[col + gOffset] = (uchar)(error_g >> 8);
-                dst_pixels[col + bOffset] = (uchar)(error_b >> 8);
-                dst_pixels[col + aOffset] = (uchar)(std::min(a * 256.f, 255.f));
-            }
-        }
-    } else {
-        for (int y = rect.bottom(); y < rect.top(); ++y) {
-            int start = rand() % rect.width() + rect.left();
-            unsigned error_r, error_g, error_b;
-            error_r = error_g = error_b = 0x80;
-            int srcY = y;
-            if (invertY) {
-                srcY = srcRod.top() - y - 1;
-            }
-            int dstY = dstRod.top() - y - 1;
-            
-            const float *src_pixels = from + (srcY * srcRod.width() * 4);
-            uchar *dst_pixels = to + (dstY * dstRod.width() * 4);
-            /* go fowards from starting point to end of line: */
-            for (int x = start; x < rect.right(); ++x) {
-                int col = x * 4;
-                float a = src_pixels[col + 3];
-                error_r = (error_r & 0xff) + to_byte_table[hipart(src_pixels[col] * a)];
-                error_g = (error_g & 0xff) + to_byte_table[hipart(src_pixels[col + 1] * a)];
-                error_b = (error_b & 0xff) + to_byte_table[hipart(src_pixels[col + 2] * a)];
-                dst_pixels[col + rOffset] = (uchar)(error_r >> 8);
-                dst_pixels[col + gOffset] = (uchar)(error_g >> 8);
-                dst_pixels[col + bOffset] = (uchar)(error_b >> 8);
-                dst_pixels[col + aOffset] = (uchar)(std::min(a * 256.f, 255.f));
-            }
-            /* go backwards from starting point to start of line: */
-            error_r = error_g = error_b = 0x80;
-            for (int x = start - 1; x >= rect.left(); --x) {
-                int col = x * 4;
-                float a = src_pixels[col + 3];
-                error_r = (error_r & 0xff) + to_byte_table[hipart(src_pixels[col] * a)];
-                error_g = (error_g & 0xff) + to_byte_table[hipart(src_pixels[col + 1] * a)];
-                error_b = (error_b & 0xff) + to_byte_table[hipart(src_pixels[col + 2] * a)];
-                dst_pixels[col + rOffset] = (uchar)(error_r >> 8);
-                dst_pixels[col + gOffset] = (uchar)(error_g >> 8);
-                dst_pixels[col + bOffset] = (uchar)(error_b >> 8);
-                dst_pixels[col + aOffset] = (uchar)(std::min(a * 256.f, 255.f));
-            }
+    for (int y = rect.bottom(); y < rect.top(); ++y) {
+        int start = rand() % rect.width() + rect.left();
+        unsigned error_r, error_g, error_b;
+        error_r = error_g = error_b = 0x80;
+        int srcY = y;
+        if (!invertY) {
+            srcY = srcRod.top() - y - 1;
         }
 
+        int dstY = dstRod.top() - y - 1;
+
+        const float *src_pixels = from + (srcY * srcRod.width() * 4);
+        uchar *dst_pixels = to + (dstY * dstRod.width() * 4);
+        /* go fowards from starting point to end of line: */
+        for (int x = start; x < rect.right(); ++x) {
+            int col = x * 4;
+            float a = src_pixels[col + 3];
+            error_r = (error_r & 0xff) + to_byte_table[hipart(src_pixels[col])];
+            error_g = (error_g & 0xff) + to_byte_table[hipart(src_pixels[col + 1])];
+            error_b = (error_b & 0xff) + to_byte_table[hipart(src_pixels[col + 2])];
+            dst_pixels[col + rOffset] = (uchar)(error_r >> 8);
+            dst_pixels[col + gOffset] = (uchar)(error_g >> 8);
+            dst_pixels[col + bOffset] = (uchar)(error_b >> 8);
+            dst_pixels[col + aOffset] = (uchar)(std::min(a * 256.f, 255.f));
+        }
+        /* go backwards from starting point to start of line: */
+        error_r = error_g = error_b = 0x80;
+        for (int x = start - 1; x >= rect.left(); --x) {
+            int col = x * 4;
+            float a = src_pixels[col + 3];
+            error_r = (error_r & 0xff) + to_byte_table[hipart(src_pixels[col])];
+            error_g = (error_g & 0xff) + to_byte_table[hipart(src_pixels[col + 1])];
+            error_b = (error_b & 0xff) + to_byte_table[hipart(src_pixels[col + 2])];
+            dst_pixels[col + rOffset] = (uchar)(error_r >> 8);
+            dst_pixels[col + gOffset] = (uchar)(error_g >> 8);
+            dst_pixels[col + bOffset] = (uchar)(error_b >> 8);
+            dst_pixels[col + aOffset] = (uchar)(std::min(a * 256.f, 255.f));
+        }
     }
+}
 
+void Lut::to_byte_rect_premult(uchar *to, const float *from,
+                       const RectI &rect, const RectI& srcRod,const RectI& dstRod,
+                       bool invertY,
+                       Lut::PackedPixelsFormat format) const
+{
+    int rOffset, gOffset, bOffset, aOffset;
+    getOffsetsForPacking(format, &rOffset, &gOffset, &bOffset, &aOffset);
+    assert(!linear());
+    validate();
+    for (int y = rect.bottom(); y < rect.top(); ++y) {
+        int start = rand() % rect.width() + rect.left();
+        unsigned error_r, error_g, error_b;
+        error_r = error_g = error_b = 0x80;
+        int srcY = y;
+        if (invertY) {
+            srcY = srcRod.top() - y - 1;
+        }
+        int dstY = dstRod.top() - y - 1;
+
+        const float *src_pixels = from + (srcY * srcRod.width() * 4);
+        uchar *dst_pixels = to + (dstY * dstRod.width() * 4);
+        /* go fowards from starting point to end of line: */
+        for (int x = start; x < rect.right(); ++x) {
+            int col = x * 4;
+            float a = src_pixels[col + 3];
+            error_r = (error_r & 0xff) + to_byte_table[hipart(src_pixels[col] * a)];
+            error_g = (error_g & 0xff) + to_byte_table[hipart(src_pixels[col + 1] * a)];
+            error_b = (error_b & 0xff) + to_byte_table[hipart(src_pixels[col + 2] * a)];
+            dst_pixels[col + rOffset] = (uchar)(error_r >> 8);
+            dst_pixels[col + gOffset] = (uchar)(error_g >> 8);
+            dst_pixels[col + bOffset] = (uchar)(error_b >> 8);
+            dst_pixels[col + aOffset] = (uchar)(std::min(a * 256.f, 255.f));
+        }
+        /* go backwards from starting point to start of line: */
+        error_r = error_g = error_b = 0x80;
+        for (int x = start - 1; x >= rect.left(); --x) {
+            int col = x * 4;
+            float a = src_pixels[col + 3];
+            error_r = (error_r & 0xff) + to_byte_table[hipart(src_pixels[col] * a)];
+            error_g = (error_g & 0xff) + to_byte_table[hipart(src_pixels[col + 1] * a)];
+            error_b = (error_b & 0xff) + to_byte_table[hipart(src_pixels[col + 2] * a)];
+            dst_pixels[col + rOffset] = (uchar)(error_r >> 8);
+            dst_pixels[col + gOffset] = (uchar)(error_g >> 8);
+            dst_pixels[col + bOffset] = (uchar)(error_b >> 8);
+            dst_pixels[col + aOffset] = (uchar)(std::min(a * 256.f, 255.f));
+        }
+    }
 }
 
 void Lut::to_short_rect(U16 *to, const float *from,
                         const RectI &rect, const RectI& srcRod,const RectI& dstRod,
-                        bool invertY , bool premult,
+                        bool invertY,
                         Lut::PackedPixelsFormat format) const
 {
     (void)to;
@@ -653,56 +709,78 @@ void Lut::to_short_rect(U16 *to, const float *from,
     (void)srcRod;
     (void)dstRod;
     (void)invertY;
-    (void)premult;
     (void)format;
     cout << "Lut::to_short_rect not yet implemented." << endl;
 }
 
+void Lut::to_short_rect_premult(U16 *to, const float *from,
+                        const RectI &rect, const RectI& srcRod,const RectI& dstRod,
+                        bool invertY,
+                        Lut::PackedPixelsFormat format) const
+{
+    (void)to;
+    (void)from;
+    (void)rect;
+    (void)srcRod;
+    (void)dstRod;
+    (void)invertY;
+    (void)format;
+    cout << "Lut::to_short_rect_premult not yet implemented." << endl;
+}
+
 void Lut::to_float_rect(float *to, const float *from,
                         const RectI &rect,const RectI& srcRod,const RectI& dstRod,
-                        bool invertY , bool premult,
+                        bool invertY,
                         Lut::PackedPixelsFormat format) const
 {
     int rOffset, gOffset, bOffset, aOffset;
     getOffsetsForPacking(format, &rOffset, &gOffset, &bOffset, &aOffset);
     assert(!linear());
     validate();
-    if (!premult) {
-        for (int y = rect.bottom(); y < rect.top(); ++y) {
-            int srcY = y;
-            if (invertY) {
-                srcY = srcRod.top() - y - 1;
-            }
-            int dstY = dstRod.top() - y - 1;
-            const float *src_pixels = from + (srcY * srcRod.width() * 4);
-            float *dst_pixels = to + (dstY * dstRod.width() * 4);
-            /* go fowards from starting point to end of line: */
-            for (int x = rect.left(); x < rect.right(); ++x) {
-                int col = x * 4;
-                dst_pixels[col] = toFloatFast(src_pixels[col]);
-                dst_pixels[col + rOffset] = toFloatFast(src_pixels[col + 1]);
-                dst_pixels[col + gOffset] = toFloatFast(src_pixels[col + 2]);
-                dst_pixels[col + bOffset] = src_pixels[col + 3];
-            }
+    for (int y = rect.bottom(); y < rect.top(); ++y) {
+        int srcY = y;
+        if (invertY) {
+            srcY = srcRod.top() - y - 1;
         }
-    } else {
-        for (int y = rect.bottom(); y < rect.top(); ++y) {
-            int srcY = y;
-            if (invertY) {
-                srcY = srcRod.top() - y - 1;
-            }
-            int dstY = dstRod.top() - y - 1;
-            const float *src_pixels = from + (srcY * srcRod.width() * 4);
-            float *dst_pixels = to + (dstY * dstRod.width() * 4);
-            /* go fowards from starting point to end of line: */
-            for (int x = rect.left(); x < rect.right(); ++x) {
-                int col = x * 4;
-                float a = src_pixels[col + 3];
-                dst_pixels[col + rOffset] = toFloatFast(src_pixels[col] * a);
-                dst_pixels[col + gOffset] = toFloatFast(src_pixels[col + 1] * a);
-                dst_pixels[col + bOffset] = toFloatFast(src_pixels[col + 2] * a);
-                dst_pixels[col + aOffset] = a;
-            }
+        int dstY = dstRod.top() - y - 1;
+        const float *src_pixels = from + (srcY * srcRod.width() * 4);
+        float *dst_pixels = to + (dstY * dstRod.width() * 4);
+        /* go fowards from starting point to end of line: */
+        for (int x = rect.left(); x < rect.right(); ++x) {
+            int col = x * 4;
+            dst_pixels[col] = toFloatFast(src_pixels[col]);
+            dst_pixels[col + rOffset] = toFloatFast(src_pixels[col + 1]);
+            dst_pixels[col + gOffset] = toFloatFast(src_pixels[col + 2]);
+            dst_pixels[col + bOffset] = src_pixels[col + 3];
+        }
+    }
+}
+
+void Lut::to_float_rect_premult(float *to, const float *from,
+                        const RectI &rect,const RectI& srcRod,const RectI& dstRod,
+                        bool invertY,
+                        Lut::PackedPixelsFormat format) const
+{
+    int rOffset, gOffset, bOffset, aOffset;
+    getOffsetsForPacking(format, &rOffset, &gOffset, &bOffset, &aOffset);
+    assert(!linear());
+    validate();
+    for (int y = rect.bottom(); y < rect.top(); ++y) {
+        int srcY = y;
+        if (invertY) {
+            srcY = srcRod.top() - y - 1;
+        }
+        int dstY = dstRod.top() - y - 1;
+        const float *src_pixels = from + (srcY * srcRod.width() * 4);
+        float *dst_pixels = to + (dstY * dstRod.width() * 4);
+        /* go fowards from starting point to end of line: */
+        for (int x = rect.left(); x < rect.right(); ++x) {
+            int col = x * 4;
+            float a = src_pixels[col + 3];
+            dst_pixels[col + rOffset] = toFloatFast(src_pixels[col] * a);
+            dst_pixels[col + gOffset] = toFloatFast(src_pixels[col + 1] * a);
+            dst_pixels[col + bOffset] = toFloatFast(src_pixels[col + 2] * a);
+            dst_pixels[col + aOffset] = a;
         }
     }
 }
@@ -743,13 +821,11 @@ void linear_from_byteQt(float *to, const QRgb *from, Natron::Channel z, int W, i
             to[i] = (float)qAlpha(c) / 255.f;
         }
     } else {
-
         for (int i = 0 ; i < W ; i += delta) {
             const QRgb c = from[i];
             to[i] = (float)(*lookup)(c);
         }
     }
-
 }
 
 void linear_from_short(float *to, const U16 *from, int W, int bits, int delta)
@@ -877,7 +953,7 @@ void linear_to_byte(uchar *to, const float *from, int W, int delta)
     }
 }
 
-void linear_to_byte(uchar *to, const float *from, const float *alpha, int W, int delta)
+void linear_to_byte_premult(uchar *to, const float *from, const float *alpha, int W, int delta)
 {
     unsigned char *end = to + W * delta;
     int start = rand() % W;
@@ -930,7 +1006,7 @@ void linear_to_short(U16 *to, const float *from, int W, int bits, int delta)
     cout << "linear_to_short not implemented yet." << endl;
 }
 
-void linear_to_short(U16 *to, const float *from, const float *alpha, int W, int bits, int delta)
+void linear_to_short_premult(U16 *to, const float *from, const float *alpha, int W, int bits, int delta)
 {
     (void)to;
     (void)from;
@@ -953,7 +1029,7 @@ void linear_to_float(float *to, const float *from, int W, int delta)
     }
 }
 
-void linear_to_float(float *to, const float *from, const float *alpha, int W, int delta)
+void linear_to_float_premult(float *to, const float *from, const float *alpha, int W, int delta)
 {
     for (int i = 0; i < W; i += delta) {
         to[i] = from[i] * alpha[i];
@@ -962,92 +1038,97 @@ void linear_to_float(float *to, const float *from, const float *alpha, int W, in
 
 void linear_to_byte_rect(uchar *to, const float *from,
                          const RectI &rect, const RectI& srcRod,const RectI& dstRod,
-                         bool invertY , bool premult,
+                         bool invertY,
                          Lut::PackedPixelsFormat format)
 {
     int rOffset, gOffset, bOffset, aOffset;
     getOffsetsForPacking(format, &rOffset, &gOffset, &bOffset, &aOffset);
-    if (!premult) {
-        for (int y = rect.bottom(); y < rect.top(); ++y) {
-            int start = rand() % rect.width() + rect.left();
-            unsigned error_r, error_g, error_b;
-            error_r = error_g = error_b = 0x80;
-            int srcY = y;
-            if (invertY) {
-                srcY = srcRod.top() - y - 1;
-            }
-            const float *src_pixels = from + (srcY * srcRod.width() * 4);
-            uchar *dst_pixels = to + (y * dstRod.width() * 4);
-            /* go fowards from starting point to end of line: */
-            for (int x = start; x < rect.right(); ++x) {
-                int col = x * 4;
-                float a = src_pixels[col + 3];
-                error_r = (error_r & 0xff) + src_pixels[col] * 255.f;
-                error_g = (error_g & 0xff) + src_pixels[col + 1] * 255.f;
-                error_b = (error_b & 0xff) + src_pixels[col + 2] * 255.f;
-                dst_pixels[col] = (uchar)(error_r >> 8);
-                dst_pixels[col + rOffset] = (uchar)(error_g >> 8);
-                dst_pixels[col + gOffset] = (uchar)(error_b >> 8);
-                dst_pixels[col + aOffset] = (uchar)(std::min(a * 256.f, 255.f));
-            }
-            /* go backwards from starting point to start of line: */
-            error_r = error_g = error_b = 0x80;
-            for (int x = start - 1; x >= rect.left(); --x) {
-                int col = x * 4;
-                float a = src_pixels[col + 3];
-                error_r = (error_r & 0xff) + src_pixels[col] * 255.f;
-                error_g = (error_g & 0xff) + src_pixels[col + 1] * 255.f;
-                error_b = (error_b & 0xff) + src_pixels[col + 2] * 255.f;
-                dst_pixels[col + rOffset] = (uchar)(error_r >> 8);
-                dst_pixels[col + gOffset] = (uchar)(error_g >> 8);
-                dst_pixels[col + bOffset] = (uchar)(error_b >> 8);
-                dst_pixels[col + aOffset] = (uchar)(std::min(a * 256.f, 255.f));
-            }
+    for (int y = rect.bottom(); y < rect.top(); ++y) {
+        int start = rand() % rect.width() + rect.left();
+        unsigned error_r, error_g, error_b;
+        error_r = error_g = error_b = 0x80;
+        int srcY = y;
+        if (invertY) {
+            srcY = srcRod.top() - y - 1;
         }
-    } else {
-        for (int y = rect.bottom(); y < rect.top(); ++y) {
-            int start = rand() % rect.width() + rect.left();
-            unsigned error_r, error_g, error_b;
-            error_r = error_g = error_b = 0x80;
-            int srcY = y;
-            if (invertY) {
-                srcY = srcRod.top() - y - 1;
-            }
-            const float *src_pixels = from + (srcY * srcRod.width() * 4);
-            uchar *dst_pixels = to + (y * dstRod.width() * 4);
-            /* go fowards from starting point to end of line: */
-            for (int x = start; x < rect.right(); ++x) {
-                int col = x * 4;
-                float a = src_pixels[col + 3];
-                error_r = (error_r & 0xff) + src_pixels[col] * a * 255.f;
-                error_g = (error_g & 0xff) + src_pixels[col + 1] * a * 255.f;
-                error_b = (error_b & 0xff) + src_pixels[col + 2] * a * 255.f;
-                dst_pixels[col + rOffset] = (uchar)(error_r >> 8);
-                dst_pixels[col + gOffset] = (uchar)(error_g >> 8);
-                dst_pixels[col + bOffset] = (uchar)(error_b >> 8);
-                dst_pixels[col + aOffset] = (uchar)(std::min(a * 256.f, 255.f));
-            }
-            /* go backwards from starting point to start of line: */
-            error_r = error_g = error_b = 0x80;
-            for (int x = start - 1; x >= rect.left(); --x) {
-                int col = x * 4;
-                float a = src_pixels[col + 3];
-                error_r = (error_r & 0xff) + src_pixels[col] * a * 255.f;
-                error_g = (error_g & 0xff) + src_pixels[col + 1] * a * 255.f;
-                error_b = (error_b & 0xff) + src_pixels[col + 2] * a * 255.f;
-                dst_pixels[col + rOffset] = (uchar)(error_r >> 8);
-                dst_pixels[col + gOffset] = (uchar)(error_g >> 8);
-                dst_pixels[col + bOffset] = (uchar)(error_b >> 8);
-                dst_pixels[col + aOffset] = (uchar)(std::min(a * 256.f, 255.f));
-            }
+        const float *src_pixels = from + (srcY * srcRod.width() * 4);
+        uchar *dst_pixels = to + (y * dstRod.width() * 4);
+        /* go fowards from starting point to end of line: */
+        for (int x = start; x < rect.right(); ++x) {
+            int col = x * 4;
+            float a = src_pixels[col + 3];
+            error_r = (error_r & 0xff) + src_pixels[col] * 255.f;
+            error_g = (error_g & 0xff) + src_pixels[col + 1] * 255.f;
+            error_b = (error_b & 0xff) + src_pixels[col + 2] * 255.f;
+            dst_pixels[col] = (uchar)(error_r >> 8);
+            dst_pixels[col + rOffset] = (uchar)(error_g >> 8);
+            dst_pixels[col + gOffset] = (uchar)(error_b >> 8);
+            dst_pixels[col + aOffset] = (uchar)(std::min(a * 256.f, 255.f));
         }
+        /* go backwards from starting point to start of line: */
+        error_r = error_g = error_b = 0x80;
+        for (int x = start - 1; x >= rect.left(); --x) {
+            int col = x * 4;
+            float a = src_pixels[col + 3];
+            error_r = (error_r & 0xff) + src_pixels[col] * 255.f;
+            error_g = (error_g & 0xff) + src_pixels[col + 1] * 255.f;
+            error_b = (error_b & 0xff) + src_pixels[col + 2] * 255.f;
+            dst_pixels[col + rOffset] = (uchar)(error_r >> 8);
+            dst_pixels[col + gOffset] = (uchar)(error_g >> 8);
+            dst_pixels[col + bOffset] = (uchar)(error_b >> 8);
+            dst_pixels[col + aOffset] = (uchar)(std::min(a * 256.f, 255.f));
+        }
+    }
+}
 
+void linear_to_byte_rect_premult(uchar *to, const float *from,
+                         const RectI &rect, const RectI& srcRod,const RectI& dstRod,
+                         bool invertY,
+                         Lut::PackedPixelsFormat format)
+{
+    int rOffset, gOffset, bOffset, aOffset;
+    getOffsetsForPacking(format, &rOffset, &gOffset, &bOffset, &aOffset);
+    for (int y = rect.bottom(); y < rect.top(); ++y) {
+        int start = rand() % rect.width() + rect.left();
+        unsigned error_r, error_g, error_b;
+        error_r = error_g = error_b = 0x80;
+        int srcY = y;
+        if (invertY) {
+            srcY = srcRod.top() - y - 1;
+        }
+        const float *src_pixels = from + (srcY * srcRod.width() * 4);
+        uchar *dst_pixels = to + (y * dstRod.width() * 4);
+        /* go fowards from starting point to end of line: */
+        for (int x = start; x < rect.right(); ++x) {
+            int col = x * 4;
+            float a = src_pixels[col + 3];
+            error_r = (error_r & 0xff) + src_pixels[col] * a * 255.f;
+            error_g = (error_g & 0xff) + src_pixels[col + 1] * a * 255.f;
+            error_b = (error_b & 0xff) + src_pixels[col + 2] * a * 255.f;
+            dst_pixels[col + rOffset] = (uchar)(error_r >> 8);
+            dst_pixels[col + gOffset] = (uchar)(error_g >> 8);
+            dst_pixels[col + bOffset] = (uchar)(error_b >> 8);
+            dst_pixels[col + aOffset] = (uchar)(std::min(a * 256.f, 255.f));
+        }
+        /* go backwards from starting point to start of line: */
+        error_r = error_g = error_b = 0x80;
+        for (int x = start - 1; x >= rect.left(); --x) {
+            int col = x * 4;
+            float a = src_pixels[col + 3];
+            error_r = (error_r & 0xff) + src_pixels[col] * a * 255.f;
+            error_g = (error_g & 0xff) + src_pixels[col + 1] * a * 255.f;
+            error_b = (error_b & 0xff) + src_pixels[col + 2] * a * 255.f;
+            dst_pixels[col + rOffset] = (uchar)(error_r >> 8);
+            dst_pixels[col + gOffset] = (uchar)(error_g >> 8);
+            dst_pixels[col + bOffset] = (uchar)(error_b >> 8);
+            dst_pixels[col + aOffset] = (uchar)(std::min(a * 256.f, 255.f));
+        }
     }
 }
 
 void linear_to_short_rect(U16 *to, const float *from,
                           const RectI &rect, const RectI& srcRod,const RectI& dstRod,
-                          bool invertY , bool premult,
+                          bool invertY,
                           Lut::PackedPixelsFormat format)
 {
     (void)to;
@@ -1056,56 +1137,74 @@ void linear_to_short_rect(U16 *to, const float *from,
     (void)srcRod;
     (void)dstRod;
     (void)invertY;
-    (void)premult;
     (void)format;
     cout << "linear_to_short_rect not yet implemented" << endl;
 }
 
-void linear_to_float_rect(float *to, const float *from,
-                          const RectI &rect,const RectI& srcRod,const RectI& dstRod,
-                          bool invertY , bool premult,
+void linear_to_short_rect_premult(U16 *to, const float *from,
+                          const RectI &rect, const RectI& srcRod,const RectI& dstRod,
+                          bool invertY,
                           Lut::PackedPixelsFormat format)
 {
-    if (!premult) {
-        for (int y = rect.bottom(); y < rect.top(); ++y) {
-            int srcY = y;
-            if (invertY) {
-                srcY = srcRod.top() - y - 1;
-            }
-            const float *src_pixels = from + (srcY * srcRod.width() * 4);
-            float *dst_pixels = to + (y * dstRod.width() * 4);
-            if (format == Lut::RGBA) {
-                memcpy(dst_pixels, src_pixels, rect.width()*sizeof(float));
-            } else {
-                int rOffset, gOffset, bOffset, aOffset;
-                getOffsetsForPacking(format, &rOffset, &gOffset, &bOffset, &aOffset);
-                for (int x = rect.left(); x < rect.right(); ++x) {
-                    int col = x * 4;
-                    dst_pixels[col + rOffset] = src_pixels[col];
-                    dst_pixels[col + gOffset] = src_pixels[col + 1];
-                    dst_pixels[col + bOffset] = src_pixels[col + 2];
-                    dst_pixels[col + aOffset] = src_pixels[col + 3];
-                }
-            }
+    (void)to;
+    (void)from;
+    (void)rect;
+    (void)srcRod;
+    (void)dstRod;
+    (void)invertY;
+    (void)format;
+    cout << "linear_to_short_rect_premult not yet implemented" << endl;
+}
+
+void linear_to_float_rect(float *to, const float *from,
+                          const RectI &rect,const RectI& srcRod,const RectI& dstRod,
+                          bool invertY,
+                          Lut::PackedPixelsFormat format)
+{
+    for (int y = rect.bottom(); y < rect.top(); ++y) {
+        int srcY = y;
+        if (invertY) {
+            srcY = srcRod.top() - y - 1;
         }
-    } else {
-        int rOffset, gOffset, bOffset, aOffset;
-        getOffsetsForPacking(format, &rOffset, &gOffset, &bOffset, &aOffset);
-        for (int y = rect.bottom(); y < rect.top(); ++y) {
-            int srcY = y;
-            if (invertY) {
-                srcY = srcRod.top() - y - 1;
-            }
-            const float *src_pixels = from + (srcY * srcRod.width() * 4);
-            float *dst_pixels = to + (y * dstRod.width() * 4);
+        const float *src_pixels = from + (srcY * srcRod.width() * 4);
+        float *dst_pixels = to + (y * dstRod.width() * 4);
+        if (format == Lut::RGBA) {
+            memcpy(dst_pixels, src_pixels, rect.width()*sizeof(float));
+        } else {
+            int rOffset, gOffset, bOffset, aOffset;
+            getOffsetsForPacking(format, &rOffset, &gOffset, &bOffset, &aOffset);
             for (int x = rect.left(); x < rect.right(); ++x) {
                 int col = x * 4;
-                float a = src_pixels[col + 3];
-                dst_pixels[col] = src_pixels[col] * a;
-                dst_pixels[col + rOffset] = src_pixels[col + 1] * a;
-                dst_pixels[col + gOffset] = src_pixels[col + 2] * a;
-                dst_pixels[col + bOffset] = a;
+                dst_pixels[col + rOffset] = src_pixels[col];
+                dst_pixels[col + gOffset] = src_pixels[col + 1];
+                dst_pixels[col + bOffset] = src_pixels[col + 2];
+                dst_pixels[col + aOffset] = src_pixels[col + 3];
             }
+        }
+    }
+}
+
+void linear_to_float_rect_premult(float *to, const float *from,
+                          const RectI &rect,const RectI& srcRod,const RectI& dstRod,
+                          bool invertY,
+                          Lut::PackedPixelsFormat format)
+{
+    int rOffset, gOffset, bOffset, aOffset;
+    getOffsetsForPacking(format, &rOffset, &gOffset, &bOffset, &aOffset);
+    for (int y = rect.bottom(); y < rect.top(); ++y) {
+        int srcY = y;
+        if (invertY) {
+            srcY = srcRod.top() - y - 1;
+        }
+        const float *src_pixels = from + (srcY * srcRod.width() * 4);
+        float *dst_pixels = to + (y * dstRod.width() * 4);
+        for (int x = rect.left(); x < rect.right(); ++x) {
+            int col = x * 4;
+            float a = src_pixels[col + 3];
+            dst_pixels[col] = src_pixels[col] * a;
+            dst_pixels[col + rOffset] = src_pixels[col + 1] * a;
+            dst_pixels[col + gOffset] = src_pixels[col + 2] * a;
+            dst_pixels[col + bOffset] = a;
         }
     }
 }
