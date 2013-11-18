@@ -394,20 +394,19 @@ void ScaleSlider::LinearScale2(double xmin, double xmax, int n,
     const int nvnt = vint.size();
 
     // Check whether proper input values were supplied.
-    assert(xmax > xmin && n != 0);
+    assert(xmax > xmin && n != 0 && nvnt >= 4);
     
-    const double del =  2e-9;
+    const double del =  2e-19;
     // Find approximate interval size a.
-    double a = (xmax - xmin) / n;
+    const double a = (xmax - xmin) / n;
     double al = std::log10(a);
     int nal = al;
     if (a < 1.) {
         --nal;
     }
     // a is scaled into variable named b between 1 and 10.
-    double b = a / std::pow(10,nal);
-#if 1
-    // Fred's version
+    const double b = a / std::pow(10,nal);
+
     // The closest permissible value for b is found.
     int i;
     for (i = 0; i < nvnt-1; ++i) {
@@ -419,7 +418,7 @@ void ScaleSlider::LinearScale2(double xmin, double xmax, int n,
     int np = n + 1;
     for (; np > n; ++i) {
         assert(i < nvnt);
-        *dist = vint[i] *  std::pow(10,nal);
+        *dist = vint[i] * std::pow(10,nal);
         double fm1 =  xmin / *dist;
         int m1 = fm1;
         if (fm1 < 0.) {
@@ -442,39 +441,6 @@ void ScaleSlider::LinearScale2(double xmin, double xmax, int n,
         // Check whether a second pass is required.
         np = m2 - m1;
     }
-    
-#else
-    // Alex's version
-    int i = 0;
-    int np  = 0;
-    do {
-        // bug: this should be outside of the loop
-        while (b >= (vint[i]+del) && i < nvnt) { // bug: comparisons must be switched
-            ++i;
-        }
-        assert(i < nvnt); // bug: i may be >= nvnt at this point
-        *dist =  vint[i] *  std::pow(10,nal);
-        double fm1 = xmin / *dist;
-        int m1 = fm1;
-        if(fm1 < 0.)
-            --m1;
-        if (std::abs(m1 + 1 - fm1) <  del) {
-            ++m1;
-        }
-        *xminp = *dist * m1;
-        double fm2 = xmax / *dist;
-        int m2 = fm2 + 1;
-        if (fm2 <  -1.) {
-            --m2;
-        }
-        if (std::abs(fm2 + 1 - m2) < del) {
-            --m2;
-        }
-        *xmaxp = *dist * m2;
-        np = (m2 - m1);
-        ++i;
-    } while(np > n);
-#endif
 
     int nx = (n - np) / 2;
     *xminp -= nx * *dist;
@@ -503,7 +469,7 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
     //const double vint[11] = { 10., 9., 8., 7., 6., 5., 4., 3., 2., 1., .5 };
     const int nvnt = vint.size();
 
-    assert(xmax > xmin && n > 1 && xmin > 0. && nvnt > 1);
+    assert(xmax > xmin && n > 1 && xmin > 0. && nvnt >= 4);
     
     // Check whether proper input values were supplied.
     const double del =  2e-9;
@@ -511,14 +477,14 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
     double xminl = std::log10(xmin);
     double xmaxl = std::log10(xmax);
     // Find approximate interval size a.
-    double a = (xmaxl - xminl) / n;
-    double al = std::log10(a);
+    const double a = (xmaxl - xminl) / n;
+    const double al = std::log10(a);
     int nal = al;
     if (a < 1.) {
         --nal;
     }
     // a is scaled into variable named b between 1 and 10.
-    double b = a / std::pow(10,nal);
+    const double b = a / std::pow(10,nal);
 #if 1
     // Fred's version
     // The closest permissible value for b is found.
