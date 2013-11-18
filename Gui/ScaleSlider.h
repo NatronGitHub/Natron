@@ -101,13 +101,16 @@ public:
     
     double maximum() const {return _maximum;}
           
-    static void LinearScale1(double xmin,double xmax,int n,double* xminp,double* xmaxp,double *dist);
+    static void LinearScale1(double xmin ,double xmax, int n,
+                             double* xminp, double* xmaxp, double *dist);
     
-    static void LinearScale2(double xmin,double xmax,int n,double* xminp,double* xmaxp,double *dist,
-                             const std::vector<double> &acceptedDistances);
+    static void LinearScale2(double xmin ,double xmax, int n,
+                             const std::vector<double> &vint,
+                             double* xminp ,double* xmaxp ,double *dist);
     
-    static void LogScale1(double xmin,double xmax,int n,double* xminp,double* xmaxp,double *dist,
-                          const std::vector<double> &acceptedDistances);
+    static void LogScale1(double xmin ,double xmax ,int n,
+                          const std::vector<double> &vint,
+                          double* xminp, double* xmaxp ,double *dist);
     
 signals:
     

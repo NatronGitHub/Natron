@@ -127,7 +127,7 @@ void CurveEditor::drawScale(){
     acceptedDistances.push_back(1.);
     acceptedDistances.push_back(5.);
     acceptedDistances.push_back(10.);
-    ScaleSlider::LinearScale2(btmLeft.x(), topRight.x(), majorTicksCount, &xminp, &xmaxp, &dist,acceptedDistances);
+    ScaleSlider::LinearScale2(btmLeft.x(), topRight.x(), majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
     double value = xminp;
     double prev = value;
     for(int i = 0 ; i < majorTicksCount; ++i){
@@ -155,7 +155,7 @@ void CurveEditor::drawScale(){
 
     majorTicksCount = (scaleHeight / fontM.height()) / 2; //divide by 2 to count as much spaces between ticks as there're ticks
 
-    ScaleSlider::LinearScale2(btmLeft.y(), topRight.y(), majorTicksCount, &xminp, &xmaxp, &dist,acceptedDistances);
+    ScaleSlider::LinearScale2(btmLeft.y(), topRight.y(), majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
     value = xminp;
     for(int i = 0 ; i < majorTicksCount; ++i){
         renderText(scaleXpos,value ,
