@@ -543,8 +543,8 @@ void ViewerGL::paintGL()
     assert(_zoomCtx._zoomFactor <= 1024);
     double bottom = _zoomCtx._bottom;
     double left = _zoomCtx._left;
-    double top =  bottom +  h / (double)_zoomCtx._zoomFactor;
-    double right = left +  w / (double)_zoomCtx._zoomFactor;
+    double top =  bottom +  h / (double)_zoomCtx._zoomFactor * _currentViewerInfos.getDisplayWindow().getPixelAspect();
+    double right = left +  w / (double)_zoomCtx._zoomFactor ;
     if(left == right || top == bottom){
         clearColorBuffer(_clearColor.redF(),_clearColor.greenF(),_clearColor.blueF(),_clearColor.alphaF());
         return;
@@ -1282,12 +1282,22 @@ void ViewerGL::zoomSlot(QString str){
     zoomSlot(v);
 }
 
-QPoint ViewerGL::toWidgetCoordinates(int x, int y){
-    double w = width() ;
-    double h = height();
+QPointF ViewerGL::toImgCoordinates_fast(int x,int y){
+    double w = (double)width() ;
+    double h = (double)height();
     double bottom = _zoomCtx._bottom;
     double left = _zoomCtx._left;
-    double top =  bottom +  h / _zoomCtx._zoomFactor;
+    double top =  bottom +  h / _zoomCtx._zoomFactor * _currentViewerInfos.getDisplayWindow().getPixelAspect();
+    double right = left +  w / _zoomCtx._zoomFactor;
+    return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
+}
+
+QPoint ViewerGL::toWidgetCoordinates(double x, double y){
+    double w = (double)width() ;
+    double h = (double)height();
+    double bottom = _zoomCtx._bottom;
+    double left = _zoomCtx._left;
+    double top =  bottom +  h / _zoomCtx._zoomFactor * _currentViewerInfos.getDisplayWindow().getPixelAspect();
     double right = left +  w / _zoomCtx._zoomFactor;
     return QPoint((int)(((x - left)/(right - left))*w),(int)(((y - top)/(bottom - top))*h));
 }
@@ -1339,7 +1349,7 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
     return QVector4D(0,0,0,0);
 }
 
-void ViewerGL::fitToFormat(const RectI& rod){
+void ViewerGL::fitToFormat(const Format& rod){
     double h = rod.height();
     double w = rod.width();
     assert(h > 0. && w > 0.);
@@ -1350,7 +1360,7 @@ void ViewerGL::fitToFormat(const RectI& rod){
     emit zoomChanged(zoomFactor * 100);
     resetMousePos();
     _zoomCtx._left = w/2.f - (width()/(2.f*_zoomCtx._zoomFactor));
-    _zoomCtx._bottom = h/2.f - (height()/(2.f*_zoomCtx._zoomFactor));
+    _zoomCtx._bottom = h/2.f - (height()/(2.f*_zoomCtx._zoomFactor)) * rod.getPixelAspect();
 }
 
 
@@ -1410,6 +1420,8 @@ void ViewerGL::onProjectFormatChanged(const Format& format){
     _resolutionOverlay.append(QString::number(format.width()));
     _resolutionOverlay.append("x");
     _resolutionOverlay.append(QString::number(format.height()));
+    fitToFormat(format);
+
 
 }
 

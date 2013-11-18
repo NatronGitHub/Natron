@@ -147,7 +147,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     }
     ifInfiniteclipRectToProjectDefault(&rod);
     if(fitToViewer){
-        viewer->fitToFormat(rod);
+        viewer->fitToFormat(Format(rod));
         zoomFactor = viewer->getZoomFactor();
     }
     viewer->setRod(rod);
@@ -346,16 +346,7 @@ void ViewerInstance::updateViewer(){
                                            _pboIndex);
         _pboIndex = (_pboIndex+1)%2;
     }
-    
-    // updating viewer & pixel aspect ratio if needed
-    int width = viewer->width();
-    int height = viewer->height();
-    double ap = viewer->getDisplayWindow().getPixelAspect();
-    if(ap > 1.f){
-        glViewport (0, 0, (int)(width*ap), height);
-    }else{
-        glViewport (0, 0, width, (int)(height/ap));
-    }
+        
     viewer->updateColorPicker();
     viewer->updateGL();
     

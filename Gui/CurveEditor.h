@@ -83,20 +83,12 @@ private:
     /**
      *@brief See toImgCoordinates_fast in ViewerGL.h
      **/
-    QPointF toImgCoordinates_fast(int x,int y){
-        float w = (float)width() ;
-        float h = (float)height();
-        float bottom = _zoomCtx._bottom;
-        float left = _zoomCtx._left;
-        float top =  bottom +  h / _zoomCtx._zoomFactor;
-        float right = left +  w / _zoomCtx._zoomFactor;
-        return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
-    }
+    QPointF toImgCoordinates_fast(int x,int y);
     
     /**
      *@brief See toWidgetCoordinates in ViewerGL.h
      **/
-    QPoint toWidgetCoordinates(int x,int y);
+    QPoint toWidgetCoordinates(double x, double y);
 
     void drawBaseAxis();
     

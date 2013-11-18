@@ -379,7 +379,7 @@ public:
      *@param y[in] The y coordinates of the point in image coordinates.
      *@returns Returns the viewport coordinates mapped equivalent of (x,y).
      **/
-    QPoint toWidgetCoordinates(int x,int y);
+    QPoint toWidgetCoordinates(double x,double y);
     
     /**
      *@brief Computes the image coordinates of the point passed in parameter.
@@ -398,15 +398,7 @@ public:
      *@param y[in] The y coordinates of the point in viewport coordinates.
      *@returns Returns the image coordinates mapped equivalent of (x,y).
      **/
-    QPointF toImgCoordinates_fast(int x,int y){
-        float w = (float)width() ;
-        float h = (float)height();
-        float bottom = _zoomCtx._bottom;
-        float left = _zoomCtx._left;
-        float top =  bottom +  h / _zoomCtx._zoomFactor;
-        float right = left +  w / _zoomCtx._zoomFactor;
-        return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
-    }
+    QPointF toImgCoordinates_fast(int x,int y);
     
     /**
      *@brief Returns the rgba components of the pixel located at position (x,y) in viewport coordinates.
@@ -430,7 +422,7 @@ public:
      *@brief Handy function that zoom automatically the viewer so it fit
      *the displayWindow  entirely in the viewer
      **/
-    void fitToFormat(const RectI& rod);
+    void fitToFormat(const Format &rod);
     
     /**
      *@returns Returns a pointer to the current viewer infos.

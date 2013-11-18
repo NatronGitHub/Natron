@@ -17,8 +17,9 @@
 #include <QMouseEvent>
 
 
-static double AXIS_MAX = 100000;
-static double AXIS_MIN = -100000;
+static double ASPECT_RATIO = 0.1;
+static double AXIS_MAX = 100000.;
+static double AXIS_MIN = -100000.;
 
 CurveEditor::CurveEditor(QWidget* parent, const QGLWidget* shareWidget)
 : QGLWidget(parent,shareWidget)
@@ -43,16 +44,16 @@ CurveEditor::~CurveEditor(){
 
 void CurveEditor::initializeGL(){
     
-    //initialize the box position
+    //initialize the box position so the origin of the system
     _zoomCtx._left = 0. - (width()/(2.*_zoomCtx._zoomFactor));
-    _zoomCtx._bottom = 0. - (height()/(2.*_zoomCtx._zoomFactor));
+    _zoomCtx._bottom = 0. - (height()/(2.*_zoomCtx._zoomFactor)) * ASPECT_RATIO;
 
 }
 
 void CurveEditor::resizeGL(int width,int height){
     if(height == 0)
         height = 1;
-    glViewport (0, 0, width, height);
+    glViewport (0, 0, width , height);
 }
 
 void CurveEditor::paintGL(){
@@ -64,8 +65,8 @@ void CurveEditor::paintGL(){
     assert(_zoomCtx._zoomFactor <= 1024);
     double bottom = _zoomCtx._bottom;
     double left = _zoomCtx._left;
-    double top =  bottom +  h / (double)_zoomCtx._zoomFactor;
-    double right = left +  w / (double)_zoomCtx._zoomFactor;
+    double top = bottom +  h / (double)_zoomCtx._zoomFactor * ASPECT_RATIO;
+    double right = left +  (w / (double)_zoomCtx._zoomFactor);
     if(left == right || top == bottom){
         glClearColor(_clearColor.redF(),_clearColor.greenF(),_clearColor.blueF(),_clearColor.alphaF());
         glClear(GL_COLOR_BUFFER_BIT);
@@ -75,7 +76,7 @@ void CurveEditor::paintGL(){
     _zoomCtx._lastOrthoRight = right;
     _zoomCtx._lastOrthoBottom = bottom;
     _zoomCtx._lastOrthoTop = top;
-    glOrtho(left, right, bottom, top, -1, 1);
+    glOrtho(left , right, bottom, top, -1, 1);
     checkGLErrors();
     
     glMatrixMode (GL_MODELVIEW);
@@ -107,22 +108,47 @@ void CurveEditor::drawScale(){
     QPointF btmLeft = toImgCoordinates_fast(0,height()-1);
     QPointF topRight = toImgCoordinates_fast(width()-1, 0);
     
-    double scaleWidth = width();
 
     QFontMetrics fontM(*_font);
+
+    /*drawing X axis*/
+    double scaleWidth = width();
     double scaleYpos = btmLeft.y();
-    double averageTextUnitWidth = (fontM.width(QString::number((int)btmLeft.x()))
-                                + fontM.width(QString::number((int)topRight.x()))) / 2.;
+    double averageTextUnitWidth = 0.;
+
+    averageTextUnitWidth = (fontM.width(QString::number(btmLeft.x()))
+                            + fontM.width(QString::number(topRight.x()))) / 2.;
+
     int majorTicksCount = (scaleWidth / averageTextUnitWidth) / 2; //divide by 2 to count as much spaces between ticks as there're ticks
 
     double xminp,xmaxp,dist;
     ScaleSlider::LinearScale2(btmLeft.x(), topRight.x(), majorTicksCount, &xminp, &xmaxp, &dist);
     double value = xminp;
+    double prev = value;
     for(int i = 0 ; i < majorTicksCount; ++i){
-        renderText(value,scaleYpos ,QString::number((int)value) , _scaleColor, *_font);
+        renderText(value,scaleYpos ,
+                   (value - prev < 1.) ?  QString::number(value) :  QString::number((int)value),
+                   _scaleColor, *_font);
+        prev = value;
         value += dist;
     }
     
+    /*drawing Y axis*/
+    double scaleHeight = height();
+    double scaleXpos = btmLeft.x();
+
+
+    majorTicksCount = (scaleHeight / fontM.height()) / 2; //divide by 2 to count as much spaces between ticks as there're ticks
+
+    ScaleSlider::LinearScale2(btmLeft.y(), topRight.y(), majorTicksCount, &xminp, &xmaxp, &dist);
+    value = xminp;
+    for(int i = 0 ; i < majorTicksCount; ++i){
+        renderText(scaleXpos,value ,
+                    QString::number(value)
+                                  , _scaleColor, *_font);
+        value += dist;
+    }
+
 }
 
 void CurveEditor::renderText(double x,double y,const QString& text,const QColor& color,const QFont& font){
@@ -194,7 +220,7 @@ void CurveEditor::wheelEvent(QWheelEvent *event){
     }
     QPointF zoomCenter = toImgCoordinates_fast(event->x(), event->y());
     double zoomRatio =   _zoomCtx._zoomFactor / newZoomFactor;
-    _zoomCtx._left = zoomCenter.x() - (zoomCenter.x() - _zoomCtx._left)*zoomRatio;
+    _zoomCtx._left = zoomCenter.x() - (zoomCenter.x() - _zoomCtx._left)*zoomRatio ;
     _zoomCtx._bottom = zoomCenter.y() - (zoomCenter.y() - _zoomCtx._bottom)*zoomRatio;
     
     _zoomCtx._zoomFactor = newZoomFactor;
@@ -203,12 +229,22 @@ void CurveEditor::wheelEvent(QWheelEvent *event){
 
 }
 
-QPoint CurveEditor::toWidgetCoordinates(int x, int y){
-    double w = width() ;
-    double h = height();
+QPointF CurveEditor::toImgCoordinates_fast(int x,int y){
+    double w = (double)width() ;
+    double h = (double)height();
     double bottom = _zoomCtx._bottom;
     double left = _zoomCtx._left;
-    double top =  bottom +  h / _zoomCtx._zoomFactor;
+    double top =  bottom +  h / _zoomCtx._zoomFactor * ASPECT_RATIO;
+    double right = left +  w / _zoomCtx._zoomFactor;
+    return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
+}
+
+QPoint CurveEditor::toWidgetCoordinates(double x, double y){
+    double w = (double)width() ;
+    double h = (double)height();
+    double bottom = _zoomCtx._bottom;
+    double left = _zoomCtx._left;
+    double top =  bottom +  h / _zoomCtx._zoomFactor * ASPECT_RATIO;
     double right = left +  w / _zoomCtx._zoomFactor;
     return QPoint((int)(((x - left)/(right - left))*w),(int)(((y - top)/(bottom - top))*h));
 }

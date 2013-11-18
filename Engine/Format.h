@@ -47,6 +47,14 @@ public:
     , _pixel_aspect(pa)
     , _name(name)
     {}
+
+    Format(const RectI& rect)
+        :RectI(rect)
+        ,_pixel_aspect(1.)
+        ,_name()
+    {
+
+    }
     
     Format(const Format& other)
     :RectI(other.left(),other.bottom(),other.right(),other.top())
