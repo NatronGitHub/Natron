@@ -81,30 +81,59 @@ public:
     void to_byte(uchar* to, const float* from, int W, int delta = 1) const;
     
     /*used to pre-multiply by alpha*/
-    void to_byte(uchar* to, const float* from, const float* alpha, int W,int delta = -1) const;
+    void to_byte_premult(uchar* to, const float* from, const float* alpha, int W,int delta = -1) const;
     
     void to_short(U16* to, const float* from, int W, int bits = 16, int delta = 1) const;
-    void to_short(U16* to, const float* from, const float* alpha, int W, int bits = 16, int delta = 1) const;
+    void to_short_premult(U16* to, const float* from, const float* alpha, int W, int bits = 16, int delta = 1) const;
     
     void to_float(float* to, const float* from, int W, int delta = 1) const;
-    void to_float(float* to, const float* from, const float* alpha, int W, int delta = 1) const;
+    void to_float_premult(float* to, const float* from, const float* alpha, int W, int delta = 1) const;
     
 
     void from_byte(float* to, const uchar* from, int W, int delta = 1) const;
     
     /*un-premultiply by alpha before color-space converting and re-multiply by alpha
      afterwards*/
-    void from_byte(float* to, const uchar* from, const uchar* alpha, int W, int delta = 1) const;
-    void from_byteQt(float* to, const QRgb* from,Natron::Channel z,bool premult,int W,int delta = 1) const;
-    
+    void from_byte_premult(float* to, const uchar* from, const uchar* alpha, int W, int delta = 1) const;
+
+    void from_byteQt(float* to, const QRgb* from, Natron::Channel z, int W, int delta = 1) const;
+    void from_byteQt_premult(float* to, const QRgb* from, Natron::Channel z, int W, int delta = 1) const;
+
     void from_short(float* to, const U16* from, int W, int bits = 16, int delta = 1) const;
-    void from_short(float* to, const U16* from, const U16* alpha, int W, int bits = 16, int delta = 1) const;
+    void from_short_premult(float* to, const U16* from, const U16* alpha, int W, int bits = 16, int delta = 1) const;
     
     void from_float(float* to, const float* from, int W, int delta = 1) const;
-    void from_float(float* to, const float* from, const float* alpha, int W, int delta = 1) const;
+    void from_float_premult(float* to, const float* from, const float* alpha, int W, int delta = 1) const;
     
     
     
+    
+    /**
+     * @brief These functions work exactly like to_byte but take in parameter 2 packed-buffers
+     * pointing to (0,0) and rectangle to copy in image coordinates.
+     * The output pixels are pre-multiplied by alpha.
+     * @param to[out] The buffer to write to. It must point to (rod.left(),rod.bottom()).
+     * @param from[in] The buffer to read from. It must point to (rod.left(),rod.bottom()).
+     * @param rect[in] The rectangle portion to copy over. It must be clipped to the rod.
+     * @param srcRod[in] The region of definition of the input buffer.
+     * @param dstRod[in] The region of definition of the output buffer.
+     * @param invertY[in] If true, then it will use for the output scan-line y the input scan-line srcY = rod.top() - y - 1
+     * @param format[in] Specifies the pixel packing format of the OUTPUT buffer. This function assumes the 'from' buffer
+     * is RGBA laid out.
+     * WARNING: to and from must have exactly the same pixels count.
+     **/
+    void to_byte_rect_premult(uchar* to, const float* from,
+                      const RectI& rect,const RectI& srcRod,const RectI& dstRod,
+                      bool invertY,
+                      Lut::PackedPixelsFormat format) const;
+    void to_short_rect_premult(U16* to, const float* from,
+                       const RectI& rect,const RectI& srcRod,const RectI& dstRod,
+                       bool invertY,
+                       Lut::PackedPixelsFormat format) const;
+    void to_float_rect_premult(float* to, const float* from,
+                       const RectI& rect,const RectI& srcRod,const RectI& dstRod,
+                       bool invertY,
+                       Lut::PackedPixelsFormat format) const;
     
     /**
      * @brief These functions work exactly like to_byte but take in parameter 2 packed-buffers
@@ -115,24 +144,51 @@ public:
      * @param srcRod[in] The region of definition of the input buffer.
      * @param dstRod[in] The region of definition of the output buffer.
      * @param invertY[in] If true, then it will use for the output scan-line y the input scan-line srcY = rod.top() - y - 1
-     * @param premult[in] Should the output pixels be pre-multiplied by alpha ?
      * @param format[in] Specifies the pixel packing format of the OUTPUT buffer. This function assumes the 'from' buffer
      * is RGBA laid out.
      * WARNING: to and from must have exactly the same pixels count.
      **/
     void to_byte_rect(uchar* to, const float* from,
                       const RectI& rect,const RectI& srcRod,const RectI& dstRod,
-                      bool invertY,bool premult,
+                      bool invertY,
                       Lut::PackedPixelsFormat format) const;
     void to_short_rect(U16* to, const float* from,
                        const RectI& rect,const RectI& srcRod,const RectI& dstRod,
-                       bool invertY ,bool premult,
+                       bool invertY,
                        Lut::PackedPixelsFormat format) const;
     void to_float_rect(float* to, const float* from,
                        const RectI& rect,const RectI& srcRod,const RectI& dstRod,
-                       bool invertY,bool premult,
+                       bool invertY,
                        Lut::PackedPixelsFormat format) const;
-    
+
+
+    /**
+     * @brief These functions work exactly like from_byte but take in parameter 2 packed-buffers
+     * pointing to (0,0) and rectangle to copy in image coordinates.
+     * The input pixels are pre-multiplied by alpha. It will un-premultiply by alpha before color-converting
+     * and then multiply by alpha afterwards.
+     * @param to[out] The buffer to write to. It must point to (rod.left(),rod.bottom()).
+     * @param from[in] The buffer to read from. It must point to (rod.left(),rod.bottom()).
+     * @param rect[in] The rectangle portion to copy over. It must be clipped to the rod.
+     * @param rod[in] The region of definition of the input and output buffers.
+     * @param invertY[in] If true, then it will use for the output scan-line y the input scan-line srcY = rod.top() - y - 1
+     * @param format[in] Specifies the pixel packing format of the INPUT buffer. This function assumes the 'to' buffer
+     * is RGBA laid out.
+     * WARNING: to and from must have exactly the same pixels count.
+     **/
+
+    void from_byte_rect_premult(float* to, const uchar* from,
+                        const RectI& rect,const RectI& rod,
+                        bool invertY,
+                        Lut::PackedPixelsFormat format) const;
+    void from_short_rect_premult(float* to, const U16* from,
+                         const RectI& rect,const RectI& rod,
+                         bool invertY,
+                         Lut::PackedPixelsFormat format) const;
+    void from_float_rect_premult(float* to, const float* from,
+                         const RectI& rect,const RectI& rod,
+                         bool invertY,
+                         Lut::PackedPixelsFormat format) const;
     
     /**
      * @brief These functions work exactly like from_byte but take in parameter 2 packed-buffers
@@ -142,8 +198,6 @@ public:
      * @param rect[in] The rectangle portion to copy over. It must be clipped to the rod.
      * @param rod[in] The region of definition of the input and output buffers.
      * @param invertY[in] If true, then it will use for the output scan-line y the input scan-line srcY = rod.top() - y - 1
-     * @param premult[in] Are the input pixels pre-multiplied by alpha ? If yes it will un-premultiply by alpha before color-converting
-     * and then multiply by alpha afterwards.
      * @param format[in] Specifies the pixel packing format of the INPUT buffer. This function assumes the 'to' buffer
      * is RGBA laid out.
      * WARNING: to and from must have exactly the same pixels count.
@@ -151,18 +205,18 @@ public:
 
     void from_byte_rect(float* to, const uchar* from,
                         const RectI& rect,const RectI& rod,
-                        bool invertY ,bool premult,
+                        bool invertY,
                         Lut::PackedPixelsFormat format) const;
     void from_short_rect(float* to, const U16* from,
                          const RectI& rect,const RectI& rod,
-                         bool invertY ,bool premult,
+                         bool invertY,
                          Lut::PackedPixelsFormat format) const;
     void from_float_rect(float* to, const float* from,
                          const RectI& rect,const RectI& rod,
-                         bool invertY ,bool premult,
+                         bool invertY,
                          Lut::PackedPixelsFormat format) const;
-    
-    
+
+
 
     
     float toFloatFast(float v) const;
@@ -306,38 +360,63 @@ void linear_from_float_rect(float* to, const float* from,
  The input and output buffers must not overlap in memory.
  */
 void linear_to_byte(uchar* to, const float* from, int W, int delta = 1);
-void linear_to_byte(uchar* to, const float* from,const float* alpha, int W, int delta = 1);
+void linear_to_byte_premult(uchar* to, const float* from,const float* alpha, int W, int delta = 1);
 void linear_to_short(U16* to, const float* from, int W, int bits = 16, int delta = 1);
-void linear_to_short(U16* to, const float* from,const float* alpha, int W, int bits = 16, int delta = 1);
+void linear_to_short_premult(U16* to, const float* from,const float* alpha, int W, int bits = 16, int delta = 1);
 void linear_to_float(float* to, const float* from, int W, int delta = 1);
-void linear_to_float(float* to, const float* from,const float* alpha, int W, int delta = 1);
+void linear_to_float_premult(float* to, const float* from,const float* alpha, int W, int delta = 1);
     
     
-    /**
-     * @brief These functions work exactly like to_byte but take in parameter 2 packed-buffers
-     * pointing to (0,0) and rectangle to copy in image coordinates.
-     * @param to[out] The buffer to write to. It must point to (rod.left(),rod.bottom()).
-     * @param from[in] The buffer to read from. It must point to (rod.left(),rod.bottom()).
-     * @param rect[in] The rectangle portion to copy over. It must be clipped to the rod.
-     * @param rod[in] The region of definition of the input and output buffers.
-     * @param invertY[in] If true, then it will use for the output scan-line y the input scan-line srcY = rod.top() - y - 1
-     * @param premult[in] Should the output pixels be pre-multiplied by alpha ?
-     * @param format[in] Specifies the pixel packing format of the OUTPUT buffer. This function assumes the 'from' buffer
-     * is RGBA laid out.
-     * WARNING: to and from must have exactly the same pixels count.
-     **/
-void linear_to_byte_rect(uchar* to, const float* from,
+/**
+ * @brief These functions work exactly like to_byte but take in parameter 2 packed-buffers
+ * pointing to (0,0) and rectangle to copy in image coordinates.
+ * The output pixels are pre-multiplied by alpha.
+ * @param to[out] The buffer to write to. It must point to (rod.left(),rod.bottom()).
+ * @param from[in] The buffer to read from. It must point to (rod.left(),rod.bottom()).
+ * @param rect[in] The rectangle portion to copy over. It must be clipped to the rod.
+ * @param rod[in] The region of definition of the input and output buffers.
+ * @param invertY[in] If true, then it will use for the output scan-line y the input scan-line srcY = rod.top() - y - 1
+ * @param format[in] Specifies the pixel packing format of the OUTPUT buffer. This function assumes the 'from' buffer
+ * is RGBA laid out.
+ * WARNING: to and from must have exactly the same pixels count.
+ **/
+void linear_to_byte_rect_premult(uchar* to, const float* from,
                          const RectI& rect,const RectI& srcRod,const RectI& dstRod,
-                         bool invertY,bool premult,
+                         bool invertY,
                          Lut::PackedPixelsFormat format);
+void linear_to_short_rect_premult(U16* to, const float* from,
+                          const RectI& rect,const RectI& srcRod,const RectI& dstRod,
+                          bool invertY,
+                          Lut::PackedPixelsFormat format);
+void linear_to_float_rect_premult(float* to, const float* from,
+                          const RectI& rect,const RectI& srcRod,const RectI& dstRod,
+                          bool invertY,
+                          Lut::PackedPixelsFormat format);
+
+/**
+ * @brief These functions work exactly like to_byte but take in parameter 2 packed-buffers
+ * pointing to (0,0) and rectangle to copy in image coordinates.
+ * @param to[out] The buffer to write to. It must point to (rod.left(),rod.bottom()).
+ * @param from[in] The buffer to read from. It must point to (rod.left(),rod.bottom()).
+ * @param rect[in] The rectangle portion to copy over. It must be clipped to the rod.
+ * @param rod[in] The region of definition of the input and output buffers.
+ * @param invertY[in] If true, then it will use for the output scan-line y the input scan-line srcY = rod.top() - y - 1
+ * @param format[in] Specifies the pixel packing format of the OUTPUT buffer. This function assumes the 'from' buffer
+ * is RGBA laid out.
+ * WARNING: to and from must have exactly the same pixels count.
+ **/
+void linear_to_byte_rect(uchar* to, const float* from,
+                     const RectI& rect,const RectI& srcRod,const RectI& dstRod,
+                     bool invertY,
+                     Lut::PackedPixelsFormat format);
 void linear_to_short_rect(U16* to, const float* from,
-                          const RectI& rect,const RectI& srcRod,const RectI& dstRod,
-                          bool invertY,bool premult,
-                          Lut::PackedPixelsFormat format);
+                      const RectI& rect,const RectI& srcRod,const RectI& dstRod,
+                      bool invertY,
+                      Lut::PackedPixelsFormat format);
 void linear_to_float_rect(float* to, const float* from,
-                          const RectI& rect,const RectI& srcRod,const RectI& dstRod,
-                          bool invertY,bool premult,
-                          Lut::PackedPixelsFormat format);
+                      const RectI& rect,const RectI& srcRod,const RectI& dstRod,
+                      bool invertY,
+                      Lut::PackedPixelsFormat format);
 
 } // namespace Natron
 } // namespace Color
