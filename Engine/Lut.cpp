@@ -232,8 +232,7 @@ void Lut::from_byte(float *to, const uchar *from, const uchar *alpha, int W, int
     assert(!linear());
     validate();
     for (int i = 0 ; i < W ; i += delta) {
-        float a = (float)alpha[i];
-        to[i] = from_byte_table[(int)from[i] / (int)a] * a;
+        to[i] = from_byte_table[(from[i]*255 + 128) / alpha[i]] * alpha[i] / 255.;
     }
 }
 
@@ -265,7 +264,7 @@ void Lut::from_byteQt(float *to, const QRgb *from, Natron::Channel z, bool premu
             for (int i = 0 ; i < W ; i += delta) {
                 const QRgb c = from[i];
                 int alpha = qAlpha(c);
-                to[i] = from_byte_table[((*lookup)(c) / alpha)] * alpha;
+                to[i] = from_byte_table[((*lookup)(c)*255 + 128) / alpha] * alpha / 255.;
             }
         } else {
             for (int i = 0 ; i < W ; i += delta) {
