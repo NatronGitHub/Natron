@@ -362,7 +362,7 @@ void Project::setProjectDefaultFormat(const Format& f) {
 
  
 void Project::createNewFormat(){
-    AddFormatDialog dialog(getApp()->getGui());
+    AddFormatDialog dialog(this,getApp()->getGui());
     if(dialog.exec()){
         tryAddProjectFormat(dialog.getFormat());
     }

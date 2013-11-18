@@ -62,11 +62,13 @@ class SpinBox;
 class LineEdit;
 class DockablePanel;
 class PluginToolButton;
+class ComboBox;
 class CurveEditor;
 
 namespace Natron{
     class Node;
     class OutputEffectInstance;
+    class Project;
 }
 
 
@@ -440,20 +442,32 @@ public:
 
 
 class AddFormatDialog : public QDialog {
-    
+    Q_OBJECT
+
 public:
     
-    AddFormatDialog(QWidget* parent = 0);
+    AddFormatDialog(Natron::Project* project,QWidget* parent = 0);
     
     virtual ~AddFormatDialog(){}
     
     Format getFormat() const ;
 
+public slots:
+
+    void onCopyFromViewer();
+
 private:
+    Natron::Project* _project;
+
     QVBoxLayout* _mainLayout;
 
-    QWidget* _secondLine;
-    QHBoxLayout* _secondLineLayout;
+    QWidget* _fromViewerLine;
+    QHBoxLayout* _fromViewerLineLayout;
+    Button* _copyFromViewerButton;
+    ComboBox* _copyFromViewerCombo;
+
+    QWidget* _parametersLine;
+    QHBoxLayout* _parametersLineLayout;
     QLabel* _widthLabel;
     SpinBox* _widthSpinBox;
     QLabel* _heightLabel;
@@ -462,13 +476,13 @@ private:
     SpinBox* _pixelAspectSpinBox;
 
 
-    QWidget* _thirdLine;
-    QHBoxLayout* _thirdLineLayout;
+    QWidget* _formatNameLine;
+    QHBoxLayout* _formatNameLayout;
     QLabel* _nameLabel;
     LineEdit* _nameLineEdit;
 
-    QWidget* _fourthLine;
-    QHBoxLayout* _fourthLineLayout;
+    QWidget* _buttonsLine;
+    QHBoxLayout* _buttonsLineLayout;
     Button* _cancelButton;
     Button* _okButton;
 };
