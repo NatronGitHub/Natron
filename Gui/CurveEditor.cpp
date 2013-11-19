@@ -149,10 +149,13 @@ void CurveEditor::drawScale(){
     if(majorTicksCount > 0){
         ScaleSlider::LinearScale2(btmLeft.x(), topRight.x(), majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
         value = xminp;
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        for (double x = xminp; x < xmaxp;++x) {
-            float alpha = 1.f;
+    }
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    for(int i = 0 ; i < majorTicksCount; ++i, value += dist) {
+
+        for (double x = value; x < value + dist;++x) {
+            float alpha = 0.f;
             if(std::fmod(x,dist * 5) == 0){
                 alpha = 0.8;
             }else if(std::fmod(x,dist) == 0){
@@ -164,6 +167,7 @@ void CurveEditor::drawScale(){
             else if(std::fmod(x,dist / 10) == 0){
                 alpha = 0.2;
             }
+
             glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
 
             glBegin(GL_LINES);
@@ -172,10 +176,8 @@ void CurveEditor::drawScale(){
             glEnd();
 
         }
-        glDisable(GL_BLEND);
-    }
 
-    for(int i = 0 ; i < majorTicksCount; ++i, value += dist) {
+
         QString s;
         if (dist < 1.) {
             if (std::abs(value) < dist/2.) {
@@ -187,9 +189,12 @@ void CurveEditor::drawScale(){
             s = QString::number(std::floor(value+0.5));
         }
 
+
         renderText(value,scaleYpos , s, _scaleColor, *_font);
 
     }
+    glDisable(GL_BLEND);
+
     
     /*drawing Y axis*/
     double scaleHeight = height();
