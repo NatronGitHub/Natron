@@ -405,10 +405,8 @@ void KnobHolder::cloneKnobs(const KnobHolder& other){
 
 void Knob::cloneValue(const Knob& other){
     assert(_name == other._name);
-    bool newValueDiffThanOldValue = _value != other._value;
+    _hashVector = other._hashVector;
     _value = other._value;
-    if(newValueDiffThanOldValue)
-        updateHash();
     cloneExtraData(other);
 }
 
@@ -676,7 +674,8 @@ void Bool_Knob::_restoreFromString(const std::string& str){
 void Double_Knob::fillHashVector(){
     _hashVector.clear();
     for(std::map<int,Variant>::const_iterator it = _value.begin();it!=_value.end();++it){
-        _hashVector.push_back((U64)it->second.toDouble());
+        double d = it->second.toDouble();
+        _hashVector.push_back(*(reinterpret_cast<U64*>(&(d))));
     }
 }
 

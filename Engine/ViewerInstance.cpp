@@ -216,7 +216,6 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
             _forceRender = false;
         }
     }
-    
     if (cachedFrame) {
         /*Found in viewer cache, we execute the cached engine and leave*/
         _interThreadInfos._ramBuffer = cachedFrame->data();

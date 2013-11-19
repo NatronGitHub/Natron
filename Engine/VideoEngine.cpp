@@ -673,7 +673,7 @@ U64 RenderTree::cloneKnobsAndcomputeTreeHash(EffectInstance* effect,const std::v
     if(!effect->isHashValid()){
         effect->clone();
         ret = effect->computeHash(inputsHashs);
-        // std::cout << effect->getName() << ": " << ret << std::endl;
+      //  std::cout << effect->getName() << ": " << ret << std::endl;
     }
     return ret;
 }
