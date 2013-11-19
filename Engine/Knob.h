@@ -17,7 +17,6 @@
 #include <map>
 #include <cfloat>
 #include <boost/shared_ptr.hpp>
-#include <QtGui/QVector4D>
 #include <QtCore/QMutex>
 #include <QtCore/QStringList>
 
@@ -75,6 +74,8 @@ public:
     
     enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1,STARTUP_RESTORATION = 2};
 
+    typedef std::map<double,Variant>  Keys;
+
     
     Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
     
@@ -98,26 +99,70 @@ public:
     
     template<typename T>
     void setValue(T variant[],int count){
-        Variant v(variant,count);
-        setValueInternal(v);
+        for(int i = 0; i < count; ++i){
+            setValueInternal(Variant(variant[i]),i);
+        }
     }
     
     template<typename T>
-    void setValue(const T &value) {
-        setValueInternal(Variant(value));
+    void setValue(const T &value,int dimension = 0) {
+        setValueInternal(Variant(value),dimension);
     }
     
     /*Used to extract the value held by the knob.
      Derived classes should provide a more appropriate
      way to retrieve results in the expected type.*/
     template<typename T>
-    T value(){
-        return _value.value<T>();
+    T getValue(int dimension = 0) const {
+        std::map<int,Variant>::const_iterator it = _value.find(dimension);
+        assert(it != _value.end());
+        return it->second.value<T>();
     }
     
-    const Variant& getValueAsVariant() const {
-        return _value;
+    const std::map<int,Variant>& getMultiDimensionalValue() const {return _value;}
+
+    /**
+     * @brief Must return true if this knob can animate (i.e: if we can set different values depending on the time)
+     * Some parameters cannot animate, for example a file selector. 
+     **/
+    virtual bool canAnimate() const = 0;
+    
+    /**
+     * @brief Set the value of a knob for a specific dimension at a specific time. By default dimension
+     * is 0. If the knob has only 1 dimension, it will set the dimension 0 regardless of the parameter dimension.
+     * Otherwise, it will attempt to set a key for only the dimension 'dimensionIndex' of the knob.
+     **/
+    template<typename T>
+    void setValueAtTime(double time,const T& value,int dimensionIndex = 0){
+        assert(dimensionIndex < _dimension);
+        setValueAtTimeInternal(time,Variant(value),dimensionIndex);
     }
+
+    /**
+     * @brief Set the value for the knob in all dimensions at time 'time'.
+     **/
+    template<typename T>
+    void setValueAtTime(double time,T variant[],int count){
+        for(int i = 0; i < count; ++i){
+            setValueAtTimeInternal(time,Variant(variant[i]),i);
+        }
+    }
+
+    /**
+     * @brief Returns the value of the knob in a specific dimension at a specific time. If
+     * the knob has no keys in this dimension it will return the value at the requested dimension
+     * stored in _value. Type type parameter must be the type of the knob, i.e: double for a Double_Knob.
+     * The type of the Variant can never be cast to QList<QVariant>.
+     **/
+    template<typename T>
+    T getValueAtTime(double time,int dimension = 0){
+        return getValueAtTimeInternal(time,dimension).value<T>();
+    }
+
+    /**
+     * @brief Returns an ordered map of all the keys at a specific dimension.
+     **/
+    Knob::Keys getKeys(int dimension = 0);
     
     /*other must have exactly the same name*/
     void cloneValue(const Knob& other);
@@ -158,13 +203,14 @@ public:
     void setHintToolTip(const std::string& hint){_tooltipHint = hint;}
     
     const std::string& getHintToolTip() const {return _tooltipHint;}
+
     
 public slots:
     
     /*Set the value of the knob but does NOT emit the valueChanged signal.
      This is called by the GUI hence does not change the value of any
      render thread storage.*/
-    void onValueChanged(const Variant& variant);
+    void onValueChanged(int dimension,const Variant& variant);
     
     void onKnobUndoneChange();
     
@@ -175,7 +221,7 @@ signals:
     void deleted();
     
     /*Emitted when the value is changed internally by a call to setValue*/
-    void valueChanged(const Variant&);
+    void valueChanged(int dimension,const Variant&);
 
     void visible(bool);
     
@@ -203,7 +249,8 @@ protected:
     virtual void processNewValue(){}
     
     KnobHolder*  _holder;
-    Variant _value;
+    /* A variant storing all the values of the knob. <dimension,value>*/
+    std::map<int,Variant> _value;
     std::vector<U64> _hashVector;
     int _dimension;
     
@@ -212,7 +259,11 @@ private:
     
     void updateHash();
     
-    void setValueInternal(const Variant& v);
+    void setValueInternal(const Variant& v,int dimension);
+
+    void setValueAtTimeInternal(double time,const Variant& v,int dimension);
+
+    Variant getValueAtTimeInternal(double time, int dimension) const;
     
     std::string _description;//< the text label that will be displayed  on the GUI
     QString _name;//< the knob can have a name different than the label displayed on GUI.
@@ -226,10 +277,15 @@ private:
     bool _canUndo;
     bool _isInsignificant; //< if true, a value change will never trigger an evaluation
     std::string _tooltipHint;
-    Variant _valuePostedWhileLocked;
-    QMutex _lock;
-    bool _isLocked;
-    bool _hasPostedValue;
+
+
+    typedef std::map<int,Keys> MultiDimensionalKeys;
+
+    /*A map storing for each dimension the keys of the knob. For instance a Double_Knob of dimension 2
+    would have 2 Keys in its map, 1 for dimension 0 and 1 for dimension 1.
+    The Keys are an ordered map of <time,value> where value is the type requested for the knob (i.e: double
+    for a double knob).*/
+    MultiDimensionalKeys _keys; /// the keys for a specific dimension
 };
 
 /**
@@ -354,6 +410,8 @@ public:
     {}
     
     virtual void fillHashVector();
+
+    virtual bool canAnimate() const { return false; }
     
     virtual const std::string typeName(){return "InputFile";}
     
@@ -420,6 +478,8 @@ public:
     {}
     
     virtual void fillHashVector();
+
+    virtual bool canAnimate() const { return false; }
     
     std::string getFileName() const;
     
@@ -465,12 +525,10 @@ public:
     bool isSliderDisabled() const {return _disableSlider;}
     
     virtual void fillHashVector();
+
+    virtual bool canAnimate() const { return true; }
     
     virtual const std::string typeName(){return "Int";}
-    
-    /*Returns a vector of values. The vector
-     contains _dimension elements.*/
-    std::vector<int> getValues() const;
     
     void setMinimum(int mini,int index = 0){
         if(_minimums.size() > (U32)index){
@@ -637,11 +695,11 @@ public:
     {}
     
     virtual void fillHashVector();
+
+    virtual bool canAnimate() const { return false; }
     
     virtual const std::string typeName(){return "Bool";}
-    
-    bool getValue() const { return _value.toBool(); }
-    
+        
     virtual std::string serialize() const;
 
 protected:
@@ -673,15 +731,12 @@ public:
     bool isSliderDisabled() const {return _disableSlider;}
     
     virtual void fillHashVector();
+
+    virtual bool canAnimate() const { return true; }
     
     virtual std::string serialize() const;
-
     
     virtual const std::string typeName(){return "Double";}
-    
-    /*Returns a vector of values. The vector
-     contains _dimension elements.*/
-    std::vector<double> getValues() const ;
     
     const std::vector<double>& getMinimums() const {return _minimums;}
     
@@ -860,6 +915,8 @@ public:
     Knob(holder,description,dimension){}
     
     virtual void fillHashVector(){}
+
+    virtual bool canAnimate() const { return false; }
     
     virtual const std::string typeName(){return "Button";}
     
@@ -886,6 +943,8 @@ public:
     {
         
     }
+
+    virtual bool canAnimate() const { return false; }
     
     virtual void fillHashVector();
     
@@ -903,7 +962,7 @@ public:
     
     const std::vector<std::string>& getEntriesHelp() const {return _entriesHelp;}
     
-    int getActiveEntry() const {return _value.toInt();}
+    int getActiveEntry() const {return getValue<int>();}
     
     const std::string& getActiveEntryText() const { return _entries[getActiveEntry()]; }
     
@@ -934,6 +993,8 @@ public:
     Knob(holder,description,dimension){
         
     }
+
+    virtual bool canAnimate() const { return false; }
     
     virtual void fillHashVector(){}
     
@@ -945,39 +1006,41 @@ protected:
     virtual void _restoreFromString(const std::string& str){(void)str;}
 };
 /******************************RGBA_KNOB**************************************/
-class RGBA_Knob:public Knob
+
+/**
+ * @brief A color knob with of variable dimension. Each color is a double ranging in [0. , 1.]
+ * In dimension 1 the knob will have a single channel being a gray-scale
+ * In dimension 3 the knob will have 3 channel R,G,B
+ * In dimension 4 the knob will have R,G,B and A channels.
+**/
+class Color_Knob:public Knob
 {
 public:
     
     static Knob* BuildKnob(KnobHolder* holder, const std::string& description,int dimension){
-        return new RGBA_Knob(holder,description,dimension);
+        return new Color_Knob(holder,description,dimension);
     }
     
-    RGBA_Knob(KnobHolder* holder, const std::string& description,int dimension):
-    Knob(holder,description,dimension),_alphaEnabled(true)
+
+    Color_Knob(KnobHolder* holder, const std::string& description,int dimension):
+    Knob(holder,description,dimension)
     {
-        
+        //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
+        assert(dimension <= 4 && dimension != 2);
     }
     
+    virtual bool canAnimate() const { return true; }
+
     virtual void fillHashVector();
     
-    virtual const std::string typeName(){return "RGBA";}
-    
-    QVector4D getValues() const {return _value.value<QVector4D>();}
-    
-    void setAlphaEnabled(bool enabled) { _alphaEnabled = enabled; }
-    
-    bool isAlphaEnabled() const { return _alphaEnabled; }
+    virtual const std::string typeName(){return "Color";}
     
     virtual std::string serialize() const;
+
 protected:
     
     virtual void _restoreFromString(const std::string& str);
     
-private:
-    
-    bool _alphaEnabled;
-    QStringList _entries;
 };
 
 /******************************STRING_KNOB**************************************/
@@ -994,11 +1057,13 @@ public:
         
     }
     
+    virtual bool canAnimate() const { return false; }
+
     virtual void fillHashVector();
     
     virtual const std::string typeName(){return "String";}
     
-    std::string getString() const {return _value.toString().toStdString();}
+    std::string getString() const {return getValue<QString>().toStdString();}
     
     virtual std::string serialize() const;
 protected:
@@ -1025,6 +1090,8 @@ public:
     {
         
     }
+
+    virtual bool canAnimate() const { return false; }
     
     virtual void fillHashVector(){}
     
@@ -1055,6 +1122,8 @@ public:
         
     }
     
+    virtual bool canAnimate() const { return false; }
+
     virtual void fillHashVector(){}
     
     virtual const std::string typeName(){return "Tab";}
@@ -1089,13 +1158,15 @@ public:
         
     }
     
+    virtual bool canAnimate() const { return false; }
+
     virtual void fillHashVector();
     
     virtual std::string serialize() const;
     
     virtual const std::string typeName(){return "RichText";}
     
-    std::string getString() const {return _value.toString().toStdString();}
+    std::string getString() const {return getValue<QString>().toStdString();}
     
 protected:
     

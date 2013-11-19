@@ -66,7 +66,7 @@ bool Reader::isInputOptional(int /*inputNb*/) const{
     return false;
 }
 Natron::Status Reader::preProcessFrame(SequenceTime time){
-    int missingFrameChoice = _missingFrameChoice->value<int>();
+    int missingFrameChoice = _missingFrameChoice->getValue<int>();
     QString filename = _fileKnob->getRandomFrameName(time,missingFrameChoice == 0);
     if(filename.isEmpty() && (missingFrameChoice == 1 || missingFrameChoice == 0)){
         setPersistentMessage(Natron::ERROR_MESSAGE,QString(" couldn't find a file for frame "+QString::number(time)).toStdString());
@@ -172,7 +172,7 @@ boost::shared_ptr<Decoder> Reader::decodeHeader(const QString& filename){
 
 
 Natron::Status Reader::render(SequenceTime time,RenderScale scale,const RectI& roi,int /*view*/,boost::shared_ptr<Natron::Image> output){
-    int missingFrameChoice = _missingFrameChoice->value<int>();
+    int missingFrameChoice = _missingFrameChoice->getValue<int>();
     QString filename = _fileKnob->getRandomFrameName(time,missingFrameChoice == 0);
     if(filename.isEmpty() && missingFrameChoice == 2){
         output->fill(roi,0.,0.); // render black

@@ -671,7 +671,7 @@ std::string OfxEffectInstance::getOutputFileName() const{
     for (U32 i = 0; i < knobs.size(); ++i) {
         if (knobs[i]->typeName() == "OutputFile") {
             OutputFile_Knob* knob = dynamic_cast<OutputFile_Knob*>(knobs[i]);
-            return knob->value<QString>().toStdString();
+            return knob->getValue<QString>().toStdString();
         }
     }
     return "";

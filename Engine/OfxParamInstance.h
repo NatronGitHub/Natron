@@ -35,7 +35,7 @@ class File_Knob;
 class OutputFile_Knob;
 class Button_Knob;
 class Tab_Knob;
-class RGBA_Knob;
+class Color_Knob;
 class Int_Knob;
 class Double_Knob;
 class Bool_Knob;
@@ -170,7 +170,7 @@ class OfxRGBAInstance :public OFX::Host::Param::RGBAInstance {
     
 protected:
     OfxEffectInstance* _node;
-    RGBA_Knob* _knob;
+    Color_Knob* _knob;
 
 public:
     OfxRGBAInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
@@ -194,7 +194,7 @@ public:
 class OfxRGBInstance : public OFX::Host::Param::RGBInstance {
 protected:
     OfxEffectInstance* _node;
-    RGBA_Knob* _knob;
+    Color_Knob* _knob;
 
 public:
     OfxRGBInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
