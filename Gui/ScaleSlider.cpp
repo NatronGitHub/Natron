@@ -490,12 +490,8 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
         --nal;
     }
     // a is scaled into variable named b between 1 and 10.
-<<<<<<< HEAD
-    const double b = a / std::pow(10,nal);
-    assert(b >= 1. && b <= 10);
-=======
     const double b = a / std::pow(10.,nal);
->>>>>>> ded8b357fbfd07f2e82ee0a761598bc936ef15e6
+    assert(b >= 1. && b <= 10);
 #if 1
     // Fred's version
     // The closest permissible value for b is found.

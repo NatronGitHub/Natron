@@ -739,31 +739,29 @@ void ComboBox_Knob::_restoreFromString(const std::string& str){
 
 /***********************************RGBA_KNOB*****************************************/
 void Color_Knob::fillHashVector(){
-    if(getDimension() <= 2){
-        double r = getValue<double>(0);
-        _hashVector.push_back(*(reinterpret_cast<U64*>(&(r))));
-    }
-    if(getDimension() <= 3){
+    double r = getValue<double>(0);
+    _hashVector.push_back(*(reinterpret_cast<U64*>(&(r))));
+
+    if(getDimension() >= 3){
         double g = getValue<double>(1);
         double b = getValue<double>(2);
         _hashVector.push_back(*(reinterpret_cast<U64*>(&(g))));
         _hashVector.push_back(*(reinterpret_cast<U64*>(&(b))));
     }
-    if(getDimension() <= 4){
+    if(getDimension() >= 4){
         double a = getValue<double>(3);
-       _hashVector.push_back(*(reinterpret_cast<U64*>(&(a))));
+        _hashVector.push_back(*(reinterpret_cast<U64*>(&(a))));
     }
 }
 std::string Color_Knob::serialize() const{
     QString ret;
-    if(getDimension() <= 2){
-        ret.append(QString("r " + QString::number(getValue<double>(0))));
-    }
-    if(getDimension() <= 3){
+    ret.append(QString("r " + QString::number(getValue<double>(0))));
+
+    if(getDimension() >= 3){
         ret.append(QString(" g " + QString::number(getValue<double>(1))));
         ret.append(QString(" b " + QString::number(getValue<double>(2))));
     }
-    if(getDimension() <= 4){
+    if(getDimension() >= 4){
         ret.append(QString(" a " + QString::number(getValue<double>(3))));
     }
     return ret.toStdString();
