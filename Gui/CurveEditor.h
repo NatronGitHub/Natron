@@ -48,8 +48,6 @@ class CurveEditor : public QGLWidget
     QMenu* _rightClickMenu;
     QColor _clearColor;
     QColor _baseAxisColor;
-    QColor _majorAxisColor;
-    QColor _minorAxisColor;
     QColor _scaleColor;
     Natron::TextRenderer _textRenderer;
     QFont* _font;
