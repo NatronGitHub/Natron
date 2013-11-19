@@ -121,6 +121,8 @@ void CurveEditor::drawBaseAxis(){
     glColor4f(1., 1., 1., 1.);
 }
 
+
+
 void CurveEditor::drawScale(){
     QPointF btmLeft = toImgCoordinates_fast(0,height()-1);
     QPointF topRight = toImgCoordinates_fast(width()-1, 0);
@@ -152,22 +154,27 @@ void CurveEditor::drawScale(){
     }
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    double comp = 0.0001;
     for(int i = 0 ; i < majorTicksCount; ++i, value += dist) {
 
-        for (double x = value; x < value + dist;++x) {
-            float alpha = 0.f;
-            if(std::fmod(x,dist * 5) == 0){
-                alpha = 0.8;
-            }else if(std::fmod(x,dist) == 0){
-                alpha = 0.6;
-            }
-            else if(std::fmod(x,dist / 5) == 0){
-                alpha = 0.4;
-            }
-            else if(std::fmod(x,dist / 10) == 0){
-                alpha = 0.2;
+        for (float x = value; x < value + dist;x+=dist/10) {
+            //if almost 0, make it 0
+            if (std::abs(x) < std::numeric_limits<float>::epsilon()) {
+                x = 0.;
             }
 
+            float alpha = 0.f;
+            if(std::abs(std::remainder(x,dist * 5.)) < comp){
+                alpha = 0.7;
+            }else if(std::abs(std::remainder(x,dist)) < comp){
+                alpha = 0.5;
+            }
+            else if(std::abs(std::remainder(x,dist / 5.)) < comp){
+                alpha = 0.3;
+            }
+            else if(std::abs(std::remainder(x,dist / 10.)) < comp){
+                alpha = 0.1;
+            }
             glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
 
             glBegin(GL_LINES);
@@ -206,7 +213,37 @@ void CurveEditor::drawScale(){
         ScaleSlider::LinearScale2(btmLeft.y(), topRight.y(), majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
         value = xminp;
     }
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     for(int i = 0 ; i < majorTicksCount; ++i){
+
+        for (float y = value; y < value + dist;y+=dist/10) {
+            //if almost 0, make it 0
+            if (std::abs(y) < std::numeric_limits<float>::epsilon()) {
+                y = 0.;
+            }
+
+            float alpha = 0.f;
+            if(std::abs(std::remainder(y,dist * 5.)) < comp){
+                alpha = 0.7;
+            }else if(std::abs(std::remainder(y,dist)) < comp){
+                alpha = 0.5;
+            }
+            else if(std::abs(std::remainder(y,dist / 5.)) < comp){
+                alpha = 0.3;
+            }
+            else if(std::abs(std::remainder(y,dist / 10.)) < comp){
+                alpha = 0.1;
+            }
+            glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
+
+            glBegin(GL_LINES);
+            glVertex2f(btmLeft.x(),y);
+            glVertex2f(topRight.x(),y);
+            glEnd();
+
+        }
         QString s;
         if (dist < 1.) {
             if (std::abs(value) < dist/2.) {
@@ -223,7 +260,7 @@ void CurveEditor::drawScale(){
 
         value += dist;
     }
-
+    glDisable(GL_BLEND);
 
     //reset back the color
     glColor4f(1., 1., 1., 1.);
