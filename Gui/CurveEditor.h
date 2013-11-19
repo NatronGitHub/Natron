@@ -96,6 +96,7 @@ private:
     
 };
 
+#if 0
 namespace Natron{
 
 template<class T>
@@ -109,5 +110,6 @@ typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
                             * ulp;
 }
 }
+#endif
 
 #endif // CURVEEDITOR_H
