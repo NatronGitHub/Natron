@@ -26,6 +26,8 @@ CLANG_DIAG_ON(unused-private-field);
 #define SLIDER_WIDTH 4
 #define SLIDER_HEIGHT 20
 
+
+
 ScaleSlider::ScaleSlider(double bottom, double top, double initialPos, Natron::Scale_Type type, QWidget* parent):
 QGLWidget(parent,NULL)
 , _zoomCtx()
@@ -352,7 +354,7 @@ void ScaleSlider::LinearScale1(double xmin, double xmax, int n,
         }
     }
     // The interval size is computed.
-    *dist =  vint[i] * std::pow(10,nal);
+    *dist =  vint[i] * std::pow(10.,nal);
     double fm1 = xmin / *dist;
     int m1 = fm1;
     if (fm1 < 0.) {
@@ -392,7 +394,7 @@ void ScaleSlider::LinearScale2(double xmin, double xmax, int n,
                                const std::vector<double> &vint,
                                double* xminp, double* xmaxp, double *dist)
 {
-    //const double vint[4] = {1., 2., 5., 10., 20. };
+    //const double vint[4] = {1., 2., 5., 10., 20. }; // the original algorithm only works with these values
     const int nvnt = vint.size();
 
     // Check whether proper input values were supplied.
@@ -409,6 +411,7 @@ void ScaleSlider::LinearScale2(double xmin, double xmax, int n,
     // a is scaled into variable named b between 1 and 10.
     const double b = a / std::pow(10,nal);
     assert(b >= 1. && b <= 10);
+
     // The closest permissible value for b is found.
     int i;
     for (i = 0; i < nvnt-1; ++i) {
@@ -418,10 +421,10 @@ void ScaleSlider::LinearScale2(double xmin, double xmax, int n,
     }
     // The interval size is computed.
     int np = n + 1;
-    for (int iter = 0; np > n; ++i, ++iter) {
-        assert(iter < 2);
+    for (int iter = 0; np > n && i < nvnt; ++i, ++iter) { // the original algorithm didn't have i < nvnt
+        //assert(iter < 2); // the original algorithm makes at most two iterations
         assert(i < nvnt);
-        *dist = vint[i] * std::pow(10,nal);
+        *dist = vint[i] * std::pow(10.,nal);
         double fm1 =  xmin / *dist;
         int m1 = fm1;
         if (fm1 < 0.) {
@@ -487,8 +490,12 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
         --nal;
     }
     // a is scaled into variable named b between 1 and 10.
+<<<<<<< HEAD
     const double b = a / std::pow(10,nal);
     assert(b >= 1. && b <= 10);
+=======
+    const double b = a / std::pow(10.,nal);
+>>>>>>> ded8b357fbfd07f2e82ee0a761598bc936ef15e6
 #if 1
     // Fred's version
     // The closest permissible value for b is found.
@@ -503,7 +510,7 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
     double distl;
     for (; np > n; ++i) {
         assert(i < nvnt);
-        distl = std::pow(10,nal+1) / vint[i];
+        distl = std::pow(10.,nal+1) / vint[i];
         double fm1 =  xminl / distl;
         int m1 = fm1;
         if (fm1 < 0.) {

@@ -17,6 +17,7 @@
 #include <QMouseEvent>
 
 
+
 static double ASPECT_RATIO = 0.1;
 static double AXIS_MAX = 100000.;
 static double AXIS_MIN = -100000.;
@@ -28,8 +29,6 @@ CurveEditor::CurveEditor(QWidget* parent, const QGLWidget* shareWidget)
 , _rightClickMenu(new QMenu(this))
 , _clearColor(0,0,0,255)
 , _baseAxisColor(118,215,90,255)
-, _majorAxisColor(31,50,27,255)
-, _minorAxisColor(22,31,20,255)
 , _scaleColor(67,123,52,255)
 , _textRenderer()
 , _font(new QFont("Helvetica",10))
@@ -43,17 +42,34 @@ CurveEditor::~CurveEditor(){
 }
 
 void CurveEditor::initializeGL(){
-    
-    //initialize the box position so the origin of the system  is in the middle
-    _zoomCtx._left = 0. - (width()/(2.*_zoomCtx._zoomFactor));
-    _zoomCtx._bottom = 0. - (height()/(2.*_zoomCtx._zoomFactor)) * ASPECT_RATIO;
 
+
+}
+
+void CurveEditor::centerOn(double xmin,double xmax,double ymin,double ymax){
+    double curveWidth = xmax - xmin;
+    double curveHeight = (ymax - ymin);
+    double w = width();
+    double h = height() * ASPECT_RATIO ;
+    if(w / h < curveWidth / curveHeight){
+        _zoomCtx._left = xmin;
+        _zoomCtx._zoomFactor = w / curveWidth;
+        _zoomCtx._bottom = (ymax + ymin) / 2. - ((h / w) * curveWidth / 2.);
+    } else {
+        _zoomCtx._bottom = ymin;
+        _zoomCtx._zoomFactor = h / curveHeight;
+        _zoomCtx._left = (xmax + xmin) / 2. - ((w / h) * curveHeight / 2.);
+    }
+
+
+    updateGL();
 }
 
 void CurveEditor::resizeGL(int width,int height){
     if(height == 0)
         height = 1;
     glViewport (0, 0, width , height);
+    centerOn(-10,500,-10,10);
 }
 
 void CurveEditor::paintGL(){
@@ -105,6 +121,8 @@ void CurveEditor::drawBaseAxis(){
     glColor4f(1., 1., 1., 1.);
 }
 
+
+
 void CurveEditor::drawScale(){
     QPointF btmLeft = toImgCoordinates_fast(0,height()-1);
     QPointF topRight = toImgCoordinates_fast(width()-1, 0);
@@ -117,20 +135,56 @@ void CurveEditor::drawScale(){
     double scaleYpos = btmLeft.y();
     double averageTextUnitWidth = 0.;
 
+
     averageTextUnitWidth = fontM.width(QString("-0.00000"));
 
     //int majorTicksCount = (scaleWidth / averageTextUnitWidth) / 2; //divide by 2 to count as much spaces between ticks as there're ticks
     int majorTicksCount = (scaleWidth / (averageTextUnitWidth+fontM.width(QString("00"))));
 
     double xminp,xmaxp,dist;
+    double value;
     std::vector<double> acceptedDistances;
     acceptedDistances.push_back(1.);
     acceptedDistances.push_back(5.);
     acceptedDistances.push_back(10.);
     acceptedDistances.push_back(50.);
-    ScaleSlider::LinearScale2(btmLeft.x(), topRight.x(), majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
-    double value = xminp;
+    if(majorTicksCount > 0){
+        ScaleSlider::LinearScale2(btmLeft.x(), topRight.x(), majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
+        value = xminp;
+    }
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    double comp = 0.0001;
     for(int i = 0 ; i < majorTicksCount; ++i, value += dist) {
+
+        for (float x = value; x < value + dist;x+=dist/10) {
+            //if almost 0, make it 0
+            if (std::abs(x) < std::numeric_limits<float>::epsilon()) {
+                x = 0.;
+            }
+
+            float alpha = 0.f;
+            if(std::abs(std::remainder(x,dist * 5.)) < comp){
+                alpha = 0.7;
+            }else if(std::abs(std::remainder(x,dist)) < comp){
+                alpha = 0.5;
+            }
+            else if(std::abs(std::remainder(x,dist / 5.)) < comp){
+                alpha = 0.3;
+            }
+            else if(std::abs(std::remainder(x,dist / 10.)) < comp){
+                alpha = 0.1;
+            }
+            glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
+
+            glBegin(GL_LINES);
+            glVertex2f(x, btmLeft.y());
+            glVertex2f(x, topRight.y());
+            glEnd();
+
+        }
+
+
         QString s;
         if (dist < 1.) {
             if (std::abs(value) < dist/2.) {
@@ -142,17 +196,12 @@ void CurveEditor::drawScale(){
             s = QString::number(std::floor(value+0.5));
         }
 
+
         renderText(value,scaleYpos , s, _scaleColor, *_font);
 
-        /*also draw a line*/
-        glColor4f(_majorAxisColor.redF(), _majorAxisColor.greenF(), _majorAxisColor.blueF(), _majorAxisColor.alphaF());
-        glBegin(GL_LINES);
-        glVertex2f(value, btmLeft.y());
-        glVertex2f(value, topRight.y());
-        glEnd();
-        //reset back the color
-        glColor4f(1., 1., 1., 1.);
     }
+    glDisable(GL_BLEND);
+
     
     /*drawing Y axis*/
     double scaleHeight = height();
@@ -160,10 +209,41 @@ void CurveEditor::drawScale(){
 
 
     majorTicksCount = (scaleHeight / fontM.height()) / 2; //divide by 2 to count as much spaces between ticks as there're ticks
+    if(majorTicksCount > 0){
+        ScaleSlider::LinearScale2(btmLeft.y(), topRight.y(), majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
+        value = xminp;
+    }
 
-    ScaleSlider::LinearScale2(btmLeft.y(), topRight.y(), majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
-    value = xminp;
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     for(int i = 0 ; i < majorTicksCount; ++i){
+
+        for (float y = value; y < value + dist;y+=dist/10) {
+            //if almost 0, make it 0
+            if (std::abs(y) < std::numeric_limits<float>::epsilon()) {
+                y = 0.;
+            }
+
+            float alpha = 0.f;
+            if(std::abs(std::remainder(y,dist * 5.)) < comp){
+                alpha = 0.7;
+            }else if(std::abs(std::remainder(y,dist)) < comp){
+                alpha = 0.5;
+            }
+            else if(std::abs(std::remainder(y,dist / 5.)) < comp){
+                alpha = 0.3;
+            }
+            else if(std::abs(std::remainder(y,dist / 10.)) < comp){
+                alpha = 0.1;
+            }
+            glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
+
+            glBegin(GL_LINES);
+            glVertex2f(btmLeft.x(),y);
+            glVertex2f(topRight.x(),y);
+            glEnd();
+
+        }
         QString s;
         if (dist < 1.) {
             if (std::abs(value) < dist/2.) {
@@ -176,19 +256,15 @@ void CurveEditor::drawScale(){
         }
 
         renderText(scaleXpos,value, s, _scaleColor, *_font);
-        /*also draw a line*/
-        glColor4f(_majorAxisColor.redF(), _majorAxisColor.greenF(), _majorAxisColor.blueF(), _majorAxisColor.alphaF());
-        glBegin(GL_LINES);
-        glVertex2f(btmLeft.x(),value);
-        glVertex2f(topRight.x(),value);
-        glEnd();
-        //reset back the color
-        glColor4f(1., 1., 1., 1.);
+
 
         value += dist;
     }
+    glDisable(GL_BLEND);
 
-
+    //reset back the color
+    glColor4f(1., 1., 1., 1.);
+    
 }
 
 void CurveEditor::renderText(double x,double y,const QString& text,const QColor& color,const QFont& font){

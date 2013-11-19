@@ -465,6 +465,7 @@ void Gui::setupUi()
     _workshopPane->appendTab(_nodeGraphArea);
     
     _curveEditor = new CurveEditor(this);
+
     _curveEditor->setObjectName("CurveEditor");
     _workshopPane->appendTab(_curveEditor);
     

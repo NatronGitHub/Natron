@@ -48,8 +48,6 @@ class CurveEditor : public QGLWidget
     QMenu* _rightClickMenu;
     QColor _clearColor;
     QColor _baseAxisColor;
-    QColor _majorAxisColor;
-    QColor _minorAxisColor;
     QColor _scaleColor;
     Natron::TextRenderer _textRenderer;
     QFont* _font;
@@ -77,7 +75,9 @@ public:
     virtual QSize sizeHint() const;
     
     void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font);
-    
+
+    void centerOn(double xmin,double xmax,double ymin,double ymax);
+
 private:
     
     /**
@@ -95,5 +95,19 @@ private:
     void drawScale();
     
 };
+
+namespace Natron{
+
+template<class T>
+typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
+    almost_equal(T x, T y, int ulp)
+{
+    // the machine epsilon has to be scaled to the magnitude of the larger value
+    // and multiplied by the desired precision in ULPs (units in the last place)
+    return std::abs(x-y) <=   std::numeric_limits<T>::epsilon()
+                            * std::max(std::abs(x), std::abs(y))
+                            * ulp;
+}
+}
 
 #endif // CURVEEDITOR_H

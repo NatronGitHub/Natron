@@ -255,8 +255,8 @@ public:
       , _betweenBeginEndParamChanged(false){}
     
     virtual ~KnobHolder(){
-        for (unsigned int i = 0; i < _knobs.size(); ++i) {
-            delete _knobs[i];
+        while(!_knobs.empty()) {
+            delete _knobs.back();
         }
     }
     
