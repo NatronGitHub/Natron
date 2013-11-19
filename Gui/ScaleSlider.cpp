@@ -323,7 +323,8 @@ void ScaleSlider::LinearScale1(double xmin, double xmax, int n,
                                double* xminp, double* xmaxp, double *dist){
     const double vint[4] = { 1., 2., 5., 10. };
     const double sqr[3] = { 1.414214, 3.162278, 7.071068}; //sqrt(2), sqrt(10), sqrt(50)
-    
+    const int nvnt = sizeof(vint)/sizeof(double);
+
     // check whether proper input values were supplied.
     assert(xmax > xmin && n != 0);
 
@@ -340,9 +341,10 @@ void ScaleSlider::LinearScale1(double xmin, double xmax, int n,
     if (a < 1.) {
         --nal;
     }
-    // a is scaled into variable named b between 1 and 20.
+    // a is scaled into variable named b between 1 and 10.
     double b = a / std::pow(10.,nal);
-    /* The closest permissible value for b is found. */
+    assert(b >= 1. && b <= 10);
+    // The closest permissible value for b is found.
     int i;
     for (i=0; i<3; ++i) {
         if (b<sqr[i]) {
@@ -394,7 +396,7 @@ void ScaleSlider::LinearScale2(double xmin, double xmax, int n,
     const int nvnt = vint.size();
 
     // Check whether proper input values were supplied.
-    assert(xmax > xmin && n != 0 && nvnt >= 4);
+    assert(xmax > xmin && n != 0);
     
     const double del =  2e-19;
     // Find approximate interval size a.
@@ -406,7 +408,7 @@ void ScaleSlider::LinearScale2(double xmin, double xmax, int n,
     }
     // a is scaled into variable named b between 1 and 10.
     const double b = a / std::pow(10,nal);
-
+    assert(b >= 1. && b <= 10);
     // The closest permissible value for b is found.
     int i;
     for (i = 0; i < nvnt-1; ++i) {
@@ -416,7 +418,8 @@ void ScaleSlider::LinearScale2(double xmin, double xmax, int n,
     }
     // The interval size is computed.
     int np = n + 1;
-    for (; np > n; ++i) {
+    for (int iter = 0; np > n; ++i, ++iter) {
+        assert(iter < 2);
         assert(i < nvnt);
         *dist = vint[i] * std::pow(10,nal);
         double fm1 =  xmin / *dist;
@@ -469,7 +472,7 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
     //const double vint[11] = { 10., 9., 8., 7., 6., 5., 4., 3., 2., 1., .5 };
     const int nvnt = vint.size();
 
-    assert(xmax > xmin && n > 1 && xmin > 0. && nvnt >= 4);
+    assert(xmax > xmin && n > 1 && xmin > 0.);
     
     // Check whether proper input values were supplied.
     const double del =  2e-9;
@@ -485,6 +488,7 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
     }
     // a is scaled into variable named b between 1 and 10.
     const double b = a / std::pow(10,nal);
+    assert(b >= 1. && b <= 10);
 #if 1
     // Fred's version
     // The closest permissible value for b is found.
