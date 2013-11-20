@@ -263,6 +263,12 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
                 //plugin should have posted a message
                 return StatFailed;
             }
+
+            if(aborted()){
+                //if render was aborted, remove the frame from the cache as it contains only garbage
+                appPTR->getViewerCache().removeEntry(cachedFrame);
+                return StatOK;
+            }
             
             int rowsPerThread = std::ceil((double)rows.size()/(double)QThread::idealThreadCount());
             // group of group of rows where first is image coordinate, second is texture coordinate
@@ -291,6 +297,11 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
                                                          boost::bind(&ViewerInstance::renderFunctor,this,inputImage,_1,columns));
                 future.waitForFinished();
             }
+        }
+        if(aborted()){
+            //if render was aborted, remove the frame from the cache as it contains only garbage
+            appPTR->getViewerCache().removeEntry(cachedFrame);
+            return StatOK;
         }
         //we released the input image and force the cache to clear exceeding entries
         appPTR->clearExceedingEntriesFromNodeCache();

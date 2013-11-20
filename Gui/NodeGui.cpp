@@ -125,9 +125,10 @@ NodeGui::NodeGui(NodeGraph* dag,
 
     if(_internalNode->makePreviewByDefault() && !_graph->areAllPreviewTurnedOff()){
         togglePreview();
+
+    }else{
+        updateShape(NODE_LENGTH,NODE_HEIGHT);
     }
-    
-    updateShape(NODE_LENGTH,NODE_HEIGHT);
     
     
     QRectF rect = _boundingBox->rect();

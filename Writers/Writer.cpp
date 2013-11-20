@@ -193,6 +193,11 @@ Natron::Status Writer::renderWriter(SequenceTime time){
             return StatFailed;
         }
         boost::shared_ptr<const Natron::Image> inputImage = roi->first->renderRoI(time, scale,i,roi->second);
+
+        if(aborted()){
+            return StatOK;
+        }
+
         Natron::Status st = encoder->render(inputImage, i, renderFormat);
         if(st != StatOK){
             QFile::remove(encoder->filename());
