@@ -139,40 +139,36 @@ void CurveEditor::drawScale(){
     averageTextUnitWidth = fontM.width(QString("-0.00000"));
 
     //int majorTicksCount = (scaleWidth / averageTextUnitWidth) / 2; //divide by 2 to count as much spaces between ticks as there're ticks
-    int majorTicksCount = (scaleWidth / (averageTextUnitWidth+fontM.width(QString("00"))));
+    double minTickWidth = averageTextUnitWidth+fontM.width(QString("00"));
+    int majorTicksCount = (scaleWidth / minTickWidth) + 2;
 
     double xminp,xmaxp,dist;
-    double value;
     std::vector<double> acceptedDistances;
     acceptedDistances.push_back(1.);
     acceptedDistances.push_back(5.);
     acceptedDistances.push_back(10.);
     acceptedDistances.push_back(50.);
-    if(majorTicksCount > 0){
-        ScaleSlider::LinearScale2(btmLeft.x(), topRight.x(), majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
-        value = xminp;
-    }
+    ScaleSlider::LinearScale2(btmLeft.x()-minTickWidth, topRight.x()+minTickWidth, majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    double comp = 0.0001;
-    for(int i = 0 ; i < majorTicksCount; ++i, value += dist) {
+    int m1 = floor(xminp/dist + 0.5);
+    int m2 = floor(xmaxp/dist + 0.5);
 
-        for (float x = value; x < value + dist;x+=dist/10) {
-            //if almost 0, make it 0
-            if (std::abs(x) < std::numeric_limits<float>::epsilon()) {
-                x = 0.;
-            }
+    for(int i = m1 ; i <= m2; ++i) {
+        double value = i * dist;
 
-            float alpha = 0.f;
-            if(std::abs(std::remainder(x,dist * 5.)) < comp){
+        for (int j=0; j < 10; ++j) {
+            double x = value + j*dist/10.;
+            double alpha;
+
+            if (j == 0 && i % 5 == 0) {
                 alpha = 0.7;
-            }else if(std::abs(std::remainder(x,dist)) < comp){
+            } else if (j == 0) {
                 alpha = 0.5;
-            }
-            else if(std::abs(std::remainder(x,dist / 5.)) < comp){
+            } else if (j == 5) {
                 alpha = 0.3;
-            }
-            else if(std::abs(std::remainder(x,dist / 10.)) < comp){
+            } else {
                 alpha = 0.1;
             }
             glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
@@ -207,33 +203,30 @@ void CurveEditor::drawScale(){
     double scaleHeight = height();
     double scaleXpos = btmLeft.x();
 
+    minTickWidth = fontM.height() * 2;
+    majorTicksCount = (scaleHeight / minTickWidth) + 2;
 
-    majorTicksCount = (scaleHeight / fontM.height()) / 2; //divide by 2 to count as much spaces between ticks as there're ticks
-    if(majorTicksCount > 0){
-        ScaleSlider::LinearScale2(btmLeft.y(), topRight.y(), majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
-        value = xminp;
-    }
+    ScaleSlider::LinearScale2(btmLeft.y()-minTickWidth, topRight.y()+minTickWidth, majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    for(int i = 0 ; i < majorTicksCount; ++i){
+    m1 = floor(xminp/dist + 0.5);
+    m2 = floor(xmaxp/dist + 0.5);
 
-        for (float y = value; y < value + dist;y+=dist/10) {
-            //if almost 0, make it 0
-            if (std::abs(y) < std::numeric_limits<float>::epsilon()) {
-                y = 0.;
-            }
+    for(int i = m1 ; i <= m2; ++i) {
+        double value = i * dist;
 
-            float alpha = 0.f;
-            if(std::abs(std::remainder(y,dist * 5.)) < comp){
+        for (int j=0; j < 10; ++j) {
+            double y = value + j*dist/10.;
+            double alpha;
+
+            if (j == 0 && i % 5 == 0) {
                 alpha = 0.7;
-            }else if(std::abs(std::remainder(y,dist)) < comp){
+            } else if (j == 0) {
                 alpha = 0.5;
-            }
-            else if(std::abs(std::remainder(y,dist / 5.)) < comp){
+            } else if (j == 5) {
                 alpha = 0.3;
-            }
-            else if(std::abs(std::remainder(y,dist / 10.)) < comp){
+            } else {
                 alpha = 0.1;
             }
             glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
