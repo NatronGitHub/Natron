@@ -18,7 +18,7 @@
 
 #include <QtCore/QMetaType>
 
-#include "Engine/RectI.h"
+#include "Engine/Rect.h"
 
 /*This class is used to hold the format of a frame (its resolution).
  *Some formats have a name , e.g : 1920*1080 is full HD, etc...

@@ -22,7 +22,7 @@
 #include <QtCore/QMutex>
 
 #include "Engine/Cache.h"
-#include "Engine/RectI.h"
+#include "Engine/Rect.h"
 
 namespace Natron{
     

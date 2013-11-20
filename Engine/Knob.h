@@ -17,6 +17,7 @@
 #include <map>
 #include <cfloat>
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <QtCore/QMutex>
 #include <QtCore/QStringList>
 
@@ -63,6 +64,74 @@ private:
     void loadBultinKnobs();
     
 };
+
+
+
+/**
+ * @brief A KeyFrame is a pair <time,value>. These are the value that are used
+ * to interpolate an AnimationCurve. The _leftTangent and _rightTangent can be
+ * used by the interpolation method of the curve.
+**/
+class KeyFrame : public QObject {
+    
+    Q_OBJECT
+    
+    Variant _value; /// the value held by the key
+    double _time; /// a value ranging between 0 and 1
+    std::pair<double,Variant> _leftTangent,_rightTangent;
+
+public:
+
+    KeyFrame(double time,const Variant& initialValue);
+
+    ~KeyFrame(){}
+
+signals:
+
+    void keyFrameChanged();
+};
+
+
+class AnimationCurve : public QObject {
+
+    Q_OBJECT
+    
+public:
+
+    enum Interpolation{
+        CONSTANT = 0,
+        LINEAR = 1,
+        CUBIC = 2,
+        CATMULL_ROM = 3
+    };
+
+    AnimationCurve(Interpolation type);
+
+    ~AnimationCurve(){}
+
+    void setStartAndEnd(boost::shared_ptr<KeyFrame> start,boost::shared_ptr<KeyFrame> end){
+        addControlPoint(start);
+        addControlPoint(end);
+    }
+
+    void addControlPoint(boost::shared_ptr<KeyFrame> cp)
+    {
+        _controlPoints.push_back(cp);
+        QObject::connect(cp.get(),SIGNAL(keyFrameChanged()),this,SIGNAL(curveChanged()));
+    }
+
+    Variant getValueAt(double t) const;
+
+signals:
+
+    void curveChanged();
+
+private:
+
+    Interpolation _interpolation;
+    std::list< boost::shared_ptr<KeyFrame> > _controlPoints;
+};
+
 
 
 /******************************KNOB_BASE**************************************/

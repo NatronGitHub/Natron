@@ -100,7 +100,7 @@ void SpinBox::wheelEvent(QWheelEvent *e) {
     }
 }
 
-void SpinBox::focusOutEvent(QFocusEvent * event){
+void SpinBox::focusOutEvent(QFocusEvent * /*event*/){
    emit valueChanged(text().toDouble());
 }
 

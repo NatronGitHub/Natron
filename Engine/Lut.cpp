@@ -19,7 +19,7 @@
 #include <boost/cstdint.hpp>
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
-#include "Engine/RectI.h"
+#include "Engine/Rect.h"
 
 using std::cout;
 using std::endl;

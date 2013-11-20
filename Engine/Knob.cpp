@@ -219,6 +219,27 @@ KnobGui* KnobFactory::createGuiForKnob(Knob* knob,DockablePanel* container) cons
 }
 
 
+/************************************KEYFRAME************************************/
+KeyFrame::KeyFrame(double time,const Variant& initialValue)
+    : _value(initialValue)
+    , _time(time)
+    , _leftTangent()
+    , _rightTangent()
+{
+
+}
+
+AnimationCurve::AnimationCurve(Interpolation type)
+    : _interpolation(type)
+{
+}
+
+
+Variant AnimationCurve::getValueAt(double t) const {
+    assert(_controlPoints.size() >= 2);
+}
+
+
 /***********************************KNOB BASE******************************************/
 
 

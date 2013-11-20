@@ -14,7 +14,7 @@
 
 #include "Global/Macros.h"
 #include "Writers/Encoder.h"
-#include "Engine/RectI.h"
+#include "Engine/Rect.h"
 
 class QImage;
 class QtEncoder :public Encoder{

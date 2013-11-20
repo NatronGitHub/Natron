@@ -1157,7 +1157,7 @@ void String_KnobGui::onStringChanged(const QString& str){
     newV.insert(make_pair(0,Variant(str)));
     pushUndoCommand(new KnobUndoCommand(this,_knob->getMultiDimensionalValue(),newV));
 }
-void String_KnobGui::updateGUI(int dimension, const Variant& variant){
+void String_KnobGui::updateGUI(int /*dimension*/, const Variant& variant){
     _lineEdit->setText(variant.toString());
 }
 void String_KnobGui::hide(){
@@ -1243,7 +1243,7 @@ void Group_KnobGui::setChecked(bool b){
         }
     }
 }
-void Group_KnobGui::updateGUI(int dimension, const Variant& variant){
+void Group_KnobGui::updateGUI(int /*dimension*/, const Variant& variant){
     bool b = variant.toBool();
     setChecked(b);
     _button->setChecked(b);

@@ -154,7 +154,7 @@ SOURCES += \
 
 HEADERS += \
     Engine/Cache.h \
-    Engine/RectI.h \
+    Engine/Rect.h \
     Engine/ChannelSet.h \
     Engine/EffectInstance.h \
     Engine/Format.h \

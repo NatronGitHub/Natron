@@ -26,7 +26,7 @@
 #include "Engine/MemoryFile.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
-#include "Engine/RectI.h"
+#include "Engine/Rect.h"
 #include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/ViewerInstance.h"
