@@ -18,6 +18,7 @@
 #include <QDragMoveEvent>
 #include <QDropEvent>
 #include <QUrl>
+#include <QMimeData>
 
 class QPaintEvent;
 class LineEdit : public QLineEdit {
@@ -38,7 +39,6 @@ public:
         if(!event->mimeData()->hasUrls())
             return;
         
-        QStringList filesList;
         QList<QUrl> urls = event->mimeData()->urls();
         QString path;
         if(urls.size() > 0){

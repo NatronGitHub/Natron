@@ -348,6 +348,7 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
                     if(aborted()){
                         //if render was aborted, remove the frame from the cache as it contains only garbage
                         appPTR->getNodeCache().removeEntry(image);
+                        _node->removeImageBeingRendered(time, view);
                         return image;
                     }
 

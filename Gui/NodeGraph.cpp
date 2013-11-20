@@ -29,6 +29,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QMenu>
 #include <QDropEvent>
 #include <QCoreApplication>
+#include <QMimeData>
 
 #include "Gui/TabWidget.h"
 #include "Gui/Edge.h"
