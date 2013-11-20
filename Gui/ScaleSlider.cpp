@@ -142,11 +142,10 @@ void ScaleSlider::drawScale(){
     double xminp,xmaxp,dist;
     std::vector<double> acceptedDistances;
     acceptedDistances.push_back(1.);
-    acceptedDistances.push_back(2.);
     acceptedDistances.push_back(5.);
     acceptedDistances.push_back(10.);
     acceptedDistances.push_back(50.);
-    if(_type == Natron::LINEAR_SCALE){
+    if (_type == Natron::LINEAR_SCALE) {
         ScaleSlider::LinearScale2(btmLeft.x(), topRight.x(), majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
     } else {
         assert(_type == Natron::LOG_SCALE);
