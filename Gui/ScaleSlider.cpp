@@ -344,7 +344,7 @@ void ScaleSlider::LinearScale1(double xmin, double xmax, int n,
         --nal;
     }
     // a is scaled into variable named b between 1 and 10.
-    double b = a * std::pow(10,-nal);
+    double b = a * std::pow(10.,-nal);
     assert(b >= 1. && b <= 10);
     // The closest permissible value for b is found.
     int i;
@@ -420,7 +420,7 @@ void ScaleSlider::LinearScale2(double xmin, double xmax, int n,
         --nal;
     }
     // a is scaled into variable named b between 1 and 10.
-    const double b = a * std::pow(10,-nal);
+    const double b = a * std::pow(10.,-nal);
     assert(b >= 1. && b <= 10);
 
     // The closest permissible value for b is found.
@@ -435,7 +435,7 @@ void ScaleSlider::LinearScale2(double xmin, double xmax, int n,
     for (int iter = 0; np > n; ++i, ++iter) {
         assert(iter < 2);
         assert(i < nvnt);
-        *dist = vint[i] * std::pow(10,nal);
+        *dist = vint[i] * std::pow(10.,nal);
         double fm1 =  xmin / *dist;
         int m1 = fm1;
         if (fm1 < 0.) {
@@ -510,7 +510,7 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
         --nal;
     }
     // a is scaled into variable named b between 1 and 10.
-    const double b = a * std::pow(10,-nal);
+    const double b = a * std::pow(10.,-nal);
     assert(b >= 1. && b <= 10.);
     // The closest permissible value for b is found.
     int i;
@@ -524,7 +524,7 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
     double distl;
     for (; np > n; ++i) {
         assert(i < nvnt);
-        distl = std::pow(10,nal+1) / vint[i];
+        distl = std::pow(10.,nal+1) / vint[i];
         double fm1 =  xminl / distl;
         int m1 = fm1;
         if (fm1 < 0.) {
@@ -552,9 +552,9 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
     *xminp -= nx * distl;
     *xmaxp = *xminp + n * distl;
     // Values are translated from the logarithmic into the linear region.
-    *dist = std::pow(10,distl);
-    *xminp = std::pow(10,*xminp);
-    *xmaxp = std::pow(10,*xmaxp);
+    *dist = std::pow(10.,distl);
+    *xminp = std::pow(10.,*xminp);
+    *xmaxp = std::pow(10.,*xmaxp);
     // Adjust limits to account for round-off if necessary.
     if(*xminp > xmin){
         *xminp = xmin;
