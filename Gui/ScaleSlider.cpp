@@ -325,7 +325,7 @@ void ScaleSlider::LinearScale1(double xmin, double xmax, int n,
                                double* xminp, double* xmaxp, double *dist){
     const double vint[4] = { 1., 2., 5., 10. };
     const double sqr[3] = { 1.414214, 3.162278, 7.071068}; //sqrt(2), sqrt(10), sqrt(50)
-    const int nvnt = sizeof(vint)/sizeof(double);
+    //const int nvnt = (int)sizeof(vint)/sizeof(double);
 
     // check whether proper input values were supplied.
     assert(xmax > xmin && n != 0);
@@ -344,7 +344,7 @@ void ScaleSlider::LinearScale1(double xmin, double xmax, int n,
         --nal;
     }
     // a is scaled into variable named b between 1 and 10.
-    double b = a / std::pow(10.,nal);
+    double b = a * std::pow(10,-nal);
     assert(b >= 1. && b <= 10);
     // The closest permissible value for b is found.
     int i;
@@ -389,18 +389,29 @@ void ScaleSlider::LinearScale1(double xmin, double xmax, int n,
  * Given xmin, xmax and n, scale2 finds a new range xminp and
  * xmaxp divisible into exactly n linear intervals of size
  * dist, where n is greater than 1.
+ *
+ * Preconditions: the first element of the vint array must be 1.,
+ * the forelast must be 10., and the last must be >= 20.
  */
 void ScaleSlider::LinearScale2(double xmin, double xmax, int n,
                                const std::vector<double> &vint,
                                double* xminp, double* xmaxp, double *dist)
 {
     //const double vint[4] = {1., 2., 5., 10., 20. }; // the original algorithm only works with these values
-    const int nvnt = vint.size();
+    //const int nvnt = sizeof(vint)/sizeof(double);
+    const int nvnt = (int)vint.size();
 
     // Check whether proper input values were supplied.
-    assert(xmax > xmin && n != 0);
-    
-    const double del =  2e-19;
+    assert(vint[0] == 1.);
+    assert(vint[nvnt-2] == 10.);
+    assert(vint[nvnt-1] >= 20.);
+    assert(xmax > xmin);
+    assert(n != 0);
+    // there may be an infinite loop with n=1
+    // try xmin=-0.0003697607621756708, xmax=0.03520313976418831, n=1
+    assert(n > 1);
+
+    const double del =  2e-9;
     // Find approximate interval size a.
     const double a = (xmax - xmin) / n;
     double al = std::log10(a);
@@ -409,7 +420,7 @@ void ScaleSlider::LinearScale2(double xmin, double xmax, int n,
         --nal;
     }
     // a is scaled into variable named b between 1 and 10.
-    const double b = a / std::pow(10,nal);
+    const double b = a * std::pow(10,-nal);
     assert(b >= 1. && b <= 10);
 
     // The closest permissible value for b is found.
@@ -421,10 +432,10 @@ void ScaleSlider::LinearScale2(double xmin, double xmax, int n,
     }
     // The interval size is computed.
     int np = n + 1;
-    for (int iter = 0; np > n && i < nvnt; ++i, ++iter) { // the original algorithm didn't have i < nvnt
-        //assert(iter < 2); // the original algorithm makes at most two iterations
+    for (int iter = 0; np > n; ++i, ++iter) {
+        assert(iter < 2);
         assert(i < nvnt);
-        *dist = vint[i] * std::pow(10.,nal);
+        *dist = vint[i] * std::pow(10,nal);
         double fm1 =  xmin / *dist;
         int m1 = fm1;
         if (fm1 < 0.) {
@@ -467,17 +478,26 @@ void ScaleSlider::LinearScale2(double xmin, double xmax, int n,
  * finds a new range xminp and xmaxp divisible into exactly 
  * n logarithmic intervals, where the ratio of adjacent
  * uniformly spaced scale values is dist.
+ *
+ * Preconditions: the first element of the vint array must be 10.,
+ * the forelast must be 1., and the last must be <= 0.5
  */
 void ScaleSlider::LogScale1(double xmin, double xmax, int n,
                             const std::vector<double> &vint,
                             double* xminp, double* xmaxp, double *dist)
 {
     //const double vint[11] = { 10., 9., 8., 7., 6., 5., 4., 3., 2., 1., .5 };
-    const int nvnt = vint.size();
+    //const int nvnt = sizeof(vint)/sizeof(double);
+    const int nvnt = (int)vint.size();
 
-    assert(xmax > xmin && n > 1 && xmin > 0.);
-    
     // Check whether proper input values were supplied.
+    assert(vint[0] == 10.);
+    assert(vint[nvnt-2] == 1.);
+    assert(vint[nvnt-1] <= 0.5);
+    assert(xmax > xmin);
+    assert(n > 1);
+    assert(xmin > 0.);
+
     const double del =  2e-9;
     //  Values are translated from the linear into logarithmic region.
     double xminl = std::log10(xmin);
@@ -490,14 +510,8 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
         --nal;
     }
     // a is scaled into variable named b between 1 and 10.
-<<<<<<< HEAD
-    const double b = a / std::pow(10,nal);
+    const double b = a * std::pow(10,-nal);
     assert(b >= 1. && b <= 10);
-=======
-    const double b = a / std::pow(10.,nal);
->>>>>>> ded8b357fbfd07f2e82ee0a761598bc936ef15e6
-#if 1
-    // Fred's version
     // The closest permissible value for b is found.
     int i;
     for (i = 0; i < nvnt-1; ++i) {
@@ -510,7 +524,7 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
     double distl;
     for (; np > n; ++i) {
         assert(i < nvnt);
-        distl = std::pow(10.,nal+1) / vint[i];
+        distl = std::pow(10,nal+1) / vint[i];
         double fm1 =  xminl / distl;
         int m1 = fm1;
         if (fm1 < 0.) {
@@ -533,44 +547,6 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
         np = m2 - m1;
         // Check whether another pass is necessary.
     }
-#else
-    // Alex's version
-    int i = 0;
-    while(b >= 10. / vint[i] + del && i < nvnt) {
-        ++i;
-    }
-    int i_1 = nal + 1;
-    int np = 0;
-    double distl;
-    do{
-        assert(i < nvnt);
-        // bug: i_1 is not updated at the second look iteration
-        distl = std::pow(10,i_1) / vint[i];
-        double fm1 = xminl / distl;
-        int m1 = fm1;
-        if(fm1 < 0.){
-            --m1;
-        }
-        double r_1 = (double)m1 + 1. - fm1;
-        if(std::abs(r_1) < del){
-            ++m1;
-        }
-        *xminp = distl * (double)m1;
-        double fm2 = xmaxl / distl;
-        int m2 = fm2 + 1.;
-        if (fm2 < -1.) {
-            --m2;
-        }
-        r_1 = fm2 + 1. - (double)m2;
-        if(std::abs(r_1) < del){
-            --m2;
-        }
-        *xmaxp = distl * (double)m2;
-        
-        np = m2 - m1;
-        ++i;
-    }while(np > n);
-#endif
 
     int nx = (n - np) / 2;
     *xminp -= nx * distl;
