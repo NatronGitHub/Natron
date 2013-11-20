@@ -512,7 +512,7 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
     }
     // a is scaled into variable named b between 1 and 10.
     const double b = a * std::pow(10,-nal);
-    assert(b >= 1. && b <= 10);
+    assert(b >= 1. && b <= 10.);
     // The closest permissible value for b is found.
     int i;
     for (i = 0; i < nvnt-1; ++i) {

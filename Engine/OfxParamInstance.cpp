@@ -120,19 +120,19 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param:
     set(def);
 }
 OfxStatus OfxIntegerInstance::get(int& v) {
-    v = _knob->getValues()[0];
+    v = _knob->getValue<int>();
     return kOfxStatOK;
 }
-OfxStatus OfxIntegerInstance::get(OfxTime /*time*/, int& v) {
-    v = _knob->getValues()[0];
+OfxStatus OfxIntegerInstance::get(OfxTime time, int& v) {
+    v = _knob->getValueAtTime<int>(time);
     return kOfxStatOK;
 }
 OfxStatus OfxIntegerInstance::set(int v){
-    _knob->setValue(v);
+    _knob->setValue<int>(v);
     return kOfxStatOK;
 }
-OfxStatus OfxIntegerInstance::set(OfxTime /*time*/, int v){
-    _knob->setValue(v);
+OfxStatus OfxIntegerInstance::set(OfxTime time, int v){
+    _knob->setValueAtTime<int>(time,v);
     return kOfxStatOK;
 }
 
@@ -190,19 +190,19 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
     
 }
 OfxStatus OfxDoubleInstance::get(double& v){
-    v = _knob->getValues()[0];
+    v = _knob->getValue<double>();
     return kOfxStatOK;
 }
-OfxStatus OfxDoubleInstance::get(OfxTime /*time*/, double& v){
-    v = _knob->getValues()[0];
+OfxStatus OfxDoubleInstance::get(OfxTime time, double& v){
+    v = _knob->getValueAtTime<double>(time);
     return kOfxStatOK;
 }
 OfxStatus OfxDoubleInstance::set(double v) {
-    _knob->setValue(v);
+    _knob->setValue<double>(v);
     return kOfxStatOK;
 }
-OfxStatus OfxDoubleInstance::set(OfxTime /*time*/, double v){
-    _knob->setValue(v);
+OfxStatus OfxDoubleInstance::set(OfxTime time, double v){
+    _knob->setValueAtTime<double>(time,v);
     return kOfxStatOK;
 }
 
@@ -211,7 +211,7 @@ OfxStatus OfxDoubleInstance::derive(OfxTime /*time*/, double& v) {
     return kOfxStatOK;
 }
 OfxStatus OfxDoubleInstance::integrate(OfxTime time1, OfxTime time2, double& v) {
-    v = _knob->getValues()[0] * (time2 - time1);
+    v = _knob->getValue<double>() * (time2 - time1);
     return kOfxStatOK;
 }
 
@@ -255,20 +255,20 @@ OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param
     
 }
 OfxStatus OfxBooleanInstance::get(bool& b){
-    b = _knob->getValue();
+    b = _knob->getValue<bool>();
     return kOfxStatOK;
 }
 OfxStatus OfxBooleanInstance::get(OfxTime /*time*/, bool& b) {
-    b = _knob->getValue();
+    b = _knob->getValue<bool>();
     return kOfxStatOK;
 }
 OfxStatus OfxBooleanInstance::set(bool b){
-    _knob->setValue(b);
+    _knob->setValue<bool>(b);
     return kOfxStatOK;
 }
 
 OfxStatus OfxBooleanInstance::set(OfxTime /*time*/, bool b){
-    _knob->setValue(b);
+    _knob->setValue<bool>(b);
     return kOfxStatOK;
 }
 
@@ -330,7 +330,7 @@ OfxStatus OfxChoiceInstance::get(OfxTime /*time*/, int& v){
 }
 OfxStatus OfxChoiceInstance::set(int v){
     if(v < (int)_entries.size()){
-        _knob->setValue(v);
+        _knob->setValue<int>(v);
         return kOfxStatOK;
     }else{
         return kOfxStatErrBadIndex;
@@ -338,7 +338,7 @@ OfxStatus OfxChoiceInstance::set(int v){
 }
 OfxStatus OfxChoiceInstance::set(OfxTime /*time*/, int v){
     if(v < (int)_entries.size()){
-        _knob->setValue(v);
+        _knob->setValue<int>(v);
         return kOfxStatOK;
     }else{
         return kOfxStatErrBadIndex;
@@ -371,7 +371,7 @@ OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descr
     if(layoutHint == 1){
         appPTR->getKnobFactory().createKnob("Separator", node, getParamLabel(this));
     }
-    _knob = dynamic_cast<RGBA_Knob*>(appPTR->getKnobFactory().createKnob("RGBA", node, getParamLabel(this)));
+    _knob = dynamic_cast<Color_Knob*>(appPTR->getKnobFactory().createKnob("Color", node, getParamLabel(this),4));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
@@ -391,37 +391,31 @@ OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descr
 }
 OfxStatus OfxRGBAInstance::get(double& r, double& g, double& b, double& a) {
   
-    QVector4D _color = _knob->getValues();
-    r = _color.x();
-    g = _color.y();
-    b = _color.z();
-    a = _color.w();
+    r = _knob->getValue<double>(0);
+    g = _knob->getValue<double>(1);
+    b = _knob->getValue<double>(2);
+    a = _knob->getValue<double>(3);
     return kOfxStatOK;
 }
-OfxStatus OfxRGBAInstance::get(OfxTime /*time*/, double&r ,double& g, double& b, double& a) {
-    QVector4D _color = _knob->getValues();
-    r = _color.x();
-    g = _color.y();
-    b = _color.z();
-    a = _color.w();
+OfxStatus OfxRGBAInstance::get(OfxTime time, double&r ,double& g, double& b, double& a) {
+    r = _knob->getValueAtTime<double>(time,0);
+    g = _knob->getValueAtTime<double>(time,1);
+    b = _knob->getValueAtTime<double>(time,2);
+    a = _knob->getValueAtTime<double>(time,3);
     return kOfxStatOK;
 }
 OfxStatus OfxRGBAInstance::set(double r,double g , double b ,double a){
-    QVector4D _color;
-    _color.setX(r);
-    _color.setY(g);
-    _color.setZ(b);
-    _color.setW(a);
-    _knob->setValue(_color);
+    _knob->setValue<double>(r,0);
+    _knob->setValue<double>(g,1);
+    _knob->setValue<double>(b,2);
+    _knob->setValue<double>(a,3);
     return kOfxStatOK;
 }
-OfxStatus OfxRGBAInstance::set(OfxTime /*time*/, double r ,double g,double b,double a){
-    QVector4D _color;
-    _color.setX(r);
-    _color.setY(g);
-    _color.setZ(b);
-    _color.setW(a);
-    _knob->setValue(_color);
+OfxStatus OfxRGBAInstance::set(OfxTime time, double r ,double g,double b,double a){
+    _knob->setValueAtTime<double>(time,r,0);
+    _knob->setValueAtTime<double>(time,g,1);
+    _knob->setValueAtTime<double>(time,b,2);
+    _knob->setValueAtTime<double>(time,a,3);
     return kOfxStatOK;
 }
 
@@ -452,8 +446,8 @@ OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descr
     if(layoutHint == 1){
         appPTR->getKnobFactory().createKnob("Separator", node, getParamLabel(this));
     }
-    _knob = dynamic_cast<RGBA_Knob*>(appPTR->getKnobFactory().createKnob("RGBA", node, getParamLabel(this)));
-    _knob->setAlphaEnabled(false);
+    _knob = dynamic_cast<Color_Knob*>(appPTR->getKnobFactory().createKnob("Color", node, getParamLabel(this),3));
+
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
@@ -471,35 +465,27 @@ OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descr
     set(defR, defG, defB);
 }
 OfxStatus OfxRGBInstance::get(double& r, double& g, double& b) {
-    QVector4D _color = _knob->getValues();
-    r = _color.x();
-    g = _color.y();
-    b = _color.z();
+    r = _knob->getValue<double>(0);
+    g = _knob->getValue<double>(1);
+    b = _knob->getValue<double>(2);
     return kOfxStatOK;
 }
-OfxStatus OfxRGBInstance::get(OfxTime /*time*/, double& r, double& g, double& b) {
-    QVector4D _color = _knob->getValues();
-    r = _color.x();
-    g = _color.y();
-    b = _color.z();
+OfxStatus OfxRGBInstance::get(OfxTime time, double& r, double& g, double& b) {
+    r = _knob->getValueAtTime<double>(time,0);
+    g = _knob->getValueAtTime<double>(time,1);
+    b = _knob->getValueAtTime<double>(time,2);
     return kOfxStatOK;
 }
 OfxStatus OfxRGBInstance::set(double r,double g,double b){
-    QVector4D _color;
-	_color.setX(r);
-    _color.setY(g);
-    _color.setZ(b);
-    _color.setW(1.0);
-    _knob->setValue(_color);
+    _knob->setValue<double>(r,0);
+    _knob->setValue<double>(g,1);
+    _knob->setValue<double>(b,2);
     return kOfxStatOK;
 }
-OfxStatus OfxRGBInstance::set(OfxTime /*time*/, double r,double g,double b){
-    QVector4D _color;
-	_color.setX(r);
-    _color.setY(g);
-    _color.setZ(b);
-    _color.setW(1.0);
-    _knob->setValue(_color);
+OfxStatus OfxRGBInstance::set(OfxTime time, double r,double g,double b){
+    _knob->setValueAtTime<double>(time,r,0);
+    _knob->setValueAtTime<double>(time,g,1);
+    _knob->setValueAtTime<double>(time,b,2);
     return kOfxStatOK;
 }
 
@@ -571,29 +557,24 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
     
 }
 OfxStatus OfxDouble2DInstance::get(double& x1, double& x2) {
-    std::vector<double> _values = _knob->getValues();
-    x1 = _values[0];
-    x2 = _values[1];
+    x1 = _knob->getValue<double>(0);
+    x2 = _knob->getValue<double>(1);
     return kOfxStatOK;
 }
-OfxStatus OfxDouble2DInstance::get(OfxTime /*time*/, double& x1, double& x2) {
-    std::vector<double> _values = _knob->getValues();
-    x1 = _values[0];
-    x2 = _values[1];
+OfxStatus OfxDouble2DInstance::get(OfxTime time, double& x1, double& x2) {
+
+    x1 = _knob->getValueAtTime<double>(time,0);
+    x2 = _knob->getValueAtTime<double>(time,1);
     return kOfxStatOK;
 }
 OfxStatus OfxDouble2DInstance::set(double x1,double x2){
-    double _values[2];
-	_values[0] = x1;
-    _values[1] = x2;
-    _knob->setValue<double>(_values,2);
+    _knob->setValue<double>(x1,0);
+    _knob->setValue<double>(x2,1);
 	return kOfxStatOK;
 }
-OfxStatus OfxDouble2DInstance::set(OfxTime /*time*/,double x1,double x2){
-    double _values[2];
-	_values[0] = x1;
-    _values[1] = x2;
-    _knob->setValue<double>(_values,2);
+OfxStatus OfxDouble2DInstance::set(OfxTime time,double x1,double x2){
+    _knob->setValueAtTime<double>(time,x1,0);
+    _knob->setValueAtTime<double>(time,x2,1);
 	return kOfxStatOK;
 }
 
@@ -661,29 +642,24 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::P
     _knob->setValue<int>(def,2);
 }
 OfxStatus OfxInteger2DInstance::get(int& x1, int& x2) {
-    std::vector<int> _values = _knob->getValues();
-    x1 = _values[0];
-    x2 = _values[1];
+    x1 = _knob->getValue<int>(0);
+    x2 = _knob->getValue<int>(1);
     return kOfxStatOK;
 }
-OfxStatus OfxInteger2DInstance::get(OfxTime /*time*/, int& x1, int& x2) {
-    std::vector<int> _values = _knob->getValues();
-    x1 = _values[0];
-    x2 = _values[1];
+OfxStatus OfxInteger2DInstance::get(OfxTime time, int& x1, int& x2) {
+
+    x1 = _knob->getValueAtTime<int>(time,0);
+    x2 = _knob->getValueAtTime<int>(time,1);
     return kOfxStatOK;
 }
 OfxStatus OfxInteger2DInstance::set(int x1,int x2){
-    int _values[2];
-	_values[0] = x1;
-    _values[1] = x2;
-   _knob->setValue<int>(_values,2);
+    _knob->setValue<int>(x1,0);
+    _knob->setValue<int>(x2,1);
 	return kOfxStatOK;
 }
-OfxStatus OfxInteger2DInstance::set(OfxTime /*time*/, int x1, int x2) {
-    int _values[2];
-	_values[0] = x1;
-    _values[1] = x2;
-    _knob->setValue<int>(_values,2);
+OfxStatus OfxInteger2DInstance::set(OfxTime time, int x1, int x2) {
+    _knob->setValueAtTime<int>(time,x1,0);
+    _knob->setValueAtTime<int>(time,x2,1);
 	return kOfxStatOK;
 }
 
@@ -974,16 +950,16 @@ const QString OfxStringInstance::getRandomFrameName(int f) const{
 }
 bool OfxStringInstance::isValid() const{
     if(_fileKnob){
-        return !_fileKnob->value<QStringList>().isEmpty();
+        return !_fileKnob->getValue<QStringList>().isEmpty();
     }
     if(_outputFileKnob){
-        return !_outputFileKnob->value<QString>().toStdString().empty();
+        return !_outputFileKnob->getValue<QString>().toStdString().empty();
     }
     return true;
 }
 std::string OfxStringInstance::filenameFromPattern(int frameIndex) const{
     if(_outputFileKnob){
-        std::string pattern = _outputFileKnob->value<QString>().toStdString();
+        std::string pattern = _outputFileKnob->getValue<QString>().toStdString();
         if(isValid()){
             QString p(pattern.c_str());
             return p.replace("#", QString::number(frameIndex)).toStdString();

@@ -100,7 +100,7 @@ boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,int view,int to
         }
     }
     
-    encoder->premultiplyByAlpha(_premultKnob->getValue());
+    encoder->premultiplyByAlpha(_premultKnob->getValue<bool>());
     /*check if the filename already contains the extension, otherwise appending it*/
     QString filename(fileName.c_str());
     int i = filename.lastIndexOf(QChar('.'));
@@ -166,7 +166,7 @@ void Writer::initializeKnobs(){
     
 }
 bool Writer::continueOnError() const{
-    return _continueOnError->getValue();
+    return _continueOnError->getValue<bool>();
 }
 
 Natron::Status Writer::renderWriter(SequenceTime time){
@@ -193,6 +193,11 @@ Natron::Status Writer::renderWriter(SequenceTime time){
             return StatFailed;
         }
         boost::shared_ptr<const Natron::Image> inputImage = roi->first->renderRoI(time, scale,i,roi->second);
+
+        if(aborted()){
+            return StatOK;
+        }
+
         Natron::Status st = encoder->render(inputImage, i, renderFormat);
         if(st != StatOK){
             QFile::remove(encoder->filename());
@@ -220,12 +225,12 @@ void Writer::renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,
 
 
 void Writer::getFrameRange(SequenceTime *first,SequenceTime *last){
-    int index = _frameRangeChoosal->value<int>();
+    int index = _frameRangeChoosal->getValue<int>();
     if(index == 0){
         input(0)->getFrameRange(first, last);
     }else{
-        *first = _firstFrameKnob->value<int>();
-        *last = _lastFrameKnob->value<int>();
+        *first = _firstFrameKnob->getValue<int>();
+        *last = _lastFrameKnob->getValue<int>();
     }
 }
 std::string Writer::getOutputFileName() const{
@@ -265,7 +270,7 @@ void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
         }
 
     }else if(k == _frameRangeChoosal){
-        int index = _frameRangeChoosal->value<int>();
+        int index = _frameRangeChoosal->getValue<int>();
         if(index == 0){
             if(_firstFrameKnob){
                 delete _firstFrameKnob;

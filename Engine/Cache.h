@@ -702,6 +702,45 @@ public:
         return _signalEmitter;
     }
 
+    /** @brief This function can be called to remove a specific entry from the cache. For example a frame
+     * that has had its render aborted but already belong to the cache.
+     **/
+    void removeEntry(value_type entry) const {
+        QMutexLocker l(&_lock);
+        CacheIterator existingEntry = _memoryCache(entry->getHashKey());
+        if(existingEntry != _memoryCache.end()){
+            std::list<value_type>& ret = getValueFromIterator(existingEntry);
+            for (typename std::list<value_type>::iterator it = ret.begin(); it!=ret.end(); ++it) {
+                if((*it)->getKey() == entry->getKey()){
+                    if(_signalEmitter)
+                        _signalEmitter->emitRemovedEntry();
+
+                    ret.erase(it);
+                    _memoryCacheSize -= entry->size();
+                    break;
+                }
+            }
+            if(ret.empty()){
+                _memoryCache.erase(existingEntry);
+            }
+        }else{
+            existingEntry = _diskCache(entry->getHashKey());
+            if(existingEntry != _diskCache.end()){
+                std::list<value_type>& ret = getValueFromIterator(existingEntry);
+                for (typename std::list<value_type>::iterator it = ret.begin(); it!=ret.end(); ++it) {
+                    if((*it)->getKey() == entry->getKey()){
+                        ret.erase(it);
+                        _diskCacheSize -= entry->size();
+                        break;
+                    }
+                }
+                if(ret.empty()){
+                    _diskCache.erase(existingEntry);
+                }
+            }
+        }
+    }
+
 private:
     typedef std::list<std::pair<hash_type,typename ValueType::key_type> > CacheTOC;
 

@@ -110,7 +110,7 @@ void Project::initializeKnobs(){
 
 void Project::evaluate(Knob* knob,bool /*isSignificant*/){
     if(knob == _viewsCount){
-        int viewsCount = _viewsCount->value<int>();
+        int viewsCount = _viewsCount->getValue<int>();
         getApp()->setupViewersForViews(viewsCount);
     }else if(knob == _formatKnob){
         const Format& f = _availableFormats[_formatKnob->getActiveEntry()];
@@ -369,5 +369,5 @@ void Project::createNewFormat(){
 }
 
 int Project::getProjectViewsCount() const{
-    return _viewsCount->value<int>();
+    return _viewsCount->getValue<int>();
 }

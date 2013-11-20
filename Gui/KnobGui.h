@@ -75,7 +75,10 @@ public:
     void createGUI(QGridLayout* layout,int row){
         createWidget(layout, row);
         _widgetCreated = true;
-        updateGUI(_knob->getValueAsVariant());
+        const std::map<int,Variant>& values = _knob->getMultiDimensionalValue();
+        for(std::map<int,Variant>::const_iterator it = values.begin();it!=values.end();++it){
+            updateGUI(it->first,it->second);
+        }
         setEnabled(_knob->isEnabled());
         setVisible(_knob->isVisible());
     }
@@ -99,9 +102,9 @@ public slots:
     /*Called when the value held by the knob is changed internally.
      This should in turn update the GUI but not emit the valueChanged()
      signal.*/
-    void onInternalValueChanged(const Variant& variant){
+    void onInternalValueChanged(int dimension,const Variant& variant){
         if(_widgetCreated)
-            updateGUI(variant);
+            updateGUI(dimension,variant);
     }
     
     void deleteKnob(){
@@ -124,7 +127,7 @@ signals:
     
     /*Must be emitted when a value is changed by the user or by
      an external source.*/
-    void valueChanged(const Variant& variant);
+    void valueChanged(int dimension,const Variant& variant);
     
     void knobUndoneChange();
     
@@ -137,7 +140,7 @@ protected:
    
     /*Called by the onInternalValueChanged slot. This should update
      the widget to reflect the new internal value held by variant.*/
-    virtual void updateGUI(const Variant& variant)=0;
+    virtual void updateGUI(int dimension,const Variant& variant)=0;
     
     Knob* _knob;
     
@@ -148,9 +151,9 @@ private:
     
     /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
      signal/slot sequence can cause an infinite loop.*/
-    void setValue(const Variant& variant){
-        updateGUI(variant);
-        emit valueChanged(variant);
+    void setValue(int dimension,const Variant& variant){
+        updateGUI(dimension,variant);
+        emit valueChanged(dimension,variant);
     }
     
     bool _triggerNewLine;
@@ -169,7 +172,7 @@ class KnobUndoCommand : public QObject, public QUndoCommand{
     
 public:
     
-    KnobUndoCommand(KnobGui* knob,const Variant& oldValue,const Variant& newValue,QUndoCommand *parent = 0):QUndoCommand(parent),
+    KnobUndoCommand(KnobGui* knob,const std::map<int,Variant>& oldValue,const std::map<int,Variant>& newValue,QUndoCommand *parent = 0):QUndoCommand(parent),
     _oldValue(oldValue),
     _newValue(newValue),
     _knob(knob)
@@ -187,8 +190,8 @@ signals:
     void knobRedoneChange();
     
 private:
-    Variant _oldValue;
-    Variant _newValue;
+    std::map<int,Variant> _oldValue;
+    std::map<int,Variant> _newValue;
     KnobGui* _knob;
 };
 
@@ -224,7 +227,7 @@ public slots:
     
 protected:
     
-    virtual void updateGUI(const Variant& variant);
+    virtual void updateGUI(int dimension,const Variant& variant);
     
 private:
     
@@ -269,7 +272,7 @@ public slots:
     
 protected:
     
-    virtual void updateGUI(const Variant& variant);
+    virtual void updateGUI(int dimension,const Variant& variant);
     
 private:
     void updateLastOpened(const QString& str);
@@ -324,7 +327,7 @@ public slots:
  
 protected:
     
-    virtual void updateGUI(const Variant& variant);
+    virtual void updateGUI(int dimension,const Variant& variant);
     
 private:
     std::vector<std::pair<SpinBox*,QLabel*> > _spinBoxes;
@@ -381,7 +384,7 @@ public slots:
     
 protected:
     
-    virtual void updateGUI(const Variant& variant);
+    virtual void updateGUI(int dimension,const Variant& variant);
     
 private:
 
@@ -426,7 +429,7 @@ public slots:
     
 protected:
     
-    virtual void updateGUI(const Variant& variant);
+    virtual void updateGUI(int dimension,const Variant& variant);
     
 private:
     std::vector<std::pair<SpinBox*,QLabel*> > _spinBoxes;
@@ -462,7 +465,7 @@ public slots:
     void emitValueChanged();
 protected:
     
-    virtual void updateGUI(const Variant& variant){Q_UNUSED(variant);}
+    virtual void updateGUI(int dimension,const Variant& variant){(void)dimension;Q_UNUSED(variant);}
 
     
 private:
@@ -499,7 +502,7 @@ public slots:
     
 protected:
     
-    virtual void updateGUI(const Variant& variant);
+    virtual void updateGUI(int dimension,const Variant& variant);
     
 private:
     std::vector<std::string> _entries;
@@ -529,27 +532,25 @@ public:
     
 protected:
     
-    virtual void updateGUI(const Variant& variant){(void)variant;}
+    virtual void updateGUI(int dimension,const Variant& variant){(void)dimension;(void)variant;}
 private:
     QFrame* _line;
     QLabel* _descriptionLabel;
 };
 
 /******************************/
-class RGBA_KnobGui : public KnobGui{
+class Color_KnobGui : public KnobGui{
     Q_OBJECT
 public:
-    static KnobGui* BuildKnobGui(Knob* knob,DockablePanel* container){ return new RGBA_KnobGui(knob,container); }
+    static KnobGui* BuildKnobGui(Knob* knob,DockablePanel* container){ return new Color_KnobGui(knob,container); }
 
     
-    RGBA_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container),_alphaEnabled(true){}
+    Color_KnobGui(Knob* knob,DockablePanel* container);
     
-    virtual ~RGBA_KnobGui();
+    virtual ~Color_KnobGui();
     
     virtual void createWidget(QGridLayout* layout,int row);
-    
-    void disablePermantlyAlpha();
-    
+        
     virtual void hide();
     
     virtual void show();
@@ -566,7 +567,7 @@ public slots:
     
 protected:
     
-    virtual void updateGUI(const Variant& variant);
+    virtual void updateGUI(int dimension,const Variant& variant);
     
 private:
     
@@ -596,7 +597,7 @@ private:
     QLabel* _colorLabel;
     Button* _colorDialogButton;
     
-    bool _alphaEnabled;
+    int _dimension;
 };
 
 /*****************************/
@@ -625,7 +626,7 @@ public:
     
 protected:
     
-    virtual void updateGUI(const Variant& variant);
+    virtual void updateGUI(int dimension,const Variant& variant);
     
 private:
 	LineEdit* _lineEdit;
@@ -695,7 +696,7 @@ public:
 protected:
     
     
-    virtual void updateGUI(const Variant& variant);
+    virtual void updateGUI(int dimension,const Variant& variant);
     
     
 public slots:
@@ -741,7 +742,7 @@ public slots:
     
 protected:
     
-    virtual void updateGUI(const Variant& variant);
+    virtual void updateGUI(int dimension,const Variant& variant);
     
 private:
 	QTextEdit* _textEdit;

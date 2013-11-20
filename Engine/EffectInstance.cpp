@@ -345,6 +345,12 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
                     if (inputImg) {
                         inputImages.push_back(inputImg);
                     }
+                    if(aborted()){
+                        //if render was aborted, remove the frame from the cache as it contains only garbage
+                        appPTR->getNodeCache().removeEntry(image);
+                        return image;
+                    }
+
                 } catch(const std::exception& e) {
                     throw e; // FIXME: what's the point in throwing the exception you just catched???
                 }
@@ -361,13 +367,17 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
                 if(st != Natron::StatOK){
                     throw std::runtime_error("");
                 }
-                image->markForRendered(*it);
+                if(!aborted()){
+                    image->markForRendered(*it);
+                }
             }else if(safety == INSTANCE_SAFE){
                 Natron::Status st = render(time, scale, *it,view, image);
                 if(st != Natron::StatOK){
                     throw std::runtime_error("");
                 }
-                image->markForRendered(*it);
+                if(!aborted()){
+                    image->markForRendered(*it);
+                }
             }else{ // fully_safe, we do multi-threaded rendering on small tiles
                 std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(*it, QThread::idealThreadCount());
                 QFuture<Natron::Status> ret = QtConcurrent::mapped(splitRects,
@@ -392,6 +402,11 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
     
     //we released the input images and force the cache to clear exceeding entries
     appPTR->clearExceedingEntriesFromNodeCache();
+
+    if(aborted()){
+        //if render was aborted, remove the frame from the cache as it contains only garbage
+        appPTR->getNodeCache().removeEntry(image);
+    }
     
     Natron::Log::endFunction(getName(),"renderRoI");
     return image;
@@ -410,7 +425,9 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
     if(st != StatOK){
         return st;
     }
-    output->markForRendered(roi);
+    if(!aborted()){
+        output->markForRendered(roi);
+    }
     return StatOK;
 }
 
