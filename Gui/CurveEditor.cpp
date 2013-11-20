@@ -197,10 +197,16 @@ void CurveEditor::drawScale(){
                 } else {
                     tickCount = 1*jmax;
                 }
+            } else if (j % 25 == 0) {
+                tickCount = 25;
             } else if (j % 10 == 0) {
                 tickCount = 10;
             } else if (j % 5 == 0) {
-                tickCount = 5;
+                if (jmax == 10 && (i*jmax+j) % 25 == 0) {
+                    tickCount = 25;
+                } else {
+                    tickCount = 5;
+                }
             }
             const double alpha = tickAlpha(smallestTickSize,largestTickSize, tickCount*dist/(double)jmax);
 
@@ -280,10 +286,16 @@ void CurveEditor::drawScale(){
                 } else {
                     tickCount = 1*jmax;
                 }
+            } else if (j % 25 == 0) {
+                tickCount = 25;
             } else if (j % 10 == 0) {
                 tickCount = 10;
             } else if (j % 5 == 0) {
-                tickCount = 5;
+                if (jmax == 10 && (i*jmax+j) % 25 == 0) {
+                    tickCount = 25;
+                } else {
+                    tickCount = 5;
+                }
             }
             const double alpha = tickAlpha(smallestTickSize,largestTickSize, tickCount*dist/(double)jmax);
             glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
