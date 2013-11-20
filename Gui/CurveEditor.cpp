@@ -162,7 +162,6 @@ void CurveEditor::drawScale(){
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     int m1 = floor(xminp/dist + 0.5);
     int m2 = floor(xmaxp/dist + 0.5);
-    std::cout << majorTicksCount <<'*' << dist << ' ' << m1 << ',' << m2 << "->" << m2-m1+1 <<  std::endl;
     double smallestTickSize = (topRight.x() - btmLeft.x()) * smallestTickSizePixel / scaleWidth;
     double largestTickSize = (topRight.x() - btmLeft.x()) * largestTickSizePixel / scaleWidth;
     assert(smallestTickSize > 0);
