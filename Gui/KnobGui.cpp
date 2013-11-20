@@ -1205,9 +1205,9 @@ void GroupBoxLabel::setChecked(bool b){
 Group_KnobGui::~Group_KnobGui(){
     delete _button;
     delete _descriptionLabel;
-    for(U32 i  = 0 ; i < _children.size(); ++i){
-        delete _children[i].first;
-    }
+//    for(U32 i  = 0 ; i < _children.size(); ++i){
+//        delete _children[i].first;
+//    }
     
 }
 

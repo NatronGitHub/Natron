@@ -382,7 +382,7 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
             for (int i = 0; i < nthClip ; ++i) {
                 OFX::Host::ImageEffect::ClipInstance* clip = effect_->getNthClip(i);
                 assert(clip);
-                if (!clip->isOptional() && !clip->isOutput()) {
+                if (!clip->isOutput()) {
                     double f,l;
                     clip->getFrameRange(f, l);
                     if (i != 0) {
