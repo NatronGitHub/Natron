@@ -35,7 +35,7 @@ class DockablePanel;
 class AppInstance;
 
 namespace Natron {
-    class LibraryBinary;
+class LibraryBinary;
 }
 
 /******************************KNOB_FACTORY**************************************/
@@ -141,11 +141,11 @@ T interpolate_catmullRom(double t0,const T v0, // control point k - 1
 
     //and call HERMIT_CUBIC interpolation
     return interpolate<T>(t0,v0,
-                mk,
-                mk_1,
-                t3,v3,
-                currentTime,
-                HERMIT_CUBIC);
+                          mk,
+                          mk_1,
+                          t3,v3,
+                          currentTime,
+                          HERMIT_CUBIC);
 
 }
 
@@ -454,7 +454,7 @@ public:
 
     /**
      * @brief Must return true if this knob can animate (i.e: if we can set different values depending on the time)
-     * Some parameters cannot animate, for example a file selector. 
+     * Some parameters cannot animate, for example a file selector.
      **/
     virtual bool canAnimate() const = 0;
     
@@ -493,7 +493,7 @@ public:
     /**
      * @brief Returns an ordered map of all the keys at a specific dimension.
      **/
-    boost::shared_ptr<CurvePath> getKeys(int dimension = 0) const;
+    boost::shared_ptr<CurvePath> getCurve(int dimension = 0) const;
     
     /*other must have exactly the same name*/
     void cloneValue(const Knob& other);
@@ -506,7 +506,7 @@ public:
     
     void setVisible(bool b);
     
-    /*Call this to change the knob name. The name is not the text label displayed on 
+    /*Call this to change the knob name. The name is not the text label displayed on
      the GUI but what is passed to the valueChangedByUser signal. By default the
      name is the same as the description(i.e: the text label).*/
     void setName(const std::string& name){_name = QString(name.c_str());}
@@ -535,7 +535,12 @@ public:
     
     const std::string& getHintToolTip() const {return _tooltipHint;}
 
-    
+    /**
+      * @brief If the parameter is multidimensional, this is the label thats the that will be displayed
+      * for a dimension.
+    **/
+    virtual std::string getDimensionName(int dimension) const{(void)dimension; return "";}
+
 public slots:
     
     /*Set the value of the knob but does NOT emit the valueChanged signal.
@@ -568,14 +573,14 @@ protected:
      of the knob. Cloning happens when a render request is made: all knobs values of the GUI
      are cloned into small copies in order to be sure they will not be modified further on.
      This function is useful if you need to copy for example an extra bit of information.
-     e.g: the File_Knob has to copy not only the QStringList containing the file names, but 
+     e.g: the File_Knob has to copy not only the QStringList containing the file names, but
      also the sequence it has parsed.*/
     virtual void cloneExtraData(const Knob& other){(void)other;}
     
     /*This function is called right after that the _value has changed
      but before any signal notifying that it has changed. It can be useful
      to do some processing to create new informations.
-     e.g: The File_Knob parses the files list to create a mapping of 
+     e.g: The File_Knob parses the files list to create a mapping of
      <time,file> .*/
     virtual void processNewValue(){}
     
@@ -598,7 +603,7 @@ private:
     
     std::string _description;//< the text label that will be displayed  on the GUI
     QString _name;//< the knob can have a name different than the label displayed on GUI.
-                          //By default this is the same as _description but can be set by calling setName().
+    //By default this is the same as _description but can be set by calling setName().
     bool _newLine;
     int _itemSpacing;
     
@@ -622,8 +627,8 @@ private:
 };
 
 /**
- * @brief A Knob holder is a class that stores Knobs and interact with them in some way. 
- * It serves 2 purpose: 
+ * @brief A Knob holder is a class that stores Knobs and interact with them in some way.
+ * It serves 2 purpose:
  * 1) It automatically deletes the knobs, you don't have to manually call delete
  * 2) It calls a set of begin/end valueChanged whenever a knob value changed. It also
  * calls evaluate() which should then trigger an evaluation of the freshly changed value
@@ -665,7 +670,7 @@ public:
     
     /**
      * @brief Must be implemented to evaluate a value change
-     * made to a knob(e.g: force a new render). 
+     * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
     virtual void evaluate(Knob* knob,bool isSignificant) = 0;
@@ -739,7 +744,7 @@ public:
     }
     
     File_Knob(KnobHolder* holder, const std::string& description,int dimension):
-    Knob(holder,description,dimension)
+        Knob(holder,description,dimension)
     {}
     
     virtual void fillHashVector();
@@ -762,7 +767,7 @@ public:
      * @brief lastFrame
      * @return Returns the index of the last frame in the sequence held by this Reader.
      */
-	int lastFrame() const;
+    int lastFrame() const;
     
     int frameCount() const{return _filesSequence.size();}
     
@@ -792,7 +797,7 @@ signals:
 protected:
     
     virtual void _restoreFromString(const std::string& str);
-        
+
 };
 
 /******************************OUTPUT_FILE_KNOB**************************************/
@@ -807,7 +812,7 @@ public:
     }
     
     OutputFile_Knob(KnobHolder* holder, const std::string& description,int dimension):
-    Knob(holder,description,dimension)
+        Knob(holder,description,dimension)
     {}
     
     virtual void fillHashVector();
@@ -849,9 +854,24 @@ public:
     }
     
     Int_Knob(KnobHolder* holder, const std::string& description,int dimension):
-    Knob(holder,description,dimension)
-    ,_disableSlider(false)
+        Knob(holder,description,dimension)
+      ,_disableSlider(false)
     {}
+
+    virtual std::string getDimensionName(int dimension) const{
+        switch(dimension){
+        case 0:
+            return "x";
+        case 1:
+            return "y";
+        case 2:
+            return "z";
+        case 3:
+            return "w";
+        default:
+            return QString::number(dimension).toStdString();
+        }
+    }
 
     void disableSlider() { _disableSlider = true;}
 
@@ -1024,7 +1044,7 @@ public:
     }
     
     Bool_Knob(KnobHolder* holder, const std::string& description,int dimension):
-    Knob(holder,description,dimension)
+        Knob(holder,description,dimension)
     {}
     
     virtual void fillHashVector();
@@ -1032,7 +1052,7 @@ public:
     virtual bool canAnimate() const { return false; }
     
     virtual const std::string typeName(){return "Bool";}
-        
+
     virtual std::string serialize() const;
 
 protected:
@@ -1055,9 +1075,24 @@ public:
     }
     
     Double_Knob(KnobHolder* holder, const std::string& description,int dimension):
-    Knob(holder,description,dimension)
-    ,_disableSlider(false)
+        Knob(holder,description,dimension)
+      ,_disableSlider(false)
     {}
+
+    virtual std::string getDimensionName(int dimension) const{
+        switch(dimension){
+        case 0:
+            return "x";
+        case 1:
+            return "y";
+        case 2:
+            return "z";
+        case 3:
+            return "w";
+        default:
+            return QString::number(dimension).toStdString();
+        }
+    }
 
     void disableSlider() { _disableSlider = true;}
 
@@ -1245,7 +1280,7 @@ public:
     }
     
     Button_Knob(KnobHolder*  holder, const std::string& description,int dimension):
-    Knob(holder,description,dimension){}
+        Knob(holder,description,dimension){}
     
     virtual void fillHashVector(){}
 
@@ -1272,7 +1307,7 @@ public:
     }
     
     ComboBox_Knob(KnobHolder* holder, const std::string& description,int dimension):
-    Knob(holder,description,dimension)
+        Knob(holder,description,dimension)
     {
         
     }
@@ -1323,7 +1358,7 @@ public:
     }
     
     Separator_Knob(KnobHolder* holder, const std::string& description,int dimension):
-    Knob(holder,description,dimension){
+        Knob(holder,description,dimension){
         
     }
 
@@ -1356,10 +1391,25 @@ public:
     
 
     Color_Knob(KnobHolder* holder, const std::string& description,int dimension):
-    Knob(holder,description,dimension)
+        Knob(holder,description,dimension)
     {
         //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
         assert(dimension <= 4 && dimension != 2);
+    }
+
+    virtual std::string getDimensionName(int dimension) const{
+        switch(dimension){
+        case 0:
+            return "r";
+        case 1:
+            return "g";
+        case 2:
+            return "b";
+        case 3:
+            return "a";
+        default:
+            return QString::number(dimension).toStdString();
+        }
     }
     
     virtual bool canAnimate() const { return true; }
@@ -1386,7 +1436,7 @@ public:
     }
     
     String_Knob(KnobHolder* holder, const std::string& description,int dimension):
-    Knob(holder,description,dimension){
+        Knob(holder,description,dimension){
         
     }
     
@@ -1419,7 +1469,7 @@ public:
     }
     
     Group_Knob(KnobHolder* holder, const std::string& description,int dimension):
-    Knob(holder,description,dimension)
+        Knob(holder,description,dimension)
     {
         
     }
@@ -1451,7 +1501,7 @@ public:
     }
     
     Tab_Knob(KnobHolder* holder, const std::string& description,int dimension):
-    Knob(holder,description,dimension){
+        Knob(holder,description,dimension){
         
     }
     
@@ -1487,7 +1537,7 @@ public:
     }
     
     RichText_Knob(KnobHolder* holder, const std::string& description,int dimension):
-    Knob(holder,description,dimension){
+        Knob(holder,description,dimension){
         
     }
     

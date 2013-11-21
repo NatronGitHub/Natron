@@ -32,7 +32,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Global/AppManager.h"
 #include "Gui/Gui.h"
 #include "Gui/NodeGraph.h"
-#include "Gui/CurveWidget.h"
+#include "Gui/CurveEditor.h"
 #include "Gui/ViewerTab.h"
 #include "Engine/ViewerInstance.h"
 

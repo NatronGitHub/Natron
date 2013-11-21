@@ -48,12 +48,12 @@ void CurveWidget::initializeGL(){
 
 }
 
-void CurveWidget::addCurve(const CurveGui& curve){
+void CurveWidget::addCurve(boost::shared_ptr<CurveGui> curve){
     _curves.push_back(curve);
 }
 
-void CurveWidget::removeCurve(const CurveGui& curve){
-    for(std::list<CurveGui>::iterator it = _curves.begin();it!=_curves.end();++it){
+void CurveWidget::removeCurve(boost::shared_ptr<CurveGui> curve){
+    for(std::list<boost::shared_ptr<CurveGui> >::iterator it = _curves.begin();it!=_curves.end();++it){
         if((*it) == curve){
             _curves.erase(it);
             break;
@@ -125,22 +125,22 @@ void CurveWidget::paintGL(){
 
 void CurveWidget::drawCurves(){
     //now draw each curve
-    for(std::list<CurveGui>::const_iterator it = _curves.begin();it!=_curves.end();++it){
-        if((*it).isVisible()){
-            const QColor& curveColor =  (*it).isSelected() ?  _selectedCurveColor :  (*it).getColor();
-            const QColor& nameColor =  (*it).getColor();
+    for(std::list<boost::shared_ptr<CurveGui>>::const_iterator it = _curves.begin();it!=_curves.end();++it){
+        if((*it)->isVisible()){
+            const QColor& curveColor =  (*it)->isSelected() ?  _selectedCurveColor :  (*it)->getColor();
+            const QColor& nameColor =  (*it)->getColor();
 
             glColor4f(curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF());
 
             for(int i = 0; i < width();++i){
                 double x = toImgCoordinates_fast(i,0).x();
-                double y = (*it).evaluate(x);
+                double y = (*it)->evaluate(x);
                 if(i == 10){ // draw the name of the curve on the left of the widget
                     glColor4f(1., 1., 1., 1.);
-                    renderText(x,y,(*it).getName(),curveColor,*_font);
+                    renderText(x,y,(*it)->getName(),nameColor,*_font);
                     glColor4f(curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF());
                 }
-                glPointSize((*it).getThickness());
+                glPointSize((*it)->getThickness());
                 glBegin(GL_POINTS);
                 glVertex2f(x,y);
                 glEnd();
@@ -400,18 +400,19 @@ void CurveWidget::renderText(double x,double y,const QString& text,const QColor&
 
 CurveWidget::Curves::const_iterator CurveWidget::isNearbyCurve(const QPointF& pt) const{
     for(Curves::const_iterator it = _curves.begin();it!=_curves.end();++it){
-        double y = (*it).evaluate(pt.x());
+        double y = (*it)->evaluate(pt.x());
         if(std::abs(pt.y() - y) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE){
             return it;
         }
     }
+    return _curves.end();
 }
 
-void CurveWidget::selectCurve(const CurveGui& curve){
+void CurveWidget::selectCurve(boost::shared_ptr<CurveGui> curve){
     for(Curves::const_iterator it = _curves.begin();it!=_curves.end();++it){
-        (*it).setSelected(false);
+        (*it)->setSelected(false);
     }
-    curve.setSelected(true);
+    curve->setSelected(true);
 }
 
 void CurveWidget::mousePressEvent(QMouseEvent *event){

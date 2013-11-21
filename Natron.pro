@@ -113,6 +113,7 @@ SOURCES += \
     Global/LibraryBinary.cpp \
     Global/main.cpp \
     Gui/ComboBox.cpp \
+    Gui/CurveEditor.cpp \
     Gui/CurveWidget.cpp \
     Gui/Edge.cpp \
     Gui/Gui.cpp \
@@ -194,6 +195,7 @@ HEADERS += \
     Global/QtCompat.h \
     Gui/Button.h \
     Gui/ComboBox.h \
+    Gui/CurveEditor.h \
     Gui/CurveWidget.h \
     Gui/Edge.h \
     Gui/Gui.h \

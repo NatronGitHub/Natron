@@ -414,7 +414,7 @@ void Knob::setValueAtTimeInternal(double time, const Variant& v, int dimension){
 
 }
 
-boost::shared_ptr<CurvePath> Knob::getKeys(int dimension) const {
+boost::shared_ptr<CurvePath> Knob::getCurve(int dimension) const {
     CurvesMap::const_iterator foundDimension = _curves.find(dimension);
     assert(foundDimension != _curves.end());
     return foundDimension->second;

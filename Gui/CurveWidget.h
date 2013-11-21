@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef CURVEEDITOR_H
-#define CURVEEDITOR_H
+#ifndef CURVE_WIDGET_H
+#define CURVE_WIDGET_H
 
 #include "Gui/ViewerGL.h"
 
@@ -62,10 +62,6 @@ public:
     **/
     double evaluate(double x) const;
 
-    bool operator==(const CurveGui& other){
-        return other._name == _name &&
-                other._internalCurve == _internalCurve;
-    }
 
 private:
 
@@ -116,7 +112,7 @@ class CurveWidget : public QGLWidget
     Natron::TextRenderer _textRenderer;
     QFont* _font;
 
-    typedef std::list<CurveGui> Curves;
+    typedef std::list<boost::shared_ptr<CurveGui> > Curves;
     Curves _curves;
 public:
     
@@ -144,9 +140,9 @@ public:
 
     void centerOn(double xmin,double xmax,double ymin,double ymax);
 
-    void addCurve(const CurveGui& curve);
+    void addCurve(boost::shared_ptr<CurveGui> curve);
 
-    void removeCurve(const CurveGui& curve);
+    void removeCurve(boost::shared_ptr<CurveGui> curve);
 
 
 
@@ -161,7 +157,7 @@ private:
     /**
      * @brief Selects the curve given in parameter and deselects any other curve in the widget.
     **/
-    void selectCurve(const CurveGui& curve);
+    void selectCurve(boost::shared_ptr<CurveGui> curve);
 
     /**
      *@brief See toImgCoordinates_fast in ViewerGL.h
@@ -183,4 +179,4 @@ private:
 
 
 
-#endif // CURVEEDITOR_H
+#endif // CURVE_WIDGET_H

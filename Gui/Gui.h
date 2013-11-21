@@ -63,7 +63,7 @@ class LineEdit;
 class DockablePanel;
 class PluginToolButton;
 class ComboBox;
-class CurveWidget;
+class CurveEditor;
 
 namespace Natron{
     class Node;
@@ -398,7 +398,7 @@ public:
     QGraphicsScene* _graphScene;
     NodeGraph *_nodeGraphArea;
 
-    CurveWidget *_curveEditor;
+    CurveEditor *_curveEditor;
     
     /*TOOLBOX*/
     QToolBar* _toolBox;
