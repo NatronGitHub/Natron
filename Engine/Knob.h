@@ -74,21 +74,80 @@ private:
 **/
 class KeyFrame : public QObject {
     
+
     Q_OBJECT
     
-    Variant _value; /// the value held by the key
-    double _time; /// a value ranging between 0 and 1
-    std::pair<double,Variant> _leftTangent,_rightTangent;
-
 public:
 
+    typedef std::pair<double,Variant> Tangent;
+
+    
     KeyFrame(double time,const Variant& initialValue);
 
     ~KeyFrame(){}
+    
+    const Variant& getValue() const { return _value; }
+    
+    double getTime() const { return _time; }
+    
+    const Tangent& getLeftTangent() const { return _leftTangent; }
+    
+    const Tangent& getRightTangent() const { return _rightTangent; }
 
+    void setLeftTangent(double time,const Variant& v){
+        _leftTangent.first = time;
+        _leftTangent.second = v;
+        emit keyFrameChanged();
+    }
+    
+    void setRightTangent(double time,const Variant& v){
+        _rightTangent.first = time;
+        _rightTangent.second = v;
+        emit keyFrameChanged();
+    }
+    
+    void setValue(const Variant& v){
+        _value = v;
+        emit keyFrameChanged();
+    }
+    
+    void setTime(double time){
+        _time = time;
+        emit keyFrameChanged();
+    }
+
+    
+public slots:
+    
+    void onLeftTangentChanged(double time,const Variant& v){
+        _leftTangent.first = time;
+        _leftTangent.second = v;
+    }
+    
+    void onRightTangentChanged(double time,const Variant& v){
+        _rightTangent.first = time;
+        _rightTangent.second = v;
+    }
+    
+    void onValueChanged(const Variant& v){
+        _value = v;
+    }
+    
+    void onTimeChanged(double time){
+        _time = time;
+    }
+    
 signals:
 
     void keyFrameChanged();
+    
+private:
+    
+    Variant _value; /// the value held by the key
+    double _time; /// a value ranging between 0 and 1
+    
+    Tangent _leftTangent,_rightTangent;
+
 };
 
 
