@@ -358,7 +358,7 @@ private:
             t2 = (*upper).first->getTime();
             v2 = (*upper).first->getValue().value<T>();
             t3 = uppernext != _keyFrames.end() ? (*uppernext).first->getTime() : (*upper).first->getTime();
-            t3 = uppernext != _keyFrames.end() ? (*uppernext).first->getValue().value<T>() : (*upper).first->getValue().value<T>();
+            v3 = uppernext != _keyFrames.end() ? (*uppernext).first->getValue().value<T>() : (*upper).first->getValue().value<T>();
 
             //now normalize all the 't's to be in the range [0,1]
             t2 = (t2 - t0) / (t3 - t0);

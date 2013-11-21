@@ -255,7 +255,7 @@ void ScaleSlider::seekScalePosition(double v){
     double displayedRange = _maximum - _minimum + 2*padding;
     double zoomFactor = width() /displayedRange;
     zoomFactor = (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01);
-    assert(zoomFactor>=0.01 && zoomFactor <= 1024);
+    // assert(zoomFactor>=0.01 && zoomFactor <= 1024);
     _zoomCtx.setZoomFactor(zoomFactor);
     _zoomCtx._left = _minimum - padding ;
     _zoomCtx._bottom = 0;

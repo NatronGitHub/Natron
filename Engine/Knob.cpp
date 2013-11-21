@@ -303,7 +303,6 @@ void CurvePath::addControlPoint(boost::shared_ptr<KeyFrame> cp)
 Variant CurvePath::getValueAt(double t) const{
     assert(!_keyFrames.empty());
     const Variant& firstKeyValue = _keyFrames.front().first->getValue();
-    InterpolableType type;
     switch(firstKeyValue.type()){
         case QVariant::Int :
             return Variant(getValueAtInternal<int>(t));

@@ -126,7 +126,7 @@ void CurveWidget::paintGL(){
 
 void CurveWidget::drawCurves(){
     //now draw each curve
-    for(std::list<boost::shared_ptr<CurveGui>>::const_iterator it = _curves.begin();it!=_curves.end();++it){
+    for(std::list<boost::shared_ptr<CurveGui> >::const_iterator it = _curves.begin();it!=_curves.end();++it){
         if((*it)->isVisible()){
             const QColor& curveColor =  (*it)->isSelected() ?  _selectedCurveColor :  (*it)->getColor();
             const QColor& nameColor =  (*it)->getColor();

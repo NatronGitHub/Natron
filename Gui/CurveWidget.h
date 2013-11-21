@@ -54,7 +54,7 @@ public:
 
     bool isSelected() const { return _selected; }
 
-    bool setSelected(bool s) const { _selected = s; }
+    void setSelected(bool s) const { _selected = s; }
 
     /**
       * @brief Evaluates the curve and returns the y position corresponding to the given x.
