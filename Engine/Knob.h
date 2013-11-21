@@ -65,6 +65,91 @@ private:
     
 };
 
+namespace Natron{
+
+enum Interpolation{
+    CONSTANT = 0,
+    LINEAR = 1,
+    HERMIT_CUBIC = 2,
+    CATMULL_ROM = 3,
+    BEZIER_CUBIC = 4
+};
+
+/**
+ * @brief Interpolates using the control points P0(t0,v0) , P3(t3,v3)
+ * and the tangents P1(t1,v1) (being the tangent of P0) and P2(t2,v2)
+ * (being the tangent of P3) the value at 'currentTime' using the
+ * interpolation method "interp".
+ * Note that for CATMULL-ROM you must use the function interpolate_catmullRom
+ * which will compute the tangents for you.
+**/
+template <typename T>
+T interpolate(double t0,const T v0, //start control point
+              const T v1, //being the tangent of (t0,v0)
+              const T v2, //being the tangent of (t3,v3)
+              double t3,const T v3, //end control point
+              double currentTime,
+              Interpolation interp){
+
+    assert(interp != CATMULL_ROM);
+    double tsquare = currentTime * currentTime;
+    double tcube = tsquare * currentTime;
+    switch(interp){
+
+    case CONSTANT:
+        return currentTime < t3 ? v0 : v3;
+
+    case LINEAR:
+
+        return ((currentTime - t0) / (t3 - t0)) * v0 +
+                ((t3 - currentTime) / (t3 - t0)) * v3;
+
+    case HERMIT_CUBIC:
+
+        return ((2 * tcube - 3 * tsquare + 1) * v0) +
+                ((tcube - 2 * tsquare + currentTime) * v1) +
+                ((-2 * tcube + 3 * tsquare) * v3) +
+                (tcube - tsquare) * v2;
+
+    case BEZIER_CUBIC:
+
+        return (1 - 3 * currentTime + 3 * tsquare - tcube) * v0 +
+                (1 - 2 * currentTime + tsquare) * 3 * currentTime * v1 +
+                (1 - currentTime) * 3 * tsquare * v2 +
+                tcube * v3;
+    default: //defaults to a constant
+        return currentTime < t3 ? v0 : v3;
+    }
+}
+
+/**
+ * @brief This function is a helper to interpolate a value at
+ * a given time. Using 4 control points ( k-1,k,k+1 and k+2 )
+ * it computes the tangent Tk and Tk+1 and finally interpolate
+ * the value using the HERMIT_CUBIC method.
+**/
+template <typename T>
+T interpolate_catmullRom(double t0,const T v0, // control point k - 1
+                         double t1,const T v1, // control point k
+                         double t2,const T v2,  // control point k + 1
+                         double t3,const T v3,
+                         double currentTime){  // control point k + 2
+
+    //compute tangents
+    T mk = (v2 - v0) / (t2 - t0); // tangent at k
+    T mk_1 = (v3 - v1) / (t3 - t1); // tangent at k + 1
+
+    //and call HERMIT_CUBIC interpolation
+    return interpolate<T>(t0,v0,
+                mk,
+                mk_1,
+                t3,v3,
+                currentTime,
+                HERMIT_CUBIC);
+
+}
+
+}
 
 
 /**
@@ -150,36 +235,157 @@ private:
 
 };
 
-
-class AnimationCurve : public QObject {
+/**
+  * @brief A CurvePath is a list of chained curves. Each curve is a set of 2 keyFrames and has its
+  * own interpolation method (that can differ from other curves).
+  * 2 connected curves share a same keyFrame.
+**/
+class CurvePath : public QObject {
 
     Q_OBJECT
     
 public:
 
-    enum Interpolation{
-        CONSTANT = 0,
-        LINEAR = 1,
-        CUBIC = 2,
-        CATMULL_ROM = 3
+
+
+    enum InterpolableType{
+        INT = 0,
+        DOUBLE = 1
     };
 
-    AnimationCurve(Interpolation type);
+    CurvePath(boost::shared_ptr<KeyFrame> cp);
 
-    ~AnimationCurve(){}
+    CurvePath(const CurvePath& other)
+        : _keyFrames(other._keyFrames)
+    {}
 
-    void setStartAndEnd(boost::shared_ptr<KeyFrame> start,boost::shared_ptr<KeyFrame> end){
-        addControlPoint(start);
-        addControlPoint(end);
+    ~CurvePath(){}
+
+
+    void addControlPoint(boost::shared_ptr<KeyFrame> cp);
+
+    void setStart(boost::shared_ptr<KeyFrame> cp);
+
+    void setEnd(boost::shared_ptr<KeyFrame> cp);
+
+    int getControlPointsCount() const { return (int)_keyFrames.size(); }
+
+    template <typename T>
+    T getValueAt(double t) const {
+
+        if(_keyFrames.size() == 1){
+            //if there's only 1 keyframe, don't bother interpolating
+            return (*_keyFrames.begin()).first->getValue().value<T>();
+        }
+
+        KeyFrames::const_iterator upper;
+        for(KeyFrames::const_iterator it = _keyFrames.begin();it!=_keyFrames.end();++it){
+            if((*it).first->getTime() > t){
+                upper = it;
+                break;
+            }else if((*it).first->getTime() == t){
+                //if the time is exactly the time of a keyframe, return its value
+                return (*it).first->getValue().value<T>();
+            }
+        }
+
+        //if we found no key that has a greater time (i.e: we search before the 1st keyframe)
+        if(upper == _keyFrames.begin()){
+            if((*upper).second == Natron::CONSTANT || (*upper).second == Natron::LINEAR){
+                return (*upper).first->getValue().value<T>();
+            }else{
+                boost::shared_ptr<KeyFrame> key = (*upper).first;
+                //for all other methods, interpolate linearly in the direction of the tangent
+                const KeyFrame::Tangent& tangent = key->getLeftTangent();
+                T keyFrameValue = key->getValue().value<T>();
+                return ((std::abs(tangent.second.value<T>() - keyFrameValue) * std::abs(key->getTime() - t)) /
+                        (std::abs(key->getTime() - tangent.first))) + keyFrameValue;
+            }
+        }
+
+
+        //if all keys have a greater time (i.e: we search after the last keyframe)
+        KeyFrames::const_iterator prev = upper;
+        --prev;
+        assert(prev != _keyFrames.end());
+
+        if(upper == _keyFrames.end()){
+
+            if((*prev).second == Natron::CONSTANT || (*prev).second == Natron::LINEAR){
+                return (*prev).first->getValue().value<T>();
+            }else{
+                boost::shared_ptr<KeyFrame> key = (*prev).first;
+                //for all other methods, interpolate linearly in the direction of the tangent
+                const KeyFrame::Tangent& tangent = key->getRightTangent();
+                T keyFrameValue = key->getValue().value<T>();
+                return ((std::abs(tangent.second.value<T>() - keyFrameValue) * std::abs(key->getTime() - t)) /
+                        (std::abs(key->getTime() - tangent.first))) + keyFrameValue;
+            }
+        }
+
+        // if we reach here we are between 2 keyframes (prev and upper)
+        Natron::Interpolation inter = (*prev).second;
+        if(inter == Natron::CATMULL_ROM){
+            //we have control points k (prev) ,k+1 (upper), we need to find k-1 and k+2
+            // if we can't find them take respectively k for k-1 and k+1 for k+2
+            double t0,t1,t2,t3;
+            T v0,v1,v2,v3;
+            KeyFrames::const_iterator prevprev = prev; // k-1
+            if(prev == _keyFrames.begin()){
+                prevprev = _keyFrames.end();
+            }else{
+                --prevprev;
+            }
+            KeyFrames::const_iterator uppernext = upper; // k+2
+            ++uppernext;
+            t0 = prevprev != _keyFrames.end() ? (*prevprev).first->getTime() : (*prev).first->getTime();
+            v0 = prevprev != _keyFrames.end() ? (*prevprev).first->getValue().value<T>() : (*prev).first->getValue().value<T>();
+            t1 = (*prev).first->getTime();
+            v1 = (*prev).first->getValue().value<T>();
+            t2 = (*upper).first->getTime();
+            v2 = (*upper).first->getValue().value<T>();
+            t3 = uppernext != _keyFrames.end() ? (*uppernext).first->getTime() : (*upper).first->getTime();
+            t3 = uppernext != _keyFrames.end() ? (*uppernext).first->getValue().value<T>() : (*upper).first->getValue().value<T>();
+
+            //now normalize all the 't's to be in the range [0,1]
+            t2 = (t2 - t0) / (t3 - t0);
+            t1 = (t1 - t0) / (t3 - t0);
+            t = (t - t0) / (t3 - t0);
+            t0 = 0.;
+            t3 = 1.;
+
+
+            return Natron::interpolate_catmullRom<T>(t0,v0,t1,v1,t2,v2,t3,v3,t);
+        }else{
+            double t0,t3;
+            T v0,v1,v2,v3;
+            t0 = (*prev).first->getTime();
+            t3 = (*upper).first->getTime();
+
+            v0 = (*prev).first->getValue().value<T>();
+            v1 = (*prev).first->getRightTangent().second.value<T>();
+            v2 = (*upper).first->getLeftTangent().second.value<T>();
+            v3 = (*upper).first->getValue().value<T>();
+
+            //normalize t relatively to t0, t3
+            t = (t - t0) / (t3 - t0);
+            t0 = 0.;
+            t3 = 1.;
+
+            return Natron::interpolate<T>(t0,v0,v1,v2,t3,v3,t,inter);
+        }
+
     }
 
-    void addControlPoint(boost::shared_ptr<KeyFrame> cp)
-    {
-        _controlPoints.push_back(cp);
-        QObject::connect(cp.get(),SIGNAL(keyFrameChanged()),this,SIGNAL(curveChanged()));
-    }
+    double getMinimumTimeCovered() const;
 
-    Variant getValueAt(double t) const;
+    double getMaximumTimeCovered() const;
+
+    boost::shared_ptr<KeyFrame> getStart() const { assert(!_keyFrames.empty()); return _keyFrames.front().first; }
+
+    boost::shared_ptr<KeyFrame> getEnd() const { assert(!_keyFrames.empty()); return _keyFrames.back().first; }
+
+    InterpolableType getInterpolableType() const;
 
 signals:
 
@@ -187,8 +393,10 @@ signals:
 
 private:
 
-    Interpolation _interpolation;
-    std::list< boost::shared_ptr<KeyFrame> > _controlPoints;
+
+    //each segment of curve between a keyframe and the next can have a different interpolation method
+    typedef std::list< std::pair<boost::shared_ptr<KeyFrame>,Natron::Interpolation > > KeyFrames;
+    KeyFrames _keyFrames;
 };
 
 
@@ -200,9 +408,8 @@ class Knob : public QObject
     
 public:
     
-    enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1,STARTUP_RESTORATION = 2};
 
-    typedef std::map<double,Variant>  Keys;
+    enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1,STARTUP_RESTORATION = 2};
 
     
     Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
@@ -290,7 +497,7 @@ public:
     /**
      * @brief Returns an ordered map of all the keys at a specific dimension.
      **/
-    Knob::Keys getKeys(int dimension = 0);
+    const CurvePath& getKeys(int dimension = 0) const;
     
     /*other must have exactly the same name*/
     void cloneValue(const Knob& other);
@@ -406,14 +613,16 @@ private:
     bool _isInsignificant; //< if true, a value change will never trigger an evaluation
     std::string _tooltipHint;
 
-
-    typedef std::map<int,Keys> MultiDimensionalKeys;
+    /// for each dimension,there's a list of chained curve. The list is always sorted
+    /// which means that the curve at index i-1 is linked to the curve at index i.
+    /// Note that 2 connected curves share a pointer to the same keyframe.
+    typedef std::map<int, CurvePath  > CurvesMap;
 
     /*A map storing for each dimension the keys of the knob. For instance a Double_Knob of dimension 2
     would have 2 Keys in its map, 1 for dimension 0 and 1 for dimension 1.
     The Keys are an ordered map of <time,value> where value is the type requested for the knob (i.e: double
     for a double knob).*/
-    MultiDimensionalKeys _keys; /// the keys for a specific dimension
+    CurvesMap _curves; /// the keys for a specific dimension
 };
 
 /**

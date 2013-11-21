@@ -229,16 +229,94 @@ KeyFrame::KeyFrame(double time,const Variant& initialValue)
 
 }
 
-AnimationCurve::AnimationCurve(Interpolation type)
-    : _interpolation(type)
+CurvePath::CurvePath(boost::shared_ptr<KeyFrame> cp)
+    : _keyFrames()
 {
+    setStart(cp);
 }
 
 
-Variant AnimationCurve::getValueAt(double t) const {
-    assert(_controlPoints.size() >= 2);
+double CurvePath::getMinimumTimeCovered() const{
+    assert(!_keyFrames.empty());
+    return _keyFrames.front().first->getTime();
 }
 
+double CurvePath::getMaximumTimeCovered() const{
+    assert(!_keyFrames.empty());
+    return _keyFrames.back().first->getTime();
+}
+
+void CurvePath::setStart(boost::shared_ptr<KeyFrame> cp){
+    QObject::connect(cp.get(),SIGNAL(keyFrameChanged()),this,SIGNAL(curveChanged()));
+    if(!_keyFrames.empty()){
+        //remove the already existing key frame
+        _keyFrames.pop_front();
+    }
+    _keyFrames.push_front(std::make_pair(cp,Natron::LINEAR));
+}
+
+void CurvePath::setEnd(boost::shared_ptr<KeyFrame> cp){
+    QObject::connect(cp.get(),SIGNAL(keyFrameChanged()),this,SIGNAL(curveChanged()));
+    if(!_keyFrames.empty()){
+        //remove the already existing key frame
+        _keyFrames.pop_back();
+    }
+    _keyFrames.push_back(std::make_pair(cp,Natron::LINEAR));
+}
+
+void CurvePath::addControlPoint(boost::shared_ptr<KeyFrame> cp)
+{
+    QObject::connect(cp.get(),SIGNAL(keyFrameChanged()),this,SIGNAL(curveChanged()));
+
+    if(_keyFrames.empty()){
+        _keyFrames.push_back(std::make_pair(cp,Natron::LINEAR));
+    }else{
+        //finding a matching or the first greater key
+        KeyFrames::iterator upper = _keyFrames.end();
+        for(KeyFrames::iterator it = _keyFrames.begin();it!=_keyFrames.end();++it){
+            if((*it).first->getTime() > cp->getTime()){
+                upper = it;
+                break;
+            }else if((*it).first->getTime() == cp->getTime()){
+                //if the key already exists at this time, just modify it.
+                (*it).first->setValue(cp->getValue());
+                return;
+            }
+        }
+        //if we found no key that has a greater time, just append the key
+        if(upper == _keyFrames.end()){
+            _keyFrames.push_back(std::make_pair(cp,Natron::LINEAR));
+            return;
+        }
+        //if all the keys have a greater time, just insert this key at the begining
+        if(upper == _keyFrames.begin()){
+            _keyFrames.push_front(std::make_pair(cp,Natron::LINEAR));
+            return;
+        }
+
+        //if we reach here, that means we're in the middle of 2 keys, insert it before the upper bound
+        _keyFrames.insert(upper,std::make_pair(cp,Natron::LINEAR));
+
+    }
+}
+
+CurvePath::InterpolableType CurvePath::getInterpolableType() const{
+    assert(!_keyFrames.empty());
+    const Variant& firstKeyValue = _keyFrames.front().first->getValue();
+    switch(firstKeyValue.type()){
+        case QVariant::Int :
+            return INT;
+        case QVariant::Double :
+            return DOUBLE;
+        default:
+        std::string exc("The type requested ( ");
+        exc.append(firstKeyValue.typeName());
+        exc.append(") is not interpolable, it cannot animate!");
+        throw std::invalid_argument(exc);
+    }
+
+
+}
 
 /***********************************KNOB BASE******************************************/
 
@@ -258,7 +336,7 @@ Knob::Knob(KnobHolder* holder,const std::string& description,int dimension):
   , _canUndo(true)
   , _isInsignificant(false)
   , _tooltipHint()
-  , _keys()
+  , _curves()
 {
     
     if(_holder){
@@ -320,31 +398,31 @@ void Knob::setValueInternal(const Variant& v,int dimension){
 
 void Knob::setValueAtTimeInternal(double time, const Variant& v, int dimension){
     assert(canAnimate());
-    MultiDimensionalKeys::iterator it = _keys.find(dimension);
+    CurvesMap::iterator it = _curves.find(dimension);
 
-    /*if the dimension has no key yet, insert a new map*/
-    if( it == _keys.end() ){
-        it = _keys.insert(std::make_pair(dimension,Keys())).first;
+    boost::shared_ptr<KeyFrame> key(new KeyFrame(time,v));
+    if( it == _curves.end() ){
+        /*if the dimension had no curve yet, create one and add the first keyframe*/
+        _curves.insert(std::make_pair(dimension,CurvePath(key)));
+    }else{
+        /*else just add one more key frame to the curve*/
+        it->second.addControlPoint(key);
     }
 
-    it->second.insert(std::make_pair(time,v));
 }
 
-Knob::Keys Knob::getKeys(int dimension){
-    MultiDimensionalKeys::const_iterator foundDimension = _keys.find(dimension);
-    if(foundDimension == _keys.end()){
-        return Knob::Keys();
-    }else{
-        return foundDimension->second;
-    }
+const CurvePath &Knob::getKeys(int dimension) const {
+    CurvesMap::const_iterator foundDimension = _curves.find(dimension);
+    assert(foundDimension != _curves.end());
+    return foundDimension->second;
 }
 
 Variant Knob::getValueAtTimeInternal(double time,int dimension) const{
     assert(canAnimate());
-    MultiDimensionalKeys::const_iterator foundDimension = _keys.find(dimension);
+    CurvesMap::const_iterator foundDimension = _curves.find(dimension);
 
-    if(foundDimension == _keys.end()){
-        /*if the knob as no keys at this time, return the value
+    if(foundDimension == _curves.end()){
+        /*if the knob as no keys at this dimension, return the value
         at the requested dimension.*/
         std::map<int,Variant>::const_iterator it = _value.find(dimension);
         if(it != _value.end()){
@@ -352,33 +430,25 @@ Variant Knob::getValueAtTimeInternal(double time,int dimension) const{
         }else{
             return Variant();
         }
+    }else{
+        CurvePath::InterpolableType dataType;
+        try{
+            dataType = foundDimension->second.getInterpolableType();
+        }catch(const std::exception& e){
+            std::cout << e.what() << std::endl;
+            assert(false);
+        }
+        switch(dataType){
+            case CurvePath::INT:
+                return Variant(foundDimension->second.getValueAt<int>(time));
+            case  CurvePath::DOUBLE:
+                return Variant(foundDimension->second.getValueAt<double>(time));
+            default:
+                return Variant();
+        }
+
+
     }
-
-    /*FOR NOW RETURN THE NEAREST KEY, INTERPOLATION NOT IMPLEMENTED YET*/
-
-    const Keys& keys = foundDimension->second;
-
-    if(keys.size() == 1){
-        return keys.begin()->second;
-    }
-    //finding a matching or the first greater key
-    Keys::const_iterator upper = keys.lower_bound(time);
-    //decrement the iterator to find the previous
-    Keys::const_iterator lower = upper;
-    --lower;
-    // if the found iterator points at the end of the container, return the last element
-    if (upper == keys.end())
-        return lower->second;
-    //if we found a matching key or the key is the begin, return it
-    if (upper == keys.begin() || upper->first == time)
-        return upper->second;
-
-    //we're in the middle interpolate between values
-    //if the previous is closer to the searchedkey than the found iterator, return it
-    if ((time - lower->first) < (upper->first - time))
-        return lower->second;
-    return upper->second;
-
 }
 
 void Knob::onValueChanged(int dimension,const Variant& variant){
