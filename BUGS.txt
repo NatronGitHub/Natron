@@ -1,4 +1,42 @@
-Here is a list of the know bugs:
+Here is a list of know bugs, ordered by priority from high to low:
 
+- The viewer should *NOT* multiply RGB by alpha (this is the reason
+  why the output of the invert plugin is black on Natron)
+
+- a plugin that returns an error during the "load" or "describe" actions,
+  for example if it requires a missing suite
+  (e.g. ParametricParameterSuite for OFX/Color/RGBLut), should *not*
+  appear in the menus.
+
+- a multibundle plugin should appear as a group in the hierarchy. If
+  the multibundle specifies a grouping, it should appear as a group
+  *below* that grouping. for example, a multibundle called Toto, which
+  specifies PluginGrouping as "Titi/Tata" should create entries
+  "Titi/Tata/Toto/Plugin1", "Titi/Tata/Toto/Plugin2", etc.
+  A multibundle plugin with no grouping should create a toplevel
+  group.
+  As of now, a multibundle plugin with a grouping puts all plugins
+  within that grouping inside its own menu (see multibundle from
+  Support plugins), which is a bug, of course.
+
+- a plugin should uniquely be identified internally by its name
+  (e.g. "net.sf.openfx:invertPlugin"), not by its label.
+  (e.g. "Invert"). This name can be attached to the menus using
+  QAction::setData()
+
+- in the plugin menu, only the name of the plugin (not its group)
+  should appear. 
+
+- When viewing a single component (R, G, or B), is should be displayed
+  as grayscale, because blue has a very low luminance. Another
+  solution would be a channel-specific display, where for example for
+  the blue channel the values 0-0.0722 would be mapped linearly to
+  (0,0,0)-(0,0,255), and the values 0.0722-1.0 would be mapped
+  linearly to (0,0,255)-(255,255,255). This gives the same luminance
+  as the grayscale version, but with a blue clor. 
+
+- The color picker displays the wrong information when viewing a
+single component (all other components are 0, except alpha which is 1)
 
 - On OSX dragging the viewer pane will freeze the GUI (Qt5 only)
+
