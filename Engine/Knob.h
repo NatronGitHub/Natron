@@ -70,7 +70,7 @@ namespace Natron{
 enum Interpolation{
     CONSTANT = 0,
     LINEAR = 1,
-    HERMIT_CUBIC = 2,
+    HERMITE_CUBIC = 2,
     CATMULL_ROM = 3,
     BEZIER_CUBIC = 4
 };
@@ -104,7 +104,7 @@ T interpolate(double t0,const T v0, //start control point
         return ((currentTime - t0) / (t3 - t0)) * v0 +
                 ((t3 - currentTime) / (t3 - t0)) * v3;
 
-    case HERMIT_CUBIC:
+    case HERMITE_CUBIC:
 
         return ((2 * tcube - 3 * tsquare + 1) * v0) +
                 ((tcube - 2 * tsquare + currentTime) * v1) +
@@ -126,7 +126,7 @@ T interpolate(double t0,const T v0, //start control point
  * @brief This function is a helper to interpolate a value at
  * a given time. Using 4 control points ( k-1,k,k+1 and k+2 )
  * it computes the tangent Tk and Tk+1 and finally interpolate
- * the value using the HERMIT_CUBIC method.
+ * the value using the HERMITE_CUBIC method.
 **/
 template <typename T>
 T interpolate_catmullRom(double t0,const T v0, // control point k - 1
@@ -139,13 +139,13 @@ T interpolate_catmullRom(double t0,const T v0, // control point k - 1
     T mk = (v2 - v0) / (t2 - t0); // tangent at k
     T mk_1 = (v3 - v1) / (t3 - t1); // tangent at k + 1
 
-    //and call HERMIT_CUBIC interpolation
+    //and call HERMITE_CUBIC interpolation
     return interpolate<T>(t0,v0,
                           mk,
                           mk_1,
                           t3,v3,
                           currentTime,
-                          HERMIT_CUBIC);
+                          HERMITE_CUBIC);
 
 }
 
