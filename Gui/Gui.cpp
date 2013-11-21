@@ -179,9 +179,14 @@ void Gui::closeEvent(QCloseEvent *e) {
 
 NodeGui* Gui::createNodeGUI( Node* node){
     assert(_nodeGraphArea);
-    NodeGui* gui = _nodeGraphArea->createNodeGUI(_layoutPropertiesBin,node);
-    return gui;
+    NodeGui* nodeGui = _nodeGraphArea->createNodeGUI(_layoutPropertiesBin,node);
+    assert(nodeGui);
+    return nodeGui;
 }
+
+ void Gui::addNodeGuiToCurveEditor(NodeGui* node){
+      _curveEditor->addNode(node);
+ }
 
 void Gui::createViewerGui(Node* viewer){
     TabWidget* where = _nextViewerTabPlace;

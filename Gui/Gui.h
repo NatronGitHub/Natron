@@ -190,6 +190,8 @@ public:
     void createGui();
     
     NodeGui* createNodeGUI(Natron::Node *node);
+
+    void addNodeGuiToCurveEditor(NodeGui *node);
     
     void autoConnect(NodeGui* target,NodeGui* created);
     

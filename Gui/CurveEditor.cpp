@@ -59,6 +59,22 @@ CurveEditor::CurveEditor(QWidget *parent)
 
 
 void CurveEditor::addNode(NodeGui* node){
+
+    const std::vector<Knob*>& knobs = node->getNode()->getKnobs();
+    if(knobs.empty()){
+        return;
+    }
+    bool hasKnobsAnimating = false;
+    for(U32 i = 0;i < knobs.size();++i){
+        if(knobs[i]->canAnimate()){
+            hasKnobsAnimating = true;
+            break;
+        }
+    }
+    if(!hasKnobsAnimating){
+        return;
+    }
+
     NodeCurveEditorContext* nodeContext = new NodeCurveEditorContext(_tree,node);
     _nodes.push_back(nodeContext);
     const NodeCurveEditorContext::Elements& elems = nodeContext->getElements();
@@ -97,26 +113,54 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,NodeGui *node)
     nameItem->setText(0,_node->getNode()->getName().c_str());
 
     QObject::connect(node,SIGNAL(nameChanged(QString)),this,SLOT(onNameChanged(QString)));
-    _nodeElements.push_back(make_pair(nameItem,boost::shared_ptr<CurveGui>()));
     const std::vector<Knob*>& knobs = node->getNode()->getKnobs();
+
+    bool hasAtLeast1KnobWithACurve = false;
+
+
     for(U32 i = 0; i < knobs.size();++i){
         QTreeWidgetItem* knobItem = new QTreeWidgetItem(nameItem);
         Knob* k = knobs[i];
         knobItem->setText(0,k->getName().c_str());
         boost::shared_ptr<CurveGui> knobCurve;
+
+        bool hasAtLeast1Curve = false;
         if(k->getDimension() == 1){
-            knobCurve.reset(new CurveGui(k->getCurve(0),k->getDimensionName(0).c_str(),QColor(255,255,255),2));
+            boost::shared_ptr<CurvePath> internalCurve = k->getCurve(0);
+            if(!internalCurve){
+                delete knobItem;
+                continue;
+            }
+            hasAtLeast1Curve = true;
+            knobCurve.reset(new CurveGui(internalCurve,k->getDimensionName(0).c_str(),QColor(255,255,255),2));
         }
-        _nodeElements.push_back(make_pair(knobItem,knobCurve));
 
         if(k->getDimension() > 1){
             for(int j = 0 ; j < k->getDimension();++j){
+
+                boost::shared_ptr<CurvePath> internalCurve = k->getCurve(j);
+                if(!internalCurve){
+                    continue;
+                }
                 QTreeWidgetItem* dimItem = new QTreeWidgetItem(knobItem);
                 dimItem->setText(0,k->getDimensionName(j).c_str());
-                boost::shared_ptr<CurveGui> dimCurve(new CurveGui(k->getCurve(j),k->getDimensionName(j).c_str(),QColor(255,255,255),2));
+                hasAtLeast1Curve = true;
+                boost::shared_ptr<CurveGui> dimCurve(new CurveGui(internalCurve,k->getDimensionName(j).c_str(),QColor(255,255,255),2));
                 _nodeElements.push_back(make_pair(dimItem,dimCurve));
             }
         }
+        if(hasAtLeast1Curve){
+            _nodeElements.push_back(make_pair(knobItem,knobCurve));
+            hasAtLeast1KnobWithACurve = true;
+        }else{
+             delete knobItem;
+        }
+
+    }
+    if(hasAtLeast1KnobWithACurve){
+        _nodeElements.push_back(make_pair(nameItem,boost::shared_ptr<CurveGui>()));
+    }else{
+        delete nameItem;
     }
 
 

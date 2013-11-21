@@ -150,9 +150,9 @@ private:
 
     /**
      * @brief Returns an iterator pointing to a curve if a curve was nearby the point 'pt' which is
-     * already in the correct coordinate system.
+     * widget coordinates.
     **/
-    Curves::const_iterator isNearbyCurve(const QPointF& pt) const;
+    Curves::const_iterator isNearbyCurve(const QPoint& pt) const;
 
     /**
      * @brief Selects the curve given in parameter and deselects any other curve in the widget.
@@ -162,12 +162,12 @@ private:
     /**
      *@brief See toImgCoordinates_fast in ViewerGL.h
      **/
-    QPointF toImgCoordinates_fast(int x,int y);
+    QPointF toImgCoordinates_fast(int x,int y) const;
 
     /**
      *@brief See toWidgetCoordinates in ViewerGL.h
      **/
-    QPoint toWidgetCoordinates(double x, double y);
+    QPoint toWidgetCoordinates(double x, double y) const;
     
 
     void drawBaseAxis();

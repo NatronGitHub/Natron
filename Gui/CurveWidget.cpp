@@ -18,6 +18,7 @@
 #include <QMouseEvent>
 
 #define CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE 5 //maximum distance from a curve that accepts a mouse click
+// (in widget pixels)
 
 static double ASPECT_RATIO = 0.1;
 static double AXIS_MAX = 100000.;
@@ -398,10 +399,12 @@ void CurveWidget::renderText(double x,double y,const QString& text,const QColor&
 
 }
 
-CurveWidget::Curves::const_iterator CurveWidget::isNearbyCurve(const QPointF& pt) const{
+CurveWidget::Curves::const_iterator CurveWidget::isNearbyCurve(const QPoint &pt) const{
+    QPointF openGL_pos = toImgCoordinates_fast(pt.x(),pt.y());
     for(Curves::const_iterator it = _curves.begin();it!=_curves.end();++it){
-        double y = (*it)->evaluate(pt.x());
-        if(std::abs(pt.y() - y) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE){
+        double y = (*it)->evaluate(openGL_pos.x());
+        int yWidget = toWidgetCoordinates(0,y).y();
+        if(std::abs(pt.y() - yWidget) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE){
             return it;
         }
     }
@@ -420,9 +423,8 @@ void CurveWidget::mousePressEvent(QMouseEvent *event){
         _rightClickMenu->exec(mapToGlobal(event->pos()));
         return;
     }
-    QPointF openGLPos = toImgCoordinates_fast(event->pos().x(),event->pos().y());
 
-    CurveWidget::Curves::const_iterator foundCurveNearby = isNearbyCurve(openGLPos);
+    CurveWidget::Curves::const_iterator foundCurveNearby = isNearbyCurve(event->pos());
     if(foundCurveNearby != _curves.end()){
         selectCurve(*foundCurveNearby);
     }
@@ -478,7 +480,7 @@ void CurveWidget::wheelEvent(QWheelEvent *event){
 
 }
 
-QPointF CurveWidget::toImgCoordinates_fast(int x,int y){
+QPointF CurveWidget::toImgCoordinates_fast(int x,int y) const {
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _zoomCtx._bottom;
@@ -488,7 +490,7 @@ QPointF CurveWidget::toImgCoordinates_fast(int x,int y){
     return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
 }
 
-QPoint CurveWidget::toWidgetCoordinates(double x, double y){
+QPoint CurveWidget::toWidgetCoordinates(double x, double y) const {
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _zoomCtx._bottom;

@@ -26,6 +26,7 @@
 #include "Gui/Gui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/ViewerGL.h"
+#include "Gui/CurveEditor.h"
 
 #include "Readers/Reader.h"
 
@@ -444,6 +445,7 @@ void NodeGui::activate(){
     show();
     setActive(true);
     _graph->restoreFromTrash(this);
+    _graph->getGui()->_curveEditor->addNode(this);
     for (NodeGui::InputEdgesMap::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
         _graph->scene()->addItem(it->second);
         it->second->setParentItem(this);
@@ -475,6 +477,7 @@ void NodeGui::deactivate(){
     hide();
     setActive(false);
     _graph->moveToTrash(this);
+    _graph->getGui()->_curveEditor->removeNode(this);
     for (NodeGui::InputEdgesMap::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
         _graph->scene()->removeItem(it->second);
         it->second->setActive(false);

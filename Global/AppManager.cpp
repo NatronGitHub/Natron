@@ -185,7 +185,7 @@ Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
     QObject::connect(node, SIGNAL(deactivated()), this, SLOT(triggerAutoSave()));
     QObject::connect(node,SIGNAL(activated()),this,SLOT(checkViewersConnection()));
     QObject::connect(node, SIGNAL(activated()), this, SLOT(triggerAutoSave()));
-    
+
     NodeGui* nodegui = 0;
     if(!_isBackground){
         nodegui = _gui->createNodeGUI(node);
@@ -193,8 +193,16 @@ Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
     }
     node->initializeKnobs();
     node->initializeInputs();
-    
+
+
     _currentProject->initNodeCountersAndSetName(node);
+
+
+    if(!_isBackground){
+        assert(nodegui);
+        _gui->addNodeGuiToCurveEditor(nodegui);
+    }
+
     if(node->className() == "Viewer" && !_isBackground){
         _gui->createViewerGui(node);
     }
