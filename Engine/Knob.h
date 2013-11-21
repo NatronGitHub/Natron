@@ -255,10 +255,6 @@ public:
 
     CurvePath(boost::shared_ptr<KeyFrame> cp);
 
-    CurvePath(const CurvePath& other)
-        : _keyFrames(other._keyFrames)
-    {}
-
     ~CurvePath(){}
 
 
@@ -270,8 +266,25 @@ public:
 
     int getControlPointsCount() const { return (int)_keyFrames.size(); }
 
+    double getMinimumTimeCovered() const;
+
+    double getMaximumTimeCovered() const;
+
+    boost::shared_ptr<KeyFrame> getStart() const { assert(!_keyFrames.empty()); return _keyFrames.front().first; }
+
+    boost::shared_ptr<KeyFrame> getEnd() const { assert(!_keyFrames.empty()); return _keyFrames.back().first; }
+
+    Variant getValueAt(double t) const;
+
+signals:
+
+    void curveChanged();
+
+private:
+
+
     template <typename T>
-    T getValueAt(double t) const {
+    T getValueAtInternal(double t) const {
 
         if(_keyFrames.size() == 1){
             //if there's only 1 keyframe, don't bother interpolating
@@ -377,23 +390,6 @@ public:
 
     }
 
-    double getMinimumTimeCovered() const;
-
-    double getMaximumTimeCovered() const;
-
-    boost::shared_ptr<KeyFrame> getStart() const { assert(!_keyFrames.empty()); return _keyFrames.front().first; }
-
-    boost::shared_ptr<KeyFrame> getEnd() const { assert(!_keyFrames.empty()); return _keyFrames.back().first; }
-
-    InterpolableType getInterpolableType() const;
-
-signals:
-
-    void curveChanged();
-
-private:
-
-
     //each segment of curve between a keyframe and the next can have a different interpolation method
     typedef std::list< std::pair<boost::shared_ptr<KeyFrame>,Natron::Interpolation > > KeyFrames;
     KeyFrames _keyFrames;
@@ -497,7 +493,7 @@ public:
     /**
      * @brief Returns an ordered map of all the keys at a specific dimension.
      **/
-    const CurvePath& getKeys(int dimension = 0) const;
+    boost::shared_ptr<CurvePath> getKeys(int dimension = 0) const;
     
     /*other must have exactly the same name*/
     void cloneValue(const Knob& other);
@@ -616,7 +612,7 @@ private:
     /// for each dimension,there's a list of chained curve. The list is always sorted
     /// which means that the curve at index i-1 is linked to the curve at index i.
     /// Note that 2 connected curves share a pointer to the same keyframe.
-    typedef std::map<int, CurvePath  > CurvesMap;
+    typedef std::map<int, boost::shared_ptr<CurvePath>  > CurvesMap;
 
     /*A map storing for each dimension the keys of the knob. For instance a Double_Knob of dimension 2
     would have 2 Keys in its map, 1 for dimension 0 and 1 for dimension 1.

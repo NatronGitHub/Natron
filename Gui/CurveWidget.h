@@ -12,17 +12,80 @@
 #ifndef CURVEEDITOR_H
 #define CURVEEDITOR_H
 
-
 #include "Gui/ViewerGL.h"
 
+class CurvePath;
+
+
+class CurveGui {
+
+public:
+
+    CurveGui(boost::shared_ptr<CurvePath> curve,
+             const QString& name,
+             const QColor& color,
+             int thickness = 1)
+        : _internalCurve(curve)
+        , _name(name)
+        , _color(color)
+        , _thickness(thickness)
+        , _visible(true)
+        , _selected(false)
+    {
+
+    }
+
+
+    const QString& getName() const { return _name; }
+
+    void setName(const QString& name) { _name = name; }
+
+    const QColor& getColor() const { return _color; }
+
+    void setColor(const QColor& color) { _color = color; }
+
+    int getThickness() const { return _thickness; }
+
+    void setThickness(int t) { _thickness = t;}
+
+    bool isVisible() const { return _visible; }
+
+    void setVisible(bool visible) { _visible = visible; }
+
+    bool isSelected() const { return _selected; }
+
+    bool setSelected(bool s) const { _selected = s; }
+
+    /**
+      * @brief Evaluates the curve and returns the y position corresponding to the given x.
+      * The coordinates are those of the curve, not of the widget.
+    **/
+    double evaluate(double x) const;
+
+    bool operator==(const CurveGui& other){
+        return other._name == _name &&
+                other._internalCurve == _internalCurve;
+    }
+
+private:
+
+    boost::shared_ptr<CurvePath> _internalCurve; ///ptr to the internal curve
+    QString _name; /// the name of the curve
+    QColor _color; /// the color that must be used to draw the curve
+    int _thickness; /// its thickness
+    bool _visible; /// should we draw this curve ?
+    mutable bool _selected; /// is this curve selected
+
+};
 
 class QMenu;
-class CurveEditor : public QGLWidget
+class CurveWidget : public QGLWidget
 {
     
     class ZoomContext{
         
     public:
+
         
         ZoomContext():
         _bottom(0.)
@@ -49,14 +112,17 @@ class CurveEditor : public QGLWidget
     QColor _clearColor;
     QColor _baseAxisColor;
     QColor _scaleColor;
+    QColor _selectedCurveColor;
     Natron::TextRenderer _textRenderer;
     QFont* _font;
-    
+
+    typedef std::list<CurveGui> Curves;
+    Curves _curves;
 public:
     
-    CurveEditor(QWidget* parent, const QGLWidget* shareWidget = NULL);
+    CurveWidget(QWidget* parent, const QGLWidget* shareWidget = NULL);
 
-    virtual ~CurveEditor();
+    virtual ~CurveWidget();
    
     virtual void initializeGL();
     
@@ -78,38 +144,43 @@ public:
 
     void centerOn(double xmin,double xmax,double ymin,double ymax);
 
+    void addCurve(const CurveGui& curve);
+
+    void removeCurve(const CurveGui& curve);
+
+
+
 private:
-    
+
+    /**
+     * @brief Returns an iterator pointing to a curve if a curve was nearby the point 'pt' which is
+     * already in the correct coordinate system.
+    **/
+    Curves::const_iterator isNearbyCurve(const QPointF& pt) const;
+
+    /**
+     * @brief Selects the curve given in parameter and deselects any other curve in the widget.
+    **/
+    void selectCurve(const CurveGui& curve);
+
     /**
      *@brief See toImgCoordinates_fast in ViewerGL.h
      **/
     QPointF toImgCoordinates_fast(int x,int y);
-    
+
     /**
      *@brief See toWidgetCoordinates in ViewerGL.h
      **/
     QPoint toWidgetCoordinates(double x, double y);
+    
 
     void drawBaseAxis();
     
     void drawScale();
     
+    void drawCurves();
 };
 
-#if 0
-namespace Natron{
 
-template<class T>
-typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
-    almost_equal(T x, T y, int ulp)
-{
-    // the machine epsilon has to be scaled to the magnitude of the larger value
-    // and multiplied by the desired precision in ULPs (units in the last place)
-    return std::abs(x-y) <=   std::numeric_limits<T>::epsilon()
-                            * std::max(std::abs(x), std::abs(y))
-                            * ulp;
-}
-}
-#endif
 
 #endif // CURVEEDITOR_H

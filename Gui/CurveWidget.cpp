@@ -9,20 +9,21 @@
 *
 */
 
-#include "CurveEditor.h"
+#include "CurveWidget.h"
 
+#include "Engine/Knob.h"
 #include "Gui/ScaleSlider.h"
 
 #include <QMenu>
 #include <QMouseEvent>
 
-
+#define CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE 5 //maximum distance from a curve that accepts a mouse click
 
 static double ASPECT_RATIO = 0.1;
 static double AXIS_MAX = 100000.;
 static double AXIS_MIN = -100000.;
 
-CurveEditor::CurveEditor(QWidget* parent, const QGLWidget* shareWidget)
+CurveWidget::CurveWidget(QWidget* parent, const QGLWidget* shareWidget)
 : QGLWidget(parent,shareWidget)
 , _zoomCtx()
 , _dragging(false)
@@ -30,23 +31,37 @@ CurveEditor::CurveEditor(QWidget* parent, const QGLWidget* shareWidget)
 , _clearColor(0,0,0,255)
 , _baseAxisColor(118,215,90,255)
 , _scaleColor(67,123,52,255)
+, _selectedCurveColor(255,255,89,255)
 , _textRenderer()
 , _font(new QFont("Helvetica",10))
-
+, _curves()
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 }
 
-CurveEditor::~CurveEditor(){
+CurveWidget::~CurveWidget(){
     delete _font;
 }
 
-void CurveEditor::initializeGL(){
+void CurveWidget::initializeGL(){
 
 
 }
 
-void CurveEditor::centerOn(double xmin,double xmax,double ymin,double ymax){
+void CurveWidget::addCurve(const CurveGui& curve){
+    _curves.push_back(curve);
+}
+
+void CurveWidget::removeCurve(const CurveGui& curve){
+    for(std::list<CurveGui>::iterator it = _curves.begin();it!=_curves.end();++it){
+        if((*it) == curve){
+            _curves.erase(it);
+            break;
+        }
+    }
+}
+
+void CurveWidget::centerOn(double xmin,double xmax,double ymin,double ymax){
     double curveWidth = xmax - xmin;
     double curveHeight = (ymax - ymin);
     double w = width();
@@ -65,14 +80,14 @@ void CurveEditor::centerOn(double xmin,double xmax,double ymin,double ymax){
     updateGL();
 }
 
-void CurveEditor::resizeGL(int width,int height){
+void CurveWidget::resizeGL(int width,int height){
     if(height == 0)
         height = 1;
     glViewport (0, 0, width , height);
     centerOn(-10,500,-10,10);
 }
 
-void CurveEditor::paintGL(){
+void CurveWidget::paintGL(){
     double w = (double)width();
     double h = (double)height();
     glMatrixMode (GL_PROJECTION);
@@ -104,10 +119,42 @@ void CurveEditor::paintGL(){
     drawScale();
 
     drawBaseAxis();
+
+    drawCurves();
+}
+
+void CurveWidget::drawCurves(){
+    //now draw each curve
+    for(std::list<CurveGui>::const_iterator it = _curves.begin();it!=_curves.end();++it){
+        if((*it).isVisible()){
+            const QColor& curveColor =  (*it).isSelected() ?  _selectedCurveColor :  (*it).getColor();
+            const QColor& nameColor =  (*it).getColor();
+
+            glColor4f(curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF());
+
+            for(int i = 0; i < width();++i){
+                double x = toImgCoordinates_fast(i,0).x();
+                double y = (*it).evaluate(x);
+                if(i == 10){ // draw the name of the curve on the left of the widget
+                    glColor4f(1., 1., 1., 1.);
+                    renderText(x,y,(*it).getName(),curveColor,*_font);
+                    glColor4f(curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF());
+                }
+                glPointSize((*it).getThickness());
+                glBegin(GL_POINTS);
+                glVertex2f(x,y);
+                glEnd();
+            }
+        }
+    }
+    glPointSize(1.f);
+    //reset back the color
+    glColor4f(1., 1., 1., 1.);
+
 }
 
 
-void CurveEditor::drawBaseAxis(){
+void CurveWidget::drawBaseAxis(){
     
     glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), _baseAxisColor.alphaF());
     glBegin(GL_LINES);
@@ -129,7 +176,7 @@ double tickAlpha(double min, double max, double val)
     return std::max(0.,std::min(alpha,1.));
 }
 
-void CurveEditor::drawScale(){
+void CurveWidget::drawScale(){
     QPointF btmLeft = toImgCoordinates_fast(0,height()-1);
     QPointF topRight = toImgCoordinates_fast(width()-1, 0);
     
@@ -329,7 +376,7 @@ void CurveEditor::drawScale(){
     
 }
 
-void CurveEditor::renderText(double x,double y,const QString& text,const QColor& color,const QFont& font){
+void CurveWidget::renderText(double x,double y,const QString& text,const QColor& color,const QFont& font){
     
     if(text.isEmpty())
         return;
@@ -351,24 +398,47 @@ void CurveEditor::renderText(double x,double y,const QString& text,const QColor&
 
 }
 
-void CurveEditor::mousePressEvent(QMouseEvent *event){
+CurveWidget::Curves::const_iterator CurveWidget::isNearbyCurve(const QPointF& pt) const{
+    for(Curves::const_iterator it = _curves.begin();it!=_curves.end();++it){
+        double y = (*it).evaluate(pt.x());
+        if(std::abs(pt.y() - y) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE){
+            return it;
+        }
+    }
+}
+
+void CurveWidget::selectCurve(const CurveGui& curve){
+    for(Curves::const_iterator it = _curves.begin();it!=_curves.end();++it){
+        (*it).setSelected(false);
+    }
+    curve.setSelected(true);
+}
+
+void CurveWidget::mousePressEvent(QMouseEvent *event){
     if(event->button() == Qt::RightButton){
         _rightClickMenu->exec(mapToGlobal(event->pos()));
         return;
     }
-    
+    QPointF openGLPos = toImgCoordinates_fast(event->pos().x(),event->pos().y());
+
+    CurveWidget::Curves::const_iterator foundCurveNearby = isNearbyCurve(openGLPos);
+    if(foundCurveNearby != _curves.end()){
+        selectCurve(*foundCurveNearby);
+    }
+
     _zoomCtx._oldClick = event->pos();
     if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
         _dragging = true;
     }
     QGLWidget::mousePressEvent(event);
+    updateGL();
 }
 
-void CurveEditor::mouseReleaseEvent(QMouseEvent *event){
+void CurveWidget::mouseReleaseEvent(QMouseEvent *event){
     _dragging = false;
     QGLWidget::mouseReleaseEvent(event);
 }
-void CurveEditor::mouseMoveEvent(QMouseEvent *event){
+void CurveWidget::mouseMoveEvent(QMouseEvent *event){
     if (_dragging) {
         QPoint newClick =  event->pos();
         QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
@@ -381,7 +451,7 @@ void CurveEditor::mouseMoveEvent(QMouseEvent *event){
     }
 }
 
-void CurveEditor::wheelEvent(QWheelEvent *event){
+void CurveWidget::wheelEvent(QWheelEvent *event){
     if (event->orientation() != Qt::Vertical) {
         return;
     }
@@ -407,7 +477,7 @@ void CurveEditor::wheelEvent(QWheelEvent *event){
 
 }
 
-QPointF CurveEditor::toImgCoordinates_fast(int x,int y){
+QPointF CurveWidget::toImgCoordinates_fast(int x,int y){
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _zoomCtx._bottom;
@@ -417,7 +487,7 @@ QPointF CurveEditor::toImgCoordinates_fast(int x,int y){
     return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
 }
 
-QPoint CurveEditor::toWidgetCoordinates(double x, double y){
+QPoint CurveWidget::toWidgetCoordinates(double x, double y){
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _zoomCtx._bottom;
@@ -427,6 +497,10 @@ QPoint CurveEditor::toWidgetCoordinates(double x, double y){
     return QPoint((int)(((x - left)/(right - left))*w),(int)(((y - top)/(bottom - top))*h));
 }
 
-QSize CurveEditor::sizeHint() const{
+QSize CurveWidget::sizeHint() const{
     return QSize(1000,1000);
+}
+
+double CurveGui::evaluate(double x) const{
+    return _internalCurve->getValueAt(x).toDouble();
 }

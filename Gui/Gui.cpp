@@ -54,7 +54,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/Button.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/ComboBox.h"
-#include "Gui/CurveEditor.h"
+#include "Gui/CurveWidget.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH"openeffects.png"
@@ -464,7 +464,7 @@ void Gui::setupUi()
     _nodeGraphArea->setObjectName("NodeGraph");
     _workshopPane->appendTab(_nodeGraphArea);
     
-    _curveEditor = new CurveEditor(this);
+    _curveEditor = new CurveWidget(this);
 
     _curveEditor->setObjectName("CurveEditor");
     _workshopPane->appendTab(_curveEditor);

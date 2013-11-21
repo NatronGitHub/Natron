@@ -300,14 +300,16 @@ void CurvePath::addControlPoint(boost::shared_ptr<KeyFrame> cp)
     }
 }
 
-CurvePath::InterpolableType CurvePath::getInterpolableType() const{
+Variant CurvePath::getValueAt(double t) const{
     assert(!_keyFrames.empty());
     const Variant& firstKeyValue = _keyFrames.front().first->getValue();
+    InterpolableType type;
     switch(firstKeyValue.type()){
         case QVariant::Int :
-            return INT;
+            return Variant(getValueAtInternal<int>(t));
         case QVariant::Double :
-            return DOUBLE;
+            return Variant(getValueAtInternal<double>(t));
+            break;
         default:
         std::string exc("The type requested ( ");
         exc.append(firstKeyValue.typeName());
@@ -317,6 +319,7 @@ CurvePath::InterpolableType CurvePath::getInterpolableType() const{
 
 
 }
+
 
 /***********************************KNOB BASE******************************************/
 
@@ -403,15 +406,15 @@ void Knob::setValueAtTimeInternal(double time, const Variant& v, int dimension){
     boost::shared_ptr<KeyFrame> key(new KeyFrame(time,v));
     if( it == _curves.end() ){
         /*if the dimension had no curve yet, create one and add the first keyframe*/
-        _curves.insert(std::make_pair(dimension,CurvePath(key)));
+        _curves.insert(std::make_pair(dimension,boost::shared_ptr<CurvePath>( new CurvePath(key))));
     }else{
         /*else just add one more key frame to the curve*/
-        it->second.addControlPoint(key);
+        it->second->addControlPoint(key);
     }
 
 }
 
-const CurvePath &Knob::getKeys(int dimension) const {
+boost::shared_ptr<CurvePath> Knob::getKeys(int dimension) const {
     CurvesMap::const_iterator foundDimension = _curves.find(dimension);
     assert(foundDimension != _curves.end());
     return foundDimension->second;
@@ -431,22 +434,12 @@ Variant Knob::getValueAtTimeInternal(double time,int dimension) const{
             return Variant();
         }
     }else{
-        CurvePath::InterpolableType dataType;
         try{
-            dataType = foundDimension->second.getInterpolableType();
+            return foundDimension->second->getValueAt(time);
         }catch(const std::exception& e){
             std::cout << e.what() << std::endl;
             assert(false);
         }
-        switch(dataType){
-            case CurvePath::INT:
-                return Variant(foundDimension->second.getValueAt<int>(time));
-            case  CurvePath::DOUBLE:
-                return Variant(foundDimension->second.getValueAt<double>(time));
-            default:
-                return Variant();
-        }
-
 
     }
 }
