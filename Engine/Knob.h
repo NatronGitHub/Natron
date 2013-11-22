@@ -245,7 +245,10 @@ class CurvePath : public QObject {
     Q_OBJECT
     
 public:
-
+    
+    
+    //each segment of curve between a keyframe and the next can have a different interpolation method
+    typedef std::list< std::pair<boost::shared_ptr<KeyFrame>,Natron::Interpolation > > KeyFrames;
 
 
     enum InterpolableType{
@@ -275,7 +278,8 @@ public:
     boost::shared_ptr<KeyFrame> getEnd() const { assert(!_keyFrames.empty()); return _keyFrames.back().first; }
 
     Variant getValueAt(double t) const;
-
+    
+    const KeyFrames& getKeyFrames() const { return _keyFrames; }
 signals:
 
     void curveChanged();
@@ -390,8 +394,6 @@ private:
 
     }
 
-    //each segment of curve between a keyframe and the next can have a different interpolation method
-    typedef std::list< std::pair<boost::shared_ptr<KeyFrame>,Natron::Interpolation > > KeyFrames;
     KeyFrames _keyFrames;
 };
 

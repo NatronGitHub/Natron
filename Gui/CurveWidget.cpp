@@ -17,6 +17,7 @@
 #include <QMenu>
 #include <QMouseEvent>
 
+
 #define CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE 5 //maximum distance from a curve that accepts a mouse click
 // (in widget pixels)
 
@@ -36,6 +37,7 @@ CurveWidget::CurveWidget(QWidget* parent, const QGLWidget* shareWidget)
 , _textRenderer()
 , _font(new QFont("Helvetica",10))
 , _curves()
+, _selectedKeyFrames()
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 }
@@ -93,8 +95,11 @@ void CurveWidget::paintGL(){
     double h = (double)height();
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
-    assert(_zoomCtx._zoomFactor > 0);
-    assert(_zoomCtx._zoomFactor <= 1024);
+    //assert(_zoomCtx._zoomFactor > 0);
+    if(_zoomCtx._zoomFactor <= 0){
+        return;
+    }
+    //assert(_zoomCtx._zoomFactor <= 1024);
     double bottom = _zoomCtx._bottom;
     double left = _zoomCtx._left;
     double top = bottom +  h / (double)_zoomCtx._zoomFactor * ASPECT_RATIO;
@@ -146,9 +151,35 @@ void CurveWidget::drawCurves(){
                 glVertex2f(x,y);
                 glEnd();
             }
+
+
+            // draw the keyframes
+            const CurvePath::KeyFrames& keyframes = (*it)->getInternalCurve()->getKeyFrames();
+
+            glPointSize(7);
+
+            for(CurvePath::KeyFrames::const_iterator k = keyframes.begin();k!=keyframes.end();++k){
+                glColor4f(nameColor.redF(), nameColor.greenF(), nameColor.blueF(), nameColor.alphaF());
+                boost::shared_ptr<KeyFrame> key = (*k).first;
+                //if the key is selected change its color to white
+                for(std::list<boost::shared_ptr<KeyFrame> >::const_iterator it2 = _selectedKeyFrames.begin();
+                    it2 != _selectedKeyFrames.end();++it2){
+                    if((*it2) == key){
+                         glColor4f(1.f,1.f,1.f,1.f);
+                         break;
+                    }
+                }
+
+                glBegin(GL_POINTS);
+                glVertex2f(key->getTime(),key->getValue().toDouble());
+                glEnd();
+
+            }
+
         }
     }
     glPointSize(1.f);
+
     //reset back the color
     glColor4f(1., 1., 1., 1.);
 
@@ -507,3 +538,5 @@ QSize CurveWidget::sizeHint() const{
 double CurveGui::evaluate(double x) const{
     return _internalCurve->getValueAt(x).toDouble();
 }
+
+

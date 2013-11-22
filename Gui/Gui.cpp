@@ -943,9 +943,14 @@ void Gui::closePane(TabWidget* what) {
         }
     }
     
+    assert(other);
+    
     /*Removing "what" from the container and delete it*/
     what->setVisible(false);
-    what->destroyTabs();
+    //move all its tabs to the other TabWidget
+    while(what->count() > 0) {
+        moveTab(what->tabAt(0), other);
+    }
     // delete what;
     
     /*Removing the container from the mainContainer*/

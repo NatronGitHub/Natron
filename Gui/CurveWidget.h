@@ -15,11 +15,11 @@
 #include "Gui/ViewerGL.h"
 
 class CurvePath;
-
-
+class KeyFrame;
 class CurveGui {
 
-public:
+public :
+    
 
     CurveGui(boost::shared_ptr<CurvePath> curve,
              const QString& name,
@@ -62,6 +62,7 @@ public:
     **/
     double evaluate(double x) const;
 
+    boost::shared_ptr<CurvePath> getInternalCurve() const { return _internalCurve; }
 
 private:
 
@@ -114,6 +115,7 @@ class CurveWidget : public QGLWidget
 
     typedef std::list<boost::shared_ptr<CurveGui> > Curves;
     Curves _curves;
+    std::list<boost::shared_ptr<KeyFrame> > _selectedKeyFrames;
 public:
     
     CurveWidget(QWidget* parent, const QGLWidget* shareWidget = NULL);
