@@ -231,6 +231,8 @@ KeyFrame::KeyFrame(double time,const Variant& initialValue)
 
 CurvePath::CurvePath(const KeyFrame& cp)
     : _keyFrames()
+    , _bbox()
+    ,_betweendBeginAndEndRecord(false)
 {
     setStart(cp);
 }
@@ -300,11 +302,13 @@ void CurvePath::addControlPoint(const KeyFrame& cp)
 Variant CurvePath::getValueAt(double t) const{
     assert(!_keyFrames.empty());
     const Variant& firstKeyValue = _keyFrames.front().getValue();
+    double v;
     switch(firstKeyValue.type()){
         case QVariant::Int :
-            return Variant(getValueAtInternal<int>(t));
+            v = (double)getValueAtInternal<int>(t);
+            break;
         case QVariant::Double :
-            return Variant(getValueAtInternal<double>(t));
+            v = getValueAtInternal<double>(t);
             break;
         default:
         std::string exc("The type requested ( ");
@@ -312,6 +316,17 @@ Variant CurvePath::getValueAt(double t) const{
         exc.append(") is not interpolable, it cannot animate!");
         throw std::invalid_argument(exc);
     }
+    if(_betweendBeginAndEndRecord){
+        if( v  < _bbox.bottom() )
+            _bbox.set_bottom(v);
+        if( v > _bbox.top() )
+            _bbox.set_top(v);
+        if( t < _bbox.left() )
+            _bbox.set_left(t);
+        if( t > _bbox.right())
+            _bbox.set_right(t);
+    }
+    return Variant(v);
 
 
 }
@@ -334,6 +349,7 @@ Knob::Knob(KnobHolder* holder,const std::string& description,int dimension):
   , _canUndo(true)
   , _isInsignificant(false)
   , _tooltipHint()
+  , _isAnimationEnabled(true)
 {
     
     if(_holder){
@@ -444,8 +460,8 @@ const CurvePath& MultidimensionalValue::getCurve(int dimension) const {
 
 Variant MultidimensionalValue::getValueAtTime(double time,int dimension) const{
     CurvesMap::const_iterator foundDimension = _curves.find(dimension);
-
-    if(foundDimension == _curves.end()){
+    const CurvePath& curve = getCurve(dimension);
+    if(!curve.isAnimated()){
         /*if the knob as no keys at this dimension, return the value
         at the requested dimension.*/
         std::map<int,Variant>::const_iterator it = _value.find(dimension);
@@ -466,6 +482,13 @@ Variant MultidimensionalValue::getValueAtTime(double time,int dimension) const{
 }
 
 
+RectD MultidimensionalValue::getCurvesBoundingBox() const{
+    RectD ret;
+    for(CurvesMap::const_iterator it = _curves.begin() ; it!=_curves.end();++it){
+        ret.merge(it->second.getBoundingBox());
+    }
+    return ret;
+}
 
 void KnobHolder::beginValuesChanged(Knob::ValueChangedReason reason){
     _betweenBeginEndParamChanged = true ;

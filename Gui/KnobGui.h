@@ -72,16 +72,7 @@ public:
     
     int getSpacingBetweenItems() const { return _spacingBetweenItems; }
     
-    void createGUI(QGridLayout* layout,int row){
-        createWidget(layout, row);
-        _widgetCreated = true;
-        const std::map<int,Variant>& values = _knob->getValueForEachDimension();
-        for(std::map<int,Variant>::const_iterator it = values.begin();it!=values.end();++it){
-            updateGUI(it->first,it->second);
-        }
-        setEnabled(_knob->isEnabled());
-        setVisible(_knob->isVisible());
-    }
+    void createGUI(QGridLayout* layout,int row);
     
     void moveToLayout(QVBoxLayout* layout);
     
@@ -94,10 +85,8 @@ public:
     
     bool hasWidgetBeenCreated() const {return _widgetCreated;}
     
-    virtual void hide() =0;
-    
-    virtual void show() =0;
-    
+
+
 public slots:
     /*Called when the value held by the knob is changed internally.
      This should in turn update the GUI but not emit the valueChanged()
@@ -119,8 +108,18 @@ public slots:
         }
     }
     
+    void showAnimationMenu();
     
     virtual void setEnabled(bool b) =0;
+    
+    void onSetKeyActionTriggered();
+    
+    void onShowInCurveEditorActionTriggered();
+
+    void hide();
+
+    void show();
+
     
 signals:
     void deleted(KnobGui*);
@@ -134,6 +133,12 @@ signals:
     void knobRedoneChange();
     
 protected:
+
+    virtual void _hide() =0;
+
+    virtual void _show() =0;
+
+
     /*Must create the GUI and insert it in the grid layout at the index "row".*/
     virtual void createWidget(QGridLayout* layout,int row)=0;
     
@@ -149,6 +154,10 @@ protected:
     
 private:
     
+    void createAnimationMenu(QWidget* parent);
+    
+    void createAnimationButton(QGridLayout* layout,int row);
+    
     /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
      signal/slot sequence can cause an infinite loop.*/
     void setValue(int dimension,const Variant& variant){
@@ -160,6 +169,8 @@ private:
     int _spacingBetweenItems;
     bool _widgetCreated;
     DockablePanel* _container;
+    QMenu* _animationMenu;
+    Button* _animationButton;
 };
 Q_DECLARE_METATYPE(KnobGui*);
 
@@ -211,9 +222,9 @@ public:
             
     virtual void createWidget(QGridLayout* layout,int row);
     
-    virtual void hide();
+    virtual void _hide();
     
-    virtual void show();
+    virtual void _show();
     
     virtual void setEnabled(bool b){(void)b;}
     
@@ -256,9 +267,9 @@ public:
     
     virtual void createWidget(QGridLayout* layout,int row);
     
-    virtual void hide();
+    virtual void _hide();
     
-    virtual void show();
+    virtual void _show();
     
     virtual void setEnabled(bool b){(void)b;}
     
@@ -307,9 +318,9 @@ public:
     
     void setMinimum(int);
     
-    virtual void hide();
+    virtual void _hide();
     
-    virtual void show();
+    virtual void _show();
     
     virtual void setEnabled(bool b);
     
@@ -370,9 +381,9 @@ public:
     
     virtual void createWidget(QGridLayout* layout,int row);
     
-    virtual void hide();
+    virtual void _hide();
     
-    virtual void show();
+    virtual void _show();
     
     virtual void setEnabled(bool b);
     
@@ -411,9 +422,9 @@ public:
     void setMaximum(int);
     void setMinimum(int);
     
-    virtual void hide();
+    virtual void _hide();
     
-    virtual void show();
+    virtual void _show();
     
     virtual void setEnabled(bool b);
     
@@ -452,9 +463,9 @@ public:
 
     virtual void createWidget(QGridLayout* layout,int row);
     
-    virtual void hide();
+    virtual void _hide();
     
-    virtual void show();
+    virtual void _show();
     
     virtual void setEnabled(bool b);
     
@@ -486,9 +497,9 @@ public:
     
     virtual void createWidget(QGridLayout* layout,int row);
     
-    virtual void hide();
+    virtual void _hide();
     
-    virtual void show();
+    virtual void _show();
     
     virtual void setEnabled(bool b);
     
@@ -522,9 +533,9 @@ public:
     
     virtual void createWidget(QGridLayout* layout,int row);
     
-    virtual void hide();
+    virtual void _hide();
     
-    virtual void show();
+    virtual void _show();
     
     virtual void setEnabled(bool b){(void)b;}
     
@@ -551,9 +562,9 @@ public:
     
     virtual void createWidget(QGridLayout* layout,int row);
         
-    virtual void hide();
+    virtual void _hide();
     
-    virtual void show();
+    virtual void _show();
     
     virtual void setEnabled(bool b);
     
@@ -613,9 +624,9 @@ public:
     
     virtual void createWidget(QGridLayout* layout,int row);
     
-    virtual void hide();
+    virtual void _hide();
     
-    virtual void show();
+    virtual void _show();
     
     virtual void setEnabled(bool b);
     
@@ -685,9 +696,9 @@ public:
     
     bool isChecked() const {return _button->isChecked();}
     
-    virtual void hide();
+    virtual void _hide();
     
-    virtual void show();
+    virtual void _show();
     
     virtual void setEnabled(bool b){(void)b;}
     
@@ -729,9 +740,9 @@ public:
     
     virtual void createWidget(QGridLayout* layout,int row);
     
-    virtual void hide();
+    virtual void _hide();
     
-    virtual void show();
+    virtual void _show();
     
     virtual void setEnabled(bool b);
     

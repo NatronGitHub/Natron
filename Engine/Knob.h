@@ -33,6 +33,7 @@
 #include "Global/AppManager.h"
 
 #include "Engine/Variant.h"
+#include "Engine/Rect.h"
 
 class Knob;
 class holder;
@@ -279,7 +280,9 @@ public:
     CurvePath(){}
     
     CurvePath(const CurvePath& other):
-    _keyFrames(other._keyFrames)
+     _keyFrames(other._keyFrames)
+    ,_bbox()
+    ,_betweendBeginAndEndRecord(false)
     {}
 
     CurvePath(const KeyFrame& cp);
@@ -303,8 +306,14 @@ public:
     const KeyFrame& getStart() const { assert(!_keyFrames.empty()); return _keyFrames.front(); }
 
     const KeyFrame& getEnd() const { assert(!_keyFrames.empty()); return _keyFrames.back(); }
+    
+    void beginRecordBoundingBox() const { _betweendBeginAndEndRecord = true; _bbox.clear(); }
 
     Variant getValueAt(double t) const;
+    
+    void endRecordBoundingBox() const { _betweendBeginAndEndRecord = false; }
+    
+    const RectD& getBoundingBox() const { return _bbox; }
     
     const KeyFrames& getKeyFrames() const { return _keyFrames; }
 
@@ -419,6 +428,8 @@ private:
     }
 
     KeyFrames _keyFrames;
+    mutable RectD _bbox;
+    mutable bool _betweendBeginAndEndRecord;
 };
 
 
@@ -490,7 +501,7 @@ public:
     
     Variant getValueAtTime(double time, int dimension) const;
     
-
+    RectD getCurvesBoundingBox() const;
 private:
     
   
@@ -515,7 +526,6 @@ public:
     
 
     enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1};
-
     
     Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
     
@@ -560,11 +570,17 @@ public:
     
     const std::map<int,Variant>& getValueForEachDimension() const { return _value.getValueForEachDimension(); }
 
+    RectD getCurvesBoundingBox() const { return _value.getCurvesBoundingBox(); }
+    
     /**
      * @brief Must return true if this knob can animate (i.e: if we can set different values depending on the time)
      * Some parameters cannot animate, for example a file selector.
      **/
     virtual bool canAnimate() const = 0;
+    
+    void ifAnimatingTurnOffAnimation() { _isAnimationEnabled = false; }
+    
+    bool isAnimationEnabled() const { return canAnimate() && _isAnimationEnabled; }
     
     /**
      * @brief Set the value of a knob for a specific dimension at a specific time. By default dimension
@@ -720,6 +736,7 @@ private:
     bool _canUndo;
     bool _isInsignificant; //< if true, a value change will never trigger an evaluation
     std::string _tooltipHint;
+    bool _isAnimationEnabled;
 
 };
 

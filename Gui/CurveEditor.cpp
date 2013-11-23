@@ -76,7 +76,6 @@ void CurveEditor::addNode(NodeGui* node){
     }
 
     NodeCurveEditorContext* nodeContext = new NodeCurveEditorContext(_tree,node);
-    _nodes.push_back(nodeContext);
     const NodeCurveEditorContext::Elements& elems = nodeContext->getElements();
     for(U32 i = 0 ; i < elems.size();++i){
         if(elems[i].second){
@@ -109,6 +108,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,NodeGui *node)
     : _node(node)
     , _nodeElements()
 {
+    
     QTreeWidgetItem* nameItem = new QTreeWidgetItem(tree);
     nameItem->setText(0,_node->getNode()->getName().c_str());
 
@@ -170,4 +170,12 @@ NodeCurveEditorContext::~NodeCurveEditorContext() { _nodeElements.clear(); }
 
 void NodeCurveEditorContext::onNameChanged(const QString& name){
     _nodeElements.front().first->setText(0,name);
+}
+
+void CurveEditor::centerOn(double bottom,double left,double top,double right){
+    _curveWidget->centerOn(left, right, bottom, top);
+}
+
+void CurveEditor::centerOn(const RectD& rect){
+    centerOn(rect.bottom(),rect.left(),rect.top(),rect.right());
 }

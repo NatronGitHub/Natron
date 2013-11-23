@@ -56,6 +56,10 @@ public :
 
     void setSelected(bool s) const { _selected = s; }
 
+    void beginRecordBoundingBox() const;
+    
+    void endRecordBoundingBox() const;
+    
     /**
       * @brief Evaluates the curve and returns the y position corresponding to the given x.
       * The coordinates are those of the curve, not of the widget.

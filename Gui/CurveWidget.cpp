@@ -137,7 +137,8 @@ void CurveWidget::drawCurves(){
             const QColor& nameColor =  (*it)->getColor();
 
             glColor4f(curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF());
-
+            
+            (*it)->beginRecordBoundingBox();
             for(int i = 0; i < width();++i){
                 double x = toImgCoordinates_fast(i,0).x();
                 double y = (*it)->evaluate(x);
@@ -151,7 +152,7 @@ void CurveWidget::drawCurves(){
                 glVertex2f(x,y);
                 glEnd();
             }
-
+            (*it)->endRecordBoundingBox();
 
             // draw the keyframes
             const CurvePath::KeyFrames& keyframes = (*it)->getInternalCurve().getKeyFrames();
@@ -185,6 +186,13 @@ void CurveWidget::drawCurves(){
 
 }
 
+void CurveGui::beginRecordBoundingBox() const{
+    _internalCurve.beginRecordBoundingBox();
+}
+
+void CurveGui::endRecordBoundingBox() const{
+    _internalCurve.endRecordBoundingBox();
+}
 
 void CurveWidget::drawBaseAxis(){
     

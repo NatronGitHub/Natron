@@ -79,8 +79,8 @@ void ScaleSlider::paintGL(){
     double h = (double)height();
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
-    assert(_zoomCtx._zoomFactor > 0);
-    assert(_zoomCtx._zoomFactor <= 1024);
+    //assert(_zoomCtx._zoomFactor > 0);
+    //assert(_zoomCtx._zoomFactor <= 1024);
     double bottom = _zoomCtx._bottom;
     double left = _zoomCtx._left;
     double top = bottom +  h / (double)_zoomCtx._zoomFactor;

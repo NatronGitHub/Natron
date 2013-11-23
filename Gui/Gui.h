@@ -273,6 +273,9 @@ public:
     void updateViewsActions(int viewsCount);
     
     static QKeySequence keySequenceForView(int v);
+    
+    /*set the curve editor as the active widget of its pane*/
+    void setCurveEditorOnTop();
         
 
 private:

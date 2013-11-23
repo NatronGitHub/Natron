@@ -15,6 +15,7 @@
 #include <QWidget>
 #include <boost/shared_ptr.hpp>
 
+class RectD;
 class NodeGui;
 class QTreeWidget;
 class QTreeWidgetItem;
@@ -70,6 +71,10 @@ public:
     void addNode(NodeGui *node);
 
     void removeNode(NodeGui* node);
+    
+    void centerOn(const RectD& rect);
+    
+    void centerOn(double bottom,double left,double top,double right);
 
 private:
 

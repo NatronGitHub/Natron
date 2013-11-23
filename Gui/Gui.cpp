@@ -1583,3 +1583,15 @@ void Gui::showView9(){
     _appInstance->setViewersCurrentView(9);
 }
 
+void Gui::setCurveEditorOnTop(){
+    for(std::list<TabWidget*>::iterator it = _panes.begin();it!=_panes.end();++it){
+        TabWidget* cur = (*it);
+        assert(cur);
+        for(int i = 0; i < cur->count();++i){
+            if(cur->tabAt(i) == _curveEditor){
+                cur->makeCurrentTab(i);
+                break;
+            }
+        }
+    }
+}

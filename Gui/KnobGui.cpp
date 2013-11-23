@@ -43,6 +43,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/ViewerInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/Knob.h"
+#include "Engine/TimeLine.h"
 
 #include "Gui/Button.h"
 #include "Gui/DockablePanel.h"
@@ -55,6 +56,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/SpinBox.h"
 #include "Gui/ComboBox.h"
 #include "Gui/LineEdit.h"
+#include "Gui/CurveEditor.h"
 #include "Gui/ScaleSlider.h"
 
 #include "Readers/Reader.h"
@@ -70,7 +72,9 @@ KnobGui::KnobGui(Knob* knob,DockablePanel* container):
     _triggerNewLine(true),
     _spacingBetweenItems(0),
     _widgetCreated(false),
-    _container(container)
+    _container(container),
+    _animationMenu(NULL),
+    _animationButton(NULL)
 {
     QObject::connect(knob,SIGNAL(valueChanged(int,const Variant&)),this,SLOT(onInternalValueChanged(int,const Variant&)));
     QObject::connect(this,SIGNAL(valueChanged(int,const Variant&)),knob,SLOT(onValueChanged(int,const Variant&)));
@@ -84,6 +88,8 @@ KnobGui::KnobGui(Knob* knob,DockablePanel* container):
 KnobGui::~KnobGui(){
     
     emit deleted(this);
+    delete _animationButton;
+    delete _animationMenu;
 }
 
 void KnobGui::pushUndoCommand(QUndoCommand* cmd){
@@ -103,6 +109,75 @@ void KnobGui::moveToLayout(QVBoxLayout* layout){
     containerLayout->setContentsMargins(0, 0, 0, 0);
     addToLayout(containerLayout);
     layout->addWidget(container);
+}
+
+void KnobGui::createGUI(QGridLayout* layout,int row){
+    createWidget(layout, row);
+    if(_knob->isAnimationEnabled() && _knob->isVisible()){
+        createAnimationButton(layout,row);
+    }
+    _widgetCreated = true;
+    const std::map<int,Variant>& values = _knob->getValueForEachDimension();
+    for(std::map<int,Variant>::const_iterator it = values.begin();it!=values.end();++it){
+        updateGUI(it->first,it->second);
+    }
+    setEnabled(_knob->isEnabled());
+    setVisible(_knob->isVisible());
+}
+
+void KnobGui::createAnimationButton(QGridLayout* layout,int row){
+    createAnimationMenu(layout->parentWidget());
+    _animationButton = new Button("A",layout->parentWidget());
+    _animationButton->setToolTip("Animation menu");
+    QObject::connect(_animationButton,SIGNAL(clicked()),this,SLOT(showAnimationMenu()));
+    layout->addWidget(_animationButton, row, 3,Qt::AlignLeft);
+}
+
+void KnobGui::createAnimationMenu(QWidget* parent){
+    _animationMenu = new QMenu(parent);
+    QAction* setKeyAction = new QAction(tr("Set Key"),_animationMenu);
+    QObject::connect(setKeyAction,SIGNAL(triggered()),this,SLOT(onSetKeyActionTriggered()));
+    _animationMenu->addAction(setKeyAction);
+    
+    QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"),_animationMenu);
+    QObject::connect(showInCurveEditorAction,SIGNAL(triggered()),this,SLOT(onShowInCurveEditorActionTriggered()));
+    _animationMenu->addAction(showInCurveEditorAction);
+    
+}
+
+void KnobGui::showAnimationMenu(){
+    _animationMenu->exec(_animationButton->mapToGlobal(QPoint(0,0)));
+}
+
+void KnobGui::onShowInCurveEditorActionTriggered(){
+    _knob->getHolder()->getApp()->getGui()->setCurveEditorOnTop();
+    const RectD& bbox = _knob->getCurvesBoundingBox();
+    if(!bbox.isNull()){
+        _knob->getHolder()->getApp()->getGui()->_curveEditor->centerOn(bbox);
+    }
+}
+
+void KnobGui::onSetKeyActionTriggered(){
+    
+    //get the current time on the global timeline
+    SequenceTime time = _knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+    const std::map<int,Variant>& dimValueMap = _knob->getValueForEachDimension();
+    for(std::map<int,Variant>::const_iterator it = dimValueMap.begin();it!=dimValueMap.end();++it){
+        _knob->setValueAtTime(time,it->second,it->first);
+    }
+    
+}
+
+void KnobGui::hide(){
+    _hide();
+    if(_animationButton)
+        _animationButton->hide();
+}
+
+void KnobGui::show(){
+    _show();
+    if(_animationButton)
+        _animationButton->show();
 }
 
 //================================================================
@@ -216,13 +291,13 @@ void File_KnobGui::updateLastOpened(const QString& str){
     _lastOpened = str.left(pos);
 }
 
-void File_KnobGui::hide(){
+void File_KnobGui::_hide(){
     _openFileButton->hide();
     _descriptionLabel->hide();
     _lineEdit->hide();
 }
 
-void File_KnobGui::show(){
+void File_KnobGui::_show(){
     _openFileButton->show();
     _descriptionLabel->show();
     _lineEdit->show();
@@ -306,13 +381,13 @@ void OutputFile_KnobGui::updateLastOpened(const QString& str){
     int pos = str.indexOf(withoutPath);
     _lastOpened = str.left(pos);
 }
-void OutputFile_KnobGui::hide(){
+void OutputFile_KnobGui::_hide(){
     _openFileButton->hide();
     _descriptionLabel->hide();
     _lineEdit->hide();
 }
 
-void OutputFile_KnobGui::show(){
+void OutputFile_KnobGui::_show(){
     _openFileButton->show();
     _descriptionLabel->show();
     _lineEdit->show();
@@ -442,7 +517,7 @@ void Int_KnobGui::onSpinBoxValueChanged(){
 
     pushUndoCommand(new KnobUndoCommand(this,_knob->getValueForEachDimension(),newValues));
 }
-void Int_KnobGui::hide(){
+void Int_KnobGui::_hide(){
     _descriptionLabel->hide();
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         _spinBoxes[i].first->hide();
@@ -454,7 +529,7 @@ void Int_KnobGui::hide(){
     }
 }
 
-void Int_KnobGui::show(){
+void Int_KnobGui::_show(){
     _descriptionLabel->show();
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         _spinBoxes[i].first->show();
@@ -520,12 +595,12 @@ void Bool_KnobGui::onCheckBoxStateChanged(bool b){
     newValues.insert(std::make_pair(0,Variant(b)));
     pushUndoCommand(new KnobUndoCommand(this,_knob->getValueForEachDimension(),newValues));
 }
-void Bool_KnobGui::hide(){
+void Bool_KnobGui::_hide(){
     _descriptionLabel->hide();
     _checkBox->hide();
 }
 
-void Bool_KnobGui::show(){
+void Bool_KnobGui::_show(){
     _descriptionLabel->show();
     _checkBox->show();
 }
@@ -671,7 +746,7 @@ void Double_KnobGui::onSpinBoxValueChanged(){
 
     pushUndoCommand(new KnobUndoCommand(this,_knob->getValueForEachDimension(),newValues));
 }
-void Double_KnobGui::hide(){
+void Double_KnobGui::_hide(){
     _descriptionLabel->hide();
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         _spinBoxes[i].first->hide();
@@ -684,7 +759,7 @@ void Double_KnobGui::hide(){
     
 }
 
-void Double_KnobGui::show(){
+void Double_KnobGui::_show(){
     _descriptionLabel->show();
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         _spinBoxes[i].first->show();
@@ -736,11 +811,11 @@ Button_KnobGui::~Button_KnobGui(){
 void Button_KnobGui::emitValueChanged(){
     emit valueChanged(0,Variant());
 }
-void Button_KnobGui::hide(){
+void Button_KnobGui::_hide(){
     _button->hide();
 }
 
-void Button_KnobGui::show(){
+void Button_KnobGui::_show(){
     _button->show();
 }
 void Button_KnobGui::setEnabled(bool b){
@@ -800,12 +875,12 @@ void ComboBox_KnobGui::updateGUI(int /*dimension*/,const Variant& variant){
     assert(i < (int)_entries.size());
     _comboBox->setCurrentText(_entries[i].c_str());
 }
-void ComboBox_KnobGui::hide(){
+void ComboBox_KnobGui::_hide(){
     _descriptionLabel->hide();
     _comboBox->hide();
 }
 
-void ComboBox_KnobGui::show(){
+void ComboBox_KnobGui::_show(){
     _descriptionLabel->show();
     _comboBox->show();
 }
@@ -836,12 +911,12 @@ Separator_KnobGui::~Separator_KnobGui(){
     delete _descriptionLabel;
     delete _line;
 }
-void Separator_KnobGui::hide(){
+void Separator_KnobGui::_hide(){
     _descriptionLabel->hide();
     _line->hide();
 }
 
-void Separator_KnobGui::show(){
+void Separator_KnobGui::_show(){
     _descriptionLabel->show();
     _line->show();
 }
@@ -1074,7 +1149,7 @@ void Color_KnobGui::updateLabel(const QColor& color){
     _colorLabel->setPixmap(pix);
 }
 
-void Color_KnobGui::hide(){
+void Color_KnobGui::_hide(){
     _descriptionLabel->hide();
     _rBox->hide();
     _rLabel->hide();
@@ -1093,7 +1168,7 @@ void Color_KnobGui::hide(){
     _colorDialogButton->hide();
 }
 
-void Color_KnobGui::show(){
+void Color_KnobGui::_show(){
     _descriptionLabel->show();
     
     _rBox->show();
@@ -1160,12 +1235,12 @@ void String_KnobGui::onStringChanged(const QString& str){
 void String_KnobGui::updateGUI(int /*dimension*/, const Variant& variant){
     _lineEdit->setText(variant.toString());
 }
-void String_KnobGui::hide(){
+void String_KnobGui::_hide(){
     _descriptionLabel->hide();
     _lineEdit->hide();
 }
 
-void String_KnobGui::show(){
+void String_KnobGui::_show(){
     _descriptionLabel->show();
     _lineEdit->show();
 }
@@ -1248,7 +1323,7 @@ void Group_KnobGui::updateGUI(int /*dimension*/, const Variant& variant){
     setChecked(b);
     _button->setChecked(b);
 }
-void Group_KnobGui::hide(){
+void Group_KnobGui::_hide(){
     _button->hide();
     _descriptionLabel->hide();
     for (U32 i = 0; i < _children.size(); ++i) {
@@ -1256,7 +1331,7 @@ void Group_KnobGui::hide(){
     }
 }
 
-void Group_KnobGui::show(){
+void Group_KnobGui::_show(){
     _button->show();
     _descriptionLabel->show();
     for (U32 i = 0; i < _children.size(); ++i) {
@@ -1309,12 +1384,12 @@ RichText_KnobGui::~RichText_KnobGui(){
 
 }
 
-void RichText_KnobGui::hide(){
+void RichText_KnobGui::_hide(){
     _descriptionLabel->hide();
     _textEdit->hide();
 }
 
-void RichText_KnobGui::show(){
+void RichText_KnobGui::_show(){
     _descriptionLabel->show();
     _textEdit->show();
 }
