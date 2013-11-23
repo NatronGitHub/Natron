@@ -53,6 +53,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Log.h"
+#include "Engine/TextureRectSerialization.h"
 
 #include "Readers/Reader.h"
 #include "Readers/Decoder.h"

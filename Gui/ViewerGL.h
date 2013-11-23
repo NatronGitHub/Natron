@@ -12,78 +12,30 @@
 #ifndef NATRON_GUI_VIEWERGL_H_
 #define NATRON_GUI_VIEWERGL_H_
 
-#include <cmath>
 #include <vector>
 #include <utility>
-#include <cassert>
+#include <boost/scoped_ptr.hpp>
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
-#include <QtGui/QVector4D>
-#include <QMutex>
-#include <QtCore/QHash>
-#include <QWaitCondition>
-
-#include "Engine/ImageInfo.h"
-#include "Engine/Format.h"
-#include "Engine/ChannelSet.h"
-#include "Engine/Singleton.h"
-
-#include "Gui/Texture.h"
 
 class QKeyEvent;
 class QEvent;
 class QMenu;
 class QGLShaderProgram;
+
 namespace Natron {
-    namespace Color {
-        class Lut;
-    }
+    class ChannelSet;
 }
 class InfoViewerWidget;
 class AppInstance;
 class ViewerInstance;
 class ViewerTab;
+class ImageInfo;
+class RectI;
+class Format;
+class TextureRect;
 
-#ifndef NATRON_DEBUG
-#define checkGLErrors() ((void)0)
-#define assert_checkGLErrors() ((void)0)
-#else
-#define checkGLErrors() \
-{ \
-GLenum _glerror_ = glGetError(); \
-if(_glerror_ != GL_NO_ERROR) { \
-std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl; \
-} \
-}
-#define assert_checkGLErrors() \
-{ \
-GLenum _glerror_ = glGetError(); \
-if(_glerror_ != GL_NO_ERROR) { \
-std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl; abort(); \
-} \
-}
-#endif
-
-
-namespace Natron{
-    
-    struct TextRendererPrivate;
-    class TextRenderer {
-        
-    public:
-        
-        TextRenderer();
-        
-        virtual ~TextRenderer();
-        
-        void renderText(float x, float y, const QString &text,const QColor& color,const QFont& font);
-        
-    private:
-        typedef std::vector<std::pair<QFont,TextRendererPrivate*> > FontRenderers;
-        FontRenderers _renderers;
-    };
-}
 /**
  *@class ViewerGL
  *@brief The main viewport. This class is part of the ViewerTab GUI and handles all
@@ -92,171 +44,6 @@ namespace Natron{
 class ViewerGL : public QGLWidget
 {
     Q_OBJECT
-    
-    /**
-     *@class ZoomContext
-     *@brief Holds all zoom related variables. This is an internal class used by the ViewerGL.
-     *The variables stored here are the minimal variables needed to enable the zoom and the drag
-     *of the image.
-     *The top and right edges of the ortographic projection can be computed as such:
-     *
-     * top = bottom + heightWidget/zoomFactor
-     * right = left + widthWidget/zoomFactor
-     *
-     *
-     *During the computations made in the ViewerGL, we define 2 coordinate systems:
-     *  - The viewport (or widget) coordinate system, with origin top left.
-     *  - The image coordinate system with the origin bottom left.
-     *To transform the coordinates between one system to another is a simple mapping operation,
-     *which yields :
-     *
-     * Ximg = (Xwidget/widthWidget) * ( right - left ) + left
-     * Yimg = (Ywidget/heightWidget) * (bottom - top) + top  [notice the y inversion here]
-     *
-     *Let us define the zoomFactor being the ratio of screen pixels size divided by image pixels size.
-     *
-     *Zooming to a point is simply a matter of changing the orthographic projection.
-     *When zooming, the position of the center should never change, relativly to the orthographic projection.
-     *Which means that the old position (before zooming) expressed in its own orthographic projection, should equal
-     *the new position (after zooming) expressed in its own orthographic projection.
-     *That is:
-     *
-     * - For the x coordinate:  (Ximg - left_old) * zoomFactor_old == (Ximg - left_new) * zoomFactor_new
-     *Where Ximg is the X coordinate of the zoom center in image coordinates, left_old is the left edge of
-     *the orthographic projection before zooming, and the left_new the left edge after zooming.
-     *
-     *This formula yields:
-     *
-     *  left_new = Ximg - (Ximg - left_old)*(zoomFactor_old/zoomFactor_new).
-     *
-     * -The y coordinate follows exactly the same reasoning and the following equation can be found:
-     *
-     *  bottom_new = Yimg - (Yimg - bottom_old)*(zoomFactor_old/zoomFactor_new).
-     *
-     * Retrieving top_new and right_new can be done with the formulas exhibited above.
-     *
-     *A last note on the zoom is the initialisation. A desired effect can be to initialise the image
-     *so it appears centered in the viewer and that fit entirely in the viewer. This can be done as such:
-     *
-     *The zoomFactor needed to fit the image in the viewer can be computed with the ratio of the
-     *height of the widget by the height of the image :
-     *
-     * zoomFactor = heightWidget / heightImage
-     *
-     *The left and bottom edges can then be initialised :
-     *
-     * left = widthImage / 2 - ( widthWidget / ( 2 * zoomFactor ) )
-     * bottom = heightImage / 2 - ( heightWidget / ( 2 * zoomFactor ) )
-     *
-     *TRANSLATING THE IMAGE : (panning around)
-     *
-     *Translation is simply a matter of displacing the edges of the orthographic projection
-     *by a delta. The delta is the difference between the last mouse position (in image coordinates)
-     *and the new mouse position (in image coordinates).
-     *
-     *Translating is just doing so:
-     *
-     *  bottom += Yimg_old - Yimg_new
-     *  left += Ximg_old - Ximg_new
-     **/
-    class ZoomContext{
-        
-    public:
-        
-        ZoomContext():
-        _bottom(0.)
-        ,_left(0.)
-        ,_zoomFactor(1.)
-        {}
-        
-        QPoint _oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
-        double _bottom; /// the bottom edge of orthographic projection
-        double _left; /// the left edge of the orthographic projection
-        double _zoomFactor; /// the zoom factor applied to the current image
-        
-        double _lastOrthoLeft,_lastOrthoBottom,_lastOrthoRight,_lastOrthoTop; //< remembers the last values passed to the glOrtho call
-        
-        /*!< the level of zoom used to display the frame*/
-        void setZoomFactor(double f){assert(f>0.); _zoomFactor = f;}
-        
-        double getZoomFactor() const {return _zoomFactor;}
-    };
-    
-    /**
-     *@enum MOUSE_STATE
-     *@brief basic state switching for mouse events
-     **/
-    enum MOUSE_STATE{DRAGGING,UNDEFINED};
-    
-    std::vector<GLuint> _pboIds; /*!< PBO's id's used by the OpenGL context*/
-    
-    //   GLuint _vaoId; /*!< VAO holding the rendering VBOs for texture mapping.*/
-    
-    GLuint _vboVerticesId; /*!< VBO holding the vertices for the texture mapping*/
-    
-    GLuint _vboTexturesId; /*!< VBO holding texture coordinates*/
-    
-    GLuint _iboTriangleStripId; /*!< IBOs holding vertices indexes for triangle strip sets*/
-    
-    Texture* _defaultDisplayTexture;/*!< A pointer to the current texture used to display.*/
-    QMutex _textureMutex;/*!< protects _defaultDisplayTexture*/
-    
-    Texture* _blackTex;/*!< the texture used to render a black screen when nothing is connected.*/
-    
-    QGLShaderProgram* shaderRGB;/*!< The shader program used to render RGB data*/
-    QGLShaderProgram* shaderLC;/*!< The shader program used to render YCbCr data*/
-    QGLShaderProgram* shaderBlack;/*!< The shader program used when the viewer is disconnected.*/
-    
-    bool _shaderLoaded;/*!< Flag to check whether the shaders have already been loaded.*/
-    
-    
-    InfoViewerWidget* _infoViewer;/*!< Pointer to the info bar below the viewer holding pixel/mouse/format related infos*/
-    
-    ViewerTab* _viewerTab;/*!< Pointer to the viewer tab GUI*/
-    
-    ImageInfo _currentViewerInfos;/*!< Pointer to the ViewerInfos  used for rendering*/
-    
-    ImageInfo _blankViewerInfos;/*!< Pointer to the infos used when the viewer is disconnected.*/
-    
-    bool _displayingImage;/*!< True if the viewer is connected and not displaying black.*/
-    bool _must_initBlackTex;
-    
-    MOUSE_STATE _ms;/*!< Holds the mouse state*/
-    
-    ZoomContext _zoomCtx;/*!< All zoom related variables are packed into this object*/
-    
-    QString _resolutionOverlay;/*!< The string holding the resolution overlay, e.g: "1920x1080"*/
-    QString _btmLeftBBOXoverlay;/*!< The string holding the bottom left corner coordinates of the dataWindow*/
-    QString _topRightBBOXoverlay;/*!< The string holding the top right corner coordinates of the dataWindow*/
-    QColor _textRenderingColor;
-    QColor _displayWindowOverlayColor;
-    QColor _rodOverlayColor;
-    QFont* _textFont;
-
-    bool _overlay;/*!< True if the user enabled overlay dispay*/
-    
-    bool _hasHW;/*!< True if the user has a GLSL version supporting everything requested.*/
-        
-    // FIXME-seeabove: why a float to really represent an enum????
-    float _displayChannels;
-    
-    bool _drawProgressBar;
-    
-    bool _updatingTexture;
-    
-    int _progressBarY;
-    
-    QColor _clearColor;
-    
-    QMenu* _menu;
-        
-    bool _clipToDisplayWindow;
-    
-    QString _persistentMessage;
-    int _persistentMessageType;
-    bool _displayPersistentMessage;
-    
-    Natron::TextRenderer _textRenderer;
     
 public:
     
@@ -272,26 +59,21 @@ public:
     
     QSize sizeHint() const;
     
-    const QFont& textFont() {return *_textFont;}
+    const QFont& textFont() const;
 
-    void setTextFont(const QFont& f){*_textFont = f;}
+    void setTextFont(const QFont& f);
 
     
     /**
      *@brief Toggles on/off the display on the viewer. If d is false then it will
      *render black only.
      **/
-    void setDisplayingImage(bool d) {
-        _displayingImage = d;
-        if (!_displayingImage) {
-            _must_initBlackTex = true;
-        };
-    }
-    
+    void setDisplayingImage(bool d);
+
     /**
      *@returns Returns true if the viewer is displaying something.
      **/
-    bool displayingImage() const { return _displayingImage; }
+    bool displayingImage() const;
     
     
     /**
@@ -307,9 +89,9 @@ public:
     void setRod(const RectI& rod);
     
     
-    void setClipToDisplayWindow(bool b) ;
+    void setClipToDisplayWindow(bool b);
     
-    bool isClippingToDisplayWindow() const {return _clipToDisplayWindow;}
+    bool isClippingToDisplayWindow() const;
     
     /**
      *@brief Saves the OpenGL context so it can be restored later-on .
@@ -344,17 +126,17 @@ public:
     /**
      *@returns Returns the height of the frame with the scale factor applied to it.
      **/
-    double zoomedHeight(){return std::floor(getDisplayWindow().height()*_zoomCtx._zoomFactor);}
+    //double zoomedHeight(){return std::floor(getDisplayWindow().height()*_zoomCtx._zoomFactor);}
     
     /**
      *@returns Returns the width of the frame with the scale factor applied to it.
      **/
-    double zoomedWidth(){return std::floor(getDisplayWindow().width()*_zoomCtx._zoomFactor);}
+    //double zoomedWidth(){return std::floor(getDisplayWindow().width()*_zoomCtx._zoomFactor);}
     
     /**
      *@returns Returns the current zoom factor that is applied to the display.
      **/
-    double getZoomFactor(){return _zoomCtx.getZoomFactor();}
+    double getZoomFactor();
     
     /**
      *@brief Computes what are the rows that should be displayed on viewer
@@ -388,7 +170,7 @@ public:
      *@param y[in] The y coordinates of the point in viewport coordinates.
      *@returns Returns the image coordinates mapped equivalent of (x,y) as well as the depth.
      **/
-    QVector3D toImgCoordinates_slow(int x,int y);
+    //QVector3D toImgCoordinates_slow(int x,int y);
     
     /**
      *@brief Computes the image coordinates of the point passed in parameter.
@@ -427,19 +209,19 @@ public:
     /**
      *@returns Returns a pointer to the current viewer infos.
      **/
-    const ImageInfo& getCurrentViewerInfos() const {return _currentViewerInfos;}
+    const ImageInfo& getCurrentViewerInfos() const;
     
-    ViewerTab* getViewerTab() const {return _viewerTab;}
+    ViewerTab* getViewerTab() const;
     
     /**
      *@brief Turns on the overlays on the viewer.
      **/
-    void turnOnOverlay(){_overlay=true;}
+    void turnOnOverlay();
     
     /**
      *@brief Turns off the overlays on the viewer.
      **/
-    void turnOffOverlay(){_overlay=false;}
+    void turnOffOverlay();
     
     
   
@@ -458,7 +240,7 @@ public:
     /**
      *@returns Returns true if the graphic card supports GLSL.
      **/
-    bool hasHardware(){return _hasHW;}
+    bool hasHardware();
     
     /**
      *@brief Disconnects the viewer.
@@ -472,7 +254,7 @@ public:
      **/
     void setDisplayChannel(const Natron::ChannelSet& channels,bool yMode = false);
     
-    void stopDisplayingProgressBar() {_drawProgressBar = false;}
+    void stopDisplayingProgressBar();
     
     void backgroundColor(double &r,double &g,double &b);
     
@@ -513,7 +295,7 @@ public:
     
     void clearColorBuffer(double r = 0.,double g = 0.,double b = 0.,double a = 1.);
     
-    void toggleOverlays(){ _overlay = ! _overlay; updateGL();}
+    void toggleOverlays();
     
     void renderText(int x, int y, const QString &string,const QColor& color,const QFont& font);
     
@@ -663,7 +445,11 @@ private:
     /**
      *@brief Resets the mouse position
      **/
-    void resetMousePos(){_zoomCtx._oldClick.setX(0); _zoomCtx._oldClick.setY(0);}
+    void resetMousePos();
+
+private:
+    struct Implementation;
+    boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
 };
 
 

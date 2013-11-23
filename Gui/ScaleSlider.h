@@ -14,12 +14,16 @@
 
 #include <vector>
 #include <cmath> // for std::pow()
+
 #include <QtCore/QObject>
 #include <QWidget>
 
+#include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
+#include <QtOpenGL/QGLWidget>
+
 #include "Global/Enums.h"
 
-#include "Gui/ViewerGL.h"
+#include "Gui/TextRenderer.h"
 
 using Natron::Scale_Type;
 

@@ -10,6 +10,8 @@
 
 #include "ScaleSlider.h"
 
+#include "Global/Macros.h" // for CLANG_DIAG_OFF
+
 #include <cassert>
 #include <qlayout.h>
 #if QT_VERSION < 0x050000

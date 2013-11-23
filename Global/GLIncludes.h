@@ -14,5 +14,24 @@
 #include <GL/glew.h>
 #define QT_NO_OPENGL_ES_2
 
+#ifndef NATRON_DEBUG
+#define checkGLErrors() ((void)0)
+#define assert_checkGLErrors() ((void)0)
+#else
+#define checkGLErrors() \
+{ \
+GLenum _glerror_ = glGetError(); \
+if(_glerror_ != GL_NO_ERROR) { \
+std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl; \
+} \
+}
+#define assert_checkGLErrors() \
+{ \
+GLenum _glerror_ = glGetError(); \
+if(_glerror_ != GL_NO_ERROR) { \
+std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl; abort(); \
+} \
+}
+#endif
 
 #endif
