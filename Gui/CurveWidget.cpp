@@ -11,12 +11,11 @@
 
 #include "CurveWidget.h"
 
-#include "Engine/Knob.h"
-#include "Gui/ScaleSlider.h"
-
 #include <QMenu>
 #include <QMouseEvent>
 
+#include "Engine/Knob.h"
+#include "Gui/ScaleSlider.h"
 
 #define CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE 5 //maximum distance from a curve that accepts a mouse click
 // (in widget pixels)
@@ -201,7 +200,7 @@ void CurveWidget::drawBaseAxis(){
 }
 
 static inline
-double tickAlpha(double min, double max, double val)
+double ticks_alpha(double min, double max, double val)
 {
     assert(val > 0. && min > 0. && max > 0. && max > min);
     const double alpha = sqrt((val-min)/(max-min));
@@ -284,7 +283,7 @@ void CurveWidget::drawScale(){
                         tickCount = 5;
                     }
                 }
-                const double alpha = tickAlpha(smallestTickSize,largestTickSize, tickCount*dist/(double)jmax);
+                const double alpha = ticks_alpha(smallestTickSize,largestTickSize, tickCount*dist/(double)jmax);
 
                 glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
 
@@ -370,7 +369,7 @@ void CurveWidget::drawScale(){
                         tickCount = 5;
                     }
                 }
-                const double alpha = tickAlpha(smallestTickSize,largestTickSize, tickCount*dist/(double)jmax);
+                const double alpha = ticks_alpha(smallestTickSize,largestTickSize, tickCount*dist/(double)jmax);
                 glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
                 
                 glBegin(GL_LINES);
