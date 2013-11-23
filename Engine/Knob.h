@@ -462,6 +462,7 @@ public:
         //default initialize the values map
         for(int i = 0; i < dimension ; ++i){
             _value.insert(std::make_pair(i,Variant()));
+            _curves.insert(std::make_pair(i,CurvePath()));
         }
     }
     

@@ -426,17 +426,10 @@ void MultidimensionalValue::setValue(const Variant& v,int dimension){
 }
 
 void MultidimensionalValue::setValueAtTime(double time, const Variant& v, int dimension){
-    CurvesMap::iterator it = _curves.find(dimension);
-
     KeyFrame key(time,v);
-    if( it == _curves.end() ){
-        /*if the dimension had no curve yet, create one and add the first keyframe*/
-        _curves.insert(std::make_pair(dimension,CurvePath(key)));
-    }else{
-        /*else just add one more key frame to the curve*/
-        it->second.addControlPoint(key);
-    }
-
+    CurvesMap::iterator foundDimension = _curves.find(dimension);
+    assert(foundDimension != _curves.end());
+    foundDimension->second.addControlPoint(key);
 }
 
 const CurvePath& Knob::getCurve(int dimension) const{
