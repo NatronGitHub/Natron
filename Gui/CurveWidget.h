@@ -12,7 +12,10 @@
 #ifndef CURVE_WIDGET_H
 #define CURVE_WIDGET_H
 
-#include "Gui/ViewerGL.h"
+#include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
+#include <QtOpenGL/QGLWidget>
+
+#include "Gui/TextRenderer.h"
 
 class CurvePath;
 class KeyFrame;

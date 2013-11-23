@@ -127,6 +127,7 @@ SOURCES += \
     Gui/DockablePanel.cpp \
     Gui/SpinBox.cpp \
     Gui/TabWidget.cpp \
+    Gui/TextRenderer.cpp \
     Gui/Texture.cpp \
     Gui/ticks.cpp \
     Gui/TimeLineGui.cpp \
@@ -213,6 +214,7 @@ HEADERS += \
     Gui/Shaders.h \
     Gui/SpinBox.h \
     Gui/TabWidget.h \
+    Gui/TextRenderer.h \
     Gui/Texture.h \
     Gui/ticks.h \
     Gui/TimeLineGui.h \

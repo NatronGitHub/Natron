@@ -12,30 +12,18 @@
 #ifndef NATRON_GUI_VIEWERGL_H_
 #define NATRON_GUI_VIEWERGL_H_
 
-//#include <cmath>
 #include <vector>
 #include <utility>
-//#include <cassert>
 #include <boost/scoped_ptr.hpp>
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
-//#include <QtGui/QVector4D>
-//#include <QMutex>
-//#include <QtCore/QHash>
-//#include <QWaitCondition>
-
-//#include "Engine/ImageInfo.h"
-//#include "Engine/Format.h"
-//#include "Engine/ChannelSet.h"
-//#include "Engine/Singleton.h"
-
-//#include "Gui/Texture.h"
 
 class QKeyEvent;
 class QEvent;
 class QMenu;
 class QGLShaderProgram;
+
 namespace Natron {
     class ChannelSet;
 }
@@ -48,45 +36,6 @@ class RectI;
 class Format;
 class TextureRect;
 
-#ifndef NATRON_DEBUG
-#define checkGLErrors() ((void)0)
-#define assert_checkGLErrors() ((void)0)
-#else
-#define checkGLErrors() \
-{ \
-GLenum _glerror_ = glGetError(); \
-if(_glerror_ != GL_NO_ERROR) { \
-std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl; \
-} \
-}
-#define assert_checkGLErrors() \
-{ \
-GLenum _glerror_ = glGetError(); \
-if(_glerror_ != GL_NO_ERROR) { \
-std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl; abort(); \
-} \
-}
-#endif
-
-
-namespace Natron{
-    
-    struct TextRendererPrivate;
-    class TextRenderer {
-        
-    public:
-        
-        TextRenderer();
-        
-        virtual ~TextRenderer();
-        
-        void renderText(float x, float y, const QString &text,const QColor& color,const QFont& font);
-        
-    private:
-        typedef std::vector<std::pair<QFont,TextRendererPrivate*> > FontRenderers;
-        FontRenderers _renderers;
-    };
-}
 /**
  *@class ViewerGL
  *@brief The main viewport. This class is part of the ViewerTab GUI and handles all
