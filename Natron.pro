@@ -128,6 +128,7 @@ SOURCES += \
     Gui/SpinBox.cpp \
     Gui/TabWidget.cpp \
     Gui/Texture.cpp \
+    Gui/ticks.cpp \
     Gui/TimeLineGui.cpp \
     Gui/ViewerGL.cpp \
     Gui/ViewerTab.cpp \
@@ -181,6 +182,7 @@ HEADERS += \
     Engine/Settings.h \
     Engine/Singleton.h \
     Engine/TextureRect.h \
+    Engine/TextureRectSerialization.h \
     Engine/TimeLine.h \
     Engine/Timer.h \
     Engine/Variant.h \
@@ -212,6 +214,7 @@ HEADERS += \
     Gui/SpinBox.h \
     Gui/TabWidget.h \
     Gui/Texture.h \
+    Gui/ticks.h \
     Gui/TimeLineGui.h \
     Gui/ViewerGL.h \
     Gui/ViewerTab.h \

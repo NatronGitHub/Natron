@@ -10,16 +10,21 @@
 
 #include "ViewerGL.h"
 
+#include "Global/Macros.h" // for CLANG_DIAG_OFF
+
 #include <cassert>
 #include <map>
 
-#include <QtGui/QPainter>
 #include <QtCore/QCoreApplication>
-#include <QtGui/QImage>
-#include <QMenu>
-#include <QDockWidget>
-#include <QtOpenGL/QGLShaderProgram>
 #include <QtCore/QEvent>
+#include <QtCore/QFile>
+#include <QtCore/QHash>
+#include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
+#include <QtGui/QPainter>
+#include <QtGui/QImage>
+#include <QtGui/QMenu>
+#include <QtGui/QDockWidget>
 #include <QtGui/QPainter>
 #if QT_VERSION < 0x050000
 CLANG_DIAG_OFF(unused-private-field);
@@ -27,28 +32,35 @@ CLANG_DIAG_OFF(unused-private-field);
 CLANG_DIAG_ON(unused-private-field);
 #endif
 #include <QtGui/QKeyEvent>
-#include <QtCore/QFile>
+#include <QtGui/QVector4D>
+#include <QtOpenGL/QGLShaderProgram>
 
 #include "Global/Macros.h"
 GCC_DIAG_OFF(unused-parameter);
 #include <ImfAttribute.h> // FIXME: should be PIMPL'ed
 GCC_DIAG_ON(unused-parameter);
 
-#include "Gui/TabWidget.h"
-#include "Engine/VideoEngine.h"
-#include "Gui/Shaders.h"
-#include "Engine/Lut.h"
 #include "Global/AppManager.h"
-#include "Gui/InfoViewerWidget.h"
-#include "Gui/SpinBox.h"
-#include "Gui/TimeLineGui.h"
+
+#include "Engine/ChannelSet.h"
+#include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
-#include "Engine/Settings.h"
+#include "Engine/ImageInfo.h"
+#include "Engine/Lut.h"
 #include "Engine/MemoryFile.h"
-#include "Engine/ViewerInstance.h"
+#include "Engine/Settings.h"
 #include "Engine/Timer.h"
-#include "Gui/ViewerTab.h"
+#include "Engine/VideoEngine.h"
+#include "Engine/ViewerInstance.h"
+
 #include "Gui/Gui.h"
+#include "Gui/InfoViewerWidget.h"
+#include "Gui/Texture.h"
+#include "Gui/Shaders.h"
+#include "Gui/SpinBox.h"
+#include "Gui/TabWidget.h"
+#include "Gui/TimeLineGui.h"
+#include "Gui/ViewerTab.h"
 
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
@@ -61,8 +73,218 @@ using std::cout; using std::endl;
 
 static const double pi= 3.14159265358979323846264338327950288419717;
 
+//namespace {
+/**
+ *@class ZoomContext
+ *@brief Holds all zoom related variables. This is an internal class used by the ViewerGL.
+ *The variables stored here are the minimal variables needed to enable the zoom and the drag
+ *of the image.
+ *The top and right edges of the ortographic projection can be computed as such:
+ *
+ * top = bottom + heightWidget/zoomFactor
+ * right = left + widthWidget/zoomFactor
+ *
+ *
+ *During the computations made in the ViewerGL, we define 2 coordinate systems:
+ *  - The viewport (or widget) coordinate system, with origin top left.
+ *  - The image coordinate system with the origin bottom left.
+ *To transform the coordinates between one system to another is a simple mapping operation,
+ *which yields :
+ *
+ * Ximg = (Xwidget/widthWidget) * ( right - left ) + left
+ * Yimg = (Ywidget/heightWidget) * (bottom - top) + top  [notice the y inversion here]
+ *
+ *Let us define the zoomFactor being the ratio of screen pixels size divided by image pixels size.
+ *
+ *Zooming to a point is simply a matter of changing the orthographic projection.
+ *When zooming, the position of the center should never change, relativly to the orthographic projection.
+ *Which means that the old position (before zooming) expressed in its own orthographic projection, should equal
+ *the new position (after zooming) expressed in its own orthographic projection.
+ *That is:
+ *
+ * - For the x coordinate:  (Ximg - left_old) * zoomFactor_old == (Ximg - left_new) * zoomFactor_new
+ *Where Ximg is the X coordinate of the zoom center in image coordinates, left_old is the left edge of
+ *the orthographic projection before zooming, and the left_new the left edge after zooming.
+ *
+ *This formula yields:
+ *
+ *  left_new = Ximg - (Ximg - left_old)*(zoomFactor_old/zoomFactor_new).
+ *
+ * -The y coordinate follows exactly the same reasoning and the following equation can be found:
+ *
+ *  bottom_new = Yimg - (Yimg - bottom_old)*(zoomFactor_old/zoomFactor_new).
+ *
+ * Retrieving top_new and right_new can be done with the formulas exhibited above.
+ *
+ *A last note on the zoom is the initialisation. A desired effect can be to initialise the image
+ *so it appears centered in the viewer and that fit entirely in the viewer. This can be done as such:
+ *
+ *The zoomFactor needed to fit the image in the viewer can be computed with the ratio of the
+ *height of the widget by the height of the image :
+ *
+ * zoomFactor = heightWidget / heightImage
+ *
+ *The left and bottom edges can then be initialised :
+ *
+ * left = widthImage / 2 - ( widthWidget / ( 2 * zoomFactor ) )
+ * bottom = heightImage / 2 - ( heightWidget / ( 2 * zoomFactor ) )
+ *
+ *TRANSLATING THE IMAGE : (panning around)
+ *
+ *Translation is simply a matter of displacing the edges of the orthographic projection
+ *by a delta. The delta is the difference between the last mouse position (in image coordinates)
+ *and the new mouse position (in image coordinates).
+ *
+ *Translating is just doing so:
+ *
+ *  bottom += Yimg_old - Yimg_new
+ *  left += Ximg_old - Ximg_new
+ **/
+struct ZoomContext{
 
-static GLfloat renderingTextureCoordinates[32] = {
+    ZoomContext()
+    : bottom(0.)
+    , left(0.)
+    , zoomFactor(1.)
+    {}
+
+    QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
+    double bottom; /// the bottom edge of orthographic projection
+    double left; /// the left edge of the orthographic projection
+    double zoomFactor; /// the zoom factor applied to the current image
+
+    double lastOrthoLeft, lastOrthoBottom, lastOrthoRight, lastOrthoTop; //< remembers the last values passed to the glOrtho call
+
+    /*!< the level of zoom used to display the frame*/
+    void setZoomFactor(double f){assert(f>0.); zoomFactor = f;}
+
+    double getZoomFactor() const {return zoomFactor;}
+};
+
+/**
+ *@enum MOUSE_STATE
+ *@brief basic state switching for mouse events
+ **/
+enum MOUSE_STATE{DRAGGING,UNDEFINED};
+//} // namespace
+
+struct ViewerGL::Implementation {
+
+    Implementation(ViewerTab* parent, ViewerGL* _this)
+    : pboIds()
+    , vboVerticesId(0)
+    , vboTexturesId(0)
+    , iboTriangleStripId(0)
+    , defaultDisplayTexture(0)
+    , textureMutex()
+    , blackTex(0)
+    , shaderRGB(0)
+    , shaderLC(0)
+    , shaderBlack(0)
+    , shaderLoaded(false)
+    , infoViewer(0)
+    , viewerTab(parent)
+    , currentViewerInfos()
+    , blankViewerInfos()
+    , displayingImage(false)
+    , must_initBlackTex(true)
+    , ms(UNDEFINED)
+    , zoomCtx()
+    , resolutionOverlay()
+    , btmLeftBBOXoverlay()
+    , topRightBBOXoverlay()
+    , textRenderingColor(200,200,200,255)
+    , displayWindowOverlayColor(125,125,125,255)
+    , rodOverlayColor(100,100,100,255)
+    , textFont(new QFont("Helvetica",15))
+    , overlay(true)
+    , hasHW(true)
+    , displayChannels(0.f)
+    , drawProgressBar(false)
+    , updatingTexture(false)
+    , progressBarY(-1)
+    , clearColor(0,0,0,255)
+    , menu(new QMenu(_this))
+    , clipToDisplayWindow(true)
+    , persistentMessage()
+    , persistentMessageType(0)
+    , displayPersistentMessage(false)
+    , textRenderer()
+    {
+    }
+
+    std::vector<GLuint> pboIds; /*!< PBO's id's used by the OpenGL context*/
+
+    //   GLuint vaoId; /*!< VAO holding the rendering VBOs for texture mapping.*/
+
+    GLuint vboVerticesId; /*!< VBO holding the vertices for the texture mapping*/
+
+    GLuint vboTexturesId; /*!< VBO holding texture coordinates*/
+
+    GLuint iboTriangleStripId; /*!< IBOs holding vertices indexes for triangle strip sets*/
+
+    Texture* defaultDisplayTexture;/*!< A pointer to the current texture used to display.*/
+    QMutex textureMutex;/*!< protects defaultDisplayTexture*/
+
+    Texture* blackTex;/*!< the texture used to render a black screen when nothing is connected.*/
+
+    QGLShaderProgram* shaderRGB;/*!< The shader program used to render RGB data*/
+    QGLShaderProgram* shaderLC;/*!< The shader program used to render YCbCr data*/
+    QGLShaderProgram* shaderBlack;/*!< The shader program used when the viewer is disconnected.*/
+
+    bool shaderLoaded;/*!< Flag to check whether the shaders have already been loaded.*/
+
+
+    InfoViewerWidget* infoViewer;/*!< Pointer to the info bar below the viewer holding pixel/mouse/format related infos*/
+
+    ViewerTab* viewerTab;/*!< Pointer to the viewer tab GUI*/
+
+    ImageInfo currentViewerInfos;/*!< Pointer to the ViewerInfos  used for rendering*/
+
+    ImageInfo blankViewerInfos;/*!< Pointer to the infos used when the viewer is disconnected.*/
+
+    bool displayingImage;/*!< True if the viewer is connected and not displaying black.*/
+    bool must_initBlackTex;
+
+    MOUSE_STATE ms;/*!< Holds the mouse state*/
+
+    ZoomContext zoomCtx;/*!< All zoom related variables are packed into this object*/
+
+    QString resolutionOverlay;/*!< The string holding the resolution overlay, e.g: "1920x1080"*/
+    QString btmLeftBBOXoverlay;/*!< The string holding the bottom left corner coordinates of the dataWindow*/
+    QString topRightBBOXoverlay;/*!< The string holding the top right corner coordinates of the dataWindow*/
+    const QColor textRenderingColor;
+    const QColor displayWindowOverlayColor;
+    const QColor rodOverlayColor;
+    QFont* textFont;
+
+    bool overlay;/*!< True if the user enabled overlay dispay*/
+
+    bool hasHW;/*!< True if the user has a GLSL version supporting everything requested.*/
+
+    // FIXME-seeabove: why a float to really represent an enum????
+    float displayChannels;
+
+    bool drawProgressBar;
+
+    bool updatingTexture;
+
+    int progressBarY;
+
+    QColor clearColor;
+
+    QMenu* menu;
+
+    bool clipToDisplayWindow;
+
+    QString persistentMessage;
+    int persistentMessageType;
+    bool displayPersistentMessage;
+
+    Natron::TextRenderer textRenderer;
+};
+
+static const GLfloat renderingTextureCoordinates[32] = {
     0 , 1 , //0
     0 , 1 , //1
     1 , 1 ,//2
@@ -82,7 +304,7 @@ static GLfloat renderingTextureCoordinates[32] = {
 };
 
 /*see http://www.learnopengles.com/android-lesson-eight-an-introduction-to-index-buffer-objects-ibos/ */
-static GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
+static const GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
                                     7,4,
                                     4,8,5,9,6,10,7,11,
                                     11,8,
@@ -109,8 +331,8 @@ static GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
  12--13--14--15
  */
 void ViewerGL::drawRenderingVAO(){
-    const TextureRect& r = _displayingImage ? _defaultDisplayTexture->getTextureRect() : _blackTex->getTextureRect();
-    const RectI& img = _clipToDisplayWindow ? getDisplayWindow() : getRoD();
+    const TextureRect& r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
+    const RectI& img = _imp->clipToDisplayWindow ? getDisplayWindow() : getRoD();
     GLfloat vertices[32] = {
         (GLfloat)img.left() ,(GLfloat)img.top()  , //0
         (GLfloat)r.x       , (GLfloat)img.top()  , //1
@@ -130,19 +352,19 @@ void ViewerGL::drawRenderingVAO(){
         (GLfloat)img.right(),(GLfloat)img.bottom() //15
     };
     
-    glBindBuffer(GL_ARRAY_BUFFER, _vboVerticesId);
+    glBindBuffer(GL_ARRAY_BUFFER, _imp->vboVerticesId);
     glBufferSubData(GL_ARRAY_BUFFER, 0, 32*sizeof(GLfloat), vertices);
     glEnableClientState(GL_VERTEX_ARRAY);
     glVertexPointer(2, GL_FLOAT, 0, 0);
     
-    glBindBuffer(GL_ARRAY_BUFFER, _vboTexturesId);
+    glBindBuffer(GL_ARRAY_BUFFER, _imp->vboTexturesId);
     glClientActiveTexture(GL_TEXTURE0);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glTexCoordPointer(2, GL_FLOAT, 0 , 0);
     
     glBindBuffer(GL_ARRAY_BUFFER,0);
     
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _imp->iboTriangleStripId);
     glDrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0);
     checkGLErrors();
     
@@ -191,11 +413,11 @@ namespace
     
     struct CharBitmap
     {
-        GLuint _texID;
-        uint _w;
-        uint _h;
-        GLfloat _xTexCoords[2];
-        GLfloat _yTexCoords[2];
+        GLuint texID;
+        uint w;
+        uint h;
+        GLfloat xTexCoords[2];
+        GLfloat yTexCoords[2];
     };
     
 }
@@ -325,16 +547,16 @@ namespace Natron{
             it = _bitmapsCache.insert(unic,newHash);
         }
         CharBitmap character;
-        character._texID = texture;
+        character.texID = texture;
         
-        character._w = width;
-        character._h = height;
+        character.w = width;
+        character.h = height;
         
-        character._xTexCoords[0] = (GLfloat)_xOffset / TEXTURE_SIZE;
-        character._xTexCoords[1] = (GLfloat)(_xOffset + width) / TEXTURE_SIZE;
+        character.xTexCoords[0] = (GLfloat)_xOffset / TEXTURE_SIZE;
+        character.xTexCoords[1] = (GLfloat)(_xOffset + width) / TEXTURE_SIZE;
         
-        character._yTexCoords[0] = (GLfloat)_yOffset / TEXTURE_SIZE;
-        character._yTexCoords[1] = (GLfloat)(_yOffset + height) / TEXTURE_SIZE;
+        character.yTexCoords[0] = (GLfloat)_yOffset / TEXTURE_SIZE;
+        character.yTexCoords[1] = (GLfloat)(_yOffset + height) / TEXTURE_SIZE;
         
         it.value().push_back(std::make_pair(color,character)); // insert a new charactr
         
@@ -395,20 +617,20 @@ namespace Natron{
             CharBitmap *c = _imp->createCharacter(text[i],color);
             if(!c)
                 continue;
-            if (texture != c->_texID)
+            if (texture != c->texID)
             {
-                texture = c->_texID;
+                texture = c->texID;
                 glBindTexture(GL_TEXTURE_2D, texture);
             }
             
             glBegin(GL_QUADS);
-            glTexCoord2f(c->_xTexCoords[0], c->_yTexCoords[0]);glVertex2f(0, 0);
-            glTexCoord2f(c->_xTexCoords[1], c->_yTexCoords[0]);glVertex2f(c->_w, 0);
-            glTexCoord2f(c->_xTexCoords[1], c->_yTexCoords[1]);glVertex2f(c->_w, c->_h);
-            glTexCoord2f(c->_xTexCoords[0], c->_yTexCoords[1]);glVertex2f(0, c->_h);
+            glTexCoord2f(c->xTexCoords[0], c->yTexCoords[0]);glVertex2f(0, 0);
+            glTexCoord2f(c->xTexCoords[1], c->yTexCoords[0]);glVertex2f(c->w, 0);
+            glTexCoord2f(c->xTexCoords[1], c->yTexCoords[1]);glVertex2f(c->w, c->h);
+            glTexCoord2f(c->xTexCoords[0], c->yTexCoords[1]);glVertex2f(0, c->h);
             glEnd();
             
-            glTranslatef(c->_w, 0, 0);
+            glTranslatef(c->w, 0, 0);
         }
         glPopMatrix();
         glPopAttrib();
@@ -423,45 +645,7 @@ namespace Natron{
 
 ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 : QGLWidget(parent,shareWidget)
-, _pboIds()
-, _vboVerticesId(0)
-, _vboTexturesId(0)
-, _iboTriangleStripId(0)
-, _defaultDisplayTexture(0)
-, _textureMutex()
-, _blackTex(0)
-, shaderRGB(0)
-, shaderLC(0)
-, shaderBlack(0)
-, _shaderLoaded(false)
-, _infoViewer(0)
-, _viewerTab(parent)
-, _currentViewerInfos()
-, _blankViewerInfos()
-, _displayingImage(false)
-, _must_initBlackTex(true)
-, _ms(UNDEFINED)
-, _zoomCtx()
-, _resolutionOverlay()
-, _btmLeftBBOXoverlay()
-, _topRightBBOXoverlay()
-, _textRenderingColor(200,200,200,255)
-, _displayWindowOverlayColor(125,125,125,255)
-, _rodOverlayColor(100,100,100,255)
-, _textFont(new QFont("Helvetica",15))
-, _overlay(true)
-, _hasHW(true)
-, _displayChannels(0.f)
-, _drawProgressBar(false)
-, _updatingTexture(false)
-, _progressBarY(-1)
-, _clearColor(0,0,0,255)
-, _menu(new QMenu(this))
-, _clipToDisplayWindow(true)
-, _persistentMessage()
-, _persistentMessageType(0)
-, _displayPersistentMessage(false)
-, _textRenderer()
+, _imp(new Implementation(parent, this))
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     
@@ -470,46 +654,78 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
     populateMenu();
 
     
-    _blankViewerInfos.setChannels(Natron::Mask_RGBA);
+    _imp->blankViewerInfos.setChannels(Natron::Mask_RGBA);
     Format frmt(0, 0, 1920, 1080,"HD",1.0);
-    _blankViewerInfos.setRoD(RectI(0, 0, 1920, 1080));
-    _blankViewerInfos.setDisplayWindow(frmt);
-    setRod(_blankViewerInfos.getRoD());
+    _imp->blankViewerInfos.setRoD(RectI(0, 0, 1920, 1080));
+    _imp->blankViewerInfos.setDisplayWindow(frmt);
+    setRod(_imp->blankViewerInfos.getRoD());
     onProjectFormatChanged(frmt);
 
 }
 
 
 ViewerGL::~ViewerGL(){
-    if(shaderLC){
-        shaderLC->removeAllShaders();
-        delete shaderLC;
+    if(_imp->shaderLC){
+        _imp->shaderLC->removeAllShaders();
+        delete _imp->shaderLC;
         
     }
-    if(shaderRGB){
-        shaderRGB->removeAllShaders();
-        delete shaderRGB;
+    if(_imp->shaderRGB){
+        _imp->shaderRGB->removeAllShaders();
+        delete _imp->shaderRGB;
     }
-    if(shaderBlack){
-        shaderBlack->removeAllShaders();
-        delete shaderBlack;
+    if(_imp->shaderBlack){
+        _imp->shaderBlack->removeAllShaders();
+        delete _imp->shaderBlack;
         
     }
-    delete _blackTex;
-    delete _defaultDisplayTexture;
-    for(U32 i = 0; i < _pboIds.size();++i){
-        glDeleteBuffers(1,&_pboIds[i]);
+    delete _imp->blackTex;
+    delete _imp->defaultDisplayTexture;
+    for(U32 i = 0; i < _imp->pboIds.size();++i){
+        glDeleteBuffers(1,&_imp->pboIds[i]);
     }
-    glDeleteBuffers(1, &_vboVerticesId);
-    glDeleteBuffers(1, &_vboTexturesId);
-    glDeleteBuffers(1, &_iboTriangleStripId);
+    glDeleteBuffers(1, &_imp->vboVerticesId);
+    glDeleteBuffers(1, &_imp->vboTexturesId);
+    glDeleteBuffers(1, &_imp->iboTriangleStripId);
     checkGLErrors();
-    delete _textFont;
+    delete _imp->textFont;
 }
 
-QSize ViewerGL::sizeHint() const{
+QSize ViewerGL::sizeHint() const
+{
     return QSize(1000,1000);
 }
+
+const QFont& ViewerGL::textFont() const
+{
+    return *_imp->textFont;
+}
+
+void ViewerGL::setTextFont(const QFont& f)
+{
+    *_imp->textFont = f;
+}
+
+/**
+ *@brief Toggles on/off the display on the viewer. If d is false then it will
+ *render black only.
+ **/
+void ViewerGL::setDisplayingImage(bool d)
+{
+    _imp->displayingImage = d;
+    if (!_imp->displayingImage) {
+        _imp->must_initBlackTex = true;
+    };
+}
+
+/**
+ *@returns Returns true if the viewer is displaying something.
+ **/
+bool ViewerGL::displayingImage() const
+{
+    return _imp->displayingImage;
+}
+
 void ViewerGL::resizeGL(int width, int height){
     if(height == 0)// prevent division by 0
         height=1;
@@ -520,9 +736,9 @@ void ViewerGL::resizeGL(int width, int height){
         glViewport (0, 0, width, (int)(height/ap));
     }
     checkGLErrors();
-    _ms = UNDEFINED;
-    assert(_viewerTab);
-    ViewerInstance* viewer = _viewerTab->getInternalNode();
+    _imp->ms = UNDEFINED;
+    assert(_imp->viewerTab);
+    ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
     if (viewer->getUiContext()) {
         viewer->refreshAndContinueRender(true);
@@ -532,27 +748,27 @@ void ViewerGL::resizeGL(int width, int height){
 void ViewerGL::paintGL()
 {
     checkGLErrors();
-    if (_must_initBlackTex) {
+    if (_imp->must_initBlackTex) {
         initBlackTex();
     }
     double w = (double)width();
     double h = (double)height();
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
-    assert(_zoomCtx._zoomFactor > 0);
-    assert(_zoomCtx._zoomFactor <= 1024);
-    double bottom = _zoomCtx._bottom;
-    double left = _zoomCtx._left;
-    double top =  bottom +  h / (double)_zoomCtx._zoomFactor * _currentViewerInfos.getDisplayWindow().getPixelAspect();
-    double right = left +  w / (double)_zoomCtx._zoomFactor ;
+    assert(_imp->zoomCtx.zoomFactor > 0);
+    assert(_imp->zoomCtx.zoomFactor <= 1024);
+    double bottom = _imp->zoomCtx.bottom;
+    double left = _imp->zoomCtx.left;
+    double top =  bottom +  h / (double)_imp->zoomCtx.zoomFactor * _imp->currentViewerInfos.getDisplayWindow().getPixelAspect();
+    double right = left +  w / (double)_imp->zoomCtx.zoomFactor ;
     if(left == right || top == bottom){
-        clearColorBuffer(_clearColor.redF(),_clearColor.greenF(),_clearColor.blueF(),_clearColor.alphaF());
+        clearColorBuffer(_imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF());
         return;
     }
-    _zoomCtx._lastOrthoLeft = left;
-    _zoomCtx._lastOrthoRight = right;
-    _zoomCtx._lastOrthoBottom = bottom;
-    _zoomCtx._lastOrthoTop = top;
+    _imp->zoomCtx.lastOrthoLeft = left;
+    _imp->zoomCtx.lastOrthoRight = right;
+    _imp->zoomCtx.lastOrthoBottom = bottom;
+    _imp->zoomCtx.lastOrthoTop = top;
     glOrtho(left, right, bottom, top, -1, 1);
     checkGLErrors();
     
@@ -560,72 +776,83 @@ void ViewerGL::paintGL()
     glLoadIdentity();
     
     {
-        QMutexLocker locker(&_textureMutex);
+        QMutexLocker locker(&_imp->textureMutex);
         glEnable (GL_TEXTURE_2D);
-        if(_displayingImage){
-            glBindTexture(GL_TEXTURE_2D, _defaultDisplayTexture->getTexID());
+        if(_imp->displayingImage){
+            glBindTexture(GL_TEXTURE_2D, _imp->defaultDisplayTexture->getTexID());
             // debug (so the OpenGL debugger can make a breakpoint here)
             // GLfloat d;
             //  glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
             activateShaderRGB();
             checkGLErrors();
         }else{
-            glBindTexture(GL_TEXTURE_2D, _blackTex->getTexID());
+            glBindTexture(GL_TEXTURE_2D, _imp->blackTex->getTexID());
             checkGLErrors();
-            if(_hasHW && !shaderBlack->bind()){
-                cout << qPrintable(shaderBlack->log()) << endl;
+            if(_imp->hasHW && !_imp->shaderBlack->bind()){
+                cout << qPrintable(_imp->shaderBlack->log()) << endl;
                 checkGLErrors();
             }
-            if(_hasHW)
-                shaderBlack->setUniformValue("Tex", 0);
+            if(_imp->hasHW)
+                _imp->shaderBlack->setUniformValue("Tex", 0);
             checkGLErrors();
             
         }
         checkGLErrors();
-        clearColorBuffer(_clearColor.redF(),_clearColor.greenF(),_clearColor.blueF(),_clearColor.alphaF());
+        clearColorBuffer(_imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF());
         checkGLErrors();
         drawRenderingVAO();
     }
     glBindTexture(GL_TEXTURE_2D, 0);
     
-    if(_displayingImage){
-        if(_hasHW){
-            shaderRGB->release();
+    if (_imp->displayingImage) {
+        if (_imp->hasHW) {
+            _imp->shaderRGB->release();
         }
-    }else{
-        if(_hasHW)
-            shaderBlack->release();
+    } else {
+        if (_imp->hasHW)
+            _imp->shaderBlack->release();
     }
-    if(_overlay){
+    if (_imp->overlay) {
         drawOverlay();
     }
-    if(_drawProgressBar){
+    if (_imp->drawProgressBar) {
         drawProgressBar();
     }
-    if(_displayPersistentMessage){
+    if (_imp->displayPersistentMessage) {
         drawPersistentMessage();
     }
     assert_checkGLErrors();
 }
 
 
-void ViewerGL::clearColorBuffer(double r ,double g ,double b ,double a ){
+void ViewerGL::clearColorBuffer(double r ,double g ,double b ,double a )
+{
     glClearColor(r,g,b,a);
     glClear(GL_COLOR_BUFFER_BIT);
 }
-void ViewerGL::backgroundColor(double &r,double &g,double &b){
-    r = _clearColor.redF();
-    g = _clearColor.greenF();
-    b = _clearColor.blueF();
+
+void ViewerGL::toggleOverlays()
+{
+    _imp->overlay = !_imp->overlay;
+    updateGL();
 }
-void ViewerGL::drawOverlay(){
+
+void ViewerGL::backgroundColor(double &r,double &g,double &b)
+{
+    r = _imp->clearColor.redF();
+    g = _imp->clearColor.greenF();
+    b = _imp->clearColor.blueF();
+}
+
+void ViewerGL::drawOverlay()
+{
     
     ///TODO: use glVertexArrays instead!
     glDisable(GL_TEXTURE_2D);
     const RectI& dispW = getDisplayWindow();
     
-    if(_clipToDisplayWindow){
-        renderText(dispW.right(),dispW.bottom(), _resolutionOverlay,_textRenderingColor,*_textFont);
+    if(_imp->clipToDisplayWindow){
+        renderText(dispW.right(),dispW.bottom(), _imp->resolutionOverlay,_imp->textRenderingColor,*_imp->textFont);
         
         QPoint topRight(dispW.right(),dispW.top());
         QPoint topLeft(dispW.left(),dispW.top());
@@ -634,10 +861,10 @@ void ViewerGL::drawOverlay(){
         
         glBegin(GL_LINES);
 
-        glColor4f( _displayWindowOverlayColor.redF(),
-                   _displayWindowOverlayColor.greenF(),
-                   _displayWindowOverlayColor.blueF(),
-                   _displayWindowOverlayColor.alphaF() );
+        glColor4f( _imp->displayWindowOverlayColor.redF(),
+                   _imp->displayWindowOverlayColor.greenF(),
+                   _imp->displayWindowOverlayColor.blueF(),
+                   _imp->displayWindowOverlayColor.alphaF() );
         glVertex3f(btmRight.x(),btmRight.y(),1);
         glVertex3f(btmLeft.x(),btmLeft.y(),1);
         
@@ -646,7 +873,7 @@ void ViewerGL::drawOverlay(){
         
         glVertex3f(topLeft.x(),topLeft.y(),1);
         glVertex3f(topRight.x(),topRight.y(),1);
-        
+
         glVertex3f(topRight.x(),topRight.y(),1);
         glVertex3f(btmRight.x(),btmRight.y(),1);
         
@@ -654,10 +881,10 @@ void ViewerGL::drawOverlay(){
         checkGLErrors();
     }
     const RectI& dataW = getRoD();
-    if((dispW != dataW && _clipToDisplayWindow) || !_clipToDisplayWindow){
+    if((dispW != dataW && _imp->clipToDisplayWindow) || !_imp->clipToDisplayWindow){
         
-        renderText(dataW.right(), dataW.top(), _topRightBBOXoverlay, _rodOverlayColor,*_textFont);
-        renderText(dataW.left(), dataW.bottom(), _btmLeftBBOXoverlay, _rodOverlayColor,*_textFont);
+        renderText(dataW.right(), dataW.top(), _imp->topRightBBOXoverlay, _imp->rodOverlayColor,*_imp->textFont);
+        renderText(dataW.left(), dataW.bottom(), _imp->btmLeftBBOXoverlay, _imp->rodOverlayColor,*_imp->textFont);
         
         
         QPoint topRight2(dataW.right(), dataW.top());
@@ -668,10 +895,10 @@ void ViewerGL::drawOverlay(){
         glLineStipple(2, 0xAAAA);
         glEnable(GL_LINE_STIPPLE);
         glBegin(GL_LINES);
-        glColor4f( _rodOverlayColor.redF(),
-                  _rodOverlayColor.greenF(),
-                  _rodOverlayColor.blueF(),
-                  _rodOverlayColor.alphaF() );
+        glColor4f( _imp->rodOverlayColor.redF(),
+                  _imp->rodOverlayColor.greenF(),
+                  _imp->rodOverlayColor.blueF(),
+                  _imp->rodOverlayColor.alphaF() );
         glVertex3f(btmRight2.x(),btmRight2.y(),1);
         glVertex3f(btmLeft2.x(),btmLeft2.y(),1);
         
@@ -688,45 +915,57 @@ void ViewerGL::drawOverlay(){
         glPopAttrib();
         checkGLErrors();
     }
-    if(_displayingImage){
-        _viewerTab->getInternalNode()->drawOverlays();
+    if(_imp->displayingImage){
+        _imp->viewerTab->getInternalNode()->drawOverlays();
     }
     //reseting color for next pass
     glColor4f(1., 1., 1., 1.);
     checkGLErrors();
 }
-void ViewerGL::drawProgressBar(){
+
+void ViewerGL::drawProgressBar()
+{
     const Format& dW = getDisplayWindow();
     glLineWidth(5);
     glBegin(GL_LINES);
     
-    glVertex3f(dW.left(),_progressBarY,1);
-    glVertex3f(dW.right(),_progressBarY,1);
+    glVertex3f(dW.left(),_imp->progressBarY,1);
+    glVertex3f(dW.right(),_imp->progressBarY,1);
     
     glEnd();
     glLineWidth(1);
     checkGLErrors();
 }
 
+
+/**
+ *@brief Resets the mouse position
+ **/
+void ViewerGL::resetMousePos()
+{
+    _imp->zoomCtx.oldClick.setX(0);
+    _imp->zoomCtx.oldClick.setY(0);
+}
+
 void ViewerGL::drawPersistentMessage(){
     QFontMetrics metrics(font());
-    int numberOfLines = std::ceil((double)metrics.width(_persistentMessage)/(double)(width()-20));
-    int averageCharsPerLine = numberOfLines != 0 ? _persistentMessage.size() / numberOfLines : _persistentMessage.size();
+    int numberOfLines = std::ceil((double)metrics.width(_imp->persistentMessage)/(double)(width()-20));
+    int averageCharsPerLine = numberOfLines != 0 ? _imp->persistentMessage.size() / numberOfLines : _imp->persistentMessage.size();
     QStringList lines;
    
     int i = 0;
-    while(i < _persistentMessage.size()) {
+    while(i < _imp->persistentMessage.size()) {
         QString str;
-        while(i < _persistentMessage.size()){
+        while(i < _imp->persistentMessage.size()){
             if(i%averageCharsPerLine == 0 && i!=0){
                 break;
             }
-            str.append(_persistentMessage.at(i));
+            str.append(_imp->persistentMessage.at(i));
             ++i;
         }
         /*Find closest word end and insert a new line*/
-        while(i < _persistentMessage.size() && _persistentMessage.at(i)!=QChar(' ')){
-            str.append(_persistentMessage.at(i));
+        while(i < _imp->persistentMessage.size() && _imp->persistentMessage.at(i)!=QChar(' ')){
+            str.append(_imp->persistentMessage.at(i));
             ++i;
         }
         lines.append(str);
@@ -736,7 +975,7 @@ void ViewerGL::drawPersistentMessage(){
     QPointF topLeft = toImgCoordinates_fast(0,0);
     QPointF bottomRight = toImgCoordinates_fast(width(),numberOfLines*(metrics.height()*2));
     
-    if(_persistentMessageType == 1){ // error
+    if(_imp->persistentMessageType == 1){ // error
         glColor4f(0.5,0.,0.,1.);
     }else{ // warning
         glColor4f(0.65,0.65,0.,1.);
@@ -755,7 +994,7 @@ void ViewerGL::drawPersistentMessage(){
     int offset = metrics.height()+10;
     for(int j = 0 ; j < lines.size();++j){
         QPointF pos = toImgCoordinates_fast(20, offset);
-        renderText(pos.x(),pos.y(), lines.at(j),_textRenderingColor,*_textFont);
+        renderText(pos.x(),pos.y(), lines.at(j),_imp->textRenderingColor,*_imp->textFont);
         offset += metrics.height()*2;
     }
     //reseting color for next pass
@@ -767,37 +1006,37 @@ void ViewerGL::drawPersistentMessage(){
 
 void ViewerGL::initializeGL(){
     initAndCheckGlExtensions();
-    _blackTex = new Texture;
-    _defaultDisplayTexture = new Texture;
+    _imp->blackTex = new Texture;
+    _imp->defaultDisplayTexture = new Texture;
     
     
     // glGenVertexArrays(1, &_vaoId);
-    glGenBuffers(1, &_vboVerticesId);
-    glGenBuffers(1, &_vboTexturesId);
-    glGenBuffers(1 , &_iboTriangleStripId);
+    glGenBuffers(1, &_imp->vboVerticesId);
+    glGenBuffers(1, &_imp->vboTexturesId);
+    glGenBuffers(1 , &_imp->iboTriangleStripId);
     
-    glBindBuffer(GL_ARRAY_BUFFER, _vboTexturesId);
+    glBindBuffer(GL_ARRAY_BUFFER, _imp->vboTexturesId);
     glBufferData(GL_ARRAY_BUFFER, 32*sizeof(GLfloat), renderingTextureCoordinates, GL_STATIC_DRAW);
     
-    glBindBuffer(GL_ARRAY_BUFFER, _vboVerticesId);
+    glBindBuffer(GL_ARRAY_BUFFER, _imp->vboVerticesId);
     glBufferData(GL_ARRAY_BUFFER, 32*sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _imp->iboTriangleStripId);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 28*sizeof(GLubyte), triangleStrip, GL_STATIC_DRAW);
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     checkGLErrors();
     
     
-    if(_hasHW){
-        shaderBlack=new QGLShaderProgram(context());
-        if(!shaderBlack->addShaderFromSourceCode(QGLShader::Vertex,vertRGB))
-            cout << qPrintable(shaderBlack->log()) << endl;
-        if(!shaderBlack->addShaderFromSourceCode(QGLShader::Fragment,blackFrag))
-            cout << qPrintable(shaderBlack->log()) << endl;
-        if(!shaderBlack->link()){
-            cout << qPrintable(shaderBlack->log()) << endl;
+    if(_imp->hasHW){
+        _imp->shaderBlack=new QGLShaderProgram(context());
+        if(!_imp->shaderBlack->addShaderFromSourceCode(QGLShader::Vertex,vertRGB))
+            cout << qPrintable(_imp->shaderBlack->log()) << endl;
+        if(!_imp->shaderBlack->addShaderFromSourceCode(QGLShader::Fragment,blackFrag))
+            cout << qPrintable(_imp->shaderBlack->log()) << endl;
+        if(!_imp->shaderBlack->link()){
+            cout << qPrintable(_imp->shaderBlack->log()) << endl;
         }
         initShaderGLSL();
         checkGLErrors();
@@ -808,13 +1047,13 @@ void ViewerGL::initializeGL(){
 }
 
 GLuint ViewerGL::getPboID(int index){
-    if(index >= (int)_pboIds.size()){
+    if(index >= (int)_imp->pboIds.size()){
         GLuint handle;
         glGenBuffersARB(1,&handle);
-        _pboIds.push_back(handle);
+        _imp->pboIds.push_back(handle);
         return handle;
     }else{
-        return _pboIds[index];
+        return _imp->pboIds[index];
     }
 }
 
@@ -833,6 +1072,14 @@ void ViewerGL::makeCurrent(){
     }else{
         QGLWidget::makeCurrent();
     }
+}
+
+/**
+ *@returns Returns the current zoom factor that is applied to the display.
+ **/
+double ViewerGL::getZoomFactor()
+{
+    return _imp->zoomCtx.getZoomFactor();
 }
 
 std::pair<int,int> ViewerGL::computeRowSpan(int bottom,int top, std::vector<int>* rows) {
@@ -973,64 +1220,64 @@ void ViewerGL::initAndCheckGlExtensions() {
     if (!QGLShaderProgram::hasOpenGLShaderPrograms(context())) {
         // no need to pull out a dialog, it was already presented after the GLEW check above
 
-        //Natron::errorDialog("Viewer error","The viewer is unable to work without a proper version of GLSL.");
+        //Natron::errorDialog("Viewer error","The viewer is unabgile to work without a proper version of GLSL.");
         //cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
-        _hasHW = false;
+        _imp->hasHW = false;
     }
 }
 
 void ViewerGL::activateShaderLC(){
-    if(!_hasHW) return;
-    if(!shaderLC->bind()){
-        cout << qPrintable(shaderLC->log()) << endl;
+    if(!_imp->hasHW) return;
+    if(!_imp->shaderLC->bind()){
+        cout << qPrintable(_imp->shaderLC->log()) << endl;
     }
-    shaderLC->setUniformValue("Tex", 0);
-    shaderLC->setUniformValue("yw",1.0,1.0,1.0);
-    shaderLC->setUniformValue("expMult",  (GLfloat)_viewerTab->getInternalNode()->getExposure());
+    _imp->shaderLC->setUniformValue("Tex", 0);
+    _imp->shaderLC->setUniformValue("yw",1.0,1.0,1.0);
+    _imp->shaderLC->setUniformValue("expMult",  (GLfloat)_imp->viewerTab->getInternalNode()->getExposure());
     // FIXME: why a float to really represent an enum????
-    shaderLC->setUniformValue("lut", (GLfloat)_viewerTab->getInternalNode()->getLutType());
+    _imp->shaderLC->setUniformValue("lut", (GLfloat)_imp->viewerTab->getInternalNode()->getLutType());
     // FIXME-seeabove: why a float to really represent an enum????
-    shaderLC->setUniformValue("byteMode", (GLfloat)byteMode());
+    _imp->shaderLC->setUniformValue("byteMode", (GLfloat)byteMode());
     
 }
 void ViewerGL::activateShaderRGB(){
-    if(!_hasHW) return;
-    if(!shaderRGB->bind()){
-        cout << qPrintable(shaderRGB->log()) << endl;
+    if(!_imp->hasHW) return;
+    if(!_imp->shaderRGB->bind()){
+        cout << qPrintable(_imp->shaderRGB->log()) << endl;
     }
     
-    shaderRGB->setUniformValue("Tex", 0);
+    _imp->shaderRGB->setUniformValue("Tex", 0);
     // FIXME-seeabove: why a float to really represent an enum????
-    shaderRGB->setUniformValue("byteMode", (GLfloat)byteMode());
-    shaderRGB->setUniformValue("expMult",  (GLfloat)_viewerTab->getInternalNode()->getExposure());
+    _imp->shaderRGB->setUniformValue("byteMode", (GLfloat)byteMode());
+    _imp->shaderRGB->setUniformValue("expMult",  (GLfloat)_imp->viewerTab->getInternalNode()->getExposure());
     // FIXME-seeabove: why a float to really represent an enum????
-    shaderRGB->setUniformValue("lut", (GLfloat)_viewerTab->getInternalNode()->getLutType());
+    _imp->shaderRGB->setUniformValue("lut", (GLfloat)_imp->viewerTab->getInternalNode()->getLutType());
     // FIXME-seeabove: why a float to really represent an enum????
-    shaderRGB->setUniformValue("channels", (GLfloat)_displayChannels);
+    _imp->shaderRGB->setUniformValue("channels", (GLfloat)_imp->displayChannels);
     
     
 }
 
 void ViewerGL::initShaderGLSL(){
-    if(!_shaderLoaded && _hasHW){
-        shaderRGB=new QGLShaderProgram(context());
-        if(!shaderRGB->addShaderFromSourceCode(QGLShader::Vertex,vertRGB))
-            cout << qPrintable(shaderRGB->log()) << endl;
-        if(!shaderRGB->addShaderFromSourceCode(QGLShader::Fragment,fragRGB))
-            cout << qPrintable(shaderRGB->log()) << endl;
+    if(!_imp->shaderLoaded && _imp->hasHW){
+        _imp->shaderRGB=new QGLShaderProgram(context());
+        if(!_imp->shaderRGB->addShaderFromSourceCode(QGLShader::Vertex,vertRGB))
+            cout << qPrintable(_imp->shaderRGB->log()) << endl;
+        if(!_imp->shaderRGB->addShaderFromSourceCode(QGLShader::Fragment,fragRGB))
+            cout << qPrintable(_imp->shaderRGB->log()) << endl;
         
-        shaderLC = new QGLShaderProgram(context());
-        if (!shaderLC->addShaderFromSourceCode(QGLShader::Vertex, vertLC)){
-            cout << qPrintable(shaderLC->log()) << endl;
+        _imp->shaderLC = new QGLShaderProgram(context());
+        if (!_imp->shaderLC->addShaderFromSourceCode(QGLShader::Vertex, vertLC)){
+            cout << qPrintable(_imp->shaderLC->log()) << endl;
         }
-        if(!shaderLC->addShaderFromSourceCode(QGLShader::Fragment,fragLC))
-            cout << qPrintable(shaderLC->log())<< endl;
+        if(!_imp->shaderLC->addShaderFromSourceCode(QGLShader::Fragment,fragLC))
+            cout << qPrintable(_imp->shaderLC->log())<< endl;
         
         
-        if(!shaderRGB->link()){
-            cout << qPrintable(shaderRGB->log()) << endl;
+        if(!_imp->shaderRGB->link()){
+            cout << qPrintable(_imp->shaderRGB->log()) << endl;
         }
-        _shaderLoaded = true;
+        _imp->shaderLoaded = true;
     }
     
 }
@@ -1071,17 +1318,18 @@ void ViewerGL::initBlackTex(){
     }
     glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();
-    _blackTex->fillOrAllocateTexture(texSize,Texture::BYTE);
+    _imp->blackTex->fillOrAllocateTexture(texSize,Texture::BYTE);
     
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
     checkGLErrors();
-    _must_initBlackTex = false;
+    _imp->must_initBlackTex = false;
 }
 
 
 
-void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region,int pboIndex){
-    QMutexLocker locker(&_textureMutex);
+void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region,int pboIndex)
+{
+    QMutexLocker locker(&_imp->textureMutex);
     GLint currentBoundPBO;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
     if (currentBoundPBO != 0) {
@@ -1100,13 +1348,21 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();
     
-    if(byteMode() == 1.f || !_hasHW){
-        _defaultDisplayTexture->fillOrAllocateTexture(region,Texture::BYTE);
+    if(byteMode() == 1.f || !_imp->hasHW){
+        _imp->defaultDisplayTexture->fillOrAllocateTexture(region,Texture::BYTE);
     }else{
-        _defaultDisplayTexture->fillOrAllocateTexture(region,Texture::FLOAT);
+        _imp->defaultDisplayTexture->fillOrAllocateTexture(region,Texture::FLOAT);
     }
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,0);
     checkGLErrors();
+}
+
+/**
+ *@returns Returns true if the graphic card supports GLSL.
+ **/
+bool ViewerGL::hasHardware()
+{
+    return _imp->hasHW;
 }
 
 #if QT_VERSION < 0x050000
@@ -1117,23 +1373,23 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
 
 void ViewerGL::mousePressEvent(QMouseEvent *event){
     if(event->button() == Qt::RightButton){
-        _menu->exec(mapToGlobal(event->pos()));
+        _imp->menu->exec(mapToGlobal(event->pos()));
         return;
     }
     
-    _zoomCtx._oldClick = event->pos();
+    _imp->zoomCtx.oldClick = event->pos();
     if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
-        _ms = DRAGGING;
+        _imp->ms = DRAGGING;
     } else if (event->button() == Qt::LeftButton) {
-        _viewerTab->getInternalNode()->notifyOverlaysPenDown(QMouseEventLocalPos(event),
+        _imp->viewerTab->getInternalNode()->notifyOverlaysPenDown(QMouseEventLocalPos(event),
                                                              toImgCoordinates_fast(event->x(), event->y()));
     }
     QGLWidget::mousePressEvent(event);
 }
 
 void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
-    _ms = UNDEFINED;
-    _viewerTab->getInternalNode()->notifyOverlaysPenUp(QMouseEventLocalPos(event),
+    _imp->ms = UNDEFINED;
+    _imp->viewerTab->getInternalNode()->notifyOverlaysPenUp(QMouseEventLocalPos(event),
                                                        toImgCoordinates_fast(event->x(), event->y()));
     QGLWidget::mouseReleaseEvent(event);
 }
@@ -1147,39 +1403,39 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
             pos.y() <= dispW.height() &&
             event->x() >= 0 && event->x() < width() &&
             event->y() >= 0 && event->y() < height()) {
-        if (!_infoViewer->colorAndMouseVisible()) {
-            _infoViewer->showColorAndMouseInfo();
+        if (!_imp->infoViewer->colorAndMouseVisible()) {
+            _imp->infoViewer->showColorAndMouseInfo();
         }
-        boost::shared_ptr<VideoEngine> videoEngine = _viewerTab->getInternalNode()->getVideoEngine();
+        boost::shared_ptr<VideoEngine> videoEngine = _imp->viewerTab->getInternalNode()->getVideoEngine();
         if (!videoEngine->isWorking()) {
             updateColorPicker(event->x(),event->y());
         }
-        _infoViewer->setMousePos(QPoint((int)pos.x(),(int)pos.y()));
+        _imp->infoViewer->setMousePos(QPoint((int)pos.x(),(int)pos.y()));
         emit infoMousePosChanged();
     } else {
-        if(_infoViewer->colorAndMouseVisible()){
-            _infoViewer->hideColorAndMouseInfo();
+        if(_imp->infoViewer->colorAndMouseVisible()){
+            _imp->infoViewer->hideColorAndMouseInfo();
         }
     }
     
     
-    if (_ms == DRAGGING) {
+    if (_imp->ms == DRAGGING) {
         QPoint newClick =  event->pos();
         QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
-        QPointF oldClick_opengl = toImgCoordinates_fast(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
+        QPointF oldClick_opengl = toImgCoordinates_fast(_imp->zoomCtx.oldClick.x(),_imp->zoomCtx.oldClick.y());
         float dy = (oldClick_opengl.y() - newClick_opengl.y());
-        _zoomCtx._bottom += dy;
-        _zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
-        _zoomCtx._oldClick = newClick;
-        if(_displayingImage){
-            _viewerTab->getInternalNode()->refreshAndContinueRender();
+        _imp->zoomCtx.bottom += dy;
+        _imp->zoomCtx.left += (oldClick_opengl.x() - newClick_opengl.x());
+        _imp->zoomCtx.oldClick = newClick;
+        if(_imp->displayingImage){
+            _imp->viewerTab->getInternalNode()->refreshAndContinueRender();
         }
         //else {
         updateGL();
         // }
         // no need to update the color picker or mouse posn: they should be unchanged
     } else {
-        _viewerTab->getInternalNode()->notifyOverlaysPenMotion(QMouseEventLocalPos(event),pos);
+        _imp->viewerTab->getInternalNode()->notifyOverlaysPenMotion(QMouseEventLocalPos(event),pos);
     }
 }
 
@@ -1204,7 +1460,7 @@ void ViewerGL::updateColorPicker(int x,int y){
     }
     QVector4D color = getColorUnderMouse(pos.x(),pos.y());
     //   cout << "r: " << color.x() << " g: " << color.y() << " b: " << color.z() << endl;
-    _infoViewer->setColor(color);
+    _imp->infoViewer->setColor(color);
     emit infoColorUnderMouseChanged();
 }
 
@@ -1214,9 +1470,9 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     }
     double newZoomFactor;
     if (event->delta() > 0) {
-        newZoomFactor = _zoomCtx._zoomFactor*std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+        newZoomFactor = _imp->zoomCtx.zoomFactor*std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
     } else {
-        newZoomFactor = _zoomCtx._zoomFactor/std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, -event->delta());
+        newZoomFactor = _imp->zoomCtx.zoomFactor/std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, -event->delta());
     }
     if (newZoomFactor <= 0.01) {
         newZoomFactor = 0.01;
@@ -1224,21 +1480,21 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
         newZoomFactor = 1024.;
     }
     QPointF zoomCenter = toImgCoordinates_fast(event->x(), event->y());
-    double zoomRatio =   _zoomCtx._zoomFactor / newZoomFactor;
-    _zoomCtx._left = zoomCenter.x() - (zoomCenter.x() - _zoomCtx._left)*zoomRatio;
-    _zoomCtx._bottom = zoomCenter.y() - (zoomCenter.y() - _zoomCtx._bottom)*zoomRatio;
+    double zoomRatio =   _imp->zoomCtx.zoomFactor / newZoomFactor;
+    _imp->zoomCtx.left = zoomCenter.x() - (zoomCenter.x() - _imp->zoomCtx.left)*zoomRatio;
+    _imp->zoomCtx.bottom = zoomCenter.y() - (zoomCenter.y() - _imp->zoomCtx.bottom)*zoomRatio;
     
-    _zoomCtx._zoomFactor = newZoomFactor;
-    if(_displayingImage){
+    _imp->zoomCtx.zoomFactor = newZoomFactor;
+    if(_imp->displayingImage){
         appPTR->clearPlaybackCache();
-        _viewerTab->getInternalNode()->refreshAndContinueRender();
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender();
     }
     //else {
     updateGL();
     //}
     
-    assert(0 < _zoomCtx._zoomFactor && _zoomCtx._zoomFactor <= 1024);
-    int zoomValue = (int)(100*_zoomCtx._zoomFactor);
+    assert(0 < _imp->zoomCtx.zoomFactor && _imp->zoomCtx.zoomFactor <= 1024);
+    int zoomValue = (int)(100*_imp->zoomCtx.zoomFactor);
     if (zoomValue == 0) {
         zoomValue = 1; // sometimes, floor(100*0.01) makes 0
     }
@@ -1254,25 +1510,25 @@ void ViewerGL::zoomSlot(int v) {
     } else if (newZoomFactor > 1024.) {
         newZoomFactor = 1024.;
     }
-    double zoomRatio =   _zoomCtx._zoomFactor / newZoomFactor;
+    double zoomRatio =   _imp->zoomCtx.zoomFactor / newZoomFactor;
     double w = (double)width();
     double h = (double)height();
-    double bottom = _zoomCtx._bottom;
-    double left = _zoomCtx._left;
-    double top =  bottom +  h / (double)_zoomCtx._zoomFactor;
-    double right = left +  w / (double)_zoomCtx._zoomFactor;
+    double bottom = _imp->zoomCtx.bottom;
+    double left = _imp->zoomCtx.left;
+    double top =  bottom +  h / (double)_imp->zoomCtx.zoomFactor;
+    double right = left +  w / (double)_imp->zoomCtx.zoomFactor;
     
-    _zoomCtx._left = (right + left)/2. - zoomRatio * (right - left)/2.;
-    _zoomCtx._bottom = (top + bottom)/2. - zoomRatio * (top - bottom)/2.;
+    _imp->zoomCtx.left = (right + left)/2. - zoomRatio * (right - left)/2.;
+    _imp->zoomCtx.bottom = (top + bottom)/2. - zoomRatio * (top - bottom)/2.;
     
-    _zoomCtx._zoomFactor = newZoomFactor;
-    if(_displayingImage){
+    _imp->zoomCtx.zoomFactor = newZoomFactor;
+    if(_imp->displayingImage){
         appPTR->clearPlaybackCache();
-        _viewerTab->getInternalNode()->refreshAndContinueRender();
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender();
     } else {
         updateGL();
     }
-    assert(0 < _zoomCtx._zoomFactor && _zoomCtx._zoomFactor <= 1024);
+    assert(0 < _imp->zoomCtx.zoomFactor && _imp->zoomCtx.zoomFactor <= 1024);
 }
 
 void ViewerGL::zoomSlot(QString str){
@@ -1285,20 +1541,20 @@ void ViewerGL::zoomSlot(QString str){
 QPointF ViewerGL::toImgCoordinates_fast(int x,int y){
     double w = (double)width() ;
     double h = (double)height();
-    double bottom = _zoomCtx._bottom;
-    double left = _zoomCtx._left;
-    double top =  bottom +  h / _zoomCtx._zoomFactor * _currentViewerInfos.getDisplayWindow().getPixelAspect();
-    double right = left +  w / _zoomCtx._zoomFactor;
+    double bottom = _imp->zoomCtx.bottom;
+    double left = _imp->zoomCtx.left;
+    double top =  bottom +  h / _imp->zoomCtx.zoomFactor * _imp->currentViewerInfos.getDisplayWindow().getPixelAspect();
+    double right = left +  w / _imp->zoomCtx.zoomFactor;
     return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
 }
 
 QPoint ViewerGL::toWidgetCoordinates(double x, double y){
     double w = (double)width() ;
     double h = (double)height();
-    double bottom = _zoomCtx._bottom;
-    double left = _zoomCtx._left;
-    double top =  bottom +  h / _zoomCtx._zoomFactor * _currentViewerInfos.getDisplayWindow().getPixelAspect();
-    double right = left +  w / _zoomCtx._zoomFactor;
+    double bottom = _imp->zoomCtx.bottom;
+    double left = _imp->zoomCtx.left;
+    double top =  bottom +  h / _imp->zoomCtx.zoomFactor * _imp->currentViewerInfos.getDisplayWindow().getPixelAspect();
+    double right = left +  w / _imp->zoomCtx.zoomFactor;
     return QPoint((int)(((x - left)/(right - left))*w),(int)(((y - top)/(bottom - top))*h));
 }
 
@@ -1329,7 +1585,7 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
     QPointF pos = toImgCoordinates_fast(x, y);
     if(pos.x() < getDisplayWindow().left() || pos.x() >= getDisplayWindow().width() || pos.y() < getDisplayWindow().bottom() || pos.y() >=getDisplayWindow().height())
         return QVector4D(0,0,0,0);
-    if(byteMode()==1 || !_hasHW){
+    if(byteMode()==1 || !_imp->hasHW){
         U32 pixel;
         glReadBuffer(GL_FRONT);
         glReadPixels( x, height()-y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
@@ -1340,7 +1596,7 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
         a |= (pixel >> 24);
         checkGLErrors();
         return QVector4D((float)r/255.f,(float)g/255.f,(float)b/255.f,(float)a/255.f);
-    }else if(byteMode()==0 && _hasHW){
+    }else if(byteMode()==0 && _imp->hasHW){
         GLfloat pixel[4];
         glReadPixels( x, height()-y, 1, 1, GL_RGBA, GL_FLOAT, pixel);
         checkGLErrors();
@@ -1356,22 +1612,50 @@ void ViewerGL::fitToFormat(const Format& rod){
     double zoomFactor = height()/h;
     zoomFactor = (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01);
     assert(zoomFactor>=0.01 && zoomFactor <= 1024);
-    _zoomCtx.setZoomFactor(zoomFactor);
+    _imp->zoomCtx.setZoomFactor(zoomFactor);
     emit zoomChanged(zoomFactor * 100);
     resetMousePos();
-    _zoomCtx._left = w/2.f - (width()/(2.f*_zoomCtx._zoomFactor));
-    _zoomCtx._bottom = h/2.f - (height()/(2.f*_zoomCtx._zoomFactor)) * rod.getPixelAspect();
+    _imp->zoomCtx.left = w/2.f - (width()/(2.f*_imp->zoomCtx.zoomFactor));
+    _imp->zoomCtx.bottom = h/2.f - (height()/(2.f*_imp->zoomCtx.zoomFactor)) * rod.getPixelAspect();
 }
 
 
+/**
+ *@returns Returns a pointer to the current viewer infos.
+ **/
+const ImageInfo& ViewerGL::getCurrentViewerInfos() const
+{
+    return _imp->currentViewerInfos;
+}
+
+ViewerTab* ViewerGL::getViewerTab() const
+{
+    return _imp->viewerTab;
+}
+
+/**
+ *@brief Turns on the overlays on the viewer.
+ **/
+void ViewerGL::turnOnOverlay()
+{
+    _imp->overlay=true;
+}
+
+/**
+ *@brief Turns off the overlays on the viewer.
+ **/
+void ViewerGL::turnOffOverlay()
+{
+    _imp->overlay=false;
+}
 
 void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
-    
-    _infoViewer = i;
-    QObject::connect(this,SIGNAL(infoMousePosChanged()), _infoViewer, SLOT(updateCoordMouse()));
-    QObject::connect(this,SIGNAL(infoColorUnderMouseChanged()),_infoViewer,SLOT(updateColor()));
-    QObject::connect(this,SIGNAL(infoResolutionChanged()),_infoViewer,SLOT(changeResolution()));
-    QObject::connect(this,SIGNAL(infoDataWindowChanged()),_infoViewer,SLOT(changeDataWindow()));
+
+    _imp->infoViewer = i;
+    QObject::connect(this,SIGNAL(infoMousePosChanged()), _imp->infoViewer, SLOT(updateCoordMouse()));
+    QObject::connect(this,SIGNAL(infoColorUnderMouseChanged()),_imp->infoViewer,SLOT(updateColor()));
+    QObject::connect(this,SIGNAL(infoResolutionChanged()),_imp->infoViewer,SLOT(changeResolution()));
+    QObject::connect(this,SIGNAL(infoDataWindowChanged()),_imp->infoViewer,SLOT(changeDataWindow()));
     
     
 }
@@ -1380,8 +1664,8 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
 
 
 void ViewerGL::disconnectViewer(){
-    _viewerTab->getInternalNode()->getVideoEngine()->abortRendering(); // aborting current work
-    setRod(_blankViewerInfos.getRoD());
+    _imp->viewerTab->getInternalNode()->getVideoEngine()->abortRendering(); // aborting current work
+    setRod(_imp->blankViewerInfos.getRoD());
     fitToFormat(getDisplayWindow());
     clearViewer();
 }
@@ -1389,50 +1673,55 @@ void ViewerGL::disconnectViewer(){
 
 
 /*The dataWindow of the currentFrame(BBOX)*/
-const RectI& ViewerGL::getRoD() const {return _currentViewerInfos.getRoD();}
+const RectI& ViewerGL::getRoD() const {return _imp->currentViewerInfos.getRoD();}
 
 /*The displayWindow of the currentFrame(Resolution)*/
-const Format& ViewerGL::getDisplayWindow() const {return _currentViewerInfos.getDisplayWindow();}
+const Format& ViewerGL::getDisplayWindow() const {return _imp->currentViewerInfos.getDisplayWindow();}
 
 
 void ViewerGL::setRod(const RectI& rod){
 
-    _currentViewerInfos.setRoD(rod);
+    _imp->currentViewerInfos.setRoD(rod);
     emit infoDataWindowChanged();
-    _btmLeftBBOXoverlay.clear();
-    _btmLeftBBOXoverlay.append(QString::number(rod.left()));
-    _btmLeftBBOXoverlay.append(",");
-    _btmLeftBBOXoverlay.append(QString::number(rod.bottom()));
-    _topRightBBOXoverlay.clear();
-    _topRightBBOXoverlay.append(QString::number(rod.right()));
-    _topRightBBOXoverlay.append(",");
-    _topRightBBOXoverlay.append(QString::number(rod.top()));
+    _imp->btmLeftBBOXoverlay.clear();
+    _imp->btmLeftBBOXoverlay.append(QString::number(rod.left()));
+    _imp->btmLeftBBOXoverlay.append(",");
+    _imp->btmLeftBBOXoverlay.append(QString::number(rod.bottom()));
+    _imp->topRightBBOXoverlay.clear();
+    _imp->topRightBBOXoverlay.append(QString::number(rod.right()));
+    _imp->topRightBBOXoverlay.append(",");
+    _imp->topRightBBOXoverlay.append(QString::number(rod.top()));
     
     
     
 }
 void ViewerGL::onProjectFormatChanged(const Format& format){
-    _currentViewerInfos.setDisplayWindow(format);
-    _blankViewerInfos.setDisplayWindow(format);
-    _blankViewerInfos.setRoD(format);
+    _imp->currentViewerInfos.setDisplayWindow(format);
+    _imp->blankViewerInfos.setDisplayWindow(format);
+    _imp->blankViewerInfos.setRoD(format);
     emit infoResolutionChanged();
-    _resolutionOverlay.clear();
-    _resolutionOverlay.append(QString::number(format.width()));
-    _resolutionOverlay.append("x");
-    _resolutionOverlay.append(QString::number(format.height()));
+    _imp->resolutionOverlay.clear();
+    _imp->resolutionOverlay.append(QString::number(format.width()));
+    _imp->resolutionOverlay.append("x");
+    _imp->resolutionOverlay.append(QString::number(format.height()));
     fitToFormat(format);
 
 
 }
 
 void ViewerGL::setClipToDisplayWindow(bool b) {
-    _clipToDisplayWindow = b;
-    ViewerInstance* viewer = _viewerTab->getInternalNode();
+    _imp->clipToDisplayWindow = b;
+    ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
     if (viewer->getUiContext()) {
-        _viewerTab->abortRendering();
-        _viewerTab->getInternalNode()->refreshAndContinueRender(false);
+        _imp->viewerTab->abortRendering();
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
     }
+}
+
+bool ViewerGL::isClippingToDisplayWindow() const
+{
+    return _imp->clipToDisplayWindow;
 }
 
 /*display black in the viewer*/
@@ -1444,13 +1733,13 @@ void ViewerGL::clearViewer(){
 /*overload of QT enter/leave/resize events*/
 void ViewerGL::enterEvent(QEvent *event)
 {   QGLWidget::enterEvent(event);
-    //    _viewerTab->getInternalNode()->notifyOverlaysFocusGained();
+    //    _imp->viewerTab->getInternalNode()->notifyOverlaysFocusGained();
     
 }
 void ViewerGL::leaveEvent(QEvent *event)
 {
     QGLWidget::leaveEvent(event);
-    // _viewerTab->getInternalNode()->notifyOverlaysFocusLost();
+    // _imp->viewerTab->getInternalNode()->notifyOverlaysFocusLost();
     
 }
 void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected field
@@ -1459,15 +1748,15 @@ void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected
 
 void ViewerGL::keyPressEvent(QKeyEvent* event){
     if(event->isAutoRepeat())
-        _viewerTab->getInternalNode()->notifyOverlaysKeyRepeat(event);
+        _imp->viewerTab->getInternalNode()->notifyOverlaysKeyRepeat(event);
     else{
-        _viewerTab->getInternalNode()->notifyOverlaysKeyDown(event);
+        _imp->viewerTab->getInternalNode()->notifyOverlaysKeyDown(event);
     }
 }
 
 
 void ViewerGL::keyReleaseEvent(QKeyEvent* event){
-    _viewerTab->getInternalNode()->notifyOverlaysKeyUp(event);
+    _imp->viewerTab->getInternalNode()->notifyOverlaysKeyUp(event);
 }
 
 
@@ -1477,53 +1766,59 @@ float ViewerGL::byteMode() const {
 
 void ViewerGL::setDisplayChannel(const ChannelSet& channels,bool yMode){
     if(yMode){
-        _displayChannels = 5.f;
+        _imp->displayChannels = 5.f;
         
     }else{
         if(channels == Natron::Mask_RGB || channels == Natron::Mask_RGBA)
-            _displayChannels = 0.f;
+            _imp->displayChannels = 0.f;
         else if((channels & Natron::Channel_red) == Natron::Channel_red)
-            _displayChannels = 1.f;
+            _imp->displayChannels = 1.f;
         else if((channels & Natron::Channel_green) == Natron::Channel_green)
-            _displayChannels = 2.f;
+            _imp->displayChannels = 2.f;
         else if((channels & Natron::Channel_blue) == Natron::Channel_blue)
-            _displayChannels = 3.f;
+            _imp->displayChannels = 3.f;
         else if((channels & Natron::Channel_alpha) == Natron::Channel_alpha)
-            _displayChannels = 4.f;
+            _imp->displayChannels = 4.f;
         
     }
     updateGL();
     
 }
+
+void ViewerGL::stopDisplayingProgressBar()
+{
+    _imp->drawProgressBar = false;
+}
+
 void ViewerGL::updateProgressOnViewer(const TextureRect& /*region*/,int /*y*/ , int /*texY*/) {
-//    _updatingTexture = true;
+//    _imp->updatingTexture = true;
 //    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
 //    checkGLErrors();
-//    if(byteMode() == 1.f || !_hasHW){
-//        _defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::BYTE);
+//    if(byteMode() == 1.f || !_imp->hasHW){
+//        _imp->defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::BYTE);
 //    }else{
-//        _defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::FLOAT);
+//        _imp->defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::FLOAT);
 //    }
-//    _drawProgressBar = true;
-//    _progressBarY = y;
+//    _imp->drawProgressBar = true;
+//    _imp->progressBarY = y;
 //    updateGL();
 //    assert(!frameData);
 //    frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
 //    checkGLErrors();
 //
-//    _updatingTexture = false;
+//    _imp->updatingTexture = false;
 }
 
 void ViewerGL::doSwapBuffers(){
     swapBuffers();
 }
 void ViewerGL::populateMenu(){
-    _menu->clear();
+    _imp->menu->clear();
     QAction* displayOverlaysAction = new QAction("Display overlays",this);
     displayOverlaysAction->setCheckable(true);
     displayOverlaysAction->setChecked(true);
     QObject::connect(displayOverlaysAction,SIGNAL(triggered()),this,SLOT(toggleOverlays()));
-    _menu->addAction(displayOverlaysAction);
+    _imp->menu->addAction(displayOverlaysAction);
 }
 
 void ViewerGL::renderText( int x, int y, const QString &string,const QColor& color,const QFont& font)
@@ -1540,26 +1835,26 @@ void ViewerGL::renderText( int x, int y, const QString &string,const QColor& col
     glOrtho(0,w,0,h,-1,1);
     glMatrixMode(GL_MODELVIEW);
     QPointF pos = toWidgetCoordinates(x, y);
-    _textRenderer.renderText(pos.x(),h-pos.y(),string,color,font);
+    _imp->textRenderer.renderText(pos.x(),h-pos.y(),string,color,font);
     checkGLErrors();
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(_zoomCtx._lastOrthoLeft,_zoomCtx._lastOrthoRight,_zoomCtx._lastOrthoBottom,_zoomCtx._lastOrthoTop,-1,1);
+    glOrtho(_imp->zoomCtx.lastOrthoLeft,_imp->zoomCtx.lastOrthoRight,_imp->zoomCtx.lastOrthoBottom,_imp->zoomCtx.lastOrthoTop,-1,1);
     glMatrixMode(GL_MODELVIEW);
 }
 
 void ViewerGL::setPersistentMessage(int type,const QString& message){
-    _persistentMessageType = type;
-    _persistentMessage = message;
-    _displayPersistentMessage = true;
+    _imp->persistentMessageType = type;
+    _imp->persistentMessage = message;
+    _imp->displayPersistentMessage = true;
     updateGL();
 }
 
 void ViewerGL::clearPersistentMessage(){
-    if(!_displayPersistentMessage){
+    if(!_imp->displayPersistentMessage){
         return;
     }
-    _displayPersistentMessage = false;
+    _imp->displayPersistentMessage = false;
     updateGL();
 }
 
