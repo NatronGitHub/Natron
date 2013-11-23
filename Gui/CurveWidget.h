@@ -21,7 +21,7 @@ class CurveGui {
 public :
     
 
-    CurveGui(boost::shared_ptr<CurvePath> curve,
+    CurveGui(const CurvePath&  curve,
              const QString& name,
              const QColor& color,
              int thickness = 1)
@@ -62,11 +62,11 @@ public :
     **/
     double evaluate(double x) const;
 
-    boost::shared_ptr<CurvePath> getInternalCurve() const { return _internalCurve; }
+    const CurvePath&  getInternalCurve() const { return _internalCurve; }
 
 private:
 
-    boost::shared_ptr<CurvePath> _internalCurve; ///ptr to the internal curve
+    const CurvePath& _internalCurve; ///ptr to the internal curve
     QString _name; /// the name of the curve
     QColor _color; /// the color that must be used to draw the curve
     int _thickness; /// its thickness
@@ -115,7 +115,7 @@ class CurveWidget : public QGLWidget
 
     typedef std::list<boost::shared_ptr<CurveGui> > Curves;
     Curves _curves;
-    std::list<boost::shared_ptr<KeyFrame> > _selectedKeyFrames;
+    std::list< KeyFrame > _selectedKeyFrames;
 public:
     
     CurveWidget(QWidget* parent, const QGLWidget* shareWidget = NULL);

@@ -667,10 +667,10 @@ void OfxEffectInstance::endKnobsValuesChanged(Knob::ValueChangedReason reason){
 }
 
 std::string OfxEffectInstance::getOutputFileName() const{
-    const std::vector<Knob*>& knobs = getKnobs();
+    const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         if (knobs[i]->typeName() == "OutputFile") {
-            OutputFile_Knob* knob = dynamic_cast<OutputFile_Knob*>(knobs[i]);
+            boost::shared_ptr<OutputFile_Knob> knob = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
             return knob->getValue<QString>().toStdString();
         }
     }

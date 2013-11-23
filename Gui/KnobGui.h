@@ -75,7 +75,7 @@ public:
     void createGUI(QGridLayout* layout,int row){
         createWidget(layout, row);
         _widgetCreated = true;
-        const std::map<int,Variant>& values = _knob->getMultiDimensionalValue();
+        const std::map<int,Variant>& values = _knob->getValueForEachDimension();
         for(std::map<int,Variant>::const_iterator it = values.begin();it!=values.end();++it){
             updateGUI(it->first,it->second);
         }

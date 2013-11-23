@@ -168,13 +168,16 @@ DockablePanel::DockablePanel(KnobHolder* holder
 DockablePanel::~DockablePanel(){
     delete _undoStack;
     //removing parentship otherwise Qt will attempt to delete knobs a second time
-    for(std::map<Knob*,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it)
+    for(std::map<Knob*,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it){
         it->second->setParent(NULL);
+        QObject::disconnect(it->second,SIGNAL(deleted(KnobGui*)),this,SLOT(onKnobDeletion(KnobGui*)));
+
+    }
 }
 
 void DockablePanel::initializeKnobs(){
     /*We now have all knobs in a vector, just add them to the layout.*/
-    const std::vector<Knob*>& knobs = _holder->getKnobs();
+    const std::vector<boost::shared_ptr<Knob> >& knobs = _holder->getKnobs();
     for(U32 i = 0 ; i < knobs.size(); ++i){
          if(knobs[i]->typeName() == "Tab"){
              bool found = false;
@@ -188,7 +191,7 @@ void DockablePanel::initializeKnobs(){
              if(!found)
                  addTab(tabName);
          }else{
-             KnobGui* gui = findKnobGuiOrCreate(knobs[i]);
+             KnobGui* gui = findKnobGuiOrCreate(knobs[i].get());
              if(!gui){
                  return;
              }
@@ -330,19 +333,22 @@ Button* DockablePanel::insertHeaderButton(int headerPosition){
 }
 
 KnobGui* DockablePanel::findKnobGuiOrCreate(Knob* knob){
-    std::map<Knob*,KnobGui*>::const_iterator it = _knobs.find(knob);
-    if (it == _knobs.end()) {
-        KnobGui* ret =  appPTR->getKnobFactory().createGuiForKnob(knob,this);
-        QObject::connect(ret,SIGNAL(deleted(KnobGui*)),this,SLOT(onKnobDeletion(KnobGui*)));
-        if(!ret){
-            std::cout << "Failed to create gui for Knob" << std::endl;
-            return NULL;
+    for (std::map<Knob*,KnobGui*>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
+        if(it->first == knob){
+            return it->second;
         }
-        _knobs.insert(make_pair(knob, ret));
-        return ret;
-    }else{
-        return it->second;
     }
+    
+    
+    KnobGui* ret =  appPTR->getKnobFactory().createGuiForKnob(knob,this);
+    QObject::connect(ret,SIGNAL(deleted(KnobGui*)),this,SLOT(onKnobDeletion(KnobGui*)));
+    if(!ret){
+        std::cout << "Failed to create gui for Knob" << std::endl;
+        return NULL;
+    }
+    _knobs.insert(make_pair(knob, ret));
+    return ret;
+    
 }
 
 void DockablePanel::onKnobDeletion(KnobGui* k){

@@ -525,16 +525,14 @@ bool NodeGui::isSettingsPanelVisible() const{
 
 NodeGui::SerializedState::SerializedState(const NodeGui* n):_node(n){
     
-    const std::vector<Knob*>& knobs = _node->getNode()->getKnobs();
+    const std::vector<boost::shared_ptr<Knob> >& knobs = _node->getNode()->getKnobs();
+    
     for (U32 i  = 0; i < knobs.size(); ++i) {
-        std::string serializedValue = knobs[i]->serialize();
-        if(!serializedValue.empty()){
-            _knobsValues.push_back(std::make_pair(knobs[i]->getDescription(), serializedValue));
-        }
+        _knobsValues.push_back(std::make_pair(knobs[i]->getDescription(), knobs[i]->getValue()));
     }
     
     _name = _node->getNode()->getName();
-    
+     
     _className = _node->getNode()->className();
    
     const Natron::Node::InputMap& inputs = _node->getNode()->getInputs();

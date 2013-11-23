@@ -81,7 +81,7 @@ public:
     
     const Inputs& getInputs() const WARN_UNUSED_RETURN;
     
-    Knob* getKnobByDescription(const std::string& desc) const WARN_UNUSED_RETURN;
+    boost::shared_ptr<Knob> getKnobByDescription(const std::string& desc) const WARN_UNUSED_RETURN;
 
     void setMarkedByTopologicalSort(bool marked) const;
 

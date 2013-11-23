@@ -72,7 +72,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    const std::vector<Knob*>& getKnobs() const;
+    const std::vector< boost::shared_ptr<Knob> >& getKnobs() const;
 
     /*Returns in viewers the list of all the viewers connected to this node*/
     void hasViewersConnected(std::list<ViewerInstance*>* viewers) const;
@@ -208,7 +208,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    Knob* getKnobByDescription(const std::string& desc) const;
+    boost::shared_ptr<Knob> getKnobByDescription(const std::string& desc) const;
     
     /*@brief The derived class should query this to abort any long process
      in the engine function.*/

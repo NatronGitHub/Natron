@@ -154,15 +154,15 @@ void CurveWidget::drawCurves(){
 
 
             // draw the keyframes
-            const CurvePath::KeyFrames& keyframes = (*it)->getInternalCurve()->getKeyFrames();
+            const CurvePath::KeyFrames& keyframes = (*it)->getInternalCurve().getKeyFrames();
 
             glPointSize(7);
 
             for(CurvePath::KeyFrames::const_iterator k = keyframes.begin();k!=keyframes.end();++k){
                 glColor4f(nameColor.redF(), nameColor.greenF(), nameColor.blueF(), nameColor.alphaF());
-                boost::shared_ptr<KeyFrame> key = (*k).first;
+                KeyFrame key = (*k);
                 //if the key is selected change its color to white
-                for(std::list<boost::shared_ptr<KeyFrame> >::const_iterator it2 = _selectedKeyFrames.begin();
+                for(std::list< KeyFrame >::const_iterator it2 = _selectedKeyFrames.begin();
                     it2 != _selectedKeyFrames.end();++it2){
                     if((*it2) == key){
                          glColor4f(1.f,1.f,1.f,1.f);
@@ -171,7 +171,7 @@ void CurveWidget::drawCurves(){
                 }
 
                 glBegin(GL_POINTS);
-                glVertex2f(key->getTime(),key->getValue().toDouble());
+                glVertex2f(key.getTime(),key.getValue().toDouble());
                 glEnd();
 
             }
@@ -536,7 +536,7 @@ QSize CurveWidget::sizeHint() const{
 }
 
 double CurveGui::evaluate(double x) const{
-    return _internalCurve->getValueAt(x).toDouble();
+    return _internalCurve.getValueAt(x).toDouble();
 }
 
 

@@ -229,7 +229,7 @@ KeyFrame::KeyFrame(double time,const Variant& initialValue)
 
 }
 
-CurvePath::CurvePath(boost::shared_ptr<KeyFrame> cp)
+CurvePath::CurvePath(const KeyFrame& cp)
     : _keyFrames()
 {
     setStart(cp);
@@ -238,71 +238,68 @@ CurvePath::CurvePath(boost::shared_ptr<KeyFrame> cp)
 
 double CurvePath::getMinimumTimeCovered() const{
     assert(!_keyFrames.empty());
-    return _keyFrames.front().first->getTime();
+    return _keyFrames.front().getTime();
 }
 
 double CurvePath::getMaximumTimeCovered() const{
     assert(!_keyFrames.empty());
-    return _keyFrames.back().first->getTime();
+    return _keyFrames.back().getTime();
 }
 
-void CurvePath::setStart(boost::shared_ptr<KeyFrame> cp){
-    QObject::connect(cp.get(),SIGNAL(keyFrameChanged()),this,SIGNAL(curveChanged()));
+void CurvePath::setStart(const KeyFrame& cp){
     if(!_keyFrames.empty()){
         //remove the already existing key frame
         _keyFrames.pop_front();
     }
-    _keyFrames.push_front(std::make_pair(cp,Natron::LINEAR));
+    _keyFrames.push_front(cp);
 }
 
-void CurvePath::setEnd(boost::shared_ptr<KeyFrame> cp){
-    QObject::connect(cp.get(),SIGNAL(keyFrameChanged()),this,SIGNAL(curveChanged()));
+void CurvePath::setEnd(const KeyFrame& cp){
     if(!_keyFrames.empty()){
         //remove the already existing key frame
         _keyFrames.pop_back();
     }
-    _keyFrames.push_back(std::make_pair(cp,Natron::LINEAR));
+    _keyFrames.push_back(cp);
 }
 
-void CurvePath::addControlPoint(boost::shared_ptr<KeyFrame> cp)
+void CurvePath::addControlPoint(const KeyFrame& cp)
 {
-    QObject::connect(cp.get(),SIGNAL(keyFrameChanged()),this,SIGNAL(curveChanged()));
 
     if(_keyFrames.empty()){
-        _keyFrames.push_back(std::make_pair(cp,Natron::LINEAR));
+        _keyFrames.push_back(cp);
     }else{
         //finding a matching or the first greater key
         KeyFrames::iterator upper = _keyFrames.end();
         for(KeyFrames::iterator it = _keyFrames.begin();it!=_keyFrames.end();++it){
-            if((*it).first->getTime() > cp->getTime()){
+            if((*it).getTime() > cp.getTime()){
                 upper = it;
                 break;
-            }else if((*it).first->getTime() == cp->getTime()){
+            }else if((*it).getTime() == cp.getTime()){
                 //if the key already exists at this time, just modify it.
-                (*it).first->setValue(cp->getValue());
+                (*it).setValue(cp.getValue());
                 return;
             }
         }
         //if we found no key that has a greater time, just append the key
         if(upper == _keyFrames.end()){
-            _keyFrames.push_back(std::make_pair(cp,Natron::LINEAR));
+            _keyFrames.push_back(cp);
             return;
         }
         //if all the keys have a greater time, just insert this key at the begining
         if(upper == _keyFrames.begin()){
-            _keyFrames.push_front(std::make_pair(cp,Natron::LINEAR));
+            _keyFrames.push_front(cp);
             return;
         }
 
         //if we reach here, that means we're in the middle of 2 keys, insert it before the upper bound
-        _keyFrames.insert(upper,std::make_pair(cp,Natron::LINEAR));
+        _keyFrames.insert(upper,cp);
 
     }
 }
 
 Variant CurvePath::getValueAt(double t) const{
     assert(!_keyFrames.empty());
-    const Variant& firstKeyValue = _keyFrames.front().first->getValue();
+    const Variant& firstKeyValue = _keyFrames.front().getValue();
     switch(firstKeyValue.type()){
         case QVariant::Int :
             return Variant(getValueAtInternal<int>(t));
@@ -325,9 +322,8 @@ Variant CurvePath::getValueAt(double t) const{
 
 Knob::Knob(KnobHolder* holder,const std::string& description,int dimension):
     _holder(holder)
-  , _value()
   , _hashVector()
-  , _dimension(dimension)
+  , _value(dimension)
   , _description(description)
   , _name(description.c_str())
   , _newLine(true)
@@ -338,16 +334,10 @@ Knob::Knob(KnobHolder* holder,const std::string& description,int dimension):
   , _canUndo(true)
   , _isInsignificant(false)
   , _tooltipHint()
-  , _curves()
 {
     
     if(_holder){
-        _holder->addKnob(this);
-
-        //default initialize the values map
-        for(int i = 0; i < dimension ; ++i){
-            _value.insert(std::make_pair(i,Variant()));
-        }
+        _holder->addKnob(boost::shared_ptr<Knob>(this));
     }
 }
 
@@ -355,7 +345,6 @@ Knob::~Knob(){
     if(_holder){
         _holder->removeKnob(this);
     }
-    _value.clear();
     emit deleted();
 
 }
@@ -373,22 +362,37 @@ void Knob::updateHash(){
     _holder->invalidateHash();
 }
 
-void Knob::restoreFromString(const std::string& str){
-    _restoreFromString(str);
+void Knob::onStartupRestoration(const MultidimensionalValue& other){
+    _value = other; //set the value
     if(!_isInsignificant)
-        updateHash();
-    processNewValue();
-    _holder->onValueChanged(this,Knob::STARTUP_RESTORATION);
+        updateHash(); //refresh hash if needed
+    processNewValue(); // process new value if needed
+    _holder->onValueChanged(this,Knob::USER_EDITED); // notify plugin the value changed
 
-    for(std::map<int,Variant>::const_iterator it = _value.begin();it!=_value.end();++it){
+    //notify gui for each value changed
+    const std::map<int, Variant>& value = _value.getValueForEachDimension();
+    for(std::map<int,Variant>::const_iterator it = value.begin();it!=value.end();++it){
         emit valueChanged(it->first,it->second);
     }
 }
 
+void Knob::fillHashVector(){
+    _hashVector.clear();
+    const std::map<int,Variant>& value = _value.getValueForEachDimension();
+    for(std::map<int,Variant>::const_iterator it = value.begin();it!=value.end();++it){
+        QByteArray data;
+        QDataStream ds(&data,QIODevice::WriteOnly);
+        ds << it->second;
+        data = data.toBase64();
+        QString str(data);
+        for (int i = 0; i < str.size(); ++i) {
+            _hashVector.push_back(str.at(i).unicode());
+        }
+    }
+}
+
 void Knob::setValueInternal(const Variant& v,int dimension){
-    const std::map<int,Variant>::iterator it = _value.find(dimension);
-    assert(it != _value.end());
-    it->second = v;
+    _value.setValue(v, dimension);
     if(!_isInsignificant)
         updateHash();
     processNewValue();
@@ -398,32 +402,54 @@ void Knob::setValueInternal(const Variant& v,int dimension){
 
 }
 
-void Knob::setValueAtTimeInternal(double time, const Variant& v, int dimension){
-    assert(canAnimate());
+void Knob::onValueChanged(int dimension,const Variant& variant){
+    _value.setValue(variant, dimension);
+    if(!_isInsignificant)
+        updateHash();
+    processNewValue();
+    _holder->onValueChanged(this,Knob::USER_EDITED);
+    _holder->evaluate(this,!_isInsignificant);
+    
+}
+
+const Variant& MultidimensionalValue::getValue(int dimension) const{
+    std::map<int,Variant>::const_iterator it = _value.find(dimension);
+    assert(it != _value.end());
+    return it->second;
+}
+
+void MultidimensionalValue::setValue(const Variant& v,int dimension){
+    std::map<int,Variant>::iterator it = _value.find(dimension);
+    assert(it != _value.end());
+    it->second = v;
+
+}
+
+void MultidimensionalValue::setValueAtTime(double time, const Variant& v, int dimension){
     CurvesMap::iterator it = _curves.find(dimension);
 
-    boost::shared_ptr<KeyFrame> key(new KeyFrame(time,v));
+    KeyFrame key(time,v);
     if( it == _curves.end() ){
         /*if the dimension had no curve yet, create one and add the first keyframe*/
-        _curves.insert(std::make_pair(dimension,boost::shared_ptr<CurvePath>( new CurvePath(key))));
+        _curves.insert(std::make_pair(dimension,CurvePath(key)));
     }else{
         /*else just add one more key frame to the curve*/
-        it->second->addControlPoint(key);
+        it->second.addControlPoint(key);
     }
 
 }
 
-boost::shared_ptr<CurvePath> Knob::getCurve(int dimension) const {
+const CurvePath& Knob::getCurve(int dimension) const{
+    return _value.getCurve(dimension);
+}
+
+const CurvePath& MultidimensionalValue::getCurve(int dimension) const {
     CurvesMap::const_iterator foundDimension = _curves.find(dimension);
-    if(foundDimension != _curves.end()){
-        return foundDimension->second;
-    }else{
-        return boost::shared_ptr<CurvePath>();
-    }
+    assert(foundDimension != _curves.end());
+    return foundDimension->second;
 }
 
-Variant Knob::getValueAtTimeInternal(double time,int dimension) const{
-    assert(canAnimate());
+Variant MultidimensionalValue::getValueAtTime(double time,int dimension) const{
     CurvesMap::const_iterator foundDimension = _curves.find(dimension);
 
     if(foundDimension == _curves.end()){
@@ -437,7 +463,7 @@ Variant Knob::getValueAtTimeInternal(double time,int dimension) const{
         }
     }else{
         try{
-            return foundDimension->second->getValueAt(time);
+            return foundDimension->second.getValueAt(time);
         }catch(const std::exception& e){
             std::cout << e.what() << std::endl;
             assert(false);
@@ -446,18 +472,7 @@ Variant Knob::getValueAtTimeInternal(double time,int dimension) const{
     }
 }
 
-void Knob::onValueChanged(int dimension,const Variant& variant){
-    
-    const std::map<int,Variant>::iterator it = _value.find(dimension);
-    assert(it != _value.end());
-    it->second = variant;
-    if(!_isInsignificant)
-        updateHash();
-    processNewValue();
-    _holder->onValueChanged(this,Knob::USER_EDITED);
-    _holder->evaluate(this,!_isInsignificant);
-    
-}
+
 
 void KnobHolder::beginValuesChanged(Knob::ValueChangedReason reason){
     _betweenBeginEndParamChanged = true ;
@@ -533,7 +548,7 @@ int Knob::determineHierarchySize() const{
 
 void KnobHolder::removeKnob(Knob* knob){
     for(U32 i = 0; i < _knobs.size() ; ++i){
-        if (_knobs[i] == knob) {
+        if (_knobs[i].get() == knob) {
             _knobs.erase(_knobs.begin()+i);
             break;
         }
@@ -544,24 +559,7 @@ void KnobHolder::triggerAutoSave(){
     _app->triggerAutoSave();
 }
 /***********************************FILE_KNOB*****************************************/
-std::string File_Knob::serialize() const{
-    return SequenceFileDialog::patternFromFilesList(getValue<QStringList>()).toStdString();
-}
 
-void File_Knob::_restoreFromString(const std::string& str){
-    QStringList filesList = SequenceFileDialog::filesListFromPattern(str.c_str());
-    setValue<QStringList>(filesList);
-}
-void File_Knob::fillHashVector(){
-    _hashVector.clear();
-    QStringList files = getValue<QStringList>();
-    for (int i = 0; i < files.size(); ++i) {
-        const QString& file = files.at(i);
-        for (int j = 0; j < file.size(); ++j) {
-            _hashVector.push_back(file.at(j).unicode());
-        }
-    }
-}
 
 void File_Knob::processNewValue(){
     QMutexLocker locker(&_fileSequenceLock);
@@ -669,247 +667,12 @@ QString File_Knob::getRandomFrameName(int f,bool loadNearestIfNotFound) const{
 
 /***********************************OUTPUT_FILE_KNOB*****************************************/
 
-std::string OutputFile_Knob::serialize() const{
-    return getValue<QString>().toStdString();
-}
-void OutputFile_Knob::_restoreFromString(const std::string& str){
-    setValue<QString>(str.c_str());
-}
 
 std::string OutputFile_Knob::getFileName() const{
     return  getValue<QString>().toStdString();
 }
 
-void OutputFile_Knob::fillHashVector(){
-    _hashVector.clear();
-    QString file = getValue<QString>();
-    for (int j = 0; j < file.size(); ++j) {
-        _hashVector.push_back(file.at(j).unicode());
-    }
-}
 
-/***********************************INT_KNOB*****************************************/
-void Int_Knob::fillHashVector(){
-    _hashVector.clear();
-    for(std::map<int,Variant>::const_iterator it = _value.begin();it!=_value.end();++it){
-        _hashVector.push_back((U64)it->second.toInt());
-    }
-}
-
-std::string Int_Knob::serialize() const{
-    QString str;
-    for(std::map<int,Variant>::const_iterator it = _value.begin();it!=_value.end();++it){
-        str.append("v");
-        str.append(QString::number(it->first));
-        str.append(" ");
-        str.append(QString::number(it->second.toInt()));
-        std::map<int,Variant>::const_iterator next = it;
-        ++next;
-        if(next != _value.end()){
-            str.append(" ");
-        }
-
-    }
-    return str.toStdString();
-}
-void Int_Knob::_restoreFromString(const std::string& str){
-    QString s(str.c_str());
-    if(!s.isEmpty()){
-
-        int i = s.indexOf("v");
-        while(i != -1){
-            ++i; // skip " "
-            QString dimStr;
-            while(i < s.size() && s.at(i).isDigit()){
-                dimStr.append(s.at(i));
-                ++i;
-            }
-            ++i;//skip " "
-            QString vStr;
-            while(i < s.size() && s.at(i).isDigit()){
-                vStr.append(s.at(i));
-                ++i;
-            }
-            setValue<int>(vStr.toInt(),dimStr.toInt());
-            i = s.indexOf("v",i);
-        }
-    }
-}
-
-
-/***********************************BOOL_KNOB*****************************************/
-void Bool_Knob::fillHashVector(){
-    _hashVector.clear();
-    _hashVector.push_back((U64)getValue<bool>());
-}
-
-std::string Bool_Knob::serialize() const{
-    return getValue<bool>() ? "1" : "0";
-}
-void Bool_Knob::_restoreFromString(const std::string& str){
-    QString s(str.c_str());
-    if(!s.isEmpty()){
-        int val = s.toInt();
-        setValue<bool>((bool)val);
-    }
-    
-}
-
-
-/***********************************DOUBLE_KNOB*****************************************/
-void Double_Knob::fillHashVector(){
-    _hashVector.clear();
-    for(std::map<int,Variant>::const_iterator it = _value.begin();it!=_value.end();++it){
-        double d = it->second.toDouble();
-        _hashVector.push_back(*(reinterpret_cast<U64*>(&(d))));
-    }
-}
-
-std::string Double_Knob::serialize() const{
-    QString str;
-    for(std::map<int,Variant>::const_iterator it = _value.begin();it!=_value.end();++it){
-        str.append("v");
-        str.append(QString::number(it->first));
-        str.append(" ");
-        str.append(QString::number(it->second.toDouble()));
-        std::map<int,Variant>::const_iterator next = it;
-        ++next;
-        if(next != _value.end()){
-            str.append(" ");
-        }
-
-    }
-    return str.toStdString();
-    
-}
-void Double_Knob::_restoreFromString(const std::string& str){
-    QString s(str.c_str());
-    if(!s.isEmpty()){
-
-        int i = s.indexOf("v");
-        while(i != -1){
-            ++i; // skip " "
-            QString dimStr;
-            while(i < s.size() && s.at(i).isDigit()){
-                dimStr.append(s.at(i));
-                ++i;
-            }
-            ++i;//skip " "
-            QString vStr;
-            while(i < s.size() && s.at(i).isDigit()){
-                vStr.append(s.at(i));
-                ++i;
-            }
-            setValue<double>(vStr.toDouble(),dimStr.toInt());
-            i = s.indexOf("v",i);
-        }
-    }
-}
-
-
-
-/***********************************COMBOBOX_KNOB*****************************************/
-void ComboBox_Knob::fillHashVector(){
-    _hashVector.clear();
-    _hashVector.push_back(getValue<int>());
-}
-
-std::string ComboBox_Knob::serialize() const{
-    return QString::number(getValue<int>()).toStdString();
-}
-void ComboBox_Knob::_restoreFromString(const std::string& str){
-    setValue<int>(QString(str.c_str()).toInt());
-}
-
-
-/***********************************RGBA_KNOB*****************************************/
-void Color_Knob::fillHashVector(){
-    double r = getValue<double>(0);
-    _hashVector.push_back(*(reinterpret_cast<U64*>(&(r))));
-
-    if(getDimension() >= 3){
-        double g = getValue<double>(1);
-        double b = getValue<double>(2);
-        _hashVector.push_back(*(reinterpret_cast<U64*>(&(g))));
-        _hashVector.push_back(*(reinterpret_cast<U64*>(&(b))));
-    }
-    if(getDimension() >= 4){
-        double a = getValue<double>(3);
-        _hashVector.push_back(*(reinterpret_cast<U64*>(&(a))));
-    }
-}
-std::string Color_Knob::serialize() const{
-    QString ret;
-    ret.append(QString("r " + QString::number(getValue<double>(0))));
-
-    if(getDimension() >= 3){
-        ret.append(QString(" g " + QString::number(getValue<double>(1))));
-        ret.append(QString(" b " + QString::number(getValue<double>(2))));
-    }
-    if(getDimension() >= 4){
-        ret.append(QString(" a " + QString::number(getValue<double>(3))));
-    }
-    return ret.toStdString();
-}
-
-void Color_Knob::_restoreFromString(const std::string& str){
-    QString s(str.c_str());
-    int i = s.indexOf("r");
-    if(i == -1)
-        return;
-    i+=2;
-    QString rStr,gStr,bStr,aStr;
-    while(i < s.size() && s.at(i).isDigit()){
-        rStr.append(s.at(i));
-        ++i;
-    }
-    setValue(rStr.toDouble(),0);
-    i = s.indexOf("g");
-    if(i == -1)
-        return;
-    i+=2;
-    while(i < s.size() && s.at(i).isDigit()){
-        gStr.append(s.at(i));
-        ++i;
-    }
-    setValue(gStr.toDouble(),1);
-    i = s.indexOf("b");
-    if(i == -1)
-        return;
-    i+=2;
-    while(i < s.size() && s.at(i).isDigit()){
-        bStr.append(s.at(i));
-        ++i;
-    }
-    setValue(bStr.toDouble(),2);
-    i = s.indexOf("a");
-    if(i == -1)
-        return;
-    i+=2;
-    while(i < s.size() && s.at(i).isDigit()){
-        aStr.append(s.at(i));
-        ++i;
-    }
-    setValue(aStr.toDouble(),3);
-    
-}
-/***********************************STRING_KNOB*****************************************/
-void String_Knob::fillHashVector(){
-    _hashVector.clear();
-    QString str = getValue<QString>();
-    for (int i = 0; i < str.size(); ++i) {
-        _hashVector.push_back(str.at(i).unicode());
-    }
-}
-
-
-std::string String_Knob::serialize() const{
-    return getValue<QString>().toStdString();
-}
-
-void String_Knob::_restoreFromString(const std::string& str){
-    setValue<QString>(str.c_str());
-}
 
 /***********************************GROUP_KNOB*****************************************/
 
@@ -933,20 +696,4 @@ void Tab_Knob::addKnob(const std::string& tabName,Knob* k){
         it->second.push_back(k);
     }
 }
-/******************************RichText_Knob**************************************/
 
-void RichText_Knob::fillHashVector(){
-    _hashVector.clear();
-    QString str = getValue<QString>();
-    for (int i = 0; i < str.size(); ++i) {
-        _hashVector.push_back(str.at(i).unicode());
-    }
-}
-
-std::string RichText_Knob::serialize() const{
-    return getValue<QString>().toStdString();
-}
-
-void RichText_Knob::_restoreFromString(const std::string& str){
-    setValue<QString>(str.c_str());
-}

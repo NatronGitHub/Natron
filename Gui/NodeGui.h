@@ -22,8 +22,9 @@
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/utility.hpp>
 #include <boost/serialization/map.hpp>
+#include <boost/serialization/vector.hpp>
 #include <boost/serialization/version.hpp>
-
+#include <boost/serialization/shared_ptr.hpp>
 
 #include "Engine/Knob.h"
 #include "Global/Macros.h"
@@ -37,7 +38,6 @@ class AppInstance;
 class NodeGraph;
 class QAction;
 class KnobGui;
-class Knob;
 class QMenu;
 namespace Natron {
 class ChannelSet;
@@ -56,8 +56,33 @@ public:
     
     class SerializedState {
         
+        
+    public:
+        
+        typedef std::vector< std::pair<std::string,MultidimensionalValue > > KnobValues;
+
+        
+        SerializedState():_node(NULL){};
+        
+        SerializedState(const NodeGui* n);
+        
+        const KnobValues& getKnobsValues() const {return _knobsValues;}
+        
+        const std::string& getName() const {return _name;}
+        
+        const std::string& getClassName() const {return _className;}
+        
+        const std::map<int,std::string>& getInputs() const {return _inputs;}
+                
+        double getX() const {return _posX;}
+        
+        double getY() const {return _posY;}
+        
+    private:
+        
         const NodeGui* _node;
-        std::vector<std::pair<std::string,std::string> > _knobsValues;
+        
+        KnobValues _knobsValues;
         std::string _name;
         std::string _className;
         
@@ -77,24 +102,7 @@ public:
             ar & boost::serialization::make_nvp("X_position",_posX);
             ar & boost::serialization::make_nvp("Y_position",_posY);
         }
-        
-    public:
-        
-        SerializedState():_node(NULL){};
-        
-        SerializedState(const NodeGui* n);
-        
-        const std::vector<std::pair<std::string,std::string> >& getKnobsValues() const {return _knobsValues;}
-        
-        const std::string getName() const {return _name;}
-        
-        const std::string getClassName() const {return _className;}
-        
-        const std::map<int,std::string>& getInputs() const {return _inputs;}
-                
-        double getX() const {return _posX;}
-        
-        double getY() const {return _posY;}
+
         
     };
     

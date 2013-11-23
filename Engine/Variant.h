@@ -14,11 +14,47 @@
 
 #include <QtCore/QVariant>
 #include <QtCore/QMetaType>
-/******************************VARIANT**************************************/
+#include <QtCore/QDataStream>
+#include <QtCore/QByteArray>
+#include <QtCore/QString>
+
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/serialization/split_member.hpp>
 
 class Variant : public QVariant {
+    
+    friend class boost::serialization::access;
+    
+    template<class Archive>
+    void save(Archive & ar, const unsigned int version) const
+    {
+        (void)version;
+        QByteArray data;
+        QDataStream ds(&data,QIODevice::WriteOnly);
+        ds << *this;
+        data = data.toBase64();
+        QString str(data);
+        std::string stdStr = str.toStdString();
+        ar & boost::serialization::make_nvp("Value",stdStr);
+        
+    }
+    template<class Archive>
+    void load(Archive & ar, const unsigned int version)
+    {
+        (void)version;
+        std::string stdStr;
+        ar & boost::serialization::make_nvp("Value",stdStr);
+        QByteArray data(stdStr.c_str());
+        data = QByteArray::fromBase64(data);
+        QDataStream ds(&data,QIODevice::ReadOnly);
+        ds >> *this;
+        
+    }
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
+    
 public:
-
+    
     Variant()
     : QVariant()
     {

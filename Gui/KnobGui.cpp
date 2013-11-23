@@ -128,7 +128,7 @@ bool KnobUndoCommand::mergeWith(const QUndoCommand *command){
     KnobGui* knob = knobCommand->_knob;
     if(_knob != knob)
         return false;
-    _newValue = knob->getKnob()->getMultiDimensionalValue();
+    _newValue = knob->getKnob()->getValueForEachDimension();
     setText(QObject::tr("Change %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
     return true;
@@ -194,7 +194,7 @@ void File_KnobGui::open_file(){
         updateLastOpened(filesList.at(0));
         std::map<int,Variant> newV;
         newV.insert(make_pair(0,Variant(filesList)));
-        pushUndoCommand(new KnobUndoCommand(this,_knob->getMultiDimensionalValue(),newV));
+        pushUndoCommand(new KnobUndoCommand(this,_knob->getValueForEachDimension(),newV));
     }
 }
 
@@ -205,7 +205,7 @@ void File_KnobGui::onReturnPressed(){
     QStringList newList = SequenceFileDialog::filesListFromPattern(str);
     if(newList.isEmpty())
         return;
-    const std::map<int,Variant>& oldValue = _knob->getMultiDimensionalValue();
+    const std::map<int,Variant>& oldValue = _knob->getValueForEachDimension();
     std::map<int,Variant> newValue;
     newValue.insert(std::make_pair(0,Variant(newList)));
     pushUndoCommand(new KnobUndoCommand(this,oldValue,newValue));
@@ -287,7 +287,7 @@ void OutputFile_KnobGui::open_file(){
         updateLastOpened(SequenceFileDialog::removePath(oldPattern));
         std::map<int,Variant> newValues;
         newValues.insert(make_pair(0,Variant(newPattern)));
-        pushUndoCommand(new KnobUndoCommand(this,_knob->getMultiDimensionalValue(),newValues));
+        pushUndoCommand(new KnobUndoCommand(this,_knob->getValueForEachDimension(),newValues));
     }
 }
 
@@ -297,7 +297,7 @@ void OutputFile_KnobGui::onReturnPressed(){
     QString newPattern= _lineEdit->text();
     std::map<int,Variant> newValues;
     newValues.insert(make_pair(0,Variant(newPattern)));
-    pushUndoCommand(new KnobUndoCommand(this,_knob->getMultiDimensionalValue(),newValues));
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueForEachDimension(),newValues));
 }
 
 
@@ -429,7 +429,7 @@ void Int_KnobGui::onSliderValueChanged(double d){
     _spinBoxes[0].first->setValue(d);
     Variant v;
     v.setValue(d);
-    std::map<int,Variant> oldValue = _knob->getMultiDimensionalValue();
+    std::map<int,Variant> oldValue = _knob->getValueForEachDimension();
     std::map<int,Variant> newValue;
     newValue.insert(std::make_pair(0,v));
     pushUndoCommand(new KnobUndoCommand(this,oldValue,newValue));
@@ -440,7 +440,7 @@ void Int_KnobGui::onSpinBoxValueChanged(){
         newValues.insert(std::make_pair(i,Variant(_spinBoxes[i].first->value())));
     }
 
-    pushUndoCommand(new KnobUndoCommand(this,_knob->getMultiDimensionalValue(),newValues));
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueForEachDimension(),newValues));
 }
 void Int_KnobGui::hide(){
     _descriptionLabel->hide();
@@ -518,7 +518,7 @@ void Bool_KnobGui::updateGUI(int /*dimension*/, const Variant& variant){
 void Bool_KnobGui::onCheckBoxStateChanged(bool b){
     std::map<int,Variant> newValues;
     newValues.insert(std::make_pair(0,Variant(b)));
-    pushUndoCommand(new KnobUndoCommand(this,_knob->getMultiDimensionalValue(),newValues));
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueForEachDimension(),newValues));
 }
 void Bool_KnobGui::hide(){
     _descriptionLabel->hide();
@@ -661,7 +661,7 @@ void Double_KnobGui::onSliderValueChanged(double d){
     _spinBoxes[0].first->setValue(d);
     std::map<int,Variant> newValues;
     newValues.insert(make_pair(0,Variant(d)));
-    pushUndoCommand(new KnobUndoCommand(this,_knob->getMultiDimensionalValue(),newValues));
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueForEachDimension(),newValues));
 }
 void Double_KnobGui::onSpinBoxValueChanged(){
     std::map<int,Variant> newValues;
@@ -669,7 +669,7 @@ void Double_KnobGui::onSpinBoxValueChanged(){
         newValues.insert(std::make_pair(i,Variant(_spinBoxes[i].first->value())));
     }
 
-    pushUndoCommand(new KnobUndoCommand(this,_knob->getMultiDimensionalValue(),newValues));
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueForEachDimension(),newValues));
 }
 void Double_KnobGui::hide(){
     _descriptionLabel->hide();
@@ -781,7 +781,7 @@ void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row) {
 void ComboBox_KnobGui::onCurrentIndexChanged(int i){
     std::map<int,Variant> newV;
     newV.insert(make_pair(0,Variant(i)));
-    pushUndoCommand(new KnobUndoCommand(this,_knob->getMultiDimensionalValue(),newV));
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueForEachDimension(),newV));
     
 }
 void ComboBox_KnobGui::onEntriesPopulated(){
@@ -1063,7 +1063,7 @@ void Color_KnobGui::onColorChanged(){
         color.setAlphaF(_aBox->value());
         newValues.insert(make_pair(3,Variant(color.alphaF())));
     }
-    pushUndoCommand(new KnobUndoCommand(this,_knob->getMultiDimensionalValue(),newValues));
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueForEachDimension(),newValues));
 }
 
 
@@ -1155,7 +1155,7 @@ String_KnobGui::~String_KnobGui(){
 void String_KnobGui::onStringChanged(const QString& str){
     std::map<int,Variant> newV;
     newV.insert(make_pair(0,Variant(str)));
-    pushUndoCommand(new KnobUndoCommand(this,_knob->getMultiDimensionalValue(),newV));
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueForEachDimension(),newV));
 }
 void String_KnobGui::updateGUI(int /*dimension*/, const Variant& variant){
     _lineEdit->setText(variant.toString());
@@ -1331,7 +1331,7 @@ void RichText_KnobGui::addToLayout(QHBoxLayout* layout){
 void RichText_KnobGui::onTextChanged(){
     std::map<int,Variant> newV;
     newV.insert(make_pair(0,Variant(_textEdit->toPlainText())));
-    pushUndoCommand(new KnobUndoCommand(this,_knob->getMultiDimensionalValue(),newV));
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueForEachDimension(),newV));
 }
 
 

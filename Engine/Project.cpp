@@ -20,7 +20,6 @@
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/vector.hpp>
 
-
 #include "Global/AppManager.h"
 
 #include "Engine/TimeLine.h"
@@ -200,13 +199,14 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
             entries.push_back(formatStr.toStdString());
         }
         _formatKnob->populate(entries);
-        std::string currentFormat;
-        iArchive >> boost::serialization::make_nvp("Project_output_format",currentFormat);
+
+        MultidimensionalValue formatValue(_formatKnob->getDimension());
+        MultidimensionalValue viewsValue(_viewsCount->getDimension());
+        iArchive >> boost::serialization::make_nvp("Project_output_format",formatValue);
+        _formatKnob->onStartupRestoration(formatValue);
         setAutoSetProjectFormat(false);
-        _formatKnob->restoreFromString(currentFormat);
-        std::string viewsCount;
-        iArchive >> boost::serialization::make_nvp("Project_views_count",viewsCount);
-        _viewsCount->restoreFromString(viewsCount);
+        iArchive >> boost::serialization::make_nvp("Project_views_count",viewsValue);
+        _viewsCount->onStartupRestoration(viewsValue);
         ifile.close();
     }catch(const std::exception& e){
         throw e;
@@ -236,18 +236,15 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
             throw std::invalid_argument(text.toStdString());
         }
         n->setName(state.getName());
-        const std::vector<std::pair<std::string,std::string> >& knobsValues = state.getKnobsValues();
+        const NodeGui::SerializedState::KnobValues& knobsValues = state.getKnobsValues();
         //begin changes to params
-        for (std::vector<std::pair<std::string,std::string> >::const_iterator v = knobsValues.begin(); v!=knobsValues.end(); ++v) {
-            if(v->second.empty())
-                continue;
-            Knob* knob = n->getKnobByDescription(v->first);
+        for (U32 i = 0; i < knobsValues.size(); ++i) {
+            boost::shared_ptr<Knob> knob = n->getKnobByDescription(knobsValues[i].first);
             if(!knob){
-                cout << "Couldn't restore knob value ( " << v->first << " )." << endl;
+                cout << "Couldn't restore knob value ( " << knobsValues[i].first << " )." << endl;
             }else{
-                knob->restoreFromString(v->second);
+                knob->onStartupRestoration(knobsValues[i].second);
             }
-            
         }
         if(!background){
             NodeGui* nGui = getApp()->getNodeGui(n);
@@ -321,10 +318,8 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
     }
     oArchive << boost::serialization::make_nvp("Nodes",nodeStates);
     oArchive << boost::serialization::make_nvp("Project_formats",_availableFormats);
-    std::string currentFormat = _formatKnob->serialize();
-    oArchive << boost::serialization::make_nvp("Project_output_format",currentFormat);
-    std::string viewsCount = _viewsCount->serialize();
-    oArchive << boost::serialization::make_nvp("Project_views_count",viewsCount);
+    oArchive << boost::serialization::make_nvp("Project_output_format",_formatKnob->getValue());
+    oArchive << boost::serialization::make_nvp("Project_views_count",_viewsCount->getValue());
     ofile.close();
 }
 

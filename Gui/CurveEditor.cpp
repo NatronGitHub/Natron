@@ -60,7 +60,7 @@ CurveEditor::CurveEditor(QWidget *parent)
 
 void CurveEditor::addNode(NodeGui* node){
 
-    const std::vector<Knob*>& knobs = node->getNode()->getKnobs();
+    const std::vector<boost::shared_ptr<Knob> >& knobs = node->getNode()->getKnobs();
     if(knobs.empty()){
         return;
     }
@@ -113,21 +113,21 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,NodeGui *node)
     nameItem->setText(0,_node->getNode()->getName().c_str());
 
     QObject::connect(node,SIGNAL(nameChanged(QString)),this,SLOT(onNameChanged(QString)));
-    const std::vector<Knob*>& knobs = node->getNode()->getKnobs();
+    const std::vector<boost::shared_ptr<Knob> >& knobs = node->getNode()->getKnobs();
 
     bool hasAtLeast1KnobWithACurve = false;
 
 
     for(U32 i = 0; i < knobs.size();++i){
         QTreeWidgetItem* knobItem = new QTreeWidgetItem(nameItem);
-        Knob* k = knobs[i];
+        boost::shared_ptr<Knob> k = knobs[i];
         knobItem->setText(0,k->getName().c_str());
         boost::shared_ptr<CurveGui> knobCurve;
 
         bool hasAtLeast1Curve = false;
         if(k->getDimension() == 1){
-            boost::shared_ptr<CurvePath> internalCurve = k->getCurve(0);
-            if(!internalCurve){
+            const CurvePath& internalCurve = k->getCurve(0);
+            if(!internalCurve.isAnimated()){
                 delete knobItem;
                 continue;
             }
@@ -138,8 +138,8 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,NodeGui *node)
         if(k->getDimension() > 1){
             for(int j = 0 ; j < k->getDimension();++j){
 
-                boost::shared_ptr<CurvePath> internalCurve = k->getCurve(j);
-                if(!internalCurve){
+                const CurvePath&  internalCurve = k->getCurve(j);
+                if(!internalCurve.isAnimated()){
                     continue;
                 }
                 QTreeWidgetItem* dimItem = new QTreeWidgetItem(knobItem);

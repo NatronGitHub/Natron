@@ -141,7 +141,7 @@ U64 EffectInstance::computeHash(const std::vector<U64>& inputsHashs){
     _imp->hashAge = getAppAge();
     
     _imp->hashValue.reset();
-    const std::vector<Knob*>& knobs = getKnobs();
+    const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         ::Hash64_appendKnob(&_imp->hashValue, *knobs[i]);
     }
@@ -467,13 +467,13 @@ void EffectInstance::evaluate(Knob* knob,bool isSignificant){
 
 
 void EffectInstance::openFilesForAllFileKnobs(){
-    const std::vector<Knob*>& knobs = getKnobs();
+    const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
-        Knob* k = knobs[i];
+        boost::shared_ptr<Knob> k = knobs[i];
         if(k->typeName() == "InputFile"){
-            dynamic_cast<File_Knob*>(k)->openFile();
+            boost::dynamic_pointer_cast<File_Knob>(k)->openFile();
         }else if(k->typeName() == "OutputFile"){
-            dynamic_cast<OutputFile_Knob*>(k)->openFile();
+            boost::dynamic_pointer_cast<OutputFile_Knob>(k)->openFile();
         }
     }
 }
@@ -527,15 +527,15 @@ void EffectInstance::updateInputs(RenderTree* tree) {
 
 
 
-Knob* EffectInstance::getKnobByDescription(const std::string& desc) const{
+boost::shared_ptr<Knob> EffectInstance::getKnobByDescription(const std::string& desc) const{
 
-    const std::vector<Knob*>& knobs = getKnobs();
+    const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
     for(U32 i = 0; i < knobs.size() ; ++i){
         if (knobs[i]->getDescription() == desc) {
             return knobs[i];
         }
     }
-    return NULL;
+    return boost::shared_ptr<Knob>();
 }
 
 bool EffectInstance::message(Natron::MessageType type,const std::string& content) const{

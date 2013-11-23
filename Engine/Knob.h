@@ -16,13 +16,18 @@
 #include <string>
 #include <map>
 #include <cfloat>
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
+
 #include <QtCore/QMutex>
 #include <QtCore/QStringList>
 
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/serialization/shared_ptr.hpp>
+#include <boost/serialization/map.hpp>
+#include <boost/serialization/list.hpp>
+#include <boost/serialization/utility.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include "Global/GlobalDefines.h"
 #include "Global/AppManager.h"
@@ -157,17 +162,40 @@ T interpolate_catmullRom(double t0,const T v0, // control point k - 1
  * to interpolate an AnimationCurve. The _leftTangent and _rightTangent can be
  * used by the interpolation method of the curve.
 **/
-class KeyFrame : public QObject {
+class KeyFrame  {
     
-
-    Q_OBJECT
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        (void)version;
+        ar & boost::serialization::make_nvp("Time",_time);
+        ar & boost::serialization::make_nvp("Value",_value);
+        ar & boost::serialization::make_nvp("LeftTangent",_leftTangent);
+        ar & boost::serialization::make_nvp("RightTangent",_rightTangent);
+    }
     
 public:
 
     typedef std::pair<double,Variant> Tangent;
 
+    KeyFrame()
+    : _value()
+    , _time(0)
+    , _interpolation(Natron::LINEAR)
+    {}
     
     KeyFrame(double time,const Variant& initialValue);
+    
+    KeyFrame(const KeyFrame& other)
+    : _value(other._value)
+    , _time(other._time)
+    , _leftTangent(other._leftTangent)
+    , _rightTangent(other._rightTangent)
+    , _interpolation(Natron::LINEAR)
+    {
+        
+    }
 
     ~KeyFrame(){}
     
@@ -182,49 +210,34 @@ public:
     void setLeftTangent(double time,const Variant& v){
         _leftTangent.first = time;
         _leftTangent.second = v;
-        emit keyFrameChanged();
     }
     
     void setRightTangent(double time,const Variant& v){
         _rightTangent.first = time;
         _rightTangent.second = v;
-        emit keyFrameChanged();
     }
     
     void setValue(const Variant& v){
         _value = v;
-        emit keyFrameChanged();
     }
     
     void setTime(double time){
         _time = time;
-        emit keyFrameChanged();
     }
 
+    void setInterpolation(Natron::Interpolation interp) { _interpolation = interp; }
     
-public slots:
+    Natron::Interpolation getInterpolation() const { return _interpolation; }
     
-    void onLeftTangentChanged(double time,const Variant& v){
-        _leftTangent.first = time;
-        _leftTangent.second = v;
+    bool operator==(const KeyFrame& other) const {
+        return _value == other._value &&
+        _time == other._time &&
+        _leftTangent.first == other._leftTangent.first &&
+        _leftTangent.second == other._leftTangent.second &&
+        _rightTangent.first == other._rightTangent.first &&
+        _rightTangent.second == other._rightTangent.second &&
+        _interpolation == other._interpolation;
     }
-    
-    void onRightTangentChanged(double time,const Variant& v){
-        _rightTangent.first = time;
-        _rightTangent.second = v;
-    }
-    
-    void onValueChanged(const Variant& v){
-        _value = v;
-    }
-    
-    void onTimeChanged(double time){
-        _time = time;
-    }
-    
-signals:
-
-    void keyFrameChanged();
     
 private:
     
@@ -232,40 +245,54 @@ private:
     double _time; /// a value ranging between 0 and 1
     
     Tangent _leftTangent,_rightTangent;
+    Natron::Interpolation _interpolation;
 
 };
 
 /**
   * @brief A CurvePath is a list of chained curves. Each curve is a set of 2 keyFrames and has its
   * own interpolation method (that can differ from other curves).
-  * 2 connected curves share a same keyFrame.
 **/
-class CurvePath : public QObject {
-
-    Q_OBJECT
+class CurvePath  {
+    
+    
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        (void)version;
+        ar & boost::serialization::make_nvp("KeyFrames",_keyFrames);
+    }
     
 public:
     
     
     //each segment of curve between a keyframe and the next can have a different interpolation method
-    typedef std::list< std::pair<boost::shared_ptr<KeyFrame>,Natron::Interpolation > > KeyFrames;
+    typedef std::list< KeyFrame > KeyFrames;
 
 
     enum InterpolableType{
         INT = 0,
         DOUBLE = 1
     };
+    
+    CurvePath(){}
+    
+    CurvePath(const CurvePath& other):
+    _keyFrames(other._keyFrames)
+    {}
 
-    CurvePath(boost::shared_ptr<KeyFrame> cp);
+    CurvePath(const KeyFrame& cp);
 
     ~CurvePath(){}
 
+    bool isAnimated() const { return _keyFrames.size() > 1; }
+    
+    void addControlPoint(const KeyFrame& cp);
 
-    void addControlPoint(boost::shared_ptr<KeyFrame> cp);
+    void setStart(const KeyFrame& cp);
 
-    void setStart(boost::shared_ptr<KeyFrame> cp);
-
-    void setEnd(boost::shared_ptr<KeyFrame> cp);
+    void setEnd(const KeyFrame& cp);
 
     int getControlPointsCount() const { return (int)_keyFrames.size(); }
 
@@ -273,16 +300,13 @@ public:
 
     double getMaximumTimeCovered() const;
 
-    boost::shared_ptr<KeyFrame> getStart() const { assert(!_keyFrames.empty()); return _keyFrames.front().first; }
+    const KeyFrame& getStart() const { assert(!_keyFrames.empty()); return _keyFrames.front(); }
 
-    boost::shared_ptr<KeyFrame> getEnd() const { assert(!_keyFrames.empty()); return _keyFrames.back().first; }
+    const KeyFrame& getEnd() const { assert(!_keyFrames.empty()); return _keyFrames.back(); }
 
     Variant getValueAt(double t) const;
     
     const KeyFrames& getKeyFrames() const { return _keyFrames; }
-signals:
-
-    void curveChanged();
 
 private:
 
@@ -292,31 +316,31 @@ private:
 
         if(_keyFrames.size() == 1){
             //if there's only 1 keyframe, don't bother interpolating
-            return (*_keyFrames.begin()).first->getValue().value<T>();
+            return (*_keyFrames.begin()).getValue().value<T>();
         }
 
         KeyFrames::const_iterator upper;
         for(KeyFrames::const_iterator it = _keyFrames.begin();it!=_keyFrames.end();++it){
-            if((*it).first->getTime() > t){
+            if((*it).getTime() > t){
                 upper = it;
                 break;
-            }else if((*it).first->getTime() == t){
+            }else if((*it).getTime() == t){
                 //if the time is exactly the time of a keyframe, return its value
-                return (*it).first->getValue().value<T>();
+                return (*it).getValue().value<T>();
             }
         }
 
         //if we found no key that has a greater time (i.e: we search before the 1st keyframe)
         if(upper == _keyFrames.begin()){
-            if((*upper).second == Natron::CONSTANT || (*upper).second == Natron::LINEAR){
-                return (*upper).first->getValue().value<T>();
+            if((*upper).getInterpolation() == Natron::CONSTANT || (*upper).getInterpolation() == Natron::LINEAR){
+                return (*upper).getValue().value<T>();
             }else{
-                boost::shared_ptr<KeyFrame> key = (*upper).first;
+                const KeyFrame& key = (*upper);
                 //for all other methods, interpolate linearly in the direction of the tangent
-                const KeyFrame::Tangent& tangent = key->getLeftTangent();
-                T keyFrameValue = key->getValue().value<T>();
-                return ((std::abs(tangent.second.value<T>() - keyFrameValue) * std::abs(key->getTime() - t)) /
-                        (std::abs(key->getTime() - tangent.first))) + keyFrameValue;
+                const KeyFrame::Tangent& tangent = key.getLeftTangent();
+                T keyFrameValue = key.getValue().value<T>();
+                return ((std::abs(tangent.second.value<T>() - keyFrameValue) * std::abs(key.getTime() - t)) /
+                        (std::abs(key.getTime() - tangent.first))) + keyFrameValue;
             }
         }
 
@@ -328,20 +352,20 @@ private:
 
         if(upper == _keyFrames.end()){
 
-            if((*prev).second == Natron::CONSTANT || (*prev).second == Natron::LINEAR){
-                return (*prev).first->getValue().value<T>();
+            if((*prev).getInterpolation() == Natron::CONSTANT || (*prev).getInterpolation() == Natron::LINEAR){
+                return (*prev).getValue().value<T>();
             }else{
-                boost::shared_ptr<KeyFrame> key = (*prev).first;
+                const KeyFrame& key = (*prev);
                 //for all other methods, interpolate linearly in the direction of the tangent
-                const KeyFrame::Tangent& tangent = key->getRightTangent();
-                T keyFrameValue = key->getValue().value<T>();
-                return ((std::abs(tangent.second.value<T>() - keyFrameValue) * std::abs(key->getTime() - t)) /
-                        (std::abs(key->getTime() - tangent.first))) + keyFrameValue;
+                const KeyFrame::Tangent& tangent = key.getRightTangent();
+                T keyFrameValue = key.getValue().value<T>();
+                return ((std::abs(tangent.second.value<T>() - keyFrameValue) * std::abs(key.getTime() - t)) /
+                        (std::abs(key.getTime() - tangent.first))) + keyFrameValue;
             }
         }
 
         // if we reach here we are between 2 keyframes (prev and upper)
-        Natron::Interpolation inter = (*prev).second;
+        Natron::Interpolation inter = (*prev).getInterpolation();
         if(inter == Natron::CATMULL_ROM){
             //we have control points k (prev) ,k+1 (upper), we need to find k-1 and k+2
             // if we can't find them take respectively k for k-1 and k+1 for k+2
@@ -355,14 +379,14 @@ private:
             }
             KeyFrames::const_iterator uppernext = upper; // k+2
             ++uppernext;
-            t0 = prevprev != _keyFrames.end() ? (*prevprev).first->getTime() : (*prev).first->getTime();
-            v0 = prevprev != _keyFrames.end() ? (*prevprev).first->getValue().value<T>() : (*prev).first->getValue().value<T>();
-            t1 = (*prev).first->getTime();
-            v1 = (*prev).first->getValue().value<T>();
-            t2 = (*upper).first->getTime();
-            v2 = (*upper).first->getValue().value<T>();
-            t3 = uppernext != _keyFrames.end() ? (*uppernext).first->getTime() : (*upper).first->getTime();
-            v3 = uppernext != _keyFrames.end() ? (*uppernext).first->getValue().value<T>() : (*upper).first->getValue().value<T>();
+            t0 = prevprev != _keyFrames.end() ? (*prevprev).getTime() : (*prev).getTime();
+            v0 = prevprev != _keyFrames.end() ? (*prevprev).getValue().value<T>() : (*prev).getValue().value<T>();
+            t1 = (*prev).getTime();
+            v1 = (*prev).getValue().value<T>();
+            t2 = (*upper).getTime();
+            v2 = (*upper).getValue().value<T>();
+            t3 = uppernext != _keyFrames.end() ? (*uppernext).getTime() : (*upper).getTime();
+            v3 = uppernext != _keyFrames.end() ? (*uppernext).getValue().value<T>() : (*upper).getValue().value<T>();
 
             //now normalize all the 't's to be in the range [0,1]
             t2 = (t2 - t0) / (t3 - t0);
@@ -376,13 +400,13 @@ private:
         }else{
             double t0,t3;
             T v0,v1,v2,v3;
-            t0 = (*prev).first->getTime();
-            t3 = (*upper).first->getTime();
+            t0 = (*prev).getTime();
+            t3 = (*upper).getTime();
 
-            v0 = (*prev).first->getValue().value<T>();
-            v1 = (*prev).first->getRightTangent().second.value<T>();
-            v2 = (*upper).first->getLeftTangent().second.value<T>();
-            v3 = (*upper).first->getValue().value<T>();
+            v0 = (*prev).getValue().value<T>();
+            v1 = (*prev).getRightTangent().second.value<T>();
+            v2 = (*upper).getLeftTangent().second.value<T>();
+            v3 = (*upper).getValue().value<T>();
 
             //normalize t relatively to t0, t3
             t = (t - t0) / (t3 - t0);
@@ -400,6 +424,88 @@ private:
 
 
 /******************************KNOB_BASE**************************************/
+
+/**
+ * @brief A class based on Variant that can store a value across multiple dimension
+ * and also have specific "keyframes".
+ **/
+class MultidimensionalValue {
+    
+    friend class boost::serialization::access;
+    template<class Archive>
+    void save(Archive & ar, const unsigned int version) const
+    {
+        (void)version;
+        ar & boost::serialization::make_nvp("Values",_value);
+        ar & boost::serialization::make_nvp("Curves",_curves);
+    }
+    template<class Archive>
+    void load(Archive & ar, const unsigned int version)
+    {
+        (void)version;
+        ar & boost::serialization::make_nvp("Values",_value);
+        ar & boost::serialization::make_nvp("Curves",_curves);
+    }
+    
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
+    
+    
+public:
+    /// for each dimension,there's a list of chained curve. The list is always sorted
+    /// which means that the curve at index i-1 is linked to the curve at index i.
+    /// Note that 2 connected curves share a pointer to the same keyframe.
+    typedef std::map<int, CurvePath > CurvesMap;
+    
+    MultidimensionalValue(int dimension = 1)
+    : _dimension(dimension)
+    {
+        //default initialize the values map
+        for(int i = 0; i < dimension ; ++i){
+            _value.insert(std::make_pair(i,Variant()));
+        }
+    }
+    
+    MultidimensionalValue(const MultidimensionalValue& other):
+    _value(other._value)
+    ,_dimension(other._dimension)
+    ,_curves(other._curves)
+    {
+        
+    }
+    
+    ~MultidimensionalValue() { _value.clear(); _curves.clear(); }
+    
+    const std::map<int,Variant>& getValueForEachDimension() const {return _value;}
+    
+    int getDimension() const {return _dimension;}
+    
+    void setValue(const Variant& v,int dimension);
+    
+    const Variant& getValue(int dimension) const;
+    
+    const CurvePath& getCurve(int dimension) const;
+    
+    void setValueAtTime(double time,const Variant& v,int dimension);
+    
+    Variant getValueAtTime(double time, int dimension) const;
+    
+
+private:
+    
+  
+    
+    /* A variant storing all the values of the knob in any dimension. <dimension,value>*/
+    std::map<int,Variant> _value;
+    
+    int _dimension;
+    
+    /*A map storing for each dimension the keys of the value. For instance a Double_Knob of dimension 2
+     would have 2 Keys in its map, 1 for dimension 0 and 1 for dimension 1.
+     The Keys are an ordered map of <time,value> where value is the type requested for the knob (i.e: double
+     for a double knob).*/
+    CurvesMap _curves; /// the keys for a specific dimension
+};
+
 class Knob : public QObject
 {
     Q_OBJECT
@@ -407,7 +513,7 @@ class Knob : public QObject
 public:
     
 
-    enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1,STARTUP_RESTORATION = 2};
+    enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1};
 
     
     Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
@@ -420,15 +526,14 @@ public:
     
     KnobHolder*  getHolder() const { return _holder; }
     
-    int getDimension() const {return _dimension;}
+    int getDimension() const {return _value.getDimension();}
     
     /*Must return the type name of the knob. This name will be used by the KnobFactory
      to create an instance of this knob.*/
     virtual const std::string typeName()=0;
     
-    virtual std::string serialize() const =0;
-    
-    void restoreFromString(const std::string& str);
+    void onStartupRestoration(const MultidimensionalValue& other);
+
     
     template<typename T>
     void setValue(T variant[],int count){
@@ -447,12 +552,12 @@ public:
      way to retrieve results in the expected type.*/
     template<typename T>
     T getValue(int dimension = 0) const {
-        std::map<int,Variant>::const_iterator it = _value.find(dimension);
-        assert(it != _value.end());
-        return it->second.value<T>();
+        return _value.getValue(dimension).value<T>();
     }
     
-    const std::map<int,Variant>& getMultiDimensionalValue() const {return _value;}
+    const MultidimensionalValue& getValue() const { return _value; }
+    
+    const std::map<int,Variant>& getValueForEachDimension() const { return _value.getValueForEachDimension(); }
 
     /**
      * @brief Must return true if this knob can animate (i.e: if we can set different values depending on the time)
@@ -467,8 +572,9 @@ public:
      **/
     template<typename T>
     void setValueAtTime(double time,const T& value,int dimensionIndex = 0){
-        assert(dimensionIndex < _dimension);
-        setValueAtTimeInternal(time,Variant(value),dimensionIndex);
+        assert(dimensionIndex < getDimension());
+        assert(canAnimate());
+        _value.setValueAtTime(time,Variant(value),dimensionIndex);
     }
 
     /**
@@ -476,8 +582,9 @@ public:
      **/
     template<typename T>
     void setValueAtTime(double time,T variant[],int count){
+        assert(canAnimate());
         for(int i = 0; i < count; ++i){
-            setValueAtTimeInternal(time,Variant(variant[i]),i);
+            _value.setValueAtTime(time,Variant(variant[i]),i);
         }
     }
 
@@ -489,13 +596,14 @@ public:
      **/
     template<typename T>
     T getValueAtTime(double time,int dimension = 0){
-        return getValueAtTimeInternal(time,dimension).value<T>();
+        assert(canAnimate());
+        return _value.getValueAtTime(time,dimension).value<T>();
     }
 
     /**
      * @brief Returns an ordered map of all the keys at a specific dimension.
      **/
-    boost::shared_ptr<CurvePath> getCurve(int dimension = 0) const;
+    const CurvePath&  getCurve(int dimension = 0) const;
     
     /*other must have exactly the same name*/
     void cloneValue(const Knob& other);
@@ -567,9 +675,7 @@ signals:
     
     
 protected:
-    virtual void fillHashVector()=0; // function to add the specific values of the knob to the values vector.
     
-    virtual void _restoreFromString(const std::string& str) =0;
     
     /*This function can be implemented if you want to clone more data than just the value
      of the knob. Cloning happens when a render request is made: all knobs values of the GUI
@@ -586,23 +692,21 @@ protected:
      <time,file> .*/
     virtual void processNewValue(){}
     
-    KnobHolder*  _holder;
-    /* A variant storing all the values of the knob. <dimension,value>*/
-    std::map<int,Variant> _value;
-    std::vector<U64> _hashVector;
-    int _dimension;
+  
     
     
 private:
     
+    void fillHashVector(); // function to add the specific values of the knob to the values vector.
+
     void updateHash();
     
     void setValueInternal(const Variant& v,int dimension);
-
-    void setValueAtTimeInternal(double time,const Variant& v,int dimension);
-
-    Variant getValueAtTimeInternal(double time, int dimension) const;
     
+    
+    KnobHolder*  _holder;
+    std::vector<U64> _hashVector;
+    MultidimensionalValue _value;
     std::string _description;//< the text label that will be displayed  on the GUI
     QString _name;//< the knob can have a name different than the label displayed on GUI.
     //By default this is the same as _description but can be set by calling setName().
@@ -616,16 +720,6 @@ private:
     bool _isInsignificant; //< if true, a value change will never trigger an evaluation
     std::string _tooltipHint;
 
-    /// for each dimension,there's a list of chained curve. The list is always sorted
-    /// which means that the curve at index i-1 is linked to the curve at index i.
-    /// Note that 2 connected curves share a pointer to the same keyframe.
-    typedef std::map<int, boost::shared_ptr<CurvePath>  > CurvesMap;
-
-    /*A map storing for each dimension the keys of the knob. For instance a Double_Knob of dimension 2
-    would have 2 Keys in its map, 1 for dimension 0 and 1 for dimension 1.
-    The Keys are an ordered map of <time,value> where value is the type requested for the knob (i.e: double
-    for a double knob).*/
-    CurvesMap _curves; /// the keys for a specific dimension
 };
 
 /**
@@ -639,7 +733,7 @@ private:
 class KnobHolder {
     
     AppInstance* _app;
-    std::vector<Knob*> _knobs;
+    std::vector< boost::shared_ptr<Knob> > _knobs;
     bool _betweenBeginEndParamChanged;
 
 public:
@@ -651,9 +745,7 @@ public:
       , _betweenBeginEndParamChanged(false){}
     
     virtual ~KnobHolder(){
-        while(!_knobs.empty()) {
-            delete _knobs.back();
-        }
+        _knobs.clear();
     }
     
     /**
@@ -685,7 +777,7 @@ public:
     
     int getAppAge() const;
     
-    const std::vector<Knob*>& getKnobs() const { return _knobs; }
+    const std::vector< boost::shared_ptr<Knob> >& getKnobs() const { return _knobs; }
     
     void beginValuesChanged(Knob::ValueChangedReason reason);
     
@@ -723,7 +815,7 @@ private:
     
     /*Add a knob to the vector. This is called by the
      Knob class.*/
-    void addKnob(Knob* k){ _knobs.push_back(k); }
+    void addKnob(boost::shared_ptr<Knob> k){ _knobs.push_back(k); }
     
     /*Removes a knob to the vector. This is called by the
      Knob class.*/
@@ -749,8 +841,6 @@ public:
         Knob(holder,description,dimension)
     {}
     
-    virtual void fillHashVector();
-
     virtual bool canAnimate() const { return false; }
     
     virtual const std::string typeName(){return "InputFile";}
@@ -787,8 +877,6 @@ public:
      */
     QString getRandomFrameName(int f,bool loadNearestIfNotFound) const;
     
-    virtual std::string serialize() const;
-
     virtual void cloneExtraData(const Knob& other);
     
     virtual void processNewValue();
@@ -796,9 +884,6 @@ public:
 signals:
     void shouldOpenFile();
     
-protected:
-    
-    virtual void _restoreFromString(const std::string& str);
 
 };
 
@@ -817,8 +902,6 @@ public:
         Knob(holder,description,dimension)
     {}
     
-    virtual void fillHashVector();
-
     virtual bool canAnimate() const { return false; }
     
     std::string getFileName() const;
@@ -829,17 +912,11 @@ public:
         emit shouldOpenFile();
     }
     
-    virtual std::string serialize() const;
-
     
 signals:
     
     void shouldOpenFile();
-    
-protected:
-    
-    virtual void _restoreFromString(const std::string& str);
-    
+
 };
 
 /******************************INT_KNOB**************************************/
@@ -879,8 +956,6 @@ public:
 
     bool isSliderDisabled() const {return _disableSlider;}
     
-    virtual void fillHashVector();
-
     virtual bool canAnimate() const { return true; }
     
     virtual const std::string typeName(){return "Int";}
@@ -1014,13 +1089,7 @@ public:
     
     const std::vector<int>& getDisplayMaximums() const {return _displayMaxs;}
     
-    virtual std::string serialize() const;
-
-    
-protected:
-    
-    virtual void _restoreFromString(const std::string& str);
-    
+ 
 signals:
     
     void minMaxChanged(int mini,int maxi,int index = 0);
@@ -1049,19 +1118,11 @@ public:
         Knob(holder,description,dimension)
     {}
     
-    virtual void fillHashVector();
-
     virtual bool canAnimate() const { return false; }
     
     virtual const std::string typeName(){return "Bool";}
 
-    virtual std::string serialize() const;
-
-protected:
-    
-    
-    virtual void _restoreFromString(const std::string& str);
-    
+   
 };
 
 /******************************DOUBLE_KNOB**************************************/
@@ -1100,11 +1161,7 @@ public:
 
     bool isSliderDisabled() const {return _disableSlider;}
     
-    virtual void fillHashVector();
-
     virtual bool canAnimate() const { return true; }
-    
-    virtual std::string serialize() const;
     
     virtual const std::string typeName(){return "Double";}
     
@@ -1251,9 +1308,6 @@ public:
             emit decimalsChanged(decis[i],i);
         }
     }
-protected:
-    
-    virtual void _restoreFromString(const std::string& str);
 signals:
     void minMaxChanged(double mini,double maxi,int index = 0);
     
@@ -1284,17 +1338,11 @@ public:
     Button_Knob(KnobHolder*  holder, const std::string& description,int dimension):
         Knob(holder,description,dimension){}
     
-    virtual void fillHashVector(){}
-
     virtual bool canAnimate() const { return false; }
     
     virtual const std::string typeName(){return "Button";}
     
-    virtual std::string serialize() const{return "";}
 
-protected:
-    
-    virtual void _restoreFromString(const std::string& str){(void)str;}
 };
 
 /******************************COMBOBOX_KNOB**************************************/
@@ -1316,8 +1364,6 @@ public:
 
     virtual bool canAnimate() const { return false; }
     
-    virtual void fillHashVector();
-    
     virtual const std::string typeName(){return "ComboBox";}
     
     /*Must be called right away after the constructor.*/
@@ -1336,10 +1382,6 @@ public:
     
     const std::string& getActiveEntryText() const { return _entries[getActiveEntry()]; }
     
-    virtual std::string serialize() const;
-protected:
-    
-    virtual void _restoreFromString(const std::string& str);
 signals:
     
     void populated();
@@ -1366,14 +1408,8 @@ public:
 
     virtual bool canAnimate() const { return false; }
     
-    virtual void fillHashVector(){}
-    
     virtual const std::string typeName(){return "Separator";}
     
-    virtual std::string serialize() const{return "";}
-protected:
-    
-    virtual void _restoreFromString(const std::string& str){(void)str;}
 };
 /******************************RGBA_KNOB**************************************/
 
@@ -1415,16 +1451,9 @@ public:
     }
     
     virtual bool canAnimate() const { return true; }
-
-    virtual void fillHashVector();
     
     virtual const std::string typeName(){return "Color";}
     
-    virtual std::string serialize() const;
-
-protected:
-    
-    virtual void _restoreFromString(const std::string& str);
     
 };
 
@@ -1443,18 +1472,11 @@ public:
     }
     
     virtual bool canAnimate() const { return false; }
-
-    virtual void fillHashVector();
     
     virtual const std::string typeName(){return "String";}
     
     std::string getString() const {return getValue<QString>().toStdString();}
     
-    virtual std::string serialize() const;
-protected:
-    
-    
-    virtual void _restoreFromString(const std::string& str);
 private:
     QStringList _entries;
 };
@@ -1478,18 +1500,12 @@ public:
 
     virtual bool canAnimate() const { return false; }
     
-    virtual void fillHashVector(){}
-    
     virtual const std::string typeName(){return "Group";}
     
     void addKnob(Knob* k);
     
     const std::vector<Knob*>& getChildren() const {return _children;}
-    
-    virtual std::string serialize() const{return "";}
-protected:
-    
-    virtual void _restoreFromString(const std::string& str){(void)str;}
+
 };
 /******************************TAB_KNOB**************************************/
 
@@ -1508,8 +1524,6 @@ public:
     }
     
     virtual bool canAnimate() const { return false; }
-
-    virtual void fillHashVector(){}
     
     virtual const std::string typeName(){return "Tab";}
     
@@ -1518,12 +1532,7 @@ public:
     void addKnob(const std::string& tabName,Knob* k);
     
     const std::map<std::string,std::vector<Knob*> >& getKnobs() const {return _knobs;}
-    
-    virtual std::string serialize() const{return "";}
-    
-protected:
-    
-    virtual void _restoreFromString(const std::string& str){(void)str;}
+
     
 private:
     std::map<std::string,std::vector<Knob*> > _knobs;
@@ -1545,17 +1554,10 @@ public:
     
     virtual bool canAnimate() const { return false; }
 
-    virtual void fillHashVector();
-    
-    virtual std::string serialize() const;
     
     virtual const std::string typeName(){return "RichText";}
     
     std::string getString() const {return getValue<QString>().toStdString();}
-    
-protected:
-    
-    virtual void _restoreFromString(const std::string& str);
 
 };
 

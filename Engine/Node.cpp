@@ -490,7 +490,7 @@ int Node::getRenderViewsCountForEffect( const EffectInstance* effect) const
 }
 
 
-Knob* Node::getKnobByDescription(const std::string& desc) const
+boost::shared_ptr<Knob> Node::getKnobByDescription(const std::string& desc) const
 {
     return _liveInstance->getKnobByDescription(desc);
 }
@@ -635,7 +635,7 @@ bool Node::isOpenFXNode() const
     return _liveInstance->isOpenFX();
 }
 
-const std::vector<Knob*>& Node::getKnobs() const
+const std::vector< boost::shared_ptr<Knob> >& Node::getKnobs() const
 {
     return _liveInstance->getKnobs();
 }

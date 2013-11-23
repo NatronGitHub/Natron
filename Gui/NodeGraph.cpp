@@ -1114,10 +1114,10 @@ void NodeGraph::dropEvent(QDropEvent* event){
         
         QStringList list = files[i];
         Natron::Node* reader = _gui->getApp()->createNode("Reader",true);
-        const std::vector<Knob*>& knobs = reader->getKnobs();
+        const std::vector<boost::shared_ptr<Knob> >& knobs = reader->getKnobs();
         for(U32 j = 0 ; j < knobs.size();++j){
             if(knobs[j]->typeName() == "InputFile"){
-                File_Knob* fileKnob = dynamic_cast<File_Knob*>(knobs[j]);
+                boost::shared_ptr<File_Knob> fileKnob = boost::dynamic_pointer_cast<File_Knob>(knobs[j]);
                 assert(fileKnob);
                 fileKnob->setValue(files[i]);
                // reader->refreshPreviewImage(fileKnob->firstFrame());

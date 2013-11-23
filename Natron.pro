@@ -41,6 +41,7 @@ warning("Compiling in DEBUG mode.")
     DEFINES += NATRON_DEBUG
 }
 
+QMAKE_CXXFLAGS += -ftemplate-depth=500
 
 # When compiler is GCC check for at least version 4.7
 *g++*{
