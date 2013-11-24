@@ -166,6 +166,7 @@ HEADERS += \
     Engine/Hash64.h \
     Engine/ImageInfo.h \
     Engine/Image.h \
+    Engine/Interpolation.h \
     Engine/Knob.h \
     Engine/Log.h \
     Engine/LRUHashTable.h \

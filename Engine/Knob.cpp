@@ -266,9 +266,9 @@ void CurvePath::setEnd(const KeyFrame& cp){
 
 void CurvePath::addControlPoint(const KeyFrame& cp)
 {
-
+    KeyFrames::iterator newKeyIt = _keyFrames.end();
     if(_keyFrames.empty()){
-        _keyFrames.push_back(cp);
+        newKeyIt = _keyFrames.insert(_keyFrames.end(),cp);
     }else{
         //finding a matching or the first greater key
         KeyFrames::iterator upper = _keyFrames.end();
@@ -284,20 +284,60 @@ void CurvePath::addControlPoint(const KeyFrame& cp)
         }
         //if we found no key that has a greater time, just append the key
         if(upper == _keyFrames.end()){
-            _keyFrames.push_back(cp);
+            newKeyIt = _keyFrames.insert(_keyFrames.end(),cp);
             return;
         }
         //if all the keys have a greater time, just insert this key at the begining
         if(upper == _keyFrames.begin()){
-            _keyFrames.push_front(cp);
+            newKeyIt = _keyFrames.insert(_keyFrames.begin(),cp);
             return;
         }
 
         //if we reach here, that means we're in the middle of 2 keys, insert it before the upper bound
-        _keyFrames.insert(upper,cp);
+        newKeyIt = _keyFrames.insert(upper,cp);
 
     }
+    refreshTangents(newKeyIt);
 }
+
+void CurvePath::refreshTangents(KeyFrames::iterator key){
+    double tcur = key->getTime();
+    double vcur = key->getValue().value<double>();
+    
+    double tprev,vprev,tnext,vnext;
+    if(key == _keyFrames.begin()){
+        tprev = tcur;
+        vprev = vcur;
+    }else{
+        KeyFrames::const_iterator prev = key;
+        --prev;
+        tprev = prev->getTime();
+        vprev = prev->getValue().value<double>();
+    }
+    
+    KeyFrames::const_iterator next = key;
+    ++next;
+    if(next == _keyFrames.end()){
+        tnext = tcur;
+        vnext = vcur;
+    }else{
+        tnext = next->getTime();
+        vnext = next->getValue().value<double>();
+    }
+    
+    double tcur_rightTan,vcur_rightTan,tcur_leftTan,vcur_leftTan;
+    Natron::autoComputeTangents(key->getInterpolation(),
+                                tprev, vprev,
+                                tcur, vcur,
+                                tnext, vnext,
+                                &tcur_leftTan, &vcur_leftTan,
+                                &tcur_rightTan, &vcur_rightTan);
+    
+    key->setLeftTangent(tcur_leftTan, Variant(vcur_leftTan));
+    key->setRightTangent(tcur_rightTan, Variant(vcur_rightTan));
+}
+
+
 
 Variant CurvePath::getValueAt(double t) const{
     assert(!_keyFrames.empty());

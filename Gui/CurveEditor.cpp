@@ -116,49 +116,52 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,NodeGui *node)
     const std::vector<boost::shared_ptr<Knob> >& knobs = node->getNode()->getKnobs();
 
     bool hasAtLeast1KnobWithACurve = false;
-
+    bool hasAtLeast1KnobWithACurveShown = false;
 
     for(U32 i = 0; i < knobs.size();++i){
-        QTreeWidgetItem* knobItem = new QTreeWidgetItem(nameItem);
+        
         boost::shared_ptr<Knob> k = knobs[i];
+        
+        if(!k->canAnimate()){
+            continue;
+        }
+        
+        hasAtLeast1KnobWithACurve = true;
+        
+        QTreeWidgetItem* knobItem = new QTreeWidgetItem(nameItem);
+
         knobItem->setText(0,k->getName().c_str());
         boost::shared_ptr<CurveGui> knobCurve;
 
-        bool hasAtLeast1Curve = false;
         if(k->getDimension() == 1){
-            const CurvePath& internalCurve = k->getCurve(0);
-            if(!internalCurve.isAnimated()){
-                delete knobItem;
-                continue;
+
+            knobCurve.reset(new CurveGui(k->getCurve(),k->getDimensionName(0).c_str(),QColor(255,255,255),2));
+            if(!k->getCurve().isAnimated()){
+                knobItem->setHidden(true);
+            }else{
+                hasAtLeast1KnobWithACurveShown = true;
             }
-            hasAtLeast1Curve = true;
-            knobCurve.reset(new CurveGui(internalCurve,k->getDimensionName(0).c_str(),QColor(255,255,255),2));
-        }
-
-        if(k->getDimension() > 1){
+        }else{
             for(int j = 0 ; j < k->getDimension();++j){
-
-                const CurvePath&  internalCurve = k->getCurve(j);
-                if(!internalCurve.isAnimated()){
-                    continue;
-                }
+                
                 QTreeWidgetItem* dimItem = new QTreeWidgetItem(knobItem);
                 dimItem->setText(0,k->getDimensionName(j).c_str());
-                hasAtLeast1Curve = true;
-                boost::shared_ptr<CurveGui> dimCurve(new CurveGui(internalCurve,k->getDimensionName(j).c_str(),QColor(255,255,255),2));
+                boost::shared_ptr<CurveGui> dimCurve(new CurveGui(k->getCurve(j),k->getDimensionName(j).c_str(),QColor(255,255,255),2));
                 _nodeElements.push_back(make_pair(dimItem,dimCurve));
+                if(!k->getCurve().isAnimated()){
+                    dimItem->setHidden(true);
+                }else{
+                    hasAtLeast1KnobWithACurveShown = true;
+                }
             }
         }
-        if(hasAtLeast1Curve){
-            _nodeElements.push_back(make_pair(knobItem,knobCurve));
-            hasAtLeast1KnobWithACurve = true;
-        }else{
-             delete knobItem;
-        }
-
+        _nodeElements.push_back(make_pair(knobItem,knobCurve));
     }
     if(hasAtLeast1KnobWithACurve){
         _nodeElements.push_back(make_pair(nameItem,boost::shared_ptr<CurveGui>()));
+        if(!hasAtLeast1KnobWithACurveShown){
+            nameItem->setHidden(true);
+        }
     }else{
         delete nameItem;
     }

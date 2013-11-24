@@ -34,6 +34,7 @@
 
 #include "Engine/Variant.h"
 #include "Engine/Rect.h"
+#include "Engine/Interpolation.h"
 
 class Knob;
 class holder;
@@ -70,92 +71,6 @@ private:
     void loadBultinKnobs();
     
 };
-
-namespace Natron{
-
-enum Interpolation{
-    CONSTANT = 0,
-    LINEAR = 1,
-    HERMITE_CUBIC = 2,
-    CATMULL_ROM = 3,
-    BEZIER_CUBIC = 4
-};
-
-/**
- * @brief Interpolates using the control points P0(t0,v0) , P3(t3,v3)
- * and the tangents P1(t1,v1) (being the tangent of P0) and P2(t2,v2)
- * (being the tangent of P3) the value at 'currentTime' using the
- * interpolation method "interp".
- * Note that for CATMULL-ROM you must use the function interpolate_catmullRom
- * which will compute the tangents for you.
-**/
-template <typename T>
-T interpolate(double t0,const T v0, //start control point
-              const T v1, //being the tangent of (t0,v0)
-              const T v2, //being the tangent of (t3,v3)
-              double t3,const T v3, //end control point
-              double currentTime,
-              Interpolation interp){
-
-    assert(interp != CATMULL_ROM);
-    double tsquare = currentTime * currentTime;
-    double tcube = tsquare * currentTime;
-    switch(interp){
-
-    case CONSTANT:
-        return currentTime < t3 ? v0 : v3;
-
-    case LINEAR:
-
-        return ((currentTime - t0) / (t3 - t0)) * v0 +
-                ((t3 - currentTime) / (t3 - t0)) * v3;
-
-    case HERMITE_CUBIC:
-
-        return ((2 * tcube - 3 * tsquare + 1) * v0) +
-                ((tcube - 2 * tsquare + currentTime) * v1) +
-                ((-2 * tcube + 3 * tsquare) * v3) +
-                (tcube - tsquare) * v2;
-
-    case BEZIER_CUBIC:
-
-        return (1 - 3 * currentTime + 3 * tsquare - tcube) * v0 +
-                (1 - 2 * currentTime + tsquare) * 3 * currentTime * v1 +
-                (1 - currentTime) * 3 * tsquare * v2 +
-                tcube * v3;
-    default: //defaults to a constant
-        return currentTime < t3 ? v0 : v3;
-    }
-}
-
-/**
- * @brief This function is a helper to interpolate a value at
- * a given time. Using 4 control points ( k-1,k,k+1 and k+2 )
- * it computes the tangent Tk and Tk+1 and finally interpolate
- * the value using the HERMITE_CUBIC method.
-**/
-template <typename T>
-T interpolate_catmullRom(double t0,const T v0, // control point k - 1
-                         double t1,const T v1, // control point k
-                         double t2,const T v2,  // control point k + 1
-                         double t3,const T v3,
-                         double currentTime){  // control point k + 2
-
-    //compute tangents
-    T mk = (v2 - v0) / (t2 - t0); // tangent at k
-    T mk_1 = (v3 - v1) / (t3 - t1); // tangent at k + 1
-
-    //and call HERMITE_CUBIC interpolation
-    return interpolate<T>(t0,v0,
-                          mk,
-                          mk_1,
-                          t3,v3,
-                          currentTime,
-                          HERMITE_CUBIC);
-
-}
-
-}
 
 
 /**
@@ -242,6 +157,7 @@ public:
     
 private:
     
+    
     Variant _value; /// the value held by the key
     double _time; /// a value ranging between 0 and 1
     
@@ -317,6 +233,8 @@ public:
     
     const KeyFrames& getKeyFrames() const { return _keyFrames; }
 
+    void refreshTangents(KeyFrames::iterator key);
+    
 private:
 
 
@@ -372,61 +290,27 @@ private:
                         (std::abs(key.getTime() - tangent.first))) + keyFrameValue;
             }
         }
-
-        // if we reach here we are between 2 keyframes (prev and upper)
-        Natron::Interpolation inter = (*prev).getInterpolation();
-        if(inter == Natron::CATMULL_ROM){
-            //we have control points k (prev) ,k+1 (upper), we need to find k-1 and k+2
-            // if we can't find them take respectively k for k-1 and k+1 for k+2
-            double t0,t1,t2,t3;
-            T v0,v1,v2,v3;
-            KeyFrames::const_iterator prevprev = prev; // k-1
-            if(prev == _keyFrames.begin()){
-                prevprev = _keyFrames.end();
-            }else{
-                --prevprev;
-            }
-            KeyFrames::const_iterator uppernext = upper; // k+2
-            ++uppernext;
-            t0 = prevprev != _keyFrames.end() ? (*prevprev).getTime() : (*prev).getTime();
-            v0 = prevprev != _keyFrames.end() ? (*prevprev).getValue().value<T>() : (*prev).getValue().value<T>();
-            t1 = (*prev).getTime();
-            v1 = (*prev).getValue().value<T>();
-            t2 = (*upper).getTime();
-            v2 = (*upper).getValue().value<T>();
-            t3 = uppernext != _keyFrames.end() ? (*uppernext).getTime() : (*upper).getTime();
-            v3 = uppernext != _keyFrames.end() ? (*uppernext).getValue().value<T>() : (*upper).getValue().value<T>();
-
-            //now normalize all the 't's to be in the range [0,1]
-            t2 = (t2 - t0) / (t3 - t0);
-            t1 = (t1 - t0) / (t3 - t0);
-            t = (t - t0) / (t3 - t0);
-            t0 = 0.;
-            t3 = 1.;
-
-
-            return Natron::interpolate_catmullRom<T>(t0,v0,t1,v1,t2,v2,t3,v3,t);
-        }else{
-            double t0,t3;
-            T v0,v1,v2,v3;
-            t0 = (*prev).getTime();
-            t3 = (*upper).getTime();
-
-            v0 = (*prev).getValue().value<T>();
-            v1 = (*prev).getRightTangent().second.value<T>();
-            v2 = (*upper).getLeftTangent().second.value<T>();
-            v3 = (*upper).getValue().value<T>();
-
-            //normalize t relatively to t0, t3
-            t = (t - t0) / (t3 - t0);
-            t0 = 0.;
-            t3 = 1.;
-
-            return Natron::interpolate<T>(t0,v0,v1,v2,t3,v3,t,inter);
-        }
-
+        
+        double t0,t3;
+        T v0,v1,v2,v3;
+        t0 = (*prev).getTime();
+        t3 = (*upper).getTime();
+        
+        v0 = (*prev).getValue().value<T>();
+        v1 = (*prev).getRightTangent().second.value<T>();
+        v2 = (*upper).getLeftTangent().second.value<T>();
+        v3 = (*upper).getValue().value<T>();
+        
+        //normalize t relatively to t0, t3
+        t = (t - t0) / (t3 - t0);
+        t0 = 0.;
+        t3 = 1.;
+        
+        return Natron::interpolate<T>(t0,v0,v1,v2,t3,v3,t,(*prev).getInterpolation());
+        
+        
     }
-
+    
     KeyFrames _keyFrames;
     mutable RectD _bbox;
     mutable bool _betweendBeginAndEndRecord;
