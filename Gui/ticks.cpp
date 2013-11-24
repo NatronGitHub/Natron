@@ -110,3 +110,12 @@ ticks_fill(bool half_tick, int tick_max, int m1, int m2, std::vector<int>* ticks
         (*ticks)[-m1] = 10 * tick_max;
     }
 }
+
+
+// compute alpha value for drawing the ticks
+double ticks_alpha(double min, double max, double val)
+{
+    assert(val > 0. && min > 0. && max > 0. && max > min);
+    const double alpha = sqrt((val-min)/(max-min));
+    return std::max(0.,std::min(alpha,1.));
+}

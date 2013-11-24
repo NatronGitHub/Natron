@@ -200,14 +200,6 @@ void CurveWidget::drawBaseAxis(){
     glColor4f(1., 1., 1., 1.);
 }
 
-static inline
-double ticks_alpha(double min, double max, double val)
-{
-    assert(val > 0. && min > 0. && max > 0. && max > min);
-    const double alpha = sqrt((val-min)/(max-min));
-    return std::max(0.,std::min(alpha,1.));
-}
-
 void CurveWidget::drawScale(){
     QPointF btmLeft = toImgCoordinates_fast(0,height()-1);
     QPointF topRight = toImgCoordinates_fast(width()-1, 0);

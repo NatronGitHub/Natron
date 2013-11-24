@@ -47,7 +47,9 @@ void ticks_bounds(double xmin, double xmax, double tick_width, bool half_tick, i
 // 1 (half minor tick), 2 (minor tick), 10 (regular tick), 20, 100, etc.
 //
 // tick_max is the maximum tick value that may be used, see tick_bounds().
-void
-ticks_fill(bool half_tick, int tick_max, int m1, int m2, std::vector<int>* ticks);
+void ticks_fill(bool half_tick, int tick_max, int m1, int m2, std::vector<int>* ticks);
+
+// compute alpha value for drawing the ticks
+double ticks_alpha(double min, double max, double val);
 
 #endif
