@@ -29,19 +29,23 @@ double ticks_size_10(double xmin, double xmax, double range_units, double min_ti
 // for a range xmin,xmax drawn with a size range_units (in pixels, or cm...),
 // find the smallest tick size, which is a multiple of a power of ten or of five times a
 // power of ten, and is drawn larger than min_tick_size_units (in pixels, or cm...).
-double ticks_size(double xmin, double xmax, double range_units, double min_tick_size_units)
+void ticks_size(double xmin, double xmax, double range_units, double min_tick_size_units, double *t_size, bool* half_tick)
 {
     // first, compute the size of min_tick_size_units
     double min_tick_size = min_tick_size_units * (xmax - xmin) / range_units;
 
     int next_p10 = std::ceil(std::log10(min_tick_size));
-    double tick_size = std::pow(10,next_p10);
-    assert(tick_size/10 < min_tick_size);
-    assert(tick_size >= min_tick_size);
-    if (tick_size/2 >= min_tick_size) {
-        return tick_size/2;
+    *t_size = std::pow(10.,next_p10);
+    assert(*t_size/10 < min_tick_size);
+    assert(*t_size >= min_tick_size);
+    if (*t_size/2 >= min_tick_size) {
+        *t_size /= 2;
+        if (half_tick) {
+            *half_tick = true;
+        }
+    } else if (half_tick) {
+        *half_tick = false;
     }
-    return tick_size;
 }
  
 // ticks_bounds
@@ -52,17 +56,18 @@ double ticks_size(double xmin, double xmax, double range_units, double min_tick_
 // This offset is computed so that the maximum tick value within the interval is below tick_max.
 // The tick value represents the "majorness" of a tick (tick values are 1, 5, 10, 50, etc.).
 // tick_max should be a power of 10. A good value for tick_max is 1000. tick_max should be a multiple of 50
-double ticks_bounds(double xmin, double xmax, double tick_width, int tick_max, int* m1, int* m2)
+void ticks_bounds(double xmin, double xmax, double tick_width, bool half_tick, int tick_max, double *offset, int* m1, int* m2)
 {
-    double offset = 0.;
+    *offset = 0.;
     assert(tick_max >= 0);
     if (tick_max > 0 && (xmin > 0 || xmax < 0)) {
+        const int h = half_tick ? 2 : 1;
+        const int mult = h*tick_width*tick_max;
         // make sure offset is outside of the range (xmin,xmax)
-        offset = (xmin > 0) ? std::floor(xmin/(tick_width*tick_max)) : std::ceil(xmax/(tick_width*tick_max));
+        *offset = mult * ((xmin > 0) ? std::floor(xmin/mult) : std::ceil(xmax/mult));
     }
-    *m1 = std::ceil((xmin-offset)/tick_width);
-    *m2 = std::floor((xmax-offset)/tick_width);
-    return offset;
+    *m1 = std::ceil((xmin-*offset)/tick_width);
+    *m2 = std::floor((xmax-*offset)/tick_width);
 }
 
 // ticks_fill
@@ -78,30 +83,17 @@ double ticks_bounds(double xmin, double xmax, double tick_width, int tick_max, i
 //
 // tick_max is the maximum tick value that may be used, see tick_bounds().
 void
-ticks_fill(int tick_max, int m1, int m2, bool half_tick, std::vector<int>* ticks)
+ticks_fill(bool half_tick, int tick_max, int m1, int m2, std::vector<int>* ticks)
 {
     ticks->resize(m2-m1+1);
 
-    // the largest possible  tick number is the largest power of 10 below max(abs(m1),abs(m2)),
-    // (or half of this, or five times less if half_tick is true)
-    int m_max = std::max(std::abs(m1),std::abs(m2));
-    int tick_size_max = (int)std::pow(10.,std::floor(std::log10(m_max)));
-    if (half_tick) {
-        // find the closest real power of 10 (i.e. 2, 20, or 200 ticks)
-        if (tick_size_max / 5 >= m_max) {
-            tick_size_max /= 5;
-        } else {
-            tick_size_max *= 2;
-        }
-    }
-    tick_size_max = std::min(tick_size_max,tick_max);
     // now all ticks can be obtained by dividing tick_largest by 2, then 5, then 2, then 5, etc.
     int tick_size = 1;
     bool multiply_by_two = half_tick;
-    while (tick_size <= tick_size_max) {
-        int tick_min = std::ceil(m1/(double)tick_size) * tick_size;
-        int tick_max = std::floor(m2/(double)tick_size) * tick_size;
-        for (int tick = tick_min; tick <= tick_max; tick += tick_size) {
+    while (tick_size <= tick_max) {
+        int tick_1 = std::ceil(m1/(double)tick_size) * tick_size;
+        int tick_2 = std::floor(m2/(double)tick_size) * tick_size;
+        for (int tick = tick_1; tick <= tick_2; tick += tick_size) {
             assert(tick-m1 >= 0 && tick-m1 < (int)ticks->size());
             (*ticks)[tick-m1] = tick_size;
         }
