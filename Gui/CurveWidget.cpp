@@ -16,6 +16,7 @@
 
 #include "Engine/Knob.h"
 #include "Gui/ScaleSlider.h"
+#include "Gui/ticks.h"
 
 #define CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE 5 //maximum distance from a curve that accepts a mouse click
 // (in widget pixels)
@@ -207,14 +208,6 @@ void CurveWidget::drawBaseAxis(){
     glColor4f(1., 1., 1., 1.);
 }
 
-static inline
-double ticks_alpha(double min, double max, double val)
-{
-    assert(val > 0. && min > 0. && max > 0. && max > min);
-    const double alpha = sqrt((val-min)/(max-min));
-    return std::max(0.,std::min(alpha,1.));
-}
-
 void CurveWidget::drawScale(){
     QPointF btmLeft = toImgCoordinates_fast(0,height()-1);
     QPointF topRight = toImgCoordinates_fast(width()-1, 0);
@@ -223,33 +216,89 @@ void CurveWidget::drawScale(){
     QFontMetrics fontM(*_font);
     const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
-    int jmax;
-    double xminp,xmaxp,dist;
     std::vector<double> acceptedDistances;
     acceptedDistances.push_back(1.);
     acceptedDistances.push_back(5.);
     acceptedDistances.push_back(10.);
     acceptedDistances.push_back(50.);
-    
-    { /*drawing X axis*/
-        double rangePixel = width(); // AXIS-SPECIFIC
-        double range_min = btmLeft.x(); // AXIS-SPECIFIC
-        double range_max = topRight.x(); // AXIS-SPECIFIC
-        double minTickSizePixel = fontM.width(QString("-0.00000")) + fontM.width(QString("00")); // AXIS-SPECIFIC
 
-        double range = range_max - range_min;
-        int majorTicksCount = (rangePixel / minTickSizePixel) + 2;
-        double minTickSize = range * minTickSizePixel/rangePixel;
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    for (int axis = 0; axis < 2; ++axis) {
+        const double rangePixel = (axis == 0) ? width() : height(); // AXIS-SPECIFIC
+        const double range_min = (axis == 0) ? btmLeft.x() : btmLeft.y(); // AXIS-SPECIFIC
+        const double range_max = (axis == 0) ? topRight.x() : topRight.y(); // AXIS-SPECIFIC
+        const double range = range_max - range_min;
+#if 1 // use new version of graph paper drawing
+        double smallTickSize;
+        bool half_tick;
+        ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
+        int m1, m2;
+        const int ticks_max = 1000;
+        double offset;
+        ticks_bounds(range_min, range_max, smallTickSize, half_tick, ticks_max, &offset, &m1, &m2);
+        std::vector<int> ticks;
+        ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
+        const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
+        const double largestTickSize = range * largestTickSizePixel / rangePixel;
+        const double minTickSizeTextPixel = (axis == 0) ? fontM.width(QString("00")) : fontM.height(); // AXIS-SPECIFIC
+        const double minTickSizeText = range * minTickSizeTextPixel/rangePixel;
+        for(int i = m1 ; i <= m2; ++i) {
+            double value = i * smallTickSize + offset;
+            const double tickSize = ticks[i-m1]*smallTickSize;
+            const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
+
+            glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
+
+            glBegin(GL_LINES);
+            if (axis == 0) {
+                glVertex2f(value, btmLeft.y()); // AXIS-SPECIFIC
+                glVertex2f(value, topRight.y()); // AXIS-SPECIFIC
+            } else {
+                glVertex2f(btmLeft.x(), value); // AXIS-SPECIFIC
+                glVertex2f(topRight.x(), value); // AXIS-SPECIFIC
+            }
+            glEnd();
+
+            if (tickSize > minTickSizeText) {
+                const int tickSizePixel = rangePixel * tickSize/range;
+                const QString s = QString::number(value);
+                const int sSizePixel = (axis == 0) ? fontM.width(s) : fontM.height(); // AXIS-SPECIFIC
+                if (tickSizePixel > sSizePixel) {
+                    const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
+                    double alphaText = 1.0;//alpha;
+                    if (tickSizePixel < sSizeFullPixel) {
+                        // when the text size is between sSizePixel and sSizeFullPixel,
+                        // draw it with a lower alpha
+                        alphaText *= (tickSizePixel - sSizePixel)/(double)minTickSizeTextPixel;
+                    }
+                    QColor c = _scaleColor;
+                    c.setAlpha(255*alphaText);
+                    if (axis == 0) {
+                        renderText(value, btmLeft.y(), s, c, *_font); // AXIS-SPECIFIC
+                    } else {
+                        renderText(btmLeft.x(), value, s, c, *_font); // AXIS-SPECIFIC
+                    }
+                }
+            }
+        }
+#else // use old version of graph paper drawing
+        const double minTickSizePixel = axis == 0 ? fontM.width(QString("-0.00000")) + fontM.width(QString("00")) : fontM.height() * 2; // AXIS-SPECIFIC
+        const int majorTicksCount = (rangePixel / minTickSizePixel) + 2;
+        const double minTickSize = range * minTickSizePixel/rangePixel;
+        double xminp,xmaxp,dist;
         ScaleSlider::LinearScale2(range_min - minTickSize, range_max + minTickSize, majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
 
-        int m1 = floor(xminp/dist + 0.5);
-        int m2 = floor(xmaxp/dist + 0.5);
-        double smallestTickSize = range * smallestTickSizePixel / rangePixel;
-        double largestTickSize = range * largestTickSizePixel / rangePixel;
+        const int m1 = floor(xminp/dist + 0.5);
+        const int m2 = floor(xmaxp/dist + 0.5);
+        const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
+        const double largestTickSize = range * largestTickSizePixel / rangePixel;
         assert(smallestTickSize > 0);
         assert(largestTickSize > 0);
+        int jmax;
         {
-            double log10dist = std::log10(dist);
+            const double log10dist = std::log10(dist);
             if (std::abs(log10dist - std::floor(log10dist+0.5)) < 0.001) {
                 // dist is a power of 10
                 jmax = 10;
@@ -257,11 +306,10 @@ void CurveWidget::drawScale(){
                 jmax = 50;
             }
         }
+        std::cout << " m1=" << m1 << " m2=" << m2 << std::endl;
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         for(int i = m1 ; i <= m2; ++i) {
-            double value = i * dist;
+            const double value = i * dist;
 
             for (int j=0; j < jmax; ++j) {
                 int tickCount = 1;
@@ -296,9 +344,14 @@ void CurveWidget::drawScale(){
                 glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
 
                 glBegin(GL_LINES);
-                double u = value + j*dist/(double)jmax;
-                glVertex2f(u, btmLeft.y()); // AXIS-SPECIFIC
-                glVertex2f(u, topRight.y()); // AXIS-SPECIFIC
+                const double u = value + j*dist/(double)jmax;
+                if (axis == 0) {
+                    glVertex2f(u, btmLeft.y()); // AXIS-SPECIFIC
+                    glVertex2f(u, topRight.y()); // AXIS-SPECIFIC
+                } else {
+                    glVertex2f(btmLeft.x(), u); // AXIS-SPECIFIC
+                    glVertex2f(topRight.x(), u); // AXIS-SPECIFIC
+                }
                 glEnd();
             }
 
@@ -313,95 +366,16 @@ void CurveWidget::drawScale(){
                 s = QString::number(std::floor(value+0.5));
             }
 
-            renderText(value, btmLeft.y(), s, _scaleColor, *_font); // AXIS-SPECIFIC
-        }
-        glDisable(GL_BLEND);
-    }
-    { /*drawing Y axis*/
-        double rangePixel = height(); // AXIS-SPECIFIC
-        double range_min = btmLeft.y(); // AXIS-SPECIFIC
-        double range_max = topRight.y(); // AXIS-SPECIFIC
-        double minTickSizePixel = fontM.height() * 2; // AXIS-SPECIFIC
-
-        double range = range_max - range_min;
-        int majorTicksCount = (rangePixel / minTickSizePixel) + 2;
-        double minTickSize = range * minTickSizePixel / rangePixel;
-        ScaleSlider::LinearScale2(range_min - minTickSize, range_max + minTickSize, majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
-
-        int m1 = floor(xminp/dist + 0.5);
-        int m2 = floor(xmaxp/dist + 0.5);
-        double smallestTickSize = range * smallestTickSizePixel / rangePixel;
-        double largestTickSize = range * largestTickSizePixel / rangePixel;
-        assert(smallestTickSize > 0);
-        assert(largestTickSize > 0);
-        {
-            double log10dist = std::log10(dist);
-            if (std::abs(log10dist - std::floor(log10dist+0.5)) < 0.001) {
-                // dist is a power of 10
-                jmax = 10;
+            if (axis == 0) {
+                renderText(value, btmLeft.y(), s, _scaleColor, *_font); // AXIS-SPECIFIC
             } else {
-                jmax = 50;
+                renderText(btmLeft.x(), value, s, _scaleColor, *_font); // AXIS-SPECIFIC
             }
         }
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        for(int i = m1 ; i <= m2; ++i) {
-            double value = i * dist;
-
-            for (int j=0; j < jmax; ++j) {
-                int tickCount = 1;
-
-                if (i == 0 && j == 0) {
-                    tickCount = 10000; // special case for the axes
-                } else if (j == 0) {
-                    if (i % 100 == 0) {
-                        tickCount = 100*jmax;
-                    } else if (i % 50 == 0) {
-                        tickCount = 50*jmax;
-                    } else if (i % 10 == 0) {
-                        tickCount = 10*jmax;
-                    } else if (i % 5 == 0) {
-                        tickCount = 5*jmax;
-                    } else {
-                        tickCount = 1*jmax;
-                    }
-                } else if (j % 25 == 0) {
-                    tickCount = 25;
-                } else if (j % 10 == 0) {
-                    tickCount = 10;
-                } else if (j % 5 == 0) {
-                    if (jmax == 10 && (i*jmax+j) % 25 == 0) {
-                        tickCount = 25;
-                    } else {
-                        tickCount = 5;
-                    }
-                }
-                const double alpha = ticks_alpha(smallestTickSize,largestTickSize, tickCount*dist/(double)jmax);
-                glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
-                
-                glBegin(GL_LINES);
-                double u = value + j*dist/(double)jmax;
-                glVertex2f(btmLeft.x(), u); // AXIS-SPECIFIC
-                glVertex2f(topRight.x(), u); // AXIS-SPECIFIC
-                glEnd();
-                
-            }
-            QString s;
-            if (dist < 1.) {
-                if (std::abs(value) < dist/2.) {
-                    s = QString::number(0.);
-                } else {
-                    s = QString::number(value);
-                }
-            } else {
-                s = QString::number(std::floor(value+0.5));
-            }
-
-            renderText(btmLeft.x(), value, s, _scaleColor, *_font); // AXIS-SPECIFIC
-        }
-        glDisable(GL_BLEND);
+#endif
     }
+
+    glDisable(GL_BLEND);
     //reset back the color
     glColor4f(1., 1., 1., 1.);
     

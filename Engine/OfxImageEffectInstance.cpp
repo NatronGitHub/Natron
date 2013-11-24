@@ -266,6 +266,9 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
                 ret->getKnob()->setIsInsignificant(true);
             }
+            if(!descriptor.getCanAnimate()){
+                ret->getKnob()->ifAnimatingTurnOffAnimation();
+            }
         }
         return ret;
 
@@ -284,6 +287,9 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             ret->getKnob()->setName(paramName);
             if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
                 ret->getKnob()->setIsInsignificant(true);
+            }
+            if(!descriptor.getCanAnimate()){
+                ret->getKnob()->ifAnimatingTurnOffAnimation();
             }
         }
         return ret;
@@ -304,6 +310,9 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
                 ret->getKnob()->setIsInsignificant(true);
             }
+            if(!descriptor.getCanAnimate()){
+                ret->getKnob()->ifAnimatingTurnOffAnimation();
+            }
 
         }
         return ret;
@@ -323,6 +332,9 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             ret->getKnob()->setName(paramName);
             if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
                 ret->getKnob()->setIsInsignificant(true);
+            }
+            if(!descriptor.getCanAnimate()){
+                ret->getKnob()->ifAnimatingTurnOffAnimation();
             }
         }
         return ret;
@@ -362,6 +374,9 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
                 ret->getKnob()->setIsInsignificant(true);
             }
+            if(!descriptor.getCanAnimate()){
+                ret->getKnob()->ifAnimatingTurnOffAnimation();
+            }
         }
         return ret;
 
@@ -400,6 +415,9 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
                 ret->getKnob()->setIsInsignificant(true);
             }
+            if(!descriptor.getCanAnimate()){
+                ret->getKnob()->ifAnimatingTurnOffAnimation();
+            }
         }
         return ret;
 
@@ -418,6 +436,9 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             ret->getKnob()->setName(paramName);
             if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
                 ret->getKnob()->setIsInsignificant(true);
+            }
+            if(!descriptor.getCanAnimate()){
+                ret->getKnob()->ifAnimatingTurnOffAnimation();
             }
         }
         return ret;
@@ -458,6 +479,9 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             ret->getKnob()->setName(paramName);
             if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
                 ret->getKnob()->setIsInsignificant(true);
+            }
+            if(!descriptor.getCanAnimate()){
+                ret->getKnob()->ifAnimatingTurnOffAnimation();
             }
         }
         return ret;

@@ -22,8 +22,9 @@ double ticks_size_10(double xmin, double xmax, double range_units, double min_ti
 // for a range xmin,xmax drawn with a size range_units (in pixels, or cm...),
 // find the smallest tick size, which is a multiple of a power of ten or of five times a
 // power of ten, and is drawn larger than min_tick_size_units (in pixels, or cm...).
-double ticks_size(double xmin, double xmax, double range_units, double min_tick_size_units);
- 
+// power of ten, and is drawn larger than min_tick_size_units (in pixels, or cm...).
+void ticks_size(double xmin, double xmax, double range_units, double min_tick_size_units, double *t_size, bool* half_tick);
+
 // ticks_bounds
 //
 // Find the index of the first and last tick of width tick_width within the interval xmin,xmax.
@@ -32,7 +33,7 @@ double ticks_size(double xmin, double xmax, double range_units, double min_tick_
 // This offset is computed so that the maximum tick value within the interval is below tick_max.
 // The tick value represents the "majorness" of a tick (tick values are 1, 5, 10, 50, etc.).
 // tick_max should be a power of 10. A good value for tick_max is 1000. tick_max should be a multiple of 50
-double ticks_bounds(double xmin, double xmax, double tick_width, int tick_max, int &m1, int &m2);
+void ticks_bounds(double xmin, double xmax, double tick_width, bool half_tick, int tick_max, double *offset, int* m1, int* m2);
 
 // ticks_fill
 //
@@ -46,7 +47,9 @@ double ticks_bounds(double xmin, double xmax, double tick_width, int tick_max, i
 // 1 (half minor tick), 2 (minor tick), 10 (regular tick), 20, 100, etc.
 //
 // tick_max is the maximum tick value that may be used, see tick_bounds().
-void
-ticks_fill(int tick_max, int m1, int m2, bool half_tick, std::vector<int>* ticks);
+void ticks_fill(bool half_tick, int tick_max, int m1, int m2, std::vector<int>* ticks);
+
+// compute alpha value for drawing the ticks
+double ticks_alpha(double min, double max, double val);
 
 #endif
