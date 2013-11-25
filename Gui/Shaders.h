@@ -33,7 +33,7 @@ static const char* fragRGB ="uniform sampler2D Tex;\n"
 "    vec4 color_tmp = texture2D(Tex,gl_TexCoord[0].st);\n"
 "if(byteMode == 0.0){\n"
 "    \n"
-"    color_tmp.rgb = color_tmp.rgb * color_tmp.a;\n"
+"    color_tmp.rgb = color_tmp.rgb ;\n"
 "   if(lut == 1.0){ // srgb\n"
 "           \n" // << TO SRGB
 "       if (color_tmp.r<=0.0031308){\n"

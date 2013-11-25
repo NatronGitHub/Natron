@@ -522,9 +522,9 @@ void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vec
             double  _a = data[col+3];
             U8 a_,r_,g_,b_;
             a_ = (U8)std::min((int)(_a*256),255);
-            r_ = (U8)std::min((int)((data[col])*_a*_exposure*256),255);
-            g_ = (U8)std::min((int)((data[col+1])*_a*_exposure*256),255);
-            b_ = (U8)std::min((int)((data[col+2])*_a*_exposure*256),255);
+            r_ = (U8)std::min((int)((data[col])*_exposure*256),255);
+            g_ = (U8)std::min((int)((data[col+1])*_exposure*256),255);
+            b_ = (U8)std::min((int)((data[col+2])*_exposure*256),255);
             output[i] = toBGRA(r_,g_,b_,a_);
         }
         /* go backwards from starting point to start of line: */
@@ -533,9 +533,9 @@ void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vec
             double  _a = data[col+3];
             U8 a_,r_,g_,b_;
             a_ = (U8)std::min((int)(_a*256),255);
-            r_ = (U8)std::min((int)((data[col])*_a*_exposure*256),255);
-            g_ = (U8)std::min((int)((data[col+1])*_a*_exposure*256),255);
-            b_ = (U8)std::min((int)((data[col+2])*_a*_exposure*256),255);
+            r_ = (U8)std::min((int)((data[col])*_exposure*256),255);
+            g_ = (U8)std::min((int)((data[col+1])*_exposure*256),255);
+            b_ = (U8)std::min((int)((data[col+2])*_exposure*256),255);
             output[i] = toBGRA(r_,g_,b_,a_);
         }
     }else{ // !linear
@@ -551,9 +551,9 @@ void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vec
             int col = columnSpan[i]*4;
             U8 r_,g_,b_,a_;
             double _a =  data[col+3];
-            error_r = (error_r&0xff) + _colorSpace->toFloatFast(data[col]*_a*_exposure);
-            error_g = (error_g&0xff) + _colorSpace->toFloatFast(data[col+1]*_a*_exposure);
-            error_b = (error_b&0xff) + _colorSpace->toFloatFast(data[col+2]*_a*_exposure);
+            error_r = (error_r&0xff) + _colorSpace->toFloatFast(data[col]*_exposure);
+            error_g = (error_g&0xff) + _colorSpace->toFloatFast(data[col+1]*_exposure);
+            error_b = (error_b&0xff) + _colorSpace->toFloatFast(data[col+2]*_exposure);
             a_ = (U8)std::min(_a*256.,255.);
             r_ = (U8)(error_r >> 8);
             g_ = (U8)(error_g >> 8);
@@ -569,9 +569,9 @@ void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vec
             int col = columnSpan[i]*4;
             U8 r_,g_,b_,a_;
             double _a =  data[col+3];
-            error_r = (error_r&0xff) + _colorSpace->toFloatFast(data[col]*_a*_exposure);
-            error_g = (error_g&0xff) + _colorSpace->toFloatFast(data[col+1]*_a*_exposure);
-            error_b = (error_b&0xff) + _colorSpace->toFloatFast(data[col+2]*_a*_exposure);
+            error_r = (error_r&0xff) + _colorSpace->toFloatFast(data[col]*_exposure);
+            error_g = (error_g&0xff) + _colorSpace->toFloatFast(data[col+1]*_exposure);
+            error_b = (error_b&0xff) + _colorSpace->toFloatFast(data[col+2]*_exposure);
             a_ = (U8)std::min(_a*256.,255.);
             r_ = (U8)(error_r >> 8);
             g_ = (U8)(error_g >> 8);
