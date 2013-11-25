@@ -13,7 +13,6 @@
 #define CURVEEDITOR_H
 
 #include <QWidget>
-#include <boost/shared_ptr.hpp>
 
 class RectD;
 class NodeGui;
@@ -31,7 +30,7 @@ class NodeCurveEditorElement : public QObject
 
 public:
     
-    NodeCurveEditorElement(CurveWidget* curveWidget,QTreeWidgetItem* item,boost::shared_ptr<CurveGui> curve);
+    NodeCurveEditorElement(CurveWidget* curveWidget,QTreeWidgetItem* item,CurveGui* curve);
     
     NodeCurveEditorElement():_treeItem(NULL),_curve(),_curveDisplayed(false),_curveWidget(NULL){}
     
@@ -39,7 +38,7 @@ public:
     
     QTreeWidgetItem* getTreeItem() const {return _treeItem;}
     
-    boost::shared_ptr<CurveGui> getCurve() const {return _curve;}
+    CurveGui* getCurve() const {return _curve;}
 
     bool isCurveVisible() const { return _curveDisplayed; }
     
@@ -54,7 +53,7 @@ private:
     
     
     QTreeWidgetItem* _treeItem;
-    boost::shared_ptr<CurveGui> _curve;
+    CurveGui* _curve;
     bool _curveDisplayed;
     CurveWidget* _curveWidget;
 };
@@ -84,6 +83,7 @@ private:
 
     NodeGui* _node;
     Elements _nodeElements;
+    QTreeWidgetItem* _nameItem;
 
 };
 

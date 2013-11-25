@@ -206,6 +206,19 @@ public:
 
     ~CurvePath(){}
 
+    bool operator==(const CurvePath& other) const{
+        const KeyFrames& otherKeys = other.getKeyFrames();
+        KeyFrames::const_iterator itOther = otherKeys.begin();
+        for(KeyFrames::const_iterator it = _keyFrames.begin();it!=_keyFrames.end();++it){
+            if(!((*it) == (*itOther))){
+                return false;
+            }
+            if(itOther == otherKeys.end())
+                return false;
+            ++itOther;
+        }
+    }
+
     bool isAnimated() const { return _keyFrames.size() > 1; }
     
     void addControlPoint(const KeyFrame& cp);
@@ -601,10 +614,8 @@ protected:
      e.g: The File_Knob parses the files list to create a mapping of
      <time,file> .*/
     virtual void processNewValue(){}
-    
-  
-    
-    
+
+
 private:
     
     void fillHashVector(); // function to add the specific values of the knob to the values vector.

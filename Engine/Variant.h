@@ -17,9 +17,11 @@
 #include <QtCore/QDataStream>
 #include <QtCore/QByteArray>
 #include <QtCore/QString>
+#include <QtCore/QStringList>
 
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
+#include <boost/serialization/list.hpp>
 #include <boost/serialization/split_member.hpp>
 
 class Variant : public QVariant {
@@ -30,38 +32,119 @@ class Variant : public QVariant {
     void save(Archive & ar, const unsigned int version) const
     {
         (void)version;
-        QByteArray data;
-        QDataStream ds(&data,QIODevice::WriteOnly);
-        ds << *this;
-        data = data.toBase64();
-        QString str(data);
-        std::string stdStr = str.toStdString();
-        ar & boost::serialization::make_nvp("Value",stdStr);
+        QVariant::Type t = type();
+        std::string typeStr;
+        switch(t){
+        case QVariant::Bool:{
+            bool v = toBool();
+            typeStr = "bool";
+            ar & boost::serialization::make_nvp("Type",typeStr);
+            ar & boost::serialization::make_nvp("Value",v);
+            break;
+        }
+        case QVariant::Int:{
+            int v = toInt();
+            typeStr = "int";
+            ar & boost::serialization::make_nvp("Type",typeStr);
+            ar & boost::serialization::make_nvp("Value",v);
+            break;
+        }
+        case QVariant::UInt:{
+            int v = toUInt();
+            typeStr = "uint";
+            ar & boost::serialization::make_nvp("Type",typeStr);
+            ar & boost::serialization::make_nvp("Value",v);
+            break;
+        }
+        case QVariant::Double:{
+            double v = toDouble();
+            typeStr = "double";
+            ar & boost::serialization::make_nvp("Type",typeStr);
+            ar & boost::serialization::make_nvp("Value",v);
+            break;
+        }
+        case QVariant::String:{
+            typeStr = "string";
+            ar & boost::serialization::make_nvp("Type",typeStr);
+            std::string str = toString().toStdString();
+            ar & boost::serialization::make_nvp("Value",str);
+            break;
+        }
+        case QVariant::StringList:{
+            typeStr = "stringlist";
+            ar & boost::serialization::make_nvp("Type",typeStr);
+            std::list<std::string> list;
+            QStringList strList = toStringList();
+            for(int i = 0; i < strList.size();++i){
+                list.push_back(strList.at(i).toStdString());
+            }
+            ar & boost::serialization::make_nvp("Value",list);
+            break;
+        }
+        default:
+            break;
+        }
+
+
         
     }
     template<class Archive>
     void load(Archive & ar, const unsigned int version)
     {
         (void)version;
-        std::string stdStr;
-        ar & boost::serialization::make_nvp("Value",stdStr);
-        QByteArray data(stdStr.c_str());
-        data = QByteArray::fromBase64(data);
-        QDataStream ds(&data,QIODevice::ReadOnly);
-        ds >> *this;
+        std::string typeStr;
+        ar & boost::serialization::make_nvp("Type",typeStr);
+        if(typeStr == "bool"){
+            bool v ;
+            ar & boost::serialization::make_nvp("Value",v);
+            setValue<bool>(v);
+        }
+        else if(typeStr == "int"){
+            int v ;
+            ar & boost::serialization::make_nvp("Value",v);
+            setValue<int>(v);
+        }
+        else if(typeStr == "uint"){
+            int v;
+            ar & boost::serialization::make_nvp("Value",v);
+            setValue<unsigned int>(v);
+        }
+        else if(typeStr == "double"){
+            double v ;
+            ar & boost::serialization::make_nvp("Value",v);
+            setValue<double>(v);
+        }
+        else if(typeStr == "string"){
+            std::string str;
+            ar & boost::serialization::make_nvp("Value",str);
+            setValue<QString>(QString(str.c_str()));
+        }
+        else if(typeStr == "stringlist"){
+            std::list<std::string> list;
+            ar & boost::serialization::make_nvp("Value",list);
+            QStringList strList;
+            for(std::list<std::string>::iterator it = list.begin();it!=list.end();++it){
+                strList.push_back((*it).c_str());
+            }
+            setValue<QStringList>(strList);
+        }
+
+
+
+
         
     }
     BOOST_SERIALIZATION_SPLIT_MEMBER()
     
-public:
-    
-    Variant()
-    : QVariant()
+    public:
+
+        Variant()
+      : QVariant()
     {
     }
 
     explicit Variant(const QVariant& qtVariant)
-    : QVariant(qtVariant)
+        : QVariant(qtVariant)
     {
     }
 

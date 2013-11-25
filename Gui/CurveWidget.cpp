@@ -26,40 +26,146 @@ static double AXIS_MAX = 100000.;
 static double AXIS_MIN = -100000.;
 
 
-CurveGui::CurveGui(const CurvePath&  curve,
-         const QString& name,
-         const QColor& color,
-         int thickness)
-: _internalCurve(curve)
-, _name(name)
-, _color(color)
-, _thickness(thickness)
-, _visible(true)
-, _selected(false)
+CurveGui::CurveGui(const CurveWidget *curveWidget,
+                   const CurvePath&  curve,
+                   const QString& name,
+                   const QColor& color,
+                   int thickness)
+    : _internalCurve(curve)
+    , _name(name)
+    , _color(color)
+    , _thickness(thickness)
+    , _visible(false)
+    , _selected(false)
+    , _curveWidget(curveWidget)
 {
     QObject::connect(&curve, SIGNAL(keyFrameChanged()), this , SIGNAL(curveChanged()));
-    
+    glGenVertexArrays(1,&_vaoID);
+    glGenBuffers(1,&_vboID);
+    if(curve.getControlPointsCount() > 1){
+        _visible = true;
+    }
+
 }
 
+CurveGui::~CurveGui(){
+
+    glDeleteVertexArrays(1,&_vaoID);
+    glDeleteBuffers(1,&_vboID);
+
+}
+
+void CurveGui::drawCurve(){
+    if(!_visible)
+        return;
+
+    int w = _curveWidget->width();
+    float* vertices = new float[w * 2];
+    for(int i = 0 ; i < w*2;i+=2){
+        double x = _curveWidget->toScaleCoordinates(i,0).x();
+        double y = evaluate(x);
+        vertices[i] = (float)x;
+        vertices[i+1] = (float)y;
+    }
+
+
+
+    const QColor& curveColor = _selected ?  _curveWidget->getSelectedCurveColor() : _color;
+
+    glColor4f(curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF());
+
+    beginRecordBoundingBox();
+    glPointSize(_thickness);
+    glBindVertexArray(_vaoID);
+    glBindBuffer(GL_ARRAY_BUFFER, _vboID);
+    glBufferData(GL_ARRAY_BUFFER, w * 2 * sizeof(float), vertices, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer((GLuint)0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnable(GL_LINE_SMOOTH);
+    glEnable(GL_BLEND);
+    glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
+    glLineWidth(1.5);
+    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+
+    glDrawArrays(GL_LINE_STRIP, 0, w);
+     glLineWidth(1.);
+    glDisable(GL_LINE_SMOOTH);
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
+    checkGLErrors();
+    delete [] vertices;
+
+
+    //render the name of the curve
+    glColor4f(1.f, 1.f, 1.f, 1.f);
+    double textX = _curveWidget->toScaleCoordinates(15,0).x();
+    double textY = evaluate(textX);
+    _curveWidget->renderText(textX,textY,_name,_color,_curveWidget->getFont());
+    glColor4f(curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF());
+
+
+    //draw keyframes
+    const CurvePath::KeyFrames& keyframes = _internalCurve.getKeyFrames();
+    glPointSize(7.f);
+    glEnable(GL_POINT_SMOOTH);
+
+    glBegin(GL_POINTS);
+    for(CurvePath::KeyFrames::const_iterator k = keyframes.begin();k!=keyframes.end();++k){
+        glColor4f(_color.redF(), _color.greenF(), _color.blueF(), _color.alphaF());
+        const KeyFrame& key = (*k);
+        //if the key is selected change its color to white
+        const std::list< const KeyFrame* >& selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
+        for(std::list< const KeyFrame* >::const_iterator it2 = selectedKeyFrames.begin();
+            it2 != selectedKeyFrames.end();++it2){
+            if(*(*it2) == key){
+                glColor4f(1.f,1.f,1.f,1.f);
+                break;
+            }
+        }
+        glVertex2f(key.getTime(),key.getValue().toDouble());
+
+    }
+    glEnd();
+
+    glDisable(GL_BLEND);
+    glDisable(GL_POINT_SMOOTH);
+
+    glPointSize(1.f);
+    //reset back the color
+    glColor4f(1.f, 1.f, 1.f, 1.f);
+
+
+}
+
+double CurveGui::evaluate(double x) const{
+    return _internalCurve.getValueAt(x).toDouble();
+}
+
+
 CurveWidget::CurveWidget(QWidget* parent, const QGLWidget* shareWidget)
-: QGLWidget(parent,shareWidget)
-, _zoomCtx()
-, _dragging(false)
-, _rightClickMenu(new QMenu(this))
-, _clearColor(0,0,0,255)
-, _baseAxisColor(118,215,90,255)
-, _scaleColor(67,123,52,255)
-, _selectedCurveColor(255,255,89,255)
-, _textRenderer()
-, _font(new QFont("Helvetica",10))
-, _curves()
-, _selectedKeyFrames()
+    : QGLWidget(parent,shareWidget)
+    , _zoomCtx()
+    , _dragging(false)
+    , _rightClickMenu(new QMenu(this))
+    , _clearColor(0,0,0,255)
+    , _baseAxisColor(118,215,90,255)
+    , _scaleColor(67,123,52,255)
+    , _selectedCurveColor(255,255,89,255)
+    , _nextCurveAddedColor()
+    , _textRenderer()
+    , _font(new QFont("Helvetica",10))
+    , _curves()
+    , _selectedKeyFrames()
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    _nextCurveAddedColor.setHsv(200,255,255);
 }
 
 CurveWidget::~CurveWidget(){
     delete _font;
+    for(std::list<CurveGui*>::const_iterator it = _curves.begin();it!=_curves.end();++it){
+        delete (*it);
+    }
+    _curves.clear();
 }
 
 void CurveWidget::initializeGL(){
@@ -67,15 +173,20 @@ void CurveWidget::initializeGL(){
 
 }
 
-void CurveWidget::addCurve(boost::shared_ptr<CurveGui> curve){
-    QObject::connect(curve.get(),SIGNAL(curveChanged()),this,SLOT(updateGL()));
-    _curves.push_back(curve);
+CurveGui* CurveWidget::createCurve(const CurvePath &curve,const QString& name){
+    CurveGui* curveGui = new CurveGui(this,curve,name,QColor(255,255,255),1);
+    QObject::connect(curveGui,SIGNAL(curveChanged()),this,SLOT(updateGL()));
+    _curves.push_back(curveGui);
+    curveGui->setColor(_nextCurveAddedColor);
+    _nextCurveAddedColor.setHsv(_nextCurveAddedColor.hsvHue() + 60,_nextCurveAddedColor.hsvSaturation(),_nextCurveAddedColor.value());
+    return curveGui;
 }
 
-void CurveWidget::removeCurve(boost::shared_ptr<CurveGui> curve){
-    for(std::list<boost::shared_ptr<CurveGui> >::iterator it = _curves.begin();it!=_curves.end();++it){
+
+void CurveWidget::removeCurve(CurveGui *curve){
+    for(std::list<CurveGui* >::iterator it = _curves.begin();it!=_curves.end();++it){
         if((*it) == curve){
-            QObject::disconnect(curve.get(),SIGNAL(curveChanged()),this,SLOT(updateGL()));
+            delete (*it);
             _curves.erase(it);
             break;
         }
@@ -149,59 +260,9 @@ void CurveWidget::paintGL(){
 
 void CurveWidget::drawCurves(){
     //now draw each curve
-    for(std::list<boost::shared_ptr<CurveGui> >::const_iterator it = _curves.begin();it!=_curves.end();++it){
-        if((*it)->isVisible()){
-            const QColor& curveColor =  (*it)->isSelected() ?  _selectedCurveColor :  (*it)->getColor();
-            const QColor& nameColor =  (*it)->getColor();
-
-            glColor4f(curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF());
-            
-            (*it)->beginRecordBoundingBox();
-            for(int i = 0; i < width();++i){
-                double x = toImgCoordinates_fast(i,0).x();
-                double y = (*it)->evaluate(x);
-                if(i == 10){ // draw the name of the curve on the left of the widget
-                    glColor4f(1., 1., 1., 1.);
-                    renderText(x,y,(*it)->getName(),nameColor,*_font);
-                    glColor4f(curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF());
-                }
-                glPointSize((*it)->getThickness());
-                glBegin(GL_POINTS);
-                glVertex2f(x,y);
-                glEnd();
-            }
-            (*it)->endRecordBoundingBox();
-
-            // draw the keyframes
-            const CurvePath::KeyFrames& keyframes = (*it)->getInternalCurve().getKeyFrames();
-
-            glPointSize(7);
-
-            for(CurvePath::KeyFrames::const_iterator k = keyframes.begin();k!=keyframes.end();++k){
-                glColor4f(nameColor.redF(), nameColor.greenF(), nameColor.blueF(), nameColor.alphaF());
-                KeyFrame key = (*k);
-                //if the key is selected change its color to white
-                for(std::list< KeyFrame >::const_iterator it2 = _selectedKeyFrames.begin();
-                    it2 != _selectedKeyFrames.end();++it2){
-                    if((*it2) == key){
-                         glColor4f(1.f,1.f,1.f,1.f);
-                         break;
-                    }
-                }
-
-                glBegin(GL_POINTS);
-                glVertex2f(key.getTime(),key.getValue().toDouble());
-                glEnd();
-
-            }
-
-        }
+    for(std::list<CurveGui*>::const_iterator it = _curves.begin();it!=_curves.end();++it){
+        (*it)->drawCurve();
     }
-    glPointSize(1.f);
-
-    //reset back the color
-    glColor4f(1., 1., 1., 1.);
-
 }
 
 void CurveGui::beginRecordBoundingBox() const{
@@ -227,8 +288,8 @@ void CurveWidget::drawBaseAxis(){
 }
 
 void CurveWidget::drawScale(){
-    QPointF btmLeft = toImgCoordinates_fast(0,height()-1);
-    QPointF topRight = toImgCoordinates_fast(width()-1, 0);
+    QPointF btmLeft = toScaleCoordinates(0,height()-1);
+    QPointF topRight = toScaleCoordinates(width()-1, 0);
     
 
     QFontMetrics fontM(*_font);
@@ -399,7 +460,7 @@ void CurveWidget::drawScale(){
     
 }
 
-void CurveWidget::renderText(double x,double y,const QString& text,const QColor& color,const QFont& font){
+void CurveWidget::renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const{
     
     if(text.isEmpty())
         return;
@@ -422,18 +483,20 @@ void CurveWidget::renderText(double x,double y,const QString& text,const QColor&
 }
 
 CurveWidget::Curves::const_iterator CurveWidget::isNearbyCurve(const QPoint &pt) const{
-    QPointF openGL_pos = toImgCoordinates_fast(pt.x(),pt.y());
+    QPointF openGL_pos = toScaleCoordinates(pt.x(),pt.y());
     for(Curves::const_iterator it = _curves.begin();it!=_curves.end();++it){
-        double y = (*it)->evaluate(openGL_pos.x());
-        int yWidget = toWidgetCoordinates(0,y).y();
-        if(std::abs(pt.y() - yWidget) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE){
-            return it;
+        if((*it)->isVisible()){
+            double y = (*it)->evaluate(openGL_pos.x());
+            int yWidget = toWidgetCoordinates(0,y).y();
+            if(std::abs(pt.y() - yWidget) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE){
+                return it;
+            }
         }
     }
     return _curves.end();
 }
 
-void CurveWidget::selectCurve(boost::shared_ptr<CurveGui> curve){
+void CurveWidget::selectCurve(CurveGui* curve){
     for(Curves::const_iterator it = _curves.begin();it!=_curves.end();++it){
         (*it)->setSelected(false);
     }
@@ -466,8 +529,8 @@ void CurveWidget::mouseReleaseEvent(QMouseEvent *event){
 void CurveWidget::mouseMoveEvent(QMouseEvent *event){
     if (_dragging) {
         QPoint newClick =  event->pos();
-        QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
-        QPointF oldClick_opengl = toImgCoordinates_fast(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
+        QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
+        QPointF oldClick_opengl = toScaleCoordinates(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
         float dy = (oldClick_opengl.y() - newClick_opengl.y());
         _zoomCtx._bottom += dy;
         _zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
@@ -491,7 +554,7 @@ void CurveWidget::wheelEvent(QWheelEvent *event){
     } else if (newZoomFactor > 1024.) {
         newZoomFactor = 1024.;
     }
-    QPointF zoomCenter = toImgCoordinates_fast(event->x(), event->y());
+    QPointF zoomCenter = toScaleCoordinates(event->x(), event->y());
     double zoomRatio =   _zoomCtx._zoomFactor / newZoomFactor;
     _zoomCtx._left = zoomCenter.x() - (zoomCenter.x() - _zoomCtx._left)*zoomRatio ;
     _zoomCtx._bottom = zoomCenter.y() - (zoomCenter.y() - _zoomCtx._bottom)*zoomRatio;
@@ -502,7 +565,7 @@ void CurveWidget::wheelEvent(QWheelEvent *event){
 
 }
 
-QPointF CurveWidget::toImgCoordinates_fast(int x,int y) const {
+QPointF CurveWidget::toScaleCoordinates(int x,int y) const {
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _zoomCtx._bottom;
@@ -526,8 +589,5 @@ QSize CurveWidget::sizeHint() const{
     return QSize(1000,1000);
 }
 
-double CurveGui::evaluate(double x) const{
-    return _internalCurve.getValueAt(x).toDouble();
-}
 
 

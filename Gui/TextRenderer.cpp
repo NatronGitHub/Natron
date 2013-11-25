@@ -188,7 +188,7 @@ struct TextRenderer::Implementation {
     Implementation()
         : renderers() {}
 
-    FontRenderers renderers;
+    mutable FontRenderers renderers;
 };
 
 TextRenderer::TextRenderer()
@@ -204,7 +204,7 @@ TextRenderer::~TextRenderer()
 }
 
 
-void TextRenderer::renderText(float x, float y, const QString &text, const QColor &color, const QFont &font)
+void TextRenderer::renderText(float x, float y, const QString &text, const QColor &color, const QFont &font) const
 {
 
     TextRendererPrivate *p = NULL;

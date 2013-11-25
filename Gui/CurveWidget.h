@@ -19,19 +19,20 @@
 
 class CurvePath;
 class KeyFrame;
+class CurveWidget;
 class CurveGui : public QObject {
     
     Q_OBJECT
-    
+
 public:
     
 
-    CurveGui(const CurvePath&  curve,
+    CurveGui(const CurveWidget *curveWidget, const CurvePath&  curve,
              const QString& name,
              const QColor& color,
              int thickness = 1);
 
-    virtual ~CurveGui(){}
+    virtual ~CurveGui();
     
     const QString& getName() const { return _name; }
 
@@ -65,11 +66,16 @@ public:
 
     const CurvePath&  getInternalCurve() const { return _internalCurve; }
 
+    void drawCurve();
+
 signals:
-    
+
     void curveChanged();
     
 private:
+
+
+
 
     const CurvePath& _internalCurve; ///ptr to the internal curve
     QString _name; /// the name of the curve
@@ -77,6 +83,9 @@ private:
     int _thickness; /// its thickness
     bool _visible; /// should we draw this curve ?
     mutable bool _selected; /// is this curve selected
+    GLuint _vaoID;
+    GLuint _vboID;
+    const CurveWidget* _curveWidget;
 
 };
 
@@ -116,12 +125,13 @@ class CurveWidget : public QGLWidget
     QColor _baseAxisColor;
     QColor _scaleColor;
     QColor _selectedCurveColor;
+    QColor _nextCurveAddedColor;
     Natron::TextRenderer _textRenderer;
     QFont* _font;
 
-    typedef std::list<boost::shared_ptr<CurveGui> > Curves;
+    typedef std::list<CurveGui* > Curves;
     Curves _curves;
-    std::list< KeyFrame > _selectedKeyFrames;
+    std::list< const KeyFrame* > _selectedKeyFrames;
 public:
     
     CurveWidget(QWidget* parent, const QGLWidget* shareWidget = NULL);
@@ -144,15 +154,31 @@ public:
     
     virtual QSize sizeHint() const;
     
-    void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font);
+    void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const;
 
     void centerOn(double xmin,double xmax,double ymin,double ymax);
 
-    void addCurve(boost::shared_ptr<CurveGui> curve);
+    CurveGui *createCurve(const CurvePath& curve, const QString &name);
 
-    void removeCurve(boost::shared_ptr<CurveGui> curve);
+    void displayCurve(CurveGui* curve);
+
+    void removeCurve(CurveGui* curve);
     
+    /**
+     *@brief See toImgCoordinates_fast in ViewerGL.h
+     **/
+    QPointF toScaleCoordinates(int x,int y) const;
 
+    /**
+     *@brief See toWidgetCoordinates in ViewerGL.h
+     **/
+    QPoint toWidgetCoordinates(double x, double y) const;
+
+    const QColor& getSelectedCurveColor() const { return _selectedCurveColor; }
+
+    const QFont& getFont() const { return *_font; }
+
+    const std::list< const KeyFrame* >& getSelectedKeyFrames() const { return _selectedKeyFrames; }
 private:
 
     /**
@@ -164,18 +190,7 @@ private:
     /**
      * @brief Selects the curve given in parameter and deselects any other curve in the widget.
     **/
-    void selectCurve(boost::shared_ptr<CurveGui> curve);
-
-    /**
-     *@brief See toImgCoordinates_fast in ViewerGL.h
-     **/
-    QPointF toImgCoordinates_fast(int x,int y) const;
-
-    /**
-     *@brief See toWidgetCoordinates in ViewerGL.h
-     **/
-    QPoint toWidgetCoordinates(double x, double y) const;
-    
+    void selectCurve(CurveGui *curve);
 
     void drawBaseAxis();
     

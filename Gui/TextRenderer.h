@@ -25,7 +25,7 @@ public:
 
     virtual ~TextRenderer();
 
-    void renderText(float x, float y, const QString &text, const QColor &color, const QFont &font);
+    void renderText(float x, float y, const QString &text, const QColor &color, const QFont &font) const;
 
 private:
     struct Implementation;

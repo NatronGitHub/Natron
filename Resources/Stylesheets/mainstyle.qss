@@ -12,19 +12,19 @@ QToolBar {
 color: %2;
 spacing: 3px; /* spacing between items in the tool bar */
 border: 0px solid black;
- }
+}
 /* QToolBar::handle {
-     image: url(handle.png);
- }TODO*/
+image: url(handle.png);
+}TODO*/
 QGroupBox{
- border: 1px solid black;
- border-radius : 4px;
- margin-top : 1px;
+border: 1px solid black;
+border-radius : 4px;
+margin-top : 1px;
 }
 QGroupBox::title {
-     subcontrol-origin: margin;
-     subcontrol-position: top left; /* position at the top center */
-     padding: 0 3px;
+subcontrol-origin: margin;
+subcontrol-position: top left; /* position at the top center */
+padding: 0 3px;
 
 }
 QGroupBox::indicator:unchecked {
@@ -37,43 +37,43 @@ width :10px;
 height: 10px;
 image: url(:/Resources/Images/groupbox_unfolded.png);
 }
- QScrollBar:vertical {
- border: 1px solid %1 ;
- background: %3;
- width: 15px;
- margin : 23px 0px 23px 0px;
- }
- QScrollBar::handle:vertical {
- image: url(:/Resources/Images/scrollbarHandle_vertical.png);
- min-height: 20px;
- }
- QScrollBar::up-arrow:vertical {
- image : url(:/Resources/Images/scrollbarButton_up.png);
- width: 11px;
- height: 20px;
- }
- QScrollBar::down-arrow:vertical {
- image : url(:/Resources/Images/scrollbarButton_down.png);
- width: 11px;
- height: 20px;
- }
- QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
- background: %2;
- }
- QScrollBar::add-line:vertical {
-       border: 1px solid %1;
-       background: %3;
-       height: 20px;
-       subcontrol-position: bottom;
-       subcontrol-origin: margin;
-   }
+QScrollBar:vertical {
+border: 1px solid %1 ;
+background: %3;
+width: 15px;
+margin : 23px 0px 23px 0px;
+}
+QScrollBar::handle:vertical {
+image: url(:/Resources/Images/scrollbarHandle_vertical.png);
+min-height: 20px;
+}
+QScrollBar::up-arrow:vertical {
+image : url(:/Resources/Images/scrollbarButton_up.png);
+width: 11px;
+height: 20px;
+}
+QScrollBar::down-arrow:vertical {
+image : url(:/Resources/Images/scrollbarButton_down.png);
+width: 11px;
+height: 20px;
+}
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+background: %2;
+}
+QScrollBar::add-line:vertical {
+border: 1px solid %1;
+background: %3;
+height: 20px;
+subcontrol-position: bottom;
+subcontrol-origin: margin;
+}
 
    QScrollBar::sub-line:vertical {
-       border: 1px solid %1;
-       background: %3;
-       height: 20px;
-       subcontrol-position: top;
-       subcontrol-origin: margin;
+   border: 1px solid %1;
+   background: %3;
+   height: 20px;
+   subcontrol-position: top;
+   subcontrol-origin: margin;
    }
 
 
@@ -101,19 +101,19 @@ image: url(:/Resources/Images/groupbox_unfolded.png);
  background: %2;
  }
  QScrollBar::add-line:horizontal {
-       border: 1px solid %1;
-       background: %3;
-       width: 20px;
-       subcontrol-position: left;
-       subcontrol-origin: margin;
-   }
+ border: 1px solid %1;
+ background: %3;
+ width: 20px;
+ subcontrol-position: left;
+ subcontrol-origin: margin;
+ }
 
    QScrollBar::sub-line:horizontal {
-       border: 1px solid %1;
-       background: %3;
-       width: 20px;
-       subcontrol-position: right;
-       subcontrol-origin: margin;
+   border: 1px solid %1;
+   background: %3;
+   width: 20px;
+   subcontrol-position: right;
+   subcontrol-origin: margin;
    }
 
 
@@ -123,6 +123,37 @@ image: url(:/Resources/Images/groupbox_unfolded.png);
  color: %5;
  selection-background-color: %1;
  }
+ QTreeWidget::item:selected{
+    background: %1;
+ }
+ QTreeWidget::branch:selected{
+    background: %1;
+ }
+
+QTreeWidget::branch:has-siblings:!adjoins-item {
+     border-image: url(:/Resources/Images/treeview_vline.png) 0;
+ }
+
+ QTreeWidget::branch:has-siblings:adjoins-item {
+     border-image: url(:/Resources/Images/treeview_more.png) 0;
+ }
+
+ QTreeWidget::branch:!has-children:!has-siblings:adjoins-item {
+     border-image: url(:/Resources/Images/treeview_end.png) 0;
+ }
+
+ QTreeWidget::branch:has-children:!has-siblings:closed,
+ QTreeWidget::branch:closed:has-children:has-siblings {
+         border-image: none;
+         image: url(:/Resources/Images/groupbox_folded.png);
+ }
+
+ QTreeWidget::branch:open:has-children:!has-siblings,
+ QTreeWidget::branch:open:has-children:has-siblings  {
+         border-image: none;
+         image: url(:/Resources/Images/groupbox_unfolded.png);
+ }
+
  QHeaderView:section{
  background-color: %2;
  color: %5;
@@ -163,7 +194,7 @@ background-color : %4;
 }
 QPushButton:hover
 {
-    border: 1px solid gray;
+border: 1px solid gray;
 }
 QPushButton:focus {
 border: 2px solid %1;
