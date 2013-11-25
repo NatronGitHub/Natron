@@ -19,26 +19,20 @@
 
 class CurvePath;
 class KeyFrame;
-class CurveGui {
-
-public :
+class CurveGui : public QObject {
+    
+    Q_OBJECT
+    
+public:
     
 
     CurveGui(const CurvePath&  curve,
              const QString& name,
              const QColor& color,
-             int thickness = 1)
-        : _internalCurve(curve)
-        , _name(name)
-        , _color(color)
-        , _thickness(thickness)
-        , _visible(true)
-        , _selected(false)
-    {
+             int thickness = 1);
 
-    }
-
-
+    virtual ~CurveGui(){}
+    
     const QString& getName() const { return _name; }
 
     void setName(const QString& name) { _name = name; }
@@ -71,6 +65,10 @@ public :
 
     const CurvePath&  getInternalCurve() const { return _internalCurve; }
 
+signals:
+    
+    void curveChanged();
+    
 private:
 
     const CurvePath& _internalCurve; ///ptr to the internal curve
@@ -85,6 +83,7 @@ private:
 class QMenu;
 class CurveWidget : public QGLWidget
 {
+    
     
     class ZoomContext{
         
@@ -152,8 +151,7 @@ public:
     void addCurve(boost::shared_ptr<CurveGui> curve);
 
     void removeCurve(boost::shared_ptr<CurveGui> curve);
-
-
+    
 
 private:
 

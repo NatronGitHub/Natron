@@ -75,11 +75,11 @@ void CurveEditor::addNode(NodeGui* node){
         return;
     }
 
-    NodeCurveEditorContext* nodeContext = new NodeCurveEditorContext(_tree,node);
+    NodeCurveEditorContext* nodeContext = new NodeCurveEditorContext(_tree,_curveWidget,node);
     const NodeCurveEditorContext::Elements& elems = nodeContext->getElements();
     for(U32 i = 0 ; i < elems.size();++i){
-        if(elems[i].second){
-            _curveWidget->addCurve(elems[i].second);
+        if(elems[i]->isCurveVisible()){
+            _curveWidget->addCurve(elems[i]->getCurve());
         }
     }
     _nodes.push_back(nodeContext);
@@ -89,13 +89,6 @@ void CurveEditor::addNode(NodeGui* node){
 void CurveEditor::removeNode(NodeGui *node){
     for(std::list<NodeCurveEditorContext*>::iterator it = _nodes.begin();it!=_nodes.end();++it){
         if((*it)->getNode() == node){
-            const NodeCurveEditorContext::Elements& elems = (*it)->getElements();
-            for(U32 i = 0 ; i < elems.size();++i){
-                if(elems[i].second){
-                    _curveWidget->removeCurve(elems[i].second);
-                }
-                delete elems[i].first;
-            }
             delete (*it);
             _nodes.erase(it);
             break;
@@ -104,7 +97,7 @@ void CurveEditor::removeNode(NodeGui *node){
 }
 
 
-NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,NodeGui *node)
+NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* curveWidget,NodeGui *node)
     : _node(node)
     , _nodeElements()
 {
@@ -147,7 +140,8 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,NodeGui *node)
                 QTreeWidgetItem* dimItem = new QTreeWidgetItem(knobItem);
                 dimItem->setText(0,k->getDimensionName(j).c_str());
                 boost::shared_ptr<CurveGui> dimCurve(new CurveGui(k->getCurve(j),k->getDimensionName(j).c_str(),QColor(255,255,255),2));
-                _nodeElements.push_back(make_pair(dimItem,dimCurve));
+                
+                _nodeElements.push_back(new NodeCurveEditorElement(curveWidget,dimItem,dimCurve));
                 if(!k->getCurve().isAnimated()){
                     dimItem->setHidden(true);
                 }else{
@@ -155,10 +149,10 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,NodeGui *node)
                 }
             }
         }
-        _nodeElements.push_back(make_pair(knobItem,knobCurve));
+        _nodeElements.push_back(new NodeCurveEditorElement(curveWidget,knobItem,knobCurve));
     }
     if(hasAtLeast1KnobWithACurve){
-        _nodeElements.push_back(make_pair(nameItem,boost::shared_ptr<CurveGui>()));
+        _nodeElements.push_back(new NodeCurveEditorElement(curveWidget,nameItem,boost::shared_ptr<CurveGui>()));
         if(!hasAtLeast1KnobWithACurveShown){
             nameItem->setHidden(true);
         }
@@ -169,10 +163,59 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,NodeGui *node)
 
 }
 
-NodeCurveEditorContext::~NodeCurveEditorContext() { _nodeElements.clear(); }
+NodeCurveEditorContext::~NodeCurveEditorContext() {
+    for(U32 i = 0 ; i < _nodeElements.size();++i){
+        delete _nodeElements[i];
+    }
+    _nodeElements.clear();
+}
 
 void NodeCurveEditorContext::onNameChanged(const QString& name){
-    _nodeElements.front().first->setText(0,name);
+    _nodeElements.front()->getTreeItem()->setText(0,name);
+}
+
+void NodeCurveEditorElement::onKeyFrameAdded(){
+    int i = _curve->getInternalCurve().getControlPointsCount();
+    if(i > 1){
+        if(!_curveDisplayed){
+            _curveDisplayed = true;
+            _curveWidget->addCurve(_curve);
+            _treeItem->setHidden(false);
+        }
+    }
+}
+
+void NodeCurveEditorElement::onKeyFrameRemoved(){
+    int i = _curve->getInternalCurve().getControlPointsCount();
+    if(i < 2){
+        if(_curveDisplayed){
+            _curveDisplayed = false;
+            _treeItem->setHidden(true);
+            _curveWidget->removeCurve(_curve);
+        }
+    }
+
+}
+
+
+NodeCurveEditorElement::NodeCurveEditorElement(CurveWidget* curveWidget,QTreeWidgetItem* item,boost::shared_ptr<CurveGui> curve):
+_treeItem(item)
+,_curve(curve)
+,_curveDisplayed(false)
+,_curveWidget(curveWidget)
+{
+    if(curve){
+        QObject::connect(&curve->getInternalCurve(), SIGNAL(keyFrameAdded()), this, SLOT(onKeyFrameAdded()));
+        QObject::connect(&curve->getInternalCurve(), SIGNAL(keyFrameRemoved()), this, SLOT(onKeyFrameRemoved()));
+        if(curve->getInternalCurve().getControlPointsCount() > 1){
+            _curveDisplayed = true;
+        }
+    }
+}
+
+NodeCurveEditorElement::~NodeCurveEditorElement(){
+    _curveWidget->removeCurve(_curve);
+    delete _treeItem;
 }
 
 void CurveEditor::centerOn(double bottom,double left,double top,double right){

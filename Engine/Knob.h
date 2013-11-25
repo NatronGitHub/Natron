@@ -170,8 +170,9 @@ private:
   * @brief A CurvePath is a list of chained curves. Each curve is a set of 2 keyFrames and has its
   * own interpolation method (that can differ from other curves).
 **/
-class CurvePath  {
+class CurvePath : public QObject {
     
+    Q_OBJECT
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -235,6 +236,14 @@ public:
 
     void refreshTangents(KeyFrames::iterator key);
     
+signals:
+    
+    void keyFrameAdded();
+    
+    void keyFrameRemoved();
+    
+    void keyFrameChanged();
+    
 private:
 
 
@@ -246,7 +255,7 @@ private:
             return (*_keyFrames.begin()).getValue().value<T>();
         }
 
-        KeyFrames::const_iterator upper;
+        KeyFrames::const_iterator upper = _keyFrames.begin();
         for(KeyFrames::const_iterator it = _keyFrames.begin();it!=_keyFrames.end();++it){
             if((*it).getTime() > t){
                 upper = it;

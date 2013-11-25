@@ -25,6 +25,22 @@ static double ASPECT_RATIO = 0.1;
 static double AXIS_MAX = 100000.;
 static double AXIS_MIN = -100000.;
 
+
+CurveGui::CurveGui(const CurvePath&  curve,
+         const QString& name,
+         const QColor& color,
+         int thickness)
+: _internalCurve(curve)
+, _name(name)
+, _color(color)
+, _thickness(thickness)
+, _visible(true)
+, _selected(false)
+{
+    QObject::connect(&curve, SIGNAL(keyFrameChanged()), this , SIGNAL(curveChanged()));
+    
+}
+
 CurveWidget::CurveWidget(QWidget* parent, const QGLWidget* shareWidget)
 : QGLWidget(parent,shareWidget)
 , _zoomCtx()
@@ -52,12 +68,14 @@ void CurveWidget::initializeGL(){
 }
 
 void CurveWidget::addCurve(boost::shared_ptr<CurveGui> curve){
+    QObject::connect(curve.get(),SIGNAL(curveChanged()),this,SLOT(updateGL()));
     _curves.push_back(curve);
 }
 
 void CurveWidget::removeCurve(boost::shared_ptr<CurveGui> curve){
     for(std::list<boost::shared_ptr<CurveGui> >::iterator it = _curves.begin();it!=_curves.end();++it){
         if((*it) == curve){
+            QObject::disconnect(curve.get(),SIGNAL(curveChanged()),this,SLOT(updateGL()));
             _curves.erase(it);
             break;
         }

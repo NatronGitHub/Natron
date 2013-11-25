@@ -282,15 +282,12 @@ void CurvePath::addControlPoint(const KeyFrame& cp)
                 return;
             }
         }
-        //if we found no key that has a greater time, just append the key
         if(upper == _keyFrames.end()){
+            //if we found no key that has a greater time, just append the key
             newKeyIt = _keyFrames.insert(_keyFrames.end(),cp);
-            return;
-        }
-        //if all the keys have a greater time, just insert this key at the begining
-        if(upper == _keyFrames.begin()){
+        }else if(upper == _keyFrames.begin()){
+            //if all the keys have a greater time, just insert this key at the begining
             newKeyIt = _keyFrames.insert(_keyFrames.begin(),cp);
-            return;
         }
 
         //if we reach here, that means we're in the middle of 2 keys, insert it before the upper bound
@@ -298,6 +295,7 @@ void CurvePath::addControlPoint(const KeyFrame& cp)
 
     }
     refreshTangents(newKeyIt);
+    emit keyFrameAdded();
 }
 
 void CurvePath::refreshTangents(KeyFrames::iterator key){
@@ -335,6 +333,7 @@ void CurvePath::refreshTangents(KeyFrames::iterator key){
     
     key->setLeftTangent(tcur_leftTan, Variant(vcur_leftTan));
     key->setRightTangent(tcur_rightTan, Variant(vcur_rightTan));
+    emit keyFrameChanged();
 }
 
 

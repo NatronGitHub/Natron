@@ -23,15 +23,51 @@ class CurveWidget;
 class CurveGui;
 class QHBoxLayout;
 class QSplitter;
+
+class NodeCurveEditorElement : public QObject
+{
+    
+    Q_OBJECT
+
+public:
+    
+    NodeCurveEditorElement(CurveWidget* curveWidget,QTreeWidgetItem* item,boost::shared_ptr<CurveGui> curve);
+    
+    NodeCurveEditorElement():_treeItem(NULL),_curve(),_curveDisplayed(false),_curveWidget(NULL){}
+    
+    virtual ~NodeCurveEditorElement();
+    
+    QTreeWidgetItem* getTreeItem() const {return _treeItem;}
+    
+    boost::shared_ptr<CurveGui> getCurve() const {return _curve;}
+
+    bool isCurveVisible() const { return _curveDisplayed; }
+    
+    
+public slots:
+    
+    void onKeyFrameAdded();
+    
+    void onKeyFrameRemoved();
+    
+private:
+    
+    
+    QTreeWidgetItem* _treeItem;
+    boost::shared_ptr<CurveGui> _curve;
+    bool _curveDisplayed;
+    CurveWidget* _curveWidget;
+};
+
 class NodeCurveEditorContext : public QObject
 {
     Q_OBJECT
 
 public:
 
-    typedef std::vector< std::pair<QTreeWidgetItem*,boost::shared_ptr<CurveGui> > > Elements;
+    typedef std::vector< NodeCurveEditorElement* > Elements;
 
-    NodeCurveEditorContext(QTreeWidget *tree,NodeGui* node);
+    NodeCurveEditorContext(QTreeWidget *tree,CurveWidget* curveWidget,NodeGui* node);
 
     virtual ~NodeCurveEditorContext() ;
 
@@ -42,7 +78,8 @@ public:
 public slots:
 
     void onNameChanged(const QString& name);
-
+    
+    
 private:
 
     NodeGui* _node;
