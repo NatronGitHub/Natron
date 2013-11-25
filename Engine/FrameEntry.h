@@ -88,8 +88,8 @@ namespace Natron{
         void fillHash(Hash64* hash) const {
             hash->append(_frameNb);
             hash->append(_treeVersion);
-            hash->append(_zoomFactor);
-            hash->append(_exposure);
+            hash->append(*(reinterpret_cast<const U64*>(&(_zoomFactor))));
+            hash->append(*(reinterpret_cast<const U64*>(&(_exposure))));
             hash->append(_lut);
             hash->append(_byteMode);
             hash->append(_view);

@@ -232,9 +232,12 @@ void ScaleSlider::renderText(double x,double y,const QString& text,const QColor&
 
 
 void ScaleSlider::mousePressEvent(QMouseEvent *event){
+    QPoint newClick =  event->pos();
 
-    _zoomCtx._oldClick = event->pos();
-
+    _zoomCtx._oldClick = newClick;
+    QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
+    
+    seekInternal(newClick_opengl.x());
     QGLWidget::mousePressEvent(event);
 }
 
