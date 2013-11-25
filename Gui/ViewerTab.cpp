@@ -138,7 +138,7 @@ _channelsToDraw(Mask_RGBA)
     _secondRowLayout->addWidget(_gainBox);
     
     
-    _gainSlider=new ScaleSlider(0, 64,1.0,Natron::LINEAR_SCALE,_secondSettingsRow);
+    _gainSlider=new ScaleSlider(0, 64,1.0,Natron::SCALE_LINEAR,_secondSettingsRow);
     _gainSlider->setToolTip("<p></br><b>Gain: \n</b></p>"
                             "Multiplies the image by \nthis amount before display.");
     _secondRowLayout->addWidget(_gainSlider);
