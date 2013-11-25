@@ -147,10 +147,10 @@ void ScaleSlider::drawScale(){
     acceptedDistances.push_back(5.);
     acceptedDistances.push_back(10.);
     acceptedDistances.push_back(50.);
-    if (_type == Natron::SCALE_LINEAR) {
+    if (_type == Natron::LINEAR_SCALE) {
         ScaleSlider::LinearScale2(btmLeft.x(), topRight.x(), majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
     } else {
-        assert(_type == Natron::SCALE_LOG);
+        assert(_type == Natron::LOG_SCALE);
         ScaleSlider::LogScale1(btmLeft.x(), topRight.x(), majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
     }
 

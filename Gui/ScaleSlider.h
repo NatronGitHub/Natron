@@ -75,7 +75,7 @@ public:
     ScaleSlider(double bottom, // the minimum value
                 double top, // the maximum value
                 double initialPos, // the initial value
-                Natron::Scale_Type type = Natron::SCALE_LINEAR, // the type of scale
+                Natron::Scale_Type type = Natron::LINEAR_SCALE, // the type of scale
                 QWidget* parent=0);
     
     virtual ~ScaleSlider();
