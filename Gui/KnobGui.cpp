@@ -469,7 +469,7 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row){
                 max = maximums[i];
             if((max - min) < SLIDER_MAX_RANGE && max < INT_MAX && min > INT_MIN){
                 _slider = new ScaleSlider(min,max,
-                                          _knob->getValue<int>(),Natron::LINEAR_SCALE,layout->parentWidget());
+                                          _knob->getValue<int>(),Natron::SCALE_LINEAR,layout->parentWidget());
                 _slider->setToolTip(_knob->getHintToolTip().c_str());
                 QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
                 boxContainerLayout->addWidget(_slider);
@@ -696,7 +696,7 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
                 max = maximums[i];
             if((max - min) < SLIDER_MAX_RANGE && max < DBL_MAX && min > -DBL_MAX){
                 _slider = new ScaleSlider(min,max,
-                                          _knob->getValue<double>(),Natron::LINEAR_SCALE,layout->parentWidget());
+                                          _knob->getValue<double>(),Natron::SCALE_LINEAR,layout->parentWidget());
                 _slider->setToolTip(_knob->getHintToolTip().c_str());
                 QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
                 boxContainerLayout->addWidget(_slider);

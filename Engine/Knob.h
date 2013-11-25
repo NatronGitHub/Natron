@@ -98,7 +98,7 @@ public:
     KeyFrame()
     : _value()
     , _time(0)
-    , _interpolation(Natron::LINEAR)
+    , _interpolation(Natron::KEYFRAME_LINEAR)
     {}
     
     KeyFrame(double time,const Variant& initialValue);
@@ -108,7 +108,7 @@ public:
     , _time(other._time)
     , _leftTangent(other._leftTangent)
     , _rightTangent(other._rightTangent)
-    , _interpolation(Natron::LINEAR)
+    , _interpolation(Natron::KEYFRAME_LINEAR)
     {
         
     }
@@ -141,9 +141,9 @@ public:
         _time = time;
     }
 
-    void setInterpolation(Natron::Type interp) { _interpolation = interp; }
+    void setInterpolation(Natron::KeyframeType interp) { _interpolation = interp; }
     
-    Natron::Type getInterpolation() const { return _interpolation; }
+    Natron::KeyframeType getInterpolation() const { return _interpolation; }
     
     bool operator==(const KeyFrame& other) const {
         return _value == other._value &&
@@ -162,7 +162,7 @@ private:
     double _time; /// a value ranging between 0 and 1
     
     Tangent _leftTangent,_rightTangent;
-    Natron::Type _interpolation;
+    Natron::KeyframeType _interpolation;
 
 };
 
@@ -281,7 +281,7 @@ private:
 
         //if we found no key that has a greater time (i.e: we search before the 1st keyframe)
         if(upper == _keyFrames.begin()){
-            if((*upper).getInterpolation() == Natron::CONSTANT || (*upper).getInterpolation() == Natron::LINEAR){
+            if((*upper).getInterpolation() == Natron::KEYFRAME_CONSTANT || (*upper).getInterpolation() == Natron::KEYFRAME_LINEAR){
                 return (*upper).getValue().value<T>();
             }else{
                 const KeyFrame& key = (*upper);
@@ -301,7 +301,7 @@ private:
 
         if(upper == _keyFrames.end()){
 
-            if((*prev).getInterpolation() == Natron::CONSTANT || (*prev).getInterpolation() == Natron::LINEAR){
+            if((*prev).getInterpolation() == Natron::KEYFRAME_CONSTANT || (*prev).getInterpolation() == Natron::KEYFRAME_LINEAR){
                 return (*prev).getValue().value<T>();
             }else{
                 const KeyFrame& key = (*prev);
