@@ -181,6 +181,10 @@ void NodeCurveEditorElement::onKeyFrameAdded(){
             _curveDisplayed = true;
             _curveWidget->addCurve(_curve);
             _treeItem->setHidden(false);
+            _treeItem->parent()->setHidden(false);
+            if(_treeItem->parent()->parent()){
+                 _treeItem->parent()->setHidden(false);
+            }
         }
     }
 }
@@ -191,6 +195,10 @@ void NodeCurveEditorElement::onKeyFrameRemoved(){
         if(_curveDisplayed){
             _curveDisplayed = false;
             _treeItem->setHidden(true);
+            _treeItem->parent()->setHidden(true);
+            if(_treeItem->parent()->parent()){
+                 _treeItem->parent()->setHidden(true);
+            }
             _curveWidget->removeCurve(_curve);
         }
     }

@@ -6,7 +6,7 @@
  */
 #include "ticks.h"
 #include <cmath>
-
+#include <cassert>
 // tick_size_10
 //
 // for a range xmin,xmax drawn with a size range_units (in pixels, or cm...),

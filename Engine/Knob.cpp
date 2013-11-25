@@ -324,15 +324,15 @@ void CurvePath::refreshTangents(KeyFrames::iterator key){
     }
     
     double tcur_rightTan,vcur_rightTan,tcur_leftTan,vcur_leftTan;
-    Natron::autoComputeTangents(key->getInterpolation(),
-                                tprev, vprev,
-                                tcur, vcur,
-                                tnext, vnext,
-                                &tcur_leftTan, &vcur_leftTan,
-                                &tcur_rightTan, &vcur_rightTan);
+//    Natron::autoComputeTangents(key->getInterpolation(),
+//                                tprev, vprev,
+//                                tcur, vcur,
+//                                tnext, vnext,
+//                                &tcur_leftTan, &vcur_leftTan,
+//                                &tcur_rightTan, &vcur_rightTan);
     
-    key->setLeftTangent(tcur_leftTan, Variant(vcur_leftTan));
-    key->setRightTangent(tcur_rightTan, Variant(vcur_rightTan));
+//    key->setLeftTangent(tcur_leftTan, Variant(vcur_leftTan));
+//    key->setRightTangent(tcur_rightTan, Variant(vcur_rightTan));
     emit keyFrameChanged();
 }
 

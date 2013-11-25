@@ -9,9 +9,10 @@
 #include <QtCore/QString>
 #include <QtGui/QFont>
 #include <QtGui/QImage>
+#include <QtCore/QHash>
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-#include <QtOpenGL/QGlWidget>
+#include <QtOpenGL/QGLWidget>
 
 using namespace Natron;
 

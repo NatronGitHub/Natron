@@ -17,13 +17,16 @@
 
 namespace Natron{
     
-    enum Interpolation{
+    enum Type{
         CONSTANT = 0,
         LINEAR = 1,
         SMOOTH = 2,
         CATMULL_ROM = 3,
         CUBIC = 4,
-        HORIZONTAL = 5
+        HORIZONTAL = 5,
+        FREE = 6,
+        BROKEN = 7,
+        NONE = 8
     };
     
     /**
@@ -40,17 +43,13 @@ namespace Natron{
                   const T v2, //being the tangent of (t3,v3)
                   double t3,const T v3, //end control point
                   double currentTime,
-                  Interpolation interp){
+                  Type interp){
         
         double tsquare = currentTime * currentTime;
         double tcube = tsquare * currentTime;
         switch(interp){
                 
             case LINEAR:
-                
-                return ((currentTime - t0) / (t3 - t0)) * v0 +
-                ((t3 - currentTime) / (t3 - t0)) * v3;
-            
             case HORIZONTAL:
             case CATMULL_ROM:
             case SMOOTH:
@@ -75,14 +74,14 @@ namespace Natron{
      * Using the Bezier cubic equation, its 2nd derivative can be expressed as such:
      * B''(t) = 6(1-t)(P2 - 2P1 + P0) + 6t(P3 - 2P2 + P1)
      * We have P1 = P0 + P0'_r / 3
-     * and P2 = P3 - P3'_l / 3
+     * and Q2 = Q3 - Q3'_l / 3
      * We can insert it in the 2nd derivative form, which yields:
      * B''(t) = 6(1-t)(P3 - P3'_l/3 - P0 - 2P0'_r/3) + 6t(P0 - P3 + 2P3'_l/3 + P0'_r/3)
      *
      * So for t = 0, we have:
-     * B''(0) = P3 - P0 - P3'_l / 3 - 2P0'_r / 3
+     * B''(0) = 6(P3 - P0 - P3'_l / 3 - 2P0'_r / 3)
      * and for t = 1 , we have:
-     * B''(1) = P0 - P3 + 2P3'_l / 3 + P0'_r / 3
+     * Q''(1) = 6(Q0 - Q3 + 2Q3'_l / 3 + Q0'_r / 3)
      *
      * We also know that the 1st derivative of B(t) at 0 is the tangent to P0
      * and the 1st derivative of B(t) at 1 is the tangent to P3, i.e:
@@ -91,81 +90,154 @@ namespace Natron{
      **/
 
     template <typename T>
-    void autoComputeTangents(Natron::Interpolation interp,
-                            double tprev,const T vprev,
-                            double tcur,const T vcur,
-                            double tnext,const T vnext,
-                            double *tcur_leftTan,T* vcur_leftTan,
-                            double *tcur_rightTan,T* vcur_rightTan){
-        if(interp == CONSTANT){
-            /*Constant interpolation is meaningless (i.e: we don't need tangents) so return*/
-            return;
-        }else if(interp == LINEAR){
+    void autoComputeTangents(Natron::Type interpPrev,
+                             Natron::Type interp,
+                             Natron::Type interpNext,
+                             double tprev,const T vprev, // vprev = Q0
+                             double tcur,const T vcur, // vcur = Q3 = P0
+                             double tnext,const T vnext, // vnext = P3
+                             const T vprevDerivRight, // Q0'_r
+                             const T vnextDerivLeft, // P3'_l
+                             T* vcurDerivLeft, // Q3'_l
+                             T* vcurDerivRight){ // P0'_r
+        if(interp == LINEAR){
             /* Linear means the the 2nd derivative of the cubic curve at the point 'cur' is null.
              * That means
-             * B''(0) = B''(1) = 0
+             * B''(0) = Q''(1) = 0
              * We have 2 equations:
-             *          P3 - P0 - P3'_l / 3 - 2P0'_r / 3 = 0 (1)
-             *          P0 - P3 + 2P3'_l / 3 - P0'_r / 3 = 0 (2)
-             * Resolving this system yields:
-             * R3_l = (3 / 5) * (P3 - P0) and
-             * R0_r = (9 / 5) * (P3 - P0)
+             *          6(P3 - P0 - P3'_l / 3 - 2P0'_r / 3) = 0 (1)
+             *          6(Q0 - Q3 + 2Q3'_l / 3 - Q0'_r / 3) = 0 (2)
+             *
+             *
+             * Continuity yields Q3 = P0
+             *
+             * P0'_r = 3 / 2 ( P3 - P0 - P3'_l / 3)
+             * Q3'_l = 3 / 2 ( Q0'_r / 3 + Q3 - Q0 )
              */
-            *tcur_rightTan = (1. / 3.) * (tnext - tcur);
-            *vcur_rightTan = (9. / 5.) * (vnext - vcur);
-            
-            *tcur_leftTan = (2. / 3.) * (tcur - tprev);
-            *vcur_leftTan = (3. / 5.) * (vcur - vprev);
+
+            if(interpNext == LINEAR){
+                *vcurDerivRight = (vnext - vcur);
+            }else{
+                *vcurDerivRight = 1.5 * ( vnext - vcur - vnextDerivLeft / 3.);
+            }
+
+            if(interpPrev == LINEAR){
+                *vcurDerivLeft = (vcur - vprev);
+            }else{
+                *vcurDerivLeft = 1.5 * ( vprevDerivRight / 3. + vcur - vprev);
+            }
+
         }else if(interp == CATMULL_ROM || interp == SMOOTH){
             /* http://en.wikipedia.org/wiki/Cubic_Hermite_spline We use the formula given to compute the tangents*/
-            *tcur_rightTan = (1. / 3.) * (tnext - tcur);
-            *vcur_rightTan = (vnext - vprev) / (tnext - tprev);
-
-            *tcur_leftTan = (2. / 3.) * (tcur - tprev);
-            *vcur_leftTan = std::abs((vprev - vnext) / (tnext - tprev));
+            T deriv = (vnext - vprev) / (tnext - tprev);
+            *vcurDerivRight = deriv * (tnext - tcur);
+            *vcurDerivLeft = deriv * (tcur - tprev);
             
             if(interp == SMOOTH){
                 /*Now that we have the tangent by catmull-rom's formula, we compute the bezier
                  point on the left and on the right from the tangents (i.e: P1 and Q2, Q being the segment before P)
                  */
-                T p1 = vcur + *vcur_rightTan / 3.;
-                T q2 = vcur - *vcur_leftTan / 3.;
+                T p1 = vcur + *vcurDerivRight / 3.;
+                T q2 = vcur - *vcurDerivLeft / 3.;
                 
                 /*We clamp Q2 to Q0(aka vprev) and Q3(aka vcur)
                  and P1 to P0(aka vcur) and P3(aka vnext)*/
-                
-                if(q2 < vprev)
-                    q2 = vprev;
-                if(q2 > vcur)
-                    q2 = vcur;
-                if(p1 < vcur)
-                    p1 = vcur;
-                if(p1 > vnext)
-                    p1 = vnext;
+                T prevMax = std::max(vprev,vcur);
+                T prevMin = std::min(vprev,vcur);
+                q2 = std::max(prevMin,std::min(q2,prevMax));
+
+                T nextMax = std::max(vcur,vnext);
+                T nextMin = std::min(vcur,vnext);
+                p1 = std::max(nextMin,std::min(p1,nextMax));
                 
                 /*We recompute the tangents from the new clamped control points*/
                 
-                *vcur_rightTan = 3. * (p1 - vcur);
-                *vcur_leftTan = 3. * (vcur - q2);
+                *vcurDerivRight = 3. * (p1 - vcur);
+                *vcurDerivLeft = 3. * (vcur - q2);
                 
                 /*And set the tangent on the left and on the right to be the minimum
                  of the 2.*/
                 
-                T min = std::min(*vcur_rightTan,*vcur_leftTan);
-                *vcur_rightTan = min;
-                *vcur_leftTan = min;
+
+                if(std::abs(*vcurDerivLeft) < std::abs(*vcurDerivRight)){
+                    *vcurDerivRight = *vcurDerivLeft;
+                }else{
+                    *vcurDerivLeft = *vcurDerivRight;
+                }
+
             }
             
-        }else if(interp == HORIZONTAL){
-            /*The values are the same than the keyframe they belong*/
-            
-            *tcur_rightTan = (1. / 3.) * (tnext - tcur);
-            *vcur_rightTan = vcur;
-            
-            *tcur_leftTan = (2. / 3.) * (tcur - tprev);
-            *vcur_leftTan = vcur;
+        }else if(interp == HORIZONTAL || interp == CONSTANT){
+            /*The values are the same than the keyframe they belong*/        
+            *vcurDerivRight = 0.;
+            *vcurDerivLeft = 0.;
         }else if(interp == CUBIC){
-            //to do
+            /* Cubic means the the 2nd derivative of the cubic curve at the point 'cur' are equal.
+             * That means
+             * B''(0)/(tnext - tcur) = Q''(1)/ (tcur - tprev)
+             * We have 2 equations:
+             *          P3 - P0 - P3'_l / 3 - 2P0'_r / 3 = Q0 - Q3 + 2Q3'_l / 3 - Q0'_r / 3  (1)
+             *
+             *
+             * Continuity yields Q3 = P0
+             *
+             * P0'_r / (tnext - tcur) = Q3'_l / (tcur - tprev)
+             *
+             */
+
+            double timeRatio = (tcur - tprev) / (tnext - tcur);
+
+            if(interpPrev == LINEAR && interpNext == LINEAR){
+                /** we have two more unknowns, Q0'_r and P3'_l, and two more equations:
+                 *        Q"(0) = 6(Q3 - Q0 - Q3'_l / 3 - (2 / 3) * Q0'_r) = 0
+                 *        P''(1) = 6(P0 - P3 + (2 / 3) * P3'_l + P0'_r / 3) = 0
+                 */
+            }else if(interpPrev == LINEAR){
+                /** we have one more unknown, Q0'_r, and one more equation:
+                 *        Q"(0) = 6(Q3 - Q0 - Q3'_l / 3 - (2 / 3) * Q0'_r) = 0
+                 *
+                 *  which yields Q0'_r = 3 / 2 ( Q3 - Q0 - Q3'_l /3)
+                 *
+                 * We inject Q0'_r in equation (1) :
+                 *
+                 * P3 - P0 - P3'_l /3 - 2P0'_r / 3 = Q0 - Q3 + 2Q3'_l /3 - (1 /2) * (Q3 - Q0 - Q3'_l / 3)
+                 *
+                 * P3 - P0 - P3'_l /3 - 2P0'_r / 3 = (3 / 2) * Q0 - (3 / 2) * Q3 + (5 / 6) * Q3'_l
+                 *
+                 * P3 - P0 - P3'_l /3 - 2P0'_r / 3 = (3 / 2) * Q0 - (3 / 2) * P0 + (5 / 6) * P0'_r * timeRatio
+                 *
+                 * P0'_r = (P3 - P0 - P3'_l / 3 - (3 / 2) * (Q0 - P0)) / ((5 / 6) * timeRatio + 2 / 3 )
+                 **/
+
+                *vcurDerivRight = ( 3. *(vnext - vcur) - vnextDerivLeft - 4.5 * (vprev - vcur)) / (2.5 * timeRatio + 2.);
+                *vcurDerivLeft = timeRatio * *vcurDerivRight;
+
+            }else if(interpNext == LINEAR){
+                /** we have one more unknown, P3'_l, and one more equation:
+                 *        P''(1) = 6(P0 - P3 + (2 / 3) * P3'_l + P0'_r / 3) = 0
+                 *
+                 *  which yields P3'_l = (3 / 2) * (P3 - P0 - P0'_r / 3)
+                 *
+                 * We inject P3'_l in equation (1) :
+                 *
+                 * P3 - P0 - (1 / 2) * (P3 - P0 - P0'_r / 3) - 2P0'_r / 3 = Q0 - Q3 + (2/3) Q3'_l - Q0'_r / 3
+                 *
+                 *
+                 * (1 / 2) (P3 - P0) - (1 / 2) * P0'_r  = Q0 - Q3 + (2/3) Q3'_l - Q0'_r / 3
+                 *
+                 * (1 / 2) (P3 - P0 - P0'_r)  = Q0 - Q3 + (2/3) Q3'_l - Q0'_r / 3
+                 *
+                 * (1 / 2) (P3 - P0 - P0'_r)  = Q0 - Q3 + (2/3) P0'_r * timeRatio - Q0'_r / 3
+                 *
+                 * PO'_r = ((1 / 2) ( P3 - P0 ) - Q0 + Q3 + Q0'_r / 3) / ((2 / 3) * timeRatio + 1 / 2)
+                 **/
+
+            }else{
+                *vcurDerivRight = (1.5 * (vnext - vnextDerivLeft / 3. - vprev + vprevDerivRight / 3.)) / (timeRatio + 1.);
+                *vcurDerivLeft = timeRatio * *vcurDerivRight;
+            }
+
+
         }
         
     }

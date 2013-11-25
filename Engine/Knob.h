@@ -141,9 +141,9 @@ public:
         _time = time;
     }
 
-    void setInterpolation(Natron::Interpolation interp) { _interpolation = interp; }
+    void setInterpolation(Natron::Type interp) { _interpolation = interp; }
     
-    Natron::Interpolation getInterpolation() const { return _interpolation; }
+    Natron::Type getInterpolation() const { return _interpolation; }
     
     bool operator==(const KeyFrame& other) const {
         return _value == other._value &&
@@ -162,7 +162,7 @@ private:
     double _time; /// a value ranging between 0 and 1
     
     Tangent _leftTangent,_rightTangent;
-    Natron::Interpolation _interpolation;
+    Natron::Type _interpolation;
 
 };
 

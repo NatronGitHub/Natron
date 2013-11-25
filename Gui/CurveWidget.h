@@ -14,7 +14,7 @@
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
-
+#include <boost/shared_ptr.hpp>
 #include "Gui/TextRenderer.h"
 
 class CurvePath;
