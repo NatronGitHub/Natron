@@ -1,8 +1,5 @@
 Here is a list of know bugs, ordered by priority from high to low:
 
-- The viewer should *NOT* multiply RGB by alpha (this is the reason
-  why the output of the invert plugin is black on Natron)
-
 - a plugin that returns an error during the "load" or "describe" actions,
   for example if it requires a missing suite
   (e.g. ParametricParameterSuite for OFX/Color/RGBLut), should *not*
