@@ -40,6 +40,7 @@ CurveGui::CurveGui(const CurveWidget *curveWidget,
     , _curveWidget(curveWidget)
 {
     QObject::connect(&curve, SIGNAL(keyFrameChanged()), this , SIGNAL(curveChanged()));
+    
     if(_curveWidget->isSupportingOpenGLVAO()){
         glGenVertexArrays(1,&_vaoID);
     }
@@ -192,6 +193,7 @@ void CurveWidget::initializeGL(){
 }
 
 CurveGui* CurveWidget::createCurve(const CurvePath &curve,const QString& name){
+    updateGL(); //force initializeGL to be called if it wasn't before.
     CurveGui* curveGui = new CurveGui(this,curve,name,QColor(255,255,255),1);
     QObject::connect(curveGui,SIGNAL(curveChanged()),this,SLOT(updateGL()));
     _curves.push_back(curveGui);
