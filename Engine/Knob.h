@@ -372,7 +372,7 @@ public:
     /// for each dimension,there's a list of chained curve. The list is always sorted
     /// which means that the curve at index i-1 is linked to the curve at index i.
     /// Note that 2 connected curves share a pointer to the same keyframe.
-    typedef std::map<int, CurvePath > CurvesMap;
+    typedef std::map<int, boost::shared_ptr<CurvePath> > CurvesMap;
     
     MultidimensionalValue(int dimension = 1)
     : _dimension(dimension)
@@ -380,7 +380,7 @@ public:
         //default initialize the values map
         for(int i = 0; i < dimension ; ++i){
             _value.insert(std::make_pair(i,Variant()));
-            _curves.insert(std::make_pair(i,CurvePath()));
+            _curves.insert(std::make_pair(i,boost::shared_ptr<CurvePath>(new CurvePath)));
         }
     }
     
@@ -402,7 +402,7 @@ public:
     
     const Variant& getValue(int dimension) const;
     
-    const CurvePath& getCurve(int dimension) const;
+    boost::shared_ptr<CurvePath> getCurve(int dimension) const;
     
     void setValueAtTime(double time,const Variant& v,int dimension);
     
@@ -527,7 +527,7 @@ public:
     /**
      * @brief Returns an ordered map of all the keys at a specific dimension.
      **/
-    const CurvePath&  getCurve(int dimension = 0) const;
+    boost::shared_ptr<CurvePath> getCurve(int dimension = 0) const;
     
     /*other must have exactly the same name*/
     void cloneValue(const Knob& other);
@@ -585,7 +585,9 @@ public slots:
     void onKnobUndoneChange();
     
     void onKnobRedoneChange();
-    
+
+    void onTimeChanged(int time);
+
 signals:
     
     void deleted();

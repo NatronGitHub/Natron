@@ -27,7 +27,7 @@ class CurveGui : public QObject {
 public:
     
 
-    CurveGui(const CurveWidget *curveWidget, const CurvePath&  curve,
+    CurveGui(const CurveWidget *curveWidget,boost::shared_ptr<CurvePath>  curve,
              const QString& name,
              const QColor& color,
              int thickness = 1);
@@ -60,7 +60,7 @@ public:
     **/
     double evaluate(double x) const;
 
-    const CurvePath&  getInternalCurve() const { return _internalCurve; }
+    boost::shared_ptr<CurvePath>  getInternalCurve() const { return _internalCurve; }
 
     void drawCurve();
 
@@ -76,13 +76,13 @@ private:
 
 
 
-    const CurvePath& _internalCurve; ///ptr to the internal curve
+    boost::shared_ptr<CurvePath> _internalCurve; ///ptr to the internal curve
     QString _name; /// the name of the curve
     QColor _color; /// the color that must be used to draw the curve
     int _thickness; /// its thickness
     bool _visible; /// should we draw this curve ?
     mutable bool _selected; /// is this curve selected
-    GLuint _vaoID; ///if GL_ARB_vertex_buffer_object is supported this is the handle to a VAO
+ //   GLuint _vaoID; ///if GL_ARB_vertex_buffer_object is supported this is the handle to a VAO
     const CurveWidget* _curveWidget;
 
 };
@@ -158,7 +158,7 @@ public:
 
     void centerOn(double xmin,double xmax,double ymin,double ymax);
 
-    CurveGui *createCurve(const CurvePath& curve, const QString &name);
+    CurveGui *createCurve(boost::shared_ptr<CurvePath> curve, const QString &name);
 
     void displayCurve(CurveGui* curve);
 

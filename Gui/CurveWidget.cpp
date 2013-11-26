@@ -27,7 +27,7 @@ static double AXIS_MIN = -100000.;
 
 
 CurveGui::CurveGui(const CurveWidget *curveWidget,
-                   const CurvePath&  curve,
+                   boost::shared_ptr<CurvePath> curve,
                    const QString& name,
                    const QColor& color,
                    int thickness)
@@ -39,21 +39,21 @@ CurveGui::CurveGui(const CurveWidget *curveWidget,
     , _selected(false)
     , _curveWidget(curveWidget)
 {
-    QObject::connect(&curve, SIGNAL(keyFrameChanged()), this , SIGNAL(curveChanged()));
+    QObject::connect(curve.get(), SIGNAL(keyFrameChanged()), this , SIGNAL(curveChanged()));
     
-    if(_curveWidget->isSupportingOpenGLVAO()){
-        glGenVertexArrays(1,&_vaoID);
-    }
-    if(curve.getControlPointsCount() > 1){
+//    if(_curveWidget->isSupportingOpenGLVAO()){
+//        glGenVertexArrays(1,&_vaoID);
+//    }
+    if(curve->getControlPointsCount() > 1){
         _visible = true;
     }
 
 }
 
 CurveGui::~CurveGui(){
-    if(_curveWidget->isSupportingOpenGLVAO()){
-        glDeleteVertexArrays(1,&_vaoID);
-    }
+//    if(_curveWidget->isSupportingOpenGLVAO()){
+//        glDeleteVertexArrays(1,&_vaoID);
+//    }
 
 }
 
@@ -87,13 +87,13 @@ void CurveGui::drawCurve(){
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
 
-    if(_curveWidget->isSupportingOpenGLVAO()){
-        glBindVertexArray(_vaoID);
-        glVertexAttribPointer((GLuint)0, 2, GL_FLOAT, GL_FALSE, 0, vertices);
-        glDrawArrays(GL_LINE_STRIP, 0, w);
-        glEnableVertexAttribArray(0);
-        glBindVertexArray(0);
-    }else{
+//    if(_curveWidget->isSupportingOpenGLVAO()){
+//        glBindVertexArray(_vaoID);
+//        glEnableVertexAttribArray(0);
+//        glVertexAttribPointer((GLuint)0, 2, GL_FLOAT, GL_FALSE, 0, vertices);
+//        glDrawArrays(GL_LINE_STRIP, 0, w);
+//        glBindVertexArray(0);
+//    }else{
 
         glBegin(GL_LINE_STRIP);
         for(int i = 0; i < w*2;i+=2){
@@ -101,7 +101,7 @@ void CurveGui::drawCurve(){
         }
         glEnd();
 
-    }
+   // }
     glDisable(GL_LINE_SMOOTH);
     checkGLErrors();
     delete [] vertices;
@@ -118,7 +118,7 @@ void CurveGui::drawCurve(){
 
 
     //draw keyframes
-    const CurvePath::KeyFrames& keyframes = _internalCurve.getKeyFrames();
+    const CurvePath::KeyFrames& keyframes = _internalCurve->getKeyFrames();
     glPointSize(7.f);
     glEnable(GL_POINT_SMOOTH);
 
@@ -151,7 +151,7 @@ void CurveGui::drawCurve(){
 }
 
 double CurveGui::evaluate(double x) const{
-    return _internalCurve.getValueAt(x).toDouble();
+    return _internalCurve->getValueAt(x).toDouble();
 }
 
 
@@ -192,7 +192,7 @@ void CurveWidget::initializeGL(){
     }
 }
 
-CurveGui* CurveWidget::createCurve(const CurvePath &curve,const QString& name){
+CurveGui* CurveWidget::createCurve(boost::shared_ptr<CurvePath> curve,const QString& name){
     updateGL(); //force initializeGL to be called if it wasn't before.
     CurveGui* curveGui = new CurveGui(this,curve,name,QColor(255,255,255),1);
     QObject::connect(curveGui,SIGNAL(curveChanged()),this,SLOT(updateGL()));
@@ -286,11 +286,11 @@ void CurveWidget::drawCurves(){
 }
 
 void CurveGui::beginRecordBoundingBox() const{
-    _internalCurve.beginRecordBoundingBox();
+    _internalCurve->beginRecordBoundingBox();
 }
 
 void CurveGui::endRecordBoundingBox() const{
-    _internalCurve.endRecordBoundingBox();
+    _internalCurve->endRecordBoundingBox();
 }
 
 void CurveWidget::drawBaseAxis(){

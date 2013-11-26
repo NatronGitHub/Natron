@@ -16,6 +16,7 @@
 
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/TimeLine.h"
 
 #include "Global/AppManager.h"
 #include "Global/LibraryBinary.h"
@@ -393,6 +394,7 @@ Knob::Knob(KnobHolder* holder,const std::string& description,int dimension):
     
     if(_holder){
         _holder->addKnob(boost::shared_ptr<Knob>(this));
+        QObject::connect(holder->getApp()->getTimeLine().get(),SIGNAL(frameChanged(int)),this,SLOT(onTimeChanged(int)));
     }
 }
 
@@ -467,6 +469,12 @@ void Knob::onValueChanged(int dimension,const Variant& variant){
     
 }
 
+void Knob::onTimeChanged(int time){
+//    for(int i = 0; i < getDimension();++i){
+//        setValue(getValueAtTime(time,i),i);
+//    }
+}
+
 const Variant& MultidimensionalValue::getValue(int dimension) const{
     std::map<int,Variant>::const_iterator it = _value.find(dimension);
     assert(it != _value.end());
@@ -484,14 +492,14 @@ void MultidimensionalValue::setValueAtTime(double time, const Variant& v, int di
     KeyFrame key(time,v);
     CurvesMap::iterator foundDimension = _curves.find(dimension);
     assert(foundDimension != _curves.end());
-    foundDimension->second.addControlPoint(key);
+    foundDimension->second->addControlPoint(key);
 }
 
-const CurvePath& Knob::getCurve(int dimension) const{
+boost::shared_ptr<CurvePath> Knob::getCurve(int dimension) const{
     return _value.getCurve(dimension);
 }
 
-const CurvePath& MultidimensionalValue::getCurve(int dimension) const {
+boost::shared_ptr<CurvePath> MultidimensionalValue::getCurve(int dimension) const {
     CurvesMap::const_iterator foundDimension = _curves.find(dimension);
     assert(foundDimension != _curves.end());
     return foundDimension->second;
@@ -499,8 +507,8 @@ const CurvePath& MultidimensionalValue::getCurve(int dimension) const {
 
 Variant MultidimensionalValue::getValueAtTime(double time,int dimension) const{
     CurvesMap::const_iterator foundDimension = _curves.find(dimension);
-    const CurvePath& curve = getCurve(dimension);
-    if(!curve.isAnimated()){
+    boost::shared_ptr<CurvePath> curve = getCurve(dimension);
+    if(!curve->isAnimated()){
         /*if the knob as no keys at this dimension, return the value
         at the requested dimension.*/
         std::map<int,Variant>::const_iterator it = _value.find(dimension);
@@ -511,7 +519,7 @@ Variant MultidimensionalValue::getValueAtTime(double time,int dimension) const{
         }
     }else{
         try{
-            return foundDimension->second.getValueAt(time);
+            return foundDimension->second->getValueAt(time);
         }catch(const std::exception& e){
             std::cout << e.what() << std::endl;
             assert(false);
@@ -524,7 +532,7 @@ Variant MultidimensionalValue::getValueAtTime(double time,int dimension) const{
 RectD MultidimensionalValue::getCurvesBoundingBox() const{
     RectD ret;
     for(CurvesMap::const_iterator it = _curves.begin() ; it!=_curves.end();++it){
-        ret.merge(it->second.getBoundingBox());
+        ret.merge(it->second->getBoundingBox());
     }
     return ret;
 }

@@ -124,7 +124,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
         if(k->getDimension() == 1){
 
             knobCurve = curveWidget->createCurve(k->getCurve(),k->getDimensionName(0).c_str());
-            if(!k->getCurve().isAnimated()){
+            if(!k->getCurve()->isAnimated()){
                 knobItem->setHidden(true);
             }else{
                 hasAtLeast1KnobWithACurveShown = true;
@@ -137,7 +137,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
                 CurveGui* dimCurve = curveWidget->createCurve(k->getCurve(j),k->getDimensionName(j).c_str());
                 
                 _nodeElements.push_back(new NodeCurveEditorElement(curveWidget,dimItem,dimCurve));
-                if(!k->getCurve().isAnimated()){
+                if(!k->getCurve()->isAnimated()){
                     dimItem->setHidden(true);
                 }else{
                     hasAtLeast1KnobWithACurveShown = true;
@@ -171,7 +171,7 @@ void NodeCurveEditorContext::onNameChanged(const QString& name){
 }
 
 void NodeCurveEditorElement::onKeyFrameAdded(){
-    int i = _curve->getInternalCurve().getControlPointsCount();
+    int i = _curve->getInternalCurve()->getControlPointsCount();
     if(i > 1){
         if(!_curveDisplayed){
             _curveDisplayed = true;
@@ -188,7 +188,7 @@ void NodeCurveEditorElement::onKeyFrameAdded(){
 }
 
 void NodeCurveEditorElement::onKeyFrameRemoved(){
-    int i = _curve->getInternalCurve().getControlPointsCount();
+    int i = _curve->getInternalCurve()->getControlPointsCount();
     if(i < 2){
         if(_curveDisplayed){
             _curveDisplayed = false;
@@ -213,9 +213,9 @@ _treeItem(item)
 ,_curveWidget(curveWidget)
 {
     if(curve){
-        QObject::connect(&curve->getInternalCurve(), SIGNAL(keyFrameAdded()), this, SLOT(onKeyFrameAdded()));
-        QObject::connect(&curve->getInternalCurve(), SIGNAL(keyFrameRemoved()), this, SLOT(onKeyFrameRemoved()));
-        if(curve->getInternalCurve().getControlPointsCount() > 1){
+        QObject::connect(curve->getInternalCurve().get(), SIGNAL(keyFrameAdded()), this, SLOT(onKeyFrameAdded()));
+        QObject::connect(curve->getInternalCurve().get(), SIGNAL(keyFrameRemoved()), this, SLOT(onKeyFrameRemoved()));
+        if(curve->getInternalCurve()->getControlPointsCount() > 1){
             _curveDisplayed = true;
         }
     }
