@@ -159,7 +159,7 @@ bool OfxEffectInstance::isGeneratorAndFilter() const {
  Toto/Superplugins/blabla
  This functions extracts the all parts of such a grouping, e.g in this case
  it would return [Toto,Superplugins,blabla].*/
-QStringList ofxExtractAllPartsOfGrouping(const QString& str,const QString& bundlePath) {
+QStringList ofxExtractAllPartsOfGrouping(const QString& pluginLabel,const QString& str,const QString& bundlePath) {
     QStringList out;
     int pos = 0;
     while(pos < str.size()){
@@ -169,7 +169,9 @@ QStringList ofxExtractAllPartsOfGrouping(const QString& str,const QString& bundl
             ++pos;
         }
         ++pos;
-        out.push_back(newPart);
+        if(newPart != pluginLabel){
+            out.push_back(newPart);
+        }
     }
     if(!bundlePath.isEmpty()){
         int lastDotPos = bundlePath.lastIndexOf('.');
@@ -191,10 +193,10 @@ QStringList ofxExtractAllPartsOfGrouping(const QString& str,const QString& bundl
     return out;
 }
 
-QStringList OfxEffectInstance::getPluginGrouping(const std::string& bundlePath,int pluginsCount,const std::string& grouping){
+QStringList OfxEffectInstance::getPluginGrouping(const std::string& pluginLabel,const std::string& bundlePath,int pluginsCount,const std::string& grouping){
     std::string bundlePathToUse;
     bundlePathToUse = pluginsCount  > 1 ? bundlePath : "";
-    return  ofxExtractAllPartsOfGrouping(grouping.c_str(),bundlePathToUse.c_str());
+    return  ofxExtractAllPartsOfGrouping(pluginLabel.c_str(),grouping.c_str(),bundlePathToUse.c_str());
 }
 std::string OfxEffectInstance::getPluginLabel(const std::string& shortLabel,
                                       const std::string& label,
@@ -216,7 +218,7 @@ std::string OfxEffectInstance::generateImageEffectClassName(const std::string& s
                                                             const std::string& bundlePath,
                                                             const std::string& grouping){
     std::string labelToUse = getPluginLabel(shortLabel,label,longLabel);
-    QStringList groups = getPluginGrouping(bundlePath,pluginsCount,grouping);
+    QStringList groups = getPluginGrouping(labelToUse,bundlePath,pluginsCount,grouping);
 
     if(labelToUse == "Viewer"){ // we don't want a plugin to have the same name as our viewer
         labelToUse =  groups[0].toStdString() + longLabel;

@@ -262,16 +262,19 @@ private:
 
 class PluginToolButton{
 
-    QString _name;
+    QString _id;
+    QString _label;
     QString _iconPath;
     std::vector<PluginToolButton*> _children;
     PluginToolButton* _parent;
 
 public:
-    PluginToolButton(const QString& name,
+    PluginToolButton(const QString& pluginID,
+                     const QString& pluginLabel,
                      const QString& iconPath)
         :
-          _name(name)
+          _id(pluginID)
+        , _label(pluginLabel)
         , _iconPath(iconPath)
         , _children()
         , _parent(NULL)
@@ -279,10 +282,11 @@ public:
 
     }
 
+    const QString& getID() const {return _id;}
 
-    const QString& getName() const {return _name;}
+    const QString& getLabel() const {return _label;}
 
-    void setName(const QString& name) {_name = name;}
+    void setLabel(const QString& label) {_label = label;}
 
     const QString& getIconPath() const {return _iconPath;}
 
@@ -329,14 +333,7 @@ public:
 
     }
 
-    ~Plugin(){
-        if(_lock){
-            delete _lock;
-        }
-        if(_binary){
-            delete _binary;
-        }
-    }
+    ~Plugin();
 
     void setPluginID(const QString& id) { _id = id; }
 
@@ -346,9 +343,9 @@ public:
 
     const QString& getPluginLabel() const { return _label; }
 
-    const QMutex& getPluginLock() const { return *_lock; }
+    QMutex* getPluginLock() const { return _lock; }
 
-    const Natron::LibraryBinary& getLibraryBinary() const { return *_binary; }
+    Natron::LibraryBinary* getLibraryBinary() const { return _binary; }
 
 };
 }
@@ -385,9 +382,9 @@ public:
     /*Return a list of the name of all nodes available currently in the software*/
     QStringList getNodeNameList() const WARN_UNUSED_RETURN;
 
-    QMutex* getMutexForPlugin(const QString& pluginName) const;
+    QMutex* getMutexForPlugin(const QString& pluginId) const;
 
-    Natron::LibraryBinary* getPluginBinary(const QString& pluginName) const;
+    Natron::LibraryBinary* getPluginBinary(const QString& pluginId) const;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0) const WARN_UNUSED_RETURN;
@@ -412,7 +409,7 @@ public:
 
     const Settings& getCurrentSettings() const {return *_settings;}
 
-    PluginToolButton* findPluginToolButtonOrCreate(const QString& name,const QString& iconPath);
+    PluginToolButton* findPluginToolButtonOrCreate(const QString& pluginID,const QString& name,const QString& iconPath);
 
 public slots:
 
@@ -425,7 +422,8 @@ public slots:
     void clearExceedingEntriesFromNodeCache();
 
     void addPluginToolButtons(const QStringList& groups,
-                              const QString& pluginName,
+                              const QString& pluginID,
+                              const QString& pluginLabel,
                               const QString& pluginIconPath,
                               const QString& groupIconPath);
     /*Quit the app*/

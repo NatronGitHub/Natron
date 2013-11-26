@@ -25,6 +25,9 @@
 #include <ofxhImageEffectAPI.h>
 #include <ofxhHost.h>
 
+#include "Global/AppManager.h"
+#include "Global/LibraryBinary.h"
+
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 
@@ -285,9 +288,9 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
     OFX::Host::PluginCache::getPluginCache()->scanPluginFiles();
     
     /*Filling node name list and plugin grouping*/
-    const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& plugins = _imageEffectPluginCache.getPlugins();
-    for (unsigned int i = 0 ; i < plugins.size(); ++i) {
-        OFX::Host::ImageEffect::ImageEffectPlugin* p = plugins[i];
+    const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& ofxPlugins = _imageEffectPluginCache.getPlugins();
+    for (unsigned int i = 0 ; i < ofxPlugins.size(); ++i) {
+        OFX::Host::ImageEffect::ImageEffectPlugin* p = ofxPlugins[i];
         assert(p);
         if(p->getContexts().size() == 0)
             continue;
@@ -308,9 +311,8 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
                                                                            pluginsCount,
                                                                            bundlePath,
                                                                            grouping);
-        std::string rawName = pluginId;
 
-        QStringList groups = OfxEffectInstance::getPluginGrouping(bundlePath, pluginsCount, grouping);
+        QStringList groups = OfxEffectInstance::getPluginGrouping(pluginLabel,bundlePath, pluginsCount, grouping);
         
         assert(p->getBinary());
         QString iconFilename = QString(bundlePath.c_str()) + "/Contents/Resources/";
@@ -318,13 +320,13 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
         iconFilename.append(openfxId);
         iconFilename.append(".png");
         QString groupIconFilename;
-        if (groups.size() >= 1) {
+        if (groups.size() > 0) {
             groupIconFilename = QString(p->getBinary()->getBundlePath().c_str()) + "/Contents/Resources/";
             groupIconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1).c_str());
             groupIconFilename.append(groups[0]);
             groupIconFilename.append(".png");
         }
-        emit toolButtonAdded(groups, rawName.c_str(), iconFilename, groupIconFilename);
+        emit toolButtonAdded(groups,pluginId.c_str(), pluginLabel.c_str(), iconFilename, groupIconFilename);
         _ofxPlugins.insert(make_pair(pluginId, make_pair(openfxId.toStdString(), grouping)));
         QMutex* pluginMutex = NULL;
         if(p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe){
@@ -334,7 +336,6 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
                                                     pluginId.c_str(),pluginLabel.c_str(),pluginMutex);
         plugins->push_back(plugin);
     }
-    return plugins;
 }
 
 

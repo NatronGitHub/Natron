@@ -161,14 +161,14 @@ AppInstance::~AppInstance(){
 
 Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
     Node* node = 0;
-    LibraryBinary* pluginBinary = appPTR->getPluginBinary(name);
-    if(!pluginBinary){
-        QString err("Reason:\n The plugin binary for ");
-        err.append(name);
-        err.append(" couldn't be located");
-        Natron::errorDialog("Failed to create node",err.toStdString());
-        return NULL;
+    LibraryBinary* pluginBinary = 0;
+    try{
+        pluginBinary = appPTR->getPluginBinary(name);
+    }catch(const std::exception& e){
+        Natron::errorDialog("Missing plugin", e.what());
+        return node;
     }
+    
     try{
         if(name != "Viewer"){ // for now only the viewer can be an inspector.
             node = new Node(this,pluginBinary,name.toStdString());
@@ -624,8 +624,8 @@ AppManager::AppManager()
 ,_viewerCache(new Cache<FrameEntry>("ViewerCache",0x1,_settings->_cacheSettings.maxDiskCache
 ,_settings->_cacheSettings.maxPlayBackMemoryPercent))
 {
-    connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString)),
-            this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString)));
+    connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString,QString)),
+            this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString,QString)));
     
     
     /*loading all plugins*/
@@ -646,11 +646,8 @@ AppManager::~AppManager(){
     for(WritePluginsIterator it = _writePluginsLoaded.begin(); it!=_writePluginsLoaded.end(); ++it) {
         delete it->second.second;
     }
-    for(PluginsMap::iterator it = _plugins.begin();it!=_plugins.end();++it){
-        if(it->second.second)
-            delete it->second.second;
-        if(it->second.first)
-            delete it->second.first;
+    for(U32 i = 0; i < _plugins.size();++i){
+        delete _plugins[i];
     }
     foreach(Format* f,_formats){
         delete f;
@@ -680,7 +677,7 @@ void AppManager::loadAllPlugins() {
     loadWritePlugins();
     
     /*loading ofx plugins*/
-    ofxHost->loadOFXPlugins(_plugins);
+    ofxHost->loadOFXPlugins(&_plugins);
     
 }
 
@@ -763,7 +760,7 @@ void AppManager::loadNodePlugins(){
                 pluginMutex = new QMutex;
             }
             Natron::Plugin* plugin = new Natron::Plugin(plugins[i],effect->pluginID().c_str(),effect->pluginLabel().c_str(),
-                                                        pluginMutex;);
+                                                        pluginMutex);
             _plugins.push_back(plugin);
             delete effect;
         }
@@ -786,7 +783,7 @@ void AppManager::loadBuiltinNodePlugins(){
         Natron::Plugin* plugin = new Natron::Plugin(readerPlugin,reader->pluginID().c_str(),reader->pluginLabel().c_str(),
                                                     (QMutex*)NULL);
          _plugins.push_back(plugin);
-        addPluginToolButtons(grouping,reader->pluginID().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
+        addPluginToolButtons(grouping,reader->pluginID().c_str(),reader->pluginLabel().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete reader;
     }
     {
@@ -799,7 +796,7 @@ void AppManager::loadBuiltinNodePlugins(){
         Natron::Plugin* plugin = new Natron::Plugin(viewerPlugin,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(),
                                                     (QMutex*)NULL);
          _plugins.push_back(plugin);
-        addPluginToolButtons(grouping,viewer->pluginID().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
+        addPluginToolButtons(grouping,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete viewer;
     }
     {
@@ -812,7 +809,7 @@ void AppManager::loadBuiltinNodePlugins(){
         Natron::Plugin* plugin = new Natron::Plugin(writerPlugin,writer->pluginID().c_str(),writer->pluginLabel().c_str(),
                                                     (QMutex*)NULL);
          _plugins.push_back(plugin);
-        addPluginToolButtons(grouping,writer->pluginID().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
+        addPluginToolButtons(grouping,writer->pluginID().c_str(),writer->pluginLabel().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete writer;
     }
 }
@@ -968,13 +965,13 @@ void PluginToolButton::tryAddChild(PluginToolButton* plugin){
 }
 
 void AppManager::addPluginToolButtons(const QStringList& groups,
-                                      const QString& pluginName,
+                                      const QString& pluginID,
+                                      const QString& pluginLabel,
                                       const QString& pluginIconPath,
                                       const QString& groupIconPath){
     PluginToolButton* parent = NULL;
     for(int i = 0; i < groups.size();++i){
-        
-        PluginToolButton* child = findPluginToolButtonOrCreate(groups.at(i),groupIconPath);
+        PluginToolButton* child = findPluginToolButtonOrCreate(groups.at(i),groups.at(i),groupIconPath);
         if(parent){
             parent->tryAddChild(child);
             child->setParent(parent);
@@ -982,7 +979,7 @@ void AppManager::addPluginToolButtons(const QStringList& groups,
         parent = child;
         
     }
-    PluginToolButton* lastChild = findPluginToolButtonOrCreate(pluginName,pluginIconPath);
+    PluginToolButton* lastChild = findPluginToolButtonOrCreate(pluginID,pluginLabel,pluginIconPath);
     if(parent){
         parent->tryAddChild(lastChild);
         lastChild->setParent(parent);
@@ -990,12 +987,12 @@ void AppManager::addPluginToolButtons(const QStringList& groups,
 
     //_toolButtons.push_back(new PluginToolButton(groups,pluginName,pluginIconPath,groupIconPath));
 }
-PluginToolButton* AppManager::findPluginToolButtonOrCreate(const QString& name,const QString& iconPath){
+PluginToolButton* AppManager::findPluginToolButtonOrCreate(const QString& pluginID,const QString& label,const QString& iconPath){
     for(U32 i = 0 ; i < _toolButtons.size();++i){
-        if(_toolButtons[i]->getName() == name)
+        if(_toolButtons[i]->getID() == pluginID)
             return _toolButtons[i];
     }
-    PluginToolButton* ret = new PluginToolButton(name,iconPath);
+    PluginToolButton* ret = new PluginToolButton(pluginID,label,iconPath);
     _toolButtons.push_back(ret);
     return ret;
 }
@@ -1104,32 +1101,37 @@ void AppManager::clearExceedingEntriesFromNodeCache(){
 
 QStringList AppManager::getNodeNameList() const{
     QStringList ret;
-    for(PluginsMap::const_iterator it = _plugins.begin();it!=_plugins.end();++it){
-        ret.append(it->first);
+    for (U32 i = 0; i < _plugins.size(); ++i) {
+        ret.append(_plugins[i]->getPluginID());
     }
     return ret;
 }
 
-QMutex* AppManager::getMutexForPlugin(const QString& pluginName) const {
-    PluginsMap::const_iterator it = _plugins.find(pluginName);
-    if(it != _plugins.end()){
-        return it->second.second;
+QMutex* AppManager::getMutexForPlugin(const QString& pluginId) const {
+    for (U32 i = 0; i < _plugins.size(); ++i) {
+        if(_plugins[i]->getPluginID() == pluginId){
+            return _plugins[i]->getPluginLock();
+        }
     }
-    return NULL;
+    std::string exc("Couldn't find a plugin named ");
+    exc.append(pluginId.toStdString());
+    throw std::invalid_argument(exc);
 }
 void AppManager::printPluginsLoaded(){
-    for(PluginsMap::const_iterator it = _plugins.begin();it!=_plugins.end();++it){
-        std::cout << it->first.toStdString() << std::endl;
+    for(U32 i = 0; i < _plugins.size(); ++i){
+        std::cout << _plugins[i]->getPluginID().toStdString() << std::endl;
     }
 }
 
-Natron::LibraryBinary* AppManager::getPluginBinary(const QString& pluginName) const{
-    PluginsMap::const_iterator it = _plugins.find(pluginName);
-    if(it != _plugins.end()){
-        return it->second.first;
+Natron::LibraryBinary* AppManager::getPluginBinary(const QString& pluginId) const{
+    for (U32 i = 0; i < _plugins.size(); ++i) {
+        if(_plugins[i]->getPluginID() == pluginId){
+            return _plugins[i]->getLibraryBinary();
+        }
     }
-    return NULL;
-
+    std::string exc("Couldn't find a plugin named ");
+    exc.append(pluginId.toStdString());
+    throw std::invalid_argument(exc);
 }
 int AppInstance::getKnobsAge() const{
     return _currentProject->getKnobsAge();
@@ -1401,6 +1403,15 @@ Natron::StandardButton questionDialog(const std::string& title,const std::string
     Log::beginFunction(title,"QUESTION");
     Log::print(message);
     Log::endFunction(title,"QUESTION");
+}
+    
+Plugin::~Plugin(){
+    if(_lock){
+        delete _lock;
+    }
+    if(_binary){
+        delete _binary;
+    }
 }
     
 } //Namespace Natron

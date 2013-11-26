@@ -217,6 +217,7 @@ public:
                 return false;
             ++itOther;
         }
+        return true;
     }
 
     bool isAnimated() const { return _keyFrames.size() > 1; }

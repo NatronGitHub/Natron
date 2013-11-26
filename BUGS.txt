@@ -16,13 +16,6 @@ Here is a list of know bugs, ordered by priority from high to low:
   within that grouping inside its own menu (see multibundle from
   Support plugins), which is a bug, of course.
 
-- a plugin should uniquely be identified internally by its name
-  (e.g. "net.sf.openfx:invertPlugin"), not by its label.
-  (e.g. "Invert"). This name can be attached to the menus using
-  QAction::setData()
-
-- in the plugin menu, only the name of the plugin (not its group)
-  should appear. 
 
 - When viewing a single component (R, G, or B), is should be displayed
   as grayscale, because blue has a very low luminance. Another

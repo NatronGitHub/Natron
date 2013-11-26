@@ -159,7 +159,7 @@ public:
 
     void backgroundColorOfAttachedViewer(double &r,double &g,double &b);
 
-    static QStringList getPluginGrouping(const std::string& bundlePath,int pluginsCount,const std::string& grouping);
+    static QStringList getPluginGrouping(const std::string& pluginLabel,const std::string& bundlePath,int pluginsCount,const std::string& grouping);
 
     static std::string getPluginLabel(const std::string& shortLabel,
                                       const std::string& label,

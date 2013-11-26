@@ -78,7 +78,7 @@ public:
     void loadOFXPlugins(std::vector<Natron::Plugin *> *plugins);
 
 signals:
-    void toolButtonAdded(QStringList,QString,QString,QString);
+    void toolButtonAdded(QStringList,QString,QString,QString,QString);
     
 private:
     /*Writes all plugins loaded and their descriptors to

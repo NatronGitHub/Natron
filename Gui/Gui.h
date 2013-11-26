@@ -79,10 +79,12 @@ public:
     
     ToolButton(AppInstance* app,
                PluginToolButton* pluginToolButton,
-               const QString& name,
+               const QString& pluginID,
+               const QString& label,
                QIcon icon = QIcon())
     : _app(app)
-    , _name(name)
+    , _id(pluginID)
+    , _label(label)
     , _icon(icon)
     , _menu(NULL)
     , _children()
@@ -93,8 +95,10 @@ public:
     
     
     virtual ~ToolButton(){}
+    
+    const QString& getID() const { return _id; }
 
-    const QString& getName() const { return _name; };
+    const QString& getLabel() const { return _label; };
     
     const QIcon& getIcon() const { return _icon; };
     
@@ -120,7 +124,8 @@ public slots:
 
 private:
     AppInstance* _app;
-    QString _name;
+    QString _id;
+    QString _label;
     QIcon _icon;
     QMenu* _menu;
     std::vector<ToolButton*> _children;
