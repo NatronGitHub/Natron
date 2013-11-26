@@ -45,7 +45,8 @@ T interpolate(double tcur, const T vcur, //start control point
               const T vnextDerivLeft, //being the derivative dv/dt at tnext
               double tnext, const T vnext, //end control point
               double currentTime,
-              KeyframeType interp)
+              KeyframeType interp,
+              KeyframeType interpNext)
 {
     const T P0 = vcur;
     const T P0pr = vcurDerivRight;
@@ -55,6 +56,11 @@ T interpolate(double tcur, const T vcur, //start control point
     const double t = (currentTime - tcur)/(tnext - tcur);
     const double t2 = t * t;
     const double t3 = t2 * t;
+    if (interpNext == KEYFRAME_NONE) {
+        assert(interp != KEYFRAME_NONE);
+        return P0 + (t - tcur) * P0pr;
+    }
+    
     switch (interp) {
     case KEYFRAME_LINEAR:
     case KEYFRAME_HORIZONTAL:
@@ -71,7 +77,7 @@ T interpolate(double tcur, const T vcur, //start control point
     case KEYFRAME_CONSTANT:
         return t < tnext ? P0 : P3;
     case KEYFRAME_NONE:
-        throw std::runtime_error("Cannot interpolate after KEYFRAME_NONE");
+        return P3 - (tnext - t) * P3pl;
     }
 }
 
