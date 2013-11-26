@@ -40,7 +40,11 @@ CurveGui::CurveGui(const CurveWidget *curveWidget,
     , _curveWidget(curveWidget)
 {
     QObject::connect(&curve, SIGNAL(keyFrameChanged()), this , SIGNAL(curveChanged()));
-    glGenVertexArrays(1,&_vaoID);
+    if(_curveWidget->isSupportingOpenGLVAO()){
+        glGenVertexArrays(1,&_vaoID);
+    }else{
+        glGenBuffers(1,&_vaoID);
+    }
     glGenBuffers(1,&_vboID);
     if(curve.getControlPointsCount() > 1){
         _visible = true;
@@ -59,40 +63,52 @@ void CurveGui::drawCurve(){
     if(!_visible)
         return;
 
+    beginRecordBoundingBox();
+
     int w = _curveWidget->width();
     float* vertices = new float[w * 2];
-    for(int i = 0 ; i < w*2;i+=2){
+    int vertIndex = 0;
+    for(int i = 0 ; i < w;++i,vertIndex+=2){
         double x = _curveWidget->toScaleCoordinates(i,0).x();
         double y = evaluate(x);
-        vertices[i] = (float)x;
-        vertices[i+1] = (float)y;
+        vertices[vertIndex] = (float)x;
+        vertices[vertIndex+1] = (float)y;
     }
 
-
+    endRecordBoundingBox();
 
     const QColor& curveColor = _selected ?  _curveWidget->getSelectedCurveColor() : _color;
 
     glColor4f(curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF());
 
-    beginRecordBoundingBox();
     glPointSize(_thickness);
-    glBindVertexArray(_vaoID);
-    glBindBuffer(GL_ARRAY_BUFFER, _vboID);
-    glBufferData(GL_ARRAY_BUFFER, w * 2 * sizeof(float), vertices, GL_DYNAMIC_DRAW);
-    glVertexAttribPointer((GLuint)0, 2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnable(GL_LINE_SMOOTH);
     glEnable(GL_BLEND);
     glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
     glLineWidth(1.5);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
-    glDrawArrays(GL_LINE_STRIP, 0, w);
-     glLineWidth(1.);
+
+    if(_curveWidget->isSupportingOpenGLVAO()){
+        glBindVertexArray(_vaoID);
+        glVertexAttribPointer((GLuint)0, 2, GL_FLOAT, GL_FALSE, 0, vertices);
+        glDrawArrays(GL_LINE_STRIP, 0, w);
+        glEnableVertexAttribArray(0);
+        glBindVertexArray(0);
+    }else{
+
+        glBegin(GL_LINE_STRIP);
+        for(int i = 0; i < w*2;i+=2){
+            glVertex2f(vertices[i],vertices[i+1]);
+        }
+        glEnd();
+
+    }
     glDisable(GL_LINE_SMOOTH);
-    glEnableVertexAttribArray(0);
-    glBindVertexArray(0);
     checkGLErrors();
     delete [] vertices;
+
+    glLineWidth(1.);
 
 
     //render the name of the curve
@@ -155,6 +171,8 @@ CurveWidget::CurveWidget(QWidget* parent, const QGLWidget* shareWidget)
     , _font(new QFont("Helvetica",10))
     , _curves()
     , _selectedKeyFrames()
+    , _hasOpenGLVAOSupport(true)
+
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     _nextCurveAddedColor.setHsv(200,255,255);
@@ -170,7 +188,10 @@ CurveWidget::~CurveWidget(){
 
 void CurveWidget::initializeGL(){
 
-
+    if (!glewIsSupported("GL_ARB_vertex_array_object "  // BindVertexArray, DeleteVertexArrays, GenVertexArrays, IsVertexArray (VAO), core since 3.0
+                        )) {
+        _hasOpenGLVAOSupport = false;
+    }
 }
 
 CurveGui* CurveWidget::createCurve(const CurvePath &curve,const QString& name){

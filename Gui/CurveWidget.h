@@ -54,10 +54,6 @@ public:
 
     void setSelected(bool s) const { _selected = s; }
 
-    void beginRecordBoundingBox() const;
-    
-    void endRecordBoundingBox() const;
-    
     /**
       * @brief Evaluates the curve and returns the y position corresponding to the given x.
       * The coordinates are those of the curve, not of the widget.
@@ -74,6 +70,9 @@ signals:
     
 private:
 
+    void beginRecordBoundingBox() const;
+
+    void endRecordBoundingBox() const;
 
 
 
@@ -83,7 +82,7 @@ private:
     int _thickness; /// its thickness
     bool _visible; /// should we draw this curve ?
     mutable bool _selected; /// is this curve selected
-    GLuint _vaoID;
+    GLuint _vaoID; ///if GL_ARB_vertex_buffer_object is supported this is the handle to a VAO, otherwise a handle to a IBO
     GLuint _vboID;
     const CurveWidget* _curveWidget;
 
@@ -132,6 +131,8 @@ class CurveWidget : public QGLWidget
     typedef std::list<CurveGui* > Curves;
     Curves _curves;
     std::list< const KeyFrame* > _selectedKeyFrames;
+    bool _hasOpenGLVAOSupport;
+
 public:
     
     CurveWidget(QWidget* parent, const QGLWidget* shareWidget = NULL);
@@ -179,6 +180,9 @@ public:
     const QFont& getFont() const { return *_font; }
 
     const std::list< const KeyFrame* >& getSelectedKeyFrames() const { return _selectedKeyFrames; }
+
+    bool isSupportingOpenGLVAO() const { return _hasOpenGLVAOSupport; }
+
 private:
 
     /**
