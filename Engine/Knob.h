@@ -88,10 +88,8 @@ class KeyFrame  {
         ar & boost::serialization::make_nvp("Time",_time);
         ar & boost::serialization::make_nvp("Value",_value);
         ar & boost::serialization::make_nvp("InterpolationMethod",_interpolation);
-        ar & boost::serialization::make_nvp("LeftTangent.time",_leftTangent.first);
-        ar & boost::serialization::make_nvp("LeftTangent.value",_leftTangent.second);
-        ar & boost::serialization::make_nvp("RightTangent.time",_rightTangent.first);
-        ar & boost::serialization::make_nvp("RightTangent.value",_rightTangent.second);
+        ar & boost::serialization::make_nvp("LeftTangent",_leftTangent);
+        ar & boost::serialization::make_nvp("RightTangent",_rightTangent);
     }
     
 public:
@@ -115,6 +113,11 @@ public:
     }
 
     ~KeyFrame(){}
+    
+    bool operator==(const KeyFrame& o) const {
+        return _value == o._value &&
+        _time == o._time;
+    }
     
     const Variant& getValue() const { return _value; }
     
@@ -240,7 +243,9 @@ private:
             //if there's only 1 keyframe, don't bother interpolating
             return (*_keyFrames.begin()).getValue().value<T>();
         }
-
+        double tcur,tnext;
+        T vcurDerivRight,vnextDerivLeft,vcur,vnext;
+        Natron::KeyframeType interp = Natron::KEYFRAME_NONE,interpNext = Natron::KEYFRAME_NONE;
         KeyFrames::const_iterator upper = _keyFrames.begin();
         for(KeyFrames::const_iterator it = _keyFrames.begin();it!=_keyFrames.end();++it){
             if((*it).getTime() > t){
@@ -254,22 +259,43 @@ private:
 
         //if we found no key that has a greater time (i.e: we search before the 1st keyframe)
         if(upper == _keyFrames.begin()){
-            
+            tcur = 0;
+            tnext = upper->getTime();
+            vnext = upper->getValue().value<double>();
+            vnextDerivLeft = upper->getLeftTangent().value<double>();
+            interpNext = upper->getInterpolation();
         }
         
-        
-        if(upper == _keyFrames.end()){
-            
-        }
-        
-
-
         //if all keys have a greater time (i.e: we search after the last keyframe)
         KeyFrames::const_iterator prev = upper;
         --prev;
+
         
-        return Natron::interpolate<T>(t0,v0,v1,v2,t3,v3,t,(*prev).getInterpolation());
+        if(upper == _keyFrames.end()){
+            tcur = prev->getTime();
+            vcur = prev->getValue().value<double>();
+            vcurDerivRight = prev->getRightTangent().value<double>();
+            interp = prev->getInterpolation();
+            tnext = 0;
+        }else{
+            tcur = prev->getTime();
+            vcur = prev->getValue().value<double>();
+            vcurDerivRight = prev->getRightTangent().value<double>();
+            interp = prev->getInterpolation();
+            tnext = upper->getTime();
+            vnext = upper->getValue().value<double>();
+            vnextDerivLeft = upper->getLeftTangent().value<double>();
+            interpNext = upper->getInterpolation();
+        }
         
+        return Natron::interpolate<T>(tcur,vcur,
+                                      vcurDerivRight,
+                                      vnextDerivLeft,
+                                      tnext,vnext,
+                                      t,
+                                      interp,
+                                      interpNext);
+
         
     }
     

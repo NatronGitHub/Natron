@@ -228,10 +228,8 @@ KeyFrame::KeyFrame(double time,const Variant& initialValue)
     , _rightTangent()
     , _interpolation(Natron::KEYFRAME_SMOOTH)
 {
-    _leftTangent.first = time;
-    _leftTangent.second = initialValue;
-    _rightTangent.first = time;
-    _rightTangent.second = initialValue;
+    _leftTangent = initialValue;
+    _rightTangent = initialValue;
 }
 
 CurvePath::CurvePath(const KeyFrame& cp)
@@ -316,7 +314,7 @@ void CurvePath::refreshTangents(KeyFrames::iterator key){
         --prev;
         tprev = prev->getTime();
         vprev = prev->getValue().value<double>();
-        vprevDerivRight = prev->getRightTangent().second.value<double>();
+        vprevDerivRight = prev->getRightTangent().value<double>();
         prevType = prev->getInterpolation();
     }
     
@@ -328,7 +326,7 @@ void CurvePath::refreshTangents(KeyFrames::iterator key){
     }else{
         tnext = next->getTime();
         vnext = next->getValue().value<double>();
-        vnextDerivLeft = next->getLeftTangent().second.value<double>();
+        vnextDerivLeft = next->getLeftTangent().value<double>();
         nextType = next->getInterpolation();
     }
     
