@@ -23,6 +23,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QtGui/QMouseEvent>
 #include <QtGui/QPainter>
 
+#include "Gui/ticks.h"
 
 #define TICK_HEIGHT 7
 #define SLIDER_WIDTH 4
@@ -121,13 +122,9 @@ void ScaleSlider::drawScale(){
     QFontMetrics fontM(*_font);
 
     /*drawing X axis*/
-    double scaleWidth = width();
-    double scaleYpos = btmLeft.y();
     double lineYpos = toImgCoordinates_fast(0,height() -1 - fontM.height()  - TICK_HEIGHT/2).y();
-    double tickBottom = toImgCoordinates_fast(0,height() -1 - fontM.height() ).y();
-    double tickTop = toImgCoordinates_fast(0,height() -1 - fontM.height()  - TICK_HEIGHT).y();
-    double averageTextUnitWidth = 0.;
 
+   
     /*draw the horizontal axis*/
     glColor4f(_scaleColor.redF(), _scaleColor.greenF(), _scaleColor.blueF(), _scaleColor.alphaF());
     glBegin(GL_LINES);
@@ -135,41 +132,61 @@ void ScaleSlider::drawScale(){
     glVertex2f(topRight.x(), lineYpos);
     glEnd();
 
-
-    averageTextUnitWidth = (fontM.width(QString::number(_minimum))
-                            + fontM.width(QString::number(_maximum))) / 2.;
-
-    int majorTicksCount = (scaleWidth / averageTextUnitWidth) / 2; //divide by 2 to count as much spaces between ticks as there're ticks
-
-    double xminp,xmaxp,dist;
+    double tickBottom = toImgCoordinates_fast(0,height() -1 - fontM.height() ).y();
+    double tickTop = toImgCoordinates_fast(0,height() -1 - fontM.height()  - TICK_HEIGHT).y();
+    const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
+    const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
     std::vector<double> acceptedDistances;
     acceptedDistances.push_back(1.);
     acceptedDistances.push_back(5.);
     acceptedDistances.push_back(10.);
     acceptedDistances.push_back(50.);
-    if (_type == Natron::LINEAR_SCALE) {
-        ScaleSlider::LinearScale2(btmLeft.x(), topRight.x(), majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
-    } else {
-        assert(_type == Natron::LOG_SCALE);
-        ScaleSlider::LogScale1(btmLeft.x(), topRight.x(), majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
-    }
-
-    double value = xminp;
-    double prev = value;
-    for(int i = 0 ; i < majorTicksCount; ++i){
-        QString text = (value - prev < 1.) ?  QString::number(value,'f',1) :  QString::number((int)value);
-        renderText(value ,scaleYpos , text, _scaleColor, *_font);
-        /*also draw a line*/
-        glColor4f(_majorAxisColor.redF(), _majorAxisColor.greenF(), _majorAxisColor.blueF(), _majorAxisColor.alphaF());
+    const double rangePixel =  width();
+    const double range_min = btmLeft.x() ;
+    const double range_max =  topRight.x() ;
+    const double range = range_max - range_min;
+    double smallTickSize;
+    bool half_tick;
+    ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
+    int m1, m2;
+    const int ticks_max = 1000;
+    double offset;
+    ticks_bounds(range_min, range_max, smallTickSize, half_tick, ticks_max, &offset, &m1, &m2);
+    std::vector<int> ticks;
+    ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
+    const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
+    const double largestTickSize = range * largestTickSizePixel / rangePixel;
+    const double minTickSizeTextPixel = fontM.width(QString("00")) ; // AXIS-SPECIFIC
+    const double minTickSizeText = range * minTickSizeTextPixel/rangePixel;
+    for(int i = m1 ; i <= m2; ++i) {
+        double value = i * smallTickSize + offset;
+        const double tickSize = ticks[i-m1]*smallTickSize;
+        const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
+        
+        glColor4f(_majorAxisColor.redF(), _majorAxisColor.greenF(), _majorAxisColor.blueF(), alpha);
+        
         glBegin(GL_LINES);
         glVertex2f(value, tickBottom);
         glVertex2f(value, tickTop);
         glEnd();
-        //reset back the color
-        glColor4f(1., 1., 1., 1.);
-
-        prev = value;
-        value += dist;
+        
+        if (tickSize > minTickSizeText) {
+            const int tickSizePixel = rangePixel * tickSize/range;
+            const QString s = QString::number(value);
+            const int sSizePixel =  fontM.width(s);
+            if (tickSizePixel > sSizePixel) {
+                const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
+                double alphaText = 1.0;//alpha;
+                if (tickSizePixel < sSizeFullPixel) {
+                    // when the text size is between sSizePixel and sSizeFullPixel,
+                    // draw it with a lower alpha
+                    alphaText *= (tickSizePixel - sSizePixel)/(double)minTickSizeTextPixel;
+                }
+                QColor c = _scaleColor;
+                c.setAlpha(255*alphaText);
+                renderText(value, btmLeft.y(), s, c, *_font);
+            }
+        }
     }
 
     QPointF sliderBottomLeft = toImgCoordinates_fast(_position - SLIDER_WIDTH / 2,height() -1 - fontM.height()/2);

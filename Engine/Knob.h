@@ -238,15 +238,15 @@ private:
 
     template <typename T>
     T getValueAtInternal(double t) const {
-
+        assert(!_keyFrames.empty());
         if(_keyFrames.size() == 1){
             //if there's only 1 keyframe, don't bother interpolating
             return (*_keyFrames.begin()).getValue().value<T>();
         }
         double tcur,tnext;
-        T vcurDerivRight,vnextDerivLeft,vcur,vnext;
+        T vcurDerivRight = 0,vnextDerivLeft = 0,vcur = 0,vnext = 0;
         Natron::KeyframeType interp = Natron::KEYFRAME_NONE,interpNext = Natron::KEYFRAME_NONE;
-        KeyFrames::const_iterator upper = _keyFrames.begin();
+        KeyFrames::const_iterator upper = _keyFrames.end();
         for(KeyFrames::const_iterator it = _keyFrames.begin();it!=_keyFrames.end();++it){
             if((*it).getTime() > t){
                 upper = it;
@@ -257,26 +257,26 @@ private:
             }
         }
 
-        //if we found no key that has a greater time (i.e: we search before the 1st keyframe)
-        if(upper == _keyFrames.begin()){
-            tcur = 0;
-            tnext = upper->getTime();
-            vnext = upper->getValue().value<double>();
-            vnextDerivLeft = upper->getLeftTangent().value<double>();
-            interpNext = upper->getInterpolation();
-        }
-        
+
         //if all keys have a greater time (i.e: we search after the last keyframe)
         KeyFrames::const_iterator prev = upper;
         --prev;
 
-        
-        if(upper == _keyFrames.end()){
+
+        //if we found no key that has a greater time (i.e: we search before the 1st keyframe)
+        if(upper == _keyFrames.begin()){
+            tnext = upper->getTime();
+            vnext = upper->getValue().value<double>();
+            vnextDerivLeft = upper->getLeftTangent().value<double>();
+            interpNext = upper->getInterpolation();
+            tcur = tnext;
+
+        }else if(upper == _keyFrames.end()){
             tcur = prev->getTime();
             vcur = prev->getValue().value<double>();
             vcurDerivRight = prev->getRightTangent().value<double>();
             interp = prev->getInterpolation();
-            tnext = 0;
+            tnext = tcur;
         }else{
             tcur = prev->getTime();
             vcur = prev->getValue().value<double>();
