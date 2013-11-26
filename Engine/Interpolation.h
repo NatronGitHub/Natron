@@ -193,13 +193,26 @@ void autoComputeTangents(Natron::KeyframeType interpPrev,
         break;
 
     case KEYFRAME_CATMULL_ROM:
-    case KEYFRAME_SMOOTH: {
-        /* http://en.wikipedia.org/wiki/Cubic_Hermite_spline We use the formula given to compute the tangents*/
-        T deriv = (vnext - vprev) / (tnext - tprev);
-        P0pr = deriv * (tnext - tcur);
-        Q3pl = deriv * (tcur - tprev);
+        {
+            /* http://en.wikipedia.org/wiki/Cubic_Hermite_spline We use the formula given to compute the tangents*/
+            T deriv = (vnext - vprev) / (tnext - tprev);
+            P0pr = deriv * (tnext - tcur);
+            Q3pl = deriv * (tcur - tprev);
+        }
+        break;
 
-        if (interp == KEYFRAME_SMOOTH) {
+    case KEYFRAME_SMOOTH:
+        // If vcur is outside of the range [vprev,vnext], then interpolation is horizontal
+        if ((vprev > vcur && vcur < vnext) || (vprev < vcur && vcur > vnext)) {
+            P0pr = 0.;
+            Q3pl = 0.;
+        } else {
+            // Catmull-Rom interpolatio, see above
+            /* http://en.wikipedia.org/wiki/Cubic_Hermite_spline We use the formula given to compute the tangents*/
+            T deriv = (vnext - vprev) / (tnext - tprev);
+            P0pr = deriv * (tnext - tcur);
+            Q3pl = deriv * (tcur - tprev);
+
             /*Now that we have the tangent by catmull-rom's formula, we compute the bezier
               point on the left and on the right from the tangents (i.e: P1 and Q2, Q being the segment before P)
             */
@@ -232,9 +245,7 @@ void autoComputeTangents(Natron::KeyframeType interpPrev,
             }
 
         }
-
-    }
-        break;
+       break;
 
     case KEYFRAME_HORIZONTAL:
     case KEYFRAME_CONSTANT:
