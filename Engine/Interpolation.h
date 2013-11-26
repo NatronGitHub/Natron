@@ -52,7 +52,7 @@ T interpolate(double tcur, const T vcur, //start control point
     const T P0pr = vcurDerivRight;
     const T P3pl = vnextDerivLeft;
     const T P3 = vnext;
-    assert(currentTime >= tcur && currentTime <= tnext);
+    assert((interp == KEYFRAME_NONE || currentTime >= tcur) && (interpNext == KEYFRAME_NONE || currentTime <= tnext));
     const double t = (currentTime - tcur)/(tnext - tcur);
     const double t2 = t * t;
     const double t3 = t2 * t;
