@@ -206,19 +206,11 @@ public:
     CurvePath(const KeyFrame& cp);
 
     ~CurvePath(){}
-
-    bool operator==(const CurvePath& other) const{
-        const KeyFrames& otherKeys = other.getKeyFrames();
-        KeyFrames::const_iterator itOther = otherKeys.begin();
-        for(KeyFrames::const_iterator it = _keyFrames.begin();it!=_keyFrames.end();++it){
-            if(!((*it) == (*itOther))){
-                return false;
-            }
-            if(itOther == otherKeys.end())
-                return false;
-            ++itOther;
-        }
-        return true;
+    
+    void operator=(const CurvePath& other){
+        _keyFrames = other._keyFrames;
+        _bbox = other._bbox;
+        _betweendBeginAndEndRecord = other._betweendBeginAndEndRecord;
     }
 
     bool isAnimated() const { return _keyFrames.size() > 1; }
@@ -388,13 +380,7 @@ public:
     
     ~MultidimensionalValue() { _value.clear(); _curves.clear(); }
 
-    void operator=(const MultidimensionalValue& other){
-        _value = other._value;
-        _curves.clear();
-        for(int i = 0; i < other.getDimension();++i){
-            _curves.insert(std::make_pair(i,other.getCurve(i)));
-        }
-    }
+    void clone(const MultidimensionalValue& other);
     
     const std::map<int,Variant>& getValueForEachDimension() const {return _value;}
     
@@ -613,6 +599,7 @@ signals:
     
     void enabled(bool);
     
+    void restorationComplete();
     
 protected:
     

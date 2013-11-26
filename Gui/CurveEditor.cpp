@@ -72,7 +72,7 @@ void CurveEditor::addNode(NodeGui* node){
             break;
         }
     }
-    if(!hasKnobsAnimating){
+    if(!hasKnobsAnimating){ 
         return;
     }
 

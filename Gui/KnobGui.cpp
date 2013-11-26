@@ -81,6 +81,7 @@ KnobGui::KnobGui(Knob* knob,DockablePanel* container):
     QObject::connect(knob,SIGNAL(visible(bool)),this,SLOT(setVisible(bool)));
     QObject::connect(knob,SIGNAL(enabled(bool)),this,SLOT(setEnabled(bool)));
     QObject::connect(knob,SIGNAL(deleted()),this,SLOT(deleteKnob()));
+    QObject::connect(knob,SIGNAL(restorationComplete()),this,SIGNAL(keyAdded()));
     QObject::connect(this, SIGNAL(knobUndoneChange()), knob, SLOT(onKnobUndoneChange()));
     QObject::connect(this, SIGNAL(knobRedoneChange()), knob, SLOT(onKnobRedoneChange()));
 }

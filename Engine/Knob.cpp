@@ -421,7 +421,7 @@ void Knob::updateHash(){
 }
 
 void Knob::onStartupRestoration(const MultidimensionalValue& other){
-    _value = other; //set the value
+    _value.clone(other); //set the value
     if(!_isInsignificant)
         updateHash(); //refresh hash if needed
     processNewValue(); // process new value if needed
@@ -432,6 +432,7 @@ void Knob::onStartupRestoration(const MultidimensionalValue& other){
     for(std::map<int,Variant>::const_iterator it = value.begin();it!=value.end();++it){
         emit valueChanged(it->first,it->second);
     }
+    emit restorationComplete();
 
 }
 
@@ -506,6 +507,17 @@ void MultidimensionalValue::setValueAtTime(double time, const Variant& v, int di
     assert(foundDimension != _curves.end());
     foundDimension->second->addControlPoint(key);
 }
+
+void MultidimensionalValue::clone(const MultidimensionalValue& other) {
+    assert(other.getDimension() == _dimension);
+    for(int i = 0; i < _dimension;++i){
+        setValue(other.getValue(i),i);
+        boost::shared_ptr<CurvePath> curve = other.getCurve(i);
+        boost::shared_ptr<CurvePath> thisCurve = getCurve(i);
+        (*thisCurve) = (*curve);
+    }
+}
+
 
 boost::shared_ptr<CurvePath> Knob::getCurve(int dimension) const{
     return _value.getCurve(dimension);
@@ -582,7 +594,7 @@ void KnobHolder::cloneKnobs(const KnobHolder& other){
 void Knob::cloneValue(const Knob& other){
     assert(_name == other._name);
     _hashVector = other._hashVector;
-    _value = other._value;
+    _value.clone(other._value);
     cloneExtraData(other);
 }
 
