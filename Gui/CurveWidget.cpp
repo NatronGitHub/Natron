@@ -39,11 +39,7 @@ CurveGui::CurveGui(const CurveWidget *curveWidget,
     , _selected(false)
     , _curveWidget(curveWidget)
 {
-    QObject::connect(curve.get(), SIGNAL(keyFrameChanged()), this , SIGNAL(curveChanged()));
-    
-//    if(_curveWidget->isSupportingOpenGLVAO()){
-//        glGenVertexArrays(1,&_vaoID);
-//    }
+
     if(curve->getControlPointsCount() > 1){
         _visible = true;
     }
@@ -51,9 +47,6 @@ CurveGui::CurveGui(const CurveWidget *curveWidget,
 }
 
 CurveGui::~CurveGui(){
-//    if(_curveWidget->isSupportingOpenGLVAO()){
-//        glDeleteVertexArrays(1,&_vaoID);
-//    }
 
 }
 
@@ -86,22 +79,13 @@ void CurveGui::drawCurve(){
     glLineWidth(1.5);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
+    glBegin(GL_LINE_STRIP);
+    for(int i = 0; i < w*2;i+=2){
+        glVertex2f(vertices[i],vertices[i+1]);
+    }
+    glEnd();
 
-//    if(_curveWidget->isSupportingOpenGLVAO()){
-//        glBindVertexArray(_vaoID);
-//        glEnableVertexAttribArray(0);
-//        glVertexAttribPointer((GLuint)0, 2, GL_FLOAT, GL_FALSE, 0, vertices);
-//        glDrawArrays(GL_LINE_STRIP, 0, w);
-//        glBindVertexArray(0);
-//    }else{
 
-        glBegin(GL_LINE_STRIP);
-        for(int i = 0; i < w*2;i+=2){
-            glVertex2f(vertices[i],vertices[i+1]);
-        }
-        glEnd();
-
-   // }
     glDisable(GL_LINE_SMOOTH);
     checkGLErrors();
     delete [] vertices;
@@ -195,7 +179,6 @@ void CurveWidget::initializeGL(){
 CurveGui* CurveWidget::createCurve(boost::shared_ptr<CurvePath> curve,const QString& name){
     updateGL(); //force initializeGL to be called if it wasn't before.
     CurveGui* curveGui = new CurveGui(this,curve,name,QColor(255,255,255),1);
-    QObject::connect(curveGui,SIGNAL(curveChanged()),this,SLOT(updateGL()));
     _curves.push_back(curveGui);
     curveGui->setColor(_nextCurveAddedColor);
     _nextCurveAddedColor.setHsv(_nextCurveAddedColor.hsvHue() + 60,_nextCurveAddedColor.hsvSaturation(),_nextCurveAddedColor.value());

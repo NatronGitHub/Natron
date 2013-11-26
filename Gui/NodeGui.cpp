@@ -32,7 +32,6 @@
 
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/ViewerInstance.h"
-#include "Engine/Knob.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/ChannelSet.h"
 
@@ -616,4 +615,7 @@ void NodeGui::populateMenu(){
     QObject::connect(deleteAction,SIGNAL(triggered()),_graph,SLOT(deleteSelectedNode()));
     _menu->addAction(deleteAction);
 
+}
+const std::map<Knob*,KnobGui*>& NodeGui::getKnobs() const{
+    return _settingsPanel->getKnobs();
 }

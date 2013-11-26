@@ -227,7 +227,10 @@ KeyFrame::KeyFrame(double time,const Variant& initialValue)
     , _leftTangent()
     , _rightTangent()
 {
-
+    _leftTangent.first = time;
+    _leftTangent.second = initialValue;
+    _rightTangent.first = time;
+    _rightTangent.second = initialValue;
 }
 
 CurvePath::CurvePath(const KeyFrame& cp)
@@ -296,7 +299,6 @@ void CurvePath::addControlPoint(const KeyFrame& cp)
 
     }
     refreshTangents(newKeyIt);
-    emit keyFrameAdded();
 }
 
 void CurvePath::refreshTangents(KeyFrames::iterator key){
@@ -324,17 +326,16 @@ void CurvePath::refreshTangents(KeyFrames::iterator key){
         vnext = next->getValue().value<double>();
     }
     
-    double tcur_rightTan,vcur_rightTan,tcur_leftTan,vcur_leftTan;
-//    Natron::autoComputeTangents(key->getInterpolation(),
-//                                tprev, vprev,
-//                                tcur, vcur,
-//                                tnext, vnext,
-//                                &tcur_leftTan, &vcur_leftTan,
-//                                &tcur_rightTan, &vcur_rightTan);
+    //double tcur_rightTan,vcur_rightTan,tcur_leftTan,vcur_leftTan;
+    //    Natron::autoComputeTangents(key->getInterpolation(),
+    //                                tprev, vprev,
+    //                                tcur, vcur,
+    //                                tnext, vnext,
+    //                                &tcur_leftTan, &vcur_leftTan,
+    //                                &tcur_rightTan, &vcur_rightTan);
     
-//    key->setLeftTangent(tcur_leftTan, Variant(vcur_leftTan));
-//    key->setRightTangent(tcur_rightTan, Variant(vcur_rightTan));
-    emit keyFrameChanged();
+    //    key->setLeftTangent(tcur_leftTan, Variant(vcur_leftTan));
+    //    key->setRightTangent(tcur_rightTan, Variant(vcur_rightTan));
 }
 
 
@@ -344,13 +345,13 @@ Variant CurvePath::getValueAt(double t) const{
     const Variant& firstKeyValue = _keyFrames.front().getValue();
     double v;
     switch(firstKeyValue.type()){
-        case QVariant::Int :
-            v = (double)getValueAtInternal<int>(t);
-            break;
-        case QVariant::Double :
-            v = getValueAtInternal<double>(t);
-            break;
-        default:
+    case QVariant::Int :
+        v = (double)getValueAtInternal<int>(t);
+        break;
+    case QVariant::Double :
+        v = getValueAtInternal<double>(t);
+        break;
+    default:
         std::string exc("The type requested ( ");
         exc.append(firstKeyValue.typeName());
         exc.append(") is not interpolable, it cannot animate!");
@@ -431,6 +432,7 @@ void Knob::onStartupRestoration(const MultidimensionalValue& other){
     for(std::map<int,Variant>::const_iterator it = value.begin();it!=value.end();++it){
         emit valueChanged(it->first,it->second);
     }
+
 }
 
 void Knob::fillHashVector(){
@@ -470,9 +472,19 @@ void Knob::onValueChanged(int dimension,const Variant& variant){
 }
 
 void Knob::onTimeChanged(int time){
-//    for(int i = 0; i < getDimension();++i){
-//        setValue(getValueAtTime(time,i),i);
-//    }
+    if(isAnimationEnabled()){
+        for(int i = 0; i < getDimension();++i){
+            boost::shared_ptr<CurvePath> curve = getCurve(i);
+            if(curve && curve->isAnimated()){
+                Variant v = getValueAtTime(time,i);
+                _value.setValue(v, i);
+                if(!_isInsignificant)
+                    updateHash();
+                processNewValue();
+                emit valueChanged(i,v);
+            }
+        }
+    }
 }
 
 const Variant& MultidimensionalValue::getValue(int dimension) const{

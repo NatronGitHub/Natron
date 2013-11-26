@@ -164,6 +164,7 @@ void KnobGui::onSetKeyActionTriggered(){
     const std::map<int,Variant>& dimValueMap = _knob->getValueForEachDimension();
     for(std::map<int,Variant>::const_iterator it = dimValueMap.begin();it!=dimValueMap.end();++it){
         _knob->setValueAtTime(time,it->second,it->first);
+        emit keyAdded();
     }
     
 }

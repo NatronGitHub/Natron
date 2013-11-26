@@ -93,6 +93,8 @@ public:
     
     /*inserts a new tab to the dockable panel.*/
     void addTab(const QString& name);
+
+    const std::map<Knob*,KnobGui*>& getKnobs() const { return _knobs; }
     
     /*Creates a new button and inserts it in the header
      at position headerPosition. You can then take

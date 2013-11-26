@@ -27,6 +27,7 @@
 #include <boost/serialization/shared_ptr.hpp>
 
 #include "Engine/Knob.h"
+
 #include "Global/Macros.h"
 
 class Edge;
@@ -62,7 +63,7 @@ public:
         typedef std::vector< std::pair<std::string,MultidimensionalValue > > KnobValues;
 
         
-        SerializedState():_node(NULL){};
+        SerializedState():_node(NULL){}
         
         SerializedState(const NodeGui* n);
         
@@ -179,7 +180,7 @@ public:
         
     void markInputNull(Edge* e);
     
-    
+    const std::map<Knob*,KnobGui*>& getKnobs() const;
     
     static const int NODE_LENGTH = 80;
     static const int NODE_HEIGHT = 30;

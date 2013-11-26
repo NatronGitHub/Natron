@@ -87,8 +87,11 @@ class KeyFrame  {
         (void)version;
         ar & boost::serialization::make_nvp("Time",_time);
         ar & boost::serialization::make_nvp("Value",_value);
-        ar & boost::serialization::make_nvp("LeftTangent",_leftTangent);
-        ar & boost::serialization::make_nvp("RightTangent",_rightTangent);
+        ar & boost::serialization::make_nvp("InterpolationMethod",_interpolation);
+        ar & boost::serialization::make_nvp("LeftTangent.time",_leftTangent.first);
+        ar & boost::serialization::make_nvp("LeftTangent.value",_leftTangent.second);
+        ar & boost::serialization::make_nvp("RightTangent.time",_rightTangent.first);
+        ar & boost::serialization::make_nvp("RightTangent.value",_rightTangent.second);
     }
     
 public:
@@ -170,10 +173,8 @@ private:
   * @brief A CurvePath is a list of chained curves. Each curve is a set of 2 keyFrames and has its
   * own interpolation method (that can differ from other curves).
 **/
-class CurvePath : public QObject {
-    
-    Q_OBJECT
-    
+class CurvePath {
+        
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
@@ -249,14 +250,7 @@ public:
     const KeyFrames& getKeyFrames() const { return _keyFrames; }
 
     void refreshTangents(KeyFrames::iterator key);
-    
-signals:
-    
-    void keyFrameAdded();
-    
-    void keyFrameRemoved();
-    
-    void keyFrameChanged();
+
     
 private:
 
@@ -393,6 +387,14 @@ public:
     }
     
     ~MultidimensionalValue() { _value.clear(); _curves.clear(); }
+
+    void operator=(const MultidimensionalValue& other){
+        _value = other._value;
+        _curves.clear();
+        for(int i = 0; i < other.getDimension();++i){
+            _curves.insert(std::make_pair(i,other.getCurve(i)));
+        }
+    }
     
     const std::map<int,Variant>& getValueForEachDimension() const {return _value;}
     
@@ -464,7 +466,8 @@ public:
     void setValue(const T &value,int dimension = 0) {
         setValueInternal(Variant(value),dimension);
     }
-    
+
+
     /*Used to extract the value held by the knob.
      Derived classes should provide a more appropriate
      way to retrieve results in the expected type.*/
@@ -519,9 +522,20 @@ public:
      * The type of the Variant can never be cast to QList<QVariant>.
      **/
     template<typename T>
-    T getValueAtTime(double time,int dimension = 0){
+    T getValueAtTime(double time,int dimension = 0) const {
         assert(canAnimate());
         return _value.getValueAtTime(time,dimension).value<T>();
+    }
+
+    /**
+     * @brief Returns the value of the knob in a specific dimension at a specific time. If
+     * the knob has no keys in this dimension it will return the value at the requested dimension
+     * stored in _value. Type type parameter must be the type of the knob, i.e: double for a Double_Knob.
+     * The type of the Variant can never be cast to QList<QVariant>.
+     **/
+    Variant getValueAtTime(double time,int dimension = 0){
+        assert(canAnimate());
+         return _value.getValueAtTime(time,dimension);
     }
 
     /**

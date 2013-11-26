@@ -127,6 +127,8 @@ signals:
     /*Must be emitted when a value is changed by the user or by
      an external source.*/
     void valueChanged(int dimension,const Variant& variant);
+
+    void keyAdded();
     
     void knobUndoneChange();
     

@@ -22,6 +22,7 @@
 
 #include "Gui/CurveWidget.h"
 #include "Gui/NodeGui.h"
+#include "Gui/KnobGui.h"
 
 
 using std::make_pair;
@@ -101,15 +102,15 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
     nameItem->setText(0,_node->getNode()->getName().c_str());
 
     QObject::connect(node,SIGNAL(nameChanged(QString)),this,SLOT(onNameChanged(QString)));
-    const std::vector<boost::shared_ptr<Knob> >& knobs = node->getNode()->getKnobs();
+    const std::map<Knob*,KnobGui*>& knobs = node->getKnobs();
 
     bool hasAtLeast1KnobWithACurve = false;
     bool hasAtLeast1KnobWithACurveShown = false;
 
-    for(U32 i = 0; i < knobs.size();++i){
+    for(std::map<Knob*,KnobGui*>::const_iterator it = knobs.begin();it!=knobs.end();++it){
         
-        boost::shared_ptr<Knob> k = knobs[i];
-        
+        Knob* k = it->first;
+        KnobGui* kgui = it->second;
         if(!k->canAnimate()){
             continue;
         }
@@ -135,8 +136,9 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
                 QTreeWidgetItem* dimItem = new QTreeWidgetItem(knobItem);
                 dimItem->setText(0,k->getDimensionName(j).c_str());
                 CurveGui* dimCurve = curveWidget->createCurve(k->getCurve(j),k->getDimensionName(j).c_str());
-                
-                _nodeElements.push_back(new NodeCurveEditorElement(curveWidget,dimItem,dimCurve));
+                NodeCurveEditorElement* elem = new NodeCurveEditorElement(curveWidget,dimItem,dimCurve);
+                QObject::connect(kgui,SIGNAL(keyAdded()),elem,SLOT(checkVisibleState()));
+                _nodeElements.push_back(elem);
                 if(!k->getCurve()->isAnimated()){
                     dimItem->setHidden(true);
                 }else{
@@ -144,10 +146,13 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
                 }
             }
         }
-        _nodeElements.push_back(new NodeCurveEditorElement(curveWidget,knobItem,knobCurve));
+        NodeCurveEditorElement* elem = new NodeCurveEditorElement(curveWidget,knobItem,knobCurve);
+        QObject::connect(kgui,SIGNAL(keyAdded()),elem,SLOT(checkVisibleState()));
+        _nodeElements.push_back(elem);
     }
     if(hasAtLeast1KnobWithACurve){
-        _nodeElements.push_back(new NodeCurveEditorElement(curveWidget,nameItem,(CurveGui*)NULL));
+        NodeCurveEditorElement* elem = new NodeCurveEditorElement(curveWidget,nameItem,(CurveGui*)NULL);
+        _nodeElements.push_back(elem);
         if(!hasAtLeast1KnobWithACurveShown){
             nameItem->setHidden(true);
         }
@@ -170,7 +175,9 @@ void NodeCurveEditorContext::onNameChanged(const QString& name){
     _nameItem->setText(0,name);
 }
 
-void NodeCurveEditorElement::onKeyFrameAdded(){
+void NodeCurveEditorElement::checkVisibleState(){
+    if(!_curve)
+        return;
     int i = _curve->getInternalCurve()->getControlPointsCount();
     if(i > 1){
         if(!_curveDisplayed){
@@ -180,16 +187,11 @@ void NodeCurveEditorElement::onKeyFrameAdded(){
             _treeItem->parent()->setHidden(false);
             _treeItem->parent()->setExpanded(true);
             if(_treeItem->parent()->parent()){
-                 _treeItem->parent()->parent()->setHidden(false);
-                 _treeItem->parent()->parent()->setExpanded(true);
+                _treeItem->parent()->parent()->setHidden(false);
+                _treeItem->parent()->parent()->setExpanded(true);
             }
         }
-    }
-}
-
-void NodeCurveEditorElement::onKeyFrameRemoved(){
-    int i = _curve->getInternalCurve()->getControlPointsCount();
-    if(i < 2){
+    }else{
         if(_curveDisplayed){
             _curveDisplayed = false;
             _treeItem->setHidden(true);
@@ -202,19 +204,16 @@ void NodeCurveEditorElement::onKeyFrameRemoved(){
             _curve->setVisible(false);
         }
     }
-
 }
 
 
 NodeCurveEditorElement::NodeCurveEditorElement(CurveWidget* curveWidget,QTreeWidgetItem* item,CurveGui* curve):
-_treeItem(item)
-,_curve(curve)
-,_curveDisplayed(false)
-,_curveWidget(curveWidget)
+    _treeItem(item)
+  ,_curve(curve)
+  ,_curveDisplayed(false)
+  ,_curveWidget(curveWidget)
 {
     if(curve){
-        QObject::connect(curve->getInternalCurve().get(), SIGNAL(keyFrameAdded()), this, SLOT(onKeyFrameAdded()));
-        QObject::connect(curve->getInternalCurve().get(), SIGNAL(keyFrameRemoved()), this, SLOT(onKeyFrameRemoved()));
         if(curve->getInternalCurve()->getControlPointsCount() > 1){
             _curveDisplayed = true;
         }

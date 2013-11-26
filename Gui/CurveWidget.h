@@ -20,10 +20,8 @@
 class CurvePath;
 class KeyFrame;
 class CurveWidget;
-class CurveGui : public QObject {
+class CurveGui {
     
-    Q_OBJECT
-
 public:
     
 
@@ -64,9 +62,7 @@ public:
 
     void drawCurve();
 
-signals:
 
-    void curveChanged();
     
 private:
 
@@ -82,7 +78,6 @@ private:
     int _thickness; /// its thickness
     bool _visible; /// should we draw this curve ?
     mutable bool _selected; /// is this curve selected
- //   GLuint _vaoID; ///if GL_ARB_vertex_buffer_object is supported this is the handle to a VAO
     const CurveWidget* _curveWidget;
 
 };

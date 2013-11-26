@@ -14,6 +14,7 @@
 
 #include <QWidget>
 
+
 class RectD;
 class NodeGui;
 class QTreeWidget;
@@ -45,9 +46,8 @@ public:
     
 public slots:
     
-    void onKeyFrameAdded();
+    void checkVisibleState();
     
-    void onKeyFrameRemoved();
     
 private:
     
