@@ -226,6 +226,7 @@ KeyFrame::KeyFrame(double time,const Variant& initialValue)
     , _time(time)
     , _leftTangent()
     , _rightTangent()
+    , _interpolation(Natron::KEYFRAME_SMOOTH)
 {
     _leftTangent.first = time;
     _leftTangent.second = initialValue;
@@ -305,7 +306,8 @@ void CurvePath::refreshTangents(KeyFrames::iterator key){
     double tcur = key->getTime();
     double vcur = key->getValue().value<double>();
     
-    double tprev,vprev,tnext,vnext;
+    double tprev,vprev,tnext,vnext,vprevDerivRight,vnextDerivLeft;
+    Natron::KeyframeType prevType = Natron::KEYFRAME_NONE,nextType = Natron::KEYFRAME_NONE;
     if(key == _keyFrames.begin()){
         tprev = tcur;
         vprev = vcur;
@@ -314,6 +316,8 @@ void CurvePath::refreshTangents(KeyFrames::iterator key){
         --prev;
         tprev = prev->getTime();
         vprev = prev->getValue().value<double>();
+        vprevDerivRight = prev->getRightTangent().second.value<double>();
+        prevType = prev->getInterpolation();
     }
     
     KeyFrames::const_iterator next = key;
@@ -324,18 +328,24 @@ void CurvePath::refreshTangents(KeyFrames::iterator key){
     }else{
         tnext = next->getTime();
         vnext = next->getValue().value<double>();
+        vnextDerivLeft = next->getLeftTangent().second.value<double>();
+        nextType = next->getInterpolation();
     }
     
-    //double tcur_rightTan,vcur_rightTan,tcur_leftTan,vcur_leftTan;
-    //    Natron::autoComputeTangents(key->getInterpolation(),
-    //                                tprev, vprev,
-    //                                tcur, vcur,
-    //                                tnext, vnext,
-    //                                &tcur_leftTan, &vcur_leftTan,
-    //                                &tcur_rightTan, &vcur_rightTan);
+    double vcurDerivLeft,vcurDerivRight;
+    Natron::autoComputeTangents<double>(prevType,
+                                key->getInterpolation(),
+                                nextType,
+                                tprev, vprev,
+                                tcur, vcur,
+                                tnext, vnext,
+                                vprevDerivRight,
+                                vnextDerivLeft,
+                                &vcurDerivLeft, &vcurDerivRight);
     
-    //    key->setLeftTangent(tcur_leftTan, Variant(vcur_leftTan));
-    //    key->setRightTangent(tcur_rightTan, Variant(vcur_rightTan));
+    
+    key->setLeftTangent(Variant(vcurDerivLeft));
+    key->setRightTangent(Variant(vcurDerivRight));
 }
 
 

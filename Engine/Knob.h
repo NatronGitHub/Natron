@@ -96,8 +96,6 @@ class KeyFrame  {
     
 public:
 
-    typedef std::pair<double,Variant> Tangent;
-
     KeyFrame()
     : _value()
     , _time(0)
@@ -111,7 +109,7 @@ public:
     , _time(other._time)
     , _leftTangent(other._leftTangent)
     , _rightTangent(other._rightTangent)
-    , _interpolation(Natron::KEYFRAME_LINEAR)
+    , _interpolation(other._interpolation)
     {
         
     }
@@ -122,18 +120,16 @@ public:
     
     double getTime() const { return _time; }
     
-    const Tangent& getLeftTangent() const { return _leftTangent; }
+    const Variant& getLeftTangent() const { return _leftTangent; }
     
-    const Tangent& getRightTangent() const { return _rightTangent; }
+    const Variant& getRightTangent() const { return _rightTangent; }
 
-    void setLeftTangent(double time,const Variant& v){
-        _leftTangent.first = time;
-        _leftTangent.second = v;
+    void setLeftTangent(const Variant& v){
+        _leftTangent = v;
     }
     
-    void setRightTangent(double time,const Variant& v){
-        _rightTangent.first = time;
-        _rightTangent.second = v;
+    void setRightTangent(const Variant& v){
+        _rightTangent = v;
     }
     
     void setValue(const Variant& v){
@@ -148,23 +144,13 @@ public:
     
     Natron::KeyframeType getInterpolation() const { return _interpolation; }
     
-    bool operator==(const KeyFrame& other) const {
-        return _value == other._value &&
-        _time == other._time &&
-        _leftTangent.first == other._leftTangent.first &&
-        _leftTangent.second == other._leftTangent.second &&
-        _rightTangent.first == other._rightTangent.first &&
-        _rightTangent.second == other._rightTangent.second &&
-        _interpolation == other._interpolation;
-    }
-    
 private:
     
     
     Variant _value; /// the value held by the key
     double _time; /// a value ranging between 0 and 1
     
-    Tangent _leftTangent,_rightTangent;
+    Variant _leftTangent,_rightTangent;
     Natron::KeyframeType _interpolation;
 
 };
@@ -268,52 +254,19 @@ private:
 
         //if we found no key that has a greater time (i.e: we search before the 1st keyframe)
         if(upper == _keyFrames.begin()){
-            if((*upper).getInterpolation() == Natron::KEYFRAME_CONSTANT || (*upper).getInterpolation() == Natron::KEYFRAME_LINEAR){
-                return (*upper).getValue().value<T>();
-            }else{
-                const KeyFrame& key = (*upper);
-                //for all other methods, interpolate linearly in the direction of the tangent
-                const KeyFrame::Tangent& tangent = key.getLeftTangent();
-                T keyFrameValue = key.getValue().value<T>();
-                return ((std::abs(tangent.second.value<T>() - keyFrameValue) * std::abs(key.getTime() - t)) /
-                        (std::abs(key.getTime() - tangent.first))) + keyFrameValue;
-            }
+            
         }
+        
+        
+        if(upper == _keyFrames.end()){
+            
+        }
+        
 
 
         //if all keys have a greater time (i.e: we search after the last keyframe)
         KeyFrames::const_iterator prev = upper;
         --prev;
-        assert(prev != _keyFrames.end());
-
-        if(upper == _keyFrames.end()){
-
-            if((*prev).getInterpolation() == Natron::KEYFRAME_CONSTANT || (*prev).getInterpolation() == Natron::KEYFRAME_LINEAR){
-                return (*prev).getValue().value<T>();
-            }else{
-                const KeyFrame& key = (*prev);
-                //for all other methods, interpolate linearly in the direction of the tangent
-                const KeyFrame::Tangent& tangent = key.getRightTangent();
-                T keyFrameValue = key.getValue().value<T>();
-                return ((std::abs(tangent.second.value<T>() - keyFrameValue) * std::abs(key.getTime() - t)) /
-                        (std::abs(key.getTime() - tangent.first))) + keyFrameValue;
-            }
-        }
-        
-        double t0,t3;
-        T v0,v1,v2,v3;
-        t0 = (*prev).getTime();
-        t3 = (*upper).getTime();
-        
-        v0 = (*prev).getValue().value<T>();
-        v1 = (*prev).getRightTangent().second.value<T>();
-        v2 = (*upper).getLeftTangent().second.value<T>();
-        v3 = (*upper).getValue().value<T>();
-        
-        //normalize t relatively to t0, t3
-        t = (t - t0) / (t3 - t0);
-        t0 = 0.;
-        t3 = 1.;
         
         return Natron::interpolate<T>(t0,v0,v1,v2,t3,v3,t,(*prev).getInterpolation());
         
