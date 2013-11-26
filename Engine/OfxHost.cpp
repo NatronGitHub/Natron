@@ -247,8 +247,7 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
     return hostSideEffect;
 }
 
-std::map<QString,QMutex*> Natron::OfxHost::loadOFXPlugins() {
-    std::map<QString,QMutex*> pluginNames;
+void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
     
     assert(OFX::Host::PluginCache::getPluginCache());
     /// set the version label in the global cache
@@ -295,25 +294,28 @@ std::map<QString,QMutex*> Natron::OfxHost::loadOFXPlugins() {
        
         
         
-        QString id = p->getIdentifier().c_str();
+        QString openfxId = p->getIdentifier().c_str();
         std::string grouping = p->getDescriptor().getPluginGrouping().c_str();
         
         std::string bundlePath = p->getBinary()->getBundlePath();
         int pluginsCount = p->getBinary()->getNPlugins();
-        std::string name = OfxEffectInstance::generateImageEffectClassName(p->getDescriptor().getShortLabel(),
-                                                                           p->getDescriptor().getLabel(),
-                                                                           p->getDescriptor().getLongLabel(),
+        std::string pluginLabel = OfxEffectInstance::getPluginLabel(p->getDescriptor().getShortLabel(),
+                                                                    p->getDescriptor().getLabel(),
+                                                                    p->getDescriptor().getLongLabel());
+        std::string pluginId = OfxEffectInstance::generateImageEffectClassName(p->getDescriptor().getShortLabel(),
+                                                                               p->getDescriptor().getLabel(),
+                                                                               p->getDescriptor().getLongLabel(),
                                                                            pluginsCount,
                                                                            bundlePath,
                                                                            grouping);
-        std::string rawName = name;
+        std::string rawName = pluginId;
 
         QStringList groups = OfxEffectInstance::getPluginGrouping(bundlePath, pluginsCount, grouping);
         
         assert(p->getBinary());
         QString iconFilename = QString(bundlePath.c_str()) + "/Contents/Resources/";
         iconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1).c_str());
-        iconFilename.append(id);
+        iconFilename.append(openfxId);
         iconFilename.append(".png");
         QString groupIconFilename;
         if (groups.size() >= 1) {
@@ -323,14 +325,16 @@ std::map<QString,QMutex*> Natron::OfxHost::loadOFXPlugins() {
             groupIconFilename.append(".png");
         }
         emit toolButtonAdded(groups, rawName.c_str(), iconFilename, groupIconFilename);
-        _ofxPlugins.insert(make_pair(name, make_pair(id.toStdString(), grouping)));
+        _ofxPlugins.insert(make_pair(pluginId, make_pair(openfxId.toStdString(), grouping)));
         QMutex* pluginMutex = NULL;
         if(p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe){
             pluginMutex = new QMutex;
         }
-        pluginNames.insert(std::make_pair(name.c_str(),pluginMutex));
+        Natron::Plugin* plugin = new Natron::Plugin(new Natron::LibraryBinary(Natron::LibraryBinary::BUILTIN),
+                                                    pluginId.c_str(),pluginLabel.c_str(),pluginMutex);
+        plugins->push_back(plugin);
     }
-    return pluginNames;
+    return plugins;
 }
 
 

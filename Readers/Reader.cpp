@@ -54,7 +54,10 @@ Reader::~Reader(){
     _buffer.clear();
 }
 
-std::string Reader::className() const {
+std::string Reader::pluginID() const {
+    return "Reader";
+}
+std::string Reader::pluginLabel() const{
     return "Reader";
 }
 

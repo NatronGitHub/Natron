@@ -165,16 +165,10 @@ public:
 
     virtual bool makePreviewByDefault() const OVERRIDE {return true;}
 
-    /**
-     * @brief className
-     * @return A string containing "Reader".
-     */
-    virtual std::string className() const OVERRIDE;
+    virtual std::string pluginID() const OVERRIDE;
 
-    /**
-     * @brief description
-     * @return A string containing "InputNode".
-     */
+    virtual std::string pluginLabel() const OVERRIDE;
+
     virtual std::string description() const OVERRIDE;
 
     virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod) OVERRIDE;

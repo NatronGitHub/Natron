@@ -105,7 +105,9 @@ public:
 
     virtual bool isInputOptional(int /*n*/) const OVERRIDE;
 
-    virtual std::string className() const OVERRIDE {return "Viewer";}
+    virtual std::string pluginID() const OVERRIDE {return "Viewer";}
+
+    virtual std::string pluginLabel() const OVERRIDE {return "Viewer";}
     
     virtual std::string description() const OVERRIDE {return "The Viewer node can display the output of a node graph.";}
     

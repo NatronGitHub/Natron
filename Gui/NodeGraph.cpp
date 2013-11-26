@@ -636,7 +636,7 @@ void NodeGraph::selectNode(NodeGui* n) {
     for(U32 i = 0 ; i < _nodes.size() ;++i) {
         _nodes[i]->setSelected(false);
     }
-    if(n->getNode()->className() == "Viewer"){
+    if(n->getNode()->pluginID() == "Viewer"){
         _gui->setLastSelectedViewer(dynamic_cast<ViewerInstance*>(n->getNode()->getLiveInstance())->getUiContext());
     }
     n->setSelected(true);

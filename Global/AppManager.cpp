@@ -204,7 +204,7 @@ Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
         _gui->addNodeGuiToCurveEditor(nodegui);
     }
 
-    if(node->className() == "Viewer" && !_isBackground){
+    if(node->pluginID() == "Viewer" && !_isBackground){
         _gui->createViewerGui(node);
     }
     
@@ -514,7 +514,7 @@ Node* AppInstance::getNode(NodeGui* n) const{
 void AppInstance::connectViewersToViewerCache(){
     foreach(Node* n,_currentProject->getCurrentNodes()){
         assert(n);
-        if(n->className() == "Viewer"){
+        if(n->pluginID() == "Viewer"){
             dynamic_cast<ViewerInstance*>(n->getLiveInstance())->connectSlotsToViewerCache();
         }
     }
@@ -523,7 +523,7 @@ void AppInstance::connectViewersToViewerCache(){
 void AppInstance::disconnectViewersFromViewerCache(){
     foreach(Node* n,_currentProject->getCurrentNodes()){
         assert(n);
-        if(n->className() == "Viewer"){
+        if(n->pluginID() == "Viewer"){
             dynamic_cast<ViewerInstance*>(n->getLiveInstance())->disconnectSlotsToViewerCache();
         }
     }
@@ -680,13 +680,8 @@ void AppManager::loadAllPlugins() {
     loadWritePlugins();
     
     /*loading ofx plugins*/
-    std::map<QString,QMutex*> ofxPluginNames = ofxHost->loadOFXPlugins();
+    ofxHost->loadOFXPlugins(_plugins);
     
-    for(std::map<QString,QMutex*>::iterator it = ofxPluginNames.begin();it!=ofxPluginNames.end();++it){
-        std::map<std::string,void*> functions;
-        LibraryBinary *plugin = new Natron::LibraryBinary(Natron::LibraryBinary::BUILTIN);
-        _plugins.insert(std::make_pair(it->first, std::make_pair(plugin, it->second)));
-    }
 }
 
 void AppManager::loadReadPlugins(){
@@ -767,7 +762,9 @@ void AppManager::loadNodePlugins(){
             if(effect->renderThreadSafety() == Natron::EffectInstance::UNSAFE){
                 pluginMutex = new QMutex;
             }
-            _plugins.insert(make_pair(effect->className().c_str(),make_pair(plugins[i],pluginMutex)));
+            Natron::Plugin* plugin = new Natron::Plugin(plugins[i],effect->pluginID().c_str(),effect->pluginLabel().c_str(),
+                                                        pluginMutex;);
+            _plugins.push_back(plugin);
             delete effect;
         }
     }
@@ -786,8 +783,10 @@ void AppManager::loadBuiltinNodePlugins(){
         readerFunctions.insert(make_pair("BuildEffect", (void*)&Reader::BuildEffect));
         LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
         assert(readerPlugin);
-        _plugins.insert(std::make_pair(reader->className().c_str(),std::make_pair(readerPlugin,(QMutex*)NULL)));
-        addPluginToolButtons(grouping,reader->className().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
+        Natron::Plugin* plugin = new Natron::Plugin(readerPlugin,reader->pluginID().c_str(),reader->pluginLabel().c_str(),
+                                                    (QMutex*)NULL);
+         _plugins.push_back(plugin);
+        addPluginToolButtons(grouping,reader->pluginID().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete reader;
     }
     {
@@ -797,8 +796,10 @@ void AppManager::loadBuiltinNodePlugins(){
         viewerFunctions.insert(make_pair("BuildEffect", (void*)&ViewerInstance::BuildEffect));
         LibraryBinary *viewerPlugin = new LibraryBinary(viewerFunctions);
         assert(viewerPlugin);
-        _plugins.insert(std::make_pair(viewer->className().c_str(),std::make_pair(viewerPlugin,(QMutex*)NULL)));
-        addPluginToolButtons(grouping,viewer->className().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
+        Natron::Plugin* plugin = new Natron::Plugin(viewerPlugin,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(),
+                                                    (QMutex*)NULL);
+         _plugins.push_back(plugin);
+        addPluginToolButtons(grouping,viewer->pluginID().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete viewer;
     }
     {
@@ -808,8 +809,10 @@ void AppManager::loadBuiltinNodePlugins(){
         writerFunctions.insert(make_pair("BuildEffect", (void*)&Writer::BuildEffect));
         LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
         assert(writerPlugin);
-        _plugins.insert(std::make_pair(writer->className().c_str(),std::make_pair(writerPlugin,(QMutex*)NULL)));
-        addPluginToolButtons(grouping,writer->className().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
+        Natron::Plugin* plugin = new Natron::Plugin(writerPlugin,writer->pluginID().c_str(),writer->pluginLabel().c_str(),
+                                                    (QMutex*)NULL);
+         _plugins.push_back(plugin);
+        addPluginToolButtons(grouping,writer->pluginID().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete writer;
     }
 }
@@ -1035,7 +1038,7 @@ void AppInstance::checkViewersConnection(){
     const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
-        if (nodes[i]->className() == "Viewer") {
+        if (nodes[i]->pluginID() == "Viewer") {
             ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             assert(n);
             n->updateTreeAndRender();
@@ -1046,7 +1049,7 @@ void AppInstance::setupViewersForViews(int viewsCount){
     const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
-        if (nodes[i]->className() == "Viewer") {
+        if (nodes[i]->pluginID() == "Viewer") {
             ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             assert(n);
             n->getUiContext()->updateViewsMenu(viewsCount);
@@ -1058,7 +1061,7 @@ void AppInstance::notifyViewersProjectFormatChanged(const Format& format){
     const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
-        if (nodes[i]->className() == "Viewer") {
+        if (nodes[i]->pluginID() == "Viewer") {
             ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             assert(n);
             n->getUiContext()->viewer->onProjectFormatChanged(format);
@@ -1069,7 +1072,7 @@ void AppInstance::setViewersCurrentView(int view){
     const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
-        if (nodes[i]->className() == "Viewer") {
+        if (nodes[i]->pluginID() == "Viewer") {
             ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             assert(n);
             n->getUiContext()->setCurrentView(view);
@@ -1161,7 +1164,7 @@ void AppInstance::startWritersRendering(const QStringList& writers){
                     exc.append(" is not an output node! It cannot render anything.");
                     throw std::invalid_argument(exc);
                 }
-                if(node->className() == "Viewer"){
+                if(node->pluginID() == "Viewer"){
                     throw std::invalid_argument("Internal issue with the project loader...viewers should have been evicted from the project.");
                 }
                 renderers.push_back(dynamic_cast<OutputEffectInstance*>(node->getLiveInstance()));
@@ -1170,7 +1173,7 @@ void AppInstance::startWritersRendering(const QStringList& writers){
     }else{
         //start rendering for all writers found in the project
         for (U32 j = 0; j < projectNodes.size(); ++j) {
-            if(projectNodes[j]->isOutputNode() && projectNodes[j]->className() != "Viewer"){
+            if(projectNodes[j]->isOutputNode() && projectNodes[j]->pluginID() != "Viewer"){
                 renderers.push_back(dynamic_cast<OutputEffectInstance*>(projectNodes[j]->getLiveInstance()));
             }
         }

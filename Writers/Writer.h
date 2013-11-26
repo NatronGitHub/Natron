@@ -46,7 +46,9 @@ public:
     
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE {return false;}
     
-    virtual std::string className() const OVERRIDE;
+    virtual std::string pluginID() const OVERRIDE;
+
+    virtual std::string pluginLabel() const OVERRIDE;
     
     virtual std::string description() const OVERRIDE;
 

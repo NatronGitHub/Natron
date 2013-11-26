@@ -23,7 +23,7 @@ class AppInstance;
 class QMutex;
 namespace Natron {
 class Node;
-    
+class Plugin;
 class OfxHost : public QObject,public OFX::Host::ImageEffect::Host {
     
     Q_OBJECT
@@ -75,7 +75,7 @@ public:
 
     /*Reads OFX plugin cache and scan plugins directories
      to load them all.*/
-    std::map<QString,QMutex*> loadOFXPlugins();
+    void loadOFXPlugins(std::vector<Natron::Plugin *> *plugins);
 
 signals:
     void toolButtonAdded(QStringList,QString,QString,QString);

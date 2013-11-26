@@ -148,7 +148,7 @@ U64 EffectInstance::computeHash(const std::vector<U64>& inputsHashs){
     for (U32 i =0; i < inputsHashs.size(); ++i) {
         _imp->hashValue.append(inputsHashs[i]);
     }
-    ::Hash64_appendQString(&_imp->hashValue, className().c_str());
+    ::Hash64_appendQString(&_imp->hashValue, pluginID().c_str());
     _imp->hashValue.computeHash();
     return _imp->hashValue.value();
 }
@@ -360,7 +360,7 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
              amount of threads*/
             EffectInstance::RenderSafety safety = renderThreadSafety();
             if(safety == UNSAFE){
-                QMutex* pluginLock = appPTR->getMutexForPlugin(className().c_str());
+                QMutex* pluginLock = appPTR->getMutexForPlugin(pluginID().c_str());
                 assert(pluginLock);
                 pluginLock->lock();
                 Natron::Status st = render(time, scale, *it,view, image);
@@ -454,7 +454,7 @@ void EffectInstance::evaluate(Knob* knob,bool isSignificant){
         }
     }else{
         /*if this is a writer (openfx or built-in writer)*/
-        if (className() != "Viewer") {
+        if (pluginID() != "Viewer") {
             /*if this is a button,we're safe to assume the plug-ins wants to start rendering.*/
             if(knob->typeName() == "Button"){
                 QStringList list;
@@ -585,7 +585,7 @@ void OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
 }
 
 void OutputEffectInstance::renderFullSequence(){
-    assert(className() != "Viewer"); //< this function is not meant to be called for rendering on the viewer
+    assert(pluginID() != "Viewer"); //< this function is not meant to be called for rendering on the viewer
     getVideoEngine()->refreshTree();
     getVideoEngine()->render(-1, true,false,true,false);
     

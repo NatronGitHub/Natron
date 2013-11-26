@@ -153,10 +153,15 @@ public:
     virtual std::string inputLabel(int inputNb) const WARN_UNUSED_RETURN;
     
     /**
-     * @brief Must be implemented to give a name to the class.
+     * @brief Must be implemented to give the plugin internal id(i.e: net.sf.openfx:invertPlugin)
      **/
-    virtual std::string className() const WARN_UNUSED_RETURN = 0;
+    virtual std::string pluginID() const WARN_UNUSED_RETURN = 0;
     
+    /**
+     * @brief Must be implemented to give the plugin a label that will be used by the graphical
+     * user interface.
+     **/
+    virtual std::string pluginLabel() const WARN_UNUSED_RETURN = 0;
     
     /**
      * @brief Must be implemented to give a desription of the effect that this node does. This is typically

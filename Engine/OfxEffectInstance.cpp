@@ -196,13 +196,9 @@ QStringList OfxEffectInstance::getPluginGrouping(const std::string& bundlePath,i
     bundlePathToUse = pluginsCount  > 1 ? bundlePath : "";
     return  ofxExtractAllPartsOfGrouping(grouping.c_str(),bundlePathToUse.c_str());
 }
-
-std::string OfxEffectInstance::generateImageEffectClassName(const std::string& shortLabel,
-                                         const std::string& label,
-                                         const std::string& longLabel,
-                                         int pluginsCount,
-                                         const std::string& bundlePath,
-                                         const std::string& grouping){
+std::string OfxEffectInstance::getPluginLabel(const std::string& shortLabel,
+                                      const std::string& label,
+                                      const std::string& longLabel) {
     std::string labelToUse = label;
     if(labelToUse.empty()){
         labelToUse = shortLabel;
@@ -210,6 +206,16 @@ std::string OfxEffectInstance::generateImageEffectClassName(const std::string& s
     if(labelToUse.empty()){
         labelToUse = longLabel;
     }
+    return labelToUse;
+}
+
+std::string OfxEffectInstance::generateImageEffectClassName(const std::string& shortLabel,
+                                                            const std::string& label,
+                                                            const std::string& longLabel,
+                                                            int pluginsCount,
+                                                            const std::string& bundlePath,
+                                                            const std::string& grouping){
+    std::string labelToUse = getPluginLabel(shortLabel,label,longLabel);
     QStringList groups = getPluginGrouping(bundlePath,pluginsCount,grouping);
 
     if(labelToUse == "Viewer"){ // we don't want a plugin to have the same name as our viewer
@@ -224,13 +230,17 @@ std::string OfxEffectInstance::generateImageEffectClassName(const std::string& s
     return labelToUse;
 }
 
-std::string OfxEffectInstance::className() const {
+std::string OfxEffectInstance::pluginID() const {
     return generateImageEffectClassName(effect_->getShortLabel(),
                                         effect_->getLabel(),
                                         effect_->getLongLabel(),
                                         effect_->getPlugin()->getBinary()->getNPlugins(),
                                         effect_->getPlugin()->getBinary()->getBundlePath(),
                                         effect_->getPluginGrouping());
+}
+
+std::string OfxEffectInstance::pluginLabel() const{
+    return getPluginLabel( effect_->getShortLabel(),effect_->getLabel(),effect_->getLongLabel());
 }
 
 std::string OfxEffectInstance::inputLabel(int inputNb) const {
@@ -295,7 +305,7 @@ void OfxEffectInstance::ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const{
         rod->y1 = projectDefault.bottom();
     }
     if (rod->x2== kOfxFlagInfiniteMax || rod->x2 == std::numeric_limits<double>::infinity()) {
-       rod->x2 = projectDefault.right();
+        rod->x2 = projectDefault.right();
     }
     if (rod->y2 == kOfxFlagInfiniteMax || rod->y2  == std::numeric_limits<double>::infinity()) {
         rod->y2 = projectDefault.top();
@@ -401,17 +411,17 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
         }
     }
 }
-    
+
 
 Natron::Status OfxEffectInstance::preProcessFrame(SequenceTime /*time*/){
     //if(!isGenerator() && !isGeneratorAndFilter()){
-        /*Checking if all mandatory inputs are connected!*/
-        MappedInputV ofxInputs = inputClipsCopyWithoutOutput();
-        for (U32 i = 0; i < ofxInputs.size(); ++i) {
-            if (!ofxInputs[i]->isOptional() && !input(ofxInputs.size()-1-i)) {
-                return StatFailed;
-            }
+    /*Checking if all mandatory inputs are connected!*/
+    MappedInputV ofxInputs = inputClipsCopyWithoutOutput();
+    for (U32 i = 0; i < ofxInputs.size(); ++i) {
+        if (!ofxInputs[i]->isOptional() && !input(ofxInputs.size()-1-i)) {
+            return StatFailed;
         }
+    }
     //  }
     //iterate over param and find if there's an unvalid param
     // e.g: an empty filename
@@ -429,7 +439,7 @@ Natron::Status OfxEffectInstance::preProcessFrame(SequenceTime /*time*/){
 }
 
 Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
-                                          const RectI& roi,int view,boost::shared_ptr<Natron::Image>/* output*/){
+                                         const RectI& roi,int view,boost::shared_ptr<Natron::Image>/* output*/){
     OfxRectI ofxRoI;
     ofxRoI.x1 = roi.left();
     ofxRoI.x2 = roi.right();

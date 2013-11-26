@@ -172,8 +172,12 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    std::string className() const;
+    std::string pluginID() const;
     
+    /**
+     * @brief Forwarded to the live effect instance
+     **/
+    std::string pluginLabel() const;
 
     /**
      * @brief Forwarded to the live effect instance

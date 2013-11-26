@@ -1456,7 +1456,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project, QWidget* parent):QDia
     const std::vector<Natron::Node*>& nodes = project->getCurrentNodes();
 
     for(U32 i = 0 ; i < nodes.size(); ++i){
-        if(nodes[i]->className() == "Viewer"){
+        if(nodes[i]->pluginID() == "Viewer"){
             _copyFromViewerCombo->addItem(nodes[i]->getName().c_str());
         }
     }

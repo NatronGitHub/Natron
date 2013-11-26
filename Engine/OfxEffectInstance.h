@@ -98,7 +98,9 @@ public:
 
     virtual int maximumInputs() const OVERRIDE;
 
-    virtual std::string className() const OVERRIDE;
+    virtual std::string pluginID() const OVERRIDE;
+
+    virtual std::string pluginLabel() const OVERRIDE;
 
     virtual std::string description() const OVERRIDE;
 
@@ -158,6 +160,10 @@ public:
     void backgroundColorOfAttachedViewer(double &r,double &g,double &b);
 
     static QStringList getPluginGrouping(const std::string& bundlePath,int pluginsCount,const std::string& grouping);
+
+    static std::string getPluginLabel(const std::string& shortLabel,
+                                      const std::string& label,
+                                      const std::string& longLabel) ;
 
     static std::string generateImageEffectClassName(const std::string& shortLabel,
                                                 const std::string& label,

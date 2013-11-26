@@ -54,12 +54,12 @@ struct ImageBeingRenderedKey{
 
     bool operator==(const ImageBeingRenderedKey& other) const {
         return _time == other._time &&
-        _view == other._view;
+                _view == other._view;
     }
 
     bool operator<(const ImageBeingRenderedKey& other) const {
         return _time < other._time ||
-        _view < other._view;
+                _view < other._view;
     }
 };
 
@@ -79,20 +79,20 @@ struct DeactivatedState{
 
 struct Node::Implementation {
     Implementation(AppInstance* app_,LibraryBinary* plugin_)
-    : app(app_)
-    , outputs()
-    , previewInstance(NULL)
-    , previewRenderTree(NULL)
-    , previewMutex()
-    , inputLabelsMap()
-    , name()
-    , deactivatedState()
-    , activated(true)
-    , nodeInstanceLock()
-    , imagesBeingRenderedNotEmpty()
-    , imagesBeingRendered()
-    , plugin(plugin_)
-    , renderInstances()
+        : app(app_)
+        , outputs()
+        , previewInstance(NULL)
+        , previewRenderTree(NULL)
+        , previewMutex()
+        , inputLabelsMap()
+        , name()
+        , deactivatedState()
+        , activated(true)
+        , nodeInstanceLock()
+        , imagesBeingRenderedNotEmpty()
+        , imagesBeingRendered()
+        , plugin(plugin_)
+        , renderInstances()
     {
     }
 
@@ -118,10 +118,10 @@ struct Node::Implementation {
 };
 
 Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
-: QObject()
-, _inputs()
-, _liveInstance(NULL)
-, _imp(new Implementation(app,plugin))
+    : QObject()
+    , _inputs()
+    , _liveInstance(NULL)
+    , _imp(new Implementation(app,plugin))
 {
 
     try {
@@ -208,7 +208,7 @@ EffectInstance* Node::findOrCreateLiveInstanceClone(RenderTree* tree)
     if (it != _imp->renderInstances.end()) {
         ret =  it->second;
     } else {
-       ret = createLiveInstanceClone();
+        ret = createLiveInstanceClone();
         _imp->renderInstances.insert(std::make_pair(tree, ret));
     }
     
@@ -227,7 +227,7 @@ EffectInstance*  Node::createLiveInstanceClone()
         assert(func.first);
         ret =  func.second(this);
     } else {
-        ret = appPTR->getOfxHost()->createOfxEffect(_liveInstance->className(),this);
+        ret = appPTR->getOfxHost()->createOfxEffect(_liveInstance->pluginID(),this);
 
     }
     assert(ret);
@@ -257,7 +257,7 @@ void Node::createKnobDynamically()
 
 void Node::hasViewersConnected(std::list<ViewerInstance*>* viewers) const
 {
-    if(className() == "Viewer") {
+    if(pluginID() == "Viewer") {
         ViewerInstance* thisViewer = dynamic_cast<ViewerInstance*>(_liveInstance);
         assert(thisViewer);
         std::list<ViewerInstance*>::const_iterator alreadyExists = std::find(viewers->begin(), viewers->end(), thisViewer);
@@ -465,7 +465,7 @@ const Format& Node::getRenderFormatForEffect(const EffectInstance* effect) const
         return getApp()->getProjectFormat();
     } else {
         for (std::map<RenderTree*,EffectInstance*>::const_iterator it = _imp->renderInstances.begin();
-            it!=_imp->renderInstances.end();++it) {
+             it!=_imp->renderInstances.end();++it) {
             if (it->second == effect) {
                 return it->first->getRenderFormat();
             }
@@ -480,7 +480,7 @@ int Node::getRenderViewsCountForEffect( const EffectInstance* effect) const
         return getApp()->getCurrentProjectViewsCount();
     } else {
         for (std::map<RenderTree*,EffectInstance*>::const_iterator it = _imp->renderInstances.begin();
-            it!=_imp->renderInstances.end();++it) {
+             it!=_imp->renderInstances.end();++it) {
             if (it->second == effect) {
                 return it->first->renderViewsCount();
             }
@@ -640,11 +640,15 @@ const std::vector< boost::shared_ptr<Knob> >& Node::getKnobs() const
     return _liveInstance->getKnobs();
 }
 
-std::string Node::className() const
+std::string Node::pluginID() const
 {
-    return _liveInstance->className();
+    return _liveInstance->pluginID();
 }
 
+std::string Node::pluginLabel() const
+{
+    return _liveInstance->pluginLabel();
+}
 
 std::string Node::description() const
 {
@@ -775,9 +779,9 @@ void Node::clearPersistentMessage()
 }
 
 InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin,const std::string& name)
-: Node(app,plugin,name)
-, _inputsCount(1)
-, _activeInput(0)
+    : Node(app,plugin,name)
+    , _inputsCount(1)
+    , _activeInput(0)
 {}
 
 
@@ -792,9 +796,9 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
     }
     
     InputMap::iterator found = _inputs.find(inputNumber);
-//    if(/*input->className() == "Viewer" && */found!=_inputs.end() && !found->second){
-//        return false;
-//    }
+    //    if(/*input->className() == "Viewer" && */found!=_inputs.end() && !found->second){
+    //        return false;
+    //    }
     /*Adding all empty edges so it creates at least the inputNB'th one.*/
     while(_inputsCount <= inputNumber){
         tryAddEmptyInput();
@@ -810,7 +814,7 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
     }
     
     if(found!=_inputs.end() && found->second && !autoConnection &&
-       ((inputAlreadyConnected!=_inputs.end()) )){
+            ((inputAlreadyConnected!=_inputs.end()) )){
         setActiveInputAndRefresh(found->first);
         return false;
     }

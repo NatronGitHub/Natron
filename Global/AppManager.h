@@ -63,28 +63,28 @@ class Project;
 
 
 class ProcessHandler : public QObject {
-    
+
     Q_OBJECT
-    
+
     AppInstance* _app;//< pointer to the app executing this process
     QProcess* _process; //< the process executing the render
     bool _hasProcessBeenDeleted;
     Natron::OutputEffectInstance* _writer;//< pointer to the writer actually rendering
     RenderingProgressDialog* _dialog;//< a dialog to report progress and allow the user to cancel the process
 public:
-    
+
     ProcessHandler(AppInstance* app,const QString& programPath,const QStringList& programArgs,Natron::OutputEffectInstance* writer);
-    
+
     virtual ~ProcessHandler();
-    
+
 public slots:
-    
+
     void onStandardOutputBytesWritten();
-    
+
     void onProcessCanceled();
-    
+
     void onProcessError(QProcess::ProcessError err);
-    
+
     void onProcessEnd(int exitCode,QProcess::ExitStatus stat);
 };
 
@@ -95,19 +95,19 @@ class AppInstance : public QObject,public boost::noncopyable
     Q_OBJECT
 public:
     AppInstance(bool backgroundMode,int appID,const QString& projectName = QString(),const QStringList& writers = QStringList());
-    
+
     ~AppInstance();
-    
+
     int getAppID() const {return _appID;}
-    
+
     bool isBackground() const {return _isBackground;}
-    
+
     /*Create a new node  in the node graph.
      The name passed in parameter must match a valid node name,
      otherwise an exception is thrown. You should encapsulate the call
      by a try-catch block.*/
     Natron::Node* createNode(const QString& name,bool requestedByLoad = false);
-    
+
     /*Pointer to the GUI*/
     Gui* getGui() WARN_UNUSED_RETURN {return _gui;}
 
@@ -185,7 +185,7 @@ public:
 
     Natron::StandardButton questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons =
             Natron::StandardButtons(Natron::Yes | Natron::No),
-                                           Natron::StandardButton defaultButton = Natron::NoButton) const WARN_UNUSED_RETURN;
+                                          Natron::StandardButton defaultButton = Natron::NoButton) const WARN_UNUSED_RETURN;
     void notifyRenderFinished(Natron::OutputEffectInstance* writer);
 
 
@@ -234,26 +234,26 @@ private:
     bool _isBackground;
 
 
-class ActiveBackgroundRender{
-    
+    class ActiveBackgroundRender{
 
-    bool _running;
-    QWaitCondition _runningCond;
-    QMutex _runningMutex;
-    Natron::OutputEffectInstance* _writer;
-public:
-    
-    ActiveBackgroundRender(Natron::OutputEffectInstance* writer);
-    
-    virtual ~ActiveBackgroundRender(){}
-    
-    Natron::OutputEffectInstance* getWriter() const {return _writer;}
-    
-    void notifyFinished();
-    
-    void blockingRender();
-    
-};
+
+        bool _running;
+        QWaitCondition _runningCond;
+        QMutex _runningMutex;
+        Natron::OutputEffectInstance* _writer;
+    public:
+
+        ActiveBackgroundRender(Natron::OutputEffectInstance* writer);
+
+        virtual ~ActiveBackgroundRender(){}
+
+        Natron::OutputEffectInstance* getWriter() const {return _writer;}
+
+        void notifyFinished();
+
+        void blockingRender();
+
+    };
     QMutex _activeRenderersMutex;
     std::vector<ActiveBackgroundRender*> _activeRenderers;
 
@@ -261,60 +261,113 @@ public:
 };
 
 class PluginToolButton{
-    
+
     QString _name;
     QString _iconPath;
     std::vector<PluginToolButton*> _children;
     PluginToolButton* _parent;
-    
+
 public:
     PluginToolButton(const QString& name,
                      const QString& iconPath)
-    :
-     _name(name)
-    , _iconPath(iconPath)
-    , _children()
-    , _parent(NULL)
+        :
+          _name(name)
+        , _iconPath(iconPath)
+        , _children()
+        , _parent(NULL)
     {
-        
+
     }
-    
-    
+
+
     const QString& getName() const {return _name;}
-    
+
     void setName(const QString& name) {_name = name;}
-    
+
     const QString& getIconPath() const {return _iconPath;}
-    
+
     void setIconPath(const QString& iconPath) {_iconPath = iconPath;}
-    
+
     const std::vector<PluginToolButton*>& getChildren() const {return _children;}
-    
+
     void tryAddChild(PluginToolButton* plugin);
-    
+
     PluginToolButton* getParent() const {return _parent;}
-    
+
     void setParent(PluginToolButton* parent) {_parent = parent;}
-    
+
     bool hasParent() const {return _parent != NULL;}
-    
+
 };
+
+namespace Natron{
+class Plugin {
+
+    Natron::LibraryBinary* _binary;
+    QString _id;
+    QString _label;
+    QMutex* _lock;
+
+public:
+
+    Plugin():
+        _binary(NULL)
+      , _id()
+      , _label()
+      , _lock() {}
+
+    Plugin(Natron::LibraryBinary* binary,
+           const QString& id,
+           const QString& label,
+           QMutex* lock
+           ):
+        _binary(binary)
+      , _id(id)
+      , _label(label)
+      , _lock(lock)
+    {
+
+    }
+
+    ~Plugin(){
+        if(_lock){
+            delete _lock;
+        }
+        if(_binary){
+            delete _binary;
+        }
+    }
+
+    void setPluginID(const QString& id) { _id = id; }
+
+    const QString& getPluginID() const { return _id; }
+
+    void setPluginLabel(const QString& label){ _label = label; }
+
+    const QString& getPluginLabel() const { return _label; }
+
+    const QMutex& getPluginLock() const { return *_lock; }
+
+    const Natron::LibraryBinary& getLibraryBinary() const { return *_binary; }
+
+};
+}
 
 class AppManager : public QObject, public Singleton<AppManager>
 {
-    
+
     Q_OBJECT
-    
+
 public:
-    
-    
+
+
     typedef std::map< std::string,std::pair< std::vector<std::string> ,Natron::LibraryBinary*> >::iterator ReadPluginsIterator;
     typedef ReadPluginsIterator WritePluginsIterator;
-    
+
     AppManager();
-    
+
     virtual ~AppManager();
-    
+
     const boost::scoped_ptr<Natron::OfxHost>& getOfxHost() const WARN_UNUSED_RETURN {return ofxHost;}
 
     AppInstance* newAppInstance(bool background,const QString& projectName = QString(),const QStringList& writers = QStringList());
@@ -349,7 +402,7 @@ public:
     /*Tries to load all plugins in directory "where" that contains all the functions described by
  their name in "functions".*/
     static std::vector<Natron::LibraryBinary*> loadPluginsAndFindFunctions(const QString& where,
-                                                                            const std::vector<std::string>& functions) WARN_UNUSED_RETURN;
+                                                                           const std::vector<std::string>& functions) WARN_UNUSED_RETURN;
 
     const Natron::Cache<Natron::FrameEntry>& getViewerCache() const WARN_UNUSED_RETURN {return *_viewerCache;}
 
@@ -426,8 +479,7 @@ private:
 
     std::vector<Format*> _formats;
 
-    typedef std::map<QString,std::pair<Natron::LibraryBinary*, QMutex*> > PluginsMap;
-    PluginsMap _plugins; /*!< map of all plug-ins loaded + a global mutex for each plug-in*/
+    std::vector<Natron::Plugin*> _plugins;
 
     boost::scoped_ptr<Natron::OfxHost> ofxHost;
 
@@ -446,9 +498,9 @@ namespace Natron{
 void errorDialog(const std::string& title,const std::string& message);
 
 void warningDialog(const std::string& title,const std::string& message);
-    
+
 void informationDialog(const std::string& title,const std::string& message);
-    
+
 Natron::StandardButton questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons =
         Natron::StandardButtons(Natron::Yes | Natron::No),
                                       Natron::StandardButton defaultButton = Natron::NoButton);

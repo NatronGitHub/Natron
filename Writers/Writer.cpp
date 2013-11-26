@@ -34,14 +34,14 @@ using std::cout; using std::endl;
 using std::make_pair;
 
 Writer::Writer(Node* node):
-Natron::OutputEffectInstance(node)
-, _requestedChannels(Mask_RGBA) // temporary
-, _premultKnob(0)
-, _writeOptions(0)
-, _frameRangeChoosal(0)
-, _firstFrameKnob(0)
-, _lastFrameKnob(0)
-, _continueOnError(0)
+    Natron::OutputEffectInstance(node)
+  , _requestedChannels(Mask_RGBA) // temporary
+  , _premultKnob(0)
+  , _writeOptions(0)
+  , _frameRangeChoosal(0)
+  , _firstFrameKnob(0)
+  , _lastFrameKnob(0)
+  , _continueOnError(0)
 {
     if(node){
         QObject::connect(getNode()->getApp()->getTimeLine().get(),
@@ -57,7 +57,10 @@ Writer::~Writer(){
     }
 }
 
-std::string Writer::className() const {
+std::string Writer::pluginID() const {
+    return "Writer";
+}
+std::string Writer::pluginLabel() const{
     return "Writer";
 }
 

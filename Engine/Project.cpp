@@ -115,7 +115,7 @@ void Project::evaluate(Knob* knob,bool /*isSignificant*/){
     }else if(knob == _formatKnob){
         const Format& f = _availableFormats[_formatKnob->getActiveEntry()];
         for(U32 i = 0 ; i < _currentNodes.size() ; ++i){
-            if (_currentNodes[i]->className() == "Viewer") {
+            if (_currentNodes[i]->pluginID() == "Viewer") {
                 ViewerInstance* n = dynamic_cast<ViewerInstance*>(_currentNodes[i]->getLiveInstance());
                 assert(n);
                 n->getUiContext()->viewer->onProjectFormatChanged(f);
@@ -135,13 +135,13 @@ const Format& Project::getProjectDefaultFormat() const{
 
 void Project::initNodeCountersAndSetName(Node* n){
     assert(n);
-    std::map<std::string,int>::iterator it = _nodeCounters.find(n->className());
+    std::map<std::string,int>::iterator it = _nodeCounters.find(n->pluginID());
     if(it != _nodeCounters.end()){
         it->second++;
-        n->setName(QString(QString(n->className().c_str())+ "_" + QString::number(it->second)).toStdString());
+        n->setName(QString(QString(n->pluginLabel().c_str())+ "_" + QString::number(it->second)).toStdString());
     }else{
-        _nodeCounters.insert(make_pair(n->className(), 1));
-        n->setName(QString(QString(n->className().c_str())+ "_" + QString::number(1)).toStdString());
+        _nodeCounters.insert(make_pair(n->pluginID(), 1));
+        n->setName(QString(QString(n->pluginLabel().c_str())+ "_" + QString::number(1)).toStdString());
     }
     _currentNodes.push_back(n);
 }
@@ -224,7 +224,7 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
         
         Node* n = getApp()->createNode(state.getClassName().c_str(),true);
         
-        if(n->className() == "Writer" || (n->isOpenFXNode() && n->isOutputNode())){
+        if(n->pluginID() == "Writer" || (n->isOpenFXNode() && n->isOutputNode())){
             hasProjectAWriter = true;
         }
         

@@ -112,7 +112,7 @@ NodeGui::NodeGui(NodeGraph* dag,
     _stateIndicator->hide();
 
     /*building settings panel*/
-    if(_internalNode->className() != "Viewer"){
+    if(_internalNode->pluginID() != "Viewer"){
         _panelDisplayed=true;
         assert(dockContainer_);
         _settingsPanel = new NodeSettingsPanel(this,dockContainer_,dockContainer_->parentWidget());
@@ -457,7 +457,7 @@ void NodeGui::activate(){
             it->second->doRefreshEdgesGUI();
         }
     }
-    if(_internalNode->className() != "Viewer"){
+    if(_internalNode->pluginID() != "Viewer"){
         if(isSettingsPanelVisible()){
             setVisibleSettingsPanel(false);
         }
@@ -484,7 +484,7 @@ void NodeGui::deactivate(){
         it->second->setSource(NULL);
     }
    
-    if(_internalNode->className() != "Viewer"){
+    if(_internalNode->pluginID() != "Viewer"){
         if(isSettingsPanelVisible()){
             setVisibleSettingsPanel(false);
         }
@@ -533,7 +533,7 @@ NodeGui::SerializedState::SerializedState(const NodeGui* n):_node(n){
     
     _name = _node->getNode()->getName();
      
-    _className = _node->getNode()->className();
+    _className = _node->getNode()->pluginID();
    
     const Natron::Node::InputMap& inputs = _node->getNode()->getInputs();
     for(Natron::Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
