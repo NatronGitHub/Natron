@@ -42,10 +42,7 @@ CurveGui::CurveGui(const CurveWidget *curveWidget,
     QObject::connect(&curve, SIGNAL(keyFrameChanged()), this , SIGNAL(curveChanged()));
     if(_curveWidget->isSupportingOpenGLVAO()){
         glGenVertexArrays(1,&_vaoID);
-    }else{
-        glGenBuffers(1,&_vaoID);
     }
-    glGenBuffers(1,&_vboID);
     if(curve.getControlPointsCount() > 1){
         _visible = true;
     }
@@ -53,9 +50,9 @@ CurveGui::CurveGui(const CurveWidget *curveWidget,
 }
 
 CurveGui::~CurveGui(){
-
-    glDeleteVertexArrays(1,&_vaoID);
-    glDeleteBuffers(1,&_vboID);
+    if(_curveWidget->isSupportingOpenGLVAO()){
+        glDeleteVertexArrays(1,&_vaoID);
+    }
 
 }
 
@@ -189,7 +186,7 @@ CurveWidget::~CurveWidget(){
 void CurveWidget::initializeGL(){
 
     if (!glewIsSupported("GL_ARB_vertex_array_object "  // BindVertexArray, DeleteVertexArrays, GenVertexArrays, IsVertexArray (VAO), core since 3.0
-                        )) {
+                         )) {
         _hasOpenGLVAOSupport = false;
     }
 }

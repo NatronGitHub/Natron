@@ -82,8 +82,7 @@ private:
     int _thickness; /// its thickness
     bool _visible; /// should we draw this curve ?
     mutable bool _selected; /// is this curve selected
-    GLuint _vaoID; ///if GL_ARB_vertex_buffer_object is supported this is the handle to a VAO, otherwise a handle to a IBO
-    GLuint _vboID;
+    GLuint _vaoID; ///if GL_ARB_vertex_buffer_object is supported this is the handle to a VAO
     const CurveWidget* _curveWidget;
 
 };
