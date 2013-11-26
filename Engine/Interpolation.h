@@ -176,19 +176,47 @@ void autoComputeTangents(Natron::KeyframeType interpPrev,
     T P0pr;
     T Q3pl;
 
+    // if there are no keyframes before and after, the derivatives are zero
+    if (interpPrev == KEYFRAME_NONE && interpNext == KEYFRAME_NONE) {
+        *vcurDerivRight = 0.;
+        *vcurDerivLeft = 0.;
+    }
+
+    // If there is no next/previous keyframe, should there be a continuous derivative?
+    bool keyframe_none_same_derivative = false;
+
+    // if there is no next/previous keyframe, use LINEAR interpolation, and set keyframe_none_same_derivative
+    if (interpPrev == KEYFRAME_NONE || interpNext == KEYFRAME_NONE) {
+        // Do this before modifying interp (next line)
+        keyframe_none_same_derivative = (interp == KEYFRAME_CATMULL_ROM || interp == KEYFRAME_CUBIC);
+        interp = KEYFRAME_LINEAR;
+    }
+
     switch (interp) {
     case KEYFRAME_LINEAR:
         /* Linear means the the 2nd derivative of the cubic curve at the point 'cur' is zero. */
-        if (interpNext == KEYFRAME_LINEAR) {
+        if (interpNext == KEYFRAME_NONE) {
+            P0pr = 0.;
+        } else if (interpNext == KEYFRAME_LINEAR) {
             P0pr = -P0 + P3;
         } else {
             P0pr = -0.3e1 / 0.2e1 * P0 + 0.3e1 / 0.2e1 * P3 - P3pl / 0.2e1;
         }
 
-        if (interpPrev == KEYFRAME_LINEAR) {
+        if (interpPrev == KEYFRAME_NONE) {
+            Q3pl = 0.;
+        } else if (interpPrev == KEYFRAME_LINEAR) {
             Q3pl = -Q0 + P0;
         } else {
             Q3pl = -0.3e1 / 0.2e1 * Q0 - Q0pr / 0.2e1 + 0.3e1 / 0.2e1 * P0;
+        }
+
+        if (keyframe_none_same_derivative) {
+            if (interpNext == KEYFRAME_NONE) {
+                P0pr = Q3pl;
+            } else if (interpPrev == KEYFRAME_NONE) {
+                Q3pl = P0pr;
+            }
         }
         break;
 
