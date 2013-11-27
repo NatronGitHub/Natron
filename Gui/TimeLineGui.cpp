@@ -13,7 +13,6 @@
 #include <cmath>
 
 #include <QtGui/QFont>
-#include <cmath>
 #if QT_VERSION < 0x050000
 CLANG_DIAG_OFF(unused-private-field);
 #include <QtGui/qmime.h>
