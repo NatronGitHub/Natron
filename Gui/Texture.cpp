@@ -44,6 +44,7 @@ void Texture::fillOrAllocateTexture(const TextureRect& texRect ,DataType type){
                             GL_FLOAT,		// type
                             0);
         }
+        checkGLErrors();
         
     }else{
         _textureRect = texRect;
@@ -75,7 +76,7 @@ void Texture::fillOrAllocateTexture(const TextureRect& texRect ,DataType type){
                           0);			// pixels
         }
         
-        
+        checkGLErrors();
     }
 }
 void Texture::updatePartOfTexture(const TextureRect& fullRegion,int zoomedY,DataType type){

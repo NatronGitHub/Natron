@@ -240,7 +240,7 @@ public:
     /**
      *@returns Returns true if the graphic card supports GLSL.
      **/
-    bool hasHardware();
+    bool supportsGLSL();
     
     /**
      *@brief Disconnects the viewer.

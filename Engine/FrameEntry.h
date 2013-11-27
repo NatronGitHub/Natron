@@ -30,10 +30,10 @@ namespace Natron{
     public:
         SequenceTime _frameNb;
         U64 _treeVersion;
-        float _zoomFactor;
-        float _exposure;
-        float _lut;
-        float _byteMode;
+        double _zoomFactor;
+        double _exposure;
+        double _lut;
+        double _byteMode;
         int _view;
         RectI _dataWindow;//RoD
         Format _displayWindow;
@@ -68,8 +68,8 @@ namespace Natron{
         , _textureRect()
         {}
         
-        FrameKey(SequenceTime frameNb,U64 treeVersion,float zoomFactor,float exposure,
-                 float lut,float byteMode,int view,const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect):
+        FrameKey(SequenceTime frameNb,U64 treeVersion,double zoomFactor,double exposure,
+                 double lut,double byteMode,int view,const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect):
         KeyHelper<U64>()
         ,_frameNb(frameNb)
         ,_treeVersion(treeVersion)
@@ -86,7 +86,11 @@ namespace Natron{
         }
         
         void fillHash(Hash64* hash) const {
-            hash->append(*(reinterpret_cast<const U64*>(&(_frameNb))));
+            if(sizeof(SequenceTime) == 8){
+                hash->append(*(reinterpret_cast<const U64*>(&(_frameNb))));
+            }else{
+                hash->append(_frameNb);
+            }
             hash->append(_treeVersion);
             hash->append(*(reinterpret_cast<const U64*>(&(_zoomFactor))));
             hash->append(*(reinterpret_cast<const U64*>(&(_exposure))));
@@ -101,7 +105,8 @@ namespace Natron{
             hash->append(_displayWindow.right());
             hash->append(_displayWindow.top());
             hash->append(_displayWindow.bottom());
-            hash->append(_displayWindow.getPixelAspect());
+            double pa = _displayWindow.getPixelAspect();
+            hash->append(*(reinterpret_cast<const U64*>(&(pa))));
             hash->append(_textureRect.x);
             hash->append(_textureRect.y);
             hash->append(_textureRect.r);
@@ -164,8 +169,8 @@ namespace Natron{
       
         ~FrameEntry(){ }
         
-        static FrameKey makeKey(SequenceTime frameNb,U64 treeVersion,float zoomFactor,float exposure,
-                                float lut,float byteMode,int view,const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect){
+        static FrameKey makeKey(SequenceTime frameNb,U64 treeVersion,double zoomFactor,double exposure,
+                                double lut,double byteMode,int view,const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect){
             return FrameKey(frameNb,treeVersion,zoomFactor,exposure,lut,byteMode,view,dataWindow,displayWindow,textureRect);
         }
         

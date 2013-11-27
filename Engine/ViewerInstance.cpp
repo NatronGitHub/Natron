@@ -185,7 +185,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     }
     _interThreadInfos._textureRect = textureRect;
     _interThreadInfos._bytesCount = _interThreadInfos._textureRect.w * _interThreadInfos._textureRect.h * 4;
-    if(viewer->byteMode() == 0 && viewer->hasHardware()){
+    if(viewer->byteMode() == 0 && viewer->supportsGLSL()){
         _interThreadInfos._bytesCount *= sizeof(float);
     }
 
@@ -331,7 +331,7 @@ void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputI
     }
     for(U32 i = 0; i < rows.size();++i){
         const float* data = inputImage->pixelAt(0, rows[i].first);
-        if(_uiContext->viewer->byteMode() == 0 && _uiContext->viewer->hasHardware()){
+        if(_uiContext->viewer->byteMode() == 0 && _uiContext->viewer->supportsGLSL()){
             convertRowToFitTextureBGRA_fp(data,columns,rows[i].second);
         }
         else{
@@ -603,7 +603,7 @@ void ViewerInstance::onExposureChanged(double exp){
     QMutexLocker l(&_renderArgsMutex);
     _exposure = exp;
     
-    if((_uiContext->viewer->byteMode() == 1  || !_uiContext->viewer->hasHardware()) && input(activeInput()) != NULL){
+    if((_uiContext->viewer->byteMode() == 1  || !_uiContext->viewer->supportsGLSL()) && input(activeInput()) != NULL){
         refreshAndContinueRender();
     }else{
         emit mustRedraw();
@@ -632,7 +632,7 @@ void ViewerInstance::onColorSpaceChanged(const QString& colorspaceName){
         _lut = 2;
     }
     
-    if((_uiContext->viewer->byteMode() == 1  || !_uiContext->viewer->hasHardware()) && input(activeInput()) != NULL){
+    if((_uiContext->viewer->byteMode() == 1  || !_uiContext->viewer->supportsGLSL()) && input(activeInput()) != NULL){
         refreshAndContinueRender();
     }else{
         emit mustRedraw();

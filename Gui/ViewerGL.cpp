@@ -199,7 +199,7 @@ struct ViewerGL::Implementation {
     , rodOverlayColor(100,100,100,255)
     , textFont(new QFont("Helvetica",15))
     , overlay(true)
-    , hasHW(true)
+    , supportsGLSL(true)
     , displayChannels(0.f)
     , drawProgressBar(false)
     , updatingTexture(false)
@@ -261,7 +261,7 @@ struct ViewerGL::Implementation {
 
     bool overlay;/*!< True if the user enabled overlay dispay*/
 
-    bool hasHW;/*!< True if the user has a GLSL version supporting everything requested.*/
+    bool supportsGLSL;/*!< True if the user has a GLSL version supporting everything requested.*/
 
     // FIXME-seeabove: why a float to really represent an enum????
     float displayChannels;
@@ -553,11 +553,11 @@ void ViewerGL::paintGL()
         }else{
             glBindTexture(GL_TEXTURE_2D, _imp->blackTex->getTexID());
             checkGLErrors();
-            if(_imp->hasHW && !_imp->shaderBlack->bind()){
+            if(_imp->supportsGLSL && !_imp->shaderBlack->bind()){
                 cout << qPrintable(_imp->shaderBlack->log()) << endl;
                 checkGLErrors();
             }
-            if(_imp->hasHW)
+            if(_imp->supportsGLSL)
                 _imp->shaderBlack->setUniformValue("Tex", 0);
             checkGLErrors();
             
@@ -570,11 +570,11 @@ void ViewerGL::paintGL()
     glBindTexture(GL_TEXTURE_2D, 0);
     
     if (_imp->displayingImage) {
-        if (_imp->hasHW) {
+        if (_imp->supportsGLSL) {
             _imp->shaderRGB->release();
         }
     } else {
-        if (_imp->hasHW)
+        if (_imp->supportsGLSL)
             _imp->shaderBlack->release();
     }
     if (_imp->overlay) {
@@ -794,7 +794,7 @@ void ViewerGL::initializeGL(){
     checkGLErrors();
     
     
-    if(_imp->hasHW){
+    if(_imp->supportsGLSL){
         _imp->shaderBlack=new QGLShaderProgram(context());
         if(!_imp->shaderBlack->addShaderFromSourceCode(QGLShader::Vertex,vertRGB))
             cout << qPrintable(_imp->shaderBlack->log()) << endl;
@@ -987,12 +987,12 @@ void ViewerGL::initAndCheckGlExtensions() {
 
         //Natron::errorDialog("Viewer error","The viewer is unabgile to work without a proper version of GLSL.");
         //cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
-        _imp->hasHW = false;
+        _imp->supportsGLSL = false;
     }
 }
 
 void ViewerGL::activateShaderLC(){
-    if(!_imp->hasHW) return;
+    if(!_imp->supportsGLSL) return;
     if(!_imp->shaderLC->bind()){
         cout << qPrintable(_imp->shaderLC->log()) << endl;
     }
@@ -1006,7 +1006,7 @@ void ViewerGL::activateShaderLC(){
     
 }
 void ViewerGL::activateShaderRGB(){
-    if(!_imp->hasHW) return;
+    if(!_imp->supportsGLSL) return;
     if(!_imp->shaderRGB->bind()){
         cout << qPrintable(_imp->shaderRGB->log()) << endl;
     }
@@ -1024,7 +1024,7 @@ void ViewerGL::activateShaderRGB(){
 }
 
 void ViewerGL::initShaderGLSL(){
-    if(!_imp->shaderLoaded && _imp->hasHW){
+    if(!_imp->shaderLoaded && _imp->supportsGLSL){
         _imp->shaderRGB=new QGLShaderProgram(context());
         if(!_imp->shaderRGB->addShaderFromSourceCode(QGLShader::Vertex,vertRGB))
             cout << qPrintable(_imp->shaderRGB->log()) << endl;
@@ -1113,7 +1113,7 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();
     
-    if(byteMode() == 1.f || !_imp->hasHW){
+    if(byteMode() == 1.f || !_imp->supportsGLSL){
         _imp->defaultDisplayTexture->fillOrAllocateTexture(region,Texture::BYTE);
     }else{
         _imp->defaultDisplayTexture->fillOrAllocateTexture(region,Texture::FLOAT);
@@ -1125,9 +1125,9 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
 /**
  *@returns Returns true if the graphic card supports GLSL.
  **/
-bool ViewerGL::hasHardware()
+bool ViewerGL::supportsGLSL()
 {
-    return _imp->hasHW;
+    return _imp->supportsGLSL;
 }
 
 #if QT_VERSION < 0x050000
@@ -1350,7 +1350,7 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
     QPointF pos = toImgCoordinates_fast(x, y);
     if(pos.x() < getDisplayWindow().left() || pos.x() >= getDisplayWindow().width() || pos.y() < getDisplayWindow().bottom() || pos.y() >=getDisplayWindow().height())
         return QVector4D(0,0,0,0);
-    if(byteMode()==1 || !_imp->hasHW){
+    if(byteMode()==1 || !_imp->supportsGLSL){
         U32 pixel;
         glReadBuffer(GL_FRONT);
         glReadPixels( x, height()-y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
@@ -1361,7 +1361,7 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
         a |= (pixel >> 24);
         checkGLErrors();
         return QVector4D((float)r/255.f,(float)g/255.f,(float)b/255.f,(float)a/255.f);
-    }else if(byteMode()==0 && _imp->hasHW){
+    }else if(byteMode()==0 && _imp->supportsGLSL){
         GLfloat pixel[4];
         glReadPixels( x, height()-y, 1, 1, GL_RGBA, GL_FLOAT, pixel);
         checkGLErrors();

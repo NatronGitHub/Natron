@@ -90,6 +90,7 @@ void TextRendererPrivate::newTransparantTexture()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_SIZE, TEXTURE_SIZE,
                  0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits());
 
+    glBindTexture(GL_TEXTURE_2D, 0);
     _usedTextures.push_back(texture);
 }
 
@@ -221,7 +222,7 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
         _imp->renderers.push_back(std::make_pair(font, p));
     }
     glColor4f(1., 1., 1., 1.);
-    glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_TEXTURE_BIT);
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
     glPushMatrix();
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
@@ -251,6 +252,7 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
 
         glTranslatef(c->w, 0, 0);
     }
+    glBindTexture(GL_TEXTURE_2D, 0);
     glPopMatrix();
     glPopAttrib();
     checkGLErrors();
