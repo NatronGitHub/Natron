@@ -120,6 +120,9 @@ CharBitmap *TextRendererPrivate::createCharacter(QChar c, const QColor &color)
     //if a pbo is already mapped, return, this would make the glTex** calls fail
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
     if (currentBoundPBO != 0) {
+#warning "THIS IS A BUG: the character is never created (probably creating black characters in the interface)"
+        // No PBO should ever be bound at this point.
+        assert(currentBoundPBO == 0);
         return NULL;
     }
 
