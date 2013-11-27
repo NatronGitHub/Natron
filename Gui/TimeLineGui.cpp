@@ -188,6 +188,9 @@ void TimeLineGui::paintGL(){
     glClear(GL_COLOR_BUFFER_BIT);
     glDisable(GL_SCISSOR_TEST);
 
+    checkGLErrors();
+
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -260,7 +263,7 @@ void TimeLineGui::paintGL(){
             }
         }
     }
-
+    checkGLErrors();
 
     QPointF cursorBtm(_imp->_timeline->currentFrame(),lineYpos);
     QPoint cursorBtmWidgetCoord = toWidgetCoordinates(cursorBtm.x(),cursorBtm.y());
@@ -351,22 +354,27 @@ void TimeLineGui::paintGL(){
     glEnd();
 
     glDisable(GL_POLYGON_SMOOTH);
+    checkGLErrors();
 
     //draw cached frames
     glColor4f(_imp->_cachedLineColor.redF(),_imp->_cachedLineColor.greenF(),_imp->_cachedLineColor.blueF(),_imp->_cachedLineColor.alphaF());
-    glBegin(GL_LINES);
     glEnable(GL_LINE_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
+    checkGLErrors();
     glLineWidth(2);
+    glBegin(GL_LINES);
     for(std::list<SequenceTime>::const_iterator i = _imp->_cached.begin();i!= _imp->_cached.end();++i) {
         glVertex2f(*i - 0.5,lineYpos);
-        glVertex2d(*i + 0.5,lineYpos);
+        glVertex2f(*i + 0.5,lineYpos);
     }
     glEnd();
     glDisable(GL_LINE_SMOOTH);
-    glDisable(GL_BLEND);
     glLineWidth(1.);
+
+    glDisable(GL_BLEND);
     glColor4f(1.,1.,1.,1.);
+    glPopAttrib();
+    checkGLErrors();
 }
 
 
@@ -390,6 +398,7 @@ void TimeLineGui::renderText(double x,double y,const QString& text,const QColor&
     glLoadIdentity();
     glOrtho(_imp->_zoomCtx._lastOrthoLeft,_imp->_zoomCtx._lastOrthoRight,_imp->_zoomCtx._lastOrthoBottom,_imp->_zoomCtx._lastOrthoTop,-1,1);
     glMatrixMode(GL_MODELVIEW);
+    checkGLErrors();
 
 }
 
@@ -430,20 +439,33 @@ void TimeLineGui::mouseMoveEvent(QMouseEvent* e){
     _imp->_alphaCursor = true;
     _imp->_lastMouseEventWidgetCoord = e->pos();
     double c = toTimeLineCoordinates(e->x(),0).x();
+    bool distortViewPort = false;
     if(_imp->_state == DRAGGING_CURSOR){
 
-        seek(c);
-
+        emit frameChanged(c);
+        distortViewPort = true;
     }else if(_imp->_state == DRAGGING_BOUNDARY){
 
         int firstPos = toWidgetCoordinates(_imp->_timeline->leftBound(),0).x();
         int lastPos = toWidgetCoordinates(_imp->_timeline->rightBound(),0).x();
         if( std::abs(e->x() - firstPos) > std::abs(e->x() - lastPos) ){ // moving last frame anchor
-            setBoundaries(_imp->_timeline->leftBound(),c);
+            emit boundariesChanged(_imp->_timeline->leftBound(),c);
         }else{ // moving first frame anchor
-            setBoundaries(c,_imp->_timeline->rightBound());
+            emit boundariesChanged(c,_imp->_timeline->rightBound());
         }
+        distortViewPort = true;
+    }
 
+    if(distortViewPort){
+        double leftMost = toTimeLineCoordinates(0,0).x();
+        double rightMost = toTimeLineCoordinates(width()-1,0).x();
+        if(c < leftMost){
+            centerOn(c,rightMost);
+        }else if(c > rightMost){
+            centerOn(leftMost,c);
+        }else{
+            updateGL();
+        }
     }else{
         updateGL();
     }

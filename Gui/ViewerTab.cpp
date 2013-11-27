@@ -197,8 +197,6 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     
     _currentFrameBox=new SpinBox(_playerButtonsContainer,SpinBox::INT_SPINBOX);
     _currentFrameBox->setValue(0);
-    _currentFrameBox->setMinimum(0);
-    _currentFrameBox->setMaximum(0);
     _currentFrameBox->setToolTip("<p></br><b>Current frame number</b></p>");
     _playerLayout->addWidget(_currentFrameBox);
     

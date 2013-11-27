@@ -10,6 +10,7 @@
 
 #include "SpinBox.h"
 
+#include <cfloat>
 #include "Global/Macros.h"
 #if QT_VERSION < 0x050000
 CLANG_DIAG_OFF(unused-private-field);
@@ -25,20 +26,24 @@ LineEdit(parent)
 ,_type(type)
 ,_decimals(2)
 ,_increment(1.0)
-,_mini(0)
-,_maxi(99)
+,_mini()
+,_maxi()
 ,_doubleValidator(0)
 ,_intValidator(0)
 {
-    
+
     if(type == DOUBLE_SPINBOX){
+        _mini.setValue<double>(-DBL_MAX);
+        _maxi.setValue<double>(DBL_MAX);
         _doubleValidator = new QDoubleValidator;
-        _doubleValidator->setTop(99);
-        _doubleValidator->setBottom(0);
+        _doubleValidator->setTop(DBL_MAX);
+        _doubleValidator->setBottom(-DBL_MAX);
     }else{
         _intValidator = new QIntValidator;
-        _intValidator->setTop(99);
-        _intValidator->setBottom(0);
+        _mini.setValue<int>(INT_MIN);
+        _maxi.setValue<int>(INT_MAX);
+        _intValidator->setTop(INT_MAX);
+        _intValidator->setBottom(INT_MIN);
     }
     QObject::connect(this, SIGNAL(returnPressed()), this, SLOT(interpretReturn()));
     setValue(0);
@@ -77,23 +82,33 @@ void SpinBox::wheelEvent(QWheelEvent *e) {
     }
     if(isEnabled() && !isReadOnly()){
         bool ok;
-        double cur= text().toDouble(&ok);
+        double cur = text().toDouble(&ok);
         clear();
+        double maxiD,miniD;
+        if(_type == DOUBLE_SPINBOX){
+            maxiD = _maxi.toDouble();
+            miniD = _mini.toDouble();
+        }else{
+            maxiD = _maxi.toInt();
+            miniD = _mini.toInt();
+
+        }
         if(e->delta()>0){
-            if(cur+_increment <= _maxi)
+            if(cur+_increment <= maxiD)
                 cur+=_increment;
         }else{
-            if(cur-_increment >= _mini)
+            if(cur-_increment >= miniD)
                 cur-=_increment;
         }
-        if(cur < _mini || cur > _maxi)
+        if(cur < miniD || cur > maxiD)
             return;
-
         QString str;
-        if(_type == DOUBLE_SPINBOX)
+        if(_type == DOUBLE_SPINBOX){
             str.setNum(cur,'f',_decimals);
-        else
+
+        }else{
             str.setNum((int)cur);
+        }
         
         insert(str);
         emit valueChanged(cur);
@@ -108,11 +123,21 @@ void SpinBox::keyPressEvent(QKeyEvent *e){
     if(isEnabled() && !isReadOnly()){
         bool ok;
         double cur= text().toDouble(&ok);
+        double maxiD,miniD;
+        if(_type == DOUBLE_SPINBOX){
+            maxiD = _maxi.toDouble();
+            miniD = _mini.toDouble();
+        }else{
+            maxiD = _maxi.toInt();
+            miniD = _mini.toInt();
+
+        }
         if(e->key() == Qt::Key_Up){
             clear();
-            if(cur+_increment <= _maxi)
+
+            if(cur+_increment <= maxiD)
                 cur+=_increment;
-            if(cur < _mini || cur > _maxi)
+            if(cur < miniD || cur > maxiD)
                 return;
             QString str;
             if(_type == DOUBLE_SPINBOX)
@@ -123,9 +148,9 @@ void SpinBox::keyPressEvent(QKeyEvent *e){
             emit valueChanged(cur);
         }else if(e->key() == Qt::Key_Down){
             clear();
-            if(cur-_increment >= _mini)
+            if(cur-_increment >= miniD)
                 cur-=_increment;
-            if(cur < _mini || cur > _maxi)
+            if(cur < miniD || cur > maxiD)
                 return;
             QString str;
             if(_type == DOUBLE_SPINBOX)
@@ -141,14 +166,14 @@ void SpinBox::keyPressEvent(QKeyEvent *e){
                 QString txt = text();
                 int tmp;
                 QValidator::State st = _doubleValidator->validate(txt,tmp);
-                if(st == QValidator::Invalid || txt.toDouble() < _mini || txt.toDouble() > _maxi){
+                if(st == QValidator::Invalid || txt.toDouble() < miniD || txt.toDouble() > maxiD){
                     setValue(oldValue);
                 }
             }else{
                 QString txt = text();
                 int tmp;
                 QValidator::State st = _intValidator->validate(txt,tmp);
-                if(st == QValidator::Invalid || txt.toDouble() < _mini || txt.toDouble() > _maxi){
+                if(st == QValidator::Invalid || txt.toDouble() < miniD || txt.toDouble() > maxiD){
                     setValue(oldValue);
                 }
             }
@@ -165,19 +190,21 @@ void SpinBox::decimals(int d){
     }
 }
 void SpinBox::setMaximum(double t){
-    _maxi = t;
     if(_type == DOUBLE_SPINBOX){
+        _maxi.setValue<double>(t);
         _doubleValidator->setTop(t);
     }else{
+        _maxi.setValue<int>((int)t);
         _intValidator->setTop(t);
     }
     
 }
 void SpinBox::setMinimum(double b){
-    _mini = b;
     if(_type == DOUBLE_SPINBOX){
+        _mini.setValue<double>(b);
         _doubleValidator->setBottom(b);
     }else{
+        _mini.setValue<int>(b);
         _intValidator->setBottom(b);
     }
 }

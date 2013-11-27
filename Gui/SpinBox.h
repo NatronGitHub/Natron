@@ -13,7 +13,7 @@
 #define NATRON_GUI_FEEDBACKSPINBOX_H_
 
 #include "Gui/LineEdit.h"
-
+#include "Engine/Variant.h"
 
 class QDoubleValidator;
 class QIntValidator;
@@ -71,7 +71,7 @@ private:
     SPINBOX_TYPE _type;
     int _decimals; // for the double spinbox only
     double _increment;
-    double _mini,_maxi;
+    Variant _mini,_maxi;
     QDoubleValidator* _doubleValidator;
     QIntValidator* _intValidator;
 
