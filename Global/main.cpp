@@ -98,10 +98,13 @@ int main(int argc, char *argv[])
 
     QCoreApplication* app = NULL;
     if(!isBackGround){
-        app = new QApplication(argc, argv);
+        QApplication* guiApp = new QApplication(argc, argv);
+        guiApp->setFont(QFont("Helvetica",10));
+        app = guiApp;
     }else{
         app = new QCoreApplication(argc,argv);
     }
+
     app->setOrganizationName(NATRON_ORGANIZATION_NAME);
     app->setOrganizationDomain(NATRON_ORGANIZATION_DOMAIN);
     app->setApplicationName(NATRON_APPLICATION_NAME);

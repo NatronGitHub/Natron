@@ -73,6 +73,7 @@ void CurveGui::drawCurve(){
     glColor4f(curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF());
 
     glPointSize(_thickness);
+    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT);
     glEnable(GL_LINE_SMOOTH);
     glEnable(GL_BLEND);
     glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
@@ -126,7 +127,7 @@ void CurveGui::drawCurve(){
 
     glDisable(GL_BLEND);
     glDisable(GL_POINT_SMOOTH);
-
+    glPopAttrib();
     glPointSize(1.f);
     //reset back the color
     glColor4f(1.f, 1.f, 1.f, 1.f);

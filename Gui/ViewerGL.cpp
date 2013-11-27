@@ -197,7 +197,7 @@ struct ViewerGL::Implementation {
     , textRenderingColor(200,200,200,255)
     , displayWindowOverlayColor(125,125,125,255)
     , rodOverlayColor(100,100,100,255)
-    , textFont(new QFont("Helvetica",15))
+    , textFont(new QFont("Helvetica",13))
     , overlay(true)
     , supportsGLSL(true)
     , displayChannels(0.f)
@@ -363,7 +363,6 @@ void ViewerGL::drawRenderingVAO(){
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glTexCoordPointer(2, GL_FLOAT, 0 , 0);
     
-    glBindBuffer(GL_ARRAY_BUFFER,0);
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _imp->iboTriangleStripId);
     glDrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0);
@@ -372,6 +371,7 @@ void ViewerGL::drawRenderingVAO(){
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glBindBuffer(GL_ARRAY_BUFFER,0);
     checkGLErrors();
 }
 
@@ -613,7 +613,6 @@ void ViewerGL::drawOverlay()
 {
     
     ///TODO: use glVertexArrays instead!
-    glDisable(GL_TEXTURE_2D);
     const RectI& dispW = getDisplayWindow();
     
     if(_imp->clipToDisplayWindow){
@@ -753,8 +752,7 @@ void ViewerGL::drawPersistentMessage(){
     glEnd();
     
     
-    //reseting color for next pass
-    glColor4f(1., 1., 1., 1.);
+
     
     int offset = metrics.height()+10;
     for(int j = 0 ; j < lines.size();++j){
@@ -762,9 +760,9 @@ void ViewerGL::drawPersistentMessage(){
         renderText(pos.x(),pos.y(), lines.at(j),_imp->textRenderingColor,*_imp->textFont);
         offset += metrics.height()*2;
     }
+    checkGLErrors();
     //reseting color for next pass
     glColor4f(1., 1., 1., 1.);
-    checkGLErrors();
 }
 
 
