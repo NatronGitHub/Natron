@@ -15,7 +15,7 @@
 #include <QLabel>
 #include <QtGui/QPixmap>
 
-#include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
 #include "Global/AppManager.h"
 
 #include "Engine/Knob.h"
@@ -32,6 +32,7 @@ void registerMetaTypes(){
     qRegisterMetaType<KnobGui*>();
     qRegisterMetaType<Format>();
     qRegisterMetaType<Natron::StandardButtons>();
+    qRegisterMetaType<SequenceTime>("SequenceTime");
 
 }
 

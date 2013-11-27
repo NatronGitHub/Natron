@@ -328,11 +328,7 @@ signals:
      **/
     void zoomChanged(int v);
     
-    /**
-     *@brief Signal emitted when the current frame changed.
-     **/
-    void frameChanged(int);
-    
+
     protected :
     /**
      *@brief The paint function. That's where all the drawing is done.

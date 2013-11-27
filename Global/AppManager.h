@@ -405,6 +405,10 @@ public:
 
     const Natron::Cache<Natron::Image>& getNodeCache() const WARN_UNUSED_RETURN {return *_nodeCache;}
 
+    void removeFromNodeCache(boost::shared_ptr<const Natron::Image> image);
+
+    void removeFromViewerCache(boost::shared_ptr<const Natron::FrameEntry> texture);
+
     const KnobFactory& getKnobFactory() const WARN_UNUSED_RETURN {return *_knobFactory;}
 
     const Settings& getCurrentSettings() const {return *_settings;}
@@ -428,6 +432,12 @@ public slots:
                               const QString& groupIconPath);
     /*Quit the app*/
     static void quit();
+
+signals:
+
+    void imageRemovedFromNodeCache(SequenceTime time);
+    void imageRemovedFromViewerCache(SequenceTime time);
+
 private:
 
     /*Loads all kind of plugins*/

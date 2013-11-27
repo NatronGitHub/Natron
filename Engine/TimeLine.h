@@ -13,14 +13,24 @@
 
 #include "Global/GlobalDefines.h"
 
+/**
+  * @brief A simple TimeLine representing the time for image sequences.
+  * The interval [_firstFrame,_lastFrame] represents where images exist in the time space.
+  * The interval [_leftBoundary,_rightBoundary] represents what the user interval of interest within the time space.
+  * The _currentFrame represents the current time in the time space. It doesn't have to be within any aforementioned interval.
+**/
 class TimeLine: public QObject {
+
     Q_OBJECT
+
 public:
 
     TimeLine():
-    _firstFrame(0),
-    _lastFrame(100),
-    _currentFrame(0)
+      _firstFrame(0)
+    , _lastFrame(100)
+    , _currentFrame(0)
+    , _leftBoundary(_firstFrame)
+    , _rightBoundary(_lastFrame)
     {}
 
     virtual ~TimeLine(){}
@@ -29,37 +39,38 @@ public:
 
     SequenceTime lastFrame() const {return _lastFrame;}
 
-    void setFrameRange(SequenceTime first,SequenceTime last){
-        SequenceTime oldFirst = _firstFrame;
-        SequenceTime oldLast = _lastFrame;
-        _firstFrame = first;
-        _lastFrame = last;
-        if(first != oldFirst || last != oldLast){
-            emit frameRangeChanged(first, last);
-        }
-       
-    }
-    
     SequenceTime currentFrame() const {return _currentFrame;}
 
-    void incrementCurrentFrame(){++_currentFrame; emit frameChanged(_currentFrame);}
+    SequenceTime leftBound() const {return _leftBoundary;}
 
-    void decrementCurrentFrame(){--_currentFrame; emit frameChanged(_currentFrame);}
+    SequenceTime rightBound() const {return _rightBoundary;}
 
-public slots:
+    void setFrameRange(SequenceTime first,SequenceTime last);
+
+    void setBoundaries(SequenceTime leftBound,SequenceTime rightBound);
 
     void seekFrame(SequenceTime frame);
 
-    void seekFrame_noEmit(SequenceTime frame);
+    void incrementCurrentFrame() {++_currentFrame; emit frameChanged(_currentFrame);}
 
+    void decrementCurrentFrame() {--_currentFrame; emit frameChanged(_currentFrame);}
+
+public slots:
+
+    void onFrameChanged(SequenceTime frame);
+
+    void onBoundariesChanged(SequenceTime left,SequenceTime right);
 
 signals:
-    void frameRangeChanged(int,int);
-    void frameChanged(int);
+
+    void frameRangeChanged(SequenceTime,SequenceTime);
+    void boundariesChanged(SequenceTime,SequenceTime);
+    void frameChanged(SequenceTime);
 
 private:
     SequenceTime _firstFrame;
     SequenceTime _lastFrame;
     SequenceTime _currentFrame;
+    SequenceTime _leftBoundary,_rightBoundary; //these boundaries are within the interval [firstFrame,lastFrame]
 };
 #endif /* defined(NATRON_ENGINE_TIMELINE_H_) */

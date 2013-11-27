@@ -411,14 +411,14 @@ public:
 
     void emitAddedEntry() {emit addedEntry();}
 
-    void emitRemovedEntry() {emit removedEntry();}
+    void emitRemovedLRUEntry() {emit removedLRUEntry();}
 signals:
 
     void clearedInMemoryPortion();
 
     void addedEntry();
 
-    void removedEntry();
+    void removedLRUEntry();
 
 };
 
@@ -705,16 +705,13 @@ public:
     /** @brief This function can be called to remove a specific entry from the cache. For example a frame
      * that has had its render aborted but already belong to the cache.
      **/
-    void removeEntry(value_type entry) const {
+    void removeEntry(value_type entry) {
         QMutexLocker l(&_lock);
         CacheIterator existingEntry = _memoryCache(entry->getHashKey());
         if(existingEntry != _memoryCache.end()){
             std::list<value_type>& ret = getValueFromIterator(existingEntry);
             for (typename std::list<value_type>::iterator it = ret.begin(); it!=ret.end(); ++it) {
                 if((*it)->getKey() == entry->getKey()){
-                    if(_signalEmitter)
-                        _signalEmitter->emitRemovedEntry();
-
                     ret.erase(it);
                     _memoryCacheSize -= entry->size();
                     break;
@@ -781,7 +778,7 @@ private:
         _memoryCacheSize -= evicted.second->size();
 
         if(_signalEmitter)
-            _signalEmitter->emitRemovedEntry();
+            _signalEmitter->emitRemovedLRUEntry();
 
         /*if it is stored using mmap, remove it from memory*/
 

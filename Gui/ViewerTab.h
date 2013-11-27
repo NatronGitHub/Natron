@@ -102,7 +102,7 @@ public:
     SpinBox* fpsBox;
     
 	/*frame seeker*/
-	TimeLineGui* frameSeeker;
+    TimeLineGui* _timeLineGui;
     
     /*these are the channels the viewer wants to display*/
 	const Natron::ChannelSet& displayChannels(){return _channelsToDraw;}
@@ -116,6 +116,8 @@ public:
     
     int getCurrentView() const;
     
+    void seek(SequenceTime time);
+
 public slots:
     
     void startPause(bool);
@@ -127,22 +129,18 @@ public slots:
     void nextIncrement();
     void firstFrame();
     void lastFrame();
-    void seek(int);
-    void seek(double value){seek((int)value);}
     void centerViewer();
     void toggleLoopMode(bool);
     void onViewerChannelsChanged(int);
     void onClipToProjectButtonToggle(bool);
-
+    void onTimeLineTimeChanged(SequenceTime time);
+    void onCurrentTimeSpinBoxChanged(double);
     /*Updates the comboBox according to the real zoomFactor. Value is in % */
     void updateZoomComboBox(int value);
     
     /*makes the viewer black*/
     void disconnectViewer();
     
-    void onCachedFrameAdded(int);
-    void onCachedFrameRemoved();
-    void onViewerCacheCleared();
     
     void onEngineStarted(bool forward);
     
@@ -153,6 +151,7 @@ public slots:
     void updateViewsMenu(int count);
     
     void showView(int view);
+
 
 protected:
     

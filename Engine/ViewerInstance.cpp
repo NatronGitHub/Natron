@@ -75,16 +75,16 @@ ViewerInstance::~ViewerInstance(){
 
 void ViewerInstance::connectSlotsToViewerCache(){
     Natron::CacheSignalEmitter* emitter = appPTR->getViewerCache().activateSignalEmitter();
-    QObject::connect(emitter, SIGNAL(addedEntry()), this, SLOT(onCachedFrameAdded()));
-    QObject::connect(emitter, SIGNAL(removedEntry()), this, SLOT(onCachedFrameAdded()));
-    QObject::connect(emitter, SIGNAL(clearedInMemoryPortion()), this, SLOT(onViewerCacheCleared()));
+    QObject::connect(emitter, SIGNAL(addedEntry()), this, SLOT(onViewerCacheFrameAdded()));
+    QObject::connect(emitter, SIGNAL(removedLRUEntry()), this, SIGNAL(removedLRUCachedFrame()));
+    QObject::connect(emitter, SIGNAL(clearedInMemoryPortion()), this, SIGNAL(clearedViewerCache()));
 }
 
 void ViewerInstance::disconnectSlotsToViewerCache(){
     Natron::CacheSignalEmitter* emitter = appPTR->getViewerCache().activateSignalEmitter();
-    QObject::disconnect(emitter, SIGNAL(addedEntry()), this, SLOT(onCachedFrameAdded()));
-    QObject::disconnect(emitter, SIGNAL(removedEntry()), this, SLOT(onCachedFrameAdded()));
-    QObject::disconnect(emitter, SIGNAL(clearedInMemoryPortion()), this, SLOT(onViewerCacheCleared()));
+    QObject::disconnect(emitter, SIGNAL(addedEntry()), this, SLOT(onViewerCacheFrameAdded()));
+    QObject::disconnect(emitter, SIGNAL(removedLRUEntry()), this, SIGNAL(removedLRUCachedFrame()));
+    QObject::disconnect(emitter, SIGNAL(clearedInMemoryPortion()), this, SIGNAL(clearedViewerCache()));
 }
 void ViewerInstance::initializeViewerTab(TabWidget* where){
     if(isLiveInstance()){
@@ -266,7 +266,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
 
             if(aborted()){
                 //if render was aborted, remove the frame from the cache as it contains only garbage
-                appPTR->getViewerCache().removeEntry(cachedFrame);
+                appPTR->removeFromViewerCache(cachedFrame);
                 return StatOK;
             }
             
@@ -300,7 +300,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
         }
         if(aborted()){
             //if render was aborted, remove the frame from the cache as it contains only garbage
-            appPTR->getViewerCache().removeEntry(cachedFrame);
+            appPTR->removeFromViewerCache(cachedFrame);
             return StatOK;
         }
         //we released the input image and force the cache to clear exceeding entries
@@ -364,16 +364,6 @@ void ViewerInstance::updateViewer(){
     _usingOpenGLCond.wakeOne();
 }
 
-
-void ViewerInstance::onCachedFrameAdded(){
-    emit addedCachedFrame(getNode()->getApp()->getTimeLine()->currentFrame());
-}
-void ViewerInstance::onCachedFrameRemoved(){
-    emit removedCachedFrame();
-}
-void ViewerInstance::onViewerCacheCleared(){
-    emit clearedViewerCache();
-}
 
 
 void ViewerInstance::redrawViewer(){
@@ -647,4 +637,8 @@ void ViewerInstance::onColorSpaceChanged(const QString& colorspaceName){
     }else{
         emit mustRedraw();
     }
+}
+
+void ViewerInstance::onViewerCacheFrameAdded(){
+    emit addedCachedFrame(getApp()->getTimeLine()->currentFrame());
 }

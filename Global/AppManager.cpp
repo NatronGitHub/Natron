@@ -1346,6 +1346,16 @@ void AppInstance::notifyRenderFinished(Natron::OutputEffectInstance* writer){
     }
 }
 
+void AppManager::removeFromNodeCache(boost::shared_ptr<const Natron::Image> image){
+    _nodeCache->removeEntry(image);
+    emit imageRemovedFromNodeCache(image->getKey()._time);
+}
+
+void AppManager::removeFromViewerCache(boost::shared_ptr<const Natron::FrameEntry> texture){
+    _viewerCache->removeEntry(texture);
+    emit imageRemovedFromNodeCache(texture->getKey()._frameNb);
+}
+
 namespace Natron{
 
 void errorDialog(const std::string& title,const std::string& message){

@@ -49,9 +49,9 @@ CLANG_DIAG_ON(unused-private-field);
 using namespace Natron;
 
 ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(parent),
-_gui(gui),
-_viewerNode(node),
-_channelsToDraw(Mask_RGBA)
+    _gui(gui),
+    _viewerNode(node),
+    _channelsToDraw(Mask_RGBA)
 {
     
     installEventFilter(this);
@@ -61,7 +61,7 @@ _channelsToDraw(Mask_RGBA)
     _mainLayout->setSpacing(0);
     _mainLayout->setContentsMargins(0, 0, 0, 0);
     
-	/*VIEWER SETTINGS*/
+    /*VIEWER SETTINGS*/
     
     /*1st row of buttons*/
     _firstSettingsRow = new QWidget(this);
@@ -77,7 +77,7 @@ _channelsToDraw(Mask_RGBA)
     _viewerChannels = new ComboBox(_firstSettingsRow);
     _viewerChannels->setToolTip("<p></br><b>Channels: \n</b></p>"
                                 "The channels to display on the viewer.");
-	_firstRowLayout->addWidget(_viewerChannels);
+    _firstRowLayout->addWidget(_viewerChannels);
     
     _viewerChannels->addItem("Luminance",QIcon(),QKeySequence(Qt::Key_Y));
     _viewerChannels->addItem("RGBA",QIcon(),QKeySequence(Qt::SHIFT+Qt::Key_R));
@@ -144,7 +144,7 @@ _channelsToDraw(Mask_RGBA)
     _secondRowLayout->addWidget(_gainSlider);
     
     
-	_refreshButton = new Button(_secondSettingsRow);
+    _refreshButton = new Button(_secondSettingsRow);
     _refreshButton->setShortcut(QKeySequence(Qt::Key_U));
     _refreshButton->setToolTip("Force a new render of the current frame."
                                "<p></br><b>Keyboard shortcut: U</b></p>");
@@ -173,12 +173,12 @@ _channelsToDraw(Mask_RGBA)
     
     _secondRowLayout->addStretch();
     
-	/*=============================================*/
+    /*=============================================*/
     
-	/*OpenGL viewer*/
-	viewer = new ViewerGL(this);
-	_mainLayout->addWidget(viewer);
-	/*=============================================*/
+    /*OpenGL viewer*/
+    viewer = new ViewerGL(this);
+    _mainLayout->addWidget(viewer);
+    /*=============================================*/
     /*info bbox & color*/
     _infosWidget = new InfoViewerWidget(viewer,this);
     //  _infosWidget->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
@@ -186,25 +186,25 @@ _channelsToDraw(Mask_RGBA)
     viewer->setInfoViewer(_infosWidget);
     /*=============================================*/
     
-	/*Player buttons*/
+    /*Player buttons*/
     _playerButtonsContainer = new QWidget(this);
-	_playerLayout=new QHBoxLayout(_playerButtonsContainer);
+    _playerLayout=new QHBoxLayout(_playerButtonsContainer);
     _playerLayout->setSpacing(0);
     _playerLayout->setContentsMargins(0, 0, 0, 0);
     _playerButtonsContainer->setLayout(_playerLayout);
     //   _playerButtonsContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _mainLayout->addWidget(_playerButtonsContainer);
     
-	_currentFrameBox=new SpinBox(_playerButtonsContainer,SpinBox::INT_SPINBOX);
+    _currentFrameBox=new SpinBox(_playerButtonsContainer,SpinBox::INT_SPINBOX);
     _currentFrameBox->setValue(0);
     _currentFrameBox->setMinimum(0);
     _currentFrameBox->setMaximum(0);
     _currentFrameBox->setToolTip("<p></br><b>Current frame number</b></p>");
-	_playerLayout->addWidget(_currentFrameBox);
+    _playerLayout->addWidget(_currentFrameBox);
     
-	_playerLayout->addStretch();
+    _playerLayout->addStretch();
     
-	firstFrame_Button = new Button(_playerButtonsContainer);
+    firstFrame_Button = new Button(_playerButtonsContainer);
     QKeySequence firstFrameKey(Qt::CTRL + Qt::Key_Left);
     firstFrame_Button->setShortcut(firstFrameKey);
     QString tooltip = "First frame";
@@ -212,7 +212,7 @@ _channelsToDraw(Mask_RGBA)
     tooltip.append(firstFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     firstFrame_Button->setToolTip(tooltip);
-	_playerLayout->addWidget(firstFrame_Button);
+    _playerLayout->addWidget(firstFrame_Button);
     
     
     previousKeyFrame_Button=new Button(_playerButtonsContainer);
@@ -239,7 +239,7 @@ _channelsToDraw(Mask_RGBA)
     _playerLayout->addWidget(play_Backward_Button);
     
     
-	previousFrame_Button = new Button(_playerButtonsContainer);
+    previousFrame_Button = new Button(_playerButtonsContainer);
     QKeySequence previousFrameKey(Qt::Key_Left);
     previousFrame_Button->setShortcut(previousFrameKey);
     tooltip = "Previous frame";
@@ -247,7 +247,7 @@ _channelsToDraw(Mask_RGBA)
     tooltip.append(previousFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     previousFrame_Button->setToolTip(tooltip);
-	_playerLayout->addWidget(previousFrame_Button);
+    _playerLayout->addWidget(previousFrame_Button);
     
     
     stop_Button = new Button(_playerButtonsContainer);
@@ -258,7 +258,7 @@ _channelsToDraw(Mask_RGBA)
     tooltip.append(stopKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     stop_Button->setToolTip(tooltip);
-	_playerLayout->addWidget(stop_Button);
+    _playerLayout->addWidget(stop_Button);
     
     
     nextFrame_Button = new Button(_playerButtonsContainer);
@@ -269,10 +269,10 @@ _channelsToDraw(Mask_RGBA)
     tooltip.append(nextFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     nextFrame_Button->setToolTip(tooltip);
-	_playerLayout->addWidget(nextFrame_Button);
+    _playerLayout->addWidget(nextFrame_Button);
     
     
-	play_Forward_Button = new Button(_playerButtonsContainer);
+    play_Forward_Button = new Button(_playerButtonsContainer);
     QKeySequence playKey(Qt::Key_L);
     play_Forward_Button->setShortcut(playKey);
     tooltip = "Play forward";
@@ -281,8 +281,8 @@ _channelsToDraw(Mask_RGBA)
     tooltip.append("</b></p>");
     play_Forward_Button->setToolTip(tooltip);
     play_Forward_Button->setCheckable(true);
-	_playerLayout->addWidget(play_Forward_Button);
-	
+    _playerLayout->addWidget(play_Forward_Button);
+
     
     nextKeyFrame_Button = new Button(_playerButtonsContainer);
     nextKeyFrame_Button->hide();
@@ -293,10 +293,10 @@ _channelsToDraw(Mask_RGBA)
     tooltip.append(nextKeyFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     nextKeyFrame_Button->setToolTip(tooltip);
-	_playerLayout->addWidget(nextKeyFrame_Button);
+    _playerLayout->addWidget(nextKeyFrame_Button);
     
     
-	lastFrame_Button = new Button(_playerButtonsContainer);
+    lastFrame_Button = new Button(_playerButtonsContainer);
     QKeySequence lastFrameKey(Qt::CTRL + Qt::Key_Right);
     lastFrame_Button->setShortcut(lastFrameKey);
     tooltip = "Last frame";
@@ -304,10 +304,10 @@ _channelsToDraw(Mask_RGBA)
     tooltip.append(lastFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     lastFrame_Button->setToolTip(tooltip);
-	_playerLayout->addWidget(lastFrame_Button);
+    _playerLayout->addWidget(lastFrame_Button);
     
     
-	_playerLayout->addStretch();
+    _playerLayout->addStretch();
     
     
     previousIncrement_Button = new Button(_playerButtonsContainer);
@@ -318,7 +318,7 @@ _channelsToDraw(Mask_RGBA)
     tooltip.append(previousIncrFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     previousIncrement_Button->setToolTip(tooltip);
-	_playerLayout->addWidget(previousIncrement_Button);
+    _playerLayout->addWidget(previousIncrement_Button);
     
     
     incrementSpinBox=new SpinBox(_playerButtonsContainer);
@@ -337,14 +337,14 @@ _channelsToDraw(Mask_RGBA)
     tooltip.append(nextIncrFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     nextIncrement_Button->setToolTip(tooltip);
-	_playerLayout->addWidget(nextIncrement_Button);
+    _playerLayout->addWidget(nextIncrement_Button);
     
     loopMode_Button = new Button(_playerButtonsContainer);
     loopMode_Button->setCheckable(true);
     loopMode_Button->setChecked(true);
     loopMode_Button->setDown(true);
     loopMode_Button->setToolTip("Behaviour to adopt when the playback\n hit the end of the range: loop or stop.");
-	_playerLayout->addWidget(loopMode_Button);
+    _playerLayout->addWidget(loopMode_Button);
     
     
     _playerLayout->addStretch();
@@ -435,27 +435,24 @@ _channelsToDraw(Mask_RGBA)
                                            "region of definition will be displayed. <br/> <br/>"
                                            "<b>Keyboard shortcut: C</b></p>");
     _clipToProjectFormatButton->setShortcut(QKeySequence(Qt::Key_C));
-	/*=================================================*/
+    /*=================================================*/
     
-	/*frame seeker*/
-	frameSeeker = new TimeLineGui(_gui->getApp()->getTimeLine(),this);
-    frameSeeker->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
-	_mainLayout->addWidget(frameSeeker);
-	/*================================================*/
+    /*frame seeker*/
+    _timeLineGui = new TimeLineGui(_gui->getApp()->getTimeLine(),this);
+    _timeLineGui->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
+    _mainLayout->addWidget(_timeLineGui);
+    /*================================================*/
     
     
     /*slots & signals*/
     QObject::connect(_viewerColorSpace, SIGNAL(currentIndexChanged(QString)), _viewerNode,SLOT(onColorSpaceChanged(QString)));
     QObject::connect(_zoomCombobox, SIGNAL(currentIndexChanged(QString)),viewer, SLOT(zoomSlot(QString)));
     QObject::connect(viewer, SIGNAL(zoomChanged(int)), this, SLOT(updateZoomComboBox(int)));
-    QObject::connect(viewer,SIGNAL(frameChanged(int)),_currentFrameBox,SLOT(setValue(int)));
-    QObject::connect(viewer,SIGNAL(frameChanged(int)),frameSeeker,SLOT(seekFrame(int)));
     QObject::connect(_gainBox, SIGNAL(valueChanged(double)), _viewerNode,SLOT(onExposureChanged(double)));
     QObject::connect(_gainSlider, SIGNAL(positionChanged(double)), _gainBox, SLOT(setValue(double)));
     QObject::connect(_gainSlider, SIGNAL(positionChanged(double)), _viewerNode, SLOT(onExposureChanged(double)));
     QObject::connect(_gainBox, SIGNAL(valueChanged(double)), _gainSlider, SLOT(seekScalePosition(double)));
-    QObject::connect(frameSeeker,SIGNAL(currentFrameChanged(int)), _currentFrameBox, SLOT(setValue(int)));
-    QObject::connect(_currentFrameBox, SIGNAL(valueChanged(double)), frameSeeker, SLOT(seekFrame(double)));
+    QObject::connect(_currentFrameBox, SIGNAL(valueChanged(double)), this, SLOT(onCurrentTimeSpinBoxChanged(double)));
     
     VideoEngine* vengine = _viewerNode->getVideoEngine().get();
     
@@ -468,9 +465,12 @@ _channelsToDraw(Mask_RGBA)
     QObject::connect(nextIncrement_Button,SIGNAL(clicked()),this,SLOT(nextIncrement()));
     QObject::connect(firstFrame_Button,SIGNAL(clicked()),this,SLOT(firstFrame()));
     QObject::connect(lastFrame_Button,SIGNAL(clicked()),this,SLOT(lastFrame()));
-    QObject::connect(_currentFrameBox,SIGNAL(valueChanged(double)),this,SLOT(seek(double)));
     QObject::connect(loopMode_Button, SIGNAL(clicked(bool)), this, SLOT(toggleLoopMode(bool)));
-    QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), this, SLOT(seek(int)));
+    QObject::connect(_timeLineGui,SIGNAL(frameChanged(SequenceTime)), this, SLOT(onTimeLineTimeChanged(SequenceTime)));
+    QObject::connect(_viewerNode,SIGNAL(addedCachedFrame(SequenceTime)),_timeLineGui,SLOT(onCachedFrameAdded(SequenceTime)));
+    QObject::connect(_viewerNode,SIGNAL(removedLRUCachedFrame()),_timeLineGui,SLOT(onLRUCachedFrameRemoved()));
+    QObject::connect(appPTR,SIGNAL(imageRemovedFromViewerCache(SequenceTime)),_timeLineGui,SLOT(onCachedFrameRemoved(SequenceTime)));
+    QObject::connect(_viewerNode,SIGNAL(clearedViewerCache()),_timeLineGui,SLOT(onCachedFramesCleared()));
     QObject::connect(_refreshButton, SIGNAL(clicked()), this, SLOT(refresh()));
     
     QObject::connect(_centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()));
@@ -478,10 +478,6 @@ _channelsToDraw(Mask_RGBA)
     QObject::connect(fpsBox, SIGNAL(valueChanged(double)), vengine, SLOT(setDesiredFPS(double)));
     QObject::connect(vengine, SIGNAL(fpsChanged(double)), _infosWidget, SLOT(setFps(double)));
     QObject::connect(vengine,SIGNAL(engineStopped()),_infosWidget,SLOT(hideFps()));
-    QObject::connect(_viewerNode,SIGNAL(addedCachedFrame(int)),this,SLOT(onCachedFrameAdded(int)));
-    QObject::connect(_viewerNode,SIGNAL(removedCachedFrame()),this,SLOT(onCachedFrameRemoved()));
-    QObject::connect(_viewerNode,SIGNAL(clearedViewerCache()),this,SLOT(onViewerCacheCleared()));
-    
     QObject::connect(vengine, SIGNAL(engineStarted(bool)), this, SLOT(onEngineStarted(bool)));
     QObject::connect(vengine, SIGNAL(engineStopped()), this, SLOT(onEngineStopped()));
     
@@ -587,35 +583,44 @@ void ViewerTab::startBackward(bool b){
         abortRendering();
     }
 }
-void ViewerTab::previousFrame(){
+void ViewerTab::seek(SequenceTime time){
+    _currentFrameBox->setValue(time);
+    _timeLineGui->seek(time);
     abortRendering();
-    seek(frameSeeker->currentFrame()-1);
-}
-void ViewerTab::nextFrame(){
-    abortRendering();
-    seek(frameSeeker->currentFrame()+1);
-}
-void ViewerTab::previousIncrement(){
-    abortRendering();
-    seek(frameSeeker->currentFrame()-incrementSpinBox->value());
-}
-void ViewerTab::nextIncrement(){
-    abortRendering();
-    seek(frameSeeker->currentFrame()+incrementSpinBox->value());
-}
-void ViewerTab::firstFrame(){
-    abortRendering();
-    seek(frameSeeker->firstFrame());
-}
-void ViewerTab::lastFrame(){
-    abortRendering();
-    seek(frameSeeker->lastFrame());
-}
-void ViewerTab::seek(int f){
-    abortRendering();
-    frameSeeker->seek_notSlot(f);
     _viewerNode->refreshAndContinueRender();
 }
+
+void ViewerTab::previousFrame(){
+    seek(_timeLineGui->currentFrame()-1);
+}
+void ViewerTab::nextFrame(){
+    seek(_timeLineGui->currentFrame()+1);
+}
+void ViewerTab::previousIncrement(){
+    seek(_timeLineGui->currentFrame()-incrementSpinBox->value());
+}
+void ViewerTab::nextIncrement(){
+    seek(_timeLineGui->currentFrame()+incrementSpinBox->value());
+}
+void ViewerTab::firstFrame(){
+    seek(_timeLineGui->firstFrame());
+}
+void ViewerTab::lastFrame(){
+    seek(_timeLineGui->lastFrame());
+}
+
+void ViewerTab::onTimeLineTimeChanged(SequenceTime time){
+    _currentFrameBox->setValue(time);
+    abortRendering();
+    _viewerNode->refreshAndContinueRender();
+}
+
+void ViewerTab::onCurrentTimeSpinBoxChanged(double time){
+    _timeLineGui->seek(time);
+    abortRendering();
+    _viewerNode->refreshAndContinueRender();
+}
+
 
 void ViewerTab::centerViewer(){
     if(viewer->displayingImage()){
@@ -661,26 +666,26 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
 
 void ViewerTab::onViewerChannelsChanged(int i){
     switch (i) {
-        case 0:
-            _channelsToDraw = Mask_RGBA;
-            break;
-        case 1:
-            _channelsToDraw = Mask_RGBA;
-            break;
-        case 2:
-            _channelsToDraw = Channel_red;
-            break;
-        case 3:
-            _channelsToDraw = Channel_green;
-            break;
-        case 4:
-            _channelsToDraw = Channel_blue;
-            break;
-        case 5:
-            _channelsToDraw = Channel_alpha;
-            break;
-        default:
-            break;
+    case 0:
+        _channelsToDraw = Mask_RGBA;
+        break;
+    case 1:
+        _channelsToDraw = Mask_RGBA;
+        break;
+    case 2:
+        _channelsToDraw = Channel_red;
+        break;
+    case 3:
+        _channelsToDraw = Channel_green;
+        break;
+    case 4:
+        _channelsToDraw = Channel_blue;
+        break;
+    case 5:
+        _channelsToDraw = Channel_alpha;
+        break;
+    default:
+        break;
     }
     viewer->setDisplayChannel(_channelsToDraw, !i ? true : false);
 }
@@ -696,15 +701,6 @@ void ViewerTab::disconnectViewer(){
     viewer->disconnectViewer();
 }
 
-void ViewerTab::onCachedFrameAdded(int i){
-    frameSeeker->addCachedFrame(i);
-}
-void ViewerTab::onCachedFrameRemoved(){
-    frameSeeker->removeCachedFrame();
-}
-void ViewerTab::onViewerCacheCleared(){
-    frameSeeker->clearCachedFrames();
-}
 
 
 QSize ViewerTab::minimumSizeHint() const{

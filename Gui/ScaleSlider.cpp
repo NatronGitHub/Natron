@@ -115,14 +115,14 @@ void ScaleSlider::drawScale(){
     glColor4f(1., 1., 1., 1.);
 
 
-    QPointF btmLeft = toImgCoordinates_fast(0,height()-1);
-    QPointF topRight = toImgCoordinates_fast(width()-1, 0);
+    QPointF btmLeft = toScaleCoordinates(0,height()-1);
+    QPointF topRight = toScaleCoordinates(width()-1, 0);
 
 
     QFontMetrics fontM(*_font);
 
     /*drawing X axis*/
-    double lineYpos = toImgCoordinates_fast(0,height() -1 - fontM.height()  - TICK_HEIGHT/2).y();
+    double lineYpos = toScaleCoordinates(0,height() -1 - fontM.height()  - TICK_HEIGHT/2).y();
 
    
     /*draw the horizontal axis*/
@@ -132,8 +132,8 @@ void ScaleSlider::drawScale(){
     glVertex2f(topRight.x(), lineYpos);
     glEnd();
 
-    double tickBottom = toImgCoordinates_fast(0,height() -1 - fontM.height() ).y();
-    double tickTop = toImgCoordinates_fast(0,height() -1 - fontM.height()  - TICK_HEIGHT).y();
+    double tickBottom = toScaleCoordinates(0,height() -1 - fontM.height() ).y();
+    double tickTop = toScaleCoordinates(0,height() -1 - fontM.height()  - TICK_HEIGHT).y();
     const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
     std::vector<double> acceptedDistances;
@@ -189,8 +189,8 @@ void ScaleSlider::drawScale(){
         }
     }
 
-    QPointF sliderBottomLeft = toImgCoordinates_fast(_position - SLIDER_WIDTH / 2,height() -1 - fontM.height()/2);
-    QPointF sliderTopRight = toImgCoordinates_fast(_position + SLIDER_WIDTH / 2,height() -1 - fontM.height()/2 - SLIDER_HEIGHT);
+    QPointF sliderBottomLeft = toScaleCoordinates(_position - SLIDER_WIDTH / 2,height() -1 - fontM.height()/2);
+    QPointF sliderTopRight = toScaleCoordinates(_position + SLIDER_WIDTH / 2,height() -1 - fontM.height()/2 - SLIDER_HEIGHT);
 
     /*draw the slider*/
 
@@ -252,7 +252,7 @@ void ScaleSlider::mousePressEvent(QMouseEvent *event){
     QPoint newClick =  event->pos();
 
     _zoomCtx._oldClick = newClick;
-    QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
+    QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
     
     seekInternal(newClick_opengl.x());
     QGLWidget::mousePressEvent(event);
@@ -261,7 +261,7 @@ void ScaleSlider::mousePressEvent(QMouseEvent *event){
 
 void ScaleSlider::mouseMoveEvent(QMouseEvent *event){
     QPoint newClick =  event->pos();
-    QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
+    QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
 
     seekInternal(newClick_opengl.x());
 
@@ -304,7 +304,7 @@ void ScaleSlider::seekInternal(double v){
     emit positionChanged(v);
 }
 
-QPointF ScaleSlider::toImgCoordinates_fast(int x,int y){
+QPointF ScaleSlider::toScaleCoordinates(int x,int y){
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _zoomCtx._bottom;

@@ -28,7 +28,7 @@ namespace Natron{
     
     class FrameKey : public KeyHelper<U64>{
     public:
-        int _frameNb;
+        SequenceTime _frameNb;
         U64 _treeVersion;
         float _zoomFactor;
         float _exposure;
@@ -68,7 +68,7 @@ namespace Natron{
         , _textureRect()
         {}
         
-        FrameKey(int frameNb,U64 treeVersion,float zoomFactor,float exposure,
+        FrameKey(SequenceTime frameNb,U64 treeVersion,float zoomFactor,float exposure,
                  float lut,float byteMode,int view,const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect):
         KeyHelper<U64>()
         ,_frameNb(frameNb)
@@ -86,7 +86,7 @@ namespace Natron{
         }
         
         void fillHash(Hash64* hash) const {
-            hash->append(_frameNb);
+            hash->append(*(reinterpret_cast<const U64*>(&(_frameNb))));
             hash->append(_treeVersion);
             hash->append(*(reinterpret_cast<const U64*>(&(_zoomFactor))));
             hash->append(*(reinterpret_cast<const U64*>(&(_exposure))));
@@ -111,15 +111,16 @@ namespace Natron{
         }
         
         bool operator==(const FrameKey& other) const {
-            return _treeVersion == other._treeVersion &&
-            _zoomFactor == other._zoomFactor &&
-            _exposure == other._exposure &&
-            _lut == other._lut &&
-            _byteMode == other._byteMode &&
-            _view == other._view &&
-            _dataWindow == other._dataWindow &&
-            _displayWindow == other._displayWindow &&
-            _textureRect == other._textureRect;
+            return _frameNb == other._frameNb &&
+                    _treeVersion == other._treeVersion &&
+                    _zoomFactor == other._zoomFactor &&
+                    _exposure == other._exposure &&
+                    _lut == other._lut &&
+                    _byteMode == other._byteMode &&
+                    _view == other._view &&
+                    _dataWindow == other._dataWindow &&
+                    _displayWindow == other._displayWindow &&
+                    _textureRect == other._textureRect;
         }
     };
 }
@@ -163,7 +164,7 @@ namespace Natron{
       
         ~FrameEntry(){ }
         
-        static FrameKey makeKey(int frameNb,U64 treeVersion,float zoomFactor,float exposure,
+        static FrameKey makeKey(SequenceTime frameNb,U64 treeVersion,float zoomFactor,float exposure,
                                 float lut,float byteMode,int view,const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect){
             return FrameKey(frameNb,treeVersion,zoomFactor,exposure,lut,byteMode,view,dataWindow,displayWindow,textureRect);
         }

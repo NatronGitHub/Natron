@@ -131,7 +131,7 @@ private :
     /**
      *@brief See toImgCoordinates_fast in ViewerGL.h
      **/
-    QPointF toImgCoordinates_fast(int x,int y);
+    QPointF toScaleCoordinates(int x,int y);
 
     /**
      *@brief See toWidgetCoordinates in ViewerGL.h

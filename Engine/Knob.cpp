@@ -403,7 +403,7 @@ Knob::Knob(KnobHolder* holder,const std::string& description,int dimension):
     
     if(_holder){
         _holder->addKnob(boost::shared_ptr<Knob>(this));
-        QObject::connect(holder->getApp()->getTimeLine().get(),SIGNAL(frameChanged(int)),this,SLOT(onTimeChanged(int)));
+        QObject::connect(holder->getApp()->getTimeLine().get(),SIGNAL(frameChanged(SequenceTime)),this,SLOT(onTimeChanged(SequenceTime)));
     }
 }
 
@@ -480,7 +480,7 @@ void Knob::onValueChanged(int dimension,const Variant& variant){
     
 }
 
-void Knob::onTimeChanged(int time){
+void Knob::onTimeChanged(SequenceTime time){
     if(isAnimationEnabled()){
         for(int i = 0; i < getDimension();++i){
             boost::shared_ptr<CurvePath> curve = getCurve(i);

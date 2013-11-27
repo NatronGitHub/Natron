@@ -174,7 +174,7 @@ private:
     QMenu* _animationMenu;
     Button* _animationButton;
 };
-Q_DECLARE_METATYPE(KnobGui*);
+Q_DECLARE_METATYPE(KnobGui*)
 
 //================================
 

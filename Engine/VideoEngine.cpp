@@ -136,16 +136,6 @@ void VideoEngine::render(int frameCount,
     if(!_tree.getOutput() && !refreshTree) refreshTree = true;
     
     
-    int firstFrame,lastFrame;
-    getFrameRange(&firstFrame, &lastFrame);
-    _timeline->setFrameRange(firstFrame, lastFrame);
-    int current = _timeline->currentFrame();
-    if(current < firstFrame){
-        _timeline->seekFrame(firstFrame);
-    }else if(current > lastFrame){
-        _timeline->seekFrame(lastFrame);
-    }
-    
     /*setting the run args that are used by the run function*/
     _lastRequestedRunArgs._sameFrame = sameFrame;
     _lastRequestedRunArgs._fitToViewer = fitFrameToViewer;
@@ -154,8 +144,7 @@ void VideoEngine::render(int frameCount,
     _lastRequestedRunArgs._refreshTree = refreshTree;
     _lastRequestedRunArgs._frameRequestsCount = frameCount;
     _lastRequestedRunArgs._frameRequestIndex = 0;
-    _lastRequestedRunArgs._firstFrame = firstFrame;
-    _lastRequestedRunArgs._lastFrame = lastFrame;
+
     
     
     /*Starting or waking-up the thread*/
@@ -193,6 +182,9 @@ bool VideoEngine::startEngine() {
     if(_currentRunArgs._refreshTree)
         _tree.refreshTree();/*refresh the tree*/
     
+    int firstFrame,lastFrame;
+    getFrameRange(&firstFrame, &lastFrame);
+    _timeline->setFrameRange(firstFrame, lastFrame);
     
     ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_tree.getOutput()); /*viewer might be NULL if the output is smthing else*/
     
@@ -203,7 +195,7 @@ bool VideoEngine::startEngine() {
             break;
         }
     }
-    
+
     if(!hasInput){
         if(viewer)
             viewer->disconnectViewer();
@@ -220,7 +212,7 @@ bool VideoEngine::startEngine() {
             renderScale.x = renderScale.y = 1.0;
             assert(n->effectInstance());
             OfxStatus stat;
-            stat = n->effectInstance()->beginRenderAction(_currentRunArgs._firstFrame,_currentRunArgs._lastFrame, //frame range
+            stat = n->effectInstance()->beginRenderAction(_timeline->leftBound(),_timeline->rightBound(), //frame range
                                                           1, // frame step
                                                           true, //is interactive
                                                           renderScale); //scale
@@ -289,7 +281,7 @@ bool VideoEngine::stopEngine() {
             renderScale.x = renderScale.y = 1.0;
             assert(n->effectInstance());
             OfxStatus stat;
-            stat = n->effectInstance()->endRenderAction(_currentRunArgs._firstFrame, _currentRunArgs._lastFrame, 1, true, renderScale);
+            stat = n->effectInstance()->endRenderAction(_timeline->leftBound(),_timeline->rightBound(), 1, true, renderScale);
             assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         }
     }
@@ -371,8 +363,8 @@ void VideoEngine::run(){
         
         ViewerInstance* viewer = _tree.outputAsViewer();
         
-        int firstFrame = _currentRunArgs._firstFrame;
-        int lastFrame = _currentRunArgs._lastFrame;
+        int firstFrame = _timeline->leftBound();
+        int lastFrame = _timeline->rightBound();
         int currentFrame = 0;
 
         if (!_currentRunArgs._recursiveCall) {
@@ -389,13 +381,10 @@ void VideoEngine::run(){
                 if(_currentRunArgs._forward){
                     _timeline->incrementCurrentFrame();
                     currentFrame = _timeline->currentFrame();
-                    int rightBound,leftBound;
-                    leftBound = viewer->getUiContext()->frameSeeker->firstFrame();
-                    rightBound = viewer->getUiContext()->frameSeeker->lastFrame();
-                    if(currentFrame > lastFrame || currentFrame > rightBound){
+                    if(currentFrame > lastFrame){
                         QMutexLocker loopModeLocker(&_loopModeMutex);
                         if(_loopMode && _tree.isOutputAViewer()){ // loop only for a viewer
-                            currentFrame = leftBound;
+                            currentFrame = firstFrame;
                             _timeline->seekFrame(currentFrame);
                         }else{
                             loopModeLocker.unlock();
@@ -408,13 +397,10 @@ void VideoEngine::run(){
                 }else{
                     _timeline->decrementCurrentFrame();
                     currentFrame = _timeline->currentFrame();
-                    int rightBound,leftBound;
-                    leftBound = viewer->getUiContext()->frameSeeker->firstFrame();
-                    rightBound = viewer->getUiContext()->frameSeeker->lastFrame();
-                    if(currentFrame < firstFrame || currentFrame < leftBound){
+                    if(currentFrame < firstFrame){
                         QMutexLocker loopModeLocker(&_loopModeMutex);
                         if(_loopMode && _tree.isOutputAViewer()){ //loop only for a viewer
-                            currentFrame = rightBound;
+                            currentFrame = lastFrame;
                             _timeline->seekFrame(currentFrame);
                         }else{
                             loopModeLocker.unlock();

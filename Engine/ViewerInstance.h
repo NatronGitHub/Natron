@@ -205,11 +205,7 @@ protected:
     virtual void cloneExtras() OVERRIDE;
 public slots:
 
-    void onCachedFrameAdded();
-
-    void onCachedFrameRemoved();
-
-    void onViewerCacheCleared();
+    void onViewerCacheFrameAdded();
 
     void onExposureChanged(double exp);
 
@@ -227,9 +223,9 @@ signals:
 
     void viewerDisconnected();
 
-    void addedCachedFrame(int);
+    void addedCachedFrame(SequenceTime);
 
-    void removedCachedFrame();
+    void removedLRUCachedFrame();
 
     void clearedViewerCache();
 

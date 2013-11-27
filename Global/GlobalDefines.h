@@ -21,7 +21,7 @@
 #include <boost/cstdint.hpp>
 #endif
 #include <QtCore/QForeachContainer>
-
+#include <QtCore/QMetaType>
 #include "Global/Macros.h"
 #include "Global/Enums.h"
 
@@ -37,6 +37,8 @@ typedef boost::uint16_t U16;
 #include <ofxhImageEffect.h>
 
 typedef int SequenceTime;
+
+Q_DECLARE_METATYPE(SequenceTime)
 
 typedef OfxPointD RenderScale;
 

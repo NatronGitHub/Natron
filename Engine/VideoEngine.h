@@ -234,9 +234,7 @@ private:
         _forward(true),
         _refreshTree(false),
         _frameRequestsCount(0),
-        _frameRequestIndex(0),
-        _firstFrame(0),
-        _lastFrame(0)
+        _frameRequestIndex(0)
         {}
         
         float _zoomFactor;
@@ -248,8 +246,6 @@ private:
         int _frameRequestsCount;/*!< The index of the last frame +1 if the engine
                                  is forward (-1 otherwise). This value is -1 if we're looping.*/
         int _frameRequestIndex;/*!< counter of the frames computed:used to refresh the fps only every 24 frames*/
-        int _firstFrame;
-        int _lastFrame;
     };
         
     RenderTree _tree; /*!< The internal Tree instance.*/

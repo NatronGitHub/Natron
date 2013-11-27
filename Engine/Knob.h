@@ -565,7 +565,7 @@ public slots:
     
     void onKnobRedoneChange();
 
-    void onTimeChanged(int time);
+    void onTimeChanged(SequenceTime time);
 
 signals:
     
