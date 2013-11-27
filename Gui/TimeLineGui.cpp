@@ -10,6 +10,8 @@
 
 #include "TimeLineGui.h"
 
+#include <cmath>
+
 #include <QtGui/QFont>
 #include <cmath>
 #if QT_VERSION < 0x050000
