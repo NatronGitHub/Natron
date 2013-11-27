@@ -235,7 +235,7 @@ KeyFrame::KeyFrame(double time,const Variant& initialValue)
 CurvePath::CurvePath(const KeyFrame& cp)
     : _keyFrames()
     , _bbox()
-    ,_betweendBeginAndEndRecord(false)
+    ,_betweenBeginAndEndRecord(false)
 {
     setStart(cp);
 }
@@ -365,7 +365,7 @@ Variant CurvePath::getValueAt(double t) const{
         exc.append(") is not interpolable, it cannot animate!");
         throw std::invalid_argument(exc);
     }
-    if(_betweendBeginAndEndRecord){
+    if(_betweenBeginAndEndRecord){
         if( v  < _bbox.bottom() )
             _bbox.set_bottom(v);
         if( v > _bbox.top() )
@@ -564,7 +564,10 @@ Variant MultidimensionalValue::getValueAtTime(double time,int dimension) const{
 RectD MultidimensionalValue::getCurvesBoundingBox() const{
     RectD ret;
     for(CurvesMap::const_iterator it = _curves.begin() ; it!=_curves.end();++it){
-        ret.merge(it->second->getBoundingBox());
+        const RectD& curveBbox = it->second->getBoundingBox();
+        if(!curveBbox.isNull()){
+            ret.merge(curveBbox);
+        }
     }
     return ret;
 }

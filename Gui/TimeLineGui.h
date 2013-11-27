@@ -36,7 +36,7 @@ public:
 
 
     
-    explicit TimeLineGui(boost::shared_ptr<TimeLine> timeLine, ViewerTab* parentTab,const QGLWidget* shareWidget = NULL);
+    explicit TimeLineGui(boost::shared_ptr<TimeLine> timeLine, QWidget* parent,const QGLWidget* shareWidget = NULL);
 
     virtual ~TimeLineGui();
 

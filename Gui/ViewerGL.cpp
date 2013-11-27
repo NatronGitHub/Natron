@@ -37,7 +37,6 @@ CLANG_DIAG_ON(unused-private-field);
 
 #include "Global/Macros.h"
 GCC_DIAG_OFF(unused-parameter);
-#include <ImfAttribute.h> // FIXME: should be PIMPL'ed
 GCC_DIAG_ON(unused-parameter);
 
 #include "Global/AppManager.h"
@@ -363,7 +362,8 @@ void ViewerGL::drawRenderingVAO(){
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glTexCoordPointer(2, GL_FLOAT, 0 , 0);
     
-    
+    glBindBuffer(GL_ARRAY_BUFFER,0);
+
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _imp->iboTriangleStripId);
     glDrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0);
     checkGLErrors();
@@ -371,7 +371,6 @@ void ViewerGL::drawRenderingVAO(){
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glBindBuffer(GL_ARRAY_BUFFER,0);
     checkGLErrors();
 }
 
@@ -546,8 +545,8 @@ void ViewerGL::paintGL()
         if(_imp->displayingImage){
             glBindTexture(GL_TEXTURE_2D, _imp->defaultDisplayTexture->getTexID());
             // debug (so the OpenGL debugger can make a breakpoint here)
-            // GLfloat d;
-            //  glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+             GLfloat d;
+              glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
             activateShaderRGB();
             checkGLErrors();
         }else{
@@ -562,12 +561,13 @@ void ViewerGL::paintGL()
             checkGLErrors();
             
         }
+        glBindTexture(GL_TEXTURE_2D, 0);
+
         checkGLErrors();
         clearColorBuffer(_imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF());
         checkGLErrors();
         drawRenderingVAO();
     }
-    glBindTexture(GL_TEXTURE_2D, 0);
     
     if (_imp->displayingImage) {
         if (_imp->supportsGLSL) {
@@ -612,7 +612,6 @@ void ViewerGL::backgroundColor(double &r,double &g,double &b)
 void ViewerGL::drawOverlay()
 {
     
-    ///TODO: use glVertexArrays instead!
     const RectI& dispW = getDisplayWindow();
     
     if(_imp->clipToDisplayWindow){

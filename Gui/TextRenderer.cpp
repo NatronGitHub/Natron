@@ -222,7 +222,7 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
         _imp->renderers.push_back(std::make_pair(font, p));
     }
     glColor4f(1., 1., 1., 1.);
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
     glPushMatrix();
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);

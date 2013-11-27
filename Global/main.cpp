@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     QCoreApplication* app = NULL;
     if(!isBackGround){
         QApplication* guiApp = new QApplication(argc, argv);
-        guiApp->setFont(QFont("Helvetica",10));
+        guiApp->setFont(QFont("Helvetica",12));
         app = guiApp;
     }else{
         app = new QCoreApplication(argc,argv);

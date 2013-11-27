@@ -189,7 +189,7 @@ public:
     CurvePath(const CurvePath& other):
      _keyFrames(other._keyFrames)
     ,_bbox()
-    ,_betweendBeginAndEndRecord(false)
+    ,_betweenBeginAndEndRecord(false)
     {}
 
     CurvePath(const KeyFrame& cp);
@@ -199,7 +199,7 @@ public:
     void operator=(const CurvePath& other){
         _keyFrames = other._keyFrames;
         _bbox = other._bbox;
-        _betweendBeginAndEndRecord = other._betweendBeginAndEndRecord;
+        _betweenBeginAndEndRecord = other._betweenBeginAndEndRecord;
     }
 
     bool isAnimated() const { return _keyFrames.size() > 1; }
@@ -220,11 +220,11 @@ public:
 
     const KeyFrame& getEnd() const { assert(!_keyFrames.empty()); return _keyFrames.back(); }
     
-    void beginRecordBoundingBox() const { _betweendBeginAndEndRecord = true; _bbox.clear(); }
+    void beginRecordBoundingBox() const { _betweenBeginAndEndRecord = true; _bbox.clear(); }
 
     Variant getValueAt(double t) const;
     
-    void endRecordBoundingBox() const { _betweendBeginAndEndRecord = false; }
+    void endRecordBoundingBox() const { _betweenBeginAndEndRecord = false; }
     
     const RectD& getBoundingBox() const { return _bbox; }
     
@@ -301,7 +301,7 @@ private:
     
     KeyFrames _keyFrames;
     mutable RectD _bbox;
-    mutable bool _betweendBeginAndEndRecord;
+    mutable bool _betweenBeginAndEndRecord;
 };
 
 

@@ -152,7 +152,7 @@ void KnobGui::showAnimationMenu(){
 
 void KnobGui::onShowInCurveEditorActionTriggered(){
     _knob->getHolder()->getApp()->getGui()->setCurveEditorOnTop();
-    const RectD& bbox = _knob->getCurvesBoundingBox();
+    RectD bbox = _knob->getCurvesBoundingBox();
     if(!bbox.isNull()){
         _knob->getHolder()->getApp()->getGui()->_curveEditor->centerOn(bbox);
     }

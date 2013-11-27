@@ -70,7 +70,6 @@ struct TimelineGuiPrivate{
     Natron::TIMELINE_STATE _state; //state machine for mouse events
     std::list<SequenceTime> _cached; // the frames that should appear as "cached"
 
-    ViewerTab* _viewerTab;//ptr to the viewer tab holding this timeline
     ZoomContext _zoomCtx;
     Natron::TextRenderer _textRenderer;
 
@@ -84,13 +83,12 @@ struct TimelineGuiPrivate{
     QFont _font;
     bool _firstPaint;
 
-    TimelineGuiPrivate(boost::shared_ptr<TimeLine> timeline, ViewerTab* parentTab):
+    TimelineGuiPrivate(boost::shared_ptr<TimeLine> timeline):
         _timeline(timeline)
       , _alphaCursor(false)
       , _lastMouseEventWidgetCoord()
       , _state(IDLE)
       , _cached()
-      , _viewerTab(parentTab)
       , _zoomCtx()
       , _textRenderer()
       , _cursorColor(243,149,0)
@@ -108,9 +106,9 @@ struct TimelineGuiPrivate{
 
 };
 
-TimeLineGui::TimeLineGui(boost::shared_ptr<TimeLine> timeline, ViewerTab* parentTab, const QGLWidget *shareWidget):
-    QGLWidget(parentTab,shareWidget),
-    _imp(new TimelineGuiPrivate(timeline,parentTab))
+TimeLineGui::TimeLineGui(boost::shared_ptr<TimeLine> timeline, QWidget* parent, const QGLWidget *shareWidget):
+    QGLWidget(parent,shareWidget),
+    _imp(new TimelineGuiPrivate(timeline))
 {
     
     //connect the internal timeline to the gui
@@ -191,8 +189,12 @@ void TimeLineGui::paintGL(){
     /// change the backgroud color of the portion of the timeline where images are lying
     QPoint firstFrameWidgetPos = toWidgetCoordinates(_imp->_timeline->firstFrame(),0);
     QPoint lastFrameWidgetPos = toWidgetCoordinates(_imp->_timeline->lastFrame(),0);
+
+   // glPushAttrib(GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT);
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
     glScissor(firstFrameWidgetPos.x(),0,
               lastFrameWidgetPos.x() - firstFrameWidgetPos.x(),height());
+
     glEnable(GL_SCISSOR_TEST);
     glClearColor(_imp->_backgroundColor.redF(),_imp->_backgroundColor.greenF(),_imp->_backgroundColor.blueF(),_imp->_backgroundColor.alphaF());
     glClear(GL_COLOR_BUFFER_BIT);
@@ -201,7 +203,6 @@ void TimeLineGui::paintGL(){
 
     checkGLErrors();
 
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -398,7 +399,6 @@ void TimeLineGui::renderText(double x,double y,const QString& text,const QColor&
 
     if(text.isEmpty())
         return;
-
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
     double h = (double)height();
@@ -414,7 +414,6 @@ void TimeLineGui::renderText(double x,double y,const QString& text,const QColor&
     glOrtho(_imp->_zoomCtx._lastOrthoLeft,_imp->_zoomCtx._lastOrthoRight,_imp->_zoomCtx._lastOrthoBottom,_imp->_zoomCtx._lastOrthoTop,-1,1);
     glMatrixMode(GL_MODELVIEW);
     checkGLErrors();
-
 }
 
 
