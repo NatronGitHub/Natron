@@ -65,7 +65,7 @@ class ScaleSlider : public QGLWidget
     bool _dragging;
     QFont* _font;
     QColor _clearColor;
-    QColor _majorAxisColor;
+    QColor _textColor;
     QColor _scaleColor;
     QColor _sliderColor;
     bool _initialized;

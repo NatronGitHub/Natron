@@ -43,7 +43,7 @@ QGLWidget(parent,NULL)
 , _dragging(false)
 , _font(new QFont("Times",8))
 , _clearColor(50,50,50,255)
-, _majorAxisColor(100,100,100,255)
+, _textColor(200,200,200,255)
 , _scaleColor(100,100,100,255)
 , _sliderColor(97,83,30,255)
 , _initialized(false)
@@ -163,7 +163,7 @@ void ScaleSlider::drawScale(){
         const double tickSize = ticks[i-m1]*smallTickSize;
         const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
         
-        glColor4f(_majorAxisColor.redF(), _majorAxisColor.greenF(), _majorAxisColor.blueF(), alpha);
+        glColor4f(_scaleColor.redF(), _scaleColor.greenF(), _scaleColor.blueF(), alpha);
         
         glBegin(GL_LINES);
         glVertex2f(value, tickBottom);
@@ -182,7 +182,7 @@ void ScaleSlider::drawScale(){
                     // draw it with a lower alpha
                     alphaText *= (tickSizePixel - sSizePixel)/(double)minTickSizeTextPixel;
                 }
-                QColor c = _scaleColor;
+                QColor c = _textColor;
                 c.setAlpha(255*alphaText);
                 renderText(value, btmLeft.y(), s, c, *_font);
             }

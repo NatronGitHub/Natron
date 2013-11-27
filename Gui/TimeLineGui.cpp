@@ -28,13 +28,15 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/TextRenderer.h"
 #include "Gui/ticks.h"
 
-#define UNITS_PIXELS_SPACING 3
 
 using namespace Natron;
 
 #define TICK_HEIGHT 7
 #define CURSOR_WIDTH 15
 #define CURSOR_HEIGHT 8
+
+#define DEFAULT_TIMELINE_LEFT_BOUND 0
+#define DEFAULT_TIMELINE_RIGHT_BOUND 100
 
 struct ZoomContext{
 
@@ -80,6 +82,7 @@ struct TimelineGuiPrivate{
     QColor _ticksColor;
     QColor _scaleColor;
     QFont _font;
+    bool _firstPaint;
 
     TimelineGuiPrivate(boost::shared_ptr<TimeLine> timeline, ViewerTab* parentTab):
         _timeline(timeline)
@@ -98,6 +101,7 @@ struct TimelineGuiPrivate{
       , _ticksColor(200,200,200)
       , _scaleColor(100,100,100)
       , _font("Times",10)
+      , _firstPaint(true)
     {}
 
 
@@ -143,6 +147,12 @@ void TimeLineGui::resizeGL(int width,int height){
 }
 
 void TimeLineGui::paintGL(){
+
+    if(_imp->_firstPaint){
+        _imp->_firstPaint = false;
+        centerOn(DEFAULT_TIMELINE_LEFT_BOUND,DEFAULT_TIMELINE_RIGHT_BOUND);
+    }
+
     double w = (double)width();
     double h = (double)height();
     glMatrixMode (GL_PROJECTION);
@@ -275,16 +285,16 @@ void TimeLineGui::paintGL(){
     QPointF leftBoundBtm(_imp->_timeline->leftBound(),lineYpos);
     QPoint leftBoundWidgetCoord = toWidgetCoordinates(leftBoundBtm.x(),leftBoundBtm.y());
     QPointF leftBoundBtmRight = toTimeLineCoordinates(leftBoundWidgetCoord.x() + CURSOR_WIDTH /2,
-                                                  leftBoundWidgetCoord.y());
+                                                      leftBoundWidgetCoord.y());
     QPointF leftBoundTop = toTimeLineCoordinates(leftBoundWidgetCoord.x(),
-                                                   leftBoundWidgetCoord.y() - CURSOR_HEIGHT);
+                                                 leftBoundWidgetCoord.y() - CURSOR_HEIGHT);
 
     QPointF rightBoundBtm(_imp->_timeline->rightBound(),lineYpos);
     QPoint rightBoundWidgetCoord = toWidgetCoordinates(rightBoundBtm.x(),rightBoundBtm.y());
     QPointF rightBoundBtmLeft = toTimeLineCoordinates(rightBoundWidgetCoord.x() - CURSOR_WIDTH /2,
-                                                  rightBoundWidgetCoord.y());
+                                                      rightBoundWidgetCoord.y());
     QPointF rightBoundTop = toTimeLineCoordinates(rightBoundWidgetCoord.x(),
-                                                   rightBoundWidgetCoord.y() - CURSOR_HEIGHT);
+                                                  rightBoundWidgetCoord.y() - CURSOR_HEIGHT);
 
     //draw an alpha cursor if the mouse is hovering the timeline
     glEnable(GL_POLYGON_SMOOTH);
@@ -294,9 +304,9 @@ void TimeLineGui::paintGL(){
         int currentPosBtmWidgetCoordY = toWidgetCoordinates(0,lineYpos).y();
         QPointF currentPosBtm = toTimeLineCoordinates(currentPosBtmWidgetCoordX,currentPosBtmWidgetCoordY);
         QPointF currentPosTopLeft = toTimeLineCoordinates(currentPosBtmWidgetCoordX - CURSOR_WIDTH /2,
-                                                                currentPosBtmWidgetCoordY - CURSOR_HEIGHT);
+                                                          currentPosBtmWidgetCoordY - CURSOR_HEIGHT);
         QPointF currentPosTopRight = toTimeLineCoordinates(currentPosBtmWidgetCoordX + CURSOR_WIDTH /2,
-                                                       currentPosBtmWidgetCoordY - CURSOR_HEIGHT);
+                                                           currentPosBtmWidgetCoordY - CURSOR_HEIGHT);
 
         QColor currentColor(_imp->_cursorColor);
         currentColor.setAlpha(100);
@@ -311,7 +321,7 @@ void TimeLineGui::paintGL(){
 
         QString mouseNumber(QString::number(std::floor(currentPosBtm.x())));
         QPoint mouseNumberWidgetCoord(currentPosBtmWidgetCoordX - fontM.width(mouseNumber)/2 ,
-                                       currentPosBtmWidgetCoordY - CURSOR_HEIGHT - 2);
+                                      currentPosBtmWidgetCoordY - CURSOR_HEIGHT - 2);
         QPointF mouseNumberPos = toTimeLineCoordinates(mouseNumberWidgetCoord.x(),mouseNumberWidgetCoord.y());
 
         renderText(mouseNumberPos.x(),mouseNumberPos.y(), mouseNumber, currentColor, _imp->_font);
@@ -329,11 +339,13 @@ void TimeLineGui::paintGL(){
     glVertex2f(cursorTopRight.x(),cursorTopRight.y());
     glEnd();
 
-    QString leftBoundStr(QString::number(_imp->_timeline->leftBound()));
-    double leftBoundTextXposWidget = toWidgetCoordinates((leftBoundBtm.x() + leftBoundBtmRight.x())/2,0).x() - fontM.width(leftBoundStr)/2;
-    double leftBoundTextPos = toTimeLineCoordinates(leftBoundTextXposWidget,0).x();
-    renderText(leftBoundTextPos,leftBoundTop.y(),
-               leftBoundStr, _imp->_boundsColor, _imp->_font);
+    if(_imp->_timeline->leftBound() != _imp->_timeline->currentFrame()){
+        QString leftBoundStr(QString::number(_imp->_timeline->leftBound()));
+        double leftBoundTextXposWidget = toWidgetCoordinates((leftBoundBtm.x() + leftBoundBtmRight.x())/2,0).x() - fontM.width(leftBoundStr)/2;
+        double leftBoundTextPos = toTimeLineCoordinates(leftBoundTextXposWidget,0).x();
+        renderText(leftBoundTextPos,leftBoundTop.y(),
+                   leftBoundStr, _imp->_boundsColor, _imp->_font);
+    }
     glColor4f(_imp->_boundsColor.redF(),_imp->_boundsColor.greenF(),_imp->_boundsColor.blueF(),_imp->_boundsColor.alphaF());
     glBegin(GL_POLYGON);
     glVertex2f(leftBoundBtm.x(),leftBoundBtm.y());
@@ -341,11 +353,13 @@ void TimeLineGui::paintGL(){
     glVertex2f(leftBoundTop.x(),leftBoundTop.y());
     glEnd();
 
-    QString rightBoundStr(QString::number(_imp->_timeline->rightBound()));
-    double rightBoundTextXposWidget = toWidgetCoordinates((rightBoundBtm.x() + rightBoundBtmLeft.x())/2,0).x() - fontM.width(rightBoundStr)/2;
-    double rightBoundTextPos = toTimeLineCoordinates(rightBoundTextXposWidget,0).x();
-    renderText(rightBoundTextPos,rightBoundTop.y(),
-               rightBoundStr, _imp->_boundsColor, _imp->_font);
+    if(_imp->_timeline->rightBound() != _imp->_timeline->currentFrame()){
+        QString rightBoundStr(QString::number(_imp->_timeline->rightBound()));
+        double rightBoundTextXposWidget = toWidgetCoordinates((rightBoundBtm.x() + rightBoundBtmLeft.x())/2,0).x() - fontM.width(rightBoundStr)/2;
+        double rightBoundTextPos = toTimeLineCoordinates(rightBoundTextXposWidget,0).x();
+        renderText(rightBoundTextPos,rightBoundTop.y(),
+                   rightBoundStr, _imp->_boundsColor, _imp->_font);
+    }
     glColor4f(_imp->_boundsColor.redF(),_imp->_boundsColor.greenF(),_imp->_boundsColor.blueF(),_imp->_boundsColor.alphaF());
     glBegin(GL_POLYGON);
     glVertex2f(rightBoundBtm.x(),rightBoundBtm.y());
