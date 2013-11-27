@@ -112,8 +112,9 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param:
     _knob->setDisplayMaximum(displayMax);
 
     _knob->setMinimum(min);
-    if(incr > 0)
+    if (incr > 0) {
         _knob->setIncrement(incr);
+    }
     _knob->setMaximum(max);
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
     _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
@@ -180,10 +181,12 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
     _knob->setDisplayMaximum(displayMax);
     _knob->setMinimum(min);
     _knob->setMaximum(max);
-    if(incr > 0)
+    if(incr > 0) {
         _knob->setIncrement(incr);
-    if(decimals > 0)
+    }
+    if(decimals > 0) {
         _knob->setDecimals(decimals);
+    }
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
     _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
     set(def);
@@ -526,32 +529,28 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
     _knob->setHintToolTip(hint);
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
     _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
-    std::vector<double> minimum;
-    std::vector<double> maximum;
-    std::vector<double> increment;
-    std::vector<double> displayMins;
-    std::vector<double> displayMaxs;
-    std::vector<int> decimals;
+    std::vector<double> minimum(2);
+    std::vector<double> maximum(2);
+    std::vector<double> increment(2);
+    std::vector<double> displayMins(2);
+    std::vector<double> displayMaxs(2);
+    std::vector<int> decimals(2);
     double def[2];
-    minimum.push_back(properties.getDoubleProperty(kOfxParamPropMin,0));
-    displayMins.push_back(properties.getDoubleProperty(kOfxParamPropDisplayMin,0));
-    displayMaxs.push_back(properties.getDoubleProperty(kOfxParamPropDisplayMax,0));
-    maximum.push_back(properties.getDoubleProperty(kOfxParamPropMax,0));
-    double incr1 = properties.getDoubleProperty(kOfxParamPropIncrement,0);
-    incr1 != 0 ? increment.push_back(incr1) : increment.push_back(0.1);
-    decimals.push_back(properties.getIntProperty(kOfxParamPropDigits,0));
-    def[0] = properties.getDoubleProperty(kOfxParamPropDefault,0);
-    
-    minimum.push_back(properties.getDoubleProperty(kOfxParamPropMin,1));
-    maximum.push_back(properties.getDoubleProperty(kOfxParamPropMax,1));
-    displayMins.push_back(properties.getDoubleProperty(kOfxParamPropDisplayMin,1));
-    displayMaxs.push_back(properties.getDoubleProperty(kOfxParamPropDisplayMax,1));
-    double incr2 = properties.getDoubleProperty(kOfxParamPropIncrement,0);
-    incr2 != 0 ? increment.push_back(incr2) : increment.push_back(0.1);
-    decimals.push_back(properties.getIntProperty(kOfxParamPropDigits,0));
-    def[1] = properties.getDoubleProperty(kOfxParamPropDefault,1);
+
+    for (int i=0; i < 2; ++i) {
+        minimum[i] = properties.getDoubleProperty(kOfxParamPropMin,i);
+        displayMins[i] = properties.getDoubleProperty(kOfxParamPropDisplayMin,i);
+        displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax,i);
+        maximum[i] = properties.getDoubleProperty(kOfxParamPropMax,i);
+        double incr = properties.getDoubleProperty(kOfxParamPropIncrement,i);
+        increment[i] = incr != 0 ? incr : 0.1;
+        decimals[i] = properties.getIntProperty(kOfxParamPropDigits,i);
+        def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
+    }
+
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setIncrement(increment);
+    _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
     _knob->setDecimals(decimals);
     _knob->setValue<double>(def,2);
     
@@ -615,30 +614,26 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::P
     _knob->setHintToolTip(hint);
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
     _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
-    std::vector<int> minimum;
-    std::vector<int> maximum;
-    std::vector<int> increment;
-    std::vector<int> displayMins;
-    std::vector<int> displayMaxs;
+    std::vector<int> minimum(2);
+    std::vector<int> maximum(2);
+    std::vector<int> increment(2);
+    std::vector<int> displayMins(2);
+    std::vector<int> displayMaxs(2);
     int def[2];
-    minimum.push_back(properties.getIntProperty(kOfxParamPropMin,0));
-    displayMins.push_back(properties.getIntProperty(kOfxParamPropDisplayMin,0));
-    displayMaxs.push_back(properties.getIntProperty(kOfxParamPropDisplayMax,0));
-    maximum.push_back(properties.getIntProperty(kOfxParamPropMax,0));
-    int incr1 = properties.getIntProperty(kOfxParamPropIncrement,0);
-    incr1 != 0 ? increment.push_back(incr1) : increment.push_back(1);
-    def[0] = properties.getIntProperty(kOfxParamPropDefault,0);
-    
-    minimum.push_back(properties.getIntProperty(kOfxParamPropMin,1));
-    maximum.push_back(properties.getIntProperty(kOfxParamPropMax,1));
-    displayMins.push_back(properties.getIntProperty(kOfxParamPropDisplayMin,1));
-    displayMaxs.push_back(properties.getIntProperty(kOfxParamPropDisplayMax,1));
 
-    int incr2 = properties.getIntProperty(kOfxParamPropIncrement,0);
-    incr2 != 0 ? increment.push_back(incr2) : increment.push_back(1);
-    def[1] = properties.getIntProperty(kOfxParamPropDefault,1);
+    for (int i = 0; i < 2; ++i) {
+        minimum[i] = properties.getIntProperty(kOfxParamPropMin,i);
+        displayMins[i] = properties.getIntProperty(kOfxParamPropDisplayMin,i);
+        displayMaxs[i] = properties.getIntProperty(kOfxParamPropDisplayMax,i);
+        maximum[i] = properties.getIntProperty(kOfxParamPropMax,i);
+        int incr = properties.getIntProperty(kOfxParamPropIncrement,i);
+        increment[i] = incr != 0 ?  incr : 1;
+        def[i] = properties.getIntProperty(kOfxParamPropDefault,i);
+    }
+    
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setIncrement(increment);
+    _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
     _knob->setValue<int>(def,2);
 }
 OfxStatus OfxInteger2DInstance::get(int& x1, int& x2) {
