@@ -304,12 +304,14 @@ void CurvePath::refreshTangents(KeyFrames::iterator key){
     double tcur = key->getTime();
     double vcur = key->getValue().value<double>();
     
-    double tprev,vprev,tnext,vnext,vprevDerivRight,vnextDerivLeft;
-    Natron::KeyframeType prevType = Natron::KEYFRAME_NONE,nextType = Natron::KEYFRAME_NONE;
-    if(key == _keyFrames.begin()){
+    double tprev, vprev, tnext, vnext, vprevDerivRight, vnextDerivLeft;
+    Natron::KeyframeType prevType, nextType;
+    if (key == _keyFrames.begin()) {
         tprev = tcur;
         vprev = vcur;
-    }else{
+        vprevDerivRight = 0.;
+        prevType = Natron::KEYFRAME_NONE;
+    } else {
         KeyFrames::const_iterator prev = key;
         --prev;
         tprev = prev->getTime();
@@ -320,10 +322,12 @@ void CurvePath::refreshTangents(KeyFrames::iterator key){
     
     KeyFrames::const_iterator next = key;
     ++next;
-    if(next == _keyFrames.end()){
+    if (next == _keyFrames.end()) {
         tnext = tcur;
         vnext = vcur;
-    }else{
+        vnextDerivLeft = 0.;
+        nextType = Natron::KEYFRAME_NONE;
+    } else {
         tnext = next->getTime();
         vnext = next->getValue().value<double>();
         vnextDerivLeft = next->getLeftTangent().value<double>();
