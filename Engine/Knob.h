@@ -964,7 +964,7 @@ public:
     
     void setIncrement(const std::vector<int>& incr){
         _increments = incr;
-        for (U32 i = 0; i < incr.size(); ++i) {
+        for (U32 i = 0; i < _increments.size(); ++i) {
             assert(_increments[i] > 0);
             emit incrementChanged(_increments[i],i);
         }
