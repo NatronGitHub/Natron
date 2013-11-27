@@ -259,16 +259,20 @@ int OfxClipInstance::getInputNb() const{
     return inputs.size()-1-index;
 }
 
-Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const {
-    if(_isOutput)
+Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const
+{
+    if(_isOutput) {
         return _nodeInstance;
-    else{
+    } else {
         return _nodeInstance->input(getInputNb());
     }
 }
-OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime time, int view, OfxRectD *optionalBounds) {
+
+OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime time, int view, OfxRectD *optionalBounds)
+{
     return getImageInternal(time,view,optionalBounds);
 }
+
 void OfxClipInstance::setView(int view){
     _viewRendered.setLocalData(view);
 }
