@@ -33,6 +33,8 @@ OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance
 , _nodeInstance(nodeInstance)
 , _effect(effect)
 {
+    assert(_nodeInstance);
+    assert(_effect);
 }
 
 /// Get the Raw Unmapped Pixel Depth from the host. We are always 8 bits in our example
@@ -157,16 +159,22 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     OfxRectD ret;
     RectI rod;
     EffectInstance* n = getAssociatedNode();
-    if(n){
+    if (n) {
         (void)n->getRegionOfDefinition(time,&rod);
         ret.x1 = rod.left();
         ret.x2 = rod.right();
         ret.y1 = rod.bottom();
         ret.y2 = rod.top();
-    }
-    else{
+    } else if(_nodeInstance->effectInstance()) {
         _nodeInstance->effectInstance()->getProjectOffset(ret.x1, ret.y1);
         _nodeInstance->effectInstance()->getProjectExtent(ret.x2, ret.y2);
+    } else {
+        // default value: should never happen
+        assert(!"cannot compute ROD");
+        ret.x1 = kOfxFlagInfiniteMin;
+        ret.x2 = kOfxFlagInfiniteMax;
+        ret.y1 = kOfxFlagInfiniteMin;
+        ret.y2 = kOfxFlagInfiniteMax;
     }
     return ret;
 }

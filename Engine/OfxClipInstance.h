@@ -152,8 +152,8 @@ private:
     
     OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time, int view, OfxRectD *optionalBounds);
     
-    OfxEffectInstance* _nodeInstance;
-    Natron::OfxImageEffectInstance* _effect;
+    OfxEffectInstance* const _nodeInstance;
+    Natron::OfxImageEffectInstance* const _effect;
     QThreadStorage<int> _viewRendered; //< foreach render thread, what view is it rendering ?
 };
 
