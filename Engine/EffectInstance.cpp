@@ -252,7 +252,11 @@ EffectInstance::RoIMap EffectInstance::getRegionOfInterest(SequenceTime /*time*/
 }
 
 
-void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
+void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last)
+{
+    // default is infinite if there are no non optional input clips
+    *first = INT_MIN;
+    *last = INT_MAX;
     for (Inputs::const_iterator it = _imp->inputs.begin() ; it != _imp->inputs.end() ; ++it) {
         if (*it) {
             SequenceTime inpFirst,inpLast;
@@ -260,7 +264,7 @@ void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
             if (it == _imp->inputs.begin()) {
                 *first = inpFirst;
                 *last = inpLast;
-            }else{
+            } else {
                 if (inpFirst < *first) {
                     *first = inpFirst;
                 }
