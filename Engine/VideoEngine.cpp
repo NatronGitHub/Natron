@@ -628,6 +628,7 @@ void RenderTree::refreshTree(){
         it->second->setMarkedByTopologicalSort(false);
         it->second->updateInputs(this);
         U64 ret = it->second->hash().value();
+#warning "FIXME: Value stored in ret during its initialization is never read"
         it->second->clone();
         ret = it->second->computeHash(inputsHash);
         inputsHash.push_back(ret);
