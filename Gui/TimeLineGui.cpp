@@ -198,6 +198,7 @@ void TimeLineGui::paintGL(){
     glClear(GL_COLOR_BUFFER_BIT);
     glDisable(GL_SCISSOR_TEST);
 
+
     checkGLErrors();
 
     glPushAttrib(GL_ALL_ATTRIB_BITS);
