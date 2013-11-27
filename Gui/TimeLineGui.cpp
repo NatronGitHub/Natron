@@ -397,7 +397,9 @@ void TimeLineGui::paintGL(){
 
 
 
-void TimeLineGui::renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const{
+void TimeLineGui::renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const
+{
+    assert(QGLContext::currentContext() == context());
 
     if(text.isEmpty())
         return;

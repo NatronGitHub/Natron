@@ -102,13 +102,6 @@ public:
      *@brief Restores the OpenGL context to the state it was when calling ViewerGL::saveGLState().
      **/
     void restoreGLState();
-    
-    /**
-     *@brief Makes the OpenGL current to the current thread. See the Qt doc for a full explanation.
-     *This function is quite faster than the one used by Qt as it does nothing is the current context
-     *is already this one.
-     **/
-    void makeCurrent();
         
     /**
      *@returns Returns 1.f if the viewer is using 8bit textures.

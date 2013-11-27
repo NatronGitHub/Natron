@@ -54,6 +54,7 @@ void CurveGui::drawCurve(){
     if(!_visible)
         return;
 
+    assert(QGLContext::currentContext() == _curveWidget->context());
     beginRecordBoundingBox();
 
     int w = _curveWidget->width();
@@ -223,7 +224,8 @@ void CurveWidget::resizeGL(int width,int height){
     centerOn(-10,500,-10,10);
 }
 
-void CurveWidget::paintGL(){
+void CurveWidget::paintGL()
+{
     double w = (double)width();
     double h = (double)height();
     glMatrixMode (GL_PROJECTION);
@@ -262,7 +264,9 @@ void CurveWidget::paintGL(){
     drawCurves();
 }
 
-void CurveWidget::drawCurves(){
+void CurveWidget::drawCurves()
+{
+    assert(QGLContext::currentContext() == context());
     //now draw each curve
     for(std::list<CurveGui*>::const_iterator it = _curves.begin();it!=_curves.end();++it){
         (*it)->drawCurve();
@@ -277,8 +281,10 @@ void CurveGui::endRecordBoundingBox() const{
     _internalCurve->endRecordBoundingBox();
 }
 
-void CurveWidget::drawBaseAxis(){
-    
+void CurveWidget::drawBaseAxis()
+{
+    assert(QGLContext::currentContext() == context());
+
     glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), _baseAxisColor.alphaF());
     glBegin(GL_LINES);
     glVertex2f(AXIS_MIN, 0);
@@ -291,7 +297,10 @@ void CurveWidget::drawBaseAxis(){
     glColor4f(1., 1., 1., 1.);
 }
 
-void CurveWidget::drawScale(){
+void CurveWidget::drawScale()
+{
+    assert(QGLContext::currentContext() == context());
+
     QPointF btmLeft = toScaleCoordinates(0,height()-1);
     QPointF topRight = toScaleCoordinates(width()-1, 0);
     
@@ -464,8 +473,10 @@ void CurveWidget::drawScale(){
     
 }
 
-void CurveWidget::renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const{
-    
+void CurveWidget::renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const
+{
+    assert(QGLContext::currentContext() == context());
+
     if(text.isEmpty())
         return;
     

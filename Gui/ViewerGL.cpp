@@ -330,7 +330,9 @@ static const GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
  |/  |/  |/  |
  12--13--14--15
  */
-void ViewerGL::drawRenderingVAO(){
+void ViewerGL::drawRenderingVAO() {
+    assert(QGLContext::currentContext() == context());
+
     const TextureRect& r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
     const RectI& img = _imp->clipToDisplayWindow ? getDisplayWindow() : getRoD();
     GLfloat vertices[32] = {
@@ -592,6 +594,7 @@ void ViewerGL::paintGL()
 
 void ViewerGL::clearColorBuffer(double r ,double g ,double b ,double a )
 {
+    assert(QGLContext::currentContext() == context());
     glClearColor(r,g,b,a);
     glClear(GL_COLOR_BUFFER_BIT);
 }
@@ -611,7 +614,8 @@ void ViewerGL::backgroundColor(double &r,double &g,double &b)
 
 void ViewerGL::drawOverlay()
 {
-    
+    assert(QGLContext::currentContext() == context());
+
     const RectI& dispW = getDisplayWindow();
     
     if(_imp->clipToDisplayWindow){
@@ -688,6 +692,8 @@ void ViewerGL::drawOverlay()
 
 void ViewerGL::drawProgressBar()
 {
+    assert(QGLContext::currentContext() == context());
+
     const Format& dW = getDisplayWindow();
     glLineWidth(5);
     glBegin(GL_LINES);
@@ -710,7 +716,10 @@ void ViewerGL::resetMousePos()
     _imp->zoomCtx.oldClick.setY(0);
 }
 
-void ViewerGL::drawPersistentMessage(){
+void ViewerGL::drawPersistentMessage()
+{
+    assert(QGLContext::currentContext() == context());
+
     QFontMetrics metrics(font());
     int numberOfLines = std::ceil((double)metrics.width(_imp->persistentMessage)/(double)(width()-20));
     int averageCharsPerLine = numberOfLines != 0 ? _imp->persistentMessage.size() / numberOfLines : _imp->persistentMessage.size();
@@ -766,7 +775,8 @@ void ViewerGL::drawPersistentMessage(){
 
 
 
-void ViewerGL::initializeGL(){
+void ViewerGL::initializeGL()
+{
     initAndCheckGlExtensions();
     _imp->blackTex = new Texture;
     _imp->defaultDisplayTexture = new Texture;
@@ -808,7 +818,10 @@ void ViewerGL::initializeGL(){
     checkGLErrors();
 }
 
-GLuint ViewerGL::getPboID(int index){
+GLuint ViewerGL::getPboID(int index)
+{
+    assert(QGLContext::currentContext() == context());
+
     if(index >= (int)_imp->pboIds.size()){
         GLuint handle;
         glGenBuffersARB(1,&handle);
@@ -816,23 +829,6 @@ GLuint ViewerGL::getPboID(int index){
         return handle;
     }else{
         return _imp->pboIds[index];
-    }
-}
-
-/*Little improvment to the Qt version of makeCurrent to make it faster*/
-void ViewerGL::makeCurrent(){
-    const QGLContext* ctx=context();
-    QGLFormat viewerFormat=ctx->format();
-    const QGLContext* currentCtx=QGLContext::currentContext();
-    if(currentCtx){
-        QGLFormat currentFormat=currentCtx->format();
-        if(currentFormat == viewerFormat){
-            return;
-        }else{
-            QGLWidget::makeCurrent();
-        }
-    }else{
-        QGLWidget::makeCurrent();
     }
 }
 
@@ -957,7 +953,9 @@ int ViewerGL::isExtensionSupported(const char *extension){
 }
 
 
-void ViewerGL::initAndCheckGlExtensions() {
+void ViewerGL::initAndCheckGlExtensions()
+{
+    assert(QGLContext::currentContext() == context());
     GLenum err = glewInit();
     if (GLEW_OK != err) {
         /* Problem: glewInit failed, something is seriously wrong. */
@@ -988,7 +986,9 @@ void ViewerGL::initAndCheckGlExtensions() {
     }
 }
 
-void ViewerGL::activateShaderLC(){
+void ViewerGL::activateShaderLC()
+{
+    assert(QGLContext::currentContext() == context());
     if(!_imp->supportsGLSL) return;
     if(!_imp->shaderLC->bind()){
         cout << qPrintable(_imp->shaderLC->log()) << endl;
@@ -1002,9 +1002,15 @@ void ViewerGL::activateShaderLC(){
     _imp->shaderLC->setUniformValue("byteMode", (GLfloat)byteMode());
     
 }
-void ViewerGL::activateShaderRGB(){
-    if(!_imp->supportsGLSL) return;
-    if(!_imp->shaderRGB->bind()){
+
+void ViewerGL::activateShaderRGB()
+{
+    assert(QGLContext::currentContext() == context());
+
+    if (!_imp->supportsGLSL) {
+        return;
+    }
+    if (!_imp->shaderRGB->bind()) {
         cout << qPrintable(_imp->shaderRGB->log()) << endl;
     }
     
@@ -1020,7 +1026,10 @@ void ViewerGL::activateShaderRGB(){
     
 }
 
-void ViewerGL::initShaderGLSL(){
+void ViewerGL::initShaderGLSL()
+{
+    assert(QGLContext::currentContext() == context());
+
     if(!_imp->shaderLoaded && _imp->supportsGLSL){
         _imp->shaderRGB=new QGLShaderProgram(context());
         if(!_imp->shaderRGB->addShaderFromSourceCode(QGLShader::Vertex,vertRGB))
@@ -1046,6 +1055,7 @@ void ViewerGL::initShaderGLSL(){
 
 void ViewerGL::saveGLState()
 {
+    assert(QGLContext::currentContext() == context());
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -1055,6 +1065,7 @@ void ViewerGL::saveGLState()
 
 void ViewerGL::restoreGLState()
 {
+    assert(QGLContext::currentContext() == context());
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
@@ -1062,7 +1073,9 @@ void ViewerGL::restoreGLState()
     glPopAttrib();
 }
 
-void ViewerGL::initBlackTex(){
+void ViewerGL::initBlackTex()
+{
+    assert(QGLContext::currentContext() == context());
     fitToFormat(getDisplayWindow());
     
     TextureRect texSize(0, 0, 2047, 1555,2048,1556);
@@ -1091,6 +1104,7 @@ void ViewerGL::initBlackTex(){
 
 void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region,int pboIndex)
 {
+    assert(QGLContext::currentContext() == context());
     QMutexLocker locker(&_imp->textureMutex);
     GLint currentBoundPBO;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
@@ -1342,8 +1356,10 @@ QVector3D ViewerGL::toImgCoordinates_slow(int x,int y){
 }
 #endif
 
-QVector4D ViewerGL::getColorUnderMouse(int x,int y){
-    
+QVector4D ViewerGL::getColorUnderMouse(int x,int y)
+{
+    makeCurrent();
+    assert(QGLContext::currentContext() == context());
     QPointF pos = toImgCoordinates_fast(x, y);
     if(pos.x() < getDisplayWindow().left() || pos.x() >= getDisplayWindow().width() || pos.y() < getDisplayWindow().bottom() || pos.y() >=getDisplayWindow().height())
         return QVector4D(0,0,0,0);
@@ -1585,9 +1601,11 @@ void ViewerGL::populateMenu(){
 
 void ViewerGL::renderText( int x, int y, const QString &string,const QColor& color,const QFont& font)
 {
-    
-    if(string.isEmpty())
+    assert(QGLContext::currentContext() == context());
+
+    if (string.isEmpty()) {
         return;
+    }
     
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
@@ -1605,15 +1623,17 @@ void ViewerGL::renderText( int x, int y, const QString &string,const QColor& col
     glMatrixMode(GL_MODELVIEW);
 }
 
-void ViewerGL::setPersistentMessage(int type,const QString& message){
+void ViewerGL::setPersistentMessage(int type,const QString& message)
+{
     _imp->persistentMessageType = type;
     _imp->persistentMessage = message;
     _imp->displayPersistentMessage = true;
     updateGL();
 }
 
-void ViewerGL::clearPersistentMessage(){
-    if(!_imp->displayPersistentMessage){
+void ViewerGL::clearPersistentMessage()
+{
+    if (!_imp->displayPersistentMessage) {
         return;
     }
     _imp->displayPersistentMessage = false;
