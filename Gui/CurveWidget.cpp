@@ -147,7 +147,7 @@ void CurveGui::setVisible(bool visible) { _visible = visible; emit curveChanged(
 CurveWidget::CurveWidget(QWidget* parent, const QGLWidget* shareWidget)
     : QGLWidget(parent,shareWidget)
     , _zoomCtx()
-    , _dragging(false)
+    , _state(NONE)
     , _rightClickMenu(new QMenu(this))
     , _clearColor(0,0,0,255)
     , _baseAxisColor(118,215,90,255)
@@ -159,9 +159,10 @@ CurveWidget::CurveWidget(QWidget* parent, const QGLWidget* shareWidget)
     , _curves()
     , _selectedKeyFrames()
     , _hasOpenGLVAOSupport(true)
-
+    , _mouseDragOrientation()
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    setMouseTracking(true);
     _nextCurveAddedColor.setHsv(200,255,255);
 }
 
@@ -558,32 +559,63 @@ void CurveWidget::mousePressEvent(QMouseEvent *event){
     _selectedKeyFrames.clear();
     KeyFrame* selectedKey = isNearbyKeyFrame(event->pos());
     if(selectedKey){
+        _state = DRAGGING_KEYS;
+        setCursor(QCursor(Qt::CrossCursor));
         _selectedKeyFrames.push_back(selectedKey);
     }
 
     _zoomCtx._oldClick = event->pos();
     if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
-        _dragging = true;
+        _state = DRAGGING_VIEW;
     }
     QGLWidget::mousePressEvent(event);
     updateGL();
 }
 
 void CurveWidget::mouseReleaseEvent(QMouseEvent *event){
-    _dragging = false;
+    _state = NONE;
     QGLWidget::mouseReleaseEvent(event);
 }
 void CurveWidget::mouseMoveEvent(QMouseEvent *event){
-    if (_dragging) {
-        QPoint newClick =  event->pos();
-        QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
-        QPointF oldClick_opengl = toScaleCoordinates(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
+    KeyFrame* selectedKey = isNearbyKeyFrame(event->pos());
+    if(selectedKey){
+        setCursor(QCursor(Qt::CrossCursor));
+    }else{
+        setCursor(QCursor(Qt::ArrowCursor));
+    }
+
+    
+    
+    if(std::abs(event->x() - _zoomCtx._oldClick.x()) > std::abs(event->y() - _zoomCtx._oldClick.y())){
+        _mouseDragOrientation.setX(1);
+        _mouseDragOrientation.setY(0);
+    }else{
+        _mouseDragOrientation.setX(0);
+        _mouseDragOrientation.setY(1);
+    }
+    QPoint newClick =  event->pos();
+    QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
+    QPointF oldClick_opengl = toScaleCoordinates(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
+    
+       
+    _zoomCtx._oldClick = newClick;
+    if (_state == DRAGGING_VIEW) {
+        
         float dy = (oldClick_opengl.y() - newClick_opengl.y());
         _zoomCtx._bottom += dy;
         _zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
-        _zoomCtx._oldClick = newClick;
-        updateGL();
+    }else if(_state == DRAGGING_KEYS){
+        
+        QPointF translation = (newClick_opengl - oldClick_opengl);
+        translation.rx() *= _mouseDragOrientation.x();
+        translation.ry() *= _mouseDragOrientation.y();
+        
+        for (std::list<KeyFrame*>::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
+            (*it)->setTime((*it)->getTime() + translation.x());
+            (*it)->setValue(Variant((*it)->getValue().toDouble() + translation.y()));
+        }
     }
+    updateGL();
 }
 
 void CurveWidget::wheelEvent(QWheelEvent *event){

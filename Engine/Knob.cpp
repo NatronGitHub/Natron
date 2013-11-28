@@ -232,6 +232,26 @@ KeyFrame::KeyFrame(double time,const Variant& initialValue)
     _rightTangent = initialValue;
 }
 
+void KeyFrame::setLeftTangent(const Variant& v){
+    _leftTangent = v;
+    emit keyFrameChanged();
+}
+
+void KeyFrame::setRightTangent(const Variant& v){
+    _rightTangent = v;
+    emit keyFrameChanged();
+}
+
+void KeyFrame::setValue(const Variant& v){
+    _value = v;
+    emit keyFrameChanged();
+}
+
+void KeyFrame::setTime(double time){
+    _time = time;
+    emit keyFrameChanged();
+}
+
 CurvePath::CurvePath(KeyFrame* cp)
     : _keyFrames()
     , _bbox()
@@ -254,6 +274,7 @@ void CurvePath::operator=(const CurvePath& other){
     const KeyFrames& otherKeys = other.getKeyFrames();
     for(KeyFrames::const_iterator it = otherKeys.begin();it!=otherKeys.end();++it){
         KeyFrame* key = new KeyFrame(*(*it));
+        QObject::connect(key,SIGNAL(keyFrameChanged()),this,SIGNAL(keyFrameChanged()));
         _keyFrames.push_back(key);
     }
     _bbox = other._bbox;
@@ -289,6 +310,7 @@ void CurvePath::setEnd(KeyFrame* cp){
 
 void CurvePath::addControlPoint(KeyFrame* cp)
 {
+    QObject::connect(cp,SIGNAL(keyFrameChanged()),this,SIGNAL(keyFrameChanged()));
     KeyFrames::iterator newKeyIt = _keyFrames.end();
     if(_keyFrames.empty()){
         newKeyIt = _keyFrames.insert(_keyFrames.end(),cp);
@@ -302,6 +324,7 @@ void CurvePath::addControlPoint(KeyFrame* cp)
             }else if((*it)->getTime() == cp->getTime()){
                 //if the key already exists at this time, just modify it.
                 (*it)->setValue(cp->getValue());
+                delete cp;
                 return;
             }
         }
@@ -311,10 +334,9 @@ void CurvePath::addControlPoint(KeyFrame* cp)
         }else if(upper == _keyFrames.begin()){
             //if all the keys have a greater time, just insert this key at the begining
             newKeyIt = _keyFrames.insert(_keyFrames.begin(),cp);
+        }else{
+            newKeyIt = _keyFrames.insert(upper,cp);
         }
-
-        //if we reach here, that means we're in the middle of 2 keys, insert it before the upper bound
-        newKeyIt = _keyFrames.insert(upper,cp);
 
     }
     refreshTangents(newKeyIt);
@@ -425,6 +447,8 @@ Knob::Knob(KnobHolder* holder,const std::string& description,int dimension):
   , _isAnimationEnabled(true)
 {
     
+    QObject::connect(_value,SIGNAL(keyFrameChanged()),this,SLOT(onKeyChanged()));
+    
     if(_holder){
         _holder->addKnob(boost::shared_ptr<Knob>(this));
         QObject::connect(holder->getApp()->getTimeLine().get(),SIGNAL(frameChanged(SequenceTime)),this,SLOT(onTimeChanged(SequenceTime)));
@@ -514,10 +538,17 @@ void Knob::onTimeChanged(SequenceTime time){
                 if(!_isInsignificant)
                     updateHash();
                 processNewValue();
+                 _holder->onValueChanged(this,Knob::TIME_CHANGED);
                 emit valueChanged(i,v);
             }
         }
     }
+}
+
+void Knob::onKeyChanged(){
+   SequenceTime time = _holder->getApp()->getTimeLine()->currentFrame();
+    onTimeChanged(time);
+    _holder->evaluate(this, !_isInsignificant);
 }
 
 
@@ -527,7 +558,9 @@ MultidimensionalValue::MultidimensionalValue(int dimension )
     //default initialize the values map
     for(int i = 0; i < dimension ; ++i){
         _value.insert(std::make_pair(i,Variant()));
-        _curves.insert(std::make_pair(i,boost::shared_ptr<CurvePath>(new CurvePath)));
+        CurvePath* c = new CurvePath();
+        QObject::connect(c, SIGNAL(keyFrameChanged()), this, SIGNAL(keyFrameChanged()));
+        _curves.insert(std::make_pair(i,boost::shared_ptr<CurvePath>(c)));
     }
 }
 

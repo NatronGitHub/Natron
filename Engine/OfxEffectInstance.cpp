@@ -654,28 +654,40 @@ void OfxEffectInstance::onOverlayFocusLost(){
 
 
 void OfxEffectInstance::onKnobValueChanged(Knob* k,Knob::ValueChangedReason reason){
+    OfxPointD renderScale;
+    effect_->getRenderScaleRecursive(renderScale.x, renderScale.y);
+    OfxTime time = effect_->getFrameRecursive();
+    OfxStatus stat = kOfxStatOK;
     if(reason == Knob::USER_EDITED){
-        OfxPointD renderScale;
-        effect_->getRenderScaleRecursive(renderScale.x, renderScale.y);
-        OfxTime time = effect_->getFrameRecursive();
-        OfxStatus stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangeUserEdited,time,renderScale);
-        // note: DON'T remove the following assert()s, unless you replace them with proper error feedback.
-        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangeUserEdited,time,renderScale);
+    }else if(reason == Knob::TIME_CHANGED){
+        stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangeTime,time,renderScale);
     }
+    // note: DON'T remove the following assert()s, unless you replace them with proper error feedback.
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+
 }
 
 void OfxEffectInstance::beginKnobsValuesChanged(Knob::ValueChangedReason reason) {
+    OfxStatus stat = kOfxStatOK;
     if(reason == Knob::USER_EDITED){
-        OfxStatus stat = effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        stat = effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+    }else if(reason == Knob::TIME_CHANGED){
+        stat = effectInstance()->beginInstanceChangedAction(kOfxChangeTime);
     }
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+
 }
 
 void OfxEffectInstance::endKnobsValuesChanged(Knob::ValueChangedReason reason){
+    OfxStatus stat = kOfxStatOK;
     if(reason == Knob::USER_EDITED){
-        OfxStatus stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    }else if(reason == Knob::TIME_CHANGED){
+        stat = effectInstance()->endInstanceChangedAction(kOfxChangeTime);
     }
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+
 }
 
 std::string OfxEffectInstance::getOutputFileName() const{

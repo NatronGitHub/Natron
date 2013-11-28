@@ -90,6 +90,11 @@ class QMenu;
 class CurveWidget : public QGLWidget
 {
     
+    enum EventState{
+        DRAGGING_VIEW = 0,
+        DRAGGING_KEYS = 1,
+        NONE = 2
+    };
     
     class ZoomContext{
         
@@ -116,7 +121,7 @@ class CurveWidget : public QGLWidget
     };
     
     ZoomContext _zoomCtx;
-    bool _dragging; /// true when the user is dragging (panning)
+    EventState _state;
     QMenu* _rightClickMenu;
     QColor _clearColor;
     QColor _baseAxisColor;
@@ -130,6 +135,9 @@ class CurveWidget : public QGLWidget
     Curves _curves;
     std::list< KeyFrame* > _selectedKeyFrames;
     bool _hasOpenGLVAOSupport;
+    
+    QPoint _mouseDragOrientation; ///used to drag a key frame in only 1 direction (horizontal or vertical)
+                                  ///the value is either (1,0) or (0,1)
 
 public:
     

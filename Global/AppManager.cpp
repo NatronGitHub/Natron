@@ -190,6 +190,7 @@ Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
     NodeGui* nodegui = 0;
     if(!_isBackground){
         nodegui = _gui->createNodeGUI(node);
+        assert(nodegui);
         _nodeMapping.insert(make_pair(node,nodegui));
     }
     node->initializeKnobs();

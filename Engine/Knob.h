@@ -78,7 +78,9 @@ private:
  * to interpolate an AnimationCurve. The _leftTangent and _rightTangent can be
  * used by the interpolation method of the curve.
 **/
-class KeyFrame  {
+class KeyFrame : public QObject {
+    
+    Q_OBJECT
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -130,26 +132,21 @@ public:
     
     const Variant& getRightTangent() const { return _rightTangent; }
 
-    void setLeftTangent(const Variant& v){
-        _leftTangent = v;
-    }
+    void setLeftTangent(const Variant& v);
     
-    void setRightTangent(const Variant& v){
-        _rightTangent = v;
-    }
+    void setRightTangent(const Variant& v);
     
-    void setValue(const Variant& v){
-        _value = v;
-    }
+    void setValue(const Variant& v);
     
-    void setTime(double time){
-        _time = time;
-    }
-
+    void setTime(double time);
+    
     void setInterpolation(Natron::KeyframeType interp) { _interpolation = interp; }
     
     Natron::KeyframeType getInterpolation() const { return _interpolation; }
     
+signals:
+    
+    void keyFrameChanged();
 private:
     
     
@@ -165,8 +162,10 @@ private:
   * @brief A CurvePath is a list of chained curves. Each curve is a set of 2 keyFrames and has its
   * own interpolation method (that can differ from other curves).
 **/
-class CurvePath {
-        
+class CurvePath : public QObject {
+    
+    Q_OBJECT
+    
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
@@ -233,6 +232,11 @@ public:
     void refreshTangents(KeyFrames::iterator key);
 
     void clearKeyFrames();
+    
+signals:
+    
+    void keyFrameChanged();
+    
 private:
 
 
@@ -318,7 +322,9 @@ private:
  * @brief A class based on Variant that can store a value across multiple dimension
  * and also have specific "keyframes".
  **/
-class MultidimensionalValue {
+class MultidimensionalValue : public QObject {
+    
+    Q_OBJECT
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -368,6 +374,11 @@ public:
     Variant getValueAtTime(double time, int dimension) const;
     
     RectD getCurvesBoundingBox() const;
+    
+signals:
+    
+    void keyFrameChanged();
+    
 private:
     
   
@@ -391,7 +402,7 @@ class Knob : public QObject
 public:
     
 
-    enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1};
+    enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1,TIME_CHANGED = 2};
     
     Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
     
@@ -558,6 +569,8 @@ public slots:
     void onKnobRedoneChange();
 
     void onTimeChanged(SequenceTime time);
+    
+    void onKeyChanged();
 
 signals:
     
