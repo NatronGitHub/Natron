@@ -244,6 +244,7 @@ void KeyFrame::setRightTangent(const Variant& v){
 
 void KeyFrame::setValue(const Variant& v){
     _value = v;
+    //also refresh tangents
     emit keyFrameChanged();
 }
 

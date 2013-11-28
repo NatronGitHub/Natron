@@ -115,10 +115,10 @@ void CurveGui::drawCurve(){
         glColor4f(_color.redF(), _color.greenF(), _color.blueF(), _color.alphaF());
         KeyFrame* key = (*k);
         //if the key is selected change its color to white
-        const std::list< KeyFrame* >& selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
-        for(std::list< KeyFrame* >::const_iterator it2 = selectedKeyFrames.begin();
+        const std::list< std::pair< CurveGui*,KeyFrame*> >& selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
+        for(std::list< std::pair< CurveGui*,KeyFrame*> >::const_iterator it2 = selectedKeyFrames.begin();
             it2 != selectedKeyFrames.end();++it2){
-            if((*it2) == key){
+            if((*it2).second == key){
                 glColor4f(1.f,1.f,1.f,1.f);
                 break;
             }
@@ -159,6 +159,7 @@ CurveWidget::CurveWidget(QWidget* parent, const QGLWidget* shareWidget)
     , _curves()
     , _selectedKeyFrames()
     , _hasOpenGLVAOSupport(true)
+    , _mustSetDragOrientation(false)
     , _mouseDragOrientation()
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
@@ -198,7 +199,13 @@ void CurveWidget::removeCurve(CurveGui *curve){
             //remove all its keyframes from selected keys
             const CurvePath::KeyFrames& keyFrames = (*it)->getInternalCurve()->getKeyFrames();
             for (CurvePath::KeyFrames::const_iterator it2 = keyFrames.begin(); it2 != keyFrames.end(); ++it2) {
-                std::list<KeyFrame*>::iterator foundSelected = std::find(_selectedKeyFrames.begin(), _selectedKeyFrames.end(), *it2);
+                SelectedKeys::iterator foundSelected = _selectedKeyFrames.end();
+                for(SelectedKeys::iterator it3 = _selectedKeyFrames.begin();it3!=_selectedKeyFrames.end();++it3){
+                    if (it3->second == *it2) {
+                        foundSelected = it3;
+                        break;
+                    }
+                }
                 if(foundSelected != _selectedKeyFrames.end()){
                     _selectedKeyFrames.erase(foundSelected);
                 }
@@ -523,7 +530,7 @@ CurveWidget::Curves::const_iterator CurveWidget::isNearbyCurve(const QPoint &pt)
     return _curves.end();
 }
 
-KeyFrame* CurveWidget::isNearbyKeyFrame(const QPoint& pt) const{
+std::pair<CurveGui*,KeyFrame*> CurveWidget::isNearbyKeyFrame(const QPoint& pt) const{
     for(Curves::const_iterator it = _curves.begin();it!=_curves.end();++it){
         if((*it)->isVisible()){
             const CurvePath::KeyFrames& keyFrames = (*it)->getInternalCurve()->getKeyFrames();
@@ -531,12 +538,12 @@ KeyFrame* CurveWidget::isNearbyKeyFrame(const QPoint& pt) const{
                 QPoint keyFramewidgetPos = toWidgetCoordinates((*it2)->getTime(), (*it2)->getValue().toDouble());
                 if((std::abs(pt.y() - keyFramewidgetPos.y()) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
                    (std::abs(pt.x() - keyFramewidgetPos.x()) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)){
-                    return (*it2);
+                    return std::make_pair((*it),(*it2));
                 }
             }
         }
     }
-    return NULL;
+    return std::make_pair((CurveGui*)NULL,(KeyFrame*)NULL);
 }
 
 void CurveWidget::selectCurve(CurveGui* curve){
@@ -547,6 +554,8 @@ void CurveWidget::selectCurve(CurveGui* curve){
 }
 
 void CurveWidget::mousePressEvent(QMouseEvent *event){
+    _mustSetDragOrientation = true;
+    
     if(event->button() == Qt::RightButton){
         _rightClickMenu->exec(mapToGlobal(event->pos()));
         return;
@@ -557,8 +566,8 @@ void CurveWidget::mousePressEvent(QMouseEvent *event){
         selectCurve(*foundCurveNearby);
     }
     _selectedKeyFrames.clear();
-    KeyFrame* selectedKey = isNearbyKeyFrame(event->pos());
-    if(selectedKey){
+    std::pair<CurveGui*,KeyFrame*> selectedKey = isNearbyKeyFrame(event->pos());
+    if(selectedKey.second){
         _state = DRAGGING_KEYS;
         setCursor(QCursor(Qt::CrossCursor));
         _selectedKeyFrames.push_back(selectedKey);
@@ -577,21 +586,23 @@ void CurveWidget::mouseReleaseEvent(QMouseEvent *event){
     QGLWidget::mouseReleaseEvent(event);
 }
 void CurveWidget::mouseMoveEvent(QMouseEvent *event){
-    KeyFrame* selectedKey = isNearbyKeyFrame(event->pos());
-    if(selectedKey){
+    std::pair<CurveGui*,KeyFrame*> selectedKey = isNearbyKeyFrame(event->pos());
+    if(selectedKey.second){
         setCursor(QCursor(Qt::CrossCursor));
     }else{
         setCursor(QCursor(Qt::ArrowCursor));
     }
-
     
     
-    if(std::abs(event->x() - _zoomCtx._oldClick.x()) > std::abs(event->y() - _zoomCtx._oldClick.y())){
-        _mouseDragOrientation.setX(1);
-        _mouseDragOrientation.setY(0);
-    }else{
-        _mouseDragOrientation.setX(0);
-        _mouseDragOrientation.setY(1);
+    if(_mustSetDragOrientation){
+        if(std::abs(event->x() - _zoomCtx._oldClick.x()) > std::abs(event->y() - _zoomCtx._oldClick.y())){
+            _mouseDragOrientation.setX(1);
+            _mouseDragOrientation.setY(0);
+        }else{
+            _mouseDragOrientation.setX(0);
+            _mouseDragOrientation.setY(1);
+        }
+        _mustSetDragOrientation = false;
     }
     QPoint newClick =  event->pos();
     QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
@@ -610,15 +621,31 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
         translation.rx() *= _mouseDragOrientation.x();
         translation.ry() *= _mouseDragOrientation.y();
         
-        for (std::list<KeyFrame*>::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
+        for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
             double newTime = newClick_opengl.x();//(*it)->getTime() + translation.x();
-            double diffTime = newTime - (*it)->getTime();
-            if(diffTime > 0.5){
-                (*it)->setTime((*it)->getTime() + std::ceil(diffTime));
-            }else{
-                (*it)->setTime((*it)->getTime() + std::ceil(diffTime));
+            double diffTime = (newTime - (*it).second->getTime()) * _mouseDragOrientation.x() ;
+            if(diffTime != 0){
+                //find out if the new value will be in the interval [previousKey,nextKey]
+                double newValue = (*it).second->getTime() + std::ceil(diffTime);
+                const CurvePath::KeyFrames& keys = (*it).first->getInternalCurve()->getKeyFrames();
+                CurvePath::KeyFrames::const_iterator foundKey = std::find(keys.begin(), keys.end(), (*it).second);
+                assert(foundKey != keys.end());
+                CurvePath::KeyFrames::const_iterator prevKey = foundKey;
+                if(foundKey != keys.begin()){
+                    --prevKey;
+                }else{
+                    prevKey = keys.end();
+                }
+                CurvePath::KeyFrames::const_iterator nextKey = foundKey;
+                ++nextKey;
+                
+                if(((prevKey != keys.end() && newValue > (*prevKey)->getTime()) || prevKey == keys.end())
+                    && ((nextKey != keys.end() && newValue < (*nextKey)->getTime())|| nextKey == keys.end())){
+                    (*it).second->setTime(newValue);
+                }
+                
             }
-            (*it)->setValue(Variant((*it)->getValue().toDouble() + translation.y()));
+            (*it).second->setValue(Variant((*it).second->getValue().toDouble() + translation.y()));
         }
     }
     updateGL();

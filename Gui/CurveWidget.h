@@ -133,9 +133,12 @@ class CurveWidget : public QGLWidget
 
     typedef std::list<CurveGui* > Curves;
     Curves _curves;
-    std::list< KeyFrame* > _selectedKeyFrames;
+    
+    typedef std::list< std::pair<CurveGui*,KeyFrame*> > SelectedKeys;
+    SelectedKeys _selectedKeyFrames;
     bool _hasOpenGLVAOSupport;
     
+    bool _mustSetDragOrientation;
     QPoint _mouseDragOrientation; ///used to drag a key frame in only 1 direction (horizontal or vertical)
                                   ///the value is either (1,0) or (0,1)
 
@@ -185,7 +188,7 @@ public:
 
     const QFont& getFont() const { return *_font; }
 
-    const std::list< KeyFrame* >& getSelectedKeyFrames() const { return _selectedKeyFrames; }
+    const SelectedKeys& getSelectedKeyFrames() const { return _selectedKeyFrames; }
 
     bool isSupportingOpenGLVAO() const { return _hasOpenGLVAOSupport; }
 
@@ -201,7 +204,7 @@ private:
      * @brief Returns a pointer to a keyframe if a keyframe lies nearby the point 'pt' which is
      * widget coordinates.
      **/
-    KeyFrame* isNearbyKeyFrame(const QPoint& pt) const;
+    std::pair<CurveGui*,KeyFrame*> isNearbyKeyFrame(const QPoint& pt) const;
 
     /**
      * @brief Selects the curve given in parameter and deselects any other curve in the widget.
