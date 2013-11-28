@@ -456,6 +456,9 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
 void NodeGraph::connectCurrentViewerToSelection(int inputNB){
     
     InspectorNode* v = dynamic_cast<InspectorNode*>(_gui->getLastSelectedViewer()->getInternalNode()->getNode());
+    if(!v->isActivated()){
+        return;
+    }
     if(!_nodeSelected){
         v->setActiveInputAndRefresh(inputNB);
         return;
