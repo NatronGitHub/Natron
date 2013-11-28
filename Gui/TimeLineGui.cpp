@@ -437,12 +437,14 @@ void TimeLineGui::mousePressEvent(QMouseEvent* e){
     double c = toTimeLineCoordinates(e->x(),0).x();
     if(e->modifiers().testFlag(Qt::ControlModifier)){
         _imp->_state = DRAGGING_BOUNDARY;
-        int firstPos = toWidgetCoordinates(_imp->_timeline->leftBound(),0).x();
-        int lastPos = toWidgetCoordinates(_imp->_timeline->rightBound(),0).x();
-        if( std::abs(e->x() - firstPos) > std::abs(e->x() - lastPos) ){ // moving last frame anchor
-            setBoundaries(_imp->_timeline->leftBound(),c);
-        }else{ // moving first frame anchor
-            setBoundaries(c,_imp->_timeline->rightBound());
+        int firstPos = toWidgetCoordinates(_imp->_timeline->leftBound()-1,0).x();
+        int lastPos = toWidgetCoordinates(_imp->_timeline->rightBound()+1,0).x();
+        int distFromFirst = std::abs(e->x() - firstPos);
+        int distFromLast = std::abs(e->x() - lastPos);
+        if(distFromFirst  > distFromLast ){
+            setBoundaries(_imp->_timeline->leftBound(),c); // moving last frame anchor
+        }else{
+            setBoundaries(c,_imp->_timeline->rightBound());   // moving first frame anchor
         }
     }else{
         _imp->_state = DRAGGING_CURSOR;
@@ -463,12 +465,18 @@ void TimeLineGui::mouseMoveEvent(QMouseEvent* e){
         distortViewPort = true;
     }else if(_imp->_state == DRAGGING_BOUNDARY){
 
-        int firstPos = toWidgetCoordinates(_imp->_timeline->leftBound(),0).x();
-        int lastPos = toWidgetCoordinates(_imp->_timeline->rightBound(),0).x();
-        if( std::abs(e->x() - firstPos) > std::abs(e->x() - lastPos) ){ // moving last frame anchor
-            emit boundariesChanged(_imp->_timeline->leftBound(),c);
+        int firstPos = toWidgetCoordinates(_imp->_timeline->leftBound()-1,0).x();
+        int lastPos = toWidgetCoordinates(_imp->_timeline->rightBound()+1,0).x();
+        int distFromFirst = std::abs(e->x() - firstPos);
+        int distFromLast = std::abs(e->x() - lastPos);
+        if( distFromFirst  > distFromLast  ){ // moving last frame anchor
+            if(_imp->_timeline->leftBound() <= c){
+                emit boundariesChanged(_imp->_timeline->leftBound(),c);
+            }
         }else{ // moving first frame anchor
-            emit boundariesChanged(c,_imp->_timeline->rightBound());
+            if(_imp->_timeline->rightBound() >= c){
+                emit boundariesChanged(c,_imp->_timeline->rightBound());
+            }
         }
         distortViewPort = true;
     }
