@@ -379,9 +379,8 @@ void VideoEngine::run(){
         } else if(!_currentRunArgs._sameFrame && _currentRunArgs._recursiveCall){
             if(_tree.isOutputAViewer()){
                 if(_currentRunArgs._forward){
-                    _timeline->incrementCurrentFrame();
                     currentFrame = _timeline->currentFrame();
-                    if(currentFrame > lastFrame){
+                    if(currentFrame >= lastFrame){
                         QMutexLocker loopModeLocker(&_loopModeMutex);
                         if(_loopMode && _tree.isOutputAViewer()){ // loop only for a viewer
                             currentFrame = firstFrame;
@@ -392,12 +391,14 @@ void VideoEngine::run(){
                                 return;
                             continue;
                         }
+                    }else{
+                        _timeline->incrementCurrentFrame();
+                        ++currentFrame;
                     }
                     
                 }else{
-                    _timeline->decrementCurrentFrame();
                     currentFrame = _timeline->currentFrame();
-                    if(currentFrame < firstFrame){
+                    if(currentFrame <= firstFrame){
                         QMutexLocker loopModeLocker(&_loopModeMutex);
                         if(_loopMode && _tree.isOutputAViewer()){ //loop only for a viewer
                             currentFrame = lastFrame;
@@ -408,6 +409,9 @@ void VideoEngine::run(){
                                 return;
                             continue;
                         }
+                    }else{
+                        _timeline->decrementCurrentFrame();
+                        --currentFrame;
                     }
                 }
             }else{
