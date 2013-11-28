@@ -187,8 +187,13 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
         throw std::invalid_argument(QString(filePath + " : no such file.").toStdString());
     }
     std::list<NodeGui::SerializedState> nodeStates;
-    std::ifstream ifile(filePath.toStdString().c_str(),std::ifstream::in);
-   
+    std::ifstream ifile;
+    try{
+        ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        ifile.open(filePath.toStdString().c_str(),std::ifstream::in);
+    }catch(const std::ifstream::failure& e){
+        throw std::runtime_error(std::string(std::string("Exception opening ")+ e.what() + filePath.toStdString()));
+    }
     try{
         boost::archive::xml_iarchive iArchive(ifile);
         iArchive >> boost::serialization::make_nvp("Nodes",nodeStates);
@@ -200,7 +205,7 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
             entries.push_back(formatStr.toStdString());
         }
         _formatKnob->populate(entries);
-
+        
         MultidimensionalValue formatValue(_formatKnob->getDimension());
         MultidimensionalValue viewsValue(_viewsCount->getDimension());
         iArchive >> boost::serialization::make_nvp("Project_output_format",formatValue);

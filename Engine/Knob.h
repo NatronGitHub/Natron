@@ -416,6 +416,13 @@ public:
     
     virtual ~Knob();
     
+    /**
+     * @brief Call this if you want to remove the Knob dynamically (for example in response to
+     * another knob value changed). You must not call the delete operator as the factory is
+     * responsible for allocation/deallocation.
+     **/
+    void remove();
+    
     const std::string& getDescription() const { return _description; }
     
     const std::vector<U64>& getHashVector() const { return _hashVector; }

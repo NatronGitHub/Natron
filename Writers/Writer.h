@@ -67,7 +67,7 @@ public:
     std::string getOutputFileName() const;
 
 public slots:
-    void onTimelineFrameRangeChanged(int,int);
+    void onTimelineFrameRangeChanged(SequenceTime,SequenceTime);
 
     
 protected:

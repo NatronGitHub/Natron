@@ -45,9 +45,9 @@ Writer::Writer(Node* node):
 {
     if(node){
         QObject::connect(getNode()->getApp()->getTimeLine().get(),
-                         SIGNAL(frameRangeChanged(int,int)),
+                         SIGNAL(frameRangeChanged(SequenceTime,SequenceTime)),
                          this,
-                         SLOT(onTimelineFrameRangeChanged(int, int)));
+                         SLOT(onTimelineFrameRangeChanged(SequenceTime, SequenceTime)));
     }
 }
 
@@ -230,7 +230,13 @@ void Writer::renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,
 void Writer::getFrameRange(SequenceTime *first,SequenceTime *last){
     int index = _frameRangeChoosal->getValue<int>();
     if(index == 0){
-        input(0)->getFrameRange(first, last);
+        EffectInstance* inp = input(0);
+        if(inp){
+            inp->getFrameRange(first, last);
+        }else{
+            *first = 0;
+            *last = 0;
+        }
     }else{
         *first = _firstFrameKnob->getValue<int>();
         *last = _lastFrameKnob->getValue<int>();
@@ -276,11 +282,11 @@ void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
         int index = _frameRangeChoosal->getValue<int>();
         if(index == 0){
             if(_firstFrameKnob){
-                delete _firstFrameKnob;
+                _firstFrameKnob->remove();;
                 _firstFrameKnob = 0;
             }
             if(_lastFrameKnob){
-                delete _lastFrameKnob;
+                _lastFrameKnob->remove();
                 _lastFrameKnob = 0;
             }
         }else if(index == 1){
@@ -288,20 +294,18 @@ void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
             int last = getApp()->getTimeLine()->lastFrame();
             if(!_firstFrameKnob){
                 _firstFrameKnob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", this, "First frame"));
+                _firstFrameKnob->ifAnimatingTurnOffAnimation();
                 _firstFrameKnob->setValue(first);
                 _firstFrameKnob->setDisplayMinimum(first);
                 _firstFrameKnob->setDisplayMaximum(last);
-                _firstFrameKnob->setMinimum(first);
-                _firstFrameKnob->setMaximum(last);
                 
             }
             if(!_lastFrameKnob){
                 _lastFrameKnob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", this, "Last frame"));
+                _lastFrameKnob->ifAnimatingTurnOffAnimation();
                 _lastFrameKnob->setValue(last);
                 _lastFrameKnob->setDisplayMinimum(first);
                 _lastFrameKnob->setDisplayMaximum(last);
-                _lastFrameKnob->setMinimum(first);
-                _lastFrameKnob->setMaximum(last);
                 
             }
             createKnobDynamically();
@@ -310,22 +314,18 @@ void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
     }
 }
 
-void Writer::onTimelineFrameRangeChanged(int f,int l){
+void Writer::onTimelineFrameRangeChanged(SequenceTime f,SequenceTime l){
     
     if(_firstFrameKnob){
         _firstFrameKnob->setValue(f);
-        _firstFrameKnob->setMinimum(f);
         _firstFrameKnob->setDisplayMinimum(f);
         _firstFrameKnob->setDisplayMaximum(l);
-        _firstFrameKnob->setMaximum(l);
         
     }
     if(_lastFrameKnob){
         _lastFrameKnob->setValue(l);
         _lastFrameKnob->setDisplayMinimum(f);
         _lastFrameKnob->setDisplayMaximum(l);
-        _lastFrameKnob->setMinimum(f);
-        _lastFrameKnob->setMaximum(l);
         
     }
 

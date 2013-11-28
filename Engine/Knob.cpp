@@ -459,12 +459,16 @@ Knob::Knob(KnobHolder* holder,const std::string& description,int dimension):
     }
 }
 
-Knob::~Knob(){
+
+Knob::~Knob(){    
+    remove();
+}
+
+void Knob::remove(){
+    emit deleted();
     if(_holder){
         _holder->removeKnob(this);
     }
-    emit deleted();
-
 }
 
 void Knob::onKnobUndoneChange(){

@@ -134,7 +134,6 @@ int main(int argc, char *argv[])
     }else{
         printBackGroundWelcomeMessage();
     }
-    
     if(!manager->newAppInstance(isBackGround,projectFile,writers)){
         printUsage();
         AppManager::quit();
