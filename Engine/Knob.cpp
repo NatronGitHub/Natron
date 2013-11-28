@@ -244,7 +244,9 @@ void KeyFrame::setRightTangent(const Variant& v){
 
 void KeyFrame::setValue(const Variant& v){
     _value = v;
-    //also refresh tangents
+    if(_interpolation != KEYFRAME_BROKEN && _interpolation != KEYFRAME_FREE){
+        emit mustRefreshTangents(this);
+    }
     emit keyFrameChanged();
 }
 
@@ -276,6 +278,7 @@ void CurvePath::operator=(const CurvePath& other){
     for(KeyFrames::const_iterator it = otherKeys.begin();it!=otherKeys.end();++it){
         KeyFrame* key = new KeyFrame(*(*it));
         QObject::connect(key,SIGNAL(keyFrameChanged()),this,SIGNAL(keyFrameChanged()));
+        QObject::connect(key,SIGNAL( mustRefreshTangents(KeyFrame*)),this,SLOT(computeKeyTangents(KeyFrame*)));
         _keyFrames.push_back(key);
     }
     _bbox = other._bbox;
@@ -312,6 +315,7 @@ void CurvePath::setEnd(KeyFrame* cp){
 void CurvePath::addControlPoint(KeyFrame* cp)
 {
     QObject::connect(cp,SIGNAL(keyFrameChanged()),this,SIGNAL(keyFrameChanged()));
+    QObject::connect(cp,SIGNAL( mustRefreshTangents(KeyFrame*)),this,SLOT(computeKeyTangents(KeyFrame*)));
     KeyFrames::iterator newKeyIt = _keyFrames.end();
     if(_keyFrames.empty()){
         newKeyIt = _keyFrames.insert(_keyFrames.end(),cp);
@@ -449,7 +453,6 @@ Knob::Knob(KnobHolder* holder,const std::string& description,int dimension):
 {
     
     QObject::connect(_value,SIGNAL(keyFrameChanged()),this,SLOT(onKeyChanged()));
-    
     if(_holder){
         _holder->addKnob(boost::shared_ptr<Knob>(this));
         QObject::connect(holder->getApp()->getTimeLine().get(),SIGNAL(frameChanged(SequenceTime)),this,SLOT(onTimeChanged(SequenceTime)));
@@ -552,6 +555,11 @@ void Knob::onKeyChanged(){
     _holder->evaluate(this, !_isInsignificant);
 }
 
+void CurvePath::computeKeyTangents(KeyFrame* k){
+    KeyFrames::iterator it = std::find(_keyFrames.begin(),_keyFrames.end(),k);
+    assert(it!=_keyFrames.end());
+    refreshTangents(it);
+}
 
 MultidimensionalValue::MultidimensionalValue(int dimension )
 : _dimension(dimension)

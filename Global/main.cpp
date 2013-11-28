@@ -30,6 +30,7 @@ void registerMetaTypes(){
     qRegisterMetaType<Variant>();
     qRegisterMetaType<Natron::ChannelSet>();
     qRegisterMetaType<KnobGui*>();
+    qRegisterMetaType<KeyFrame*>();
     qRegisterMetaType<Format>();
     qRegisterMetaType<Natron::StandardButtons>();
     qRegisterMetaType<SequenceTime>("SequenceTime");

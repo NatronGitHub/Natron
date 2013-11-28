@@ -1084,7 +1084,7 @@ void Color_KnobGui::updateGUI(int dimension, const Variant& variant){
         _aBox->setValue(variant.toDouble());
     }
 
-    uchar r = (uchar)std::min(_gBox->value()*256., 255.);
+    uchar r = (uchar)std::min(_rBox->value()*256., 255.);
     uchar g = r;
     uchar b = r;
     uchar a = 255;

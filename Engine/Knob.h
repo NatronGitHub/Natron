@@ -147,6 +147,8 @@ public:
 signals:
     
     void keyFrameChanged();
+    void mustRefreshTangents(KeyFrame*);
+    
 private:
     
     
@@ -157,6 +159,8 @@ private:
     Natron::KeyframeType _interpolation;
 
 };
+
+Q_DECLARE_METATYPE(KeyFrame*)
 
 /**
   * @brief A CurvePath is a list of chained curves. Each curve is a set of 2 keyFrames and has its
@@ -237,6 +241,10 @@ signals:
     
     void keyFrameChanged();
     
+public slots:
+    
+    void computeKeyTangents(KeyFrame* k);
+
 private:
 
 
@@ -571,6 +579,7 @@ public slots:
     void onTimeChanged(SequenceTime time);
     
     void onKeyChanged();
+    
 
 signals:
     
