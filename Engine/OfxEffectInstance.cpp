@@ -186,7 +186,7 @@ QStringList ofxExtractAllPartsOfGrouping(const QString& pluginLabel,const QStrin
             QString toRemove = bundleName.left(lastDotPos+1);
             bundleName = bundleName.remove(toRemove);
             if(out.size() == 1)
-                out.push_front(bundleName);
+                out.push_back(bundleName);
         }
         
     }
