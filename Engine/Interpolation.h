@@ -53,12 +53,20 @@ T interpolate(double tcur, const T vcur, //start control point
     const T P3pl = vnextDerivLeft;
     const T P3 = vnext;
     assert((interp == KEYFRAME_NONE || currentTime >= tcur) && (interpNext == KEYFRAME_NONE || currentTime <= tnext));
+    // after the last / before the first keyframe, derivatives are wrt currentTime (i.e. non-normalized)
+    if (interp == KEYFRAME_NONE) {
+        tcur = tnext - 1.;
+    }
+    if (interpNext == KEYFRAME_NONE) {
+        tnext = tcur - 1;
+    }
     const double t = (currentTime - tcur)/(tnext - tcur);
     const double t2 = t * t;
     const double t3 = t2 * t;
     if (interpNext == KEYFRAME_NONE) {
         assert(interp != KEYFRAME_NONE);
-        return P0 + (t - tcur) * P0pr;
+        // t is normalized between 0 and 1, and P0pr is the derivative wrt currentTime
+        return P0 + t * P0pr;
     }
     
     switch (interp) {
@@ -77,7 +85,8 @@ T interpolate(double tcur, const T vcur, //start control point
     case KEYFRAME_CONSTANT:
         return t < tnext ? P0 : P3;
     case KEYFRAME_NONE:
-        return P3 - (tnext - t) * P3pl;
+        // t is normalized between 0 and 1, and P3pl is the derivative wrt currentTime
+        return P3 - (1. - t) * P3pl;
     }
 }
 
@@ -219,9 +228,9 @@ void autoComputeTangents(Natron::KeyframeType interpPrev,
 
         if (keyframe_none_same_derivative) {
             if (interpNext == KEYFRAME_NONE) {
-                P0pr = Q3pl;
+                P0pr = Q3pl/(tcur-tprev);
             } else if (interpPrev == KEYFRAME_NONE) {
-                Q3pl = P0pr;
+                Q3pl = P0pr/(tnext-tcur);
             }
         }
         break;

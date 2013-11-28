@@ -691,10 +691,10 @@ void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(){
     }
     _treeVersionValid = true;
     
-    /*If the hash changed we clear the playback cache.*/
-    if((!oldVersionValid || (inputsHash.back() != oldVersion)) && !_output->getApp()->isBackground()){
-        appPTR->clearPlaybackCache();
-    }
+//    /*If the hash changed we clear the playback cache.*/
+//    if((!oldVersionValid || (inputsHash.back() != oldVersion)) && !_output->getApp()->isBackground()){
+//        appPTR->clearPlaybackCache();
+//    }
     
 
 }

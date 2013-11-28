@@ -150,7 +150,7 @@ bool OfxEffectInstance::isGenerator() const {
 bool OfxEffectInstance::isGeneratorAndFilter() const {
     const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
     std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);
-    std::set<std::string>::const_iterator foundGeneral = contexts.find(kOfxImageEffectContextGenerator);
+    std::set<std::string>::const_iterator foundGeneral = contexts.find(kOfxImageEffectContextGeneral);
     return foundGenerator!=contexts.end() && foundGeneral!=contexts.end();
 }
 
