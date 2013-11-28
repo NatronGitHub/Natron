@@ -611,7 +611,13 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
         translation.ry() *= _mouseDragOrientation.y();
         
         for (std::list<KeyFrame*>::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-            (*it)->setTime((*it)->getTime() + translation.x());
+            double newTime = newClick_opengl.x();//(*it)->getTime() + translation.x();
+            double diffTime = newTime - (*it)->getTime();
+            if(diffTime > 0.5){
+                (*it)->setTime((*it)->getTime() + std::ceil(diffTime));
+            }else{
+                (*it)->setTime((*it)->getTime() + std::ceil(diffTime));
+            }
             (*it)->setValue(Variant((*it)->getValue().toDouble() + translation.y()));
         }
     }
