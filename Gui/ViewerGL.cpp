@@ -547,8 +547,8 @@ void ViewerGL::paintGL()
         if(_imp->displayingImage){
             glBindTexture(GL_TEXTURE_2D, _imp->defaultDisplayTexture->getTexID());
             // debug (so the OpenGL debugger can make a breakpoint here)
-             GLfloat d;
-              glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+             //GLfloat d;
+              //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
             activateShaderRGB();
             checkGLErrors();
         }else{
@@ -563,7 +563,6 @@ void ViewerGL::paintGL()
             checkGLErrors();
             
         }
-        glBindTexture(GL_TEXTURE_2D, 0);
 
         checkGLErrors();
         clearColorBuffer(_imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF());
@@ -579,6 +578,8 @@ void ViewerGL::paintGL()
         if (_imp->supportsGLSL)
             _imp->shaderBlack->release();
     }
+    glBindTexture(GL_TEXTURE_2D, 0);
+
     if (_imp->overlay) {
         drawOverlay();
     }
