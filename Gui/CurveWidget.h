@@ -128,7 +128,7 @@ class CurveWidget : public QGLWidget
 
     typedef std::list<CurveGui* > Curves;
     Curves _curves;
-    std::list< const KeyFrame* > _selectedKeyFrames;
+    std::list< KeyFrame* > _selectedKeyFrames;
     bool _hasOpenGLVAOSupport;
 
 public:
@@ -177,17 +177,23 @@ public:
 
     const QFont& getFont() const { return *_font; }
 
-    const std::list< const KeyFrame* >& getSelectedKeyFrames() const { return _selectedKeyFrames; }
+    const std::list< KeyFrame* >& getSelectedKeyFrames() const { return _selectedKeyFrames; }
 
     bool isSupportingOpenGLVAO() const { return _hasOpenGLVAOSupport; }
 
 private:
 
     /**
-     * @brief Returns an iterator pointing to a curve if a curve was nearby the point 'pt' which is
+     * @brief Returns an iterator pointing to a curve if a curve lies nearby the point 'pt' which is
      * widget coordinates.
     **/
     Curves::const_iterator isNearbyCurve(const QPoint& pt) const;
+    
+    /**
+     * @brief Returns a pointer to a keyframe if a keyframe lies nearby the point 'pt' which is
+     * widget coordinates.
+     **/
+    KeyFrame* isNearbyKeyFrame(const QPoint& pt) const;
 
     /**
      * @brief Selects the curve given in parameter and deselects any other curve in the widget.

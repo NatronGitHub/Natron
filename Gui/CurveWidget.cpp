@@ -113,17 +113,17 @@ void CurveGui::drawCurve(){
     glBegin(GL_POINTS);
     for(CurvePath::KeyFrames::const_iterator k = keyframes.begin();k!=keyframes.end();++k){
         glColor4f(_color.redF(), _color.greenF(), _color.blueF(), _color.alphaF());
-        const KeyFrame& key = (*k);
+        KeyFrame* key = (*k);
         //if the key is selected change its color to white
-        const std::list< const KeyFrame* >& selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
-        for(std::list< const KeyFrame* >::const_iterator it2 = selectedKeyFrames.begin();
+        const std::list< KeyFrame* >& selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
+        for(std::list< KeyFrame* >::const_iterator it2 = selectedKeyFrames.begin();
             it2 != selectedKeyFrames.end();++it2){
-            if(*(*it2) == key){
+            if((*it2) == key){
                 glColor4f(1.f,1.f,1.f,1.f);
                 break;
             }
         }
-        glVertex2f(key.getTime(),key.getValue().toDouble());
+        glVertex2f(key->getTime(),key->getValue().toDouble());
 
     }
     glEnd();
@@ -194,6 +194,14 @@ CurveGui* CurveWidget::createCurve(boost::shared_ptr<CurvePath> curve,const QStr
 void CurveWidget::removeCurve(CurveGui *curve){
     for(std::list<CurveGui* >::iterator it = _curves.begin();it!=_curves.end();++it){
         if((*it) == curve){
+            //remove all its keyframes from selected keys
+            const CurvePath::KeyFrames& keyFrames = (*it)->getInternalCurve()->getKeyFrames();
+            for (CurvePath::KeyFrames::const_iterator it2 = keyFrames.begin(); it2 != keyFrames.end(); ++it2) {
+                std::list<KeyFrame*>::iterator foundSelected = std::find(_selectedKeyFrames.begin(), _selectedKeyFrames.end(), *it2);
+                if(foundSelected != _selectedKeyFrames.end()){
+                    _selectedKeyFrames.erase(foundSelected);
+                }
+            }
             delete (*it);
             _curves.erase(it);
             break;
@@ -514,6 +522,22 @@ CurveWidget::Curves::const_iterator CurveWidget::isNearbyCurve(const QPoint &pt)
     return _curves.end();
 }
 
+KeyFrame* CurveWidget::isNearbyKeyFrame(const QPoint& pt) const{
+    for(Curves::const_iterator it = _curves.begin();it!=_curves.end();++it){
+        if((*it)->isVisible()){
+            const CurvePath::KeyFrames& keyFrames = (*it)->getInternalCurve()->getKeyFrames();
+            for (CurvePath::KeyFrames::const_iterator it2 = keyFrames.begin(); it2 != keyFrames.end(); ++it2) {
+                QPoint keyFramewidgetPos = toWidgetCoordinates((*it2)->getTime(), (*it2)->getValue().toDouble());
+                if((std::abs(pt.y() - keyFramewidgetPos.y()) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
+                   (std::abs(pt.x() - keyFramewidgetPos.x()) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)){
+                    return (*it2);
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
 void CurveWidget::selectCurve(CurveGui* curve){
     for(Curves::const_iterator it = _curves.begin();it!=_curves.end();++it){
         (*it)->setSelected(false);
@@ -530,6 +554,11 @@ void CurveWidget::mousePressEvent(QMouseEvent *event){
     CurveWidget::Curves::const_iterator foundCurveNearby = isNearbyCurve(event->pos());
     if(foundCurveNearby != _curves.end()){
         selectCurve(*foundCurveNearby);
+    }
+    _selectedKeyFrames.clear();
+    KeyFrame* selectedKey = isNearbyKeyFrame(event->pos());
+    if(selectedKey){
+        _selectedKeyFrames.push_back(selectedKey);
     }
 
     _zoomCtx._oldClick = event->pos();

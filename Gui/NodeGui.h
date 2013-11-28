@@ -60,7 +60,7 @@ public:
         
     public:
         
-        typedef std::vector< std::pair<std::string,MultidimensionalValue > > KnobValues;
+        typedef std::vector< std::pair<std::string,const MultidimensionalValue* > > KnobValues;
 
         
         SerializedState():_node(NULL){}

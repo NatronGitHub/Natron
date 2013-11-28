@@ -25,14 +25,8 @@ class TimeLine: public QObject {
 
 public:
 
-    TimeLine():
-      _firstFrame(0)
-    , _lastFrame(100)
-    , _currentFrame(0)
-    , _leftBoundary(_firstFrame)
-    , _rightBoundary(_lastFrame)
-    {}
-
+    TimeLine();
+    
     virtual ~TimeLine(){}
 
     SequenceTime firstFrame() const {return _firstFrame;}

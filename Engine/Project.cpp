@@ -244,7 +244,7 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
             if(!knob){
                 cout << "Couldn't restore knob value ( " << knobsValues[i].first << " )." << endl;
             }else{
-                knob->onStartupRestoration(knobsValues[i].second);
+                knob->onStartupRestoration(*knobsValues[i].second);
             }
         }
         if(!background){
@@ -319,8 +319,8 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
     }
     oArchive << boost::serialization::make_nvp("Nodes",nodeStates);
     oArchive << boost::serialization::make_nvp("Project_formats",_availableFormats);
-    oArchive << boost::serialization::make_nvp("Project_output_format",_formatKnob->getValue());
-    oArchive << boost::serialization::make_nvp("Project_views_count",_viewsCount->getValue());
+    oArchive << boost::serialization::make_nvp("Project_output_format",*_formatKnob->getValue());
+    oArchive << boost::serialization::make_nvp("Project_views_count",*_viewsCount->getValue());
     ofile.close();
 }
 

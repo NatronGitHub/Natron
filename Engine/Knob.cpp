@@ -232,7 +232,7 @@ KeyFrame::KeyFrame(double time,const Variant& initialValue)
     _rightTangent = initialValue;
 }
 
-CurvePath::CurvePath(const KeyFrame& cp)
+CurvePath::CurvePath(KeyFrame* cp)
     : _keyFrames()
     , _bbox()
     ,_betweenBeginAndEndRecord(false)
@@ -240,18 +240,38 @@ CurvePath::CurvePath(const KeyFrame& cp)
     setStart(cp);
 }
 
+CurvePath::~CurvePath(){ clearKeyFrames(); }
+
+void CurvePath::clearKeyFrames(){
+    for(KeyFrames::const_iterator it = _keyFrames.begin();it!=_keyFrames.end();++it){
+        delete (*it);
+    }
+    _keyFrames.clear();
+}
+
+void CurvePath::operator=(const CurvePath& other){
+    clearKeyFrames();
+    const KeyFrames& otherKeys = other.getKeyFrames();
+    for(KeyFrames::const_iterator it = otherKeys.begin();it!=otherKeys.end();++it){
+        KeyFrame* key = new KeyFrame(*(*it));
+        _keyFrames.push_back(key);
+    }
+    _bbox = other._bbox;
+    _betweenBeginAndEndRecord = other._betweenBeginAndEndRecord;
+}
+
 
 double CurvePath::getMinimumTimeCovered() const{
     assert(!_keyFrames.empty());
-    return _keyFrames.front().getTime();
+    return _keyFrames.front()->getTime();
 }
 
 double CurvePath::getMaximumTimeCovered() const{
     assert(!_keyFrames.empty());
-    return _keyFrames.back().getTime();
+    return _keyFrames.back()->getTime();
 }
 
-void CurvePath::setStart(const KeyFrame& cp){
+void CurvePath::setStart(KeyFrame* cp){
     if(!_keyFrames.empty()){
         //remove the already existing key frame
         _keyFrames.pop_front();
@@ -259,7 +279,7 @@ void CurvePath::setStart(const KeyFrame& cp){
     _keyFrames.push_front(cp);
 }
 
-void CurvePath::setEnd(const KeyFrame& cp){
+void CurvePath::setEnd(KeyFrame* cp){
     if(!_keyFrames.empty()){
         //remove the already existing key frame
         _keyFrames.pop_back();
@@ -267,7 +287,7 @@ void CurvePath::setEnd(const KeyFrame& cp){
     _keyFrames.push_back(cp);
 }
 
-void CurvePath::addControlPoint(const KeyFrame& cp)
+void CurvePath::addControlPoint(KeyFrame* cp)
 {
     KeyFrames::iterator newKeyIt = _keyFrames.end();
     if(_keyFrames.empty()){
@@ -276,12 +296,12 @@ void CurvePath::addControlPoint(const KeyFrame& cp)
         //finding a matching or the first greater key
         KeyFrames::iterator upper = _keyFrames.end();
         for(KeyFrames::iterator it = _keyFrames.begin();it!=_keyFrames.end();++it){
-            if((*it).getTime() > cp.getTime()){
+            if((*it)->getTime() > cp->getTime()){
                 upper = it;
                 break;
-            }else if((*it).getTime() == cp.getTime()){
+            }else if((*it)->getTime() == cp->getTime()){
                 //if the key already exists at this time, just modify it.
-                (*it).setValue(cp.getValue());
+                (*it)->setValue(cp->getValue());
                 return;
             }
         }
@@ -301,8 +321,8 @@ void CurvePath::addControlPoint(const KeyFrame& cp)
 }
 
 void CurvePath::refreshTangents(KeyFrames::iterator key){
-    double tcur = key->getTime();
-    double vcur = key->getValue().value<double>();
+    double tcur = (*key)->getTime();
+    double vcur = (*key)->getValue().value<double>();
     
     double tprev, vprev, tnext, vnext, vprevDerivRight, vnextDerivLeft;
     Natron::KeyframeType prevType, nextType;
@@ -314,10 +334,10 @@ void CurvePath::refreshTangents(KeyFrames::iterator key){
     } else {
         KeyFrames::const_iterator prev = key;
         --prev;
-        tprev = prev->getTime();
-        vprev = prev->getValue().value<double>();
-        vprevDerivRight = prev->getRightTangent().value<double>();
-        prevType = prev->getInterpolation();
+        tprev = (*prev)->getTime();
+        vprev = (*prev)->getValue().value<double>();
+        vprevDerivRight = (*prev)->getRightTangent().value<double>();
+        prevType = (*prev)->getInterpolation();
     }
     
     KeyFrames::const_iterator next = key;
@@ -328,15 +348,15 @@ void CurvePath::refreshTangents(KeyFrames::iterator key){
         vnextDerivLeft = 0.;
         nextType = Natron::KEYFRAME_NONE;
     } else {
-        tnext = next->getTime();
-        vnext = next->getValue().value<double>();
-        vnextDerivLeft = next->getLeftTangent().value<double>();
-        nextType = next->getInterpolation();
+        tnext = (*next)->getTime();
+        vnext = (*next)->getValue().value<double>();
+        vnextDerivLeft = (*next)->getLeftTangent().value<double>();
+        nextType = (*next)->getInterpolation();
     }
     
     double vcurDerivLeft,vcurDerivRight;
     Natron::autoComputeTangents<double>(prevType,
-                                key->getInterpolation(),
+                                (*key)->getInterpolation(),
                                 nextType,
                                 tprev, vprev,
                                 tcur, vcur,
@@ -346,15 +366,15 @@ void CurvePath::refreshTangents(KeyFrames::iterator key){
                                 &vcurDerivLeft, &vcurDerivRight);
     
     
-    key->setLeftTangent(Variant(vcurDerivLeft));
-    key->setRightTangent(Variant(vcurDerivRight));
+    (*key)->setLeftTangent(Variant(vcurDerivLeft));
+    (*key)->setRightTangent(Variant(vcurDerivRight));
 }
 
 
 
 Variant CurvePath::getValueAt(double t) const{
     assert(!_keyFrames.empty());
-    const Variant& firstKeyValue = _keyFrames.front().getValue();
+    const Variant& firstKeyValue = _keyFrames.front()->getValue();
     double v;
     switch(firstKeyValue.type()){
     case QVariant::Int :
@@ -391,7 +411,7 @@ Variant CurvePath::getValueAt(double t) const{
 Knob::Knob(KnobHolder* holder,const std::string& description,int dimension):
     _holder(holder)
   , _hashVector()
-  , _value(dimension)
+  , _value(new MultidimensionalValue(dimension))
   , _description(description)
   , _name(description.c_str())
   , _newLine(true)
@@ -433,14 +453,14 @@ void Knob::updateHash(){
 }
 
 void Knob::onStartupRestoration(const MultidimensionalValue& other){
-    _value.clone(other); //set the value
+    _value->clone(other); //set the value
     if(!_isInsignificant)
         updateHash(); //refresh hash if needed
     processNewValue(); // process new value if needed
     _holder->onValueChanged(this,Knob::USER_EDITED); // notify plugin the value changed
 
     //notify gui for each value changed
-    const std::map<int, Variant>& value = _value.getValueForEachDimension();
+    const std::map<int, Variant>& value = _value->getValueForEachDimension();
     for(std::map<int,Variant>::const_iterator it = value.begin();it!=value.end();++it){
         emit valueChanged(it->first,it->second);
     }
@@ -450,7 +470,7 @@ void Knob::onStartupRestoration(const MultidimensionalValue& other){
 
 void Knob::fillHashVector(){
     _hashVector.clear();
-    const std::map<int,Variant>& value = _value.getValueForEachDimension();
+    const std::map<int,Variant>& value = _value->getValueForEachDimension();
     for(std::map<int,Variant>::const_iterator it = value.begin();it!=value.end();++it){
         QByteArray data;
         QDataStream ds(&data,QIODevice::WriteOnly);
@@ -464,7 +484,7 @@ void Knob::fillHashVector(){
 }
 
 void Knob::setValueInternal(const Variant& v,int dimension){
-    _value.setValue(v, dimension);
+    _value->setValue(v, dimension);
     if(!_isInsignificant)
         updateHash();
     processNewValue();
@@ -475,7 +495,7 @@ void Knob::setValueInternal(const Variant& v,int dimension){
 }
 
 void Knob::onValueChanged(int dimension,const Variant& variant){
-    _value.setValue(variant, dimension);
+    _value->setValue(variant, dimension);
     if(!_isInsignificant)
         updateHash();
     processNewValue();
@@ -490,7 +510,7 @@ void Knob::onTimeChanged(SequenceTime time){
             boost::shared_ptr<CurvePath> curve = getCurve(i);
             if(curve && curve->isAnimated()){
                 Variant v = getValueAtTime(time,i);
-                _value.setValue(v, i);
+                _value->setValue(v, i);
                 if(!_isInsignificant)
                     updateHash();
                 processNewValue();
@@ -499,6 +519,28 @@ void Knob::onTimeChanged(SequenceTime time){
         }
     }
 }
+
+
+MultidimensionalValue::MultidimensionalValue(int dimension )
+: _dimension(dimension)
+{
+    //default initialize the values map
+    for(int i = 0; i < dimension ; ++i){
+        _value.insert(std::make_pair(i,Variant()));
+        _curves.insert(std::make_pair(i,boost::shared_ptr<CurvePath>(new CurvePath)));
+    }
+}
+
+MultidimensionalValue::MultidimensionalValue(const MultidimensionalValue& other):
+_value(other._value)
+,_dimension(other._dimension)
+,_curves(other._curves)
+{
+    
+}
+
+MultidimensionalValue::~MultidimensionalValue() { _value.clear(); _curves.clear(); }
+
 
 const Variant& MultidimensionalValue::getValue(int dimension) const{
     std::map<int,Variant>::const_iterator it = _value.find(dimension);
@@ -514,10 +556,9 @@ void MultidimensionalValue::setValue(const Variant& v,int dimension){
 }
 
 void MultidimensionalValue::setValueAtTime(double time, const Variant& v, int dimension){
-    KeyFrame key(time,v);
     CurvesMap::iterator foundDimension = _curves.find(dimension);
     assert(foundDimension != _curves.end());
-    foundDimension->second->addControlPoint(key);
+    foundDimension->second->addControlPoint(new KeyFrame(time,v));
 }
 
 void MultidimensionalValue::clone(const MultidimensionalValue& other) {
@@ -532,7 +573,7 @@ void MultidimensionalValue::clone(const MultidimensionalValue& other) {
 
 
 boost::shared_ptr<CurvePath> Knob::getCurve(int dimension) const{
-    return _value.getCurve(dimension);
+    return _value->getCurve(dimension);
 }
 
 boost::shared_ptr<CurvePath> MultidimensionalValue::getCurve(int dimension) const {
@@ -609,7 +650,7 @@ void KnobHolder::cloneKnobs(const KnobHolder& other){
 void Knob::cloneValue(const Knob& other){
     assert(_name == other._name);
     _hashVector = other._hashVector;
-    _value.clone(other._value);
+    _value->clone(*other._value);
     cloneExtraData(other);
 }
 

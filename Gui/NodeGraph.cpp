@@ -170,6 +170,7 @@ _previewsTurnedOff(false)
 }
 
 NodeGraph::~NodeGraph(){
+    QObject::disconnect(&_refreshCacheTextTimer,SIGNAL(timeout()),this,SLOT(updateCacheSizeText()));
     _nodeCreationShortcutEnabled = false;
     _nodes.clear();
     _nodesTrash.clear();

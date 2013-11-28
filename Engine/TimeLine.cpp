@@ -10,6 +10,13 @@
 
 #include <cassert>
 
+TimeLine::TimeLine():
+_firstFrame(0)
+, _lastFrame(0)
+, _currentFrame(0)
+, _leftBoundary(_firstFrame)
+, _rightBoundary(_lastFrame)
+{}
 
 void TimeLine::setFrameRange(SequenceTime first,SequenceTime last){
     SequenceTime oldFirst = _firstFrame;

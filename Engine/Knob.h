@@ -103,13 +103,16 @@ public:
     KeyFrame(double time,const Variant& initialValue);
     
     KeyFrame(const KeyFrame& other)
-    : _value(other._value)
-    , _time(other._time)
-    , _leftTangent(other._leftTangent)
-    , _rightTangent(other._rightTangent)
-    , _interpolation(other._interpolation)
     {
-        
+        clone(other);
+    }
+    
+    void clone(const KeyFrame& other){
+        _value = other._value;
+        _time = other._time;
+        _rightTangent = other._rightTangent;
+        _leftTangent = other._leftTangent;
+        _interpolation = other._interpolation;
     }
 
     ~KeyFrame(){}
@@ -176,7 +179,7 @@ public:
     
     
     //each segment of curve between a keyframe and the next can have a different interpolation method
-    typedef std::list< KeyFrame > KeyFrames;
+    typedef std::list< KeyFrame* > KeyFrames;
 
 
     enum InterpolableType{
@@ -184,31 +187,28 @@ public:
         DOUBLE = 1
     };
     
-    CurvePath(){}
-    
-    CurvePath(const CurvePath& other):
-     _keyFrames(other._keyFrames)
-    ,_bbox()
-    ,_betweenBeginAndEndRecord(false)
+    CurvePath()
+    : _keyFrames()
+    , _bbox()
+    , _betweenBeginAndEndRecord(false)
     {}
-
-    CurvePath(const KeyFrame& cp);
-
-    ~CurvePath(){}
     
-    void operator=(const CurvePath& other){
-        _keyFrames = other._keyFrames;
-        _bbox = other._bbox;
-        _betweenBeginAndEndRecord = other._betweenBeginAndEndRecord;
-    }
+    CurvePath(const CurvePath& other)
+    { *this = other; }
 
+    CurvePath(KeyFrame* cp);
+    
+    ~CurvePath();
+    
+    void operator=(const CurvePath& other);
+    
     bool isAnimated() const { return _keyFrames.size() > 1; }
     
-    void addControlPoint(const KeyFrame& cp);
+    void addControlPoint(KeyFrame* cp);
 
-    void setStart(const KeyFrame& cp);
+    void setStart(KeyFrame* cp);
 
-    void setEnd(const KeyFrame& cp);
+    void setEnd(KeyFrame* cp);
 
     int getControlPointsCount() const { return (int)_keyFrames.size(); }
 
@@ -216,9 +216,9 @@ public:
 
     double getMaximumTimeCovered() const;
 
-    const KeyFrame& getStart() const { assert(!_keyFrames.empty()); return _keyFrames.front(); }
+    const KeyFrame* getStart() const { assert(!_keyFrames.empty()); return _keyFrames.front(); }
 
-    const KeyFrame& getEnd() const { assert(!_keyFrames.empty()); return _keyFrames.back(); }
+    const KeyFrame* getEnd() const { assert(!_keyFrames.empty()); return _keyFrames.back(); }
     
     void beginRecordBoundingBox() const { _betweenBeginAndEndRecord = true; _bbox.clear(); }
 
@@ -232,7 +232,7 @@ public:
 
     void refreshTangents(KeyFrames::iterator key);
 
-    
+    void clearKeyFrames();
 private:
 
 
@@ -241,19 +241,19 @@ private:
         assert(!_keyFrames.empty());
         if (_keyFrames.size() == 1) {
             //if there's only 1 keyframe, don't bother interpolating
-            return (*_keyFrames.begin()).getValue().value<T>();
+            return (*_keyFrames.begin())->getValue().value<T>();
         }
         double tcur,tnext;
         T vcurDerivRight ,vnextDerivLeft ,vcur ,vnext ;
         Natron::KeyframeType interp ,interpNext;
         KeyFrames::const_iterator upper = _keyFrames.end();
         for(KeyFrames::const_iterator it = _keyFrames.begin();it!=_keyFrames.end();++it){
-            if((*it).getTime() > t){
+            if((*it)->getTime() > t){
                 upper = it;
                 break;
-            }else if((*it).getTime() == t){
+            }else if((*it)->getTime() == t){
                 //if the time is exactly the time of a keyframe, return its value
-                return (*it).getValue().value<T>();
+                return (*it)->getValue().value<T>();
             }
         }
 
@@ -265,33 +265,33 @@ private:
 
         //if we found no key that has a greater time (i.e: we search before the 1st keyframe)
         if (upper == _keyFrames.begin()) {
-            tnext = upper->getTime();
-            vnext = upper->getValue().value<double>();
-            vnextDerivLeft = upper->getLeftTangent().value<double>();
-            interpNext = upper->getInterpolation();
+            tnext = (*upper)->getTime();
+            vnext = (*upper)->getValue().value<double>();
+            vnextDerivLeft = (*upper)->getLeftTangent().value<double>();
+            interpNext = (*upper)->getInterpolation();
             tcur = tnext - 1.;
             vcur = vnext;
             vcurDerivRight = 0.;
             interp = Natron::KEYFRAME_NONE;
 
         } else if (upper == _keyFrames.end()) {
-            tcur = prev->getTime();
-            vcur = prev->getValue().value<double>();
-            vcurDerivRight = prev->getRightTangent().value<double>();
-            interp = prev->getInterpolation();
+            tcur = (*prev)->getTime();
+            vcur = (*prev)->getValue().value<double>();
+            vcurDerivRight = (*prev)->getRightTangent().value<double>();
+            interp = (*prev)->getInterpolation();
             tnext = tcur + 1.;
             vnext = vcur;
             vnextDerivLeft = 0.;
             interpNext = Natron::KEYFRAME_NONE;
         } else {
-            tcur = prev->getTime();
-            vcur = prev->getValue().value<double>();
-            vcurDerivRight = prev->getRightTangent().value<double>();
-            interp = prev->getInterpolation();
-            tnext = upper->getTime();
-            vnext = upper->getValue().value<double>();
-            vnextDerivLeft = upper->getLeftTangent().value<double>();
-            interpNext = upper->getInterpolation();
+            tcur = (*prev)->getTime();
+            vcur = (*prev)->getValue().value<double>();
+            vcurDerivRight = (*prev)->getRightTangent().value<double>();
+            interp = (*prev)->getInterpolation();
+            tnext = (*upper)->getTime();
+            vnext = (*upper)->getValue().value<double>();
+            vnextDerivLeft = (*upper)->getLeftTangent().value<double>();
+            interpNext = (*upper)->getInterpolation();
         }
         
         return Natron::interpolate<T>(tcur,vcur,
@@ -345,25 +345,11 @@ public:
     /// Note that 2 connected curves share a pointer to the same keyframe.
     typedef std::map<int, boost::shared_ptr<CurvePath> > CurvesMap;
     
-    MultidimensionalValue(int dimension = 1)
-    : _dimension(dimension)
-    {
-        //default initialize the values map
-        for(int i = 0; i < dimension ; ++i){
-            _value.insert(std::make_pair(i,Variant()));
-            _curves.insert(std::make_pair(i,boost::shared_ptr<CurvePath>(new CurvePath)));
-        }
-    }
+    MultidimensionalValue(int dimension = 1);
     
-    MultidimensionalValue(const MultidimensionalValue& other):
-    _value(other._value)
-    ,_dimension(other._dimension)
-    ,_curves(other._curves)
-    {
-        
-    }
+    MultidimensionalValue(const MultidimensionalValue& other);
     
-    ~MultidimensionalValue() { _value.clear(); _curves.clear(); }
+    ~MultidimensionalValue();
 
     void clone(const MultidimensionalValue& other);
     
@@ -417,7 +403,7 @@ public:
     
     KnobHolder*  getHolder() const { return _holder; }
     
-    int getDimension() const {return _value.getDimension();}
+    int getDimension() const {return _value->getDimension();}
     
     /*Must return the type name of the knob. This name will be used by the KnobFactory
      to create an instance of this knob.*/
@@ -444,14 +430,14 @@ public:
      way to retrieve results in the expected type.*/
     template<typename T>
     T getValue(int dimension = 0) const {
-        return _value.getValue(dimension).value<T>();
+        return _value->getValue(dimension).value<T>();
     }
     
-    const MultidimensionalValue& getValue() const { return _value; }
+    const MultidimensionalValue* getValue() const { return _value; }
     
-    const std::map<int,Variant>& getValueForEachDimension() const { return _value.getValueForEachDimension(); }
+    const std::map<int,Variant>& getValueForEachDimension() const { return _value->getValueForEachDimension(); }
 
-    RectD getCurvesBoundingBox() const { return _value.getCurvesBoundingBox(); }
+    RectD getCurvesBoundingBox() const { return _value->getCurvesBoundingBox(); }
     
     /**
      * @brief Must return true if this knob can animate (i.e: if we can set different values depending on the time)
@@ -472,7 +458,7 @@ public:
     void setValueAtTime(double time,const T& value,int dimensionIndex = 0){
         assert(dimensionIndex < getDimension());
         assert(canAnimate());
-        _value.setValueAtTime(time,Variant(value),dimensionIndex);
+        _value->setValueAtTime(time,Variant(value),dimensionIndex);
     }
 
     /**
@@ -482,7 +468,7 @@ public:
     void setValueAtTime(double time,T variant[],int count){
         assert(canAnimate());
         for(int i = 0; i < count; ++i){
-            _value.setValueAtTime(time,Variant(variant[i]),i);
+            _value->setValueAtTime(time,Variant(variant[i]),i);
         }
     }
 
@@ -495,7 +481,7 @@ public:
     template<typename T>
     T getValueAtTime(double time,int dimension = 0) const {
         assert(canAnimate());
-        return _value.getValueAtTime(time,dimension).value<T>();
+        return _value->getValueAtTime(time,dimension).value<T>();
     }
 
     /**
@@ -506,7 +492,7 @@ public:
      **/
     Variant getValueAtTime(double time,int dimension = 0){
         assert(canAnimate());
-         return _value.getValueAtTime(time,dimension);
+         return _value->getValueAtTime(time,dimension);
     }
 
     /**
@@ -616,7 +602,7 @@ private:
     
     KnobHolder*  _holder;
     std::vector<U64> _hashVector;
-    MultidimensionalValue _value;
+    MultidimensionalValue* _value;
     std::string _description;//< the text label that will be displayed  on the GUI
     QString _name;//< the knob can have a name different than the label displayed on GUI.
     //By default this is the same as _description but can be set by calling setName().
