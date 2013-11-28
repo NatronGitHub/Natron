@@ -430,7 +430,7 @@ void VideoEngine::run(){
 
                (_tree.isOutputAViewer() // #2 the Tree contains only 1 frame and we rendered it
                 &&  _currentRunArgs._recursiveCall
-                && _timeline->lastFrame() == _timeline->firstFrame()
+                &&  firstFrame == lastFrame
                 && _currentRunArgs._frameRequestsCount == -1
                 && _currentRunArgs._frameRequestIndex == 1)
 

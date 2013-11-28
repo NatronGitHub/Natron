@@ -192,7 +192,7 @@ void TimeLineGui::paintGL(){
     QPoint firstFrameWidgetPos = toWidgetCoordinates(_imp->_timeline->firstFrame(),0);
     QPoint lastFrameWidgetPos = toWidgetCoordinates(_imp->_timeline->lastFrame(),0);
 
-   // glPushAttrib(GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT);
+    // glPushAttrib(GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT);
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glScissor(firstFrameWidgetPos.x(),0,
               lastFrameWidgetPos.x() - firstFrameWidgetPos.x(),height());
@@ -444,7 +444,6 @@ void TimeLineGui::mousePressEvent(QMouseEvent* e){
         }else{ // moving first frame anchor
             setBoundaries(c,_imp->_timeline->rightBound());
         }
-        updateGL();
     }else{
         _imp->_state = DRAGGING_CURSOR;
         seek(c);
@@ -566,9 +565,10 @@ void TimeLineGui::onFrameRangeChanged(SequenceTime first , SequenceTime last ){
 }
 
 void TimeLineGui::setBoundaries(SequenceTime first,SequenceTime last){
-
-    emit boundariesChanged(first,last);
-    updateGL();
+    if(first <= last){
+        emit boundariesChanged(first,last);
+        updateGL();
+    }
 }
 
 void TimeLineGui::onBoundariesChanged(SequenceTime ,SequenceTime ){
