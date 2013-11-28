@@ -80,8 +80,8 @@ T interpolate(double tcur, const T vcur, //start control point
         //i.e: hermite cubic spline interpolation
         return ((2 * t3 - 3 * t2 + 1) * P0 +
                 (t3 - 2 * t2 + t) * P0pr +
-                (-2 * t3 + 3 * t2) * P3pl +
-                (t3 - t2) * P3);
+                (-2 * t3 + 3 * t2) * P3 +
+                (t3 - t2) * P3pl);
     case KEYFRAME_CONSTANT:
         return t < tnext ? P0 : P3;
     case KEYFRAME_NONE:
