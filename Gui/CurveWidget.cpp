@@ -44,6 +44,8 @@ CurveGui::CurveGui(const CurveWidget *curveWidget,
         _visible = true;
     }
 
+    QObject::connect(this,SIGNAL(curveChanged()),curveWidget,SLOT(updateGL()));
+
 }
 
 CurveGui::~CurveGui(){
@@ -140,6 +142,7 @@ double CurveGui::evaluate(double x) const{
     return _internalCurve->getValueAt(x).toDouble();
 }
 
+void CurveGui::setVisible(bool visible) { _visible = visible; emit curveChanged(); }
 
 CurveWidget::CurveWidget(QWidget* parent, const QGLWidget* shareWidget)
     : QGLWidget(parent,shareWidget)

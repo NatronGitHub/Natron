@@ -20,8 +20,10 @@
 class CurvePath;
 class KeyFrame;
 class CurveWidget;
-class CurveGui {
+class CurveGui : public QObject {
     
+    Q_OBJECT
+
 public:
     
 
@@ -46,7 +48,7 @@ public:
 
     bool isVisible() const { return _visible; }
 
-    void setVisible(bool visible) { _visible = visible; }
+    void setVisible(bool visible) ;
 
     bool isSelected() const { return _selected; }
 
@@ -62,7 +64,9 @@ public:
 
     void drawCurve();
 
+signals:
 
+    void curveChanged();
     
 private:
 
