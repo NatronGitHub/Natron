@@ -944,7 +944,7 @@ SequenceItemDelegate::SequenceItemDelegate(SequenceFileDialog* fd) : QStyledItem
 
 void SequenceItemDelegate::setNameMapping(const std::vector<std::pair<QString, std::pair<qint64, QString> > >& nameMapping) {
     _maxW = 200;
-    QFont f("Times",6);
+    QFont f(NATRON_FONT_ALT, NATRON_FONT_SIZE_6);
     QFontMetrics metric(f);
     {
         QWriteLocker locker(&_nameMappingMutex);

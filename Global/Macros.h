@@ -38,6 +38,15 @@
 #define NATRON_PREVIEW_WIDTH 64
 #define NATRON_PREVIEW_HEIGHT 48
 #define NATRON_WHEEL_ZOOM_PER_DELTA 1.00152 // 120 wheel deltas (one click on a standard wheel mouse) is x1.2
+//#define NATRON_FONT "Helvetica"
+//#define NATRON_FONT_ALT "Times"
+#define NATRON_FONT "Droid Sans"
+#define NATRON_FONT_ALT "Droid Sans"
+#define NATRON_FONT_SIZE_6 6
+#define NATRON_FONT_SIZE_8 8
+#define NATRON_FONT_SIZE_10 10
+#define NATRON_FONT_SIZE_12 12
+#define NATRON_FONT_SIZE_13 13
 
 // The following was grabbed from WTF/wtf/Compiler.h (where WTF was replaced by POWITER)
 

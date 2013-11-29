@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     QCoreApplication* app = NULL;
     if(!isBackGround){
         QApplication* guiApp = new QApplication(argc, argv);
-        guiApp->setFont(QFont("Helvetica",12));
+        guiApp->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_12));
         app = guiApp;
     }else{
         app = new QCoreApplication(argc,argv);
@@ -129,6 +129,19 @@ int main(int argc, char *argv[])
 #ifndef NATRON_DEBUG
         splashScreen->show();
 #endif
+        //load custom fonts
+        QString fontResource = QString(":/Resources/Fonts/%1.ttf");
+
+        QStringList fontFilenames;
+        fontFilenames << fontResource.arg("DroidSans");
+        fontFilenames << fontResource.arg("DroidSans-Bold");
+
+        foreach(QString fontFilename, fontFilenames)
+        {
+            qDebug() << "attempting to load" << fontFilename;
+            int fontID = QFontDatabase::addApplicationFont(fontFilename);
+            qDebug() << "fontID=" << fontID << "families=" << QFontDatabase::applicationFontFamilies(fontID);
+        }
         QCoreApplication::processEvents();
     }else{
         printBackGroundWelcomeMessage();
