@@ -89,6 +89,7 @@ DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS
 
 SOURCES += \
     Engine/ChannelSet.cpp \
+    Engine/Curve.cpp \
     Engine/EffectInstance.cpp \
     Engine/Hash64.cpp \
     Engine/Image.cpp \
@@ -158,6 +159,8 @@ SOURCES += \
 
 HEADERS += \
     Engine/Cache.h \
+    Engine/Curve.h \
+    Engine/CurveSerialization.h \
     Engine/Rect.h \
     Engine/ChannelSet.h \
     Engine/EffectInstance.h \
@@ -262,8 +265,8 @@ HEADERS += \
     libs/OpenFX_extensions//tuttle/ofxMetadata.h \
     libs/OpenFX_extensions//tuttle/ofxParam.h \
     libs/OpenFX_extensions//tuttle/ofxParamAPI.h \
-    libs/OpenFX_extensions//tuttle/ofxReadWrite.h
-
+    libs/OpenFX_extensions//tuttle/ofxReadWrite.h \
+    Engine/CurvePrivate.h
 
 
 INSTALLS += target

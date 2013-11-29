@@ -23,6 +23,7 @@
 #include "Engine/Lut.h"
 #include "Gui/KnobGui.h"
 #include "Engine/Row.h"
+#include "Global/AppManager.h"
 
 using std::make_pair;
 using std::cout; using std::endl;

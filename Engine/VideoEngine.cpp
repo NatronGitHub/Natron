@@ -87,7 +87,6 @@ VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
 , _timeline(owner->getNode()->getApp()->getTimeLine())
 , _processAborter(NULL)
 {
-    
 }
 
 VideoEngine::~VideoEngine() {

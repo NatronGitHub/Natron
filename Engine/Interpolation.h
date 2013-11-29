@@ -15,21 +15,11 @@
 
 #include <cmath>
 #include <stdexcept>
-
+#include "Global/Enums.h"
 namespace Natron
 {
 
-enum KeyframeType {
-    KEYFRAME_CONSTANT = 0,
-    KEYFRAME_LINEAR = 1,
-    KEYFRAME_SMOOTH = 2,
-    KEYFRAME_CATMULL_ROM = 3,
-    KEYFRAME_CUBIC = 4,
-    KEYFRAME_HORIZONTAL = 5,
-    KEYFRAME_FREE = 6,
-    KEYFRAME_BROKEN = 7,
-    KEYFRAME_NONE = 8
-};
+
 
 /**
  * @brief Interpolates using the control points P0(t0,v0) , P3(t3,v3)

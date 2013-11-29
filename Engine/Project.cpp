@@ -14,10 +14,8 @@
 #include <QtCore/QXmlStreamReader>
 #include <QtCore/QXmlStreamWriter>
 
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/archive/xml_iarchive.hpp>
+
 #include <boost/serialization/utility.hpp>
-#include <boost/serialization/list.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/archive/archive_exception.hpp>
 
@@ -29,6 +27,7 @@
 #include "Engine/Knob.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/VideoEngine.h"
+#include "Engine/CurveSerialization.h"
 
 #include "Gui/NodeGui.h"
 #include "Gui/ViewerTab.h"
@@ -104,7 +103,7 @@ void Project::initializeKnobs(){
     
     
     _viewsCount = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int",this,"Number of views"));
-    _viewsCount->ifAnimatingTurnOffAnimation();
+    _viewsCount->turnOffAnimation();
     _viewsCount->setMinimum(1);
     _viewsCount->setValue(1);
     _viewsCount->disableSlider();
@@ -209,8 +208,8 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
         }
         _formatKnob->populate(entries);
         
-        MultidimensionalValue formatValue(_formatKnob->getDimension());
-        MultidimensionalValue viewsValue(_viewsCount->getDimension());
+        AnimatingParam formatValue(_formatKnob->getDimension());
+        AnimatingParam viewsValue(_viewsCount->getDimension());
         iArchive >> boost::serialization::make_nvp("Project_output_format",formatValue);
         _formatKnob->onStartupRestoration(formatValue);
         setAutoSetProjectFormat(false);
@@ -231,7 +230,7 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
         }
         
         Node* n = getApp()->createNode(state.getClassName().c_str(),true);
-        
+        n->getLiveInstance()->beginValuesChanged(AnimatingParam::PLUGIN_EDITED,true);
         if(n->pluginID() == "Writer" || (n->isOpenFXNode() && n->isOutputNode())){
             hasProjectAWriter = true;
         }
@@ -260,6 +259,8 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
             nGui->setPos(state.getX(),state.getY());
             getApp()->deselectAllNodes();
         }
+
+        n->getLiveInstance()->endValuesChanged(AnimatingParam::PLUGIN_EDITED);
     }
     
     if(!hasProjectAWriter && background){
@@ -327,8 +328,8 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
     }
     oArchive << boost::serialization::make_nvp("Nodes",nodeStates);
     oArchive << boost::serialization::make_nvp("Project_formats",_availableFormats);
-    oArchive << boost::serialization::make_nvp("Project_output_format",*_formatKnob->getValue());
-    oArchive << boost::serialization::make_nvp("Project_views_count",*_viewsCount->getValue());
+    oArchive << boost::serialization::make_nvp("Project_output_format",dynamic_cast<const AnimatingParam&>(*_formatKnob));
+    oArchive << boost::serialization::make_nvp("Project_views_count",dynamic_cast<const AnimatingParam&>(*_viewsCount));
     ofile.close();
 }
 

@@ -27,7 +27,7 @@ static double AXIS_MIN = -100000.;
 
 
 CurveGui::CurveGui(const CurveWidget *curveWidget,
-                   boost::shared_ptr<CurvePath> curve,
+                   boost::shared_ptr<Curve> curve,
                    const QString& name,
                    const QColor& color,
                    int thickness)
@@ -106,12 +106,12 @@ void CurveGui::drawCurve(){
 
 
     //draw keyframes
-    const CurvePath::KeyFrames& keyframes = _internalCurve->getKeyFrames();
+    const Curve::KeyFrames& keyframes = _internalCurve->getKeyFrames();
     glPointSize(7.f);
     glEnable(GL_POINT_SMOOTH);
 
     glBegin(GL_POINTS);
-    for(CurvePath::KeyFrames::const_iterator k = keyframes.begin();k!=keyframes.end();++k){
+    for(Curve::KeyFrames::const_iterator k = keyframes.begin();k!=keyframes.end();++k){
         glColor4f(_color.redF(), _color.greenF(), _color.blueF(), _color.alphaF());
         KeyFrame* key = (*k);
         //if the key is selected change its color to white
@@ -183,7 +183,7 @@ void CurveWidget::initializeGL(){
     }
 }
 
-CurveGui* CurveWidget::createCurve(boost::shared_ptr<CurvePath> curve,const QString& name){
+CurveGui* CurveWidget::createCurve(boost::shared_ptr<Curve> curve,const QString& name){
     updateGL(); //force initializeGL to be called if it wasn't before.
     CurveGui* curveGui = new CurveGui(this,curve,name,QColor(255,255,255),1);
     _curves.push_back(curveGui);
@@ -197,8 +197,8 @@ void CurveWidget::removeCurve(CurveGui *curve){
     for(std::list<CurveGui* >::iterator it = _curves.begin();it!=_curves.end();++it){
         if((*it) == curve){
             //remove all its keyframes from selected keys
-            const CurvePath::KeyFrames& keyFrames = (*it)->getInternalCurve()->getKeyFrames();
-            for (CurvePath::KeyFrames::const_iterator it2 = keyFrames.begin(); it2 != keyFrames.end(); ++it2) {
+            const Curve::KeyFrames& keyFrames = (*it)->getInternalCurve()->getKeyFrames();
+            for (Curve::KeyFrames::const_iterator it2 = keyFrames.begin(); it2 != keyFrames.end(); ++it2) {
                 SelectedKeys::iterator foundSelected = _selectedKeyFrames.end();
                 for(SelectedKeys::iterator it3 = _selectedKeyFrames.begin();it3!=_selectedKeyFrames.end();++it3){
                     if (it3->second == *it2) {
@@ -533,8 +533,8 @@ CurveWidget::Curves::const_iterator CurveWidget::isNearbyCurve(const QPoint &pt)
 std::pair<CurveGui*,KeyFrame*> CurveWidget::isNearbyKeyFrame(const QPoint& pt) const{
     for(Curves::const_iterator it = _curves.begin();it!=_curves.end();++it){
         if((*it)->isVisible()){
-            const CurvePath::KeyFrames& keyFrames = (*it)->getInternalCurve()->getKeyFrames();
-            for (CurvePath::KeyFrames::const_iterator it2 = keyFrames.begin(); it2 != keyFrames.end(); ++it2) {
+            const Curve::KeyFrames& keyFrames = (*it)->getInternalCurve()->getKeyFrames();
+            for (Curve::KeyFrames::const_iterator it2 = keyFrames.begin(); it2 != keyFrames.end(); ++it2) {
                 QPoint keyFramewidgetPos = toWidgetCoordinates((*it2)->getTime(), (*it2)->getValue().toDouble());
                 if((std::abs(pt.y() - keyFramewidgetPos.y()) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
                    (std::abs(pt.x() - keyFramewidgetPos.x()) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)){
@@ -627,16 +627,16 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
             if(diffTime != 0){
                 //find out if the new value will be in the interval [previousKey,nextKey]
                 double newValue = (*it).second->getTime() + std::ceil(diffTime);
-                const CurvePath::KeyFrames& keys = (*it).first->getInternalCurve()->getKeyFrames();
-                CurvePath::KeyFrames::const_iterator foundKey = std::find(keys.begin(), keys.end(), (*it).second);
+                const Curve::KeyFrames& keys = (*it).first->getInternalCurve()->getKeyFrames();
+                Curve::KeyFrames::const_iterator foundKey = std::find(keys.begin(), keys.end(), (*it).second);
                 assert(foundKey != keys.end());
-                CurvePath::KeyFrames::const_iterator prevKey = foundKey;
+                Curve::KeyFrames::const_iterator prevKey = foundKey;
                 if(foundKey != keys.begin()){
                     --prevKey;
                 }else{
                     prevKey = keys.end();
                 }
-                CurvePath::KeyFrames::const_iterator nextKey = foundKey;
+                Curve::KeyFrames::const_iterator nextKey = foundKey;
                 ++nextKey;
                 
                 if(((prevKey != keys.end() && newValue > (*prevKey)->getTime()) || prevKey == keys.end())

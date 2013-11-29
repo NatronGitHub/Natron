@@ -25,13 +25,11 @@
 #endif
 
 #include "Readers/Reader.h"
-#include "Gui/KnobGui.h"
 #include "Engine/Node.h"
-#include "Gui/NodeGui.h"
-#include "Gui/ViewerGL.h"
 #include "Engine/Lut.h"
 #include "Engine/Row.h"
 #include "Engine/ImageInfo.h"
+#include "Engine/Image.h"
 
 #ifndef OPENEXR_IMF_NAMESPACE
 #define OPENEXR_IMF_NAMESPACE Imf

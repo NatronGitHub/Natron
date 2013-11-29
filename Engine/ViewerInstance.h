@@ -15,12 +15,13 @@
 #include <string>
 #include <QtCore/QFutureWatcher>
 #include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
 
 #include "Global/Macros.h"
 #include "Engine/Node.h"
 #include "Engine/ImageInfo.h"
 #include "Engine/EffectInstance.h"
-
+#include "Gui/Texture.h"
 class TabWidget;
 class ViewerTab;
 class AppInstance;

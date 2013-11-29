@@ -18,23 +18,9 @@
 #include <cfloat>
 
 #include <QtCore/QMutex>
-#include <QtCore/QStringList>
-
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/serialization/shared_ptr.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/utility.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
 
 #include "Global/GlobalDefines.h"
-#include "Global/AppManager.h"
-
-#include "Engine/Variant.h"
-#include "Engine/Rect.h"
-#include "Engine/Interpolation.h"
+#include "Engine/Curve.h"
 
 class Knob;
 class holder;
@@ -73,346 +59,23 @@ private:
 };
 
 
-/**
- * @brief A KeyFrame is a pair <time,value>. These are the value that are used
- * to interpolate an AnimationCurve. The _leftTangent and _rightTangent can be
- * used by the interpolation method of the curve.
-**/
-class KeyFrame : public QObject {
-    
-    Q_OBJECT
-    
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
-    {
-        (void)version;
-        ar & boost::serialization::make_nvp("Time",_time);
-        ar & boost::serialization::make_nvp("Value",_value);
-        ar & boost::serialization::make_nvp("InterpolationMethod",_interpolation);
-        ar & boost::serialization::make_nvp("LeftTangent",_leftTangent);
-        ar & boost::serialization::make_nvp("RightTangent",_rightTangent);
-    }
-    
-public:
-
-    KeyFrame()
-    : _value()
-    , _time(0)
-    , _interpolation(Natron::KEYFRAME_LINEAR)
-    {}
-    
-    KeyFrame(double time,const Variant& initialValue);
-    
-    KeyFrame(const KeyFrame& other)
-    {
-        clone(other);
-    }
-    
-    void clone(const KeyFrame& other){
-        _value = other._value;
-        _time = other._time;
-        _rightTangent = other._rightTangent;
-        _leftTangent = other._leftTangent;
-        _interpolation = other._interpolation;
-    }
-
-    ~KeyFrame(){}
-    
-    bool operator==(const KeyFrame& o) const {
-        return _value == o._value &&
-        _time == o._time;
-    }
-    
-    const Variant& getValue() const { return _value; }
-    
-    double getTime() const { return _time; }
-    
-    const Variant& getLeftTangent() const { return _leftTangent; }
-    
-    const Variant& getRightTangent() const { return _rightTangent; }
-
-    void setLeftTangent(const Variant& v);
-    
-    void setRightTangent(const Variant& v);
-    
-    void setValue(const Variant& v);
-    
-    void setTime(double time);
-    
-    void setInterpolation(Natron::KeyframeType interp) { _interpolation = interp; }
-    
-    Natron::KeyframeType getInterpolation() const { return _interpolation; }
-    
-signals:
-    
-    void keyFrameChanged();
-    void mustRefreshTangents(KeyFrame*);
-    
-private:
-    
-    
-    Variant _value; /// the value held by the key
-    double _time; /// a value ranging between 0 and 1
-    
-    Variant _leftTangent,_rightTangent;
-    Natron::KeyframeType _interpolation;
-
-};
-
-Q_DECLARE_METATYPE(KeyFrame*)
-/**
-  * @brief A CurvePath is a list of chained curves. Each curve is a set of 2 keyFrames and has its
-  * own interpolation method (that can differ from other curves).
-**/
-class CurvePath : public QObject {
-    
-    Q_OBJECT
-    
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
-    {
-        (void)version;
-        ar & boost::serialization::make_nvp("KeyFrames",_keyFrames);
-    }
-    
-public:
-    
-    
-    //each segment of curve between a keyframe and the next can have a different interpolation method
-    typedef std::list< KeyFrame* > KeyFrames;
-
-
-    enum InterpolableType{
-        INT = 0,
-        DOUBLE = 1
-    };
-    
-    CurvePath()
-    : _keyFrames()
-    , _bbox()
-    , _betweenBeginAndEndRecord(false)
-    {}
-    
-    CurvePath(const CurvePath& other)
-    { *this = other; }
-
-    CurvePath(KeyFrame* cp);
-    
-    ~CurvePath();
-    
-    void operator=(const CurvePath& other);
-    
-    bool isAnimated() const { return _keyFrames.size() > 1; }
-    
-    void addControlPoint(KeyFrame* cp);
-
-    void setStart(KeyFrame* cp);
-
-    void setEnd(KeyFrame* cp);
-
-    int getControlPointsCount() const { return (int)_keyFrames.size(); }
-
-    double getMinimumTimeCovered() const;
-
-    double getMaximumTimeCovered() const;
-
-    const KeyFrame* getStart() const { assert(!_keyFrames.empty()); return _keyFrames.front(); }
-
-    const KeyFrame* getEnd() const { assert(!_keyFrames.empty()); return _keyFrames.back(); }
-    
-    void beginRecordBoundingBox() const { _betweenBeginAndEndRecord = true; _bbox.clear(); }
-
-    Variant getValueAt(double t) const;
-    
-    void endRecordBoundingBox() const { _betweenBeginAndEndRecord = false; }
-    
-    const RectD& getBoundingBox() const { return _bbox; }
-    
-    const KeyFrames& getKeyFrames() const { return _keyFrames; }
-
-    void refreshTangents(KeyFrames::iterator key);
-
-    void clearKeyFrames();
-    
-signals:
-    
-    void keyFrameChanged();
-    
-public slots:
-    
-    void computeKeyTangents(KeyFrame* k);
-
-private:
-
-
-    template <typename T>
-    T getValueAtInternal(double t) const {
-        assert(!_keyFrames.empty());
-        if (_keyFrames.size() == 1) {
-            //if there's only 1 keyframe, don't bother interpolating
-            return (*_keyFrames.begin())->getValue().value<T>();
-        }
-        double tcur,tnext;
-        T vcurDerivRight ,vnextDerivLeft ,vcur ,vnext ;
-        Natron::KeyframeType interp ,interpNext;
-        KeyFrames::const_iterator upper = _keyFrames.end();
-        for(KeyFrames::const_iterator it = _keyFrames.begin();it!=_keyFrames.end();++it){
-            if((*it)->getTime() > t){
-                upper = it;
-                break;
-            }else if((*it)->getTime() == t){
-                //if the time is exactly the time of a keyframe, return its value
-                return (*it)->getValue().value<T>();
-            }
-        }
-
-
-        //if all keys have a greater time (i.e: we search after the last keyframe)
-        KeyFrames::const_iterator prev = upper;
-        --prev;
-
-
-        //if we found no key that has a greater time (i.e: we search before the 1st keyframe)
-        if (upper == _keyFrames.begin()) {
-            tnext = (*upper)->getTime();
-            vnext = (*upper)->getValue().value<double>();
-            vnextDerivLeft = (*upper)->getLeftTangent().value<double>();
-            interpNext = (*upper)->getInterpolation();
-            tcur = tnext - 1.;
-            vcur = vnext;
-            vcurDerivRight = 0.;
-            interp = Natron::KEYFRAME_NONE;
-
-        } else if (upper == _keyFrames.end()) {
-            tcur = (*prev)->getTime();
-            vcur = (*prev)->getValue().value<double>();
-            vcurDerivRight = (*prev)->getRightTangent().value<double>();
-            interp = (*prev)->getInterpolation();
-            tnext = tcur + 1.;
-            vnext = vcur;
-            vnextDerivLeft = 0.;
-            interpNext = Natron::KEYFRAME_NONE;
-        } else {
-            tcur = (*prev)->getTime();
-            vcur = (*prev)->getValue().value<double>();
-            vcurDerivRight = (*prev)->getRightTangent().value<double>();
-            interp = (*prev)->getInterpolation();
-            tnext = (*upper)->getTime();
-            vnext = (*upper)->getValue().value<double>();
-            vnextDerivLeft = (*upper)->getLeftTangent().value<double>();
-            interpNext = (*upper)->getInterpolation();
-        }
-        
-        return Natron::interpolate<T>(tcur,vcur,
-                                      vcurDerivRight,
-                                      vnextDerivLeft,
-                                      tnext,vnext,
-                                      t,
-                                      interp,
-                                      interpNext);
-
-        
-    }
-    
-    KeyFrames _keyFrames;
-    mutable RectD _bbox;
-    mutable bool _betweenBeginAndEndRecord;
-};
-
-
 /******************************KNOB_BASE**************************************/
 
-/**
- * @brief A class based on Variant that can store a value across multiple dimension
- * and also have specific "keyframes".
- **/
-class MultidimensionalValue : public QObject {
-    
-    Q_OBJECT
-    
-    friend class boost::serialization::access;
-    template<class Archive>
-    void save(Archive & ar, const unsigned int version) const
-    {
-        (void)version;
-        ar & boost::serialization::make_nvp("Values",_value);
-        ar & boost::serialization::make_nvp("Curves",_curves);
-    }
-    template<class Archive>
-    void load(Archive & ar, const unsigned int version)
-    {
-        (void)version;
-        ar & boost::serialization::make_nvp("Values",_value);
-        ar & boost::serialization::make_nvp("Curves",_curves);
-    }
-    
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
-    
-    
-public:
-    /// for each dimension,there's a list of chained curve. The list is always sorted
-    /// which means that the curve at index i-1 is linked to the curve at index i.
-    /// Note that 2 connected curves share a pointer to the same keyframe.
-    typedef std::map<int, boost::shared_ptr<CurvePath> > CurvesMap;
-    
-    MultidimensionalValue(int dimension = 1);
-    
-    MultidimensionalValue(const MultidimensionalValue& other);
-    
-    ~MultidimensionalValue();
-
-    void clone(const MultidimensionalValue& other);
-    
-    const std::map<int,Variant>& getValueForEachDimension() const {return _value;}
-    
-    int getDimension() const {return _dimension;}
-    
-    void setValue(const Variant& v,int dimension);
-    
-    const Variant& getValue(int dimension) const;
-    
-    boost::shared_ptr<CurvePath> getCurve(int dimension) const;
-    
-    void setValueAtTime(double time,const Variant& v,int dimension);
-    
-    Variant getValueAtTime(double time, int dimension) const;
-    
-    RectD getCurvesBoundingBox() const;
-    
-signals:
-    
-    void keyFrameChanged();
-    
-private:
-    
-  
-    
-    /* A variant storing all the values of the knob in any dimension. <dimension,value>*/
-    std::map<int,Variant> _value;
-    
-    int _dimension;
-    
-    /*A map storing for each dimension the keys of the value. For instance a Double_Knob of dimension 2
-     would have 2 Keys in its map, 1 for dimension 0 and 1 for dimension 1.
-     The Keys are an ordered map of <time,value> where value is the type requested for the knob (i.e: double
-     for a double knob).*/
-    CurvesMap _curves; /// the keys for a specific dimension
-};
-
-
-class Knob : public QObject
+struct KnobPrivate;
+class Knob : public QObject, public AnimatingParam
 {
     Q_OBJECT
     
 public:
-    
 
-    enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1,TIME_CHANGED = 2};
     
-    Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
+    explicit Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
     
+    /**
+     * @brief Never delete a knob on your ownn. If you need to delete a knob pre-emptivly
+     * see Knob::remove() , otherwise the KnobFactory will take care of allocation / deallocation
+     * for you;
+    **/
     virtual ~Knob();
     
     /**
@@ -422,110 +85,67 @@ public:
      **/
     void remove();
     
-    const std::string& getDescription() const { return _description; }
-    
-    const std::vector<U64>& getHashVector() const { return _hashVector; }
-    
-    KnobHolder*  getHolder() const { return _holder; }
-    
-    int getDimension() const {return _value->getDimension();}
-    
-    /*Must return the type name of the knob. This name will be used by the KnobFactory
-     to create an instance of this knob.*/
+        
+    /**
+     * @brief Must return the type name of the knob. This name will be used by the KnobFactory
+     * to create an instance of this knob.
+    **/
     virtual const std::string typeName()=0;
-    
-    void onStartupRestoration(const MultidimensionalValue& other);
 
-    
-    template<typename T>
-    void setValue(T variant[],int count){
-        for(int i = 0; i < count; ++i){
-            setValueInternal(Variant(variant[i]),i);
-        }
-    }
-    
-    template<typename T>
-    void setValue(const T &value,int dimension = 0) {
-        setValueInternal(Variant(value),dimension);
-    }
-
-
-    /*Used to extract the value held by the knob.
-     Derived classes should provide a more appropriate
-     way to retrieve results in the expected type.*/
-    template<typename T>
-    T getValue(int dimension = 0) const {
-        return _value->getValue(dimension).value<T>();
-    }
-    
-    const MultidimensionalValue* getValue() const { return _value; }
-    
-    const std::map<int,Variant>& getValueForEachDimension() const { return _value->getValueForEachDimension(); }
-
-    RectD getCurvesBoundingBox() const { return _value->getCurvesBoundingBox(); }
-    
     /**
      * @brief Must return true if this knob can animate (i.e: if we can set different values depending on the time)
      * Some parameters cannot animate, for example a file selector.
      **/
     virtual bool canAnimate() const = 0;
-    
-    void ifAnimatingTurnOffAnimation() { _isAnimationEnabled = false; }
-    
-    bool isAnimationEnabled() const { return canAnimate() && _isAnimationEnabled; }
-    
-    /**
-     * @brief Set the value of a knob for a specific dimension at a specific time. By default dimension
-     * is 0. If the knob has only 1 dimension, it will set the dimension 0 regardless of the parameter dimension.
-     * Otherwise, it will attempt to set a key for only the dimension 'dimensionIndex' of the knob.
-     **/
-    template<typename T>
-    void setValueAtTime(double time,const T& value,int dimensionIndex = 0){
-        assert(dimensionIndex < getDimension());
-        assert(canAnimate());
-        _value->setValueAtTime(time,Variant(value),dimensionIndex);
-    }
 
     /**
-     * @brief Set the value for the knob in all dimensions at time 'time'.
-     **/
-    template<typename T>
-    void setValueAtTime(double time,T variant[],int count){
-        assert(canAnimate());
-        for(int i = 0; i < count; ++i){
-            _value->setValueAtTime(time,Variant(variant[i]),i);
-        }
-    }
+      * @brief If the parameter is multidimensional, this is the label thats the that will be displayed
+      * for a dimension.
+    **/
+    virtual std::string getDimensionName(int dimension) const{(void)dimension; return "";}
 
     /**
-     * @brief Returns the value of the knob in a specific dimension at a specific time. If
-     * the knob has no keys in this dimension it will return the value at the requested dimension
-     * stored in _value. Type type parameter must be the type of the knob, i.e: double for a Double_Knob.
-     * The type of the Variant can never be cast to QList<QVariant>.
-     **/
-    template<typename T>
-    T getValueAtTime(double time,int dimension = 0) const {
-        assert(canAnimate());
-        return _value->getValueAtTime(time,dimension).value<T>();
-    }
+      * @brief Must be implemented to evaluate a value that has changed at the given dimension.
+      * The reason can be of any type : time changed, user edited or plugin edited.
+    **/
+    virtual void evaluateValueChange(int dimension,AnimatingParam::ValueChangedReason reason) OVERRIDE FINAL;
 
     /**
-     * @brief Returns the value of the knob in a specific dimension at a specific time. If
-     * the knob has no keys in this dimension it will return the value at the requested dimension
-     * stored in _value. Type type parameter must be the type of the knob, i.e: double for a Double_Knob.
-     * The type of the Variant can never be cast to QList<QVariant>.
-     **/
-    Variant getValueAtTime(double time,int dimension = 0){
-        assert(canAnimate());
-         return _value->getValueAtTime(time,dimension);
-    }
+     * @brief Used to bracket calls to evaluateValueChange. This indicates than a series of calls will be made, and
+     * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
+     * to render.
+    **/
+    virtual void beginValueChange(AnimatingParam::ValueChangedReason reason) OVERRIDE FINAL;
 
     /**
-     * @brief Returns an ordered map of all the keys at a specific dimension.
-     **/
-    boost::shared_ptr<CurvePath> getCurve(int dimension = 0) const;
+     * @brief Used to bracket calls to evaluateValueChange. This indicates than a series of calls will be made, and
+     * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
+     * to render.
+    **/
+    virtual void endValueChange(AnimatingParam::ValueChangedReason reason) OVERRIDE FINAL;
+
+    virtual void evaluateAnimationChange() OVERRIDE FINAL;
+
+    /**
+     * @brief Called on project loading. This copies the value from AnimatingParam to the knob.
+    **/
+    void onStartupRestoration(const AnimatingParam& other);
+
+    void turnOffAnimation() ;
     
-    /*other must have exactly the same name*/
+    bool isAnimationEnabled() const;
+
+    const std::string& getDescription() const;
+
+    const std::vector<U64>& getHashVector() const;
+
+    KnobHolder* getHolder() const;
+
+    /**
+     * @brief Called by a render task to copy all the knobs values to another separate instance
+     * to decorellate the values modified by the gui (i.e the user) and the values used to render.
+     * This ensures thread-safety.
+    **/
     void cloneValue(const Knob& other);
     
     void turnOffNewLine();
@@ -539,37 +159,32 @@ public:
     /*Call this to change the knob name. The name is not the text label displayed on
      the GUI but what is passed to the valueChangedByUser signal. By default the
      name is the same as the description(i.e: the text label).*/
-    void setName(const std::string& name){_name = QString(name.c_str());}
+    void setName(const std::string& name);
     
-    std::string getName() const {return _name.toStdString();}
+    std::string getName() const;
     
-    void setParentKnob(Knob* knob){_parentKnob = knob;}
+    void setParentKnob(Knob* knob);
     
-    Knob* getParentKnob() const {return _parentKnob;}
+    Knob* getParentKnob() const ;
     
     int determineHierarchySize() const;
     
-    bool isVisible() const {return _visible;}
+    bool isVisible() const ;
     
-    bool isEnabled() const {return _enabled;}
+    bool isEnabled() const ;
     
-    void setIsInsignificant(bool b){_isInsignificant = b;}
+    void setIsInsignificant(bool b);
     
-    void turnOffUndoRedo() {_canUndo = false;}
+    void turnOffUndoRedo() ;
     
-    bool canBeUndone() const {return _canUndo;}
+    bool canBeUndone() const ;
     
-    bool isInsignificant() const {return _isInsignificant;}
+    bool isInsignificant() const;
     
-    void setHintToolTip(const std::string& hint){_tooltipHint = hint;}
+    void setHintToolTip(const std::string& hint);
     
-    const std::string& getHintToolTip() const {return _tooltipHint;}
+    const std::string& getHintToolTip() const ;
 
-    /**
-      * @brief If the parameter is multidimensional, this is the label thats the that will be displayed
-      * for a dimension.
-    **/
-    virtual std::string getDimensionName(int dimension) const{(void)dimension; return "";}
 
 public slots:
     
@@ -582,17 +197,15 @@ public slots:
     
     void onKnobRedoneChange();
 
-    void onTimeChanged(SequenceTime time);
-    
-    void onKeyChanged();
-    
+    void onTimeChanged(SequenceTime);
+        
 
 signals:
     
     void deleted();
     
     /*Emitted when the value is changed internally by a call to setValue*/
-    void valueChanged(int dimension,const Variant&);
+    void valueChanged(int dimension);
 
     void visible(bool);
     
@@ -603,48 +216,27 @@ signals:
 protected:
     
     
-    /*This function can be implemented if you want to clone more data than just the value
-     of the knob. Cloning happens when a render request is made: all knobs values of the GUI
-     are cloned into small copies in order to be sure they will not be modified further on.
-     This function is useful if you need to copy for example an extra bit of information.
-     e.g: the File_Knob has to copy not only the QStringList containing the file names, but
-     also the sequence it has parsed.*/
+    /** @brief This function can be implemented if you want to clone more data than just the value
+     * of the knob. Cloning happens when a render request is made: all knobs values of the GUI
+     * are cloned into small copies in order to be sure they will not be modified further on.
+     * This function is useful if you need to copy for example an extra bit of information.
+     * e.g: the File_Knob has to copy not only the QStringList containing the file names, but
+     * also the sequence it has parsed.
+    **/
     virtual void cloneExtraData(const Knob& other){(void)other;}
     
-    /*This function is called right after that the _value has changed
-     but before any signal notifying that it has changed. It can be useful
-     to do some processing to create new informations.
-     e.g: The File_Knob parses the files list to create a mapping of
-     <time,file> .*/
+    /** @brief This function is called right after that the _value has changed
+     * but before any signal notifying that it has changed. It can be useful
+     * to do some processing to create new informations.
+     * e.g: The File_Knob parses the files list to create a mapping of
+     * <time,file> .
+    **/
     virtual void processNewValue(){}
 
 
 private:
-    
-    void fillHashVector(); // function to add the specific values of the knob to the values vector.
-
-    void updateHash();
-    
-    void setValueInternal(const Variant& v,int dimension);
-    
-    
-    KnobHolder*  _holder;
-    std::vector<U64> _hashVector;
-    MultidimensionalValue* _value;
-    std::string _description;//< the text label that will be displayed  on the GUI
-    QString _name;//< the knob can have a name different than the label displayed on GUI.
-    //By default this is the same as _description but can be set by calling setName().
-    bool _newLine;
-    int _itemSpacing;
-    
-    Knob* _parentKnob;
-    bool _visible;
-    bool _enabled;
-    bool _canUndo;
-    bool _isInsignificant; //< if true, a value change will never trigger an evaluation
-    std::string _tooltipHint;
-    bool _isAnimationEnabled;
-
+          
+    boost::scoped_ptr<KnobPrivate> _imp;
 };
 
 /**
@@ -660,18 +252,15 @@ class KnobHolder {
     AppInstance* _app;
     std::vector< boost::shared_ptr<Knob> > _knobs;
     bool _betweenBeginEndParamChanged;
-
+    bool _insignificantChange;
+    std::vector <Knob*> _knobsChanged;
 public:
+
     friend class Knob;
     
-    KnobHolder(AppInstance* appInstance):
-        _app(appInstance)
-      , _knobs()
-      , _betweenBeginEndParamChanged(false){}
+    KnobHolder(AppInstance* appInstance);
     
-    virtual ~KnobHolder(){
-        _knobs.clear();
-    }
+    virtual ~KnobHolder();
     
     /**
      * @brief Clone each knob of "other" into this KnobHolder.
@@ -681,6 +270,8 @@ public:
     
     AppInstance* getApp() const {return _app;}
     
+    bool wasBeginCalled() const { return _betweenBeginEndParamChanged; }
+
     /**
      * @brief Must be implemented to initialize any knob using the
      * KnobFactory.
@@ -704,11 +295,11 @@ public:
     
     const std::vector< boost::shared_ptr<Knob> >& getKnobs() const { return _knobs; }
     
-    void beginValuesChanged(Knob::ValueChangedReason reason);
+    void beginValuesChanged(AnimatingParam::ValueChangedReason reason, bool isSignificant);
     
-    void endValuesChanged(Knob::ValueChangedReason reason);
+    void endValuesChanged(AnimatingParam::ValueChangedReason reason);
     
-    void onValueChanged(Knob* k,Knob::ValueChangedReason reason);
+    void onValueChanged(Knob* k,Knob::ValueChangedReason reason,bool isSignificant);
     
 protected:
     
@@ -717,21 +308,21 @@ protected:
      * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
      * but this can lead to worse performance. You can overload this to make all changes to params at once.
      **/
-    virtual void beginKnobsValuesChanged(Knob::ValueChangedReason reason){(void)reason;}
+    virtual void beginKnobsValuesChanged(AnimatingParam::ValueChangedReason reason){(void)reason;}
     
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
      * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
      * but this can lead to worse performance. You can overload this to make all changes to params at once.
      **/
-    virtual void endKnobsValuesChanged(Knob::ValueChangedReason reason){(void)reason;}
+    virtual void endKnobsValuesChanged(AnimatingParam::ValueChangedReason reason){(void)reason;}
     
     /**
      * @brief Called whenever a param changes. It calls the virtual
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void onKnobValueChanged(Knob* k,Knob::ValueChangedReason reason){(void)k;(void)reason;}
+    virtual void onKnobValueChanged(Knob* k,AnimatingParam::ValueChangedReason reason){(void)k;(void)reason;}
 
     
 private:
@@ -1401,9 +992,7 @@ public:
     virtual const std::string typeName(){return "String";}
     
     std::string getString() const {return getValue<QString>().toStdString();}
-    
-private:
-    QStringList _entries;
+
 };
 /******************************GROUP_KNOB**************************************/
 class Group_Knob:public Knob

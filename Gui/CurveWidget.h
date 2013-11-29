@@ -17,7 +17,7 @@
 #include <boost/shared_ptr.hpp>
 #include "Gui/TextRenderer.h"
 
-class CurvePath;
+class Curve;
 class KeyFrame;
 class CurveWidget;
 class CurveGui : public QObject {
@@ -27,7 +27,7 @@ class CurveGui : public QObject {
 public:
     
 
-    CurveGui(const CurveWidget *curveWidget,boost::shared_ptr<CurvePath>  curve,
+    CurveGui(const CurveWidget *curveWidget,boost::shared_ptr<Curve>  curve,
              const QString& name,
              const QColor& color,
              int thickness = 1);
@@ -60,7 +60,7 @@ public:
     **/
     double evaluate(double x) const;
 
-    boost::shared_ptr<CurvePath>  getInternalCurve() const { return _internalCurve; }
+    boost::shared_ptr<Curve>  getInternalCurve() const { return _internalCurve; }
 
     void drawCurve();
 
@@ -76,7 +76,7 @@ private:
 
 
 
-    boost::shared_ptr<CurvePath> _internalCurve; ///ptr to the internal curve
+    boost::shared_ptr<Curve> _internalCurve; ///ptr to the internal curve
     QString _name; /// the name of the curve
     QColor _color; /// the color that must be used to draw the curve
     int _thickness; /// its thickness
@@ -168,7 +168,7 @@ public:
 
     void centerOn(double xmin,double xmax,double ymin,double ymax);
 
-    CurveGui *createCurve(boost::shared_ptr<CurvePath> curve, const QString &name);
+    CurveGui *createCurve(boost::shared_ptr<Curve> curve, const QString &name);
 
     void displayCurve(CurveGui* curve);
 

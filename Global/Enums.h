@@ -95,6 +95,18 @@ namespace Natron{
     
     typedef QFlags<QMessageBox::StandardButton> StandardButtons;
 
+    enum KeyframeType {
+        KEYFRAME_CONSTANT = 0,
+        KEYFRAME_LINEAR = 1,
+        KEYFRAME_SMOOTH = 2,
+        KEYFRAME_CATMULL_ROM = 3,
+        KEYFRAME_CUBIC = 4,
+        KEYFRAME_HORIZONTAL = 5,
+        KEYFRAME_FREE = 6,
+        KEYFRAME_BROKEN = 7,
+        KEYFRAME_NONE = 8
+    };
+
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 

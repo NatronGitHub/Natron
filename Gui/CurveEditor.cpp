@@ -124,8 +124,8 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
 
         if(k->getDimension() == 1){
 
-            knobCurve = curveWidget->createCurve(k->getCurve(),k->getDimensionName(0).c_str());
-            if(!k->getCurve()->isAnimated()){
+            knobCurve = curveWidget->createCurve(k->getCurve(0),k->getDimensionName(0).c_str());
+            if(!k->getCurve(0)->isAnimated()){
                 knobItem->setHidden(true);
             }else{
                 hasAtLeast1KnobWithACurveShown = true;
@@ -139,7 +139,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
                 NodeCurveEditorElement* elem = new NodeCurveEditorElement(curveWidget,dimItem,dimCurve);
                 QObject::connect(kgui,SIGNAL(keyAdded()),elem,SLOT(checkVisibleState()));
                 _nodeElements.push_back(elem);
-                if(!k->getCurve()->isAnimated()){
+                if(!k->getCurve(0)->isAnimated()){
                     dimItem->setHidden(true);
                 }else{
                     hasAtLeast1KnobWithACurveShown = true;

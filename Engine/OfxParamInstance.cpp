@@ -16,6 +16,8 @@
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
 
+#include "Global/AppManager.h"
+
 #include "Engine/Knob.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxClipInstance.h"

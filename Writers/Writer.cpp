@@ -294,7 +294,7 @@ void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
             int last = getApp()->getTimeLine()->lastFrame();
             if(!_firstFrameKnob){
                 _firstFrameKnob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", this, "First frame"));
-                _firstFrameKnob->ifAnimatingTurnOffAnimation();
+                _firstFrameKnob->turnOffAnimation();
                 _firstFrameKnob->setValue(first);
                 _firstFrameKnob->setDisplayMinimum(first);
                 _firstFrameKnob->setDisplayMaximum(last);
@@ -302,7 +302,7 @@ void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
             }
             if(!_lastFrameKnob){
                 _lastFrameKnob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", this, "Last frame"));
-                _lastFrameKnob->ifAnimatingTurnOffAnimation();
+                _lastFrameKnob->turnOffAnimation();
                 _lastFrameKnob->setValue(last);
                 _lastFrameKnob->setDisplayMinimum(first);
                 _lastFrameKnob->setDisplayMaximum(last);

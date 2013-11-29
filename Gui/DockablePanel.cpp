@@ -19,7 +19,7 @@
 #include <QUndoCommand>
 #include <QToolTip>
 
-#include "Global/Macros.h"
+#include "Global/AppManager.h"
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"

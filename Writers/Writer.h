@@ -19,6 +19,7 @@
 
 #include "Global/Macros.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/ChannelSet.h"
 
 class Encoder;
 namespace Natron{

@@ -15,11 +15,13 @@
 #include <QCoreApplication>
 #include <QThreadStorage>
 
+#include "Global/AppManager.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/Log.h"
 #include "Engine/VideoEngine.h"
+#include "Engine/Image.h"
 
 #include "Writers/Writer.h"
 

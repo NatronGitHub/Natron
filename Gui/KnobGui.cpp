@@ -76,7 +76,7 @@ KnobGui::KnobGui(Knob* knob,DockablePanel* container):
     _animationMenu(NULL),
     _animationButton(NULL)
 {
-    QObject::connect(knob,SIGNAL(valueChanged(int,const Variant&)),this,SLOT(onInternalValueChanged(int,const Variant&)));
+    QObject::connect(knob,SIGNAL(valueChanged(int)),this,SLOT(onInternalValueChanged(int)));
     QObject::connect(this,SIGNAL(valueChanged(int,const Variant&)),knob,SLOT(onValueChanged(int,const Variant&)));
     QObject::connect(knob,SIGNAL(visible(bool)),this,SLOT(setVisible(bool)));
     QObject::connect(knob,SIGNAL(enabled(bool)),this,SLOT(setEnabled(bool)));
@@ -180,6 +180,11 @@ void KnobGui::show(){
     _show();
     if(_animationButton)
         _animationButton->show();
+}
+
+void KnobGui::onInternalValueChanged(int dimension){
+    if(_widgetCreated)
+        updateGUI(dimension,_knob->getValue(dimension));
 }
 
 //================================================================

@@ -219,241 +219,74 @@ KnobGui* KnobFactory::createGuiForKnob(Knob* knob,DockablePanel* container) cons
     }
 }
 
-/************************************KEYFRAME************************************/
-KeyFrame::KeyFrame(double time,const Variant& initialValue)
-    : _value(initialValue)
-    , _time(time)
-    , _leftTangent()
-    , _rightTangent()
-    , _interpolation(Natron::KEYFRAME_SMOOTH)
-{
-    _leftTangent = initialValue;
-    _rightTangent = initialValue;
-}
-
-void KeyFrame::setLeftTangent(const Variant& v){
-    _leftTangent = v;
-    emit keyFrameChanged();
-}
-
-void KeyFrame::setRightTangent(const Variant& v){
-    _rightTangent = v;
-    emit keyFrameChanged();
-}
-
-void KeyFrame::setValue(const Variant& v){
-    _value = v;
-    if(_interpolation != KEYFRAME_BROKEN && _interpolation != KEYFRAME_FREE){
-        emit mustRefreshTangents(this);
-    }
-    emit keyFrameChanged();
-}
-
-void KeyFrame::setTime(double time){
-    _time = time;
-    emit keyFrameChanged();
-}
-
-CurvePath::CurvePath(KeyFrame* cp)
-    : _keyFrames()
-    , _bbox()
-    ,_betweenBeginAndEndRecord(false)
-{
-    setStart(cp);
-}
-
-CurvePath::~CurvePath(){ clearKeyFrames(); }
-
-void CurvePath::clearKeyFrames(){
-    for(KeyFrames::const_iterator it = _keyFrames.begin();it!=_keyFrames.end();++it){
-        delete (*it);
-    }
-    _keyFrames.clear();
-}
-
-void CurvePath::operator=(const CurvePath& other){
-    clearKeyFrames();
-    const KeyFrames& otherKeys = other.getKeyFrames();
-    for(KeyFrames::const_iterator it = otherKeys.begin();it!=otherKeys.end();++it){
-        KeyFrame* key = new KeyFrame(*(*it));
-        QObject::connect(key,SIGNAL(keyFrameChanged()),this,SIGNAL(keyFrameChanged()));
-        QObject::connect(key,SIGNAL( mustRefreshTangents(KeyFrame*)),this,SLOT(computeKeyTangents(KeyFrame*)));
-        _keyFrames.push_back(key);
-    }
-    _bbox = other._bbox;
-    _betweenBeginAndEndRecord = other._betweenBeginAndEndRecord;
-}
 
 
-double CurvePath::getMinimumTimeCovered() const{
-    assert(!_keyFrames.empty());
-    return _keyFrames.front()->getTime();
-}
-
-double CurvePath::getMaximumTimeCovered() const{
-    assert(!_keyFrames.empty());
-    return _keyFrames.back()->getTime();
-}
-
-void CurvePath::setStart(KeyFrame* cp){
-    if(!_keyFrames.empty()){
-        //remove the already existing key frame
-        _keyFrames.pop_front();
-    }
-    _keyFrames.push_front(cp);
-}
-
-void CurvePath::setEnd(KeyFrame* cp){
-    if(!_keyFrames.empty()){
-        //remove the already existing key frame
-        _keyFrames.pop_back();
-    }
-    _keyFrames.push_back(cp);
-}
-
-void CurvePath::addControlPoint(KeyFrame* cp)
-{
-    QObject::connect(cp,SIGNAL(keyFrameChanged()),this,SIGNAL(keyFrameChanged()));
-    QObject::connect(cp,SIGNAL( mustRefreshTangents(KeyFrame*)),this,SLOT(computeKeyTangents(KeyFrame*)));
-    KeyFrames::iterator newKeyIt = _keyFrames.end();
-    if(_keyFrames.empty()){
-        newKeyIt = _keyFrames.insert(_keyFrames.end(),cp);
-    }else{
-        //finding a matching or the first greater key
-        KeyFrames::iterator upper = _keyFrames.end();
-        for(KeyFrames::iterator it = _keyFrames.begin();it!=_keyFrames.end();++it){
-            if((*it)->getTime() > cp->getTime()){
-                upper = it;
-                break;
-            }else if((*it)->getTime() == cp->getTime()){
-                //if the key already exists at this time, just modify it.
-                (*it)->setValue(cp->getValue());
-                delete cp;
-                return;
-            }
-        }
-        if(upper == _keyFrames.end()){
-            //if we found no key that has a greater time, just append the key
-            newKeyIt = _keyFrames.insert(_keyFrames.end(),cp);
-        }else if(upper == _keyFrames.begin()){
-            //if all the keys have a greater time, just insert this key at the begining
-            newKeyIt = _keyFrames.insert(_keyFrames.begin(),cp);
-        }else{
-            newKeyIt = _keyFrames.insert(upper,cp);
-        }
-
-    }
-    refreshTangents(newKeyIt);
-}
-
-void CurvePath::refreshTangents(KeyFrames::iterator key){
-    double tcur = (*key)->getTime();
-    double vcur = (*key)->getValue().value<double>();
-    
-    double tprev, vprev, tnext, vnext, vprevDerivRight, vnextDerivLeft;
-    Natron::KeyframeType prevType, nextType;
-    if (key == _keyFrames.begin()) {
-        tprev = tcur;
-        vprev = vcur;
-        vprevDerivRight = 0.;
-        prevType = Natron::KEYFRAME_NONE;
-    } else {
-        KeyFrames::const_iterator prev = key;
-        --prev;
-        tprev = (*prev)->getTime();
-        vprev = (*prev)->getValue().value<double>();
-        vprevDerivRight = (*prev)->getRightTangent().value<double>();
-        prevType = (*prev)->getInterpolation();
-    }
-    
-    KeyFrames::const_iterator next = key;
-    ++next;
-    if (next == _keyFrames.end()) {
-        tnext = tcur;
-        vnext = vcur;
-        vnextDerivLeft = 0.;
-        nextType = Natron::KEYFRAME_NONE;
-    } else {
-        tnext = (*next)->getTime();
-        vnext = (*next)->getValue().value<double>();
-        vnextDerivLeft = (*next)->getLeftTangent().value<double>();
-        nextType = (*next)->getInterpolation();
-    }
-    
-    double vcurDerivLeft,vcurDerivRight;
-    Natron::autoComputeTangents<double>(prevType,
-                                (*key)->getInterpolation(),
-                                nextType,
-                                tprev, vprev,
-                                tcur, vcur,
-                                tnext, vnext,
-                                vprevDerivRight,
-                                vnextDerivLeft,
-                                &vcurDerivLeft, &vcurDerivRight);
-    
-    
-    (*key)->setLeftTangent(Variant(vcurDerivLeft));
-    (*key)->setRightTangent(Variant(vcurDerivRight));
-}
-
-
-
-Variant CurvePath::getValueAt(double t) const{
-    assert(!_keyFrames.empty());
-    const Variant& firstKeyValue = _keyFrames.front()->getValue();
-    double v;
-    switch(firstKeyValue.type()){
-    case QVariant::Int :
-        v = (double)getValueAtInternal<int>(t);
-        break;
-    case QVariant::Double :
-        v = getValueAtInternal<double>(t);
-        break;
-    default:
-        std::string exc("The type requested ( ");
-        exc.append(firstKeyValue.typeName());
-        exc.append(") is not interpolable, it cannot animate!");
-        throw std::invalid_argument(exc);
-    }
-    if(_betweenBeginAndEndRecord){
-        if( v  < _bbox.bottom() )
-            _bbox.set_bottom(v);
-        if( v > _bbox.top() )
-            _bbox.set_top(v);
-        if( t < _bbox.left() )
-            _bbox.set_left(t);
-        if( t > _bbox.right())
-            _bbox.set_right(t);
-    }
-    return Variant(v);
-
-
-}
 
 
 /***********************************KNOB BASE******************************************/
 
+struct KnobPrivate{
+    KnobHolder*  _holder;
+    std::vector<U64> _hashVector;
+    std::string _description;//< the text label that will be displayed  on the GUI
+    QString _name;//< the knob can have a name different than the label displayed on GUI.
+    //By default this is the same as _description but can be set by calling setName().
+    bool _newLine;
+    int _itemSpacing;
 
-Knob::Knob(KnobHolder* holder,const std::string& description,int dimension):
-    _holder(holder)
-  , _hashVector()
-  , _value(new MultidimensionalValue(dimension))
-  , _description(description)
-  , _name(description.c_str())
-  , _newLine(true)
-  , _itemSpacing(0)
-  , _parentKnob(NULL)
-  , _visible(true)
-  , _enabled(true)
-  , _canUndo(true)
-  , _isInsignificant(false)
-  , _tooltipHint()
-  , _isAnimationEnabled(true)
+    Knob* _parentKnob;
+    bool _visible;
+    bool _enabled;
+    bool _canUndo;
+    bool _isInsignificant; //< if true, a value change will never trigger an evaluation
+    std::string _tooltipHint;
+    bool _isAnimationEnabled;
+
+    KnobPrivate(KnobHolder*  holder,const std::string& description)
+        : _holder(holder)
+        , _hashVector()
+        , _description(description)
+        , _name(description.c_str())
+        , _newLine(true)
+        , _itemSpacing(0)
+        , _parentKnob(NULL)
+        , _visible(true)
+        , _enabled(true)
+        , _canUndo(true)
+        , _isInsignificant(false)
+        , _tooltipHint()
+        , _isAnimationEnabled(true)
+    {
+
+    }
+
+    void updateHash(const std::map<int,Variant>& value){
+
+        _hashVector.clear();
+
+        for(std::map<int,Variant>::const_iterator it = value.begin();it!=value.end();++it){
+            QByteArray data;
+            QDataStream ds(&data,QIODevice::WriteOnly);
+            ds << it->second;
+            data = data.toBase64();
+            QString str(data);
+            for (int i = 0; i < str.size(); ++i) {
+                _hashVector.push_back(str.at(i).unicode());
+            }
+        }
+
+        _holder->invalidateHash();
+    }
+
+};
+
+Knob::Knob(KnobHolder* holder,const std::string& description,int dimension)
+    : AnimatingParam(dimension)
+    , _imp(new KnobPrivate(holder,description))
 {
     
-    QObject::connect(_value,SIGNAL(keyFrameChanged()),this,SLOT(onKeyChanged()));
-    if(_holder){
-        _holder->addKnob(boost::shared_ptr<Knob>(this));
+    if(_imp->_holder){
+        _imp->_holder->addKnob(boost::shared_ptr<Knob>(this));
         QObject::connect(holder->getApp()->getTimeLine().get(),SIGNAL(frameChanged(SequenceTime)),this,SLOT(onTimeChanged(SequenceTime)));
     }
 }
@@ -465,261 +298,104 @@ Knob::~Knob(){
 
 void Knob::remove(){
     emit deleted();
-    if(_holder){
-        _holder->removeKnob(this);
+    if(_imp->_holder){
+        _imp->_holder->removeKnob(this);
     }
 }
 
 void Knob::onKnobUndoneChange(){
-    _holder->triggerAutoSave();
+    _imp->_holder->triggerAutoSave();
 }
 
 void Knob::onKnobRedoneChange(){
-    _holder->triggerAutoSave();
+    _imp->_holder->triggerAutoSave();
 }
 
-void Knob::updateHash(){
-    fillHashVector();
-    _holder->invalidateHash();
-}
 
-void Knob::onStartupRestoration(const MultidimensionalValue& other){
-    _value->clone(other); //set the value
-    if(!_isInsignificant)
-        updateHash(); //refresh hash if needed
-    processNewValue(); // process new value if needed
-    _holder->onValueChanged(this,Knob::USER_EDITED); // notify plugin the value changed
-
-    //notify gui for each value changed
-    const std::map<int, Variant>& value = _value->getValueForEachDimension();
-    for(std::map<int,Variant>::const_iterator it = value.begin();it!=value.end();++it){
-        emit valueChanged(it->first,it->second);
+void Knob::onStartupRestoration(const AnimatingParam& other){
+    clone(other); //set the value
+    bool wasBeginCalled = true;
+    if(!_imp->_holder->wasBeginCalled()){
+        wasBeginCalled = false;
+        _imp->_holder->beginValuesChanged(AnimatingParam::PLUGIN_EDITED,true);
+    }
+    for(int i = 0 ; i < getDimension();++i){
+        evaluateValueChange(i,AnimatingParam::PLUGIN_EDITED);
+    }
+    if(!wasBeginCalled){
+        _imp->_holder->endValuesChanged(AnimatingParam::PLUGIN_EDITED);
     }
     emit restorationComplete();
-
 }
 
-void Knob::fillHashVector(){
-    _hashVector.clear();
-    const std::map<int,Variant>& value = _value->getValueForEachDimension();
-    for(std::map<int,Variant>::const_iterator it = value.begin();it!=value.end();++it){
-        QByteArray data;
-        QDataStream ds(&data,QIODevice::WriteOnly);
-        ds << it->second;
-        data = data.toBase64();
-        QString str(data);
-        for (int i = 0; i < str.size(); ++i) {
-            _hashVector.push_back(str.at(i).unicode());
-        }
-    }
-}
 
-void Knob::setValueInternal(const Variant& v,int dimension){
-    _value->setValue(v, dimension);
-    if(!_isInsignificant)
-        updateHash();
-    processNewValue();
-    emit valueChanged(dimension,v);
-    _holder->onValueChanged(this,Knob::PLUGIN_EDITED);
-    _holder->evaluate(this,!_isInsignificant);
-
-}
 
 void Knob::onValueChanged(int dimension,const Variant& variant){
-    _value->setValue(variant, dimension);
-    if(!_isInsignificant)
-        updateHash();
+    setValue(variant, dimension,AnimatingParam::USER_EDITED);
+}
+
+
+void Knob::evaluateAnimationChange(){
+    SequenceTime time = _imp->_holder->getApp()->getTimeLine()->currentFrame();
+    beginValueChange(AnimatingParam::PLUGIN_EDITED);
+    for(int i = 0; i < getDimension();++i){
+        boost::shared_ptr<Curve> curve = getCurve(i);
+        if(curve && curve->isAnimated()){
+            Variant v = getValueAtTime(time,i);
+            setValue(v,i);
+            evaluateValueChange(i,AnimatingParam::PLUGIN_EDITED);
+        }
+    }
+    endValueChange(AnimatingParam::PLUGIN_EDITED);
+}
+
+void Knob::beginValueChange(AnimatingParam::ValueChangedReason reason) {
+    _imp->_holder->beginValuesChanged(reason,!_imp->_isInsignificant);
+}
+
+void Knob::endValueChange(AnimatingParam::ValueChangedReason reason) {
+    _imp->_holder->endValuesChanged(reason);
+}
+
+void Knob::evaluateValueChange(int dimension,AnimatingParam::ValueChangedReason reason){
+    if(!_imp->_isInsignificant)
+        _imp->updateHash(getValueForEachDimension());
     processNewValue();
-    _holder->onValueChanged(this,Knob::USER_EDITED);
-    _holder->evaluate(this,!_isInsignificant);
-    
+    if(reason != AnimatingParam::USER_EDITED){
+        emit valueChanged(dimension);
+    }
+    _imp->_holder->onValueChanged(this,reason,!_imp->_isInsignificant);
 }
 
-void Knob::onTimeChanged(SequenceTime time){
+void Knob::onTimeChanged(SequenceTime /*time*/){
     if(isAnimationEnabled()){
-        for(int i = 0; i < getDimension();++i){
-            boost::shared_ptr<CurvePath> curve = getCurve(i);
-            if(curve && curve->isAnimated()){
-                Variant v = getValueAtTime(time,i);
-                _value->setValue(v, i);
-                if(!_isInsignificant)
-                    updateHash();
-                processNewValue();
-                 _holder->onValueChanged(this,Knob::TIME_CHANGED);
-                emit valueChanged(i,v);
-            }
-        }
+        evaluateAnimationChange();
     }
 }
 
-void Knob::onKeyChanged(){
-   SequenceTime time = _holder->getApp()->getTimeLine()->currentFrame();
-    onTimeChanged(time);
-    _holder->evaluate(this, !_isInsignificant);
-}
-
-void CurvePath::computeKeyTangents(KeyFrame* k){
-    KeyFrames::iterator it = std::find(_keyFrames.begin(),_keyFrames.end(),k);
-    assert(it!=_keyFrames.end());
-    refreshTangents(it);
-}
-
-MultidimensionalValue::MultidimensionalValue(int dimension )
-: _dimension(dimension)
-{
-    //default initialize the values map
-    for(int i = 0; i < dimension ; ++i){
-        _value.insert(std::make_pair(i,Variant()));
-        CurvePath* c = new CurvePath();
-        QObject::connect(c, SIGNAL(keyFrameChanged()), this, SIGNAL(keyFrameChanged()));
-        _curves.insert(std::make_pair(i,boost::shared_ptr<CurvePath>(c)));
-    }
-}
-
-MultidimensionalValue::MultidimensionalValue(const MultidimensionalValue& other):
-_value(other._value)
-,_dimension(other._dimension)
-,_curves(other._curves)
-{
-    
-}
-
-MultidimensionalValue::~MultidimensionalValue() { _value.clear(); _curves.clear(); }
-
-
-const Variant& MultidimensionalValue::getValue(int dimension) const{
-    std::map<int,Variant>::const_iterator it = _value.find(dimension);
-    assert(it != _value.end());
-    return it->second;
-}
-
-void MultidimensionalValue::setValue(const Variant& v,int dimension){
-    std::map<int,Variant>::iterator it = _value.find(dimension);
-    assert(it != _value.end());
-    it->second = v;
-
-}
-
-void MultidimensionalValue::setValueAtTime(double time, const Variant& v, int dimension){
-    CurvesMap::iterator foundDimension = _curves.find(dimension);
-    assert(foundDimension != _curves.end());
-    foundDimension->second->addControlPoint(new KeyFrame(time,v));
-}
-
-void MultidimensionalValue::clone(const MultidimensionalValue& other) {
-    assert(other.getDimension() == _dimension);
-    for(int i = 0; i < _dimension;++i){
-        setValue(other.getValue(i),i);
-        boost::shared_ptr<CurvePath> curve = other.getCurve(i);
-        boost::shared_ptr<CurvePath> thisCurve = getCurve(i);
-        (*thisCurve) = (*curve);
-    }
-}
-
-
-boost::shared_ptr<CurvePath> Knob::getCurve(int dimension) const{
-    return _value->getCurve(dimension);
-}
-
-boost::shared_ptr<CurvePath> MultidimensionalValue::getCurve(int dimension) const {
-    CurvesMap::const_iterator foundDimension = _curves.find(dimension);
-    assert(foundDimension != _curves.end());
-    return foundDimension->second;
-}
-
-Variant MultidimensionalValue::getValueAtTime(double time,int dimension) const{
-    CurvesMap::const_iterator foundDimension = _curves.find(dimension);
-    boost::shared_ptr<CurvePath> curve = getCurve(dimension);
-    if(!curve->isAnimated()){
-        /*if the knob as no keys at this dimension, return the value
-        at the requested dimension.*/
-        std::map<int,Variant>::const_iterator it = _value.find(dimension);
-        if(it != _value.end()){
-            return it->second;
-        }else{
-            return Variant();
-        }
-    }else{
-        try{
-            return foundDimension->second->getValueAt(time);
-        }catch(const std::exception& e){
-            std::cout << e.what() << std::endl;
-            assert(false);
-        }
-
-    }
-}
-
-
-RectD MultidimensionalValue::getCurvesBoundingBox() const{
-    RectD ret;
-    for(CurvesMap::const_iterator it = _curves.begin() ; it!=_curves.end();++it){
-        const RectD& curveBbox = it->second->getBoundingBox();
-        if(!curveBbox.isNull()){
-            ret.merge(curveBbox);
-        }
-    }
-    return ret;
-}
-
-void KnobHolder::beginValuesChanged(Knob::ValueChangedReason reason){
-    _betweenBeginEndParamChanged = true ;
-    beginKnobsValuesChanged(reason);
-}
-
-void KnobHolder::endValuesChanged(Knob::ValueChangedReason reason){
-    assert(_betweenBeginEndParamChanged);
-    _betweenBeginEndParamChanged = false ;
-    endKnobsValuesChanged(reason);
-}
-
-void KnobHolder::onValueChanged(Knob* k,Knob::ValueChangedReason reason){
-    bool wasBeginCalled = true;
-    if(!_betweenBeginEndParamChanged){
-        beginValuesChanged(reason);
-        wasBeginCalled = false;
-    }
-    onKnobValueChanged(k,reason);
-    if(!wasBeginCalled){
-        endValuesChanged(reason);
-    }
-}
-void KnobHolder::cloneKnobs(const KnobHolder& other){
-    assert(_knobs.size() == other._knobs.size());
-    for(U32 i = 0 ; i < other._knobs.size();++i){
-        _knobs[i]->cloneValue(*(other._knobs[i]));
-    }
-}
 
 
 void Knob::cloneValue(const Knob& other){
-    assert(_name == other._name);
-    _hashVector = other._hashVector;
-    _value->clone(*other._value);
+    assert(_imp->_name == other._imp->_name);
+    _imp->_hashVector = other._imp->_hashVector;
+    clone(dynamic_cast<const AnimatingParam&>(other));
     cloneExtraData(other);
 }
 
-void KnobHolder::invalidateHash(){
-    _app->incrementKnobsAge();
-}
-int KnobHolder::getAppAge() const{
-    return _app->getKnobsAge();
-}
-
 void Knob::turnOffNewLine(){
-    _newLine = false;
+    _imp->_newLine = false;
 }
 
 void Knob::setSpacingBetweenItems(int spacing){
-    _itemSpacing = spacing;
+    _imp->_itemSpacing = spacing;
 }
 void Knob::setEnabled(bool b){
-    _enabled = b;
+    _imp->_enabled = b;
     emit enabled(b);
 }
 
 void Knob::setVisible(bool b){
-    _visible = b;
+    _imp->_visible = b;
     emit visible(b);
 }
 
@@ -732,6 +408,105 @@ int Knob::determineHierarchySize() const{
     }
     return ret;
 }
+
+
+const std::string& Knob::getDescription() const { return _imp->_description; }
+
+const std::vector<U64>& Knob::getHashVector() const { return _imp->_hashVector; }
+
+KnobHolder*  Knob::getHolder() const { return _imp->_holder; }
+
+void Knob::turnOffAnimation() { _imp->_isAnimationEnabled = false; }
+
+bool Knob::isAnimationEnabled() const { return canAnimate() && _imp->_isAnimationEnabled; }
+
+void Knob::setName(const std::string& name) {_imp->_name = QString(name.c_str());}
+
+std::string Knob::getName() const {return _imp->_name.toStdString();}
+
+void Knob::setParentKnob(Knob* knob){ _imp->_parentKnob = knob;}
+
+Knob* Knob::getParentKnob() const {return _imp->_parentKnob;}
+
+bool Knob::isVisible() const {return _imp->_visible;}
+
+bool Knob::isEnabled() const {return _imp->_enabled;}
+
+void Knob::setIsInsignificant(bool b) {_imp->_isInsignificant = b;}
+
+void Knob::turnOffUndoRedo() {_imp->_canUndo = false;}
+
+bool Knob::canBeUndone() const {return _imp->_canUndo;}
+
+bool Knob::isInsignificant() const {return _imp->_isInsignificant;}
+
+void Knob::setHintToolTip(const std::string& hint) {_imp->_tooltipHint = hint;}
+
+const std::string& Knob::getHintToolTip() const {return _imp->_tooltipHint;}
+
+/***************************KNOB HOLDER******************************************/
+
+KnobHolder::KnobHolder(AppInstance* appInstance):
+    _app(appInstance)
+  , _knobs()
+  , _betweenBeginEndParamChanged(false)
+  , _insignificantChange(false)
+  , _knobsChanged()
+{}
+
+KnobHolder::~KnobHolder(){
+    _knobs.clear();
+}
+
+void KnobHolder::invalidateHash(){
+    _app->incrementKnobsAge();
+}
+int KnobHolder::getAppAge() const{
+    return _app->getKnobsAge();
+}
+
+
+void KnobHolder::beginValuesChanged(Knob::ValueChangedReason reason, bool isSignificant){
+    _betweenBeginEndParamChanged = true ;
+    _insignificantChange = !isSignificant;
+    beginKnobsValuesChanged(reason);
+}
+
+void KnobHolder::endValuesChanged(Knob::ValueChangedReason reason){
+    assert(_betweenBeginEndParamChanged);
+    _betweenBeginEndParamChanged = false ;
+
+    for(U32 i = 0; i < _knobsChanged.size();++i){
+        if(i < _knobsChanged.size()-1){
+            evaluate(_knobsChanged[i],true);
+        }else{
+            evaluate(_knobsChanged[i],!_insignificantChange);
+        }
+    }
+    _knobsChanged.clear();
+    endKnobsValuesChanged(reason);
+}
+
+void KnobHolder::onValueChanged(Knob* k, Knob::ValueChangedReason reason, bool isSignificant){
+    bool wasBeginCalled = true;
+    if(!_betweenBeginEndParamChanged){
+        beginValuesChanged(reason,isSignificant);
+        wasBeginCalled = false;
+    }
+    _knobsChanged.push_back(k);
+    onKnobValueChanged(k,reason);
+    if(!wasBeginCalled){
+        endValuesChanged(reason);
+    }
+
+}
+void KnobHolder::cloneKnobs(const KnobHolder& other){
+    assert(_knobs.size() == other._knobs.size());
+    for(U32 i = 0 ; i < other._knobs.size();++i){
+        _knobs[i]->cloneValue(*(other._knobs[i]));
+    }
+}
+
 
 
 void KnobHolder::removeKnob(Knob* knob){

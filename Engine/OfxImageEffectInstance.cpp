@@ -267,7 +267,7 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 ret->getKnob()->setIsInsignificant(true);
             }
             if(!descriptor.getCanAnimate()){
-                ret->getKnob()->ifAnimatingTurnOffAnimation();
+                ret->getKnob()->turnOffAnimation();
             }
         }
         return ret;
@@ -289,7 +289,7 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 ret->getKnob()->setIsInsignificant(true);
             }
             if(!descriptor.getCanAnimate()){
-                ret->getKnob()->ifAnimatingTurnOffAnimation();
+                ret->getKnob()->turnOffAnimation();
             }
         }
         return ret;
@@ -311,7 +311,7 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 ret->getKnob()->setIsInsignificant(true);
             }
             if(!descriptor.getCanAnimate()){
-                ret->getKnob()->ifAnimatingTurnOffAnimation();
+                ret->getKnob()->turnOffAnimation();
             }
 
         }
@@ -334,7 +334,7 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 ret->getKnob()->setIsInsignificant(true);
             }
             if(!descriptor.getCanAnimate()){
-                ret->getKnob()->ifAnimatingTurnOffAnimation();
+                ret->getKnob()->turnOffAnimation();
             }
         }
         return ret;
@@ -375,7 +375,7 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 ret->getKnob()->setIsInsignificant(true);
             }
             if(!descriptor.getCanAnimate()){
-                ret->getKnob()->ifAnimatingTurnOffAnimation();
+                ret->getKnob()->turnOffAnimation();
             }
         }
         return ret;
@@ -416,7 +416,7 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 ret->getKnob()->setIsInsignificant(true);
             }
             if(!descriptor.getCanAnimate()){
-                ret->getKnob()->ifAnimatingTurnOffAnimation();
+                ret->getKnob()->turnOffAnimation();
             }
         }
         return ret;
@@ -438,7 +438,7 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 ret->getKnob()->setIsInsignificant(true);
             }
             if(!descriptor.getCanAnimate()){
-                ret->getKnob()->ifAnimatingTurnOffAnimation();
+                ret->getKnob()->turnOffAnimation();
             }
         }
         return ret;
@@ -481,7 +481,7 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 ret->getKnob()->setIsInsignificant(true);
             }
             if(!descriptor.getCanAnimate()){
-                ret->getKnob()->ifAnimatingTurnOffAnimation();
+                ret->getKnob()->turnOffAnimation();
             }
         }
         return ret;

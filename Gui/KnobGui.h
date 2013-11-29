@@ -91,10 +91,7 @@ public slots:
     /*Called when the value held by the knob is changed internally.
      This should in turn update the GUI but not emit the valueChanged()
      signal.*/
-    void onInternalValueChanged(int dimension,const Variant& variant){
-        if(_widgetCreated)
-            updateGUI(dimension,variant);
-    }
+    void onInternalValueChanged(int dimension);
     
     void deleteKnob(){
         delete this;

@@ -527,7 +527,7 @@ NodeGui::SerializedState::SerializedState(const NodeGui* n):_node(n){
     const std::vector<boost::shared_ptr<Knob> >& knobs = _node->getNode()->getKnobs();
     
     for (U32 i  = 0; i < knobs.size(); ++i) {
-        _knobsValues.push_back(std::make_pair(knobs[i]->getDescription(), knobs[i]->getValue()));
+        _knobsValues.push_back(std::make_pair(knobs[i]->getDescription(),dynamic_cast<const AnimatingParam*>(knobs[i].get())));
     }
     
     _name = _node->getNode()->getName();
