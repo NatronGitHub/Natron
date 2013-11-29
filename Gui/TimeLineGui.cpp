@@ -100,7 +100,7 @@ struct TimelineGuiPrivate{
       , _backgroundColor(50,50,50)
       , _ticksColor(200,200,200)
       , _scaleColor(100,100,100)
-      , _font("Times",10)
+      , _font(NATRON_FONT_ALT, NATRON_FONT_SIZE_10)
       , _firstPaint(true)
     {}
 

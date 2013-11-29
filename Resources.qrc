@@ -47,5 +47,7 @@
         <file>Resources/Images/loopmode.png</file>
         <file>Resources/Images/help.png</file>
         <file>Resources/Images/cliptoproject.png</file>
+        <file>Resources/Fonts/DroidSans.ttf</file>
+        <file>Resources/Fonts/DroidSans-Bold.ttf</file>
     </qresource>
 </RCC>

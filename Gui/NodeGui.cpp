@@ -189,7 +189,7 @@ void NodeGui::updateShape(int width,int height){
     _boundingBox->setRect(topLeft.x(),topLeft.y(),width,height);
     _channelsPixmap->setPos(topLeft.x()+1,topLeft.y()+1);
     
-    QFont f("Times",12);
+    QFont f(NATRON_FONT_ALT, NATRON_FONT_SIZE_12);
     QFontMetrics metrics(f);
     int nameWidth = metrics.width(_nameItem->toPlainText());
     _nameItem->setX(topLeft.x()+(_boundingBox->rect().width()/2)-(nameWidth/2));

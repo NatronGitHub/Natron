@@ -196,7 +196,7 @@ struct ViewerGL::Implementation {
     , textRenderingColor(200,200,200,255)
     , displayWindowOverlayColor(125,125,125,255)
     , rodOverlayColor(100,100,100,255)
-    , textFont(new QFont("Helvetica",13))
+    , textFont(new QFont(NATRON_FONT, NATRON_FONT_SIZE_13))
     , overlay(true)
     , supportsGLSL(true)
     , displayChannels(0.f)
