@@ -19,6 +19,7 @@
 #include <boost/serialization/utility.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/archive/archive_exception.hpp>
 
 #include "Global/AppManager.h"
 
@@ -33,6 +34,8 @@
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/Gui.h"
+
+
 
 using namespace Natron;
 using std::cout; using std::endl;
@@ -214,8 +217,8 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
         iArchive >> boost::serialization::make_nvp("Project_views_count",viewsValue);
         _viewsCount->onStartupRestoration(viewsValue);
         ifile.close();
-    }catch(const std::exception& e){
-        throw e;
+    }catch(const boost::archive::archive_exception& e){
+        throw std::runtime_error(std::string("Serialization error: ") + std::string(e.what()));
     }
     
     bool hasProjectAWriter = false;

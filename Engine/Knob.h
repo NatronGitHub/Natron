@@ -161,7 +161,6 @@ private:
 };
 
 Q_DECLARE_METATYPE(KeyFrame*)
-
 /**
   * @brief A CurvePath is a list of chained curves. Each curve is a set of 2 keyFrames and has its
   * own interpolation method (that can differ from other curves).
@@ -323,7 +322,6 @@ private:
 };
 
 
-
 /******************************KNOB_BASE**************************************/
 
 /**
@@ -402,6 +400,7 @@ private:
      for a double knob).*/
     CurvesMap _curves; /// the keys for a specific dimension
 };
+
 
 class Knob : public QObject
 {

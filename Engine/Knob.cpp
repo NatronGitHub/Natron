@@ -219,7 +219,6 @@ KnobGui* KnobFactory::createGuiForKnob(Knob* knob,DockablePanel* container) cons
     }
 }
 
-
 /************************************KEYFRAME************************************/
 KeyFrame::KeyFrame(double time,const Variant& initialValue)
     : _value(initialValue)
