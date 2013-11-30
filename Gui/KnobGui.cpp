@@ -154,6 +154,10 @@ void KnobGui::onShowInCurveEditorActionTriggered(){
     _knob->getHolder()->getApp()->getGui()->setCurveEditorOnTop();
     RectD bbox = _knob->getCurvesBoundingBox();
     if(!bbox.isNull()){
+        bbox.set_bottom(bbox.bottom() - bbox.height()/10);
+        bbox.set_left(bbox.left() - bbox.width()/10);
+        bbox.set_right(bbox.right() + bbox.width()/10);
+        bbox.set_top(bbox.top() + bbox.height()/10);
         _knob->getHolder()->getApp()->getGui()->_curveEditor->centerOn(bbox);
     }
 }

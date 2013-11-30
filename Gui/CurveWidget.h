@@ -70,12 +70,6 @@ signals:
     
 private:
 
-    void beginRecordBoundingBox() const;
-
-    void endRecordBoundingBox() const;
-
-
-
     boost::shared_ptr<Curve> _internalCurve; ///ptr to the internal curve
     QString _name; /// the name of the curve
     QColor _color; /// the color that must be used to draw the curve

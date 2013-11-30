@@ -114,8 +114,6 @@ void Curve::clone(const Curve& other){
         key->clone(*(*it));
         _imp->_keyFrames.push_back(key);
     }
-    _imp->_bbox = other._imp->_bbox;
-    _imp->_betweenBeginAndEndRecord = other._imp->_betweenBeginAndEndRecord;
 }
 
 
@@ -280,19 +278,7 @@ Variant Curve::getValueAt(double t) const {
                                            interp,
                                            interpNext);
 
-
-    if(_imp->_betweenBeginAndEndRecord){
-        if( v  < _imp->_bbox.bottom() )
-            _imp->_bbox.set_bottom(v);
-        if( v > _imp->_bbox.top() )
-            _imp->_bbox.set_top(v);
-        if( t < _imp->_bbox.left() )
-            _imp->_bbox.set_left(t);
-        if( t > _imp->_bbox.right())
-            _imp->_bbox.set_right(t);
-    }
-
-
+    
     const Variant& firstKeyValue = _imp->_keyFrames.front()->getValue();
     switch(firstKeyValue.type()){
     case QVariant::Int :
@@ -324,12 +310,6 @@ int Curve::getControlPointsCount() const { return (int)_imp->_keyFrames.size(); 
 const KeyFrame* Curve::getStart() const { assert(!_imp->_keyFrames.empty()); return _imp->_keyFrames.front(); }
 
 const KeyFrame* Curve::getEnd() const { assert(!_imp->_keyFrames.empty()); return _imp->_keyFrames.back(); }
-
-void Curve::beginRecordBoundingBox() const {_imp->_betweenBeginAndEndRecord = true; _imp->_bbox.clear(); }
-
-void Curve::endRecordBoundingBox() const { _imp->_betweenBeginAndEndRecord = false; }
-
-const RectD& Curve::getBoundingBox() const { return _imp->_bbox; }
 
 const Curve::KeyFrames& Curve::getKeyFrames() const { return _imp->_keyFrames; }
 
@@ -450,10 +430,28 @@ Variant AnimatingParam::getValueAtTime(double time,int dimension) const{
 RectD AnimatingParam::getCurvesBoundingBox() const{
     RectD ret;
     for(CurvesMap::const_iterator it = _imp->_curves.begin() ; it!=_imp->_curves.end();++it){
-        const RectD& curveBbox = it->second->getBoundingBox();
-        if(!curveBbox.isNull()){
-            ret.merge(curveBbox);
+        
+        
+        double xmin = it->second->getMinimumTimeCovered();
+        double xmax = it->second->getMaximumTimeCovered();
+        double ymin = INT_MAX;
+        double ymax = INT_MIN;
+        //find out ymin,ymax
+        const Curve::KeyFrames& keys = it->second->getKeyFrames();
+        for (Curve::KeyFrames::const_iterator it2 = keys.begin(); it2!=keys.end(); ++it2) {
+            const Variant& v = (*it2)->getValue();
+            double value;
+            if(v.type() == QVariant::Int){
+                value = (double)v.toInt();
+            }else{
+                value = v.toDouble();
+            }
+            if(value < ymin)
+                ymin = value;
+            if(value > ymax)
+                ymax = value;
         }
+        ret.merge(xmin,ymin,xmax,ymax);
     }
     return ret;
 }

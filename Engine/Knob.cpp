@@ -289,7 +289,7 @@ Knob::Knob(KnobHolder* holder,const std::string& description,int dimension)
     
     if(_imp->_holder){
         _imp->_holder->addKnob(boost::shared_ptr<Knob>(this));
-        QObject::connect(holder->getApp()->getTimeLine().get(),SIGNAL(frameChanged(SequenceTime)),this,SLOT(onTimeChanged(SequenceTime)));
+        QObject::connect(holder->getApp(),SIGNAL(timeChanged(SequenceTime)),this,SLOT(onTimeChanged(SequenceTime)));
     }
 }
 

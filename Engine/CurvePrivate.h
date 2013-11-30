@@ -13,7 +13,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "Engine/Rect.h"
 #include "Engine/Variant.h"
 
 
@@ -69,14 +68,10 @@ class AnimatingParam;
 struct CurvePrivate{
 
     std::list< KeyFrame* >  _keyFrames;
-    mutable RectD _bbox;
-    mutable bool _betweenBeginAndEndRecord;
     AnimatingParam* _owner;
 
     CurvePrivate()
     : _keyFrames()
-    , _bbox()
-    , _betweenBeginAndEndRecord(false)
     , _owner(NULL)
     {}
 

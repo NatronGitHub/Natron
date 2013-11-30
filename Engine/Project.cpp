@@ -68,6 +68,7 @@ KnobHolder(appInstance)
 , _availableFormats()
 , _knobsAge(0)
 {
+    QObject::connect(_timeline.get(),SIGNAL(frameChanged(SequenceTime)),appInstance,SIGNAL(timeChanged(SequenceTime)));
 }
 
 Project::~Project(){

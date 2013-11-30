@@ -126,11 +126,7 @@ public:
 
     const KeyFrame* getEnd() const;
 
-    void beginRecordBoundingBox() const;
-
     Variant getValueAt(double t) const;
-
-    void endRecordBoundingBox() const;
 
     const RectD& getBoundingBox() const ;
 

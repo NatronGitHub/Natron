@@ -57,7 +57,6 @@ void CurveGui::drawCurve(){
         return;
 
     assert(QGLContext::currentContext() == _curveWidget->context());
-    beginRecordBoundingBox();
 
     int w = _curveWidget->width();
     float* vertices = new float[w * 2];
@@ -68,8 +67,6 @@ void CurveGui::drawCurve(){
         vertices[vertIndex] = (float)x;
         vertices[vertIndex+1] = (float)y;
     }
-
-    endRecordBoundingBox();
 
     const QColor& curveColor = _selected ?  _curveWidget->getSelectedCurveColor() : _color;
 
@@ -292,13 +289,6 @@ void CurveWidget::drawCurves()
     }
 }
 
-void CurveGui::beginRecordBoundingBox() const{
-    _internalCurve->beginRecordBoundingBox();
-}
-
-void CurveGui::endRecordBoundingBox() const{
-    _internalCurve->endRecordBoundingBox();
-}
 
 void CurveWidget::drawBaseAxis()
 {

@@ -437,6 +437,7 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     
     /*frame seeker*/
     _timeLineGui = new TimeLineGui(_gui->getApp()->getTimeLine(),this);
+    QObject::connect(_timeLineGui,SIGNAL(frameChanged(SequenceTime)),_gui->getApp(),SIGNAL(timeChanged(SequenceTime)));
     _timeLineGui->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _mainLayout->addWidget(_timeLineGui);
     /*================================================*/
@@ -601,10 +602,10 @@ void ViewerTab::nextIncrement(){
     seek(_timeLineGui->currentFrame()+incrementSpinBox->value());
 }
 void ViewerTab::firstFrame(){
-    seek(_timeLineGui->firstFrame());
+    seek(_timeLineGui->leftBound());
 }
 void ViewerTab::lastFrame(){
-    seek(_timeLineGui->lastFrame());
+    seek(_timeLineGui->rightBound());
 }
 
 void ViewerTab::onTimeLineTimeChanged(SequenceTime time){
