@@ -159,6 +159,7 @@ void Writer::initializeKnobs(){
     _frameRangeChoosal = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", this, "Frame range"));
     std::vector<std::string> frameRangeChoosalEntries;
     frameRangeChoosalEntries.push_back("Inputs union");
+    frameRangeChoosalEntries.push_back("Timeline bounds");
     frameRangeChoosalEntries.push_back("Manual");
     _frameRangeChoosal->populate(frameRangeChoosalEntries);
     
@@ -237,6 +238,9 @@ void Writer::getFrameRange(SequenceTime *first,SequenceTime *last){
             *first = 0;
             *last = 0;
         }
+    }else if(index == 1){
+        *first = getApp()->getTimeLine()->leftBound();
+        *last = getApp()->getTimeLine()->rightBound();
     }else{
         *first = _firstFrameKnob->getValue<int>();
         *last = _lastFrameKnob->getValue<int>();
@@ -280,7 +284,7 @@ void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
 
     }else if(k == _frameRangeChoosal){
         int index = _frameRangeChoosal->getValue<int>();
-        if(index == 0){
+        if(index != 2){
             if(_firstFrameKnob){
                 _firstFrameKnob->remove();;
                 _firstFrameKnob = 0;
@@ -289,7 +293,7 @@ void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
                 _lastFrameKnob->remove();
                 _lastFrameKnob = 0;
             }
-        }else if(index == 1){
+        }else{
             int first = getApp()->getTimeLine()->firstFrame();
             int last = getApp()->getTimeLine()->lastFrame();
             if(!_firstFrameKnob){

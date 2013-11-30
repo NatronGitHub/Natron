@@ -215,6 +215,13 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
         setAutoSetProjectFormat(false);
         iArchive >> boost::serialization::make_nvp("Project_views_count",viewsValue);
         _viewsCount->onStartupRestoration(viewsValue);
+        
+        SequenceTime leftBound,rightBound,current;
+        iArchive >> boost::serialization::make_nvp("Timeline_current_time",current);
+        iArchive >> boost::serialization::make_nvp("Timeline_left_bound",leftBound);
+        iArchive >> boost::serialization::make_nvp("Timeline_right_bound",rightBound);
+        _timeline->setBoundaries(leftBound, rightBound);
+        _timeline->seekFrame(current);
     }catch(const boost::archive::archive_exception& e){
         throw std::runtime_error(std::string("Serialization error: ") + std::string(e.what()));
     }
@@ -334,6 +341,13 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
         oArchive << boost::serialization::make_nvp("Project_formats",_availableFormats);
         oArchive << boost::serialization::make_nvp("Project_output_format",dynamic_cast<const AnimatingParam&>(*_formatKnob));
         oArchive << boost::serialization::make_nvp("Project_views_count",dynamic_cast<const AnimatingParam&>(*_viewsCount));
+        SequenceTime leftBound,rightBound,current;
+        leftBound = _timeline->leftBound();
+        rightBound = _timeline->rightBound();
+        current = _timeline->currentFrame();
+        oArchive << boost::serialization::make_nvp("Timeline_current_time",current);
+        oArchive << boost::serialization::make_nvp("Timeline_left_bound",leftBound);
+        oArchive << boost::serialization::make_nvp("Timeline_right_bound",rightBound);
     }catch(const std::exception& e){
         std::cout << e.what() << std::endl;
     }

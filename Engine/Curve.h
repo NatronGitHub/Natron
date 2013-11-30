@@ -37,7 +37,7 @@ public:
 
     KeyFrame();
 
-    KeyFrame(double time,const Variant& initialValue,const boost::shared_ptr<Curve>& curve);
+    KeyFrame(double time,const Variant& initialValue,Curve* curve);
 
     KeyFrame(const KeyFrame& other);
 

@@ -20,7 +20,7 @@ KeyFrame::KeyFrame()
 {}
 
 
-KeyFrame::KeyFrame(double time, const Variant& initialValue,const boost::shared_ptr<Curve>& curve)
+KeyFrame::KeyFrame(double time, const Variant& initialValue,Curve* curve)
     : _imp(new KeyFramePrivate(time,initialValue,curve))
 {
 }
@@ -110,7 +110,8 @@ void Curve::clone(const Curve& other){
     clearKeyFrames();
     const KeyFrames& otherKeys = other.getKeyFrames();
     for(KeyFrames::const_iterator it = otherKeys.begin();it!=otherKeys.end();++it){
-        KeyFrame* key = new KeyFrame(*(*it));
+        KeyFrame* key = new KeyFrame(0,Variant(0),this);
+        key->clone(*(*it));
         _imp->_keyFrames.push_back(key);
     }
     _imp->_bbox = other._imp->_bbox;
@@ -399,7 +400,7 @@ void AnimatingParam::setValue(const Variant& v, int dimension, ValueChangedReaso
 void AnimatingParam::setValueAtTime(double time, const Variant& v, int dimension){
     CurvesMap::iterator foundDimension = _imp->_curves.find(dimension);
     assert(foundDimension != _imp->_curves.end());
-    foundDimension->second->addControlPoint(new KeyFrame(time,v,foundDimension->second));
+    foundDimension->second->addControlPoint(new KeyFrame(time,v,foundDimension->second.get()));
 }
 
 void AnimatingParam::clone(const AnimatingParam& other) {
