@@ -303,7 +303,7 @@ public:
     
     void endValuesChanged(AnimatingParam::ValueChangedReason reason);
     
-    void onValueChanged(Knob* k,Knob::ValueChangedReason reason,bool isSignificant);
+    void onValueChanged(Knob* k,AnimatingParam::ValueChangedReason reason,bool isSignificant);
     
 protected:
     

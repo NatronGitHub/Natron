@@ -71,15 +71,18 @@ void load(Archive & ar,AnimatingParamPrivate& v ,const unsigned int version)
     ar & boost::serialization::make_nvp("dimension",v._dimension);
     ar & boost::serialization::make_nvp("Values",v._value);
     
+    v._curves.clear();
     for(int i = 0 ; i < v._dimension;++i){
-        v._curves.insert(std::make_pair(i,boost::shared_ptr<Curve>()));
+        boost::shared_ptr<Curve> c (new Curve());
+        v._curves.insert(std::make_pair(i,c));
     }
     std::map<int,boost::shared_ptr<Curve> > serializedCurves;
     ar & boost::serialization::make_nvp("Curves",serializedCurves);
-    
     for(std::map<int,boost::shared_ptr<Curve> >::iterator it = v._curves.begin(); it!=v._curves.end();++it){
+        assert(it->second);
         std::map<int,boost::shared_ptr<Curve> >::const_iterator found = serializedCurves.find(it->first);
         if(found != serializedCurves.end()){
+            assert(found->second);
             it->second->clone(*found->second);
         }
     }

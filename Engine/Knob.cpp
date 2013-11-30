@@ -369,9 +369,18 @@ void Knob::evaluateValueChange(int dimension,AnimatingParam::ValueChangedReason 
     _imp->_holder->onValueChanged(this,reason,!_imp->_isInsignificant);
 }
 
-void Knob::onTimeChanged(SequenceTime /*time*/){
+void Knob::onTimeChanged(SequenceTime time){
     if(isAnimationEnabled()){
-        evaluateAnimationChange();
+        _imp->_holder->beginValuesChanged(AnimatingParam::TIME_CHANGED,false); // we do not want to force a re-evaluation
+        for(int i = 0; i < getDimension();++i){
+            boost::shared_ptr<Curve> curve = getCurve(i);
+            if(curve && curve->isAnimated()){
+                Variant v = getValueAtTime(time,i);
+                setValue(v,i);
+            }
+        }
+        _imp->_holder->endValuesChanged(AnimatingParam::TIME_CHANGED);
+
     }
 }
 
@@ -472,28 +481,23 @@ int KnobHolder::getAppAge() const{
 }
 
 
-void KnobHolder::beginValuesChanged(Knob::ValueChangedReason reason, bool isSignificant){
+void KnobHolder::beginValuesChanged(AnimatingParam::ValueChangedReason reason, bool isSignificant){
     _betweenBeginEndParamChanged = true ;
     _insignificantChange = !isSignificant;
     beginKnobsValuesChanged(reason);
 }
 
-void KnobHolder::endValuesChanged(Knob::ValueChangedReason reason){
+void KnobHolder::endValuesChanged(AnimatingParam::ValueChangedReason reason){
     assert(_betweenBeginEndParamChanged);
     _betweenBeginEndParamChanged = false ;
-
-    for(U32 i = 0; i < _knobsChanged.size();++i){
-        if(i < _knobsChanged.size()-1){
-            evaluate(_knobsChanged[i],true);
-        }else{
-            evaluate(_knobsChanged[i],!_insignificantChange);
-        }
+    if(!_knobsChanged.empty() && reason != AnimatingParam::TIME_CHANGED){
+        evaluate(_knobsChanged.back(),!_insignificantChange);
     }
     _knobsChanged.clear();
     endKnobsValuesChanged(reason);
 }
 
-void KnobHolder::onValueChanged(Knob* k, Knob::ValueChangedReason reason, bool isSignificant){
+void KnobHolder::onValueChanged(Knob* k, AnimatingParam::ValueChangedReason reason, bool isSignificant){
     bool wasBeginCalled = true;
     if(!_betweenBeginEndParamChanged){
         beginValuesChanged(reason,isSignificant);

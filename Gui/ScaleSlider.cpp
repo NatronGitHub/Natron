@@ -287,9 +287,11 @@ void ScaleSlider::seekScalePosition(double v){
 
 void ScaleSlider::seekInternal(double v){
 
-    if(v < _minimum || v > _maximum)
-        return;
-
+    if(v < _minimum)
+        v = _minimum;
+    if(v > _maximum)
+        v = _maximum;
+        
     _position = toWidgetCoordinates(v,0).x();
     double padding = (_maximum - _minimum) / 10.;
     double displayedRange = _maximum - _minimum + 2*padding;

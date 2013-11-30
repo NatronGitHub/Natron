@@ -37,7 +37,7 @@ public:
 
     KeyFrame();
 
-    KeyFrame(double time,const Variant& initialValue,boost::shared_ptr<Curve> curve);
+    KeyFrame(double time,const Variant& initialValue,const boost::shared_ptr<Curve>& curve);
 
     KeyFrame(const KeyFrame& other);
 
@@ -48,6 +48,7 @@ public:
     bool operator==(const KeyFrame& o) const ;
 
     const Variant& getValue() const;
+    
     double getTime() const ;
 
     const Variant& getLeftTangent() const;

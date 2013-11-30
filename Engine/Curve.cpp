@@ -20,7 +20,7 @@ KeyFrame::KeyFrame()
 {}
 
 
-KeyFrame::KeyFrame(double time, const Variant& initialValue, boost::shared_ptr<Curve> curve)
+KeyFrame::KeyFrame(double time, const Variant& initialValue,const boost::shared_ptr<Curve>& curve)
     : _imp(new KeyFramePrivate(time,initialValue,curve))
 {
 }
@@ -143,6 +143,7 @@ void Curve::addControlPoint(KeyFrame* cp)
             }else if((*it)->getTime() == cp->getTime()){
                 //if the key already exists at this time, just modify it.
                 (*it)->setValue(cp->getValue());
+                refreshTangents(it);
                 delete cp;
                 return;
             }
@@ -351,7 +352,7 @@ AnimatingParam::AnimatingParam(int dimension )
     //default initialize the values map
     for(int i = 0; i < dimension ; ++i){
         _imp->_value.insert(std::make_pair(i,Variant()));
-        boost::shared_ptr<Curve> c (new Curve());
+        boost::shared_ptr<Curve> c (new Curve(this));
         _imp->_curves.insert(std::make_pair(i,c));
     }
 }
@@ -368,7 +369,7 @@ void AnimatingParam::operator=(const AnimatingParam& other){
     _imp->_dimension = other._imp->_dimension;
     for(int i = 0; i < other.getDimension() ; ++i){
         _imp->_value.insert(std::make_pair(i,other.getValue(i)));
-        boost::shared_ptr<Curve> c(new Curve());
+        boost::shared_ptr<Curve> c(new Curve(this));
         boost::shared_ptr<Curve> otherCurve  = other.getCurve(i);
         if(otherCurve){
             c->clone(*otherCurve);
