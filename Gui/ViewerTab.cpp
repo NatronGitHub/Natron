@@ -585,7 +585,7 @@ void ViewerTab::startBackward(bool b){
 void ViewerTab::seek(SequenceTime time){
     _currentFrameBox->setValue(time);
     _timeLineGui->seek(time);
-    abortRendering();
+    //   abortRendering();
     _viewerNode->refreshAndContinueRender();
 }
 
