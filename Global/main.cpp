@@ -14,7 +14,8 @@
 #include <QtCore/QString>
 #include <QLabel>
 #include <QtGui/QPixmap>
-
+#include <QDebug>
+#include <QFontDatabase>
 #include "Global/GlobalDefines.h"
 #include "Global/AppManager.h"
 
