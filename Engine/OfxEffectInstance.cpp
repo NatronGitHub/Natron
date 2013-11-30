@@ -68,6 +68,7 @@ OfxEffectInstance::OfxEffectInstance(Natron::Node* node)
     , _overlayInteract()
     , _tabKnob(0)
     , _lastKnobLayoutWithNoNewLine(0)
+    , _initialized(false)
 {
     if(!node->getLiveInstance()){
         node->setLiveInstance(this);
@@ -102,11 +103,21 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
             if (stat != kOfxStatOK) {
                 throw std::runtime_error("Error while populating the Ofx image effect");
             }
+            
+            stat = effect_->createInstanceAction();
+            if(stat != kOfxStatOK && stat != kOfxStatReplyDefault){
+                throw std::runtime_error("Could not create effect instance for plugin");
+            }
+            
+            /*must be called AFTER createInstanceAction!*/
+            tryInitializeOverlayInteracts();
+            
         } catch (const std::exception &e) {
             cout << "Error: Caught exception while creating OfxImageEffectInstance: " << e.what() << std::endl;
             throw;
         }
     }
+    _initialized = true;
 }
 
 OfxEffectInstance::~OfxEffectInstance(){
@@ -159,8 +170,12 @@ bool OfxEffectInstance::isGeneratorAndFilter() const {
  Toto/Superplugins/blabla
  This functions extracts the all parts of such a grouping, e.g in this case
  it would return [Toto,Superplugins,blabla].*/
-QStringList ofxExtractAllPartsOfGrouping(const QString& pluginLabel,const QString& str,const QString& bundlePath) {
+QStringList ofxExtractAllPartsOfGrouping(const QString& pluginLabel,const QString& str) {
+    
     QStringList out;
+    if(str.startsWith("Sapphire ")){
+        out.push_back("Sapphire");
+    }
     int pos = 0;
     while(pos < str.size()){
         QString newPart;
@@ -173,30 +188,11 @@ QStringList ofxExtractAllPartsOfGrouping(const QString& pluginLabel,const QStrin
             out.push_back(newPart);
         }
     }
-    if(!bundlePath.isEmpty()){
-        int lastDotPos = bundlePath.lastIndexOf('.');
-        QString bundleName = bundlePath.left(lastDotPos);
-        lastDotPos = bundleName.lastIndexOf('.');
-        bundleName = bundleName.left(lastDotPos);
-        lastDotPos = bundleName.lastIndexOf('/');
-        if(lastDotPos == -1){
-            lastDotPos = bundleName.lastIndexOf('\\');
-        }
-        if(lastDotPos != -1){
-            QString toRemove = bundleName.left(lastDotPos+1);
-            bundleName = bundleName.remove(toRemove);
-            if(out.size() == 1)
-                out.push_back(bundleName);
-        }
-        
-    }
     return out;
 }
 
-QStringList OfxEffectInstance::getPluginGrouping(const std::string& pluginLabel,const std::string& bundlePath,int pluginsCount,const std::string& grouping){
-    std::string bundlePathToUse;
-    bundlePathToUse = pluginsCount  > 1 ? bundlePath : "";
-    return  ofxExtractAllPartsOfGrouping(pluginLabel.c_str(),grouping.c_str(),bundlePathToUse.c_str());
+QStringList OfxEffectInstance::getPluginGrouping(const std::string& pluginLabel,const std::string& grouping){
+    return  ofxExtractAllPartsOfGrouping(pluginLabel.c_str(),grouping.c_str());
 }
 std::string OfxEffectInstance::getPluginLabel(const std::string& shortLabel,
                                       const std::string& label,
@@ -214,11 +210,9 @@ std::string OfxEffectInstance::getPluginLabel(const std::string& shortLabel,
 std::string OfxEffectInstance::generateImageEffectClassName(const std::string& shortLabel,
                                                             const std::string& label,
                                                             const std::string& longLabel,
-                                                            int pluginsCount,
-                                                            const std::string& bundlePath,
                                                             const std::string& grouping){
     std::string labelToUse = getPluginLabel(shortLabel,label,longLabel);
-    QStringList groups = getPluginGrouping(labelToUse,bundlePath,pluginsCount,grouping);
+    QStringList groups = getPluginGrouping(labelToUse,grouping);
 
     if(labelToUse == "Viewer"){ // we don't want a plugin to have the same name as our viewer
         labelToUse =  groups[0].toStdString() + longLabel;
@@ -236,8 +230,6 @@ std::string OfxEffectInstance::pluginID() const {
     return generateImageEffectClassName(effect_->getShortLabel(),
                                         effect_->getLabel(),
                                         effect_->getLongLabel(),
-                                        effect_->getPlugin()->getBinary()->getNPlugins(),
-                                        effect_->getPlugin()->getBinary()->getBundlePath(),
                                         effect_->getPluginGrouping());
 }
 
@@ -316,6 +308,9 @@ void OfxEffectInstance::ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const{
 }
 
 Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod){
+    if(!_initialized){
+        return Natron::StatFailed;
+    }
     assert(effect_);
     OfxPointD rS;
     rS.x = rS.y = 1.0;
@@ -359,8 +354,12 @@ OfxRectD rectToOfxRect2D(const RectI b){
 
 
 EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) {
+    
     std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD> inputRois;
     EffectInstance::RoIMap ret;
+    if(!_initialized){
+        return ret;
+    }
     OfxStatus stat = effect_->getRegionOfInterestAction((OfxTime)time, scale, rectToOfxRect2D(renderWindow), inputRois);
     if(stat != kOfxStatOK && stat != kOfxStatReplyDefault)
         return ret;
@@ -377,6 +376,9 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
 
 
 void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
+    if(!_initialized){
+        return;
+    }
     OfxRangeD range;
     OfxStatus st = effect_->getTimeDomainAction(range);
     if(st == kOfxStatOK){
@@ -442,6 +444,9 @@ Natron::Status OfxEffectInstance::preProcessFrame(SequenceTime /*time*/){
 
 Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
                                          const RectI& roi,int view,boost::shared_ptr<Natron::Image>/* output*/){
+    if(!_initialized){
+        return Natron::StatFailed;
+    }
     OfxRectI ofxRoI;
     ofxRoI.x1 = roi.left();
     ofxRoI.x2 = roi.right();
@@ -525,6 +530,9 @@ void OfxEffectInstance::backgroundColorOfAttachedViewer(double &r,double &g,doub
 
 
 void OfxEffectInstance::drawOverlay(){
+    if(!_initialized){
+        return;
+    }
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
@@ -534,6 +542,9 @@ void OfxEffectInstance::drawOverlay(){
 
 
 bool OfxEffectInstance::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
+    if(!_initialized){
+        return false;
+    }
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
@@ -554,6 +565,9 @@ bool OfxEffectInstance::onOverlayPenDown(const QPointF& viewportPos,const QPoint
 }
 
 bool OfxEffectInstance::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
+    if(!_initialized){
+        return false;
+    }
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
@@ -574,6 +588,9 @@ bool OfxEffectInstance::onOverlayPenMotion(const QPointF& viewportPos,const QPoi
 
 
 bool OfxEffectInstance::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos){
+    if(!_initialized){
+        return false;
+    }
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
@@ -594,6 +611,9 @@ bool OfxEffectInstance::onOverlayPenUp(const QPointF& viewportPos,const QPointF&
 }
 
 void OfxEffectInstance::onOverlayKeyDown(QKeyEvent* e){
+    if(!_initialized){
+        return;
+    }
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
@@ -606,6 +626,9 @@ void OfxEffectInstance::onOverlayKeyDown(QKeyEvent* e){
 }
 
 void OfxEffectInstance::onOverlayKeyUp(QKeyEvent* e){
+    if(!_initialized){
+        return;
+    }
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
@@ -618,6 +641,9 @@ void OfxEffectInstance::onOverlayKeyUp(QKeyEvent* e){
 }
 
 void OfxEffectInstance::onOverlayKeyRepeat(QKeyEvent* e){
+    if(!_initialized){
+        return;
+    }
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
@@ -629,6 +655,9 @@ void OfxEffectInstance::onOverlayKeyRepeat(QKeyEvent* e){
 }
 
 void OfxEffectInstance::onOverlayFocusGained(){
+    if(!_initialized){
+        return;
+    }
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
@@ -653,38 +682,53 @@ void OfxEffectInstance::onOverlayFocusLost(){
 }
 
 
-void OfxEffectInstance::onKnobValueChanged(Knob* k,Knob::ValueChangedReason reason){
+void OfxEffectInstance::onKnobValueChanged(Knob* k,AnimatingParam::ValueChangedReason reason){
+    if(!_initialized){
+        return;
+    }
     OfxPointD renderScale;
     effect_->getRenderScaleRecursive(renderScale.x, renderScale.y);
     OfxTime time = effect_->getFrameRecursive();
     OfxStatus stat = kOfxStatOK;
-    if(reason == Knob::USER_EDITED){
+    if(reason == AnimatingParam::USER_EDITED){
         stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangeUserEdited,time,renderScale);
-    }else if(reason == Knob::TIME_CHANGED){
+    }else if(reason == AnimatingParam::TIME_CHANGED){
         stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangeTime,time,renderScale);
+    }else if(reason == AnimatingParam::PLUGIN_EDITED){
+        stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangePluginEdited,time,renderScale);
     }
     // note: DON'T remove the following assert()s, unless you replace them with proper error feedback.
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
 
 }
 
-void OfxEffectInstance::beginKnobsValuesChanged(Knob::ValueChangedReason reason) {
+void OfxEffectInstance::beginKnobsValuesChanged(AnimatingParam::ValueChangedReason reason) {
+    if(!_initialized){
+        return;
+    }
     OfxStatus stat = kOfxStatOK;
-    if(reason == Knob::USER_EDITED){
+    if(reason == AnimatingParam::USER_EDITED){
         stat = effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-    }else if(reason == Knob::TIME_CHANGED){
+    }else if(reason == AnimatingParam::TIME_CHANGED){
         stat = effectInstance()->beginInstanceChangedAction(kOfxChangeTime);
+    }else if(reason == AnimatingParam::PLUGIN_EDITED){
+        stat = effectInstance()->beginInstanceChangedAction(kOfxChangePluginEdited);
     }
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
 
 }
 
-void OfxEffectInstance::endKnobsValuesChanged(Knob::ValueChangedReason reason){
+void OfxEffectInstance::endKnobsValuesChanged(AnimatingParam::ValueChangedReason reason){
+    if(!_initialized){
+        return;
+    }
     OfxStatus stat = kOfxStatOK;
-    if(reason == Knob::USER_EDITED){
+    if(reason == AnimatingParam::USER_EDITED){
         stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-    }else if(reason == Knob::TIME_CHANGED){
+    }else if(reason == AnimatingParam::TIME_CHANGED){
         stat = effectInstance()->endInstanceChangedAction(kOfxChangeTime);
+    }else if(reason == AnimatingParam::PLUGIN_EDITED){
+        stat = effectInstance()->endInstanceChangedAction(kOfxChangePluginEdited);
     }
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
 

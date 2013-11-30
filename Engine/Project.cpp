@@ -215,10 +215,10 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
         setAutoSetProjectFormat(false);
         iArchive >> boost::serialization::make_nvp("Project_views_count",viewsValue);
         _viewsCount->onStartupRestoration(viewsValue);
-        ifile.close();
     }catch(const boost::archive::archive_exception& e){
         throw std::runtime_error(std::string("Serialization error: ") + std::string(e.what()));
     }
+    ifile.close();
     
     bool hasProjectAWriter = false;
     /*first create all nodes and restore the knobs values*/
@@ -246,16 +246,18 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
         n->setName(state.getName());
         const NodeGui::SerializedState::KnobValues& knobsValues = state.getKnobsValues();
         //begin changes to params
-        for (U32 i = 0; i < knobsValues.size(); ++i) {
-            boost::shared_ptr<Knob> knob = n->getKnobByDescription(knobsValues[i].first);
+        for (NodeGui::SerializedState::KnobValues::const_iterator i = knobsValues.begin();
+             i != knobsValues.end();++i) {
+            boost::shared_ptr<Knob> knob = n->getKnobByDescription(i->first);
             if(!knob){
-                cout << "Couldn't restore knob value ( " << knobsValues[i].first << " )." << endl;
+                cout << "Couldn't restore knob value ( " << i->first << " )." << endl;
             }else{
-                knob->onStartupRestoration(*knobsValues[i].second);
+                knob->onStartupRestoration(i->second);
             }
         }
         if(!background){
             NodeGui* nGui = getApp()->getNodeGui(n);
+            assert(nGui);
             nGui->setPos(state.getX(),state.getY());
             getApp()->deselectAllNodes();
         }
@@ -315,6 +317,7 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
         filePath = path+filename;
     }
     std::ofstream ofile(filePath.toStdString().c_str(),std::ofstream::out);
+    {
     boost::archive::xml_oarchive oArchive(ofile);
     if(!ofile.is_open()){
         cout << "Failed to open file " << filePath.toStdString() << endl;
@@ -326,10 +329,15 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
         NodeGui::SerializedState state = activeNodes[i]->serialize();
         nodeStates.push_back(state);
     }
-    oArchive << boost::serialization::make_nvp("Nodes",nodeStates);
-    oArchive << boost::serialization::make_nvp("Project_formats",_availableFormats);
-    oArchive << boost::serialization::make_nvp("Project_output_format",dynamic_cast<const AnimatingParam&>(*_formatKnob));
-    oArchive << boost::serialization::make_nvp("Project_views_count",dynamic_cast<const AnimatingParam&>(*_viewsCount));
+    try{
+        oArchive << boost::serialization::make_nvp("Nodes",nodeStates);
+        oArchive << boost::serialization::make_nvp("Project_formats",_availableFormats);
+        oArchive << boost::serialization::make_nvp("Project_output_format",dynamic_cast<const AnimatingParam&>(*_formatKnob));
+        oArchive << boost::serialization::make_nvp("Project_views_count",dynamic_cast<const AnimatingParam&>(*_viewsCount));
+    }catch(const std::exception& e){
+        std::cout << e.what() << std::endl;
+    }
+    }
     ofile.close();
 }
 

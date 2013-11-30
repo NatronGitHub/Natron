@@ -263,8 +263,11 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
+            if (!descriptor.getEvaluateOnChange()) {
                 ret->getKnob()->setIsInsignificant(true);
+            }
+            if(!descriptor.getIsPersistant()){
+                ret->getKnob()->setPersistent(false);
             }
             if(!descriptor.getCanAnimate()){
                 ret->getKnob()->turnOffAnimation();
@@ -285,8 +288,11 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
+            if (!descriptor.getEvaluateOnChange()) {
                 ret->getKnob()->setIsInsignificant(true);
+            }
+            if(!descriptor.getIsPersistant()){
+                ret->getKnob()->setPersistent(false);
             }
             if(!descriptor.getCanAnimate()){
                 ret->getKnob()->turnOffAnimation();
@@ -307,8 +313,11 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
+            if (!descriptor.getEvaluateOnChange()) {
                 ret->getKnob()->setIsInsignificant(true);
+            }
+            if(!descriptor.getIsPersistant()){
+                ret->getKnob()->setPersistent(false);
             }
             if(!descriptor.getCanAnimate()){
                 ret->getKnob()->turnOffAnimation();
@@ -330,8 +339,11 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
+            if (!descriptor.getEvaluateOnChange()) {
                 ret->getKnob()->setIsInsignificant(true);
+            }
+            if(!descriptor.getIsPersistant()){
+                ret->getKnob()->setPersistent(false);
             }
             if(!descriptor.getCanAnimate()){
                 ret->getKnob()->turnOffAnimation();
@@ -352,8 +364,14 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
+            if (!descriptor.getEvaluateOnChange()) {
                 ret->getKnob()->setIsInsignificant(true);
+            }
+            if(!descriptor.getIsPersistant()){
+                ret->getKnob()->setPersistent(false);
+            }
+            if(!descriptor.getCanAnimate()){
+                ret->getKnob()->turnOffAnimation();
             }
         }
         return ret;
@@ -371,8 +389,11 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
+            if (!descriptor.getEvaluateOnChange()) {
                 ret->getKnob()->setIsInsignificant(true);
+            }
+            if(!descriptor.getIsPersistant()){
+                ret->getKnob()->setPersistent(false);
             }
             if(!descriptor.getCanAnimate()){
                 ret->getKnob()->turnOffAnimation();
@@ -393,8 +414,14 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
+            if (!descriptor.getEvaluateOnChange()) {
                 ret->getKnob()->setIsInsignificant(true);
+            }
+            if(!descriptor.getIsPersistant()){
+                ret->getKnob()->setPersistent(false);
+            }
+            if(!descriptor.getCanAnimate()){
+                ret->getKnob()->turnOffAnimation();
             }
         }
         return ret;
@@ -412,8 +439,11 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
+            if (!descriptor.getEvaluateOnChange()) {
                 ret->getKnob()->setIsInsignificant(true);
+            }
+            if(!descriptor.getIsPersistant()){
+                ret->getKnob()->setPersistent(false);
             }
             if(!descriptor.getCanAnimate()){
                 ret->getKnob()->turnOffAnimation();
@@ -434,8 +464,11 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
+            if (!descriptor.getEvaluateOnChange()) {
                 ret->getKnob()->setIsInsignificant(true);
+            }
+            if(!descriptor.getIsPersistant()){
+                ret->getKnob()->setPersistent(false);
             }
             if(!descriptor.getCanAnimate()){
                 ret->getKnob()->turnOffAnimation();
@@ -456,8 +489,14 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
+            if (!descriptor.getEvaluateOnChange()) {
                 ret->getKnob()->setIsInsignificant(true);
+            }
+            if(!descriptor.getIsPersistant()){
+                ret->getKnob()->setPersistent(false);
+            }
+            if(!descriptor.getCanAnimate()){
+                ret->getKnob()->turnOffAnimation();
             }
         }
         return ret;
@@ -477,8 +516,11 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange() || !descriptor.getIsPersistant()) {
+            if (!descriptor.getEvaluateOnChange()) {
                 ret->getKnob()->setIsInsignificant(true);
+            }
+            if(!descriptor.getIsPersistant()){
+                ret->getKnob()->setPersistent(false);
             }
             if(!descriptor.getCanAnimate()){
                 ret->getKnob()->turnOffAnimation();

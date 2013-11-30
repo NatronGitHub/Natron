@@ -36,7 +36,7 @@ using namespace Natron;
 Natron::OfxHost::OfxHost()
 :_imageEffectPluginCache(*this)
 {
-    _properties.setStringProperty(kOfxPropName, NATRON_APPLICATION_NAME "Host");
+    _properties.setStringProperty(kOfxPropName,"uk.co.thefoundry.nuke");//NATRON_APPLICATION_NAME "Host");
     _properties.setStringProperty(kOfxPropLabel, NATRON_APPLICATION_NAME);
     _properties.setIntProperty(kOfxPropAPIVersion, 1 , 0); //API v1.0
     _properties.setIntProperty(kOfxPropAPIVersion, 0 , 1);
@@ -172,7 +172,6 @@ OfxStatus Natron::OfxHost::clearPersistentMessage(){
 }
 
 OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natron::Node* node) {
-    OfxStatus stat;
     OFXPluginsIterator ofxPlugin = _ofxPlugins.find(name);
     if (ofxPlugin == _ofxPlugins.end()) {
         return NULL;
@@ -231,22 +230,6 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
         delete hostSideEffect;
         return NULL;
     }
-    Natron::OfxImageEffectInstance* effect = hostSideEffect->effectInstance();
-    if (effect) {
-        stat = effect->createInstanceAction();
-        if(stat != kOfxStatOK && stat != kOfxStatReplyDefault){
-            throw std::runtime_error("Could not create effect instance for plugin");
-            delete hostSideEffect;
-            return NULL;
-        }
-    } else {
-        throw std::runtime_error("Could not create effect instance for plugin");
-        delete hostSideEffect;
-        return NULL;
-    }
-    
-    /*must be called AFTER createInstanceAction!*/
-    hostSideEffect->tryInitializeOverlayInteracts();
     return hostSideEffect;
 }
 
@@ -301,18 +284,17 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
         std::string grouping = p->getDescriptor().getPluginGrouping().c_str();
         
         std::string bundlePath = p->getBinary()->getBundlePath();
-        int pluginsCount = p->getBinary()->getNPlugins();
         std::string pluginLabel = OfxEffectInstance::getPluginLabel(p->getDescriptor().getShortLabel(),
                                                                     p->getDescriptor().getLabel(),
                                                                     p->getDescriptor().getLongLabel());
+     
+        
         std::string pluginId = OfxEffectInstance::generateImageEffectClassName(p->getDescriptor().getShortLabel(),
                                                                                p->getDescriptor().getLabel(),
                                                                                p->getDescriptor().getLongLabel(),
-                                                                           pluginsCount,
-                                                                           bundlePath,
                                                                            grouping);
 
-        QStringList groups = OfxEffectInstance::getPluginGrouping(pluginLabel,bundlePath, pluginsCount, grouping);
+        QStringList groups = OfxEffectInstance::getPluginGrouping(pluginLabel, grouping);
         
         assert(p->getBinary());
         QString iconFilename = QString(bundlePath.c_str()) + "/Contents/Resources/";

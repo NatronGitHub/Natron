@@ -20,7 +20,7 @@ KeyFrame::KeyFrame()
 {}
 
 
-KeyFrame::KeyFrame(double time, const Variant& initialValue, Curve *curve)
+KeyFrame::KeyFrame(double time, const Variant& initialValue, boost::shared_ptr<Curve> curve)
     : _imp(new KeyFramePrivate(time,initialValue,curve))
 {
 }
@@ -339,6 +339,11 @@ void Curve::evaluateCurveChanged(){
 
 
 /***********************************MULTIDIMENSIONAL VALUE*********************/
+AnimatingParam::AnimatingParam()
+: _imp(new AnimatingParamPrivate(0))
+{
+    
+}
 
 AnimatingParam::AnimatingParam(int dimension )
     : _imp(new AnimatingParamPrivate(dimension))
@@ -346,9 +351,31 @@ AnimatingParam::AnimatingParam(int dimension )
     //default initialize the values map
     for(int i = 0; i < dimension ; ++i){
         _imp->_value.insert(std::make_pair(i,Variant()));
-        Curve* c = new Curve();
-        _imp->_curves.insert(std::make_pair(i,boost::shared_ptr<Curve>(c)));
+        boost::shared_ptr<Curve> c (new Curve());
+        _imp->_curves.insert(std::make_pair(i,c));
     }
+}
+
+AnimatingParam::AnimatingParam(const AnimatingParam& other)
+: _imp(new AnimatingParamPrivate(other.getDimension()))
+{
+    *this = other;
+}
+
+void AnimatingParam::operator=(const AnimatingParam& other){
+    _imp->_value.clear();
+    _imp->_curves.clear();
+    _imp->_dimension = other._imp->_dimension;
+    for(int i = 0; i < other.getDimension() ; ++i){
+        _imp->_value.insert(std::make_pair(i,other.getValue(i)));
+        boost::shared_ptr<Curve> c(new Curve());
+        boost::shared_ptr<Curve> otherCurve  = other.getCurve(i);
+        if(otherCurve){
+            c->clone(*otherCurve);
+        }
+        _imp->_curves.insert(std::make_pair(i,c));
+    }
+
 }
 
 
@@ -371,7 +398,7 @@ void AnimatingParam::setValue(const Variant& v, int dimension, ValueChangedReaso
 void AnimatingParam::setValueAtTime(double time, const Variant& v, int dimension){
     CurvesMap::iterator foundDimension = _imp->_curves.find(dimension);
     assert(foundDimension != _imp->_curves.end());
-    foundDimension->second->addControlPoint(new KeyFrame(time,v,foundDimension->second.get()));
+    foundDimension->second->addControlPoint(new KeyFrame(time,v,foundDimension->second));
 }
 
 void AnimatingParam::clone(const AnimatingParam& other) {
@@ -382,7 +409,9 @@ void AnimatingParam::clone(const AnimatingParam& other) {
         it->second = other.getValue(i);
         boost::shared_ptr<Curve> curve = other.getCurve(i);
         boost::shared_ptr<Curve> thisCurve = getCurve(i);
-        thisCurve->clone(*curve);
+        if(curve){
+            thisCurve->clone(*curve);
+        }
     }
 }
 

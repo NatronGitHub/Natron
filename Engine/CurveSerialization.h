@@ -20,9 +20,11 @@
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/scoped_ptr.hpp>
+#include <boost/serialization/split_free.hpp>
 
 #include "Engine/Curve.h"
 #include "Engine/CurvePrivate.h"
+
 
 namespace boost {
 namespace serialization {
@@ -48,17 +50,44 @@ void serialize(Archive & ar,CurvePrivate& c, const unsigned int version)
 
 
 template<class Archive>
-void serialize(Archive & ar,AnimatingParamPrivate& v ,const unsigned int version)
+void save(Archive & ar,const AnimatingParamPrivate& v ,const unsigned int version)
 {
     (void)version;
+    ar & boost::serialization::make_nvp("dimension",v._dimension);
     ar & boost::serialization::make_nvp("Values",v._value);
-    ar & boost::serialization::make_nvp("Curves",v._curves);
+    std::map<int,boost::shared_ptr<Curve> > toSerialize;
+    for(std::map<int,boost::shared_ptr<Curve> >::const_iterator it = v._curves.begin(); it!=v._curves.end();++it){
+        if(it->second->isAnimated()){
+            toSerialize.insert(*it);
+        }
+    }
+    ar & boost::serialization::make_nvp("Curves",toSerialize);
 }
 
-
-
+template<class Archive>
+void load(Archive & ar,AnimatingParamPrivate& v ,const unsigned int version)
+{
+    (void)version;
+    ar & boost::serialization::make_nvp("dimension",v._dimension);
+    ar & boost::serialization::make_nvp("Values",v._value);
+    
+    for(int i = 0 ; i < v._dimension;++i){
+        v._curves.insert(std::make_pair(i,boost::shared_ptr<Curve>()));
+    }
+    std::map<int,boost::shared_ptr<Curve> > serializedCurves;
+    ar & boost::serialization::make_nvp("Curves",serializedCurves);
+    
+    for(std::map<int,boost::shared_ptr<Curve> >::iterator it = v._curves.begin(); it!=v._curves.end();++it){
+        std::map<int,boost::shared_ptr<Curve> >::const_iterator found = serializedCurves.find(it->first);
+        if(found != serializedCurves.end()){
+            it->second->clone(*found->second);
+        }
+    }
+}
+    
 }
 }
+BOOST_SERIALIZATION_SPLIT_FREE(AnimatingParamPrivate)
 
 
 template<class Archive>

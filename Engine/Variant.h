@@ -81,11 +81,14 @@ class Variant : public QVariant {
             ar & boost::serialization::make_nvp("Value",list);
             break;
         }
-        default:
-            break;
+            default:
+                typeStr = "null";
+                ar & boost::serialization::make_nvp("Type",typeStr);
+                break;
+                
         }
-
-
+        
+        
         
     }
     template<class Archive>
@@ -127,6 +130,9 @@ class Variant : public QVariant {
                 strList.push_back((*it).c_str());
             }
             setValue<QStringList>(strList);
+        }else{
+            assert(typeStr == "null");
+            //nothing
         }
 
 

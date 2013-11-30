@@ -48,7 +48,7 @@ class OfxEffectInstance : public Natron::OutputEffectInstance {
 
     Tab_Knob* _tabKnob; // for nuke tab extension: it creates all Group param as a tab and put it into this knob.
     QHBoxLayout* _lastKnobLayoutWithNoNewLine; // for nuke layout hint extension
-
+    bool _initialized; //true when the image effect instance has been created and populated
 public:
     
     
@@ -134,11 +134,11 @@ public:
 
     virtual void onOverlayFocusLost() OVERRIDE;
 
-    virtual void beginKnobsValuesChanged(Knob::ValueChangedReason reason) OVERRIDE ;
+    virtual void beginKnobsValuesChanged(AnimatingParam::ValueChangedReason reason) OVERRIDE ;
 
-    virtual void endKnobsValuesChanged(Knob::ValueChangedReason reason) OVERRIDE ;
+    virtual void endKnobsValuesChanged(AnimatingParam::ValueChangedReason reason) OVERRIDE ;
 
-    virtual void onKnobValueChanged(Knob* k,Knob::ValueChangedReason reason) OVERRIDE;
+    virtual void onKnobValueChanged(Knob* k,AnimatingParam::ValueChangedReason reason) OVERRIDE;
 
     virtual Natron::Status render(SequenceTime time,RenderScale scale,
                                    const RectI& roi,int view,boost::shared_ptr<Natron::Image> output) OVERRIDE;
@@ -147,7 +147,6 @@ public:
 
 
     /*********OVERLAY INTERACT FUNCTIONS********/
-    void tryInitializeOverlayInteracts();
 
     void swapBuffersOfAttachedViewer();
 
@@ -159,7 +158,7 @@ public:
 
     void backgroundColorOfAttachedViewer(double &r,double &g,double &b);
 
-    static QStringList getPluginGrouping(const std::string& pluginLabel,const std::string& bundlePath,int pluginsCount,const std::string& grouping);
+    static QStringList getPluginGrouping(const std::string& pluginLabel,const std::string& grouping);
 
     static std::string getPluginLabel(const std::string& shortLabel,
                                       const std::string& label,
@@ -168,9 +167,12 @@ public:
     static std::string generateImageEffectClassName(const std::string& shortLabel,
                                                 const std::string& label,
                                                 const std::string& longLabel,
-                                                int pluginsCount,
-                                                const std::string& bundlePath,
                                                 const std::string& grouping);
+
+private:
+
+    void tryInitializeOverlayInteracts();
+
 
 };
 

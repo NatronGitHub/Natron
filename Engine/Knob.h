@@ -175,6 +175,10 @@ public:
     
     void setIsInsignificant(bool b);
     
+    bool isPersistent() const;
+    
+    void setPersistent(bool b);
+    
     void turnOffUndoRedo() ;
     
     bool canBeUndone() const ;
@@ -852,7 +856,9 @@ public:
     }
     
     Button_Knob(KnobHolder*  holder, const std::string& description,int dimension):
-        Knob(holder,description,dimension){}
+        Knob(holder,description,dimension){
+            setPersistent(false);
+        }
     
     virtual bool canAnimate() const { return false; }
     

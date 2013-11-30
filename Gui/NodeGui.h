@@ -22,7 +22,6 @@
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/utility.hpp>
 #include <boost/serialization/map.hpp>
-#include <boost/serialization/vector.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
@@ -60,7 +59,7 @@ public:
         
     public:
         
-        typedef std::vector< std::pair<std::string,const AnimatingParam* > > KnobValues;
+        typedef std::map< std::string,AnimatingParam> KnobValues;
 
         
         SerializedState():_node(NULL){}

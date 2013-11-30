@@ -239,6 +239,7 @@ struct KnobPrivate{
     bool _enabled;
     bool _canUndo;
     bool _isInsignificant; //< if true, a value change will never trigger an evaluation
+    bool _isPersistent;//will it be serialized?
     std::string _tooltipHint;
     bool _isAnimationEnabled;
 
@@ -254,6 +255,7 @@ struct KnobPrivate{
         , _enabled(true)
         , _canUndo(true)
         , _isInsignificant(false)
+        , _isPersistent(true)
         , _tooltipHint()
         , _isAnimationEnabled(true)
     {
@@ -433,6 +435,10 @@ bool Knob::isVisible() const {return _imp->_visible;}
 bool Knob::isEnabled() const {return _imp->_enabled;}
 
 void Knob::setIsInsignificant(bool b) {_imp->_isInsignificant = b;}
+
+bool Knob::isPersistent() const { return _imp->_isPersistent; }
+
+void Knob::setPersistent(bool b) { _imp->_isPersistent = b; }
 
 void Knob::turnOffUndoRedo() {_imp->_canUndo = false;}
 

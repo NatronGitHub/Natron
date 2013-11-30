@@ -37,7 +37,7 @@ public:
 
     KeyFrame();
 
-    KeyFrame(double time,const Variant& initialValue,Curve* curve);
+    KeyFrame(double time,const Variant& initialValue,boost::shared_ptr<Curve> curve);
 
     KeyFrame(const KeyFrame& other);
 
@@ -172,9 +172,15 @@ public:
 
     typedef std::map<int, boost::shared_ptr<Curve> > CurvesMap;
 
-    AnimatingParam(int dimension = 1);
+    AnimatingParam();
+    
+    explicit AnimatingParam(int dimension);
+    
+    AnimatingParam(const AnimatingParam& other);
+    
+    void operator=(const AnimatingParam& other);
 
-    ~AnimatingParam();
+    virtual ~AnimatingParam();
 
     const std::map<int,Variant>& getValueForEachDimension() const ;
 
