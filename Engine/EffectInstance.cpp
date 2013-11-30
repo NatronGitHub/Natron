@@ -453,7 +453,7 @@ void EffectInstance::evaluate(Knob* knob,bool isSignificant){
         bool fitToViewer = knob->typeName() == "InputFile";
         for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
             if(isSignificant){
-                (*it)->abortRendering();
+                //(*it)->abortRendering();
                 (*it)->refreshAndContinueRender(fitToViewer);
             }else{
                 (*it)->redrawViewer();

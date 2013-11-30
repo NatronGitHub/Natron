@@ -345,7 +345,6 @@ void Knob::evaluateAnimationChange(){
         if(curve && curve->isAnimated()){
             Variant v = getValueAtTime(time,i);
             setValue(v,i);
-            evaluateValueChange(i,AnimatingParam::PLUGIN_EDITED);
         }
     }
     endValueChange(AnimatingParam::PLUGIN_EDITED);
