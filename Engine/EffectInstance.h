@@ -462,7 +462,8 @@ class OutputEffectInstance : public Natron::EffectInstance {
     boost::shared_ptr<VideoEngine> _videoEngine;
     int _writerCurrentFrame;/*!< for writers only: indicates the current frame
                              It avoids snchronizing all viewers in the app to the render*/
-    
+    int _writerFirstFrame;
+    int _writerLastFrame;
 public:
 
     OutputEffectInstance(Node* node);
@@ -493,6 +494,17 @@ public:
     int getCurrentFrame() const { return _writerCurrentFrame; }
     
     void setCurrentFrame(int f) { _writerCurrentFrame = f; }
+    
+    int getFirstFrame() const { return _writerFirstFrame; }
+    
+    void setFirstFrame(int f) {  _writerFirstFrame = f;}
+    
+    int getLastFrame() const { return _writerLastFrame; }
+    
+    void setLastFrame(int f) {  _writerLastFrame = f;}
+
+    
+    
 };
 
 

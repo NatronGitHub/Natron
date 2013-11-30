@@ -183,7 +183,13 @@ bool VideoEngine::startEngine() {
     
     int firstFrame,lastFrame;
     getFrameRange(&firstFrame, &lastFrame);
-    _timeline->setFrameRange(firstFrame, lastFrame);
+    if(_tree.isOutputAViewer()){
+        _timeline->setFrameRange(firstFrame, lastFrame);
+    }else{
+        Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
+        output->setFirstFrame(firstFrame);
+        output->setLastFrame(lastFrame);
+    }
     
     ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_tree.getOutput()); /*viewer might be NULL if the output is smthing else*/
     
@@ -362,15 +368,25 @@ void VideoEngine::run(){
         
         ViewerInstance* viewer = _tree.outputAsViewer();
         
-        int firstFrame = _timeline->leftBound();
-        int lastFrame = _timeline->rightBound();
+        int firstFrame,lastFrame;
+        if(_tree.isOutputAViewer()){
+            firstFrame = _timeline->leftBound();
+            lastFrame = _timeline->rightBound();
+        }else{
+            Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
+            firstFrame = output->getFirstFrame();
+            lastFrame = output->getLastFrame();
+        }
+        
         int currentFrame = 0;
 
         if (!_currentRunArgs._recursiveCall) {
             
             /*if writing on disk and not a recursive call, move back the timeline cursor to the start*/
             if(!_tree.isOutputAViewer()){
-                dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput())->setCurrentFrame(firstFrame);
+                Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
+                assert(output);
+                output->setCurrentFrame(firstFrame);
                 currentFrame = firstFrame;
             }else{
                 currentFrame = _timeline->currentFrame();
@@ -381,7 +397,7 @@ void VideoEngine::run(){
                     currentFrame = _timeline->currentFrame();
                     if(currentFrame >= lastFrame){
                         QMutexLocker loopModeLocker(&_loopModeMutex);
-                        if(_loopMode && _tree.isOutputAViewer()){ // loop only for a viewer
+                        if(_loopMode){ // loop only for a viewer
                             currentFrame = firstFrame;
                             _timeline->seekFrame(currentFrame);
                         }else{
@@ -399,7 +415,7 @@ void VideoEngine::run(){
                     currentFrame = _timeline->currentFrame();
                     if(currentFrame <= firstFrame){
                         QMutexLocker loopModeLocker(&_loopModeMutex);
-                        if(_loopMode && _tree.isOutputAViewer()){ //loop only for a viewer
+                        if(_loopMode){ //loop only for a viewer
                             currentFrame = lastFrame;
                             _timeline->seekFrame(currentFrame);
                         }else{
