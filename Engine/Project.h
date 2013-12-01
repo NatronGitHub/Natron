@@ -28,6 +28,7 @@ class AppInstance;
 
 namespace Natron{
 class Node;
+class OutputEffectInstance;
 struct ProjectPrivate;
 class Project : public QObject,  public KnobHolder {
     
@@ -95,12 +96,6 @@ public:
     // TimeLine operations (to avoid duplicating the shared_ptr when possible)
     void setFrameRange(int first, int last);
     
-    void seekFrame(int frame);
-    
-    void incrementCurrentFrame();
-    
-    void decrementCurrentFrame();
-    
     int currentFrame() const WARN_UNUSED_RETURN;
     
     int firstFrame() const WARN_UNUSED_RETURN;
@@ -124,10 +119,12 @@ public:
     void incrementKnobsAge() ;
     
     int getKnobsAge() const;
+    
+    void setLastTimelineSeekCaller(Natron::OutputEffectInstance* output);
 
 public slots:
 
-    void onTimeChanged(SequenceTime time);
+    void onTimeChanged(SequenceTime time,int reason);
 
 private:
 

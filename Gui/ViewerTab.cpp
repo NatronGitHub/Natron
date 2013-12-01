@@ -438,7 +438,6 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     
     /*frame seeker*/
     _timeLineGui = new TimeLineGui(_gui->getApp()->getTimeLine(),this);
-    QObject::connect(_timeLineGui,SIGNAL(frameChanged(SequenceTime)),_gui->getApp(),SIGNAL(timeChanged(SequenceTime)));
     _timeLineGui->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _mainLayout->addWidget(_timeLineGui);
     /*================================================*/
@@ -466,7 +465,8 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     QObject::connect(firstFrame_Button,SIGNAL(clicked()),this,SLOT(firstFrame()));
     QObject::connect(lastFrame_Button,SIGNAL(clicked()),this,SLOT(lastFrame()));
     QObject::connect(loopMode_Button, SIGNAL(clicked(bool)), this, SLOT(toggleLoopMode(bool)));
-    QObject::connect(_gui->getApp()->getTimeLine().get(),SIGNAL(frameChanged(SequenceTime)), this, SLOT(onTimeLineTimeChanged(SequenceTime)));
+    QObject::connect(_gui->getApp()->getTimeLine().get(),SIGNAL(frameChanged(SequenceTime,int)),
+                     this, SLOT(onTimeLineTimeChanged(SequenceTime,int)));
     QObject::connect(_viewerNode,SIGNAL(addedCachedFrame(SequenceTime)),_timeLineGui,SLOT(onCachedFrameAdded(SequenceTime)));
     QObject::connect(_viewerNode,SIGNAL(removedLRUCachedFrame()),_timeLineGui,SLOT(onLRUCachedFrameRemoved()));
     QObject::connect(appPTR,SIGNAL(imageRemovedFromViewerCache(SequenceTime)),_timeLineGui,SLOT(onCachedFrameRemoved(SequenceTime)));
@@ -609,7 +609,7 @@ void ViewerTab::lastFrame(){
     seek(_timeLineGui->rightBound());
 }
 
-void ViewerTab::onTimeLineTimeChanged(SequenceTime time){
+void ViewerTab::onTimeLineTimeChanged(SequenceTime time,int /*reason*/){
     _currentFrameBox->setValue(time);
     // abortRendering();
     //_viewerNode->refreshAndContinueRender();

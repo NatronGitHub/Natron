@@ -213,7 +213,7 @@ EffectInstance* Node::findOrCreateLiveInstanceClone(RenderTree* tree)
     }
     
     assert(ret);
-    ret->clone();
+    ret->clone(0); //the time parameter is meaningless here since we just create it.
     //ret->updateInputs(tree);
     return ret;
 
@@ -540,7 +540,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     QMutexLocker locker(&_imp->previewMutex); /// prevent 2 previews to occur at the same time since there's only 1 preview instance
 
     RectI rod;
-    _imp->previewRenderTree->refreshTree();
+    _imp->previewRenderTree->refreshTree(time);
     Natron::Status stat = _imp->previewInstance->getRegionOfDefinition(time, &rod);
     if (stat == StatFailed) {
         return;

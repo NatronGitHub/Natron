@@ -44,7 +44,7 @@ using std::cout; using std::endl;
 using std::make_pair;
 
 namespace Natron{
-    
+
 
 static QString generateStringFromFormat(const Format& f){
     QString formatStr;
@@ -78,30 +78,32 @@ struct ProjectPrivate{
     std::vector<Format> _availableFormats;
     
     int _knobsAge; //< the age of the knobs in the app. This is updated on each value changed.
+    Natron::OutputEffectInstance* _lastTimelineSeekCaller;
     
-    ProjectPrivate()
-    : _projectName("Untitled." NATRON_PROJECT_FILE_EXT)
-    , _hasProjectBeenSavedByUser(false)
-    , _ageSinceLastSave(QDateTime::currentDateTime())
-    , _formatKnob(NULL)
-    , _addFormatKnob(NULL)
-    , _viewsCount(NULL)
-    , _timeline(new TimeLine())
-    , _autoSetProjectFormat(true)
-    , _projectDataLock()
-    , _currentNodes()
-    , _availableFormats()
-    , _knobsAge(0)
+    ProjectPrivate(Project* project)
+        : _projectName("Untitled." NATRON_PROJECT_FILE_EXT)
+        , _hasProjectBeenSavedByUser(false)
+        , _ageSinceLastSave(QDateTime::currentDateTime())
+        , _formatKnob(NULL)
+        , _addFormatKnob(NULL)
+        , _viewsCount(NULL)
+        , _timeline(new TimeLine(project))
+        , _autoSetProjectFormat(true)
+        , _projectDataLock()
+        , _currentNodes()
+        , _availableFormats()
+        , _knobsAge(0)
+        , _lastTimelineSeekCaller(NULL)
     {
         
     }
 };
 
 Project::Project(AppInstance* appInstance)
-: KnobHolder(appInstance)
-, _imp(new ProjectPrivate)
+    : KnobHolder(appInstance)
+    , _imp(new ProjectPrivate(this))
 {
-    QObject::connect(_imp->_timeline.get(),SIGNAL(frameChanged(SequenceTime)),this,SLOT(onTimeChanged(SequenceTime)));
+    QObject::connect(_imp->_timeline.get(),SIGNAL(frameChanged(SequenceTime,int)),this,SLOT(onTimeChanged(SequenceTime,int)));
 }
 
 Project::~Project(){
@@ -193,16 +195,6 @@ void Project::setFrameRange(int first, int last){
     _imp->_timeline->setFrameRange(first,last);
 }
 
-void Project::seekFrame(int frame){
-    _imp->_timeline->seekFrame(frame);
-}
-
-void Project::incrementCurrentFrame() {
-    _imp->_timeline->incrementCurrentFrame();
-}
-void Project::decrementCurrentFrame(){
-    _imp->_timeline->decrementCurrentFrame();
-}
 
 int Project::currentFrame() const {
     return _imp->_timeline->currentFrame();
@@ -255,7 +247,7 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
         iArchive >> boost::serialization::make_nvp("Timeline_left_bound",leftBound);
         iArchive >> boost::serialization::make_nvp("Timeline_right_bound",rightBound);
         _imp->_timeline->setBoundaries(leftBound, rightBound);
-        _imp->_timeline->seekFrame(current);
+        _imp->_timeline->seekFrame(current,NULL);
     }catch(const boost::archive::archive_exception& e){
         throw std::runtime_error(std::string("Serialization error: ") + std::string(e.what()));
     }
@@ -315,7 +307,7 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
     for(std::list<NodeGui::SerializedState>::const_iterator it = nodeStates.begin() ; it!=nodeStates.end(); ++it){
         
         if(background && (*it).getClassName() == "Viewer")//ignore viewers on background mode
-           continue;
+            continue;
         
         const std::map<int, std::string>& inputs = (*it).getInputs();
         Node* thisNode = NULL;
@@ -359,32 +351,32 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
     }
     std::ofstream ofile(filePath.toStdString().c_str(),std::ofstream::out);
     {
-    boost::archive::xml_oarchive oArchive(ofile);
-    if(!ofile.is_open()){
-        cout << "Failed to open file " << filePath.toStdString() << endl;
-        return;
-    }
-    std::list<NodeGui::SerializedState> nodeStates;
-    const std::vector<NodeGui*>& activeNodes = getApp()->getAllActiveNodes();
-    for (U32 i = 0; i < activeNodes.size(); ++i) {
-        NodeGui::SerializedState state = activeNodes[i]->serialize();
-        nodeStates.push_back(state);
-    }
-    try{
-        oArchive << boost::serialization::make_nvp("Nodes",nodeStates);
-        oArchive << boost::serialization::make_nvp("Project_formats",_imp->_availableFormats);
-        oArchive << boost::serialization::make_nvp("Project_output_format",dynamic_cast<const AnimatingParam&>(*_imp->_formatKnob));
-        oArchive << boost::serialization::make_nvp("Project_views_count",dynamic_cast<const AnimatingParam&>(*_imp->_viewsCount));
-        SequenceTime leftBound,rightBound,current;
-        leftBound = _imp->_timeline->leftBound();
-        rightBound = _imp->_timeline->rightBound();
-        current = _imp->_timeline->currentFrame();
-        oArchive << boost::serialization::make_nvp("Timeline_current_time",current);
-        oArchive << boost::serialization::make_nvp("Timeline_left_bound",leftBound);
-        oArchive << boost::serialization::make_nvp("Timeline_right_bound",rightBound);
-    }catch(const std::exception& e){
-        std::cout << e.what() << std::endl;
-    }
+        boost::archive::xml_oarchive oArchive(ofile);
+        if(!ofile.is_open()){
+            cout << "Failed to open file " << filePath.toStdString() << endl;
+            return;
+        }
+        std::list<NodeGui::SerializedState> nodeStates;
+        const std::vector<NodeGui*>& activeNodes = getApp()->getAllActiveNodes();
+        for (U32 i = 0; i < activeNodes.size(); ++i) {
+            NodeGui::SerializedState state = activeNodes[i]->serialize();
+            nodeStates.push_back(state);
+        }
+        try{
+            oArchive << boost::serialization::make_nvp("Nodes",nodeStates);
+            oArchive << boost::serialization::make_nvp("Project_formats",_imp->_availableFormats);
+            oArchive << boost::serialization::make_nvp("Project_output_format",dynamic_cast<const AnimatingParam&>(*_imp->_formatKnob));
+            oArchive << boost::serialization::make_nvp("Project_views_count",dynamic_cast<const AnimatingParam&>(*_imp->_viewsCount));
+            SequenceTime leftBound,rightBound,current;
+            leftBound = _imp->_timeline->leftBound();
+            rightBound = _imp->_timeline->rightBound();
+            current = _imp->_timeline->currentFrame();
+            oArchive << boost::serialization::make_nvp("Timeline_current_time",current);
+            oArchive << boost::serialization::make_nvp("Timeline_left_bound",leftBound);
+            oArchive << boost::serialization::make_nvp("Timeline_right_bound",rightBound);
+        }catch(const std::exception& e){
+            std::cout << e.what() << std::endl;
+        }
     }
     ofile.close();
 }
@@ -421,7 +413,7 @@ void Project::setProjectDefaultFormat(const Format& f) {
     getApp()->triggerAutoSave();
 }
 
- 
+
 void Project::createNewFormat(){
     AddFormatDialog dialog(this,getApp()->getGui());
     if(dialog.exec()){
@@ -473,27 +465,32 @@ void Project::incrementKnobsAge() {
     else
         _imp->_knobsAge = 0;
 }
-
-int Project::getKnobsAge() const {return _imp->_knobsAge;}
-
-void Project::onTimeChanged(SequenceTime time){
     
-    refreshAfterTimeChange(time);
-    //Notify all knobs that the current time changed.
-    //It lets a chance for an animated knob to change its value according to the current time
-    std::list<ViewerInstance*> viewers;
-    for (U32 i = 0; i < _imp->_currentNodes.size(); ++i) {
-        _imp->_currentNodes[i]->getLiveInstance()->refreshAfterTimeChange(time);
+    int Project::getKnobsAge() const {return _imp->_knobsAge;}
+    
+    void Project::setLastTimelineSeekCaller(Natron::OutputEffectInstance* output){
+        _imp->_lastTimelineSeekCaller = output;
+    }
+    
+    void Project::onTimeChanged(SequenceTime time,int reason){
+        std::list<ViewerInstance*> viewers;
+        
+        refreshAfterTimeChange(time);
+        
+        for (U32 i = 0; i < _imp->_currentNodes.size(); ++i) {
         if(_imp->_currentNodes[i]->pluginID() == "Viewer"){
             viewers.push_back(dynamic_cast<ViewerInstance*>(_imp->_currentNodes[i]->getLiveInstance()));
         }
+        _imp->_currentNodes[i]->getLiveInstance()->refreshAfterTimeChange(time);
     }
-    
-    // now that we refreshed all knobs, refresh all viewers
-    for (std::list<ViewerInstance*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
-        (*it)->refreshAndContinueRender();
-    }
-    
+        //Notify all knobs that the current time changed.
+        //It lets a chance for an animated knob to change its value according to the current time
+        for (std::list<ViewerInstance*>::const_iterator it = viewers.begin(); it != viewers.end() ;++it)  {
+            if((Natron::TIMELINE_CHANGE_REASON)reason == Natron::PLAYBACK_SEEK && (*it) == _imp->_lastTimelineSeekCaller){
+                continue;
+            }
+            (*it)->refreshAndContinueRender();
+        }
 }
-    
+
 } //namespace Natron

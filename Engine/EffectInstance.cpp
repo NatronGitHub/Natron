@@ -111,10 +111,11 @@ void EffectInstance::setAsRenderClone()
     _imp->isRenderClone = true;
 }
 
-void EffectInstance::clone(){
+void EffectInstance::clone(SequenceTime time){
     if(!_imp->isRenderClone)
         return;
     cloneKnobs(*(_node->getLiveInstance()));
+    refreshAfterTimeChange(time);
     cloneExtras();
     _imp->previewEnabled = _node->getLiveInstance()->isPreviewEnabled();
 }
@@ -593,7 +594,7 @@ void OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
 
 void OutputEffectInstance::renderFullSequence(){
     assert(pluginID() != "Viewer"); //< this function is not meant to be called for rendering on the viewer
-    getVideoEngine()->refreshTree();
+    getVideoEngine()->refreshTree(_writerFirstFrame);
     getVideoEngine()->render(-1, true,false,true,false);
     
 }

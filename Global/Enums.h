@@ -25,6 +25,8 @@ namespace Natron{
     enum Scale_Type{LINEAR_SCALE,LOG_SCALE};
         
     enum TIMELINE_STATE{IDLE,DRAGGING_CURSOR,DRAGGING_BOUNDARY};
+    
+    enum TIMELINE_CHANGE_REASON{USER_SEEK = 0, PLAYBACK_SEEK = 1};
 
     // when adding more standard channels,
     // update the functions getChannelByName() and getChannelName() in ChannelSet.cpp

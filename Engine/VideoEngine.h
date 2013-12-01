@@ -105,7 +105,7 @@ public:
      *The rest of the tree is fetched recursivly starting from this node.
      *@TODO Throw some exception to detect cycles in the graph
      */
-    void refreshTree();
+    void refreshTree(SequenceTime time);
     
     /*Lock the dag. You should call this before any access*/
     void lock() const { _treeMutex.lock(); }
@@ -177,7 +177,7 @@ public:
     
     void debug() const;
     
-    void refreshKnobsAndHashAndClearPersistentMessage();
+    void refreshKnobsAndHashAndClearPersistentMessage(SequenceTime time);
     
     const Format& getRenderFormat() const {return _renderOutputFormat;}
     
@@ -194,7 +194,7 @@ private:
     
     
     
-    U64 cloneKnobsAndcomputeTreeHash(Natron::EffectInstance* effect,const std::vector<U64>& inputsHashs);
+    U64 cloneKnobsAndcomputeTreeHash(SequenceTime time,Natron::EffectInstance* effect,const std::vector<U64>& inputsHashs);
     
     
     Natron::EffectInstance* _output; /*!<the output of the Tree*/
@@ -443,8 +443,8 @@ public:
     const RenderTree& getTree() const { return _tree; }
     
     
-    void refreshTree(){
-        _tree.refreshTree();
+    void refreshTree(SequenceTime time){
+        _tree.refreshTree(time);
     }
     
 	/**

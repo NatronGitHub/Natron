@@ -178,9 +178,6 @@ bool VideoEngine::startEngine() {
     
     _currentRunArgs = _lastRequestedRunArgs;
     
-    if(_currentRunArgs._refreshTree)
-        _tree.refreshTree();/*refresh the tree*/
-    
     int firstFrame,lastFrame;
     getFrameRange(&firstFrame, &lastFrame);
     if(_tree.isOutputAViewer()){
@@ -190,6 +187,11 @@ bool VideoEngine::startEngine() {
         output->setFirstFrame(firstFrame);
         output->setLastFrame(lastFrame);
     }
+
+    
+    if(_currentRunArgs._refreshTree)
+        _tree.refreshTree(firstFrame);/*refresh the tree*/
+    
     
     ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_tree.getOutput()); /*viewer might be NULL if the output is smthing else*/
     
@@ -359,13 +361,13 @@ void VideoEngine::run(){
             }
         }
         
-        /*update the tree hash */
-        _tree.refreshKnobsAndHashAndClearPersistentMessage();
-                
+        
         if (!_currentRunArgs._sameFrame && _currentRunArgs._frameRequestsCount == -1) {
             appPTR->clearNodeCache();
         }
         
+        Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
+        assert(output);
         ViewerInstance* viewer = _tree.outputAsViewer();
         
         int firstFrame,lastFrame;
@@ -373,7 +375,6 @@ void VideoEngine::run(){
             firstFrame = _timeline->leftBound();
             lastFrame = _timeline->rightBound();
         }else{
-            Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
             firstFrame = output->getFirstFrame();
             lastFrame = output->getLastFrame();
         }
@@ -384,8 +385,6 @@ void VideoEngine::run(){
             
             /*if writing on disk and not a recursive call, move back the timeline cursor to the start*/
             if(!_tree.isOutputAViewer()){
-                Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
-                assert(output);
                 output->setCurrentFrame(firstFrame);
                 currentFrame = firstFrame;
             }else{
@@ -399,7 +398,7 @@ void VideoEngine::run(){
                         QMutexLocker loopModeLocker(&_loopModeMutex);
                         if(_loopMode){ // loop only for a viewer
                             currentFrame = firstFrame;
-                            _timeline->seekFrame(currentFrame);
+                            _timeline->seekFrame(currentFrame,output);
                         }else{
                             loopModeLocker.unlock();
                             if(stopEngine())
@@ -407,7 +406,7 @@ void VideoEngine::run(){
                             continue;
                         }
                     }else{
-                        _timeline->incrementCurrentFrame();
+                        _timeline->incrementCurrentFrame(output);
                         ++currentFrame;
                     }
                     
@@ -417,7 +416,7 @@ void VideoEngine::run(){
                         QMutexLocker loopModeLocker(&_loopModeMutex);
                         if(_loopMode){ //loop only for a viewer
                             currentFrame = lastFrame;
-                            _timeline->seekFrame(currentFrame);
+                            _timeline->seekFrame(currentFrame,output);
                         }else{
                             loopModeLocker.unlock();
                             if(stopEngine())
@@ -425,12 +424,11 @@ void VideoEngine::run(){
                             continue;
                         }
                     }else{
-                        _timeline->decrementCurrentFrame();
+                        _timeline->decrementCurrentFrame(output);
                         --currentFrame;
                     }
                 }
             }else{
-                Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
                 output->setCurrentFrame(output->getCurrentFrame()+1);
                 currentFrame = output->getCurrentFrame();
                 if(currentFrame > lastFrame){
@@ -461,6 +459,10 @@ void VideoEngine::run(){
                 continue;
             }
         }
+        
+        
+        /*update the tree hash */
+        _tree.refreshKnobsAndHashAndClearPersistentMessage(currentFrame);
         
         /*pre process frame*/
         
@@ -633,7 +635,7 @@ void RenderTree::clearGraph(){
     _sorted.clear();
 }
 
-void RenderTree::refreshTree(){
+void RenderTree::refreshTree(SequenceTime time){
     _isViewer = dynamic_cast<ViewerInstance*>(_output) != NULL;
     _isOutputOpenFXNode = _output->isOpenFX();
     
@@ -647,7 +649,7 @@ void RenderTree::refreshTree(){
         it->second->setMarkedByTopologicalSort(false);
         it->second->updateInputs(this);
         U64 ret = 0;
-        it->second->clone();
+        it->second->clone(time);
         ret = it->second->computeHash(inputsHash);
         inputsHash.push_back(ret);
     }
@@ -676,16 +678,16 @@ void RenderTree::fillGraph(EffectInstance *effect){
     }
 }
 
-U64 RenderTree::cloneKnobsAndcomputeTreeHash(EffectInstance* effect,const std::vector<U64>& inputsHashs){
+U64 RenderTree::cloneKnobsAndcomputeTreeHash(SequenceTime time,EffectInstance* effect,const std::vector<U64>& inputsHashs){
     U64 ret = effect->hash().value();
     if(!effect->isHashValid()){
-        effect->clone();
+        effect->clone(time);
         ret = effect->computeHash(inputsHashs);
       //  std::cout << effect->getName() << ": " << ret << std::endl;
     }
     return ret;
 }
-void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(){
+void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(SequenceTime time){
     _renderOutputFormat = _output->getApp()->getProjectFormat();
     _projectViewsCount = _output->getApp()->getCurrentProjectViewsCount();
     
@@ -700,7 +702,7 @@ void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(){
      been computed.*/
     std::vector<U64> inputsHash;
     for (TreeIterator it = _sorted.begin(); it!=_sorted.end(); ++it) {
-        inputsHash.push_back(cloneKnobsAndcomputeTreeHash(it->second,inputsHash));
+        inputsHash.push_back(cloneKnobsAndcomputeTreeHash(time,it->second,inputsHash));
         (*it).second->clearPersistentMessage();
     }
     _treeVersionValid = true;

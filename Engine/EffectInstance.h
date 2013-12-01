@@ -66,7 +66,7 @@ public:
      * @brief  Used once for each "render instance". It makes a full clone of the live instance.
      * This instance will be "read-only": modifying values will have no impact on the GUI.
      **/
-    void clone();
+    void clone(SequenceTime time);
     
     /**
      * @brief  Used once for each "render instance". It makes a full clone of the other instance.
@@ -460,10 +460,10 @@ class OutputEffectInstance : public Natron::EffectInstance {
     
 
     boost::shared_ptr<VideoEngine> _videoEngine;
-    int _writerCurrentFrame;/*!< for writers only: indicates the current frame
+    SequenceTime _writerCurrentFrame;/*!< for writers only: indicates the current frame
                              It avoids snchronizing all viewers in the app to the render*/
-    int _writerFirstFrame;
-    int _writerLastFrame;
+    SequenceTime _writerFirstFrame;
+    SequenceTime _writerLastFrame;
 public:
 
     OutputEffectInstance(Node* node);

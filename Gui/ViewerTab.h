@@ -133,7 +133,7 @@ public slots:
     void toggleLoopMode(bool);
     void onViewerChannelsChanged(int);
     void onClipToProjectButtonToggle(bool);
-    void onTimeLineTimeChanged(SequenceTime time);
+    void onTimeLineTimeChanged(SequenceTime time,int);
     void onCurrentTimeSpinBoxChanged(double);
     /*Updates the comboBox according to the real zoomFactor. Value is in % */
     void updateZoomComboBox(int value);

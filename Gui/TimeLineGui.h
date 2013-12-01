@@ -75,7 +75,7 @@ public slots:
 
     void centerOn(SequenceTime left,SequenceTime right);
 
-    void onFrameChanged(SequenceTime);
+    void onFrameChanged(SequenceTime,int);
     void onFrameRangeChanged(SequenceTime first, SequenceTime last);
     void onBoundariesChanged(SequenceTime, SequenceTime);
     void onCachedFrameAdded(SequenceTime time);

@@ -114,7 +114,7 @@ TimeLineGui::TimeLineGui(boost::shared_ptr<TimeLine> timeline, QWidget* parent, 
 {
     
     //connect the internal timeline to the gui
-    QObject::connect(timeline.get(), SIGNAL(frameChanged(SequenceTime)), this, SLOT(onFrameChanged(SequenceTime)));
+    QObject::connect(timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onFrameChanged(SequenceTime,int)));
     QObject::connect(timeline.get(), SIGNAL(frameRangeChanged(SequenceTime,SequenceTime)),
                      this, SLOT(onFrameRangeChanged(SequenceTime,SequenceTime)));
     QObject::connect(timeline.get(), SIGNAL(boundariesChanged(SequenceTime,SequenceTime)),
@@ -421,7 +421,7 @@ void TimeLineGui::renderText(double x,double y,const QString& text,const QColor&
 }
 
 
-void TimeLineGui::onFrameChanged(SequenceTime ){
+void TimeLineGui::onFrameChanged(SequenceTime ,int ){
     updateGL();
 }
 
