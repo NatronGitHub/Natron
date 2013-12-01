@@ -364,29 +364,28 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
             NodeGui::SerializedState state = activeNodes[i]->serialize();
             nodeStates.push_back(state);
         }
-        try{
-            oArchive << boost::serialization::make_nvp("Nodes",nodeStates);
-            oArchive << boost::serialization::make_nvp("Project_formats",_imp->_availableFormats);
-            oArchive << boost::serialization::make_nvp("Project_output_format",dynamic_cast<const AnimatingParam&>(*_imp->_formatKnob));
-            oArchive << boost::serialization::make_nvp("Project_views_count",dynamic_cast<const AnimatingParam&>(*_imp->_viewsCount));
-            SequenceTime leftBound,rightBound,current;
-            leftBound = _imp->_timeline->leftBound();
-            rightBound = _imp->_timeline->rightBound();
-            current = _imp->_timeline->currentFrame();
-            oArchive << boost::serialization::make_nvp("Timeline_current_time",current);
-            oArchive << boost::serialization::make_nvp("Timeline_left_bound",leftBound);
-            oArchive << boost::serialization::make_nvp("Timeline_right_bound",rightBound);
-        }catch (const std::exception& e) {
-            qDebug() << "Error while saving project" << ": " << e.what();
-            throw;
-        } catch (...) {
-            qDebug() << "Error while saving project";
-            throw;
-        }
-
+        oArchive << boost::serialization::make_nvp("Nodes",nodeStates);
+        oArchive << boost::serialization::make_nvp("Project_formats",_imp->_availableFormats);
+        oArchive << boost::serialization::make_nvp("Project_output_format",dynamic_cast<const AnimatingParam&>(*_imp->_formatKnob));
+        oArchive << boost::serialization::make_nvp("Project_views_count",dynamic_cast<const AnimatingParam&>(*_imp->_viewsCount));
+        SequenceTime leftBound,rightBound,current;
+        leftBound = _imp->_timeline->leftBound();
+        rightBound = _imp->_timeline->rightBound();
+        current = _imp->_timeline->currentFrame();
+        oArchive << boost::serialization::make_nvp("Timeline_current_time",current);
+        oArchive << boost::serialization::make_nvp("Timeline_left_bound",leftBound);
+        oArchive << boost::serialization::make_nvp("Timeline_right_bound",rightBound);
+    }catch (const std::exception& e) {
+        qDebug() << "Error while saving project" << ": " << e.what();
+        throw;
+    } catch (...) {
+        qDebug() << "Error while saving project";
+        throw;
     }
-    // ofstream destructor closes the file
+    
 }
+    // ofstream destructor closes the file
+
 
 
 
