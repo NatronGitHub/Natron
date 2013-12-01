@@ -691,11 +691,11 @@ void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(SequenceTime time)
     _renderOutputFormat = _output->getApp()->getProjectFormat();
     _projectViewsCount = _output->getApp()->getCurrentProjectViewsCount();
     
-    bool oldVersionValid = _treeVersionValid;
-    U64 oldVersion = 0;
-    if (oldVersionValid) {
-        oldVersion = _output->hash().value();
-    }
+//    bool oldVersionValid = _treeVersionValid;
+//    U64 oldVersion = 0;
+//    if (oldVersionValid) {
+//        oldVersion = _output->hash().value();
+//    }
     
     /*Computing the hash of the tree in topological ordering.
      For each effect in the tree, the hash of its inputs is guaranteed to have

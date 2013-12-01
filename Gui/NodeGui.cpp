@@ -548,6 +548,8 @@ NodeGui::SerializedState::SerializedState(const NodeGui* n):_node(n){
     QPointF pos = _node->pos();
     _posX = pos.x();
     _posY = pos.y();
+    
+    _previewEnabled = n->getNode()->isPreviewEnabled();
 }
 
 NodeGui::SerializedState NodeGui::serialize() const{

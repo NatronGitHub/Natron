@@ -878,7 +878,7 @@ void ComboBox_KnobGui::onEntriesPopulated(){
     for (U32 j = 0; j < _entries.size(); ++j) {
         _comboBox->addItem(_entries[j].c_str());
     }
-    _comboBox->setCurrentText(_entries[i].c_str());
+    _comboBox->setCurrentText(QString(_entries[i].c_str()));
 }
 
 void ComboBox_KnobGui::updateGUI(int /*dimension*/,const Variant& variant){

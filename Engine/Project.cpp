@@ -263,6 +263,10 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
         }
         
         Node* n = getApp()->createNode(state.getClassName().c_str(),true);
+        if(!n){
+            Natron::errorDialog("Loading failed", "Cannot load node " + state.getClassName());
+            continue;
+        }
         n->getLiveInstance()->beginValuesChanged(AnimatingParam::PLUGIN_EDITED,true);
         if(n->pluginID() == "Writer" || (n->isOpenFXNode() && n->isOutputNode())){
             hasProjectAWriter = true;
@@ -293,6 +297,9 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
             assert(nGui);
             nGui->setPos(state.getX(),state.getY());
             getApp()->deselectAllNodes();
+            if(state.isPreviewEnabled() && !n->isPreviewEnabled()){
+                nGui->togglePreview();
+            }
         }
 
         n->getLiveInstance()->endValuesChanged(AnimatingParam::PLUGIN_EDITED);

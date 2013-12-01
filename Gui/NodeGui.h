@@ -78,6 +78,8 @@ public:
         
         double getY() const {return _posY;}
         
+        bool isPreviewEnabled() const {return _previewEnabled;}
+        
     private:
         
         const NodeGui* _node;
@@ -88,6 +90,7 @@ public:
         
         std::map<int,std::string> _inputs;
         double _posX,_posY;
+        bool _previewEnabled;
         
         
         friend class boost::serialization::access;
@@ -101,6 +104,7 @@ public:
             ar & boost::serialization::make_nvp("Input_nodes_map",_inputs);
             ar & boost::serialization::make_nvp("X_position",_posX);
             ar & boost::serialization::make_nvp("Y_position",_posY);
+            ar & boost::serialization::make_nvp("Preview_enabled",_previewEnabled);
         }
 
         

@@ -31,7 +31,7 @@ KeyFrame::KeyFrame(const KeyFrame& other)
 }
 
 void KeyFrame::clone(const KeyFrame& other){
-    _imp->clone(other._imp->_value,other._imp->_time,other._imp->_rightTangent,other._imp->_leftTangent,other._imp->_interpolation);
+    _imp->clone(other._imp->_value,other._imp->_time,other._imp->_leftTangent,other._imp->_rightTangent,other._imp->_interpolation);
 }
 
 KeyFrame::~KeyFrame(){}
