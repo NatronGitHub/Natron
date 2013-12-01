@@ -335,11 +335,7 @@ public:
              * caller is already preventing other threads to call this function.
              **/
     void reOpenFileMapping() const {
-        try{
-            _data.reOpenFileMapping();
-        }catch(const std::exception& e){
-            throw e;
-        }
+        _data.reOpenFileMapping();
     }
 
 
@@ -599,10 +595,13 @@ public:
                             _diskCache.erase(diskCached);
                         }
                         
-                        try{
+                        try {
                             entry->reOpenFileMapping();
-                        }catch(const std::exception& e){
-                            std::cout << e.what() << std::endl;
+                        } catch (const std::exception& e) {
+                            qDebug() << "Error while reopening cache file: " << e.what();
+                            return value_type();
+                        } catch (...) {
+                            qDebug() << "Error while reopening cache file";
                             return value_type();
                         }
                         

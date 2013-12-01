@@ -123,18 +123,13 @@ Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
     , _liveInstance(NULL)
     , _imp(new Implementation(app,plugin))
 {
-
-    try {
-        std::pair<bool,EffectBuilder> func = plugin->findFunction<EffectBuilder>("BuildEffect");
-        if(func.first){
-            _liveInstance         = func.second(this);
-            _imp->previewInstance = func.second(this);
-        }else{ //ofx plugin
-            _liveInstance         = appPTR->getOfxHost()->createOfxEffect(name,this);
-            _imp->previewInstance = appPTR->getOfxHost()->createOfxEffect(name,this);
-        }
-    } catch(const std::exception& e) {
-        throw e;
+    std::pair<bool,EffectBuilder> func = plugin->findFunction<EffectBuilder>("BuildEffect");
+    if (func.first) {
+        _liveInstance         = func.second(this);
+        _imp->previewInstance = func.second(this);
+    } else { //ofx plugin
+        _liveInstance         = appPTR->getOfxHost()->createOfxEffect(name,this);
+        _imp->previewInstance = appPTR->getOfxHost()->createOfxEffect(name,this);
     }
     assert(_liveInstance);
     assert(_imp->previewInstance);
@@ -143,7 +138,6 @@ Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
     _imp->previewInstance->initializeKnobs();
     _imp->previewRenderTree = new RenderTree(_imp->previewInstance);
     _imp->renderInstances.insert(std::make_pair(_imp->previewRenderTree,_imp->previewInstance));
-
 }
 
 
@@ -572,8 +566,11 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     boost::shared_ptr<const Image> img;
     try {
         img = _imp->previewInstance->renderRoI(time, scale, 0,rod);
-    } catch(const std::exception& e) {
-        std::cout << e.what() << std::endl;
+    } catch (const std::exception& e) {
+        qDebug() << "Cannot create preview" << ": " << e.what();
+        return;
+    } catch (...) {
+        qDebug() << "Cannot create preview";
         return;
     }
     for (int i=0; i < h; ++i) {

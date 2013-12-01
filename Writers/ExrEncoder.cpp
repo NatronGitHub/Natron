@@ -114,9 +114,11 @@ static bool timeCodeFromString(const std::string& str, Imf_::TimeCode& attr)
         attr.setMinutes(mins);
         attr.setSeconds(secs);
         attr.setFrame(frames);
-    }
-    catch (const std::exception& exc) {
-        std::cout << "EXR: Time Code Metadata warning" <<  exc.what() << std::endl;
+    } catch (const std::exception& e) {
+        qDebug() << "EXR: Time Code Metadata warning" << ": " <<  e.what();
+        return false;
+    } catch (...) {
+        qDebug() << "EXR: Time Code Metadata warning";
         return false;
     }
     return true;
@@ -133,10 +135,11 @@ static bool edgeCodeFromString(const std::string& str, Imf_::KeyCode& a)
         a.setPrefix(prefix);
         a.setCount(count);
         a.setPerfOffset(perfOffset);
-    }
-
-    catch (const std::exception& exc) {
-        std::cout << "EXR: Edge Code Metadata warning " << exc.what() << std::endl;
+    } catch (const std::exception& e) {
+        qDebug() << "EXR: Edge Code Metadata warning" << ": " <<  e.what();
+        return false;
+    } catch (...) {
+        qDebug() << "EXR: Edge Code Metadata warning";
         return false;
     }
 
@@ -215,7 +218,7 @@ void ExrEncoder::initializeColorSpace(){
 /*This must be implemented to do the output colorspace conversion*/
 Natron::Status ExrEncoder::render(boost::shared_ptr<const Natron::Image> inputImage,int /*view*/,const RectI& roi){
     
-    try{
+    try {
         for (int y = roi.bottom(); y < roi.top(); ++y) {
             if(_writer->aborted()){
                 return Natron::StatFailed;
@@ -280,8 +283,11 @@ Natron::Status ExrEncoder::render(boost::shared_ptr<const Natron::Image> inputIm
             _imp->_outputFile->setFrameBuffer(fbuf);
             _imp->_outputFile->writePixels(1);
         }
-    }catch(const std::exception& e){
-        _writer->setPersistentMessage(Natron::ERROR_MESSAGE, e.what());
+    } catch (const std::exception& e) {
+        _writer->setPersistentMessage(Natron::ERROR_MESSAGE, std::string("OpenEXR error") + ": " + e.what());
+        return Natron::StatFailed;
+    } catch (...) {
+        _writer->setPersistentMessage(Natron::ERROR_MESSAGE, std::string("OpenEXR error"));
         return Natron::StatFailed;
     }
     return Natron::StatOK;
@@ -292,7 +298,7 @@ Natron::Status ExrEncoder::render(boost::shared_ptr<const Natron::Image> inputIm
  meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
  otherwise it would stall the GUI.*/
 Natron::Status ExrEncoder::setupFile(const QString& filename, const RectI& rod) {
-    try{
+    try {
         ExrEncoderKnobs* knobs = dynamic_cast<ExrEncoderKnobs*>(_optionalKnobs);
         Imf_::Compression compression(EXR::stringToCompression(knobs->_compression));
         _imp->_depth = EXR::depthNameToInt(knobs->_dataType);
@@ -324,8 +330,11 @@ Natron::Status ExrEncoder::setupFile(const QString& filename, const RectI& rod) 
         _imp->_outputFile = new Imf_::OutputFile(filename.toStdString().c_str(),exrheader);
         _imp->_exrDataW = exrDataW;
         _imp->_exrDispW = exrDispW;
-    }catch(const std::exception& e){
-        cout << e.what() << endl;
+    } catch (const std::exception& e) {
+        qDebug() << "OpenEXR error" << ": " << e.what();
+        return Natron::StatFailed;
+    } catch (...) {
+        qDebug() << "OpenEXR error";
         return Natron::StatFailed;
     }
     return Natron::StatOK;

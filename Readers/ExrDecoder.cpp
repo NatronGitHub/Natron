@@ -184,10 +184,13 @@ private:
             _chan = newSplits.at(0).toStdString();
         }
         
-        try{
+        try {
             _mappedChannel = EXR::fromExrChannel(_chan);
-        } catch (const std::exception &e) {
-            std::cout << e.what() << endl;
+        } catch (const std::exception& e) {
+            qDebug() << "Error while reading EXR file" << ": " << e.what();
+            return false;
+        } catch (...) {
+            qDebug() << "Error while reading EXR file";
             return false;
         }
         return true;
@@ -335,14 +338,17 @@ Natron::Status ExrDecoder::readHeader(const QString& filename){
         
         setReaderInfo(imageFormat, rod, mask);
         return Natron::StatOK;
-    }
-    catch (const std::exception& exc) {
-        cout << "OpenEXR error: " << exc.what() << endl;
+    } catch (const std::exception& e) {
+        qDebug() << "OpenEXR error" << ": " << e.what();
+        delete _imp->_inputfile;
+        _imp->_inputfile = 0;
+        return Natron::StatFailed;
+    } catch (...) {
+        qDebug() << "OpenEXR error";
         delete _imp->_inputfile;
         _imp->_inputfile = 0;
         return Natron::StatFailed;
     }
-    
 }
 
 
@@ -423,8 +429,11 @@ Natron::Status ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,co
             try {
                 _imp->_inputfile->setFrameBuffer(fbuf);
                 _imp->_inputfile->readPixels(exrY);
-            } catch (const std::exception& exc) {
-                _reader->setPersistentMessage(Natron::ERROR_MESSAGE, exc.what());
+            } catch (const std::exception& e) {
+                _reader->setPersistentMessage(Natron::ERROR_MESSAGE, std::string("OpenEXR error") + ": " + e.what());
+                return Natron::StatFailed;
+            } catch (...) {
+                _reader->setPersistentMessage(Natron::ERROR_MESSAGE, std::string("OpenEXR error"));
                 return Natron::StatFailed;
             }
         }

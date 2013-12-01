@@ -341,21 +341,23 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
         getApp()->checkViewersConnection();
     }
 }
-void Project::saveProject(const QString& path,const QString& filename,bool autoSave){
+void Project::saveProject(const QString& path,const QString& filename,bool autoSave)
+{
     QString filePath;
-    if(autoSave){
+    if (autoSave) {
         filePath = AppInstance::autoSavesDir()+QDir::separator()+filename;
+
         _imp->_lastAutoSaveFilePath = filePath;
-    }else{
+    } else {
         filePath = path+filename;
     }
     std::ofstream ofile(filePath.toStdString().c_str(),std::ofstream::out);
-    {
+    if (!ofile.good()) {
+        qDebug() << "Failed to open file " << filePath.toStdString().c_str();
+        throw std::runtime_error("Failed to open file " + filePath.toStdString());
+    }
+    try {
         boost::archive::xml_oarchive oArchive(ofile);
-        if(!ofile.is_open()){
-            cout << "Failed to open file " << filePath.toStdString() << endl;
-            return;
-        }
         std::list<NodeGui::SerializedState> nodeStates;
         const std::vector<NodeGui*>& activeNodes = getApp()->getAllActiveNodes();
         for (U32 i = 0; i < activeNodes.size(); ++i) {
@@ -374,11 +376,16 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
             oArchive << boost::serialization::make_nvp("Timeline_current_time",current);
             oArchive << boost::serialization::make_nvp("Timeline_left_bound",leftBound);
             oArchive << boost::serialization::make_nvp("Timeline_right_bound",rightBound);
-        }catch(const std::exception& e){
-            std::cout << e.what() << std::endl;
+        }catch (const std::exception& e) {
+            qDebug() << "Error while saving project" << ": " << e.what();
+            throw;
+        } catch (...) {
+            qDebug() << "Error while saving project";
+            throw;
         }
+
     }
-    ofile.close();
+    // ofstream destructor closes the file
 }
 
 
