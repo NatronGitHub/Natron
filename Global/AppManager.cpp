@@ -140,11 +140,7 @@ _gui(NULL)
         if(!loadProject(path,name,true)){
             throw std::invalid_argument("Project file loading failed.");
         }
-        try{
-            startWritersRendering(writers);
-        }catch(const std::exception& e){
-            throw e;
-        }
+        startWritersRendering(writers);
     }
     
     
@@ -162,10 +158,13 @@ AppInstance::~AppInstance(){
 Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
     Node* node = 0;
     LibraryBinary* pluginBinary = 0;
-    try{
+    try {
         pluginBinary = appPTR->getPluginBinary(name);
-    }catch(const std::exception& e){
-        Natron::errorDialog("Missing plugin", e.what());
+    } catch (const std::exception& e) {
+        Natron::errorDialog("Plugin error", std::string("Cannot load plugin executable") + ": " + e.what());
+        return node;
+    } catch (...) {
+        Natron::errorDialog("Plugin error", std::string("Cannot load plugin executable"));
         return node;
     }
     
@@ -175,8 +174,12 @@ Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
         }else{
             node = new InspectorNode(this,pluginBinary,name.toStdString());
         }
-    }catch(const std::exception& e){
-        std::cout << e.what() << std::endl;
+    } catch (const std::exception& e) {
+        qDebug() << "Exception while creating node" << ": " << e.what();
+        delete node;
+        return NULL;
+    } catch (...) {
+        qDebug() << "Exception while creating node";
         delete node;
         return NULL;
     }
@@ -237,10 +240,15 @@ const std::vector<NodeGui*>& AppInstance::getAllActiveNodes() const{
     
 }
 bool AppInstance::loadProject(const QString& path,const QString& name,bool background){
-    try{
+    try {
         _currentProject->loadProject(path,name,background);
-    }catch(const std::exception& e){
-        Natron::errorDialog("Project loader",e.what());
+    } catch (const std::exception& e) {
+        Natron::errorDialog("Project loader", std::string("Error while loading project") + ": " + e.what());
+        if(!background)
+            createNode("Viewer");
+        return false;
+    } catch (...) {
+        Natron::errorDialog("Project loader", std::string("Error while loading project"));
         if(!background)
             createNode("Viewer");
         return false;
@@ -368,11 +376,13 @@ bool AppInstance::findAutoSave() {
                 resetCurrentProject();
                 return false;
             } else {
-                try{
+                try {
                     _currentProject->loadProject(savesDir.path()+QDir::separator(), entry,false);
-                }catch(const std::exception& e){
-                    Natron::errorDialog("Project loader",e.what());
-                    cout << e.what() << endl;
+                } catch (const std::exception& e) {
+                    Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project") + ": " + e.what());
+                    createNode("Viewer");
+                } catch (...) {
+                    Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project"));
                     createNode("Viewer");
                 }
                 if (exists) {
@@ -438,10 +448,14 @@ ViewerTab* AppInstance::addNewViewerTab(ViewerInstance* node,TabWidget* where){
 
 AppInstance* AppManager::newAppInstance(bool background,const QString& projectName,const QStringList& writers){
     AppInstance* instance = 0;
-    try{
+    try {
         instance = new AppInstance(background,_availableID,projectName,writers);
-    }catch(const std::exception& e){
-        Natron::errorDialog(NATRON_APPLICATION_NAME, e.what());
+    } catch (const std::exception& e) {
+        Natron::errorDialog(NATRON_APPLICATION_NAME, std::string("Cannot create project") + ": " + e.what());
+        delete instance;
+        return NULL;
+    } catch (...) {
+        Natron::errorDialog(NATRON_APPLICATION_NAME, std::string("Cannot create project"));
         delete instance;
         return NULL;
     }
@@ -1202,10 +1216,13 @@ void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* write
         processArgs << _currentProject->getLastAutoSaveFilePath() << "--background" << "--writer" << writer->getName().c_str();
         ProcessHandler* newProcess = 0;
         
-        try{
+        try {
             newProcess = new ProcessHandler(this,appArgs.at(0),processArgs,writer); //< the process will delete itself
-        }catch(const std::exception& e){
-            Natron::errorDialog(writer->getName(),e.what());
+        } catch (const std::exception& e) {
+            Natron::errorDialog(writer->getName(), std::string("Error while starting rendering") + ": " + e.what());
+            delete newProcess;
+        } catch (...) {
+            Natron::errorDialog(writer->getName(), std::string("Error while starting rendering"));
             delete newProcess;
         }
     }else{

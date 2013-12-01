@@ -88,11 +88,7 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
     OFX::Host::PluginHandle* ph = plugin->getPluginHandle();
     (void)ph;
     OFX::Host::ImageEffect::Descriptor* desc = NULL;
-    try {
-        desc = plugin->getContext(context);
-    } catch (const std::exception &e) {
-        throw e;
-    }
+    desc = plugin->getContext(context);
     if (desc) {
         try {
             effect_ = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
@@ -112,8 +108,11 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
             /*must be called AFTER createInstanceAction!*/
             tryInitializeOverlayInteracts();
             
-        } catch (const std::exception &e) {
-            cout << "Error: Caught exception while creating OfxImageEffectInstance: " << e.what() << std::endl;
+        } catch (const std::exception& e) {
+            qDebug() << "Error: Caught exception while creating OfxImageEffectInstance" << ": " << e.what();
+            throw;
+        } catch (...) {
+            qDebug() << "Error: Caught exception while creating OfxImageEffectInstance";
             throw;
         }
     }

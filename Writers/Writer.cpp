@@ -187,10 +187,13 @@ Natron::Status Writer::renderWriter(SequenceTime time){
     RoIMap::const_iterator roi = inputsRoi.begin();
     for(int i = 0 ; i < viewsCount ; ++i){
         boost::shared_ptr<Encoder> encoder;
-        try{
+        try {
             encoder = makeEncoder(time,i,viewsCount,renderFormat);
-        }catch(const std::exception& e){
-            setPersistentMessage(Natron::ERROR_MESSAGE, e.what());
+        } catch (const std::exception& e) {
+            setPersistentMessage(Natron::ERROR_MESSAGE, std::string("Cannot create encoder for frame") + ": " + e.what());
+            return StatFailed;
+        } catch (...) {
+            setPersistentMessage(Natron::ERROR_MESSAGE, std::string("Cannot create encoder for frame"));
             return StatFailed;
         }
         if(!encoder){

@@ -406,7 +406,9 @@ boost::shared_ptr<Curve> AnimatingParam::getCurve(int dimension) const {
 Variant AnimatingParam::getValueAtTime(double time,int dimension) const{
     CurvesMap::const_iterator foundDimension = _imp->_curves.find(dimension);
     boost::shared_ptr<Curve> curve = getCurve(dimension);
-    if(!curve->isAnimated()){
+    if (curve->isAnimated()) {
+        return foundDimension->second->getValueAt(time);
+    } else {
         /*if the knob as no keys at this dimension, return the value
         at the requested dimension.*/
         std::map<int,Variant>::const_iterator it = _imp->_value.find(dimension);
@@ -415,14 +417,6 @@ Variant AnimatingParam::getValueAtTime(double time,int dimension) const{
         }else{
             return Variant();
         }
-    }else{
-        try{
-            return foundDimension->second->getValueAt(time);
-        }catch(const std::exception& e){
-            std::cout << e.what() << std::endl;
-            assert(false);
-        }
-
     }
 }
 

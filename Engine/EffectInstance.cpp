@@ -346,20 +346,15 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
              in order to maintain a shared_ptr use_count > 1 so the cache doesn't attempt
              to remove them.*/
             for (RoIMap::const_iterator it2 = inputsRoi.begin(); it2!= inputsRoi.end(); ++it2) {
-                try {
-                    boost::shared_ptr<const Natron::Image> inputImg = it2->first->renderRoI(time, scale,view, it2->second,byPassCache);
-                    if (inputImg) {
-                        inputImages.push_back(inputImg);
-                    }
-                    if(aborted()){
-                        //if render was aborted, remove the frame from the cache as it contains only garbage
-                        appPTR->removeFromNodeCache(image);
-                        _node->removeImageBeingRendered(time, view);
-                        return image;
-                    }
-
-                } catch(const std::exception& e) {
-                    throw e; // FIXME: what's the point in throwing the exception you just catched???
+                boost::shared_ptr<const Natron::Image> inputImg = it2->first->renderRoI(time, scale,view, it2->second,byPassCache);
+                if (inputImg) {
+                    inputImages.push_back(inputImg);
+                }
+                if (aborted()) {
+                    //if render was aborted, remove the frame from the cache as it contains only garbage
+                    appPTR->removeFromNodeCache(image);
+                    _node->removeImageBeingRendered(time, view);
+                    return image;
                 }
             }
             /*depending on the thread-safety of the plug-in we render with a different

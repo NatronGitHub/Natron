@@ -212,24 +212,21 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
     
     
     bool rval = false;
-    try{
+    try {
         rval = plugin->getPluginHandle();
-    } catch (const std::exception &e) {
-        throw std::runtime_error("Error: Could not get plugin handle for plugin");
-        return NULL;
+    } catch (const std::exception& e) {
+        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin") + ": " + e.what());
+    } catch (...) {
+        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin"));
     }
+
     if(!rval) {
         return NULL;
     }
     OfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
     
-    try{
-        hostSideEffect->createOfxImageEffectInstance(plugin, context);
-    }catch(const std::exception& e){
-        throw e;
-        delete hostSideEffect;
-        return NULL;
-    }
+    hostSideEffect->createOfxImageEffectInstance(plugin, context);
+
     return hostSideEffect;
 }
 
