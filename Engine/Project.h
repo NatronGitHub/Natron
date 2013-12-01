@@ -14,45 +14,25 @@
 #include <map>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
-
-#include <QMutex>
-#include <QString>
-#include <QDateTime>
+#include <QtCore/QObject>
 
 #include "Global/GlobalDefines.h"
-
 #include "Engine/Knob.h"
-#include "Engine/Format.h"
 
+
+class QString;
+class QDateTime;
+class Format;
 class TimeLine;
 class AppInstance;
 
 namespace Natron{
 class Node;
-
-class Project :  public KnobHolder {
+struct ProjectPrivate;
+class Project : public QObject,  public KnobHolder {
     
+    Q_OBJECT
     
-    QString _projectName;
-    QString _projectPath;
-    QString _lastAutoSaveFilePath;
-    bool _hasProjectBeenSavedByUser;
-    QDateTime _ageSinceLastSave;
-    QDateTime _lastAutoSave;
-    ComboBox_Knob* _formatKnob;
-    Button_Knob* _addFormatKnob;
-    Int_Knob* _viewsCount;
-    boost::shared_ptr<TimeLine> _timeline; // global timeline
-    
-    std::map<std::string,int> _nodeCounters;
-    bool _autoSetProjectFormat;
-    mutable QMutex _projectDataLock;
-    std::vector<Node*> _currentNodes;
-    
-    std::vector<Format> _availableFormats;
-    
-    int _knobsAge; //< the age of the knobs in the app. This is updated on each value changed.
     
 public:
     
@@ -73,29 +53,29 @@ public:
      **/
     virtual void evaluate(Knob* knob,bool isSignificant) OVERRIDE;
     
-    const std::vector<Node*>& getCurrentNodes() const{return _currentNodes;}
+    const std::vector<Node*>& getCurrentNodes() const;
     
-    const QString& getProjectName() const WARN_UNUSED_RETURN {return _projectName;}
+    const QString& getProjectName() const WARN_UNUSED_RETURN ;
     
-    void setProjectName(const QString& name) {_projectName = name;}
+    void setProjectName(const QString& name) ;
     
-    const QString& getLastAutoSaveFilePath() const {return _lastAutoSaveFilePath;}
+    const QString& getLastAutoSaveFilePath() const;
     
-    const QString& getProjectPath() const WARN_UNUSED_RETURN {return _projectPath;}
+    const QString& getProjectPath() const WARN_UNUSED_RETURN;
     
-    void setProjectPath(const QString& path) {_projectPath = path;}
+    void setProjectPath(const QString& path);
     
-    bool hasProjectBeenSavedByUser() const WARN_UNUSED_RETURN {return _hasProjectBeenSavedByUser;}
+    bool hasProjectBeenSavedByUser() const WARN_UNUSED_RETURN;
     
-    void setHasProjectBeenSavedByUser(bool s) {_hasProjectBeenSavedByUser = s;}
+    void setHasProjectBeenSavedByUser(bool s) ;
     
-    const QDateTime& projectAgeSinceLastSave() const WARN_UNUSED_RETURN {return _ageSinceLastSave;}
+    const QDateTime& projectAgeSinceLastSave() const WARN_UNUSED_RETURN ;
     
-    void setProjectAgeSinceLastSave(const QDateTime& t) {_ageSinceLastSave = t;}
+    void setProjectAgeSinceLastSave(const QDateTime& t);
     
-    const QDateTime& projectAgeSinceLastAutosave() const WARN_UNUSED_RETURN {return _lastAutoSave;}
+    const QDateTime& projectAgeSinceLastAutosave() const WARN_UNUSED_RETURN;
     
-    void setProjectAgeSinceLastAutosaveSave(const QDateTime& t) {_lastAutoSave = t;}
+    void setProjectAgeSinceLastAutosaveSave(const QDateTime& t) ;
     
     const Format& getProjectDefaultFormat() const WARN_UNUSED_RETURN ;
     
@@ -106,11 +86,11 @@ public:
     /*Returns the index of the format*/
     int tryAddProjectFormat(const Format& f);
     
-    bool shouldAutoSetProjectFormat() const {return _autoSetProjectFormat;}
+    bool shouldAutoSetProjectFormat() const ;
     
-    void setAutoSetProjectFormat(bool b){_autoSetProjectFormat = b;}
+    void setAutoSetProjectFormat(bool b);
     
-    boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN {return _timeline;}
+    boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN;
     
     // TimeLine operations (to avoid duplicating the shared_ptr when possible)
     void setFrameRange(int first, int last);
@@ -135,21 +115,24 @@ public:
     
     void saveProject(const QString& path,const QString& filename,bool autoSave = false);
     
-    void lock() const {_projectDataLock.lock();}
+    void lock() const ;
     
-    void unlock() const { assert(!_projectDataLock.tryLock());_projectDataLock.unlock();}
+    void unlock() const ;
 
     void createNewFormat();
     
-    void incrementKnobsAge() {
-        if(_knobsAge < 99999)
-            ++_knobsAge;
-        else
-            _knobsAge = 0;
-    }
+    void incrementKnobsAge() ;
     
-    int getKnobsAge() const {return _knobsAge;}
-    
+    int getKnobsAge() const;
+
+public slots:
+
+    void onTimeChanged(SequenceTime time);
+
+private:
+
+    boost::scoped_ptr<ProjectPrivate> _imp;
+
 };
 
 } // Natron

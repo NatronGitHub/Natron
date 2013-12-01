@@ -289,7 +289,6 @@ Knob::Knob(KnobHolder* holder,const std::string& description,int dimension)
     
     if(_imp->_holder){
         _imp->_holder->addKnob(boost::shared_ptr<Knob>(this));
-        QObject::connect(holder->getApp(),SIGNAL(timeChanged(SequenceTime)),this,SLOT(onTimeChanged(SequenceTime)));
     }
 }
 
@@ -338,6 +337,7 @@ void Knob::onValueChanged(int dimension,const Variant& variant){
 
 
 void Knob::evaluateAnimationChange(){
+    
     SequenceTime time = _imp->_holder->getApp()->getTimeLine()->currentFrame();
     beginValueChange(AnimatingParam::PLUGIN_EDITED);
     for(int i = 0; i < getDimension();++i){
@@ -348,6 +348,7 @@ void Knob::evaluateAnimationChange(){
         }
     }
     endValueChange(AnimatingParam::PLUGIN_EDITED);
+    _imp->_holder->triggerAutoSave();
 }
 
 void Knob::beginValueChange(AnimatingParam::ValueChangedReason reason) {
@@ -529,6 +530,12 @@ void KnobHolder::removeKnob(Knob* knob){
 
 void KnobHolder::triggerAutoSave(){
     _app->triggerAutoSave();
+}
+
+void KnobHolder::refreshAfterTimeChange(SequenceTime time){
+    for(U32 i = 0; i < _knobs.size() ; ++i){
+        _knobs[i]->onTimeChanged(time);
+    }
 }
 /***********************************FILE_KNOB*****************************************/
 

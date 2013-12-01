@@ -209,8 +209,6 @@ signals:
 
     void pluginsPopulated();
 
-    //emitted when the app's global timeline's time changed
-    void timeChanged(SequenceTime);
 
 private:
 

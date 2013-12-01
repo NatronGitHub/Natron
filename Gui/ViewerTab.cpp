@@ -33,6 +33,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/Project.h"
+#include "Engine/TimeLine.h"
 
 #include "Gui/ViewerGL.h"
 #include "Gui/InfoViewerWidget.h"
@@ -465,7 +466,7 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     QObject::connect(firstFrame_Button,SIGNAL(clicked()),this,SLOT(firstFrame()));
     QObject::connect(lastFrame_Button,SIGNAL(clicked()),this,SLOT(lastFrame()));
     QObject::connect(loopMode_Button, SIGNAL(clicked(bool)), this, SLOT(toggleLoopMode(bool)));
-    QObject::connect(_timeLineGui,SIGNAL(frameChanged(SequenceTime)), this, SLOT(onTimeLineTimeChanged(SequenceTime)));
+    QObject::connect(_gui->getApp()->getTimeLine().get(),SIGNAL(frameChanged(SequenceTime)), this, SLOT(onTimeLineTimeChanged(SequenceTime)));
     QObject::connect(_viewerNode,SIGNAL(addedCachedFrame(SequenceTime)),_timeLineGui,SLOT(onCachedFrameAdded(SequenceTime)));
     QObject::connect(_viewerNode,SIGNAL(removedLRUCachedFrame()),_timeLineGui,SLOT(onLRUCachedFrameRemoved()));
     QObject::connect(appPTR,SIGNAL(imageRemovedFromViewerCache(SequenceTime)),_timeLineGui,SLOT(onCachedFrameRemoved(SequenceTime)));
@@ -610,14 +611,14 @@ void ViewerTab::lastFrame(){
 
 void ViewerTab::onTimeLineTimeChanged(SequenceTime time){
     _currentFrameBox->setValue(time);
-    abortRendering();
-    _viewerNode->refreshAndContinueRender();
+    // abortRendering();
+    //_viewerNode->refreshAndContinueRender();
 }
 
 void ViewerTab::onCurrentTimeSpinBoxChanged(double time){
     _timeLineGui->seek(time);
-    abortRendering();
-    _viewerNode->refreshAndContinueRender();
+    // abortRendering();
+    //_viewerNode->refreshAndContinueRender();
 }
 
 
@@ -632,7 +633,7 @@ void ViewerTab::centerViewer(){
 }
 
 void ViewerTab::refresh(){
-    abortRendering();
+    //abortRendering();
     _viewerNode->forceFullComputationOnNextFrame();
     _viewerNode->updateTreeAndRender();
 }

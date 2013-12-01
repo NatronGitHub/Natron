@@ -10,10 +10,14 @@
 
 #include "Project.h"
 
+
 #include <fstream>
 #include <QtCore/QXmlStreamReader>
 #include <QtCore/QXmlStreamWriter>
 
+#include <QMutex>
+#include <QString>
+#include <QDateTime>
 
 #include <boost/serialization/utility.hpp>
 #include <boost/serialization/vector.hpp>
@@ -24,7 +28,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
-#include "Engine/Knob.h"
+#include "Engine/Format.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/CurveSerialization.h"
@@ -36,10 +40,11 @@
 
 
 
-using namespace Natron;
 using std::cout; using std::endl;
 using std::make_pair;
 
+namespace Natron{
+    
 
 static QString generateStringFromFormat(const Format& f){
     QString formatStr;
@@ -53,134 +58,162 @@ static QString generateStringFromFormat(const Format& f){
     return formatStr;
 }
 
-Project::Project(AppInstance* appInstance):
-KnobHolder(appInstance)
-, _projectName("Untitled." NATRON_PROJECT_FILE_EXT)
-, _hasProjectBeenSavedByUser(false)
-, _ageSinceLastSave(QDateTime::currentDateTime())
-, _formatKnob(NULL)
-, _addFormatKnob(NULL)
-, _viewsCount(NULL)
-, _timeline(new TimeLine())
-, _autoSetProjectFormat(true)
-, _projectDataLock()
-, _currentNodes()
-, _availableFormats()
-, _knobsAge(0)
+struct ProjectPrivate{
+    QString _projectName;
+    QString _projectPath;
+    QString _lastAutoSaveFilePath;
+    bool _hasProjectBeenSavedByUser;
+    QDateTime _ageSinceLastSave;
+    QDateTime _lastAutoSave;
+    ComboBox_Knob* _formatKnob;
+    Button_Knob* _addFormatKnob;
+    Int_Knob* _viewsCount;
+    boost::shared_ptr<TimeLine> _timeline; // global timeline
+    
+    std::map<std::string,int> _nodeCounters;
+    bool _autoSetProjectFormat;
+    mutable QMutex _projectDataLock;
+    std::vector<Node*> _currentNodes;
+    
+    std::vector<Format> _availableFormats;
+    
+    int _knobsAge; //< the age of the knobs in the app. This is updated on each value changed.
+    
+    ProjectPrivate()
+    : _projectName("Untitled." NATRON_PROJECT_FILE_EXT)
+    , _hasProjectBeenSavedByUser(false)
+    , _ageSinceLastSave(QDateTime::currentDateTime())
+    , _formatKnob(NULL)
+    , _addFormatKnob(NULL)
+    , _viewsCount(NULL)
+    , _timeline(new TimeLine())
+    , _autoSetProjectFormat(true)
+    , _projectDataLock()
+    , _currentNodes()
+    , _availableFormats()
+    , _knobsAge(0)
+    {
+        
+    }
+};
+
+Project::Project(AppInstance* appInstance)
+: KnobHolder(appInstance)
+, _imp(new ProjectPrivate)
 {
-    QObject::connect(_timeline.get(),SIGNAL(frameChanged(SequenceTime)),appInstance,SIGNAL(timeChanged(SequenceTime)));
+    QObject::connect(_imp->_timeline.get(),SIGNAL(frameChanged(SequenceTime)),this,SLOT(onTimeChanged(SequenceTime)));
 }
 
 Project::~Project(){
-    QMutexLocker locker(&_projectDataLock);
-    for (U32 i = 0; i < _currentNodes.size(); ++i) {
-        if(_currentNodes[i]->isOutputNode()){
-            dynamic_cast<OutputEffectInstance*>(_currentNodes[i]->getLiveInstance())->getVideoEngine()->quitEngineThread();
+    QMutexLocker locker(&_imp->_projectDataLock);
+    for (U32 i = 0; i < _imp->_currentNodes.size(); ++i) {
+        if(_imp->_currentNodes[i]->isOutputNode()){
+            dynamic_cast<OutputEffectInstance*>(_imp->_currentNodes[i]->getLiveInstance())->getVideoEngine()->quitEngineThread();
         }
     }
-    for (U32 i = 0; i < _currentNodes.size(); ++i) {
-        delete _currentNodes[i];
+    for (U32 i = 0; i < _imp->_currentNodes.size(); ++i) {
+        delete _imp->_currentNodes[i];
     }
-    _currentNodes.clear();
+    _imp->_currentNodes.clear();
 }
 
 void Project::initializeKnobs(){
-    _formatKnob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", this, "Output Format"));
+    _imp->_formatKnob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", this, "Output Format"));
     const std::vector<Format*>& appFormats = appPTR->getFormats();
     std::vector<std::string> entries;
     for (U32 i = 0; i < appFormats.size(); ++i) {
         Format* f = appFormats[i];
         QString formatStr = generateStringFromFormat(*f);
         if(f->width() == 1920 && f->height() == 1080){
-            _formatKnob->setValue(i);
+            _imp->_formatKnob->setValue(i);
         }
         entries.push_back(formatStr.toStdString());
-        _availableFormats.push_back(*f);
+        _imp->_availableFormats.push_back(*f);
     }
     
-    _formatKnob->populate(entries);
+    _imp->_formatKnob->populate(entries);
     
-    _addFormatKnob = dynamic_cast<Button_Knob*>(appPTR->getKnobFactory().createKnob("Button",this,"New format..."));
+    _imp->_addFormatKnob = dynamic_cast<Button_Knob*>(appPTR->getKnobFactory().createKnob("Button",this,"New format..."));
     
     
-    _viewsCount = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int",this,"Number of views"));
-    _viewsCount->turnOffAnimation();
-    _viewsCount->setMinimum(1);
-    _viewsCount->setValue(1);
-    _viewsCount->disableSlider();
+    _imp->_viewsCount = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int",this,"Number of views"));
+    _imp->_viewsCount->turnOffAnimation();
+    _imp->_viewsCount->setMinimum(1);
+    _imp->_viewsCount->setValue(1);
+    _imp->_viewsCount->disableSlider();
 }
 
 
 void Project::evaluate(Knob* knob,bool /*isSignificant*/){
-    if(knob == _viewsCount){
-        int viewsCount = _viewsCount->getValue<int>();
+    if(knob == _imp->_viewsCount){
+        int viewsCount = _imp->_viewsCount->getValue<int>();
         getApp()->setupViewersForViews(viewsCount);
-    }else if(knob == _formatKnob){
-        const Format& f = _availableFormats[_formatKnob->getActiveEntry()];
-        for(U32 i = 0 ; i < _currentNodes.size() ; ++i){
-            if (_currentNodes[i]->pluginID() == "Viewer") {
-                ViewerInstance* n = dynamic_cast<ViewerInstance*>(_currentNodes[i]->getLiveInstance());
+    }else if(knob == _imp->_formatKnob){
+        const Format& f = _imp->_availableFormats[_imp->_formatKnob->getActiveEntry()];
+        for(U32 i = 0 ; i < _imp->_currentNodes.size() ; ++i){
+            if (_imp->_currentNodes[i]->pluginID() == "Viewer") {
+                ViewerInstance* n = dynamic_cast<ViewerInstance*>(_imp->_currentNodes[i]->getLiveInstance());
                 assert(n);
                 n->getUiContext()->viewer->onProjectFormatChanged(f);
                 n->refreshAndContinueRender();
             }
         }
-    }else if(knob == _addFormatKnob){
+    }else if(knob == _imp->_addFormatKnob){
         createNewFormat();
     }
 }
 
 
 const Format& Project::getProjectDefaultFormat() const{
-    int index = _formatKnob->getActiveEntry();
-    return _availableFormats[index];
+    int index = _imp->_formatKnob->getActiveEntry();
+    return _imp->_availableFormats[index];
 }
 
 void Project::initNodeCountersAndSetName(Node* n){
     assert(n);
-    std::map<std::string,int>::iterator it = _nodeCounters.find(n->pluginID());
-    if(it != _nodeCounters.end()){
+    std::map<std::string,int>::iterator it = _imp->_nodeCounters.find(n->pluginID());
+    if(it != _imp->_nodeCounters.end()){
         it->second++;
         n->setName(QString(QString(n->pluginLabel().c_str())+ "_" + QString::number(it->second)).toStdString());
     }else{
-        _nodeCounters.insert(make_pair(n->pluginID(), 1));
+        _imp->_nodeCounters.insert(make_pair(n->pluginID(), 1));
         n->setName(QString(QString(n->pluginLabel().c_str())+ "_" + QString::number(1)).toStdString());
     }
-    _currentNodes.push_back(n);
+    _imp->_currentNodes.push_back(n);
 }
 
 void Project::clearNodes(){
-    foreach(Node* n,_currentNodes){
+    foreach(Node* n,_imp->_currentNodes){
         delete n;
     }
-    _currentNodes.clear();
+    _imp->_currentNodes.clear();
 }
 
 void Project::setFrameRange(int first, int last){
-    _timeline->setFrameRange(first,last);
+    _imp->_timeline->setFrameRange(first,last);
 }
 
 void Project::seekFrame(int frame){
-    _timeline->seekFrame(frame);
+    _imp->_timeline->seekFrame(frame);
 }
 
 void Project::incrementCurrentFrame() {
-    _timeline->incrementCurrentFrame();
+    _imp->_timeline->incrementCurrentFrame();
 }
 void Project::decrementCurrentFrame(){
-    _timeline->decrementCurrentFrame();
+    _imp->_timeline->decrementCurrentFrame();
 }
 
 int Project::currentFrame() const {
-    return _timeline->currentFrame();
+    return _imp->_timeline->currentFrame();
 }
 
 int Project::firstFrame() const {
-    return _timeline->firstFrame();
+    return _imp->_timeline->firstFrame();
 }
 
 int Project::lastFrame() const {
-    return _timeline->lastFrame();
+    return _imp->_timeline->lastFrame();
 }
 
 
@@ -200,29 +233,29 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
     try{
         boost::archive::xml_iarchive iArchive(ifile);
         iArchive >> boost::serialization::make_nvp("Nodes",nodeStates);
-        iArchive >> boost::serialization::make_nvp("Project_formats",_availableFormats);
+        iArchive >> boost::serialization::make_nvp("Project_formats",_imp->_availableFormats);
         /*we must restore the entries in the combobox before restoring the value*/
         std::vector<std::string> entries;
-        for (U32 i = 0; i < _availableFormats.size(); ++i) {
-            QString formatStr = generateStringFromFormat(_availableFormats[i]);
+        for (U32 i = 0; i < _imp->_availableFormats.size(); ++i) {
+            QString formatStr = generateStringFromFormat(_imp->_availableFormats[i]);
             entries.push_back(formatStr.toStdString());
         }
-        _formatKnob->populate(entries);
+        _imp->_formatKnob->populate(entries);
         
-        AnimatingParam formatValue(_formatKnob->getDimension());
-        AnimatingParam viewsValue(_viewsCount->getDimension());
+        AnimatingParam formatValue(_imp->_formatKnob->getDimension());
+        AnimatingParam viewsValue(_imp->_viewsCount->getDimension());
         iArchive >> boost::serialization::make_nvp("Project_output_format",formatValue);
-        _formatKnob->onStartupRestoration(formatValue);
+        _imp->_formatKnob->onStartupRestoration(formatValue);
         setAutoSetProjectFormat(false);
         iArchive >> boost::serialization::make_nvp("Project_views_count",viewsValue);
-        _viewsCount->onStartupRestoration(viewsValue);
+        _imp->_viewsCount->onStartupRestoration(viewsValue);
         
         SequenceTime leftBound,rightBound,current;
         iArchive >> boost::serialization::make_nvp("Timeline_current_time",current);
         iArchive >> boost::serialization::make_nvp("Timeline_left_bound",leftBound);
         iArchive >> boost::serialization::make_nvp("Timeline_right_bound",rightBound);
-        _timeline->setBoundaries(leftBound, rightBound);
-        _timeline->seekFrame(current);
+        _imp->_timeline->setBoundaries(leftBound, rightBound);
+        _imp->_timeline->seekFrame(current);
     }catch(const boost::archive::archive_exception& e){
         throw std::runtime_error(std::string("Serialization error: ") + std::string(e.what()));
     }
@@ -286,9 +319,9 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
         
         const std::map<int, std::string>& inputs = (*it).getInputs();
         Node* thisNode = NULL;
-        for (U32 i = 0; i < _currentNodes.size(); ++i) {
-            if (_currentNodes[i]->getName() == (*it).getName()) {
-                thisNode = _currentNodes[i];
+        for (U32 i = 0; i < _imp->_currentNodes.size(); ++i) {
+            if (_imp->_currentNodes[i]->getName() == (*it).getName()) {
+                thisNode = _imp->_currentNodes[i];
                 break;
             }
         }
@@ -312,7 +345,7 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
     
     /*Refresh all viewers as it was*/
     if(!background){
-        getApp()->notifyViewersProjectFormatChanged(_availableFormats[_formatKnob->getActiveEntry()]);
+        getApp()->notifyViewersProjectFormatChanged(_imp->_availableFormats[_imp->_formatKnob->getActiveEntry()]);
         getApp()->checkViewersConnection();
     }
 }
@@ -320,7 +353,7 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
     QString filePath;
     if(autoSave){
         filePath = AppInstance::autoSavesDir()+QDir::separator()+filename;
-        _lastAutoSaveFilePath = filePath;
+        _imp->_lastAutoSaveFilePath = filePath;
     }else{
         filePath = path+filename;
     }
@@ -339,13 +372,13 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
     }
     try{
         oArchive << boost::serialization::make_nvp("Nodes",nodeStates);
-        oArchive << boost::serialization::make_nvp("Project_formats",_availableFormats);
-        oArchive << boost::serialization::make_nvp("Project_output_format",dynamic_cast<const AnimatingParam&>(*_formatKnob));
-        oArchive << boost::serialization::make_nvp("Project_views_count",dynamic_cast<const AnimatingParam&>(*_viewsCount));
+        oArchive << boost::serialization::make_nvp("Project_formats",_imp->_availableFormats);
+        oArchive << boost::serialization::make_nvp("Project_output_format",dynamic_cast<const AnimatingParam&>(*_imp->_formatKnob));
+        oArchive << boost::serialization::make_nvp("Project_views_count",dynamic_cast<const AnimatingParam&>(*_imp->_viewsCount));
         SequenceTime leftBound,rightBound,current;
-        leftBound = _timeline->leftBound();
-        rightBound = _timeline->rightBound();
-        current = _timeline->currentFrame();
+        leftBound = _imp->_timeline->leftBound();
+        rightBound = _imp->_timeline->rightBound();
+        current = _imp->_timeline->currentFrame();
         oArchive << boost::serialization::make_nvp("Timeline_current_time",current);
         oArchive << boost::serialization::make_nvp("Timeline_left_bound",leftBound);
         oArchive << boost::serialization::make_nvp("Timeline_right_bound",rightBound);
@@ -359,31 +392,31 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
 
 
 int Project::tryAddProjectFormat(const Format& f){
-    for (U32 i = 0; i < _availableFormats.size(); ++i) {
-        if(f == _availableFormats[i]){
+    for (U32 i = 0; i < _imp->_availableFormats.size(); ++i) {
+        if(f == _imp->_availableFormats[i]){
             return i;
         }
     }
-    std::vector<Format> currentFormats = _availableFormats;
-    _availableFormats.clear();
+    std::vector<Format> currentFormats = _imp->_availableFormats;
+    _imp->_availableFormats.clear();
     std::vector<std::string> entries;
     for (U32 i = 0; i < currentFormats.size(); ++i) {
         const Format& f = currentFormats[i];
         QString formatStr = generateStringFromFormat(f);
         entries.push_back(formatStr.toStdString());
-        _availableFormats.push_back(f);
+        _imp->_availableFormats.push_back(f);
     }
     QString formatStr = generateStringFromFormat(f);
     entries.push_back(formatStr.toStdString());
-    _availableFormats.push_back(f);
-    _formatKnob->populate(entries);
-    return _availableFormats.size() - 1;
+    _imp->_availableFormats.push_back(f);
+    _imp->_formatKnob->populate(entries);
+    return _imp->_availableFormats.size() - 1;
 }
 
 void Project::setProjectDefaultFormat(const Format& f) {
     
     int index = tryAddProjectFormat(f);
-    _formatKnob->setValue(index);
+    _imp->_formatKnob->setValue(index);
     getApp()->notifyViewersProjectFormatChanged(f);
     getApp()->triggerAutoSave();
 }
@@ -397,5 +430,70 @@ void Project::createNewFormat(){
 }
 
 int Project::getProjectViewsCount() const{
-    return _viewsCount->getValue<int>();
+    return _imp->_viewsCount->getValue<int>();
 }
+
+const std::vector<Node*>& Project::getCurrentNodes() const{return _imp->_currentNodes;}
+
+const QString& Project::getProjectName() const {return _imp->_projectName;}
+
+void Project::setProjectName(const QString& name) {_imp->_projectName = name;}
+
+const QString& Project::getLastAutoSaveFilePath() const {return _imp->_lastAutoSaveFilePath;}
+
+const QString& Project::getProjectPath() const {return _imp->_projectPath;}
+
+void Project::setProjectPath(const QString& path) {_imp->_projectPath = path;}
+
+bool Project::hasProjectBeenSavedByUser() const {return _imp->_hasProjectBeenSavedByUser;}
+
+void Project::setHasProjectBeenSavedByUser(bool s) {_imp->_hasProjectBeenSavedByUser = s;}
+
+const QDateTime& Project::projectAgeSinceLastSave() const {return _imp->_ageSinceLastSave;}
+
+void Project::setProjectAgeSinceLastSave(const QDateTime& t) {_imp->_ageSinceLastSave = t;}
+
+const QDateTime& Project::projectAgeSinceLastAutosave() const {return _imp->_lastAutoSave;}
+
+void Project::setProjectAgeSinceLastAutosaveSave(const QDateTime& t) {_imp->_lastAutoSave = t;}
+
+bool Project::shouldAutoSetProjectFormat() const {return _imp->_autoSetProjectFormat;}
+
+void Project::setAutoSetProjectFormat(bool b){_imp->_autoSetProjectFormat = b;}
+
+boost::shared_ptr<TimeLine> Project::getTimeLine() const  {return _imp->_timeline;}
+
+void  Project::lock() const {_imp->_projectDataLock.lock();}
+
+void  Project::unlock() const { assert(!_imp->_projectDataLock.tryLock());_imp->_projectDataLock.unlock();}
+
+void Project::incrementKnobsAge() {
+    if(_imp->_knobsAge < 99999)
+        ++_imp->_knobsAge;
+    else
+        _imp->_knobsAge = 0;
+}
+
+int Project::getKnobsAge() const {return _imp->_knobsAge;}
+
+void Project::onTimeChanged(SequenceTime time){
+    
+    refreshAfterTimeChange(time);
+    //Notify all knobs that the current time changed.
+    //It lets a chance for an animated knob to change its value according to the current time
+    std::list<ViewerInstance*> viewers;
+    for (U32 i = 0; i < _imp->_currentNodes.size(); ++i) {
+        _imp->_currentNodes[i]->getLiveInstance()->refreshAfterTimeChange(time);
+        if(_imp->_currentNodes[i]->pluginID() == "Viewer"){
+            viewers.push_back(dynamic_cast<ViewerInstance*>(_imp->_currentNodes[i]->getLiveInstance()));
+        }
+    }
+    
+    // now that we refreshed all knobs, refresh all viewers
+    for (std::list<ViewerInstance*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
+        (*it)->refreshAndContinueRender();
+    }
+    
+}
+    
+} //namespace Natron

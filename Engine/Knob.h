@@ -305,6 +305,8 @@ public:
     
     void onValueChanged(Knob* k,AnimatingParam::ValueChangedReason reason,bool isSignificant);
     
+    void refreshAfterTimeChange(SequenceTime time);
+    
 protected:
     
     /**

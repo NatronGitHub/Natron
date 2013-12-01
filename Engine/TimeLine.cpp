@@ -37,6 +37,10 @@ void TimeLine::seekFrame(SequenceTime frame){
 
 void TimeLine::onFrameChanged(SequenceTime frame){
     _currentFrame = frame;
+    
+    /*This function is called in response to a signal emitted by a single timeline gui, but we also
+     need to sync all the other timelines potentially existing.*/
+    emit frameChanged(_currentFrame);
 }
 
 void TimeLine::setBoundaries(SequenceTime leftBound,SequenceTime rightBound){
