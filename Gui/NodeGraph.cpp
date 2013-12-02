@@ -80,7 +80,6 @@ _previewsTurnedOff(false)
     setRenderHint(QPainter::Antialiasing);
     setTransformationAnchor(QGraphicsView::AnchorViewCenter);
     scale(qreal(0.8), qreal(0.8));
-    setDragMode(QGraphicsView::ScrollHandDrag);
     
     smartNodeCreationEnabled=true;
     _root = new QGraphicsTextItem(0);
@@ -262,7 +261,6 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
     assert(event);
     if(event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier)) {
         _evtState = MOVING_AREA;
-        QGraphicsView::mousePressEvent(event);
         return;
     }
     
@@ -350,12 +348,11 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
     }else if(_evtState == NODE_DRAGGING){
         if(_nodeSelected)
             _undoStack->push(new MoveCommand(_nodeSelected,_lastNodeDragStartPoint));
-    }else if(_evtState == MOVING_AREA){
-        QGraphicsView::mouseReleaseEvent(event);
     }
     scene()->update();
     
     _evtState=DEFAULT;
+    setCursor(QCursor(Qt::ArrowCursor));
 }
 void NodeGraph::mouseMoveEvent(QMouseEvent *event){
     QPointF newPos = mapToScene(event->pos());
@@ -373,7 +370,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
         qreal diffy=np.y()-op.y();
         QPointF p = _nodeSelected->pos()+QPointF(diffx,diffy);
         _nodeSelected->refreshPosition(p.x(),p.y());
-        
+        setCursor(QCursor(Qt::ClosedHandCursor));
     }else if(_evtState == MOVING_AREA){
         
         double dx = _root->mapFromScene(newPos).x() - _root->mapFromScene(_lastScenePosClick).x();
@@ -383,7 +380,32 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
         _root->moveBy(dx, dy);
 //        QGraphicsView::mouseMoveEvent(event);
 //        translate(dx, dy);
-       
+       setCursor(QCursor(Qt::SizeAllCursor));
+    }else{
+        NodeGui* selected = 0;
+        Edge* selectedEdge = 0;
+        for(U32 i = 0;i < _nodes.size();++i){
+            NodeGui* n = _nodes[i];
+            QPointF evpt = n->mapFromScene(newPos);
+            if(n->isActive() && n->contains(evpt)){
+                selected = n;
+                break;
+            }else{
+                Edge* edge = n->hasEdgeNearbyPoint(newPos);
+                if(edge){
+                    selectedEdge = edge;
+                    break;
+                }
+            }
+        }
+
+        if(selected){
+            setCursor(QCursor(Qt::OpenHandCursor));
+        }else if(selectedEdge){
+
+        }else if(!selectedEdge && !selected){
+            setCursor(QCursor(Qt::ArrowCursor));
+        }
     }
     _lastScenePosClick = newPos;
     update();

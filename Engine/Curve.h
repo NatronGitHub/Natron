@@ -121,7 +121,7 @@ public:
 
     void removeKeyFrame(KeyFrame* cp);
 
-    int getControlPointsCount() const ;
+    int keyFramesCount() const ;
 
     double getMinimumTimeCovered() const;
 

@@ -50,7 +50,7 @@ void KeyFrame::setLeftTangent(const Variant& v,bool evaluateNeighboors){
     _imp->_leftTangent = v;
     assert(_imp->_curve);
     if(evaluateNeighboors){
-       _imp->_curve->evaluateCurveChanged(Curve::TANGENT_CHANGED,this);
+        _imp->_curve->evaluateCurveChanged(Curve::TANGENT_CHANGED,this);
     }
 }
 
@@ -146,7 +146,6 @@ void Curve::addKeyFrame(KeyFrame* cp)
             }else if((*it)->getTime() == cp->getTime()){
                 //if the key already exists at this time, just modify it.
                 (*it)->setValue(cp->getValue());
-                refreshTangents(KEYFRAME_CHANGED,it);
                 delete cp;
                 return;
             }
@@ -168,7 +167,27 @@ void Curve::addKeyFrame(KeyFrame* cp)
 void Curve::removeKeyFrame(KeyFrame* cp){
 
     KeyFrames::iterator it = std::find(_imp->_keyFrames.begin(),_imp->_keyFrames.end(),cp);
+    delete cp;
+    KeyFrames::iterator prev = it;
+    KeyFrame* prevCp = NULL;
+    KeyFrame* nextCp = NULL;
+    if(it != _imp->_keyFrames.begin()){
+        --prev;
+        prevCp = (*prev);
+    }
+    KeyFrames::iterator next = it;
+    ++next;
+    if(next != _imp->_keyFrames.end()){
+        nextCp = (*next);
+    }
     _imp->_keyFrames.erase(it);
+    if(prevCp){
+        refreshTangents(TANGENT_CHANGED,prevCp);
+    }
+    if(nextCp){
+        refreshTangents(TANGENT_CHANGED,nextCp);
+    }
+
 }
 
 void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrames::iterator key){
@@ -318,7 +337,7 @@ void Curve::refreshTangents(CurveChangedReason reason, KeyFrame* k){
 
 bool Curve::isAnimated() const { return _imp->_keyFrames.size() > 1; }
 
-int Curve::getControlPointsCount() const { return (int)_imp->_keyFrames.size(); }
+int Curve::keyFramesCount() const { return (int)_imp->_keyFrames.size(); }
 
 const KeyFrame* Curve::getStart() const { assert(!_imp->_keyFrames.empty()); return _imp->_keyFrames.front(); }
 
@@ -333,23 +352,23 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason,KeyFrame *k){
 
 
     if(k->getInterpolation()!= Natron::KEYFRAME_BROKEN && k->getInterpolation() != Natron::KEYFRAME_FREE
-          && reason != TANGENT_CHANGED ){
+            && reason != TANGENT_CHANGED ){
         refreshTangents(TANGENT_CHANGED,it);
     }
-     KeyFrames::iterator prev = it;
-     if(it != _imp->_keyFrames.begin()){
+    KeyFrames::iterator prev = it;
+    if(it != _imp->_keyFrames.begin()){
         --prev;
-         if((*prev)->getInterpolation()!= Natron::KEYFRAME_BROKEN &&
-                 (*prev)->getInterpolation()!= Natron::KEYFRAME_FREE){
+        if((*prev)->getInterpolation()!= Natron::KEYFRAME_BROKEN &&
+                (*prev)->getInterpolation()!= Natron::KEYFRAME_FREE){
             refreshTangents(TANGENT_CHANGED,prev);
-         }
-     }
+        }
+    }
     KeyFrames::iterator next = it;
     ++next;
     if(next != _imp->_keyFrames.end()){
         if((*next)->getInterpolation()!= Natron::KEYFRAME_BROKEN &&
                 (*next)->getInterpolation()!= Natron::KEYFRAME_FREE){
-           refreshTangents(TANGENT_CHANGED,next);
+            refreshTangents(TANGENT_CHANGED,next);
         }
     }
 
@@ -360,7 +379,7 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason,KeyFrame *k){
 
 /***********************************MULTIDIMENSIONAL VALUE*********************/
 AnimatingParam::AnimatingParam()
-: _imp(new AnimatingParamPrivate(0))
+    : _imp(new AnimatingParamPrivate(0))
 {
     
 }
@@ -377,7 +396,7 @@ AnimatingParam::AnimatingParam(int dimension )
 }
 
 AnimatingParam::AnimatingParam(const AnimatingParam& other)
-: _imp(new AnimatingParamPrivate(other.getDimension()))
+    : _imp(new AnimatingParamPrivate(other.getDimension()))
 {
     *this = other;
 }

@@ -184,7 +184,7 @@ void NodeCurveEditorContext::onNameChanged(const QString& name){
 void NodeCurveEditorElement::checkVisibleState(){
     if(!_curve)
         return;
-    int i = _curve->getInternalCurve()->getControlPointsCount();
+    int i = _curve->getInternalCurve()->keyFramesCount();
     if(i > 1){
         if(!_curveDisplayed){
             _curveDisplayed = true;
@@ -220,7 +220,7 @@ NodeCurveEditorElement::NodeCurveEditorElement(CurveWidget* curveWidget,boost::s
   ,_curveWidget(curveWidget)
 {
     if(curve){
-        if(curve->getInternalCurve()->getControlPointsCount() > 1){
+        if(curve->getInternalCurve()->keyFramesCount() > 1){
             _curveDisplayed = true;
         }
     }

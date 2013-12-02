@@ -42,7 +42,7 @@ CurveGui::CurveGui(const CurveWidget *curveWidget,
     , _curveWidget(curveWidget)
 {
 
-    if(curve->getControlPointsCount() > 1){
+    if(curve->keyFramesCount() > 1){
         _visible = true;
     }
 
@@ -51,6 +51,36 @@ CurveGui::CurveGui(const CurveWidget *curveWidget,
 }
 
 CurveGui::~CurveGui(){
+
+}
+
+void CurveGui::nextPointForSegment(double x1, double* x2){
+    //    const Curve::KeyFrames& keys = _internalCurve->getKeyFrames();
+    //    assert(!keys.empty());
+    //    int xminCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keys.front()->getTime(),0).x();
+    //    int xmaxCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keys.back()->getTime(),0).x();
+    //    if(x1 < xminCurveWidgetCoord){
+    //         *x2 = xminCurveWidgetCoord;
+    //    }else if(x1 >= xmaxCurveWidgetCoord){
+    //        *x2 = _curveWidget->toWidgetCoordinates(_curveWidget->width(),0).x();;
+    //    }else{
+    //        //we're between 2 keyframes,get the upper and lower
+    //        Curve::KeyFrames::const_iterator upper = keys.end();
+    //        for(Curve::KeyFrames::const_iterator it = keys.begin();it!=keys.end();++it){
+    //            int keyPosWidgetCoord = _curveWidget->toWidgetCoordinates((*it)->getTime(),0).x();
+    //            if(keyPosWidgetCoord > x1){
+    //                upper = it;
+    //                break;
+    //            }
+    //        }
+    //        assert(upper != keys.end() && upper!= keys.begin());
+
+    //        Curve::KeyFrames::const_iterator lower = upper;
+    //        --lower;
+
+    //        double curvatureAtX =
+    //        *x2 = 2. / std::max(,0.1);
+    //    }
 
 }
 
@@ -381,7 +411,6 @@ void CurveWidget::drawScale()
         const double range_min = (axis == 0) ? btmLeft.x() : btmLeft.y(); // AXIS-SPECIFIC
         const double range_max = (axis == 0) ? topRight.x() : topRight.y(); // AXIS-SPECIFIC
         const double range = range_max - range_min;
-#if 1 // use new version of graph paper drawing
         double smallTickSize;
         bool half_tick;
         ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
@@ -434,96 +463,7 @@ void CurveWidget::drawScale()
                 }
             }
         }
-#else // use old version of graph paper drawing
-        const double minTickSizePixel = axis == 0 ? fontM.width(QString("-0.00000")) + fontM.width(QString("00")) : fontM.height() * 2; // AXIS-SPECIFIC
-        const int majorTicksCount = (rangePixel / minTickSizePixel) + 2;
-        const double minTickSize = range * minTickSizePixel/rangePixel;
-        double xminp,xmaxp,dist;
-        ScaleSlider::LinearScale2(range_min - minTickSize, range_max + minTickSize, majorTicksCount, acceptedDistances, &xminp, &xmaxp, &dist);
 
-        const int m1 = floor(xminp/dist + 0.5);
-        const int m2 = floor(xmaxp/dist + 0.5);
-        const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
-        const double largestTickSize = range * largestTickSizePixel / rangePixel;
-        assert(smallestTickSize > 0);
-        assert(largestTickSize > 0);
-        int jmax;
-        {
-            const double log10dist = std::log10(dist);
-            if (std::abs(log10dist - std::floor(log10dist+0.5)) < 0.001) {
-                // dist is a power of 10
-                jmax = 10;
-            } else {
-                jmax = 50;
-            }
-        }
-        std::cout << " m1=" << m1 << " m2=" << m2 << std::endl;
-
-        for(int i = m1 ; i <= m2; ++i) {
-            const double value = i * dist;
-
-            for (int j=0; j < jmax; ++j) {
-                int tickCount = 1;
-
-                if (i == 0 && j == 0) {
-                    tickCount = 10000; // special case for the axes
-                } else if (j == 0) {
-                    if (i % 100 == 0) {
-                        tickCount = 100*jmax;
-                    } else if (i % 50 == 0) {
-                        tickCount = 50*jmax;
-                    } else if (i % 10 == 0) {
-                        tickCount = 10*jmax;
-                    } else if (i % 5 == 0) {
-                        tickCount = 5*jmax;
-                    } else {
-                        tickCount = 1*jmax;
-                    }
-                } else if (j % 25 == 0) {
-                    tickCount = 25;
-                } else if (j % 10 == 0) {
-                    tickCount = 10;
-                } else if (j % 5 == 0) {
-                    if (jmax == 10 && (i*jmax+j) % 25 == 0) {
-                        tickCount = 25;
-                    } else {
-                        tickCount = 5;
-                    }
-                }
-                const double alpha = ticks_alpha(smallestTickSize,largestTickSize, tickCount*dist/(double)jmax);
-
-                glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
-
-                glBegin(GL_LINES);
-                const double u = value + j*dist/(double)jmax;
-                if (axis == 0) {
-                    glVertex2f(u, btmLeft.y()); // AXIS-SPECIFIC
-                    glVertex2f(u, topRight.y()); // AXIS-SPECIFIC
-                } else {
-                    glVertex2f(btmLeft.x(), u); // AXIS-SPECIFIC
-                    glVertex2f(topRight.x(), u); // AXIS-SPECIFIC
-                }
-                glEnd();
-            }
-
-            QString s;
-            if (dist < 1.) {
-                if (std::abs(value) < dist/2.) {
-                    s = QString::number(0.);
-                } else {
-                    s = QString::number(value);
-                }
-            } else {
-                s = QString::number(std::floor(value+0.5));
-            }
-
-            if (axis == 0) {
-                renderText(value, btmLeft.y(), s, _scaleColor, *_font); // AXIS-SPECIFIC
-            } else {
-                renderText(btmLeft.x(), value, s, _scaleColor, *_font); // AXIS-SPECIFIC
-            }
-        }
-#endif
     }
 
     glDisable(GL_BLEND);
@@ -634,15 +574,20 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
     }
     
     
-    if(_mustSetDragOrientation){
-        if(std::abs(event->x() - _zoomCtx._oldClick.x()) > std::abs(event->y() - _zoomCtx._oldClick.y())){
-            _mouseDragOrientation.setX(1);
-            _mouseDragOrientation.setY(0);
+    if(_mustSetDragOrientation && _state == DRAGGING_KEYS){
+        int dist = QPoint(event->pos() - _zoomCtx._oldClick).manhattanLength();
+        if(dist > 5){
+            if(std::abs(event->x() - _zoomCtx._oldClick.x()) > std::abs(event->y() - _zoomCtx._oldClick.y())){
+                _mouseDragOrientation.setX(1);
+                _mouseDragOrientation.setY(0);
+            }else{
+                _mouseDragOrientation.setX(0);
+                _mouseDragOrientation.setY(1);
+            }
+            _mustSetDragOrientation = false;
         }else{
-            _mouseDragOrientation.setX(0);
-            _mouseDragOrientation.setY(1);
+            return;
         }
-        _mustSetDragOrientation = false;
     }
     QPoint newClick =  event->pos();
     QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
@@ -744,6 +689,17 @@ QSize CurveWidget::sizeHint() const{
 
 void CurveWidget::keyPressEvent(QKeyEvent *event){
     if(event->key() == Qt::Key_Backspace){
-
+        for(SelectedKeys::const_iterator it = _selectedKeyFrames.begin();it!=_selectedKeyFrames.end();++it){
+            it->first->getInternalCurve()->removeKeyFrame(it->second);
+            if(!it->first->getInternalCurve()->isAnimated()){
+                it->first->setVisibleAndRefresh(false);
+            }
+        }
+        _selectedKeyFrames.clear();
     }
+}
+
+
+void CurveWidget::enterEvent(QEvent */*event*/){
+    setFocus();
 }

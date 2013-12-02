@@ -502,7 +502,7 @@ void TabWidget::keyPressEvent ( QKeyEvent * event ){
             _gui->maximize(this);
         }
     }
-    
+    event->ignore();
 }
 void TabWidget::enterEvent(QEvent *event)
 {   QWidget::enterEvent(event);
