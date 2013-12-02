@@ -153,14 +153,6 @@ public:
     
     virtual void paintGL();
     
-    virtual void mousePressEvent(QMouseEvent *event);
-    
-    virtual void mouseReleaseEvent(QMouseEvent *event);
-    
-    virtual void mouseMoveEvent(QMouseEvent *event);
-    
-    virtual void wheelEvent(QWheelEvent *event);
-    
     virtual QSize sizeHint() const;
     
     void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const;
@@ -193,6 +185,17 @@ public:
 
     bool isSupportingOpenGLVAO() const { return _hasOpenGLVAOSupport; }
 
+
+protected:
+    virtual void mousePressEvent(QMouseEvent *event);
+
+    virtual void mouseReleaseEvent(QMouseEvent *event);
+
+    virtual void mouseMoveEvent(QMouseEvent *event);
+
+    virtual void wheelEvent(QWheelEvent *event);
+
+    virtual void keyPressEvent(QKeyEvent *event);
 private:
 
     /**

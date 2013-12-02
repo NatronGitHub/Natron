@@ -23,6 +23,7 @@
 #include <QtCore/QObject>
 #include <QtCore/QFile>
 #include <QtCore/QDir>
+#include <QtCore/QDebug>
 #include <QtCore/QTextStream>
 #include <QtCore/QBuffer>
 #if QT_VERSION < 0x050000

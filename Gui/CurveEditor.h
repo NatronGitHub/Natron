@@ -14,7 +14,7 @@
 
 #include <QWidget>
 
-
+#include <boost/shared_ptr.hpp>
 class RectD;
 class NodeGui;
 class QTreeWidget;

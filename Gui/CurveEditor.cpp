@@ -124,7 +124,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
 
         knobItem->setText(0,k->getName().c_str());
         CurveGui* knobCurve = NULL;
-
+        bool hideKnob = true;
         if(k->getDimension() == 1){
 
             knobCurve = curveWidget->createCurve(k->getCurve(0),k->getDimensionName(0).c_str());
@@ -132,6 +132,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
                 knobItem->setHidden(true);
             }else{
                 hasAtLeast1KnobWithACurveShown = true;
+                hideKnob = false;
             }
         }else{
             for(int j = 0 ; j < k->getDimension();++j){
@@ -142,12 +143,16 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
                 NodeCurveEditorElement* elem = new NodeCurveEditorElement(curveWidget,dimItem,dimCurve);
                 QObject::connect(kgui,SIGNAL(keyAdded()),elem,SLOT(checkVisibleState()));
                 _nodeElements.push_back(elem);
-                if(!k->getCurve(0)->isAnimated()){
+                if(!dimCurve->getInternalCurve()->isAnimated()){
                     dimItem->setHidden(true);
                 }else{
                     hasAtLeast1KnobWithACurveShown = true;
+                    hideKnob = false;
                 }
             }
+        }
+        if(hideKnob){
+            knobItem->setHidden(true);
         }
         NodeCurveEditorElement* elem = new NodeCurveEditorElement(curveWidget,knobItem,knobCurve);
         QObject::connect(kgui,SIGNAL(keyAdded()),elem,SLOT(checkVisibleState()));
@@ -255,12 +260,15 @@ void CurveEditor::centerOn(const std::vector<boost::shared_ptr<Curve> >& curves)
 
 
 void CurveEditor::recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *curves){
+    if(!cur){
+        return;
+    }
     cur->setSelected(true);
     for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
         it!=_nodes.end();++it){
         const NodeCurveEditorContext::Elements& elems = (*it)->getElements();
         for (U32 i = 0; i < elems.size(); ++i) {
-            if(cur == elems[i]->getTreeItem().get()){
+            if(elems[i]->getTreeItem() && cur == elems[i]->getTreeItem().get()){
                 CurveGui* curve = elems[i]->getCurve();
                 if (curve && curve->getInternalCurve()->isAnimated()) {
                     curves->push_back(curve);

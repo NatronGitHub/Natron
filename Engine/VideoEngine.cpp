@@ -650,7 +650,7 @@ void RenderTree::refreshTree(SequenceTime time){
         it->second->updateInputs(this);
         U64 ret = 0;
         it->second->clone(time);
-        ret = it->second->computeHash(inputsHash);
+        ret = it->second->computeHash(time,inputsHash);
         inputsHash.push_back(ret);
     }
     
@@ -682,7 +682,7 @@ U64 RenderTree::cloneKnobsAndcomputeTreeHash(SequenceTime time,EffectInstance* e
     U64 ret = effect->hash().value();
     if(!effect->isHashValid()){
         effect->clone(time);
-        ret = effect->computeHash(inputsHashs);
+        ret = effect->computeHash(time,inputsHashs);
       //  std::cout << effect->getName() << ": " << ret << std::endl;
     }
     return ret;

@@ -54,9 +54,9 @@ public:
 
     const Variant& getRightTangent() const ;
 
-    void setLeftTangent(const Variant& v);
+    void setLeftTangent(const Variant& v,bool evaluateNeighboors);
 
-    void setRightTangent(const Variant& v);
+    void setRightTangent(const Variant& v,bool evaluateNeighboors);
 
     void setValue(const Variant& v);
 
@@ -90,6 +90,10 @@ class Curve {
 
 public:
 
+    enum CurveChangedReason{
+        TANGENT_CHANGED = 0,
+        KEYFRAME_CHANGED = 1
+    };
 
     //each segment of curve between a keyframe and the next can have a different interpolation method
     typedef std::list< KeyFrame* > KeyFrames;
@@ -113,7 +117,9 @@ public:
 
     bool isAnimated() const;
 
-    void addControlPoint(KeyFrame* cp);
+    void addKeyFrame(KeyFrame* cp);
+
+    void removeKeyFrame(KeyFrame* cp);
 
     int getControlPointsCount() const ;
 
@@ -131,9 +137,9 @@ public:
 
     const KeyFrames& getKeyFrames() const;
 
-    void refreshTangents(KeyFrame* k);
+    void refreshTangents(CurveChangedReason reason, KeyFrame* k);
 
-    void refreshTangents(KeyFrames::iterator key);
+    void refreshTangents(CurveChangedReason reason, KeyFrames::iterator key);
 
     void clearKeyFrames();
 
@@ -141,7 +147,7 @@ public:
      * @brief Called when a keyframe/tangent is modified, indicating that the curve has changed and we must
      * evaluate any change (i.e: force a new render)
     **/
-    void evaluateCurveChanged();
+    void evaluateCurveChanged(CurveChangedReason reason,KeyFrame* k);
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);

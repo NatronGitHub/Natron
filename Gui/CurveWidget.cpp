@@ -577,7 +577,7 @@ std::pair<CurveGui*,KeyFrame*> CurveWidget::isNearbyKeyFrame(const QPoint& pt) c
             for (Curve::KeyFrames::const_iterator it2 = keyFrames.begin(); it2 != keyFrames.end(); ++it2) {
                 QPoint keyFramewidgetPos = toWidgetCoordinates((*it2)->getTime(), (*it2)->getValue().toDouble());
                 if((std::abs(pt.y() - keyFramewidgetPos.y()) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
-                   (std::abs(pt.x() - keyFramewidgetPos.x()) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)){
+                        (std::abs(pt.x() - keyFramewidgetPos.x()) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)){
                     return std::make_pair((*it),(*it2));
                 }
             }
@@ -648,7 +648,7 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
     QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
     QPointF oldClick_opengl = toScaleCoordinates(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
     
-       
+
     _zoomCtx._oldClick = newClick;
     if (_state == DRAGGING_VIEW) {
         
@@ -680,7 +680,7 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
                 ++nextKey;
                 
                 if(((prevKey != keys.end() && newValue > (*prevKey)->getTime()) || prevKey == keys.end())
-                    && ((nextKey != keys.end() && newValue < (*nextKey)->getTime())|| nextKey == keys.end())){
+                        && ((nextKey != keys.end() && newValue < (*nextKey)->getTime())|| nextKey == keys.end())){
                     (*it).second->setTime(newValue);
                 }
                 
@@ -742,4 +742,8 @@ QSize CurveWidget::sizeHint() const{
 }
 
 
+void CurveWidget::keyPressEvent(QKeyEvent *event){
+    if(event->key() == Qt::Key_Backspace){
 
+    }
+}

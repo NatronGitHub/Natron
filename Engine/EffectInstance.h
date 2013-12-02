@@ -72,7 +72,7 @@ public:
      * @brief  Used once for each "render instance". It makes a full clone of the other instance.
      * This instance will be "read-only": modifying values will have no impact on the GUI.
      **/
-    U64 computeHash(const std::vector<U64>& inputsHashs);
+    U64 computeHash(SequenceTime time,const std::vector<U64>& inputsHashs);
     
     const Hash64& hash() const WARN_UNUSED_RETURN;
             

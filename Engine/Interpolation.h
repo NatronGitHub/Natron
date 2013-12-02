@@ -235,6 +235,7 @@ void autoComputeTangents(Natron::KeyframeType interpPrev,
         break;
 
     case KEYFRAME_SMOOTH:
+
         // If vcur is outside of the range [vprev,vnext], then interpolation is horizontal
         if ((vprev > vcur && vcur < vnext) || (vprev < vcur && vcur > vnext)) {
             P0pr = 0.;
@@ -256,27 +257,24 @@ void autoComputeTangents(Natron::KeyframeType interpPrev,
               and P1 to P0(aka vcur) and P3(aka vnext)*/
             T prevMax = std::max(vprev, vcur);
             T prevMin = std::min(vprev, vcur);
-            Q2 = std::max(prevMin, std::min(Q2, prevMax));
+            if (Q2 < prevMin || Q2 > prevMax) {
+                T Q2new = std::max(prevMin, std::min(Q2, prevMax));
+                P1 = P0 + (P1-P0) * (Q3-Q2new)/(Q3-Q2);
+                Q2 = Q2new;
+            }
 
             T nextMax = std::max(vcur, vnext);
             T nextMin = std::min(vcur, vnext);
-            P1 = std::max(nextMin, std::min(P1, nextMax));
+            if (P1 < nextMin || P1 > nextMax) {
+                T P1new = std::max(nextMin, std::min(P1, nextMax));
+                Q2 = Q3 - (Q3-Q2) * (P1new-P0)/(P1-P0);
+                P1 = P1new;
+            }
 
             /*We recompute the tangents from the new clamped control points*/
 
-            P0pr = 3. * (P1 - P3);
+            P0pr = 3. * (P1 - P0);
             Q3pl = 3. * (Q3 - Q2);
-
-            /*And set the tangent on the left and on the right to be the minimum
-              of the 2.*/
-
-
-            if (std::abs(Q3pl) < std::abs(P0pr)) {
-                P0pr = Q3pl;
-            } else {
-                Q3pl = P0pr;
-            }
-
         }
        break;
 
