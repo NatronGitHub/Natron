@@ -421,34 +421,7 @@ Variant AnimatingParam::getValueAtTime(double time,int dimension) const{
 }
 
 
-RectD AnimatingParam::getCurvesBoundingBox() const{
-    RectD ret;
-    for(CurvesMap::const_iterator it = _imp->_curves.begin() ; it!=_imp->_curves.end();++it){
-        
-        
-        double xmin = it->second->getMinimumTimeCovered();
-        double xmax = it->second->getMaximumTimeCovered();
-        double ymin = INT_MAX;
-        double ymax = INT_MIN;
-        //find out ymin,ymax
-        const Curve::KeyFrames& keys = it->second->getKeyFrames();
-        for (Curve::KeyFrames::const_iterator it2 = keys.begin(); it2!=keys.end(); ++it2) {
-            const Variant& v = (*it2)->getValue();
-            double value;
-            if(v.type() == QVariant::Int){
-                value = (double)v.toInt();
-            }else{
-                value = v.toDouble();
-            }
-            if(value < ymin)
-                ymin = value;
-            if(value > ymax)
-                ymax = value;
-        }
-        ret.merge(xmin,ymin,xmax,ymax);
-    }
-    return ret;
-}
+
 
 const std::map<int,Variant>& AnimatingParam::getValueForEachDimension() const {return _imp->_value;}
 

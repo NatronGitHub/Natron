@@ -15,6 +15,8 @@
 #include <QMouseEvent>
 
 #include "Engine/Knob.h"
+#include "Engine/Rect.h"
+
 #include "Gui/ScaleSlider.h"
 #include "Gui/ticks.h"
 
@@ -139,7 +141,9 @@ double CurveGui::evaluate(double x) const{
     return _internalCurve->getValueAt(x).toDouble();
 }
 
-void CurveGui::setVisible(bool visible) { _visible = visible; emit curveChanged(); }
+void CurveGui::setVisible(bool visible){ _visible = visible; }
+
+void CurveGui::setVisibleAndRefresh(bool visible) { _visible = visible; emit curveChanged(); }
 
 CurveWidget::CurveWidget(QWidget* parent, const QGLWidget* shareWidget)
     : QGLWidget(parent,shareWidget)
@@ -212,6 +216,52 @@ void CurveWidget::removeCurve(CurveGui *curve){
             break;
         }
     }
+}
+
+void CurveWidget::centerOn(const std::vector<CurveGui*>& curves){
+    RectD ret;
+    for(U32 i = 0; i < curves.size();++i){
+        CurveGui* c = curves[i];
+        
+        double xmin = c->getInternalCurve()->getMinimumTimeCovered();
+        double xmax = c->getInternalCurve()->getMaximumTimeCovered();
+        double ymin = INT_MAX;
+        double ymax = INT_MIN;
+        //find out ymin,ymax
+        const Curve::KeyFrames& keys = c->getInternalCurve()->getKeyFrames();
+        for (Curve::KeyFrames::const_iterator it2 = keys.begin(); it2!=keys.end(); ++it2) {
+            const Variant& v = (*it2)->getValue();
+            double value;
+            if(v.type() == QVariant::Int){
+                value = (double)v.toInt();
+            }else{
+                value = v.toDouble();
+            }
+            if(value < ymin)
+                ymin = value;
+            if(value > ymax)
+                ymax = value;
+        }
+        ret.merge(xmin,ymin,xmax,ymax);
+    }
+    ret.set_bottom(ret.bottom() - ret.height()/10);
+    ret.set_left(ret.left() - ret.width()/10);
+    ret.set_right(ret.right() + ret.width()/10);
+    ret.set_top(ret.top() + ret.height()/10);
+    
+    centerOn(ret.left(), ret.right(), ret.bottom(), ret.top());
+}
+
+void CurveWidget::showCurvesAndHideOthers(const std::vector<CurveGui*>& curves){
+    for(std::list<CurveGui* >::iterator it = _curves.begin();it!=_curves.end();++it){
+        std::vector<CurveGui*>::const_iterator it2 = std::find(curves.begin(), curves.end(), *it);
+        if(it2 != curves.end()){
+            (*it)->setVisible(true);
+        }else{
+            (*it)->setVisible(false);
+        }
+    }
+    updateGL();
 }
 
 void CurveWidget::centerOn(double xmin,double xmax,double ymin,double ymax){

@@ -20,6 +20,7 @@ class NodeGui;
 class QTreeWidget;
 class QTreeWidgetItem;
 class CurveWidget;
+class Curve;
 class CurveGui;
 class QHBoxLayout;
 class QSplitter;
@@ -31,13 +32,13 @@ class NodeCurveEditorElement : public QObject
 
 public:
     
-    NodeCurveEditorElement(CurveWidget* curveWidget,QTreeWidgetItem* item,CurveGui* curve);
+    NodeCurveEditorElement(CurveWidget* curveWidget,boost::shared_ptr<QTreeWidgetItem> item,CurveGui* curve);
     
-    NodeCurveEditorElement():_treeItem(NULL),_curve(),_curveDisplayed(false),_curveWidget(NULL){}
+    NodeCurveEditorElement():_treeItem(),_curve(),_curveDisplayed(false),_curveWidget(NULL){}
     
     virtual ~NodeCurveEditorElement();
     
-    QTreeWidgetItem* getTreeItem() const {return _treeItem;}
+    boost::shared_ptr<QTreeWidgetItem> getTreeItem() const {return _treeItem;}
     
     CurveGui* getCurve() const {return _curve;}
 
@@ -52,7 +53,7 @@ public slots:
 private:
     
     
-    QTreeWidgetItem* _treeItem;
+    boost::shared_ptr<QTreeWidgetItem> _treeItem;
     CurveGui* _curve;
     bool _curveDisplayed;
     CurveWidget* _curveWidget;
@@ -83,14 +84,14 @@ private:
 
     NodeGui* _node;
     Elements _nodeElements;
-    QTreeWidgetItem* _nameItem;
+    boost::shared_ptr<QTreeWidgetItem> _nameItem;
 
 };
 
 class CurveEditor  : public QWidget
 {
 
-
+    Q_OBJECT
 
 public:
 
@@ -109,12 +110,16 @@ public:
 
     void removeNode(NodeGui* node);
     
-    void centerOn(const RectD& rect);
+    void centerOn(const std::vector<boost::shared_ptr<Curve> >& curves);
     
-    void centerOn(double bottom,double left,double top,double right);
-
+public slots:
+    
+    void onCurrentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*);
+    
 private:
-
+    
+    void recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *curves);
+    
     std::list<NodeCurveEditorContext*> _nodes;
 
     QHBoxLayout* _mainLayout;

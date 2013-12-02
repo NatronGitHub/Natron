@@ -13,6 +13,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "Engine/Rect.h"
 #include "Engine/Variant.h"
 
 

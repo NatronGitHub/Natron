@@ -68,9 +68,9 @@ public:
         
         const KnobValues& getKnobsValues() const {return _knobsValues;}
         
-        const std::string& getName() const {return _name;}
+        const std::string& getPluginLabel() const {return _pluginLabel;}
         
-        const std::string& getClassName() const {return _className;}
+        const std::string& getPluginID() const {return _pluginID;}
         
         const std::map<int,std::string>& getInputs() const {return _inputs;}
                 
@@ -85,8 +85,8 @@ public:
         const NodeGui* _node;
         
         KnobValues _knobsValues;
-        std::string _name;
-        std::string _className;
+        std::string _pluginLabel;
+        std::string _pluginID;
         
         std::map<int,std::string> _inputs;
         double _posX,_posY;
@@ -99,8 +99,8 @@ public:
         {
             (void)version;
             ar & boost::serialization::make_nvp("Knobs_values_map", _knobsValues);
-            ar & boost::serialization::make_nvp("Node_instance_unique_name",_name);
-            ar & boost::serialization::make_nvp("Node_class_name",_className);
+            ar & boost::serialization::make_nvp("Node_instance_unique_name",_pluginLabel);
+            ar & boost::serialization::make_nvp("Node_class_name",_pluginID);
             ar & boost::serialization::make_nvp("Input_nodes_map",_inputs);
             ar & boost::serialization::make_nvp("X_position",_posX);
             ar & boost::serialization::make_nvp("Y_position",_posY);

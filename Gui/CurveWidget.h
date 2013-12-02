@@ -48,7 +48,12 @@ public:
 
     bool isVisible() const { return _visible; }
 
-    void setVisible(bool visible) ;
+    void setVisibleAndRefresh(bool visible) ;
+
+    /**
+      * @brief same as setVisibleAndRefresh() but doesn't emit any signal for a repaint
+    **/
+    void setVisible(bool visible);
 
     bool isSelected() const { return _selected; }
 
@@ -164,9 +169,11 @@ public:
 
     CurveGui *createCurve(boost::shared_ptr<Curve> curve, const QString &name);
 
-    void displayCurve(CurveGui* curve);
-
     void removeCurve(CurveGui* curve);
+    
+    void centerOn(const std::vector<CurveGui*>& curves);
+    
+    void showCurvesAndHideOthers(const std::vector<CurveGui*>& curves);
     
     /**
      *@brief See toImgCoordinates_fast in ViewerGL.h

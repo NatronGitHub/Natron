@@ -532,9 +532,9 @@ NodeGui::SerializedState::SerializedState(const NodeGui* n):_node(n){
         }
     }
     
-    _name = _node->getNode()->getName();
+    _pluginLabel = _node->getNode()->getName();
      
-    _className = _node->getNode()->pluginID();
+    _pluginID = _node->getNode()->pluginID();
    
     const Natron::Node::InputMap& inputs = _node->getNode()->getInputs();
     for(Natron::Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){

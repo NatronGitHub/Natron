@@ -258,13 +258,13 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
     for (std::list<NodeGui::SerializedState>::const_iterator it = nodeStates.begin() ; it!=nodeStates.end(); ++it) {
         const NodeGui::SerializedState& state = *it;
         
-        if (background && state.getClassName() == "Viewer") { //if the node is a viewer, don't try to load it in background mode
+        if (background && state.getPluginID() == "Viewer") { //if the node is a viewer, don't try to load it in background mode
             continue;
         }
         
-        Node* n = getApp()->createNode(state.getClassName().c_str(),true);
+        Node* n = getApp()->createNode(state.getPluginID().c_str(),true);
         if(!n){
-            Natron::errorDialog("Loading failed", "Cannot load node " + state.getClassName());
+            Natron::errorDialog("Loading failed", "Cannot load node " + state.getPluginID());
             continue;
         }
         n->getLiveInstance()->beginValuesChanged(AnimatingParam::PLUGIN_EDITED,true);
@@ -275,12 +275,12 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
         if(!n){
             clearNodes();
             QString text("Failed to restore the graph! \n The node ");
-            text.append(state.getClassName().c_str());
+            text.append(state.getPluginID().c_str());
             text.append(" was found in the auto-save script but doesn't seem \n"
                         "to exist in the currently loaded plug-ins.");
             throw std::invalid_argument(text.toStdString());
         }
-        n->setName(state.getName());
+        n->setName(state.getPluginLabel());
         const NodeGui::SerializedState::KnobValues& knobsValues = state.getKnobsValues();
         //begin changes to params
         for (NodeGui::SerializedState::KnobValues::const_iterator i = knobsValues.begin();
@@ -313,13 +313,13 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
     /*now that we have all nodes, just connect them*/
     for(std::list<NodeGui::SerializedState>::const_iterator it = nodeStates.begin() ; it!=nodeStates.end(); ++it){
         
-        if(background && (*it).getClassName() == "Viewer")//ignore viewers on background mode
+        if(background && (*it).getPluginID() == "Viewer")//ignore viewers on background mode
             continue;
         
         const std::map<int, std::string>& inputs = (*it).getInputs();
         Node* thisNode = NULL;
         for (U32 i = 0; i < _imp->_currentNodes.size(); ++i) {
-            if (_imp->_currentNodes[i]->getName() == (*it).getName()) {
+            if (_imp->_currentNodes[i]->getName() == (*it).getPluginLabel()) {
                 thisNode = _imp->_currentNodes[i];
                 break;
             }
@@ -328,7 +328,7 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
             if(input->second.empty())
                 continue;
             if(!getApp()->connect(input->first, input->second,thisNode)){
-                cout << "Failed to connect " << (*it).getName() << " to " << input->second << endl;
+                cout << "Failed to connect " << (*it).getPluginLabel() << " to " << input->second << endl;
             }
         }
         

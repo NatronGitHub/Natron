@@ -18,7 +18,6 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "Engine/Rect.h"
 #include "Engine/Variant.h"
 
 #include "Global/Enums.h"
@@ -238,9 +237,6 @@ public:
 
 
     boost::shared_ptr<Curve> getCurve(int dimension) const;
-
-
-    RectD getCurvesBoundingBox() const;
 
 
     virtual void evaluateAnimationChange(){}

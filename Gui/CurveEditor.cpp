@@ -55,6 +55,9 @@ CurveEditor::CurveEditor(QWidget *parent)
 
 
     _mainLayout->addWidget(_splitter);
+    
+    QObject::connect(_tree, SIGNAL(currentItemChanged(QTreeWidgetItem*, QTreeWidgetItem*)),
+                     this, SLOT(onCurrentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)));
 
 }
 
@@ -95,10 +98,10 @@ void CurveEditor::removeNode(NodeGui *node){
 NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* curveWidget,NodeGui *node)
     : _node(node)
     , _nodeElements()
-    , _nameItem(0)
+    , _nameItem()
 {
     
-    QTreeWidgetItem* nameItem = new QTreeWidgetItem(tree);
+    boost::shared_ptr<QTreeWidgetItem> nameItem(new QTreeWidgetItem(tree));
     nameItem->setText(0,_node->getNode()->getName().c_str());
 
     QObject::connect(node,SIGNAL(nameChanged(QString)),this,SLOT(onNameChanged(QString)));
@@ -117,7 +120,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
         
         hasAtLeast1KnobWithACurve = true;
         
-        QTreeWidgetItem* knobItem = new QTreeWidgetItem(nameItem);
+        boost::shared_ptr<QTreeWidgetItem> knobItem(new QTreeWidgetItem(nameItem.get()));
 
         knobItem->setText(0,k->getName().c_str());
         CurveGui* knobCurve = NULL;
@@ -133,7 +136,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
         }else{
             for(int j = 0 ; j < k->getDimension();++j){
                 
-                QTreeWidgetItem* dimItem = new QTreeWidgetItem(knobItem);
+                boost::shared_ptr<QTreeWidgetItem> dimItem(new QTreeWidgetItem(knobItem.get()));
                 dimItem->setText(0,k->getDimensionName(j).c_str());
                 CurveGui* dimCurve = curveWidget->createCurve(k->getCurve(j),k->getDimensionName(j).c_str());
                 NodeCurveEditorElement* elem = new NodeCurveEditorElement(curveWidget,dimItem,dimCurve);
@@ -157,8 +160,6 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
             nameItem->setHidden(true);
         }
         _nameItem = nameItem;
-    }else{
-        delete nameItem;
     }
 
 
@@ -182,7 +183,7 @@ void NodeCurveEditorElement::checkVisibleState(){
     if(i > 1){
         if(!_curveDisplayed){
             _curveDisplayed = true;
-            _curve->setVisible(true);
+            _curve->setVisibleAndRefresh(true);
             _treeItem->setHidden(false);
             _treeItem->parent()->setHidden(false);
             _treeItem->parent()->setExpanded(true);
@@ -201,13 +202,13 @@ void NodeCurveEditorElement::checkVisibleState(){
                 _treeItem->parent()->parent()->setHidden(true);
                 _treeItem->parent()->parent()->setExpanded(false);
             }
-            _curve->setVisible(false);
+            _curve->setVisibleAndRefresh(false);
         }
     }
 }
 
 
-NodeCurveEditorElement::NodeCurveEditorElement(CurveWidget* curveWidget,QTreeWidgetItem* item,CurveGui* curve):
+NodeCurveEditorElement::NodeCurveEditorElement(CurveWidget* curveWidget,boost::shared_ptr<QTreeWidgetItem> item,CurveGui* curve):
     _treeItem(item)
   ,_curve(curve)
   ,_curveDisplayed(false)
@@ -222,13 +223,71 @@ NodeCurveEditorElement::NodeCurveEditorElement(CurveWidget* curveWidget,QTreeWid
 
 NodeCurveEditorElement::~NodeCurveEditorElement(){
     _curveWidget->removeCurve(_curve);
-    delete _treeItem;
 }
 
-void CurveEditor::centerOn(double bottom,double left,double top,double right){
-    _curveWidget->centerOn(left, right, bottom, top);
+void CurveEditor::centerOn(const std::vector<boost::shared_ptr<Curve> >& curves){
+    
+    // find the curve's gui
+    std::vector<CurveGui*> curvesGuis;
+    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
+        it!=_nodes.end();++it){
+        const NodeCurveEditorContext::Elements& elems = (*it)->getElements();
+        for (U32 i = 0; i < elems.size(); ++i) {
+            CurveGui* curve = elems[i]->getCurve();
+            if (curve) {
+                std::vector<boost::shared_ptr<Curve> >::const_iterator found =
+                std::find(curves.begin(), curves.end(), curve->getInternalCurve());
+                if(found != curves.end()){
+                    curvesGuis.push_back(curve);
+                    elems[i]->getTreeItem()->setSelected(true);
+                }else{
+                    elems[i]->getTreeItem()->setSelected(false);
+                }
+            }else{
+                elems[i]->getTreeItem()->setSelected(false);
+            }
+        }
+    }
+    _curveWidget->centerOn(curvesGuis);
+    _curveWidget->showCurvesAndHideOthers(curvesGuis);
+    
 }
 
-void CurveEditor::centerOn(const RectD& rect){
-    centerOn(rect.bottom(),rect.left(),rect.top(),rect.right());
+
+void CurveEditor::recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *curves){
+    cur->setSelected(true);
+    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
+        it!=_nodes.end();++it){
+        const NodeCurveEditorContext::Elements& elems = (*it)->getElements();
+        for (U32 i = 0; i < elems.size(); ++i) {
+            if(cur == elems[i]->getTreeItem().get()){
+                CurveGui* curve = elems[i]->getCurve();
+                if (curve && curve->getInternalCurve()->isAnimated()) {
+                    curves->push_back(curve);
+                }
+            }
+        }
+    }
+    for (int j = 0; j < cur->childCount(); ++j) {
+        recursiveSelect(cur->child(j),curves);
+    }
+}
+
+static void recursiveDeselect(QTreeWidgetItem* current){
+    current->setSelected(false);
+    for (int j = 0; j < current->childCount(); ++j) {
+        recursiveDeselect(current->child(j));
+    }
+}
+
+void CurveEditor::onCurrentItemChanged(QTreeWidgetItem* current,QTreeWidgetItem* previous){
+    std::vector<CurveGui*> curves;
+    if(previous){
+        recursiveDeselect(previous);
+    }
+    recursiveSelect(current,&curves);
+    
+    _curveWidget->centerOn(curves);
+    _curveWidget->showCurvesAndHideOthers(curves);
+    
 }
