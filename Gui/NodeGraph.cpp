@@ -122,13 +122,13 @@ private:
 
 
 NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
-QGraphicsView(scene,parent),
-_gui(gui),
-_evtState(DEFAULT),
-_nodeSelected(0),
-_propertyBin(0),
-_refreshOverlays(true),
-_previewsTurnedOff(false)
+    QGraphicsView(scene,parent),
+    _gui(gui),
+    _evtState(DEFAULT),
+    _nodeSelected(0),
+    _propertyBin(0),
+    _refreshOverlays(true),
+    _previewsTurnedOff(false)
 {
     setAcceptDrops(true);
     
@@ -277,10 +277,10 @@ void NodeGraph::paintEvent(QPaintEvent* event){
     QGraphicsView::paintEvent(event);
 }
 QRectF NodeGraph::visibleRect() {
-//    QPointF tl(horizontalScrollBar()->value(), verticalScrollBar()->value());
-//    QPointF br = tl + viewport()->rect().bottomRight();
-//    QMatrix mat = matrix().inverted();
-//    return mat.mapRect(QRectF(tl,br));
+    //    QPointF tl(horizontalScrollBar()->value(), verticalScrollBar()->value());
+    //    QPointF br = tl + viewport()->rect().bottomRight();
+    //    QMatrix mat = matrix().inverted();
+    //    return mat.mapRect(QRectF(tl,br));
     
     return mapToScene(viewport()->rect()).boundingRect();
 }
@@ -391,7 +391,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
             QPointF evpt = n->mapFromScene(ep);
             
             if(n->isActive() && n->isNearby(evpt) &&
-               (n->getNode()->getName()!=_arrowSelected->getDest()->getNode()->getName())){
+                    (n->getNode()->getName()!=_arrowSelected->getDest()->getNode()->getName())){
                 if(n->getNode()->isOutputNode()){
                     break;
                 }
@@ -439,12 +439,12 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
         
         double dx = _root->mapFromScene(newPos).x() - _root->mapFromScene(_lastScenePosClick).x();
         double dy = _root->mapFromScene(newPos).y() - _root->mapFromScene(_lastScenePosClick).y();
-//        double dx = newPos.x() - _lastScenePosClick.x();
-//        double dy = newPos.y() - _lastScenePosClick.y();
+        //        double dx = newPos.x() - _lastScenePosClick.x();
+        //        double dy = newPos.y() - _lastScenePosClick.y();
         _root->moveBy(dx, dy);
-//        QGraphicsView::mouseMoveEvent(event);
-//        translate(dx, dy);
-       setCursor(QCursor(Qt::SizeAllCursor));
+        //        QGraphicsView::mouseMoveEvent(event);
+        //        translate(dx, dy);
+        setCursor(QCursor(Qt::SizeAllCursor));
     }else{
         NodeGui* selected = 0;
         Edge* selectedEdge = 0;
@@ -534,9 +534,8 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         _gui->getApp()->createNode("Writer");
     }else if(e->key() == Qt::Key_Backspace){
         /*delete current node.*/
-        if(_nodeSelected){
-            deleteSelectedNode();
-        }
+        deleteSelectedNode();
+
     }
 }
 void NodeGraph::connectCurrentViewerToSelection(int inputNB){
@@ -573,7 +572,7 @@ void NodeGraph::leaveEvent(QEvent *event)
     QGraphicsView::leaveEvent(event);
     if(smartNodeCreationEnabled){
         _nodeCreationShortcutEnabled=false;
-         setFocus();
+        setFocus();
     }
 }
 
@@ -698,10 +697,10 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
 }
 
 void NodeGraph::deleteSelectedNode(){
-    
-    _undoStack->push(new RemoveCommand(this,_nodeSelected));
-    _nodeSelected = 0;
-    
+    if(_nodeSelected){
+        _undoStack->push(new RemoveCommand(this,_nodeSelected));
+        _nodeSelected = 0;
+    }
 }
 
 
@@ -753,8 +752,8 @@ void NodeGraph::updateNavigator(){
 bool NodeGraph::areAllNodesVisible(){
     QRectF rect = visibleRect();
     for (U32 i = 0; i < _nodes.size(); ++i) {
-//        QRectF itemSceneRect = _nodes[i]->mapRectFromScene(rect);
-//        if(!itemSceneRect.contains(_nodes[i]->boundingRect()))
+        //        QRectF itemSceneRect = _nodes[i]->mapRectFromScene(rect);
+        //        if(!itemSceneRect.contains(_nodes[i]->boundingRect()))
         if(!rect.contains(_nodes[i]->boundingRectWithEdges()))
             return false;
     }
@@ -810,7 +809,7 @@ bool NodeGraph::isGraphWorthLess() const{
 }
 
 NodeGraph::NodeGraphNavigator::NodeGraphNavigator(QWidget* parent ):QLabel(parent),
-_w(120),_h(70){
+    _w(120),_h(70){
     
 }
 
@@ -844,9 +843,9 @@ void NodeGraph::restoreFromTrash(NodeGui* node) {
 
 MoveCommand::MoveCommand(NodeGui *node, const QPointF &oldPos,
                          QUndoCommand *parent):QUndoCommand(parent),
-_node(node),
-_oldPos(oldPos),
-_newPos(node->pos()){
+    _node(node),
+    _oldPos(oldPos),
+    _newPos(node->pos()){
     
 }
 void MoveCommand::undo(){
@@ -877,7 +876,7 @@ bool MoveCommand::mergeWith(const QUndoCommand *command){
 
 
 AddCommand::AddCommand(NodeGraph* graph,NodeGui *node,QUndoCommand *parent):QUndoCommand(parent),
-_node(node),_graph(graph),_undoWasCalled(false){
+    _node(node),_graph(graph),_undoWasCalled(false){
     
 }
 void AddCommand::undo(){
@@ -909,7 +908,7 @@ void AddCommand::redo(){
 }
 
 RemoveCommand::RemoveCommand(NodeGraph* graph,NodeGui *node,QUndoCommand *parent):QUndoCommand(parent),
-_node(node),_graph(graph){
+    _node(node),_graph(graph){
     
 }
 void RemoveCommand::undo(){
@@ -938,10 +937,10 @@ void RemoveCommand::redo(){
 
 
 ConnectCommand::ConnectCommand(NodeGraph* graph,Edge* edge,NodeGui *oldSrc,NodeGui* newSrc,QUndoCommand *parent):QUndoCommand(parent),
-_edge(edge),
-_oldSrc(oldSrc),
-_newSrc(newSrc),
-_graph(graph){
+    _edge(edge),
+    _oldSrc(oldSrc),
+    _newSrc(newSrc),
+    _graph(graph){
     
 }
 
@@ -991,13 +990,13 @@ void ConnectCommand::redo(){
         if(_oldSrc){
             if(!_graph->getGui()->getApp()->disconnect(_oldSrc->getNode(), dst->getNode())){
                 cout << "Failed to disconnect (input) " << _oldSrc->getNode()->getName()
-                << " to (output) " << dst->getNode()->getName() << endl;
+                     << " to (output) " << dst->getNode()->getName() << endl;
             }
         }
         if(_newSrc){
             if(!_graph->getGui()->getApp()->connect(_edge->getInputNumber(), _newSrc->getNode(), dst->getNode())){
                 cout << "Failed to connect (input) " << _newSrc->getNode()->getName()
-                << " to (output) " << dst->getNode()->getName() << endl;
+                     << " to (output) " << dst->getNode()->getName() << endl;
             }
         }
     }
@@ -1024,11 +1023,11 @@ void ConnectCommand::redo(){
 
 
 SmartInputDialog::SmartInputDialog(NodeGraph* graph_)
-: QDialog()
-, graph(graph_)
-, layout(NULL)
-, textLabel(NULL)
-, textEdit(NULL)
+    : QDialog()
+    , graph(graph_)
+    , layout(NULL)
+    , textLabel(NULL)
+    , textEdit(NULL)
 {
     setWindowTitle(QString("Node creation tool"));
     setWindowFlags(Qt::Popup);
@@ -1189,7 +1188,7 @@ void NodeGraph::dropEvent(QDropEvent* event){
             //otherwise append everything inside the dir recursively
             SequenceFileDialog::appendFilesFromDirRecursively(&dir,&filesList);
         }
-    
+
     }
     
     QStringList supportedExtensions;
@@ -1210,7 +1209,7 @@ void NodeGraph::dropEvent(QDropEvent* event){
                 boost::shared_ptr<File_Knob> fileKnob = boost::dynamic_pointer_cast<File_Knob>(knobs[j]);
                 assert(fileKnob);
                 fileKnob->setValue(files[i]);
-               // reader->refreshPreviewImage(fileKnob->firstFrame());
+                // reader->refreshPreviewImage(fileKnob->firstFrame());
                 break;
             }
         }

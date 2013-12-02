@@ -444,7 +444,7 @@ void Node::activate()
             cout << "Big issue while activating this node, canceling process." << endl;
             return;
         }
-        assert(found->second.first == it->first);
+        assert(found->second.second == it->first);
         it->second->connectInput(this,found->second.first);
     }
     emit activated();
