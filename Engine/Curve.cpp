@@ -74,6 +74,13 @@ void KeyFrame::setTime(double time){
     _imp->_curve->evaluateCurveChanged(Curve::KEYFRAME_CHANGED,this);
 }
 
+void KeyFrame::setTimeAndValue(double time,const Variant& v){
+    _imp->_time = time;
+    _imp->_value = v;
+    assert(_imp->_curve);
+    _imp->_curve->evaluateCurveChanged(Curve::KEYFRAME_CHANGED,this);
+}
+
 void KeyFrame::setInterpolation(Natron::KeyframeType interp) { _imp->_interpolation = interp; }
 
 Natron::KeyframeType KeyFrame::getInterpolation() const { return _imp->_interpolation; }
@@ -104,9 +111,6 @@ Curve::Curve(AnimatingParam* owner)
 Curve::~Curve(){ clearKeyFrames(); }
 
 void Curve::clearKeyFrames(){
-    for(KeyFrames::const_iterator it = _imp->_keyFrames.begin();it!=_imp->_keyFrames.end();++it){
-        delete (*it);
-    }
     _imp->_keyFrames.clear();
 }
 
@@ -114,7 +118,7 @@ void Curve::clone(const Curve& other){
     clearKeyFrames();
     const KeyFrames& otherKeys = other.getKeyFrames();
     for(KeyFrames::const_iterator it = otherKeys.begin();it!=otherKeys.end();++it){
-        KeyFrame* key = new KeyFrame(0,Variant(0),this);
+        boost::shared_ptr<KeyFrame> key(new KeyFrame(0,Variant(0),this));
         key->clone(*(*it));
         _imp->_keyFrames.push_back(key);
     }
@@ -131,7 +135,7 @@ double Curve::getMaximumTimeCovered() const{
     return _imp->_keyFrames.back()->getTime();
 }
 
-void Curve::addKeyFrame(KeyFrame* cp)
+void Curve::addKeyFrame(boost::shared_ptr<KeyFrame> cp)
 {
     KeyFrames::iterator newKeyIt = _imp->_keyFrames.end();
     if(_imp->_keyFrames.empty()){
@@ -146,7 +150,6 @@ void Curve::addKeyFrame(KeyFrame* cp)
             }else if((*it)->getTime() == cp->getTime()){
                 //if the key already exists at this time, just modify it.
                 (*it)->setValue(cp->getValue());
-                delete cp;
                 return;
             }
         }
@@ -164,13 +167,12 @@ void Curve::addKeyFrame(KeyFrame* cp)
     refreshTangents(KEYFRAME_CHANGED,newKeyIt);
 }
 
-void Curve::removeKeyFrame(KeyFrame* cp){
+void Curve::removeKeyFrame(boost::shared_ptr<KeyFrame> cp){
 
     KeyFrames::iterator it = std::find(_imp->_keyFrames.begin(),_imp->_keyFrames.end(),cp);
-    delete cp;
     KeyFrames::iterator prev = it;
-    KeyFrame* prevCp = NULL;
-    KeyFrame* nextCp = NULL;
+    boost::shared_ptr<KeyFrame> prevCp;
+    boost::shared_ptr<KeyFrame> nextCp;
     if(it != _imp->_keyFrames.begin()){
         --prev;
         prevCp = (*prev);
@@ -329,7 +331,7 @@ Variant Curve::getValueAt(double t) const {
 }
 
 
-void Curve::refreshTangents(CurveChangedReason reason, KeyFrame* k){
+void Curve::refreshTangents(CurveChangedReason reason, boost::shared_ptr<KeyFrame> k){
     KeyFrames::iterator it = std::find(_imp->_keyFrames.begin(),_imp->_keyFrames.end(),k);
     assert(it!=_imp->_keyFrames.end());
     refreshTangents(reason,it);
@@ -339,31 +341,33 @@ bool Curve::isAnimated() const { return _imp->_keyFrames.size() > 1; }
 
 int Curve::keyFramesCount() const { return (int)_imp->_keyFrames.size(); }
 
-const KeyFrame* Curve::getStart() const { assert(!_imp->_keyFrames.empty()); return _imp->_keyFrames.front(); }
-
-const KeyFrame* Curve::getEnd() const { assert(!_imp->_keyFrames.empty()); return _imp->_keyFrames.back(); }
-
 const Curve::KeyFrames& Curve::getKeyFrames() const { return _imp->_keyFrames; }
 
 
 void Curve::evaluateCurveChanged(CurveChangedReason reason,KeyFrame *k){
-    KeyFrames::iterator it = std::find(_imp->_keyFrames.begin(),_imp->_keyFrames.end(),k);
-    assert(it!=_imp->_keyFrames.end());
+    KeyFrames::iterator found = _imp->_keyFrames.end();
+    for(KeyFrames::iterator it =  _imp->_keyFrames.begin();it!=_imp->_keyFrames.end();++it){
+        if((*it).get() == k){
+            found = it;
+            break;
+        }
+    }
+    assert(found!=_imp->_keyFrames.end());
 
 
     if(k->getInterpolation()!= Natron::KEYFRAME_BROKEN && k->getInterpolation() != Natron::KEYFRAME_FREE
             && reason != TANGENT_CHANGED ){
-        refreshTangents(TANGENT_CHANGED,it);
+        refreshTangents(TANGENT_CHANGED,found);
     }
-    KeyFrames::iterator prev = it;
-    if(it != _imp->_keyFrames.begin()){
+    KeyFrames::iterator prev = found;
+    if(found != _imp->_keyFrames.begin()){
         --prev;
         if((*prev)->getInterpolation()!= Natron::KEYFRAME_BROKEN &&
                 (*prev)->getInterpolation()!= Natron::KEYFRAME_FREE){
             refreshTangents(TANGENT_CHANGED,prev);
         }
     }
-    KeyFrames::iterator next = it;
+    KeyFrames::iterator next = found;
     ++next;
     if(next != _imp->_keyFrames.end()){
         if((*next)->getInterpolation()!= Natron::KEYFRAME_BROKEN &&
@@ -434,10 +438,12 @@ void AnimatingParam::setValue(const Variant& v, int dimension, ValueChangedReaso
     evaluateValueChange(dimension,reason);
 }
 
-void AnimatingParam::setValueAtTime(double time, const Variant& v, int dimension){
+boost::shared_ptr<KeyFrame> AnimatingParam::setValueAtTime(double time, const Variant& v, int dimension){
     CurvesMap::iterator foundDimension = _imp->_curves.find(dimension);
     assert(foundDimension != _imp->_curves.end());
-    foundDimension->second->addKeyFrame(new KeyFrame(time,v,foundDimension->second.get()));
+    boost::shared_ptr<KeyFrame> k(new KeyFrame(time,v,foundDimension->second.get()));
+    foundDimension->second->addKeyFrame(k);
+    return k;
 }
 
 void AnimatingParam::clone(const AnimatingParam& other) {

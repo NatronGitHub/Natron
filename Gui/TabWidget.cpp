@@ -37,19 +37,19 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/ViewerInstance.h"
 
 TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent):
-QFrame(parent),
-_gui(gui),
-_header(0),
-_headerLayout(0),
-_tabBar(0),
-_leftCornerButton(0),
-_floatButton(0),
-_closeButton(0),
-_currentWidget(0),
-_decorations(decorations),
-_isFloating(false),
-_drawDropRect(false),
-_fullScreen(false)
+    QFrame(parent),
+    _gui(gui),
+    _header(0),
+    _headerLayout(0),
+    _tabBar(0),
+    _leftCornerButton(0),
+    _floatButton(0),
+    _closeButton(0),
+    _currentWidget(0),
+    _decorations(decorations),
+    _isFloating(false),
+    _drawDropRect(false),
+    _fullScreen(false)
 {
     
     if(decorations!=NONE){
@@ -339,7 +339,7 @@ void TabWidget::insertTab(int index,const QIcon& icon,QWidget* widget){
     }else{
         appendTab(widget);
     }
-     _floatButton->setEnabled(true);
+    _floatButton->setEnabled(true);
     
 }
 
@@ -397,11 +397,20 @@ void TabWidget::makeCurrentTab(int index){
         _mainLayout->removeWidget(_currentWidget);
         _currentWidget->setParent(0);
     }
-    _mainLayout->addWidget(_tabs[index]);
-    _currentWidget = _tabs[index];
+    QWidget* tab = _tabs[index];
+    _mainLayout->addWidget(tab);
+    _currentWidget = tab;
     _currentWidget->setVisible(true);
     _currentWidget->setParent(this);
     _tabBar->setCurrentIndex(index);
+
+    if(tab == _gui->_curveEditor){
+        std::pair<QAction*,QAction*> p = _gui->_curveEditor->getUndoRedoActions();
+        _gui->setUndoRedoActions(p.first,p.second);
+    }else if(tab == _gui->_nodeGraphArea){
+        std::pair<QAction*,QAction*> p = _gui->_nodeGraphArea->getUndoRedoActions();
+        _gui->setUndoRedoActions(p.first,p.second);
+    }
 }
 
 void TabWidget::dragEnterEvent(QDragEnterEvent* event){
@@ -413,7 +422,7 @@ void TabWidget::dragEnterEvent(QDragEnterEvent* event){
         _drawDropRect = true;
         setFrameShape(QFrame::Box);
     }else{
-       
+
     }
     repaint();
 }
@@ -502,7 +511,6 @@ void TabWidget::keyPressEvent ( QKeyEvent * event ){
             _gui->maximize(this);
         }
     }
-    event->ignore();
 }
 void TabWidget::enterEvent(QEvent *event)
 {   QWidget::enterEvent(event);

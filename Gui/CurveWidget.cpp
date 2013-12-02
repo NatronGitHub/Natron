@@ -19,6 +19,7 @@
 
 #include "Gui/ScaleSlider.h"
 #include "Gui/ticks.h"
+#include "Gui/CurveEditor.h"
 
 #define CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE 5 //maximum distance from a curve that accepts a mouse click
 // (in widget pixels)
@@ -142,10 +143,10 @@ void CurveGui::drawCurve(){
     glBegin(GL_POINTS);
     for(Curve::KeyFrames::const_iterator k = keyframes.begin();k!=keyframes.end();++k){
         glColor4f(_color.redF(), _color.greenF(), _color.blueF(), _color.alphaF());
-        KeyFrame* key = (*k);
+        boost::shared_ptr<KeyFrame> key = (*k);
         //if the key is selected change its color to white
-        const std::list< std::pair< CurveGui*,KeyFrame*> >& selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
-        for(std::list< std::pair< CurveGui*,KeyFrame*> >::const_iterator it2 = selectedKeyFrames.begin();
+        const std::list< std::pair< CurveGui*,boost::shared_ptr<KeyFrame> > >& selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
+        for(std::list< std::pair< CurveGui*,boost::shared_ptr<KeyFrame> > >::const_iterator it2 = selectedKeyFrames.begin();
             it2 != selectedKeyFrames.end();++it2){
             if((*it2).second == key){
                 glColor4f(1.f,1.f,1.f,1.f);
@@ -510,7 +511,7 @@ CurveWidget::Curves::const_iterator CurveWidget::isNearbyCurve(const QPoint &pt)
     return _curves.end();
 }
 
-std::pair<CurveGui*,KeyFrame*> CurveWidget::isNearbyKeyFrame(const QPoint& pt) const{
+std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > CurveWidget::isNearbyKeyFrame(const QPoint& pt) const{
     for(Curves::const_iterator it = _curves.begin();it!=_curves.end();++it){
         if((*it)->isVisible()){
             const Curve::KeyFrames& keyFrames = (*it)->getInternalCurve()->getKeyFrames();
@@ -523,7 +524,7 @@ std::pair<CurveGui*,KeyFrame*> CurveWidget::isNearbyKeyFrame(const QPoint& pt) c
             }
         }
     }
-    return std::make_pair((CurveGui*)NULL,(KeyFrame*)NULL);
+    return std::make_pair((CurveGui*)NULL,boost::shared_ptr<KeyFrame>());
 }
 
 void CurveWidget::selectCurve(CurveGui* curve){
@@ -546,7 +547,7 @@ void CurveWidget::mousePressEvent(QMouseEvent *event){
         selectCurve(*foundCurveNearby);
     }
     _selectedKeyFrames.clear();
-    std::pair<CurveGui*,KeyFrame*> selectedKey = isNearbyKeyFrame(event->pos());
+    std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > selectedKey = isNearbyKeyFrame(event->pos());
     if(selectedKey.second){
         _state = DRAGGING_KEYS;
         setCursor(QCursor(Qt::CrossCursor));
@@ -566,7 +567,7 @@ void CurveWidget::mouseReleaseEvent(QMouseEvent *event){
     QGLWidget::mouseReleaseEvent(event);
 }
 void CurveWidget::mouseMoveEvent(QMouseEvent *event){
-    std::pair<CurveGui*,KeyFrame*> selectedKey = isNearbyKeyFrame(event->pos());
+    std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > selectedKey = isNearbyKeyFrame(event->pos());
     if(selectedKey.second){
         setCursor(QCursor(Qt::CrossCursor));
     }else{
@@ -606,9 +607,21 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
         translation.rx() *= _mouseDragOrientation.x();
         translation.ry() *= _mouseDragOrientation.y();
         
+
+        CurveEditor* editor = NULL;
+        if(parentWidget()){
+            if(parentWidget()->parentWidget()){
+                if(parentWidget()->parentWidget()->objectName() == kCurveEditorObjectName){
+                    editor = dynamic_cast<CurveEditor*>(parentWidget()->parentWidget());
+
+                }
+            }
+        }
+
         for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
             double newTime = newClick_opengl.x();//(*it)->getTime() + translation.x();
             double diffTime = (newTime - (*it).second->getTime()) * _mouseDragOrientation.x() ;
+            double newX,newY;
             if(diffTime != 0){
                 //find out if the new value will be in the interval [previousKey,nextKey]
                 double newValue = (*it).second->getTime() + std::ceil(diffTime);
@@ -626,20 +639,22 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
                 
                 if(((prevKey != keys.end() && newValue > (*prevKey)->getTime()) || prevKey == keys.end()) &&
                         ((nextKey != keys.end() && newValue < (*nextKey)->getTime()) || nextKey == keys.end())){
-                    (*it).second->setTime(newValue);
+                    newX = newValue;
                 }else if(prevKey != keys.end() && newValue <= (*prevKey)->getTime()){
-                    (*it).second->setTime((*prevKey)->getTime());
+                    newX = (*prevKey)->getTime();
                 }else if(nextKey != keys.end() && newValue >= (*nextKey)->getTime()){
-                    (*it).second->setTime((*nextKey)->getTime());
+                    newX = (*nextKey)->getTime();
                 }
 
-//                if(((prevKey != keys.end() && newValue > (*prevKey)->getTime()) || prevKey == keys.end())
-//                        && ((nextKey != keys.end() && newValue < (*nextKey)->getTime())|| nextKey == keys.end())){
-//                    (*it).second->setTime(newValue);
-//                }
-                
+            }else{
+                newX = (*it).second->getTime();
             }
-            (*it).second->setValue(Variant((*it).second->getValue().toDouble() + translation.y()));
+            newY = (*it).second->getValue().toDouble() + translation.y();
+            if(!editor){
+                setKeyPos((*it).second,newX,Variant(newY));
+            }else{
+                editor->setKeyFrame(it->first,it->second,newX,Variant(newY));
+            }
         }
     }
     updateGL();
@@ -695,20 +710,58 @@ QSize CurveWidget::sizeHint() const{
     return QSize(1000,1000);
 }
 
+void CurveWidget::addKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key){
+    curve->getInternalCurve()->addKeyFrame(key);
+    if(curve->getInternalCurve()->isAnimated()){
+        curve->setVisibleAndRefresh(true);
+    }
+}
+
+boost::shared_ptr<KeyFrame> CurveWidget::addKeyFrame(CurveGui* curve,const Variant& y, int x){
+    boost::shared_ptr<KeyFrame> key(new KeyFrame(x,y,curve->getInternalCurve().get()));
+    addKeyFrame(curve,key);
+    return key;
+}
+
+void CurveWidget::removeKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key){
+    curve->getInternalCurve()->removeKeyFrame(key);
+    if(!curve->getInternalCurve()->isAnimated()){
+        curve->setVisibleAndRefresh(false);
+    }
+}
 
 void CurveWidget::keyPressEvent(QKeyEvent *event){
     if(event->key() == Qt::Key_Backspace){
-        for(SelectedKeys::const_iterator it = _selectedKeyFrames.begin();it!=_selectedKeyFrames.end();++it){
-            it->first->getInternalCurve()->removeKeyFrame(it->second);
-            if(!it->first->getInternalCurve()->isAnimated()){
-                it->first->setVisibleAndRefresh(false);
+        CurveEditor* editor = NULL;
+        if(parentWidget()){
+            if(parentWidget()->parentWidget()){
+                if(parentWidget()->parentWidget()->objectName() == kCurveEditorObjectName){
+                    editor = dynamic_cast<CurveEditor*>(parentWidget()->parentWidget());
+
+                }
             }
         }
-        _selectedKeyFrames.clear();
+
+        while(!_selectedKeyFrames.empty()){
+            const std::pair<CurveGui*,boost::shared_ptr<KeyFrame> >& it = _selectedKeyFrames.back();
+            if(editor){
+                //if the parent is the editor, it will call removeKeyFrame but also add it to the undo stack
+                editor->removeKeyFrame(it.first,it.second);
+            }else{
+                removeKeyFrame(it.first,it.second);
+            }
+            _selectedKeyFrames.pop_back();
+        }
     }
+
+
 }
 
 
 void CurveWidget::enterEvent(QEvent */*event*/){
     setFocus();
+}
+
+void CurveWidget::setKeyPos(boost::shared_ptr<KeyFrame> key, double x, const Variant& y){
+    key->setTimeAndValue(x,y);
 }

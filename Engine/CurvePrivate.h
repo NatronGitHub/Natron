@@ -68,7 +68,7 @@ class KeyFrame;
 class AnimatingParam;
 struct CurvePrivate{
 
-    std::list< KeyFrame* >  _keyFrames;
+    std::list< boost::shared_ptr<KeyFrame> >  _keyFrames;
     AnimatingParam* _owner;
 
     CurvePrivate()

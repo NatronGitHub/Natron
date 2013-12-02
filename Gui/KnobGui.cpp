@@ -81,7 +81,6 @@ KnobGui::KnobGui(Knob* knob,DockablePanel* container):
     QObject::connect(knob,SIGNAL(visible(bool)),this,SLOT(setVisible(bool)));
     QObject::connect(knob,SIGNAL(enabled(bool)),this,SLOT(setEnabled(bool)));
     QObject::connect(knob,SIGNAL(deleted()),this,SLOT(deleteKnob()));
-    QObject::connect(knob,SIGNAL(restorationComplete()),this,SIGNAL(keyAdded()));
     QObject::connect(this, SIGNAL(knobUndoneChange()), knob, SLOT(onKnobUndoneChange()));
     QObject::connect(this, SIGNAL(knobRedoneChange()), knob, SLOT(onKnobRedoneChange()));
 }
@@ -169,12 +168,10 @@ void KnobGui::onSetKeyActionTriggered(){
     
     //get the current time on the global timeline
     SequenceTime time = _knob->getHolder()->getApp()->getTimeLine()->currentFrame();
-    const std::map<int,Variant>& dimValueMap = _knob->getValueForEachDimension();
-    for(std::map<int,Variant>::const_iterator it = dimValueMap.begin();it!=dimValueMap.end();++it){
-        _knob->setValueAtTime(time,it->second,it->first);
-        emit keyAdded();
+    for(int i = 0; i < _knob->getDimension();++i){
+        _knob->getHolder()->getApp()->getGui()->_curveEditor->addKeyFrame(this,time,i);
     }
-    
+
 }
 
 void KnobGui::hide(){

@@ -11,13 +11,18 @@
 
 #include "CurveEditor.h"
 
+#include <utility>
+
 #include <QHBoxLayout>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QSplitter>
 #include <QHeaderView>
+#include <QtGui/QUndoStack>
+#include <QAction>
 
 #include "Engine/Knob.h"
+#include "Engine/Curve.h"
 #include "Engine/Node.h"
 
 #include "Gui/CurveWidget.h"
@@ -36,7 +41,14 @@ CurveEditor::CurveEditor(QWidget *parent)
     , _splitter(NULL)
     , _curveWidget(NULL)
     , _tree(NULL)
+    , _undoStack(new QUndoStack())
 {
+
+    _undoAction = _undoStack->createUndoAction(this,tr("&Undo"));
+    _undoAction->setShortcuts(QKeySequence::Undo);
+    _redoAction = _undoStack->createRedoAction(this,tr("&Redo"));
+    _redoAction->setShortcuts(QKeySequence::Redo);
+
     _mainLayout = new QHBoxLayout(this);
     setLayout(_mainLayout);
     _mainLayout->setContentsMargins(0,0,0,0);
@@ -61,6 +73,19 @@ CurveEditor::CurveEditor(QWidget *parent)
 
 }
 
+CurveEditor::~CurveEditor(){
+
+    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
+        it!=_nodes.end();++it){
+        delete (*it);
+    }
+    _nodes.clear();
+}
+
+std::pair<QAction*,QAction*> CurveEditor::getUndoRedoActions() const{
+    return std::make_pair(_undoAction,_redoAction);
+}
+
 
 void CurveEditor::addNode(NodeGui* node){
 
@@ -75,7 +100,7 @@ void CurveEditor::addNode(NodeGui* node){
             break;
         }
     }
-    if(!hasKnobsAnimating){ 
+    if(!hasKnobsAnimating){
         return;
     }
 
@@ -140,8 +165,8 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
                 boost::shared_ptr<QTreeWidgetItem> dimItem(new QTreeWidgetItem(knobItem.get()));
                 dimItem->setText(0,k->getDimensionName(j).c_str());
                 CurveGui* dimCurve = curveWidget->createCurve(k->getCurve(j),k->getDimensionName(j).c_str());
-                NodeCurveEditorElement* elem = new NodeCurveEditorElement(tree,curveWidget,dimItem,dimCurve);
-                QObject::connect(kgui,SIGNAL(keyAdded()),elem,SLOT(checkVisibleState()));
+                NodeCurveEditorElement* elem = new NodeCurveEditorElement(tree,curveWidget,kgui,j,dimItem,dimCurve);
+                QObject::connect(k,SIGNAL(restorationComplete()),elem,SLOT(checkVisibleState()));
                 _nodeElements.push_back(elem);
                 if(!dimCurve->getInternalCurve()->isAnimated()){
                     dimItem->setHidden(true);
@@ -154,12 +179,13 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
         if(hideKnob){
             knobItem->setHidden(true);
         }
-        NodeCurveEditorElement* elem = new NodeCurveEditorElement(tree,curveWidget,knobItem,knobCurve);
-        QObject::connect(kgui,SIGNAL(keyAdded()),elem,SLOT(checkVisibleState()));
+        NodeCurveEditorElement* elem = new NodeCurveEditorElement(tree,curveWidget,kgui,0,knobItem,knobCurve);
+        QObject::connect(k,SIGNAL(restorationComplete()),elem,SLOT(checkVisibleState()));
         _nodeElements.push_back(elem);
     }
     if(hasAtLeast1KnobWithACurve){
-        NodeCurveEditorElement* elem = new NodeCurveEditorElement(tree,curveWidget,nameItem,(CurveGui*)NULL);
+        NodeCurveEditorElement* elem = new NodeCurveEditorElement(tree,curveWidget,(KnobGui*)NULL,-1,
+                                                                  nameItem,(CurveGui*)NULL);
         _nodeElements.push_back(elem);
         if(!hasAtLeast1KnobWithACurveShown){
             nameItem->setHidden(true);
@@ -214,17 +240,23 @@ void NodeCurveEditorElement::checkVisibleState(){
 }
 
 
-NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree, CurveWidget* curveWidget, boost::shared_ptr<QTreeWidgetItem> item, CurveGui* curve):
+NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree, CurveWidget* curveWidget,
+                                               KnobGui *knob, int dimension, boost::shared_ptr<QTreeWidgetItem> item, CurveGui* curve):
     _treeItem(item)
   ,_curve(curve)
   ,_curveDisplayed(false)
   ,_curveWidget(curveWidget)
   ,_treeWidget(tree)
+  ,_knob(knob)
+  ,_dimension(dimension)
 {
+
     if(curve){
         if(curve->getInternalCurve()->keyFramesCount() > 1){
             _curveDisplayed = true;
         }
+    }else{
+        _dimension = -1; //set dimension to be meaningless
     }
 }
 
@@ -243,7 +275,7 @@ void CurveEditor::centerOn(const std::vector<boost::shared_ptr<Curve> >& curves)
             CurveGui* curve = elems[i]->getCurve();
             if (curve) {
                 std::vector<boost::shared_ptr<Curve> >::const_iterator found =
-                std::find(curves.begin(), curves.end(), curve->getInternalCurve());
+                        std::find(curves.begin(), curves.end(), curve->getInternalCurve());
                 if(found != curves.end()){
                     curvesGuis.push_back(curve);
                     elems[i]->getTreeItem()->setSelected(true);
@@ -268,15 +300,15 @@ void CurveEditor::recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *c
     cur->setSelected(true);
     for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
         it!=_nodes.end();++it){
-        const NodeCurveEditorContext::Elements& elems = (*it)->getElements();
-        for (U32 i = 0; i < elems.size(); ++i) {
-            if(elems[i]->getTreeItem() && cur == elems[i]->getTreeItem().get()){
-                CurveGui* curve = elems[i]->getCurve();
-                if (curve && curve->getInternalCurve()->isAnimated()) {
-                    curves->push_back(curve);
-                }
+        NodeCurveEditorElement* elem = (*it)->findElement(cur);
+        if(elem){
+            CurveGui* curve = elem->getCurve();
+            if (curve && curve->getInternalCurve()->isAnimated()) {
+                curves->push_back(curve);
             }
+            break;
         }
+
     }
     for (int j = 0; j < cur->childCount(); ++j) {
         recursiveSelect(cur->child(j),curves);
@@ -300,4 +332,222 @@ void CurveEditor::onCurrentItemChanged(QTreeWidgetItem* current,QTreeWidgetItem*
     _curveWidget->centerOn(curves);
     _curveWidget->showCurvesAndHideOthers(curves);
     
+}
+
+NodeCurveEditorElement* NodeCurveEditorContext::findElement(CurveGui* curve){
+    for(U32 i = 0; i < _nodeElements.size();++i){
+        if(_nodeElements[i]->getCurve() == curve){
+            return _nodeElements[i];
+        }
+    }
+    return NULL;
+}
+
+NodeCurveEditorElement* NodeCurveEditorContext::findElement(KnobGui* knob,int dimension){
+    for(U32 i = 0; i < _nodeElements.size();++i){
+        if(_nodeElements[i]->getKnob() == knob && _nodeElements[i]->getDimension() == dimension){
+            return _nodeElements[i];
+        }
+    }
+    return NULL;
+}
+
+NodeCurveEditorElement* NodeCurveEditorContext::findElement(QTreeWidgetItem* item){
+    for(U32 i = 0; i < _nodeElements.size();++i){
+        if(_nodeElements[i]->getTreeItem().get() == item){
+            return _nodeElements[i];
+        }
+    }
+    return NULL;
+}
+
+
+
+class AddKeyCommand : public QUndoCommand{
+public:
+
+    AddKeyCommand(CurveWidget *editor,NodeCurveEditorElement *curveEditorElement,
+                  KnobGui *knob, SequenceTime time, int dimension, QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+
+private:
+
+    KnobGui* _knob;
+    NodeCurveEditorElement* _element;
+    int _dimension;
+    SequenceTime _time;
+    boost::shared_ptr<KeyFrame> _key;
+    CurveWidget *_editor;
+};
+
+class RemoveKeyCommand : public QUndoCommand{
+public:
+
+    RemoveKeyCommand(CurveWidget* editor,NodeCurveEditorElement* curveEditorElement
+                     ,boost::shared_ptr<KeyFrame> key,QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+
+private:
+
+    NodeCurveEditorElement* _element;
+    boost::shared_ptr<KeyFrame> _key;
+    CurveWidget* _curveWidget;
+};
+
+class MoveKeyCommand : public QUndoCommand{
+
+public:
+
+    MoveKeyCommand(CurveWidget* editor,NodeCurveEditorElement* curveEditorElement
+                   ,boost::shared_ptr<KeyFrame> key,double oldx,const Variant& oldy,
+                   double newx,const Variant& newy,
+                   QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+    virtual int id() const { return kCurveEditorMoveKeyCommandCompressionID; }
+    virtual bool mergeWith(const QUndoCommand * command);
+
+private:
+
+    double _newX,_oldX;
+    Variant _newY,_oldY;
+    NodeCurveEditorElement* _element;
+    boost::shared_ptr<KeyFrame> _key;
+    CurveWidget* _curveWidget;
+};
+
+void CurveEditor::addKeyFrame(KnobGui* knob,SequenceTime time,int dimension){
+    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
+        it!=_nodes.end();++it){
+        NodeCurveEditorElement* elem = (*it)->findElement(knob,dimension);
+        if(elem){
+            _undoStack->push(new AddKeyCommand(_curveWidget,elem,knob,time,dimension));
+            return;
+        }
+    }
+}
+
+AddKeyCommand::AddKeyCommand(CurveWidget *editor,  NodeCurveEditorElement *curveEditorElement, KnobGui *knob, SequenceTime time,
+                             int dimension, QUndoCommand *parent)
+    : QUndoCommand(parent)
+    , _knob(knob)
+    , _element(curveEditorElement)
+    , _dimension(dimension)
+    , _time(time)
+    , _key()
+    , _editor(editor)
+{
+
+}
+
+void AddKeyCommand::undo(){
+    CurveGui* curve = _element->getCurve();
+    assert(curve);
+    assert(_key);
+    _editor->removeKeyFrame(curve,_key);
+    _element->checkVisibleState();
+    setText(QObject::tr("Add keyframe to %1.%2")
+            .arg(_knob->getKnob()->getDescription().c_str()).arg(_knob->getKnob()->getDimensionName(_dimension).c_str()));
+}
+void AddKeyCommand::redo(){
+    CurveGui* curve = _element->getCurve();
+
+    if(!_key){
+        assert(curve);
+        _key = _editor->addKeyFrame(curve,_knob->getKnob()->getValue(_dimension),_time);
+    }else{
+        _editor->addKeyFrame(curve,_key);
+    }
+    _element->checkVisibleState();
+    setText(QObject::tr("Add keyframe to %1.%2")
+            .arg(_knob->getKnob()->getDescription().c_str()).arg(_knob->getKnob()->getDimensionName(_dimension).c_str()));
+
+
+
+}
+
+void CurveEditor::removeKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key){
+    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
+        it!=_nodes.end();++it){
+        NodeCurveEditorElement* elem = (*it)->findElement(curve);
+        if(elem){
+            _undoStack->push(new RemoveKeyCommand(_curveWidget,elem,key));
+            return;
+        }
+    }
+}
+
+RemoveKeyCommand::RemoveKeyCommand(CurveWidget *editor, NodeCurveEditorElement *curveEditorElement, boost::shared_ptr<KeyFrame> key, QUndoCommand *parent)
+    : QUndoCommand(parent)
+    , _element(curveEditorElement)
+    , _key(key)
+    , _curveWidget(editor)
+{
+
+}
+
+void RemoveKeyCommand::undo(){
+    assert(_key);
+    _curveWidget->addKeyFrame(_element->getCurve(),_key);
+    _element->checkVisibleState();
+    setText(QObject::tr("Remove keyframe from %1.%2")
+            .arg(_element->getKnob()->getKnob()->getDescription().c_str())
+            .arg(_element->getKnob()->getKnob()->getDimensionName(_element->getDimension()).c_str()));
+}
+void RemoveKeyCommand::redo(){
+    _curveWidget->removeKeyFrame(_element->getCurve(),_key);
+    _element->checkVisibleState();
+    setText(QObject::tr("Remove keyframe from %1.%2")
+            .arg(_element->getKnob()->getKnob()->getDescription().c_str())
+            .arg(_element->getKnob()->getKnob()->getDimensionName(_element->getDimension()).c_str()));
+
+
+
+}
+
+void CurveEditor::setKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key,double x,const Variant& y){
+    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
+        it!=_nodes.end();++it){
+        NodeCurveEditorElement* elem = (*it)->findElement(curve);
+        if(elem){
+            _undoStack->push(new MoveKeyCommand(_curveWidget,elem,key,key->getTime(),key->getValue(), x,y));
+            return;
+        }
+    }
+}
+
+MoveKeyCommand::MoveKeyCommand(CurveWidget* editor, NodeCurveEditorElement* curveEditorElement
+                               , boost::shared_ptr<KeyFrame> key, double oldx, const Variant &oldy, double newx, const Variant &newy, QUndoCommand *parent)
+    : QUndoCommand(parent)
+    , _newX(newx)
+    , _oldX(oldx)
+    , _newY(newy)
+    , _oldY(oldy)
+    , _element(curveEditorElement)
+    , _key(key)
+    , _curveWidget(editor)
+{
+
+}
+void MoveKeyCommand::undo(){
+    assert(_key);
+    _curveWidget->setKeyPos(_key,_oldX,_oldY);
+    setText(QObject::tr("Move keyframe from %1.%2"));
+}
+void MoveKeyCommand::redo(){
+    assert(_key);
+    _curveWidget->setKeyPos(_key,_newX,_newY);
+    setText(QObject::tr("Remove keyframe from %1.%2"));
+}
+bool MoveKeyCommand::mergeWith(const QUndoCommand * command){
+    const MoveKeyCommand* cmd = dynamic_cast<const MoveKeyCommand*>(command);
+    if(cmd && cmd->id() == id()){
+        _newX = cmd->_newX;
+        _newY = cmd->_newY;
+         return true;
+    }else{
+        return false;
+    }
 }

@@ -71,58 +71,60 @@ static QIcon get_icon(const QString &name)
 }
 
 Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
-_lastSelectedViewer(NULL),
-_appInstance(app),
-_uiUsingMainThreadCond(),
-_uiUsingMainThread(false),
-_uiUsingMainThreadMutex(),
-_lastQuestionDialogAnswer(Natron::No),
-actionNew_project(0),
-actionOpen_project(0),
-actionSave_project(0),
-actionSaveAs_project(0),
-actionPreferences(0),
-actionExit(0),
-actionProject_settings(0),
-actionFullScreen(0),
-actionClearDiskCache(0),
-actionClearPlayBackCache(0),
-actionClearNodeCache(0),
-actionConnectInput1(0),
-actionConnectInput2(0),
-actionConnectInput3(0),
-actionConnectInput4(0),
-actionConnectInput5(0),
-actionConnectInput6(0),
-actionConnectInput7(0),
-actionConnectInput8(0),
-actionConnectInput9(0),
-actionConnectInput10(0),
-_centralWidget(0),
-_mainLayout(0),
-_viewersPane(0),
-_nextViewerTabPlace(0),
-_workshopPane(0),
-_viewerWorkshopSplitter(0),
-_propertiesPane(0),
-_middleRightSplitter(0),
-_leftRightSplitter(0),
-_graphScene(0),
-_nodeGraphArea(0),
-_curveEditor(0),
-_toolBox(0),
-_propertiesScrollArea(0),
-_propertiesContainer(0),
-_layoutPropertiesBin(0),
-menubar(0),
-menuFile(0),
-menuEdit(0),
-menuDisplay(0),
-menuOptions(0),
-viewersMenu(0),
-viewerInputsMenu(0),
-cacheMenu(0),
-_projectGui(0)
+    _lastSelectedViewer(NULL),
+    _appInstance(app),
+    _uiUsingMainThreadCond(),
+    _uiUsingMainThread(false),
+    _uiUsingMainThreadMutex(),
+    _lastQuestionDialogAnswer(Natron::No),
+    _currentUndoAction(0),
+    _currentRedoAction(0),
+    actionNew_project(0),
+    actionOpen_project(0),
+    actionSave_project(0),
+    actionSaveAs_project(0),
+    actionPreferences(0),
+    actionExit(0),
+    actionProject_settings(0),
+    actionFullScreen(0),
+    actionClearDiskCache(0),
+    actionClearPlayBackCache(0),
+    actionClearNodeCache(0),
+    actionConnectInput1(0),
+    actionConnectInput2(0),
+    actionConnectInput3(0),
+    actionConnectInput4(0),
+    actionConnectInput5(0),
+    actionConnectInput6(0),
+    actionConnectInput7(0),
+    actionConnectInput8(0),
+    actionConnectInput9(0),
+    actionConnectInput10(0),
+    _centralWidget(0),
+    _mainLayout(0),
+    _viewersPane(0),
+    _nextViewerTabPlace(0),
+    _workshopPane(0),
+    _viewerWorkshopSplitter(0),
+    _propertiesPane(0),
+    _middleRightSplitter(0),
+    _leftRightSplitter(0),
+    _graphScene(0),
+    _nodeGraphArea(0),
+    _curveEditor(0),
+    _toolBox(0),
+    _propertiesScrollArea(0),
+    _propertiesContainer(0),
+    _layoutPropertiesBin(0),
+    menubar(0),
+    menuFile(0),
+    menuEdit(0),
+    menuDisplay(0),
+    menuOptions(0),
+    viewersMenu(0),
+    viewerInputsMenu(0),
+    cacheMenu(0),
+    _projectGui(0)
 {
     QObject::connect(this,SIGNAL(doDialog(int,QString,QString,Natron::StandardButtons,int)),this,
                      SLOT(onDoDialog(int,QString,QString,Natron::StandardButtons,int)));
@@ -184,9 +186,9 @@ NodeGui* Gui::createNodeGUI( Node* node){
     return nodeGui;
 }
 
- void Gui::addNodeGuiToCurveEditor(NodeGui* node){
-      _curveEditor->addNode(node);
- }
+void Gui::addNodeGuiToCurveEditor(NodeGui* node){
+    _curveEditor->addNode(node);
+}
 
 void Gui::createViewerGui(Node* viewer){
     TabWidget* where = _nextViewerTabPlace;
@@ -238,9 +240,9 @@ bool Gui::eventFilter(QObject *target, QEvent *event) {
 void Gui::retranslateUi(QMainWindow *MainWindow)
 {
     Q_UNUSED(MainWindow);
-	setWindowTitle(QCoreApplication::applicationName());
+    setWindowTitle(QCoreApplication::applicationName());
     assert(actionNew_project);
-	actionNew_project->setText(tr("&New Project"));
+    actionNew_project->setText(tr("&New Project"));
     assert(actionOpen_project);
     actionOpen_project->setText(tr("&Open Project..."));
     assert(actionSave_project);
@@ -284,9 +286,9 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
     actionConnectInput10 ->setText(tr("Connect to input 10"));
     
     
-	//WorkShop->setTabText(WorkShop->indexOf(CurveEditor), tr("Motion Editor"));
+    //WorkShop->setTabText(WorkShop->indexOf(CurveEditor), tr("Motion Editor"));
     
-	//WorkShop->setTabText(WorkShop->indexOf(GraphEditor), tr("Graph Editor"));
+    //WorkShop->setTabText(WorkShop->indexOf(GraphEditor), tr("Graph Editor"));
     assert(menuFile);
     menuFile->setTitle(tr("File"));
     assert(menuEdit);
@@ -318,116 +320,116 @@ void Gui::setupUi()
     loadStyleSheet();
     
     /*TOOL BAR menus*/
-	//======================
-	menubar = new QMenuBar(this);
-	//menubar->setGeometry(QRect(0, 0, 1159, 21)); // why set the geometry of a menubar?
-	menuFile = new QMenu(menubar);
-	menuEdit = new QMenu(menubar);
-	menuDisplay = new QMenu(menubar);
-	menuOptions = new QMenu(menubar);
-	viewersMenu= new QMenu(menuDisplay);
+    //======================
+    menubar = new QMenuBar(this);
+    //menubar->setGeometry(QRect(0, 0, 1159, 21)); // why set the geometry of a menubar?
+    menuFile = new QMenu(menubar);
+    menuEdit = new QMenu(menubar);
+    menuDisplay = new QMenu(menubar);
+    menuOptions = new QMenu(menubar);
+    viewersMenu= new QMenu(menuDisplay);
     viewerInputsMenu = new QMenu(viewersMenu);
     viewersViewMenu = new QMenu(viewersMenu);
-	cacheMenu= new QMenu(menubar);
+    cacheMenu= new QMenu(menubar);
     
-	setMenuBar(menubar);
-	
-	actionNew_project = new QAction(this);
-	actionNew_project->setObjectName(QString::fromUtf8("actionNew_project"));
+    setMenuBar(menubar);
+
+    actionNew_project = new QAction(this);
+    actionNew_project->setObjectName(QString::fromUtf8("actionNew_project"));
     actionNew_project->setShortcut(QKeySequence::New);
     actionNew_project->setIcon(get_icon("document-new"));
     QObject::connect(actionNew_project, SIGNAL(triggered()), this, SLOT(newProject()));
-	actionOpen_project = new QAction(this);
-	actionOpen_project->setObjectName(QString::fromUtf8("actionOpen_project"));
+    actionOpen_project = new QAction(this);
+    actionOpen_project->setObjectName(QString::fromUtf8("actionOpen_project"));
     actionOpen_project->setShortcut(QKeySequence::Open);
     actionOpen_project->setIcon(get_icon("document-open"));
     QObject::connect(actionOpen_project, SIGNAL(triggered()), this, SLOT(openProject()));
-	actionSave_project = new QAction(this);
-	actionSave_project->setObjectName(QString::fromUtf8("actionSave_project"));
+    actionSave_project = new QAction(this);
+    actionSave_project->setObjectName(QString::fromUtf8("actionSave_project"));
     actionSave_project->setShortcut(QKeySequence::Save);
     actionSave_project->setIcon(get_icon("document-save"));
     QObject::connect(actionSave_project, SIGNAL(triggered()), this, SLOT(saveProject()));
     actionSaveAs_project = new QAction(this);
-	actionSaveAs_project->setObjectName(QString::fromUtf8("actionSaveAs_project"));
+    actionSaveAs_project->setObjectName(QString::fromUtf8("actionSaveAs_project"));
     actionSaveAs_project->setShortcut(QKeySequence::SaveAs);
     actionSaveAs_project->setIcon(get_icon("document-save-as"));
     QObject::connect(actionSaveAs_project, SIGNAL(triggered()), this, SLOT(saveProjectAs()));
-	actionPreferences = new QAction(this);
-	actionPreferences->setObjectName(QString::fromUtf8("actionPreferences"));
-	actionPreferences->setMenuRole(QAction::PreferencesRole);
-	actionExit = new QAction(this);
-	actionExit->setObjectName(QString::fromUtf8("actionExit"));
-	actionExit->setMenuRole(QAction::QuitRole);
+    actionPreferences = new QAction(this);
+    actionPreferences->setObjectName(QString::fromUtf8("actionPreferences"));
+    actionPreferences->setMenuRole(QAction::PreferencesRole);
+    actionExit = new QAction(this);
+    actionExit->setObjectName(QString::fromUtf8("actionExit"));
+    actionExit->setMenuRole(QAction::QuitRole);
     actionExit->setIcon(get_icon("application-exit"));
-	actionProject_settings = new QAction(this);
-	actionProject_settings->setObjectName(QString::fromUtf8("actionProject_settings"));
+    actionProject_settings = new QAction(this);
+    actionProject_settings->setObjectName(QString::fromUtf8("actionProject_settings"));
     actionProject_settings->setIcon(get_icon("document-properties"));
     actionProject_settings->setShortcut(QKeySequence(Qt::Key_S));
-	actionFullScreen = new QAction(this);
-	actionFullScreen->setObjectName(QString::fromUtf8("actionFullScreen"));
-	actionFullScreen->setShortcut(QKeySequence(Qt::CTRL+Qt::META+Qt::Key_F));
+    actionFullScreen = new QAction(this);
+    actionFullScreen->setObjectName(QString::fromUtf8("actionFullScreen"));
+    actionFullScreen->setShortcut(QKeySequence(Qt::CTRL+Qt::META+Qt::Key_F));
     actionFullScreen->setIcon(get_icon("view-fullscreen"));
-	actionClearDiskCache = new QAction(this);
-	actionClearDiskCache->setObjectName(QString::fromUtf8("actionClearDiskCache"));
-	actionClearDiskCache->setCheckable(false);
-	actionClearDiskCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_K));
-	actionClearPlayBackCache = new QAction(this);
-	actionClearPlayBackCache->setObjectName(QString::fromUtf8("actionClearPlayBackCache"));
-	actionClearPlayBackCache->setCheckable(false);
-	actionClearPlayBackCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_P));
-	actionClearNodeCache = new QAction(this);
-	actionClearNodeCache->setObjectName(QString::fromUtf8("actionClearNodeCache"));
-	actionClearNodeCache->setCheckable(false);
-	actionClearNodeCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_B));
+    actionClearDiskCache = new QAction(this);
+    actionClearDiskCache->setObjectName(QString::fromUtf8("actionClearDiskCache"));
+    actionClearDiskCache->setCheckable(false);
+    actionClearDiskCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_K));
+    actionClearPlayBackCache = new QAction(this);
+    actionClearPlayBackCache->setObjectName(QString::fromUtf8("actionClearPlayBackCache"));
+    actionClearPlayBackCache->setCheckable(false);
+    actionClearPlayBackCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_P));
+    actionClearNodeCache = new QAction(this);
+    actionClearNodeCache->setObjectName(QString::fromUtf8("actionClearNodeCache"));
+    actionClearNodeCache->setCheckable(false);
+    actionClearNodeCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_B));
     
     actionConnectInput1 = new QAction(this);
-	actionConnectInput1->setCheckable(false);
-	actionConnectInput1->setShortcut(QKeySequence(Qt::Key_1));
+    actionConnectInput1->setCheckable(false);
+    actionConnectInput1->setShortcut(QKeySequence(Qt::Key_1));
     
     actionConnectInput2 = new QAction(this);
-	actionConnectInput2->setCheckable(false);
-	actionConnectInput2->setShortcut(QKeySequence(Qt::Key_2));
+    actionConnectInput2->setCheckable(false);
+    actionConnectInput2->setShortcut(QKeySequence(Qt::Key_2));
     
     actionConnectInput3 = new QAction(this);
-	actionConnectInput3->setCheckable(false);
-	actionConnectInput3->setShortcut(QKeySequence(Qt::Key_3));
+    actionConnectInput3->setCheckable(false);
+    actionConnectInput3->setShortcut(QKeySequence(Qt::Key_3));
     
     actionConnectInput4 = new QAction(this);
-	actionConnectInput4->setCheckable(false);
-	actionConnectInput4->setShortcut(QKeySequence(Qt::Key_4));
+    actionConnectInput4->setCheckable(false);
+    actionConnectInput4->setShortcut(QKeySequence(Qt::Key_4));
     
     actionConnectInput5 = new QAction(this);
-	actionConnectInput5->setCheckable(false);
-	actionConnectInput5->setShortcut(QKeySequence(Qt::Key_5));
+    actionConnectInput5->setCheckable(false);
+    actionConnectInput5->setShortcut(QKeySequence(Qt::Key_5));
     
     actionConnectInput6 = new QAction(this);
-	actionConnectInput6->setCheckable(false);
-	actionConnectInput6->setShortcut(QKeySequence(Qt::Key_6));
+    actionConnectInput6->setCheckable(false);
+    actionConnectInput6->setShortcut(QKeySequence(Qt::Key_6));
     
     actionConnectInput7 = new QAction(this);
-	actionConnectInput7->setCheckable(false);
-	actionConnectInput7->setShortcut(QKeySequence(Qt::Key_7));
+    actionConnectInput7->setCheckable(false);
+    actionConnectInput7->setShortcut(QKeySequence(Qt::Key_7));
     
     actionConnectInput8 = new QAction(this);
-	actionConnectInput8->setCheckable(false);
-	actionConnectInput8->setShortcut(QKeySequence(Qt::Key_8));
+    actionConnectInput8->setCheckable(false);
+    actionConnectInput8->setShortcut(QKeySequence(Qt::Key_8));
     
     actionConnectInput9 = new QAction(this);
-	actionConnectInput9->setCheckable(false);
-	actionConnectInput9->setShortcut(QKeySequence(Qt::Key_9));
+    actionConnectInput9->setCheckable(false);
+    actionConnectInput9->setShortcut(QKeySequence(Qt::Key_9));
     
     actionConnectInput10 = new QAction(this);
-	actionConnectInput10->setCheckable(false);
-	actionConnectInput10->setShortcut(QKeySequence(Qt::Key_0));
-	
+    actionConnectInput10->setCheckable(false);
+    actionConnectInput10->setShortcut(QKeySequence(Qt::Key_0));
+
     
-	/*CENTRAL AREA*/
-	//======================
-	_centralWidget = new QWidget(this);
+    /*CENTRAL AREA*/
+    //======================
+    _centralWidget = new QWidget(this);
     setCentralWidget(_centralWidget);
-	_mainLayout = new QHBoxLayout(_centralWidget);
+    _mainLayout = new QHBoxLayout(_centralWidget);
     _mainLayout->setContentsMargins(0, 0, 0, 0);
-	_centralWidget->setLayout(_mainLayout);
+    _centralWidget->setLayout(_mainLayout);
     
     _leftRightSplitter = new QSplitter(_centralWidget);
     _leftRightSplitter->setChildrenCollapsible(false);
@@ -441,9 +443,9 @@ void Gui::setupUi()
     
     _leftRightSplitter->addWidget(_toolBox);
     
-	_viewerWorkshopSplitter = new QSplitter(_centralWidget);
+    _viewerWorkshopSplitter = new QSplitter(_centralWidget);
     _viewerWorkshopSplitter->setContentsMargins(0, 0, 0, 0);
-	_viewerWorkshopSplitter->setOrientation(Qt::Vertical);
+    _viewerWorkshopSplitter->setOrientation(Qt::Vertical);
     _viewerWorkshopSplitter->setChildrenCollapsible(false);
     QSize viewerWorkshopSplitterSize = _viewerWorkshopSplitter->sizeHint();
     QList<int> sizesViewerSplitter; sizesViewerSplitter <<  viewerWorkshopSplitterSize.height()/2;
@@ -451,59 +453,59 @@ void Gui::setupUi()
     
     /*VIEWERS related*/
     
-	_viewersPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
+    _viewersPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
     _panes.push_back(_viewersPane);
     _viewersPane->resize(_viewersPane->width(), this->height()/5);
-	_viewerWorkshopSplitter->addWidget(_viewersPane);
+    _viewerWorkshopSplitter->addWidget(_viewersPane);
     //  _viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
     
     
-	/*WORKSHOP PANE*/
-	//======================
-	_workshopPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
+    /*WORKSHOP PANE*/
+    //======================
+    _workshopPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
     _panes.push_back(_workshopPane);
     
     _graphScene = new QGraphicsScene(this);
-	_graphScene->setItemIndexMethod(QGraphicsScene::NoIndex);
+    _graphScene->setItemIndexMethod(QGraphicsScene::NoIndex);
     _nodeGraphArea = new NodeGraph(this,_graphScene,_workshopPane);
-    _nodeGraphArea->setObjectName("NodeGraph");
+    _nodeGraphArea->setObjectName(kNodeGraphObjectName);
     _workshopPane->appendTab(_nodeGraphArea);
     
     _curveEditor = new CurveEditor(this);
 
-    _curveEditor->setObjectName("CurveEditor");
+    _curveEditor->setObjectName(kCurveEditorObjectName);
     _workshopPane->appendTab(_curveEditor);
     
     _workshopPane->makeCurrentTab(0);
     
-	_viewerWorkshopSplitter->addWidget(_workshopPane);
+    _viewerWorkshopSplitter->addWidget(_workshopPane);
     
-	
+
     _middleRightSplitter = new QSplitter(_centralWidget);
     _middleRightSplitter->setChildrenCollapsible(false);
     _middleRightSplitter->setContentsMargins(0, 0, 0, 0);
-	_middleRightSplitter->setOrientation(Qt::Horizontal);
+    _middleRightSplitter->setOrientation(Qt::Horizontal);
     _middleRightSplitter->addWidget(_viewerWorkshopSplitter);
     
-	/*PROPERTIES DOCK*/
-	//======================
-	_propertiesPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,this);
+    /*PROPERTIES DOCK*/
+    //======================
+    _propertiesPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,this);
     _propertiesPane->setObjectName("Properties_Pane");
     _panes.push_back(_propertiesPane);
-	_propertiesScrollArea = new QScrollArea(_propertiesPane);
+    _propertiesScrollArea = new QScrollArea(_propertiesPane);
     _nodeGraphArea->setPropertyBinPtr(_propertiesScrollArea);
     _propertiesScrollArea->setObjectName("Properties");
-	_propertiesContainer=new QWidget(_propertiesScrollArea);
+    _propertiesContainer=new QWidget(_propertiesScrollArea);
     _propertiesContainer->setObjectName("_propertiesContainer");
-	_layoutPropertiesBin=new QVBoxLayout(_propertiesContainer);
-	_layoutPropertiesBin->setSpacing(0);
+    _layoutPropertiesBin=new QVBoxLayout(_propertiesContainer);
+    _layoutPropertiesBin->setSpacing(0);
     _layoutPropertiesBin->setContentsMargins(0, 0, 0, 0);
-	_propertiesContainer->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
-	_propertiesContainer->setLayout(_layoutPropertiesBin);
+    _propertiesContainer->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
+    _propertiesContainer->setLayout(_layoutPropertiesBin);
     
-	_propertiesScrollArea->setWidget(_propertiesContainer);
-	_propertiesScrollArea->setWidgetResizable(true);
-	_propertiesPane->appendTab(_propertiesScrollArea);
+    _propertiesScrollArea->setWidget(_propertiesContainer);
+    _propertiesScrollArea->setWidgetResizable(true);
+    _propertiesPane->appendTab(_propertiesScrollArea);
     
     _middleRightSplitter->addWidget(_propertiesPane);
     QSize horizontalSplitterSize = _middleRightSplitter->sizeHint();
@@ -511,12 +513,12 @@ void Gui::setupUi()
     sizes << 195;
     sizes << horizontalSplitterSize.width()- 195;
     _middleRightSplitter->setSizes(sizes);
-	
+
     
     _leftRightSplitter->addWidget(_middleRightSplitter);
     
     _mainLayout->addWidget(_leftRightSplitter);
-	
+
     
     _projectGui = new DockablePanel(_appInstance->getProject().get(),
                                     _layoutPropertiesBin,
@@ -528,22 +530,22 @@ void Gui::setupUi()
     _projectGui->initializeKnobs();
     setVisibleProjectSettingsPanel();
     
-	menubar->addAction(menuFile->menuAction());
-	menubar->addAction(menuEdit->menuAction());
-	menubar->addAction(menuDisplay->menuAction());
-	menubar->addAction(menuOptions->menuAction());
-	menubar->addAction(cacheMenu->menuAction());
-	menuFile->addAction(actionNew_project);
-	menuFile->addAction(actionOpen_project);
-	menuFile->addAction(actionSave_project);
+    menubar->addAction(menuFile->menuAction());
+    menubar->addAction(menuEdit->menuAction());
+    menubar->addAction(menuDisplay->menuAction());
+    menubar->addAction(menuOptions->menuAction());
+    menubar->addAction(cacheMenu->menuAction());
+    menuFile->addAction(actionNew_project);
+    menuFile->addAction(actionOpen_project);
+    menuFile->addAction(actionSave_project);
     menuFile->addAction(actionSaveAs_project);
-	menuFile->addSeparator();
-	menuFile->addAction(actionPreferences);
-	menuFile->addSeparator();
-	menuFile->addAction(actionExit);
-	
-	menuOptions->addAction(actionProject_settings);
-	menuDisplay->addAction(viewersMenu->menuAction());
+    menuFile->addSeparator();
+    menuFile->addAction(actionPreferences);
+    menuFile->addSeparator();
+    menuFile->addAction(actionExit);
+
+    menuOptions->addAction(actionProject_settings);
+    menuDisplay->addAction(viewersMenu->menuAction());
     viewersMenu->addAction(viewerInputsMenu->menuAction());
     viewersMenu->addAction(viewersViewMenu->menuAction());
     viewerInputsMenu->addAction(actionConnectInput1);
@@ -557,12 +559,12 @@ void Gui::setupUi()
     viewerInputsMenu->addAction(actionConnectInput9);
     viewerInputsMenu->addAction(actionConnectInput10);
     menuDisplay->addSeparator();
-	menuDisplay->addAction(actionFullScreen);
+    menuDisplay->addAction(actionFullScreen);
     
-	cacheMenu->addAction(actionClearDiskCache);
-	cacheMenu->addAction(actionClearPlayBackCache);
-	cacheMenu->addAction(actionClearNodeCache);
-	retranslateUi(this);
+    cacheMenu->addAction(actionClearDiskCache);
+    cacheMenu->addAction(actionClearPlayBackCache);
+    cacheMenu->addAction(actionClearNodeCache);
+    retranslateUi(this);
     
     QObject::connect(actionFullScreen, SIGNAL(triggered()),this,SLOT(toggleFullScreen()));
     QObject::connect(actionClearDiskCache, SIGNAL(triggered()),appPTR,SLOT(clearDiskCache()));
@@ -582,7 +584,7 @@ void Gui::setupUi()
     QObject::connect(actionConnectInput9, SIGNAL(triggered()),this,SLOT(connectInput9()));
     QObject::connect(actionConnectInput10, SIGNAL(triggered()),this,SLOT(connectInput10()));
     
-	QMetaObject::connectSlotsByName(this);
+    QMetaObject::connectSlotsByName(this);
     
     restoreGuiGeometry();
     
@@ -592,76 +594,76 @@ void Gui::setupUi()
 
 QKeySequence Gui::keySequenceForView(int v){
     switch (v) {
-        case 0:
-            return QKeySequence(Qt::CTRL + Qt::ALT +  Qt::Key_1);
-            break;
-        case 1:
-            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_2);
-            break;
-        case 2:
-            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_3);
-            break;
-        case 3:
-            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_4);
-            break;
-        case 4:
-            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_5);
-            break;
-        case 5:
-            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_6);
-            break;
-        case 6:
-            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_7);
-            break;
-        case 7:
-            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_8);
-            break;
-        case 8:
-            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_9);
-            break;
-        case 9:
-            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_0);
-            break;
-        default:
-            return QKeySequence();
-            
+    case 0:
+        return QKeySequence(Qt::CTRL + Qt::ALT +  Qt::Key_1);
+        break;
+    case 1:
+        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_2);
+        break;
+    case 2:
+        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_3);
+        break;
+    case 3:
+        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_4);
+        break;
+    case 4:
+        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_5);
+        break;
+    case 5:
+        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_6);
+        break;
+    case 6:
+        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_7);
+        break;
+    case 7:
+        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_8);
+        break;
+    case 8:
+        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_9);
+        break;
+    case 9:
+        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_0);
+        break;
+    default:
+        return QKeySequence();
+
     }
 }
 
 static const char* slotForView(int view){
     switch (view){
-        case 0:
-            return SLOT(showView0());
-            break;
-        case 1:
-            return SLOT(showView1());
-            break;
-        case 2:
-            return SLOT(showView2());
-            break;
-        case 3:
-            return SLOT(showView3());
-            break;
-        case 4:
-            return SLOT(showView4());
-            break;
-        case 5:
-            return SLOT(showView5());
-            break;
-        case 6:
-            return SLOT(showView6());
-            break;
-        case 7:
-            return SLOT(showView7());
-            break;
-        case 8:
-            return SLOT(showView7());
-            break;
-        case 9:
-            return SLOT(showView8());
-            break;
-        default:
-            return NULL;
+    case 0:
+        return SLOT(showView0());
+        break;
+    case 1:
+        return SLOT(showView1());
+        break;
+    case 2:
+        return SLOT(showView2());
+        break;
+    case 3:
+        return SLOT(showView3());
+        break;
+    case 4:
+        return SLOT(showView4());
+        break;
+    case 5:
+        return SLOT(showView5());
+        break;
+    case 6:
+        return SLOT(showView6());
+        break;
+    case 7:
+        return SLOT(showView7());
+        break;
+    case 8:
+        return SLOT(showView7());
+        break;
+    case 9:
+        return SLOT(showView8());
+        break;
+    default:
+        return NULL;
     }
 }
 
@@ -826,7 +828,7 @@ void Gui::moveTab(QWidget* what,TabWidget *where){
         }
         //it wasn't found somehow
     }
-  
+
     from->removeTab(what);
     assert(where);
     where->appendTab(what);
@@ -977,9 +979,9 @@ void Gui::closePane(TabWidget* what) {
 }
 
 FloatingWidget::FloatingWidget(QWidget* parent)
-: QWidget(parent)
-, _embeddedWidget(0)
-, _layout(0)
+    : QWidget(parent)
+    , _embeddedWidget(0)
+    , _layout(0)
 {
     setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
     _layout = new QVBoxLayout(this);
@@ -1112,9 +1114,17 @@ void Gui::addToolButttonsToToolBar(){
     }
 }
 
-void Gui::addUndoRedoActions(QAction* undoAction,QAction* redoAction){
+void Gui::setUndoRedoActions(QAction* undoAction,QAction* redoAction){
+    if(_currentUndoAction){
+        menuEdit->removeAction(_currentUndoAction);
+    }
+    if(_currentRedoAction){
+        menuEdit->removeAction(_currentRedoAction);
+    }
+    _currentUndoAction = undoAction;
+    _currentRedoAction = redoAction;
     menuEdit->addAction(undoAction);
-	menuEdit->addAction(redoAction);
+    menuEdit->addAction(redoAction);
 }
 void Gui::newProject(){
     appPTR->newAppInstance(false);
@@ -1242,8 +1252,8 @@ void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron
         QMessageBox::information(this, title,content);
     }else{
         _lastQuestionDialogAnswer = (Natron::StandardButton)QMessageBox::question(this,title,content,
-                                                                                   (QMessageBox::StandardButtons)buttons,
-                                                                                   (QMessageBox::StandardButtons)defaultB);
+                                                                                  (QMessageBox::StandardButtons)buttons,
+                                                                                  (QMessageBox::StandardButtons)defaultB);
     }
     if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         _uiUsingMainThread = false;
@@ -1253,7 +1263,7 @@ void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron
 }
 
 Natron::StandardButton Gui::questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons,
-                                            Natron::StandardButton defaultButton) {
+                                           Natron::StandardButton defaultButton) {
     if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         QMutexLocker locker(&_uiUsingMainThreadMutex);
         _uiUsingMainThread = true;
@@ -1326,10 +1336,10 @@ void RenderingProgressDialog::onCurrentFrameProgress(int progress){
 }
 
 RenderingProgressDialog::RenderingProgressDialog(const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent):
-QDialog(parent),
-_sequenceName(sequenceName),
-_firstFrame(firstFrame),
-_lastFrame(lastFrame){
+    QDialog(parent),
+    _sequenceName(sequenceName),
+    _firstFrame(firstFrame),
+    _lastFrame(lastFrame){
     
     QString title = QString::number(0) + "% of " + _sequenceName;
     setMinimumWidth(fontMetrics().width(title)+100);
@@ -1405,8 +1415,8 @@ void Gui::restoreGuiGeometry(){
         QByteArray middleRightSplitterState;
         
         splittersStream >> leftRightSplitterState
-        >> viewerWorkshopSplitterState
-        >> middleRightSplitterState;
+                        >> viewerWorkshopSplitterState
+                        >> middleRightSplitterState;
         
         if(!_leftRightSplitter->restoreState(leftRightSplitterState))
             return;

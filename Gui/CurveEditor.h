@@ -13,8 +13,11 @@
 #define CURVEEDITOR_H
 
 #include <QWidget>
-
+#include <QtGui/QUndoCommand>
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
+#include "Global/GlobalDefines.h"
+
 class RectD;
 class NodeGui;
 class QTreeWidget;
@@ -24,7 +27,10 @@ class Curve;
 class CurveGui;
 class QHBoxLayout;
 class QSplitter;
-
+class KnobGui;
+class KeyFrame;
+class Variant;
+class QAction;
 class NodeCurveEditorElement : public QObject
 {
     
@@ -32,7 +38,8 @@ class NodeCurveEditorElement : public QObject
 
 public:
     
-    NodeCurveEditorElement(QTreeWidget* tree,CurveWidget* curveWidget,boost::shared_ptr<QTreeWidgetItem> item,CurveGui* curve);
+    NodeCurveEditorElement(QTreeWidget* tree,CurveWidget* curveWidget,KnobGui* knob,int dimension,
+                           boost::shared_ptr<QTreeWidgetItem> item,CurveGui* curve);
     
     NodeCurveEditorElement():_treeItem(),_curve(),_curveDisplayed(false),_curveWidget(NULL){}
     
@@ -44,6 +51,9 @@ public:
 
     bool isCurveVisible() const { return _curveDisplayed; }
     
+    int getDimension() const { return _dimension; }
+
+    KnobGui* getKnob() const { return _knob; }
     
 public slots:
     
@@ -58,6 +68,8 @@ private:
     bool _curveDisplayed;
     CurveWidget* _curveWidget;
     QTreeWidget* _treeWidget;
+    KnobGui* _knob;
+    int _dimension;
 };
 
 class NodeCurveEditorContext : public QObject
@@ -75,6 +87,12 @@ public:
     NodeGui* getNode() const { return _node; }
 
     const Elements& getElements() const  {return _nodeElements; }
+
+    NodeCurveEditorElement* findElement(CurveGui* curve);
+
+    NodeCurveEditorElement* findElement(KnobGui* knob,int dimension);
+
+    NodeCurveEditorElement* findElement(QTreeWidgetItem* item);
 
 public slots:
 
@@ -98,14 +116,7 @@ public:
 
     CurveEditor(QWidget* parent = 0);
 
-    virtual ~CurveEditor(){
-
-        for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
-            it!=_nodes.end();++it){
-            delete (*it);
-        }
-        _nodes.clear();
-    }
+    virtual ~CurveEditor();
 
     void addNode(NodeGui *node);
 
@@ -113,10 +124,18 @@ public:
     
     void centerOn(const std::vector<boost::shared_ptr<Curve> >& curves);
     
+    std::pair<QAction*,QAction*> getUndoRedoActions() const;
+
+    void addKeyFrame(KnobGui* knob,SequenceTime time,int dimension);
+
+    void removeKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key);
+
+    void setKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key,double x,const Variant& y);
+
 public slots:
     
     void onCurrentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*);
-    
+
 private:
     
     void recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *curves);
@@ -127,6 +146,10 @@ private:
     QSplitter* _splitter;
     CurveWidget* _curveWidget;
     QTreeWidget* _tree;
+    boost::scoped_ptr<QUndoStack> _undoStack;
+    QAction* _undoAction,*_redoAction;
 };
+
+
 
 #endif // CURVEEDITOR_H

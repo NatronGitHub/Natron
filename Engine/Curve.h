@@ -62,6 +62,8 @@ public:
 
     void setTime(double time);
 
+    void setTimeAndValue(double time,const Variant& v);
+
     void setInterpolation(Natron::KeyframeType interp) ;
 
     Natron::KeyframeType getInterpolation() const;
@@ -96,7 +98,7 @@ public:
     };
 
     //each segment of curve between a keyframe and the next can have a different interpolation method
-    typedef std::list< KeyFrame* > KeyFrames;
+    typedef std::list< boost::shared_ptr<KeyFrame> > KeyFrames;
 
     /**
      * @brief An empty curve, held by no one. This constructor is used by the serialization.
@@ -117,9 +119,9 @@ public:
 
     bool isAnimated() const;
 
-    void addKeyFrame(KeyFrame* cp);
+    void addKeyFrame(boost::shared_ptr<KeyFrame> cp);
 
-    void removeKeyFrame(KeyFrame* cp);
+    void removeKeyFrame(boost::shared_ptr<KeyFrame> cp);
 
     int keyFramesCount() const ;
 
@@ -127,17 +129,13 @@ public:
 
     double getMaximumTimeCovered() const;
 
-    const KeyFrame* getStart() const;
-
-    const KeyFrame* getEnd() const;
-
     Variant getValueAt(double t) const;
 
     const RectD& getBoundingBox() const ;
 
     const KeyFrames& getKeyFrames() const;
 
-    void refreshTangents(CurveChangedReason reason, KeyFrame* k);
+    void refreshTangents(CurveChangedReason reason, boost::shared_ptr<KeyFrame> k);
 
     void refreshTangents(CurveChangedReason reason, KeyFrames::iterator key);
 
@@ -147,7 +145,7 @@ public:
      * @brief Called when a keyframe/tangent is modified, indicating that the curve has changed and we must
      * evaluate any change (i.e: force a new render)
     **/
-    void evaluateCurveChanged(CurveChangedReason reason,KeyFrame* k);
+    void evaluateCurveChanged(CurveChangedReason reason, KeyFrame *k);
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
@@ -210,17 +208,19 @@ public:
         }
     }
 
+
+
     /**
      * @brief Set the value for a specific dimension at a specific time. By default dimension
      * is 0. If there's a single dimension, it will set the dimension 0 regardless of the parameter dimension.
      * Otherwise, it will attempt to set a key for only the dimension 'dimensionIndex'.
      **/
-    void setValueAtTime(double time,const Variant& v,int dimension);
+    boost::shared_ptr<KeyFrame> setValueAtTime(double time,const Variant& v,int dimension);
 
     template<typename T>
-    void setValueAtTime(double time,const T& value,int dimensionIndex = 0){
+    boost::shared_ptr<KeyFrame> setValueAtTime(double time,const T& value,int dimensionIndex = 0){
         assert(dimensionIndex < getDimension());
-        setValueAtTime(time,Variant(value),dimensionIndex);
+        return setValueAtTime(time,Variant(value),dimensionIndex);
     }
 
     template<typename T>

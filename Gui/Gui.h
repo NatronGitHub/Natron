@@ -253,7 +253,7 @@ public:
     
     const std::vector<ToolButton*>& getToolButtons() const {return _toolButtons;}
     
-    void addUndoRedoActions(QAction* undoAction,QAction* redoAction);
+    void setUndoRedoActions(QAction* undoAction,QAction* redoAction);
 
     
     bool isGraphWorthless() const;
@@ -351,6 +351,9 @@ private:
     bool _uiUsingMainThread;
     mutable QMutex _uiUsingMainThreadMutex;
     Natron::StandardButton _lastQuestionDialogAnswer;
+
+    QAction* _currentUndoAction;
+    QAction* _currentRedoAction;
 public:
     // FIXME: public pointer members are the sign of a serious design flaw!!! should at least be shared_ptr!
     /*TOOL BAR ACTIONS*/

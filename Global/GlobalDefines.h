@@ -47,6 +47,13 @@ typedef OfxPointD RenderScale;
 #define kRenderingFinishedString "Rendering finished"
 #define kAbortRenderingString "Abort rendering"
 
+#define kNodeGraphObjectName "NodeGraph"
+#define kCurveEditorObjectName "CurveEditor"
+
+#define kCurveEditorMoveKeyCommandCompressionID 1
+#define kNodeGraphMoveNodeCommandCompressionID 2
+
+
 #ifdef __NATRON_WIN32__
 namespace NatronWindows{
     /*Converts a std::string to wide string*/

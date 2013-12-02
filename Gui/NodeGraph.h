@@ -123,6 +123,8 @@ public:
     void refreshAllEdges();
 
     bool areAllPreviewTurnedOff() const { return _previewsTurnedOff; }
+
+    std::pair<QAction*,QAction*> getUndoRedoActions() const;
     
 public slots:
     
@@ -218,62 +220,6 @@ private:
     bool _previewsTurnedOff;
 };
 
-
-class MoveCommand : public QUndoCommand{
-public:
-    MoveCommand(NodeGui *node, const QPointF &oldPos,
-                QUndoCommand *parent = 0);
-    virtual void undo();
-    virtual void redo();
-    virtual bool mergeWith(const QUndoCommand *command);
-    
-private:
-    NodeGui* _node;
-    QPointF _oldPos;
-    QPointF _newPos;
-};
-
-
-class AddCommand : public QUndoCommand{
-public:
-
-    AddCommand(NodeGraph* graph,NodeGui *node,QUndoCommand *parent = 0);
-    virtual void undo();
-    virtual void redo();
-    
-private:
-    std::multimap<int,Natron::Node*> _outputs;
-    std::map<int,Natron::Node*> _inputs;
-    NodeGui* _node;
-    NodeGraph* _graph;
-    bool _undoWasCalled;
-};
-
-class RemoveCommand : public QUndoCommand{
-public:
-    
-    RemoveCommand(NodeGraph* graph,NodeGui *node,QUndoCommand *parent = 0);
-    virtual void undo();
-    virtual void redo();
-    
-private:
-    std::multimap<int,Natron::Node*> _outputs;
-    std::map<int,Natron::Node*> _inputs;
-    NodeGui* _node;
-    NodeGraph* _graph;
-};
-
-class ConnectCommand : public QUndoCommand{
-public:
-    ConnectCommand(NodeGraph* graph,Edge* edge,NodeGui *oldSrc,NodeGui* newSrc,QUndoCommand *parent = 0);
-    
-    virtual void undo();
-    virtual void redo();
-private:
-    Edge* _edge;
-    NodeGui *_oldSrc,*_newSrc;
-    NodeGraph* _graph;
-};
 
 
 class SmartInputDialog:public QDialog

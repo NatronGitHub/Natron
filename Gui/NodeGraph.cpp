@@ -61,6 +61,66 @@ CLANG_DIAG_ON(unused-private-field);
 using namespace Natron;
 using std::cout; using std::endl;
 
+
+
+class MoveCommand : public QUndoCommand{
+public:
+    MoveCommand(NodeGui *node, const QPointF &oldPos,
+                QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+    virtual int id() const { return kNodeGraphMoveNodeCommandCompressionID; }
+    virtual bool mergeWith(const QUndoCommand *command);
+
+private:
+    NodeGui* _node;
+    QPointF _oldPos;
+    QPointF _newPos;
+};
+
+
+class AddCommand : public QUndoCommand{
+public:
+
+    AddCommand(NodeGraph* graph,NodeGui *node,QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+
+private:
+    std::multimap<int,Natron::Node*> _outputs;
+    std::map<int,Natron::Node*> _inputs;
+    NodeGui* _node;
+    NodeGraph* _graph;
+    bool _undoWasCalled;
+};
+
+class RemoveCommand : public QUndoCommand{
+public:
+
+    RemoveCommand(NodeGraph* graph,NodeGui *node,QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+
+private:
+    std::multimap<int,Natron::Node*> _outputs;
+    std::map<int,Natron::Node*> _inputs;
+    NodeGui* _node;
+    NodeGraph* _graph;
+};
+
+class ConnectCommand : public QUndoCommand{
+public:
+    ConnectCommand(NodeGraph* graph,Edge* edge,NodeGui *oldSrc,NodeGui* newSrc,QUndoCommand *parent = 0);
+
+    virtual void undo();
+    virtual void redo();
+private:
+    Edge* _edge;
+    NodeGui *_oldSrc,*_newSrc;
+    NodeGraph* _graph;
+};
+
+
 NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
 QGraphicsView(scene,parent),
 _gui(gui),
@@ -135,7 +195,7 @@ _previewsTurnedOff(false)
     _redoAction = _undoStack->createRedoAction(this,tr("&Redo"));
     _redoAction->setShortcuts(QKeySequence::Redo);
     
-    _gui->addUndoRedoActions(_undoAction, _redoAction);
+    _gui->setUndoRedoActions(_undoAction, _redoAction);
     
     
     _tL = new QGraphicsTextItem(0);
@@ -173,6 +233,10 @@ NodeGraph::~NodeGraph(){
     _nodeCreationShortcutEnabled = false;
     _nodes.clear();
     _nodesTrash.clear();
+}
+
+std::pair<QAction*,QAction*> NodeGraph::getUndoRedoActions() const{
+    return std::make_pair(_undoAction,_redoAction);
 }
 
 void NodeGraph::resizeEvent(QResizeEvent* event){

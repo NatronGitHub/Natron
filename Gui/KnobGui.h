@@ -65,7 +65,7 @@ public:
     
     void turnOffNewLine() { _triggerNewLine = false; }
     
-    const Knob* getKnob() const { return _knob; }
+    Knob* getKnob() const { return _knob; }
     
     /*Set the spacing between items in the layout*/
     void setSpacingBetweenItems(int spacing){ _spacingBetweenItems = spacing; }
@@ -124,8 +124,6 @@ signals:
     /*Must be emitted when a value is changed by the user or by
      an external source.*/
     void valueChanged(int dimension,const Variant& variant);
-
-    void keyAdded();
     
     void knobUndoneChange();
     

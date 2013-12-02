@@ -14,11 +14,13 @@
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
+
 #include <boost/shared_ptr.hpp>
 #include "Gui/TextRenderer.h"
 
 class Curve;
 class KeyFrame;
+class Variant;
 class CurveWidget;
 class CurveGui : public QObject {
     
@@ -135,7 +137,7 @@ class CurveWidget : public QGLWidget
     typedef std::list<CurveGui* > Curves;
     Curves _curves;
     
-    typedef std::list< std::pair<CurveGui*,KeyFrame*> > SelectedKeys;
+    typedef std::list< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > > SelectedKeys;
     SelectedKeys _selectedKeyFrames;
     bool _hasOpenGLVAOSupport;
     
@@ -187,6 +189,13 @@ public:
 
     bool isSupportingOpenGLVAO() const { return _hasOpenGLVAOSupport; }
 
+    void addKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key);
+
+    boost::shared_ptr<KeyFrame> addKeyFrame(CurveGui* curve,const Variant& y, int x);
+
+    void removeKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key);
+
+    void setKeyPos(boost::shared_ptr<KeyFrame> key,double x,const Variant& y);
 
 protected:
     virtual void mousePressEvent(QMouseEvent *event);
@@ -213,7 +222,7 @@ private:
      * @brief Returns a pointer to a keyframe if a keyframe lies nearby the point 'pt' which is
      * widget coordinates.
      **/
-    std::pair<CurveGui*,KeyFrame*> isNearbyKeyFrame(const QPoint& pt) const;
+    std::pair<CurveGui *, boost::shared_ptr<KeyFrame> > isNearbyKeyFrame(const QPoint& pt) const;
 
     /**
      * @brief Selects the curve given in parameter and deselects any other curve in the widget.
@@ -226,7 +235,6 @@ private:
     
     void drawCurves();
 };
-
 
 
 #endif // CURVE_WIDGET_H
