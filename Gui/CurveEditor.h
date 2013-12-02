@@ -32,7 +32,7 @@ class NodeCurveEditorElement : public QObject
 
 public:
     
-    NodeCurveEditorElement(CurveWidget* curveWidget,boost::shared_ptr<QTreeWidgetItem> item,CurveGui* curve);
+    NodeCurveEditorElement(QTreeWidget* tree,CurveWidget* curveWidget,boost::shared_ptr<QTreeWidgetItem> item,CurveGui* curve);
     
     NodeCurveEditorElement():_treeItem(),_curve(),_curveDisplayed(false),_curveWidget(NULL){}
     
@@ -57,6 +57,7 @@ private:
     CurveGui* _curve;
     bool _curveDisplayed;
     CurveWidget* _curveWidget;
+    QTreeWidget* _treeWidget;
 };
 
 class NodeCurveEditorContext : public QObject

@@ -624,10 +624,19 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
                 Curve::KeyFrames::const_iterator nextKey = foundKey;
                 ++nextKey;
                 
-                if(((prevKey != keys.end() && newValue > (*prevKey)->getTime()) || prevKey == keys.end())
-                        && ((nextKey != keys.end() && newValue < (*nextKey)->getTime())|| nextKey == keys.end())){
+                if(((prevKey != keys.end() && newValue > (*prevKey)->getTime()) || prevKey == keys.end()) &&
+                        ((nextKey != keys.end() && newValue < (*nextKey)->getTime()) || nextKey == keys.end())){
                     (*it).second->setTime(newValue);
+                }else if(prevKey != keys.end() && newValue <= (*prevKey)->getTime()){
+                    (*it).second->setTime((*prevKey)->getTime());
+                }else if(nextKey != keys.end() && newValue >= (*nextKey)->getTime()){
+                    (*it).second->setTime((*nextKey)->getTime());
                 }
+
+//                if(((prevKey != keys.end() && newValue > (*prevKey)->getTime()) || prevKey == keys.end())
+//                        && ((nextKey != keys.end() && newValue < (*nextKey)->getTime())|| nextKey == keys.end())){
+//                    (*it).second->setTime(newValue);
+//                }
                 
             }
             (*it).second->setValue(Variant((*it).second->getValue().toDouble() + translation.y()));
