@@ -18,6 +18,7 @@
 #include "Engine/Settings.h"
 #include "Engine/ImageFetcher.h"
 #include "Engine/Image.h"
+#include "Engine/TimeLine.h"
 #include "Engine/Hash64.h"
 
 #include "Global/AppManager.h"
@@ -98,10 +99,14 @@ double OfxClipInstance::getFrameRate() const
 //  The frame range over which a clip has images.
 void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
 {
-    SequenceTime first = 0,last = 0;
+    SequenceTime first,last;
     EffectInstance* n = getAssociatedNode();
-    if(n)
-        n->getFrameRange(&first, &last);
+    if(n){
+       n->getFrameRange(&first, &last);
+    }else{
+        first = _nodeInstance->getApp()->getTimeLine()->leftBound();
+        last = _nodeInstance->getApp()->getTimeLine()->rightBound();
+    }
     startFrame = first;
     endFrame = last;
 }
