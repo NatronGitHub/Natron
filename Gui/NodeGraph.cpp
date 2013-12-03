@@ -1042,10 +1042,10 @@ SmartInputDialog::SmartInputDialog(NodeGraph* graph_)
     layout->addWidget(textLabel);
     layout->addWidget(textEdit);
     textEdit->lineEdit()->selectAll();
-    textEdit->setFocusPolicy(Qt::StrongFocus);
+    //textEdit->setFocusPolicy(Qt::StrongFocus);
     setFocusProxy(textEdit->lineEdit());
     textEdit->lineEdit()->setFocus(Qt::ActiveWindowFocusReason);
-    textEdit->setFocus(); // textEdit->grabKeyboard();
+    textEdit->setFocus();
     installEventFilter(this);
     
     

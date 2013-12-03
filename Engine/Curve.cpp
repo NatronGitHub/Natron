@@ -83,6 +83,12 @@ void KeyFrame::setTimeAndValue(double time,const Variant& v){
 
 void KeyFrame::setInterpolation(Natron::KeyframeType interp) { _imp->_interpolation = interp; }
 
+void KeyFrame::setInterpolationAndEvaluate(Natron::KeyframeType interp){
+    _imp->_interpolation = interp;
+     assert(_imp->_curve);
+    _imp->_curve->evaluateCurveChanged(Curve::KEYFRAME_CHANGED,this);
+}
+
 Natron::KeyframeType KeyFrame::getInterpolation() const { return _imp->_interpolation; }
 
 

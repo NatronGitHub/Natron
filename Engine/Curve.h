@@ -66,6 +66,8 @@ public:
 
     void setInterpolation(Natron::KeyframeType interp) ;
 
+    void setInterpolationAndEvaluate(Natron::KeyframeType interp) ;
+
     Natron::KeyframeType getInterpolation() const;
 
     template<class Archive>

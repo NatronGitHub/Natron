@@ -51,7 +51,9 @@ typedef OfxPointD RenderScale;
 #define kCurveEditorObjectName "CurveEditor"
 
 #define kCurveEditorMoveKeyCommandCompressionID 1
-#define kNodeGraphMoveNodeCommandCompressionID 2
+
+
+#define kNodeGraphMoveNodeCommandCompressionID 4
 
 
 #ifdef __NATRON_WIN32__

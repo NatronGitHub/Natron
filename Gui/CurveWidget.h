@@ -14,13 +14,15 @@
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
-
+#include <QtCore/QRectF>
 #include <boost/shared_ptr.hpp>
+
 #include "Gui/TextRenderer.h"
+
+#include "Engine/Variant.h"
 
 class Curve;
 class KeyFrame;
-class Variant;
 class CurveWidget;
 class CurveGui : public QObject {
     
@@ -77,7 +79,7 @@ signals:
     
 private:
 
-    void nextPointForSegment(double x1,double* x2);
+    boost::shared_ptr<KeyFrame> nextPointForSegment(double x1,double* x2);
 
     boost::shared_ptr<Curve> _internalCurve; ///ptr to the internal curve
     QString _name; /// the name of the curve
@@ -92,11 +94,14 @@ private:
 class QMenu;
 class CurveWidget : public QGLWidget
 {
+
+    Q_OBJECT
     
     enum EventState{
         DRAGGING_VIEW = 0,
         DRAGGING_KEYS = 1,
-        NONE = 2
+        SELECTING = 2,
+        NONE = 3
     };
     
     class ZoomContext{
@@ -145,6 +150,12 @@ class CurveWidget : public QGLWidget
     QPoint _mouseDragOrientation; ///used to drag a key frame in only 1 direction (horizontal or vertical)
                                   ///the value is either (1,0) or (0,1)
 
+    std::vector< std::pair<double,Variant> > _keyFramesClipBoard;
+    QRectF _selectionRectangle;
+    QPointF _selectionStartPoint;
+
+    bool _drawSelectedKeyFramesBbox;
+    QRectF _selectedKeyFramesBbox;
 public:
     
     CurveWidget(QWidget* parent, const QGLWidget* shareWidget = NULL);
@@ -197,6 +208,33 @@ public:
 
     void setKeyPos(boost::shared_ptr<KeyFrame> key,double x,const Variant& y);
 
+
+public slots:
+
+    void deleteSelectedKeyFrames();
+
+    void copySelectedKeyFrames();
+
+    void pasteKeyFramesFromClipBoardToSelectedCurve();
+
+    void selectAllKeyFrames();
+
+    void constantInterpForSelectedKeyFrames();
+
+    void linearInterpForSelectedKeyFrames();
+
+    void smoothForSelectedKeyFrames();
+
+    void catmullromInterpForSelectedKeyFrames();
+
+    void cubicInterpForSelectedKeyFrames();
+
+    void horizontalInterpForSelectedKeyFrames();
+
+    void breakTangentsForSelectedKeyFrames();
+
+    void frameSelectedCurve();
+
 protected:
     virtual void mousePressEvent(QMouseEvent *event);
 
@@ -229,11 +267,19 @@ private:
     **/
     void selectCurve(CurveGui *curve);
 
+    void keyFramesWithinRect(const QRectF& rect,std::vector< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > >* keys) const;
+
     void drawBaseAxis();
     
     void drawScale();
     
     void drawCurves();
+
+    void drawSelectionRectangle();
+
+    void drawSelectedKeyFramesBbox();
+
+    void createMenu();
 };
 
 

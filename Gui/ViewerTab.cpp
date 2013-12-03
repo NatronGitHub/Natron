@@ -146,7 +146,6 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     
     
     _refreshButton = new Button(_secondSettingsRow);
-    _refreshButton->setShortcut(QKeySequence(Qt::Key_U));
     _refreshButton->setToolTip("Force a new render of the current frame."
                                "<p></br><b>Keyboard shortcut: U</b></p>");
     _secondRowLayout->addWidget(_refreshButton);
@@ -205,7 +204,6 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     
     firstFrame_Button = new Button(_playerButtonsContainer);
     QKeySequence firstFrameKey(Qt::CTRL + Qt::Key_Left);
-    firstFrame_Button->setShortcut(firstFrameKey);
     QString tooltip = "First frame";
     tooltip.append("<p></br><b>Keyboard shortcut: ");
     tooltip.append(firstFrameKey.toString(QKeySequence::NativeText));
@@ -217,7 +215,6 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     previousKeyFrame_Button=new Button(_playerButtonsContainer);
     previousKeyFrame_Button->hide();
     QKeySequence previousKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Left);
-    previousKeyFrame_Button->setShortcut(previousKeyFrameKey);
     tooltip = "Previous keyframe";
     tooltip.append("<p></br><b>Keyboard shortcut: ");
     tooltip.append(previousKeyFrameKey.toString(QKeySequence::NativeText));
@@ -228,7 +225,6 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     
     play_Backward_Button=new Button(_playerButtonsContainer);
     QKeySequence playbackFrameKey(Qt::Key_J);
-    play_Backward_Button->setShortcut(playbackFrameKey);
     tooltip = "Play backward";
     tooltip.append("<p></br><b>Keyboard shortcut: ");
     tooltip.append(playbackFrameKey.toString(QKeySequence::NativeText));
@@ -240,7 +236,6 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     
     previousFrame_Button = new Button(_playerButtonsContainer);
     QKeySequence previousFrameKey(Qt::Key_Left);
-    previousFrame_Button->setShortcut(previousFrameKey);
     tooltip = "Previous frame";
     tooltip.append("<p></br><b>Keyboard shortcut: ");
     tooltip.append(previousFrameKey.toString(QKeySequence::NativeText));
@@ -251,7 +246,6 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     
     stop_Button = new Button(_playerButtonsContainer);
     QKeySequence stopKey(Qt::Key_K);
-    stop_Button->setShortcut(stopKey);
     tooltip = "Stop";
     tooltip.append("<p></br><b>Keyboard shortcut: ");
     tooltip.append(stopKey.toString(QKeySequence::NativeText));
@@ -262,7 +256,6 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     
     nextFrame_Button = new Button(_playerButtonsContainer);
     QKeySequence nextFrameKey(Qt::Key_Right);
-    nextFrame_Button->setShortcut(nextFrameKey);
     tooltip = "Next frame";
     tooltip.append("<p></br><b>Keyboard shortcut: ");
     tooltip.append(nextFrameKey.toString(QKeySequence::NativeText));
@@ -273,7 +266,6 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     
     play_Forward_Button = new Button(_playerButtonsContainer);
     QKeySequence playKey(Qt::Key_L);
-    play_Forward_Button->setShortcut(playKey);
     tooltip = "Play forward";
     tooltip.append("<p></br><b>Keyboard shortcut: ");
     tooltip.append(playKey.toString(QKeySequence::NativeText));
@@ -286,7 +278,6 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     nextKeyFrame_Button = new Button(_playerButtonsContainer);
     nextKeyFrame_Button->hide();
     QKeySequence nextKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Right);
-    nextKeyFrame_Button->setShortcut(nextKeyFrameKey);
     tooltip = "Next keyframe";
     tooltip.append("<p></br><b>Keyboard shortcut: ");
     tooltip.append(nextKeyFrameKey.toString(QKeySequence::NativeText));
@@ -297,7 +288,6 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     
     lastFrame_Button = new Button(_playerButtonsContainer);
     QKeySequence lastFrameKey(Qt::CTRL + Qt::Key_Right);
-    lastFrame_Button->setShortcut(lastFrameKey);
     tooltip = "Last frame";
     tooltip.append("<p></br><b>Keyboard shortcut: ");
     tooltip.append(lastFrameKey.toString(QKeySequence::NativeText));
@@ -311,7 +301,6 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     
     previousIncrement_Button = new Button(_playerButtonsContainer);
     QKeySequence previousIncrFrameKey(Qt::SHIFT + Qt::Key_Left);
-    previousIncrement_Button->setShortcut(previousIncrFrameKey);
     tooltip = "Previous increment";
     tooltip.append("<p></br><b>Keyboard shortcut: ");
     tooltip.append(previousIncrFrameKey.toString(QKeySequence::NativeText));
@@ -330,7 +319,6 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     
     nextIncrement_Button = new Button(_playerButtonsContainer);
     QKeySequence nextIncrFrameKey(Qt::SHIFT + Qt::Key_Right);
-    nextIncrement_Button->setShortcut(nextIncrFrameKey);
     tooltip = "Next increment";
     tooltip.append("<p></br><b>Keyboard shortcut: ");
     tooltip.append(nextIncrFrameKey.toString(QKeySequence::NativeText));
@@ -426,14 +414,12 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     
     _centerViewerButton->setToolTip("Scales the image so it doesn't exceed the size of the viewer and centers it."
                                     "<p></br><b>Keyboard shortcut: F</b></p>");
-    _centerViewerButton->setShortcut(QKeySequence(Qt::Key_F));
     
     _clipToProjectFormatButton->setToolTip("<p> Clips the portion of the image displayed <br/>"
                                            "on the viewer to the project format. <br/>"
                                            "When off, everything in the union of all nodes <br/>"
                                            "region of definition will be displayed. <br/> <br/>"
                                            "<b>Keyboard shortcut: C</b></p>");
-    _clipToProjectFormatButton->setShortcut(QKeySequence(Qt::Key_C));
     /*=================================================*/
     
     /*frame seeker*/
@@ -659,8 +645,52 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
         _viewerChannels->setCurrentIndex(4);
     }else if(event->key() == Qt::Key_A){
         _viewerChannels->setCurrentIndex(5);
+    }else if(event->key() == Qt::Key_J){
+        startBackward(!play_Backward_Button->isDown());
     }
-    
+    else if(event->key() == Qt::Key_Left){
+        previousFrame();
+    }
+    else if(event->key() == Qt::Key_K){
+        abortRendering();
+    }
+    else if(event->key() == Qt::Key_Right){
+        nextFrame();
+    }
+    else if(event->key() == Qt::Key_L){
+        startPause(!play_Forward_Button->isDown());
+
+    }else if(event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ShiftModifier)){
+        //prev incr
+        previousIncrement();
+    }
+    else if(event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ShiftModifier)){
+        //next incr
+        nextIncrement();
+    }else if(event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)){
+        //first frame
+        firstFrame();
+    }
+    else if(event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)){
+        //last frame
+        lastFrame();
+    }
+    else if(event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)
+            && event->modifiers().testFlag(Qt::ShiftModifier)){
+        //prev key
+    }
+    else if(event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)
+            &&  event->modifiers().testFlag(Qt::ShiftModifier)){
+        //next key
+    } else if(event->key() == Qt::Key_F){
+        centerViewer();
+
+    }else if(event->key() == Qt::Key_C){
+        onClipToProjectButtonToggle(!_clipToProjectFormatButton->isDown());
+    }
+    else if(event->key() == Qt::Key_U){
+        refresh();
+    }
     
 }
 
