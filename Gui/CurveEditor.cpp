@@ -400,8 +400,7 @@ class MoveKeyCommand : public QUndoCommand{
 
 public:
 
-    MoveKeyCommand(CurveWidget* editor,NodeCurveEditorElement* curveEditorElement
-                   ,boost::shared_ptr<KeyFrame> key,double oldx,const Variant& oldy,
+    MoveKeyCommand(CurveWidget* editor,boost::shared_ptr<KeyFrame> key,double oldx,const Variant& oldy,
                    double newx,const Variant& newy,
                    QUndoCommand *parent = 0);
     virtual void undo();
@@ -413,7 +412,6 @@ private:
 
     double _newX,_oldX;
     Variant _newY,_oldY;
-    NodeCurveEditorElement* _element;
     boost::shared_ptr<KeyFrame> _key;
     CurveWidget* _curveWidget;
 };
@@ -512,20 +510,18 @@ void CurveEditor::setKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key,do
         it!=_nodes.end();++it){
         NodeCurveEditorElement* elem = (*it)->findElement(curve);
         if(elem){
-            _undoStack->push(new MoveKeyCommand(_curveWidget,elem,key,key->getTime(),key->getValue(), x,y));
+            _undoStack->push(new MoveKeyCommand(_curveWidget,key,key->getTime(),key->getValue(), x,y));
             return;
         }
     }
 }
 
-MoveKeyCommand::MoveKeyCommand(CurveWidget* editor, NodeCurveEditorElement* curveEditorElement
-                               , boost::shared_ptr<KeyFrame> key, double oldx, const Variant &oldy, double newx, const Variant &newy, QUndoCommand *parent)
+MoveKeyCommand::MoveKeyCommand(CurveWidget* editor, boost::shared_ptr<KeyFrame> key, double oldx, const Variant &oldy, double newx, const Variant &newy, QUndoCommand *parent)
     : QUndoCommand(parent)
     , _newX(newx)
     , _oldX(oldx)
     , _newY(newy)
     , _oldY(oldy)
-    , _element(curveEditorElement)
     , _key(key)
     , _curveWidget(editor)
 {
