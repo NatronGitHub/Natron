@@ -295,10 +295,14 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeDouble3D) {
-        throw std::runtime_error(std::string("Parameter ") + paramName + std::string(" has unsupported OFX type ") + descriptor.getType());
+        OfxDouble3DInstance *ret = new OfxDouble3DInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeInteger3D) {
-        throw std::runtime_error(std::string("Parameter ") + paramName + std::string(" has unsupported OFX type ") + descriptor.getType());
+        OfxInteger3DInstance *ret = new OfxInteger3DInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeString) {
         OfxStringInstance *ret = new OfxStringInstance(node(), descriptor);

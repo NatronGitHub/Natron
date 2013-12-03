@@ -505,33 +505,34 @@ Knob* OfxRGBInstance::getKnob() const{
 OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance())
 {
+    const int dims = 2;
     const OFX::Host::Property::Set &properties = getProperties();
 
     int layoutHint = properties.getIntProperty(kOfxParamPropLayoutHint);
-    if(layoutHint == 1){
+    if (layoutHint == 1) {
         appPTR->getKnobFactory().createKnob("Separator", node, getParamLabel(this));
     }
-    _knob = dynamic_cast<Double_Knob*>(appPTR->getKnobFactory().createKnob("Double", node, getParamLabel(this),2));
-    if(layoutHint == 2){
+    _knob = dynamic_cast<Double_Knob*>(appPTR->getKnobFactory().createKnob("Double", node, getParamLabel(this),dims));
+    if (layoutHint == 2) {
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(properties.getIntProperty(kOfxParamPropLayoutPadWidth));
-    if(!properties.getIntProperty(kOfxParamPropCanUndo)){
+    if (!properties.getIntProperty(kOfxParamPropCanUndo)) {
         _knob->turnOffUndoRedo();
     }
     const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
     _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
-    std::vector<double> minimum(2);
-    std::vector<double> maximum(2);
-    std::vector<double> increment(2);
-    std::vector<double> displayMins(2);
-    std::vector<double> displayMaxs(2);
-    std::vector<int> decimals(2);
-    double def[2];
+    std::vector<double> minimum(dims);
+    std::vector<double> maximum(dims);
+    std::vector<double> increment(dims);
+    std::vector<double> displayMins(dims);
+    std::vector<double> displayMaxs(dims);
+    std::vector<int> decimals(dims);
+    boost::scoped_array<double> def(new double[dims]);
 
-    for (int i=0; i < 2; ++i) {
+    for (int i=0; i < dims; ++i) {
         minimum[i] = properties.getDoubleProperty(kOfxParamPropMin,i);
         displayMins[i] = properties.getDoubleProperty(kOfxParamPropDisplayMin,i);
         displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax,i);
@@ -546,25 +547,27 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
     _knob->setIncrement(increment);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
     _knob->setDecimals(decimals);
-    _knob->setValue<double>(def,2);
-    
+    _knob->setValue<double>(def.get(),dims);
 }
+
 OfxStatus OfxDouble2DInstance::get(double& x1, double& x2) {
     x1 = _knob->getValue<double>(0);
     x2 = _knob->getValue<double>(1);
     return kOfxStatOK;
 }
-OfxStatus OfxDouble2DInstance::get(OfxTime time, double& x1, double& x2) {
 
+OfxStatus OfxDouble2DInstance::get(OfxTime time, double& x1, double& x2) {
     x1 = _knob->getValueAtTime<double>(time,0);
     x2 = _knob->getValueAtTime<double>(time,1);
     return kOfxStatOK;
 }
+
 OfxStatus OfxDouble2DInstance::set(double x1,double x2){
     _knob->setValue<double>(x1,0);
     _knob->setValue<double>(x2,1);
 	return kOfxStatOK;
 }
+
 OfxStatus OfxDouble2DInstance::set(OfxTime time,double x1,double x2){
     _knob->setValueAtTime<double>(time,x1,0);
     _knob->setValueAtTime<double>(time,x2,1);
@@ -589,32 +592,33 @@ Knob* OfxDouble2DInstance::getKnob() const{
 OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Integer2DInstance(descriptor,node->effectInstance())
 {
+    const int dims = 2;
     const OFX::Host::Property::Set &properties = getProperties();
 
     int layoutHint = properties.getIntProperty(kOfxParamPropLayoutHint);
-    if(layoutHint == 1){
+    if (layoutHint == 1) {
         appPTR->getKnobFactory().createKnob("Separator", node, getParamLabel(this));
     }
-    _knob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", node, getParamLabel(this), 2));
-    if(layoutHint == 2){
+    _knob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", node, getParamLabel(this), dims));
+    if (layoutHint == 2) {
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(properties.getIntProperty(kOfxParamPropLayoutPadWidth));
-    if(!properties.getIntProperty(kOfxParamPropCanUndo)){
+    if (!properties.getIntProperty(kOfxParamPropCanUndo)) {
         _knob->turnOffUndoRedo();
     }
     const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
     _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
-    std::vector<int> minimum(2);
-    std::vector<int> maximum(2);
-    std::vector<int> increment(2);
-    std::vector<int> displayMins(2);
-    std::vector<int> displayMaxs(2);
-    int def[2];
+    std::vector<int> minimum(dims);
+    std::vector<int> maximum(dims);
+    std::vector<int> increment(dims);
+    std::vector<int> displayMins(dims);
+    std::vector<int> displayMaxs(dims);
+    boost::scoped_array<int> def(new int[dims]);
 
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < dims; ++i) {
         minimum[i] = properties.getIntProperty(kOfxParamPropMin,i);
         displayMins[i] = properties.getIntProperty(kOfxParamPropDisplayMin,i);
         displayMaxs[i] = properties.getIntProperty(kOfxParamPropDisplayMax,i);
@@ -627,24 +631,27 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::P
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setIncrement(increment);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
-    _knob->setValue<int>(def,2);
+    _knob->setValue<int>(def.get(),dims);
 }
+
 OfxStatus OfxInteger2DInstance::get(int& x1, int& x2) {
     x1 = _knob->getValue<int>(0);
     x2 = _knob->getValue<int>(1);
     return kOfxStatOK;
 }
-OfxStatus OfxInteger2DInstance::get(OfxTime time, int& x1, int& x2) {
 
+OfxStatus OfxInteger2DInstance::get(OfxTime time, int& x1, int& x2) {
     x1 = _knob->getValueAtTime<int>(time,0);
     x2 = _knob->getValueAtTime<int>(time,1);
     return kOfxStatOK;
 }
-OfxStatus OfxInteger2DInstance::set(int x1,int x2){
+
+OfxStatus OfxInteger2DInstance::set(int x1,int x2) {
     _knob->setValue<int>(x1,0);
     _knob->setValue<int>(x2,1);
 	return kOfxStatOK;
 }
+
 OfxStatus OfxInteger2DInstance::set(OfxTime time, int x1, int x2) {
     _knob->setValueAtTime<int>(time,x1,0);
     _knob->setValueAtTime<int>(time,x2,1);
@@ -653,15 +660,194 @@ OfxStatus OfxInteger2DInstance::set(OfxTime time, int x1, int x2) {
 
 
 // callback which should set enabled state as appropriate
-void OfxInteger2DInstance::setEnabled(){
+void OfxInteger2DInstance::setEnabled() {
     _knob->setEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
-void OfxInteger2DInstance::setSecret(){
+void OfxInteger2DInstance::setSecret() {
     _knob->setVisible(!!getSecret());
 }
-Knob* OfxInteger2DInstance::getKnob() const{
+
+Knob* OfxInteger2DInstance::getKnob() const {
+    return _knob;
+}
+
+OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
+: OFX::Host::Param::Double3DInstance(descriptor,node->effectInstance())
+{
+    const int dims = 3;
+    const OFX::Host::Property::Set &properties = getProperties();
+
+    int layoutHint = properties.getIntProperty(kOfxParamPropLayoutHint);
+    if (layoutHint == 1) {
+        appPTR->getKnobFactory().createKnob("Separator", node, getParamLabel(this));
+    }
+    _knob = dynamic_cast<Double_Knob*>(appPTR->getKnobFactory().createKnob("Double", node, getParamLabel(this),dims));
+    if (layoutHint == 2) {
+        _knob->turnOffNewLine();
+    }
+    _knob->setSpacingBetweenItems(properties.getIntProperty(kOfxParamPropLayoutPadWidth));
+    if (!properties.getIntProperty(kOfxParamPropCanUndo)) {
+        _knob->turnOffUndoRedo();
+    }
+    const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
+    _knob->setHintToolTip(hint);
+    _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
+    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+    std::vector<double> minimum(dims);
+    std::vector<double> maximum(dims);
+    std::vector<double> increment(dims);
+    std::vector<double> displayMins(dims);
+    std::vector<double> displayMaxs(dims);
+    std::vector<int> decimals(dims);
+    boost::scoped_array<double> def(new double[dims]);
+
+    for (int i=0; i < dims; ++i) {
+        minimum[i] = properties.getDoubleProperty(kOfxParamPropMin,i);
+        displayMins[i] = properties.getDoubleProperty(kOfxParamPropDisplayMin,i);
+        displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax,i);
+        maximum[i] = properties.getDoubleProperty(kOfxParamPropMax,i);
+        double incr = properties.getDoubleProperty(kOfxParamPropIncrement,i);
+        increment[i] = incr != 0 ? incr : 0.1;
+        decimals[i] = properties.getIntProperty(kOfxParamPropDigits,i);
+        def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
+    }
+
+    _knob->setMinimumsAndMaximums(minimum, maximum);
+    _knob->setIncrement(increment);
+    _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    _knob->setDecimals(decimals);
+    _knob->setValue<double>(def.get(),dims);
+}
+
+OfxStatus OfxDouble3DInstance::get(double& x1, double& x2, double& x3) {
+    x1 = _knob->getValue<double>(0);
+    x2 = _knob->getValue<double>(1);
+    x3 = _knob->getValue<double>(2);
+    return kOfxStatOK;
+}
+
+OfxStatus OfxDouble3DInstance::get(OfxTime time, double& x1, double& x2, double& x3) {
+    x1 = _knob->getValueAtTime<double>(time,0);
+    x2 = _knob->getValueAtTime<double>(time,1);
+    x3 = _knob->getValueAtTime<double>(time,2);
+    return kOfxStatOK;
+}
+
+OfxStatus OfxDouble3DInstance::set(double x1,double x2,double x3){
+    _knob->setValue<double>(x1,0);
+    _knob->setValue<double>(x2,1);
+    _knob->setValue<double>(x3,2);
+	return kOfxStatOK;
+}
+
+OfxStatus OfxDouble3DInstance::set(OfxTime time, double x1, double x2, double x3) {
+    _knob->setValueAtTime<double>(time,x1,0);
+    _knob->setValueAtTime<double>(time,x2,1);
+    _knob->setValueAtTime<double>(time,x3,2);
+	return kOfxStatOK;
+}
+
+// callback which should set enabled state as appropriate
+void OfxDouble3DInstance::setEnabled() {
+    _knob->setEnabled(getEnabled());
+}
+
+// callback which should set secret state as appropriate
+void OfxDouble3DInstance::setSecret() {
+    _knob->setVisible(!!getSecret());
+}
+
+Knob* OfxDouble3DInstance::getKnob() const {
+    return _knob;
+}
+
+
+OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::Param::Descriptor& descriptor)
+: OFX::Host::Param::Integer3DInstance(descriptor,node->effectInstance())
+{
+    const int dims = 3;
+    const OFX::Host::Property::Set &properties = getProperties();
+
+    int layoutHint = properties.getIntProperty(kOfxParamPropLayoutHint);
+    if (layoutHint == 1) {
+        appPTR->getKnobFactory().createKnob("Separator", node, getParamLabel(this));
+    }
+    _knob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", node, getParamLabel(this), dims));
+    if (layoutHint == 2) {
+        _knob->turnOffNewLine();
+    }
+    _knob->setSpacingBetweenItems(properties.getIntProperty(kOfxParamPropLayoutPadWidth));
+    if (!properties.getIntProperty(kOfxParamPropCanUndo)) {
+        _knob->turnOffUndoRedo();
+    }
+    const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
+    _knob->setHintToolTip(hint);
+    _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
+    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+    std::vector<int> minimum(dims);
+    std::vector<int> maximum(dims);
+    std::vector<int> increment(dims);
+    std::vector<int> displayMins(dims);
+    std::vector<int> displayMaxs(dims);
+    boost::scoped_array<int> def(new int[dims]);
+
+    for (int i = 0; i < dims; ++i) {
+        minimum[i] = properties.getIntProperty(kOfxParamPropMin,i);
+        displayMins[i] = properties.getIntProperty(kOfxParamPropDisplayMin,i);
+        displayMaxs[i] = properties.getIntProperty(kOfxParamPropDisplayMax,i);
+        maximum[i] = properties.getIntProperty(kOfxParamPropMax,i);
+        int incr = properties.getIntProperty(kOfxParamPropIncrement,i);
+        increment[i] = incr != 0 ?  incr : 1;
+        def[i] = properties.getIntProperty(kOfxParamPropDefault,i);
+    }
+
+    _knob->setMinimumsAndMaximums(minimum, maximum);
+    _knob->setIncrement(increment);
+    _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    _knob->setValue<int>(def.get(),dims);
+}
+
+OfxStatus OfxInteger3DInstance::get(int& x1, int& x2, int& x3) {
+    x1 = _knob->getValue<int>(0);
+    x2 = _knob->getValue<int>(1);
+    x3 = _knob->getValue<int>(2);
+    return kOfxStatOK;
+}
+
+OfxStatus OfxInteger3DInstance::get(OfxTime time, int& x1, int& x2, int& x3) {
+    x1 = _knob->getValueAtTime<int>(time,0);
+    x2 = _knob->getValueAtTime<int>(time,1);
+    x3 = _knob->getValueAtTime<int>(time,2);
+    return kOfxStatOK;
+}
+
+OfxStatus OfxInteger3DInstance::set(int x1, int x2, int x3) {
+    _knob->setValue<int>(x1,0);
+    _knob->setValue<int>(x2,1);
+    _knob->setValue<int>(x3,2);
+	return kOfxStatOK;
+}
+
+OfxStatus OfxInteger3DInstance::set(OfxTime time, int x1, int x2, int x3) {
+    _knob->setValueAtTime<int>(time,x1,0);
+    _knob->setValueAtTime<int>(time,x2,1);
+    _knob->setValueAtTime<int>(time,x3,2);
+	return kOfxStatOK;
+}
+
+// callback which should set enabled state as appropriate
+void OfxInteger3DInstance::setEnabled() {
+    _knob->setEnabled(getEnabled());
+}
+
+// callback which should set secret state as appropriate
+void OfxInteger3DInstance::setSecret() {
+    _knob->setVisible(!!getSecret());
+}
+
+Knob* OfxInteger3DInstance::getKnob() const {
     return _knob;
 }
 
