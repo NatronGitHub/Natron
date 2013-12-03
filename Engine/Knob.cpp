@@ -25,7 +25,6 @@
 
 #include "Readers/Reader.h"
 
-#include "Gui/SequenceFileDialog.h"
 #include "Gui/KnobGui.h"
 #include "Gui/DockablePanel.h"
 
