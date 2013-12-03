@@ -248,293 +248,129 @@ void OfxImageEffectInstance::getRenderScaleRecursive(double &x, double &y) const
 }
 
 // make a parameter instance
-OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& paramName, OFX::Host::Param::Descriptor& descriptor)
+OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &paramName, OFX::Host::Param::Descriptor &descriptor)
 {
-    if(descriptor.getType()==kOfxParamTypeInteger){
-        OfxIntegerInstance* ret = new OfxIntegerInstance(node(),descriptor);
-        if(ret){
-            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
-            if(it != _parentingMap.end()){
-                if(it->second->getType() == kOfxParamTypeGroup){
-                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
-                    group->addKnob(ret->getKnob());
-                }
-            }
-            _parentingMap.insert(make_pair(paramName,ret));
-            ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange()) {
-                ret->getKnob()->setIsInsignificant(true);
-            }
-            if(!descriptor.getIsPersistant()){
-                ret->getKnob()->setPersistent(false);
-            }
-            if(!descriptor.getCanAnimate()){
-                ret->getKnob()->turnOffAnimation();
-            }
-        }
+    // note: the order for parameter types is the same as in ofxParam.h
+    OFX::Host::Param::Instance* instance = NULL;
+    Knob* knob = NULL;
+
+    if (descriptor.getType() == kOfxParamTypeInteger) {
+        OfxIntegerInstance *ret = new OfxIntegerInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
+
+    } else if (descriptor.getType() == kOfxParamTypeDouble) {
+        OfxDoubleInstance  *ret = new OfxDoubleInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
+
+    } else if (descriptor.getType() == kOfxParamTypeBoolean) {
+        OfxBooleanInstance *ret = new OfxBooleanInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
+
+    } else if (descriptor.getType() == kOfxParamTypeChoice) {
+        OfxChoiceInstance *ret = new OfxChoiceInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
+
+    } else if (descriptor.getType() == kOfxParamTypeRGBA) {
+        OfxRGBAInstance *ret = new OfxRGBAInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
+
+    } else if (descriptor.getType() == kOfxParamTypeRGB) {
+        OfxRGBInstance *ret = new OfxRGBInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
+
+    } else if (descriptor.getType() == kOfxParamTypeDouble2D) {
+        OfxDouble2DInstance *ret = new OfxDouble2DInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
+
+    } else if (descriptor.getType() == kOfxParamTypeInteger2D) {
+        OfxInteger2DInstance *ret = new OfxInteger2DInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
+
+    } else if (descriptor.getType() == kOfxParamTypeDouble3D) {
+        OfxDouble3DInstance *ret = new OfxDouble3DInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
+
+    } else if (descriptor.getType() == kOfxParamTypeInteger3D) {
+        OfxInteger3DInstance *ret = new OfxInteger3DInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
+
+    } else if (descriptor.getType() == kOfxParamTypeString) {
+        OfxStringInstance *ret = new OfxStringInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
+
+    } else if (descriptor.getType() == kOfxParamTypeCustom) {
+        /*
+         http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamTypeCustom
+
+         Custom parameters contain null terminated char * C strings, and may animate. They are designed to provide plugins with a way of storing data that is too complicated or impossible to store in a set of ordinary parameters.
+
+        If a custom parameter animates, it must set its kOfxParamPropCustomInterpCallbackV1 property, which points to a OfxCustomParamInterpFuncV1 function. This function is used to interpolate keyframes in custom params.
+
+        Custom parameters have no interface by default. However,
+
+        * if they animate, the host's animation sheet/editor should present a keyframe/curve representation to allow positioning of keys and control of interpolation. The 'normal' (ie: paged or hierarchical) interface should not show any gui.
+        * if the custom param sets its kOfxParamPropInteractV1 property, this should be used by the host in any normal (ie: paged or hierarchical) interface for the parameter.
+
+        Custom parameters are mandatory, as they are simply ASCII C strings. However, animation of custom parameters an support for an in editor interact is optional.
+         */
+        throw std::runtime_error(std::string("Parameter ") + paramName + std::string(" has unsupported OFX type ") + descriptor.getType());
+
+    } else if (descriptor.getType() == kOfxParamTypeGroup) {
+        OfxGroupInstance *ret = new OfxGroupInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
+
+    } else if (descriptor.getType() == kOfxParamTypePage) {
+        OFX::Host::Param::PageInstance *ret = new OFX::Host::Param::PageInstance(descriptor, this);
+        // RETURN immediately, nothing else to do
         return ret;
 
-    }else if(descriptor.getType()==kOfxParamTypeDouble){
-        OfxDoubleInstance*  ret = new OfxDoubleInstance(node(),descriptor);
-        if(ret){
-            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
-            if(it != _parentingMap.end()){
-                if(it->second->getType() == kOfxParamTypeGroup){
-                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
-                    group->addKnob(ret->getKnob());
-                }
-            }
-            _parentingMap.insert(make_pair(paramName,ret));
-            ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange()) {
-                ret->getKnob()->setIsInsignificant(true);
-            }
-            if(!descriptor.getIsPersistant()){
-                ret->getKnob()->setPersistent(false);
-            }
-            if(!descriptor.getCanAnimate()){
-                ret->getKnob()->turnOffAnimation();
-            }
-        }
-        return ret;
-
-    }else if(descriptor.getType()==kOfxParamTypeBoolean){
-        OfxBooleanInstance* ret = new OfxBooleanInstance(node(),descriptor);
-        if(ret){
-            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
-            if(it != _parentingMap.end()){
-                if(it->second->getType() == kOfxParamTypeGroup){
-                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
-                    group->addKnob(ret->getKnob());
-                }
-            }
-            _parentingMap.insert(make_pair(paramName,ret));
-            ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange()) {
-                ret->getKnob()->setIsInsignificant(true);
-            }
-            if(!descriptor.getIsPersistant()){
-                ret->getKnob()->setPersistent(false);
-            }
-            if(!descriptor.getCanAnimate()){
-                ret->getKnob()->turnOffAnimation();
-            }
-
-        }
-        return ret;
-
-    }else if(descriptor.getType()==kOfxParamTypeChoice){
-        OfxChoiceInstance* ret = new OfxChoiceInstance(node(),descriptor);
-        if(ret){
-            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
-            if(it != _parentingMap.end()){
-                if(it->second->getType() == kOfxParamTypeGroup){
-                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
-                    group->addKnob(ret->getKnob());
-                }
-            }
-            _parentingMap.insert(make_pair(paramName,ret));
-            ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange()) {
-                ret->getKnob()->setIsInsignificant(true);
-            }
-            if(!descriptor.getIsPersistant()){
-                ret->getKnob()->setPersistent(false);
-            }
-            if(!descriptor.getCanAnimate()){
-                ret->getKnob()->turnOffAnimation();
-            }
-        }
-        return ret;
-
-    }else if(descriptor.getType()==kOfxParamTypeRGBA){
-        OfxRGBAInstance* ret = new OfxRGBAInstance(node(),descriptor);
-        if(ret){
-            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
-            if(it != _parentingMap.end()){
-                if(it->second->getType() == kOfxParamTypeGroup){
-                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
-                    group->addKnob(ret->getKnob());
-                }
-            }
-            _parentingMap.insert(make_pair(paramName,ret));
-            ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange()) {
-                ret->getKnob()->setIsInsignificant(true);
-            }
-            if(!descriptor.getIsPersistant()){
-                ret->getKnob()->setPersistent(false);
-            }
-            if(!descriptor.getCanAnimate()){
-                ret->getKnob()->turnOffAnimation();
-            }
-        }
-        return ret;
-
-    }else if(descriptor.getType()==kOfxParamTypeRGB){
-        OfxRGBInstance* ret = new OfxRGBInstance(node(),descriptor);
-        if(ret){
-            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
-            if(it != _parentingMap.end()){
-                if(it->second->getType() == kOfxParamTypeGroup){
-                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
-                    group->addKnob(ret->getKnob());
-                }
-            }
-            _parentingMap.insert(make_pair(paramName,ret));
-            ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange()) {
-                ret->getKnob()->setIsInsignificant(true);
-            }
-            if(!descriptor.getIsPersistant()){
-                ret->getKnob()->setPersistent(false);
-            }
-            if(!descriptor.getCanAnimate()){
-                ret->getKnob()->turnOffAnimation();
-            }
-        }
-        return ret;
-
-    }else if(descriptor.getType()==kOfxParamTypeDouble2D){
-        OfxDouble2DInstance* ret = new OfxDouble2DInstance(node(),descriptor);
-        if(ret){
-            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
-            if(it != _parentingMap.end()){
-                if(it->second->getType() == kOfxParamTypeGroup){
-                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
-                    group->addKnob(ret->getKnob());
-                }
-            }
-            _parentingMap.insert(make_pair(paramName,ret));
-            ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange()) {
-                ret->getKnob()->setIsInsignificant(true);
-            }
-            if(!descriptor.getIsPersistant()){
-                ret->getKnob()->setPersistent(false);
-            }
-            if(!descriptor.getCanAnimate()){
-                ret->getKnob()->turnOffAnimation();
-            }
-        }
-        return ret;
-
-    }else if(descriptor.getType()==kOfxParamTypeInteger2D){
-        OfxInteger2DInstance* ret = new OfxInteger2DInstance(node(),descriptor);
-        if(ret){
-            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
-            if(it != _parentingMap.end()){
-                if(it->second->getType() == kOfxParamTypeGroup){
-                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
-                    group->addKnob(ret->getKnob());
-                }
-            }
-            _parentingMap.insert(make_pair(paramName,ret));
-            ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange()) {
-                ret->getKnob()->setIsInsignificant(true);
-            }
-            if(!descriptor.getIsPersistant()){
-                ret->getKnob()->setPersistent(false);
-            }
-            if(!descriptor.getCanAnimate()){
-                ret->getKnob()->turnOffAnimation();
-            }
-        }
-        return ret;
-
-    }else if(descriptor.getType()==kOfxParamTypePushButton){
-        OfxPushButtonInstance* ret = new OfxPushButtonInstance(node(),descriptor);
-        if(ret){
-            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
-            if(it != _parentingMap.end()){
-                if(it->second->getType() == kOfxParamTypeGroup){
-                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
-                    group->addKnob(ret->getKnob());
-                }
-            }
-            _parentingMap.insert(make_pair(paramName,ret));
-            ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange()) {
-                ret->getKnob()->setIsInsignificant(true);
-            }
-            if(!descriptor.getIsPersistant()){
-                ret->getKnob()->setPersistent(false);
-            }
-            if(!descriptor.getCanAnimate()){
-                ret->getKnob()->turnOffAnimation();
-            }
-        }
-        return ret;
-
-    }else if(descriptor.getType()==kOfxParamTypeGroup){
-        OfxGroupInstance* ret = new OfxGroupInstance(node(),descriptor);
-        if(ret){
-            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
-            if(it != _parentingMap.end()){
-                if(it->second->getType() == kOfxParamTypeGroup){
-                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
-                    group->addKnob(ret->getKnob());
-                }
-            }
-            _parentingMap.insert(make_pair(paramName,ret));
-            ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange()) {
-                ret->getKnob()->setIsInsignificant(true);
-            }
-            if(!descriptor.getIsPersistant()){
-                ret->getKnob()->setPersistent(false);
-            }
-            if(!descriptor.getCanAnimate()){
-                ret->getKnob()->turnOffAnimation();
-            }
-        }
-        return ret;
-
-    }else if(descriptor.getType()==kOfxParamTypePage){
-        OFX::Host::Param::PageInstance* ret = new OFX::Host::Param::PageInstance(descriptor,this);
-        return ret;
-    }else if(descriptor.getType()==kOfxParamTypeString){
-        OfxStringInstance* ret = new OfxStringInstance(node(),descriptor);if(ret){
-            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
-            if(it != _parentingMap.end()){
-                if(it->second->getType() == kOfxParamTypeGroup){
-                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
-                    group->addKnob(ret->getKnob());
-                }
-            }
-            _parentingMap.insert(make_pair(paramName,ret));
-            ret->getKnob()->setName(paramName);
-            if (!descriptor.getEvaluateOnChange()) {
-                ret->getKnob()->setIsInsignificant(true);
-            }
-            if(!descriptor.getIsPersistant()){
-                ret->getKnob()->setPersistent(false);
-            }
-            if(!descriptor.getCanAnimate()){
-                ret->getKnob()->turnOffAnimation();
-            }
-        }
-        return ret;
-    }else{
-        return 0;
+    } else if (descriptor.getType() == kOfxParamTypePushButton) {
+        OfxPushButtonInstance *ret = new OfxPushButtonInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
     }
+
+    if (!instance) {
+        throw std::runtime_error(std::string("Parameter ") + paramName + std::string(" has unknown OFX type ") + descriptor.getType());
+    }
+
+    std::string parent = instance->getProperties().getStringProperty(kOfxParamPropParent);
+    std::map<std::string, OFX::Host::Param::Instance *>::const_iterator it = _parentingMap.find(parent);
+    if (it != _parentingMap.end()) {
+        if (it->second->getType() == kOfxParamTypeGroup) {
+            OfxGroupInstance *group = dynamic_cast<OfxGroupInstance *>(it->second);
+            group->addKnob(knob);
+        }
+    }
+    _parentingMap.insert(make_pair(paramName, instance));
+    knob->setName(paramName);
+    if (!descriptor.getEvaluateOnChange()) {
+        knob->setIsInsignificant(true);
+    }
+    if (!descriptor.getIsPersistant()) {
+        knob->setPersistent(false);
+    }
+    if (!descriptor.getCanAnimate()) {
+        knob->turnOffAnimation();
+    }
+    return instance;
+
 }
 
-
 /** @brief Used to group any parameter changes for undo/redo purposes
- 
+
  \arg paramSet   the parameter set in which this is happening
  \arg name       label to attach to any undo/redo string UTF8
  

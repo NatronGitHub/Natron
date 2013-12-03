@@ -175,11 +175,17 @@ Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
             node = new InspectorNode(this,pluginBinary,name.toStdString());
         }
     } catch (const std::exception& e) {
-        qDebug() << "Exception while creating node" << ": " << e.what();
+        std::string title = std::string("Exception while creating node");
+        std::string message = title + " " + name.toStdString() + ": " + e.what();
+        qDebug() << message.c_str();
+        errorDialog(title, message);
         delete node;
         return NULL;
     } catch (...) {
-        qDebug() << "Exception while creating node";
+        std::string title = std::string("Exception while creating node");
+        std::string message = title + " " + name.toStdString();
+        qDebug() << message.c_str();
+        errorDialog(title, message);
         delete node;
         return NULL;
     }

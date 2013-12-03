@@ -211,7 +211,7 @@ public:
         }
         
         /*frame index is a frame index as read in the file name.*/
-        bool addToSequence(int frameIndex) { _frames.insert(frameIndex); }
+        bool addToSequence(int frameIndex) { return _frames.insert(frameIndex).second; }
         
         
     private:
