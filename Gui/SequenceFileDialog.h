@@ -16,6 +16,7 @@
 #include <string>
 #include <map>
 #include <utility>
+#include <set>
 
 #include <boost/shared_ptr.hpp>
 
@@ -184,31 +185,38 @@ public:
     
     class FrameIndexes{
     public:
-        FrameIndexes():_isEmpty(true),_firstFrame(999999),_lastFrame(-1),_size(0){}
+        FrameIndexes(){}
         
         ~FrameIndexes(){}
         
-        bool isEmpty() const {return _isEmpty;}
+        bool isEmpty() const {return _frames.empty();}
         
-        int firstFrame() const {return _firstFrame;}
+        int firstFrame() const { return _frames.empty() ? INT_MIN : *_frames.begin(); }
         
-        int lastFrame() const {return _lastFrame;}
+        int lastFrame() const {
+            if(_frames.empty()){
+                return INT_MAX;
+            }else{
+                 std::set<int>::iterator it = _frames.end();
+                 --it;
+                 return *it;
+            }
+        }
         
-        int size() const {return _size;}
+        int size() const {return _frames.size();}
         
         /*frame index is a frame index as read in the file name.*/
-        bool isInSequence(int frameIndex) const;
+        bool isInSequence(int frameIndex) const {
+            return _frames.find(frameIndex) != _frames.end();
+        }
         
         /*frame index is a frame index as read in the file name.*/
-        bool addToSequence(int frameIndex);
+        bool addToSequence(int frameIndex) { _frames.insert(frameIndex); }
         
         
     private:
         
-        bool _isEmpty;
-        int _firstFrame,_lastFrame;
-        int _size;
-        std::vector<quint64> _bits; /// each bit of a quint64 represents a frame index. The storage is a vector if there're more than 64
+        std::set<int> _frames; /// each bit  represents a frame index. The storage is a vector if there're more than 64
                                     /// files in the sequence. The first frame and the last frame are not counted in these bits.
     };
     

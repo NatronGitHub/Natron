@@ -733,9 +733,7 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
         for(Natron::SequenceIterator it2 = it.first; it2!=it.second; ++it2) {
             if(it2->second->getFileType() == extension.toStdString()){
                 it2->second->addToSequence(frameNumber,path);
-                if(frameNumber == it2->second->firstFrame())
-                    return true;
-                return false;
+                return frameNumber == it2->second->firstFrame();
             }
         }
         /*if it reaches here it means there's already a sequence with the same name but
@@ -2247,64 +2245,6 @@ void FileDialogComboBox::paintEvent(QPaintEvent *){
     painter.drawControl(QStyle::CE_ComboBoxLabel, opt);
 }
 
-
-bool FileSequence::FrameIndexes::isInSequence(int frameIndex) const{
-    if(_firstFrame == 999999)
-        return false;
-    if (frameIndex == _firstFrame || frameIndex == _lastFrame) {
-        return true;
-    }
-    // assuming frameIndex is positive,offset is the index in the bits to look for (starting at 0)
-    int offset = frameIndex - _firstFrame - 1;
-    int bitsIndex = offset / 64; //accessing the proper variable containing the bit
-    int bitsOffset = (offset+1) % (64+1);
-    if(bitsIndex < (int)_bits.size()){
-        quint64 frames = _bits[bitsIndex];
-        quint64 base = 1;
-        return frames & ( base << bitsOffset);
-    }else{
-        return false;
-    }
-
-}
-bool FileSequence::FrameIndexes::addToSequence(int frameIndex){
-    if (frameIndex == _firstFrame || frameIndex == _lastFrame) {
-        return false;
-    }
-    if(_firstFrame == 999999){
-        _firstFrame = frameIndex;
-        _lastFrame = _firstFrame;
-        _isEmpty = false;
-        ++_size;
-        return true;
-    }
-    if(frameIndex < _firstFrame)
-        _firstFrame = frameIndex;
-    if(frameIndex > _lastFrame)
-        _lastFrame = frameIndex;
-    int offset = frameIndex - _firstFrame -1; // assuming frameIndex is positive,offset is the index in the bits to look for (starting at 0)
-    int bitsIndex = offset / 64; //accessing the proper variable containing the bit
-    int bitsOffset = (offset+1) % (64+1);
-    quint64 frames = 0;
-    if(bitsIndex < (int)_bits.size()){
-        frames = _bits[bitsIndex];
-    }
-    quint64 base = 1;
-    if(!(frames & ( base << bitsOffset))){ // if the item is not in sequence
-        frames |= (base << bitsOffset); // add it
-        if(bitsIndex >= (int)_bits.size()){
-            _bits.push_back(frames);
-        }else{
-            _bits[bitsIndex] = frames;
-        }
-        ++_size;
-        _isEmpty = false;
-
-        return true;
-    }
-    return false;
-
-}
 
 std::vector<QStringList> SequenceFileDialog::fileSequencesFromFilesList(const QStringList& files,const QStringList& supportedFileTypes){
     std::vector<QStringList> ret;
