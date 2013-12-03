@@ -128,7 +128,13 @@ public:
 
     void addKeyFrame(KnobGui* knob,SequenceTime time,int dimension);
 
+    void addKeyFrame(CurveGui* curve,SequenceTime time,const Variant& value);
+
+    void addKeyFrames(CurveGui* curve,const std::vector<std::pair<SequenceTime,Variant> >& keys);
+
     void removeKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key);
+
+    void removeKeyFrames(const std::vector<std::pair<CurveGui *, boost::shared_ptr<KeyFrame> > > &keys);
 
     void setKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key,double x,const Variant& y);
 
