@@ -189,8 +189,8 @@ void TimeLineGui::paintGL(){
 
 
     /// change the backgroud color of the portion of the timeline where images are lying
-    QPoint firstFrameWidgetPos = toWidgetCoordinates(_imp->_timeline->firstFrame(),0);
-    QPoint lastFrameWidgetPos = toWidgetCoordinates(_imp->_timeline->lastFrame(),0);
+    QPointF firstFrameWidgetPos = toWidgetCoordinates(_imp->_timeline->firstFrame(),0);
+    QPointF lastFrameWidgetPos = toWidgetCoordinates(_imp->_timeline->lastFrame(),0);
 
     // glPushAttrib(GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT);
     glPushAttrib(GL_ALL_ATTRIB_BITS);
@@ -280,21 +280,21 @@ void TimeLineGui::paintGL(){
     checkGLErrors();
 
     QPointF cursorBtm(_imp->_timeline->currentFrame(),lineYpos);
-    QPoint cursorBtmWidgetCoord = toWidgetCoordinates(cursorBtm.x(),cursorBtm.y());
+    QPointF cursorBtmWidgetCoord = toWidgetCoordinates(cursorBtm.x(),cursorBtm.y());
     QPointF cursorTopLeft = toTimeLineCoordinates(cursorBtmWidgetCoord.x() - CURSOR_WIDTH /2,
                                                   cursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
     QPointF cursorTopRight = toTimeLineCoordinates(cursorBtmWidgetCoord.x() + CURSOR_WIDTH /2,
                                                    cursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
 
     QPointF leftBoundBtm(_imp->_timeline->leftBound(),lineYpos);
-    QPoint leftBoundWidgetCoord = toWidgetCoordinates(leftBoundBtm.x(),leftBoundBtm.y());
+    QPointF leftBoundWidgetCoord = toWidgetCoordinates(leftBoundBtm.x(),leftBoundBtm.y());
     QPointF leftBoundBtmRight = toTimeLineCoordinates(leftBoundWidgetCoord.x() + CURSOR_WIDTH /2,
                                                       leftBoundWidgetCoord.y());
     QPointF leftBoundTop = toTimeLineCoordinates(leftBoundWidgetCoord.x(),
                                                  leftBoundWidgetCoord.y() - CURSOR_HEIGHT);
 
     QPointF rightBoundBtm(_imp->_timeline->rightBound(),lineYpos);
-    QPoint rightBoundWidgetCoord = toWidgetCoordinates(rightBoundBtm.x(),rightBoundBtm.y());
+    QPointF rightBoundWidgetCoord = toWidgetCoordinates(rightBoundBtm.x(),rightBoundBtm.y());
     QPointF rightBoundBtmLeft = toTimeLineCoordinates(rightBoundWidgetCoord.x() - CURSOR_WIDTH /2,
                                                       rightBoundWidgetCoord.y());
     QPointF rightBoundTop = toTimeLineCoordinates(rightBoundWidgetCoord.x(),
@@ -604,7 +604,7 @@ SequenceTime TimeLineGui::currentFrame() const { return _imp->_timeline->current
 
 
 
-QPointF TimeLineGui::toTimeLineCoordinates(int x,int y) const {
+QPointF TimeLineGui::toTimeLineCoordinates(double x,double y) const {
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _imp->_zoomCtx._bottom;
@@ -614,12 +614,12 @@ QPointF TimeLineGui::toTimeLineCoordinates(int x,int y) const {
     return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
 }
 
-QPoint TimeLineGui::toWidgetCoordinates(double x, double y) const {
+QPointF TimeLineGui::toWidgetCoordinates(double x, double y) const {
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _imp->_zoomCtx._bottom;
     double left = _imp->_zoomCtx._left;
     double top =  bottom +  h / _imp->_zoomCtx._zoomFactor ;
     double right = left +  w / _imp->_zoomCtx._zoomFactor;
-    return QPoint((int)(((x - left)/(right - left))*w),(int)(((y - top)/(bottom - top))*h));
+    return QPoint(((x - left)/(right - left))*w,((y - top)/(bottom - top))*h);
 }

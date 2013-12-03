@@ -210,6 +210,12 @@ void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrames::iterato
         vprev = (*prev)->getValue().value<double>();
         vprevDerivRight = (*prev)->getRightTangent().value<double>();
         prevType = (*prev)->getInterpolation();
+
+        //if prev is the first keyframe, and not edited by the user then interpolate linearly
+        if(prev == _imp->_keyFrames.begin() && prevType != Natron::KEYFRAME_FREE &&
+                prevType != Natron::KEYFRAME_BROKEN){
+            prevType = Natron::KEYFRAME_LINEAR;
+        }
     }
 
     KeyFrames::const_iterator next = key;
@@ -224,6 +230,14 @@ void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrames::iterato
         vnext = (*next)->getValue().value<double>();
         vnextDerivLeft = (*next)->getLeftTangent().value<double>();
         nextType = (*next)->getInterpolation();
+
+        KeyFrames::const_iterator nextnext = next;
+        ++nextnext;
+        //if next is thelast keyframe, and not edited by the user then interpolate linearly
+        if(nextnext == _imp->_keyFrames.end() && nextType != Natron::KEYFRAME_FREE &&
+                nextType != Natron::KEYFRAME_BROKEN){
+            nextType = Natron::KEYFRAME_LINEAR;
+        }
     }
 
     double vcurDerivLeft,vcurDerivRight;

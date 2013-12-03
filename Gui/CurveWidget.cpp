@@ -56,32 +56,46 @@ CurveGui::~CurveGui(){
 }
 
 void CurveGui::nextPointForSegment(double x1, double* x2){
-    //    const Curve::KeyFrames& keys = _internalCurve->getKeyFrames();
-    //    assert(!keys.empty());
-    //    int xminCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keys.front()->getTime(),0).x();
-    //    int xmaxCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keys.back()->getTime(),0).x();
-    //    if(x1 < xminCurveWidgetCoord){
-    //         *x2 = xminCurveWidgetCoord;
-    //    }else if(x1 >= xmaxCurveWidgetCoord){
-    //        *x2 = _curveWidget->toWidgetCoordinates(_curveWidget->width(),0).x();;
-    //    }else{
-    //        //we're between 2 keyframes,get the upper and lower
-    //        Curve::KeyFrames::const_iterator upper = keys.end();
-    //        for(Curve::KeyFrames::const_iterator it = keys.begin();it!=keys.end();++it){
-    //            int keyPosWidgetCoord = _curveWidget->toWidgetCoordinates((*it)->getTime(),0).x();
-    //            if(keyPosWidgetCoord > x1){
-    //                upper = it;
-    //                break;
-    //            }
-    //        }
-    //        assert(upper != keys.end() && upper!= keys.begin());
+        const Curve::KeyFrames& keys = _internalCurve->getKeyFrames();
+        assert(!keys.empty());
+        double xminCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keys.front()->getTime(),0).x();
+        double xmaxCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keys.back()->getTime(),0).x();
+        if(x1 < xminCurveWidgetCoord){
+             *x2 = xminCurveWidgetCoord;
+        }else if(x1 >= xmaxCurveWidgetCoord){
+            *x2 = _curveWidget->width() - 1;
+        }else{
+            //we're between 2 keyframes,get the upper and lower
+            Curve::KeyFrames::const_iterator upper = keys.end();
+            double upperWidgetCoord;
+            for(Curve::KeyFrames::const_iterator it = keys.begin();it!=keys.end();++it){
+                upperWidgetCoord = _curveWidget->toWidgetCoordinates((*it)->getTime(),0).x();
+                if(upperWidgetCoord > x1){
+                    upper = it;
+                    break;
+                }
+            }
+            assert(upper != keys.end() && upper!= keys.begin());
 
-    //        Curve::KeyFrames::const_iterator lower = upper;
-    //        --lower;
+            Curve::KeyFrames::const_iterator lower = upper;
+            --lower;
 
-    //        double curvatureAtX =
-    //        *x2 = 2. / std::max(,0.1);
-    //    }
+            double t = ( x1 - (*lower)->getTime() ) / ((*upper)->getTime() - (*lower)->getTime());
+            double P3 = (*upper)->getValue().value<double>();
+            double P0 = (*lower)->getValue().value<double>();
+            double P3pl = (*upper)->getLeftTangent().value<double>();
+            double P0pr = (*lower)->getRightTangent().value<double>();
+            double secondDer = 6. * (1. - t) *(P3 - P3pl / 3. - P0 - 2. * P0pr / 3.) +
+                    6.* t * (P0 - P3 + 2 * P3pl / 3. + P0pr / 3. );
+            double secondDerWidgetCoord = std::abs(_curveWidget->toWidgetCoordinates(0,secondDer).y()
+                     / ((*upper)->getTime() - (*lower)->getTime()));
+            // compute delta_x so that the y difference between the tangent and the curve is at most
+            // 1 pixel (use the second order Taylor expansion of the function)
+            double delta_x = std::max(2. / std::max(std::sqrt(secondDerWidgetCoord),0.1), 1.);
+
+            *x2 = std::min(x1 + delta_x,upperWidgetCoord);
+
+        }
 
 }
 
@@ -91,14 +105,24 @@ void CurveGui::drawCurve(){
 
     assert(QGLContext::currentContext() == _curveWidget->context());
 
-    int w = _curveWidget->width();
-    float* vertices = new float[w * 2];
-    int vertIndex = 0;
-    for(int i = 0 ; i < w;++i,vertIndex+=2){
-        double x = _curveWidget->toScaleCoordinates(i,0).x();
+    std::vector<float> vertices;
+    double x1 = 0;
+    double x2;
+    double w = _curveWidget->width();
+    while(x1 < (w -1)){
+        double x = _curveWidget->toScaleCoordinates(x1,0).x();
         double y = evaluate(x);
-        vertices[vertIndex] = (float)x;
-        vertices[vertIndex+1] = (float)y;
+        vertices.push_back((float)x);
+        vertices.push_back((float)y);
+        nextPointForSegment(x1,&x2);
+        x1 = x2;
+    }
+    //also add the last point
+    {
+        double x = _curveWidget->toScaleCoordinates(x1,0).x();
+        double y = evaluate(x);
+        vertices.push_back((float)x);
+        vertices.push_back((float)y);
     }
 
     const QColor& curveColor = _selected ?  _curveWidget->getSelectedCurveColor() : _color;
@@ -114,7 +138,7 @@ void CurveGui::drawCurve(){
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
     glBegin(GL_LINE_STRIP);
-    for(int i = 0; i < w*2;i+=2){
+    for(int i = 0; i < (int)vertices.size();i+=2){
         glVertex2f(vertices[i],vertices[i+1]);
     }
     glEnd();
@@ -122,7 +146,6 @@ void CurveGui::drawCurve(){
 
     glDisable(GL_LINE_SMOOTH);
     checkGLErrors();
-    delete [] vertices;
 
     glLineWidth(1.);
 
@@ -502,7 +525,7 @@ CurveWidget::Curves::const_iterator CurveWidget::isNearbyCurve(const QPoint &pt)
     for(Curves::const_iterator it = _curves.begin();it!=_curves.end();++it){
         if((*it)->isVisible()){
             double y = (*it)->evaluate(openGL_pos.x());
-            int yWidget = toWidgetCoordinates(0,y).y();
+            double yWidget = toWidgetCoordinates(0,y).y();
             if(std::abs(pt.y() - yWidget) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE){
                 return it;
             }
@@ -516,7 +539,7 @@ std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > CurveWidget::isNearbyKeyFrame(
         if((*it)->isVisible()){
             const Curve::KeyFrames& keyFrames = (*it)->getInternalCurve()->getKeyFrames();
             for (Curve::KeyFrames::const_iterator it2 = keyFrames.begin(); it2 != keyFrames.end(); ++it2) {
-                QPoint keyFramewidgetPos = toWidgetCoordinates((*it2)->getTime(), (*it2)->getValue().toDouble());
+                QPointF keyFramewidgetPos = toWidgetCoordinates((*it2)->getTime(), (*it2)->getValue().toDouble());
                 if((std::abs(pt.y() - keyFramewidgetPos.y()) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
                         (std::abs(pt.x() - keyFramewidgetPos.x()) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)){
                     return std::make_pair((*it),(*it2));
@@ -641,9 +664,9 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
                         ((nextKey != keys.end() && newValue < (*nextKey)->getTime()) || nextKey == keys.end())){
                     newX = newValue;
                 }else if(prevKey != keys.end() && newValue <= (*prevKey)->getTime()){
-                    newX = (*prevKey)->getTime();
+                    newX = (*prevKey)->getTime()+1;
                 }else if(nextKey != keys.end() && newValue >= (*nextKey)->getTime()){
-                    newX = (*nextKey)->getTime();
+                    newX = (*nextKey)->getTime()-1;
                 }
 
             }else{
@@ -686,7 +709,7 @@ void CurveWidget::wheelEvent(QWheelEvent *event){
 
 }
 
-QPointF CurveWidget::toScaleCoordinates(int x,int y) const {
+QPointF CurveWidget::toScaleCoordinates(double x,double y) const {
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _zoomCtx._bottom;
@@ -696,14 +719,14 @@ QPointF CurveWidget::toScaleCoordinates(int x,int y) const {
     return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
 }
 
-QPoint CurveWidget::toWidgetCoordinates(double x, double y) const {
+QPointF CurveWidget::toWidgetCoordinates(double x, double y) const {
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _zoomCtx._bottom;
     double left = _zoomCtx._left;
     double top =  bottom +  h / _zoomCtx._zoomFactor * ASPECT_RATIO;
     double right = left +  w / _zoomCtx._zoomFactor;
-    return QPoint((int)(((x - left)/(right - left))*w),(int)(((y - top)/(bottom - top))*h));
+    return QPointF(((x - left)/(right - left))*w,((y - top)/(bottom - top))*h);
 }
 
 QSize CurveWidget::sizeHint() const{

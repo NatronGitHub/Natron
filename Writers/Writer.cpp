@@ -73,9 +73,9 @@ static QString viewToString(int view,int viewsCount){
         return "";
     }else if(viewsCount == 2){
         if(view == 0){
-            return "_left";
+            return "_l";
         }else{
-            return "_right";
+            return "_r";
         }
     }else{
         return QString("_view")+QString::number(view);
@@ -110,18 +110,16 @@ boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,int view,int to
     if(i != -1){
         filename.truncate(i); // truncate the extension
     }
-    filename.append(viewToString(view,totalViews));
-    filename.append('.');
-    filename.append(fileType.c_str());
-    
     i = filename.lastIndexOf(QChar('#'));
-    QString n = QString::number(time);
+    QString n = viewToString(view,totalViews) + QString("_") +  QString::number(time)  ;
     if(i != -1){
         filename = filename.replace(i,1,n);
     }else{
         i = filename.lastIndexOf(QChar('.'));
         filename = filename.insert(i, n);
     }
+    filename.append('.');
+    filename.append(fileType.c_str());
     
     encoder->setOptionalKnobsPtr(_writeOptions);
     encoder->initializeColorSpace();

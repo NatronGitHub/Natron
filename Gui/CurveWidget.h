@@ -174,12 +174,12 @@ public:
     /**
      *@brief See toImgCoordinates_fast in ViewerGL.h
      **/
-    QPointF toScaleCoordinates(int x,int y) const;
+    QPointF toScaleCoordinates(double x, double y) const;
 
     /**
      *@brief See toWidgetCoordinates in ViewerGL.h
      **/
-    QPoint toWidgetCoordinates(double x, double y) const;
+    QPointF toWidgetCoordinates(double x, double y) const;
 
     const QColor& getSelectedCurveColor() const { return _selectedCurveColor; }
 

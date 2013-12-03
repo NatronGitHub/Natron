@@ -131,12 +131,12 @@ private :
     /**
      *@brief See toImgCoordinates_fast in ViewerGL.h
      **/
-    QPointF toScaleCoordinates(int x,int y);
+    QPointF toScaleCoordinates(double x, double y);
 
     /**
      *@brief See toWidgetCoordinates in ViewerGL.h
      **/
-    QPoint toWidgetCoordinates(double x, double y);
+    QPointF toWidgetCoordinates(double x, double y);
 
     void drawScale();
 };

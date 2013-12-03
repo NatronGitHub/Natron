@@ -1315,7 +1315,7 @@ void ViewerGL::zoomSlot(QString str){
     zoomSlot(v);
 }
 
-QPointF ViewerGL::toImgCoordinates_fast(int x,int y){
+QPointF ViewerGL::toImgCoordinates_fast(double x,double y){
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _imp->zoomCtx.bottom;
@@ -1325,14 +1325,14 @@ QPointF ViewerGL::toImgCoordinates_fast(int x,int y){
     return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
 }
 
-QPoint ViewerGL::toWidgetCoordinates(double x, double y){
+QPointF ViewerGL::toWidgetCoordinates(double x, double y){
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _imp->zoomCtx.bottom;
     double left = _imp->zoomCtx.left;
     double top =  bottom +  h / _imp->zoomCtx.zoomFactor * _imp->currentViewerInfos.getDisplayWindow().getPixelAspect();
     double right = left +  w / _imp->zoomCtx.zoomFactor;
-    return QPoint((int)(((x - left)/(right - left))*w),(int)(((y - top)/(bottom - top))*h));
+    return QPoint(((x - left)/(right - left))*w,(y - top)/((bottom - top))*h);
 }
 
 #if 0

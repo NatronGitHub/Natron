@@ -154,7 +154,7 @@ public:
      *@param y[in] The y coordinates of the point in image coordinates.
      *@returns Returns the viewport coordinates mapped equivalent of (x,y).
      **/
-    QPoint toWidgetCoordinates(double x,double y);
+    QPointF toWidgetCoordinates(double x,double y);
     
     /**
      *@brief Computes the image coordinates of the point passed in parameter.
@@ -173,7 +173,7 @@ public:
      *@param y[in] The y coordinates of the point in viewport coordinates.
      *@returns Returns the image coordinates mapped equivalent of (x,y).
      **/
-    QPointF toImgCoordinates_fast(int x,int y);
+    QPointF toImgCoordinates_fast(double x, double y);
     
     /**
      *@brief Returns the rgba components of the pixel located at position (x,y) in viewport coordinates.

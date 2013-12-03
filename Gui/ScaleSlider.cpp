@@ -306,7 +306,7 @@ void ScaleSlider::seekInternal(double v){
     emit positionChanged(v);
 }
 
-QPointF ScaleSlider::toScaleCoordinates(int x,int y){
+QPointF ScaleSlider::toScaleCoordinates(double x,double y){
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _zoomCtx._bottom;
@@ -316,14 +316,14 @@ QPointF ScaleSlider::toScaleCoordinates(int x,int y){
     return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
 }
 
-QPoint ScaleSlider::toWidgetCoordinates(double x, double y){
+QPointF ScaleSlider::toWidgetCoordinates(double x, double y){
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _zoomCtx._bottom;
     double left = _zoomCtx._left;
     double top =  bottom +  h / _zoomCtx._zoomFactor;
     double right = left +  w / _zoomCtx._zoomFactor;
-    return QPoint((int)(((x - left)/(right - left))*w),(int)(((y - top)/(bottom - top))*h));
+    return QPoint(((x - left)/(right - left))*w,((y - top)/(bottom - top))*h);
 }
 
 // Algorithms SCALE1, SCALE2 and SCALE3 for Determination of Scales on Computer Generated Plots

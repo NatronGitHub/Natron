@@ -64,12 +64,12 @@ public:
     /**
      *@brief See toImgCoordinates_fast in ViewerGL.h
      **/
-    QPointF toTimeLineCoordinates(int x,int y) const;
+    QPointF toTimeLineCoordinates(double x, double y) const;
 
     /**
      *@brief See toWidgetCoordinates in ViewerGL.h
      **/
-    QPoint toWidgetCoordinates(double x, double y) const;
+    QPointF toWidgetCoordinates(double x, double y) const;
 
 public slots:
 
