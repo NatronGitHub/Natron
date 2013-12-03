@@ -44,10 +44,12 @@ class Group_Knob;
 class RichText_Knob;
 class OfxEffectInstance;
 class Knob;
+
 class OfxPushButtonInstance :public OFX::Host::Param::PushbuttonInstance {
     
 public:
-    
+    OfxPushButtonInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
+
     // callback which should set enabled state as appropriate
     virtual void setEnabled();
     
@@ -56,22 +58,13 @@ public:
     
     Knob* getKnob() const;
 
-
-protected:
-    OfxEffectInstance* _node;
+private:
     Button_Knob *_knob;
-public:
-    OfxPushButtonInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
 };
 
 
 
 class OfxIntegerInstance :public OFX::Host::Param::IntegerInstance {
-    
-protected:
-    OfxEffectInstance* _node;
-    Int_Knob* _knob;
-
 public:
     
     OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
@@ -87,16 +80,12 @@ public:
     virtual void setSecret();
     
     Knob* getKnob() const;
-    
-    
+
+private:
+    Int_Knob* _knob;
 };
 
 class OfxDoubleInstance : public OFX::Host::Param::DoubleInstance {
-    
-protected:
-    OfxEffectInstance* _node;
-    Double_Knob* _knob;
-
 public:
     OfxDoubleInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&);
@@ -113,14 +102,12 @@ public:
     virtual void setSecret();
     
     Knob* getKnob() const;
+
+private:
+    Double_Knob* _knob;
 };
 
 class OfxBooleanInstance : public OFX::Host::Param::BooleanInstance {
-    
-protected:
-    OfxEffectInstance* _node;
-    Bool_Knob* _knob;
- 
 public:
     OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(bool&);
@@ -138,16 +125,11 @@ public:
     
     Knob* getKnob() const;
 
-    
+private:
+    Bool_Knob* _knob;
 };
 
 class OfxChoiceInstance : public OFX::Host::Param::ChoiceInstance {
-    
-protected:
-    OfxEffectInstance* _node;
-    std::vector<std::string> _entries;
-    ComboBox_Knob* _knob;
-
 public:
     OfxChoiceInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&);
@@ -162,16 +144,13 @@ public:
     virtual void setSecret();
     
     Knob* getKnob() const;
-    
 
+private:
+    std::vector<std::string> _entries;
+    ComboBox_Knob* _knob;
 };
 
 class OfxRGBAInstance :public OFX::Host::Param::RGBAInstance {
-    
-protected:
-    OfxEffectInstance* _node;
-    Color_Knob* _knob;
-
 public:
     OfxRGBAInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&,double&,double&);
@@ -186,16 +165,13 @@ public:
     virtual void setSecret();
     
     Knob* getKnob() const;
-    
-    
+
+private:
+    Color_Knob* _knob;
 };
 
 
 class OfxRGBInstance : public OFX::Host::Param::RGBInstance {
-protected:
-    OfxEffectInstance* _node;
-    Color_Knob* _knob;
-
 public:
     OfxRGBInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&,double&);
@@ -210,14 +186,12 @@ public:
     virtual void setSecret();
     
     Knob* getKnob() const;
-    
+
+private:
+    Color_Knob* _knob;
 };
 
 class OfxDouble2DInstance :public OFX::Host::Param::Double2DInstance {
-protected:
-    OfxEffectInstance* _node;
-    Double_Knob* _knob;
-
 public:
     OfxDouble2DInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&);
@@ -233,56 +207,93 @@ public:
     
     Knob* getKnob() const;
 
+private:
+    Double_Knob* _knob;
 };
 
+
 class OfxInteger2DInstance : public OFX::Host::Param::Integer2DInstance {
-
-protected:
-    OfxEffectInstance* _node;
-    Int_Knob *_knob;
-
 public:
     OfxInteger2DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&,int&);
     OfxStatus get(OfxTime time,int&,int&);
     OfxStatus set(int,int);
     OfxStatus set(OfxTime time,int,int);
-    
+
     // callback which should set enabled state as appropriate
     virtual void setEnabled();
-    
+
     // callback which should set secret state as appropriate
     virtual void setSecret();
-    
+
     Knob* getKnob() const;
-    
+
+private:
+    Int_Knob *_knob;
 };
-class OfxGroupInstance : public OFX::Host::Param::GroupInstance{
+
+class OfxDouble3DInstance :public OFX::Host::Param::Double3DInstance {
+public:
+    OfxDouble3DInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
+    OfxStatus get(double&,double&,double&);
+    OfxStatus get(OfxTime time,double&,double&,double&);
+    OfxStatus set(double,double,double);
+    OfxStatus set(OfxTime time,double,double,double);
+
+    // callback which should set enabled state as appropriate
+    virtual void setEnabled();
+
+    // callback which should set secret state as appropriate
+    virtual void setSecret();
+
+    Knob* getKnob() const;
+
+private:
+    OfxEffectInstance* _node;
+    Double_Knob* _knob;
+};
+
+class OfxInteger3DInstance : public OFX::Host::Param::Integer3DInstance {
+public:
+    OfxInteger3DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
+    OfxStatus get(int&,int&,int&);
+    OfxStatus get(OfxTime time,int&,int&,int&);
+    OfxStatus set(int,int,int);
+    OfxStatus set(OfxTime time,int,int,int);
+
+    // callback which should set enabled state as appropriate
+    virtual void setEnabled();
+
+    // callback which should set secret state as appropriate
+    virtual void setSecret();
+
+    Knob* getKnob() const;
+
+private:
+    OfxEffectInstance* _node;
+    Int_Knob *_knob;
+};
+
+class OfxGroupInstance : public OFX::Host::Param::GroupInstance {
+public:
+
+    OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
+
+    void addKnob(Knob* k);
+
+    Knob* getKnob() const;
+
+    virtual ~OfxGroupInstance(){}
+
+private:
     OfxEffectInstance* _node;
     Group_Knob* _groupKnob;
-public:
-    
-    OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
-    
-    void addKnob(Knob* k);
-    
-    Knob* getKnob() const;
-    
-    virtual ~OfxGroupInstance(){}
 };
 
-class OfxStringInstance : public QObject, public OFX::Host::Param::StringInstance{
-    OfxEffectInstance* _node;
-    File_Knob* _fileKnob;
-    OutputFile_Knob* _outputFileKnob;
-    String_Knob* _stringKnob;
-    RichText_Knob* _multiLineKnob;
-    QThreadStorage<std::string> _localString;
-
+class OfxStringInstance : public QObject, public OFX::Host::Param::StringInstance {
     Q_OBJECT
 
 public:
-    
     OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
     
     virtual OfxStatus get(std::string&) OVERRIDE;
@@ -329,9 +340,15 @@ public:
     virtual ~OfxStringInstance(){}
     
 public slots:
-
     void onFrameRangeChanged(int,int);
 
+private:
+    OfxEffectInstance* _node;
+    File_Knob* _fileKnob;
+    OutputFile_Knob* _outputFileKnob;
+    String_Knob* _stringKnob;
+    RichText_Knob* _multiLineKnob;
+    QThreadStorage<std::string> _localString;
 };
 
 

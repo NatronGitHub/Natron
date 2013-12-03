@@ -44,7 +44,6 @@ static std::string getParamLabel(OFX::Host::Param::Instance* param){
 OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
                                              OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::PushbuttonInstance(descriptor, node->effectInstance())
-, _node(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
@@ -86,7 +85,6 @@ Knob* OfxPushButtonInstance::getKnob() const {
 
 OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::IntegerInstance(descriptor, node->effectInstance())
-, _node(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
@@ -154,7 +152,6 @@ Knob* OfxIntegerInstance::getKnob() const{
 
 OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance())
-, _node(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
@@ -235,7 +232,6 @@ Knob* OfxDoubleInstance::getKnob() const{
 
 OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::BooleanInstance(descriptor,node->effectInstance())
-, _node(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
@@ -293,7 +289,6 @@ Knob* OfxBooleanInstance::getKnob() const{
 
 OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::ChoiceInstance(descriptor,node->effectInstance())
-, _node(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
@@ -368,7 +363,6 @@ Knob* OfxChoiceInstance::getKnob() const{
 
 OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::RGBAInstance(descriptor,node->effectInstance())
-, _node(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
@@ -443,7 +437,6 @@ Knob* OfxRGBAInstance::getKnob() const{
 
 OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::RGBInstance(descriptor,node->effectInstance())
-, _node(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
@@ -511,7 +504,6 @@ Knob* OfxRGBInstance::getKnob() const{
 
 OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance())
-, _node(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
@@ -596,7 +588,6 @@ Knob* OfxDouble2DInstance::getKnob() const{
 
 OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Integer2DInstance(descriptor,node->effectInstance())
-, _node(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
