@@ -210,11 +210,11 @@ void CurveGui::drawCurve(){
             }
             Curve::KeyFrames::const_iterator next = k;
             ++next;
-            double leftTan = key->getLeftTangent().toDouble()/(x - (*prev)->getTime());
-            double leftTanX = 0;
-            double leftTanY = leftTan + y;
-            if(prev != keyframes.end()){
-                double prevKeyXWidgetCoord = _curveWidget->toWidgetCoordinates((*prev)->getTime(), 0).x();
+            double leftTanX, leftTanY;
+            {
+                double prevTime = (prev == keyframes.end()) ? (x - 1000.) : (*prev)->getTime();
+                double leftTan = key->getLeftTangent().toDouble()/(x - prevTime);
+                double prevKeyXWidgetCoord = _curveWidget->toWidgetCoordinates(prevTime, 0).x();
                 //set the left tangent X to be at 1/3 of the interval [prev,k], and clamp it to 1/8 of the widget width.
                 double leftTanXWidgetDiffMax = std::min( w/8., (keyWidgetCoord.x() - prevKeyXWidgetCoord) / 3.);
                 //clamp the left tangent Y to 1/8 of the widget height.
@@ -236,11 +236,11 @@ void CurveGui::drawCurve(){
                 assert(std::abs(leftTanX - x) <= tanMax.x());
                 assert(std::abs(leftTanY - y) <= tanMax.y());
             }
-            double rightTan = key->getRightTangent().toDouble()/((*next)->getTime() - x );
-            double rightTanX = 0.;
-            double rightTanY = rightTan + y;
-            if(next != keyframes.end()){
-                double nextKeyXWidgetCoord = _curveWidget->toWidgetCoordinates((*next)->getTime(), 0).x();
+            double rightTanX, rightTanY;
+            {
+                double nextTime = (next == keyframes.end()) ? (x + 1000.) : (*next)->getTime();
+                double rightTan = key->getRightTangent().toDouble()/(nextTime - x );
+                double nextKeyXWidgetCoord = _curveWidget->toWidgetCoordinates(nextTime, 0).x();
                 //set the right tangent X to be at 1/3 of the interval [k,next], and clamp it to 1/8 of the widget width.
                 double rightTanXWidgetDiffMax = std::min( w/8., (nextKeyXWidgetCoord - keyWidgetCoord.x()) / 3.);
                 //clamp the right tangent Y to 1/8 of the widget height.
@@ -270,14 +270,14 @@ void CurveGui::drawCurve(){
             }
             glBegin(GL_LINES);
             glColor4f(1., 0.35, 0.35, 1.);
-            if(prev != keyframes.end() && (*prev)->getInterpolation() != Natron::KEYFRAME_NONE){
+            //if(prev != keyframes.end() && (*prev)->getInterpolation() != Natron::KEYFRAME_NONE){
                 glVertex2f(leftTanX, leftTanY);
                 glVertex2f(x, y);
-            }
-            if(next != keyframes.end() && (*next)->getInterpolation() != Natron::KEYFRAME_NONE){
+            //}
+            //if(next != keyframes.end() && (*next)->getInterpolation() != Natron::KEYFRAME_NONE){
                 glVertex2f(x, y);
                 glVertex2f(rightTanX, rightTanY);
-            }
+            //}
             glEnd();
             if(key->getInterpolation() != Natron::KEYFRAME_FREE && key->getInterpolation() != Natron::KEYFRAME_BROKEN){
                 glDisable(GL_LINE_STIPPLE);
@@ -295,12 +295,12 @@ void CurveGui::drawCurve(){
                 
             }
             glBegin(GL_POINTS);
-            if(prev != keyframes.end() && (*prev)->getInterpolation() != Natron::KEYFRAME_NONE){
+            //if(prev != keyframes.end() && (*prev)->getInterpolation() != Natron::KEYFRAME_NONE){
                 glVertex2f(leftTanX, leftTanY);
-            }
-            if(next != keyframes.end() && (*next)->getInterpolation() != Natron::KEYFRAME_NONE){
+            //}
+            //if(next != keyframes.end() && (*next)->getInterpolation() != Natron::KEYFRAME_NONE){
                 glVertex2f(rightTanX, rightTanY);
-            }
+            //}
             glEnd();
         }
         
