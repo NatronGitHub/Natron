@@ -15,6 +15,9 @@
 #include <map>
 #include <locale>
 
+//ofx extension
+#include <nuke/fnPublicOfxExtensions.h>
+
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxParamInstance.h"
@@ -364,6 +367,19 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
     }
     if (!descriptor.getCanAnimate()) {
         knob->turnOffAnimation();
+    }
+    knob->setSecret(descriptor.getSecret());
+    knob->setEnabled(descriptor.getEnabled());
+    knob->setHintToolTip(descriptor.getHint());
+    if (!descriptor.getCanUndo()) {
+       knob->turnOffUndoRedo();
+    }
+    knob->setSpacingBetweenItems(descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
+    int layoutHint = descriptor.getProperties().getIntProperty(kOfxParamPropLayoutHint);
+    if(layoutHint == 1){
+        appPTR->getKnobFactory().createKnob("Separator", node(), knob->getDescription());
+    }else if(layoutHint == 2){
+        knob->turnOffNewLine();
     }
     return instance;
 

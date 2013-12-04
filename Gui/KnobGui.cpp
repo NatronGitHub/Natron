@@ -1324,6 +1324,7 @@ void Group_KnobGui::createWidget(QGridLayout* layout,int row){
     headerLay->addWidget(_descriptionLabel);
     
     layout->addWidget(header,row,0,1,2,Qt::AlignLeft);
+
     
 }
 
@@ -1350,9 +1351,8 @@ void Group_KnobGui::updateGUI(int /*dimension*/, const Variant& variant) {
 void Group_KnobGui::_hide() {
     _button->hide();
     _descriptionLabel->hide();
-    for (U32 i = 0; i < _children.size(); ++i) {
-        _children[i].first->hide();
-    }
+    setChecked(false);
+
 }
 
 void Group_KnobGui::_show() {
@@ -1361,11 +1361,7 @@ void Group_KnobGui::_show() {
     }
     _button->show();
     _descriptionLabel->show();
-    for (U32 i = 0; i < _children.size(); ++i) {
-        if (!_children[i].first->getKnob()->isSecret()) {
-            _children[i].first->show();
-        }
-    }
+    setChecked(true);
 }
 
 void Group_KnobGui::addToLayout(QHBoxLayout* layout){
