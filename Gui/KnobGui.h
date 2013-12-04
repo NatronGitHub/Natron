@@ -97,10 +97,11 @@ public slots:
         delete this;
     }
 
-    virtual void setVisible(bool b){
-        if(b){
+    virtual void setVisible(bool b) {
+        if(b) {
+            // FIXME: if the Knob is within a group, only show it if the group is unfolded!
             show();
-        }else{
+        } else {
             hide();
         }
     }

@@ -1321,20 +1321,21 @@ void Group_KnobGui::setChecked(bool b){
     }
     _checked = b;
     for(U32 i = 0 ; i < _children.size() ;++i) {
-        if(!b){
+        if(!b) {
             _children[i].first->hide();
-            
-        }else{
+        } else if (_children[i].first->getKnob()->isVisible()) {
             _children[i].first->show();
         }
     }
 }
-void Group_KnobGui::updateGUI(int /*dimension*/, const Variant& variant){
+
+void Group_KnobGui::updateGUI(int /*dimension*/, const Variant& variant) {
     bool b = variant.toBool();
     setChecked(b);
     _button->setChecked(b);
 }
-void Group_KnobGui::_hide(){
+
+void Group_KnobGui::_hide() {
     _button->hide();
     _descriptionLabel->hide();
     for (U32 i = 0; i < _children.size(); ++i) {
@@ -1342,13 +1343,19 @@ void Group_KnobGui::_hide(){
     }
 }
 
-void Group_KnobGui::_show(){
+void Group_KnobGui::_show() {
+    if (!getKnob()->isVisible()) {
+        return;
+    }
     _button->show();
     _descriptionLabel->show();
     for (U32 i = 0; i < _children.size(); ++i) {
-        _children[i].first->show();
+        if (_children[i].first->getKnob()->isVisible()) {
+            _children[i].first->show();
+        }
     }
 }
+
 void Group_KnobGui::addToLayout(QHBoxLayout* layout){
     QWidget* mainWidget = new QWidget(_layout->parentWidget());
     QVBoxLayout* mainLayout = new QVBoxLayout(mainWidget);
