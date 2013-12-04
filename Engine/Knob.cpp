@@ -17,6 +17,8 @@
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/TimeLine.h"
+#include "Engine/KnobFile.h"
+#include "Engine/KnobTypes.h"
 
 #include "Global/AppManager.h"
 #include "Global/LibraryBinary.h"
@@ -224,7 +226,7 @@ KnobGui* KnobFactory::createGuiForKnob(Knob* knob,DockablePanel* container) cons
 
 /***********************************KNOB BASE******************************************/
 
-struct KnobPrivate{
+struct Knob::KnobPrivate {
     KnobHolder*  _holder;
     std::vector<U64> _hashVector;
     std::string _description;//< the text label that will be displayed  on the GUI
@@ -447,7 +449,7 @@ bool Knob::isSecret() const {return _imp->_secret;}
 
 bool Knob::isEnabled() const {return _imp->_enabled;}
 
-void Knob::setIsInsignificant(bool b) {_imp->_isInsignificant = b;}
+void Knob::setInsignificant(bool b) {_imp->_isInsignificant = b;}
 
 bool Knob::isPersistent() const { return _imp->_isPersistent; }
 

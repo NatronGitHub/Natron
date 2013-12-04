@@ -24,6 +24,8 @@
 #include "Engine/Settings.h"
 #include "Engine/Settings.h"
 #include "Engine/Knob.h"
+#include "Engine/KnobFile.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Node.h"
 
@@ -163,7 +165,7 @@ void Writer::initializeKnobs(){
     
     _continueOnError = dynamic_cast<Bool_Knob*>(appPTR->getKnobFactory().createKnob("Bool", this, "Continue on error"));
     _continueOnError->setHintToolTip("If true, when an error arises for a frame,it will skip that frame and resume rendering.");
-    _continueOnError->setIsInsignificant(true);
+    _continueOnError->setInsignificant(true);
     _continueOnError->setValue(false);
     
 }

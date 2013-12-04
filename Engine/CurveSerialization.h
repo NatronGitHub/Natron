@@ -11,8 +11,8 @@
 
 
 
-#ifndef CURVESERIALIZATION_H
-#define CURVESERIALIZATION_H
+#ifndef NATRON_ENGINE_CURVESERIALIZATION_H_
+#define NATRON_ENGINE_CURVESERIALIZATION_H_
 
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
@@ -140,4 +140,4 @@ boost::archive::xml_oarchive & ar,
 const unsigned int file_version
 );
 
-#endif // CURVESERIALIZATION_H
+#endif // NATRON_ENGINE_CURVESERIALIZATION_H_

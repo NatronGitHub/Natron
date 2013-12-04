@@ -31,6 +31,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/VideoEngine.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Project.h"
+#include "Engine/KnobFile.h"
 
 #include "Writers/Writer.h"
 

@@ -21,6 +21,8 @@
 #include "Global/AppManager.h"
 
 #include "Engine/Knob.h"
+#include "Engine/KnobFile.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
@@ -28,7 +30,6 @@
 #include "Engine/ViewerInstance.h"
 
 using namespace Natron;
-
 
 
 static std::string getParamLabel(OFX::Host::Param::Instance* param){

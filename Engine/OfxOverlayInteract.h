@@ -8,8 +8,8 @@
  *contact: immarespond at gmail dot com
  *
  */
-#ifndef OFXOVERLAYINTERACT_H
-#define OFXOVERLAYINTERACT_H
+#ifndef NATRON_ENGINE_OFXOVERLAYINTERACT_H_
+#define NATRON_ENGINE_OFXOVERLAYINTERACT_H_
 
 #include <ofxhImageEffect.h>
 
@@ -50,4 +50,4 @@ public:
 
 }
 
-#endif // OFXOVERLAYINTERACT_H
+#endif // NATRON_ENGINE_OFXOVERLAYINTERACT_H_

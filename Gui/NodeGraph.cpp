@@ -31,6 +31,18 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QCoreApplication>
 #include <QMimeData>
 
+#include "Global/AppManager.h"
+
+#include "Engine/VideoEngine.h"
+#include "Engine/OfxEffectInstance.h"
+#include "Engine/ViewerInstance.h"
+#include "Engine/Hash64.h"
+#include "Engine/FrameEntry.h"
+#include "Engine/Settings.h"
+#include "Engine/KnobFile.h"
+
+#include "Readers/Reader.h"
+
 #include "Gui/TabWidget.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
@@ -43,17 +55,6 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/Gui.h"
 #include "Gui/TimeLineGui.h"
 #include "Gui/SequenceFileDialog.h"
-
-#include "Engine/VideoEngine.h"
-#include "Engine/OfxEffectInstance.h"
-#include "Engine/ViewerInstance.h"
-#include "Engine/Hash64.h"
-#include "Engine/FrameEntry.h"
-#include "Engine/Settings.h"
-
-#include "Readers/Reader.h"
-
-#include "Global/AppManager.h"
 
 
 #define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000

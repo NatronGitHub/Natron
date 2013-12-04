@@ -8,8 +8,8 @@
 *contact: immarespond at gmail dot com
 *
 */
-#ifndef CURVEPRIVATE_H
-#define CURVEPRIVATE_H
+#ifndef NATRON_ENGINE_CURVEPRIVATE_H_
+#define NATRON_ENGINE_CURVEPRIVATE_H_
 
 #include <boost/shared_ptr.hpp>
 
@@ -98,4 +98,4 @@ struct AnimatingParamPrivate{
 };
 
 
-#endif // CURVEPRIVATE_H
+#endif // NATRON_ENGINE_CURVEPRIVATE_H_

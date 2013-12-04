@@ -171,6 +171,8 @@ HEADERS += \
     Engine/Image.h \
     Engine/Interpolation.h \
     Engine/Knob.h \
+    Engine/KnobFile.h \
+    Engine/KnobTypes.h \
     Engine/Log.h \
     Engine/LRUHashTable.h \
     Engine/Lut.h \
