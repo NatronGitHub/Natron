@@ -116,6 +116,7 @@ void CurveGui::drawCurve(){
     double x1 = 0;
     double x2;
     double w = _curveWidget->width();
+    double h = _curveWidget->height();
     boost::shared_ptr<KeyFrame> isX1AKey;
     while(x1 < (w -1)){
         double x,y;
@@ -158,10 +159,7 @@ void CurveGui::drawCurve(){
     glEnd();
     
     
-    glDisable(GL_LINE_SMOOTH);
-    checkGLErrors();
     
-    glLineWidth(1.);
     
     
     //render the name of the curve
@@ -177,31 +175,124 @@ void CurveGui::drawCurve(){
     glPointSize(7.f);
     glEnable(GL_POINT_SMOOTH);
     
-    glBegin(GL_POINTS);
+    const std::list< std::pair< CurveGui*,boost::shared_ptr<KeyFrame> > >& selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
     for(Curve::KeyFrames::const_iterator k = keyframes.begin();k!=keyframes.end();++k){
         glColor4f(_color.redF(), _color.greenF(), _color.blueF(), _color.alphaF());
         boost::shared_ptr<KeyFrame> key = (*k);
         //if the key is selected change its color to white
-        const std::list< std::pair< CurveGui*,boost::shared_ptr<KeyFrame> > >& selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
+        std::list< std::pair< CurveGui*,boost::shared_ptr<KeyFrame> > >::const_iterator isSelected = selectedKeyFrames.end();
         for(std::list< std::pair< CurveGui*,boost::shared_ptr<KeyFrame> > >::const_iterator it2 = selectedKeyFrames.begin();
             it2 != selectedKeyFrames.end();++it2){
             if((*it2).second == key){
+                isSelected = it2;
                 glColor4f(1.f,1.f,1.f,1.f);
                 break;
             }
         }
-        glVertex2f(key->getTime(),key->getValue().toDouble());
+        double x = key->getTime();
+        double y = key->getValue().toDouble();
+        glBegin(GL_POINTS);
+        glVertex2f(x,y);
+        glEnd();
+        if(isSelected != selectedKeyFrames.end()){ //if one keyframe, also draw the coordinates
+            QPointF keyWidgetCoord = _curveWidget->toWidgetCoordinates(x, y);
+                        //find the previous and next keyframes on the curve to find out the x position of the tangents
+            Curve::KeyFrames::const_iterator prev = k;
+            if(k != keyframes.begin()){
+                --prev;
+            }else{
+                prev = keyframes.end();
+            }
+            Curve::KeyFrames::const_iterator next = k;
+            ++next;
+            double leftTanX = 0,rightTanX = 0;
+            double leftTanY = key->getLeftTangent().toDouble();
+            double rightTanY = key->getRightTangent().toDouble();
+            if(prev != keyframes.end()){
+                double prevKeyXWidgetCoord = _curveWidget->toWidgetCoordinates((*prev)->getTime(), 0).x();
+                //set the left tangent X to be at 1/3 of the interval [prev,k], and clamp it to 1/8 of the widget width.
+                double leftTanXdiff =   (keyWidgetCoord.x() - prevKeyXWidgetCoord) / 3.;
+                leftTanXdiff = std::min( w/8., leftTanXdiff);
+                double leftTanXWidgetCoord = keyWidgetCoord.x() - leftTanXdiff;
+                
+                //clamp the left tangent Y to 1/8 of the widget height.
+                double leftTanYWidgetCoord = _curveWidget->toWidgetCoordinates(0, leftTanY).y();
+                double leftTanYdiff = std::abs(leftTanYWidgetCoord - keyWidgetCoord.y());
+                leftTanYdiff = std::min( h/8.,leftTanYdiff);
+                leftTanYWidgetCoord =  leftTanYWidgetCoord < keyWidgetCoord.y() ? keyWidgetCoord.y() - leftTanYdiff
+                                                                                : keyWidgetCoord.y() + leftTanYdiff;
+                QPointF leftTanScalePos = _curveWidget->toScaleCoordinates(leftTanXWidgetCoord, leftTanYWidgetCoord);
+                leftTanX = leftTanScalePos.x();
+                leftTanY = leftTanScalePos.y();
+            }
+            if(next != keyframes.end()){
+                double nextKeyXWidgetCoord = _curveWidget->toWidgetCoordinates((*next)->getTime(), 0).x();
+                //set the right tangent X to be at 1/3 of the interval [k,next], and clamp it to 1/8 of the widget width.
+                double rightTanXDiff = (nextKeyXWidgetCoord - keyWidgetCoord.x()) / 3.;
+                rightTanXDiff = std::min( w/8., rightTanXDiff);
+                double rightTanXWidgetCoord = keyWidgetCoord.x() + rightTanXDiff;
+                
+                //clamp the right tangent Y to 1/8 of the widget height.
+                double rightTanYWidgetCoord = _curveWidget->toWidgetCoordinates(0, rightTanY).y();
+                double rightTanYdiff = std::abs(rightTanYWidgetCoord - keyWidgetCoord.y());
+                rightTanYdiff = std::min( h/8.,rightTanYdiff);
+                rightTanYWidgetCoord =  rightTanYWidgetCoord < keyWidgetCoord.y() ?
+                keyWidgetCoord.y() - rightTanYdiff : keyWidgetCoord.y() + rightTanYdiff;
+                
+                QPointF rightTanScalePos = _curveWidget->toScaleCoordinates(rightTanXWidgetCoord, rightTanYWidgetCoord);
+                rightTanX = rightTanScalePos.x();
+                rightTanY = rightTanScalePos.y();
+            }
+            
+            //draw the tangents lines
+            if(key->getInterpolation() != Natron::KEYFRAME_FREE && key->getInterpolation() != Natron::KEYFRAME_BROKEN){
+                glLineStipple(2, 0xAAAA);
+                glEnable(GL_LINE_STIPPLE);
+            }
+            glBegin(GL_LINES);
+            glColor4f(1., 0.35, 0.35, 1.);
+            if(prev != keyframes.end() && (*prev)->getInterpolation() != Natron::KEYFRAME_NONE){
+                glVertex2f(leftTanX, leftTanY);
+                glVertex2f(x, y);
+            }
+            if(next != keyframes.end() && (*next)->getInterpolation() != Natron::KEYFRAME_NONE){
+                glVertex2f(x, y);
+                glVertex2f(rightTanX, rightTanY);
+            }
+            glEnd();
+            if(key->getInterpolation() != Natron::KEYFRAME_FREE && key->getInterpolation() != Natron::KEYFRAME_BROKEN){
+                glDisable(GL_LINE_STIPPLE);
+            }
+            
+            if(selectedKeyFrames.size() == 1){
+                QString coordStr("x: %1, y: %2");
+                coordStr = coordStr.arg(x).arg(y);
+                double yWidgetCoord = keyWidgetCoord.y();
+                QFontMetrics m(_curveWidget->getFont());
+                yWidgetCoord += (m.height() + 4);
+                glColor4f(1., 1., 1., 1.);
+                _curveWidget->renderText(x, _curveWidget->toScaleCoordinates(0, yWidgetCoord).y(),
+                                         coordStr, QColor(240,240,240), _curveWidget->getFont());
+                
+            }
+            glBegin(GL_POINTS);
+            glVertex2f(leftTanX, leftTanY);
+            glVertex2f(rightTanX, rightTanY);
+            glEnd();
+        }
         
     }
-    glEnd();
     
+    glDisable(GL_LINE_SMOOTH);
+    glLineWidth(1.);
     glDisable(GL_BLEND);
     glDisable(GL_POINT_SMOOTH);
     glPopAttrib();
     glPointSize(1.f);
     //reset back the color
     glColor4f(1.f, 1.f, 1.f, 1.f);
-    
+    checkGLErrors();
+
     
 }
 
@@ -696,11 +787,11 @@ void CurveWidget::mousePressEvent(QMouseEvent *event){
            _state = DRAGGING_KEYS;
        }
     else{
-       
+        
         
         
         if(selectedKey.second){
-             _drawSelectedKeyFramesBbox = false;
+            _drawSelectedKeyFramesBbox = false;
             _state = DRAGGING_KEYS;
             setCursor(QCursor(Qt::CrossCursor));
             if(!event->modifiers().testFlag(Qt::ControlModifier)){
@@ -851,7 +942,7 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
         keyFramesWithinRect(_selectionRectangle,&keyframesSelected);
         for(U32 i = 0; i < keyframesSelected.size();++i){
             _selectedKeyFrames.push_back(keyframesSelected[i]);
-
+            
         }
         refreshSelectedKeysBbox();
     }
