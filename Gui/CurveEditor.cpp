@@ -816,7 +816,9 @@ void MoveMultipleKeysCommand::redo(){
 bool MoveMultipleKeysCommand::mergeWith(const QUndoCommand * command){
     const MoveMultipleKeysCommand* cmd = dynamic_cast<const MoveMultipleKeysCommand*>(command);
     if(cmd && cmd->id() == id()){
-        assert(_keys.size() == cmd->_keys.size());
+        if(_keys.size() != cmd->_keys.size()){
+            return false;
+        }
         for(U32 i = 0; i < _keys.size();++i){
             _keys[i]->_newX = cmd->_keys[i]->_newX;
             _keys[i]->_newY = cmd->_keys[i]->_newY;
