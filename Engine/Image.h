@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef IMAGE_H
-#define IMAGE_H
+#ifndef NATRON_ENGINE_IMAGE_H_
+#define NATRON_ENGINE_IMAGE_H_
 
 #include <list>
 
@@ -218,4 +218,4 @@ namespace Natron{
     
     
 }//namespace Natron
-#endif // IMAGE_H
+#endif // NATRON_ENGINE_IMAGE_H_

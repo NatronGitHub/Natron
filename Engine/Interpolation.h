@@ -10,8 +10,8 @@
  *
  */
 
-#ifndef INTERPOLATION_H
-#define INTERPOLATION_H
+#ifndef NATRON_ENGINE_INTERPOLATION_H_
+#define NATRON_ENGINE_INTERPOLATION_H_
 
 #include <cmath>
 #include <stdexcept>
@@ -318,4 +318,4 @@ void autoComputeTangents(Natron::KeyframeType interpPrev,
 
 
 
-#endif // INTERPOLATION_H
+#endif // NATRON_ENGINE_INTERPOLATION_H_

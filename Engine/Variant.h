@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef VARIANT_H
-#define VARIANT_H
+#ifndef NATRON_ENGINE_VARIANT_H_
+#define NATRON_ENGINE_VARIANT_H_
 
 #include <QtCore/QVariant>
 #include <QtCore/QMetaType>
@@ -222,4 +222,4 @@ inline void Variant::setValue(const char* const& str){
     QVariant::setValue(QString(str));
 }
 
-#endif // VARIANT_H
+#endif // NATRON_ENGINE_VARIANT_H_

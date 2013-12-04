@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef NATRON_ENGINE_BOX_H_
-#define NATRON_ENGINE_BOX_H_
+#ifndef NATRON_ENGINE_RECT_H_
+#define NATRON_ENGINE_RECT_H_
 
 #include <cassert>
 #include <iostream>
@@ -391,4 +391,4 @@ inline bool operator!=(const RectD& b1, const RectD& b2)
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(RectD);
 
 
-#endif
+#endif // NATRON_ENGINE_RECT_H_

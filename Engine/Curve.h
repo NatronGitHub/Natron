@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef CURVE_ANIMATION_H
-#define CURVE_ANIMATION_H
+#ifndef NATRON_ENGINE_CURVE_H_
+#define NATRON_ENGINE_CURVE_H_
 
 
 #include <map>
@@ -284,4 +284,4 @@ private:
 };
 
 
-#endif // CURVE_ANIMATION_H
+#endif // NATRON_ENGINE_CURVE_H_

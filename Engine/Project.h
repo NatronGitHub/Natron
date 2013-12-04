@@ -8,8 +8,8 @@
  *
  */
 
-#ifndef NATRON_PROJECT_H
-#define NATRON_PROJECT_H
+#ifndef NATRON_ENGINE_PROJECT_H_
+#define NATRON_ENGINE_PROJECT_H_
 
 #include <map>
 #include <vector>
@@ -134,4 +134,4 @@ private:
 
 } // Natron
 
-#endif // NATRON_PROJECT_H
+#endif // NATRON_ENGINE_PROJECT_H_
