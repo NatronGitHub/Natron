@@ -280,6 +280,8 @@ private:
     void drawSelectedKeyFramesBbox();
 
     void createMenu();
+    
+    void refreshSelectedKeysBbox();
 };
 
 

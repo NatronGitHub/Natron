@@ -4,10 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
 #include "CurveWidget.h"
 
@@ -24,7 +24,7 @@
 #include "Gui/CurveEditor.h"
 
 #define CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE 5 //maximum distance from a curve that accepts a mouse click
-// (in widget pixels)
+                                               // (in widget pixels)
 
 static double ASPECT_RATIO = 0.1;
 static double AXIS_MAX = 100000.;
@@ -36,25 +36,25 @@ CurveGui::CurveGui(const CurveWidget *curveWidget,
                    const QString& name,
                    const QColor& color,
                    int thickness)
-    : _internalCurve(curve)
-    , _name(name)
-    , _color(color)
-    , _thickness(thickness)
-    , _visible(false)
-    , _selected(false)
-    , _curveWidget(curveWidget)
+: _internalCurve(curve)
+, _name(name)
+, _color(color)
+, _thickness(thickness)
+, _visible(false)
+, _selected(false)
+, _curveWidget(curveWidget)
 {
-
+    
     if(curve->keyFramesCount() > 1){
         _visible = true;
     }
-
+    
     QObject::connect(this,SIGNAL(curveChanged()),curveWidget,SLOT(updateGL()));
-
+    
 }
 
 CurveGui::~CurveGui(){
-
+    
 }
 
 boost::shared_ptr<KeyFrame> CurveGui::nextPointForSegment(double x1, double* x2){
@@ -78,23 +78,23 @@ boost::shared_ptr<KeyFrame> CurveGui::nextPointForSegment(double x1, double* x2)
             }
         }
         assert(upper != keys.end() && upper!= keys.begin());
-
+        
         Curve::KeyFrames::const_iterator lower = upper;
         --lower;
-
+        
         double t = ( x1 - (*lower)->getTime() ) / ((*upper)->getTime() - (*lower)->getTime());
         double P3 = (*upper)->getValue().value<double>();
         double P0 = (*lower)->getValue().value<double>();
         double P3pl = (*upper)->getLeftTangent().value<double>();
         double P0pr = (*lower)->getRightTangent().value<double>();
         double secondDer = 6. * (1. - t) *(P3 - P3pl / 3. - P0 - 2. * P0pr / 3.) +
-                6.* t * (P0 - P3 + 2 * P3pl / 3. + P0pr / 3. );
+        6.* t * (P0 - P3 + 2 * P3pl / 3. + P0pr / 3. );
         double secondDerWidgetCoord = std::abs(_curveWidget->toWidgetCoordinates(0,secondDer).y()
                                                / ((*upper)->getTime() - (*lower)->getTime()));
         // compute delta_x so that the y difference between the tangent and the curve is at most
         // 1 pixel (use the second order Taylor expansion of the function)
         double delta_x = std::max(2. / std::max(std::sqrt(secondDerWidgetCoord),0.1), 1.);
-
+        
         if(upperWidgetCoord < x1 + delta_x){
             *x2 = upperWidgetCoord;
             return (*upper);
@@ -103,15 +103,15 @@ boost::shared_ptr<KeyFrame> CurveGui::nextPointForSegment(double x1, double* x2)
         }
     }
     return boost::shared_ptr<KeyFrame>();
-
+    
 }
 
 void CurveGui::drawCurve(){
     if(!_visible)
         return;
-
+    
     assert(QGLContext::currentContext() == _curveWidget->context());
-
+    
     std::vector<float> vertices;
     double x1 = 0;
     double x2;
@@ -138,11 +138,11 @@ void CurveGui::drawCurve(){
         vertices.push_back((float)x);
         vertices.push_back((float)y);
     }
-
+    
     const QColor& curveColor = _selected ?  _curveWidget->getSelectedCurveColor() : _color;
-
+    
     glColor4f(curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF());
-
+    
     glPointSize(_thickness);
     glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT);
     glEnable(GL_LINE_SMOOTH);
@@ -150,33 +150,33 @@ void CurveGui::drawCurve(){
     glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
     glLineWidth(1.5);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-
+    
     glBegin(GL_LINE_STRIP);
     for(int i = 0; i < (int)vertices.size();i+=2){
         glVertex2f(vertices[i],vertices[i+1]);
     }
     glEnd();
-
-
+    
+    
     glDisable(GL_LINE_SMOOTH);
     checkGLErrors();
-
+    
     glLineWidth(1.);
-
-
+    
+    
     //render the name of the curve
     glColor4f(1.f, 1.f, 1.f, 1.f);
     double textX = _curveWidget->toScaleCoordinates(15,0).x();
     double textY = evaluate(textX);
     _curveWidget->renderText(textX,textY,_name,_color,_curveWidget->getFont());
     glColor4f(curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF());
-
-
+    
+    
     //draw keyframes
     const Curve::KeyFrames& keyframes = _internalCurve->getKeyFrames();
     glPointSize(7.f);
     glEnable(GL_POINT_SMOOTH);
-
+    
     glBegin(GL_POINTS);
     for(Curve::KeyFrames::const_iterator k = keyframes.begin();k!=keyframes.end();++k){
         glColor4f(_color.redF(), _color.greenF(), _color.blueF(), _color.alphaF());
@@ -191,18 +191,18 @@ void CurveGui::drawCurve(){
             }
         }
         glVertex2f(key->getTime(),key->getValue().toDouble());
-
+        
     }
     glEnd();
-
+    
     glDisable(GL_BLEND);
     glDisable(GL_POINT_SMOOTH);
     glPopAttrib();
     glPointSize(1.f);
     //reset back the color
     glColor4f(1.f, 1.f, 1.f, 1.f);
-
-
+    
+    
 }
 
 double CurveGui::evaluate(double x) const{
@@ -214,26 +214,26 @@ void CurveGui::setVisible(bool visible){ _visible = visible; }
 void CurveGui::setVisibleAndRefresh(bool visible) { _visible = visible; emit curveChanged(); }
 
 CurveWidget::CurveWidget(QWidget* parent, const QGLWidget* shareWidget)
-    : QGLWidget(parent,shareWidget)
-    , _zoomCtx()
-    , _state(NONE)
-    , _rightClickMenu(new QMenu(this))
-    , _clearColor(0,0,0,255)
-    , _baseAxisColor(118,215,90,255)
-    , _scaleColor(67,123,52,255)
-    , _selectedCurveColor(255,255,89,255)
-    , _nextCurveAddedColor()
-    , _textRenderer()
-    , _font(new QFont(NATRON_FONT, NATRON_FONT_SIZE_10))
-    , _curves()
-    , _selectedKeyFrames()
-    , _hasOpenGLVAOSupport(true)
-    , _mustSetDragOrientation(false)
-    , _mouseDragOrientation()
-    , _keyFramesClipBoard()
-    , _selectionRectangle()
-    , _drawSelectedKeyFramesBbox(false)
-    , _selectedKeyFramesBbox()
+: QGLWidget(parent,shareWidget)
+, _zoomCtx()
+, _state(NONE)
+, _rightClickMenu(new QMenu(this))
+, _clearColor(0,0,0,255)
+, _baseAxisColor(118,215,90,255)
+, _scaleColor(67,123,52,255)
+, _selectedCurveColor(255,255,89,255)
+, _nextCurveAddedColor()
+, _textRenderer()
+, _font(new QFont(NATRON_FONT, NATRON_FONT_SIZE_10))
+, _curves()
+, _selectedKeyFrames()
+, _hasOpenGLVAOSupport(true)
+, _mustSetDragOrientation(false)
+, _mouseDragOrientation()
+, _keyFramesClipBoard()
+, _selectionRectangle()
+, _drawSelectedKeyFramesBbox(false)
+, _selectedKeyFramesBbox()
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setMouseTracking(true);
@@ -250,7 +250,7 @@ CurveWidget::~CurveWidget(){
 }
 
 void CurveWidget::initializeGL(){
-
+    
     if (!glewIsSupported("GL_ARB_vertex_array_object "  // BindVertexArray, DeleteVertexArrays, GenVertexArrays, IsVertexArray (VAO), core since 3.0
                          )) {
         _hasOpenGLVAOSupport = false;
@@ -351,8 +351,8 @@ void CurveWidget::centerOn(double xmin,double xmax,double ymin,double ymax){
         _zoomCtx._zoomFactor = h / curveHeight;
         _zoomCtx._left = (xmax + xmin) / 2. - ((w / h) * curveHeight / 2.);
     }
-
-
+    
+    
     updateGL();
 }
 
@@ -397,42 +397,44 @@ void CurveWidget::paintGL()
     glClear(GL_COLOR_BUFFER_BIT);
     
     drawScale();
-
+    
     drawBaseAxis();
-
-    drawCurves();
-
-    if(!_selectionRectangle.isNull()){
-        drawSelectionRectangle();
-    }
-
+    
     if(_drawSelectedKeyFramesBbox){
         drawSelectedKeyFramesBbox();
     }
+    
+    
+    drawCurves();
+    
+    if(!_selectionRectangle.isNull()){
+        drawSelectionRectangle();
+    }
+    
 }
 
 void CurveWidget::drawSelectionRectangle(){
-
+    
     glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT);
     glEnable(GL_LINE_SMOOTH);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
     glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
-
+    
     glColor4f(0.3,0.3,0.3,0.2);
     QPointF btmRight =_selectionRectangle.bottomRight();
     QPointF topLeft = _selectionRectangle.topLeft();
-
+    
     glBegin(GL_POLYGON);
     glVertex2f(topLeft.x(),btmRight.y());
     glVertex2f(topLeft.x(),topLeft.y());
     glVertex2f(btmRight.x(),topLeft.y());
     glVertex2f(btmRight.x(),btmRight.y());
     glEnd();
-
-
+    
+    
     glLineWidth(1.5);
-
+    
     glColor4f(0.5,0.5,0.5,1.);
     glBegin(GL_LINE_STRIP);
     glVertex2f(topLeft.x(),btmRight.y());
@@ -441,30 +443,30 @@ void CurveWidget::drawSelectionRectangle(){
     glVertex2f(btmRight.x(),btmRight.y());
     glVertex2f(topLeft.x(),btmRight.y());
     glEnd();
-
-
+    
+    
     glDisable(GL_LINE_SMOOTH);
     checkGLErrors();
-
+    
     glLineWidth(1.);
     glPopAttrib();
     glColor4f(1., 1., 1., 1.);
 }
 
 void CurveWidget::drawSelectedKeyFramesBbox(){
-
+    
     glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT);
     glEnable(GL_LINE_SMOOTH);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
     glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
-
-
+    
+    
     QPointF topLeft = _selectedKeyFramesBbox.topLeft();
     QPointF btmRight = _selectedKeyFramesBbox.bottomRight();
-
+    
     glLineWidth(1.5);
-
+    
     glColor4f(0.5,0.5,0.5,1.);
     glBegin(GL_LINE_STRIP);
     glVertex2f(topLeft.x(),btmRight.y());
@@ -473,24 +475,24 @@ void CurveWidget::drawSelectedKeyFramesBbox(){
     glVertex2f(btmRight.x(),btmRight.y());
     glVertex2f(topLeft.x(),btmRight.y());
     glEnd();
-
+    
     QPointF middle((topLeft.x() + btmRight.x()) / 2., (topLeft.y() + btmRight.y()) / 2. );
     QPointF middleWidgetCoord = toWidgetCoordinates(middle.x(),middle.y());
     QPointF middleLeft = toScaleCoordinates(middleWidgetCoord.x() - 20,middleWidgetCoord.y());
     QPointF middleRight = toScaleCoordinates(middleWidgetCoord.x() + 20,middleWidgetCoord.y());
     QPointF middleTop = toScaleCoordinates(middleWidgetCoord.x() ,middleWidgetCoord.y()-20);
     QPointF middleBottom = toScaleCoordinates(middleWidgetCoord.x(),middleWidgetCoord.y()+20);
-
+    
     glBegin(GL_LINES);
-    glVertex2f(middleLeft.x(),middleLeft.y());
-    glVertex2f(middleRight.x(),middleRight.y());
-    glVertex2f(middleBottom.x(),middleBottom.y());
-    glVertex2f(middleTop.x(),middleTop.y());
+    glVertex2f(std::max(middleLeft.x(),topLeft.x()),middleLeft.y());
+    glVertex2f(std::min(middleRight.x(),btmRight.x()),middleRight.y());
+    glVertex2f(middleBottom.x(),std::max(middleBottom.y(),btmRight.y()));
+    glVertex2f(middleTop.x(),std::min(middleTop.y(),topLeft.y()));
     glEnd();
-
+    
     glDisable(GL_LINE_SMOOTH);
     checkGLErrors();
-
+    
     glLineWidth(1.);
     glPopAttrib();
     glColor4f(1., 1., 1., 1.);
@@ -509,7 +511,7 @@ void CurveWidget::drawCurves()
 void CurveWidget::drawBaseAxis()
 {
     assert(QGLContext::currentContext() == context());
-
+    
     glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), _baseAxisColor.alphaF());
     glBegin(GL_LINES);
     glVertex2f(AXIS_MIN, 0);
@@ -525,11 +527,11 @@ void CurveWidget::drawBaseAxis()
 void CurveWidget::drawScale()
 {
     assert(QGLContext::currentContext() == context());
-
+    
     QPointF btmLeft = toScaleCoordinates(0,height()-1);
     QPointF topRight = toScaleCoordinates(width()-1, 0);
     
-
+    
     QFontMetrics fontM(*_font);
     const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
@@ -538,10 +540,10 @@ void CurveWidget::drawScale()
     acceptedDistances.push_back(5.);
     acceptedDistances.push_back(10.);
     acceptedDistances.push_back(50.);
-
+    
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+    
     for (int axis = 0; axis < 2; ++axis) {
         const double rangePixel = (axis == 0) ? width() : height(); // AXIS-SPECIFIC
         const double range_min = (axis == 0) ? btmLeft.x() : btmLeft.y(); // AXIS-SPECIFIC
@@ -564,9 +566,9 @@ void CurveWidget::drawScale()
             double value = i * smallTickSize + offset;
             const double tickSize = ticks[i-m1]*smallTickSize;
             const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
-
+            
             glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
-
+            
             glBegin(GL_LINES);
             if (axis == 0) {
                 glVertex2f(value, btmLeft.y()); // AXIS-SPECIFIC
@@ -576,7 +578,7 @@ void CurveWidget::drawScale()
                 glVertex2f(topRight.x(), value); // AXIS-SPECIFIC
             }
             glEnd();
-
+            
             if (tickSize > minTickSizeText) {
                 const int tickSizePixel = rangePixel * tickSize/range;
                 const QString s = QString::number(value);
@@ -599,9 +601,9 @@ void CurveWidget::drawScale()
                 }
             }
         }
-
+        
     }
-
+    
     glDisable(GL_BLEND);
     //reset back the color
     glColor4f(1., 1., 1., 1.);
@@ -611,7 +613,7 @@ void CurveWidget::drawScale()
 void CurveWidget::renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const
 {
     assert(QGLContext::currentContext() == context());
-
+    
     if(text.isEmpty())
         return;
     
@@ -629,7 +631,7 @@ void CurveWidget::renderText(double x,double y,const QString& text,const QColor&
     glLoadIdentity();
     glOrtho(_zoomCtx._lastOrthoLeft,_zoomCtx._lastOrthoRight,_zoomCtx._lastOrthoBottom,_zoomCtx._lastOrthoTop,-1,1);
     glMatrixMode(GL_MODELVIEW);
-
+    
 }
 
 CurveWidget::Curves::const_iterator CurveWidget::isNearbyCurve(const QPoint &pt) const{
@@ -653,7 +655,7 @@ std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > CurveWidget::isNearbyKeyFrame(
             for (Curve::KeyFrames::const_iterator it2 = keyFrames.begin(); it2 != keyFrames.end(); ++it2) {
                 QPointF keyFramewidgetPos = toWidgetCoordinates((*it2)->getTime(), (*it2)->getValue().toDouble());
                 if((std::abs(pt.y() - keyFramewidgetPos.y()) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
-                        (std::abs(pt.x() - keyFramewidgetPos.x()) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)){
+                   (std::abs(pt.x() - keyFramewidgetPos.x()) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)){
                     return std::make_pair((*it),(*it2));
                 }
             }
@@ -676,38 +678,46 @@ void CurveWidget::mousePressEvent(QMouseEvent *event){
         _rightClickMenu->exec(mapToGlobal(event->pos()));
         return;
     }
-
+    
     CurveWidget::Curves::const_iterator foundCurveNearby = isNearbyCurve(event->pos());
     if(foundCurveNearby != _curves.end()){
         selectCurve(*foundCurveNearby);
     }
-
+    
     int x = event->x();
     int y = event->y();
+    std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > selectedKey = isNearbyKeyFrame(event->pos());
     QPointF middle((_selectedKeyFramesBbox.topLeft().x() + _selectedKeyFramesBbox.bottomRight().x()) / 2.,
-                   (_selectedKeyFramesBbox.topLeft().y() + _selectedKeyFramesBbox.bottomRight().y() / 2.));
-    if( _drawSelectedKeyFramesBbox && (x > (middle.x() - 20) && x < (middle.x() + 20)) &&
-            (y > (middle.y() - 20) && y < (middle.y() + 20))){
-        _state = DRAGGING_KEYS;
-        _zoomCtx._oldClick = event->pos();
-        _selectionStartPoint = event->pos();
-        updateGL();
-    }
+                   (_selectedKeyFramesBbox.topLeft().y() + _selectedKeyFramesBbox.bottomRight().y()) / 2.);
+    QPointF middleWidget = toWidgetCoordinates(middle.x(), middle.y());
+    if( _drawSelectedKeyFramesBbox &&
+       (((x > (middleWidget.x() - 20) && x < (middleWidget.x() + 20)) && (y < (middleWidget.y() + 20) && y > (middleWidget.y() - 20))) ||
+        (selectedKey.second))){
+           _state = DRAGGING_KEYS;
+       }
     else{
-
-        if(!event->modifiers().testFlag(Qt::ControlModifier)){
-            _selectedKeyFrames.clear();
-        }
-        std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > selectedKey = isNearbyKeyFrame(event->pos());
+       
+        
+        
         if(selectedKey.second){
+             _drawSelectedKeyFramesBbox = false;
             _state = DRAGGING_KEYS;
             setCursor(QCursor(Qt::CrossCursor));
+            if(!event->modifiers().testFlag(Qt::ControlModifier)){
+                _selectedKeyFrames.clear();
+                
+            }
             _selectedKeyFrames.push_back(selectedKey);
         }else{
-
+            
             if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
                 _state = DRAGGING_VIEW;
             }else{
+                _drawSelectedKeyFramesBbox = false;
+                if(!event->modifiers().testFlag(Qt::ControlModifier)){
+                    _selectedKeyFrames.clear();
+                    
+                }
                 _state = SELECTING;
             }
         }
@@ -717,25 +727,36 @@ void CurveWidget::mousePressEvent(QMouseEvent *event){
     updateGL();
 }
 
-void CurveWidget::mouseReleaseEvent(QMouseEvent *event){
+void CurveWidget::mouseReleaseEvent(QMouseEvent*){
     _state = NONE;
     _selectionRectangle.setBottomRight(QPointF(0,0));
     _selectionRectangle.setTopLeft(_selectionRectangle.bottomRight());
     if(_selectedKeyFrames.size() > 1){
         _drawSelectedKeyFramesBbox = true;
-
+        
     }
-    QGLWidget::mouseReleaseEvent(event);
+    
     updateGL();
 }
 void CurveWidget::mouseMoveEvent(QMouseEvent *event){
     std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > selectedKey = isNearbyKeyFrame(event->pos());
-    if(selectedKey.second){
-        setCursor(QCursor(Qt::CrossCursor));
-    }else{
-        setCursor(QCursor(Qt::ArrowCursor));
+    int x = event->x();
+    int y = event->y();
+    QPointF middle((_selectedKeyFramesBbox.topLeft().x() + _selectedKeyFramesBbox.bottomRight().x()) / 2.,
+                   (_selectedKeyFramesBbox.topLeft().y() + _selectedKeyFramesBbox.bottomRight().y()) / 2.);
+    QPointF middleWidget = toWidgetCoordinates(middle.x(), middle.y());
+    if( _drawSelectedKeyFramesBbox &&
+       ( (x > (middleWidget.x() - 20) && x < (middleWidget.x() + 20) && y < (middleWidget.y() + 20) && y > (middleWidget.y() - 20) ) ||
+        (selectedKey.second))){
+           setCursor(QCursor(Qt::SizeAllCursor));
+       }
+    else{
+        if(selectedKey.second){
+            setCursor(QCursor(Qt::CrossCursor));
+        }else{
+            setCursor(QCursor(Qt::ArrowCursor));
+        }
     }
-    
     
     if(_mustSetDragOrientation && _state == DRAGGING_KEYS){
         int dist = QPoint(event->pos() - _zoomCtx._oldClick).manhattanLength();
@@ -756,7 +777,7 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
     QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
     QPointF oldClick_opengl = toScaleCoordinates(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
     
-
+    
     if (_state == DRAGGING_VIEW) {
         
         float dy = (oldClick_opengl.y() - newClick_opengl.y());
@@ -768,20 +789,20 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
         translation.rx() *= _mouseDragOrientation.x();
         translation.ry() *= _mouseDragOrientation.y();
         
-
+        
         CurveEditor* editor = NULL;
         if(parentWidget()){
             if(parentWidget()->parentWidget()){
                 if(parentWidget()->parentWidget()->objectName() == kCurveEditorObjectName){
                     editor = dynamic_cast<CurveEditor*>(parentWidget()->parentWidget());
-
+                    
                 }
             }
         }
-
+        
         for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
             double newTime = newClick_opengl.x();//(*it)->getTime() + translation.x();
-            double diffTime = (newTime - (*it).second->getTime()) * _mouseDragOrientation.x() ;
+            double diffTime = (newTime - oldClick_opengl.x()) * _mouseDragOrientation.x() ;
             double newX,newY;
             if(diffTime != 0){
                 //find out if the new value will be in the interval [previousKey,nextKey]
@@ -799,14 +820,14 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
                 ++nextKey;
                 
                 if(((prevKey != keys.end() && newValue > (*prevKey)->getTime()) || prevKey == keys.end()) &&
-                        ((nextKey != keys.end() && newValue < (*nextKey)->getTime()) || nextKey == keys.end())){
+                   ((nextKey != keys.end() && newValue < (*nextKey)->getTime()) || nextKey == keys.end())){
                     newX = newValue;
                 }else if(prevKey != keys.end() && newValue <= (*prevKey)->getTime()){
                     newX = (*prevKey)->getTime()+1;
                 }else if(nextKey != keys.end() && newValue >= (*nextKey)->getTime()){
                     newX = (*nextKey)->getTime()-1;
                 }
-
+                
             }else{
                 newX = (*it).second->getTime();
             }
@@ -817,6 +838,7 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
                 editor->setKeyFrame(it->first,it->second,newX,Variant(newY));
             }
         }
+        refreshSelectedKeysBbox();
     }else if(_state == SELECTING){
         double xmin = std::min(_selectionStartPoint.x(),(double)event->x());
         double xmax = std::max(_selectionStartPoint.x(),(double)event->x());
@@ -829,15 +851,44 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
         keyFramesWithinRect(_selectionRectangle,&keyframesSelected);
         for(U32 i = 0; i < keyframesSelected.size();++i){
             _selectedKeyFrames.push_back(keyframesSelected[i]);
+
         }
-
+        refreshSelectedKeysBbox();
     }
-
+    
     _zoomCtx._oldClick = newClick;
-
+    
     updateGL();
 }
 
+void CurveWidget::refreshSelectedKeysBbox(){
+    RectD keyFramesBbox;
+    for(SelectedKeys::const_iterator it = _selectedKeyFrames.begin() ; it!= _selectedKeyFrames.end();++it){
+        double x = it->second->getTime();
+        double y = it->second->getValue().value<double>();
+        if(it != _selectedKeyFrames.begin()){
+            if(x < keyFramesBbox.left()){
+                keyFramesBbox.set_left(x);
+            }
+            if(x > keyFramesBbox.right()){
+                keyFramesBbox.set_right(x);
+            }
+            if(y > keyFramesBbox.top()){
+                keyFramesBbox.set_top(y);
+            }
+            if(y < keyFramesBbox.bottom()){
+                keyFramesBbox.set_bottom(y);
+            }
+        }else{
+            keyFramesBbox.set_left(x);
+            keyFramesBbox.set_right(x);
+            keyFramesBbox.set_top(y);
+            keyFramesBbox.set_bottom(y);
+        }
+    }
+    _selectedKeyFramesBbox.setTopLeft(QPointF(keyFramesBbox.left(),keyFramesBbox.top()));
+    _selectedKeyFramesBbox.setBottomRight(QPointF(keyFramesBbox.right(),keyFramesBbox.bottom()));
+}
 void CurveWidget::wheelEvent(QWheelEvent *event){
     if (event->orientation() != Qt::Vertical) {
         return;
@@ -861,7 +912,7 @@ void CurveWidget::wheelEvent(QWheelEvent *event){
     _zoomCtx._zoomFactor = newZoomFactor;
     
     updateGL();
-
+    
 }
 
 QPointF CurveWidget::toScaleCoordinates(double x,double y) const {
@@ -909,7 +960,18 @@ void CurveWidget::removeKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key
 }
 
 void CurveWidget::keyPressEvent(QKeyEvent *event){
-    if(event->key() == Qt::Key_Backspace){
+    if(event->key() == Qt::Key_Space){
+        if(parentWidget()){
+            if(parentWidget()->parentWidget()){
+                if(parentWidget()->parentWidget()->objectName() == kCurveEditorObjectName){
+                    QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
+                    QCoreApplication::postEvent(parentWidget()->parentWidget(),ev);
+                }
+            }
+        }
+        
+    }
+    else if(event->key() == Qt::Key_Backspace){
         deleteSelectedKeyFrames();
     }else if(event->key() == Qt::Key_K){
         constantInterpForSelectedKeyFrames();
@@ -939,8 +1001,8 @@ void CurveWidget::keyPressEvent(QKeyEvent *event){
     }else if(event->key() == Qt::Key_V && event->modifiers().testFlag(Qt::ControlModifier)){
         pasteKeyFramesFromClipBoardToSelectedCurve();
     }
-
-
+    
+    
 }
 
 
@@ -957,81 +1019,81 @@ void CurveWidget::createMenu(){
     QMenu* editMenu = new QMenu(_rightClickMenu);
     editMenu->setTitle("Edit");
     _rightClickMenu->addAction(editMenu->menuAction());
-
+    
     QMenu* interpMenu = new QMenu(_rightClickMenu);
     interpMenu->setTitle("Interpolation");
     _rightClickMenu->addAction(interpMenu->menuAction());
-
+    
     QMenu* viewMenu = new QMenu(_rightClickMenu);
     viewMenu->setTitle("View");
     _rightClickMenu->addAction(viewMenu->menuAction());
-
+    
     QAction* deleteKeyFramesAction = new QAction("Delete selected keyframes",this);
     deleteKeyFramesAction->setShortcut(QKeySequence(Qt::Key_Backspace));
     QObject::connect(deleteKeyFramesAction,SIGNAL(triggered()),this,SLOT(deleteSelectedKeyFrames()));
     editMenu->addAction(deleteKeyFramesAction);
-
+    
     QAction* copyKeyFramesAction = new QAction("Copy selected keyframes",this);
     copyKeyFramesAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_C));
     QObject::connect(copyKeyFramesAction,SIGNAL(triggered()),this,SLOT(copySelectedKeyFrames()));
     editMenu->addAction(copyKeyFramesAction);
-
+    
     QAction* pasteKeyFramesAction = new QAction("Paste to selected curve",this);
     pasteKeyFramesAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_V));
     QObject::connect(pasteKeyFramesAction,SIGNAL(triggered()),this,SLOT(pasteKeyFramesFromClipBoardToSelectedCurve()));
     editMenu->addAction(pasteKeyFramesAction);
-
+    
     QAction* selectAllAction = new QAction("Select all keyframes",this);
     selectAllAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_A));
     QObject::connect(selectAllAction,SIGNAL(triggered()),this,SLOT(selectAllKeyFrames()));
     editMenu->addAction(selectAllAction);
-
-
+    
+    
     QAction* constantInterp = new QAction("Constant",this);
     constantInterp->setShortcut(QKeySequence(Qt::Key_K));
     QObject::connect(constantInterp,SIGNAL(triggered()),this,SLOT(constantInterpForSelectedKeyFrames()));
     interpMenu->addAction(constantInterp);
-
+    
     QAction* linearInterp = new QAction("Linear",this);
     linearInterp->setShortcut(QKeySequence(Qt::Key_L));
     QObject::connect(linearInterp,SIGNAL(triggered()),this,SLOT(linearInterpForSelectedKeyFrames()));
     interpMenu->addAction(linearInterp);
-
-
+    
+    
     QAction* smoothInterp = new QAction("Smooth",this);
     smoothInterp->setShortcut(QKeySequence(Qt::Key_Z));
     QObject::connect(smoothInterp,SIGNAL(triggered()),this,SLOT(smoothForSelectedKeyFrames()));
     interpMenu->addAction(smoothInterp);
-
-
+    
+    
     QAction* catmullRomInterp = new QAction("Catmull-Rom",this);
     catmullRomInterp->setShortcut(QKeySequence(Qt::Key_R));
     QObject::connect(catmullRomInterp,SIGNAL(triggered()),this,SLOT(catmullromInterpForSelectedKeyFrames()));
     interpMenu->addAction(catmullRomInterp);
-
-
+    
+    
     QAction* cubicInterp = new QAction("Cubic",this);
     cubicInterp->setShortcut(QKeySequence(Qt::Key_C));
     QObject::connect(cubicInterp,SIGNAL(triggered()),this,SLOT(cubicInterpForSelectedKeyFrames()));
     interpMenu->addAction(cubicInterp);
-
+    
     QAction* horizontalInterp = new QAction("Horizontal",this);
     horizontalInterp->setShortcut(QKeySequence(Qt::Key_H));
     QObject::connect(horizontalInterp,SIGNAL(triggered()),this,SLOT(horizontalInterpForSelectedKeyFrames()));
     interpMenu->addAction(horizontalInterp);
-
-
+    
+    
     QAction* breakTangents = new QAction("Break",this);
     breakTangents->setShortcut(QKeySequence(Qt::Key_X));
     QObject::connect(breakTangents,SIGNAL(triggered()),this,SLOT(breakTangentsForSelectedKeyFrames()));
     interpMenu->addAction(breakTangents);
-
+    
     QAction* frameCurve = new QAction("Frame selected curve",this);
     frameCurve->setShortcut(QKeySequence(Qt::Key_F));
     QObject::connect(frameCurve,SIGNAL(triggered()),this,SLOT(frameSelectedCurve()));
     viewMenu->addAction(frameCurve);
-
-
+    
+    
 }
 
 void CurveWidget::constantInterpForSelectedKeyFrames(){
@@ -1126,18 +1188,21 @@ void CurveWidget::breakTangentsForSelectedKeyFrames(){
 }
 
 void CurveWidget::deleteSelectedKeyFrames(){
+    _drawSelectedKeyFramesBbox = false;
+    _selectedKeyFramesBbox.setBottomRight(QPointF(0,0));
+    _selectedKeyFramesBbox.setTopLeft(_selectedKeyFramesBbox.bottomRight());
     CurveEditor* editor = NULL;
     if(parentWidget()){
         if(parentWidget()->parentWidget()){
             if(parentWidget()->parentWidget()->objectName() == kCurveEditorObjectName){
                 editor = dynamic_cast<CurveEditor*>(parentWidget()->parentWidget());
-
+                
             }
         }
     }
-
+    
     if(editor){
-
+        
         //if the parent is the editor, it will call removeKeyFrame but also add it to the undo stack
         if(_selectedKeyFrames.size() > 1){
             std::vector< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > > toRemove;
@@ -1145,13 +1210,13 @@ void CurveWidget::deleteSelectedKeyFrames(){
                 toRemove.push_back(*it);
             }
             editor->removeKeyFrames(toRemove);
-
+            
         }else{
             const std::pair<CurveGui*,boost::shared_ptr<KeyFrame> >& it = _selectedKeyFrames.front();
             editor->removeKeyFrame(it.first,it.second);
         }
         _selectedKeyFrames.clear();
-
+        
     }else{
         while(!_selectedKeyFrames.empty()){
             const std::pair<CurveGui*,boost::shared_ptr<KeyFrame> >& it = _selectedKeyFrames.back();
@@ -1159,7 +1224,7 @@ void CurveWidget::deleteSelectedKeyFrames(){
             _selectedKeyFrames.pop_back();
         }
     }
-
+    
     updateGL();
 }
 
@@ -1175,11 +1240,11 @@ void CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve(){
         if(parentWidget()->parentWidget()){
             if(parentWidget()->parentWidget()->objectName() == kCurveEditorObjectName){
                 editor = dynamic_cast<CurveEditor*>(parentWidget()->parentWidget());
-
+                
             }
         }
     }
-
+    
     for(Curves::iterator it = _curves.begin() ; it != _curves.end() ; ++it){
         if((*it)->isSelected()){
             for(U32 i = 0; i < _keyFramesClipBoard.size();++i){
@@ -1198,6 +1263,7 @@ void CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve(){
 }
 
 void CurveWidget::selectAllKeyFrames(){
+    _drawSelectedKeyFramesBbox = true;
     _selectedKeyFrames.clear();
     for(Curves::iterator it = _curves.begin() ; it != _curves.end() ; ++it){
         const Curve::KeyFrames& keys = (*it)->getInternalCurve()->getKeyFrames();
@@ -1205,6 +1271,7 @@ void CurveWidget::selectAllKeyFrames(){
             _selectedKeyFrames.push_back(std::make_pair(*it,*it2));
         }
     }
+    refreshSelectedKeysBbox();
     updateGL();
 }
 
@@ -1221,7 +1288,7 @@ void CurveWidget::frameSelectedCurve(){
 }
 
 void CurveWidget::keyFramesWithinRect(const QRectF& rect,std::vector< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > >* keys) const{
-
+    
     double left = rect.topLeft().x();
     double right = rect.bottomRight().x();
     double bottom = rect.topLeft().y();
