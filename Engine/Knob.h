@@ -17,8 +17,6 @@
 #include <map>
 #include <cfloat>
 
-#include <QtCore/QMutex>
-
 #include "Global/GlobalDefines.h"
 #include "Engine/Curve.h"
 

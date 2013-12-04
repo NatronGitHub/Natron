@@ -94,6 +94,8 @@ SOURCES += \
     Engine/Hash64.cpp \
     Engine/Image.cpp \
     Engine/Knob.cpp \
+    Engine/KnobFile.cpp \
+    Engine/KnobTypes.cpp \
     Engine/Log.cpp \
     Engine/Lut.cpp \
     Engine/MemoryFile.cpp \

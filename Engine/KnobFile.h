@@ -13,8 +13,10 @@
 #define NATRON_ENGINE_KNOBFILE_H_
 
 #include <vector>
+
 #include <QtCore/QObject>
 #include <QtCore/QMutex>
+#include <QtCore/QString>
 
 #include "Engine/Knob.h"
 
@@ -26,22 +28,26 @@ class File_Knob : public Knob
 {
     Q_OBJECT
 public:
-    
-    static Knob* BuildKnob(KnobHolder*  holder, const std::string& description,int dimension) {
-        return new File_Knob(holder,description,dimension);
+
+    static Knob *BuildKnob(KnobHolder  *holder, const std::string &description, int dimension) {
+        return new File_Knob(holder, description, dimension);
     }
-    
-    File_Knob(KnobHolder* holder, const std::string& description, int dimension)
-    : Knob(holder,description,dimension)
+
+    File_Knob(KnobHolder *holder, const std::string &description, int dimension)
+        : Knob(holder, description, dimension)
     {}
 
 private:
-    virtual bool canAnimate() const OVERRIDE FINAL { return false; }
-    
-    virtual std::string typeName() const OVERRIDE FINAL {return "InputFile";}
+    virtual bool canAnimate() const OVERRIDE FINAL {
+        return false;
+    }
+
+    virtual std::string typeName() const OVERRIDE FINAL {
+        return "InputFile";
+    }
 
 public:
-    void openFile(){
+    void openFile() {
         emit shouldOpenFile();
     }
 
@@ -50,74 +56,80 @@ public:
      * @return Returns the index of the first frame in the sequence held by this Reader.
      */
     int firstFrame() const;
-    
+
     /**
      * @brief lastFrame
      * @return Returns the index of the last frame in the sequence held by this Reader.
      */
     int lastFrame() const;
-    
+
 private:
-    int frameCount() const{return _filesSequence.size();}
-    
+    int frameCount() const {
+        return _filesSequence.size();
+    }
+
     /**
      * @brief nearestFrame
      * @return Returns the index of the nearest frame in the Range [ firstFrame() - lastFrame( ].
      * @param f The index of the frame to modify.
      */
     int nearestFrame(int f) const;
-    
+
 public:
     /**
      * @brief getRandomFrameName
      * @param f The index of the frame.
      * @return The file name associated to the frame index. Returns an empty string if it couldn't find it.
      */
-    QString getRandomFrameName(int f,bool loadNearestIfNotFound) const;
+    QString getRandomFrameName(int f, bool loadNearestIfNotFound) const;
 private:
-    virtual void cloneExtraData(const Knob& other) OVERRIDE FINAL;
-    
+    virtual void cloneExtraData(const Knob &other) OVERRIDE FINAL;
+
     virtual void processNewValue() OVERRIDE FINAL;
-    
+
 signals:
     void shouldOpenFile();
-    
+
 private:
     mutable QMutex _fileSequenceLock;
-    std::map<int,QString> _filesSequence;///mapping <frameNumber,fileName>
+    std::map<int, QString> _filesSequence; ///mapping <frameNumber,fileName>
 };
 
 /******************************OUTPUT_FILE_KNOB**************************************/
 
-class OutputFile_Knob:public Knob
+class OutputFile_Knob: public Knob
 {
     Q_OBJECT
 public:
-    
-    static Knob* BuildKnob(KnobHolder* holder, const std::string& description,int dimension){
-        return new OutputFile_Knob(holder,description,dimension);
+
+    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+        return new OutputFile_Knob(holder, description, dimension);
     }
-    
-    OutputFile_Knob(KnobHolder* holder, const std::string& description,int dimension):
-        Knob(holder,description,dimension)
+
+    OutputFile_Knob(KnobHolder *holder, const std::string &description, int dimension):
+        Knob(holder, description, dimension)
     {}
 
     std::string getFileName() const;
 
-    void openFile(){
+    void openFile() {
         emit shouldOpenFile();
     }
-    
-    
+
+
 signals:
-    
+
     void shouldOpenFile();
 
 private:
 
-    virtual bool canAnimate() const OVERRIDE FINAL { return false; }
+    virtual bool canAnimate() const OVERRIDE FINAL {
+        return false;
+    }
 
-    virtual std::string typeName() const OVERRIDE FINAL {return "OutputFile";}
+    virtual std::string typeName() const OVERRIDE FINAL {
+        return "OutputFile";
+    }
 };
 
 
