@@ -416,6 +416,8 @@ public:
 
     PluginToolButton* findPluginToolButtonOrCreate(const QString& pluginID,const QString& name,const QString& iconPath);
 
+    void getIcon(Natron::PixmapEnum e,QPixmap* pix) const;
+
 public slots:
 
     void clearPlaybackCache();
@@ -472,6 +474,8 @@ private:
 
     void printPluginsLoaded();
 
+     void populateIcons();
+
     boost::scoped_ptr<Settings> _settings;
 
     std::map<int,AppInstance*> _appInstances;
@@ -499,6 +503,7 @@ private:
     boost::scoped_ptr<Natron::Cache<Natron::Image> >  _nodeCache;
 
     boost::scoped_ptr<Natron::Cache<Natron::FrameEntry> > _viewerCache;
+
 
 };
 

@@ -147,18 +147,11 @@ bool TabWidget::destroyTab(QWidget* tab) {
 
 void TabWidget::createMenu(){
     QMenu *menu = new QMenu(_gui);
-    QImage imgV(NATRON_IMAGES_PATH"splitVertically.png");
-    QPixmap pixV=QPixmap::fromImage(imgV);
-    pixV.scaled(12,12);
-    QImage imgH(NATRON_IMAGES_PATH"splitHorizontally.png");
-    QPixmap pixH=QPixmap::fromImage(imgH);
-    QImage imgC(NATRON_IMAGES_PATH"close.png");
-    QPixmap pixC=QPixmap::fromImage(imgC);
-    pixC.scaled(12,12);
-    QImage imgM(NATRON_IMAGES_PATH"maximize.png");
-    QPixmap pixM=QPixmap::fromImage(imgM);
-    pixM.scaled(12,12);
-    pixH.scaled(12,12);
+    QPixmap pixV,pixM,pixH,pixC;
+    appPTR->getIcon(Natron::TAB_WIDGET_SPLIT_VERTICALLY_PIXMAP,&pixV);
+    appPTR->getIcon(Natron::TAB_WIDGET_SPLIT_HORIZONTALLY_PIXMAP,&pixH);
+    appPTR->getIcon(Natron::MAXIMIZE_WIDGET_PIXMAP,&pixM);
+    appPTR->getIcon(Natron::CLOSE_WIDGET_PIXMAP,&pixC);
     QAction* splitVerticallyAction = new QAction(QIcon(pixV),tr("Split vertical"),this);
     QObject::connect(splitVerticallyAction, SIGNAL(triggered()), this, SLOT(splitVertically()));
     menu->addAction(splitVerticallyAction);

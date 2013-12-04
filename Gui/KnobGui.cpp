@@ -244,9 +244,8 @@ void File_KnobGui::createWidget(QGridLayout* layout,int row){
 
     _openFileButton = new Button(layout->parentWidget());
     
-    QImage img(NATRON_IMAGES_PATH"open-file.png");
-    QPixmap pix = QPixmap::fromImage(img);
-    pix = pix.scaled(15,15);
+    QPixmap pix;
+    appPTR->getIcon(Natron::OPEN_FILE_PIXMAP,&pix);
     _openFileButton->setIcon(QIcon(pix));
     _openFileButton->setFixedSize(20, 20);
     QObject::connect(_openFileButton,SIGNAL(clicked()),this,SLOT(open_file()));
@@ -340,9 +339,8 @@ void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row){
     _lineEdit->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
     _openFileButton = new Button(layout->parentWidget());
     
-    QImage img(NATRON_IMAGES_PATH"open-file.png");
-    QPixmap pix=QPixmap::fromImage(img);
-    pix = pix.scaled(15,15);
+    QPixmap pix;
+    appPTR->getIcon(Natron::OPEN_FILE_PIXMAP,&pix);
     _openFileButton->setIcon(QIcon(pix));
     _openFileButton->setFixedSize(20,20);
     QObject::connect(_openFileButton,SIGNAL(clicked()),this,SLOT(open_file()));
@@ -1055,11 +1053,10 @@ void Color_KnobGui::createWidget(QGridLayout* layout,int row) {
     _colorLabel->setToolTip(_knob->getHintToolTip().c_str());
     colorLayout->addWidget(_colorLabel);
     
-    QImage buttonImg(NATRON_IMAGES_PATH"colorwheel.png");
-    QPixmap buttonPix = QPixmap::fromImage(buttonImg);
-    buttonPix = buttonPix.scaled(25, 20);
-    QIcon buttonIcon(buttonPix);
-    _colorDialogButton = new Button(buttonIcon,"",colorContainer);
+    QPixmap buttonPix;
+    appPTR->getIcon(Natron::COLORWHEEL_PIXMAP,&buttonPix);
+
+    _colorDialogButton = new Button(QIcon(buttonPix),"",colorContainer);
     QObject::connect(_colorDialogButton, SIGNAL(pressed()), this, SLOT(showColorDialog()));
     colorLayout->addWidget(_colorDialogButton);
     
@@ -1275,17 +1272,13 @@ GroupBoxLabel::GroupBoxLabel(QWidget* parent):
 
 void GroupBoxLabel::setChecked(bool b){
     _checked = b;
+    QPixmap pix;
     if(b){
-        QImage img(NATRON_IMAGES_PATH"groupbox_unfolded.png");
-        QPixmap pix = QPixmap::fromImage(img);
-        pix = pix.scaled(20, 20);
-        setPixmap(pix);
+        appPTR->getIcon(Natron::GROUPBOX_UNFOLDED_PIXMAP,&pix);
     }else{
-        QImage img(NATRON_IMAGES_PATH"groupbox_folded.png");
-        QPixmap pix = QPixmap::fromImage(img);
-        pix = pix.scaled(20, 20);
-        setPixmap(pix);
+        appPTR->getIcon(Natron::GROUPBOX_FOLDED_PIXMAP,&pix);
     }
+    setPixmap(pix);
 }
 
 Group_KnobGui::~Group_KnobGui(){

@@ -91,9 +91,8 @@ NodeGui::NodeGui(NodeGraph* dag,
     _boundingBox = new QGraphicsRectItem(this);
     _boundingBox->setZValue(-1);
 	
-    QImage img(NATRON_IMAGES_PATH"RGBAchannels.png");
-    QPixmap pixmap = QPixmap::fromImage(img);
-    pixmap = pixmap.scaled(10,10);
+    QPixmap pixmap;
+    appPTR->getIcon(Natron::RGBA_CHANNELS_PIXMAP,&pixmap);
     _channelsPixmap= new QGraphicsPixmapItem(pixmap,this);
 	
     _nameItem = new QGraphicsTextItem(_internalNode->getName().c_str(),this);

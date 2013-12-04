@@ -21,6 +21,8 @@
 #include <QtCore/QCoreApplication>
 #include <QtConcurrentRun>
 #include <QtConcurrentMap>
+#include <QtGui/QPixmapCache>
+
 #if QT_VERSION < 0x050000
 #include <QtGui/QDesktopServices>
 #else
@@ -70,16 +72,191 @@ using std::cout; using std::endl;
 using std::make_pair;
 
 
-
+void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const{
+    Natron::PixmapEnum type;
+    if(!QPixmapCache::find(QString::number(e),pix)){
+        QImage img;
+        switch(e){
+        case Natron::PLAYER_PREVIOUS_PIXMAP:
+            type = Natron::PLAYER_PREVIOUS_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"back1.png");
+            *pix = QPixmap::fromImage(img).scaled(20,20);
+            break;
+        case Natron::PLAYER_FIRST_FRAME_PIXMAP:
+            type = Natron::PLAYER_FIRST_FRAME_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"firstFrame.png");
+            *pix = QPixmap::fromImage(img).scaled(20,20);
+            break;
+        case Natron::PLAYER_NEXT_PIXMAP:
+            type = Natron::PLAYER_NEXT_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"forward1.png");
+            *pix = QPixmap::fromImage(img).scaled(20,20);
+            break;
+        case Natron::PLAYER_LAST_FRAME_PIXMAP:
+            type = Natron::PLAYER_LAST_FRAME_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"lastFrame.png");
+            *pix = QPixmap::fromImage(img).scaled(20,20);
+            break;
+        case Natron::PLAYER_NEXT_INCR_PIXMAP:
+            type = Natron::PLAYER_NEXT_INCR_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"nextIncr.png");
+            *pix = QPixmap::fromImage(img).scaled(20,20);
+            break;
+        case Natron::PLAYER_NEXT_KEY_PIXMAP:
+            type = Natron::PLAYER_NEXT_KEY_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"nextKF.png");
+            *pix = QPixmap::fromImage(img).scaled(20,20);
+            break;
+        case Natron::PLAYER_PREVIOUS_INCR_PIXMAP:
+            type = Natron::PLAYER_PREVIOUS_INCR_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"previousIncr.png");
+            *pix = QPixmap::fromImage(img).scaled(20,20);
+            break;
+        case Natron::PLAYER_PREVIOUS_KEY_PIXMAP:
+            type = Natron::PLAYER_PREVIOUS_KEY_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"prevKF.png");
+            *pix = QPixmap::fromImage(img).scaled(20,20);
+            break;
+        case Natron::PLAYER_REWIND_PIXMAP:
+            type = Natron::PLAYER_REWIND_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"rewind.png");
+            *pix = QPixmap::fromImage(img).scaled(20,20);
+            break;
+        case Natron::PLAYER_PLAY_PIXMAP:
+            type = Natron::PLAYER_PLAY_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"play.png");
+            *pix = QPixmap::fromImage(img).scaled(20,20);
+            break;
+        case Natron::PLAYER_STOP_PIXMAP:
+            type = Natron::PLAYER_STOP_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"stop.png");
+            *pix = QPixmap::fromImage(img).scaled(20,20);
+            break;
+        case Natron::PLAYER_LOOP_MODE_PIXMAP:
+            type = Natron::PLAYER_LOOP_MODE_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"loopmode.png");
+            *pix = QPixmap::fromImage(img).scaled(20,20);
+            break;
+        case Natron::MAXIMIZE_WIDGET_PIXMAP:
+            type = Natron::MAXIMIZE_WIDGET_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"maximize.png");
+            *pix = QPixmap::fromImage(img).scaled(15,15);
+            break;
+        case Natron::MINIMIZE_WIDGET_PIXMAP:
+            type = Natron::MINIMIZE_WIDGET_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"minimize.png");
+            *pix = QPixmap::fromImage(img).scaled(15,15);
+            break;
+        case Natron::CLOSE_WIDGET_PIXMAP:
+            type = Natron::CLOSE_WIDGET_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"close.png");
+            *pix = QPixmap::fromImage(img).scaled(15,15);
+            break;
+        case Natron::HELP_WIDGET_PIXMAP:
+            type = Natron::HELP_WIDGET_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"help.png");
+            *pix = QPixmap::fromImage(img).scaled(15,15);
+            break;
+        case Natron::GROUPBOX_FOLDED_PIXMAP:
+            type = Natron::GROUPBOX_FOLDED_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"groupbox_folded.png");
+            *pix = QPixmap::fromImage(img).scaled(20, 20);
+            break;
+        case Natron::GROUPBOX_UNFOLDED_PIXMAP:
+            type = Natron::GROUPBOX_UNFOLDED_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"groupbox_unfolded.png");
+            *pix = QPixmap::fromImage(img).scaled(20, 20);
+            break;
+        case Natron::UNDO_PIXMAP:
+            type = Natron::UNDO_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"undo.png");
+            *pix = QPixmap::fromImage(img).scaled(15, 15);
+            break;
+        case Natron::REDO_PIXMAP:
+            type = Natron::REDO_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"redo.png");
+            *pix = QPixmap::fromImage(img).scaled(15, 15);
+            break;
+        case Natron::UNDO_GRAYSCALE_PIXMAP:
+            type = Natron::UNDO_GRAYSCALE_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"undo_grayscale.png");
+            *pix = QPixmap::fromImage(img).scaled(15, 15);
+            break;
+        case Natron::REDO_GRAYSCALE_PIXMAP:
+            type = Natron::REDO_GRAYSCALE_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"redo_grayscale.png");
+            *pix = QPixmap::fromImage(img).scaled(15, 15);
+            break;
+        case Natron::TAB_WIDGET_LAYOUT_BUTTON_PIXMAP:
+            type = Natron::TAB_WIDGET_LAYOUT_BUTTON_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"layout.png");
+            *pix = QPixmap::fromImage(img).scaled(12,12);
+            break;
+        case Natron::TAB_WIDGET_SPLIT_HORIZONTALLY_PIXMAP:
+            type = Natron::TAB_WIDGET_SPLIT_HORIZONTALLY_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"splitHorizontally.png");
+            *pix = QPixmap::fromImage(img).scaled(12,12);
+            break;
+        case Natron::TAB_WIDGET_SPLIT_VERTICALLY_PIXMAP:
+            type = Natron::TAB_WIDGET_SPLIT_VERTICALLY_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"splitVertically.png");
+            *pix = QPixmap::fromImage(img).scaled(12,12);
+            break;
+        case Natron::VIEWER_CENTER_PIXMAP:
+            type = Natron::VIEWER_CENTER_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"centerViewer.png");
+            *pix = QPixmap::fromImage(img).scaled(50, 50);
+            break;
+        case Natron::VIEWER_CLIP_TO_PROJECT_PIXMAP:
+            type = Natron::VIEWER_CLIP_TO_PROJECT_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"cliptoproject.png");
+            *pix = QPixmap::fromImage(img).scaled(50, 50);
+            break;
+        case Natron::VIEWER_REFRESH_PIXMAP:
+            type = Natron::VIEWER_REFRESH_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"refresh.png");
+            *pix = QPixmap::fromImage(img).scaled(20,20);
+            break;
+        case Natron::OPEN_FILE_PIXMAP:
+            type = Natron::OPEN_FILE_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"file.png");
+            *pix = QPixmap::fromImage(img).scaled(15,15);
+            break;
+        case Natron::RGBA_CHANNELS_PIXMAP:
+            type = Natron::RGBA_CHANNELS_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"RGBAchannels.png");
+            *pix = QPixmap::fromImage(img).scaled(10,10);
+            break;
+        case Natron::COLORWHEEL_PIXMAP:
+            type = Natron::COLORWHEEL_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"colorwheel.png");
+            *pix = QPixmap::fromImage(img).scaled(25, 20);
+            break;
+        case Natron::IO_GROUPING_PIXMAP:
+            type = Natron::IO_GROUPING_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"ioGroupingIcon.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case Natron::OPEN_EFFECTS_GROUPING_PIXMAP:
+            type = Natron::OPEN_EFFECTS_GROUPING_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"openeffects.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        default:
+            assert("Missing image.");
+        }
+        QPixmapCache::insert(QString::number(type),*pix);
+    }
+}
 
 
 AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectName,const QStringList& writers):
-_gui(NULL)
-, _currentProject(new Natron::Project(this))
-, _appID(appID)
-, _nodeMapping()
-, _autoSaveMutex(new QMutex)
-, _isBackground(backgroundMode)
+    _gui(NULL)
+  , _currentProject(new Natron::Project(this))
+  , _appID(appID)
+  , _nodeMapping()
+  , _autoSaveMutex(new QMutex)
+  , _isBackground(backgroundMode)
 {
     appPTR->registerAppInstance(this);
     appPTR->setAsTopLevelInstance(appID);
@@ -271,7 +448,7 @@ void AppInstance::saveProject(const QString& path,const QString& name,bool autoS
     if(!autoSave) {
         
         if((_currentProject->projectAgeSinceLastSave() != _currentProject->projectAgeSinceLastAutosave()) ||
-           !QFile::exists(path+name)){
+                !QFile::exists(path+name)){
             
             _currentProject->saveProject(path,name);
             _currentProject->setHasProjectBeenSavedByUser(true);
@@ -443,7 +620,7 @@ void AppInstance::informationDialog(const std::string& title,const std::string& 
 }
 
 Natron::StandardButton AppInstance::questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons,
-                                                    Natron::StandardButton defaultButton) const{
+                                                   Natron::StandardButton defaultButton) const{
     return _gui->questionDialog(title, message,buttons,defaultButton);
 }
 
@@ -571,7 +748,7 @@ void AppManager::clearDiskCache(){
 
 void  AppManager::clearNodeCache(){
     _nodeCache->clear();
- 
+
 }
 
 
@@ -583,7 +760,7 @@ std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){
         QStringList filters;
         filters << QString(QString("*.")+QString(NATRON_LIBRARY_EXT));
         d.setNameFilters(filters);
-		QStringList fileList = d.entryList();
+        QStringList fileList = d.entryList();
         for(int i = 0 ; i < fileList.size() ; ++i) {
             QString filename = fileList.at(i);
             if(filename.endsWith(".dll") || filename.endsWith(".dylib") || filename.endsWith(".so")){
@@ -606,7 +783,7 @@ std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){
 }
 
 std::vector<Natron::LibraryBinary*> AppManager::loadPluginsAndFindFunctions(const QString& where,
-                                                                             const std::vector<std::string>& functions){
+                                                                            const std::vector<std::string>& functions){
     std::vector<LibraryBinary*> ret;
     std::vector<LibraryBinary*> loadedLibraries = loadPlugins(where);
     for (U32 i = 0; i < loadedLibraries.size(); ++i) {
@@ -627,23 +804,23 @@ AppInstance* AppManager::getTopLevelInstance () const{
 }
 
 AppManager::AppManager()
-: QObject()
-, Singleton<AppManager>()
-, _settings(new Settings())
-, _appInstances()
-, _availableID(0)
-, _topLevelInstanceID(0)
-, _readPluginsLoaded()
-, _writePluginsLoaded()
-, _formats()
-, _plugins()
-, ofxHost(new Natron::OfxHost())
-, _toolButtons()
-, _knobFactory(new KnobFactory())
-,_nodeCache(new Cache<Image>("NodeCache",0x1, (_settings->_cacheSettings.maxCacheMemoryPercent -
-                                               _settings->_cacheSettings.maxPlayBackMemoryPercent)*getSystemTotalRAM(),1))
-,_viewerCache(new Cache<FrameEntry>("ViewerCache",0x1,_settings->_cacheSettings.maxDiskCache
-,_settings->_cacheSettings.maxPlayBackMemoryPercent))
+    : QObject()
+    , Singleton<AppManager>()
+    , _settings(new Settings())
+    , _appInstances()
+    , _availableID(0)
+    , _topLevelInstanceID(0)
+    , _readPluginsLoaded()
+    , _writePluginsLoaded()
+    , _formats()
+    , _plugins()
+    , ofxHost(new Natron::OfxHost())
+    , _toolButtons()
+    , _knobFactory(new KnobFactory())
+    ,_nodeCache(new Cache<Image>("NodeCache",0x1, (_settings->_cacheSettings.maxCacheMemoryPercent -
+                                                   _settings->_cacheSettings.maxPlayBackMemoryPercent)*getSystemTotalRAM(),1))
+    ,_viewerCache(new Cache<FrameEntry>("ViewerCache",0x1,_settings->_cacheSettings.maxDiskCache
+                                        ,_settings->_cacheSettings.maxPlayBackMemoryPercent))
 {
     connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString,QString)),
             this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString,QString)));
@@ -656,8 +833,7 @@ AppManager::AppManager()
     /*Adjusting multi-threading for OpenEXR library.*/
     Imf::setGlobalThreadCount(QThread::idealThreadCount());
     
-    
-    
+
 }
 
 AppManager::~AppManager(){
@@ -803,7 +979,7 @@ void AppManager::loadBuiltinNodePlugins(){
         assert(readerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin(readerPlugin,reader->pluginID().c_str(),reader->pluginLabel().c_str(),
                                                     (QMutex*)NULL);
-         _plugins.push_back(plugin);
+        _plugins.push_back(plugin);
         addPluginToolButtons(grouping,reader->pluginID().c_str(),reader->pluginLabel().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete reader;
     }
@@ -816,7 +992,7 @@ void AppManager::loadBuiltinNodePlugins(){
         assert(viewerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin(viewerPlugin,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(),
                                                     (QMutex*)NULL);
-         _plugins.push_back(plugin);
+        _plugins.push_back(plugin);
         addPluginToolButtons(grouping,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete viewer;
     }
@@ -829,7 +1005,7 @@ void AppManager::loadBuiltinNodePlugins(){
         assert(writerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin(writerPlugin,writer->pluginID().c_str(),writer->pluginLabel().c_str(),
                                                     (QMutex*)NULL);
-         _plugins.push_back(plugin);
+        _plugins.push_back(plugin);
         addPluginToolButtons(grouping,writer->pluginID().c_str(),writer->pluginLabel().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete writer;
     }
@@ -965,6 +1141,8 @@ void AppManager::loadBuiltinFormats(){
     
 }
 
+
+
 Format* AppManager::findExistingFormat(int w, int h, double pixel_aspect) const {
     
     for(U32 i =0;i< _formats.size();++i) {
@@ -976,6 +1154,7 @@ Format* AppManager::findExistingFormat(int w, int h, double pixel_aspect) const 
     }
     return NULL;
 }
+
 
 void PluginToolButton::tryAddChild(PluginToolButton* plugin){
     for(unsigned int i = 0; i < _children.size() ; ++i){
@@ -1204,7 +1383,7 @@ void AppInstance::startWritersRendering(const QStringList& writers){
     }
     
     if(_isBackground){
-    //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
+        //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
         QtConcurrent::blockingMap(renderers,boost::bind(&AppInstance::startRenderingFullSequence,this,_1));
     }else{
         for (U32 i = 0; i < renderers.size(); ++i) {
@@ -1251,11 +1430,11 @@ void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* write
 }
 
 ProcessHandler::ProcessHandler(AppInstance* app,const QString& programPath,const QStringList& programArgs,Natron::OutputEffectInstance* writer)
-: _app(app)
- ,_process(new QProcess)
- ,_hasProcessBeenDeleted(false)
- ,_writer(writer)
- ,_dialog(NULL)
+    : _app(app)
+    ,_process(new QProcess)
+    ,_hasProcessBeenDeleted(false)
+    ,_writer(writer)
+    ,_dialog(NULL)
 {
     
     
@@ -1338,8 +1517,8 @@ void ProcessHandler::onProcessEnd(int exitCode,QProcess::ExitStatus stat){
 }
 
 AppInstance::ActiveBackgroundRender::ActiveBackgroundRender(Natron::OutputEffectInstance* writer)
-: _running(false)
- ,_writer(writer)
+    : _running(false)
+    ,_writer(writer)
 {
     
 }
@@ -1379,6 +1558,8 @@ void AppManager::removeFromViewerCache(boost::shared_ptr<const Natron::FrameEntr
     _viewerCache->removeEntry(texture);
     emit imageRemovedFromNodeCache(texture->getKey()._frameNb);
 }
+
+
 
 namespace Natron{
 
@@ -1423,7 +1604,7 @@ void informationDialog(const std::string& title,const std::string& message){
 }
 
 Natron::StandardButton questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons,
-                                             Natron::StandardButton defaultButton){
+                                      Natron::StandardButton defaultButton){
     
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     assert(topLvlInstance);
@@ -1438,7 +1619,7 @@ Natron::StandardButton questionDialog(const std::string& title,const std::string
     Log::print(message);
     Log::endFunction(title,"QUESTION");
 }
-    
+
 Plugin::~Plugin(){
     if(_lock){
         delete _lock;
@@ -1447,5 +1628,5 @@ Plugin::~Plugin(){
         delete _binary;
     }
 }
-    
+
 } //Namespace Natron

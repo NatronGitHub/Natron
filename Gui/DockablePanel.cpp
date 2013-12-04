@@ -74,9 +74,9 @@ DockablePanel::DockablePanel(KnobHolder* holder
     _headerLayout->setSpacing(0);
     _headerWidget->setLayout(_headerLayout);
     
-    QImage imgHelp(NATRON_IMAGES_PATH"help.png");
-    QPixmap pixHelp = QPixmap::fromImage(imgHelp);
-    pixHelp = pixHelp.scaled(15, 15);
+
+    QPixmap pixHelp ;
+    appPTR->getIcon(Natron::HELP_WIDGET_PIXMAP,&pixHelp);
     _helpButton = new Button(QIcon(pixHelp),"",_headerWidget);
     
     QString tooltip = helpToolTip;
@@ -92,12 +92,11 @@ DockablePanel::DockablePanel(KnobHolder* holder
     QObject::connect(_helpButton, SIGNAL(clicked()), this, SLOT(showHelp()));
     
     
-    QImage imgM(NATRON_IMAGES_PATH"minimize.png");
-    QPixmap pixM=QPixmap::fromImage(imgM);
-    pixM = pixM.scaled(15,15);
-    QImage imgC(NATRON_IMAGES_PATH"close.png");
-    QPixmap pixC=QPixmap::fromImage(imgC);
-    pixC = pixC.scaled(15,15);
+    QPixmap pixM;
+    appPTR->getIcon(Natron::MINIMIZE_WIDGET_PIXMAP,&pixM);
+
+    QPixmap pixC;
+    appPTR->getIcon(Natron::CLOSE_WIDGET_PIXMAP,&pixC);
     _minimize=new Button(QIcon(pixM),"",_headerWidget);
     _minimize->setFixedSize(15,15);
     _minimize->setCheckable(true);
@@ -106,12 +105,11 @@ DockablePanel::DockablePanel(KnobHolder* holder
     _cross->setFixedSize(15,15);
     QObject::connect(_cross,SIGNAL(clicked()),this,SLOT(close()));
 
-    QImage imgUndo(NATRON_IMAGES_PATH"undo.png");
-    QPixmap pixUndo = QPixmap::fromImage(imgUndo);
-    pixUndo = pixUndo.scaled(15, 15);
-    QImage imgUndo_gray(NATRON_IMAGES_PATH"undo_grayscale.png");
-    QPixmap pixUndo_gray = QPixmap::fromImage(imgUndo_gray);
-    pixUndo_gray = pixUndo_gray.scaled(15, 15);
+
+    QPixmap pixUndo ;
+    appPTR->getIcon(Natron::UNDO_PIXMAP,&pixUndo);
+    QPixmap pixUndo_gray ;
+    appPTR->getIcon(Natron::UNDO_GRAYSCALE_PIXMAP,&pixUndo_gray);
     QIcon icUndo;
     icUndo.addPixmap(pixUndo,QIcon::Normal);
     icUndo.addPixmap(pixUndo_gray,QIcon::Disabled);
@@ -119,12 +117,10 @@ DockablePanel::DockablePanel(KnobHolder* holder
     _undoButton->setToolTip("Undo the last change made to this operator");
     _undoButton->setEnabled(false);
     
-    QImage imgRedo(NATRON_IMAGES_PATH"redo.png");
-    QPixmap pixRedo = QPixmap::fromImage(imgRedo);
-    pixRedo = pixRedo.scaled(15, 15);
-    QImage imgRedo_gray(NATRON_IMAGES_PATH"redo_grayscale.png");
-    QPixmap pixRedo_gray = QPixmap::fromImage(imgRedo_gray);
-    pixRedo_gray = pixRedo_gray.scaled(15, 15);
+    QPixmap pixRedo ;
+    appPTR->getIcon(Natron::REDO_PIXMAP,&pixRedo);
+    QPixmap pixRedo_gray;
+    appPTR->getIcon(Natron::REDO_GRAYSCALE_PIXMAP,&pixRedo_gray);
     QIcon icRedo;
     icRedo.addPixmap(pixRedo,QIcon::Normal);
     icRedo.addPixmap(pixRedo_gray,QIcon::Disabled);
@@ -290,15 +286,13 @@ void DockablePanel::closePanel(){
 void DockablePanel::minimizeOrMaximize(bool toggled){
     _minimized=toggled;
     if(_minimized){
-        QImage imgM(NATRON_IMAGES_PATH"maximize.png");
-        QPixmap pixM=QPixmap::fromImage(imgM);
-        pixM.scaled(15,15);
+        QPixmap pixM;
+        appPTR->getIcon(Natron::MAXIMIZE_WIDGET_PIXMAP,&pixM);
         _minimize->setIcon(QIcon(pixM));
         emit minimized();
     }else{
-        QImage imgM(NATRON_IMAGES_PATH"minimize.png");
-        QPixmap pixM=QPixmap::fromImage(imgM);
-        pixM.scaled(15,15);
+        QPixmap pixM;
+        appPTR->getIcon(Natron::MINIMIZE_WIDGET_PIXMAP,&pixM);
         _minimize->setIcon(QIcon(pixM));
         emit maximized();
     }
