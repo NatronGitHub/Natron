@@ -32,13 +32,12 @@
 #include "Engine/ViewerInstance.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/CurveSerialization.h"
+#include "Engine/KnobTypes.h"
 
 #include "Gui/NodeGui.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/Gui.h"
-
-
 
 using std::cout; using std::endl;
 using std::make_pair;

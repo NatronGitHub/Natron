@@ -22,12 +22,15 @@
 #include "Engine/Log.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Image.h"
+#include "Engine/KnobFile.h"
 
 #include "Writers/Writer.h"
 
 using namespace Natron;
 
 
+class File_Knob;
+class OutputFile_Knob;
 
 struct EffectInstance::Implementation {
     Implementation()

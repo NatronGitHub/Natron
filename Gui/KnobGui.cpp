@@ -8,6 +8,8 @@
  *
  */
 
+// TODO: split into KnobGui.cpp, KnobGuiFile.cpp and KnobGuiTypes.cpp
+
 #include "Gui/KnobGui.h"
 
 #include <cassert>
@@ -44,6 +46,8 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/ViewerInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/Knob.h"
+#include "Engine/KnobFile.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
 
 #include "Gui/Button.h"

@@ -357,7 +357,7 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
     _parentingMap.insert(make_pair(paramName, instance));
     knob->setName(paramName);
     if (!descriptor.getEvaluateOnChange()) {
-        knob->setIsInsignificant(true);
+        knob->setInsignificant(true);
     }
     if (!descriptor.getIsPersistant()) {
         knob->setPersistent(false);
