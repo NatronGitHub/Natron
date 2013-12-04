@@ -196,7 +196,9 @@ void CurveGui::drawCurve(){
         glEnd();
         if(isSelected != selectedKeyFrames.end()){ //if one keyframe, also draw the coordinates
             QPointF keyWidgetCoord = _curveWidget->toWidgetCoordinates(x, y);
-                        //find the previous and next keyframes on the curve to find out the x position of the tangents
+            
+            //DRAWING TANGENTS
+            //find the previous and next keyframes on the curve to find out the  position of the tangents
             Curve::KeyFrames::const_iterator prev = k;
             if(k != keyframes.begin()){
                 --prev;
@@ -206,8 +208,8 @@ void CurveGui::drawCurve(){
             Curve::KeyFrames::const_iterator next = k;
             ++next;
             double leftTanX = 0,rightTanX = 0;
-            double leftTanY = key->getLeftTangent().toDouble();
-            double rightTanY = key->getRightTangent().toDouble();
+            double leftTanY = key->getLeftTangent().toDouble() + y;
+            double rightTanY = key->getRightTangent().toDouble() + y;
             if(prev != keyframes.end()){
                 double prevKeyXWidgetCoord = _curveWidget->toWidgetCoordinates((*prev)->getTime(), 0).x();
                 //set the left tangent X to be at 1/3 of the interval [prev,k], and clamp it to 1/8 of the widget width.
@@ -276,8 +278,12 @@ void CurveGui::drawCurve(){
                 
             }
             glBegin(GL_POINTS);
-            glVertex2f(leftTanX, leftTanY);
-            glVertex2f(rightTanX, rightTanY);
+            if(prev != keyframes.end() && (*prev)->getInterpolation() != Natron::KEYFRAME_NONE){
+                glVertex2f(leftTanX, leftTanY);
+            }
+            if(next != keyframes.end() && (*next)->getInterpolation() != Natron::KEYFRAME_NONE){
+                glVertex2f(rightTanX, rightTanY);
+            }
             glEnd();
         }
         
