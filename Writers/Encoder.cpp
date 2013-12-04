@@ -13,7 +13,6 @@
 
 #include "Engine/Row.h"
 #include "Writers/Writer.h"
-//#include "Gui/KnobGui.h"
 
 using namespace Natron;
 

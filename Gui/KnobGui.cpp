@@ -151,11 +151,22 @@ void KnobGui::createAnimationMenu(QWidget* parent){
 }
 
 void KnobGui::setSecret() {
+#warning "FIXME: if the Knob is within a group, only show it if the group is unfolded!"
+    // FIXME: if the Knob is within a group, only show it if the group is unfolded!
+    //It is not fixed.
+    //try TuttlePinning: fold all groups, then switch from perspective to affine to perspective.
+    //you will see that it is NOT fixed.
+    //VISIBILITY is different from SECRETNESS. The code considers that both things are equivalent, which is wrong.
+    // the code should also check if it is within a *group* and if the *group* is checked or not. if it is
+    // not checked, don't show.
+    // the problem is to get the parent GUI Knob, not the Knob itself.
+    // The only way I see would be to add a _group member to KnobGui.
+    // Of course, this check has to be *recursive* (in case the group is within a folded group)
     if (!_knob->isSecret()) {
         if(_knob->getParentKnob() && _knob->getParentKnob()->isSecret()){
             return;
         }
-        show();
+        show(); //
     } else {
         hide();
     }
