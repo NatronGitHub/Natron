@@ -13,9 +13,9 @@
 
 #include <QMenu>
 #include <QMouseEvent>
+#include <QtCore/QCoreApplication>
 
 #include "Global/AppManager.h"
-
 #include "Engine/Knob.h"
 #include "Engine/Rect.h"
 
