@@ -30,7 +30,8 @@ class CurveGui : public QObject {
 
 public:
     
-
+    enum SelectedTangent{LEFT_TANGENT = 0,RIGHT_TANGENT = 1};
+    
     CurveGui(const CurveWidget *curveWidget,boost::shared_ptr<Curve>  curve,
              const QString& name,
              const QColor& color,
@@ -255,6 +256,12 @@ private:
      * widget coordinates.
     **/
     Curves::const_iterator isNearbyCurve(const QPoint& pt) const;
+    
+    /**
+     * @brief Returns a pointer to a keyframe if a keyframe's tangent lies nearby the point 'pt' which is
+     * widget coordinates. The first member SelectedTangent indicates whether this is the left or right tangent.
+     **/
+    std::pair<CurveGui::SelectedTangent,boost::shared_ptr<KeyFrame> > isNearByTangent(const QPoint& pt) const;
     
     /**
      * @brief Returns a pointer to a keyframe if a keyframe lies nearby the point 'pt' which is

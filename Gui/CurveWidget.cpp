@@ -221,8 +221,8 @@ void CurveGui::drawCurve(){
                 double leftTanYWidgetCoord = _curveWidget->toWidgetCoordinates(0, leftTanY).y();
                 double leftTanYdiff = std::abs(leftTanYWidgetCoord - keyWidgetCoord.y());
                 leftTanYdiff = std::min( h/8.,leftTanYdiff);
-                leftTanYWidgetCoord =  leftTanYWidgetCoord < keyWidgetCoord.y() ? keyWidgetCoord.y() - leftTanYdiff
-                                                                                : keyWidgetCoord.y() + leftTanYdiff;
+                leftTanYWidgetCoord =  leftTanYWidgetCoord < keyWidgetCoord.y() ? keyWidgetCoord.y() + leftTanYdiff
+                                                                                : keyWidgetCoord.y() - leftTanYdiff;
                 QPointF leftTanScalePos = _curveWidget->toScaleCoordinates(leftTanXWidgetCoord, leftTanYWidgetCoord);
                 leftTanX = leftTanScalePos.x();
                 leftTanY = leftTanScalePos.y();
@@ -759,6 +759,19 @@ std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > CurveWidget::isNearbyKeyFrame(
         }
     }
     return std::make_pair((CurveGui*)NULL,boost::shared_ptr<KeyFrame>());
+}
+
+std::pair<CurveGui::SelectedTangent,boost::shared_ptr<KeyFrame> > CurveWidget::isNearByTangent(const QPoint& pt) const{
+    //todo
+//    for(Curves::const_iterator it = _curves.begin();it!=_curves.end();++it){
+//        if((*it)->isVisible()){
+//            const Curve::KeyFrames& keyFrames = (*it)->getInternalCurve()->getKeyFrames();
+//            for (Curve::KeyFrames::const_iterator it2 = keyFrames.begin(); it2 != keyFrames.end(); ++it2) {
+//                
+//            }
+//            
+//        }
+//    }
 }
 
 void CurveWidget::selectCurve(CurveGui* curve){
