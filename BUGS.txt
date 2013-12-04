@@ -1,27 +1,10 @@
 Here is a list of know bugs, ordered by priority from high to low:
 
-- all pixmaps should be precomputed (either at application launch or
-   on demand) and stored globally as QPixmaps. There should be a "global"
-   const QPixmap& getPixmap(Natron::PixmapEnum e) which returns a
-   given pixmap (after building it if it was never asked for), and
-   stores it until the application quits. Natron keeps decoding PNGs
-   everywhere (search for NATRON_IMAGES_PATH in the code)
-
 - a plugin that returns an error during the "load" or "describe" actions,
   for example if it requires a missing suite
   (e.g. ParametricParameterSuite for OFX/Color/RGBLut), should *not*
   appear in the menus.
 
-- a multibundle plugin should appear as a group in the hierarchy. If
-  the multibundle specifies a grouping, it should appear as a group
-  *below* that grouping. for example, a multibundle called Toto, which
-  specifies PluginGrouping as "Titi/Tata" should create entries
-  "Titi/Tata/Toto/Plugin1", "Titi/Tata/Toto/Plugin2", etc.
-  A multibundle plugin with no grouping should create a toplevel
-  group.
-  As of now, a multibundle plugin with a grouping puts all plugins
-  within that grouping inside its own menu (see multibundle from
-  Support plugins), which is a bug, of course.
 
 - bug in KnobGui::setVisible: if the Knob is within a group, only show it if the group is
   unfolded!
