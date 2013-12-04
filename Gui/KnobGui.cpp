@@ -73,20 +73,20 @@ using namespace Natron;
 using std::make_pair;
 
 KnobGui::KnobGui(Knob* knob,DockablePanel* container)
-: _knob(knob)
-, _triggerNewLine(true)
-, _spacingBetweenItems(0)
-, _widgetCreated(false)
-, _container(container)
-, _animationMenu(NULL)
-, _animationButton(NULL)
+    : _knob(knob)
+    , _triggerNewLine(true)
+    , _spacingBetweenItems(0)
+    , _widgetCreated(false)
+    , _container(container)
+    , _animationMenu(NULL)
+    , _animationButton(NULL)
 {
     QObject::connect(knob,SIGNAL(valueChanged(int)),this,SLOT(onInternalValueChanged(int)));
     QObject::connect(this,SIGNAL(valueChanged(int,const Variant&)),knob,SLOT(onValueChanged(int,const Variant&)));
     QObject::connect(knob,SIGNAL(secretChanged()),this,SLOT(setSecret()));
     QObject::connect(knob,SIGNAL(enabledChanged()),this,SLOT(setEnabled()));
     QObject::connect(knob,SIGNAL(deleted()),this,SLOT(deleteKnob()));
-   // QObject::connect(this, SIGNAL(knobUndoneChange()), knob, SLOT(onKnobUndoneChange()));
+    // QObject::connect(this, SIGNAL(knobUndoneChange()), knob, SLOT(onKnobUndoneChange()));
     //QObject::connect(this, SIGNAL(knobRedoneChange()), knob, SLOT(onKnobRedoneChange()));
 }
 
@@ -152,7 +152,9 @@ void KnobGui::createAnimationMenu(QWidget* parent){
 
 void KnobGui::setSecret() {
     if (!_knob->isSecret()) {
-        // FIXME: if the Knob is within a group, only show it if the group is unfolded!
+        if(_knob->getParentKnob() && _knob->getParentKnob()->isSecret()){
+            return;
+        }
         show();
     } else {
         hide();
@@ -211,7 +213,7 @@ void KnobUndoCommand::undo(){
     for(std::map<int,Variant>::const_iterator it = _oldValue.begin();it!=_oldValue.end();++it){
         _knob->setValue(it->first,it->second);
     }
-   // emit knobUndoneChange();
+    // emit knobUndoneChange();
     setText(QObject::tr("Change %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
 }
@@ -219,7 +221,7 @@ void KnobUndoCommand::redo(){
     for(std::map<int,Variant>::const_iterator it = _newValue.begin();it!=_newValue.end();++it){
         _knob->setValue(it->first,it->second);
     }
-   // emit knobRedoneChange();
+    // emit knobRedoneChange();
     setText(QObject::tr("Change %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
 }
@@ -1307,9 +1309,9 @@ void GroupBoxLabel::setChecked(bool b){
 Group_KnobGui::~Group_KnobGui(){
     delete _button;
     delete _descriptionLabel;
-//    for(U32 i  = 0 ; i < _children.size(); ++i){
-//        delete _children[i].first;
-//    }
+    //    for(U32 i  = 0 ; i < _children.size(); ++i){
+    //        delete _children[i].first;
+    //    }
     
 }
 
@@ -1317,6 +1319,7 @@ void Group_KnobGui::createWidget(QGridLayout* layout,int row){
     _layout = layout;
     _button = new GroupBoxLabel(layout->parentWidget());
     _button->setToolTip(getKnob()->getHintToolTip().c_str());
+    _button->setChecked(_checked);
     QWidget* header = new QWidget(layout->parentWidget());
     QHBoxLayout* headerLay = new QHBoxLayout(header);
     header->setLayout(headerLay);
@@ -1355,7 +1358,10 @@ void Group_KnobGui::updateGUI(int /*dimension*/, const Variant& variant) {
 void Group_KnobGui::_hide() {
     _button->hide();
     _descriptionLabel->hide();
-    setChecked(false);
+    for(U32 i = 0 ; i < _children.size() ;++i) {
+        _children[i].first->hide();
+
+    }
 
 }
 
@@ -1365,7 +1371,9 @@ void Group_KnobGui::_show() {
     }
     _button->show();
     _descriptionLabel->show();
-    setChecked(true);
+    for(U32 i = 0 ; i < _children.size() ;++i) {
+        _children[i].first->show();
+    }
 }
 
 void Group_KnobGui::addToLayout(QHBoxLayout* layout){

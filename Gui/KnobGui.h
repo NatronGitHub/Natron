@@ -97,7 +97,7 @@ public slots:
         delete this;
     }
 
-    virtual void setSecret(); // FIXME: why virtual?
+    void setSecret();
 
     void showAnimationMenu();
     
