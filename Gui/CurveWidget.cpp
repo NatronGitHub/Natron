@@ -210,43 +210,57 @@ void CurveGui::drawCurve(){
             }
             Curve::KeyFrames::const_iterator next = k;
             ++next;
-            double leftTanX = 0,rightTanX = 0;
-            double leftTanY = key->getLeftTangent().toDouble() + y;
-            double rightTanY = key->getRightTangent().toDouble() + y;
+            double leftTan = key->getLeftTangent().toDouble()/(x - (*prev)->getTime());
+            double leftTanX = 0;
+            double leftTanY = leftTan + y;
             if(prev != keyframes.end()){
                 double prevKeyXWidgetCoord = _curveWidget->toWidgetCoordinates((*prev)->getTime(), 0).x();
                 //set the left tangent X to be at 1/3 of the interval [prev,k], and clamp it to 1/8 of the widget width.
-                double leftTanXdiff =   (keyWidgetCoord.x() - prevKeyXWidgetCoord) / 3.;
-                leftTanXdiff = std::min( w/8., leftTanXdiff);
-                double leftTanXWidgetCoord = keyWidgetCoord.x() - leftTanXdiff;
-                
+                double leftTanXWidgetDiffMax = std::min( w/8., (keyWidgetCoord.x() - prevKeyXWidgetCoord) / 3.);
                 //clamp the left tangent Y to 1/8 of the widget height.
-                double leftTanYWidgetCoord = _curveWidget->toWidgetCoordinates(0, leftTanY).y();
-                double leftTanYdiff = std::abs(leftTanYWidgetCoord - keyWidgetCoord.y());
-                leftTanYdiff = std::min( h/8.,leftTanYdiff);
-                leftTanYWidgetCoord =  leftTanYWidgetCoord < keyWidgetCoord.y() ? keyWidgetCoord.y() + leftTanYdiff
-                                                                                : keyWidgetCoord.y() - leftTanYdiff;
-                QPointF leftTanScalePos = _curveWidget->toScaleCoordinates(leftTanXWidgetCoord, leftTanYWidgetCoord);
-                leftTanX = leftTanScalePos.x();
-                leftTanY = leftTanScalePos.y();
+                double leftTanYWidgetDiffMax = std::min( h/8., leftTanXWidgetDiffMax);
+                assert(leftTanXWidgetDiffMax >= 0.);
+                assert(leftTanYWidgetDiffMax >= 0.);
+
+                QPointF tanMax = _curveWidget->toScaleCoordinates(keyWidgetCoord.x() + leftTanXWidgetDiffMax, keyWidgetCoord.y() -leftTanYWidgetDiffMax) - QPointF(x,y);
+                assert(tanMax.x() >= 0.);
+                assert(tanMax.y() >= 0.);
+
+                if (tanMax.x() * std::abs(leftTan) < tanMax.y()) {
+                    leftTanX = x - tanMax.x();
+                    leftTanY = y - tanMax.x() * leftTan;
+                } else {
+                    leftTanX = x - tanMax.y() / std::abs(leftTan);
+                    leftTanY = y - tanMax.y() * (leftTan > 0 ? 1 : -1);
+                }
+                assert(std::abs(leftTanX - x) <= tanMax.x());
+                assert(std::abs(leftTanY - y) <= tanMax.y());
             }
+            double rightTan = key->getRightTangent().toDouble()/((*next)->getTime() - x );
+            double rightTanX = 0.;
+            double rightTanY = rightTan + y;
             if(next != keyframes.end()){
                 double nextKeyXWidgetCoord = _curveWidget->toWidgetCoordinates((*next)->getTime(), 0).x();
                 //set the right tangent X to be at 1/3 of the interval [k,next], and clamp it to 1/8 of the widget width.
-                double rightTanXDiff = (nextKeyXWidgetCoord - keyWidgetCoord.x()) / 3.;
-                rightTanXDiff = std::min( w/8., rightTanXDiff);
-                double rightTanXWidgetCoord = keyWidgetCoord.x() + rightTanXDiff;
-                
+                double rightTanXWidgetDiffMax = std::min( w/8., (nextKeyXWidgetCoord - keyWidgetCoord.x()) / 3.);
                 //clamp the right tangent Y to 1/8 of the widget height.
-                double rightTanYWidgetCoord = _curveWidget->toWidgetCoordinates(0, rightTanY).y();
-                double rightTanYdiff = std::abs(rightTanYWidgetCoord - keyWidgetCoord.y());
-                rightTanYdiff = std::min( h/8.,rightTanYdiff);
-                rightTanYWidgetCoord =  rightTanYWidgetCoord < keyWidgetCoord.y() ?
-                keyWidgetCoord.y() - rightTanYdiff : keyWidgetCoord.y() + rightTanYdiff;
-                
-                QPointF rightTanScalePos = _curveWidget->toScaleCoordinates(rightTanXWidgetCoord, rightTanYWidgetCoord);
-                rightTanX = rightTanScalePos.x();
-                rightTanY = rightTanScalePos.y();
+                double rightTanYWidgetDiffMax = std::min( h/8., rightTanXWidgetDiffMax);
+                assert(rightTanXWidgetDiffMax >= 0.);
+                assert(rightTanYWidgetDiffMax >= 0.);
+
+                QPointF tanMax = _curveWidget->toScaleCoordinates(keyWidgetCoord.x() + rightTanXWidgetDiffMax, keyWidgetCoord.y() -rightTanYWidgetDiffMax) - QPointF(x,y);
+                assert(tanMax.x() >= 0.);
+                assert(tanMax.y() >= 0.);
+
+                if (tanMax.x() * std::abs(rightTan) < tanMax.y()) {
+                    rightTanX = x + tanMax.x();
+                    rightTanY = y + tanMax.x() * rightTan;
+                } else {
+                    rightTanX = x + tanMax.y() / std::abs(rightTan);
+                    rightTanY = y + tanMax.y() * (rightTan > 0 ? 1 : -1);
+                }
+                assert(std::abs(rightTanX - x) <= tanMax.x());
+                assert(std::abs(rightTanY - y) <= tanMax.y());
             }
             
             //draw the tangents lines
