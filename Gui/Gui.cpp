@@ -471,7 +471,7 @@ void Gui::setupUi()
     _nodeGraphArea->setObjectName(kNodeGraphObjectName);
     _workshopPane->appendTab(_nodeGraphArea);
     
-    _curveEditor = new CurveEditor(this);
+    _curveEditor = new CurveEditor(_appInstance->getTimeLine(),this);
 
     _curveEditor->setObjectName(kCurveEditorObjectName);
     _workshopPane->appendTab(_curveEditor);

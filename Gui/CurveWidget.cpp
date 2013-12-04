@@ -18,6 +18,7 @@
 #include "Global/AppManager.h"
 #include "Engine/Knob.h"
 #include "Engine/Rect.h"
+#include "Engine/TimeLine.h"
 
 #include "Gui/ScaleSlider.h"
 #include "Gui/ticks.h"
@@ -25,6 +26,8 @@
 
 #define CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE 5 //maximum distance from a curve that accepts a mouse click
                                                // (in widget pixels)
+#define CURSOR_WIDTH 15
+#define CURSOR_HEIGHT 8
 
 static double ASPECT_RATIO = 0.1;
 static double AXIS_MAX = 100000.;
@@ -310,7 +313,7 @@ void CurveGui::setVisible(bool visible){ _visible = visible; }
 
 void CurveGui::setVisibleAndRefresh(bool visible) { _visible = visible; emit curveChanged(); }
 
-CurveWidget::CurveWidget(QWidget* parent, const QGLWidget* shareWidget)
+CurveWidget::CurveWidget(boost::shared_ptr<TimeLine> timeline, QWidget* parent, const QGLWidget* shareWidget)
 : QGLWidget(parent,shareWidget)
 , _zoomCtx()
 , _state(NONE)
@@ -331,11 +334,17 @@ CurveWidget::CurveWidget(QWidget* parent, const QGLWidget* shareWidget)
 , _selectionRectangle()
 , _drawSelectedKeyFramesBbox(false)
 , _selectedKeyFramesBbox()
+, _timeline(timeline)
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setMouseTracking(true);
     _nextCurveAddedColor.setHsv(200,255,255);
     createMenu();
+
+    if(_timeline){
+        QObject::connect(_timeline.get(),SIGNAL(frameChanged(SequenceTime,int)),this,SLOT(onTimeLineFrameChanged(SequenceTime,int)));
+        QObject::connect(_timeline.get(),SIGNAL(boundariesChanged(SequenceTime,SequenceTime)),this,SLOT(onTimeLineBoundariesChanged(SequenceTime,SequenceTime)));
+    }
 }
 
 CurveWidget::~CurveWidget(){
@@ -496,6 +505,10 @@ void CurveWidget::paintGL()
     drawScale();
     
     drawBaseAxis();
+
+    if(_timeline){
+        drawTimelineMarkers();
+    }
     
     if(_drawSelectedKeyFramesBbox){
         drawSelectedKeyFramesBbox();
@@ -548,6 +561,63 @@ void CurveWidget::drawSelectionRectangle(){
     glLineWidth(1.);
     glPopAttrib();
     glColor4f(1., 1., 1., 1.);
+}
+
+void CurveWidget::drawTimelineMarkers(){
+    assert(_timeline);
+    SequenceTime first = _timeline->leftBound();
+    SequenceTime last = _timeline->rightBound();
+    SequenceTime current = _timeline->currentFrame();
+
+    QPointF topLeft = toScaleCoordinates(0,0);
+    QPointF btmRight = toScaleCoordinates(width()-1,height()-1);
+
+    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT);
+    glEnable(GL_LINE_SMOOTH);
+    glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
+    glColor4f(0.8,0.3,0.,1.);
+
+    glBegin(GL_LINES);
+    glVertex2f(first,btmRight.y());
+    glVertex2f(first,topLeft.y());
+    glVertex2f(last,btmRight.y());
+    glVertex2f(last,topLeft.y());
+    glColor4f(0.95,0.58,0.,1.);
+    glVertex2f(current,btmRight.y());
+    glVertex2f(current,topLeft.y());
+    glEnd();
+
+    glDisable(GL_LINE_SMOOTH);
+
+    QPointF btmCursorBtm(current,btmRight.y());
+    QPointF btmcursorBtmWidgetCoord = toWidgetCoordinates(btmCursorBtm.x(),btmCursorBtm.y());
+    QPointF btmCursorTop = toScaleCoordinates(btmcursorBtmWidgetCoord.x(), btmcursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
+    QPointF btmCursorLeft = toScaleCoordinates(btmcursorBtmWidgetCoord.x() - CURSOR_WIDTH /2, btmcursorBtmWidgetCoord.y());
+    QPointF btmCursorRight = toScaleCoordinates(btmcursorBtmWidgetCoord.x() + CURSOR_WIDTH / 2,btmcursorBtmWidgetCoord.y());
+
+    QPointF topCursortop(current,topLeft.y());
+    QPointF topcursorTopWidgetCoord = toWidgetCoordinates(topCursortop.x(),topCursortop.y());
+    QPointF topCursorBtm = toScaleCoordinates(topcursorTopWidgetCoord.x(), topcursorTopWidgetCoord.y() + CURSOR_HEIGHT);
+    QPointF topCursorLeft = toScaleCoordinates(topcursorTopWidgetCoord.x() - CURSOR_WIDTH /2, topcursorTopWidgetCoord.y());
+    QPointF topCursorRight = toScaleCoordinates(topcursorTopWidgetCoord.x() + CURSOR_WIDTH / 2,topcursorTopWidgetCoord.y());
+
+    glEnable(GL_POLYGON_SMOOTH);
+    glHint(GL_POLYGON_SMOOTH_HINT,GL_DONT_CARE);
+
+    glBegin(GL_POLYGON);
+    glVertex2f(btmCursorLeft.x(),btmCursorLeft.y());
+    glVertex2f(btmCursorTop.x(),btmCursorTop.y());
+    glVertex2f(btmCursorRight.x(),btmCursorRight.y());
+    glEnd();
+
+    glBegin(GL_POLYGON);
+    glVertex2f(topCursorBtm.x(),topCursorBtm.y());
+    glVertex2f(topCursorLeft.x(),topCursorLeft.y());
+    glVertex2f(topCursorRight.x(),topCursorRight.y());
+    glEnd();
+
+    glDisable(GL_POLYGON_SMOOTH);
+    glPopAttrib();
 }
 
 void CurveWidget::drawSelectedKeyFramesBbox(){
@@ -1421,4 +1491,10 @@ void CurveWidget::keyFramesWithinRect(const QRectF& rect,std::vector< std::pair<
             }
         }
     }
+}
+void CurveWidget::onTimeLineFrameChanged(SequenceTime,int){
+    updateGL();
+}
+void CurveWidget::onTimeLineBoundariesChanged(SequenceTime,SequenceTime){
+    updateGL();
 }

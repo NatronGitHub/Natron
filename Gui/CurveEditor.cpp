@@ -34,7 +34,7 @@ using std::make_pair;
 using std::cout;
 using std::endl;
 
-CurveEditor::CurveEditor(QWidget *parent)
+CurveEditor::CurveEditor(boost::shared_ptr<TimeLine> timeline, QWidget *parent)
     : QWidget(parent)
     , _nodes()
     , _mainLayout(NULL)
@@ -56,7 +56,7 @@ CurveEditor::CurveEditor(QWidget *parent)
 
     _splitter = new QSplitter(Qt::Horizontal,this);
 
-    _curveWidget = new CurveWidget(_splitter);
+    _curveWidget = new CurveWidget(timeline,_splitter);
 
     _tree = new QTreeWidget(_splitter);
     _tree->setColumnCount(1);

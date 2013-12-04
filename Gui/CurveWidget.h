@@ -17,12 +17,15 @@
 #include <QtCore/QRectF>
 #include <boost/shared_ptr.hpp>
 
+#include "Global/GlobalDefines.h"
+
 #include "Gui/TextRenderer.h"
 
 #include "Engine/Variant.h"
 
 class Curve;
 class KeyFrame;
+class TimeLine;
 class CurveWidget;
 class CurveGui : public QObject {
     
@@ -157,9 +160,12 @@ class CurveWidget : public QGLWidget
 
     bool _drawSelectedKeyFramesBbox;
     QRectF _selectedKeyFramesBbox;
+
+    boost::shared_ptr<TimeLine> _timeline;
 public:
     
-    CurveWidget(QWidget* parent, const QGLWidget* shareWidget = NULL);
+    /*Pass a null timeline ptr if you don't want interaction with the global timeline. */
+    CurveWidget(boost::shared_ptr<TimeLine> timeline = boost::shared_ptr<TimeLine>() ,QWidget* parent = NULL, const QGLWidget* shareWidget = NULL);
 
     virtual ~CurveWidget();
    
@@ -238,6 +244,10 @@ public slots:
 
     void refreshSelectedKeysBbox();
 
+    void onTimeLineFrameChanged(SequenceTime,int);
+
+    void onTimeLineBoundariesChanged(SequenceTime,SequenceTime);
+
 protected:
     virtual void mousePressEvent(QMouseEvent *event);
 
@@ -289,6 +299,8 @@ private:
     void drawSelectedKeyFramesBbox();
 
     void createMenu();
+
+    void drawTimelineMarkers();
     
 };
 
