@@ -78,7 +78,7 @@ KnobGui::KnobGui(Knob* knob,DockablePanel* container):
 {
     QObject::connect(knob,SIGNAL(valueChanged(int)),this,SLOT(onInternalValueChanged(int)));
     QObject::connect(this,SIGNAL(valueChanged(int,const Variant&)),knob,SLOT(onValueChanged(int,const Variant&)));
-    QObject::connect(knob,SIGNAL(visible(bool)),this,SLOT(setVisible(bool)));
+    QObject::connect(knob,SIGNAL(secret(bool)),this,SLOT(setSecret(bool)));
     QObject::connect(knob,SIGNAL(enabled(bool)),this,SLOT(setEnabled(bool)));
     QObject::connect(knob,SIGNAL(deleted()),this,SLOT(deleteKnob()));
    // QObject::connect(this, SIGNAL(knobUndoneChange()), knob, SLOT(onKnobUndoneChange()));
@@ -113,7 +113,7 @@ void KnobGui::moveToLayout(QVBoxLayout* layout){
 
 void KnobGui::createGUI(QGridLayout* layout,int row){
     createWidget(layout, row);
-    if(_knob->isAnimationEnabled() && _knob->isVisible()){
+    if(_knob->isAnimationEnabled() && !_knob->isSecret()){
         createAnimationButton(layout,row);
     }
     _widgetCreated = true;
@@ -122,7 +122,7 @@ void KnobGui::createGUI(QGridLayout* layout,int row){
         updateGUI(it->first,it->second);
     }
     setEnabled(_knob->isEnabled());
-    setVisible(_knob->isVisible());
+    setSecret(_knob->isSecret());
 }
 
 void KnobGui::createAnimationButton(QGridLayout* layout,int row){
@@ -143,6 +143,15 @@ void KnobGui::createAnimationMenu(QWidget* parent){
     QObject::connect(showInCurveEditorAction,SIGNAL(triggered()),this,SLOT(onShowInCurveEditorActionTriggered()));
     _animationMenu->addAction(showInCurveEditorAction);
     
+}
+
+void KnobGui::setSecret(bool b) {
+    if (!b) {
+        // FIXME: if the Knob is within a group, only show it if the group is unfolded!
+        show();
+    } else {
+        hide();
+    }
 }
 
 void KnobGui::showAnimationMenu(){
@@ -1323,7 +1332,7 @@ void Group_KnobGui::setChecked(bool b){
     for(U32 i = 0 ; i < _children.size() ;++i) {
         if(!b) {
             _children[i].first->hide();
-        } else if (_children[i].first->getKnob()->isVisible()) {
+        } else if (!_children[i].first->getKnob()->isSecret()) {
             _children[i].first->show();
         }
     }
@@ -1344,13 +1353,13 @@ void Group_KnobGui::_hide() {
 }
 
 void Group_KnobGui::_show() {
-    if (!getKnob()->isVisible()) {
+    if (getKnob()->isSecret()) {
         return;
     }
     _button->show();
     _descriptionLabel->show();
     for (U32 i = 0; i < _children.size(); ++i) {
-        if (_children[i].first->getKnob()->isVisible()) {
+        if (!_children[i].first->getKnob()->isSecret()) {
             _children[i].first->show();
         }
     }

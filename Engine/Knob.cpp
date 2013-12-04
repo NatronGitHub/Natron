@@ -234,7 +234,7 @@ struct KnobPrivate{
     int _itemSpacing;
 
     Knob* _parentKnob;
-    bool _visible;
+    bool _secret;
     bool _enabled;
     bool _canUndo;
     bool _isInsignificant; //< if true, a value change will never trigger an evaluation
@@ -250,7 +250,7 @@ struct KnobPrivate{
         , _newLine(true)
         , _itemSpacing(0)
         , _parentKnob(NULL)
-        , _visible(true)
+        , _secret(false)
         , _enabled(true)
         , _canUndo(true)
         , _isInsignificant(false)
@@ -409,9 +409,9 @@ void Knob::setEnabled(bool b){
     emit enabled(b);
 }
 
-void Knob::setVisible(bool b){
-    _imp->_visible = b;
-    emit visible(b);
+void Knob::setSecret(bool b){
+    _imp->_secret = b;
+    emit secret(b);
 }
 
 int Knob::determineHierarchySize() const{
@@ -443,7 +443,7 @@ void Knob::setParentKnob(Knob* knob){ _imp->_parentKnob = knob;}
 
 Knob* Knob::getParentKnob() const {return _imp->_parentKnob;}
 
-bool Knob::isVisible() const {return _imp->_visible;}
+bool Knob::isSecret() const {return _imp->_secret;}
 
 bool Knob::isEnabled() const {return _imp->_enabled;}
 

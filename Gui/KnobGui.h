@@ -97,15 +97,8 @@ public slots:
         delete this;
     }
 
-    virtual void setVisible(bool b) {
-        if(b) {
-            // FIXME: if the Knob is within a group, only show it if the group is unfolded!
-            show();
-        } else {
-            hide();
-        }
-    }
-    
+    virtual void setSecret(bool b); // FIXME: why virtual?
+
     void showAnimationMenu();
     
     virtual void setEnabled(bool b) =0;
