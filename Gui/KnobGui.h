@@ -97,11 +97,11 @@ public slots:
         delete this;
     }
 
-    virtual void setSecret(bool b); // FIXME: why virtual?
+    virtual void setSecret(); // FIXME: why virtual?
 
     void showAnimationMenu();
     
-    virtual void setEnabled(bool b) =0;
+    virtual void setEnabled() = 0;
     
     void onSetKeyActionTriggered();
     
@@ -123,28 +123,21 @@ signals:
     
     void knobRedoneChange();
     
-protected:
+private:
 
-    virtual void _hide() =0;
+    virtual void _hide() = 0;
 
-    virtual void _show() =0;
+    virtual void _show() = 0;
 
 
     /*Must create the GUI and insert it in the grid layout at the index "row".*/
-    virtual void createWidget(QGridLayout* layout,int row)=0;
+    virtual void createWidget(QGridLayout* layout,int row) = 0;
     
    
     /*Called by the onInternalValueChanged slot. This should update
      the widget to reflect the new internal value held by variant.*/
-    virtual void updateGUI(int dimension,const Variant& variant)=0;
-    
-    Knob* _knob;
-    
-    
+    virtual void updateGUI(int dimension,const Variant& variant) = 0;
 
-    
-private:
-    
     void createAnimationMenu(QWidget* parent);
     
     void createAnimationButton(QGridLayout* layout,int row);
@@ -156,10 +149,12 @@ private:
         emit valueChanged(dimension,variant);
     }
     
+private:
+    Knob* const _knob;
     bool _triggerNewLine;
     int _spacingBetweenItems;
     bool _widgetCreated;
-    DockablePanel* _container;
+    DockablePanel* const _container;
     QMenu* _animationMenu;
     Button* _animationButton;
 };
@@ -209,37 +204,33 @@ public:
     
     File_KnobGui(Knob* knob,DockablePanel* container);
 
-    virtual ~File_KnobGui();
+    virtual ~File_KnobGui() OVERRIDE;
             
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row) OVERRIDE;
     
-    virtual void _hide();
+    virtual void _hide() OVERRIDE;
     
-    virtual void _show();
+    virtual void _show() OVERRIDE;
     
-    virtual void setEnabled(bool b){(void)b;}
+    virtual void setEnabled() OVERRIDE {}
     
-    virtual void addToLayout(QHBoxLayout* layout);
+    virtual void addToLayout(QHBoxLayout* layout) OVERRIDE;
     
 public slots:
     void open_file();
-    void onReturnPressed();
-    
 
-    
-protected:
-    
-    virtual void updateGUI(int dimension,const Variant& variant);
-    
+    void onReturnPressed();
+
 private:
     
+    virtual void updateGUI(int dimension,const Variant& variant) OVERRIDE;
+
     void updateLastOpened(const QString& str);
-    
-    
+
+private:
     LineEdit* _lineEdit;
     QLabel* _descriptionLabel;
     Button* _openFileButton;
-    
     QString _lastOpened;
 };
 
@@ -254,17 +245,17 @@ public:
     
     OutputFile_KnobGui(Knob* knob,DockablePanel* container);
     
-    virtual ~OutputFile_KnobGui();
+    virtual ~OutputFile_KnobGui() OVERRIDE;
     
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row) OVERRIDE;
     
-    virtual void _hide();
+    virtual void _hide() OVERRIDE;
     
-    virtual void _show();
+    virtual void _show() OVERRIDE;
     
-    virtual void setEnabled(bool b){(void)b;}
+    virtual void setEnabled() OVERRIDE {}
     
-    virtual void addToLayout(QHBoxLayout* layout);
+    virtual void addToLayout(QHBoxLayout* layout) OVERRIDE;
     
 public slots:
     
@@ -272,14 +263,13 @@ public slots:
     void onReturnPressed();
 
     
-protected:
-    
-    virtual void updateGUI(int dimension,const Variant& variant);
-    
 private:
+
+    virtual void updateGUI(int dimension,const Variant& variant) OVERRIDE;
+
     void updateLastOpened(const QString& str);
 
-    
+private:
     LineEdit* _lineEdit;
     QLabel* _descriptionLabel;
     Button* _openFileButton;
@@ -301,21 +291,21 @@ public:
     
     Int_KnobGui(Knob* knob,DockablePanel* container);
     
-    virtual ~Int_KnobGui();
+    virtual ~Int_KnobGui() OVERRIDE;
     
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row) OVERRIDE;
     
     void setMaximum(int);
     
     void setMinimum(int);
     
-    virtual void _hide();
+    virtual void _hide() OVERRIDE;
     
-    virtual void _show();
+    virtual void _show() OVERRIDE;
     
-    virtual void setEnabled(bool b);
+    virtual void setEnabled() OVERRIDE;
     
-    virtual void addToLayout(QHBoxLayout* layout);
+    virtual void addToLayout(QHBoxLayout* layout) OVERRIDE;
     
 public slots:
     
@@ -327,10 +317,10 @@ public slots:
     
     void onIncrementChanged(int incr,int index = 0);
  
-protected:
+private:
     
-    virtual void updateGUI(int dimension,const Variant& variant);
-    
+    virtual void updateGUI(int dimension,const Variant& variant) OVERRIDE;
+
 private:
     std::vector<std::pair<SpinBox*,QLabel*> > _spinBoxes;
     QLabel* _descriptionLabel;
@@ -338,14 +328,14 @@ private:
 
 };
 
-class ClickableLabel : public QLabel{
+class ClickableLabel : public QLabel {
     Q_OBJECT
     bool _toggled;
 public:
     
     ClickableLabel(const QString& text, QWidget * parent):QLabel(text,parent),_toggled(false){}
     
-    virtual ~ClickableLabel(){}
+    virtual ~ClickableLabel() OVERRIDE {}
     
     void setClicked(bool b){_toggled = b;}
 protected:
@@ -368,25 +358,25 @@ public:
     
     Bool_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container){}
 
-    virtual ~Bool_KnobGui();
+    virtual ~Bool_KnobGui() OVERRIDE;
     
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row) OVERRIDE;
     
-    virtual void _hide();
+    virtual void _hide() OVERRIDE;
     
-    virtual void _show();
+    virtual void _show() OVERRIDE;
     
-    virtual void setEnabled(bool b);
+    virtual void setEnabled() OVERRIDE;
     
-    virtual void addToLayout(QHBoxLayout* layout);
+    virtual void addToLayout(QHBoxLayout* layout) OVERRIDE;
     
 public slots:
     
     void onCheckBoxStateChanged(bool);
     
-protected:
+private:
     
-    virtual void updateGUI(int dimension,const Variant& variant);
+    virtual void updateGUI(int dimension,const Variant& variant) OVERRIDE;
     
 private:
 
@@ -406,18 +396,18 @@ public:
     
     Double_KnobGui(Knob* knob,DockablePanel* container);
     
-    virtual ~Double_KnobGui();
+    virtual ~Double_KnobGui() OVERRIDE;
     
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row) OVERRIDE;
     
     void setMaximum(int);
     void setMinimum(int);
     
-    virtual void _hide();
+    virtual void _hide() OVERRIDE;
     
-    virtual void _show();
+    virtual void _show() OVERRIDE;
     
-    virtual void setEnabled(bool b);
+    virtual void setEnabled() OVERRIDE;
     
     virtual void addToLayout(QHBoxLayout* layout);
     
@@ -429,9 +419,9 @@ public slots:
     void onIncrementChanged(double incr,int index = 0);
     void onDecimalsChanged(int deci,int index = 0);
     
-protected:
+private:
     
-    virtual void updateGUI(int dimension,const Variant& variant);
+    virtual void updateGUI(int dimension,const Variant& variant) OVERRIDE;
     
 private:
     std::vector<std::pair<SpinBox*,QLabel*> > _spinBoxes;
@@ -450,24 +440,25 @@ public:
     
     Button_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container){}
     
-    virtual ~Button_KnobGui();
+    virtual ~Button_KnobGui() OVERRIDE;
 
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row) OVERRIDE;
     
-    virtual void _hide();
+    virtual void _hide() OVERRIDE;
     
-    virtual void _show();
+    virtual void _show() OVERRIDE;
     
-    virtual void setEnabled(bool b);
+    virtual void setEnabled() OVERRIDE;
     
-    virtual void addToLayout(QHBoxLayout* layout);
+    virtual void addToLayout(QHBoxLayout* layout) OVERRIDE;
     
 public slots:
     
     void emitValueChanged();
-protected:
+
+private:
     
-    virtual void updateGUI(int dimension,const Variant& variant){(void)dimension;Q_UNUSED(variant);}
+    virtual void updateGUI(int dimension,const Variant& variant) OVERRIDE {(void)dimension;Q_UNUSED(variant);}
 
     
 private:
@@ -484,17 +475,17 @@ public:
     
     ComboBox_KnobGui(Knob* knob,DockablePanel* container);
     
-    virtual ~ComboBox_KnobGui();
+    virtual ~ComboBox_KnobGui() OVERRIDE;
     
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row) OVERRIDE;
     
-    virtual void _hide();
+    virtual void _hide() OVERRIDE;
     
-    virtual void _show();
+    virtual void _show() OVERRIDE;
     
-    virtual void setEnabled(bool b);
+    virtual void setEnabled() OVERRIDE;
     
-    virtual void addToLayout(QHBoxLayout* layout);
+    virtual void addToLayout(QHBoxLayout* layout) OVERRIDE;
     
 public slots:
     
@@ -502,9 +493,9 @@ public slots:
 
     void onEntriesPopulated();
     
-protected:
+private:
     
-    virtual void updateGUI(int dimension,const Variant& variant);
+    virtual void updateGUI(int dimension,const Variant& variant) OVERRIDE;
     
 private:
     std::vector<std::string> _entries;
@@ -520,21 +511,22 @@ public:
 
     Separator_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container){}
     
-    virtual ~Separator_KnobGui();
+    virtual ~Separator_KnobGui() OVERRIDE;
     
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row) OVERRIDE;
     
-    virtual void _hide();
+    virtual void _hide() OVERRIDE;
     
-    virtual void _show();
+    virtual void _show() OVERRIDE;
     
-    virtual void setEnabled(bool b){(void)b;}
+    virtual void setEnabled() OVERRIDE {}
     
-    virtual void addToLayout(QHBoxLayout* layout);
+    virtual void addToLayout(QHBoxLayout* layout) OVERRIDE;
     
-protected:
+private:
     
-    virtual void updateGUI(int dimension,const Variant& variant){(void)dimension;(void)variant;}
+    virtual void updateGUI(int dimension,const Variant& variant) OVERRIDE {(void)dimension;(void)variant;}
+
 private:
     QFrame* _line;
     QLabel* _descriptionLabel;
@@ -549,17 +541,17 @@ public:
     
     Color_KnobGui(Knob* knob,DockablePanel* container);
     
-    virtual ~Color_KnobGui();
+    virtual ~Color_KnobGui() OVERRIDE;
     
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row) OVERRIDE;
         
-    virtual void _hide();
+    virtual void _hide() OVERRIDE;
     
-    virtual void _show();
+    virtual void _show() OVERRIDE;
     
-    virtual void setEnabled(bool b);
+    virtual void setEnabled() OVERRIDE;
     
-    virtual void addToLayout(QHBoxLayout* layout);
+    virtual void addToLayout(QHBoxLayout* layout) OVERRIDE;
     
 public slots:
     
@@ -567,14 +559,13 @@ public slots:
     
     void showColorDialog();
     
-protected:
-    
-    virtual void updateGUI(int dimension,const Variant& variant);
-    
 private:
     
+    virtual void updateGUI(int dimension,const Variant& variant) OVERRIDE;
+
     void updateLabel(const QColor& color);
     
+private:
     QWidget* mainContainer;
     QHBoxLayout* mainLayout;
     
@@ -611,24 +602,24 @@ public:
     
     String_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container) {}
 	
-    virtual ~String_KnobGui();
+    virtual ~String_KnobGui() OVERRIDE;
     
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row) OVERRIDE;
     
-    virtual void _hide();
+    virtual void _hide() OVERRIDE;
     
-    virtual void _show();
+    virtual void _show() OVERRIDE;
     
-    virtual void setEnabled(bool b);
+    virtual void setEnabled() OVERRIDE;
     
-    virtual void addToLayout(QHBoxLayout* layout);
+    virtual void addToLayout(QHBoxLayout* layout) OVERRIDE;
     
     public slots:
     void onStringChanged(const QString& str);
     
-protected:
+private:
     
-    virtual void updateGUI(int dimension,const Variant& variant);
+    virtual void updateGUI(int dimension,const Variant& variant) OVERRIDE;
     
 private:
 	LineEdit* _lineEdit;
@@ -643,13 +634,14 @@ class GroupBoxLabel : public QLabel{
     Q_OBJECT
     
     bool _checked;
+
 public:
     
     GroupBoxLabel(QWidget* parent = 0);
     
-    virtual ~GroupBoxLabel(){}
+    virtual ~GroupBoxLabel() OVERRIDE {}
     
-    virtual void mousePressEvent(QMouseEvent*){
+    virtual void mousePressEvent(QMouseEvent*) OVERRIDE {
         emit checked(!_checked);
     }
     
@@ -677,9 +669,9 @@ public:
     
     Group_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container),_checked(false){}
     
-    virtual ~Group_KnobGui();
+    virtual ~Group_KnobGui() OVERRIDE;
 
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row) OVERRIDE;
     
     void addKnob(KnobGui* child,int row,int column){
         _children.push_back(std::make_pair(child,std::make_pair(row,column)));
@@ -687,20 +679,18 @@ public:
     
     bool isChecked() const {return _button->isChecked();}
     
-    virtual void _hide();
+    virtual void _hide() OVERRIDE;
     
-    virtual void _show();
+    virtual void _show() OVERRIDE;
     
-    virtual void setEnabled(bool b){(void)b;}
+    virtual void setEnabled()  OVERRIDE {}
     
     virtual void addToLayout(QHBoxLayout* layout);
     
-protected:
-    
-    
-    virtual void updateGUI(int dimension,const Variant& variant);
-    
-    
+private:
+
+    virtual void updateGUI(int dimension,const Variant& variant) OVERRIDE;
+
 public slots:
     void setChecked(bool b);
 
@@ -727,24 +717,24 @@ public:
     
     RichText_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container) {}
 	
-    virtual ~RichText_KnobGui();
+    virtual ~RichText_KnobGui() OVERRIDE;
     
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row) OVERRIDE;
     
-    virtual void _hide();
+    virtual void _hide() OVERRIDE;
     
-    virtual void _show();
+    virtual void _show() OVERRIDE;
     
-    virtual void setEnabled(bool b);
+    virtual void setEnabled() OVERRIDE;
     
-    virtual void addToLayout(QHBoxLayout* layout);
+    virtual void addToLayout(QHBoxLayout* layout) OVERRIDE;
     
 public slots:
     void onTextChanged();
     
-protected:
+private:
     
-    virtual void updateGUI(int dimension,const Variant& variant);
+    virtual void updateGUI(int dimension,const Variant& variant) OVERRIDE;
     
 private:
 	QTextEdit* _textEdit;

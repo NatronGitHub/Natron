@@ -406,12 +406,12 @@ void Knob::setSpacingBetweenItems(int spacing){
 }
 void Knob::setEnabled(bool b){
     _imp->_enabled = b;
-    emit enabled(b);
+    emit enabledChanged();
 }
 
 void Knob::setSecret(bool b){
     _imp->_secret = b;
-    emit secret(b);
+    emit secretChanged();
 }
 
 int Knob::determineHierarchySize() const{

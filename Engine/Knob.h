@@ -211,9 +211,9 @@ signals:
     /*Emitted when the value is changed internally by a call to setValue*/
     void valueChanged(int dimension);
 
-    void secret(bool);
+    void secretChanged();
     
-    void enabled(bool);
+    void enabledChanged();
     
     void restorationComplete();
     
