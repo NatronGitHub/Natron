@@ -24,10 +24,11 @@
 #include "Engine/Lut.h"
 #include "Engine/Row.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/KnobFactory.h"
 
 #include "Writers/Writer.h"
 
-#include "Gui/KnobGui.h"
+//#include "Gui/KnobGui.h"
 
 using std::make_pair;
 using std::cout; using std::endl;

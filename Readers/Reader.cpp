@@ -31,6 +31,7 @@
 #include "Engine/FrameEntry.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/Knob.h"
+#include "Engine/KnobFactory.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/ImageInfo.h"

@@ -41,6 +41,7 @@
 
 class AppInstance;
 class KnobFactory;
+class KnobGuiFactory;
 class NodeGui;
 class ViewerInstance;
 class ViewerTab;
@@ -412,6 +413,8 @@ public:
 
     const KnobFactory& getKnobFactory() const WARN_UNUSED_RETURN {return *_knobFactory;}
 
+    const KnobGuiFactory& getKnobGuiFactory() const WARN_UNUSED_RETURN {return *_knobGuiFactory;}
+
     const Settings& getCurrentSettings() const {return *_settings;}
 
     PluginToolButton* findPluginToolButtonOrCreate(const QString& pluginID,const QString& name,const QString& iconPath);
@@ -499,6 +502,8 @@ private:
     std::vector<PluginToolButton*> _toolButtons;
 
     boost::scoped_ptr<KnobFactory> _knobFactory;
+
+    boost::scoped_ptr<KnobGuiFactory> _knobGuiFactory;
 
     boost::scoped_ptr<Natron::Cache<Natron::Image> >  _nodeCache;
 

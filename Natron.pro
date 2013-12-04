@@ -94,6 +94,7 @@ SOURCES += \
     Engine/Hash64.cpp \
     Engine/Image.cpp \
     Engine/Knob.cpp \
+    Engine/KnobFactory.cpp \
     Engine/KnobFile.cpp \
     Engine/KnobTypes.cpp \
     Engine/Log.cpp \
@@ -123,6 +124,7 @@ SOURCES += \
     Gui/Gui.cpp \
     Gui/InfoViewerWidget.cpp \
     Gui/KnobGui.cpp \
+    Gui/KnobGuiFactory.cpp \
     Gui/NodeGraph.cpp \
     Gui/NodeGui.cpp \
     Gui/ScaleSlider.cpp \
@@ -173,6 +175,7 @@ HEADERS += \
     Engine/Image.h \
     Engine/Interpolation.h \
     Engine/Knob.h \
+    Engine/KnobFactory.h \
     Engine/KnobFile.h \
     Engine/KnobTypes.h \
     Engine/Log.h \
@@ -213,6 +216,7 @@ HEADERS += \
     Gui/Gui.h \
     Gui/InfoViewerWidget.h \
     Gui/KnobGui.h \
+    Gui/KnobGuiFactory.h \
     Gui/LineEdit.h \
     Gui/NodeGraph.h \
     Gui/NodeGui.h \

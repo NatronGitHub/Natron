@@ -21,6 +21,7 @@
 #include "Global/AppManager.h"
 
 #include "Engine/Knob.h"
+#include "Engine/KnobFactory.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/OfxEffectInstance.h"
