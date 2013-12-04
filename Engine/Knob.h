@@ -197,9 +197,9 @@ public slots:
      render thread storage.*/
     void onValueChanged(int dimension,const Variant& variant);
     
-    void onKnobUndoneChange();
+//    void onKnobUndoneChange();
     
-    void onKnobRedoneChange();
+//    void onKnobRedoneChange();
 
     void onTimeChanged(SequenceTime);
         

@@ -81,8 +81,8 @@ KnobGui::KnobGui(Knob* knob,DockablePanel* container):
     QObject::connect(knob,SIGNAL(visible(bool)),this,SLOT(setVisible(bool)));
     QObject::connect(knob,SIGNAL(enabled(bool)),this,SLOT(setEnabled(bool)));
     QObject::connect(knob,SIGNAL(deleted()),this,SLOT(deleteKnob()));
-    QObject::connect(this, SIGNAL(knobUndoneChange()), knob, SLOT(onKnobUndoneChange()));
-    QObject::connect(this, SIGNAL(knobRedoneChange()), knob, SLOT(onKnobRedoneChange()));
+   // QObject::connect(this, SIGNAL(knobUndoneChange()), knob, SLOT(onKnobUndoneChange()));
+    //QObject::connect(this, SIGNAL(knobRedoneChange()), knob, SLOT(onKnobRedoneChange()));
 }
 
 KnobGui::~KnobGui(){
@@ -197,7 +197,7 @@ void KnobUndoCommand::undo(){
     for(std::map<int,Variant>::const_iterator it = _oldValue.begin();it!=_oldValue.end();++it){
         _knob->setValue(it->first,it->second);
     }
-    emit knobUndoneChange();
+   // emit knobUndoneChange();
     setText(QObject::tr("Change %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
 }
@@ -205,7 +205,7 @@ void KnobUndoCommand::redo(){
     for(std::map<int,Variant>::const_iterator it = _newValue.begin();it!=_newValue.end();++it){
         _knob->setValue(it->first,it->second);
     }
-    emit knobRedoneChange();
+   // emit knobRedoneChange();
     setText(QObject::tr("Change %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
 }

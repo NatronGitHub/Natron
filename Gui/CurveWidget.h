@@ -236,6 +236,8 @@ public slots:
 
     void frameSelectedCurve();
 
+    void refreshSelectedKeysBbox();
+
 protected:
     virtual void mousePressEvent(QMouseEvent *event);
 
@@ -288,7 +290,6 @@ private:
 
     void createMenu();
     
-    void refreshSelectedKeysBbox();
 };
 
 

@@ -303,13 +303,13 @@ void Knob::remove(){
     }
 }
 
-void Knob::onKnobUndoneChange(){
-    _imp->_holder->triggerAutoSave();
-}
+//void Knob::onKnobUndoneChange(){
+//    _imp->_holder->triggerAutoSave();
+//}
 
-void Knob::onKnobRedoneChange(){
-    _imp->_holder->triggerAutoSave();
-}
+//void Knob::onKnobRedoneChange(){
+//    _imp->_holder->triggerAutoSave();
+//}
 
 
 void Knob::onStartupRestoration(const AnimatingParam& other){
@@ -338,7 +338,11 @@ void Knob::onValueChanged(int dimension,const Variant& variant){
 void Knob::evaluateAnimationChange(){
     
     SequenceTime time = _imp->_holder->getApp()->getTimeLine()->currentFrame();
-    beginValueChange(AnimatingParam::PLUGIN_EDITED);
+    bool wasBeginCalled = true;
+    if(!_imp->_holder->wasBeginCalled()){
+        wasBeginCalled = false;
+        beginValueChange(AnimatingParam::PLUGIN_EDITED);
+    }
     for(int i = 0; i < getDimension();++i){
         boost::shared_ptr<Curve> curve = getCurve(i);
         if(curve && curve->isAnimated()){
@@ -346,8 +350,9 @@ void Knob::evaluateAnimationChange(){
             setValue(v,i);
         }
     }
-    endValueChange(AnimatingParam::PLUGIN_EDITED);
-    _imp->_holder->triggerAutoSave();
+    if(!wasBeginCalled){
+        endValueChange(AnimatingParam::PLUGIN_EDITED);
+    }
 }
 
 void Knob::beginValueChange(AnimatingParam::ValueChangedReason reason) {
@@ -481,13 +486,21 @@ int KnobHolder::getAppAge() const{
 
 
 void KnobHolder::beginValuesChanged(AnimatingParam::ValueChangedReason reason, bool isSignificant){
+    if(_betweenBeginEndParamChanged)
+        return;
     _betweenBeginEndParamChanged = true ;
     _insignificantChange = !isSignificant;
     beginKnobsValuesChanged(reason);
 }
 
 void KnobHolder::endValuesChanged(AnimatingParam::ValueChangedReason reason){
-    assert(_betweenBeginEndParamChanged);
+    if(!_betweenBeginEndParamChanged){
+        return;
+    }
+
+    if(reason == AnimatingParam::USER_EDITED){
+        triggerAutoSave();
+    }
     _betweenBeginEndParamChanged = false ;
     if(!_knobsChanged.empty() && reason != AnimatingParam::TIME_CHANGED){
         evaluate(_knobsChanged.back(),!_insignificantChange);

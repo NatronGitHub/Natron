@@ -909,7 +909,8 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
                 }
             }
         }
-        
+        std::vector<std::pair< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> >, std::pair<double, Variant> > > moves;
+
         for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
             double newTime = newClick_opengl.x();//(*it)->getTime() + translation.x();
             double diffTime = (newTime - oldClick_opengl.x()) * _mouseDragOrientation.x() ;
@@ -945,8 +946,15 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
             if(!editor){
                 setKeyPos((*it).second,newX,Variant(newY));
             }else{
-                editor->setKeyFrame(it->first,it->second,newX,Variant(newY));
+                if(_selectedKeyFrames.size() > 1){
+                    moves.push_back(std::make_pair(std::make_pair(it->first,it->second),std::make_pair(newX,Variant(newY))));
+                }else{
+                    editor->setKeyFrame((*it).second,newX,Variant(newY));
+                }
             }
+        }
+        if(editor && _selectedKeyFrames.size() > 1){
+            editor->setKeyFrames(moves);
         }
         refreshSelectedKeysBbox();
     }else if(_state == SELECTING){

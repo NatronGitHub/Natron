@@ -365,10 +365,10 @@ signals:
     
     void channelsChanged(const Natron::ChannelSet&);
 
-    void knobUndoneChange();
-    
-    void knobRedoneChange();
-    
+//    void knobUndoneChange();
+
+//    void knobRedoneChange();
+
     void frameRangeChanged(int,int);
 
 protected:

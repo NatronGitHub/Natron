@@ -51,6 +51,7 @@ typedef OfxPointD RenderScale;
 #define kCurveEditorObjectName "CurveEditor"
 
 #define kCurveEditorMoveKeyCommandCompressionID 1
+#define kCurveEditorMoveMultipleKeysCommandCompressionID 2
 
 
 #define kNodeGraphMoveNodeCommandCompressionID 4

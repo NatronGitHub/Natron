@@ -450,6 +450,35 @@ private:
     CurveWidget* _curveWidget;
 };
 
+
+
+class MoveMultipleKeysCommand : public QUndoCommand{
+
+    struct KeyMove{
+        KnobGui* _knob;
+        boost::shared_ptr<KeyFrame> _key;
+        double _oldX,_newX;
+        Variant _oldY,_newY;
+    };
+
+public:
+
+    MoveMultipleKeysCommand(CurveWidget* editor,
+                            const std::vector<KnobGui*>& knobs,
+                            const std::vector< std::pair< boost::shared_ptr<KeyFrame> , std::pair<double,Variant> > >& keys
+                            ,QUndoCommand *parent = 0);
+    virtual ~MoveMultipleKeysCommand(){ _keys.clear(); }
+    virtual void undo();
+    virtual void redo();
+    virtual int id() const { return kCurveEditorMoveMultipleKeysCommandCompressionID; }
+    virtual bool mergeWith(const QUndoCommand * command);
+
+private:
+
+    std::vector< boost::shared_ptr<KeyMove> > _keys;
+    CurveWidget* _curveWidget;
+};
+
 void CurveEditor::addKeyFrame(KnobGui* knob,SequenceTime time,int dimension){
     for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
         it!=_nodes.end();++it){
@@ -677,16 +706,10 @@ void RemoveMultipleKeysCommand::redo(){
 }
 
 
-void CurveEditor::setKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key,double x,const Variant& y){
-    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
-        it!=_nodes.end();++it){
-        NodeCurveEditorElement* elem = (*it)->findElement(curve);
-        if(elem){
-            _undoStack->push(new MoveKeyCommand(_curveWidget,key,key->getTime(),key->getValue(), x,y));
-            return;
-        }
-    }
+void CurveEditor::setKeyFrame(boost::shared_ptr<KeyFrame> key,double x,const Variant& y){
+    _undoStack->push(new MoveKeyCommand(_curveWidget,key,key->getTime(),key->getValue(), x,y));
 }
+
 
 MoveKeyCommand::MoveKeyCommand(CurveWidget* editor, boost::shared_ptr<KeyFrame> key, double oldx, const Variant &oldy, double newx, const Variant &newy, QUndoCommand *parent)
     : QUndoCommand(parent)
@@ -702,18 +725,102 @@ MoveKeyCommand::MoveKeyCommand(CurveWidget* editor, boost::shared_ptr<KeyFrame> 
 void MoveKeyCommand::undo(){
     assert(_key);
     _curveWidget->setKeyPos(_key,_oldX,_oldY);
-    setText(QObject::tr("Move keyframe from %1.%2"));
+    setText(QObject::tr("Move keyframe"));
 }
 void MoveKeyCommand::redo(){
     assert(_key);
     _curveWidget->setKeyPos(_key,_newX,_newY);
-    setText(QObject::tr("Remove keyframe from %1.%2"));
+    setText(QObject::tr("Move keyframe"));
 }
 bool MoveKeyCommand::mergeWith(const QUndoCommand * command){
     const MoveKeyCommand* cmd = dynamic_cast<const MoveKeyCommand*>(command);
     if(cmd && cmd->id() == id()){
         _newX = cmd->_newX;
         _newY = cmd->_newY;
+        return true;
+    }else{
+        return false;
+    }
+}
+
+void CurveEditor::setKeyFrames(const std::vector<std::pair< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> >, std::pair<double, Variant> > > &keys){
+    std::vector<KnobGui*> knobs;
+    std::vector< std::pair< boost::shared_ptr<KeyFrame> , std::pair<double,Variant> > > moves;
+    for(U32 i = 0 ; i< keys.size() ;++i){
+        for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
+            it!=_nodes.end();++it){
+            NodeCurveEditorElement* elem = (*it)->findElement(keys[i].first.first);
+            if(elem){
+                knobs.push_back(elem->getKnob());
+                moves.push_back(std::make_pair(keys[i].first.second,keys[i].second));
+                break;
+            }
+        }
+
+    }
+    _undoStack->push(new MoveMultipleKeysCommand(_curveWidget,knobs,moves));
+}
+MoveMultipleKeysCommand::MoveMultipleKeysCommand(CurveWidget* editor,
+                                                 const std::vector<KnobGui*>& knobs,
+                                                 const std::vector< std::pair< boost::shared_ptr<KeyFrame> , std::pair<double,Variant> > >& keys
+                                                 ,QUndoCommand *parent )
+    : _keys()
+    , _curveWidget(editor)
+{
+    assert(knobs.size() == keys.size());
+    for(U32 i = 0; i < keys.size();++i){
+        boost::shared_ptr<KeyMove> move(new KeyMove());
+        move->_knob = knobs[i];
+        move->_key = keys[i].first;
+        move->_oldX = move->_key->getTime();
+        move->_newX = keys[i].second.first;
+        move->_oldY = move->_key->getValue();
+        move->_newY = keys[i].second.second;
+        _keys.push_back(move);
+    }
+
+}
+void MoveMultipleKeysCommand::undo(){
+    for(U32 i = 0; i < _keys.size();++i){
+        _keys[i]->_knob->getKnob()->beginValueChange(AnimatingParam::USER_EDITED);
+
+    }
+    for(U32 i = 0; i < _keys.size();++i){
+        assert(_keys[i]->_key);
+        _curveWidget->setKeyPos(_keys[i]->_key,_keys[i]->_oldX,_keys[i]->_oldY);
+    }
+    for(U32 i = 0; i < _keys.size();++i){
+        _keys[i]->_knob->getKnob()->endValueChange(AnimatingParam::USER_EDITED);
+
+    }
+    _curveWidget->refreshSelectedKeysBbox();
+    setText(QObject::tr("Move multiple keys"));
+}
+void MoveMultipleKeysCommand::redo(){
+    for(U32 i = 0; i < _keys.size();++i){
+        _keys[i]->_knob->getKnob()->beginValueChange(AnimatingParam::USER_EDITED);
+
+    }
+    for(U32 i = 0; i < _keys.size();++i){
+        assert(_keys[i]->_key);
+        _curveWidget->setKeyPos(_keys[i]->_key,_keys[i]->_newX,_keys[i]->_newY);
+    }
+    for(U32 i = 0; i < _keys.size();++i){
+        _keys[i]->_knob->getKnob()->endValueChange(AnimatingParam::USER_EDITED);
+
+    }
+    _curveWidget->refreshSelectedKeysBbox();
+
+    setText(QObject::tr("Move multiple keys"));
+}
+bool MoveMultipleKeysCommand::mergeWith(const QUndoCommand * command){
+    const MoveMultipleKeysCommand* cmd = dynamic_cast<const MoveMultipleKeysCommand*>(command);
+    if(cmd && cmd->id() == id()){
+        assert(_keys.size() == cmd->_keys.size());
+        for(U32 i = 0; i < _keys.size();++i){
+            _keys[i]->_newX = cmd->_keys[i]->_newX;
+            _keys[i]->_newY = cmd->_keys[i]->_newY;
+        }
         return true;
     }else{
         return false;
