@@ -249,7 +249,6 @@ public:
     Knob* getKnob() const;
 
 private:
-    OfxEffectInstance* _node;
     Double_Knob* _knob;
 };
 
@@ -270,7 +269,6 @@ public:
     Knob* getKnob() const;
 
 private:
-    OfxEffectInstance* _node;
     Int_Knob *_knob;
 };
 
