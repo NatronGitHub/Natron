@@ -37,18 +37,11 @@
 #include "Global/MemoryInfo.h"
 #include "Engine/Project.h"
 
-#include "Gui/ViewerGL.h"
-#include "Gui/Gui.h"
-#include "Gui/ViewerTab.h"
-#include "Gui/NodeGui.h"
-#include "Gui/TabWidget.h"
-#include "Gui/NodeGraph.h"
-#include "Gui/SequenceFileDialog.h"
-
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/Knob.h"
+#include "Engine/KnobFactory.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
@@ -56,6 +49,15 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Log.h"
 #include "Engine/TextureRectSerialization.h"
+
+#include "Gui/ViewerGL.h"
+#include "Gui/Gui.h"
+#include "Gui/ViewerTab.h"
+#include "Gui/NodeGui.h"
+#include "Gui/TabWidget.h"
+#include "Gui/NodeGraph.h"
+#include "Gui/SequenceFileDialog.h"
+#include "Gui/KnobGuiFactory.h"
 
 #include "Readers/Reader.h"
 #include "Readers/Decoder.h"
@@ -817,6 +819,7 @@ AppManager::AppManager()
     , ofxHost(new Natron::OfxHost())
     , _toolButtons()
     , _knobFactory(new KnobFactory())
+    , _knobGuiFactory(new KnobGuiFactory())
     ,_nodeCache(new Cache<Image>("NodeCache",0x1, (_settings->_cacheSettings.maxCacheMemoryPercent -
                                                    _settings->_cacheSettings.maxPlayBackMemoryPercent)*getSystemTotalRAM(),1))
     ,_viewerCache(new Cache<FrameEntry>("ViewerCache",0x1,_settings->_cacheSettings.maxDiskCache

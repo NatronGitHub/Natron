@@ -14,48 +14,12 @@
 
 #include <vector>
 #include <string>
-#include <map>
-#include <cfloat>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Curve.h"
 
-class Knob;
-class holder;
-class DockablePanel;
-class AppInstance;
-
-namespace Natron {
-class LibraryBinary;
-}
-
-/******************************KNOB_FACTORY**************************************/
-//Maybe the factory should move to a separate file since it is used to create KnobGui aswell
-class KnobGui;
 class KnobHolder;
-
-class KnobFactory {
-    
-    std::map<std::string,Natron::LibraryBinary*> _loadedKnobs;
-    
-public:
-    KnobFactory();
-    
-    ~KnobFactory();
-    
-    Knob* createKnob(const std::string& id, KnobHolder* holder, const std::string& description,int dimension = 1) const;
-
-    KnobGui* createGuiForKnob(Knob* knob,DockablePanel* container) const;
-
-private:
-    const std::map<std::string,Natron::LibraryBinary*>& getLoadedKnobs() const {return _loadedKnobs;}
-
-    void loadKnobPlugins();
-    
-    void loadBultinKnobs();
-    
-};
-
+class AppInstance;
 
 /******************************KNOB_BASE**************************************/
 

@@ -10,8 +10,10 @@
 */
 
 #include "Image.h"
-#include "Writers/Encoder.h"
+
 #include "Engine/Lut.h"
+
+#include "Writers/Encoder.h"
 
 std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const{
     /*for now a simple version that computes the bbox*/

@@ -10,6 +10,8 @@
  */
 #include "KnobTypes.h"
 
+#include <cfloat>
+
 using namespace Natron;
 using std::make_pair;
 using std::pair;

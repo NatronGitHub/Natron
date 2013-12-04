@@ -38,13 +38,6 @@
 #include "Writers/Writer.h"
 #include "Readers/Reader.h"
 
-#include "Gui/Gui.h"
-#include "Gui/ViewerTab.h"
-#include "Gui/SpinBox.h"
-#include "Gui/ViewerGL.h"
-#include "Gui/Button.h"
-#include "Gui/TimeLineGui.h"
-
 #include "Global/AppManager.h"
 #include "Global/MemoryInfo.h"
 

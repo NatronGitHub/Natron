@@ -33,7 +33,9 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/CurveSerialization.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/KnobFactory.h"
 
+#warning "FIXME: Project should not handle ANY Gui stuff (delegate to another class, e.g. ProjectGui)"
 #include "Gui/NodeGui.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"

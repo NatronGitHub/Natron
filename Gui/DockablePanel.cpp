@@ -28,6 +28,7 @@
 
 #include "Gui/NodeGui.h"
 #include "Gui/KnobGui.h"
+#include "Gui/KnobGuiFactory.h"
 #include "Gui/LineEdit.h"
 #include "Gui/Button.h"
 #include "Gui/NodeGraph.h"
@@ -332,7 +333,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(Knob* knob){
     }
     
     
-    KnobGui* ret =  appPTR->getKnobFactory().createGuiForKnob(knob,this);
+    KnobGui* ret =  appPTR->getKnobGuiFactory().createGuiForKnob(knob,this);
     QObject::connect(ret,SIGNAL(deleted(KnobGui*)),this,SLOT(onKnobDeletion(KnobGui*)));
     if(!ret){
         std::cout << "Failed to create gui for Knob" << std::endl;

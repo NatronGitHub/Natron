@@ -24,6 +24,7 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Knob.h"
+#include "Engine/KnobFactory.h"
 
 #include "Global/AppManager.h"
 
