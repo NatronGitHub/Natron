@@ -154,7 +154,7 @@ public:
     
     void setEnabled(bool b);
     
-    void setVisible(bool b);
+    void setSecret(bool b);
     
     /*Call this to change the knob name. The name is not the text label displayed on
      the GUI but what is passed to the valueChangedByUser signal. By default the
@@ -169,7 +169,7 @@ public:
     
     int determineHierarchySize() const;
     
-    bool isVisible() const ;
+    bool isSecret() const ;
     
     bool isEnabled() const ;
     
@@ -211,9 +211,9 @@ signals:
     /*Emitted when the value is changed internally by a call to setValue*/
     void valueChanged(int dimension);
 
-    void visible(bool);
+    void secretChanged();
     
-    void enabled(bool);
+    void enabledChanged();
     
     void restorationComplete();
     

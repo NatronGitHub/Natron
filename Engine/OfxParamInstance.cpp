@@ -63,7 +63,7 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
     const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+    _knob->setSecret((bool)properties.getIntProperty(kOfxParamPropSecret));
 }
 
 
@@ -74,7 +74,7 @@ void OfxPushButtonInstance::setEnabled(){
 
 // callback which should set secret state as appropriate
 void OfxPushButtonInstance::setSecret() {
-    _knob->setVisible(!getSecret());
+    _knob->setSecret(getSecret());
 }
 
 Knob* OfxPushButtonInstance::getKnob() const {
@@ -117,7 +117,7 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param:
     }
     _knob->setMaximum(max);
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+    _knob->setSecret((bool)properties.getIntProperty(kOfxParamPropSecret));
     set(def);
 }
 OfxStatus OfxIntegerInstance::get(int& v) {
@@ -144,7 +144,7 @@ void OfxIntegerInstance::setEnabled(){
 
 // callback which should set secret state as appropriate
 void OfxIntegerInstance::setSecret() {
-    _knob->setVisible(!getSecret());
+    _knob->setSecret(getSecret());
 }
 
 Knob* OfxIntegerInstance::getKnob() const{
@@ -188,7 +188,7 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
         _knob->setDecimals(decimals);
     }
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+    _knob->setSecret((bool)properties.getIntProperty(kOfxParamPropSecret));
     set(def);
     
 }
@@ -225,7 +225,7 @@ void OfxDoubleInstance::setEnabled(){
 
 // callback which should set secret state as appropriate
 void OfxDoubleInstance::setSecret() {
-    _knob->setVisible(!getSecret());
+    _knob->setSecret(getSecret());
 }
 
 Knob* OfxDoubleInstance::getKnob() const{
@@ -252,7 +252,7 @@ OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param
         _knob->turnOffUndoRedo();
     }
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+    _knob->setSecret((bool)properties.getIntProperty(kOfxParamPropSecret));
     int def = properties.getIntProperty(kOfxParamPropDefault);
     set((bool)def);
     
@@ -282,7 +282,7 @@ void OfxBooleanInstance::setEnabled(){
 
 // callback which should set secret state as appropriate
 void OfxBooleanInstance::setSecret() {
-    _knob->setVisible(!getSecret());
+    _knob->setSecret(getSecret());
 }
 
 Knob* OfxBooleanInstance::getKnob() const{
@@ -319,7 +319,7 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::
     }
     _knob->populate(_entries,helpStrings);
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+    _knob->setSecret((bool)properties.getIntProperty(kOfxParamPropSecret));
     int def = properties.getIntProperty(kOfxParamPropDefault);
     set(def);
 }
@@ -356,7 +356,7 @@ void OfxChoiceInstance::setEnabled(){
 
 // callback which should set secret state as appropriate
 void OfxChoiceInstance::setSecret() {
-    _knob->setVisible(!getSecret());
+    _knob->setSecret(getSecret());
 }
 
 Knob* OfxChoiceInstance::getKnob() const{
@@ -385,7 +385,7 @@ OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descr
     const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+    _knob->setSecret((bool)properties.getIntProperty(kOfxParamPropSecret));
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
     double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
     double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);
@@ -430,7 +430,7 @@ void OfxRGBAInstance::setEnabled(){
 
 // callback which should set secret state as appropriate
 void OfxRGBAInstance::setSecret() {
-    _knob->setVisible(!getSecret());
+    _knob->setSecret(getSecret());
 }
 
 Knob* OfxRGBAInstance::getKnob() const{
@@ -462,7 +462,7 @@ OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descr
     double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
     double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+    _knob->setSecret((bool)properties.getIntProperty(kOfxParamPropSecret));
     set(defR, defG, defB);
 }
 OfxStatus OfxRGBInstance::get(double& r, double& g, double& b) {
@@ -497,7 +497,7 @@ void OfxRGBInstance::setEnabled(){
 
 // callback which should set secret state as appropriate
 void OfxRGBInstance::setSecret() {
-    _knob->setVisible(!getSecret());
+    _knob->setSecret(getSecret());
 }
 
 Knob* OfxRGBInstance::getKnob() const{
@@ -526,7 +526,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
     const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+    _knob->setSecret((bool)properties.getIntProperty(kOfxParamPropSecret));
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);
     std::vector<double> increment(dims);
@@ -584,7 +584,7 @@ void OfxDouble2DInstance::setEnabled(){
 
 // callback which should set secret state as appropriate
 void OfxDouble2DInstance::setSecret() {
-    _knob->setVisible(!getSecret());
+    _knob->setSecret(getSecret());
 }
 
 Knob* OfxDouble2DInstance::getKnob() const{
@@ -613,7 +613,7 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::P
     const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+    _knob->setSecret((bool)properties.getIntProperty(kOfxParamPropSecret));
     std::vector<int> minimum(dims);
     std::vector<int> maximum(dims);
     std::vector<int> increment(dims);
@@ -669,7 +669,7 @@ void OfxInteger2DInstance::setEnabled() {
 
 // callback which should set secret state as appropriate
 void OfxInteger2DInstance::setSecret() {
-    _knob->setVisible(!getSecret());
+    _knob->setSecret(getSecret());
 }
 
 Knob* OfxInteger2DInstance::getKnob() const {
@@ -697,7 +697,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Par
     const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+    _knob->setSecret((bool)properties.getIntProperty(kOfxParamPropSecret));
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);
     std::vector<double> increment(dims);
@@ -759,7 +759,7 @@ void OfxDouble3DInstance::setEnabled() {
 
 // callback which should set secret state as appropriate
 void OfxDouble3DInstance::setSecret() {
-    _knob->setVisible(!getSecret());
+    _knob->setSecret(getSecret());
 }
 
 Knob* OfxDouble3DInstance::getKnob() const {
@@ -788,7 +788,7 @@ OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::P
     const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+    _knob->setSecret((bool)properties.getIntProperty(kOfxParamPropSecret));
     std::vector<int> minimum(dims);
     std::vector<int> maximum(dims);
     std::vector<int> increment(dims);
@@ -847,7 +847,7 @@ void OfxInteger3DInstance::setEnabled() {
 
 // callback which should set secret state as appropriate
 void OfxInteger3DInstance::setSecret() {
-    _knob->setVisible(!getSecret());
+    _knob->setSecret(getSecret());
 }
 
 Knob* OfxInteger3DInstance::getKnob() const {
@@ -888,7 +888,7 @@ OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Des
         const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
         _groupKnob->setHintToolTip(hint);
         _groupKnob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
-        _groupKnob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+        _groupKnob->setSecret((bool)properties.getIntProperty(kOfxParamPropSecret));
     }
     
     
@@ -940,7 +940,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
             const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
             _fileKnob->setHintToolTip(hint);
             _fileKnob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
-            _fileKnob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+            _fileKnob->setSecret((bool)properties.getIntProperty(kOfxParamPropSecret));
         }else{
             _node->setAsOutputNode(); // IMPORTANT ! 
             _outputFileKnob = dynamic_cast<OutputFile_Knob*>(appPTR->getKnobFactory().createKnob("OutputFile", node, getParamLabel(this)));
@@ -954,7 +954,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
             const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
             _outputFileKnob->setHintToolTip(hint);
             _outputFileKnob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
-            _outputFileKnob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+            _outputFileKnob->setSecret((bool)properties.getIntProperty(kOfxParamPropSecret));
 
         }
     }else if(mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel){
@@ -973,7 +973,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
         const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
         _stringKnob->setHintToolTip(hint);
         _stringKnob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
-        _stringKnob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+        _stringKnob->setSecret((bool)properties.getIntProperty(kOfxParamPropSecret));
         set(properties.getStringProperty(kOfxParamPropDefault,1).c_str());
     }else if(mode == kOfxParamStringIsMultiLine){
         _multiLineKnob = dynamic_cast<RichText_Knob*>(appPTR->getKnobFactory().createKnob("RichText", node, getParamLabel(this)));
@@ -987,7 +987,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
         const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
         _multiLineKnob->setHintToolTip(hint);
         _multiLineKnob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
-        _multiLineKnob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+        _multiLineKnob->setSecret((bool)properties.getIntProperty(kOfxParamPropSecret));
         set(properties.getStringProperty(kOfxParamPropDefault,1).c_str());
 
     }
@@ -1108,16 +1108,16 @@ void OfxStringInstance::setEnabled(){
 // callback which should set secret state as appropriate
 void OfxStringInstance::setSecret(){
     if(_fileKnob){
-        _fileKnob->setVisible(!getSecret());
+        _fileKnob->setSecret(getSecret());
     }
     if (_outputFileKnob) {
-        _outputFileKnob->setVisible(!getSecret());
+        _outputFileKnob->setSecret(getSecret());
     }
     if (_stringKnob) {
-        _stringKnob->setVisible(!getSecret());
+        _stringKnob->setSecret(getSecret());
     }
     if (_multiLineKnob) {
-        _multiLineKnob->setVisible(!getSecret());
+        _multiLineKnob->setSecret(getSecret());
     }
 }
 

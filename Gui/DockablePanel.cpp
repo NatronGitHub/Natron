@@ -207,8 +207,8 @@ void DockablePanel::initializeKnobs(){
                  gui->setParent(parentTab->second.first);
                  if(!gui->triggerNewLine() && i!=0) --parentTab->second.second;
                  gui->createGUI(dynamic_cast<QGridLayout*>(parentTab->second.first->layout()),parentTab->second.second);
-                 gui->setVisible(knobs[i]->isVisible());
-                 gui->setEnabled(knobs[i]->isEnabled());
+                 gui->setSecret();
+                 gui->setEnabled();
                  if(parentKnob && parentKnob->typeName() == "Group"){
                      Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
                      parentGui->addKnob(gui,parentTab->second.second,offsetColumn);
