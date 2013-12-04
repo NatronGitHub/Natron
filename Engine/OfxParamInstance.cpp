@@ -73,8 +73,8 @@ void OfxPushButtonInstance::setEnabled(){
 }
 
 // callback which should set secret state as appropriate
-void OfxPushButtonInstance::setSecret(){
-    _knob->setVisible(!!getSecret());
+void OfxPushButtonInstance::setSecret() {
+    _knob->setVisible(!getSecret());
 }
 
 Knob* OfxPushButtonInstance::getKnob() const {
@@ -143,9 +143,10 @@ void OfxIntegerInstance::setEnabled(){
 }
 
 // callback which should set secret state as appropriate
-void OfxIntegerInstance::setSecret(){
-    _knob->setVisible(!!getSecret());
+void OfxIntegerInstance::setSecret() {
+    _knob->setVisible(!getSecret());
 }
+
 Knob* OfxIntegerInstance::getKnob() const{
     return _knob;
 }
@@ -223,9 +224,10 @@ void OfxDoubleInstance::setEnabled(){
 }
 
 // callback which should set secret state as appropriate
-void OfxDoubleInstance::setSecret(){
-    _knob->setVisible(!!getSecret());
+void OfxDoubleInstance::setSecret() {
+    _knob->setVisible(!getSecret());
 }
+
 Knob* OfxDoubleInstance::getKnob() const{
     return _knob;
 }
@@ -279,9 +281,10 @@ void OfxBooleanInstance::setEnabled(){
 }
 
 // callback which should set secret state as appropriate
-void OfxBooleanInstance::setSecret(){
-    _knob->setVisible(!!getSecret());
+void OfxBooleanInstance::setSecret() {
+    _knob->setVisible(!getSecret());
 }
+
 Knob* OfxBooleanInstance::getKnob() const{
     return _knob;
 }
@@ -352,9 +355,10 @@ void OfxChoiceInstance::setEnabled(){
 }
 
 // callback which should set secret state as appropriate
-void OfxChoiceInstance::setSecret(){
-    _knob->setVisible(!!getSecret());
+void OfxChoiceInstance::setSecret() {
+    _knob->setVisible(!getSecret());
 }
+
 Knob* OfxChoiceInstance::getKnob() const{
     return _knob;
 }
@@ -425,10 +429,9 @@ void OfxRGBAInstance::setEnabled(){
 }
 
 // callback which should set secret state as appropriate
-void OfxRGBAInstance::setSecret(){
-    _knob->setVisible(!!getSecret());
+void OfxRGBAInstance::setSecret() {
+    _knob->setVisible(!getSecret());
 }
-
 
 Knob* OfxRGBAInstance::getKnob() const{
     return _knob;
@@ -493,8 +496,8 @@ void OfxRGBInstance::setEnabled(){
 }
 
 // callback which should set secret state as appropriate
-void OfxRGBInstance::setSecret(){
-    _knob->setVisible(!!getSecret());
+void OfxRGBInstance::setSecret() {
+    _knob->setVisible(!getSecret());
 }
 
 Knob* OfxRGBInstance::getKnob() const{
@@ -580,8 +583,8 @@ void OfxDouble2DInstance::setEnabled(){
 }
 
 // callback which should set secret state as appropriate
-void OfxDouble2DInstance::setSecret(){
-    _knob->setVisible(!!getSecret());
+void OfxDouble2DInstance::setSecret() {
+    _knob->setVisible(!getSecret());
 }
 
 Knob* OfxDouble2DInstance::getKnob() const{
@@ -666,7 +669,7 @@ void OfxInteger2DInstance::setEnabled() {
 
 // callback which should set secret state as appropriate
 void OfxInteger2DInstance::setSecret() {
-    _knob->setVisible(!!getSecret());
+    _knob->setVisible(!getSecret());
 }
 
 Knob* OfxInteger2DInstance::getKnob() const {
@@ -756,7 +759,7 @@ void OfxDouble3DInstance::setEnabled() {
 
 // callback which should set secret state as appropriate
 void OfxDouble3DInstance::setSecret() {
-    _knob->setVisible(!!getSecret());
+    _knob->setVisible(!getSecret());
 }
 
 Knob* OfxDouble3DInstance::getKnob() const {
@@ -844,7 +847,7 @@ void OfxInteger3DInstance::setEnabled() {
 
 // callback which should set secret state as appropriate
 void OfxInteger3DInstance::setSecret() {
-    _knob->setVisible(!!getSecret());
+    _knob->setVisible(!getSecret());
 }
 
 Knob* OfxInteger3DInstance::getKnob() const {
@@ -1105,7 +1108,7 @@ void OfxStringInstance::setEnabled(){
 // callback which should set secret state as appropriate
 void OfxStringInstance::setSecret(){
     if(_fileKnob){
-        _fileKnob->setVisible(!!getSecret());
+        _fileKnob->setVisible(!getSecret());
     }
     if (_outputFileKnob) {
         _outputFileKnob->setVisible(!getSecret());
@@ -1113,7 +1116,7 @@ void OfxStringInstance::setSecret(){
     if (_stringKnob) {
         _stringKnob->setVisible(!getSecret());
     }
-    if(_multiLineKnob){
+    if (_multiLineKnob) {
         _multiLineKnob->setVisible(!getSecret());
     }
 }
