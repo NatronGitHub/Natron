@@ -286,11 +286,12 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
         for (NodeGui::SerializedState::KnobValues::const_iterator i = knobsValues.begin();
              i != knobsValues.end();++i) {
             boost::shared_ptr<Knob> knob = n->getKnobByDescription(i->first);
-            if(!knob){
-                cout << "Couldn't restore knob value ( " << i->first << " )." << endl;
-            }else{
-                knob->onStartupRestoration(i->second);
+            if (!knob) {
+                std::string message = std::string("Couldn't find knob ") + i->first;
+                qDebug() << message.c_str();
+                throw std::runtime_error(message);
             }
+            knob->onStartupRestoration(i->second);
         }
         if(!background){
             NodeGui* nGui = getApp()->getNodeGui(n);
@@ -327,8 +328,10 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
         for (std::map<int, std::string>::const_iterator input = inputs.begin(); input!=inputs.end(); ++input) {
             if(input->second.empty())
                 continue;
-            if(!getApp()->connect(input->first, input->second,thisNode)){
-                cout << "Failed to connect " << (*it).getPluginLabel() << " to " << input->second << endl;
+            if(!getApp()->connect(input->first, input->second,thisNode)) {
+                std::string message = std::string("Failed to connect node ") + (*it).getPluginLabel() + " to " + input->second;
+                qDebug() << message.c_str();
+                throw std::runtime_error(message);
             }
         }
         
