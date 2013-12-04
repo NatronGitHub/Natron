@@ -16,7 +16,7 @@
 #include <QtCore/QMutex>
 #include <ImfChannelList.h>
 #include <ImfArray.h>
-#include <ImfOutputFile.h> // FIXME: should be PIMPL'ed
+#include <ImfOutputFile.h>
 #include <half.h>
 
 #include "Global/AppManager.h"
@@ -27,8 +27,6 @@
 #include "Engine/KnobFactory.h"
 
 #include "Writers/Writer.h"
-
-//#include "Gui/KnobGui.h"
 
 using std::make_pair;
 using std::cout; using std::endl;

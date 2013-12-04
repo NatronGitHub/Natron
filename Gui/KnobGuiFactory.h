@@ -15,8 +15,6 @@
 #include <string>
 #include <map>
 
-//#include "Global/GlobalDefines.h"
-
 class Knob;
 class DockablePanel;
 
