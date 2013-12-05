@@ -40,13 +40,13 @@ class NodeCurveEditorElement : public QObject
 public:
     
     NodeCurveEditorElement(QTreeWidget* tree,CurveWidget* curveWidget,KnobGui* knob,int dimension,
-                           boost::shared_ptr<QTreeWidgetItem> item,CurveGui* curve);
+                           QTreeWidgetItem* item,CurveGui* curve);
     
     NodeCurveEditorElement():_treeItem(),_curve(),_curveDisplayed(false),_curveWidget(NULL){}
     
     virtual ~NodeCurveEditorElement();
     
-    boost::shared_ptr<QTreeWidgetItem> getTreeItem() const {return _treeItem;}
+    QTreeWidgetItem* getTreeItem() const {return _treeItem;}
     
     CurveGui* getCurve() const {return _curve;}
 
@@ -64,7 +64,7 @@ public slots:
 private:
     
     
-    boost::shared_ptr<QTreeWidgetItem> _treeItem;
+    QTreeWidgetItem* _treeItem;
     CurveGui* _curve;
     bool _curveDisplayed;
     CurveWidget* _curveWidget;
@@ -104,7 +104,7 @@ private:
 
     NodeGui* _node;
     Elements _nodeElements;
-    boost::shared_ptr<QTreeWidgetItem> _nameItem;
+    QTreeWidgetItem* _nameItem;
 
 };
 

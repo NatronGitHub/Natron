@@ -126,7 +126,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
     , _nameItem()
 {
 
-    boost::shared_ptr<QTreeWidgetItem> nameItem(new QTreeWidgetItem(tree));
+    QTreeWidgetItem* nameItem = new QTreeWidgetItem(tree);
     nameItem->setText(0,_node->getNode()->getName().c_str());
 
     QObject::connect(node,SIGNAL(nameChanged(QString)),this,SLOT(onNameChanged(QString)));
@@ -145,7 +145,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
 
         hasAtLeast1KnobWithACurve = true;
 
-        boost::shared_ptr<QTreeWidgetItem> knobItem(new QTreeWidgetItem(nameItem.get()));
+        QTreeWidgetItem* knobItem = new QTreeWidgetItem(nameItem);
 
         knobItem->setText(0,k->getName().c_str());
         CurveGui* knobCurve = NULL;
@@ -161,7 +161,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
         }else{
             for(int j = 0 ; j < k->getDimension();++j){
 
-                boost::shared_ptr<QTreeWidgetItem> dimItem(new QTreeWidgetItem(knobItem.get()));
+                QTreeWidgetItem* dimItem = new QTreeWidgetItem(knobItem);
                 dimItem->setText(0,k->getDimensionName(j).c_str());
                 QString curveName = QString(k->getDescription().c_str()) + "." + QString(k->getDimensionName(j).c_str());
                 CurveGui* dimCurve = curveWidget->createCurve(k->getCurve(j),curveName);
@@ -223,7 +223,7 @@ void NodeCurveEditorElement::checkVisibleState(){
                 _treeItem->parent()->parent()->setExpanded(true);
             }
         }
-        _treeWidget->setCurrentItem(_treeItem.get());
+        _treeWidget->setCurrentItem(_treeItem);
     }else{
         if(_curveDisplayed){
             _curveDisplayed = false;
@@ -241,7 +241,7 @@ void NodeCurveEditorElement::checkVisibleState(){
 
 
 NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree, CurveWidget* curveWidget,
-                                               KnobGui *knob, int dimension, boost::shared_ptr<QTreeWidgetItem> item, CurveGui* curve):
+                                               KnobGui *knob, int dimension, QTreeWidgetItem* item, CurveGui* curve):
     _treeItem(item)
   ,_curve(curve)
   ,_curveDisplayed(false)
@@ -352,9 +352,9 @@ NodeCurveEditorElement* NodeCurveEditorContext::findElement(KnobGui* knob,int di
     return NULL;
 }
 
-NodeCurveEditorElement* NodeCurveEditorContext::findElement(QTreeWidgetItem* item){
-    for(U32 i = 0; i < _nodeElements.size();++i){
-        if(_nodeElements[i]->getTreeItem().get() == item){
+NodeCurveEditorElement* NodeCurveEditorContext::findElement(QTreeWidgetItem* item) {
+    for (U32 i = 0; i < _nodeElements.size(); ++i) {
+        if (_nodeElements[i]->getTreeItem() == item) {
             return _nodeElements[i];
         }
     }
