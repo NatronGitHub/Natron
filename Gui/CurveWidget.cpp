@@ -1863,7 +1863,7 @@ void CurveWidget::frameSelectedCurve(){
     Natron::warningDialog("Curve Editor","You must select a curve first.");
 }
 
-void CurveWidget::onTimeLineFrameChanged(SequenceTime time,int /*reason*/){
+void CurveWidget::onTimeLineFrameChanged(SequenceTime,int /*reason*/){
     if(!_imp->_timelineEnabled){
         _imp->_timelineEnabled = true;
     }

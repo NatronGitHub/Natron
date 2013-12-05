@@ -81,7 +81,7 @@ private:
     Variant _mini,_maxi;
     QDoubleValidator* _doubleValidator;
     QIntValidator* _intValidator;
-    bool animation; // 0 = no animation, 1 = interpolated, 2 = equals keyframe value
+    int animation; // 0 = no animation, 1 = interpolated, 2 = equals keyframe value
 };
 
 #endif /* defined(NATRON_GUI_FEEDBACKSPINBOX_H_) */

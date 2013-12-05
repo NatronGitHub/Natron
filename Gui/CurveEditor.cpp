@@ -764,7 +764,8 @@ MoveMultipleKeysCommand::MoveMultipleKeysCommand(CurveWidget* editor,
                                                  const std::vector<KnobGui*>& knobs,
                                                  const std::vector< std::pair< boost::shared_ptr<KeyFrame> , std::pair<double,Variant> > >& keys
                                                  ,QUndoCommand *parent )
-    : _keys()
+    : QUndoCommand(parent)
+    , _keys()
     , _curveWidget(editor)
 {
     assert(knobs.size() == keys.size());
