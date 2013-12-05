@@ -869,7 +869,7 @@ struct CurveWidgetPrivate{
             double newX,newY;
             if(_mouseDragOrientation.x() != 0){
                 //find out if the new value will be in the interval [previousKey,nextKey]
-                double newValue = std::floor(newTime + 0.5);
+                double newValue = (*it)->_key->getTime() + std::floor(translation.x() + 0.5);
                 const Curve::KeyFrames& keys = (*it)->_curve->getInternalCurve()->getKeyFrames();
                 Curve::KeyFrames::const_iterator foundKey = std::find(keys.begin(), keys.end(), (*it)->_key);
                 assert(foundKey != keys.end());
