@@ -144,7 +144,6 @@ void KnobGuiFactory::loadBultinKnobs()
     Knob *rgbaKnob = Color_Knob::BuildKnob(NULL, stub, 1);
 
     std::map<std::string, void *> RGBAfunctions;
-    RGBAfunctions.insert(make_pair("BuildKnob", (void *)&Color_Knob::BuildKnob));
     RGBAfunctions.insert(make_pair("BuildKnobGui", (void *)&Color_KnobGui::BuildKnobGui));
     LibraryBinary *RGBAKnobPlugin = new LibraryBinary(RGBAfunctions);
     _loadedKnobs.insert(make_pair(rgbaKnob->typeName(), RGBAKnobPlugin));

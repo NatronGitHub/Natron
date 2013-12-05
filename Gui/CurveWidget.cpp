@@ -327,7 +327,7 @@ struct CurveWidgetPrivate{
 
     std::vector< std::pair<double,Variant> > _keyFramesClipBoard;
     QRectF _selectionRectangle;
-    QPointF _selectionStartPoint;
+    QPointF _dragStartPoint;
 
     bool _drawSelectedKeyFramesBbox;
     QRectF _selectedKeyFramesBbox;
@@ -361,7 +361,7 @@ struct CurveWidgetPrivate{
         , _mouseDragOrientation()
         , _keyFramesClipBoard()
         , _selectionRectangle()
-        , _selectionStartPoint()
+        , _dragStartPoint()
         , _drawSelectedKeyFramesBbox(false)
         , _selectedKeyFramesBbox()
         , _selectedKeyFramesCrossVertLine()
@@ -866,11 +866,10 @@ struct CurveWidgetPrivate{
 
         for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
             double newTime = newClick_opengl.x();//(*it)->getTime() + translation.x();
-            double diffTime = (newTime - oldClick_opengl.x()) * _mouseDragOrientation.x() ;
             double newX,newY;
-            if(diffTime != 0){
+            if(_mouseDragOrientation.x() != 0){
                 //find out if the new value will be in the interval [previousKey,nextKey]
-                double newValue = (*it)->_key->getTime() + std::ceil(diffTime);
+                double newValue = std::floor(newTime + 0.5);
                 const Curve::KeyFrames& keys = (*it)->_curve->getInternalCurve()->getKeyFrames();
                 Curve::KeyFrames::const_iterator foundKey = std::find(keys.begin(), keys.end(), (*it)->_key);
                 assert(foundKey != keys.end());
@@ -1076,6 +1075,28 @@ struct CurveWidgetPrivate{
         key->_leftTan.second = leftTanY;
         key->_rightTan.first = rightTanX;
         key->_rightTan.second = rightTanY;
+    }
+
+    void refreshSelectionRectangle(double x,double y){
+        double xmin = std::min(_dragStartPoint.x(),x);
+        double xmax = std::max(_dragStartPoint.x(),x);
+        double ymin = std::min(_dragStartPoint.y(),y);
+        double ymax = std::max(_dragStartPoint.y(),y);
+        _selectionRectangle.setBottomRight(_widget->toScaleCoordinates(xmax,ymin));
+        _selectionRectangle.setTopLeft(_widget->toScaleCoordinates(xmin,ymax));
+        std::vector< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > > keyframesSelected;
+        keyFramesWithinRect(_selectionRectangle,&keyframesSelected);
+        for(U32 i = 0; i < keyframesSelected.size();++i){
+            std::pair<SelectedKeys::const_iterator,bool> found = _widget->isKeySelected(keyframesSelected[i].second);
+            if(!found.second){
+                boost::shared_ptr<SelectedKey> newSelected(new SelectedKey);
+                newSelected->_key = keyframesSelected[i].second;
+                newSelected->_curve = keyframesSelected[i].first;
+                refreshKeyTangentsGUI(newSelected);
+                _selectedKeyFrames.push_back(newSelected);
+            }
+        }
+        _widget->refreshSelectedKeysBbox();
     }
 };
 
@@ -1349,7 +1370,7 @@ void CurveWidget::mousePressEvent(QMouseEvent *event){
         }
     }
     _imp->_zoomCtx._oldClick = event->pos();
-    _imp->_selectionStartPoint = event->pos();
+    _imp->_dragStartPoint = event->pos();
     updateGL();
 }
 
@@ -1365,80 +1386,83 @@ void CurveWidget::mouseReleaseEvent(QMouseEvent*){
     updateGL();
 }
 void CurveWidget::mouseMoveEvent(QMouseEvent *event){
+
+    //set cursor depending on the situation
+
+    //find out if there is a nearby  tangent handle
     std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator > selectedTan = _imp->isNearByTangent(event->pos());
+
+    //if the selected keyframes rectangle is drawn and we're nearby the cross
     if( _imp->_drawSelectedKeyFramesBbox && _imp->isNearbySelectedKeyFramesCrossWidget(event->pos())){
         setCursor(QCursor(Qt::SizeAllCursor));
     }
     else{
+        //if there's a keyframe handle nearby
         std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > selectedKey = _imp->isNearbyKeyFrame(event->pos());
 
+        //if there's a keyframe or tangent handle nearby set the cursor to cross
         if(selectedKey.second || selectedTan.second != _imp->_selectedKeyFrames.end()){
             setCursor(QCursor(Qt::CrossCursor));
         }else{
+
+            //if we're nearby a timeline polygon, set cursor to horizontal displacement
             if(_imp->isNearbyTimelineBtmPoly(event->pos()) || _imp->isNearbyTimelineTopPoly(event->pos())){
                 setCursor(QCursor(Qt::SizeHorCursor));
             }else{
+
+                //default case
                 setCursor(QCursor(Qt::ArrowCursor));
             }
         }
     }
-    
 
-    QPoint newClick =  event->pos();
-    QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
+    if(_imp->_mustSetDragOrientation){
+        QPointF diff(event->pos() - _imp->_dragStartPoint);
+        double dist = diff.manhattanLength();
+        if(dist > 5){
+            if(std::abs(diff.x()) > std::abs(diff.y())){
+                _imp->_mouseDragOrientation.setX(1);
+                _imp->_mouseDragOrientation.setY(0);
+            }else{
+                _imp->_mouseDragOrientation.setX(0);
+                _imp->_mouseDragOrientation.setY(1);
+            }
+            _imp->_mustSetDragOrientation = false;
+        }
+    }
+     
+    QPointF newClick_opengl = toScaleCoordinates(event->x(),event->y());
     QPointF oldClick_opengl = toScaleCoordinates(_imp->_zoomCtx._oldClick.x(),_imp->_zoomCtx._oldClick.y());
     
-    
-    if (_imp->_state == DRAGGING_VIEW) {
-        
-        float dy = (oldClick_opengl.y() - newClick_opengl.y());
-        _imp->_zoomCtx._bottom += dy;
+    switch(_imp->_state){
+
+    case DRAGGING_VIEW:{
+        _imp->_zoomCtx._bottom += (oldClick_opengl.y() - newClick_opengl.y());
         _imp->_zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
-    }else if(_imp->_state == DRAGGING_KEYS){
-        
-        if(_imp->_mustSetDragOrientation){
-            int dist = QPoint(event->pos() - _imp->_zoomCtx._oldClick).manhattanLength();
-            if(dist > 5){
-                if(std::abs(event->x() - _imp->_zoomCtx._oldClick.x()) > std::abs(event->y() - _imp->_zoomCtx._oldClick.y())){
-                    _imp->_mouseDragOrientation.setX(1);
-                    _imp->_mouseDragOrientation.setY(0);
-                }else{
-                    _imp->_mouseDragOrientation.setX(0);
-                    _imp->_mouseDragOrientation.setY(1);
-                }
-                _imp->_mustSetDragOrientation = false;
-            }else{
-                return;
-            }
-        }
-        _imp->moveSelectedKeyFrames(oldClick_opengl,newClick_opengl);
-    }else if(_imp->_state == SELECTING){
-        double xmin = std::min(_imp->_selectionStartPoint.x(),(double)event->x());
-        double xmax = std::max(_imp->_selectionStartPoint.x(),(double)event->x());
-        double ymin = std::min(_imp->_selectionStartPoint.y(),(double)event->y());
-        double ymax = std::max(_imp->_selectionStartPoint.y(),(double)event->y());
-        _imp->_selectionRectangle.setBottomRight(toScaleCoordinates(xmax,ymin));
-        _imp->_selectionRectangle.setTopLeft(toScaleCoordinates(xmin,ymax));
-        std::vector< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > > keyframesSelected;
-        _imp->keyFramesWithinRect(_imp->_selectionRectangle,&keyframesSelected);
-        for(U32 i = 0; i < keyframesSelected.size();++i){
-            std::pair<SelectedKeys::const_iterator,bool> found = isKeySelected(keyframesSelected[i].second);
-            if(!found.second){
-                boost::shared_ptr<SelectedKey> newSelected(new SelectedKey);
-                newSelected->_key = keyframesSelected[i].second;
-                newSelected->_curve = keyframesSelected[i].first;
-                _imp->refreshKeyTangentsGUI(newSelected);
-                _imp->_selectedKeyFrames.push_back(newSelected);
-            }
-        }
-        refreshSelectedKeysBbox();
-    }else if(_imp->_state == DRAGGING_TANGENT){
-        _imp->moveSelectedTangent(newClick_opengl);
-    }else if(_imp->_state == DRAGGING_TIMELINE){
-        _imp->_timeline->seekFrame((SequenceTime)newClick_opengl.x(),NULL);
+        break;
     }
-    
-    _imp->_zoomCtx._oldClick = newClick;
+    case DRAGGING_KEYS:{
+        if(!_imp->_mustSetDragOrientation){
+            _imp->moveSelectedKeyFrames(oldClick_opengl,newClick_opengl);
+        }
+        break;
+    }
+    case SELECTING:{
+        _imp->refreshSelectionRectangle((double)event->x(),(double)event->y());
+        break;
+    }
+    case DRAGGING_TANGENT:{
+        _imp->moveSelectedTangent(newClick_opengl);
+        break;
+    }
+    case DRAGGING_TIMELINE:{
+        _imp->_timeline->seekFrame((SequenceTime)newClick_opengl.x(),NULL);
+        break;
+    }
+
+    }
+
+     _imp->_zoomCtx._oldClick = event->pos();
     
     updateGL();
 }
