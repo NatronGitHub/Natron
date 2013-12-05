@@ -328,6 +328,7 @@ struct CurveWidgetPrivate{
     std::vector< std::pair<double,Variant> > _keyFramesClipBoard;
     QRectF _selectionRectangle;
     QPointF _dragStartPoint;
+    QPointF _keyDragMaxMovement;
 
     bool _drawSelectedKeyFramesBbox;
     QRectF _selectedKeyFramesBbox;
@@ -362,6 +363,7 @@ struct CurveWidgetPrivate{
         , _keyFramesClipBoard()
         , _selectionRectangle()
         , _dragStartPoint()
+        , _keyDragMaxMovement()
         , _drawSelectedKeyFramesBbox(false)
         , _selectedKeyFramesBbox()
         , _selectedKeyFramesCrossVertLine()
@@ -849,6 +851,7 @@ struct CurveWidgetPrivate{
     }
 
     void moveSelectedKeyFrames(const QPointF& oldClick_opengl,const QPointF& newClick_opengl){
+        QPointF dragStartPointOpenGL = _widget->toScaleCoordinates(_dragStartPoint.x(),_dragStartPoint.y());
         QPointF translation = (newClick_opengl - oldClick_opengl);
         translation.rx() *= _mouseDragOrientation.x();
         translation.ry() *= _mouseDragOrientation.y();
@@ -858,43 +861,34 @@ struct CurveWidgetPrivate{
             if(_widget->parentWidget()->parentWidget()){
                 if(_widget->parentWidget()->parentWidget()->objectName() == kCurveEditorObjectName){
                     editor = dynamic_cast<CurveEditor*>(_widget->parentWidget()->parentWidget());
-
                 }
             }
         }
         std::vector<std::pair< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> >, std::pair<double, Variant> > > moves;
+        //1st off, round to the nearest integer the keyframes total motion
 
+        double totalMovement = std::floor(newClick_opengl.x() - dragStartPointOpenGL.x() + 0.5);
+        // clamp totalMovement to _keyDragMaxMovement
+        if(totalMovement < 0){
+            totalMovement = std::max(totalMovement,_keyDragMaxMovement.x());
+        }else{
+            totalMovement = std::min(totalMovement,_keyDragMaxMovement.y());
+        }
+
+        double lastMovement = std::floor(oldClick_opengl.x() - dragStartPointOpenGL.x() + 0.5);
+        if(lastMovement < 0){
+            lastMovement = std::max(lastMovement,_keyDragMaxMovement.x());
+        }else{
+            lastMovement = std::min(lastMovement,_keyDragMaxMovement.y());
+        }
         for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-            double newTime = newClick_opengl.x();//(*it)->getTime() + translation.x();
-            double newX,newY;
+            double newX;
             if(_mouseDragOrientation.x() != 0){
-                //find out if the new value will be in the interval [previousKey,nextKey]
-                double newValue = (*it)->_key->getTime() + std::floor(translation.x() + 0.5);
-                const Curve::KeyFrames& keys = (*it)->_curve->getInternalCurve()->getKeyFrames();
-                Curve::KeyFrames::const_iterator foundKey = std::find(keys.begin(), keys.end(), (*it)->_key);
-                assert(foundKey != keys.end());
-                Curve::KeyFrames::const_iterator prevKey = foundKey;
-                if(foundKey != keys.begin()){
-                    --prevKey;
-                }else{
-                    prevKey = keys.end();
-                }
-                Curve::KeyFrames::const_iterator nextKey = foundKey;
-                ++nextKey;
-
-                if(((prevKey != keys.end() && newValue > (*prevKey)->getTime()) || prevKey == keys.end()) &&
-                        ((nextKey != keys.end() && newValue < (*nextKey)->getTime()) || nextKey == keys.end())){
-                    newX = newValue;
-                }else if(prevKey != keys.end() && newValue <= (*prevKey)->getTime()){
-                    newX = (*prevKey)->getTime()+1;
-                }else if(nextKey != keys.end() && newValue >= (*nextKey)->getTime()){
-                    newX = (*nextKey)->getTime()-1;
-                }
-
+                newX = (*it)->_key->getTime() + totalMovement - lastMovement;
             }else{
                 newX = (*it)->_key->getTime();
             }
-            newY = (*it)->_key->getValue().toDouble() + translation.y();
+            double newY = (*it)->_key->getValue().toDouble() + translation.y();
 
             if(!editor){
                 _widget->setKeyPos((*it)->_key,newX,Variant(newY));
@@ -1097,6 +1091,63 @@ struct CurveWidgetPrivate{
             }
         }
         _widget->refreshSelectedKeysBbox();
+    }
+
+    void updateSelectedKeysMaxMovement(){
+        if(_selectedKeyFrames.empty())
+            return;
+
+        //find out the min/max of the selection
+        boost::shared_ptr<SelectedKey> leftMost,rightMost;
+        for(SelectedKeys::const_iterator it = _selectedKeyFrames.begin();it!=_selectedKeyFrames.end();++it){
+            if(!leftMost){
+                leftMost = *it;
+            }else{
+                if((*it)->_key->getTime() < leftMost->_key->getTime()){
+                    leftMost = *it;
+                }
+            }
+            if(!rightMost){
+                rightMost = *it;
+            }else{
+                if((*it)->_key->getTime() > rightMost->_key->getTime()){
+                    rightMost = *it;
+                }
+            }
+
+        }
+
+        //find out for leftMost and rightMost of how much they can move respectively on the left and on the right
+        {
+            const Curve::KeyFrames& leftMostCurveKeys = leftMost->_curve->getInternalCurve()->getKeyFrames();
+            Curve::KeyFrames::const_iterator foundLeft = std::find(leftMostCurveKeys.begin(),
+                                                                   leftMostCurveKeys.end(),leftMost->_key);
+            assert(foundLeft != leftMostCurveKeys.end());
+            if(foundLeft == leftMostCurveKeys.begin()){
+                _keyDragMaxMovement.setX(INT_MIN);
+            }else{
+                Curve::KeyFrames::const_iterator foundLeftPrev = foundLeft;
+                --foundLeftPrev;
+                _keyDragMaxMovement.setX(((*foundLeftPrev)->getTime() + 1) - leftMost->_key->getTime());
+            }
+        }
+
+        {
+            const Curve::KeyFrames& rightMostCurveKeys = rightMost->_curve->getInternalCurve()->getKeyFrames();
+            Curve::KeyFrames::const_iterator foundRight = std::find(rightMostCurveKeys.begin(),
+                                                                    rightMostCurveKeys.end(),rightMost->_key);
+            assert(foundRight != rightMostCurveKeys.end());
+            Curve::KeyFrames::const_iterator foundRightNext = foundRight;
+            ++foundRightNext;
+
+            if(foundRightNext == rightMostCurveKeys.end()){
+                _keyDragMaxMovement.setY(INT_MAX);
+            }else{
+                _keyDragMaxMovement.setY((*foundRightNext)->getTime() - 1 - rightMost->_key->getTime());
+            }
+        }
+
+
     }
 };
 
@@ -1327,6 +1378,7 @@ void CurveWidget::mousePressEvent(QMouseEvent *event){
     std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > selectedKey = _imp->isNearbyKeyFrame(event->pos());
     if( _imp->_drawSelectedKeyFramesBbox && _imp->isNearbySelectedKeyFramesCrossWidget(event->pos())){
         _imp->_state = DRAGGING_KEYS;
+        _imp->updateSelectedKeysMaxMovement();
     }
     else{
 
@@ -1343,6 +1395,7 @@ void CurveWidget::mousePressEvent(QMouseEvent *event){
             selected->_key = selectedKey.second;
             _imp->refreshKeyTangentsGUI(selected);
             _imp->_selectedKeyFrames.push_back(selected);
+            _imp->updateSelectedKeysMaxMovement();
         }else{
             
             std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator > selectedTan = _imp->isNearByTangent(event->pos());
@@ -1430,39 +1483,41 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
             _imp->_mustSetDragOrientation = false;
         }
     }
-     
+
     QPointF newClick_opengl = toScaleCoordinates(event->x(),event->y());
     QPointF oldClick_opengl = toScaleCoordinates(_imp->_zoomCtx._oldClick.x(),_imp->_zoomCtx._oldClick.y());
     
     switch(_imp->_state){
 
-    case DRAGGING_VIEW:{
+    case DRAGGING_VIEW:
         _imp->_zoomCtx._bottom += (oldClick_opengl.y() - newClick_opengl.y());
         _imp->_zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
         break;
-    }
-    case DRAGGING_KEYS:{
+
+    case DRAGGING_KEYS:
         if(!_imp->_mustSetDragOrientation){
             _imp->moveSelectedKeyFrames(oldClick_opengl,newClick_opengl);
         }
         break;
-    }
-    case SELECTING:{
+
+    case SELECTING:
         _imp->refreshSelectionRectangle((double)event->x(),(double)event->y());
         break;
-    }
-    case DRAGGING_TANGENT:{
+
+    case DRAGGING_TANGENT:
         _imp->moveSelectedTangent(newClick_opengl);
         break;
-    }
-    case DRAGGING_TIMELINE:{
+
+    case DRAGGING_TIMELINE:
         _imp->_timeline->seekFrame((SequenceTime)newClick_opengl.x(),NULL);
+        break;
+
+    case NONE:
+    default:
         break;
     }
 
-    }
-
-     _imp->_zoomCtx._oldClick = event->pos();
+    _imp->_zoomCtx._oldClick = event->pos();
     
     updateGL();
 }
