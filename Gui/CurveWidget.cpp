@@ -927,6 +927,17 @@ struct CurveWidgetPrivate{
         if(key->_key->getInterpolation() != Natron::KEYFRAME_BROKEN){
             key->_key->setInterpolation(Natron::KEYFRAME_FREE);
 
+            //if dx is not of the good sign it would make the curve uncontrollable
+            if(_selectedTangent.first == CurveGui::LEFT_TANGENT){
+                if(dx < 0){
+                    dx = 0.0001;
+                }
+            }else{
+                if(dx > 0){
+                    dx = -0.0001;
+                }
+            }
+
             Curve::KeyFrames::const_iterator prev = cur;
             if(cur != keys.begin()){
                 --prev;
@@ -950,6 +961,11 @@ struct CurveWidgetPrivate{
 
         }else{
             if(_selectedTangent.first == CurveGui::LEFT_TANGENT){
+                //if dx is not of the good sign it would make the curve uncontrollable
+                if(dx < 0){
+                    dx = 0.0001;
+                }
+
                 Curve::KeyFrames::const_iterator prev = cur;
                 if(cur != keys.begin()){
                     --prev;
@@ -963,6 +979,11 @@ struct CurveWidgetPrivate{
                 key->_key->setLeftTangent(Variant(leftTan),true);
 
             }else{
+                //if dx is not of the good sign it would make the curve uncontrollable
+                if(dx > 0){
+                    dx = -0.0001;
+                }
+
                 Curve::KeyFrames::const_iterator next = cur;
                 ++next;
                 double rightTan;
