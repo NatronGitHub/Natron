@@ -14,15 +14,20 @@
 #include <QMenu>
 #include <QMouseEvent>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QRectF>
+#include <QtGui/QPolygonF>
 
 #include "Global/AppManager.h"
 #include "Engine/Knob.h"
 #include "Engine/Rect.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Variant.h"
 
 #include "Gui/ScaleSlider.h"
 #include "Gui/ticks.h"
 #include "Gui/CurveEditor.h"
+#include "Gui/TextRenderer.h"
+
 
 #define CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE 5 //maximum distance from a curve that accepts a mouse click
 // (in widget pixels)
@@ -354,15 +359,16 @@ struct CurveWidgetPrivate{
         , _mouseDragOrientation()
         , _keyFramesClipBoard()
         , _selectionRectangle()
+        , _selectionStartPoint()
         , _drawSelectedKeyFramesBbox(false)
         , _selectedKeyFramesBbox()
+        , _selectedKeyFramesCrossVertLine()
+        , _selectedKeyFramesCrossHorizLine()
         , _timelineLeftBound(0)
         , _timelineRightBound(0)
         , _timelineCurrent(0)
         , _timelineTopPoly()
         , _timelineBtmPoly()
-        , _selectedKeyFramesCrossVertLine()
-        , _selectedKeyFramesCrossHorizLine()
         , _timelineEnabled(false)
         , _widget(widget)
     {

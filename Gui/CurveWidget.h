@@ -14,18 +14,16 @@
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
-#include <QtCore/QRectF>
-#include <QtGui/QPolygonF>
 
+#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "Global/GlobalDefines.h"
 
-#include "Gui/TextRenderer.h"
 
-#include "Engine/Variant.h"
 
 class Curve;
+class Variant;
 class KeyFrame;
 class TimeLine;
 class CurveWidget;
