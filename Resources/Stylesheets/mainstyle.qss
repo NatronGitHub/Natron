@@ -1,4 +1,5 @@
 /*%1 = selection-color  %2 = medium background  %3 = soft background %4 = strong background %5 = text colour*/
+/*%6 = interpolated value color %7 = keyframe value color*/
 /*You have to fill the arguments with  stylesheet-representable colours.*/
 NodeSettingsPanel[_selected="true"]{
 border:1px solid yellow;
@@ -354,4 +355,13 @@ color : rgb(120,120,120);
 QToolButton{
 background-color:%2;
 color: %5;
+}
+SpinBox[animation="0"]{
+background-color: %3;
+}
+SpinBox[animation="1"]{
+background-color: %6;
+}
+SpinBox[animation="2"]{
+background-color: %7;
 }

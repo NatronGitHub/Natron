@@ -1,4 +1,4 @@
-//  Natron
+﻿//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -341,6 +341,8 @@ struct CurveWidgetPrivate{
     bool _timelineEnabled;
     CurveWidget* _widget;
 
+    std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator> _selectedTangent;
+
     CurveWidgetPrivate(boost::shared_ptr<TimeLine> timeline,CurveWidget* widget)
         : _zoomCtx()
         , _state(NONE)
@@ -369,6 +371,7 @@ struct CurveWidgetPrivate{
         , _timelineBtmPoly()
         , _timelineEnabled(false)
         , _widget(widget)
+        , _selectedTangent()
     {
         _nextCurveAddedColor.setHsv(200,255,255);
         createMenu();
@@ -910,6 +913,23 @@ struct CurveWidgetPrivate{
         _widget->refreshSelectedKeysBbox();
     }
 
+    void moveSelectedTangent(const QPointF& posWidget){
+        assert(_selectedTangent.second != _selectedKeyFrames.end());
+        boost::shared_ptr<SelectedKey> key = (*_selectedTangent.second);
+        key->_key->setInterpolation(Natron::KEYFRAME_FREE);
+        if(_selectedTangent.first == CurveGui::LEFT_TANGENT){
+            double oldPosWidget = _widget->toWidgetCoordinates(0,key->_leftTan.second).y();
+            double dy = posWidget.y() - oldPosWidget;
+            double diffOpenGL = _widget->toScaleCoordinates(0,dy).y();
+
+            key->_key->setTangents(Variant(key->_key->getLeftTangent().toDouble() + diffOpenGL),
+                                   Variant(key->_key->getRightTangent().toDouble() - diffOpenGL),
+                                           true);
+            refreshKeyTangentsGUI(key);
+        }else{
+
+        }
+    }
 
     void refreshKeyTangentsGUI(boost::shared_ptr<SelectedKey> key){
         double w = (double)_widget->width();
@@ -1238,6 +1258,7 @@ void CurveWidget::mousePressEvent(QMouseEvent *event){
             std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator > selectedTan = _imp->isNearByTangent(event->pos());
             if(selectedTan.second != _imp->_selectedKeyFrames.end()){
                 _imp->_state = DRAGGING_TANGENT;
+                _imp->_selectedTangent = selectedTan;
             }else{
 
                 if(_imp->isNearbyTimelineBtmPoly(event->pos()) || _imp->isNearbyTimelineTopPoly(event->pos())){
@@ -1343,7 +1364,7 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
         }
         refreshSelectedKeysBbox();
     }else if(_imp->_state == DRAGGING_TANGENT){
-
+        _imp->moveSelectedTangent(event->pos());
     }else if(_imp->_state == DRAGGING_TIMELINE){
         _imp->_timeline->seekFrame((SequenceTime)newClick_opengl.x(),NULL);
     }

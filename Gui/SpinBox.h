@@ -22,6 +22,9 @@ class QIntValidator;
 class SpinBox : public LineEdit
 {
     Q_OBJECT
+
+    Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
+
     
 public:
     
@@ -41,7 +44,10 @@ public:
     
     void setIncrement(double d){_increment=d;}
    
-    
+    void setAnimation(int i);
+
+    int getAnimation() const { return animation; }
+
 protected:
     
     virtual void wheelEvent(QWheelEvent* e);
@@ -74,8 +80,7 @@ private:
     Variant _mini,_maxi;
     QDoubleValidator* _doubleValidator;
     QIntValidator* _intValidator;
-
-    
+    bool animation; // 0 = no animation, 1 = interpolated, 2 = equals keyframe value
 };
 
 #endif /* defined(NATRON_GUI_FEEDBACKSPINBOX_H_) */

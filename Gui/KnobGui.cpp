@@ -533,6 +533,20 @@ void Int_KnobGui::updateGUI(int dimension,const Variant& variant){
     if(_slider)
         _slider->seekScalePosition(v);
     _spinBoxes[dimension].first->setValue(v);
+    boost::shared_ptr<Curve> c = _knob->getCurve(dimension);
+    SequenceTime time = _knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+    if(c->keyFramesCount() >= 1){
+        const Curve::KeyFrames& keys = c->getKeyFrames();
+        for(Curve::KeyFrames::const_iterator it = keys.begin();it!=keys.end();++it){
+            if((*it)->getTime() == time){
+                _spinBoxes[dimension].first->setAnimation(2);
+                return;
+            }
+        }
+        _spinBoxes[dimension].first->setAnimation(1);
+    }else{
+        _spinBoxes[dimension].first->setAnimation(0);
+    }
 
 }
 void Int_KnobGui::onSliderValueChanged(double d){
@@ -610,7 +624,7 @@ void Bool_KnobGui::createWidget(QGridLayout *layout, int row){
     _descriptionLabel->setToolTip(getKnob()->getHintToolTip().c_str());
     layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
 
-    _checkBox = new QCheckBox(layout->parentWidget());
+    _checkBox = new AnimatedCheckBox(layout->parentWidget());
     _checkBox->setToolTip(getKnob()->getHintToolTip().c_str());
     QObject::connect(_checkBox,SIGNAL(clicked(bool)),this,SLOT(onCheckBoxStateChanged(bool)));
     QObject::connect(_descriptionLabel,SIGNAL(clicked(bool)),this,SLOT(onCheckBoxStateChanged(bool)));
@@ -624,6 +638,20 @@ void Bool_KnobGui::updateGUI(int /*dimension*/, const Variant& variant){
     bool b = variant.toBool();
     _checkBox->setChecked(b);
     _descriptionLabel->setClicked(b);
+    boost::shared_ptr<Curve> c = _knob->getCurve(dimension);
+    SequenceTime time = _knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+    if(c->keyFramesCount() >= 1){
+        const Curve::KeyFrames& keys = c->getKeyFrames();
+        for(Curve::KeyFrames::const_iterator it = keys.begin();it!=keys.end();++it){
+            if((*it)->getTime() == time){
+                _checkBox->setAnimation(2);
+                return;
+            }
+        }
+       _checkBox->setAnimation(1);
+    }else{
+       _checkBox->setAnimation(0);
+    }
 }
 
 
@@ -651,6 +679,12 @@ void Bool_KnobGui::setEnabled() {
 void Bool_KnobGui::addToLayout(QHBoxLayout* layout){
     layout->addWidget(_descriptionLabel);
     layout->addWidget(_checkBox);
+}
+
+void AnimatedCheckBox::setAnimation(int i ) {
+    animation = i;
+    style()->unpolish(this);
+    style()->polish(this);
 }
 //=============================DOUBLE_KNOB_GUI===================================
 Double_KnobGui::Double_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container),_slider(0){
@@ -769,6 +803,20 @@ void Double_KnobGui::updateGUI(int dimension, const Variant& variant){
     if(_slider)
         _slider->seekScalePosition(v);
     _spinBoxes[dimension].first->setValue(v);
+    boost::shared_ptr<Curve> c = _knob->getCurve(dimension);
+    SequenceTime time = _knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+    if(c->keyFramesCount() >= 1){
+        const Curve::KeyFrames& keys = c->getKeyFrames();
+        for(Curve::KeyFrames::const_iterator it = keys.begin();it!=keys.end();++it){
+            if((*it)->getTime() == time){
+                _spinBoxes[dimension].first->setAnimation(2);
+                return;
+            }
+        }
+        _spinBoxes[dimension].first->setAnimation(1);
+    }else{
+        _spinBoxes[dimension].first->setAnimation(0);
+    }
 }
 
 void Double_KnobGui::onSliderValueChanged(double d){

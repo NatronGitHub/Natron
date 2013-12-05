@@ -30,6 +30,7 @@ LineEdit(parent)
 ,_maxi()
 ,_doubleValidator(0)
 ,_intValidator(0)
+,animation(0)
 {
 
     if(type == DOUBLE_SPINBOX){
@@ -207,4 +208,10 @@ void SpinBox::setMinimum(double b){
         _mini.setValue<int>(b);
         _intValidator->setBottom(b);
     }
+}
+
+void SpinBox::setAnimation(int i){
+    animation = i;
+    style()->unpolish(this);
+    style()->polish(this);
 }

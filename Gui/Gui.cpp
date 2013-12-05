@@ -729,13 +729,14 @@ void Gui::loadStyleSheet(){
     {
         QTextStream in(&qss);
         QString content(in.readAll());
-        // cout << content.toStdString() << endl;
         setStyleSheet(content
                       .arg("rgb(243,149,0)")
                       .arg("rgb(50,50,50)")
                       .arg("rgb(71,71,71)")
                       .arg("rgb(38,38,38)")
-                      .arg("rgb(200,200,200)"));
+                      .arg("rgb(200,200,200)")
+                      .arg("rgb(86,117,156)")
+                      .arg("rgb(21,97,248"));
     }
 }
 

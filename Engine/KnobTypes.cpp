@@ -220,7 +220,7 @@ Bool_Knob::Bool_Knob(KnobHolder *holder, const std::string &description, int dim
 
 bool Bool_Knob::canAnimate() const
 {
-    return false;
+    return true;
 }
 
 std::string Bool_Knob::typeName() const

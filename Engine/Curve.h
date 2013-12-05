@@ -54,6 +54,8 @@ public:
 
     const Variant& getRightTangent() const ;
 
+    void setTangents(const Variant& left,const Variant& right,bool evaluateNeighboors);
+
     void setLeftTangent(const Variant& v,bool evaluateNeighboors);
 
     void setRightTangent(const Variant& v,bool evaluateNeighboors);

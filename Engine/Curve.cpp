@@ -46,6 +46,15 @@ bool KeyFrame::operator==(const KeyFrame& o) const {
 
 
 
+void KeyFrame::setTangents(const Variant& left,const Variant& right,bool evaluateNeighboors){
+    assert(_imp->_curve);
+     _imp->_leftTangent = left;
+    _imp->_rightTangent = right;
+    if(evaluateNeighboors){
+        _imp->_curve->evaluateCurveChanged(Curve::TANGENT_CHANGED,this);
+    }
+}
+
 void KeyFrame::setLeftTangent(const Variant& v,bool evaluateNeighboors){
     _imp->_leftTangent = v;
     assert(_imp->_curve);
@@ -53,6 +62,7 @@ void KeyFrame::setLeftTangent(const Variant& v,bool evaluateNeighboors){
         _imp->_curve->evaluateCurveChanged(Curve::TANGENT_CHANGED,this);
     }
 }
+
 
 void KeyFrame::setRightTangent(const Variant& v, bool evaluateNeighboors){
     _imp->_rightTangent = v;

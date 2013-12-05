@@ -348,6 +348,22 @@ private:
     bool _toggled;
 };
 
+class AnimatedCheckBox : public QCheckBox {
+
+
+    Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
+
+    int animation;
+public:
+    AnimatedCheckBox(QWidget* parent = NULL): QCheckBox(parent),animation(0){}
+
+    virtual ~AnimatedCheckBox(){}
+
+    void setAnimation(int i ) ;
+
+    int getAnimation() const { return animation; }
+};
+
 //================================
 class Bool_KnobGui :public KnobGui {
 	Q_OBJECT
@@ -380,7 +396,7 @@ private:
     
 private:
 
-	QCheckBox* _checkBox;
+    AnimatedCheckBox* _checkBox;
     ClickableLabel* _descriptionLabel;
 };
 
