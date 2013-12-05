@@ -73,7 +73,8 @@ public slots:
  
 
 private:
-    
+    QString setNum(double cur);
+
     SPINBOX_TYPE _type;
     int _decimals; // for the double spinbox only
     double _increment;

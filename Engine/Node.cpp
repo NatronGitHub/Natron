@@ -730,19 +730,21 @@ void Node::onOverlayFocusLost()
 
 bool Node::message(MessageType type,const std::string& content) const
 {
-    if (type == INFO_MESSAGE) {
-        informationDialog(getName(), content);
-        return true;
-    } else if (type == WARNING_MESSAGE) {
-        warningDialog(getName(), content);
-        return true;
-    } else if (type == ERROR_MESSAGE) {
-        errorDialog(getName(), content);
-        return true;
-    } else if (type == QUESTION_MESSAGE) {
-        return questionDialog(getName(), content) == Yes;
+    switch (type) {
+        case INFO_MESSAGE:
+            informationDialog(getName(), content);
+            return true;
+        case WARNING_MESSAGE:
+            warningDialog(getName(), content);
+            return true;
+        case ERROR_MESSAGE:
+            errorDialog(getName(), content);
+            return true;
+        case QUESTION_MESSAGE:
+            return questionDialog(getName(), content) == Yes;
+        default:
+            return false;
     }
-    return false;
 }
 
 void Node::setPersistentMessage(MessageType type,const std::string& content)

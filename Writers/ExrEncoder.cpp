@@ -84,23 +84,21 @@ static int depthNameToInt(const std::string& name){
     }
 }
 
-static std::string toExrChannel(Natron::Channel from){
-    if (from == Natron::Channel_red) {
-        return "R";
+static std::string toExrChannel(Natron::Channel from) {
+    switch (from) {
+        case Natron::Channel_red:
+            return "R";
+        case Natron::Channel_green:
+            return "G";
+        case Natron::Channel_blue:
+            return "B";
+        case Natron::Channel_alpha:
+            return "A";
+        case Natron::Channel_Z:
+            return "Z";
+        default:
+            return Natron::getChannelName(from);
     }
-    if (from == Natron::Channel_green) {
-        return "G";
-    }
-    if (from == Natron::Channel_blue) {
-        return "B";
-    }
-    if (from == Natron::Channel_alpha) {
-        return "A";
-    }
-    if (from == Natron::Channel_Z) {
-        return "Z";
-    }
-    return Natron::getChannelName(from);
 }
 
 #if 0 // unused functions
