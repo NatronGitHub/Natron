@@ -18,6 +18,8 @@
 #endif
 #include <climits>
 #include <cfloat>
+#include <stdexcept>
+
 #include <QtCore/QString>
 #include <QHBoxLayout>
 #include <QPushButton>
@@ -1175,16 +1177,24 @@ void Color_KnobGui::setEnabled() {
     }
     _colorDialogButton->setEnabled(b);
 }
-void Color_KnobGui::updateGUI(int dimension, const Variant& variant){
-    assert(dimension < _dimension);
-    if(dimension == 0){
-        _rBox->setValue(variant.toDouble());
-    }else if(dimension == 1){
-        _gBox->setValue(variant.toDouble());
-    }else if(dimension == 2){
-        _bBox->setValue(variant.toDouble());
-    }else if(dimension == 3){
-        _aBox->setValue(variant.toDouble());
+
+void Color_KnobGui::updateGUI(int dimension, const Variant& variant) {
+    assert(dimension < _dimension && dimension >= 0 && dimension <= 3);
+    switch (dimension) {
+        case 0:
+            _rBox->setValue(variant.toDouble());
+            break;
+        case 1:
+            _gBox->setValue(variant.toDouble());
+            break;
+        case 2:
+            _bBox->setValue(variant.toDouble());
+            break;
+        case 3:
+            _aBox->setValue(variant.toDouble());
+            break;
+        default:
+            throw std::logic_error("wrong dimension");
     }
 
     uchar r = (uchar)std::min(_rBox->value()*256., 255.);
@@ -1198,11 +1208,10 @@ void Color_KnobGui::updateGUI(int dimension, const Variant& variant){
     if(_dimension >= 4){
         a = (uchar)std::min(_aBox->value()*256., 255.);
     }
-    
-
     QColor color(r, g, b, a);
     updateLabel(color);
 }
+
 void Color_KnobGui::showColorDialog(){
     QColorDialog dialog(_rBox->parentWidget());
     if(dialog.exec()){

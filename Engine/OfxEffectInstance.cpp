@@ -690,12 +690,16 @@ void OfxEffectInstance::onKnobValueChanged(Knob* k,AnimatingParam::ValueChangedR
     effect_->getRenderScaleRecursive(renderScale.x, renderScale.y);
     OfxTime time = effect_->getFrameRecursive();
     OfxStatus stat = kOfxStatOK;
-    if(reason == AnimatingParam::USER_EDITED){
-        stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangeUserEdited,time,renderScale);
-    }else if(reason == AnimatingParam::TIME_CHANGED){
-        stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangeTime,time,renderScale);
-    }else if(reason == AnimatingParam::PLUGIN_EDITED){
-        stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangePluginEdited,time,renderScale);
+    switch (reason) {
+        case AnimatingParam::USER_EDITED:
+            stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangeUserEdited,time,renderScale);
+            break;
+        case AnimatingParam::TIME_CHANGED:
+            stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangeTime,time,renderScale);
+            break;
+        case AnimatingParam::PLUGIN_EDITED:
+            stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangePluginEdited,time,renderScale);
+            break;
     }
     // note: DON'T remove the following assert()s, unless you replace them with proper error feedback.
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
@@ -707,12 +711,16 @@ void OfxEffectInstance::beginKnobsValuesChanged(AnimatingParam::ValueChangedReas
         return;
     }
     OfxStatus stat = kOfxStatOK;
-    if(reason == AnimatingParam::USER_EDITED){
-        stat = effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-    }else if(reason == AnimatingParam::TIME_CHANGED){
-        stat = effectInstance()->beginInstanceChangedAction(kOfxChangeTime);
-    }else if(reason == AnimatingParam::PLUGIN_EDITED){
-        stat = effectInstance()->beginInstanceChangedAction(kOfxChangePluginEdited);
+    switch (reason) {
+        case AnimatingParam::USER_EDITED:
+            stat = effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+            break;
+        case AnimatingParam::TIME_CHANGED:
+            stat = effectInstance()->beginInstanceChangedAction(kOfxChangeTime);
+            break;
+        case AnimatingParam::PLUGIN_EDITED:
+            stat = effectInstance()->beginInstanceChangedAction(kOfxChangePluginEdited);
+            break;
     }
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
 
@@ -723,12 +731,16 @@ void OfxEffectInstance::endKnobsValuesChanged(AnimatingParam::ValueChangedReason
         return;
     }
     OfxStatus stat = kOfxStatOK;
-    if(reason == AnimatingParam::USER_EDITED){
-        stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-    }else if(reason == AnimatingParam::TIME_CHANGED){
-        stat = effectInstance()->endInstanceChangedAction(kOfxChangeTime);
-    }else if(reason == AnimatingParam::PLUGIN_EDITED){
-        stat = effectInstance()->endInstanceChangedAction(kOfxChangePluginEdited);
+    switch (reason) {
+        case AnimatingParam::USER_EDITED:
+            stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+            break;
+        case AnimatingParam::TIME_CHANGED:
+            stat = effectInstance()->endInstanceChangedAction(kOfxChangeTime);
+            break;
+        case AnimatingParam::PLUGIN_EDITED:
+            stat = effectInstance()->endInstanceChangedAction(kOfxChangePluginEdited);
+            break;
     }
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
 

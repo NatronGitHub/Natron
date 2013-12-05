@@ -11,6 +11,8 @@
 
 #include "QtDecoder.h"
 
+#include <stdexcept>
+
 #include <QtGui/QImage>
 #include <QtGui/QColor>
 #include <QtGui/QImageReader>
@@ -49,19 +51,11 @@ std::vector<std::string> QtDecoder::fileTypesDecoded() const {
 };
 
 
-Natron::Status QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& roi,boost::shared_ptr<Natron::Image> output){
-    switch(_img->format()) {
-        case QImage::Format_Invalid:
-        {
-            output->fill(roi,0.f,1.f);
-            _reader->setPersistentMessage(Natron::ERROR_MESSAGE, "Invalid image format.");
-            return StatFailed;
-        }
-            break;
+Natron::Status QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& roi,boost::shared_ptr<Natron::Image> output) {
+    switch (_img->format()) {
         case QImage::Format_RGB32: // The image is stored using a 32-bit RGB format (0xffRRGGBB).
         case QImage::Format_ARGB32: // The image is stored using a 32-bit ARGB format (0xAARRGGBB).
         case QImage::Format_ARGB32_Premultiplied: // The image is stored using a premultiplied 32-bit ARGB format (0xAARRGGBB).
-        {
             //might have to invert y coordinates here
             from_byte_rect(output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),Natron::Color::Lut::BGRA,true);
             break;
@@ -77,12 +71,13 @@ Natron::Status QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,con
         case QImage::Format_RGB888: // The image is stored using a 24-bit RGB format (8-8-8).
         case QImage::Format_RGB444: // The image is stored using a 16-bit RGB format (4-4-4). The unused bits are always zero.
         case QImage::Format_ARGB4444_Premultiplied: // The image is stored using a premultiplied 16-bit ARGB format (4-4-4-4).
-        default:
-            {
-                from_byte_rect(output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),Natron::Color::Lut::BGRA,true);
-            }
+            from_byte_rect(output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),Natron::Color::Lut::BGRA,true);
             break;
-        }
+        case QImage::Format_Invalid:
+        default:
+            output->fill(roi,0.f,1.f);
+            _reader->setPersistentMessage(Natron::ERROR_MESSAGE, "Invalid image format.");
+            return StatFailed;
     }
     return StatOK;
 }
@@ -105,29 +100,36 @@ Natron::Status QtDecoder::readHeader(const QString& filename)
         
 		mask = Mask_RGBA;
         
-    }else{
-        if(_img->format()==QImage::Format_ARGB32 || _img->format()==QImage::Format_ARGB32_Premultiplied
-           || _img->format()==QImage::Format_ARGB4444_Premultiplied ||
-           _img->format()==QImage::Format_ARGB6666_Premultiplied ||
-           _img->format()==QImage::Format_ARGB8555_Premultiplied ||
-           _img->format()==QImage::Format_ARGB8565_Premultiplied){
-            
-            if(_img->format()== QImage::Format_ARGB32_Premultiplied
-               || _img->format()== QImage::Format_ARGB4444_Premultiplied
-               || _img->format()== QImage::Format_ARGB6666_Premultiplied
-               || _img->format()== QImage::Format_ARGB8555_Premultiplied
-               || _img->format()== QImage::Format_ARGB8565_Premultiplied){
+    } else {
+        switch (_img->format()) {
+            case QImage::Format_ARGB32_Premultiplied:
+            case QImage::Format_ARGB4444_Premultiplied:
+            case QImage::Format_ARGB6666_Premultiplied:
+            case QImage::Format_ARGB8555_Premultiplied:
+            case QImage::Format_ARGB8565_Premultiplied:
                 _premult=true;
-                
-            }
-            mask = Mask_RGBA;
-        }
-        else{
-			mask = Mask_RGB;
-            
+                mask = Mask_RGBA;
+                break;
+            case QImage::Format_ARGB32:
+                mask = Mask_RGBA;
+                break;
+            case QImage::Format_Mono:
+            case QImage::Format_MonoLSB:
+            case QImage::Format_Indexed8:
+            case QImage::Format_RGB32:
+            case QImage::Format_RGB16:
+            case QImage::Format_RGB666:
+            case QImage::Format_RGB555:
+            case QImage::Format_RGB888:
+            case QImage::Format_RGB444:
+                mask = Mask_RGB;
+                break;
+            case QImage::Format_Invalid:
+            default:
+                return StatFailed;
         }
     }
-    
+
     Format imageFormat(0,0,width,height,"",aspect);
     RectI bbox(0,0,width,height);
     setReaderInfo(imageFormat, bbox, mask);
