@@ -21,6 +21,7 @@
 #include <QUndoCommand>
 #include <QLineEdit>
 #include <QLabel>
+#include <QCheckBox>;
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
@@ -28,13 +29,13 @@
 #include "Engine/Singleton.h"
 #include "Engine/Knob.h"
 
-class QCheckBox;
 class LineEdit;
 class Button;
 class SpinBox;
 class ComboBox;
 class QFrame;
 class QLabel;
+class QAction;
 class QGridLayout;
 class Knob;
 class QVBoxLayout;
@@ -111,7 +112,7 @@ public slots:
 
     void show();
 
-    
+
 signals:
     void deleted(KnobGui*);
     
@@ -122,7 +123,10 @@ signals:
     void knobUndoneChange();
     
     void knobRedoneChange();
-    
+
+protected:
+    void setSetKeyActionEnabled(bool e);
+
 private:
 
     virtual void _hide() = 0;
@@ -156,6 +160,7 @@ private:
     bool _widgetCreated;
     DockablePanel* const _container;
     QMenu* _animationMenu;
+    QAction* _setKeyAction;
     Button* _animationButton;
 };
 Q_DECLARE_METATYPE(KnobGui*)
@@ -350,7 +355,7 @@ private:
 
 class AnimatedCheckBox : public QCheckBox {
 
-
+    Q_OBJECT
     Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
 
     int animation;

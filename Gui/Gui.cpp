@@ -736,7 +736,7 @@ void Gui::loadStyleSheet(){
                       .arg("rgb(38,38,38)")
                       .arg("rgb(200,200,200)")
                       .arg("rgb(86,117,156)")
-                      .arg("rgb(21,97,248"));
+                      .arg("rgb(21,97,248)"));
     }
 }
 

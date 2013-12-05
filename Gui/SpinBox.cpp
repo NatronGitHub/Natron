@@ -20,7 +20,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QtGui/QWheelEvent>
 #include <QtGui/QDoubleValidator>
 #include <QtGui/QIntValidator>
-
+#include <QtGui/QStyle>
 SpinBox::SpinBox(QWidget* parent,SPINBOX_TYPE type):
 LineEdit(parent)
 ,_type(type)
@@ -214,4 +214,5 @@ void SpinBox::setAnimation(int i){
     animation = i;
     style()->unpolish(this);
     style()->polish(this);
+    repaint();
 }

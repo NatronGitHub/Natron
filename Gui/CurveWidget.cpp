@@ -913,22 +913,70 @@ struct CurveWidgetPrivate{
         _widget->refreshSelectedKeysBbox();
     }
 
-    void moveSelectedTangent(const QPointF& posWidget){
+    void moveSelectedTangent(const QPointF& pos){
+
         assert(_selectedTangent.second != _selectedKeyFrames.end());
+
         boost::shared_ptr<SelectedKey> key = (*_selectedTangent.second);
-        key->_key->setInterpolation(Natron::KEYFRAME_FREE);
-        if(_selectedTangent.first == CurveGui::LEFT_TANGENT){
-            double oldPosWidget = _widget->toWidgetCoordinates(0,key->_leftTan.second).y();
-            double dy = posWidget.y() - oldPosWidget;
-            double diffOpenGL = _widget->toScaleCoordinates(0,dy).y();
+        const Curve::KeyFrames& keys = key->_curve->getInternalCurve()->getKeyFrames();
 
-            key->_key->setTangents(Variant(key->_key->getLeftTangent().toDouble() + diffOpenGL),
-                                   Variant(key->_key->getRightTangent().toDouble() - diffOpenGL),
-                                           true);
-            refreshKeyTangentsGUI(key);
+        Curve::KeyFrames::const_iterator cur = std::find(keys.begin(),keys.end(),key->_key);
+        assert(cur != keys.end());
+        double dy = key->_key->getValue().toDouble() - pos.y();
+        double dx = key->_key->getTime() - pos.x();
+        if(key->_key->getInterpolation() != Natron::KEYFRAME_BROKEN){
+            key->_key->setInterpolation(Natron::KEYFRAME_FREE);
+
+            Curve::KeyFrames::const_iterator prev = cur;
+            if(cur != keys.begin()){
+                --prev;
+            }else{
+                prev = keys.end();
+            }
+            Curve::KeyFrames::const_iterator next = cur;
+            ++next;
+            double leftTan,rightTan;
+            if(prev != keys.end()){
+                leftTan = (dy * ((*cur)->getTime() - (*prev)->getTime())) / dx;
+            }else{
+                leftTan = dy / dx;
+            }
+            if(next != keys.end()){
+                rightTan = (dy * ((*next)->getTime() - (*cur)->getTime())) / dx;
+            }else{
+                rightTan = dy / dx;
+            }
+            key->_key->setTangents(Variant(leftTan),Variant(rightTan),true);
+
         }else{
+            if(_selectedTangent.first == CurveGui::LEFT_TANGENT){
+                Curve::KeyFrames::const_iterator prev = cur;
+                if(cur != keys.begin()){
+                    --prev;
+                }
+                double leftTan;
+                if(prev != keys.end()){
+                    leftTan = (dy * ((*cur)->getTime() - (*prev)->getTime())) / dx;
+                }else{
+                    leftTan = dy / dx;
+                }
+                key->_key->setLeftTangent(Variant(leftTan),true);
 
+            }else{
+                Curve::KeyFrames::const_iterator next = cur;
+                ++next;
+                double rightTan;
+                if(next != keys.end()){
+                    rightTan = (dy * ((*next)->getTime() - (*cur)->getTime())) / dx;
+                }else{
+                    rightTan = dy / dx;
+                }
+                key->_key->setRightTangent(Variant(rightTan),true);
+            }
         }
+        refreshKeyTangentsGUI(key);
+
+
     }
 
     void refreshKeyTangentsGUI(boost::shared_ptr<SelectedKey> key){
@@ -1364,7 +1412,7 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
         }
         refreshSelectedKeysBbox();
     }else if(_imp->_state == DRAGGING_TANGENT){
-        _imp->moveSelectedTangent(event->pos());
+        _imp->moveSelectedTangent(newClick_opengl);
     }else if(_imp->_state == DRAGGING_TIMELINE){
         _imp->_timeline->seekFrame((SequenceTime)newClick_opengl.x(),NULL);
     }
@@ -1548,13 +1596,7 @@ void CurveWidget::setKeyPos(boost::shared_ptr<KeyFrame> key, double x, const Var
 
 void CurveWidget::constantInterpForSelectedKeyFrames(){
     for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        SelectedKeys::iterator next = it;
-        ++next;
-        if(next != _imp->_selectedKeyFrames.end()){
-            (*it)->_key->setInterpolation(Natron::KEYFRAME_CONSTANT);
-        }else{
-            (*it)->_key->setInterpolationAndEvaluate(Natron::KEYFRAME_CONSTANT);
-        }
+        (*it)->_key->setInterpolationAndEvaluate(Natron::KEYFRAME_CONSTANT);
         _imp->refreshKeyTangentsGUI(*it);
     }
     updateGL();
@@ -1562,13 +1604,7 @@ void CurveWidget::constantInterpForSelectedKeyFrames(){
 
 void CurveWidget::linearInterpForSelectedKeyFrames(){
     for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        SelectedKeys::iterator next = it;
-        ++next;
-        if(next != _imp->_selectedKeyFrames.end()){
-            (*it)->_key->setInterpolation(Natron::KEYFRAME_LINEAR);
-        }else{
-            (*it)->_key->setInterpolationAndEvaluate(Natron::KEYFRAME_LINEAR);
-        }
+        (*it)->_key->setInterpolationAndEvaluate(Natron::KEYFRAME_LINEAR);
         _imp->refreshKeyTangentsGUI(*it);
     }
     updateGL();
@@ -1576,13 +1612,7 @@ void CurveWidget::linearInterpForSelectedKeyFrames(){
 
 void CurveWidget::smoothForSelectedKeyFrames(){
     for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        SelectedKeys::iterator next = it;
-        ++next;
-        if(next != _imp->_selectedKeyFrames.end()){
-            (*it)->_key->setInterpolation(Natron::KEYFRAME_SMOOTH);
-        }else{
-            (*it)->_key->setInterpolationAndEvaluate(Natron::KEYFRAME_SMOOTH);
-        }
+        (*it)->_key->setInterpolationAndEvaluate(Natron::KEYFRAME_SMOOTH);
         _imp->refreshKeyTangentsGUI(*it);
     }
     updateGL();
@@ -1590,13 +1620,7 @@ void CurveWidget::smoothForSelectedKeyFrames(){
 
 void CurveWidget::catmullromInterpForSelectedKeyFrames(){
     for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        SelectedKeys::iterator next = it;
-        ++next;
-        if(next != _imp->_selectedKeyFrames.end()){
-            (*it)->_key->setInterpolation(Natron::KEYFRAME_CATMULL_ROM);
-        }else{
-            (*it)->_key->setInterpolationAndEvaluate(Natron::KEYFRAME_CATMULL_ROM);
-        }
+        (*it)->_key->setInterpolationAndEvaluate(Natron::KEYFRAME_CATMULL_ROM);
         _imp->refreshKeyTangentsGUI(*it);
     }
     updateGL();
@@ -1604,13 +1628,7 @@ void CurveWidget::catmullromInterpForSelectedKeyFrames(){
 
 void CurveWidget::cubicInterpForSelectedKeyFrames(){
     for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        SelectedKeys::iterator next = it;
-        ++next;
-        if(next != _imp->_selectedKeyFrames.end()){
-            (*it)->_key->setInterpolation(Natron::KEYFRAME_CUBIC);
-        }else{
-            (*it)->_key->setInterpolationAndEvaluate(Natron::KEYFRAME_CUBIC);
-        }
+        (*it)->_key->setInterpolationAndEvaluate(Natron::KEYFRAME_CUBIC);
         _imp->refreshKeyTangentsGUI(*it);
     }
     updateGL();
@@ -1618,13 +1636,7 @@ void CurveWidget::cubicInterpForSelectedKeyFrames(){
 
 void CurveWidget::horizontalInterpForSelectedKeyFrames(){
     for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        SelectedKeys::iterator next = it;
-        ++next;
-        if(next != _imp->_selectedKeyFrames.end()){
-            (*it)->_key->setInterpolation(Natron::KEYFRAME_HORIZONTAL);
-        }else{
-            (*it)->_key->setInterpolationAndEvaluate(Natron::KEYFRAME_HORIZONTAL);
-        }
+        (*it)->_key->setInterpolationAndEvaluate(Natron::KEYFRAME_HORIZONTAL);
         _imp->refreshKeyTangentsGUI(*it);
     }
     updateGL();

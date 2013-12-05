@@ -21,10 +21,11 @@
 #include <QtCore/QString>
 #include <QHBoxLayout>
 #include <QPushButton>
-#include <QCheckBox>
 #include <QLabel>
 #include <QFileDialog>
 #include <QTextEdit>
+#include <QtGui/QStyle>
+
 #if QT_VERSION < 0x050000
 CLANG_DIAG_OFF(unused-private-field);
 #include <QtGui/qmime.h>
@@ -80,6 +81,7 @@ KnobGui::KnobGui(Knob* knob,DockablePanel* container)
     , _container(container)
     , _animationMenu(NULL)
     , _animationButton(NULL)
+    , _setKeyAction(NULL)
 {
     QObject::connect(knob,SIGNAL(valueChanged(int)),this,SLOT(onInternalValueChanged(int)));
     QObject::connect(this,SIGNAL(valueChanged(int,const Variant&)),knob,SLOT(onValueChanged(int,const Variant&)));
@@ -140,14 +142,20 @@ void KnobGui::createAnimationButton(QGridLayout* layout,int row){
 
 void KnobGui::createAnimationMenu(QWidget* parent){
     _animationMenu = new QMenu(parent);
-    QAction* setKeyAction = new QAction(tr("Set Key"),_animationMenu);
-    QObject::connect(setKeyAction,SIGNAL(triggered()),this,SLOT(onSetKeyActionTriggered()));
-    _animationMenu->addAction(setKeyAction);
+    _setKeyAction = new QAction(tr("Set Key"),_animationMenu);
+    QObject::connect(_setKeyAction,SIGNAL(triggered()),this,SLOT(onSetKeyActionTriggered()));
+    _animationMenu->addAction(_setKeyAction);
     
     QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"),_animationMenu);
     QObject::connect(showInCurveEditorAction,SIGNAL(triggered()),this,SLOT(onShowInCurveEditorActionTriggered()));
     _animationMenu->addAction(showInCurveEditorAction);
     
+}
+
+void KnobGui::setSetKeyActionEnabled(bool e){
+    if(_setKeyAction){
+        _setKeyAction->setEnabled(e);
+    }
 }
 
 void KnobGui::setSecret() {
@@ -533,13 +541,14 @@ void Int_KnobGui::updateGUI(int dimension,const Variant& variant){
     if(_slider)
         _slider->seekScalePosition(v);
     _spinBoxes[dimension].first->setValue(v);
-    boost::shared_ptr<Curve> c = _knob->getCurve(dimension);
-    SequenceTime time = _knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+    boost::shared_ptr<Curve> c = getKnob()->getCurve(dimension);
+    SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     if(c->keyFramesCount() >= 1){
         const Curve::KeyFrames& keys = c->getKeyFrames();
         for(Curve::KeyFrames::const_iterator it = keys.begin();it!=keys.end();++it){
             if((*it)->getTime() == time){
                 _spinBoxes[dimension].first->setAnimation(2);
+                setSetKeyActionEnabled(false);
                 return;
             }
         }
@@ -547,6 +556,7 @@ void Int_KnobGui::updateGUI(int dimension,const Variant& variant){
     }else{
         _spinBoxes[dimension].first->setAnimation(0);
     }
+    setSetKeyActionEnabled(true);
 
 }
 void Int_KnobGui::onSliderValueChanged(double d){
@@ -638,13 +648,14 @@ void Bool_KnobGui::updateGUI(int /*dimension*/, const Variant& variant){
     bool b = variant.toBool();
     _checkBox->setChecked(b);
     _descriptionLabel->setClicked(b);
-    boost::shared_ptr<Curve> c = _knob->getCurve(dimension);
-    SequenceTime time = _knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+    boost::shared_ptr<Curve> c = getKnob()->getCurve(0);
+    SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     if(c->keyFramesCount() >= 1){
         const Curve::KeyFrames& keys = c->getKeyFrames();
         for(Curve::KeyFrames::const_iterator it = keys.begin();it!=keys.end();++it){
             if((*it)->getTime() == time){
                 _checkBox->setAnimation(2);
+                setSetKeyActionEnabled(false);
                 return;
             }
         }
@@ -652,6 +663,7 @@ void Bool_KnobGui::updateGUI(int /*dimension*/, const Variant& variant){
     }else{
        _checkBox->setAnimation(0);
     }
+    setSetKeyActionEnabled(true);
 }
 
 
@@ -803,13 +815,14 @@ void Double_KnobGui::updateGUI(int dimension, const Variant& variant){
     if(_slider)
         _slider->seekScalePosition(v);
     _spinBoxes[dimension].first->setValue(v);
-    boost::shared_ptr<Curve> c = _knob->getCurve(dimension);
-    SequenceTime time = _knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+    boost::shared_ptr<Curve> c = getKnob()->getCurve(dimension);
+    SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     if(c->keyFramesCount() >= 1){
         const Curve::KeyFrames& keys = c->getKeyFrames();
         for(Curve::KeyFrames::const_iterator it = keys.begin();it!=keys.end();++it){
             if((*it)->getTime() == time){
                 _spinBoxes[dimension].first->setAnimation(2);
+                setSetKeyActionEnabled(false);
                 return;
             }
         }
@@ -817,6 +830,7 @@ void Double_KnobGui::updateGUI(int dimension, const Variant& variant){
     }else{
         _spinBoxes[dimension].first->setAnimation(0);
     }
+     setSetKeyActionEnabled(true);
 }
 
 void Double_KnobGui::onSliderValueChanged(double d){

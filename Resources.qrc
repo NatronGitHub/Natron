@@ -49,5 +49,13 @@
         <file>Resources/Images/cliptoproject.png</file>
         <file>Resources/Fonts/DroidSans.ttf</file>
         <file>Resources/Fonts/DroidSans-Bold.ttf</file>
+        <file>Resources/Images/checkbox_animation1_checked.png</file>
+        <file>Resources/Images/checkbox_animation1_checked_hovered.png</file>
+        <file>Resources/Images/checkbox_animation1_unchecked.png</file>
+        <file>Resources/Images/checkbox_animation1_unchecked_hovered.png</file>
+        <file>Resources/Images/checkbox_animation2_checked.png</file>
+        <file>Resources/Images/checkbox_animation2_checked_hovered.png</file>
+        <file>Resources/Images/checkbox_animation2_unchecked.png</file>
+        <file>Resources/Images/checkbox_animation2_unchecked_hovered.png</file>
     </qresource>
 </RCC>

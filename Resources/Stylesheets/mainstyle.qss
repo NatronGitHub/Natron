@@ -365,3 +365,27 @@ background-color: %6;
 SpinBox[animation="2"]{
 background-color: %7;
 }
+AnimatedCheckBox[animation="1"]::indicator:unchecked {
+image: url(:/Resources/Images/checkbox_animation1_unchecked.png);
+}
+AnimatedCheckBox[animation="1"]::indicator:checked {
+image: url(:/Resources/Images/checkbox_animation1_checked.png);
+}
+AnimatedCheckBox[animation="1"]::indicator:checked:hover {
+image: url(:/Resources/Images/checkbox_animation1_checked_hovered.png);
+}
+AnimatedCheckBox[animation="1"]::indicator:unchecked:hover {
+image: url(:/Resources/Images/checkbox_animation1_unchecked_hovered.png);
+}
+AnimatedCheckBox[animation="2"]::indicator:unchecked {
+image: url(:/Resources/Images/checkbox_animation2_unchecked.png);
+}
+AnimatedCheckBox[animation="2"]::indicator:checked {
+image: url(:/Resources/Images/checkbox_animation2_checked.png);
+}
+AnimatedCheckBox[animation="2"]::indicator:checked:hover {
+image: url(:/Resources/Images/checkbox_animation2_checked_hovered.png);
+}
+AnimatedCheckBox[animation="2"]::indicator:unchecked:hover {
+image: url(:/Resources/Images/checkbox_animation2_unchecked_hovered.png);
+}
