@@ -43,7 +43,9 @@ enum EventState{
     DRAGGING_VIEW = 0,
     DRAGGING_KEYS = 1,
     SELECTING = 2,
-    NONE = 3
+    DRAGGING_TANGENT = 3,
+    DRAGGING_TIMELINE = 4,
+    NONE = 5
 };
 
 struct SelectedKey {
@@ -281,9 +283,9 @@ public:
 
 
     ZoomContext():
-    _bottom(0.)
-    ,_left(0.)
-    ,_zoomFactor(1.)
+        _bottom(0.)
+      ,_left(0.)
+      ,_zoomFactor(1.)
     {}
 
     QPoint _oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
@@ -321,7 +323,7 @@ struct CurveWidgetPrivate{
 
     bool _mustSetDragOrientation;
     QPoint _mouseDragOrientation; ///used to drag a key frame in only 1 direction (horizontal or vertical)
-                                  ///the value is either (1,0) or (0,1)
+    ///the value is either (1,0) or (0,1)
 
     std::vector< std::pair<double,Variant> > _keyFramesClipBoard;
     QRectF _selectionRectangle;
@@ -332,16 +334,14 @@ struct CurveWidgetPrivate{
     QLineF _selectedKeyFramesCrossVertLine;
     QLineF _selectedKeyFramesCrossHorizLine;
 
-    double _timelineLeftBound;
-    double _timelineRightBound;
-    double _timelineCurrent;
+    boost::shared_ptr<TimeLine> _timeline;
     QPolygonF _timelineTopPoly;
     QPolygonF _timelineBtmPoly;
 
     bool _timelineEnabled;
     CurveWidget* _widget;
 
-    CurveWidgetPrivate(CurveWidget* widget)
+    CurveWidgetPrivate(boost::shared_ptr<TimeLine> timeline,CurveWidget* widget)
         : _zoomCtx()
         , _state(NONE)
         , _rightClickMenu(new QMenu(widget))
@@ -364,9 +364,7 @@ struct CurveWidgetPrivate{
         , _selectedKeyFramesBbox()
         , _selectedKeyFramesCrossVertLine()
         , _selectedKeyFramesCrossHorizLine()
-        , _timelineLeftBound(0)
-        , _timelineRightBound(0)
-        , _timelineCurrent(0)
+        , _timeline(timeline)
         , _timelineTopPoly()
         , _timelineBtmPoly()
         , _timelineEnabled(false)
@@ -507,13 +505,13 @@ struct CurveWidgetPrivate{
         QPointF topLeft = _widget->toScaleCoordinates(0,0);
         QPointF btmRight = _widget->toScaleCoordinates(_widget->width()-1,_widget->height()-1);
 
-        QPointF btmCursorBtm(_timelineCurrent,btmRight.y());
+        QPointF btmCursorBtm(_timeline->currentFrame(),btmRight.y());
         QPointF btmcursorBtmWidgetCoord = _widget->toWidgetCoordinates(btmCursorBtm.x(),btmCursorBtm.y());
         QPointF btmCursorTop = _widget->toScaleCoordinates(btmcursorBtmWidgetCoord.x(), btmcursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
         QPointF btmCursorLeft = _widget->toScaleCoordinates(btmcursorBtmWidgetCoord.x() - CURSOR_WIDTH /2, btmcursorBtmWidgetCoord.y());
         QPointF btmCursorRight = _widget->toScaleCoordinates(btmcursorBtmWidgetCoord.x() + CURSOR_WIDTH / 2,btmcursorBtmWidgetCoord.y());
 
-        QPointF topCursortop(_timelineCurrent,topLeft.y());
+        QPointF topCursortop(_timeline->currentFrame(),topLeft.y());
         QPointF topcursorTopWidgetCoord = _widget->toWidgetCoordinates(topCursortop.x(),topCursortop.y());
         QPointF topCursorBtm = _widget->toScaleCoordinates(topcursorTopWidgetCoord.x(), topcursorTopWidgetCoord.y() + CURSOR_HEIGHT);
         QPointF topCursorLeft = _widget->toScaleCoordinates(topcursorTopWidgetCoord.x() - CURSOR_WIDTH /2, topcursorTopWidgetCoord.y());
@@ -543,13 +541,13 @@ struct CurveWidgetPrivate{
         glColor4f(0.8,0.3,0.,1.);
 
         glBegin(GL_LINES);
-        glVertex2f(_timelineLeftBound,btmRight.y());
-        glVertex2f(_timelineLeftBound,topLeft.y());
-        glVertex2f(_timelineRightBound,btmRight.y());
-        glVertex2f(_timelineRightBound,topLeft.y());
+        glVertex2f(_timeline->leftBound(),btmRight.y());
+        glVertex2f(_timeline->leftBound(),topLeft.y());
+        glVertex2f(_timeline->rightBound(),btmRight.y());
+        glVertex2f(_timeline->rightBound(),topLeft.y());
         glColor4f(0.95,0.58,0.,1.);
-        glVertex2f(_timelineCurrent,btmRight.y());
-        glVertex2f(_timelineCurrent,topLeft.y());
+        glVertex2f(_timeline->currentFrame(),btmRight.y());
+        glVertex2f(_timeline->currentFrame(),topLeft.y());
         glEnd();
 
         glDisable(GL_LINE_SMOOTH);
@@ -767,13 +765,13 @@ struct CurveWidgetPrivate{
             QPointF rightTanPt = _widget->toWidgetCoordinates((*it)->_rightTan.first,(*it)->_rightTan.second);
             if(pt.x() >= (leftTanPt.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
                     pt.x() <= (leftTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
-                    pt.y() >= (leftTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
-                    pt.y() <= (leftTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)){
+                    pt.y() <= (leftTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
+                    pt.y() >= (leftTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)){
                 return std::make_pair(CurveGui::LEFT_TANGENT,it);
             }else if(pt.x() >= (rightTanPt.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
                      pt.x() <= (rightTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
-                     pt.y() >= (rightTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
-                     pt.y() <= (rightTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)){
+                     pt.y() <= (rightTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
+                     pt.y() >= (rightTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)){
                 return std::make_pair(CurveGui::RIGHT_TANGENT,it);
             }
 
@@ -994,7 +992,7 @@ struct CurveWidgetPrivate{
 
 CurveWidget::CurveWidget(boost::shared_ptr<TimeLine> timeline, QWidget* parent, const QGLWidget* shareWidget)
     : QGLWidget(parent,shareWidget)
-    , _imp(new CurveWidgetPrivate(this))
+    , _imp(new CurveWidgetPrivate(timeline,this))
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setMouseTracking(true);
@@ -1237,15 +1235,26 @@ void CurveWidget::mousePressEvent(QMouseEvent *event){
             _imp->_selectedKeyFrames.push_back(selected);
         }else{
             
-            if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
-                _imp->_state = DRAGGING_VIEW;
+            std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator > selectedTan = _imp->isNearByTangent(event->pos());
+            if(selectedTan.second != _imp->_selectedKeyFrames.end()){
+                _imp->_state = DRAGGING_TANGENT;
             }else{
-                _imp->_drawSelectedKeyFramesBbox = false;
-                if(!event->modifiers().testFlag(Qt::ControlModifier)){
-                    _imp->_selectedKeyFrames.clear();
-                    
+
+                if(_imp->isNearbyTimelineBtmPoly(event->pos()) || _imp->isNearbyTimelineTopPoly(event->pos())){
+                    _imp->_state = DRAGGING_TIMELINE;
+                }else{
+
+                    if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
+                        _imp->_state = DRAGGING_VIEW;
+                    }else{
+                        _imp->_drawSelectedKeyFramesBbox = false;
+                        if(!event->modifiers().testFlag(Qt::ControlModifier)){
+                            _imp->_selectedKeyFrames.clear();
+
+                        }
+                        _imp->_state = SELECTING;
+                    }
                 }
-                _imp->_state = SELECTING;
             }
         }
     }
@@ -1266,16 +1275,21 @@ void CurveWidget::mouseReleaseEvent(QMouseEvent*){
     updateGL();
 }
 void CurveWidget::mouseMoveEvent(QMouseEvent *event){
-    std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > selectedKey = _imp->isNearbyKeyFrame(event->pos());
-
+    std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator > selectedTan = _imp->isNearByTangent(event->pos());
     if( _imp->_drawSelectedKeyFramesBbox && _imp->isNearbySelectedKeyFramesCrossWidget(event->pos())){
         setCursor(QCursor(Qt::SizeAllCursor));
     }
     else{
-        if(selectedKey.second){
+        std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > selectedKey = _imp->isNearbyKeyFrame(event->pos());
+
+        if(selectedKey.second || selectedTan.second != _imp->_selectedKeyFrames.end()){
             setCursor(QCursor(Qt::CrossCursor));
         }else{
-            setCursor(QCursor(Qt::ArrowCursor));
+            if(_imp->isNearbyTimelineBtmPoly(event->pos()) || _imp->isNearbyTimelineTopPoly(event->pos())){
+                setCursor(QCursor(Qt::SizeHorCursor));
+            }else{
+                setCursor(QCursor(Qt::ArrowCursor));
+            }
         }
     }
     
@@ -1328,6 +1342,10 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
             }
         }
         refreshSelectedKeysBbox();
+    }else if(_imp->_state == DRAGGING_TANGENT){
+
+    }else if(_imp->_state == DRAGGING_TIMELINE){
+        _imp->_timeline->seekFrame((SequenceTime)newClick_opengl.x(),NULL);
     }
     
     _imp->_zoomCtx._oldClick = newClick;
@@ -1716,14 +1734,10 @@ void CurveWidget::onTimeLineFrameChanged(SequenceTime time,int /*reason*/){
     if(!_imp->_timelineEnabled){
         _imp->_timelineEnabled = true;
     }
-    _imp->_timelineCurrent = time;
     _imp->refreshTimelinePositions();
     updateGL();
 }
-void CurveWidget::onTimeLineBoundariesChanged(SequenceTime left,SequenceTime right){
-
-    _imp->_timelineLeftBound = left;
-    _imp->_timelineRightBound = right;
+void CurveWidget::onTimeLineBoundariesChanged(SequenceTime,SequenceTime){
     updateGL();
 }
 
