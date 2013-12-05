@@ -15,6 +15,8 @@
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
 #include <QtCore/QRectF>
+#include <QtGui/QPolygonF>
+
 #include <boost/shared_ptr.hpp>
 
 #include "Global/GlobalDefines.h"
@@ -95,73 +97,16 @@ private:
 
 };
 
+struct SelectedKey;
+typedef std::list< boost::shared_ptr<SelectedKey> > SelectedKeys;
+
 class QMenu;
+struct CurveWidgetPrivate;
 class CurveWidget : public QGLWidget
 {
 
     Q_OBJECT
-    
-    enum EventState{
-        DRAGGING_VIEW = 0,
-        DRAGGING_KEYS = 1,
-        SELECTING = 2,
-        NONE = 3
-    };
-    
-    class ZoomContext{
-        
-    public:
 
-        
-        ZoomContext():
-        _bottom(0.)
-        ,_left(0.)
-        ,_zoomFactor(1.)
-        {}
-        
-        QPoint _oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
-        double _bottom; /// the bottom edge of orthographic projection
-        double _left; /// the left edge of the orthographic projection
-        double _zoomFactor; /// the zoom factor applied to the current image
-        
-        double _lastOrthoLeft,_lastOrthoBottom,_lastOrthoRight,_lastOrthoTop; //< remembers the last values passed to the glOrtho call
-        
-        /*!< the level of zoom used to display the frame*/
-        void setZoomFactor(double f){assert(f>0.); _zoomFactor = f;}
-        
-        double getZoomFactor() const {return _zoomFactor;}
-    };
-    
-    ZoomContext _zoomCtx;
-    EventState _state;
-    QMenu* _rightClickMenu;
-    QColor _clearColor;
-    QColor _baseAxisColor;
-    QColor _scaleColor;
-    QColor _selectedCurveColor;
-    QColor _nextCurveAddedColor;
-    Natron::TextRenderer _textRenderer;
-    QFont* _font;
-
-    typedef std::list<CurveGui* > Curves;
-    Curves _curves;
-    
-    typedef std::list< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > > SelectedKeys;
-    SelectedKeys _selectedKeyFrames;
-    bool _hasOpenGLVAOSupport;
-    
-    bool _mustSetDragOrientation;
-    QPoint _mouseDragOrientation; ///used to drag a key frame in only 1 direction (horizontal or vertical)
-                                  ///the value is either (1,0) or (0,1)
-
-    std::vector< std::pair<double,Variant> > _keyFramesClipBoard;
-    QRectF _selectionRectangle;
-    QPointF _selectionStartPoint;
-
-    bool _drawSelectedKeyFramesBbox;
-    QRectF _selectedKeyFramesBbox;
-
-    boost::shared_ptr<TimeLine> _timeline;
 public:
     
     /*Pass a null timeline ptr if you don't want interaction with the global timeline. */
@@ -169,14 +114,6 @@ public:
 
     virtual ~CurveWidget();
    
-    virtual void initializeGL();
-    
-    virtual void resizeGL(int width,int height);
-    
-    virtual void paintGL();
-    
-    virtual QSize sizeHint() const;
-    
     void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const;
 
     void centerOn(double xmin,double xmax,double ymin,double ymax);
@@ -199,13 +136,13 @@ public:
      **/
     QPointF toWidgetCoordinates(double x, double y) const;
 
-    const QColor& getSelectedCurveColor() const { return _selectedCurveColor; }
+    const QColor& getSelectedCurveColor() const ;
 
-    const QFont& getFont() const { return *_font; }
+    const QFont& getFont() const;
 
-    const SelectedKeys& getSelectedKeyFrames() const { return _selectedKeyFrames; }
+    const SelectedKeys& getSelectedKeyFrames() const ;
 
-    bool isSupportingOpenGLVAO() const { return _hasOpenGLVAOSupport; }
+    bool isSupportingOpenGLVAO() const ;
 
     void addKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key);
 
@@ -215,6 +152,7 @@ public:
 
     void setKeyPos(boost::shared_ptr<KeyFrame> key,double x,const Variant& y);
 
+    std::pair<SelectedKeys::const_iterator,bool> isKeySelected(boost::shared_ptr<KeyFrame> key) const;
 
 public slots:
 
@@ -244,11 +182,20 @@ public slots:
 
     void refreshSelectedKeysBbox();
 
-    void onTimeLineFrameChanged(SequenceTime,int);
+    void onTimeLineFrameChanged(SequenceTime time, int reason);
 
-    void onTimeLineBoundariesChanged(SequenceTime,SequenceTime);
+    void onTimeLineBoundariesChanged(SequenceTime left, SequenceTime right);
 
 protected:
+
+    virtual void initializeGL();
+
+    virtual void resizeGL(int width,int height);
+
+    virtual void paintGL();
+
+    virtual QSize sizeHint() const;
+
     virtual void mousePressEvent(QMouseEvent *event);
 
     virtual void mouseReleaseEvent(QMouseEvent *event);
@@ -263,45 +210,8 @@ protected:
 
 private:
 
-    /**
-     * @brief Returns an iterator pointing to a curve if a curve lies nearby the point 'pt' which is
-     * widget coordinates.
-    **/
-    Curves::const_iterator isNearbyCurve(const QPoint& pt) const;
-    
-    /**
-     * @brief Returns a pointer to a keyframe if a keyframe's tangent lies nearby the point 'pt' which is
-     * widget coordinates. The first member SelectedTangent indicates whether this is the left or right tangent.
-     **/
-    std::pair<CurveGui::SelectedTangent,boost::shared_ptr<KeyFrame> > isNearByTangent(const QPoint& pt) const;
-    
-    /**
-     * @brief Returns a pointer to a keyframe if a keyframe lies nearby the point 'pt' which is
-     * widget coordinates.
-     **/
-    std::pair<CurveGui *, boost::shared_ptr<KeyFrame> > isNearbyKeyFrame(const QPoint& pt) const;
-
-    /**
-     * @brief Selects the curve given in parameter and deselects any other curve in the widget.
-    **/
-    void selectCurve(CurveGui *curve);
-
-    void keyFramesWithinRect(const QRectF& rect,std::vector< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > >* keys) const;
-
-    void drawBaseAxis();
-    
-    void drawScale();
-    
-    void drawCurves();
-
-    void drawSelectionRectangle();
-
-    void drawSelectedKeyFramesBbox();
-
-    void createMenu();
-
-    void drawTimelineMarkers();
-    
+    boost::scoped_ptr<CurveWidgetPrivate> _imp;
+        
 };
 
 
