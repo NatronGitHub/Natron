@@ -64,6 +64,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/LineEdit.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/ScaleSlider.h"
+#include "Gui/KnobGuiTypes.h"
 
 #include "Readers/Reader.h"
 
@@ -155,21 +156,24 @@ void KnobGui::setSetKeyActionEnabled(bool e){
 }
 
 void KnobGui::setSecret() {
-#warning "FIXME: if the Knob is within a group, only show it if the group is unfolded!"
-    // FIXME: if the Knob is within a group, only show it if the group is unfolded!
-    //It is not fixed.
-    //try TuttlePinning: fold all groups, then switch from perspective to affine to perspective.
-    //you will see that it is NOT fixed.
-    //VISIBILITY is different from SECRETNESS. The code considers that both things are equivalent, which is wrong.
-    // the code should also check if it is within a *group* and if the *group* is checked or not. if it is
-    // not checked, don't show.
-    // the problem is to get the parent GUI Knob, not the Knob itself.
-    // The only way I see would be to add a _group member to KnobGui.
+    // If the Knob is within a group, only show it if the group is unfolded!
+    // To test it:
+    // try TuttlePinning: fold all groups, then switch from perspective to affine to perspective.
+    //  VISIBILITY is different from SECRETNESS. The code considers that both things are equivalent, which is wrong.
     // Of course, this check has to be *recursive* (in case the group is within a folded group)
-    if (!_knob->isSecret()) {
-        if(_knob->getParentKnob() && _knob->getParentKnob()->isSecret()){
-            return;
+    bool showit = !_knob->isSecret();
+    Knob* parentKnob = _knob->getParentKnob();
+    while (showit && parentKnob && parentKnob->typeName() == "Group") {
+        Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(_container->findKnobGuiOrCreate(parentKnob));
+        assert(parentGui);
+        // check for secretness and visibility of the group
+        if (parentKnob->isSecret() || !parentGui->isChecked()) {
+            showit = false; // one of the including groups is folder, so this item is hidden
         }
+        // prepare for next loop iteration
+        parentKnob = parentKnob->getParentKnob();
+    }
+    if (showit) {
         show(); //
     } else {
         hide();

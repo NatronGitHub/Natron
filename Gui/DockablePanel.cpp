@@ -209,17 +209,30 @@ void DockablePanel::initializeKnobs(){
                  gui->setParent(parentTab->second.first);
                  if(!gui->triggerNewLine() && i!=0) --parentTab->second.second;
                  gui->createGUI(dynamic_cast<QGridLayout*>(parentTab->second.first->layout()),parentTab->second.second);
-                 if(parentKnob && parentKnob->typeName() == "Group"){
-#warning "FIXME: if the Knob is within a group, only show it if the group is unfolded!"
-                     // FIXME: this should be done recursively
+                 // if this knob is within a group, check that the group is visible, i.e. the toplevel group is unfolded
+                 if (parentKnob && parentKnob->typeName() == "Group") {
                      Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
+                     assert(parentGui);
                      parentGui->addKnob(gui,parentTab->second.second,offsetColumn);
-                     if (parentGui->isChecked()) {
-                         gui->show();
-                     }else{
-                         gui->hide();
+                     bool showit = true;
+                     // see KnobGui::setSecret() for a very similar code
+                     while (showit && parentKnob && parentKnob->typeName() == "Group") {
+                         assert(parentGui);
+                         // check for secretness and visibility of the group
+                         if (parentKnob->isSecret() || !parentGui->isChecked()) {
+                             showit = false; // one of the including groups is folder, so this item is hidden
+                         }
+                         // prepare for next loop iteration
+                         parentKnob = parentKnob->getParentKnob();
+                         if (parentKnob) {
+                             parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
+                         }
                      }
-                     
+                     if (showit) {
+                         gui->show();
+                     } else {
+                         //gui->hide(); // already hidden? please comment if it's not.
+                     }
                  }
                  
 
@@ -328,7 +341,8 @@ Button* DockablePanel::insertHeaderButton(int headerPosition){
     return ret;
 }
 
-KnobGui* DockablePanel::findKnobGuiOrCreate(Knob* knob){
+KnobGui* DockablePanel::findKnobGuiOrCreate(Knob* knob) {
+    assert(knob);
     for (std::map<Knob*,KnobGui*>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
         if(it->first == knob){
             return it->second;

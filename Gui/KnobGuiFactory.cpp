@@ -171,6 +171,7 @@ void KnobGuiFactory::loadBultinKnobs()
 
 KnobGui *KnobGuiFactory::createGuiForKnob(Knob *knob, DockablePanel *container) const
 {
+    assert(knob);
     std::map<std::string, LibraryBinary *>::const_iterator it = _loadedKnobs.find(knob->typeName());
     if (it == _loadedKnobs.end()) {
         return NULL;

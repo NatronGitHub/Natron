@@ -106,7 +106,11 @@ public:
     QVBoxLayout* getContainer() const {return _container;}
     
     void pushUndoCommand(QUndoCommand* cmd);
-    
+
+    /*Search an existing knob GUI in the map, otherwise creates
+     the gui for the knob.*/
+    KnobGui* findKnobGuiOrCreate(Knob* knob);
+
 public slots:
     
     /*Internal slot, not meant to be called externally.*/
@@ -166,11 +170,7 @@ signals:
     void closed();
     
 private:
-    
-    /*Search an existing knob GUI in the map, otherwise creates
-     the gui for the knob.*/
-    KnobGui* findKnobGuiOrCreate(Knob* knob);
-       
+
 };
 
 class NodeSettingsPanel : public DockablePanel
