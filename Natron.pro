@@ -117,14 +117,22 @@ SOURCES += \
     Global/AppManager.cpp \
     Global/LibraryBinary.cpp \
     Global/main.cpp \
+    Gui/AnimatedCheckBox.cpp \
+    Gui/Button.cpp \
+    Gui/ClickableLabel.cpp \
     Gui/ComboBox.cpp \
     Gui/CurveEditor.cpp \
     Gui/CurveWidget.cpp \
     Gui/Edge.cpp \
+    Gui/GroupBoxLabel.cpp \
     Gui/Gui.cpp \
     Gui/InfoViewerWidget.cpp \
     Gui/KnobGui.cpp \
     Gui/KnobGuiFactory.cpp \
+    Gui/KnobGuiFile.cpp \
+    Gui/KnobGuiTypes.cpp \
+    Gui/KnobUndoCommand.cpp \
+    Gui/LineEdit.cpp \
     Gui/NodeGraph.cpp \
     Gui/NodeGui.cpp \
     Gui/ScaleSlider.cpp \
@@ -208,15 +216,21 @@ HEADERS += \
     Global/Macros.h \
     Global/MemoryInfo.h \
     Global/QtCompat.h \
+    Gui/AnimatedCheckBox.h \
     Gui/Button.h \
+    Gui/ClickableLabel.h \
     Gui/ComboBox.h \
     Gui/CurveEditor.h \
     Gui/CurveWidget.h \
     Gui/Edge.h \
+    Gui/GroupBoxLabel.h \
     Gui/Gui.h \
     Gui/InfoViewerWidget.h \
     Gui/KnobGui.h \
     Gui/KnobGuiFactory.h \
+    Gui/KnobGuiFile.h \
+    Gui/KnobGuiTypes.h \
+    Gui/KnobUndoCommand.h \
     Gui/LineEdit.h \
     Gui/NodeGraph.h \
     Gui/NodeGui.h \

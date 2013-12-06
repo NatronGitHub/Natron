@@ -18,6 +18,8 @@
 #include "Engine/KnobFile.h"
 
 #include "Gui/KnobGui.h"
+#include "Gui/KnobGuiFile.h"
+#include "Gui/KnobGuiTypes.h"
 #include "Gui/DockablePanel.h"
 
 using namespace Natron;

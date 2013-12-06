@@ -10,11 +10,10 @@
 
 #include "ScaleSlider.h"
 
-#include "Global/Macros.h" // for CLANG_DIAG_OFF
-
 #include <cassert>
 #include <qlayout.h>
 #if QT_VERSION < 0x050000
+#include "Global/Macros.h"
 CLANG_DIAG_OFF(unused-private-field);
 #include <QtGui/qmime.h>
 CLANG_DIAG_ON(unused-private-field);
@@ -31,8 +30,8 @@ CLANG_DIAG_ON(unused-private-field);
 
 
 
-ScaleSlider::ScaleSlider(double bottom, double top, double initialPos, Natron::Scale_Type type, QWidget* parent):
-QGLWidget(parent,NULL)
+ScaleSlider::ScaleSlider(double bottom, double top, double initialPos, Natron::Scale_Type type, QWidget* parent)
+: QGLWidget(parent,NULL)
 , _zoomCtx()
 , _textRenderer()
 , _minimum(bottom)

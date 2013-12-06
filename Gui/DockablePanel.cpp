@@ -28,6 +28,7 @@
 
 #include "Gui/NodeGui.h"
 #include "Gui/KnobGui.h"
+#include "Gui/KnobGuiTypes.h" // for Group_KnobGui
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/LineEdit.h"
 #include "Gui/Button.h"
@@ -209,6 +210,8 @@ void DockablePanel::initializeKnobs(){
                  if(!gui->triggerNewLine() && i!=0) --parentTab->second.second;
                  gui->createGUI(dynamic_cast<QGridLayout*>(parentTab->second.first->layout()),parentTab->second.second);
                  if(parentKnob && parentKnob->typeName() == "Group"){
+#warning "FIXME: if the Knob is within a group, only show it if the group is unfolded!"
+                     // FIXME: this should be done recursively
                      Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
                      parentGui->addKnob(gui,parentTab->second.second,offsetColumn);
                      if (parentGui->isChecked()) {

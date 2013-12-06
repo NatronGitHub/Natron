@@ -13,55 +13,27 @@
 #define NATRON_GUI_LINEEDIT_H_
 
 #include <QLineEdit>
-#include <QDragEnterEvent>
-#include <QDragLeaveEvent>
-#include <QDragMoveEvent>
-#include <QDropEvent>
-#include <QUrl>
-#include <QMimeData>
 
 class QPaintEvent;
+class QDropEvent;
+class QDragEnterEvent;
+class QDragMoveEvent;
+class QDragLeaveEvent;
+
 class LineEdit : public QLineEdit {
 public:
-    explicit LineEdit(QWidget* parent = 0):QLineEdit(parent){ setAttribute(Qt::WA_MacShowFocusRect,0);}
-    virtual ~LineEdit(){}
+    explicit LineEdit(QWidget* parent = 0);
+    virtual ~LineEdit();
     
-    virtual void paintEvent(QPaintEvent* e){
-        QPalette p = this->palette();
-        QColor c(200,200,200,255);
-        p.setColor( QPalette::Highlight, c );
-        p.setColor( QPalette::HighlightedText, c );
-        this->setPalette( p );
-        QLineEdit::paintEvent(e);
-    }
-    
-    void dropEvent(QDropEvent* event){
-        if(!event->mimeData()->hasUrls())
-            return;
-        
-        QList<QUrl> urls = event->mimeData()->urls();
-        QString path;
-        if(urls.size() > 0){
-            path = urls.at(0).path();
-        }
-        if(!path.isEmpty()){
-            setText(path);
-            
-        }
+    virtual void paintEvent(QPaintEvent* e);
 
-    }
-    
-    void dragEnterEvent(QDragEnterEvent *ev){
-        ev->accept();
-    }
-    
-    void dragMoveEvent(QDragMoveEvent* e){
-        e->accept();
-    }
-    
-    void dragLeaveEvent(QDragLeaveEvent* e){
-        e->accept();
-    }
+    void dropEvent(QDropEvent* event);
+
+    void dragEnterEvent(QDragEnterEvent *ev);
+
+    void dragMoveEvent(QDragMoveEvent* e);
+
+    void dragLeaveEvent(QDragLeaveEvent* e);
 };
 
 

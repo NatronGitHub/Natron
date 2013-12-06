@@ -6,7 +6,7 @@
 #include <map>
 
 #include <QtCore>
-#include <QtGui>
+//#include <QtGui>
 
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
