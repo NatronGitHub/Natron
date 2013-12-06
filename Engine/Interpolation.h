@@ -48,7 +48,7 @@ T interpolate(double tcur, const T vcur, //start control point
         tcur = tnext - 1.;
     }
     if (interpNext == KEYFRAME_NONE) {
-        tnext = tcur - 1;
+        tnext = tcur + 1;
     }
     const double t = (currentTime - tcur)/(tnext - tcur);
     const double t2 = t * t;

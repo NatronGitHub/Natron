@@ -927,6 +927,13 @@ struct CurveWidgetPrivate{
         assert(cur != keys.end());
         double dy = key->_key->getValue().toDouble() - pos.y();
         double dx = key->_key->getTime() - pos.x();
+#warning "FIXME: handle first and last keyframe correctly"
+        // TODO: handle first and last keyframe correctly:
+        // - if their interpolation was KEYFRAME_CATMULL_ROM or KEYFRAME_CUBIC, then it becomes KEYFRAME_FREE
+        // - in all other cases it becomes KEYFRAME_BROKEN
+        // For other keyframes:
+        // - if they KEYFRAME_BROKEN, move only one tangent
+        // - else change to KEYFRAME_FREE and move both tangents
         if(key->_key->getInterpolation() != Natron::KEYFRAME_BROKEN){
             key->_key->setInterpolation(Natron::KEYFRAME_FREE);
 
