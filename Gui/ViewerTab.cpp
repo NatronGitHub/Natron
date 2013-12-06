@@ -21,6 +21,7 @@
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QAbstractItemView>
+#include <QCoreApplication>
 #if QT_VERSION < 0x050000
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(unused-private-field);
@@ -51,9 +52,9 @@ CLANG_DIAG_ON(unused-private-field);
 using namespace Natron;
 
 ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(parent),
-    _gui(gui),
-    _viewerNode(node),
-    _channelsToDraw(Mask_RGBA)
+_gui(gui),
+_viewerNode(node),
+_channelsToDraw(Mask_RGBA)
 {
     
     installEventFilter(this);
@@ -274,7 +275,7 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     play_Forward_Button->setToolTip(tooltip);
     play_Forward_Button->setCheckable(true);
     _playerLayout->addWidget(play_Forward_Button);
-
+    
     
     nextKeyFrame_Button = new Button(_playerButtonsContainer);
     nextKeyFrame_Button->hide();
@@ -347,7 +348,7 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
                        "Enter here the desired playback rate.");
     _playerLayout->addWidget(fpsBox);
     
-
+    
     QPixmap pixFirst;
     QPixmap pixPrevKF;
     QPixmap pixRewind;
@@ -379,7 +380,7 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     appPTR->getIcon(Natron::VIEWER_CENTER_PIXMAP,&pixCenterViewer);
     appPTR->getIcon(Natron::PLAYER_LOOP_MODE_PIXMAP,&pixLoopMode);
     appPTR->getIcon(Natron::VIEWER_CLIP_TO_PROJECT_PIXMAP,&pixClipToProject);
-
+    
     firstFrame_Button->setIcon(QIcon(pixFirst));
     previousKeyFrame_Button->setIcon(QIcon(pixPrevKF));
     play_Backward_Button->setIcon(QIcon(pixRewind));
@@ -459,7 +460,7 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(pare
     QObject::connect(_clipToProjectFormatButton,SIGNAL(clicked(bool)),this,SLOT(onClipToProjectButtonToggle(bool)));
     
     QObject::connect(_viewsComboBox,SIGNAL(currentIndexChanged(int)),this,SLOT(showView(int)));
-
+    
 }
 
 void ViewerTab::updateViewsMenu(int count){
@@ -596,7 +597,7 @@ void ViewerTab::onCurrentTimeSpinBoxChanged(double time){
 void ViewerTab::centerViewer(){
     if(viewer->displayingImage()){
         _viewerNode->refreshAndContinueRender(true);
-
+        
     }else{
         viewer->fitToFormat(viewer->getDisplayWindow());
         viewer->updateGL();
@@ -616,9 +617,13 @@ ViewerTab::~ViewerTab()
 
 
 void ViewerTab::keyPressEvent ( QKeyEvent * event ){
-    
-    
-    if(event->key() == Qt::Key_Y){
+
+    if(event->key() == Qt::Key_Space){
+        if(parentWidget()){
+            QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
+            QCoreApplication::postEvent(parentWidget(),ev);
+        }
+    }else if(event->key() == Qt::Key_Y){
         _viewerChannels->setCurrentIndex(0);
     }else if(event->key() == Qt::Key_R && event->modifiers() == Qt::ShiftModifier ){
         _viewerChannels->setCurrentIndex(1);
@@ -633,18 +638,20 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
     }else if(event->key() == Qt::Key_J){
         startBackward(!play_Backward_Button->isDown());
     }
-    else if(event->key() == Qt::Key_Left){
+    else if(event->key() == Qt::Key_Left && !event->modifiers().testFlag(Qt::ShiftModifier)
+                                         && !event->modifiers().testFlag(Qt::ControlModifier)){
         previousFrame();
     }
     else if(event->key() == Qt::Key_K){
         abortRendering();
     }
-    else if(event->key() == Qt::Key_Right){
+    else if(event->key() == Qt::Key_Right  && !event->modifiers().testFlag(Qt::ShiftModifier)
+                                            && !event->modifiers().testFlag(Qt::ControlModifier)){
         nextFrame();
     }
     else if(event->key() == Qt::Key_L){
         startPause(!play_Forward_Button->isDown());
-
+        
     }else if(event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ShiftModifier)){
         //prev incr
         previousIncrement();
@@ -669,7 +676,7 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
         //next key
     } else if(event->key() == Qt::Key_F){
         centerViewer();
-
+        
     }else if(event->key() == Qt::Key_C){
         onClipToProjectButtonToggle(!_clipToProjectFormatButton->isDown());
     }
@@ -681,26 +688,26 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
 
 void ViewerTab::onViewerChannelsChanged(int i){
     switch (i) {
-    case 0:
-        _channelsToDraw = Mask_RGBA;
-        break;
-    case 1:
-        _channelsToDraw = Mask_RGBA;
-        break;
-    case 2:
-        _channelsToDraw = Channel_red;
-        break;
-    case 3:
-        _channelsToDraw = Channel_green;
-        break;
-    case 4:
-        _channelsToDraw = Channel_blue;
-        break;
-    case 5:
-        _channelsToDraw = Channel_alpha;
-        break;
-    default:
-        break;
+        case 0:
+            _channelsToDraw = Mask_RGBA;
+            break;
+        case 1:
+            _channelsToDraw = Mask_RGBA;
+            break;
+        case 2:
+            _channelsToDraw = Channel_red;
+            break;
+        case 3:
+            _channelsToDraw = Channel_green;
+            break;
+        case 4:
+            _channelsToDraw = Channel_blue;
+            break;
+        case 5:
+            _channelsToDraw = Channel_alpha;
+            break;
+        default:
+            break;
     }
     viewer->setDisplayChannel(_channelsToDraw, !i ? true : false);
 }
