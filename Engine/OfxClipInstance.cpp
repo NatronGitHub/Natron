@@ -99,11 +99,14 @@ double OfxClipInstance::getFrameRate() const
 //  The frame range over which a clip has images.
 void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
 {
+    assert(_nodeInstance);
     SequenceTime first,last;
     EffectInstance* n = getAssociatedNode();
-    if(n){
+    if(n) {
        n->getFrameRange(&first, &last);
-    }else{
+    } else {
+        assert(_nodeInstance->getApp());
+        assert(_nodeInstance->getApp()->getTimeLine());
         first = _nodeInstance->getApp()->getTimeLine()->leftBound();
         last = _nodeInstance->getApp()->getTimeLine()->rightBound();
     }
@@ -170,7 +173,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         ret.x2 = rod.right();
         ret.y1 = rod.bottom();
         ret.y2 = rod.top();
-    } else if(_nodeInstance->effectInstance()) {
+    } else if(_nodeInstance && _nodeInstance->effectInstance()) {
         _nodeInstance->effectInstance()->getProjectOffset(ret.x1, ret.y1);
         _nodeInstance->effectInstance()->getProjectExtent(ret.x2, ret.y2);
     } else {

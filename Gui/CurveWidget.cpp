@@ -94,10 +94,10 @@ boost::shared_ptr<KeyFrame> CurveGui::nextPointForSegment(double x1, double* x2)
         *x2 = xminCurveWidgetCoord;
     }else if(x1 >= xmaxCurveWidgetCoord){
         *x2 = _curveWidget->width() - 1;
-    }else{
+    }else {
         //we're between 2 keyframes,get the upper and lower
         Curve::KeyFrames::const_iterator upper = keys.end();
-        double upperWidgetCoord;
+        double upperWidgetCoord = x1;
         for(Curve::KeyFrames::const_iterator it = keys.begin();it!=keys.end();++it){
             upperWidgetCoord = _curveWidget->toWidgetCoordinates((*it)->getTime(),0).x();
             if(upperWidgetCoord > x1){
