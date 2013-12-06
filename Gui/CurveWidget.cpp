@@ -914,6 +914,11 @@ struct CurveWidgetPrivate{
         }else{
             _widget->refreshSelectedKeysBbox();
         }
+        
+        //refresh now the tangents positions
+        for(SelectedKeys::iterator it = _selectedKeyFrames.begin();it != _selectedKeyFrames.end();++it){
+            refreshKeyTangentsGUI(*it);
+        }
     }
 
     void moveSelectedTangent(const QPointF& pos){
@@ -1805,13 +1810,7 @@ void CurveWidget::enterEvent(QEvent */*event*/){
 
 void CurveWidget::setKeyPos(boost::shared_ptr<KeyFrame> key, double x, const Variant& y){
     key->setTimeAndValue(x,y);
-    //if selected refresh its tangent positions
-    for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin();it != _imp->_selectedKeyFrames.end();++it){
-        if((*it)->_key == key){
-            _imp->refreshKeyTangentsGUI(*it);
-            break;
-        }
-    }
+    
 }
 
 void CurveWidget::constantInterpForSelectedKeyFrames(){
