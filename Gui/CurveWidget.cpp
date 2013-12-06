@@ -1391,18 +1391,7 @@ void CurveWidget::mousePressEvent(QMouseEvent *event) {
         // no need to updateGL()
         return;
     }
-#warning "FIXME: please explain what a click on a curve should do, and why it doesn't return afterwards"
-    ////
-    // is the click near a curve?
-    //CurveWidgetPrivate::Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve(event->pos());
-    //if (foundCurveNearby != _imp->_curves.end()) {
-    //    // yes, select it
-    //    _imp->selectCurve(*foundCurveNearby);
-    //    // and then????
-    //    // probably updateGL();?
-    //    // why not return??
-    //}
-    ////
+
     // is the click near the multiple-keyframes selection box center?
     if( _imp->_drawSelectedKeyFramesBbox && _imp->isNearbySelectedKeyFramesCrossWidget(event->pos())) {
         // yes, start dragging
@@ -1458,6 +1447,20 @@ void CurveWidget::mousePressEvent(QMouseEvent *event) {
         // no need to updateGL()
         return;
     }
+    
+    ////
+    // is the click near a curve?
+    CurveWidgetPrivate::Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve(event->pos());
+    if (foundCurveNearby != _imp->_curves.end()) {
+        // yes, select it and don't start any other action, the user can then do per-curve specific actions
+        // like centering on it on the viewport or pasting previously copied keyframes.
+        // This is kind of the last resort action before the default behaviour (which is to draw
+        // a selection rectangle), because we'd rather select a keyframe than the nearby curve 
+        _imp->selectCurve(*foundCurveNearby);
+        updateGL();
+        return;
+    }
+    
     ////
     // default behaviour: unselect selected keyframes, if any, and start a new selection
     _imp->_drawSelectedKeyFramesBbox = false;

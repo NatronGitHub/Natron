@@ -159,6 +159,8 @@ protected:
     
     virtual void keyPressEvent(QKeyEvent* e);
     
+    virtual void enterEvent(QEvent*) { setFocus(); }
+    
 };
 
 #endif // NATRON_GUI_VIEWERTAB_H_
