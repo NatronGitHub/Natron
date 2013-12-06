@@ -1366,67 +1366,105 @@ void CurveWidget::renderText(double x,double y,const QString& text,const QColor&
 }
 
 
+//
+// Decide what should be done in response to a mouse press.
+// When the reason is found, process it and return.
+// (this function has as many return points as there are reasons)
+//
+void CurveWidget::mousePressEvent(QMouseEvent *event) {
 
-void CurveWidget::mousePressEvent(QMouseEvent *event){
-    _imp->_mustSetDragOrientation = true;
-    
-    if(event->button() == Qt::RightButton){
+    ////
+    // right button: popup menu
+    if (event->button() == Qt::RightButton) {
         _imp->_rightClickMenu->exec(mapToGlobal(event->pos()));
+        // no need to set _imp->_zoomCtx._oldClick
+        // no need to set _imp->_dragStartPoint
+        // no need to updateGL()
         return;
     }
-    
-    CurveWidgetPrivate::Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve(event->pos());
-    if(foundCurveNearby != _imp->_curves.end()){
-        _imp->selectCurve(*foundCurveNearby);
+    ////
+    // middle button: scroll view
+    if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
+        _imp->_state = DRAGGING_VIEW;
+        _imp->_zoomCtx._oldClick = event->pos();
+        // no need to set _imp->_dragStartPoint
+        // no need to updateGL()
+        return;
     }
-    
-    std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > selectedKey = _imp->isNearbyKeyFrame(event->pos());
-    if( _imp->_drawSelectedKeyFramesBbox && _imp->isNearbySelectedKeyFramesCrossWidget(event->pos())){
+#warning "FIXME: please explain what a click on a curve should do, and why it doesn't return afterwards"
+    ////
+    // is the click near a curve?
+    //CurveWidgetPrivate::Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve(event->pos());
+    //if (foundCurveNearby != _imp->_curves.end()) {
+    //    // yes, select it
+    //    _imp->selectCurve(*foundCurveNearby);
+    //    // and then????
+    //    // probably updateGL();?
+    //    // why not return??
+    //}
+    ////
+    // is the click near the multiple-keyframes selection box center?
+    if( _imp->_drawSelectedKeyFramesBbox && _imp->isNearbySelectedKeyFramesCrossWidget(event->pos())) {
+        // yes, start dragging
+        _imp->_mustSetDragOrientation = true;
         _imp->_state = DRAGGING_KEYS;
         _imp->updateSelectedKeysMaxMovement();
+        _imp->_zoomCtx._oldClick = event->pos();
+        _imp->_dragStartPoint = event->pos();
+        // no need to updateGL()
+        return;
     }
-    else{
-
-        if(selectedKey.second){
-            _imp->_drawSelectedKeyFramesBbox = false;
-            _imp->_state = DRAGGING_KEYS;
-            setCursor(QCursor(Qt::CrossCursor));
-            if(!event->modifiers().testFlag(Qt::ControlModifier)){
-                _imp->_selectedKeyFrames.clear();
-                
-            }
-            boost::shared_ptr<SelectedKey> selected(new SelectedKey);
-            selected->_curve = selectedKey.first;
-            selected->_key = selectedKey.second;
-            _imp->refreshKeyTangentsGUI(selected);
-            _imp->_selectedKeyFrames.push_back(selected);
-            _imp->updateSelectedKeysMaxMovement();
-        }else{
-            
-            std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator > selectedTan = _imp->isNearByTangent(event->pos());
-            if(selectedTan.second != _imp->_selectedKeyFrames.end()){
-                _imp->_state = DRAGGING_TANGENT;
-                _imp->_selectedTangent = selectedTan;
-            }else{
-
-                if(_imp->isNearbyTimelineBtmPoly(event->pos()) || _imp->isNearbyTimelineTopPoly(event->pos())){
-                    _imp->_state = DRAGGING_TIMELINE;
-                }else{
-
-                    if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
-                        _imp->_state = DRAGGING_VIEW;
-                    }else{
-                        _imp->_drawSelectedKeyFramesBbox = false;
-                        if(!event->modifiers().testFlag(Qt::ControlModifier)){
-                            _imp->_selectedKeyFrames.clear();
-
-                        }
-                        _imp->_state = SELECTING;
-                    }
-                }
-            }
+    ////
+    // is the click near a keyframe manipulator?
+    std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > selectedKey = _imp->isNearbyKeyFrame(event->pos());
+    if(selectedKey.second) {
+        _imp->_drawSelectedKeyFramesBbox = false;
+        _imp->_mustSetDragOrientation = true;
+        _imp->_state = DRAGGING_KEYS;
+        setCursor(QCursor(Qt::CrossCursor));
+        if (!event->modifiers().testFlag(Qt::ControlModifier)) {
+            _imp->_selectedKeyFrames.clear();
         }
+        boost::shared_ptr<SelectedKey> selected(new SelectedKey);
+        selected->_curve = selectedKey.first;
+        selected->_key = selectedKey.second;
+        _imp->refreshKeyTangentsGUI(selected);
+        _imp->_selectedKeyFrames.push_back(selected);
+        _imp->updateSelectedKeysMaxMovement();
+        _imp->_zoomCtx._oldClick = event->pos();
+        _imp->_dragStartPoint = event->pos();
+        updateGL(); // the keyframe changes color and the tangents must be drawn
+        return;
     }
+    ////
+    // is the click near a tangent manipulator?
+    std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator > selectedTan = _imp->isNearByTangent(event->pos());
+    if (selectedTan.second != _imp->_selectedKeyFrames.end()) {
+        _imp->_mustSetDragOrientation = true;
+        _imp->_state = DRAGGING_TANGENT;
+        _imp->_selectedTangent = selectedTan;
+        _imp->_zoomCtx._oldClick = event->pos();
+        //no need to set _imp->_dragStartPoint
+        updateGL();
+        return;
+    }
+    ////
+    // is the click near the vertical current time marker?
+    if(_imp->isNearbyTimelineBtmPoly(event->pos()) || _imp->isNearbyTimelineTopPoly(event->pos())) {
+        _imp->_mustSetDragOrientation = true;
+        _imp->_state = DRAGGING_TIMELINE;
+        _imp->_zoomCtx._oldClick = event->pos();
+        // no need to set _imp->_dragStartPoint
+        // no need to updateGL()
+        return;
+    }
+    ////
+    // default behaviour: unselect selected keyframes, if any, and start a new selection
+    _imp->_drawSelectedKeyFramesBbox = false;
+    if(!event->modifiers().testFlag(Qt::ControlModifier)){
+        _imp->_selectedKeyFrames.clear();
+    }
+    _imp->_state = SELECTING;
     _imp->_zoomCtx._oldClick = event->pos();
     _imp->_dragStartPoint = event->pos();
     updateGL();
@@ -1443,6 +1481,7 @@ void CurveWidget::mouseReleaseEvent(QMouseEvent*){
     
     updateGL();
 }
+
 void CurveWidget::mouseMoveEvent(QMouseEvent *event){
 
     //set cursor depending on the situation
@@ -1473,6 +1512,14 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
             }
         }
     }
+
+    if (_imp->_state == NONE) {
+        // nothing else to do
+        return;
+    }
+
+    // after this point , only mouse dragging situations are handled
+    assert(_imp->_state != NONE);
 
     if(_imp->_mustSetDragOrientation){
         QPointF diff(event->pos() - _imp->_dragStartPoint);
@@ -1518,7 +1565,7 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
         break;
 
     case NONE:
-    default:
+        assert(0);
         break;
     }
 
