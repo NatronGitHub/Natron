@@ -1627,42 +1627,66 @@ void CurveWidget::wheelEvent(QWheelEvent *event){
     if (event->orientation() != Qt::Vertical) {
         return;
     }
-    
-    if(event->modifiers().testFlag(Qt::AltModifier)){
-        if(event->delta() > 0){
-            _imp->_zoomCtx._aspectRatio += 0.1;
-        }else{
-            _imp->_zoomCtx._aspectRatio -= 0.1;
-        }
-        if(_imp->_zoomCtx._aspectRatio < 0.1){
-            _imp->_zoomCtx._aspectRatio = 0.1;
-        }
-        if(_imp->_zoomCtx._aspectRatio > 2.){
-            _imp->_zoomCtx._aspectRatio = 2.;
-        }
-        updateGL();
-    }else{
-        double newZoomFactor;
-        if (event->delta() > 0) {
-            newZoomFactor = _imp->_zoomCtx._zoomFactor*std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
-        } else {
-            newZoomFactor = _imp->_zoomCtx._zoomFactor/std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, -event->delta());
-        }
-        if (newZoomFactor <= 0.01) {
-            newZoomFactor = 0.01;
-        } else if (newZoomFactor > 1024.) {
-            newZoomFactor = 1024.;
-        }
-        QPointF zoomCenter = toScaleCoordinates(event->x(), event->y());
-        double zoomRatio =   _imp->_zoomCtx._zoomFactor / newZoomFactor;
-        _imp->_zoomCtx._left = zoomCenter.x() - (zoomCenter.x() - _imp->_zoomCtx._left)*zoomRatio ;
-        _imp->_zoomCtx._bottom = zoomCenter.y() - (zoomCenter.y() - _imp->_zoomCtx._bottom)*zoomRatio;
-        
-        _imp->_zoomCtx._zoomFactor = newZoomFactor;
-        updateGL();
 
+    const double oldAspectRatio = _imp->_zoomCtx._aspectRatio;
+    const double oldZoomFactor = _imp->_zoomCtx._zoomFactor;
+    double newAspectRatio = oldAspectRatio;
+    double newZoomFactor = oldZoomFactor;
+
+    if (event->modifiers().testFlag(Qt::AltModifier) && event->modifiers().testFlag(Qt::ShiftModifier)) {
+        if (event->delta() > 0) {
+            newAspectRatio *= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+        } else {
+            newAspectRatio /= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, -event->delta());
+        }
+        if (newAspectRatio <= 0.0001) {
+            newAspectRatio = 0.0001;
+        } else if (newAspectRatio > 10000.) {
+            newAspectRatio = 10000.;
+        }
+    } else if (event->modifiers().testFlag(Qt::AltModifier)) {
+        if (event->delta() > 0) {
+            newAspectRatio *= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+            newZoomFactor *= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+        } else {
+            newAspectRatio /= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, -event->delta());
+            newZoomFactor /= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, -event->delta());
+        }
+        if (newZoomFactor <= 0.0001) {
+            newAspectRatio *= 0.0001/newZoomFactor;
+            newZoomFactor = 0.0001;
+        } else if (newZoomFactor > 10000.) {
+            newAspectRatio *= 10000./newZoomFactor;
+            newZoomFactor = 10000.;
+        }
+        if (newAspectRatio <= 0.0001) {
+            newZoomFactor *= 0.0001/newAspectRatio;
+            newAspectRatio = 0.0001;
+        } else if (newAspectRatio > 10000.) {
+            newZoomFactor *= 10000./newAspectRatio;
+            newAspectRatio = 10000.;
+        }
+    } else  {
+        if (event->delta() > 0) {
+            newZoomFactor *= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+        } else {
+            newZoomFactor /= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, -event->delta());
+        }
+        if (newZoomFactor <= 0.0001) {
+            newZoomFactor = 0.0001;
+        } else if (newZoomFactor > 10000.) {
+            newZoomFactor = 10000.;
+        }
     }
-    
+    QPointF zoomCenter = toScaleCoordinates(event->x(), event->y());
+    double zoomRatio =  oldZoomFactor / newZoomFactor;
+    double aspectRatioRatio =  oldAspectRatio / newAspectRatio;
+    _imp->_zoomCtx._left = zoomCenter.x() - (zoomCenter.x() - _imp->_zoomCtx._left)*zoomRatio ;
+    _imp->_zoomCtx._bottom = zoomCenter.y() - (zoomCenter.y() - _imp->_zoomCtx._bottom)*zoomRatio/aspectRatioRatio;
+
+    _imp->_zoomCtx._aspectRatio = newAspectRatio;
+    _imp->_zoomCtx._zoomFactor = newZoomFactor;
+    updateGL();
 }
 
 QPointF CurveWidget::toScaleCoordinates(double x,double y) const {
