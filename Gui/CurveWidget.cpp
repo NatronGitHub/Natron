@@ -1638,6 +1638,13 @@ void CurveWidget::addKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key){
     if(curve->getInternalCurve()->isAnimated()){
         curve->setVisibleAndRefresh(true);
     }
+    //if the keyframe is selected, refresh its tangents
+    for (SelectedKeys::const_iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it) {
+        if ((*it)->_key == key) {
+            _imp->refreshKeyTangentsGUI(*it);
+            break;
+        }
+    }
 }
 
 boost::shared_ptr<KeyFrame> CurveWidget::addKeyFrame(CurveGui* curve,const Variant& y, int x){

@@ -18,7 +18,6 @@
 #include <QtCore/QString>
 #include <QtCore/QMetaType>
 #include <QtCore/QStringList>
-#include <QUndoCommand>
 #include <QLineEdit>
 #include <QLabel>
 #include <QCheckBox>
@@ -33,6 +32,7 @@ class LineEdit;
 class Button;
 class SpinBox;
 class ComboBox;
+class QUndoCommand;
 class QFrame;
 class QLabel;
 class QAction;
@@ -56,6 +56,7 @@ class KnobGui : public QObject
     
 public:
     
+    friend class KnobMultipleUndosCommand;
     friend class KnobUndoCommand;
     
     KnobGui(Knob* knob,DockablePanel* container);
@@ -86,6 +87,7 @@ public:
     
     bool hasWidgetBeenCreated() const {return _widgetCreated;}
     
+    void setKeyframe(SequenceTime time,int dimension);
 
 
 public slots:
@@ -165,37 +167,6 @@ private:
 };
 Q_DECLARE_METATYPE(KnobGui*)
 
-//================================
-
-
-class KnobUndoCommand : public QObject, public QUndoCommand{
-    
-    Q_OBJECT
-    
-public:
-    
-    KnobUndoCommand(KnobGui* knob,const std::map<int,Variant>& oldValue,const std::map<int,Variant>& newValue,QUndoCommand *parent = 0):QUndoCommand(parent),
-    _oldValue(oldValue),
-    _newValue(newValue),
-    _knob(knob)
-    {
-        QObject::connect(this, SIGNAL(knobUndoneChange()), knob,SIGNAL(knobUndoneChange()));
-        QObject::connect(this, SIGNAL(knobRedoneChange()), knob,SIGNAL(knobRedoneChange()));
-    }
-    virtual void undo();
-    virtual void redo();
-    virtual bool mergeWith(const QUndoCommand *command);
-    
-signals:
-    void knobUndoneChange();
-    
-    void knobRedoneChange();
-    
-private:
-    std::map<int,Variant> _oldValue;
-    std::map<int,Variant> _newValue;
-    KnobGui* _knob;
-};
 
 
 //================================
