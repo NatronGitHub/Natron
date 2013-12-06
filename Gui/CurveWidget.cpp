@@ -221,7 +221,7 @@ void CurveGui::drawCurve(){
         glBegin(GL_POINTS);
         glVertex2f(x,y);
         glEnd();
-        if(isSelected != selectedKeyFrames.end()){
+        if(isSelected != selectedKeyFrames.end() && key->getInterpolation() != Natron::KEYFRAME_CONSTANT){
 
             //draw the tangents lines
             if(key->getInterpolation() != Natron::KEYFRAME_FREE && key->getInterpolation() != Natron::KEYFRAME_BROKEN){
@@ -932,14 +932,32 @@ struct CurveWidgetPrivate{
         assert(cur != keys.end());
         double dy = key->_key->getValue().toDouble() - pos.y();
         double dx = key->_key->getTime() - pos.x();
-#warning "FIXME: handle first and last keyframe correctly"
-        // TODO: handle first and last keyframe correctly:
+        
+        //find next and previous keyframes
+        Curve::KeyFrames::const_iterator prev = cur;
+        if(cur != keys.begin()){
+            --prev;
+        }else{
+            prev = keys.end();
+        }
+        Curve::KeyFrames::const_iterator next = cur;
+        ++next;
+        
+        // handle first and last keyframe correctly:
         // - if their interpolation was KEYFRAME_CATMULL_ROM or KEYFRAME_CUBIC, then it becomes KEYFRAME_FREE
         // - in all other cases it becomes KEYFRAME_BROKEN
+        
+        bool setBothTangent = (prev != keys.end() && next != keys.end() //keyframe is not the first or last
+                               && key->_key->getInterpolation() != Natron::KEYFRAME_BROKEN)//and its interp is not broken
+        //or we are on the first or last keyframe and its interpolation is catmull-rom /cubic
+        || ((prev == keys.end() || next == keys.end()) && (key->_key->getInterpolation() == Natron::KEYFRAME_CATMULL_ROM ||
+                                                           key->_key->getInterpolation() == Natron::KEYFRAME_CUBIC ||
+                                                           key->_key->getInterpolation() == Natron::KEYFRAME_FREE));
+        
         // For other keyframes:
         // - if they KEYFRAME_BROKEN, move only one tangent
         // - else change to KEYFRAME_FREE and move both tangents
-        if(key->_key->getInterpolation() != Natron::KEYFRAME_BROKEN){
+        if(setBothTangent){
             key->_key->setInterpolation(Natron::KEYFRAME_FREE);
 
             //if dx is not of the good sign it would make the curve uncontrollable
@@ -953,14 +971,6 @@ struct CurveWidgetPrivate{
                 }
             }
 
-            Curve::KeyFrames::const_iterator prev = cur;
-            if(cur != keys.begin()){
-                --prev;
-            }else{
-                prev = keys.end();
-            }
-            Curve::KeyFrames::const_iterator next = cur;
-            ++next;
             double leftTan,rightTan;
             if(prev != keys.end()){
                 leftTan = (dy * ((*cur)->getTime() - (*prev)->getTime())) / dx;
@@ -975,16 +985,13 @@ struct CurveWidgetPrivate{
             key->_key->setTangents(Variant(leftTan),Variant(rightTan),true);
 
         }else{
+            key->_key->setInterpolation(Natron::KEYFRAME_BROKEN);
             if(_selectedTangent.first == CurveGui::LEFT_TANGENT){
                 //if dx is not of the good sign it would make the curve uncontrollable
                 if(dx < 0){
                     dx = 0.0001;
                 }
 
-                Curve::KeyFrames::const_iterator prev = cur;
-                if(cur != keys.begin()){
-                    --prev;
-                }
                 double leftTan;
                 if(prev != keys.end()){
                     leftTan = (dy * ((*cur)->getTime() - (*prev)->getTime())) / dx;
@@ -999,8 +1006,6 @@ struct CurveWidgetPrivate{
                     dx = -0.0001;
                 }
 
-                Curve::KeyFrames::const_iterator next = cur;
-                ++next;
                 double rightTan;
                 if(next != keys.end()){
                     rightTan = (dy * ((*next)->getTime() - (*cur)->getTime())) / dx;
@@ -1445,7 +1450,9 @@ void CurveWidget::mousePressEvent(QMouseEvent *event) {
     ////
     // is the click near a tangent manipulator?
     std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator > selectedTan = _imp->isNearByTangent(event->pos());
-    if (selectedTan.second != _imp->_selectedKeyFrames.end()) {
+    
+    //select the tangent only if it is not a constant keyframe
+    if (selectedTan.second != _imp->_selectedKeyFrames.end() && (*selectedTan.second)->_key->getInterpolation() != Natron::KEYFRAME_CONSTANT) {
         _imp->_mustSetDragOrientation = true;
         _imp->_state = DRAGGING_TANGENT;
         _imp->_selectedTangent = selectedTan;

@@ -497,7 +497,7 @@ void CurveEditor::addKeyFrame(CurveGui* curve, SequenceTime time, const Variant&
         NodeCurveEditorElement* elem = (*it)->findElement(curve);
         if(elem){
             std::string actionName(elem->getKnob()->getKnob()->getDescription()
-                                   +elem->getKnob()->getKnob()->getDimensionName(elem->getDimension()));
+                                   + "." + elem->getKnob()->getKnob()->getDimensionName(elem->getDimension()));
 
             _undoStack->push(new AddKeyCommand(_curveWidget,elem,actionName,time,value));
             return;
@@ -545,7 +545,7 @@ void AddKeyCommand::undo(){
     _editor->removeKeyFrame(curve,_key._key);
     _key._element->checkVisibleState();
 
-    setText(QObject::tr("Add keyframe to %1.%2")
+    setText(QObject::tr("Add keyframe to %1")
             .arg(_actionName.c_str()));
 
 }
@@ -560,7 +560,7 @@ void AddKeyCommand::redo(){
     _key._element->checkVisibleState();
 
 
-    setText(QObject::tr("Add keyframe to %1.%2")
+    setText(QObject::tr("Add keyframe to %1")
             .arg(_actionName.c_str()));
 
 }
