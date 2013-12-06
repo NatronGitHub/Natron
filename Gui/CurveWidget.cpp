@@ -1470,16 +1470,17 @@ void CurveWidget::mousePressEvent(QMouseEvent *event) {
     updateGL();
 }
 
-void CurveWidget::mouseReleaseEvent(QMouseEvent*){
+void CurveWidget::mouseReleaseEvent(QMouseEvent*) {
+    EventState prevState = _imp->_state;
     _imp->_state = NONE;
     _imp->_selectionRectangle.setBottomRight(QPointF(0,0));
     _imp->_selectionRectangle.setTopLeft(_imp->_selectionRectangle.bottomRight());
     if(_imp->_selectedKeyFrames.size() > 1){
         _imp->_drawSelectedKeyFramesBbox = true;
-        
     }
-    
-    updateGL();
+    if (prevState == SELECTING) { // should other cases be considered?
+        updateGL();
+    }
 }
 
 void CurveWidget::mouseMoveEvent(QMouseEvent *event){
