@@ -904,11 +904,10 @@ struct CurveWidgetPrivate{
         }
         if(editor && _selectedKeyFrames.size() > 1){
             editor->setKeyFrames(moves);
+            //the editor redo() call will call refreshSelectedKeysBbox() for us
+        }else{
+            _widget->refreshSelectedKeysBbox();
         }
-//        for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-//            refreshKeyTangentsGUI(*it);
-//        }
-        _widget->refreshSelectedKeysBbox();
     }
 
     void moveSelectedTangent(const QPointF& pos){

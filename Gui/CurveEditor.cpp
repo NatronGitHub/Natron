@@ -795,6 +795,7 @@ void MoveMultipleKeysCommand::undo(){
 
     }
     _curveWidget->refreshSelectedKeysBbox();
+    _curveWidget->updateGL(); //refresh the widget
     setText(QObject::tr("Move multiple keys"));
 }
 void MoveMultipleKeysCommand::redo(){
