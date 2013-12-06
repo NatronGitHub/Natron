@@ -21,7 +21,7 @@
 #include <QUndoCommand>
 #include <QLineEdit>
 #include <QLabel>
-#include <QCheckBox>;
+#include <QCheckBox>
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"

@@ -1,4 +1,4 @@
-﻿//  Natron
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,7 +34,6 @@
 #define CURSOR_WIDTH 15
 #define CURSOR_HEIGHT 8
 
-static double ASPECT_RATIO = 0.1;
 static double AXIS_MAX = 100000.;
 static double AXIS_MIN = -100000.;
 
@@ -286,12 +285,14 @@ public:
         _bottom(0.)
       ,_left(0.)
       ,_zoomFactor(1.)
+      ,_aspectRatio(0.1)
     {}
 
     QPoint _oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
     double _bottom; /// the bottom edge of orthographic projection
     double _left; /// the left edge of the orthographic projection
     double _zoomFactor; /// the zoom factor applied to the current image
+    double _aspectRatio;///
 
     double _lastOrthoLeft,_lastOrthoBottom,_lastOrthoRight,_lastOrthoTop; //< remembers the last values passed to the glOrtho call
 
@@ -343,6 +344,7 @@ struct CurveWidgetPrivate{
     CurveWidget* _widget;
 
     std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator> _selectedTangent;
+    
 
     CurveWidgetPrivate(boost::shared_ptr<TimeLine> timeline,CurveWidget* widget)
         : _zoomCtx()
@@ -903,6 +905,9 @@ struct CurveWidgetPrivate{
         if(editor && _selectedKeyFrames.size() > 1){
             editor->setKeyFrames(moves);
         }
+//        for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
+//            refreshKeyTangentsGUI(*it);
+//        }
         _widget->refreshSelectedKeysBbox();
     }
 
@@ -1260,7 +1265,7 @@ void CurveWidget::centerOn(double xmin,double xmax,double ymin,double ymax){
     double curveWidth = xmax - xmin;
     double curveHeight = (ymax - ymin);
     double w = width();
-    double h = height() * ASPECT_RATIO ;
+    double h = height() * _imp->_zoomCtx._aspectRatio ;
     if(w / h < curveWidth / curveHeight){
         _imp->_zoomCtx._left = xmin;
         _imp->_zoomCtx._zoomFactor = w / curveWidth;
@@ -1295,7 +1300,7 @@ void CurveWidget::paintGL()
     //assert(_zoomCtx._zoomFactor <= 1024);
     double bottom = _imp->_zoomCtx._bottom;
     double left = _imp->_zoomCtx._left;
-    double top = bottom +  h / (double)_imp->_zoomCtx._zoomFactor * ASPECT_RATIO;
+    double top = bottom +  h / (double)_imp->_zoomCtx._zoomFactor * _imp->_zoomCtx._aspectRatio ;
     double right = left +  (w / (double)_imp->_zoomCtx._zoomFactor);
     if(left == right || top == bottom){
         glClearColor(_imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF());
@@ -1566,25 +1571,41 @@ void CurveWidget::wheelEvent(QWheelEvent *event){
     if (event->orientation() != Qt::Vertical) {
         return;
     }
-    double newZoomFactor;
-    if (event->delta() > 0) {
-        newZoomFactor = _imp->_zoomCtx._zoomFactor*std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
-    } else {
-        newZoomFactor = _imp->_zoomCtx._zoomFactor/std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, -event->delta());
-    }
-    if (newZoomFactor <= 0.01) {
-        newZoomFactor = 0.01;
-    } else if (newZoomFactor > 1024.) {
-        newZoomFactor = 1024.;
-    }
-    QPointF zoomCenter = toScaleCoordinates(event->x(), event->y());
-    double zoomRatio =   _imp->_zoomCtx._zoomFactor / newZoomFactor;
-    _imp->_zoomCtx._left = zoomCenter.x() - (zoomCenter.x() - _imp->_zoomCtx._left)*zoomRatio ;
-    _imp->_zoomCtx._bottom = zoomCenter.y() - (zoomCenter.y() - _imp->_zoomCtx._bottom)*zoomRatio;
     
-    _imp->_zoomCtx._zoomFactor = newZoomFactor;
-    
-    updateGL();
+    if(event->modifiers().testFlag(Qt::AltModifier)){
+        if(event->delta() > 0){
+            _imp->_zoomCtx._aspectRatio += 0.1;
+        }else{
+            _imp->_zoomCtx._aspectRatio -= 0.1;
+        }
+        if(_imp->_zoomCtx._aspectRatio < 0.1){
+            _imp->_zoomCtx._aspectRatio = 0.1;
+        }
+        if(_imp->_zoomCtx._aspectRatio > 2.){
+            _imp->_zoomCtx._aspectRatio = 2.;
+        }
+        updateGL();
+    }else{
+        double newZoomFactor;
+        if (event->delta() > 0) {
+            newZoomFactor = _imp->_zoomCtx._zoomFactor*std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+        } else {
+            newZoomFactor = _imp->_zoomCtx._zoomFactor/std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, -event->delta());
+        }
+        if (newZoomFactor <= 0.01) {
+            newZoomFactor = 0.01;
+        } else if (newZoomFactor > 1024.) {
+            newZoomFactor = 1024.;
+        }
+        QPointF zoomCenter = toScaleCoordinates(event->x(), event->y());
+        double zoomRatio =   _imp->_zoomCtx._zoomFactor / newZoomFactor;
+        _imp->_zoomCtx._left = zoomCenter.x() - (zoomCenter.x() - _imp->_zoomCtx._left)*zoomRatio ;
+        _imp->_zoomCtx._bottom = zoomCenter.y() - (zoomCenter.y() - _imp->_zoomCtx._bottom)*zoomRatio;
+        
+        _imp->_zoomCtx._zoomFactor = newZoomFactor;
+        updateGL();
+
+    }
     
 }
 
@@ -1593,7 +1614,7 @@ QPointF CurveWidget::toScaleCoordinates(double x,double y) const {
     double h = (double)height();
     double bottom = _imp->_zoomCtx._bottom;
     double left = _imp->_zoomCtx._left;
-    double top =  bottom +  h / _imp->_zoomCtx._zoomFactor * ASPECT_RATIO;
+    double top =  bottom +  h / _imp->_zoomCtx._zoomFactor * _imp->_zoomCtx._aspectRatio ;
     double right = left +  w / _imp->_zoomCtx._zoomFactor;
     return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
 }
@@ -1603,7 +1624,7 @@ QPointF CurveWidget::toWidgetCoordinates(double x, double y) const {
     double h = (double)height();
     double bottom = _imp->_zoomCtx._bottom;
     double left = _imp->_zoomCtx._left;
-    double top =  bottom +  h / _imp->_zoomCtx._zoomFactor * ASPECT_RATIO;
+    double top =  bottom +  h / _imp->_zoomCtx._zoomFactor * _imp->_zoomCtx._aspectRatio ;
     double right = left +  w / _imp->_zoomCtx._zoomFactor;
     return QPointF(((x - left)/(right - left))*w,((y - top)/(bottom - top))*h);
 }
@@ -1687,10 +1708,10 @@ void CurveWidget::setKeyPos(boost::shared_ptr<KeyFrame> key, double x, const Var
     key->setTimeAndValue(x,y);
     //if selected refresh its tangent positions
     for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin();it != _imp->_selectedKeyFrames.end();++it){
-        if((*it)->_key == key){
+        //        if((*it)->_key == key){
             _imp->refreshKeyTangentsGUI(*it);
-            break;
-        }
+            //  break;
+            // }
     }
 }
 
