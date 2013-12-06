@@ -1027,12 +1027,12 @@ struct CurveWidgetPrivate{
             double leftTanXWidgetDiffMax = std::min( w/8., (keyWidgetCoord.x() - prevKeyXWidgetCoord) / 3.);
             //clamp the left tangent Y to 1/8 of the widget height.
             double leftTanYWidgetDiffMax = std::min( h/8., leftTanXWidgetDiffMax);
-            assert(leftTanXWidgetDiffMax >= 0.);
-            assert(leftTanYWidgetDiffMax >= 0.);
+            //   assert(leftTanXWidgetDiffMax >= 0.);
+            //assert(leftTanYWidgetDiffMax >= 0.);
 
             QPointF tanMax = _widget->toScaleCoordinates(keyWidgetCoord.x() + leftTanXWidgetDiffMax, keyWidgetCoord.y() -leftTanYWidgetDiffMax) - QPointF(x,y);
-            assert(tanMax.x() >= 0.);
-            assert(tanMax.y() >= 0.);
+            // assert(tanMax.x() >= 0.);
+            //assert(tanMax.y() >= 0.);
 
             if (tanMax.x() * std::abs(leftTan) < tanMax.y()) {
                 leftTanX = x - tanMax.x();
@@ -1041,8 +1041,8 @@ struct CurveWidgetPrivate{
                 leftTanX = x - tanMax.y() / std::abs(leftTan);
                 leftTanY = y - tanMax.y() * (leftTan > 0 ? 1 : -1);
             }
-            assert(std::abs(leftTanX - x) <= tanMax.x());
-            assert(std::abs(leftTanY - y) <= tanMax.y());
+            //assert(std::abs(leftTanX - x) <= tanMax.x());
+            //assert(std::abs(leftTanY - y) <= tanMax.y());
         }
         double rightTanX, rightTanY;
         {
@@ -1053,12 +1053,12 @@ struct CurveWidgetPrivate{
             double rightTanXWidgetDiffMax = std::min( w/8., (nextKeyXWidgetCoord - keyWidgetCoord.x()) / 3.);
             //clamp the right tangent Y to 1/8 of the widget height.
             double rightTanYWidgetDiffMax = std::min( h/8., rightTanXWidgetDiffMax);
-            assert(rightTanXWidgetDiffMax >= 0.);
-            assert(rightTanYWidgetDiffMax >= 0.);
+            // assert(rightTanXWidgetDiffMax >= 0.);
+            //assert(rightTanYWidgetDiffMax >= 0.);
 
             QPointF tanMax = _widget->toScaleCoordinates(keyWidgetCoord.x() + rightTanXWidgetDiffMax, keyWidgetCoord.y() -rightTanYWidgetDiffMax) - QPointF(x,y);
-            assert(tanMax.x() >= 0.);
-            assert(tanMax.y() >= 0.);
+            // assert(tanMax.x() >= 0.);
+            //assert(tanMax.y() >= 0.);
 
             if (tanMax.x() * std::abs(rightTan) < tanMax.y()) {
                 rightTanX = x + tanMax.x();
@@ -1067,8 +1067,8 @@ struct CurveWidgetPrivate{
                 rightTanX = x + tanMax.y() / std::abs(rightTan);
                 rightTanY = y + tanMax.y() * (rightTan > 0 ? 1 : -1);
             }
-            assert(std::abs(rightTanX - x) <= tanMax.x());
-            assert(std::abs(rightTanY - y) <= tanMax.y());
+            //assert(std::abs(rightTanX - x) <= tanMax.x());
+            //assert(std::abs(rightTanY - y) <= tanMax.y());
         }
         key->_leftTan.first = leftTanX;
         key->_leftTan.second = leftTanY;
@@ -1708,10 +1708,10 @@ void CurveWidget::setKeyPos(boost::shared_ptr<KeyFrame> key, double x, const Var
     key->setTimeAndValue(x,y);
     //if selected refresh its tangent positions
     for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin();it != _imp->_selectedKeyFrames.end();++it){
-        //        if((*it)->_key == key){
+        if((*it)->_key == key){
             _imp->refreshKeyTangentsGUI(*it);
-            //  break;
-            // }
+            break;
+        }
     }
 }
 
