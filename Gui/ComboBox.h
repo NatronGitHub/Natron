@@ -16,41 +16,13 @@
 #include <QFrame>
 #include <QtGui/QKeySequence>
 #include <QtGui/QIcon>
-#include <QMenu>
-#include <QToolTip>
-#if QT_VERSION < 0x050000
-#include "Global/Macros.h"
-CLANG_DIAG_OFF(unused-private-field);
-#include <QtGui/qmime.h>
-CLANG_DIAG_ON(unused-private-field);
-#endif
-#include <QHelpEvent>
 
 class QHBoxLayout;
 class QLabel;
 class QMouseEvent;
 class QAction;
 
-class MenuWithToolTips : public QMenu{
-    Q_OBJECT
-public:
-    MenuWithToolTips(QWidget* parent):QMenu(parent){}
-    
-    bool event (QEvent * e)
-    {
-        const QHelpEvent *helpEvent = static_cast <QHelpEvent *>(e);
-        if (helpEvent->type() == QEvent::ToolTip) {
-            QAction* action = activeAction();
-            if(action->text() != action->toolTip()){
-                QToolTip::showText(helpEvent->globalPos(), action->toolTip());
-            }
-        } else {
-            QToolTip::hideText();
-        }
-        return QMenu::event(e);
-    }
-};
-
+class MenuWithToolTips;
 
 class ComboBox : public QFrame
 {

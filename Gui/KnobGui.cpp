@@ -36,7 +36,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QGroupBox>
 #include <QtGui/QVector4D>
 #include <QStyleFactory>
-
+#include <QMenu>
 
 #include "Global/AppManager.h"
 #include "Global/LibraryBinary.h"

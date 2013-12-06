@@ -133,6 +133,7 @@ SOURCES += \
     Gui/KnobGuiTypes.cpp \
     Gui/KnobUndoCommand.cpp \
     Gui/LineEdit.cpp \
+    Gui/MenuWithToolTips.cpp \
     Gui/NodeGraph.cpp \
     Gui/NodeGui.cpp \
     Gui/ScaleSlider.cpp \
@@ -232,6 +233,7 @@ HEADERS += \
     Gui/KnobGuiTypes.h \
     Gui/KnobUndoCommand.h \
     Gui/LineEdit.h \
+    Gui/MenuWithToolTips.h \
     Gui/NodeGraph.h \
     Gui/NodeGui.h \
     Gui/ScaleSlider.h \

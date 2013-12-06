@@ -21,6 +21,8 @@
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
+#include "Gui/MenuWithToolTips.h"
+
 ComboBox::ComboBox(QWidget* parent):QFrame(parent),_currentIndex(0),_maximumTextSize(0),pressed(false){
     
     _mainLayout = new QHBoxLayout(this);
