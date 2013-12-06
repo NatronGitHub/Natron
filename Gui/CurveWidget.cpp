@@ -1623,7 +1623,9 @@ void CurveWidget::refreshSelectedKeysBbox(){
     _imp->_selectedKeyFramesCrossHorizLine.setPoints(middleLeft,middleRight);
     _imp->_selectedKeyFramesCrossVertLine.setPoints(middleBottom,middleTop);
 }
-void CurveWidget::wheelEvent(QWheelEvent *event){
+
+void CurveWidget::wheelEvent(QWheelEvent *event) {
+    // don't handle horizontal wheel (e.g. on trackpad or Might Mouse)
     if (event->orientation() != Qt::Vertical) {
         return;
     }
@@ -1634,6 +1636,7 @@ void CurveWidget::wheelEvent(QWheelEvent *event){
     double newZoomFactor = oldZoomFactor;
 
     if (event->modifiers().testFlag(Qt::AltModifier) && event->modifiers().testFlag(Qt::ShiftModifier)) {
+        // Alt + Shift + Wheel: zoom values only, keep point under mouse
         if (event->delta() > 0) {
             newAspectRatio *= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
         } else {
@@ -1645,6 +1648,7 @@ void CurveWidget::wheelEvent(QWheelEvent *event){
             newAspectRatio = 10000.;
         }
     } else if (event->modifiers().testFlag(Qt::AltModifier)) {
+        // Alt + Wheel: zoom time only, keep point under mouse
         if (event->delta() > 0) {
             newAspectRatio *= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
             newZoomFactor *= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
@@ -1667,6 +1671,7 @@ void CurveWidget::wheelEvent(QWheelEvent *event){
             newAspectRatio = 10000.;
         }
     } else  {
+        // Wheel: zoom values and time, keep point under mouse
         if (event->delta() > 0) {
             newZoomFactor *= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
         } else {
