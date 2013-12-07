@@ -244,6 +244,16 @@ void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const{
             img.load(NATRON_IMAGES_PATH"openeffects.png");
             *pix = QPixmap::fromImage(img);
             break;
+        case Natron::COMBOBOX_PIXMAP:
+            type = Natron::COMBOBOX_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"combobox.png");
+            *pix = QPixmap::fromImage(img).scaled(10, 10);
+            break;
+        case Natron::COMBOBOX_PRESSED_PIXMAP:
+            type = Natron::COMBOBOX_PRESSED_PIXMAP;
+            img.load(NATRON_IMAGES_PATH"pressed_combobox.png");
+            *pix = QPixmap::fromImage(img).scaled(10, 10);
+            break;
         default:
             assert("Missing image.");
         }

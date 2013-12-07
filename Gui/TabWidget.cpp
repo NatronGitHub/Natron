@@ -68,17 +68,13 @@ TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent
     _headerLayout->setContentsMargins(0, 0, 0, 0);
     _headerLayout->setSpacing(0);
     _header->setLayout(_headerLayout);
-    QImage imgC(NATRON_IMAGES_PATH"close.png");
-    QPixmap pixC=QPixmap::fromImage(imgC);
-    pixC.scaled(15,15);
-    QImage imgM(NATRON_IMAGES_PATH"maximize.png");
-    QPixmap pixM=QPixmap::fromImage(imgM);
-    pixM.scaled(15,15);
-    QImage imgL(NATRON_IMAGES_PATH"layout.png");
-    QPixmap pixL=QPixmap::fromImage(imgL);
-    pixL.scaled(15,15);
     
     
+    QPixmap pixC,pixM,pixL;
+    appPTR->getIcon(Natron::CLOSE_WIDGET_PIXMAP,&pixC);
+    appPTR->getIcon(Natron::MAXIMIZE_WIDGET_PIXMAP,&pixM);
+    appPTR->getIcon(Natron::TAB_WIDGET_LAYOUT_BUTTON_PIXMAP,&pixL);
+
     if(decorations != NONE){
         
         _leftCornerButton = new Button(QIcon(pixL),"",_header);

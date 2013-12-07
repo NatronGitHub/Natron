@@ -18,9 +18,7 @@
 #include <QFont>
 #include <QFontMetrics>
 
-#include "Global/Macros.h"
-#include "Global/GlobalDefines.h"
-
+#include "Global/AppManager.h"
 #include "Gui/MenuWithToolTips.h"
 
 ComboBox::ComboBox(QWidget* parent):QFrame(parent),_currentIndex(0),_maximumTextSize(0),pressed(false){
@@ -37,9 +35,8 @@ ComboBox::ComboBox(QWidget* parent):QFrame(parent),_currentIndex(0),_maximumText
     _mainLayout->addWidget(_currentText);
         
     _dropDownIcon = new QLabel(this);
-    QImage imgC(NATRON_IMAGES_PATH"combobox.png");
-    QPixmap pixC=QPixmap::fromImage(imgC);
-    pixC = pixC.scaled(10,10);
+    QPixmap pixC;
+    appPTR->getIcon(Natron::COMBOBOX_PIXMAP, &pixC);
     _dropDownIcon->setPixmap(pixC);
     _mainLayout->addWidget(_dropDownIcon);
     
@@ -58,9 +55,8 @@ void ComboBox::paintEvent(QPaintEvent *e)
 }
 
 void ComboBox::mousePressEvent(QMouseEvent* e){
-    QImage imgC(NATRON_IMAGES_PATH"pressed_combobox.png");
-    QPixmap pixC=QPixmap::fromImage(imgC);
-    pixC = pixC.scaled(10,10);
+    QPixmap pixC;
+    appPTR->getIcon(Natron::COMBOBOX_PRESSED_PIXMAP, &pixC);
     _dropDownIcon->setPixmap(pixC);
     setPressed(true);
     style()->unpolish(this);
@@ -70,9 +66,8 @@ void ComboBox::mousePressEvent(QMouseEvent* e){
 }
 
 void ComboBox::mouseReleaseEvent(QMouseEvent* e){
-    QImage imgC(NATRON_IMAGES_PATH"combobox.png");
-    QPixmap pixC=QPixmap::fromImage(imgC);
-    pixC = pixC.scaled(10,10);
+    QPixmap pixC;
+    appPTR->getIcon(Natron::COMBOBOX_PIXMAP, &pixC);
     _dropDownIcon->setPixmap(pixC);
     setPressed(false);
     style()->unpolish(this);
@@ -99,9 +94,8 @@ void ComboBox::createMenu(){
         }
     }
     
-    QImage imgC(NATRON_IMAGES_PATH"combobox.png");
-    QPixmap pixC=QPixmap::fromImage(imgC);
-    pixC = pixC.scaled(10,10);
+    QPixmap pixC;
+    appPTR->getIcon(Natron::COMBOBOX_PIXMAP, &pixC);
     _dropDownIcon->setPixmap(pixC);
     setPressed(false);
     style()->unpolish(this);

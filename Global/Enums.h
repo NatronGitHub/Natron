@@ -151,7 +151,10 @@ namespace Natron{
         COLORWHEEL_PIXMAP,
 
         IO_GROUPING_PIXMAP,
-        OPEN_EFFECTS_GROUPING_PIXMAP
+        OPEN_EFFECTS_GROUPING_PIXMAP,
+        
+        COMBOBOX_PIXMAP,
+        COMBOBOX_PRESSED_PIXMAP
     };
 
 }

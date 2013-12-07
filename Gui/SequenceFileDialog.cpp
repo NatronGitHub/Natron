@@ -58,7 +58,7 @@ CLANG_DIAG_ON(unused-private-field);
 
 #include <QtCore/QSettings>
 
-#include "Global/GlobalDefines.h"
+#include "Global/AppManager.h"
 #include "Global/QtCompat.h"
 #include "Gui/Button.h"
 #include "Gui/LineEdit.h"
@@ -311,10 +311,9 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
         _filterLineEdit = new LineEdit(_filterWidget);
         _filterLayout->addWidget(_filterLineEdit);
         _filterLineEdit->setText(filter);
-        QImage dropDownImg(NATRON_IMAGES_PATH"combobox.png");
-        QPixmap pixDropDown = QPixmap::fromImage(dropDownImg);
         QSize buttonSize(15,_filterLineEdit->sizeHint().height());
-        pixDropDown = pixDropDown.scaled(buttonSize);
+        QPixmap pixDropDown;
+        appPTR->getIcon(Natron::COMBOBOX_PIXMAP, &pixDropDown);
         _filterDropDown = new Button(QIcon(pixDropDown),"",_filterWidget);
         _filterDropDown->setFixedSize(buttonSize);
         _filterLayout->addWidget(_filterDropDown);
@@ -1210,9 +1209,9 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,QWidget* parent):QDi
     _pathLineEdit->setPlaceholderText("path...");
     _secondLineLayout->addWidget(_pathLineEdit);
 
-    QImage img(NATRON_IMAGES_PATH"open-file.png");
-    QPixmap pix = QPixmap::fromImage(img);
-    pix = pix.scaled(15,15);
+    
+    QPixmap pix;
+    appPTR->getIcon(Natron::OPEN_FILE_PIXMAP,&pix);
 
     _openDirButton = new Button(_secondLine);
     _openDirButton->setIcon(QIcon(pix));
