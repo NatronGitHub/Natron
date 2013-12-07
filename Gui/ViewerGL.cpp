@@ -153,11 +153,6 @@ struct ZoomContext{
     double zoomFactor; /// the zoom factor applied to the current image
 
     double lastOrthoLeft, lastOrthoBottom, lastOrthoRight, lastOrthoTop; //< remembers the last values passed to the glOrtho call
-
-    /*!< the level of zoom used to display the frame*/
-    void setZoomFactor(double f){assert(f>0.); zoomFactor = f;}
-
-    double getZoomFactor() const {return zoomFactor;}
 };
 
 /**
@@ -837,7 +832,7 @@ GLuint ViewerGL::getPboID(int index)
  **/
 double ViewerGL::getZoomFactor()
 {
-    return _imp->zoomCtx.getZoomFactor();
+    return _imp->zoomCtx.zoomFactor;
 }
 
 std::pair<int,int> ViewerGL::computeRowSpan(int bottom,int top, std::vector<int>* rows) {
@@ -1391,7 +1386,7 @@ void ViewerGL::fitToFormat(const Format& rod){
     double zoomFactor = height()/h;
     zoomFactor = (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01);
     assert(zoomFactor>=0.01 && zoomFactor <= 1024);
-    _imp->zoomCtx.setZoomFactor(zoomFactor);
+    _imp->zoomCtx.zoomFactor = zoomFactor;
     emit zoomChanged(zoomFactor * 100);
     resetMousePos();
     _imp->zoomCtx.left = w/2.f - (width()/(2.f*_imp->zoomCtx.zoomFactor));

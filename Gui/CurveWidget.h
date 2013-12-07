@@ -99,7 +99,7 @@ struct SelectedKey;
 typedef std::list< boost::shared_ptr<SelectedKey> > SelectedKeys;
 
 class QMenu;
-struct CurveWidgetPrivate;
+class CurveWidgetPrivate;
 class CurveWidget : public QGLWidget
 {
 
