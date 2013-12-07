@@ -362,11 +362,13 @@ NodeCurveEditorElement* NodeCurveEditorContext::findElement(QTreeWidgetItem* ite
 }
 
 
+namespace { // protect local classes in anonymous namespace
+
 struct NewKeyFrame{
-    boost::shared_ptr<KeyFrame> _key;
-    NodeCurveEditorElement* _element;
-    SequenceTime _time;
-    Variant _value;
+    boost::shared_ptr<KeyFrame> key;
+    NodeCurveEditorElement* element;
+    SequenceTime time;
+    Variant value;
 };
 
 class AddKeyCommand : public QUndoCommand{
@@ -479,6 +481,8 @@ private:
     CurveWidget* _curveWidget;
 };
 
+} // end of anonymous namespace
+
 void CurveEditor::addKeyFrame(KnobGui* knob,SequenceTime time,int dimension){
     for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
         it!=_nodes.end();++it){
@@ -532,32 +536,32 @@ AddKeyCommand::AddKeyCommand(CurveWidget *editor,  NodeCurveEditorElement *curve
     , _key()
     , _editor(editor)
 {
-    _key._element = curveEditorElement;
-    _key._time = time;
-    _key._value = value;
+    _key.element = curveEditorElement;
+    _key.time = time;
+    _key.value = value;
 }
 
 void AddKeyCommand::undo(){
 
 
-    CurveGui* curve = _key._element->getCurve();
+    CurveGui* curve = _key.element->getCurve();
     assert(curve);
-    _editor->removeKeyFrame(curve,_key._key);
-    _key._element->checkVisibleState();
+    _editor->removeKeyFrame(curve,_key.key);
+    _key.element->checkVisibleState();
 
     setText(QObject::tr("Add keyframe to %1")
             .arg(_actionName.c_str()));
 
 }
 void AddKeyCommand::redo(){
-    CurveGui* curve = _key._element->getCurve();
-    if(!_key._key){
+    CurveGui* curve = _key.element->getCurve();
+    if(!_key.key){
         assert(curve);
-        _key._key = _editor->addKeyFrame(curve,_key._value,_key._time);
+        _key.key = _editor->addKeyFrame(curve, _key.value, _key.time);
     }else{
-        _editor->addKeyFrame(curve,_key._key);
+        _editor->addKeyFrame(curve, _key.key);
     }
-    _key._element->checkVisibleState();
+    _key.element->checkVisibleState();
 
 
     setText(QObject::tr("Add keyframe to %1")
@@ -574,19 +578,19 @@ PasteKeysCommand::PasteKeysCommand(CurveWidget *editor, std::vector<NodeCurveEdi
     assert(elements.size() == keys.size());
     for(U32 i = 0; i < elements.size();++i){
         boost::shared_ptr<NewKeyFrame> newKey(new NewKeyFrame());
-        newKey->_element = elements[i];
-        newKey->_time = keys[i].first;
-        newKey->_value = keys[i].second;
+        newKey->element = elements[i];
+        newKey->time = keys[i].first;
+        newKey->value = keys[i].second;
     }
 
 }
 
 void PasteKeysCommand::undo(){
     for(U32 i = 0; i < _keys.size();++i){
-        CurveGui* curve = _keys[i]->_element->getCurve();
+        CurveGui* curve = _keys[i]->element->getCurve();
         assert(curve);
-        _editor->removeKeyFrame(curve,_keys[i]->_key);
-        _keys[i]->_element->checkVisibleState();
+        _editor->removeKeyFrame(curve,_keys[i]->key);
+        _keys[i]->element->checkVisibleState();
     }
 
     setText(QObject::tr("Add multiple keyframes"));
@@ -594,14 +598,14 @@ void PasteKeysCommand::undo(){
 
 void PasteKeysCommand::redo(){
     for(U32 i = 0; i < _keys.size();++i){
-        CurveGui* curve = _keys[i]->_element->getCurve();
-        if(!_keys[i]->_key){
+        CurveGui* curve = _keys[i]->element->getCurve();
+        if (!_keys[i]->key) {
             assert(curve);
-            _keys[i]->_key = _editor->addKeyFrame(curve,_keys[i]->_value,_keys[i]->_time);
-        }else{
-            _editor->addKeyFrame(curve,_keys[i]->_key);
+            _keys[i]->key = _editor->addKeyFrame(curve,_keys[i]->value,_keys[i]->time);
+        } else {
+            _editor->addKeyFrame(curve,_keys[i]->key);
         }
-        _keys[i]->_element->checkVisibleState();
+        _keys[i]->element->checkVisibleState();
     }
     setText(QObject::tr("Add multiple keyframes"));
 

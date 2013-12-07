@@ -72,7 +72,7 @@ using std::cout; using std::endl;
 
 static const double pi= 3.14159265358979323846264338327950288419717;
 
-//namespace {
+namespace {
 /**
  *@class ZoomContext
  *@brief Holds all zoom related variables. This is an internal class used by the ViewerGL.
@@ -160,7 +160,7 @@ struct ZoomContext{
  *@brief basic state switching for mouse events
  **/
 enum MOUSE_STATE{DRAGGING,UNDEFINED};
-//} // namespace
+} // namespace
 
 struct ViewerGL::Implementation {
 

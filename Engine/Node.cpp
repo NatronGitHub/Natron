@@ -42,6 +42,8 @@ using std::make_pair;
 using std::cout; using std::endl;
 using boost::shared_ptr;
 
+namespace { // protect local classes in anonymous namespace
+
 /*A key to identify an image rendered for this node.*/
 struct ImageBeingRenderedKey{
 
@@ -76,6 +78,7 @@ struct DeactivatedState{
     std::map<Node*,std::pair<int,int> > inputConnections;
 };
 
+}
 
 struct Node::Implementation {
     Implementation(AppInstance* app_,LibraryBinary* plugin_)
