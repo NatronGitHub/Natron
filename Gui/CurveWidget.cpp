@@ -1394,7 +1394,8 @@ void CurveWidget::centerOn(double xmin,double xmax,double ymin,double ymax){
         _imp->_zoomCtx.left = (xmax + xmin) / 2. - ((w / h) * curveHeight / 2.);
     }
     
-    
+    refreshDisplayedTangents();
+
     updateGL();
 }
 
@@ -1402,9 +1403,6 @@ void CurveWidget::resizeGL(int width,int height){
     if(height == 0)
         height = 1;
     glViewport (0, 0, width , height);
-    for (SelectedKeys::const_iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-        _imp->refreshKeyTangentsGUI(*it);
-    }
     centerOn(-10,500,-10,10);
 }
 
@@ -1798,9 +1796,7 @@ void CurveWidget::wheelEvent(QWheelEvent *event) {
     _imp->_zoomCtx.aspectRatio = newAspectRatio;
     _imp->_zoomCtx.zoomFactor = newZoomFactor;
     
-    for (SelectedKeys::const_iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-        _imp->refreshKeyTangentsGUI(*it);
-    }
+    refreshDisplayedTangents();
     
     updateGL();
 }
