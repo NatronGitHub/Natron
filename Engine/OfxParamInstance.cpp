@@ -79,7 +79,6 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param:
 
     int min = properties.getIntProperty(kOfxParamPropMin);
     int max = properties.getIntProperty(kOfxParamPropMax);
-    int incr = properties.getIntProperty(kOfxParamPropIncrement);
     int def = properties.getIntProperty(kOfxParamPropDefault);
     int displayMin = properties.getIntProperty(kOfxParamPropDisplayMin);
     int displayMax = properties.getIntProperty(kOfxParamPropDisplayMax);
@@ -87,9 +86,7 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param:
     _knob->setDisplayMaximum(displayMax);
 
     _knob->setMinimum(min);
-    if (incr > 0) {
-        _knob->setIncrement(incr);
-    }
+    _knob->setIncrement(1); // kOfxParamPropIncrement only exists for Double
     _knob->setMaximum(max);
     set(def);
 }
@@ -423,14 +420,18 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
     std::vector<int> decimals(dims);
     boost::scoped_array<double> def(new double[dims]);
 
+    // kOfxParamPropIncrement and kOfxParamPropDigits only have one dimension,
+    // @see Descriptor::addNumericParamProps() in ofxhParam.cpp
+    // @see gDoubleParamProps in ofxsPropertyValidation.cpp
+    double incr = properties.getDoubleProperty(kOfxParamPropIncrement);
+    int dig = properties.getIntProperty(kOfxParamPropDigits);
     for (int i=0; i < dims; ++i) {
         minimum[i] = properties.getDoubleProperty(kOfxParamPropMin,i);
         displayMins[i] = properties.getDoubleProperty(kOfxParamPropDisplayMin,i);
         displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax,i);
         maximum[i] = properties.getDoubleProperty(kOfxParamPropMax,i);
-        double incr = properties.getDoubleProperty(kOfxParamPropIncrement,i);
-        increment[i] = incr != 0 ? incr : 0.1;
-        decimals[i] = properties.getIntProperty(kOfxParamPropDigits,i);
+        increment[i] = incr;
+        decimals[i] = dig;
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
     }
 
@@ -501,8 +502,7 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::P
         displayMins[i] = properties.getIntProperty(kOfxParamPropDisplayMin,i);
         displayMaxs[i] = properties.getIntProperty(kOfxParamPropDisplayMax,i);
         maximum[i] = properties.getIntProperty(kOfxParamPropMax,i);
-        int incr = properties.getIntProperty(kOfxParamPropIncrement,i);
-        increment[i] = incr != 0 ?  incr : 1;
+        increment[i] = 1; // kOfxParamPropIncrement only exists for Double
         def[i] = properties.getIntProperty(kOfxParamPropDefault,i);
     }
     
@@ -568,14 +568,18 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Par
     std::vector<int> decimals(dims);
     boost::scoped_array<double> def(new double[dims]);
 
-    for (int i=0; i < dims; ++i) {
+    // kOfxParamPropIncrement and kOfxParamPropDigits only have one dimension,
+    // @see Descriptor::addNumericParamProps() in ofxhParam.cpp
+    // @see gDoubleParamProps in ofxsPropertyValidation.cpp
+    double incr = properties.getDoubleProperty(kOfxParamPropIncrement);
+    int dig = properties.getIntProperty(kOfxParamPropDigits);
+    for (int i = 0; i < dims; ++i) {
         minimum[i] = properties.getDoubleProperty(kOfxParamPropMin,i);
         displayMins[i] = properties.getDoubleProperty(kOfxParamPropDisplayMin,i);
         displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax,i);
         maximum[i] = properties.getDoubleProperty(kOfxParamPropMax,i);
-        double incr = properties.getDoubleProperty(kOfxParamPropIncrement,i);
-        increment[i] = incr != 0 ? incr : 0.1;
-        decimals[i] = properties.getIntProperty(kOfxParamPropDigits,i);
+        increment[i] = incr;
+        decimals[i] = dig;
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
     }
 
