@@ -33,6 +33,7 @@ LineEdit(parent)
 ,_intValidator(0)
 ,animation(0)
 ,_valueWhenEnteringFocus(0)
+,_currentDelta(0)
 {
     switch (_type) {
         case DOUBLE_SPINBOX:
@@ -107,25 +108,24 @@ void SpinBox::wheelEvent(QWheelEvent *e) {
         double cur = text().toDouble(&ok);
         clear();
         double maxiD,miniD;
+        _currentDelta += e->delta();
+        double inc = _currentDelta * _increment / 120.;
         switch (_type) {
             case DOUBLE_SPINBOX:
                 maxiD = _maxi.toDouble();
                 miniD = _mini.toDouble();
+                cur += inc;
+                _currentDelta = 0;
                 break;
             case INT_SPINBOX:
                 maxiD = _maxi.toInt();
                 miniD = _mini.toInt();
+                cur += (int)inc;
+                _currentDelta -= ((int)inc) * 120. / _increment;
+                assert(std::abs(_currentDelta) < 120);
                 break;
         }
-        if(e->delta()>0){
-            if(cur+_increment <= maxiD)
-                cur+=_increment;
-        }else{
-            if(cur-_increment >= miniD)
-                cur-=_increment;
-        }
-        if(cur < miniD || cur > maxiD)
-            return;
+        cur = std::max(miniD, std::min(cur,maxiD));
         insert(setNum(cur));
         emit valueChanged(cur);
     }

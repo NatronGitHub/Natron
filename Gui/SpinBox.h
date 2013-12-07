@@ -87,6 +87,7 @@ private:
     QIntValidator* _intValidator;
     int animation; // 0 = no animation, 1 = interpolated, 2 = equals keyframe value
     double _valueWhenEnteringFocus;
+    int _currentDelta; // accumulates the deltas from wheelevents
 };
 
 #endif /* defined(NATRON_GUI_FEEDBACKSPINBOX_H_) */
