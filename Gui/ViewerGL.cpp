@@ -1239,13 +1239,8 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     if (event->orientation() != Qt::Vertical) {
         return;
     }
-    double newZoomFactor;
-    const double factor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
-    if (event->delta() > 0) {
-        newZoomFactor = _imp->zoomCtx.zoomFactor * factor;
-    } else {
-        newZoomFactor = _imp->zoomCtx.zoomFactor / factor;
-    }
+    const double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+    double newZoomFactor = _imp->zoomCtx.zoomFactor * scaleFactor;
     if (newZoomFactor <= 0.01) {
         newZoomFactor = 0.01;
     } else if (newZoomFactor > 1024.) {
