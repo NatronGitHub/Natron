@@ -1909,7 +1909,15 @@ void CurveWidget::enterEvent(QEvent */*event*/){
 
 void CurveWidget::setKeyPos(boost::shared_ptr<KeyFrame> key, double x, const Variant& y){
     key->setTimeAndValue(x,y);
-    
+  
+
+}
+
+void CurveWidget::refreshDisplayedTangents(){
+    for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
+        _imp->refreshKeyTangentsGUI(*it);
+        
+    }
 }
 
 void CurveWidget::setKeyInterpolation(boost::shared_ptr<KeyFrame> key,Natron::KeyframeType interpolation){

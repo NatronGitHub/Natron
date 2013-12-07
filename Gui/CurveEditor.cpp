@@ -871,6 +871,7 @@ void MoveMultipleKeysCommand::undo(){
         _keys[i]->_knob->getKnob()->endValueChange(AnimatingParam::USER_EDITED);
 
     }
+    _curveWidget->refreshDisplayedTangents();
     _curveWidget->refreshSelectedKeysBbox();
     _curveWidget->updateGL(); //refresh the widget
     setText(QObject::tr("Move multiple keys"));
@@ -888,6 +889,7 @@ void MoveMultipleKeysCommand::redo(){
         _keys[i]->_knob->getKnob()->endValueChange(AnimatingParam::USER_EDITED);
 
     }
+    _curveWidget->refreshDisplayedTangents();
     _curveWidget->refreshSelectedKeysBbox();
 
     setText(QObject::tr("Move multiple keys"));

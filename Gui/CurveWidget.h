@@ -135,6 +135,8 @@ public:
     
     void setKeyInterpolation(boost::shared_ptr<KeyFrame> key,Natron::KeyframeType interpolation);
 
+    void refreshDisplayedTangents(); //< need to be called if you call setKeyPos() externally
+    
 public slots:
 
     void deleteSelectedKeyFrames();
