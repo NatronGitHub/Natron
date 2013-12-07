@@ -1245,10 +1245,11 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
         return;
     }
     double newZoomFactor;
+    const double factor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
     if (event->delta() > 0) {
-        newZoomFactor = _imp->zoomCtx.zoomFactor*std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+        newZoomFactor = _imp->zoomCtx.zoomFactor * factor;
     } else {
-        newZoomFactor = _imp->zoomCtx.zoomFactor/std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, -event->delta());
+        newZoomFactor = _imp->zoomCtx.zoomFactor / factor;
     }
     if (newZoomFactor <= 0.01) {
         newZoomFactor = 0.01;

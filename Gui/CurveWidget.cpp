@@ -1653,13 +1653,14 @@ void CurveWidget::wheelEvent(QWheelEvent *event) {
     const double oldZoomFactor = _imp->_zoomCtx._zoomFactor;
     double newAspectRatio = oldAspectRatio;
     double newZoomFactor = oldZoomFactor;
+    const double factor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
 
     if (event->modifiers().testFlag(Qt::AltModifier) && event->modifiers().testFlag(Qt::ShiftModifier)) {
         // Alt + Shift + Wheel: zoom values only, keep point under mouse
         if (event->delta() > 0) {
-            newAspectRatio *= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+            newAspectRatio *= factor;
         } else {
-            newAspectRatio /= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, -event->delta());
+            newAspectRatio /= factor;
         }
         if (newAspectRatio <= 0.0001) {
             newAspectRatio = 0.0001;
@@ -1669,11 +1670,11 @@ void CurveWidget::wheelEvent(QWheelEvent *event) {
     } else if (event->modifiers().testFlag(Qt::AltModifier)) {
         // Alt + Wheel: zoom time only, keep point under mouse
         if (event->delta() > 0) {
-            newAspectRatio *= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
-            newZoomFactor *= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+            newAspectRatio *= factor;
+            newZoomFactor *= factor;
         } else {
-            newAspectRatio /= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, -event->delta());
-            newZoomFactor /= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, -event->delta());
+            newAspectRatio /= factor;
+            newZoomFactor /= factor;
         }
         if (newZoomFactor <= 0.0001) {
             newAspectRatio *= 0.0001/newZoomFactor;
@@ -1692,9 +1693,9 @@ void CurveWidget::wheelEvent(QWheelEvent *event) {
     } else  {
         // Wheel: zoom values and time, keep point under mouse
         if (event->delta() > 0) {
-            newZoomFactor *= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+            newZoomFactor *= factor;
         } else {
-            newZoomFactor /= std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, -event->delta());
+            newZoomFactor /= factor;
         }
         if (newZoomFactor <= 0.0001) {
             newZoomFactor = 0.0001;
