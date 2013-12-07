@@ -994,12 +994,13 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
     // handle first and last keyframe correctly:
     // - if their interpolation was KEYFRAME_CATMULL_ROM or KEYFRAME_CUBIC, then it becomes KEYFRAME_FREE
     // - in all other cases it becomes KEYFRAME_BROKEN
-    bool setBothTangent = (prev != keys.end() && next != keys.end() //keyframe is not the first or last
-                           && key->key->getInterpolation() != Natron::KEYFRAME_BROKEN)//and its interp is not broken
-    //or we are on the first or last keyframe and its interpolation is catmull-rom /cubic
-    || ((prev == keys.end() || next == keys.end()) && (key->key->getInterpolation() == Natron::KEYFRAME_CATMULL_ROM ||
-                                                       key->key->getInterpolation() == Natron::KEYFRAME_CUBIC ||
-                                                       key->key->getInterpolation() == Natron::KEYFRAME_FREE));
+    KeyframeType interp = key->key->getInterpolation();
+    bool keyframeIsFirstOrLast = (prev == keys.end() || next == keys.end());
+    bool interpIsNotBroken = (interp != KEYFRAME_BROKEN);
+    bool interpIsCatmullRomOrCubicOrFree = (interp == KEYFRAME_CATMULL_ROM ||
+                                            interp == KEYFRAME_CUBIC ||
+                                            interp == KEYFRAME_FREE);
+    bool setBothTangent = keyframeIsFirstOrLast ? interpIsCatmullRomOrCubicOrFree : interpIsNotBroken;
 
 
     // For other keyframes:
