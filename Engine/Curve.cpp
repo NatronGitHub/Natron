@@ -346,9 +346,11 @@ Variant Curve::getValueAt(double t) const {
     const Variant& firstKeyValue = _imp->_keyFrames.front()->getValue();
     switch(firstKeyValue.type()){
     case QVariant::Int :
-        return Variant((int)v);
+        return Variant((int)std::floor(v+0.5));
     case QVariant::Double :
         return Variant(v);
+    case QVariant::Bool:
+        return Variant((bool)std::floor(v+0.5));
     default:
         std::string exc("The type requested ( ");
         exc.append(firstKeyValue.typeName());
