@@ -90,16 +90,30 @@ public slots:
     
     virtual void setEnabled() = 0;
     
+    void hide();
+    
+    void show();
+    
+    /******Animations slots for all dimensions at once*****/
+    
     void onSetKeyActionTriggered();
     
     void onShowInCurveEditorActionTriggered();
     
     void onRemoveAnyAnimationActionTriggered();
 
-    void hide();
-
-    void show();
-
+    void onConstantInterpActionTriggered();
+    
+    void onLinearInterpActionTriggered();
+    
+    void onSmoothInterpActionTriggered();
+    
+    void onCatmullromInterpActionTriggered();
+    
+    void onCubicInterpActionTriggered();
+    
+    void onHorizontalInterpActionTriggered();
+    /******************************************************/
 
 signals:
     void deleted(KnobGui*);
@@ -140,6 +154,8 @@ private:
         updateGUI(dimension,variant);
         emit valueChanged(dimension,variant);
     }
+    
+    void setInterpolationForDimensions(const std::vector<int>& dimensions,Natron::KeyframeType interp);
     
 private:
     Knob* const _knob;

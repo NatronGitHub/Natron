@@ -356,11 +356,14 @@ public:
     void moveSelectedKeyFrames(const QPointF& oldClick_opengl,const QPointF& newClick_opengl);
 
     void moveSelectedTangent(const QPointF& pos);
+    
     void refreshKeyTangentsGUI(boost::shared_ptr<SelectedKey> key);
 
     void refreshSelectionRectangle(double x,double y);
 
     void updateSelectedKeysMaxMovement();
+    
+    void setKeysInterpolation(const std::vector<boost::shared_ptr<KeyFrame> >& keys,Natron::KeyframeType type);
 
 private:
 
@@ -1240,6 +1243,33 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
 
 }
 
+void CurveWidgetPrivate::setKeysInterpolation(const std::vector<boost::shared_ptr<KeyFrame> >& keys,Natron::KeyframeType type){
+    
+    CurveEditor* editor = NULL;
+    if (_widget->parentWidget()) {
+        if (_widget->parentWidget()->parentWidget()) {
+            if (_widget->parentWidget()->parentWidget()->objectName() == kCurveEditorObjectName) {
+                editor = dynamic_cast<CurveEditor*>(_widget->parentWidget()->parentWidget());
+            }
+        }
+    }
+    
+    //if the curve widget is the one owned by the curve editor use the undo/redo stack
+    if(editor){
+        if(keys.size() > 1){
+            editor->setKeysInterpolation(keys, type);
+        }else{
+            editor->setKeyInterpolation(keys.front(),type);
+        }
+    }else{
+        for(U32 i = 0; i < keys.size();++i){
+            _widget->setKeyInterpolation(keys[i], type);
+        }
+    }
+    _widget->updateGL();
+}
+
+
 ///////////////////////////////////////////////////////////////////
 // CurveWidget
 //
@@ -1882,66 +1912,74 @@ void CurveWidget::setKeyPos(boost::shared_ptr<KeyFrame> key, double x, const Var
     
 }
 
-void CurveWidget::constantInterpForSelectedKeyFrames(){
+void CurveWidget::setKeyInterpolation(boost::shared_ptr<KeyFrame> key,Natron::KeyframeType interpolation){
+  
+    key->setInterpolationAndEvaluate(interpolation);
+    
+    //if the key is selected (i.e we can see its tangents, refresh the tangents gui)
     for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        (*it)->key->setInterpolationAndEvaluate(KEYFRAME_CONSTANT);
-        _imp->refreshKeyTangentsGUI(*it);
+        if((*it)->key == key){
+            _imp->refreshKeyTangentsGUI(*it);
+            break;
+        }
     }
-    updateGL();
+}
+
+void CurveWidget::constantInterpForSelectedKeyFrames(){
+    
+    std::vector<boost::shared_ptr<KeyFrame> > keys;
+    for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
+        keys.push_back((*it)->key);
+    }
+    _imp->setKeysInterpolation(keys,KEYFRAME_CONSTANT);
 }
 
 void CurveWidget::linearInterpForSelectedKeyFrames(){
+    std::vector<boost::shared_ptr<KeyFrame> > keys;
     for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        (*it)->key->setInterpolationAndEvaluate(KEYFRAME_LINEAR);
-        _imp->refreshKeyTangentsGUI(*it);
+        keys.push_back((*it)->key);
     }
-    updateGL();
+    _imp->setKeysInterpolation(keys,KEYFRAME_LINEAR);
 }
 
 void CurveWidget::smoothForSelectedKeyFrames(){
+    std::vector<boost::shared_ptr<KeyFrame> > keys;
     for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        (*it)->key->setInterpolationAndEvaluate(KEYFRAME_SMOOTH);
-        _imp->refreshKeyTangentsGUI(*it);
+        keys.push_back((*it)->key);
     }
-    updateGL();
+    _imp->setKeysInterpolation(keys,KEYFRAME_SMOOTH);
 }
 
 void CurveWidget::catmullromInterpForSelectedKeyFrames(){
+    std::vector<boost::shared_ptr<KeyFrame> > keys;
     for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        (*it)->key->setInterpolationAndEvaluate(KEYFRAME_CATMULL_ROM);
-        _imp->refreshKeyTangentsGUI(*it);
+        keys.push_back((*it)->key);
     }
-    updateGL();
+    _imp->setKeysInterpolation(keys,KEYFRAME_CATMULL_ROM);
 }
 
 void CurveWidget::cubicInterpForSelectedKeyFrames(){
+    std::vector<boost::shared_ptr<KeyFrame> > keys;
     for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        (*it)->key->setInterpolationAndEvaluate(KEYFRAME_CUBIC);
-        _imp->refreshKeyTangentsGUI(*it);
+        keys.push_back((*it)->key);
     }
-    updateGL();
+    _imp->setKeysInterpolation(keys,KEYFRAME_CUBIC);
 }
 
 void CurveWidget::horizontalInterpForSelectedKeyFrames(){
+    std::vector<boost::shared_ptr<KeyFrame> > keys;
     for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        (*it)->key->setInterpolationAndEvaluate(KEYFRAME_HORIZONTAL);
-        _imp->refreshKeyTangentsGUI(*it);
+        keys.push_back((*it)->key);
     }
-    updateGL();
+    _imp->setKeysInterpolation(keys,KEYFRAME_HORIZONTAL);
 }
 
 void CurveWidget::breakTangentsForSelectedKeyFrames(){
+    std::vector<boost::shared_ptr<KeyFrame> > keys;
     for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        SelectedKeys::iterator next = it;
-        ++next;
-        if(next != _imp->_selectedKeyFrames.end()){
-            (*it)->key->setInterpolation(KEYFRAME_BROKEN);
-        }else{
-            (*it)->key->setInterpolationAndEvaluate(KEYFRAME_BROKEN);
-        }
-        _imp->refreshKeyTangentsGUI(*it);
+        keys.push_back((*it)->key);
     }
-    updateGL();
+    _imp->setKeysInterpolation(keys,KEYFRAME_BROKEN);
 }
 
 void CurveWidget::deleteSelectedKeyFrames(){

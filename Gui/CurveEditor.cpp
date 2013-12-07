@@ -505,6 +505,43 @@ private:
     CurveWidget* _curveWidget;
 };
 
+
+
+class SetKeyInterpolationCommand : public QUndoCommand{
+
+public:
+
+    SetKeyInterpolationCommand(CurveWidget* editor,Natron::KeyframeType newInterp,
+                               boost::shared_ptr<KeyFrame> key,
+                               QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+
+private:
+
+    Natron::KeyframeType _oldInterp;
+    Natron::KeyframeType _newInterp;
+    boost::shared_ptr<KeyFrame> _key;
+    CurveWidget* _curveWidget;
+};
+
+class SetMultipleKeysInterpolationCommand : public QUndoCommand{
+
+public:
+
+    SetMultipleKeysInterpolationCommand(CurveWidget* editor, Natron::KeyframeType newInterp,
+                               const std::vector<boost::shared_ptr<KeyFrame> >& keys,
+                               QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+
+private:
+
+    std::vector<std::pair<boost::shared_ptr<KeyFrame>,Natron::KeyframeType> > _oldInterp;
+    Natron::KeyframeType _newInterp;
+    CurveWidget* _curveWidget;
+};
+
 } // end of anonymous namespace
 
 
@@ -869,4 +906,66 @@ bool MoveMultipleKeysCommand::mergeWith(const QUndoCommand * command){
     }else{
         return false;
     }
+}
+
+void CurveEditor::setKeyInterpolation(boost::shared_ptr<KeyFrame> key,Natron::KeyframeType interp){
+    _undoStack->push(new SetKeyInterpolationCommand(_curveWidget,interp,key));
+}
+
+void CurveEditor::setKeysInterpolation(const std::vector< boost::shared_ptr<KeyFrame> >& keys,Natron::KeyframeType interp){
+    _undoStack->push(new SetMultipleKeysInterpolationCommand(_curveWidget,interp,keys));
+}
+
+
+SetKeyInterpolationCommand::SetKeyInterpolationCommand(CurveWidget* editor,Natron::KeyframeType newInterp,
+                                                       boost::shared_ptr<KeyFrame> key,
+                                                       QUndoCommand *parent)
+    : QUndoCommand(parent)
+    , _oldInterp(key->getInterpolation())
+    , _newInterp(newInterp)
+    , _key(key)
+    , _curveWidget(editor)
+{
+
+}
+
+void SetKeyInterpolationCommand::undo(){
+    _curveWidget->setKeyInterpolation(_key,_oldInterp);
+    _curveWidget->updateGL();
+    setText(QObject::tr("Set key interpolation"));
+}
+
+void SetKeyInterpolationCommand::redo(){
+    _curveWidget->setKeyInterpolation(_key,_newInterp);
+    _curveWidget->updateGL();
+    setText(QObject::tr("Set key interpolation"));
+}
+
+SetMultipleKeysInterpolationCommand::SetMultipleKeysInterpolationCommand(CurveWidget* editor,Natron::KeyframeType newInterp,
+                           const std::vector<boost::shared_ptr<KeyFrame> >& keys,
+                           QUndoCommand *parent)
+    : QUndoCommand(parent)
+    , _oldInterp()
+    , _newInterp(newInterp)
+    , _curveWidget(editor)
+{
+    for(U32 i = 0; i < keys.size();++i){
+        _oldInterp.push_back(std::make_pair(keys[i],keys[i]->getInterpolation()));
+    }
+}
+
+void SetMultipleKeysInterpolationCommand::undo(){
+     for(U32 i = 0; i < _oldInterp.size();++i){
+        _curveWidget->setKeyInterpolation(_oldInterp[i].first,_oldInterp[i].second);
+     }
+    _curveWidget->updateGL();
+    setText(QObject::tr("Set multiple keys interpolation"));
+}
+
+void SetMultipleKeysInterpolationCommand::redo(){
+    for(U32 i = 0; i < _oldInterp.size();++i){
+       _curveWidget->setKeyInterpolation(_oldInterp[i].first,_newInterp);
+    }
+    _curveWidget->updateGL();
+    setText(QObject::tr("Set multiple keys interpolation"));
 }

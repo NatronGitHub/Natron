@@ -143,6 +143,12 @@ public:
     
     CurveGui* findCurve(KnobGui* knob,int dimension);
     
+    void setKeyInterpolation(boost::shared_ptr<KeyFrame> key,Natron::KeyframeType interp);
+    
+    void setKeysInterpolation(const std::vector< boost::shared_ptr<KeyFrame> >& keys,Natron::KeyframeType interp);
+    
+    
+    
 public slots:
     
     void onCurrentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*);

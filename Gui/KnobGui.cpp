@@ -152,6 +152,37 @@ void KnobGui::createAnimationMenu(QWidget* parent){
     QObject::connect(removeAnyAnimationAction,SIGNAL(triggered()),this,SLOT(onRemoveAnyAnimationActionTriggered()));
     _animationMenu->addAction(removeAnyAnimationAction);
     
+    
+    
+    QMenu* interpolationMenu = new QMenu(_animationMenu);
+    interpolationMenu->setTitle("Interpolation");
+    _animationMenu->addAction(interpolationMenu->menuAction());
+    
+    QAction* constantInterpAction = new QAction(tr("Constant"),interpolationMenu);
+    QObject::connect(constantInterpAction,SIGNAL(triggered()),this,SLOT(onConstantInterpActionTriggered()));
+    interpolationMenu->addAction(constantInterpAction);
+    
+    QAction* linearInterpAction = new QAction(tr("Linear"),interpolationMenu);
+    QObject::connect(linearInterpAction,SIGNAL(triggered()),this,SLOT(onLinearInterpActionTriggered()));
+    interpolationMenu->addAction(linearInterpAction);
+    
+    QAction* smoothInterpAction = new QAction(tr("Smooth"),interpolationMenu);
+    QObject::connect(smoothInterpAction,SIGNAL(triggered()),this,SLOT(onSmoothInterpActionTriggered()));
+    interpolationMenu->addAction(smoothInterpAction);
+    
+    QAction* catmullRomInterpAction = new QAction(tr("Catmull-Rom"),interpolationMenu);
+    QObject::connect(catmullRomInterpAction,SIGNAL(triggered()),this,SLOT(onCatmullromInterpActionTriggered()));
+    interpolationMenu->addAction(catmullRomInterpAction);
+    
+    QAction* cubicInterpAction = new QAction(tr("Cubic"),interpolationMenu);
+    QObject::connect(cubicInterpAction,SIGNAL(triggered()),this,SLOT(onCubicInterpActionTriggered()));
+    interpolationMenu->addAction(cubicInterpAction);
+    
+    QAction* horizInterpAction = new QAction(tr("Horizontal"),interpolationMenu);
+    QObject::connect(horizInterpAction,SIGNAL(triggered()),this,SLOT(onHorizontalInterpActionTriggered()));
+    interpolationMenu->addAction(horizInterpAction);
+    
+    
 }
 
 void KnobGui::setSetKeyActionEnabled(bool e){
@@ -219,6 +250,66 @@ void KnobGui::onRemoveAnyAnimationActionTriggered(){
     for(int i = 0; i < _knob->getDimension();++i){
         onInternalValueChanged(i);
     }
+}
+
+void KnobGui::setInterpolationForDimensions(const std::vector<int>& dimensions,Natron::KeyframeType interp){
+    std::vector<boost::shared_ptr<KeyFrame> > keys;
+    for(U32 i = 0; i < dimensions.size();++i){
+        boost::shared_ptr<Curve> c = _knob->getCurve(dimensions[i]);
+        const Curve::KeyFrames& keyframes = c->getKeyFrames();
+        for(Curve::KeyFrames::const_iterator it = keyframes.begin();it!=keyframes.end();++it){
+            keys.push_back(*it);
+        }
+    }
+    _knob->getHolder()->getApp()->getGui()->_curveEditor->setKeysInterpolation(keys,interp);
+}
+
+void KnobGui::onConstantInterpActionTriggered(){
+    std::vector<int> dims;
+    for(int i = 0; i < _knob->getDimension();++i){
+        dims.push_back(i);
+    }
+    setInterpolationForDimensions(dims,Natron::KEYFRAME_CONSTANT);
+}
+
+void KnobGui::onLinearInterpActionTriggered(){
+    std::vector<int> dims;
+    for(int i = 0; i < _knob->getDimension();++i){
+        dims.push_back(i);
+    }
+    setInterpolationForDimensions(dims,Natron::KEYFRAME_LINEAR);
+}
+
+void KnobGui::onSmoothInterpActionTriggered(){
+    std::vector<int> dims;
+    for(int i = 0; i < _knob->getDimension();++i){
+        dims.push_back(i);
+    }
+    setInterpolationForDimensions(dims,Natron::KEYFRAME_SMOOTH);
+}
+
+void KnobGui::onCatmullromInterpActionTriggered(){
+    std::vector<int> dims;
+    for(int i = 0; i < _knob->getDimension();++i){
+        dims.push_back(i);
+    }
+    setInterpolationForDimensions(dims,Natron::KEYFRAME_CATMULL_ROM);
+}
+
+void KnobGui::onCubicInterpActionTriggered(){
+    std::vector<int> dims;
+    for(int i = 0; i < _knob->getDimension();++i){
+        dims.push_back(i);
+    }
+    setInterpolationForDimensions(dims,Natron::KEYFRAME_CUBIC);
+}
+
+void KnobGui::onHorizontalInterpActionTriggered(){
+    std::vector<int> dims;
+    for(int i = 0; i < _knob->getDimension();++i){
+        dims.push_back(i);
+    }
+    setInterpolationForDimensions(dims,Natron::KEYFRAME_HORIZONTAL);
 }
 
 void KnobGui::setKeyframe(SequenceTime time,int dimension){

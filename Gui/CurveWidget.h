@@ -132,6 +132,8 @@ public:
     void removeKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key);
 
     void setKeyPos(boost::shared_ptr<KeyFrame> key,double x,const Variant& y);
+    
+    void setKeyInterpolation(boost::shared_ptr<KeyFrame> key,Natron::KeyframeType interpolation);
 
 public slots:
 
@@ -166,6 +168,7 @@ public slots:
     void onTimeLineBoundariesChanged(SequenceTime left, SequenceTime right);
 
 private:
+    
     virtual void initializeGL() OVERRIDE FINAL;
 
     virtual void resizeGL(int width,int height) OVERRIDE FINAL;
