@@ -101,7 +101,7 @@ public:
 
     Bool_Knob(KnobHolder *holder, const std::string &description, int dimension);
 
-    static bool canAnimateStatic() { return false; }
+    static bool canAnimateStatic() { return true; }
 
 private:
 
