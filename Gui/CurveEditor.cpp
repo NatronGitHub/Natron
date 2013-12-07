@@ -147,7 +147,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
 
         QTreeWidgetItem* knobItem = new QTreeWidgetItem(nameItem);
 
-        knobItem->setText(0,k->getName().c_str());
+        knobItem->setText(0,k->getDescription().c_str());
         CurveGui* knobCurve = NULL;
         bool hideKnob = true;
         if(k->getDimension() == 1){
