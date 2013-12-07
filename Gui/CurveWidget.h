@@ -100,8 +100,11 @@ typedef std::list< boost::shared_ptr<SelectedKey> > SelectedKeys;
 
 class QMenu;
 class CurveWidgetPrivate;
+
 class CurveWidget : public QGLWidget
 {
+    friend class CurveGui;
+    friend class CurveWidgetPrivate;
 
     Q_OBJECT
 
@@ -111,46 +114,24 @@ public:
     CurveWidget(boost::shared_ptr<TimeLine> timeline = boost::shared_ptr<TimeLine>() ,QWidget* parent = NULL, const QGLWidget* shareWidget = NULL);
 
     virtual ~CurveWidget();
-   
-    void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const;
 
     void centerOn(double xmin,double xmax,double ymin,double ymax);
 
     CurveGui *createCurve(boost::shared_ptr<Curve> curve, const QString &name);
 
     void removeCurve(CurveGui* curve);
-    
+
     void centerOn(const std::vector<CurveGui*>& curves);
-    
+
     void showCurvesAndHideOthers(const std::vector<CurveGui*>& curves);
-    
-    /**
-     *@brief See toImgCoordinates_fast in ViewerGL.h
-     **/
-    QPointF toScaleCoordinates(double x, double y) const;
 
-    /**
-     *@brief See toWidgetCoordinates in ViewerGL.h
-     **/
-    QPointF toWidgetCoordinates(double x, double y) const;
-
-    const QColor& getSelectedCurveColor() const ;
-
-    const QFont& getFont() const;
-
-    const SelectedKeys& getSelectedKeyFrames() const ;
-
-    bool isSupportingOpenGLVAO() const ;
-
-    void addKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key);
+    void addKeyFrame(CurveGui* curve, boost::shared_ptr<KeyFrame> key);
 
     boost::shared_ptr<KeyFrame> addKeyFrame(CurveGui* curve,const Variant& y, int x);
 
     void removeKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key);
 
     void setKeyPos(boost::shared_ptr<KeyFrame> key,double x,const Variant& y);
-
-    std::pair<SelectedKeys::const_iterator,bool> isKeySelected(boost::shared_ptr<KeyFrame> key) const;
 
 public slots:
 
@@ -184,27 +165,49 @@ public slots:
 
     void onTimeLineBoundariesChanged(SequenceTime left, SequenceTime right);
 
-protected:
+private:
+    virtual void initializeGL() OVERRIDE FINAL;
 
-    virtual void initializeGL();
+    virtual void resizeGL(int width,int height) OVERRIDE FINAL;
 
-    virtual void resizeGL(int width,int height);
+    virtual void paintGL() OVERRIDE FINAL;
 
-    virtual void paintGL();
+    virtual QSize sizeHint() const OVERRIDE FINAL;
 
-    virtual QSize sizeHint() const;
+    virtual void mousePressEvent(QMouseEvent *event) OVERRIDE FINAL;
 
-    virtual void mousePressEvent(QMouseEvent *event);
+    virtual void mouseReleaseEvent(QMouseEvent *event) OVERRIDE FINAL;
 
-    virtual void mouseReleaseEvent(QMouseEvent *event);
+    virtual void mouseMoveEvent(QMouseEvent *event) OVERRIDE FINAL;
 
-    virtual void mouseMoveEvent(QMouseEvent *event);
+    virtual void wheelEvent(QWheelEvent *event) OVERRIDE FINAL;
 
-    virtual void wheelEvent(QWheelEvent *event);
+    virtual void keyPressEvent(QKeyEvent *event) OVERRIDE FINAL;
 
-    virtual void keyPressEvent(QKeyEvent *event);
+    virtual void enterEvent(QEvent *event) OVERRIDE FINAL;
 
-    virtual void enterEvent(QEvent *event);
+    void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const;
+
+    /**
+     *@brief See toImgCoordinates_fast in ViewerGL.h
+     **/
+    QPointF toScaleCoordinates(double x, double y) const;
+
+    /**
+     *@brief See toWidgetCoordinates in ViewerGL.h
+     **/
+    QPointF toWidgetCoordinates(double x, double y) const;
+
+    const QColor& getSelectedCurveColor() const ;
+
+    const QFont& getFont() const;
+
+    const SelectedKeys& getSelectedKeyFrames() const ;
+
+    bool isSupportingOpenGLVAO() const ;
+
+    std::pair<SelectedKeys::const_iterator,bool> isKeySelected(boost::shared_ptr<KeyFrame> key) const;
+
 
 private:
 

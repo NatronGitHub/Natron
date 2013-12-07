@@ -45,6 +45,8 @@ static double AXIS_MAX = 100000.;
 static double AXIS_MIN = -100000.;
 
 
+namespace { // protect local classes in anonymous namespace
+
 enum EventState {
     DRAGGING_VIEW = 0,
     DRAGGING_KEYS = 1,
@@ -53,6 +55,8 @@ enum EventState {
     DRAGGING_TIMELINE = 4,
     NONE = 5
 };
+    
+}
 
 struct SelectedKey {
     CurveGui* curve;
@@ -283,6 +287,8 @@ void CurveGui::setVisibleAndRefresh(bool visible) { _visible = visible; emit cur
 
 /*****************************CURVE WIDGET***********************************************/
 
+namespace { // protext local classes in anonymous namespace
+
 // a data container with only a constructor, a destructor, and a few utility functions is really just a struct
 // see ViewerGL.cpp for a full documentation of ZoomContext
 struct ZoomContext {
@@ -303,58 +309,18 @@ struct ZoomContext {
     double _lastOrthoLeft,_lastOrthoBottom,_lastOrthoRight,_lastOrthoTop; //< remembers the last values passed to the glOrtho call
 };
 
+typedef std::list<CurveGui* > Curves;
+
+}
 
 // although all members are public, CurveWidgetPrivate is really a class because it has lots of member functions
 // (in fact, many members could probably be made private)
 class CurveWidgetPrivate {
 public:
-    ZoomContext _zoomCtx;
-    EventState _state;
-    QMenu* _rightClickMenu;
-    QColor _clearColor;
-    QColor _baseAxisColor;
-    QColor _scaleColor;
-    QColor _selectedCurveColor;
-    QColor _nextCurveAddedColor;
-    TextRenderer _textRenderer;
-    QFont* _font;
-
-    typedef std::list<CurveGui* > Curves;
-    Curves _curves;
-
-
-    SelectedKeys _selectedKeyFrames;
-    bool _hasOpenGLVAOSupport;
-
-    bool _mustSetDragOrientation;
-    QPoint _mouseDragOrientation; ///used to drag a key frame in only 1 direction (horizontal or vertical)
-    ///the value is either (1,0) or (0,1)
-
-    std::vector< std::pair<double,Variant> > _keyFramesClipBoard;
-    QRectF _selectionRectangle;
-    QPointF _dragStartPoint;
-    QPointF _keyDragMaxMovement;
-
-    bool _drawSelectedKeyFramesBbox;
-    QRectF _selectedKeyFramesBbox;
-    QLineF _selectedKeyFramesCrossVertLine;
-    QLineF _selectedKeyFramesCrossHorizLine;
-
-    boost::shared_ptr<TimeLine> _timeline;
-    QPolygonF _timelineTopPoly;
-    QPolygonF _timelineBtmPoly;
-
-    bool _timelineEnabled;
-    CurveWidget* _widget;
-
-    std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator> _selectedTangent;
-    
 
     CurveWidgetPrivate(boost::shared_ptr<TimeLine> timeline,CurveWidget* widget);
 
     ~CurveWidgetPrivate();
-
-    void createMenu();
 
     void drawSelectionRectangle();
 
@@ -366,9 +332,7 @@ public:
 
     void drawBaseAxis();
 
-
     void drawScale();
-
     void drawSelectedKeyFramesBbox();
 
     Curves::const_iterator isNearbyCurve(const QPoint &pt) const;
@@ -389,18 +353,59 @@ public:
      **/
     void selectCurve(CurveGui* curve);
 
-
-    void keyFramesWithinRect(const QRectF& rect,std::vector< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > >* keys) const;
-
     void moveSelectedKeyFrames(const QPointF& oldClick_opengl,const QPointF& newClick_opengl);
 
     void moveSelectedTangent(const QPointF& pos);
-
     void refreshKeyTangentsGUI(boost::shared_ptr<SelectedKey> key);
 
     void refreshSelectionRectangle(double x,double y);
 
     void updateSelectedKeysMaxMovement();
+
+private:
+
+    void createMenu();
+
+    void keyFramesWithinRect(const QRectF& rect,std::vector< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > >* keys) const;
+
+public:
+
+    ZoomContext _zoomCtx;
+    EventState _state;
+    QMenu* _rightClickMenu;
+    QColor _clearColor;
+    QColor _selectedCurveColor;
+    QColor _nextCurveAddedColor;
+    TextRenderer _textRenderer;
+    QFont* _font;
+
+    Curves _curves;
+    SelectedKeys _selectedKeyFrames;
+    bool _hasOpenGLVAOSupport;
+    bool _mustSetDragOrientation;
+    QPoint _mouseDragOrientation; ///used to drag a key frame in only 1 direction (horizontal or vertical)
+    ///the value is either (1,0) or (0,1)
+
+    std::vector< std::pair<double,Variant> > _keyFramesClipBoard;
+    QRectF _selectionRectangle;
+    QPointF _dragStartPoint;
+    bool _drawSelectedKeyFramesBbox;
+    QRectF _selectedKeyFramesBbox;
+    QLineF _selectedKeyFramesCrossVertLine;
+    QLineF _selectedKeyFramesCrossHorizLine;
+    boost::shared_ptr<TimeLine> _timeline;
+    bool _timelineEnabled;
+    std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator> _selectedTangent;
+    
+private:
+
+    QColor _baseAxisColor;
+    QColor _scaleColor;
+    QPointF _keyDragMaxMovement;
+    QPolygonF _timelineTopPoly;
+    QPolygonF _timelineBtmPoly;
+    CurveWidget* _widget;
+
 };
 
 CurveWidgetPrivate::CurveWidgetPrivate(boost::shared_ptr<TimeLine> timeline,CurveWidget* widget)
@@ -408,8 +413,6 @@ CurveWidgetPrivate::CurveWidgetPrivate(boost::shared_ptr<TimeLine> timeline,Curv
     , _state(NONE)
     , _rightClickMenu(new QMenu(widget))
     , _clearColor(0,0,0,255)
-    , _baseAxisColor(118,215,90,255)
-    , _scaleColor(67,123,52,255)
     , _selectedCurveColor(255,255,89,255)
     , _nextCurveAddedColor()
     , _textRenderer()
@@ -422,17 +425,19 @@ CurveWidgetPrivate::CurveWidgetPrivate(boost::shared_ptr<TimeLine> timeline,Curv
     , _keyFramesClipBoard()
     , _selectionRectangle()
     , _dragStartPoint()
-    , _keyDragMaxMovement()
     , _drawSelectedKeyFramesBbox(false)
     , _selectedKeyFramesBbox()
     , _selectedKeyFramesCrossVertLine()
     , _selectedKeyFramesCrossHorizLine()
     , _timeline(timeline)
+    , _timelineEnabled(false)
+    , _selectedTangent()
+    , _baseAxisColor(118,215,90,255)
+    , _scaleColor(67,123,52,255)
+    , _keyDragMaxMovement()
     , _timelineTopPoly()
     , _timelineBtmPoly()
-    , _timelineEnabled(false)
     , _widget(widget)
-    , _selectedTangent()
 {
     _nextCurveAddedColor.setHsv(200,255,255);
     createMenu();
@@ -789,7 +794,7 @@ void CurveWidgetPrivate::drawSelectedKeyFramesBbox() {
 }
 
 
-CurveWidgetPrivate::Curves::const_iterator CurveWidgetPrivate::isNearbyCurve(const QPoint &pt) const {
+Curves::const_iterator CurveWidgetPrivate::isNearbyCurve(const QPoint &pt) const {
     QPointF openGL_pos = _widget->toScaleCoordinates(pt.x(),pt.y());
     for (Curves::const_iterator it = _curves.begin();it!=_curves.end();++it) {
         if ((*it)->isVisible()) {
@@ -1535,7 +1540,7 @@ void CurveWidget::mousePressEvent(QMouseEvent *event) {
     
     ////
     // is the click near a curve?
-    CurveWidgetPrivate::Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve(event->pos());
+    Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve(event->pos());
     if (foundCurveNearby != _imp->_curves.end()) {
         // yes, select it and don't start any other action, the user can then do per-curve specific actions
         // like centering on it on the viewport or pasting previously copied keyframes.
@@ -1989,7 +1994,7 @@ void CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve(){
         }
     }
     
-    for(CurveWidgetPrivate::Curves::iterator it = _imp->_curves.begin() ; it != _imp->_curves.end() ; ++it){
+    for (Curves::iterator it = _imp->_curves.begin() ; it != _imp->_curves.end() ; ++it) {
         if((*it)->isSelected()){
             for(U32 i = 0; i < _imp->_keyFramesClipBoard.size();++i){
                 std::pair<double,Variant>& toCopy = _imp->_keyFramesClipBoard[i];
@@ -2008,7 +2013,7 @@ void CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve(){
 
 void CurveWidget::selectAllKeyFrames(){
     _imp->_drawSelectedKeyFramesBbox = true;
-    for(CurveWidgetPrivate::Curves::iterator it = _imp->_curves.begin() ; it != _imp->_curves.end() ; ++it){
+    for (Curves::iterator it = _imp->_curves.begin() ; it != _imp->_curves.end() ; ++it) {
         const Curve::KeyFrames& keys = (*it)->getInternalCurve()->getKeyFrames();
         for( Curve::KeyFrames::const_iterator it2 = keys.begin(); it2!=keys.end();++it2){
 
@@ -2026,8 +2031,8 @@ void CurveWidget::selectAllKeyFrames(){
     updateGL();
 }
 
-void CurveWidget::frameSelectedCurve(){
-    for(CurveWidgetPrivate::Curves::iterator it = _imp->_curves.begin() ; it != _imp->_curves.end() ; ++it){
+void CurveWidget::frameSelectedCurve() {
+    for (Curves::iterator it = _imp->_curves.begin() ; it != _imp->_curves.end() ; ++it) {
         if((*it)->isSelected()){
             std::vector<CurveGui*> curves;
             curves.push_back(*it);

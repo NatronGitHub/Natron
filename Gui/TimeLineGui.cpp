@@ -41,6 +41,8 @@ using namespace Natron;
 #define DEFAULT_TIMELINE_LEFT_BOUND 0
 #define DEFAULT_TIMELINE_RIGHT_BOUND 100
 
+namespace { // protect local classes in anonymous namespace
+
 struct ZoomContext {
     ZoomContext()
         : bottom(0.)
@@ -55,6 +57,8 @@ struct ZoomContext {
 
     double lastOrthoLeft, lastOrthoBottom, lastOrthoRight, lastOrthoTop; //< remembers the last values passed to the glOrtho call
 };
+
+}
 
 struct TimelineGuiPrivate{
 
