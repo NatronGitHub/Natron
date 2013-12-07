@@ -611,6 +611,28 @@ std::string String_Knob::getString() const
     return getValue<QString>().toStdString();
 }
 
+/******************************CUSTOM_KNOB**************************************/
+
+Custom_Knob::Custom_Knob(KnobHolder *holder, const std::string &description, int dimension)
+: Knob(holder, description, dimension)
+{
+}
+
+bool Custom_Knob::canAnimate() const
+{
+    return canAnimateStatic();
+}
+
+std::string Custom_Knob::typeName() const
+{
+    return "Custom";
+}
+
+std::string Custom_Knob::getString() const
+{
+    return getValue<QString>().toStdString();
+}
+
 /******************************GROUP_KNOB**************************************/
 
 Group_Knob::Group_Knob(KnobHolder *holder, const std::string &description, int dimension):

@@ -203,16 +203,20 @@ OfxStatus OfxBooleanInstance::get(bool& b){
     b = _knob->getValue<bool>();
     return kOfxStatOK;
 }
+
 OfxStatus OfxBooleanInstance::get(OfxTime /*time*/, bool& b) {
+    assert(!Bool_Knob::canAnimateStatic());
     b = _knob->getValue<bool>();
     return kOfxStatOK;
 }
+
 OfxStatus OfxBooleanInstance::set(bool b){
     _knob->setValue<bool>(b);
     return kOfxStatOK;
 }
 
 OfxStatus OfxBooleanInstance::set(OfxTime /*time*/, bool b){
+    assert(!Bool_Knob::canAnimateStatic());
     _knob->setValue<bool>(b);
     return kOfxStatOK;
 }
@@ -257,10 +261,12 @@ OfxStatus OfxChoiceInstance::get(int& v){
     v = _knob->getActiveEntry();
     return kOfxStatOK;
 }
-OfxStatus OfxChoiceInstance::get(OfxTime /*time*/, int& v){
+OfxStatus OfxChoiceInstance::get(OfxTime /*time*/, int& v) {
+    assert(!ComboBox_Knob::canAnimateStatic());
     v = _knob->getActiveEntry();
     return kOfxStatOK;
 }
+
 OfxStatus OfxChoiceInstance::set(int v){
     if(v < (int)_entries.size()){
         _knob->setValue<int>(v);
@@ -269,7 +275,9 @@ OfxStatus OfxChoiceInstance::set(int v){
         return kOfxStatErrBadIndex;
     }
 }
-OfxStatus OfxChoiceInstance::set(OfxTime /*time*/, int v){
+
+OfxStatus OfxChoiceInstance::set(OfxTime /*time*/, int v) {
+    assert(!ComboBox_Knob::canAnimateStatic());
     if(v < (int)_entries.size()){
         _knob->setValue<int>(v);
         return kOfxStatOK;
@@ -811,7 +819,9 @@ OfxStatus OfxStringInstance::get(std::string &str) {
     }
     return kOfxStatOK;
 }
+
 OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
+    assert(!String_Knob::canAnimateStatic());
     assert(_node->effectInstance());
     if(_fileKnob){
         str = _fileKnob->getRandomFrameName(time,true).toStdString();
@@ -824,6 +834,7 @@ OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
     }
     return kOfxStatOK;
 }
+
 OfxStatus OfxStringInstance::set(const char* str) {
     if(_fileKnob){
         _fileKnob->setValue(str);
@@ -839,7 +850,9 @@ OfxStatus OfxStringInstance::set(const char* str) {
     }
     return kOfxStatOK;
 }
+
 OfxStatus OfxStringInstance::set(OfxTime /*time*/, const char* str) {
+    assert(!String_Knob::canAnimateStatic());
     if(_fileKnob){
         _fileKnob->setValue(str);
     }
@@ -947,4 +960,91 @@ void OfxStringInstance::ifFileKnobPopDialog(){
     }else if(_outputFileKnob){
         _outputFileKnob->openFile();
     }
+}
+
+
+/*
+ http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamTypeCustom
+
+ Custom parameters contain null terminated char * C strings, and may animate. They are designed to provide plugins with a way of storing data that is too complicated or impossible to store in a set of ordinary parameters.
+
+ If a custom parameter animates, it must set its kOfxParamPropCustomInterpCallbackV1 property, which points to a OfxCustomParamInterpFuncV1 function. This function is used to interpolate keyframes in custom params.
+
+ Custom parameters have no interface by default. However,
+
+ * if they animate, the host's animation sheet/editor should present a keyframe/curve representation to allow positioning of keys and control of interpolation. The 'normal' (ie: paged or hierarchical) interface should not show any gui.
+ * if the custom param sets its kOfxParamPropInteractV1 property, this should be used by the host in any normal (ie: paged or hierarchical) interface for the parameter.
+
+ Custom parameters are mandatory, as they are simply ASCII C strings. However, animation of custom parameters an support for an in editor interact is optional.
+ */
+
+OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
+: OFX::Host::Param::CustomInstance(descriptor,node->effectInstance())
+, _node(node)
+, _knob(0)
+, _customParamInterpolationV1Entry(0)
+{
+    const OFX::Host::Property::Set &properties = getProperties();
+
+
+    _knob = dynamic_cast<String_Knob*>(appPTR->getKnobFactory().createKnob("String", node, getParamLabel(this)));
+    
+    set(properties.getStringProperty(kOfxParamPropDefault,1).c_str());
+
+    _customParamInterpolationV1Entry = (customParamInterpolationV1Entry_t)properties.getPointerProperty(kOfxParamPropCustomInterpCallbackV1);
+}
+
+OfxStatus OfxCustomInstance::get(std::string &str) {
+    assert(_node->effectInstance());
+    str = _knob->getString();
+    return kOfxStatOK;
+}
+
+OfxStatus OfxCustomInstance::get(OfxTime time, std::string& str) {
+    // FIXME: assert(!Custom_Knob::canAnimateStatic());
+    // it should call _customParamInterpolationV1Entry
+    assert(_node->effectInstance());
+    str = _knob->getString();
+    return kOfxStatOK;
+}
+
+OfxStatus OfxCustomInstance::set(const char* str) {
+    _knob->setValue(str);
+    return kOfxStatOK;
+}
+
+OfxStatus OfxCustomInstance::set(OfxTime /*time*/, const char* str) {
+    //FIXME: assert(!Custom_Knob::canAnimateStatic());
+    _knob->setValue(str);
+    return kOfxStatOK;
+}
+
+OfxStatus OfxCustomInstance::getV(va_list arg) {
+    const char **value = va_arg(arg, const char **);
+
+    OfxStatus stat = get(_localString.localData());
+    *value = _localString.localData().c_str();
+    return stat;
+
+}
+OfxStatus OfxCustomInstance::getV(OfxTime time, va_list arg) {
+    const char **value = va_arg(arg, const char **);
+
+    OfxStatus stat = get(time,_localString.localData());
+    *value = _localString.localData().c_str();
+    return stat;
+}
+
+Knob* OfxCustomInstance::getKnob() const {
+    return _knob;
+}
+
+// callback which should set enabled state as appropriate
+void OfxCustomInstance::setEnabled() {
+    _knob->setEnabled(getEnabled());
+}
+
+// callback which should set secret state as appropriate
+void OfxCustomInstance::setSecret() {
+    _knob->setSecret(getSecret());
 }

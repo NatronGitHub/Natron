@@ -328,7 +328,11 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
 
         Custom parameters are mandatory, as they are simply ASCII C strings. However, animation of custom parameters an support for an in editor interact is optional.
          */
+#warning "activate CustomParam support here"
         throw std::runtime_error(std::string("Parameter ") + paramName + std::string(" has unsupported OFX type ") + descriptor.getType());
+        OfxCustomInstance *ret = new OfxCustomInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeGroup) {
         OfxGroupInstance *ret = new OfxGroupInstance(node(), descriptor);

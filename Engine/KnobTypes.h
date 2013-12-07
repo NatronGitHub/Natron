@@ -311,6 +311,28 @@ private:
 
     virtual std::string typeName() const OVERRIDE FINAL;
 };
+
+/******************************STRING_KNOB**************************************/
+class Custom_Knob: public Knob
+{
+public:
+
+    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+        return new Custom_Knob(holder, description, dimension);
+    }
+
+    Custom_Knob(KnobHolder *holder, const std::string &description, int dimension);
+    std::string getString() const;
+
+    static bool canAnimateStatic() { return false; }
+
+private:
+
+    virtual bool canAnimate() const OVERRIDE FINAL;
+
+    virtual std::string typeName() const OVERRIDE FINAL;
+};
+
 /******************************GROUP_KNOB**************************************/
 class Group_Knob: public Knob
 {
