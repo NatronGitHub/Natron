@@ -240,3 +240,7 @@ void SpinBox::setAnimation(int i){
     style()->polish(this);
     repaint();
 }
+
+QMenu* SpinBox::getRightClickMenu() {
+    return createStandardContextMenu();
+}

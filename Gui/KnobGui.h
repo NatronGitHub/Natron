@@ -93,6 +93,8 @@ public slots:
     void onSetKeyActionTriggered();
     
     void onShowInCurveEditorActionTriggered();
+    
+    void onRemoveAnyAnimationActionTriggered();
 
     void hide();
 

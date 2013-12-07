@@ -207,11 +207,37 @@ void NodeCurveEditorContext::onNameChanged(const QString& name){
     _nameItem->setText(0,name);
 }
 
+static void checkIfHiddenRecursivly(QTreeWidget* tree,QTreeWidgetItem* item){
+    bool areAllChildrenHidden = true;
+    for(int i = 0 ;i <  item->childCount();++i){
+        if(!item->child(i)->isHidden()){
+            areAllChildrenHidden = false;
+            break;
+        }
+    }
+    if(areAllChildrenHidden){
+        item->setHidden(true);
+        item->setExpanded(false);
+
+    }
+    bool isTopLvl = false;
+    for (int i = 0; i < tree->topLevelItemCount(); ++i) {
+        if(tree->topLevelItem(i) == item){
+            isTopLvl = true;
+            break;
+        }
+    }
+    if(!isTopLvl){
+        checkIfHiddenRecursivly(tree,item->parent());
+    }
+}
+
 void NodeCurveEditorElement::checkVisibleState(){
     if(!_curve)
         return;
     int i = _curve->getInternalCurve()->keyFramesCount();
     if(i > 1){
+        //show the item
         if(!_curveDisplayed){
             _curveDisplayed = true;
             _curve->setVisibleAndRefresh(true);
@@ -225,15 +251,13 @@ void NodeCurveEditorElement::checkVisibleState(){
         }
         _treeWidget->setCurrentItem(_treeItem);
     }else{
+        //hide the item
+        //hiding is a bit more complex because we do not always hide the parent too,it also
+        // depends on the item's siblings visibility
         if(_curveDisplayed){
             _curveDisplayed = false;
             _treeItem->setHidden(true);
-            _treeItem->parent()->setHidden(true);
-            _treeItem->parent()->setExpanded(false);
-            if(_treeItem->parent()->parent()){
-                _treeItem->parent()->parent()->setHidden(true);
-                _treeItem->parent()->parent()->setExpanded(false);
-            }
+            checkIfHiddenRecursivly(_treeWidget, _treeItem->parent());
             _curve->setVisibleAndRefresh(false);
         }
     }
@@ -478,6 +502,17 @@ private:
     std::vector< boost::shared_ptr<KeyMove> > _keys;
     CurveWidget* _curveWidget;
 };
+
+CurveGui* CurveEditor::findCurve(KnobGui* knob,int dimension){
+    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
+        it!=_nodes.end();++it){
+        NodeCurveEditorElement* elem = (*it)->findElement(knob,dimension);
+        if(elem){
+            return elem->getCurve();
+        }
+    }
+    return (CurveGui*)NULL;
+}
 
 void CurveEditor::addKeyFrame(KnobGui* knob,SequenceTime time,int dimension){
     for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();

@@ -17,7 +17,7 @@
 
 class QDoubleValidator;
 class QIntValidator;
-
+class QMenu;
 
 class SpinBox : public LineEdit
 {
@@ -47,6 +47,8 @@ public:
     void setAnimation(int i);
 
     int getAnimation() const { return animation; }
+    
+    QMenu* getRightClickMenu();
 
 protected:
     

@@ -65,6 +65,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/CurveEditor.h"
 #include "Gui/ScaleSlider.h"
 #include "Gui/KnobGuiTypes.h"
+#include "Gui/CurveWidget.h"
 
 #include "Readers/Reader.h"
 
@@ -147,6 +148,10 @@ void KnobGui::createAnimationMenu(QWidget* parent){
     QObject::connect(showInCurveEditorAction,SIGNAL(triggered()),this,SLOT(onShowInCurveEditorActionTriggered()));
     _animationMenu->addAction(showInCurveEditorAction);
     
+    QAction* removeAnyAnimationAction = new QAction(tr("Remove animation"),_animationMenu);
+    QObject::connect(removeAnyAnimationAction,SIGNAL(triggered()),this,SLOT(onRemoveAnyAnimationActionTriggered()));
+    _animationMenu->addAction(removeAnyAnimationAction);
+    
 }
 
 void KnobGui::setSetKeyActionEnabled(bool e){
@@ -197,6 +202,23 @@ void KnobGui::onShowInCurveEditorActionTriggered(){
         _knob->getHolder()->getApp()->getGui()->_curveEditor->centerOn(curves);
     }
     
+    
+}
+
+void KnobGui::onRemoveAnyAnimationActionTriggered(){
+    std::vector<std::pair<CurveGui *, boost::shared_ptr<KeyFrame> > > toRemove;
+    for(int i = 0; i < _knob->getDimension();++i){
+        CurveGui* curve = _knob->getHolder()->getApp()->getGui()->_curveEditor->findCurve(this, i);
+        const Curve::KeyFrames& keys = curve->getInternalCurve()->getKeyFrames();
+        for(Curve::KeyFrames::const_iterator it = keys.begin();it!=keys.end();++it){
+            toRemove.push_back(std::make_pair(curve,*it));
+        }
+    }
+    _knob->getHolder()->getApp()->getGui()->_curveEditor->removeKeyFrames(toRemove);
+    //refresh the gui so it doesn't indicate the parameter is animated anymore
+    for(int i = 0; i < _knob->getDimension();++i){
+        onInternalValueChanged(i);
+    }
 }
 
 void KnobGui::setKeyframe(SequenceTime time,int dimension){

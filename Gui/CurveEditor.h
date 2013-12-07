@@ -140,7 +140,9 @@ public:
     void setKeyFrame(boost::shared_ptr<KeyFrame> key, double x, const Variant& y);
 
     void setKeyFrames(const std::vector<std::pair< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> >, std::pair<double, Variant> > >& keys);
-
+    
+    CurveGui* findCurve(KnobGui* knob,int dimension);
+    
 public slots:
     
     void onCurrentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*);
