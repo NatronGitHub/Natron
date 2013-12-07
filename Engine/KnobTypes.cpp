@@ -41,12 +41,14 @@ void Int_Knob::setMinimum(int mini, int index)
             _minimums.push_back(mini);
         } else {
             while (_minimums.size() <= (U32)index) {
+                // kOfxParamPropMin default value is INT_MIN
                 _minimums.push_back(INT_MIN);
             }
             _minimums.push_back(mini);
         }
     }
-    int maximum = 99;
+    // kOfxParamPropMax default value is INT_MAX
+    int maximum = INT_MAX;
     if (_maximums.size() > (U32)index) {
         maximum = _maximums[index];
     }
@@ -63,12 +65,14 @@ void Int_Knob::setMaximum(int maxi, int index)
             _maximums.push_back(maxi);
         } else {
             while (_maximums.size() <= (U32)index) {
+                // kOfxParamPropMax default value is INT_MAX
                 _maximums.push_back(INT_MAX);
             }
             _maximums.push_back(maxi);
         }
     }
-    int minimum = 99;
+    // kOfxParamPropMin default value is INT_MIN
+    int minimum = INT_MIN;
     if (_minimums.size() > (U32)index) {
         minimum = _minimums[index];
     }
@@ -84,7 +88,8 @@ void Int_Knob::setDisplayMinimum(int mini, int index)
             _displayMins.push_back(mini);
         } else {
             while (_displayMins.size() <= (U32)index) {
-                _displayMins.push_back(0);
+                // kOfxParamPropDisplayMin default value is INT_MIN
+                _displayMins.push_back(INT_MIN);
             }
             _displayMins.push_back(mini);
         }
@@ -101,7 +106,8 @@ void Int_Knob::setDisplayMaximum(int maxi, int index)
             _displayMaxs.push_back(maxi);
         } else {
             while (_displayMaxs.size() <= (U32)index) {
-                _displayMaxs.push_back(99);
+                // kOfxParamPropDisplayMax default value is INT_MAX
+                _displayMaxs.push_back(INT_MAX);
             }
             _displayMaxs.push_back(maxi);
         }
@@ -124,7 +130,7 @@ void Int_Knob::setIncrement(int incr, int index)
              can push_back the value as the last element of the
              vector.*/
             while (_increments.size() <= (U32)index) {
-                // FIXME: explain what happens here (comment?)
+                // kOfxParamPropIncrement default value is 1
                 _increments.push_back(1);
                 assert(_increments[_increments.size() - 1] > 0);
             }
@@ -312,12 +318,14 @@ void Double_Knob::setMinimum(double mini, int index)
             _minimums.push_back(mini);
         } else {
             while (_minimums.size() <= (U32)index) {
-                _minimums.push_back(0);
+                // kOfxParamPropMin default value is -DBL_MAX
+                _minimums.push_back(-DBL_MAX);
             }
             _minimums.push_back(mini);
         }
     }
-    double maximum = 99;
+    // kOfxParamPropMax default value is DBL_MAX
+    double maximum = DBL_MAX;
     if (_maximums.size() > (U32)index) {
         maximum = _maximums[index];
     }
@@ -333,12 +341,14 @@ void Double_Knob::setMaximum(double maxi, int index)
             _maximums.push_back(maxi);
         } else {
             while (_maximums.size() <= (U32)index) {
-                _maximums.push_back(99);
+                // kOfxParamPropMax default value is DBL_MAX
+                _maximums.push_back(DBL_MAX);
             }
             _maximums.push_back(maxi);
         }
     }
-    double minimum = 99;
+    // kOfxParamPropMin default value is -DBL_MAX
+    double minimum = -DBL_MAX;
     if (_minimums.size() > (U32)index) {
         minimum = _minimums[index];
     }
@@ -354,7 +364,8 @@ void Double_Knob::setDisplayMinimum(double mini, int index)
             _displayMins.push_back(DBL_MIN);
         } else {
             while (_displayMins.size() <= (U32)index) {
-                _displayMins.push_back(0);
+                // kOfxParamPropDisplayMax default value is -DBL_MAX
+                _displayMins.push_back(-DBL_MAX);
             }
             _displayMins.push_back(mini);
         }
@@ -371,6 +382,7 @@ void Double_Knob::setDisplayMaximum(double maxi, int index)
             _displayMaxs.push_back(maxi);
         } else {
             while (_displayMaxs.size() <= (U32)index) {
+                // kOfxParamPropDisplayMax default value is DBL_MAX
                 _displayMaxs.push_back(DBL_MAX);
             }
             _displayMaxs.push_back(maxi);
@@ -388,7 +400,8 @@ void Double_Knob::setIncrement(double incr, int index)
             _increments.push_back(incr);
         } else {
             while (_increments.size() <= (U32)index) {
-                _increments.push_back(0.1);  // FIXME: explain with a comment what happens here? why 0.1?
+                // kOfxParamPropIncrement default value is 1.
+                _increments.push_back(1.);
             }
             _increments.push_back(incr);
         }
@@ -405,9 +418,10 @@ void Double_Knob::setDecimals(int decis, int index)
             _decimals.push_back(decis);
         } else {
             while (_decimals.size() <= (U32)index) {
-                _decimals.push_back(3);
-                _decimals.push_back(decis);
+                // default value for kOfxParamPropDigits is 2
+                _decimals.push_back(2);
             }
+            _decimals.push_back(decis);
         }
     }
     emit decimalsChanged(_decimals[index], index);
