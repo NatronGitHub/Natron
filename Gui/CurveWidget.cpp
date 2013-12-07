@@ -1042,11 +1042,15 @@ struct CurveWidgetPrivate{
         ++next;
         double leftTanX, leftTanY;
         {
-            double prevTime = (prev == keyframes.end()) ? (x - 1000.) : (*prev)->getTime();
+            double prevTime = (prev == keyframes.end()) ? (x - 1.) : (*prev)->getTime();
             double leftTan = key->_key->getLeftTangent().toDouble()/(x - prevTime);
-            double prevKeyXWidgetCoord = _widget->toWidgetCoordinates(prevTime, 0).x();
-            //set the left tangent X to be at 1/3 of the interval [prev,k], and clamp it to 1/8 of the widget width.
-            double leftTanXWidgetDiffMax = std::min( w/8., (keyWidgetCoord.x() - prevKeyXWidgetCoord) / 3.);
+            double leftTanXWidgetDiffMax = w / 8.;
+            if (prev != keyframes.end()) {
+                double prevKeyXWidgetCoord = _widget->toWidgetCoordinates(prevTime, 0).x();
+                //set the left tangent X to be at 1/3 of the interval [prev,k], and clamp it to 1/8 of the widget width.
+                double leftTanXWidgetDiffMax = std::min(leftTanXWidgetDiffMax,
+                                                        (keyWidgetCoord.x() - prevKeyXWidgetCoord) / 3.);
+            }
             //clamp the left tangent Y to 1/8 of the widget height.
             double leftTanYWidgetDiffMax = std::min( h/8., leftTanXWidgetDiffMax);
             assert(leftTanXWidgetDiffMax >= 0.); // both bounds should be positive
@@ -1063,16 +1067,20 @@ struct CurveWidgetPrivate{
                 leftTanX = x - tanMax.y() / std::abs(leftTan);
                 leftTanY = y - tanMax.y() * (leftTan > 0 ? 1 : -1);
             }
-            assert(std::abs(leftTanX - x) <= tanMax.x()*1.001); // check that they are affectively clamped (taking into account rounding errors)
+            assert(std::abs(leftTanX - x) <= tanMax.x()*1.001); // check that they are effectively clamped (taking into account rounding errors)
             assert(std::abs(leftTanY - y) <= tanMax.y()*1.001);
         }
         double rightTanX, rightTanY;
         {
-            double nextTime = (next == keyframes.end()) ? (x + 1000.) : (*next)->getTime();
+            double nextTime = (next == keyframes.end()) ? (x + 1.) : (*next)->getTime();
             double rightTan = key->_key->getRightTangent().toDouble()/(nextTime - x );
-            double nextKeyXWidgetCoord = _widget->toWidgetCoordinates(nextTime, 0).x();
-            //set the right tangent X to be at 1/3 of the interval [k,next], and clamp it to 1/8 of the widget width.
-            double rightTanXWidgetDiffMax = std::min( w/8., (nextKeyXWidgetCoord - keyWidgetCoord.x()) / 3.);
+            double rightTanXWidgetDiffMax = w / 8.;
+            if (next != keyframes.end()) {
+                double nextKeyXWidgetCoord = _widget->toWidgetCoordinates(nextTime, 0).x();
+                //set the right tangent X to be at 1/3 of the interval [k,next], and clamp it to 1/8 of the widget width.
+                double rightTanXWidgetDiffMax = std::min(rightTanXWidgetDiffMax,
+                                                         (nextKeyXWidgetCoord - keyWidgetCoord.x()) / 3.);
+            }
             //clamp the right tangent Y to 1/8 of the widget height.
             double rightTanYWidgetDiffMax = std::min( h/8., rightTanXWidgetDiffMax);
             assert(rightTanXWidgetDiffMax >= 0.); // both bounds should be positive
@@ -1089,7 +1097,7 @@ struct CurveWidgetPrivate{
                 rightTanX = x + tanMax.y() / std::abs(rightTan);
                 rightTanY = y + tanMax.y() * (rightTan > 0 ? 1 : -1);
             }
-            assert(std::abs(rightTanX - x) <= tanMax.x()*1.001); // check that they are affectively clamped (taking into account rounding errors)
+            assert(std::abs(rightTanX - x) <= tanMax.x()*1.001); // check that they are effectively clamped (taking into account rounding errors)
             assert(std::abs(rightTanY - y) <= tanMax.y()*1.001);
         }
         key->_leftTan.first = leftTanX;
