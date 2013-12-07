@@ -83,19 +83,19 @@ void ScaleSlider::paintGL(){
     glLoadIdentity();
     //assert(_zoomCtx._zoomFactor > 0);
     //assert(_zoomCtx._zoomFactor <= 1024);
-    double bottom = _zoomCtx._bottom;
-    double left = _zoomCtx._left;
-    double top = bottom +  h / (double)_zoomCtx._zoomFactor;
-    double right = left +  (w / (double)_zoomCtx._zoomFactor);
+    double bottom = _zoomCtx.bottom;
+    double left = _zoomCtx.left;
+    double top = bottom +  h / (double)_zoomCtx.zoomFactor;
+    double right = left +  (w / (double)_zoomCtx.zoomFactor);
     if(left == right || top == bottom){
         glClearColor(_clearColor.redF(),_clearColor.greenF(),_clearColor.blueF(),_clearColor.alphaF());
         glClear(GL_COLOR_BUFFER_BIT);
         return;
     }
-    _zoomCtx._lastOrthoLeft = left;
-    _zoomCtx._lastOrthoRight = right;
-    _zoomCtx._lastOrthoBottom = bottom;
-    _zoomCtx._lastOrthoTop = top;
+    _zoomCtx.lastOrthoLeft = left;
+    _zoomCtx.lastOrthoRight = right;
+    _zoomCtx.lastOrthoBottom = bottom;
+    _zoomCtx.lastOrthoTop = top;
     glOrtho(left , right, bottom, top, -1, 1);
     checkGLErrors();
 
@@ -240,7 +240,7 @@ void ScaleSlider::renderText(double x,double y,const QString& text,const QColor&
     checkGLErrors();
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(_zoomCtx._lastOrthoLeft,_zoomCtx._lastOrthoRight,_zoomCtx._lastOrthoBottom,_zoomCtx._lastOrthoTop,-1,1);
+    glOrtho(_zoomCtx.lastOrthoLeft,_zoomCtx.lastOrthoRight,_zoomCtx.lastOrthoBottom,_zoomCtx.lastOrthoTop,-1,1);
     glMatrixMode(GL_MODELVIEW);
 
 }
@@ -250,7 +250,7 @@ void ScaleSlider::renderText(double x,double y,const QString& text,const QColor&
 void ScaleSlider::mousePressEvent(QMouseEvent *event){
     QPoint newClick =  event->pos();
 
-    _zoomCtx._oldClick = newClick;
+    _zoomCtx.oldClick = newClick;
     QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
     
     seekInternal(newClick_opengl.x());
@@ -277,9 +277,9 @@ void ScaleSlider::seekScalePosition(double v){
     double zoomFactor = width() /displayedRange;
     zoomFactor = (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01);
     // assert(zoomFactor>=0.01 && zoomFactor <= 1024);
-    _zoomCtx.setZoomFactor(zoomFactor);
-    _zoomCtx._left = _minimum - padding ;
-    _zoomCtx._bottom = 0;
+    _zoomCtx.zoomFactor = zoomFactor;
+    _zoomCtx.left = _minimum - padding ;
+    _zoomCtx.bottom = 0;
     if(_initialized)
         updateGL();
 }
@@ -297,9 +297,9 @@ void ScaleSlider::seekInternal(double v){
     double zoomFactor = width() /displayedRange;
     zoomFactor = (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01);
     assert(zoomFactor>=0.01 && zoomFactor <= 1024);
-    _zoomCtx.setZoomFactor(zoomFactor);
-    _zoomCtx._left = _minimum - padding ;
-    _zoomCtx._bottom = 0;
+    _zoomCtx.zoomFactor = zoomFactor;
+    _zoomCtx.left = _minimum - padding ;
+    _zoomCtx.bottom = 0;
     if(_initialized)
         updateGL();
     emit positionChanged(v);
@@ -308,20 +308,20 @@ void ScaleSlider::seekInternal(double v){
 QPointF ScaleSlider::toScaleCoordinates(double x,double y){
     double w = (double)width() ;
     double h = (double)height();
-    double bottom = _zoomCtx._bottom;
-    double left = _zoomCtx._left;
-    double top =  bottom +  h / _zoomCtx._zoomFactor;
-    double right = left +  w / _zoomCtx._zoomFactor;
+    double bottom = _zoomCtx.bottom;
+    double left = _zoomCtx.left;
+    double top =  bottom +  h / _zoomCtx.zoomFactor;
+    double right = left +  w / _zoomCtx.zoomFactor;
     return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
 }
 
 QPointF ScaleSlider::toWidgetCoordinates(double x, double y){
     double w = (double)width() ;
     double h = (double)height();
-    double bottom = _zoomCtx._bottom;
-    double left = _zoomCtx._left;
-    double top =  bottom +  h / _zoomCtx._zoomFactor;
-    double right = left +  w / _zoomCtx._zoomFactor;
+    double bottom = _zoomCtx.bottom;
+    double left = _zoomCtx.left;
+    double top =  bottom +  h / _zoomCtx.zoomFactor;
+    double right = left +  w / _zoomCtx.zoomFactor;
     return QPoint(((x - left)/(right - left))*w,((y - top)/(bottom - top))*h);
 }
 

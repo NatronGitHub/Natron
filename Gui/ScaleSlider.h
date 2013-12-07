@@ -33,27 +33,20 @@ class ScaleSlider : public QGLWidget
     Q_OBJECT
 
 
-    class ZoomContext{
-
-    public:
-
-        ZoomContext():
-        _bottom(0.)
-        ,_left(0.)
-        ,_zoomFactor(1.)
+    // see ViewerGL.cpp for a full documentation of ZoomContext
+    struct ZoomContext {
+        ZoomContext()
+            : bottom(0.)
+            , left(0.)
+            , zoomFactor(1.)
         {}
 
-        QPoint _oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
-        double _bottom; /// the bottom edge of orthographic projection
-        double _left; /// the left edge of the orthographic projection
-        double _zoomFactor; /// the zoom factor applied to the current image
+        QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
+        double bottom; /// the bottom edge of orthographic projection
+        double left; /// the left edge of the orthographic projection
+        double zoomFactor; /// the zoom factor applied to the current image
 
-        double _lastOrthoLeft,_lastOrthoBottom,_lastOrthoRight,_lastOrthoTop; //< remembers the last values passed to the glOrtho call
-
-        /*!< the level of zoom used to display the frame*/
-        void setZoomFactor(double f){assert(f>0.); _zoomFactor = f;}
-
-        double getZoomFactor() const {return _zoomFactor;}
+        double lastOrthoLeft, lastOrthoBottom, lastOrthoRight, lastOrthoTop; //< remembers the last values passed to the glOrtho call
     };
 
     ZoomContext _zoomCtx;

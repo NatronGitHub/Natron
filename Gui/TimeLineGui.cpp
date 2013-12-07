@@ -41,28 +41,19 @@ using namespace Natron;
 #define DEFAULT_TIMELINE_LEFT_BOUND 0
 #define DEFAULT_TIMELINE_RIGHT_BOUND 100
 
-struct ZoomContext{
-
-public:
-
-
-    ZoomContext():
-        _bottom(0.)
-      ,_left(0.)
-      ,_zoomFactor(1.)
+struct ZoomContext {
+    ZoomContext()
+        : bottom(0.)
+        , left(0.)
+        , zoomFactor(1.)
     {}
 
-    QPoint _oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
-    double _bottom; /// the bottom edge of orthographic projection
-    double _left; /// the left edge of the orthographic projection
-    double _zoomFactor; /// the zoom factor applied to the current image
+    QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
+    double bottom; /// the bottom edge of orthographic projection
+    double left; /// the left edge of the orthographic projection
+    double zoomFactor; /// the zoom factor applied to the current image
 
-    double _lastOrthoLeft,_lastOrthoBottom,_lastOrthoRight,_lastOrthoTop; //< remembers the last values passed to the glOrtho call
-
-    /*!< the level of zoom used to display the frame*/
-    void setZoomFactor(double f){assert(f>0.); _zoomFactor = f;}
-
-    double getZoomFactor() const {return _zoomFactor;}
+    double lastOrthoLeft, lastOrthoBottom, lastOrthoRight, lastOrthoTop; //< remembers the last values passed to the glOrtho call
 };
 
 struct TimelineGuiPrivate{
@@ -159,23 +150,23 @@ void TimeLineGui::paintGL(){
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
     //assert(_zoomCtx._zoomFactor > 0);
-    if(_imp->_zoomCtx._zoomFactor <= 0){
+    if(_imp->_zoomCtx.zoomFactor <= 0){
         return;
     }
     //assert(_zoomCtx._zoomFactor <= 1024);
-    double bottom = _imp->_zoomCtx._bottom;
-    double left = _imp->_zoomCtx._left;
-    double top = bottom +  h / (double)_imp->_zoomCtx._zoomFactor ;
-    double right = left +  (w / (double)_imp->_zoomCtx._zoomFactor);
+    double bottom = _imp->_zoomCtx.bottom;
+    double left = _imp->_zoomCtx.left;
+    double top = bottom +  h / (double)_imp->_zoomCtx.zoomFactor ;
+    double right = left +  (w / (double)_imp->_zoomCtx.zoomFactor);
     if(left == right || top == bottom){
         glClearColor(_imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF());
         glClear(GL_COLOR_BUFFER_BIT);
         return;
     }
-    _imp->_zoomCtx._lastOrthoLeft = left;
-    _imp->_zoomCtx._lastOrthoRight = right;
-    _imp->_zoomCtx._lastOrthoBottom = bottom;
-    _imp->_zoomCtx._lastOrthoTop = top;
+    _imp->_zoomCtx.lastOrthoLeft = left;
+    _imp->_zoomCtx.lastOrthoRight = right;
+    _imp->_zoomCtx.lastOrthoBottom = bottom;
+    _imp->_zoomCtx.lastOrthoTop = top;
     glOrtho(left , right, bottom, top, -1, 1);
     checkGLErrors();
 
@@ -416,7 +407,7 @@ void TimeLineGui::renderText(double x,double y,const QString& text,const QColor&
     checkGLErrors();
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(_imp->_zoomCtx._lastOrthoLeft,_imp->_zoomCtx._lastOrthoRight,_imp->_zoomCtx._lastOrthoBottom,_imp->_zoomCtx._lastOrthoTop,-1,1);
+    glOrtho(_imp->_zoomCtx.lastOrthoLeft,_imp->_zoomCtx.lastOrthoRight,_imp->_zoomCtx.lastOrthoBottom,_imp->_zoomCtx.lastOrthoTop,-1,1);
     glMatrixMode(GL_MODELVIEW);
     checkGLErrors();
 }
@@ -518,24 +509,19 @@ void TimeLineGui::wheelEvent(QWheelEvent *event){
     if (event->orientation() != Qt::Vertical) {
         return;
     }
-    double newZoomFactor;
-    const double factor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
-    if (event->delta() > 0) {
-        newZoomFactor = _imp->_zoomCtx._zoomFactor * factor;
-    } else {
-        newZoomFactor = _imp->_zoomCtx._zoomFactor / factor;
-    }
+    const double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+    double newZoomFactor = _imp->_zoomCtx.zoomFactor * scaleFactor;
     if (newZoomFactor <= 0.01) {
         newZoomFactor = 0.01;
     } else if (newZoomFactor > 1024.) {
         newZoomFactor = 1024.;
     }
     QPointF zoomCenter = toTimeLineCoordinates(event->x(), event->y());
-    double zoomRatio =   _imp->_zoomCtx._zoomFactor / newZoomFactor;
-    _imp->_zoomCtx._left = zoomCenter.x() - (zoomCenter.x() - _imp->_zoomCtx._left)*zoomRatio ;
-    _imp->_zoomCtx._bottom = zoomCenter.y() - (zoomCenter.y() - _imp->_zoomCtx._bottom)*zoomRatio;
+    double zoomRatio =   _imp->_zoomCtx.zoomFactor / newZoomFactor;
+    _imp->_zoomCtx.left = zoomCenter.x() - (zoomCenter.x() - _imp->_zoomCtx.left)*zoomRatio ;
+    _imp->_zoomCtx.bottom = zoomCenter.y() - (zoomCenter.y() - _imp->_zoomCtx.bottom)*zoomRatio;
 
-    _imp->_zoomCtx._zoomFactor = newZoomFactor;
+    _imp->_zoomCtx.zoomFactor = newZoomFactor;
 
     updateGL();
 
@@ -588,8 +574,8 @@ void TimeLineGui::onBoundariesChanged(SequenceTime ,SequenceTime ){
 void TimeLineGui::centerOn(SequenceTime left,SequenceTime right){
     double curveWidth = right - left + 10;
     double w = width();
-    _imp->_zoomCtx._left = left - 5;
-    _imp->_zoomCtx._zoomFactor = w / curveWidth;
+    _imp->_zoomCtx.left = left - 5;
+    _imp->_zoomCtx.zoomFactor = w / curveWidth;
 
     updateGL();
 }
@@ -609,19 +595,19 @@ SequenceTime TimeLineGui::currentFrame() const { return _imp->_timeline->current
 QPointF TimeLineGui::toTimeLineCoordinates(double x,double y) const {
     double w = (double)width() ;
     double h = (double)height();
-    double bottom = _imp->_zoomCtx._bottom;
-    double left = _imp->_zoomCtx._left;
-    double top =  bottom +  h / _imp->_zoomCtx._zoomFactor;
-    double right = left +  w / _imp->_zoomCtx._zoomFactor;
+    double bottom = _imp->_zoomCtx.bottom;
+    double left = _imp->_zoomCtx.left;
+    double top =  bottom +  h / _imp->_zoomCtx.zoomFactor;
+    double right = left +  w / _imp->_zoomCtx.zoomFactor;
     return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
 }
 
 QPointF TimeLineGui::toWidgetCoordinates(double x, double y) const {
     double w = (double)width() ;
     double h = (double)height();
-    double bottom = _imp->_zoomCtx._bottom;
-    double left = _imp->_zoomCtx._left;
-    double top =  bottom +  h / _imp->_zoomCtx._zoomFactor ;
-    double right = left +  w / _imp->_zoomCtx._zoomFactor;
+    double bottom = _imp->_zoomCtx.bottom;
+    double left = _imp->_zoomCtx.left;
+    double top =  bottom +  h / _imp->_zoomCtx.zoomFactor ;
+    double right = left +  w / _imp->_zoomCtx.zoomFactor;
     return QPoint(((x - left)/(right - left))*w,((y - top)/(bottom - top))*h);
 }
