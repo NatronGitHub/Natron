@@ -226,7 +226,7 @@ Bool_Knob::Bool_Knob(KnobHolder *holder, const std::string &description, int dim
 
 bool Bool_Knob::canAnimate() const
 {
-    return true;
+    return canAnimateStatic();
 }
 
 std::string Bool_Knob::typeName() const
@@ -489,7 +489,7 @@ ComboBox_Knob::ComboBox_Knob(KnobHolder *holder, const std::string &description,
 
 bool ComboBox_Knob::canAnimate() const
 {
-    return false;
+    return canAnimateStatic();
 }
 
 std::string ComboBox_Knob::typeName() const
@@ -598,7 +598,7 @@ String_Knob::String_Knob(KnobHolder *holder, const std::string &description, int
 
 bool String_Knob::canAnimate() const
 {
-    return false;
+    return canAnimateStatic();
 }
 
 std::string String_Knob::typeName() const

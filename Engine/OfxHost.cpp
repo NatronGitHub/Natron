@@ -30,6 +30,7 @@
 
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
+#include "Engine/KnobTypes.h"
 
 using namespace Natron;
 
@@ -60,10 +61,10 @@ Natron::OfxHost::OfxHost()
     _properties.setIntProperty(kOfxImageEffectPropSetableFrameRate, 0);
     _properties.setIntProperty(kOfxImageEffectPropSetableFielding, 0);
     _properties.setIntProperty(kOfxParamHostPropSupportsCustomInteract, 1 );
-    _properties.setIntProperty(kOfxParamHostPropSupportsStringAnimation, 0 );
-    _properties.setIntProperty(kOfxParamHostPropSupportsChoiceAnimation, 0 );
-    _properties.setIntProperty(kOfxParamHostPropSupportsBooleanAnimation, 0 );
-    _properties.setIntProperty(kOfxParamHostPropSupportsCustomAnimation, 0 );
+    _properties.setIntProperty(kOfxParamHostPropSupportsStringAnimation, String_Knob::canAnimateStatic());
+    _properties.setIntProperty(kOfxParamHostPropSupportsChoiceAnimation, ComboBox_Knob::canAnimateStatic());
+    _properties.setIntProperty(kOfxParamHostPropSupportsBooleanAnimation, Bool_Knob::canAnimateStatic());
+    _properties.setIntProperty(kOfxParamHostPropSupportsCustomAnimation, 0 /*Custom_Knob::canAnimateStatic()*/);
     _properties.setIntProperty(kOfxParamHostPropMaxParameters, -1);
     _properties.setIntProperty(kOfxParamHostPropMaxPages, 0);
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 0 );

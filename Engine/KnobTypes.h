@@ -101,12 +101,13 @@ public:
 
     Bool_Knob(KnobHolder *holder, const std::string &description, int dimension);
 
+    static bool canAnimateStatic() { return false; }
+
 private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
 
     virtual std::string typeName() const OVERRIDE FINAL;
-
 };
 
 /******************************DOUBLE_KNOB**************************************/
@@ -227,6 +228,8 @@ public:
 
     const std::string &getActiveEntryText() const;
 
+    static bool canAnimateStatic() { return false; }
+
 signals:
 
     void populated();
@@ -300,7 +303,10 @@ public:
     String_Knob(KnobHolder *holder, const std::string &description, int dimension);
     std::string getString() const;
 
+    static bool canAnimateStatic() { return false; }
+
 private:
+
     virtual bool canAnimate() const OVERRIDE FINAL;
 
     virtual std::string typeName() const OVERRIDE FINAL;
