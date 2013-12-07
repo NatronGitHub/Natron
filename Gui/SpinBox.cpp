@@ -32,6 +32,7 @@ LineEdit(parent)
 ,_doubleValidator(0)
 ,_intValidator(0)
 ,animation(0)
+,_valueWhenEnteringFocus(0)
 {
     switch (_type) {
         case DOUBLE_SPINBOX:
@@ -130,8 +131,15 @@ void SpinBox::wheelEvent(QWheelEvent *e) {
     }
 }
 
+void SpinBox::focusInEvent(QFocusEvent* /*event*/){
+    _valueWhenEnteringFocus = text().toDouble();
+}
+
 void SpinBox::focusOutEvent(QFocusEvent * /*event*/){
-   emit valueChanged(text().toDouble());
+    double newValue = text().toDouble();
+    if(newValue != _valueWhenEnteringFocus){
+        emit valueChanged(text().toDouble());
+    }
 }
 
 void SpinBox::keyPressEvent(QKeyEvent *e){

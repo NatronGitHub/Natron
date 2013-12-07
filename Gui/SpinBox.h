@@ -55,6 +55,8 @@ protected:
     virtual void keyPressEvent(QKeyEvent* e);
     
     virtual void mousePressEvent(QMouseEvent* e);
+    
+    virtual void focusInEvent(QFocusEvent* event);
 
     virtual void focusOutEvent(QFocusEvent * event);
         
@@ -82,6 +84,7 @@ private:
     QDoubleValidator* _doubleValidator;
     QIntValidator* _intValidator;
     int animation; // 0 = no animation, 1 = interpolated, 2 = equals keyframe value
+    double _valueWhenEnteringFocus;
 };
 
 #endif /* defined(NATRON_GUI_FEEDBACKSPINBOX_H_) */
