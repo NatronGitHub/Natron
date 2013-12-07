@@ -350,5 +350,48 @@ private:
 };
 
 
+class OfxCustomInstance : public QObject, public OFX::Host::Param::CustomInstance {
+
+public:
+    OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
+
+    virtual OfxStatus get(std::string&) OVERRIDE;
+    virtual OfxStatus get(OfxTime time, std::string&) OVERRIDE;
+    virtual OfxStatus set(const char*) OVERRIDE;
+    virtual OfxStatus set(OfxTime time, const char*) OVERRIDE;
+
+    /// implementation of var args function
+    /// Be careful: the char* is only valid until next API call
+    /// see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ArchitectureStrings
+    virtual OfxStatus getV(va_list arg) OVERRIDE;
+
+    /// implementation of var args function
+    /// Be careful: the char* is only valid until next API call
+    /// see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ArchitectureStrings
+    virtual OfxStatus getV(OfxTime time, va_list arg) OVERRIDE;
+
+
+    // callback which should set enabled state as appropriate
+    virtual void setEnabled();
+
+    // callback which should set secret state as appropriate
+    virtual void setSecret();
+
+    Knob* getKnob() const;
+
+    virtual ~OfxCustomInstance(){}
+
+private:
+    typedef OfxStatus (*customParamInterpolationV1Entry_t)(
+                                                           const void*            handleRaw,
+                                                           OfxPropertySetHandle   inArgsRaw,
+                                                           OfxPropertySetHandle   outArgsRaw);
+
+    OfxEffectInstance* _node;
+    String_Knob* _knob;
+    customParamInterpolationV1Entry_t _customParamInterpolationV1Entry;
+    QThreadStorage<std::string> _localString;
+};
+
 #endif // NATRON_ENGINE_OFXPARAMINSTANCE_H_
 

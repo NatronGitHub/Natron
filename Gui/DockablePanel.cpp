@@ -191,6 +191,7 @@ void DockablePanel::initializeKnobs(){
          }else{
              KnobGui* gui = findKnobGuiOrCreate(knobs[i].get());
              if(!gui){
+                 // this should happen for Custom Knobs, which have no GUI (only an interact)
                  return;
              }
              if(!gui->hasWidgetBeenCreated()){
@@ -351,11 +352,12 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(Knob* knob) {
     
     
     KnobGui* ret =  appPTR->getKnobGuiFactory().createGuiForKnob(knob,this);
-    QObject::connect(ret,SIGNAL(deleted(KnobGui*)),this,SLOT(onKnobDeletion(KnobGui*)));
     if(!ret){
-        std::cout << "Failed to create gui for Knob" << std::endl;
+        // this should happen for Custom Knobs, which have no GUI (only an interact)
+        std::cout << "Failed to create gui for Knob " << knob->getName() << " of type " << knob->typeName() << std::endl;
         return NULL;
     }
+    QObject::connect(ret,SIGNAL(deleted(KnobGui*)),this,SLOT(onKnobDeletion(KnobGui*)));
     _knobs.insert(make_pair(knob, ret));
     return ret;
     

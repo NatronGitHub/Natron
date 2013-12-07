@@ -63,108 +63,37 @@ void KnobFactory::loadKnobPlugins()
     loadBultinKnobs();
 }
 
-void KnobFactory::loadBultinKnobs()
+template<typename K>
+static std::pair<std::string,LibraryBinary *>
+knobFactoryEntry()
 {
     std::string stub;
-    Knob *fileKnob = File_Knob::BuildKnob(NULL, stub, 1);
+    boost::scoped_ptr<Knob> knob(K::BuildKnob(NULL, stub, 1));
 
-    std::map<std::string, void *> FILEfunctions;
-    FILEfunctions.insert(make_pair("BuildKnob", (void *)&File_Knob::BuildKnob));
-    LibraryBinary *FILEKnobPlugin = new LibraryBinary(FILEfunctions);
-    _loadedKnobs.insert(make_pair(fileKnob->typeName(), FILEKnobPlugin));
-    delete fileKnob;
-
-    Knob *intKnob = Int_Knob::BuildKnob(NULL, stub, 1);
-
-    std::map<std::string, void *> INTfunctions;
-    INTfunctions.insert(make_pair("BuildKnob", (void *)&Int_Knob::BuildKnob));
-    LibraryBinary *INTKnobPlugin = new LibraryBinary(INTfunctions);
-    _loadedKnobs.insert(make_pair(intKnob->typeName(), INTKnobPlugin));
-    delete intKnob;
-
-
-    Knob *doubleKnob = Double_Knob::BuildKnob(NULL, stub, 1);
-
-    std::map<std::string, void *> DOUBLEfunctions;
-    DOUBLEfunctions.insert(make_pair("BuildKnob", (void *)&Double_Knob::BuildKnob));
-    LibraryBinary *DOUBLEKnobPlugin = new LibraryBinary(DOUBLEfunctions);
-    _loadedKnobs.insert(make_pair(doubleKnob->typeName(), DOUBLEKnobPlugin));
-    delete doubleKnob;
-
-    Knob *boolKnob = Bool_Knob::BuildKnob(NULL, stub, 1);
-
-    std::map<std::string, void *> BOOLfunctions;
-    BOOLfunctions.insert(make_pair("BuildKnob", (void *)&Bool_Knob::BuildKnob));
-    LibraryBinary *BOOLKnobPlugin = new LibraryBinary(BOOLfunctions);
-    _loadedKnobs.insert(make_pair(boolKnob->typeName(), BOOLKnobPlugin));
-    delete boolKnob;
-
-    Knob *buttonKnob = Button_Knob::BuildKnob(NULL, stub, 1);
-
-    std::map<std::string, void *> BUTTONfunctions;
-    BUTTONfunctions.insert(make_pair("BuildKnob", (void *)&Button_Knob::BuildKnob));
-    LibraryBinary *BUTTONKnobPlugin = new LibraryBinary(BUTTONfunctions);
-    _loadedKnobs.insert(make_pair(buttonKnob->typeName(), BUTTONKnobPlugin));
-    delete buttonKnob;
-
-    Knob *outputFileKnob = OutputFile_Knob::BuildKnob(NULL, stub, 1);
-
-    std::map<std::string, void *> OFfunctions;
-    OFfunctions.insert(make_pair("BuildKnob", (void *)&OutputFile_Knob::BuildKnob));
-    LibraryBinary *OUTPUTFILEKnobPlugin = new LibraryBinary(OFfunctions);
-    _loadedKnobs.insert(make_pair(outputFileKnob->typeName(), OUTPUTFILEKnobPlugin));
-    delete outputFileKnob;
-
-    Knob *comboBoxKnob = ComboBox_Knob::BuildKnob(NULL, stub, 1);
-
-    std::map<std::string, void *> CBBfunctions;
-    CBBfunctions.insert(make_pair("BuildKnob", (void *)&ComboBox_Knob::BuildKnob));
-    LibraryBinary *ComboBoxKnobPlugin = new LibraryBinary(CBBfunctions);
-    _loadedKnobs.insert(make_pair(comboBoxKnob->typeName(), ComboBoxKnobPlugin));
-    delete comboBoxKnob;
-
-
-    Knob *separatorKnob = Separator_Knob::BuildKnob(NULL, stub, 1);
-
-    std::map<std::string, void *> Sepfunctions;
-    Sepfunctions.insert(make_pair("BuildKnob", (void *)&Separator_Knob::BuildKnob));
-    LibraryBinary *SeparatorKnobPlugin = new LibraryBinary(Sepfunctions);
-    _loadedKnobs.insert(make_pair(separatorKnob->typeName(), SeparatorKnobPlugin));
-    delete separatorKnob;
-
-    Knob *groupKnob = Group_Knob::BuildKnob(NULL, stub, 1);
-
-    std::map<std::string, void *> Grpfunctions;
-    Grpfunctions.insert(make_pair("BuildKnob", (void *)&Group_Knob::BuildKnob));
-    LibraryBinary *GroupKnobPlugin = new LibraryBinary(Grpfunctions);
-    _loadedKnobs.insert(make_pair(groupKnob->typeName(), GroupKnobPlugin));
-    delete groupKnob;
-
-    Knob *rgbaKnob = Color_Knob::BuildKnob(NULL, stub, 1);
-
-    std::map<std::string, void *> RGBAfunctions;
-    RGBAfunctions.insert(make_pair("BuildKnob", (void *)&Color_Knob::BuildKnob));
-    LibraryBinary *RGBAKnobPlugin = new LibraryBinary(RGBAfunctions);
-    _loadedKnobs.insert(make_pair(rgbaKnob->typeName(), RGBAKnobPlugin));
-    delete rgbaKnob;
-
-    Knob *strKnob = String_Knob::BuildKnob(NULL, stub, 1);
-
-    std::map<std::string, void *> STRfunctions;
-    STRfunctions.insert(make_pair("BuildKnob", (void *)&String_Knob::BuildKnob));
-    LibraryBinary *STRKnobPlugin = new LibraryBinary(STRfunctions);
-    _loadedKnobs.insert(make_pair(strKnob->typeName(), STRKnobPlugin));
-    delete strKnob;
-
-    Knob *richTxtKnob = RichText_Knob::BuildKnob(NULL, stub, 1);
-
-    std::map<std::string, void *> RICHTXTfunctions;
-    RICHTXTfunctions.insert(make_pair("BuildKnob", (void *)&RichText_Knob::BuildKnob));
-    LibraryBinary *RICHTXTKnobPlugin = new LibraryBinary(RICHTXTfunctions);
-    _loadedKnobs.insert(make_pair(richTxtKnob->typeName(), RICHTXTKnobPlugin));
-    delete richTxtKnob;
+    std::map<std::string, void *> functions;
+    functions.insert(make_pair("BuildKnob", (void *)&K::BuildKnob));
+    LibraryBinary *knobPlugin = new LibraryBinary(functions);
+    return make_pair(knob->typeName(), knobPlugin);
 }
 
+void KnobFactory::loadBultinKnobs()
+{
+    _loadedKnobs.insert(knobFactoryEntry<File_Knob>());
+    _loadedKnobs.insert(knobFactoryEntry<Int_Knob>());
+    _loadedKnobs.insert(knobFactoryEntry<Double_Knob>());
+    _loadedKnobs.insert(knobFactoryEntry<Bool_Knob>());
+    _loadedKnobs.insert(knobFactoryEntry<Button_Knob>());
+    _loadedKnobs.insert(knobFactoryEntry<OutputFile_Knob>());
+    _loadedKnobs.insert(knobFactoryEntry<ComboBox_Knob>());
+    _loadedKnobs.insert(knobFactoryEntry<Separator_Knob>());
+    _loadedKnobs.insert(knobFactoryEntry<Group_Knob>());
+    _loadedKnobs.insert(knobFactoryEntry<Color_Knob>());
+    _loadedKnobs.insert(knobFactoryEntry<String_Knob>());
+#warning "activate CustomParam support here"
+    //_loadedKnobs.insert(knobFactoryEntry<Custom_Knob>());
+    _loadedKnobs.insert(knobFactoryEntry<RichText_Knob>());
+    _loadedKnobs.insert(knobFactoryEntry<Bool_Knob>());
+}
 
 Knob *KnobFactory::createKnob(const std::string &id,
                               KnobHolder  *holder,
