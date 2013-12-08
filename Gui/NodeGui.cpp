@@ -496,7 +496,6 @@ void NodeGui::deactivate(){
         OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
         ofxNode->effectInstance()->endInstanceEditAction();
     }
-    
 }
 
 void NodeGui::initializeKnobs(){

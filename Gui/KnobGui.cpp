@@ -86,7 +86,7 @@ KnobGui::KnobGui(Knob* knob,DockablePanel* container)
     QObject::connect(knob,SIGNAL(valueChanged(int)),this,SLOT(onInternalValueChanged(int)));
     QObject::connect(this,SIGNAL(valueChanged(int,const Variant&)),knob,SLOT(onValueChanged(int,const Variant&)));
     QObject::connect(knob,SIGNAL(secretChanged()),this,SLOT(setSecret()));
-    QObject::connect(knob,SIGNAL(enabledChanged()),this,SLOT(setEnabled()));
+    QObject::connect(knob,SIGNAL(enabledChanged()),this,SLOT(setEnabledSlot()));
     QObject::connect(knob,SIGNAL(deleted()),this,SLOT(deleteKnob()));
 }
 
@@ -330,12 +330,26 @@ void KnobGui::hide(){
     _hide();
     if(_animationButton)
         _animationButton->hide();
+    //also  hide the curve from the curve editor if there's any
+    _knob->getHolder()->getApp()->getGui()->_curveEditor->hideCurves(this);
+    
 }
 
 void KnobGui::show(){
     _show();
     if(_animationButton)
         _animationButton->show();
+    //also show the curve from the curve editor if there's any
+    _knob->getHolder()->getApp()->getGui()->_curveEditor->showCurves(this);
+}
+
+void KnobGui::setEnabledSlot(){
+    setEnabled();
+    if(!_knob->isEnabled()){
+        _knob->getHolder()->getApp()->getGui()->_curveEditor->hideCurves(this);
+    }else{
+        _knob->getHolder()->getApp()->getGui()->_curveEditor->showCurves(this);
+    }
 }
 
 void KnobGui::onInternalValueChanged(int dimension){

@@ -143,6 +143,10 @@ public:
     
     CurveGui* findCurve(KnobGui* knob,int dimension);
     
+    void hideCurves(KnobGui* knob);
+    
+    void showCurves(KnobGui* knob);
+    
     void setKeyInterpolation(boost::shared_ptr<KeyFrame> key,Natron::KeyframeType interp);
     
     void setKeysInterpolation(const std::vector< boost::shared_ptr<KeyFrame> >& keys,Natron::KeyframeType interp);

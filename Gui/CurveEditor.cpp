@@ -117,6 +117,7 @@ void CurveEditor::removeNode(NodeGui *node){
             break;
         }
     }
+    _curveWidget->centerOn(-10,500,-10,10);
 }
 
 
@@ -286,6 +287,7 @@ NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree, CurveWidget* c
 
 NodeCurveEditorElement::~NodeCurveEditorElement(){
     _curveWidget->removeCurve(_curve);
+    delete _treeItem;
 }
 
 void CurveEditor::centerOn(const std::vector<boost::shared_ptr<Curve> >& curves){
@@ -970,4 +972,45 @@ void SetMultipleKeysInterpolationCommand::redo(){
     }
     _curveWidget->updateGL();
     setText(QObject::tr("Set multiple keys interpolation"));
+}
+
+
+void CurveEditor::hideCurves(KnobGui* knob){
+    for(int i = 0 ; i < knob->getKnob()->getDimension();++i){
+        for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
+            it!=_nodes.end();++it){
+            NodeCurveEditorElement* elem = (*it)->findElement(knob,i);
+            if(elem){
+                elem->getCurve()->setVisible(false);
+                elem->getTreeItem()->setHidden(true);
+                checkIfHiddenRecursivly(_tree, elem->getTreeItem());
+                break;
+            }
+        }
+    }
+    _curveWidget->updateGL();
+}
+
+void CurveEditor::showCurves(KnobGui* knob){
+    for(int i = 0 ; i < knob->getKnob()->getDimension();++i){
+        for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
+            it!=_nodes.end();++it){
+            NodeCurveEditorElement* elem = (*it)->findElement(knob,i);
+            if(elem){
+                if(elem->getCurve()->getInternalCurve()->isAnimated()){
+                    elem->getCurve()->setVisible(true);
+                    elem->getTreeItem()->setHidden(false);
+                    if(elem->getTreeItem()->parent()){
+                        elem->getTreeItem()->parent()->setHidden(false);
+                        if(elem->getTreeItem()->parent()->parent()){
+                            elem->getTreeItem()->parent()->parent()->setHidden(false);
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+     _curveWidget->updateGL();
+
 }

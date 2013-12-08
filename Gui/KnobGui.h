@@ -88,7 +88,7 @@ public slots:
 
     void showAnimationMenu();
     
-    virtual void setEnabled() = 0;
+    void setEnabledSlot();
     
     void hide();
     
@@ -135,7 +135,8 @@ private:
 
     virtual void _show() = 0;
 
-
+    virtual void setEnabled() = 0;
+    
     /*Must create the GUI and insert it in the grid layout at the index "row".*/
     virtual void createWidget(QGridLayout* layout,int row) = 0;
     
