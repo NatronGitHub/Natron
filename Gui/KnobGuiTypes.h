@@ -228,18 +228,18 @@ private:
 };
 
 //================================
-class ComboBox_KnobGui : public KnobGui
+class Choice_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
     static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
-        return new ComboBox_KnobGui(knob, container);
+        return new Choice_KnobGui(knob, container);
     }
 
 
-    ComboBox_KnobGui(Knob *knob, DockablePanel *container);
+    Choice_KnobGui(Knob *knob, DockablePanel *container);
 
-    virtual ~ComboBox_KnobGui() OVERRIDE FINAL;
+    virtual ~Choice_KnobGui() OVERRIDE FINAL;
 
 public slots:
 

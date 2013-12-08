@@ -18,7 +18,7 @@
 #include "Writers/Encoder.h"
 #include "Global/Macros.h"
 
-class ComboBox_Knob;
+class Choice_Knob;
 class Separator_Knob;
 class Writer;
 
@@ -28,8 +28,8 @@ class Writer;
  Class inheriting*/
 class ExrEncoderKnobs : public EncoderKnobs{
     Separator_Knob* sepKnob;
-    ComboBox_Knob *compressionCBKnob;
-    ComboBox_Knob *depthCBKnob ;
+    Choice_Knob *compressionCBKnob;
+    Choice_Knob *depthCBKnob ;
     
 public:
     

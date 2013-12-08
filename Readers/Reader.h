@@ -27,7 +27,7 @@ namespace Natron{
     class FrameEntry;
 }
 class File_Knob;
-class ComboBox_Knob;
+class Choice_Knob;
 class ViewerGL;
 class ViewerCache;
 
@@ -216,7 +216,7 @@ private:
     boost::shared_ptr<Decoder> decoderForFileType(const QString& fileName);
     Buffer _buffer;
     File_Knob* _fileKnob;
-    ComboBox_Knob* _missingFrameChoice;
+    Choice_Knob* _missingFrameChoice;
     QMutex _lock;
     boost::scoped_ptr<QFutureWatcher<void> > _previewWatcher;
 };

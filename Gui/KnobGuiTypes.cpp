@@ -588,18 +588,18 @@ void Button_KnobGui::addToLayout(QHBoxLayout *layout)
 }
 
 //=============================COMBOBOX_KNOB_GUI===================================
-ComboBox_KnobGui::ComboBox_KnobGui(Knob *knob, DockablePanel *container): KnobGui(knob, container)
+Choice_KnobGui::Choice_KnobGui(Knob *knob, DockablePanel *container): KnobGui(knob, container)
 {
-    ComboBox_Knob *cbKnob = dynamic_cast<ComboBox_Knob *>(knob);
+    Choice_Knob *cbKnob = dynamic_cast<Choice_Knob *>(knob);
     _entries = cbKnob->getEntries();
     QObject::connect(cbKnob, SIGNAL(populated()), this, SLOT(onEntriesPopulated()));
 }
-ComboBox_KnobGui::~ComboBox_KnobGui()
+Choice_KnobGui::~Choice_KnobGui()
 {
     delete _comboBox;
     delete _descriptionLabel;
 }
-void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row)
+void Choice_KnobGui::createWidget(QGridLayout *layout, int row)
 {
     _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
     _descriptionLabel->setToolTip(getKnob()->getHintToolTip().c_str());
@@ -607,7 +607,7 @@ void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row)
 
     _comboBox = new ComboBox(layout->parentWidget());
 
-    const std::vector<std::string> &help =  dynamic_cast<ComboBox_Knob *>(getKnob())->getEntriesHelp();
+    const std::vector<std::string> &help =  dynamic_cast<Choice_Knob *>(getKnob())->getEntriesHelp();
     for (U32 i = 0; i < _entries.size(); ++i) {
         std::string helpStr = help.empty() ? "" : help[i];
         _comboBox->addItem(_entries[i].c_str(), QIcon(), QKeySequence(), QString(helpStr.c_str()));
@@ -619,16 +619,16 @@ void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row)
     QObject::connect(_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
     layout->addWidget(_comboBox, row, 1, Qt::AlignLeft);
 }
-void ComboBox_KnobGui::onCurrentIndexChanged(int i)
+void Choice_KnobGui::onCurrentIndexChanged(int i)
 {
     pushUndoCommand(new KnobUndoCommand(this, 0, getKnob()->getValue(0), Variant(i)));
 
 }
-void ComboBox_KnobGui::onEntriesPopulated()
+void Choice_KnobGui::onEntriesPopulated()
 {
     int i = _comboBox->activeIndex();
     _comboBox->clear();
-    const std::vector<std::string> entries = dynamic_cast<ComboBox_Knob *>(getKnob())->getEntries();
+    const std::vector<std::string> entries = dynamic_cast<Choice_Knob *>(getKnob())->getEntries();
     _entries = entries;
     for (U32 j = 0; j < _entries.size(); ++j) {
         _comboBox->addItem(_entries[j].c_str());
@@ -636,30 +636,30 @@ void ComboBox_KnobGui::onEntriesPopulated()
     _comboBox->setCurrentText(QString(_entries[i].c_str()));
 }
 
-void ComboBox_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
+void Choice_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 {
     int i = variant.toInt();
     assert(i < (int)_entries.size());
     _comboBox->setCurrentText(_entries[i].c_str());
 }
-void ComboBox_KnobGui::_hide()
+void Choice_KnobGui::_hide()
 {
     _descriptionLabel->hide();
     _comboBox->hide();
 }
 
-void ComboBox_KnobGui::_show()
+void Choice_KnobGui::_show()
 {
     _descriptionLabel->show();
     _comboBox->show();
 }
-void ComboBox_KnobGui::setEnabled()
+void Choice_KnobGui::setEnabled()
 {
     bool b = getKnob()->isEnabled();
     _descriptionLabel->setEnabled(b);
     _comboBox->setEnabled(b);
 }
-void ComboBox_KnobGui::addToLayout(QHBoxLayout *layout)
+void Choice_KnobGui::addToLayout(QHBoxLayout *layout)
 {
     layout->addWidget(_descriptionLabel);
     layout->addWidget(_comboBox);

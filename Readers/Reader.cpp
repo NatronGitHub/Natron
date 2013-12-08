@@ -86,7 +86,7 @@ void Reader::initializeKnobs(){
     _fileKnob = dynamic_cast<File_Knob*>(appPTR->getKnobFactory().createKnob("InputFile", this, "File"));
     assert(_fileKnob);
 
-    _missingFrameChoice = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", this, "On missing frame"));
+    _missingFrameChoice = dynamic_cast<Choice_Knob*>(appPTR->getKnobFactory().createKnob("Choice", this, "On missing frame"));
     std::vector<std::string> missingFrameChoices;
     missingFrameChoices.push_back("Load nearest");
     missingFrameChoices.push_back("Error");

@@ -39,7 +39,7 @@ class Color_Knob;
 class Int_Knob;
 class Double_Knob;
 class Bool_Knob;
-class ComboBox_Knob;
+class Choice_Knob;
 class Group_Knob;
 class RichText_Knob;
 class OfxEffectInstance;
@@ -147,7 +147,7 @@ public:
 
 private:
     std::vector<std::string> _entries;
-    ComboBox_Knob* _knob;
+    Choice_Knob* _knob;
 };
 
 class OfxRGBAInstance :public OFX::Host::Param::RGBAInstance {

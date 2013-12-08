@@ -66,7 +66,7 @@ struct ProjectPrivate{
     bool _hasProjectBeenSavedByUser;
     QDateTime _ageSinceLastSave;
     QDateTime _lastAutoSave;
-    ComboBox_Knob* _formatKnob;
+    Choice_Knob* _formatKnob;
     Button_Knob* _addFormatKnob;
     Int_Knob* _viewsCount;
     boost::shared_ptr<TimeLine> _timeline; // global timeline
@@ -121,7 +121,7 @@ Project::~Project(){
 }
 
 void Project::initializeKnobs(){
-    _imp->_formatKnob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", this, "Output Format"));
+    _imp->_formatKnob = dynamic_cast<Choice_Knob*>(appPTR->getKnobFactory().createKnob("Choice", this, "Output Format"));
     const std::vector<Format*>& appFormats = appPTR->getFormats();
     std::vector<std::string> entries;
     for (U32 i = 0; i < appFormats.size(); ++i) {
