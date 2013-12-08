@@ -641,6 +641,22 @@ void Choice_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
     int i = variant.toInt();
     assert(i < (int)_entries.size());
     _comboBox->setCurrentText(_entries[i].c_str());
+    
+    boost::shared_ptr<Curve> c = getKnob()->getCurve(0);
+    SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    if (c->keyFramesCount() >= 1) {
+        const Curve::KeyFrames &keys = c->getKeyFrames();
+        for (Curve::KeyFrames::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+            if ((*it)->getTime() == time) {
+                _comboBox->setAnimation(2);
+                setSetKeyActionEnabled(false);
+                return;
+            }
+        }
+        _comboBox->setAnimation(1);
+    } else {
+        _comboBox->setAnimation(0);
+    }
 }
 void Choice_KnobGui::_hide()
 {
