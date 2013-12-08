@@ -155,7 +155,7 @@ void Writer::initializeKnobs(){
         fileTypes.push_back(it->first.c_str());
     }
     _filetypeCombo->populate(fileTypes);
-    
+    _filetypeCombo->turnOffAnimation();
     
     _frameRangeChoosal = dynamic_cast<Choice_Knob*>(appPTR->getKnobFactory().createKnob("Choice", this, "Frame range"));
     std::vector<std::string> frameRangeChoosalEntries;
@@ -163,11 +163,13 @@ void Writer::initializeKnobs(){
     frameRangeChoosalEntries.push_back("Timeline bounds");
     frameRangeChoosalEntries.push_back("Manual");
     _frameRangeChoosal->populate(frameRangeChoosalEntries);
+    _frameRangeChoosal->turnOffAnimation();
     
     _continueOnError = dynamic_cast<Bool_Knob*>(appPTR->getKnobFactory().createKnob("Bool", this, "Continue on error"));
     _continueOnError->setHintToolTip("If true, when an error arises for a frame,it will skip that frame and resume rendering.");
     _continueOnError->setInsignificant(true);
     _continueOnError->setValue(false);
+    _continueOnError->turnOffAnimation();
     
 }
 bool Writer::continueOnError() const{

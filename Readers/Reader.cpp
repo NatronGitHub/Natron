@@ -93,6 +93,7 @@ void Reader::initializeKnobs(){
     missingFrameChoices.push_back("Black image");
     _missingFrameChoice->populate(missingFrameChoices);
     _missingFrameChoice->setValue(0);
+    _missingFrameChoice->turnOffAnimation();
 }
 
 void Reader::onKnobValueChanged(Knob* /*k*/,Knob::ValueChangedReason /*reason*/){}
