@@ -36,6 +36,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/ImageInfo.h"
 #include "Engine/Project.h"
+#include "Engine/TimeLine.h"
 
 #include "Readers/ExrDecoder.h"
 #include "Readers/QtDecoder.h"
@@ -96,7 +97,11 @@ void Reader::initializeKnobs(){
     _missingFrameChoice->turnOffAnimation();
 }
 
-void Reader::onKnobValueChanged(Knob* /*k*/,Knob::ValueChangedReason /*reason*/){}
+void Reader::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
+    if(k == _fileKnob){
+        getNode()->refreshPreviewImage(getApp()->getTimeLine()->currentFrame());
+    }
+}
 
 void Reader::getFrameRange(SequenceTime *first,SequenceTime *last){
     *first = _fileKnob->firstFrame();
