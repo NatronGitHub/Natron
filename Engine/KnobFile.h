@@ -33,23 +33,17 @@ public:
         return new File_Knob(holder, description, dimension);
     }
 
-    File_Knob(KnobHolder *holder, const std::string &description, int dimension)
-        : Knob(holder, description, dimension)
-    {}
+    File_Knob(KnobHolder *holder, const std::string &description, int dimension);
+
+    static const std::string& typeNameStatic();
 
 private:
-    virtual bool canAnimate() const OVERRIDE FINAL {
-        return false;
-    }
+    virtual bool canAnimate() const OVERRIDE FINAL;
 
-    virtual std::string typeName() const OVERRIDE FINAL {
-        return "InputFile";
-    }
+    virtual const std::string& typeName() const OVERRIDE FINAL;
 
 public:
-    void openFile() {
-        emit shouldOpenFile();
-    }
+    void openFile();
 
     /**
      * @brief firstFrame
@@ -64,9 +58,7 @@ public:
     int lastFrame() const;
 
 private:
-    int frameCount() const {
-        return _filesSequence.size();
-    }
+    int frameCount() const;
 
     /**
      * @brief nearestFrame
@@ -93,6 +85,7 @@ signals:
 private:
     mutable QMutex _fileSequenceLock;
     std::map<int, QString> _filesSequence; ///mapping <frameNumber,fileName>
+    static const std::string _typeNameStr;
 };
 
 /******************************OUTPUT_FILE_KNOB**************************************/
@@ -106,16 +99,13 @@ public:
         return new OutputFile_Knob(holder, description, dimension);
     }
 
-    OutputFile_Knob(KnobHolder *holder, const std::string &description, int dimension):
-        Knob(holder, description, dimension)
-    {}
+    OutputFile_Knob(KnobHolder *holder, const std::string &description, int dimension);
 
     std::string getFileName() const;
 
-    void openFile() {
-        emit shouldOpenFile();
-    }
+    void openFile();
 
+    static const std::string& typeNameStatic();
 
 signals:
 
@@ -123,13 +113,13 @@ signals:
 
 private:
 
-    virtual bool canAnimate() const OVERRIDE FINAL {
-        return false;
-    }
+    virtual bool canAnimate() const OVERRIDE FINAL;
 
-    virtual std::string typeName() const OVERRIDE FINAL {
-        return "OutputFile";
-    }
+    virtual const std::string& typeName() const OVERRIDE FINAL;
+    
+private:
+    static const std::string _typeNameStr;
+
 };
 
 

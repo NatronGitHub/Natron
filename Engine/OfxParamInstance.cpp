@@ -51,7 +51,7 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
                                              OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::PushbuttonInstance(descriptor, node->effectInstance())
 {
-    _knob = dynamic_cast<Button_Knob*>(appPTR->getKnobFactory().createKnob("Button", node, getParamLabel(this)));
+    _knob = appPTR->getKnobFactory().createKnob<Button_Knob>(node, getParamLabel(this));
 }
 
 
@@ -75,7 +75,7 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param:
 : OFX::Host::Param::IntegerInstance(descriptor, node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();
-    _knob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", node, getParamLabel(this)));
+    _knob = appPTR->getKnobFactory().createKnob<Int_Knob>(node, getParamLabel(this));
 
     int min = properties.getIntProperty(kOfxParamPropMin);
     int max = properties.getIntProperty(kOfxParamPropMax);
@@ -126,7 +126,7 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    _knob = dynamic_cast<Double_Knob*>(appPTR->getKnobFactory().createKnob("Double", node, getParamLabel(this)));
+    _knob = appPTR->getKnobFactory().createKnob<Double_Knob>(node, getParamLabel(this));
 
     double min = properties.getDoubleProperty(kOfxParamPropMin);
     double max = properties.getDoubleProperty(kOfxParamPropMax);
@@ -194,7 +194,7 @@ OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    _knob = dynamic_cast<Bool_Knob*>(appPTR->getKnobFactory().createKnob("Bool", node, getParamLabel(this)));
+    _knob = appPTR->getKnobFactory().createKnob<Bool_Knob>(node, getParamLabel(this));
     int def = properties.getIntProperty(kOfxParamPropDefault);
     set((bool)def);
     
@@ -242,7 +242,7 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    _knob = dynamic_cast<Choice_Knob*>(appPTR->getKnobFactory().createKnob("Choice", node, getParamLabel(this)));
+    _knob = appPTR->getKnobFactory().createKnob<Choice_Knob>(node, getParamLabel(this));
 
     std::vector<std::string> helpStrings;
     for (int i = 0 ; i < properties.getDimension(kOfxParamPropChoiceOption) ; ++i) {
@@ -307,7 +307,7 @@ OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descr
 : OFX::Host::Param::RGBAInstance(descriptor,node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();  
-    _knob = dynamic_cast<Color_Knob*>(appPTR->getKnobFactory().createKnob("Color", node, getParamLabel(this),4));
+    _knob = appPTR->getKnobFactory().createKnob<Color_Knob>(node, getParamLabel(this),4);
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
     double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
     double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);
@@ -365,7 +365,7 @@ OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descr
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    _knob = dynamic_cast<Color_Knob*>(appPTR->getKnobFactory().createKnob("Color", node, getParamLabel(this),3));
+    _knob = appPTR->getKnobFactory().createKnob<Color_Knob>(node, getParamLabel(this),3);
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
     double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
     double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);   
@@ -418,7 +418,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    _knob = dynamic_cast<Double_Knob*>(appPTR->getKnobFactory().createKnob("Double", node, getParamLabel(this),dims));
+    _knob = appPTR->getKnobFactory().createKnob<Double_Knob>(node, getParamLabel(this),dims);
 
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);
@@ -496,7 +496,7 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::P
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    _knob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", node, getParamLabel(this), dims));
+    _knob = appPTR->getKnobFactory().createKnob<Int_Knob>(node, getParamLabel(this), dims);
 
     std::vector<int> minimum(dims);
     std::vector<int> maximum(dims);
@@ -566,7 +566,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Par
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    _knob = dynamic_cast<Double_Knob*>(appPTR->getKnobFactory().createKnob("Double", node, getParamLabel(this),dims));
+    _knob = appPTR->getKnobFactory().createKnob<Double_Knob>(node, getParamLabel(this),dims);
 
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);
@@ -648,7 +648,7 @@ OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::P
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    _knob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", node, getParamLabel(this), dims));
+    _knob = appPTR->getKnobFactory().createKnob<Int_Knob>(node, getParamLabel(this), dims);
 
     std::vector<int> minimum(dims);
     std::vector<int> maximum(dims);
@@ -728,13 +728,13 @@ OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Des
         Tab_Knob* _tabKnob = _node->getTabKnob();
         std::string name = getParamLabel(this);
         if(!_tabKnob){
-            _tabKnob = dynamic_cast<Tab_Knob*>(appPTR->getKnobFactory().createKnob("Tab", node, name));
+            _tabKnob = appPTR->getKnobFactory().createKnob<Tab_Knob>(node, name);
             _node->setTabKnob(_tabKnob);
         }
         _groupKnob = 0;
 
     }else{
-        _groupKnob = dynamic_cast<Group_Knob*>(appPTR->getKnobFactory().createKnob("Group", node, getParamLabel(this)));
+        _groupKnob = appPTR->getKnobFactory().createKnob<Group_Knob>(node, getParamLabel(this));
         int opened = properties.getIntProperty(kOfxParamPropGroupOpen);
         _groupKnob->setValue((bool)opened);
 
@@ -774,24 +774,24 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
 
     if(mode == kOfxParamStringIsFilePath){
         if(_node->isGenerator()){
-            _fileKnob = dynamic_cast<File_Knob*>(appPTR->getKnobFactory().createKnob("InputFile", node, getParamLabel(this)));
+            _fileKnob = appPTR->getKnobFactory().createKnob<File_Knob>(node, getParamLabel(this));
             QObject::connect(_fileKnob, SIGNAL(frameRangeChanged(int,int)), this, SLOT(onFrameRangeChanged(int,int)));
 
         }else{
             _node->setAsOutputNode(); // IMPORTANT ! 
-            _outputFileKnob = dynamic_cast<OutputFile_Knob*>(appPTR->getKnobFactory().createKnob("OutputFile", node, getParamLabel(this)));
+            _outputFileKnob = appPTR->getKnobFactory().createKnob<OutputFile_Knob>(node, getParamLabel(this));
 
         }
     }else if(mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel){
         
-        _stringKnob = dynamic_cast<String_Knob*>(appPTR->getKnobFactory().createKnob("String", node, getParamLabel(this)));
+        _stringKnob = appPTR->getKnobFactory().createKnob<String_Knob>(node, getParamLabel(this));
         if(mode == kOfxParamStringIsLabel){
             _stringKnob->setEnabled(false);
         }
 
         set(properties.getStringProperty(kOfxParamPropDefault,1).c_str());
     }else if(mode == kOfxParamStringIsMultiLine){
-        _multiLineKnob = dynamic_cast<RichText_Knob*>(appPTR->getKnobFactory().createKnob("RichText", node, getParamLabel(this)));
+        _multiLineKnob = appPTR->getKnobFactory().createKnob<RichText_Knob>(node, getParamLabel(this));
 
         set(properties.getStringProperty(kOfxParamPropDefault,1).c_str());
 
@@ -987,7 +987,7 @@ OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::D
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    _knob = dynamic_cast<String_Knob*>(appPTR->getKnobFactory().createKnob("String", node, getParamLabel(this)));
+    _knob = appPTR->getKnobFactory().createKnob<String_Knob>(node, getParamLabel(this));
     
     set(properties.getStringProperty(kOfxParamPropDefault,1).c_str());
 

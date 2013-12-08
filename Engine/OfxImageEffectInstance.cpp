@@ -24,6 +24,7 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Knob.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/KnobFactory.h"
 
 #include "Global/AppManager.h"
@@ -381,8 +382,8 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
     }
     knob->setSpacingBetweenItems(descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     int layoutHint = descriptor.getProperties().getIntProperty(kOfxParamPropLayoutHint);
-    if(layoutHint == 1){
-        appPTR->getKnobFactory().createKnob("Separator", node(), knob->getDescription());
+    if (layoutHint == 1) {
+        (void)appPTR->getKnobFactory().createKnob<Separator_Knob>(node(), knob->getDescription());
     }else if(layoutHint == 2){
         knob->turnOffNewLine();
     }
