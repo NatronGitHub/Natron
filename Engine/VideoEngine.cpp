@@ -510,11 +510,14 @@ void VideoEngine::run(){
             if(stat != StatFailed){
                 int viewsCount = _tree.getOutput()->getApp()->getCurrentProjectViewsCount();
                 for(int i = 0; i < viewsCount;++i){
-                    try{
-                        (void)_tree.getOutput()->renderRoI(currentFrame, scale,i ,rod);
-                    }catch(...){
-                        stat = StatFailed;
-                    }
+                    // Do not catch exceptions: if an exception occurs here it is probably fatal, since
+                    // it comes from Natron itself. All exceptions from plugins are already caught
+                    // by the HostSupport library.
+                   //try{
+                    (void)_tree.getOutput()->renderRoI(currentFrame, scale,i ,rod);
+                    //}catch(...){
+                    //    stat = StatFailed;
+                    //}
                 }
             }
             

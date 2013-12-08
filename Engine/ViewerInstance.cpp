@@ -257,12 +257,16 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
             EffectInstance::RoIMap::const_iterator it = inputsRoi.begin();
             
             boost::shared_ptr<const Natron::Image> inputImage;
-            try{
-                inputImage = it->first->renderRoI(time, scale,view,it->second,byPassCache);
-            }catch(...){
-                //plugin should have posted a message
-                return StatFailed;
-            }
+
+            // Do not catch exceptions: if an exception occurs here it is probably fatal, since
+            // it comes from Natron itself. All exceptions from plugins are already caught
+            // by the HostSupport library.
+            //try{
+            inputImage = it->first->renderRoI(time, scale,view,it->second,byPassCache);
+            //} catch (...) {
+            //    //plugin should have posted a message
+            //    return StatFailed;
+            //}
 
             if(aborted()){
                 //if render was aborted, remove the frame from the cache as it contains only garbage

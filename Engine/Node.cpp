@@ -567,13 +567,16 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     RenderScale scale;
     scale.x = scale.y = 1.;
     boost::shared_ptr<const Image> img;
+
+    // Exceptions are caught because the program can run without a preview,
+    // but any exception in renderROI is probably fatal.
     try {
         img = _imp->previewInstance->renderRoI(time, scale, 0,rod);
     } catch (const std::exception& e) {
-        qDebug() << "Cannot create preview" << ": " << e.what();
+        qDebug() << "Error: Cannot create preview" << ": " << e.what();
         return;
     } catch (...) {
-        qDebug() << "Cannot create preview";
+        qDebug() << "Error: Cannot create preview";
         return;
     }
     for (int i=0; i < h; ++i) {

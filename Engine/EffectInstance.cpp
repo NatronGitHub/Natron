@@ -372,7 +372,7 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
                 Natron::Status st = render(time, scale, *it,view, image);
                 pluginLock->unlock();
                 if(st != Natron::StatOK){
-                    throw std::runtime_error("");
+                    throw std::runtime_error("rendering failed");
                 }
                 if(!aborted()){
                     image->markForRendered(*it);
@@ -380,7 +380,7 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
             }else if(safety == INSTANCE_SAFE){
                 Natron::Status st = render(time, scale, *it,view, image);
                 if(st != Natron::StatOK){
-                    throw std::runtime_error("");
+                    throw std::runtime_error("rendering failed");
                 }
                 if(!aborted()){
                     image->markForRendered(*it);
@@ -392,7 +392,7 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
                 ret.waitForFinished();
                 for (QFuture<Natron::Status>::const_iterator it = ret.begin(); it!=ret.end(); ++it) {
                     if ((*it) == Natron::StatFailed) {
-                        throw std::runtime_error("");
+                        throw std::runtime_error("rendering failed");
                     }
                 }
             }

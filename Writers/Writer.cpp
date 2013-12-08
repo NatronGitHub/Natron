@@ -202,6 +202,10 @@ Natron::Status Writer::renderWriter(SequenceTime time){
         if(!encoder){
             return StatFailed;
         }
+
+        // Do not catch exceptions: if an exception occurs here it is probably fatal, since
+        // it comes from Natron itself. All exceptions from plugins are already caught
+        // by the HostSupport library.
         boost::shared_ptr<const Natron::Image> inputImage = roi->first->renderRoI(time, scale,i,roi->second);
 
         if(aborted()){
