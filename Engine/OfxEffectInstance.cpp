@@ -13,6 +13,8 @@
 
 #include <locale>
 #include <limits>
+#include <stdexcept>
+
 #if QT_VERSION < 0x050000
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(unused-private-field);
@@ -454,10 +456,21 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     ofxRoI.y1 = roi.bottom();
     ofxRoI.y2 = roi.top();
     int viewsCount = getApp()->getCurrentProjectViewsCount();
-    OfxStatus st = effect_->renderAction((OfxTime)time,kOfxImageFieldNone,ofxRoI,scale,view,viewsCount);
-    if(st != kOfxStatOK){
+    OfxStatus stat;
+    const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
+    OfxTime inputtime = time;
+    std::string inputclip;
+    stat = effect_->isIdentityAction(inputtime, field, ofxRoI, scale, inputclip);
+    if (stat == kOfxStatOK) {
+#warning "FIXME: kOfxImageEffectActionIsIdentity is not implemented. Should copy image from inputclip at inputtime to the output."
+        // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectActionIsIdentity
+        throw std::logic_error("Cannot render: kOfxImageEffectActionIsIdentity is not implemented");
+    }
+
+    stat = effect_->renderAction((OfxTime)time, field, ofxRoI, scale, view, viewsCount);
+    if (stat != kOfxStatOK) {
         return StatFailed;
-    }else{
+    } else {
         return StatOK;
     }
 }
