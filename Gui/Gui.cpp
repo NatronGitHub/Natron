@@ -1257,8 +1257,8 @@ void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron
                                                                                   (QMessageBox::StandardButtons)buttons,
                                                                                   (QMessageBox::StandardButtons)defaultB);
     }
+    _uiUsingMainThread = false;
     if(QThread::currentThread() != QCoreApplication::instance()->thread()){
-        _uiUsingMainThread = false;
         _uiUsingMainThreadCond.wakeOne();
         _uiUsingMainThreadMutex.unlock();
     }
