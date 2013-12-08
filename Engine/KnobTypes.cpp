@@ -479,7 +479,7 @@ std::string Button_Knob::typeName() const
 }
 
 
-/******************************COMBOBOX_KNOB**************************************/
+/******************************CHOICE_KNOB**************************************/
 
 Choice_Knob::Choice_Knob(KnobHolder *holder, const std::string &description, int dimension):
     Knob(holder, description, dimension)

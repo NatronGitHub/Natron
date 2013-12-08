@@ -207,7 +207,7 @@ private:
     virtual std::string typeName() const OVERRIDE FINAL;
 };
 
-/******************************COMBOBOX_KNOB**************************************/
+/******************************CHOICE_KNOB**************************************/
 
 class Choice_Knob: public Knob
 {

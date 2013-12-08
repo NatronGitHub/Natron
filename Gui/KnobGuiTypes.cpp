@@ -587,7 +587,8 @@ void Button_KnobGui::addToLayout(QHBoxLayout *layout)
     layout->addWidget(_button);
 }
 
-//=============================COMBOBOX_KNOB_GUI===================================
+
+//=============================CHOICE_KNOB_GUI===================================
 Choice_KnobGui::Choice_KnobGui(Knob *knob, DockablePanel *container): KnobGui(knob, container)
 {
     Choice_Knob *cbKnob = dynamic_cast<Choice_Knob *>(knob);
