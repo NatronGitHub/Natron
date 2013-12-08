@@ -987,7 +987,7 @@ OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::D
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    _knob = appPTR->getKnobFactory().createKnob<String_Knob>(node, getParamLabel(this));
+    _knob = appPTR->getKnobFactory().createKnob<Custom_Knob>(node, getParamLabel(this));
     
     set(properties.getStringProperty(kOfxParamPropDefault,1).c_str());
 
