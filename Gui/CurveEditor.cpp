@@ -1002,8 +1002,10 @@ void CurveEditor::showCurves(KnobGui* knob){
                     elem->getTreeItem()->setHidden(false);
                     if(elem->getTreeItem()->parent()){
                         elem->getTreeItem()->parent()->setHidden(false);
+                        elem->getTreeItem()->parent()->setExpanded(true);
                         if(elem->getTreeItem()->parent()->parent()){
                             elem->getTreeItem()->parent()->parent()->setHidden(false);
+                            elem->getTreeItem()->parent()->parent()->setExpanded(true);
                         }
                     }
                 }
