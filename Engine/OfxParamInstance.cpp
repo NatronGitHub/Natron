@@ -205,7 +205,7 @@ OfxStatus OfxBooleanInstance::get(bool& b){
 }
 
 OfxStatus OfxBooleanInstance::get(OfxTime /*time*/, bool& b) {
-    assert(!Bool_Knob::canAnimateStatic());
+    assert(Bool_Knob::canAnimateStatic());
     b = _knob->getValue<bool>();
     return kOfxStatOK;
 }
@@ -216,7 +216,7 @@ OfxStatus OfxBooleanInstance::set(bool b){
 }
 
 OfxStatus OfxBooleanInstance::set(OfxTime /*time*/, bool b){
-    assert(!Bool_Knob::canAnimateStatic());
+    assert(Bool_Knob::canAnimateStatic());
     _knob->setValue<bool>(b);
     return kOfxStatOK;
 }

@@ -1258,7 +1258,7 @@ void CurveWidgetPrivate::setKeysInterpolation(const std::vector<boost::shared_pt
     if(editor){
         if(keys.size() > 1){
             editor->setKeysInterpolation(keys, type);
-        }else{
+        }else if(keys.size() == 1){
             editor->setKeyInterpolation(keys.front(),type);
         }
     }else{
