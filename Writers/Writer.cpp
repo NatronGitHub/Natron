@@ -147,7 +147,7 @@ void Writer::initializeKnobs(){
     _premultKnob->setValue(false);
     
     std::string filetypeStr("File type");
-    _filetypeCombo = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", this, filetypeStr));
+    _filetypeCombo = dynamic_cast<Choice_Knob*>(appPTR->getKnobFactory().createKnob("Choice", this, filetypeStr));
     const std::map<std::string,Natron::LibraryBinary*>& _encoders = appPTR->getCurrentSettings()._writersSettings.getFileTypesMap();
     std::map<std::string,Natron::LibraryBinary*>::const_iterator it = _encoders.begin();
     std::vector<std::string> fileTypes;
@@ -157,7 +157,7 @@ void Writer::initializeKnobs(){
     _filetypeCombo->populate(fileTypes);
     
     
-    _frameRangeChoosal = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", this, "Frame range"));
+    _frameRangeChoosal = dynamic_cast<Choice_Knob*>(appPTR->getKnobFactory().createKnob("Choice", this, "Frame range"));
     std::vector<std::string> frameRangeChoosalEntries;
     frameRangeChoosalEntries.push_back("Inputs union");
     frameRangeChoosalEntries.push_back("Timeline bounds");

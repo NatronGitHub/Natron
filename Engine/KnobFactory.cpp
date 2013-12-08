@@ -84,7 +84,7 @@ void KnobFactory::loadBultinKnobs()
     _loadedKnobs.insert(knobFactoryEntry<Bool_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<Button_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<OutputFile_Knob>());
-    _loadedKnobs.insert(knobFactoryEntry<ComboBox_Knob>());
+    _loadedKnobs.insert(knobFactoryEntry<Choice_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<Separator_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<Group_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<Color_Knob>());

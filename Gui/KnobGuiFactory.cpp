@@ -87,7 +87,7 @@ void KnobGuiFactory::loadBultinKnobs()
     _loadedKnobs.insert(knobGuiFactoryEntry<Bool_Knob,Bool_KnobGui>());
     _loadedKnobs.insert(knobGuiFactoryEntry<Button_Knob,Button_KnobGui>());
     _loadedKnobs.insert(knobGuiFactoryEntry<OutputFile_Knob,OutputFile_KnobGui>());
-    _loadedKnobs.insert(knobGuiFactoryEntry<ComboBox_Knob,ComboBox_KnobGui>());
+    _loadedKnobs.insert(knobGuiFactoryEntry<Choice_Knob,Choice_KnobGui>());
     _loadedKnobs.insert(knobGuiFactoryEntry<Separator_Knob,Separator_KnobGui>());
     _loadedKnobs.insert(knobGuiFactoryEntry<Group_Knob,Group_KnobGui>());
     _loadedKnobs.insert(knobGuiFactoryEntry<Color_Knob,Color_KnobGui>());

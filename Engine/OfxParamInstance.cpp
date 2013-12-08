@@ -242,7 +242,7 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    _knob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", node, getParamLabel(this)));
+    _knob = dynamic_cast<Choice_Knob*>(appPTR->getKnobFactory().createKnob("Choice", node, getParamLabel(this)));
 
     std::vector<std::string> helpStrings;
     for (int i = 0 ; i < properties.getDimension(kOfxParamPropChoiceOption) ; ++i) {
@@ -262,7 +262,7 @@ OfxStatus OfxChoiceInstance::get(int& v){
     return kOfxStatOK;
 }
 OfxStatus OfxChoiceInstance::get(OfxTime /*time*/, int& v) {
-    assert(!ComboBox_Knob::canAnimateStatic());
+    assert(!Choice_Knob::canAnimateStatic());
     v = _knob->getActiveEntry();
     return kOfxStatOK;
 }
@@ -277,7 +277,7 @@ OfxStatus OfxChoiceInstance::set(int v){
 }
 
 OfxStatus OfxChoiceInstance::set(OfxTime /*time*/, int v) {
-    assert(!ComboBox_Knob::canAnimateStatic());
+    assert(!Choice_Knob::canAnimateStatic());
     if(v < (int)_entries.size()){
         _knob->setValue<int>(v);
         return kOfxStatOK;

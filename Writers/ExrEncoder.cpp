@@ -179,7 +179,7 @@ void ExrEncoderKnobs::initKnobs(const std::string& fileType) {
     sepKnob = dynamic_cast<Separator_Knob*>(appPTR->getKnobFactory().createKnob("Separator", _writer, separatorDesc));
     
     std::string compressionCBDesc("Compression");
-    compressionCBKnob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", _writer, compressionCBDesc));
+    compressionCBKnob = dynamic_cast<Choice_Knob*>(appPTR->getKnobFactory().createKnob("Choice", _writer, compressionCBDesc));
     std::vector<std::string> list;
     for (int i =0; i < 6; ++i) {
         list.push_back(EXR::compressionNames[i].c_str());
@@ -188,7 +188,7 @@ void ExrEncoderKnobs::initKnobs(const std::string& fileType) {
     compressionCBKnob->setValue(3);
     
     std::string depthCBDesc("Data type");
-    depthCBKnob = static_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", _writer,depthCBDesc));
+    depthCBKnob = static_cast<Choice_Knob*>(appPTR->getKnobFactory().createKnob("Choice", _writer,depthCBDesc));
     list.clear();
     for(int i = 0 ; i < 2 ; ++i) {
         list.push_back(EXR::depthNames[i].c_str());

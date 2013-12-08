@@ -479,26 +479,26 @@ std::string Button_Knob::typeName() const
 }
 
 
-/******************************COMBOBOX_KNOB**************************************/
+/******************************CHOICE_KNOB**************************************/
 
-ComboBox_Knob::ComboBox_Knob(KnobHolder *holder, const std::string &description, int dimension):
+Choice_Knob::Choice_Knob(KnobHolder *holder, const std::string &description, int dimension):
     Knob(holder, description, dimension)
 {
 
 }
 
-bool ComboBox_Knob::canAnimate() const
+bool Choice_Knob::canAnimate() const
 {
     return canAnimateStatic();
 }
 
-std::string ComboBox_Knob::typeName() const
+std::string Choice_Knob::typeName() const
 {
-    return "ComboBox";
+    return "Choice";
 }
 
 /*Must be called right away after the constructor.*/
-void ComboBox_Knob::populate(const std::vector<std::string> &entries, const std::vector<std::string> &entriesHelp)
+void Choice_Knob::populate(const std::vector<std::string> &entries, const std::vector<std::string> &entriesHelp)
 {
     assert(_entriesHelp.empty() || _entriesHelp.size() == entries.size());
     _entriesHelp = entriesHelp;
@@ -506,22 +506,22 @@ void ComboBox_Knob::populate(const std::vector<std::string> &entries, const std:
     emit populated();
 }
 
-const std::vector<std::string> &ComboBox_Knob::getEntries() const
+const std::vector<std::string> &Choice_Knob::getEntries() const
 {
     return _entries;
 }
 
-const std::vector<std::string> &ComboBox_Knob::getEntriesHelp() const
+const std::vector<std::string> &Choice_Knob::getEntriesHelp() const
 {
     return _entriesHelp;
 }
 
-int ComboBox_Knob::getActiveEntry() const
+int Choice_Knob::getActiveEntry() const
 {
     return getValue<int>();
 }
 
-const std::string &ComboBox_Knob::getActiveEntryText() const
+const std::string &Choice_Knob::getActiveEntryText() const
 {
     return _entries[getActiveEntry()];
 }

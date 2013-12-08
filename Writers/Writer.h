@@ -26,7 +26,7 @@ namespace Natron{
     class Image;
 }
 class OutputFile_Knob;
-class ComboBox_Knob;
+class Choice_Knob;
 class EncoderKnobs;
 class Bool_Knob;
 class Button_Knob;
@@ -92,8 +92,8 @@ private:
     EncoderKnobs* _writeOptions;
         
     OutputFile_Knob* _fileKnob;
-    ComboBox_Knob* _filetypeCombo;
-    ComboBox_Knob* _frameRangeChoosal;
+    Choice_Knob* _filetypeCombo;
+    Choice_Knob* _frameRangeChoosal;
     Int_Knob* _firstFrameKnob;
     Int_Knob* _lastFrameKnob;
     Button_Knob* _renderKnob;

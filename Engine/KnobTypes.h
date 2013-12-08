@@ -207,18 +207,18 @@ private:
     virtual std::string typeName() const OVERRIDE FINAL;
 };
 
-/******************************COMBOBOX_KNOB**************************************/
+/******************************CHOICE_KNOB**************************************/
 
-class ComboBox_Knob: public Knob
+class Choice_Knob: public Knob
 {
     Q_OBJECT
 public:
 
     static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
-        return new ComboBox_Knob(holder, description, dimension);
+        return new Choice_Knob(holder, description, dimension);
     }
 
-    ComboBox_Knob(KnobHolder *holder, const std::string &description, int dimension);
+    Choice_Knob(KnobHolder *holder, const std::string &description, int dimension);
 
     /*Must be called right away after the constructor.*/
     void populate(const std::vector<std::string> &entries, const std::vector<std::string> &entriesHelp = std::vector<std::string>());
