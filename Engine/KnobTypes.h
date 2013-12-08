@@ -101,6 +101,9 @@ public:
 
     Bool_Knob(KnobHolder *holder, const std::string &description, int dimension);
 
+    /// Can this type be animated?
+    /// BooleanParam animation may not be quite perfect yet,
+    /// @see Curve::getValueAt() for the animation code.
     static bool canAnimateStatic() { return true; }
 
 private:
@@ -228,6 +231,9 @@ public:
 
     const std::string &getActiveEntryText() const;
 
+    /// Can this type be animated?
+    /// ChoiceParam animation may not be quite perfect yet,
+    /// @see Curve::getValueAt() for the animation code.
     static bool canAnimateStatic() { return false; }
 
 signals:
@@ -303,6 +309,10 @@ public:
     String_Knob(KnobHolder *holder, const std::string &description, int dimension);
     std::string getString() const;
 
+    /// Can this type be animated?
+    /// String animation consists in setting constant strings at
+    /// each keyframe, which are valid until the next keyframe.
+    /// It can be useful for titling/subtitling.
     static bool canAnimateStatic() { return false; }
 
 private:
@@ -324,6 +334,9 @@ public:
     Custom_Knob(KnobHolder *holder, const std::string &description, int dimension);
     std::string getString() const;
 
+    /// Can this type be animated?
+    /// Custom anymation requires calling the interpolation
+    /// function given by the plugin.
     static bool canAnimateStatic() { return false; }
 
 private:
