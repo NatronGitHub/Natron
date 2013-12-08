@@ -183,6 +183,27 @@ void KnobGui::createAnimationMenu(QWidget* parent){
     interpolationMenu->addAction(horizInterpAction);
     
     
+    QMenu* copyMenu = new QMenu(_animationMenu);
+    copyMenu->setTitle("Copy");
+    _animationMenu->addAction(copyMenu->menuAction());
+    
+    QAction* copyValuesAction = new QAction(tr("Copy values"),copyMenu);
+    QObject::connect(copyValuesAction,SIGNAL(triggered()),this,SLOT(onCopyValuesActionTriggered()));
+    copyMenu->addAction(copyValuesAction);
+    
+    QAction* copyAnimationAction = new QAction(tr("Copy animation"),copyMenu);
+    QObject::connect(copyAnimationAction,SIGNAL(triggered()),this,SLOT(onCopyAnimationActionTriggered()));
+    copyMenu->addAction(copyAnimationAction);
+    
+    QAction* pasteAction = new QAction(tr("Paste"),copyMenu);
+    QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(onPasteActionTriggered()));
+    copyMenu->addAction(pasteAction);
+ 
+    
+    QAction* linkToAction = new QAction(tr("Link to"),_animationMenu);
+    QObject::connect(linkToAction,SIGNAL(triggered()),this,SLOT(onLinkToActionTriggered()));
+    _animationMenu->addAction(linkToAction);
+
 }
 
 void KnobGui::setSetKeyActionEnabled(bool e){
@@ -357,3 +378,18 @@ void KnobGui::onInternalValueChanged(int dimension){
         updateGUI(dimension,_knob->getValue(dimension));
 }
 
+void KnobGui::onCopyValuesActionTriggered(){
+    
+}
+
+void KnobGui::onCopyAnimationActionTriggered(){
+    
+}
+
+void KnobGui::onPasteActionTriggered(){
+    
+}
+
+void KnobGui::onLinkToActionTriggered(){
+    
+}

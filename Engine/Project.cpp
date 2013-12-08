@@ -135,7 +135,7 @@ void Project::initializeKnobs(){
     }
     
     _imp->_formatKnob->populate(entries);
-    
+    _imp->_formatKnob->turnOffAnimation();
     _imp->_addFormatKnob = appPTR->getKnobFactory().createKnob<Button_Knob>(this,"New format...");
     
 

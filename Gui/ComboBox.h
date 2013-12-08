@@ -31,6 +31,8 @@ class ComboBox : public QFrame
     
     Q_PROPERTY( bool pressed READ isPressed WRITE setPressed)
     
+    Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
+    
     QHBoxLayout* _mainLayout;
     QLabel* _currentText;
     QLabel* _dropDownIcon;
@@ -45,6 +47,7 @@ class ComboBox : public QFrame
     std::vector<QAction*> _actions;
     MenuWithToolTips* _menu;
 
+    int animation;
 public:
     
     explicit ComboBox(QWidget* parent = 0);
@@ -99,7 +102,9 @@ public:
     
     void setCurrentIndex(int index);
     
+    void setAnimation(int i);
     
+    int getAnimation() const { return animation; }
 signals:
     void currentIndexChanged(int index);
     void currentIndexChanged(const QString &text);

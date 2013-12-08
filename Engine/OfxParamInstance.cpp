@@ -262,7 +262,7 @@ OfxStatus OfxChoiceInstance::get(int& v){
     return kOfxStatOK;
 }
 OfxStatus OfxChoiceInstance::get(OfxTime /*time*/, int& v) {
-    assert(!Choice_Knob::canAnimateStatic());
+    assert(Choice_Knob::canAnimateStatic());
     v = _knob->getActiveEntry();
     return kOfxStatOK;
 }

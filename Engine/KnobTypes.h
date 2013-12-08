@@ -249,7 +249,7 @@ public:
     /// Can this type be animated?
     /// ChoiceParam animation may not be quite perfect yet,
     /// @see Curve::getValueAt() for the animation code.
-    static bool canAnimateStatic() { return false; }
+    static bool canAnimateStatic() { return true; }
 
     static const std::string& typeNameStatic();
 

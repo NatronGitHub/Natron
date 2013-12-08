@@ -165,13 +165,31 @@ QTreeWidget::branch:has-siblings:!adjoins-item {
 QDialog{
 background-color: %2;
 }
-ComboBox[pressed="false"]{
+ComboBox[pressed="false"][animation="0"]{
 background-color: %3;
 border:1px solid black;
 border-radius : 5px;
 }
-ComboBox[pressed="true"]{
+ComboBox[pressed="true"][animation="0"]{
 background-color: %4;
+border-radius : 5px;
+}
+ComboBox[pressed="false"][animation="1"]{
+background-color: %6;
+border:1px solid black;
+border-radius : 5px;
+}
+ComboBox[pressed="true"][animation="1"]{
+background-color: %6;
+border-radius : 5px;
+}
+ComboBox[pressed="false"][animation="2"]{
+background-color: %7;
+border:1px solid black;
+border-radius : 5px;
+}
+ComboBox[pressed="true"][animation="2"]{
+background-color: %7;
 border-radius : 5px;
 }
 TabWidget{background-color: %2;}

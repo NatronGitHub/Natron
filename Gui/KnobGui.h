@@ -113,6 +113,14 @@ public slots:
     void onCubicInterpActionTriggered();
     
     void onHorizontalInterpActionTriggered();
+    
+    void onCopyValuesActionTriggered();
+    
+    void onCopyAnimationActionTriggered();
+    
+    void onPasteActionTriggered();
+    
+    void onLinkToActionTriggered();
     /******************************************************/
 
 signals:

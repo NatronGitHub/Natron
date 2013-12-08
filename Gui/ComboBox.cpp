@@ -21,7 +21,7 @@
 #include "Global/AppManager.h"
 #include "Gui/MenuWithToolTips.h"
 
-ComboBox::ComboBox(QWidget* parent):QFrame(parent),_currentIndex(0),_maximumTextSize(0),pressed(false){
+ComboBox::ComboBox(QWidget* parent):QFrame(parent),_currentIndex(0),_maximumTextSize(0),pressed(false),animation(0){
     
     _mainLayout = new QHBoxLayout(this);
     _mainLayout->setSpacing(0);
@@ -302,3 +302,9 @@ void ComboBox::enableItem(int index){
     _actions[index]->setEnabled(true);
 }
 
+void ComboBox::setAnimation(int i){
+    animation = i;
+    style()->unpolish(this);
+    style()->polish(this);
+    repaint();
+}
