@@ -166,7 +166,7 @@ void Int_KnobGui::updateGUI(int dimension, const Variant &variant)
         for (Curve::KeyFrames::const_iterator it = keys.begin(); it != keys.end(); ++it) {
             if ((*it)->getTime() == time) {
                 _spinBoxes[dimension].first->setAnimation(2);
-                setSetKeyActionEnabled(false);
+                setIsOnKeyframe(true);
                 return;
             }
         }
@@ -174,7 +174,7 @@ void Int_KnobGui::updateGUI(int dimension, const Variant &variant)
     } else {
         _spinBoxes[dimension].first->setAnimation(0);
     }
-    setSetKeyActionEnabled(true);
+    setIsOnKeyframe(false);
 }
 
 void Int_KnobGui::onSliderValueChanged(double d)
@@ -284,7 +284,7 @@ void Bool_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
         for (Curve::KeyFrames::const_iterator it = keys.begin(); it != keys.end(); ++it) {
             if ((*it)->getTime() == time) {
                 _checkBox->setAnimation(2);
-                setSetKeyActionEnabled(false);
+                setIsOnKeyframe(true);
                 return;
             }
         }
@@ -292,7 +292,7 @@ void Bool_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
     } else {
         _checkBox->setAnimation(0);
     }
-    setSetKeyActionEnabled(true);
+    setIsOnKeyframe(false);
 }
 
 
@@ -466,7 +466,7 @@ void Double_KnobGui::updateGUI(int dimension, const Variant &variant)
         for (Curve::KeyFrames::const_iterator it = keys.begin(); it != keys.end(); ++it) {
             if ((*it)->getTime() == time) {
                 _spinBoxes[dimension].first->setAnimation(2);
-                setSetKeyActionEnabled(false);
+                setIsOnKeyframe(true);
                 return;
             }
         }
@@ -474,7 +474,7 @@ void Double_KnobGui::updateGUI(int dimension, const Variant &variant)
     } else {
         _spinBoxes[dimension].first->setAnimation(0);
     }
-    setSetKeyActionEnabled(true);
+    setIsOnKeyframe(false);
 }
 
 void Double_KnobGui::onSliderValueChanged(double d)
@@ -650,7 +650,7 @@ void Choice_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
         for (Curve::KeyFrames::const_iterator it = keys.begin(); it != keys.end(); ++it) {
             if ((*it)->getTime() == time) {
                 _comboBox->setAnimation(2);
-                setSetKeyActionEnabled(false);
+                setIsOnKeyframe(true);
                 return;
             }
         }
@@ -658,6 +658,7 @@ void Choice_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
     } else {
         _comboBox->setAnimation(0);
     }
+    setIsOnKeyframe(false);
 }
 void Choice_KnobGui::_hide()
 {

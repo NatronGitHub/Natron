@@ -74,7 +74,6 @@ KnobGui::KnobGui(Knob* knob,DockablePanel* container)
 , _widgetCreated(false)
 , _container(container)
 , _animationMenu(NULL)
-, _setKeyAction(NULL)
 , _animationButton(NULL)
 {
     QObject::connect(knob,SIGNAL(valueChanged(int)),this,SLOT(onInternalValueChanged(int)));
@@ -125,19 +124,25 @@ void KnobGui::createGUI(QGridLayout* layout,int row){
 }
 
 void KnobGui::createAnimationButton(QGridLayout* layout,int row){
-    createAnimationMenu(layout->parentWidget());
+    _animationMenu = new QMenu(layout->parentWidget());
     _animationButton = new Button("A",layout->parentWidget());
     _animationButton->setToolTip("Animation menu");
     QObject::connect(_animationButton,SIGNAL(clicked()),this,SLOT(showAnimationMenu()));
     layout->addWidget(_animationButton, row, 3,Qt::AlignLeft);
 }
 
-void KnobGui::createAnimationMenu(QWidget* parent){
-    _animationMenu = new QMenu(parent);
-    _setKeyAction = new QAction(tr("Set Key"),_animationMenu);
-    QObject::connect(_setKeyAction,SIGNAL(triggered()),this,SLOT(onSetKeyActionTriggered()));
-    _animationMenu->addAction(_setKeyAction);
+void KnobGui::createAnimationMenu(){
+    _animationMenu->clear();
     
+    if(!_isOnKeyFrame){
+        QAction* setKeyAction = new QAction(tr("Set Key"),_animationMenu);
+        QObject::connect(setKeyAction,SIGNAL(triggered()),this,SLOT(onSetKeyActionTriggered()));
+        _animationMenu->addAction(setKeyAction);
+    }else{
+        QAction* removeKeyAction = new QAction(tr("Remove Key"),_animationMenu);
+        QObject::connect(removeKeyAction,SIGNAL(triggered()),this,SLOT(onRemoveKeyActionTriggered()));
+        _animationMenu->addAction(removeKeyAction);
+    }
     QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"),_animationMenu);
     QObject::connect(showInCurveEditorAction,SIGNAL(triggered()),this,SLOT(onShowInCurveEditorActionTriggered()));
     _animationMenu->addAction(showInCurveEditorAction);
@@ -200,10 +205,8 @@ void KnobGui::createAnimationMenu(QWidget* parent){
 
 }
 
-void KnobGui::setSetKeyActionEnabled(bool e){
-    if(_setKeyAction){
-        _setKeyAction->setEnabled(e);
-    }
+void KnobGui::setIsOnKeyframe(bool e){
+    _isOnKeyFrame = e;
 }
 
 void KnobGui::setSecret() {
@@ -232,6 +235,7 @@ void KnobGui::setSecret() {
 }
 
 void KnobGui::showAnimationMenu(){
+    createAnimationMenu();
     _animationMenu->exec(_animationButton->mapToGlobal(QPoint(0,0)));
 }
 
@@ -339,6 +343,22 @@ void KnobGui::onSetKeyActionTriggered(){
         setKeyframe(time,i);
     }
     
+}
+
+void KnobGui::onRemoveKeyActionTriggered(){
+    //get the current time on the global timeline
+    SequenceTime time = _knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+
+    for(int i = 0; i < _knob->getDimension();++i){
+        CurveGui* c = _knob->getHolder()->getApp()->getGui()->_curveEditor->findCurve(this, i);
+        const Curve::KeyFrames& keys = c->getInternalCurve()->getKeyFrames();
+        for(Curve::KeyFrames::const_iterator it = keys.begin();it != keys.end();++it){
+            if((*it)->getTime() == time){
+                _knob->getHolder()->getApp()->getGui()->_curveEditor->removeKeyFrame(c ,*it);
+                break;
+            }
+        }
+    }
 }
 
 void KnobGui::hide(){

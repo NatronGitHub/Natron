@@ -355,8 +355,8 @@ void CurveEditor::onCurrentItemChanged(QTreeWidgetItem* current,QTreeWidgetItem*
     }
     recursiveSelect(current,&curves);
 
-    _curveWidget->centerOn(curves);
     _curveWidget->showCurvesAndHideOthers(curves);
+    _curveWidget->centerOn(curves); //remove this if you don't want the editor to switch to a curve on a selection change
 
 }
 
@@ -623,7 +623,7 @@ void AddKeyCommand::undo(){
     assert(curve);
     _editor->removeKeyFrame(curve,_key.key);
     _key.element->checkVisibleState();
-
+    _editor->updateGL();
     setText(QObject::tr("Add keyframe to %1")
             .arg(_actionName.c_str()));
 
@@ -637,7 +637,7 @@ void AddKeyCommand::redo(){
         _editor->addKeyFrame(curve, _key.key);
     }
     _key.element->checkVisibleState();
-
+    _editor->updateGL();
 
     setText(QObject::tr("Add keyframe to %1")
             .arg(_actionName.c_str()));
@@ -733,7 +733,7 @@ void RemoveKeyCommand::undo(){
     assert(_key);
     _curveWidget->addKeyFrame(_element->getCurve(),_key);
     _element->checkVisibleState();
-
+    _curveWidget->updateGL();
     setText(QObject::tr("Remove keyframe from %1.%2")
             .arg(_element->getKnob()->getKnob()->getDescription().c_str())
             .arg(_element->getKnob()->getKnob()->getDimensionName(_element->getDimension()).c_str()));
@@ -744,7 +744,7 @@ void RemoveKeyCommand::redo(){
     assert(_key);
     _curveWidget->removeKeyFrame(_element->getCurve(),_key);
     _element->checkVisibleState();
-
+    _curveWidget->updateGL();
 
     setText(QObject::tr("Remove keyframe from %1.%2")
             .arg(_element->getKnob()->getKnob()->getDescription().c_str())
@@ -769,6 +769,7 @@ void RemoveMultipleKeysCommand::undo(){
         _curveWidget->addKeyFrame(_keys[i].first->getCurve(),_keys[i].second);
         _keys[i].first->checkVisibleState();
     }
+     _curveWidget->updateGL();
     setText(QObject::tr("Remove multiple keyframes"));
 
 
@@ -780,6 +781,7 @@ void RemoveMultipleKeysCommand::redo(){
         _curveWidget->removeKeyFrame(_keys[i].first->getCurve(),_keys[i].second);
         _keys[i].first->checkVisibleState();
     }
+     _curveWidget->updateGL();
     setText(QObject::tr("Remove multiple keyframes"));;
 
 }

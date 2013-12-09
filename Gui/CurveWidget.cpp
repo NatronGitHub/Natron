@@ -1370,6 +1370,7 @@ void CurveWidget::showCurvesAndHideOthers(const std::vector<CurveGui*>& curves){
             (*it)->setVisible(false);
         }
     }
+    
     updateGL();
 }
 
@@ -1844,6 +1845,12 @@ void CurveWidget::removeKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key
     if(!curve->getInternalCurve()->isAnimated()){
         curve->setVisibleAndRefresh(false);
     }
+    for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it!=_imp->_selectedKeyFrames.end(); ++it) {
+        if((*it)->key == key){
+            _imp->_selectedKeyFrames.erase(it);
+            break;
+        }
+    }
 }
 
 void CurveWidget::keyPressEvent(QKeyEvent *event){
@@ -2017,7 +2024,6 @@ void CurveWidget::deleteSelectedKeyFrames(){
         while(!_imp->_selectedKeyFrames.empty()){
             boost::shared_ptr<SelectedKey> it = _imp->_selectedKeyFrames.back();
             removeKeyFrame(it->curve,it->key);
-            _imp->_selectedKeyFrames.pop_back();
         }
     }
     
@@ -2047,11 +2053,11 @@ void CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve(){
                 std::pair<double,Variant>& toCopy = _imp->_keyFramesClipBoard[i];
                 if(!editor){
                     addKeyFrame(*it,toCopy.second,toCopy.first);
+                    updateGL();
                 }else{
                     editor->addKeyFrame(*it,toCopy.first,toCopy.second);
                 }
             }
-            updateGL();
             return;
         }
     }

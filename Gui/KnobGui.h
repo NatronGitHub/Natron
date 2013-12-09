@@ -20,7 +20,6 @@
 
 // Qt
 class QUndoCommand; //used by KnobGui
-class QAction; //used by KnobGui
 class QGridLayout; //used by KnobGui
 class QVBoxLayout; //used by KnobGui
 class QHBoxLayout; //used by KnobGui
@@ -98,6 +97,8 @@ public slots:
     
     void onSetKeyActionTriggered();
     
+    void onRemoveKeyActionTriggered();
+    
     void onShowInCurveEditorActionTriggered();
     
     void onRemoveAnyAnimationActionTriggered();
@@ -135,7 +136,8 @@ signals:
     void knobRedoneChange();
 
 protected:
-    void setSetKeyActionEnabled(bool e);
+    
+    void setIsOnKeyframe(bool e);
 
 private:
 
@@ -153,7 +155,7 @@ private:
      the widget to reflect the new internal value held by variant.*/
     virtual void updateGUI(int dimension,const Variant& variant) = 0;
 
-    void createAnimationMenu(QWidget* parent);
+    void createAnimationMenu();
     
     void createAnimationButton(QGridLayout* layout,int row);
     
@@ -173,8 +175,8 @@ private:
     bool _widgetCreated;
     DockablePanel* const _container;
     QMenu* _animationMenu;
-    QAction* _setKeyAction;
     Button* _animationButton;
+    bool _isOnKeyFrame; //< true when the value of the knob is exactly the value of a keyframe
 };
 Q_DECLARE_METATYPE(KnobGui*)
 
