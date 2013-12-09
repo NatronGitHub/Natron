@@ -112,7 +112,10 @@ public:
     /*Pointer to the GUI*/
     Gui* getGui() WARN_UNUSED_RETURN {return _gui;}
 
-    const std::vector<NodeGui*>& getAllActiveNodes() const WARN_UNUSED_RETURN;
+    const std::vector<NodeGui*>& getVisibleNodes() const WARN_UNUSED_RETURN;
+
+    void getActiveNodes(std::vector<Natron::Node *> *activeNodes) const;
+
 
     const QString& getCurrentProjectName() const WARN_UNUSED_RETURN ;
 
@@ -134,7 +137,7 @@ public:
 
     const Format& getProjectFormat() const WARN_UNUSED_RETURN ;
 
-    bool loadProject(const QString& path,const QString& name,bool background);
+    bool loadProject(const QString& path,const QString& name);
 
     void saveProject(const QString& path,const QString& name,bool autoSave);
 
@@ -169,6 +172,8 @@ public:
     void autoConnect(Natron::Node* target,Natron::Node* created);
 
     NodeGui* getNodeGui(Natron::Node* n) const WARN_UNUSED_RETURN;
+
+    NodeGui* getNodeGui(const std::string& nodeName) const;
 
     Natron::Node* getNode(NodeGui* n) const WARN_UNUSED_RETURN;
 
@@ -217,6 +222,10 @@ private:
 
 
     void removeAutoSaves() const;
+
+    void loadProjectInternal(const QString& path,const QString& name);
+
+    void saveProjectInternal(const QString& path,const QString& filename,bool autosave = false);
 
     /*Attemps to find an autosave. If found one,prompts the user
  whether he/she wants to load it. If something was loaded this function

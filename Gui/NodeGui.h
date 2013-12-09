@@ -17,16 +17,6 @@
 #include <QtCore/QRectF>
 #include <QGraphicsItem>
 
-
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/serialization/utility.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/serialization/version.hpp>
-#include <boost/serialization/shared_ptr.hpp>
-
-#include "Engine/Knob.h"
-
 #include "Global/Macros.h"
 
 class Edge;
@@ -34,9 +24,13 @@ class QPainterPath;
 class QScrollArea;
 class NodeSettingsPanel;
 class QVBoxLayout;
+class QLinearGradient;
+class QGradient;
 class AppInstance;
 class NodeGraph;
 class QAction;
+class Knob;
+class NodeGuiSerialization;
 class KnobGui;
 class QMenu;
 namespace Natron {
@@ -53,64 +47,6 @@ class NodeGui : public QObject,public QGraphicsItem
     
 public:
     
-    
-    class SerializedState {
-        
-        
-    public:
-        
-        typedef std::map< std::string,AnimatingParam> KnobValues;
-
-        
-        SerializedState():_node(NULL){}
-        
-        SerializedState(const NodeGui* n);
-        
-        const KnobValues& getKnobsValues() const {return _knobsValues;}
-        
-        const std::string& getPluginLabel() const {return _pluginLabel;}
-        
-        const std::string& getPluginID() const {return _pluginID;}
-        
-        const std::map<int,std::string>& getInputs() const {return _inputs;}
-                
-        double getX() const {return _posX;}
-        
-        double getY() const {return _posY;}
-        
-        bool isPreviewEnabled() const {return _previewEnabled;}
-        
-    private:
-        
-        const NodeGui* _node;
-        
-        KnobValues _knobsValues;
-        std::string _pluginLabel;
-        std::string _pluginID;
-        
-        std::map<int,std::string> _inputs;
-        double _posX,_posY;
-        bool _previewEnabled;
-        
-        
-        friend class boost::serialization::access;
-        template<class Archive>
-        void serialize(Archive & ar, const unsigned int version)
-        {
-            (void)version;
-            ar & boost::serialization::make_nvp("Knobs_values_map", _knobsValues);
-            ar & boost::serialization::make_nvp("Node_instance_unique_name",_pluginLabel);
-            ar & boost::serialization::make_nvp("Node_class_name",_pluginID);
-            ar & boost::serialization::make_nvp("Input_nodes_map",_inputs);
-            ar & boost::serialization::make_nvp("X_position",_posX);
-            ar & boost::serialization::make_nvp("Y_position",_posY);
-            ar & boost::serialization::make_nvp("Preview_enabled",_previewEnabled);
-        }
-
-        
-    };
-    
-    
 
     typedef std::map<int,Edge*> InputEdgesMap;
     
@@ -122,7 +58,11 @@ public:
 
     ~NodeGui();
     
-    NodeGui::SerializedState serialize() const;
+    /**
+     * @brief Fills the serializationObject with the current state of the NodeGui.
+     **/
+    void serialize(NodeGuiSerialization* serializationObject) const;
+
     
     Natron::Node* getNode() const {return _internalNode;}
     
@@ -295,6 +235,5 @@ private:
     QMenu* _menu;
   
 };
-BOOST_CLASS_VERSION(NodeGui::SerializedState, 1)
 
 #endif // NATRON_GUI_NODEGUI_H_

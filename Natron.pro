@@ -101,6 +101,7 @@ SOURCES += \
     Engine/Lut.cpp \
     Engine/MemoryFile.cpp \
     Engine/Node.cpp \
+    Engine/NodeSerialization.cpp \
     Engine/OfxClipInstance.cpp \
     Engine/OfxHost.cpp \
     Engine/OfxImageEffectInstance.cpp \
@@ -108,6 +109,8 @@ SOURCES += \
     Engine/OfxOverlayInteract.cpp \
     Engine/OfxParamInstance.cpp \
     Engine/Project.cpp \
+    Engine/ProjectPrivate.cpp \
+    Engine/ProjectSerialization.cpp \
     Engine/Row.cpp \
     Engine/Settings.cpp \
     Engine/TimeLine.cpp \
@@ -136,6 +139,9 @@ SOURCES += \
     Gui/MenuWithToolTips.cpp \
     Gui/NodeGraph.cpp \
     Gui/NodeGui.cpp \
+    Gui/NodeGuiSerialization.cpp \
+    Gui/ProjectGui.cpp \
+    Gui/ProjectGuiSerialization.cpp \
     Gui/ScaleSlider.cpp \
     Gui/SequenceFileDialog.cpp \
     Gui/DockablePanel.cpp \
@@ -168,12 +174,11 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
     libs/OpenFX/HostSupport/src/ofxhUtilities.cpp
 
-
-
 HEADERS += \
     Engine/Cache.h \
     Engine/Curve.h \
     Engine/CurveSerialization.h \
+    Engine/CurvePrivate.h \
     Engine/Rect.h \
     Engine/ChannelSet.h \
     Engine/EffectInstance.h \
@@ -192,6 +197,7 @@ HEADERS += \
     Engine/Lut.h \
     Engine/MemoryFile.h \
     Engine/Node.h \
+    Engine/NodeSerialization.h \
     Engine/OfxClipInstance.h \
     Engine/OfxHost.h \
     Engine/OfxImageEffectInstance.h \
@@ -199,6 +205,8 @@ HEADERS += \
     Engine/OfxOverlayInteract.h \
     Engine/OfxParamInstance.h \
     Engine/Project.h \
+    Engine/ProjectPrivate.h \
+    Engine/ProjectSerialization.h \
     Engine/Row.h \
     Engine/Settings.h \
     Engine/Singleton.h \
@@ -236,6 +244,9 @@ HEADERS += \
     Gui/MenuWithToolTips.h \
     Gui/NodeGraph.h \
     Gui/NodeGui.h \
+    Gui/NodeGuiSerialization.h \
+    Gui/ProjectGui.h \
+    Gui/ProjectGuiSerialization.h \
     Gui/ScaleSlider.h \
     Gui/SequenceFileDialog.h \
     Gui/DockablePanel.h \
@@ -289,8 +300,7 @@ HEADERS += \
     libs/OpenFX_extensions//tuttle/ofxMetadata.h \
     libs/OpenFX_extensions//tuttle/ofxParam.h \
     libs/OpenFX_extensions//tuttle/ofxParamAPI.h \
-    libs/OpenFX_extensions//tuttle/ofxReadWrite.h \
-    Engine/CurvePrivate.h
+    libs/OpenFX_extensions//tuttle/ofxReadWrite.h
 
 
 INSTALLS += target

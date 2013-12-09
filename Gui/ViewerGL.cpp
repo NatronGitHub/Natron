@@ -50,6 +50,7 @@ GCC_DIAG_ON(unused-parameter);
 #include "Engine/Timer.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/Project.h"
 
 #include "Gui/Gui.h"
 #include "Gui/InfoViewerWidget.h"
@@ -410,6 +411,8 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     
     setMouseTracking(true);
+    
+    QObject::connect(parent->getGui()->getApp()->getProject().get(),SIGNAL(formatChanged(Format)),this,SLOT(onProjectFormatChanged(Format)));
     
     populateMenu();
 
@@ -1474,7 +1477,7 @@ void ViewerGL::onProjectFormatChanged(const Format& format){
     _imp->resolutionOverlay.append("x");
     _imp->resolutionOverlay.append(QString::number(format.height()));
     fitToFormat(format);
-
+    _imp->viewerTab->getInternalNode()->refreshAndContinueRender();
 
 }
 
