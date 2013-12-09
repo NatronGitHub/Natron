@@ -38,7 +38,7 @@ public:
     ~KnobFactory();
 
     template <typename K>
-    K *createKnob(KnobHolder  *holder, const std::string &description, int dimension = 1) const WARN_UNUSED_RETURN
+    K *createKnob(KnobHolder  *holder, const std::string &description, int dimension = 1) const
     {
         return dynamic_cast<K*>(createKnob(K::typeNameStatic(),holder,description,dimension));
     }

@@ -493,19 +493,21 @@ void Gui::setupUi()
     _propertiesPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,this);
     _propertiesPane->setObjectName("Properties_Pane");
     _panes.push_back(_propertiesPane);
+
     _propertiesScrollArea = new QScrollArea(_propertiesPane);
     _nodeGraphArea->setPropertyBinPtr(_propertiesScrollArea);
     _propertiesScrollArea->setObjectName("Properties");
+
     _propertiesContainer=new QWidget(_propertiesScrollArea);
     _propertiesContainer->setObjectName("_propertiesContainer");
     _layoutPropertiesBin=new QVBoxLayout(_propertiesContainer);
     _layoutPropertiesBin->setSpacing(0);
     _layoutPropertiesBin->setContentsMargins(0, 0, 0, 0);
     _propertiesContainer->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
-    _propertiesContainer->setLayout(_layoutPropertiesBin);
-    
+    _propertiesContainer->setLayout(_layoutPropertiesBin);  
     _propertiesScrollArea->setWidget(_propertiesContainer);
     _propertiesScrollArea->setWidgetResizable(true);
+
     _propertiesPane->appendTab(_propertiesScrollArea);
     
     _middleRightSplitter->addWidget(_propertiesPane);

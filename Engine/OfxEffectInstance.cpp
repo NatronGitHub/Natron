@@ -462,9 +462,13 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     std::string inputclip;
     stat = effect_->isIdentityAction(inputtime, field, ofxRoI, scale, inputclip);
     if (stat == kOfxStatOK) {
-#warning "FIXME: kOfxImageEffectActionIsIdentity is not implemented. Should copy image from inputclip at inputtime to the output."
-        // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectActionIsIdentity
-        throw std::logic_error("Cannot render: kOfxImageEffectActionIsIdentity is not implemented");
+
+        OFX::Host::ImageEffect::ClipInstance* clip = effect_->getClip(inputclip);
+        assert(clip);
+        OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
+        assert(natronClip);
+        natronClip->getImage(inputtime,(OfxRectD*)NULL);
+
     }
 
     stat = effect_->renderAction((OfxTime)time, field, ofxRoI, scale, view, viewsCount);

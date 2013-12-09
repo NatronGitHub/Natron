@@ -37,7 +37,7 @@ ScaleSlider::ScaleSlider(double bottom, double top, double initialPos, Natron::S
 , _minimum(bottom)
 , _maximum(top)
 , _type(type)
-, _position(initialPos)
+, _value(initialPos)
 , _XValues()
 , _dragging(false)
 , _font(new QFont(NATRON_FONT_ALT, NATRON_FONT_SIZE_8))
@@ -61,7 +61,7 @@ ScaleSlider::~ScaleSlider(){
 
 void ScaleSlider::initializeGL(){
 
-    seekScalePosition(_position);
+    seekScalePosition(_value);
     _initialized = true;
 }
 
@@ -74,9 +74,8 @@ void ScaleSlider::resizeGL(int width,int height){
 void ScaleSlider::paintGL(){
     if(_mustInitializeSliderPosition){
         _mustInitializeSliderPosition = false;
-        seekScalePosition(_position);
+        seekScalePosition(_value);
     }
-
     double w = (double)width();
     double h = (double)height();
     glMatrixMode (GL_PROJECTION);
@@ -187,9 +186,9 @@ void ScaleSlider::drawScale(){
             }
         }
     }
-
-    QPointF sliderBottomLeft = toScaleCoordinates(_position - SLIDER_WIDTH / 2,height() -1 - fontM.height()/2);
-    QPointF sliderTopRight = toScaleCoordinates(_position + SLIDER_WIDTH / 2,height() -1 - fontM.height()/2 - SLIDER_HEIGHT);
+    double positionValue = toWidgetCoordinates(_value,0).x();
+    QPointF sliderBottomLeft = toScaleCoordinates(positionValue - SLIDER_WIDTH / 2,height() -1 - fontM.height()/2);
+    QPointF sliderTopRight = toScaleCoordinates(positionValue + SLIDER_WIDTH / 2,height() -1 - fontM.height()/2 - SLIDER_HEIGHT);
 
     /*draw the slider*/
 
@@ -271,7 +270,10 @@ void ScaleSlider::seekScalePosition(double v){
     if(v < _minimum || v > _maximum)
         return;
 
-    _position = toWidgetCoordinates(v,0).x();
+    if(v == _value){
+        return;
+    }
+    _value = v;
     double padding = (_maximum - _minimum) / 10.;
     double displayedRange = _maximum - _minimum + 2*padding;
     double zoomFactor = width() /displayedRange;
@@ -290,8 +292,10 @@ void ScaleSlider::seekInternal(double v){
         v = _minimum;
     if(v > _maximum)
         v = _maximum;
-        
-    _position = toWidgetCoordinates(v,0).x();
+    if(v == _value){
+        return;
+    }
+    _value = v;
     double padding = (_maximum - _minimum) / 10.;
     double displayedRange = _maximum - _minimum + 2*padding;
     double zoomFactor = width() /displayedRange;
