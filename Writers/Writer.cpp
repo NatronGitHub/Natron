@@ -135,19 +135,19 @@ boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,int view,int to
 
 void Writer::initializeKnobs(){
     std::string fileDesc("File");
-    _fileKnob = dynamic_cast<OutputFile_Knob*>(appPTR->getKnobFactory().createKnob("OutputFile", this, fileDesc));
+    _fileKnob = appPTR->getKnobFactory().createKnob<OutputFile_Knob>(this, fileDesc);
     assert(_fileKnob);
     
     std::string renderDesc("Render");
-    _renderKnob = dynamic_cast<Button_Knob*>(appPTR->getKnobFactory().createKnob("Button", this, renderDesc));
+    _renderKnob = appPTR->getKnobFactory().createKnob<Button_Knob>(this, renderDesc);
     assert(_renderKnob);
     
     std::string premultString("Premultiply by alpha");
-    _premultKnob = dynamic_cast<Bool_Knob*>(appPTR->getKnobFactory().createKnob("Bool", this, premultString));
+    _premultKnob = appPTR->getKnobFactory().createKnob<Bool_Knob>(this, premultString);
     _premultKnob->setValue(false);
     
     std::string filetypeStr("File type");
-    _filetypeCombo = dynamic_cast<Choice_Knob*>(appPTR->getKnobFactory().createKnob("Choice", this, filetypeStr));
+    _filetypeCombo = appPTR->getKnobFactory().createKnob<Choice_Knob>(this, filetypeStr);
     const std::map<std::string,Natron::LibraryBinary*>& _encoders = appPTR->getCurrentSettings()._writersSettings.getFileTypesMap();
     std::map<std::string,Natron::LibraryBinary*>::const_iterator it = _encoders.begin();
     std::vector<std::string> fileTypes;
@@ -157,7 +157,7 @@ void Writer::initializeKnobs(){
     _filetypeCombo->populate(fileTypes);
     _filetypeCombo->turnOffAnimation();
     
-    _frameRangeChoosal = dynamic_cast<Choice_Knob*>(appPTR->getKnobFactory().createKnob("Choice", this, "Frame range"));
+    _frameRangeChoosal = appPTR->getKnobFactory().createKnob<Choice_Knob>(this, "Frame range");
     std::vector<std::string> frameRangeChoosalEntries;
     frameRangeChoosalEntries.push_back("Inputs union");
     frameRangeChoosalEntries.push_back("Timeline bounds");
@@ -165,7 +165,7 @@ void Writer::initializeKnobs(){
     _frameRangeChoosal->populate(frameRangeChoosalEntries);
     _frameRangeChoosal->turnOffAnimation();
     
-    _continueOnError = dynamic_cast<Bool_Knob*>(appPTR->getKnobFactory().createKnob("Bool", this, "Continue on error"));
+    _continueOnError = appPTR->getKnobFactory().createKnob<Bool_Knob>(this, "Continue on error");
     _continueOnError->setHintToolTip("If true, when an error arises for a frame,it will skip that frame and resume rendering.");
     _continueOnError->setInsignificant(true);
     _continueOnError->setValue(false);
@@ -202,6 +202,10 @@ Natron::Status Writer::renderWriter(SequenceTime time){
         if(!encoder){
             return StatFailed;
         }
+
+        // Do not catch exceptions: if an exception occurs here it is probably fatal, since
+        // it comes from Natron itself. All exceptions from plugins are already caught
+        // by the HostSupport library.
         boost::shared_ptr<const Natron::Image> inputImage = roi->first->renderRoI(time, scale,i,roi->second);
 
         if(aborted()){
@@ -303,7 +307,7 @@ void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
             int first = getApp()->getTimeLine()->firstFrame();
             int last = getApp()->getTimeLine()->lastFrame();
             if(!_firstFrameKnob){
-                _firstFrameKnob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", this, "First frame"));
+                _firstFrameKnob = appPTR->getKnobFactory().createKnob<Int_Knob>(this, "First frame");
                 _firstFrameKnob->turnOffAnimation();
                 _firstFrameKnob->setValue(first);
                 _firstFrameKnob->setDisplayMinimum(first);
@@ -311,7 +315,7 @@ void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
                 
             }
             if(!_lastFrameKnob){
-                _lastFrameKnob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", this, "Last frame"));
+                _lastFrameKnob = appPTR->getKnobFactory().createKnob<Int_Knob>(this, "Last frame");
                 _lastFrameKnob->turnOffAnimation();
                 _lastFrameKnob->setValue(last);
                 _lastFrameKnob->setDisplayMinimum(first);

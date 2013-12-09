@@ -43,25 +43,25 @@ public:
 
     /// get default output fielding. This is passed into the clip prefs action
     /// and  might be mapped (if the host allows such a thing)
-    virtual const std::string &getDefaultOutputFielding() const OVERRIDE;
+    virtual const std::string &getDefaultOutputFielding() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /// make a clip
     virtual OFX::Host::ImageEffect::ClipInstance* newClipInstance(OFX::Host::ImageEffect::Instance* plugin,
                                                                   OFX::Host::ImageEffect::ClipDescriptor* descriptor,
-                                                                  int index) OVERRIDE;
+                                                                  int index) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     
     virtual OfxStatus vmessage(const char* type,
                                const char* id,
                                const char* format,
-                               va_list args) OVERRIDE;
+                               va_list args) OVERRIDE FINAL;
 
     
     virtual OfxStatus setPersistentMessage(const char* type,
                                            const char* id,
                                            const char* format,
-                                           va_list args) OVERRIDE;
+                                           va_list args) OVERRIDE FINAL;
     
-    virtual OfxStatus clearPersistentMessage() OVERRIDE;
+    virtual OfxStatus clearPersistentMessage() OVERRIDE FINAL;
     
     //
     // live parameters
@@ -71,40 +71,40 @@ public:
     // The size of a project is a sub set of the kOfxImageEffectPropProjectExtent. For example a
     // project may be a PAL SD project, but only be a letter-box within that. The project size is
     // the size of this sub window.
-    virtual void getProjectSize(double& xSize, double& ySize) const OVERRIDE;
+    virtual void getProjectSize(double& xSize, double& ySize) const OVERRIDE FINAL;
 
     // The offset of the current project in canonical coordinates.
     // The offset is related to the kOfxImageEffectPropProjectSize and is the offset from the origin
     // of the project 'subwindow'. For example for a PAL SD project that is in letterbox form, the
     // project offset is the offset to the bottom left hand corner of the letter box. The project
     // offset is in canonical coordinates.
-    virtual void getProjectOffset(double& xOffset, double& yOffset) const OVERRIDE;
+    virtual void getProjectOffset(double& xOffset, double& yOffset) const OVERRIDE FINAL;
     
     // The extent of the current project in canonical coordinates.
     // The extent is the size of the 'output' for the current project. See ProjectCoordinateSystems
     // for more infomation on the project extent. The extent is in canonical coordinates and only
     // returns the top right position, as the extent is always rooted at 0,0. For example a PAL SD
     // project would have an extent of 768, 576.
-    virtual void getProjectExtent(double& xSize, double& ySize) const OVERRIDE;
+    virtual void getProjectExtent(double& xSize, double& ySize) const OVERRIDE FINAL;
     
     // The pixel aspect ratio of the current project
-    virtual double getProjectPixelAspectRatio() const OVERRIDE;
+    virtual double getProjectPixelAspectRatio() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     // The duration of the effect
     // This contains the duration of the plug-in effect, in frames.
-    virtual double getEffectDuration() const OVERRIDE;
+    virtual double getEffectDuration() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     // For an instance, this is the frame rate of the project the effect is in.
-    virtual double getFrameRate() const OVERRIDE;
+    virtual double getFrameRate() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// This is called whenever a param is changed by the plugin so that
     /// the recursive instanceChangedAction will be fed the correct frame
-    virtual double getFrameRecursive() const OVERRIDE;
+    virtual double getFrameRecursive() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// This is called whenever a param is changed by the plugin so that
     /// the recursive instanceChangedAction will be fed the correct
     /// renderScale
-    virtual void getRenderScaleRecursive(double &x, double &y) const OVERRIDE;
+    virtual void getRenderScaleRecursive(double &x, double &y) const OVERRIDE FINAL;
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -116,18 +116,18 @@ public:
     /// make a parameter instance
     ///
     /// Client host code needs to implement this
-    virtual OFX::Host::Param::Instance* newParam(const std::string& name, OFX::Host::Param::Descriptor& Descriptor) OVERRIDE;
+    virtual OFX::Host::Param::Instance* newParam(const std::string& name, OFX::Host::Param::Descriptor& Descriptor) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 
     /// Triggered when the plug-in calls OfxParameterSuiteV1::paramEditBegin
     ///
     /// Client host code needs to implement this
-    virtual OfxStatus editBegin(const std::string& name) OVERRIDE;
+    virtual OfxStatus editBegin(const std::string& name) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// Triggered when the plug-in calls OfxParameterSuiteV1::paramEditEnd
     ///
     /// Client host code needs to implement this
-    virtual OfxStatus editEnd() OVERRIDE;
+    virtual OfxStatus editEnd() OVERRIDE FINAL;
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -137,14 +137,14 @@ public:
     // overridden for Progress::ProgressI
 
     /// Start doing progress.
-    virtual void progressStart(const std::string &message) OVERRIDE;
+    virtual void progressStart(const std::string &message) OVERRIDE FINAL;
 
     /// finish yer progress
-    virtual void progressEnd() OVERRIDE;
+    virtual void progressEnd() OVERRIDE FINAL;
 
     /// set the progress to some level of completion, returns
     /// false if you should abandon processing, true to continue
-    virtual bool progressUpdate(double t) OVERRIDE;
+    virtual bool progressUpdate(double t) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -155,24 +155,24 @@ public:
 
     /// get the current time on the timeline. This is not necessarily the same
     /// time as being passed to an action (eg render)
-    virtual double timeLineGetTime() OVERRIDE;
+    virtual double timeLineGetTime() OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// set the timeline to a specific time
-    virtual void timeLineGotoTime(double t) OVERRIDE;
+    virtual void timeLineGotoTime(double t) OVERRIDE FINAL;
 
     /// get the first and last times available on the effect's timeline
-    virtual void timeLineGetBounds(double &t1, double &t2) OVERRIDE;
+    virtual void timeLineGetBounds(double &t1, double &t2) OVERRIDE FINAL;
 
-    virtual int abort();
+    virtual int abort() OVERRIDE FINAL;
     
     //
     // END of OFX::Host::ImageEffect::Instance methods
     //
 
     
-    OfxEffectInstance* node() const { return _node; }
+    OfxEffectInstance* node() const WARN_UNUSED_RETURN { return _node; }
     
-    const std::map<std::string,OFX::Host::Param::Instance*>& getParams() const {return _parentingMap;}
+    const std::map<std::string,OFX::Host::Param::Instance*>& getParams() const WARN_UNUSED_RETURN {return _parentingMap;}
     
 private:
     OfxEffectInstance* _node; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //

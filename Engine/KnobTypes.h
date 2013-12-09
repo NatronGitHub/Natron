@@ -40,6 +40,8 @@ public:
 
     bool isSliderDisabled() const;
 
+    static const std::string& typeNameStatic();
+
 public:
     void setMinimum(int mini, int index = 0);
 
@@ -79,13 +81,13 @@ private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
 
-    virtual std::string typeName() const OVERRIDE FINAL;
+    virtual const std::string& typeName() const OVERRIDE FINAL;
 
 private:
 
     std::vector<int> _minimums, _maximums, _increments, _displayMins, _displayMaxs;
     bool _disableSlider;
-
+    static const std::string _typeNameStr;
 };
 
 /******************************BOOL_KNOB**************************************/
@@ -106,11 +108,16 @@ public:
     /// @see Curve::getValueAt() for the animation code.
     static bool canAnimateStatic() { return true; }
 
+    static const std::string& typeNameStatic();
+
 private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
 
-    virtual std::string typeName() const OVERRIDE FINAL;
+    virtual const std::string& typeName() const OVERRIDE FINAL;
+
+private:
+    static const std::string _typeNameStr;
 };
 
 /******************************DOUBLE_KNOB**************************************/
@@ -166,6 +173,8 @@ public:
 
     void setDecimals(const std::vector<int> &decis);
 
+    static const std::string& typeNameStatic();
+
 signals:
     void minMaxChanged(double mini, double maxi, int index = 0);
 
@@ -178,13 +187,14 @@ private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
 
-    virtual std::string typeName() const OVERRIDE FINAL;
+    virtual const std::string& typeName() const OVERRIDE FINAL;
 
 private:
 
     std::vector<double> _minimums, _maximums, _increments, _displayMins, _displayMaxs;
     std::vector<int> _decimals;
     bool _disableSlider;
+    static const std::string _typeNameStr;
 
 };
 
@@ -201,10 +211,15 @@ public:
 
     Button_Knob(KnobHolder  *holder, const std::string &description, int dimension);
 
+    static const std::string& typeNameStatic();
+
 private:
     virtual bool canAnimate() const OVERRIDE FINAL;
 
-    virtual std::string typeName() const OVERRIDE FINAL;
+    virtual const std::string& typeName() const OVERRIDE FINAL;
+
+private:
+    static const std::string _typeNameStr;
 };
 
 /******************************CHOICE_KNOB**************************************/
@@ -236,6 +251,8 @@ public:
     /// @see Curve::getValueAt() for the animation code.
     static bool canAnimateStatic() { return true; }
 
+    static const std::string& typeNameStatic();
+
 signals:
 
     void populated();
@@ -243,11 +260,12 @@ signals:
 private:
     virtual bool canAnimate() const OVERRIDE FINAL;
 
-    virtual std::string typeName() const OVERRIDE FINAL;
+    virtual const std::string& typeName() const OVERRIDE FINAL;
 
 private:
     std::vector<std::string> _entries;
     std::vector<std::string> _entriesHelp;
+    static const std::string _typeNameStr;
 };
 
 /******************************SEPARATOR_KNOB**************************************/
@@ -263,11 +281,15 @@ public:
 
     Separator_Knob(KnobHolder *holder, const std::string &description, int dimension);
 
+    static const std::string& typeNameStatic();
+
 private:
     virtual bool canAnimate() const OVERRIDE FINAL;
 
-    virtual std::string typeName() const OVERRIDE FINAL;
+    virtual const std::string& typeName() const OVERRIDE FINAL;
 
+private:
+    static const std::string _typeNameStr;
 };
 /******************************RGBA_KNOB**************************************/
 
@@ -290,11 +312,16 @@ public:
 
     virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
 
+    static const std::string& typeNameStatic();
+
 private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
 
-    virtual std::string typeName() const OVERRIDE FINAL;
+    virtual const std::string& typeName() const OVERRIDE FINAL;
+
+private:
+    static const std::string _typeNameStr;
 };
 
 /******************************STRING_KNOB**************************************/
@@ -315,11 +342,16 @@ public:
     /// It can be useful for titling/subtitling.
     static bool canAnimateStatic() { return false; }
 
+    static const std::string& typeNameStatic();
+
 private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
 
-    virtual std::string typeName() const OVERRIDE FINAL;
+    virtual const std::string& typeName() const OVERRIDE FINAL;
+
+private:
+    static const std::string _typeNameStr;
 };
 
 /******************************STRING_KNOB**************************************/
@@ -339,11 +371,16 @@ public:
     /// function given by the plugin.
     static bool canAnimateStatic() { return false; }
 
+    static const std::string& typeNameStatic();
+
 private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
 
-    virtual std::string typeName() const OVERRIDE FINAL;
+    virtual const std::string& typeName() const OVERRIDE FINAL;
+
+private:
+    static const std::string _typeNameStr;
 };
 
 /******************************GROUP_KNOB**************************************/
@@ -364,11 +401,16 @@ public:
 
     const std::vector<Knob *> &getChildren() const;
 
+    static const std::string& typeNameStatic();
+
 private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
 
-    virtual std::string typeName() const OVERRIDE FINAL;
+    virtual const std::string& typeName() const OVERRIDE FINAL;
+
+private:
+    static const std::string _typeNameStr;
 };
 
 /******************************TAB_KNOB**************************************/
@@ -390,14 +432,16 @@ public:
 
     const std::map<std::string, std::vector<Knob *> > &getKnobs() const;
 
+    static const std::string& typeNameStatic();
 
 private:
     virtual bool canAnimate() const OVERRIDE FINAL;
 
-    virtual std::string typeName() const OVERRIDE FINAL;
+    virtual const std::string& typeName() const OVERRIDE FINAL;
 
 private:
     std::map<std::string, std::vector<Knob *> > _knobs;
+    static const std::string _typeNameStr;
 };
 
 /******************************RichText_Knob**************************************/
@@ -411,12 +455,18 @@ public:
 
     RichText_Knob(KnobHolder *holder, const std::string &description, int dimension);
 
-    virtual bool canAnimate() const OVERRIDE FINAL;
-
-
-    virtual std::string typeName() const OVERRIDE FINAL;
 
     std::string getString() const;
+
+    static const std::string& typeNameStatic();
+
+private:
+    virtual bool canAnimate() const OVERRIDE FINAL;
+
+    virtual const std::string& typeName() const OVERRIDE FINAL;
+
+private:
+    static const std::string _typeNameStr;
 };
 
 #endif // NATRON_ENGINE_KNOBTYPES_H_

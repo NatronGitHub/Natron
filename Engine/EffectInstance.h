@@ -174,7 +174,7 @@ public:
      * @brief Renders the image at the given time,scale and for the given view & render window.
      * Pre-condition: preProcess must have been called.
      **/
-    boost::shared_ptr<const Natron::Image> renderRoI(SequenceTime time,RenderScale scale,
+    boost::shared_ptr<Image> renderRoI(SequenceTime time,RenderScale scale,
                                                      int view,const RectI& renderWindow,
                                                      bool byPassCache = false) WARN_UNUSED_RETURN;
 
@@ -229,7 +229,7 @@ public:
     
     /** @brief Returns the image computed by the input 'inputNb' at the given time and scale for the given view.
      */
-    boost::shared_ptr<const Natron::Image> getImage(int inputNb,SequenceTime time,RenderScale scale,int view) WARN_UNUSED_RETURN;
+    boost::shared_ptr<Image> getImage(int inputNb,SequenceTime time,RenderScale scale,int view) WARN_UNUSED_RETURN;
     
     
     /**

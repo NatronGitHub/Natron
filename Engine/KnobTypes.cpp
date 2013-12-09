@@ -212,9 +212,16 @@ bool Int_Knob::canAnimate() const
     return true;
 }
 
-std::string Int_Knob::typeName() const
+const std::string Int_Knob::_typeNameStr("Int");
+
+const std::string& Int_Knob::typeNameStatic()
 {
-    return "Int";
+    return _typeNameStr;
+}
+
+const std::string& Int_Knob::typeName() const
+{
+    return typeNameStatic();
 }
 
 
@@ -229,9 +236,16 @@ bool Bool_Knob::canAnimate() const
     return canAnimateStatic();
 }
 
-std::string Bool_Knob::typeName() const
+const std::string Bool_Knob::_typeNameStr("Bool");
+
+const std::string& Bool_Knob::typeNameStatic()
 {
-    return "Bool";
+    return _typeNameStr;
+}
+
+const std::string& Bool_Knob::typeName() const
+{
+    return typeNameStatic();
 }
 
 
@@ -274,9 +288,16 @@ bool Double_Knob::canAnimate() const
     return true;
 }
 
-std::string Double_Knob::typeName() const
+const std::string Double_Knob::_typeNameStr("Double");
+
+const std::string& Double_Knob::typeNameStatic()
 {
-    return "Double";
+    return _typeNameStr;
+}
+
+const std::string& Double_Knob::typeName() const
+{
+    return typeNameStatic();
 }
 
 const std::vector<double> &Double_Knob::getMinimums() const
@@ -473,9 +494,16 @@ bool Button_Knob::canAnimate() const
     return false;
 }
 
-std::string Button_Knob::typeName() const
+const std::string Button_Knob::_typeNameStr("Button");
+
+const std::string& Button_Knob::typeNameStatic()
 {
-    return "Button";
+    return _typeNameStr;
+}
+
+const std::string& Button_Knob::typeName() const
+{
+    return typeNameStatic();
 }
 
 
@@ -492,9 +520,16 @@ bool Choice_Knob::canAnimate() const
     return canAnimateStatic();
 }
 
-std::string Choice_Knob::typeName() const
+const std::string Choice_Knob::_typeNameStr("Choice");
+
+const std::string& Choice_Knob::typeNameStatic()
 {
-    return "Choice";
+    return _typeNameStr;
+}
+
+const std::string& Choice_Knob::typeName() const
+{
+    return typeNameStatic();
 }
 
 /*Must be called right away after the constructor.*/
@@ -528,9 +563,8 @@ const std::string &Choice_Knob::getActiveEntryText() const
 
 /******************************SEPARATOR_KNOB**************************************/
 
-
-Separator_Knob::Separator_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
+Separator_Knob::Separator_Knob(KnobHolder *holder, const std::string &description, int dimension)
+: Knob(holder, description, dimension)
 {
 
 }
@@ -540,9 +574,16 @@ bool Separator_Knob::canAnimate() const
     return false;
 }
 
-std::string Separator_Knob::typeName() const
+const std::string Separator_Knob::_typeNameStr("Separator");
+
+const std::string& Separator_Knob::typeNameStatic()
 {
-    return "Separator";
+    return _typeNameStr;
+}
+
+const std::string& Separator_Knob::typeName() const
+{
+    return typeNameStatic();
 }
 
 /******************************COLOR_KNOB**************************************/
@@ -582,13 +623,19 @@ bool Color_Knob::canAnimate() const
     return true;
 }
 
-std::string Color_Knob::typeName() const
+const std::string Color_Knob::_typeNameStr("Color");
+
+const std::string& Color_Knob::typeNameStatic()
 {
-    return "Color";
+    return _typeNameStr;
 }
 
+const std::string& Color_Knob::typeName() const
+{
+    return typeNameStatic();
+}
 
-
+/******************************STRING_KNOB**************************************/
 
 String_Knob::String_Knob(KnobHolder *holder, const std::string &description, int dimension):
     Knob(holder, description, dimension)
@@ -601,9 +648,16 @@ bool String_Knob::canAnimate() const
     return canAnimateStatic();
 }
 
-std::string String_Knob::typeName() const
+const std::string String_Knob::_typeNameStr("String");
+
+const std::string& String_Knob::typeNameStatic()
 {
-    return "String";
+    return _typeNameStr;
+}
+
+const std::string& String_Knob::typeName() const
+{
+    return typeNameStatic();
 }
 
 std::string String_Knob::getString() const
@@ -623,9 +677,16 @@ bool Custom_Knob::canAnimate() const
     return canAnimateStatic();
 }
 
-std::string Custom_Knob::typeName() const
+const std::string Custom_Knob::_typeNameStr("Custom");
+
+const std::string& Custom_Knob::typeNameStatic()
 {
-    return "Custom";
+    return _typeNameStr;
+}
+
+const std::string& Custom_Knob::typeName() const
+{
+    return typeNameStatic();
 }
 
 std::string Custom_Knob::getString() const
@@ -646,9 +707,16 @@ bool Group_Knob::canAnimate() const
     return false;
 }
 
-std::string Group_Knob::typeName() const
+const std::string Group_Knob::_typeNameStr("Group");
+
+const std::string& Group_Knob::typeNameStatic()
 {
-    return "Group";
+    return _typeNameStr;
+}
+
+const std::string& Group_Knob::typeName() const
+{
+    return typeNameStatic();
 }
 
 void Group_Knob::addKnob(Knob *k)
@@ -674,9 +742,16 @@ bool Tab_Knob::canAnimate() const
     return false;
 }
 
-std::string Tab_Knob::typeName() const
+const std::string Tab_Knob::_typeNameStr("Tab");
+
+const std::string& Tab_Knob::typeNameStatic()
 {
-    return "Tab";
+    return _typeNameStr;
+}
+
+const std::string& Tab_Knob::typeName() const
+{
+    return typeNameStatic();
 }
 
 void Tab_Knob::addTab(const std::string &name)
@@ -715,10 +790,16 @@ bool RichText_Knob::canAnimate() const
     return false;
 }
 
+const std::string RichText_Knob::_typeNameStr("RichText");
 
-std::string RichText_Knob::typeName() const
+const std::string& RichText_Knob::typeNameStatic()
 {
-    return "RichText";
+    return _typeNameStr;
+}
+
+const std::string& RichText_Knob::typeName() const
+{
+    return typeNameStatic();
 }
 
 std::string RichText_Knob::getString() const

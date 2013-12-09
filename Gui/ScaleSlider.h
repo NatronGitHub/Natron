@@ -53,7 +53,7 @@ class ScaleSlider : public QGLWidget
     Natron::TextRenderer _textRenderer;
     double _minimum,_maximum;
     Natron::Scale_Type _type;
-    double _position;
+    double _value;
     std::vector<double> _XValues; // lut where each values is the coordinates of the value mapped on the slider
     bool _dragging;
     QFont* _font;

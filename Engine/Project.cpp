@@ -47,7 +47,7 @@ Project::~Project(){
 }
 
 void Project::initializeKnobs(){
-    _imp->_formatKnob = dynamic_cast<Choice_Knob*>(appPTR->getKnobFactory().createKnob("Choice", this, "Output Format"));
+    _imp->_formatKnob = appPTR->getKnobFactory().createKnob<Choice_Knob>(this, "Output Format");
     const std::vector<Format*>& appFormats = appPTR->getFormats();
     std::vector<std::string> entries;
     for (U32 i = 0; i < appFormats.size(); ++i) {
@@ -62,10 +62,10 @@ void Project::initializeKnobs(){
     
     _imp->_formatKnob->populate(entries);
     _imp->_formatKnob->turnOffAnimation();
-    _imp->_addFormatKnob = dynamic_cast<Button_Knob*>(appPTR->getKnobFactory().createKnob("Button",this,"New format..."));
+    _imp->_addFormatKnob = appPTR->getKnobFactory().createKnob<Button_Knob>(this,"New format...");
     
-    
-    _imp->_viewsCount = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int",this,"Number of views"));
+
+    _imp->_viewsCount = appPTR->getKnobFactory().createKnob<Int_Knob>(this,"Number of views");
     _imp->_viewsCount->turnOffAnimation();
     _imp->_viewsCount->setMinimum(1);
     _imp->_viewsCount->setValue(1);

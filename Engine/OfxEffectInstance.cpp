@@ -13,6 +13,8 @@
 
 #include <locale>
 #include <limits>
+#include <stdexcept>
+
 #if QT_VERSION < 0x050000
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(unused-private-field);
@@ -444,7 +446,7 @@ Natron::Status OfxEffectInstance::preProcessFrame(SequenceTime /*time*/){
 }
 
 Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
-                                         const RectI& roi,int view,boost::shared_ptr<Natron::Image>/* output*/){
+                                         const RectI& roi,int view,boost::shared_ptr<Natron::Image> output){
     if(!_initialized){
         return Natron::StatFailed;
     }
@@ -454,10 +456,33 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     ofxRoI.y1 = roi.bottom();
     ofxRoI.y2 = roi.top();
     int viewsCount = getApp()->getCurrentProjectViewsCount();
-    OfxStatus st = effect_->renderAction((OfxTime)time,kOfxImageFieldNone,ofxRoI,scale,view,viewsCount);
-    if(st != kOfxStatOK){
+    OfxStatus stat;
+    const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
+    OfxTime inputtime = time;
+    std::string inputclip;
+    stat = effect_->isIdentityAction(inputtime, field, ofxRoI, scale, inputclip);
+    if (stat == kOfxStatOK) {
+        OFX::Host::ImageEffect::ClipInstance* clip = effect_->getClip(inputclip);
+        if (!clip) {
+            // this is a plugin-side error, don't crash
+            qDebug() << "Error in OfxEffectInstance::render(): kOfxImageEffectActionIsIdentity returned an unknown clip: " << inputclip.c_str();
+            return StatFailed;
+        }
+        OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
+        assert(natronClip);
+        output = natronClip->getAssociatedNode()->getImage(natronClip->getInputNb(),inputtime,scale,view);
+        if (!output.get()) {
+            qDebug() << "Error in OfxEffectInstance::render(): getImage returned NULL";
+            return StatFailed;
+        } else {
+            return StatOK;
+        }
+    }
+
+    stat = effect_->renderAction((OfxTime)time, field, ofxRoI, scale, view, viewsCount);
+    if (stat != kOfxStatOK) {
         return StatFailed;
-    }else{
+    } else {
         return StatOK;
     }
 }

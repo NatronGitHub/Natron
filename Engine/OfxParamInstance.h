@@ -41,6 +41,7 @@ class Double_Knob;
 class Bool_Knob;
 class Choice_Knob;
 class Group_Knob;
+class Custom_Knob;
 class RichText_Knob;
 class OfxEffectInstance;
 class Knob;
@@ -388,7 +389,7 @@ private:
                                                            OfxPropertySetHandle   outArgsRaw);
 
     OfxEffectInstance* _node;
-    String_Knob* _knob;
+    Custom_Knob* _knob;
     customParamInterpolationV1Entry_t _customParamInterpolationV1Entry;
     QThreadStorage<std::string> _localString;
 };

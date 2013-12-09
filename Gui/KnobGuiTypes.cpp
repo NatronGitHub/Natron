@@ -1175,6 +1175,7 @@ void Group_KnobGui::_show()
     for (U32 i = 0 ; i < _children.size() ; ++i) {
         _children[i].first->show();
     }
+
 }
 
 void Group_KnobGui::addToLayout(QHBoxLayout *layout)

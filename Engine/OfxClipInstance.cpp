@@ -208,11 +208,11 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time, i
         RenderScale scale;
         scale.x = scale.y = 1.;
         // input has been rendered just find it in the cache
-        boost::shared_ptr<const Natron::Image> image = _nodeInstance->getImage(getInputNb(),time, scale,view);
+        boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(),time, scale,view);
         if(!image){
             return NULL;
         }else{
-            return new OfxImage(boost::const_pointer_cast<Natron::Image>(image),*this);
+            return new OfxImage(image,*this);
         }
     }
 

@@ -24,6 +24,7 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Knob.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/KnobFactory.h"
 
 #include "Global/AppManager.h"
@@ -329,7 +330,7 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
         Custom parameters are mandatory, as they are simply ASCII C strings. However, animation of custom parameters an support for an in editor interact is optional.
          */
 #warning "activate CustomParam support here"
-        throw std::runtime_error(std::string("Parameter ") + paramName + std::string(" has unsupported OFX type ") + descriptor.getType());
+        //throw std::runtime_error(std::string("Parameter ") + paramName + std::string(" has unsupported OFX type ") + descriptor.getType());
         OfxCustomInstance *ret = new OfxCustomInstance(node(), descriptor);
         knob = ret->getKnob();
         instance = ret;
@@ -381,8 +382,8 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
     }
     knob->setSpacingBetweenItems(descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     int layoutHint = descriptor.getProperties().getIntProperty(kOfxParamPropLayoutHint);
-    if(layoutHint == 1){
-        appPTR->getKnobFactory().createKnob("Separator", node(), knob->getDescription());
+    if (layoutHint == 1) {
+        (void)appPTR->getKnobFactory().createKnob<Separator_Knob>(node(), knob->getDescription());
     }else if(layoutHint == 2){
         knob->turnOffNewLine();
     }

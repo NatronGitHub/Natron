@@ -20,6 +20,97 @@ using std::pair;
 
 /***********************************FILE_KNOB*****************************************/
 
+File_Knob::File_Knob(KnobHolder *holder, const std::string &description, int dimension)
+: Knob(holder, description, dimension)
+{
+}
+
+bool File_Knob::canAnimate() const {
+    return false;
+}
+
+const std::string File_Knob::_typeNameStr("InputFile");
+
+const std::string& File_Knob::typeNameStatic()
+{
+    return _typeNameStr;
+}
+
+const std::string& File_Knob::typeName() const
+{
+    return typeNameStatic();
+}
+
+void File_Knob::openFile() {
+    emit shouldOpenFile();
+}
+
+int File_Knob::firstFrame() const
+{
+    QMutexLocker locker(&_fileSequenceLock);
+    std::map<int, QString>::const_iterator it = _filesSequence.begin();
+    if (it == _filesSequence.end()) {
+        return INT_MIN;
+    }
+    return it->first;
+}
+
+int File_Knob::lastFrame() const
+{
+    QMutexLocker locker(&_fileSequenceLock);
+    std::map<int, QString>::const_iterator it = _filesSequence.end();
+    if (it == _filesSequence.begin()) {
+        return INT_MAX;
+    }
+    --it;
+    return it->first;
+}
+
+int File_Knob::frameCount() const {
+    return _filesSequence.size();
+}
+
+int File_Knob::nearestFrame(int f) const
+{
+    int first = firstFrame();
+    int last = lastFrame();
+    if (f < first) {
+        return first;
+    }
+    if (f > last) {
+        return last;
+    }
+
+    std::map<int, int> distanceMap;
+    QMutexLocker locker(&_fileSequenceLock);
+    for (std::map<int, QString>::const_iterator it = _filesSequence.begin(); it != _filesSequence.end(); ++it) {
+        distanceMap.insert(make_pair(std::abs(f - it->first), it->first));
+    }
+    if (!distanceMap.empty()) {
+        return distanceMap.begin()->second;
+    } else {
+        return 0;
+    }
+}
+
+QString File_Knob::getRandomFrameName(int f, bool loadNearestIfNotFound) const
+{
+    if (loadNearestIfNotFound) {
+        f = nearestFrame(f);
+    }
+    QMutexLocker locker(&_fileSequenceLock);
+    std::map<int, QString>::const_iterator it = _filesSequence.find(f);
+    if (it != _filesSequence.end()) {
+        return it->second;
+    } else {
+        return "";
+    }
+}
+
+void File_Knob::cloneExtraData(const Knob &other)
+{
+    _filesSequence = dynamic_cast<const File_Knob &>(other)._filesSequence;
+}
 
 void File_Knob::processNewValue()
 {
@@ -82,72 +173,39 @@ void File_Knob::processNewValue()
 
 }
 
-void File_Knob::cloneExtraData(const Knob &other)
-{
-    _filesSequence = dynamic_cast<const File_Knob &>(other)._filesSequence;
-}
 
-
-int File_Knob::firstFrame() const
-{
-    QMutexLocker locker(&_fileSequenceLock);
-    std::map<int, QString>::const_iterator it = _filesSequence.begin();
-    if (it == _filesSequence.end()) {
-        return INT_MIN;
-    }
-    return it->first;
-}
-int File_Knob::lastFrame() const
-{
-    QMutexLocker locker(&_fileSequenceLock);
-    std::map<int, QString>::const_iterator it = _filesSequence.end();
-    if (it == _filesSequence.begin()) {
-        return INT_MAX;
-    }
-    --it;
-    return it->first;
-}
-int File_Knob::nearestFrame(int f) const
-{
-    int first = firstFrame();
-    int last = lastFrame();
-    if (f < first) {
-        return first;
-    }
-    if (f > last) {
-        return last;
-    }
-
-    std::map<int, int> distanceMap;
-    QMutexLocker locker(&_fileSequenceLock);
-    for (std::map<int, QString>::const_iterator it = _filesSequence.begin(); it != _filesSequence.end(); ++it) {
-        distanceMap.insert(make_pair(std::abs(f - it->first), it->first));
-    }
-    if (!distanceMap.empty()) {
-        return distanceMap.begin()->second;
-    } else {
-        return 0;
-    }
-}
-QString File_Knob::getRandomFrameName(int f, bool loadNearestIfNotFound) const
-{
-    if (loadNearestIfNotFound) {
-        f = nearestFrame(f);
-    }
-    QMutexLocker locker(&_fileSequenceLock);
-    std::map<int, QString>::const_iterator it = _filesSequence.find(f);
-    if (it != _filesSequence.end()) {
-        return it->second;
-    } else {
-        return "";
-    }
-}
 
 /***********************************OUTPUT_FILE_KNOB*****************************************/
 
+OutputFile_Knob::OutputFile_Knob(KnobHolder *holder, const std::string &description, int dimension)
+: Knob(holder, description, dimension)
+{
+}
 
 std::string OutputFile_Knob::getFileName() const
 {
     return  getValue<QString>().toStdString();
 }
+
+void OutputFile_Knob::openFile() {
+        emit shouldOpenFile();
+    }
+
+
+bool OutputFile_Knob::canAnimate() const {
+    return false;
+}
+
+const std::string OutputFile_Knob::_typeNameStr("OutputFile");
+
+const std::string& OutputFile_Knob::typeNameStatic()
+{
+    return _typeNameStr;
+}
+
+const std::string& OutputFile_Knob::typeName() const
+{
+    return typeNameStatic();
+}
+
 

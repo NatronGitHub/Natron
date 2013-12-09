@@ -49,7 +49,7 @@ public:
      * @brief Must return the type name of the knob. This name will be used by the KnobFactory
      * to create an instance of this knob.
     **/
-    virtual std::string typeName() const = 0;
+    virtual const std::string& typeName() const = 0;
 
     /**
      * @brief Must return true if this knob can animate (i.e: if we can set different values depending on the time)

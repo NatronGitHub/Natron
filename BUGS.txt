@@ -1,13 +1,16 @@
 Here is a list of know bugs, ordered by priority from high to low:
 
+- before calling Instance::renderAction(), the host should call
+Instance::isIdentityAction(). If it returns kOfxStatOk, then the host
+should copy the result from the named input clip. See doc.
+http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectActionIsIdentity
+For example, the OFX Custom Parameter Example (from Examples) has no
+render action, but isIdentity always returns OK
+
 - a plugin that returns an error during the "load" or "describe" actions,
   for example if it requires a missing suite
   (e.g. ParametricParameterSuite for OFX/Color/RGBLut), should *not*
   appear in the menus.
-
-
-- bug in KnobGui::setVisible: if the Knob is within a group, only show it if the group is
-  unfolded!
 
 - When viewing a single component (R, G, or B), is should be displayed
   as grayscale, because blue has a very low luminance. Another
@@ -22,3 +25,8 @@ single component (all other components are 0, except alpha which is 1)
 
 - On OSX dragging the viewer pane will freeze the GUI (Qt5 only)
 
+Here is a list of non-blocking bugs / wanted features:
+
+- when time is changed, there are lost of calls to
+  kOfxActionBeginInstanceChanged/kOfxActionEndInstanceChanged (one for
+  each Knob), which should be concatenated intojust  one.
