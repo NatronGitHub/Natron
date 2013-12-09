@@ -18,14 +18,13 @@
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Knob.h"
-
+#include "Engine/Format.h"
 
 class QString;
 class QDateTime;
-class Format;
 class TimeLine;
 class AppInstance;
-
+class ProjectSerialization;
 namespace Natron{
 class Node;
 class OutputEffectInstance;
@@ -74,11 +73,15 @@ public:
     
     void setProjectAgeSinceLastSave(const QDateTime& t);
     
+    void setProjectLastAutoSavePath(const QString& str);
+    
     const QDateTime& projectAgeSinceLastAutosave() const WARN_UNUSED_RETURN;
     
     void setProjectAgeSinceLastAutosaveSave(const QDateTime& t) ;
     
     const Format& getProjectDefaultFormat() const WARN_UNUSED_RETURN ;
+    
+    const std::vector<Format>& getProjectFormats() const;
     
     int getProjectViewsCount() const;
     
@@ -106,15 +109,9 @@ public:
     
     void clearNodes();
     
-    void loadProject(const QString& path,const QString& name,bool background);
-    
-    void saveProject(const QString& path,const QString& filename,bool autoSave = false);
-    
     void lock() const ;
     
     void unlock() const ;
-
-    void createNewFormat();
     
     void incrementKnobsAge() ;
     
@@ -122,10 +119,20 @@ public:
     
     void setLastTimelineSeekCaller(Natron::OutputEffectInstance* output);
 
+    void save(ProjectSerialization* serializationObject) const;
+    
+    void load(const ProjectSerialization& obj);
+    
 public slots:
 
     void onTimeChanged(SequenceTime time,int reason);
 
+signals:
+    
+    void mustCreateFormat();
+    
+    void formatChanged(Format);
+    
 private:
 
     boost::scoped_ptr<ProjectPrivate> _imp;

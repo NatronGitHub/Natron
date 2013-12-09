@@ -59,91 +59,91 @@ public:
     void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                       const std::string& context);
     
-    Natron::OfxImageEffectInstance* effectInstance(){ return effect_; }
+    Natron::OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN { return effect_; }
     
-    const Natron::OfxImageEffectInstance* effectInstance() const{ return effect_; }
+    const Natron::OfxImageEffectInstance* effectInstance() const WARN_UNUSED_RETURN { return effect_; }
 
     void setAsOutputNode() {_isOutput = true;}
 
     void setTabKnob(Tab_Knob* k){_tabKnob = k;}
 
-    Tab_Knob* getTabKnob() const {return _tabKnob;}
+    Tab_Knob* getTabKnob() const WARN_UNUSED_RETURN {return _tabKnob;}
 
-    void setLastKnobLayoutWithNoNewLine(QHBoxLayout* layout){_lastKnobLayoutWithNoNewLine = layout;}
+    void setLastKnobLayoutWithNoNewLine(QHBoxLayout* layout) {_lastKnobLayoutWithNoNewLine = layout;}
 
-    QHBoxLayout* getLastKnobLayoutWithNoNewLine() const {return _lastKnobLayoutWithNoNewLine;}
+    QHBoxLayout* getLastKnobLayoutWithNoNewLine() const WARN_UNUSED_RETURN {return _lastKnobLayoutWithNoNewLine;}
     
     
-    const std::string& getShortLabel() const;
+    const std::string& getShortLabel() const WARN_UNUSED_RETURN;
     
     typedef std::vector<OFX::Host::ImageEffect::ClipDescriptor*> MappedInputV;
-    MappedInputV inputClipsCopyWithoutOutput() const;
+    MappedInputV inputClipsCopyWithoutOutput() const WARN_UNUSED_RETURN;
     
     void ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const;
     
     /*If the OpenFX effect is an output effect (a writer), this will return the pattern of
      the output file sequence. */
-    std::string getOutputFileName() const;
-    
+    std::string getOutputFileName() const WARN_UNUSED_RETURN;
+
     /********OVERRIDEN FROM EFFECT INSTANCE*************/
-    virtual bool isGenerator() const OVERRIDE;
+    virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool isOutput() const OVERRIDE;
+    virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool isGeneratorAndFilter() const OVERRIDE;
+    virtual bool isGeneratorAndFilter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool isOpenFX() const OVERRIDE {return true;}
+    virtual bool isOpenFX() const OVERRIDE FINAL WARN_UNUSED_RETURN {return true;}
 
-    virtual bool makePreviewByDefault() const OVERRIDE ;
+    virtual bool makePreviewByDefault() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual int maximumInputs() const OVERRIDE;
+    virtual int maximumInputs() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual std::string pluginID() const OVERRIDE;
+    virtual std::string pluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual std::string pluginLabel() const OVERRIDE;
+    virtual std::string pluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual std::string description() const OVERRIDE;
+    virtual std::string description() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual std::string inputLabel (int inputNb) const OVERRIDE;
+    virtual std::string inputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool isInputOptional(int inputNb) const OVERRIDE;
+    virtual bool isInputOptional(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod) OVERRIDE;
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual Natron::EffectInstance::RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) OVERRIDE;
+    virtual Natron::EffectInstance::RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
+    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE FINAL;
 
-    virtual Natron::Status preProcessFrame(SequenceTime /*time*/) OVERRIDE;
+    virtual Natron::Status preProcessFrame(SequenceTime /*time*/) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual void drawOverlay() OVERRIDE;
+    virtual void drawOverlay() OVERRIDE FINAL;
 
-    virtual bool onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos) OVERRIDE;
+    virtual bool onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos) OVERRIDE;
+    virtual bool onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos) OVERRIDE;
+    virtual bool onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual void onOverlayKeyDown(QKeyEvent* e) OVERRIDE;
+    virtual void onOverlayKeyDown(QKeyEvent* e) OVERRIDE FINAL;
 
-    virtual void onOverlayKeyUp(QKeyEvent* e) OVERRIDE;
+    virtual void onOverlayKeyUp(QKeyEvent* e) OVERRIDE FINAL;
 
-    virtual void onOverlayKeyRepeat(QKeyEvent* e) OVERRIDE;
+    virtual void onOverlayKeyRepeat(QKeyEvent* e) OVERRIDE FINAL;
 
-    virtual void onOverlayFocusGained() OVERRIDE;
+    virtual void onOverlayFocusGained() OVERRIDE FINAL;
 
-    virtual void onOverlayFocusLost() OVERRIDE;
+    virtual void onOverlayFocusLost() OVERRIDE FINAL;
 
-    virtual void beginKnobsValuesChanged(AnimatingParam::ValueChangedReason reason) OVERRIDE ;
+    virtual void beginKnobsValuesChanged(AnimatingParam::ValueChangedReason reason) OVERRIDE FINAL;
 
-    virtual void endKnobsValuesChanged(AnimatingParam::ValueChangedReason reason) OVERRIDE ;
+    virtual void endKnobsValuesChanged(AnimatingParam::ValueChangedReason reason) OVERRIDE FINAL;
 
-    virtual void onKnobValueChanged(Knob* k,AnimatingParam::ValueChangedReason reason) OVERRIDE;
+    virtual void onKnobValueChanged(Knob* k,AnimatingParam::ValueChangedReason reason) OVERRIDE FINAL;
 
     virtual Natron::Status render(SequenceTime time,RenderScale scale,
-                                   const RectI& roi,int view,boost::shared_ptr<Natron::Image> output) OVERRIDE;
+                                   const RectI& roi,int view,boost::shared_ptr<Natron::Image> output) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE;
+    virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 
     /*********OVERLAY INTERACT FUNCTIONS********/
@@ -158,16 +158,16 @@ public:
 
     void backgroundColorOfAttachedViewer(double &r,double &g,double &b);
 
-    static QStringList getPluginGrouping(const std::string& pluginLabel,const std::string& grouping);
+    static QStringList getPluginGrouping(const std::string& pluginLabel,const std::string& grouping) WARN_UNUSED_RETURN;
 
     static std::string getPluginLabel(const std::string& shortLabel,
                                       const std::string& label,
-                                      const std::string& longLabel) ;
+                                      const std::string& longLabel) WARN_UNUSED_RETURN;
 
     static std::string generateImageEffectClassName(const std::string& shortLabel,
                                                 const std::string& label,
                                                 const std::string& longLabel,
-                                                const std::string& grouping);
+                                                const std::string& grouping) WARN_UNUSED_RETURN;
 
 private:
 

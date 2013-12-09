@@ -30,6 +30,7 @@
 #include "Engine/Project.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Log.h"
+#include "Engine/NodeSerialization.h"
 
 #include "Readers/Reader.h"
 #include "Writers/Writer.h"
@@ -781,6 +782,10 @@ void Node::clearPersistentMessage()
     if(!getApp()->isBackground()){
         emit persistentMessageCleared();
     }
+}
+
+void Node::serialize(NodeSerialization* serializationObject) const {
+    serializationObject->initialize(this);
 }
 
 InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin,const std::string& name)

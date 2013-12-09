@@ -27,6 +27,7 @@
 #include "Gui/KnobGui.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/CurveEditor.h"
+#include "Gui/NodeGuiSerialization.h"
 
 #include "Readers/Reader.h"
 
@@ -520,39 +521,6 @@ bool NodeGui::isSettingsPanelVisible() const{
     }
 }
 
-NodeGui::SerializedState::SerializedState(const NodeGui* n):_node(n){
-    
-    const std::vector<boost::shared_ptr<Knob> >& knobs = _node->getNode()->getKnobs();
-    
-    for (U32 i  = 0; i < knobs.size(); ++i) {
-        if(knobs[i]->isPersistent()){
-            _knobsValues.insert(std::make_pair(knobs[i]->getDescription(),dynamic_cast<AnimatingParam&>(*knobs[i].get())));
-        }
-    }
-    
-    _pluginLabel = _node->getNode()->getName();
-     
-    _pluginID = _node->getNode()->pluginID();
-   
-    const Natron::Node::InputMap& inputs = _node->getNode()->getInputs();
-    for(Natron::Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
-        if(it->second){
-            _inputs.insert(std::make_pair(it->first, it->second->getName()));
-        }else{
-             _inputs.insert(std::make_pair(it->first, ""));
-        }
-    }
-    
-    QPointF pos = _node->pos();
-    _posX = pos.x();
-    _posY = pos.y();
-    
-    _previewEnabled = n->getNode()->isPreviewEnabled();
-}
-
-NodeGui::SerializedState NodeGui::serialize() const{
-    return NodeGui::SerializedState(this);
-}
 
 void NodeGui::onPersistentMessageChanged(int type,const QString& message){
     //keep type in synch with this enum:
@@ -620,4 +588,8 @@ void NodeGui::populateMenu(){
 }
 const std::map<Knob*,KnobGui*>& NodeGui::getKnobs() const{
     return _settingsPanel->getKnobs();
+}
+
+void NodeGui::serialize(NodeGuiSerialization* serializationObject) const{
+    serializationObject->initialize(this);
 }

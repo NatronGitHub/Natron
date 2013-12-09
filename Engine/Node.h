@@ -30,7 +30,7 @@ class ViewerInstance;
 class QKeyEvent;
 class RenderTree;
 class Format;
-
+class NodeSerialization;
 namespace Natron{
 
 class Row;
@@ -312,7 +312,10 @@ public:
      **/
     void clearPersistentMessage();
 
-    
+    /**
+     * @brief Fills the serializationObject with the current state of the Node.
+     **/
+    void serialize(NodeSerialization* serializationObject) const;
     
 public slots:
     

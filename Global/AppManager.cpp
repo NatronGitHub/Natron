@@ -14,6 +14,8 @@
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/bind.hpp>
+#include <boost/serialization/shared_ptr.hpp>
+#include <boost/archive/archive_exception.hpp>
 
 #include <QMessageBox>
 #include <QLabel>
@@ -36,7 +38,7 @@
 #include "Global/LibraryBinary.h"
 #include "Global/MemoryInfo.h"
 #include "Engine/Project.h"
-
+#include "Engine/ProjectSerialization.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
@@ -58,6 +60,7 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/KnobGuiFactory.h"
+#include "Gui/ProjectGuiSerialization.h"
 
 #include "Readers/Reader.h"
 #include "Readers/Decoder.h"
@@ -307,7 +310,7 @@ AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectNam
                 }else{
                     QString name = SequenceFileDialog::removePath(projectName);
                     QString path = projectName.left(projectName.indexOf(name));
-                    loadProject(path,name,false);
+                    loadProject(path,name);
                 }
             }
         }else{
@@ -319,14 +322,14 @@ AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectNam
             }else{
                 QString name = SequenceFileDialog::removePath(projectName);
                 QString path = projectName.left(projectName.indexOf(name));
-                loadProject(path,name,false);
+                loadProject(path,name);
             }
         }
 
     }else{
         QString name = SequenceFileDialog::removePath(projectName);
         QString path = projectName.left(projectName.indexOf(name));
-        if(!loadProject(path,name,true)){
+        if(!loadProject(path,name)){
             throw std::invalid_argument("Project file loading failed.");
         }
         startWritersRendering(writers);
@@ -429,45 +432,99 @@ void AppInstance::autoConnect(Node* target,Node* created){
 }
 
 
-const std::vector<NodeGui*>& AppInstance::getAllActiveNodes() const{
+const std::vector<NodeGui*>& AppInstance::getVisibleNodes() const{
     assert(_gui->_nodeGraphArea);
     return  _gui->_nodeGraphArea->getAllActiveNodes();
     
 }
-bool AppInstance::loadProject(const QString& path,const QString& name,bool background){
+
+void AppInstance::getActiveNodes(std::vector<Natron::Node*>* activeNodes) const{
+    const std::vector<Natron::Node*> nodes = _currentProject->getCurrentNodes();
+    for(U32 i = 0; i < nodes.size(); ++i){
+        if(nodes[i]->isActivated()){
+            activeNodes->push_back(nodes[i]);
+        }
+    }
+}
+bool AppInstance::loadProject(const QString& path,const QString& name){
     try {
-        _currentProject->loadProject(path,name,background);
+       loadProjectInternal(path,name);
     } catch (const std::exception& e) {
         Natron::errorDialog("Project loader", std::string("Error while loading project") + ": " + e.what());
-        if(!background)
+        if(!_isBackground)
             createNode("Viewer");
         return false;
     } catch (...) {
         Natron::errorDialog("Project loader", std::string("Error while loading project"));
-        if(!background)
+        if(!_isBackground)
             createNode("Viewer");
         return false;
     }
-    if(!background){
+    if(!_isBackground){
         QString text(QCoreApplication::applicationName() + " - ");
         text.append(name);
         _gui->setWindowTitle(text);
     }
     return true;
 }
-void AppInstance::saveProject(const QString& path,const QString& name,bool autoSave){
+
+void AppInstance::loadProjectInternal(const QString& path,const QString& name){
+    QString filePath = path+name;
+    if(!QFile::exists(filePath)){
+        throw std::invalid_argument(QString(filePath + " : no such file.").toStdString());
+    }
+    std::list<NodeSerialization> nodeStates;
+    std::ifstream ifile;
+    try{
+        ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        ifile.open(filePath.toStdString().c_str(),std::ifstream::in);
+    }catch(const std::ifstream::failure& e){
+        throw std::runtime_error(std::string(std::string("Exception opening ")+ e.what() + filePath.toStdString()));
+    }
+    try{
+        boost::archive::xml_iarchive iArchive(ifile);
+        bool bgProject;
+        iArchive >> boost::serialization::make_nvp("Background_project",bgProject);
+        ProjectSerialization projectSerializationObj;
+        iArchive >> boost::serialization::make_nvp("Project",projectSerializationObj);
+        _currentProject->load(projectSerializationObj);
+        if(!bgProject){
+            ProjectGuiSerialization projectGuiSerializationObj;
+            iArchive >> boost::serialization::make_nvp("ProjectGui",projectGuiSerializationObj);
+            _gui->_projectGui->load(projectGuiSerializationObj);
+        }
+    }catch(const boost::archive::archive_exception& e){
+        throw std::runtime_error(std::string("Serialization error: ") + std::string(e.what()));
+    }catch(const std::exception& e){
+        throw e;
+    }
+    ifile.close();
+    
     QDateTime time = QDateTime::currentDateTime();
+    _currentProject->setAutoSetProjectFormat(false);
+    _currentProject->setHasProjectBeenSavedByUser(true);
+    _currentProject->setProjectName(name);
+    _currentProject->setProjectPath(path);
+    _currentProject->setProjectAgeSinceLastSave(time);
+    _currentProject->setProjectAgeSinceLastAutosaveSave(time);
+    
+    /*Refresh all viewers as it was*/
+    if(!isBackground()){
+        notifyViewersProjectFormatChanged(_currentProject->getProjectDefaultFormat());
+        checkViewersConnection();
+    }
+
+}
+
+void AppInstance::saveProject(const QString& path,const QString& name,bool autoSave){
+    
     if(!autoSave) {
         
         if((_currentProject->projectAgeSinceLastSave() != _currentProject->projectAgeSinceLastAutosave()) ||
                 !QFile::exists(path+name)){
             
-            _currentProject->saveProject(path,name);
-            _currentProject->setHasProjectBeenSavedByUser(true);
-            _currentProject->setProjectName(name);
-            _currentProject->setProjectPath(path);
-            _currentProject->setProjectAgeSinceLastSave(time);
-            _currentProject->setProjectAgeSinceLastAutosaveSave(time);
+            saveProjectInternal(path,name);
+            
             QString text(QCoreApplication::applicationName() + " - ");
             text.append(name);
             _gui->setWindowTitle(text);
@@ -476,12 +533,57 @@ void AppInstance::saveProject(const QString& path,const QString& name,bool autoS
         if(!_gui->isGraphWorthless()){
             
             removeAutoSaves();
-            _currentProject->saveProject(path,name+"."+time.toString("dd.MM.yyyy.hh:mm:ss:zzz"),true);
-            _currentProject->setProjectName(name);
-            _currentProject->setProjectPath(path);
-            _currentProject->setProjectAgeSinceLastAutosaveSave(time);
+            saveProjectInternal(path,name,true);
         }
     }
+}
+
+void AppInstance::saveProjectInternal(const QString& path,const QString& filename,bool autoSave){
+    QDateTime time = QDateTime::currentDateTime();
+    QString actualFileName = filename;
+    if(autoSave){
+        actualFileName.append("."+time.toString("dd.MM.yyyy.hh:mm:ss:zzz"));
+    }
+    QString filePath;
+    if (autoSave) {
+        filePath = AppInstance::autoSavesDir()+QDir::separator()+actualFileName;
+        _currentProject->setProjectLastAutoSavePath(filePath);
+    } else {
+        filePath = path+actualFileName;
+    }
+    std::ofstream ofile(filePath.toStdString().c_str(),std::ofstream::out);
+    if (!ofile.good()) {
+        qDebug() << "Failed to open file " << filePath.toStdString().c_str();
+        throw std::runtime_error("Failed to open file " + filePath.toStdString());
+    }
+    try {
+        boost::archive::xml_oarchive oArchive(ofile);
+        bool bgProject = _isBackground;
+        oArchive << boost::serialization::make_nvp("Background_project",bgProject);
+        ProjectSerialization projectSerializationObj;
+        _currentProject->save(&projectSerializationObj);
+        oArchive << boost::serialization::make_nvp("Project",projectSerializationObj);
+        if(!_isBackground){
+            ProjectGuiSerialization projectGuiSerializationObj;
+            _gui->_projectGui->save(&projectGuiSerializationObj);
+            oArchive << boost::serialization::make_nvp("ProjectGui",projectGuiSerializationObj);
+        }
+        
+    }catch (const std::exception& e) {
+        qDebug() << "Error while saving project: " << e.what();
+        throw;
+    } catch (...) {
+        qDebug() << "Error while saving project";
+        throw;
+    }
+    _currentProject->setProjectName(actualFileName);
+    _currentProject->setProjectPath(path);
+    if(!autoSave){
+        _currentProject->setHasProjectBeenSavedByUser(true);
+        _currentProject->setProjectAgeSinceLastSave(time);
+    }
+    _currentProject->setProjectAgeSinceLastAutosaveSave(time);
+
 }
 
 void AppInstance::autoSave(){
@@ -572,7 +674,7 @@ bool AppInstance::findAutoSave() {
                 return false;
             } else {
                 try {
-                    _currentProject->loadProject(savesDir.path()+QDir::separator(), entry,false);
+                    loadProjectInternal(savesDir.path()+QDir::separator(), entry);
                 } catch (const std::exception& e) {
                     Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project") + ": " + e.what());
                     createNode("Viewer");
@@ -711,6 +813,17 @@ NodeGui* AppInstance::getNodeGui(Node* n) const {
         return it->second;
     }
 }
+
+NodeGui* AppInstance::getNodeGui(const std::string& nodeName) const{
+    for(std::map<Node*,NodeGui*>::const_iterator it = _nodeMapping.begin();
+        it != _nodeMapping.end();++it){
+        if(it->first->getName() == nodeName){
+            return it->second;
+        }
+    }
+    return (NodeGui*)NULL;
+}
+
 Node* AppInstance::getNode(NodeGui* n) const{
     for (std::map<Node*,NodeGui*>::const_iterator it = _nodeMapping.begin(); it!=_nodeMapping.end(); ++it) {
         if(it->second == n){

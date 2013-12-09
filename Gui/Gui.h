@@ -60,10 +60,11 @@ class QLabel;
 class Gui;
 class SpinBox;
 class LineEdit;
-class DockablePanel;
+class ProjectGui;
 class PluginToolButton;
 class ComboBox;
 class CurveEditor;
+class DockablePanel;
 
 namespace Natron{
     class Node;
@@ -444,7 +445,7 @@ public:
     /*Registered tabs: for drag&drop purpose*/
     std::map<std::string,QWidget*> _registeredTabs;
     
-    DockablePanel* _projectGui;
+    ProjectGui* _projectGui;
     
     void setupUi();
    
@@ -453,52 +454,6 @@ public:
 };
 
 
-
-class AddFormatDialog : public QDialog {
-    Q_OBJECT
-
-public:
-    
-    AddFormatDialog(Natron::Project* project,QWidget* parent = 0);
-    
-    virtual ~AddFormatDialog(){}
-    
-    Format getFormat() const ;
-
-public slots:
-
-    void onCopyFromViewer();
-
-private:
-    Natron::Project* _project;
-
-    QVBoxLayout* _mainLayout;
-
-    QWidget* _fromViewerLine;
-    QHBoxLayout* _fromViewerLineLayout;
-    Button* _copyFromViewerButton;
-    ComboBox* _copyFromViewerCombo;
-
-    QWidget* _parametersLine;
-    QHBoxLayout* _parametersLineLayout;
-    QLabel* _widthLabel;
-    SpinBox* _widthSpinBox;
-    QLabel* _heightLabel;
-    SpinBox* _heightSpinBox;
-    QLabel* _pixelAspectLabel;
-    SpinBox* _pixelAspectSpinBox;
-
-
-    QWidget* _formatNameLine;
-    QHBoxLayout* _formatNameLayout;
-    QLabel* _nameLabel;
-    LineEdit* _nameLineEdit;
-
-    QWidget* _buttonsLine;
-    QHBoxLayout* _buttonsLineLayout;
-    Button* _cancelButton;
-    Button* _okButton;
-};
 
 
 #endif // NATRON_GUI_GUI_H_

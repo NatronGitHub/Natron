@@ -53,9 +53,10 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/NodeGui.h"
 #include "Gui/Button.h"
-#include "Gui/DockablePanel.h"
 #include "Gui/ComboBox.h"
 #include "Gui/CurveEditor.h"
+#include "Gui/ProjectGui.h"
+#include "Gui/DockablePanel.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH"openeffects.png"
@@ -522,15 +523,11 @@ void Gui::setupUi()
     
     _mainLayout->addWidget(_leftRightSplitter);
 
-    
-    _projectGui = new DockablePanel(_appInstance->getProject().get(),
-                                    _layoutPropertiesBin,
-                                    true,
-                                    "Project Settings",
-                                    "The settings of the current project.",
-                                    "Rendering",
-                                    _propertiesContainer);
-    _projectGui->initializeKnobs();
+
+    _projectGui = new ProjectGui;
+    _projectGui->create(_appInstance->getProject(),
+                        _layoutPropertiesBin,
+                        _propertiesContainer);
     setVisibleProjectSettingsPanel();
     
     menubar->addAction(menuFile->menuAction());
@@ -720,7 +717,7 @@ void Gui::putSettingsPanelFirst(DockablePanel* panel){
 }
 
 void Gui::setVisibleProjectSettingsPanel() {
-    putSettingsPanelFirst(_projectGui);
+    putSettingsPanelFirst(_projectGui->getPanel());
     if(!_projectGui->isVisible()){
         _projectGui->setVisible(true);
     }
@@ -1147,7 +1144,7 @@ void Gui::openProject(){
             QString name = SequenceFileDialog::removePath(file);
             QString path = file.left(file.indexOf(name));
             
-            _appInstance->loadProject(path,name,false);
+            _appInstance->loadProject(path,name);
         }
     }
 }
@@ -1450,119 +1447,6 @@ void Gui::saveGuiGeometry(){
     
     settings.endGroup();
     
-}
-
-
-AddFormatDialog::AddFormatDialog(Natron::Project *project, QWidget* parent):QDialog(parent),
-    _project(project)
-{
-    _mainLayout = new QVBoxLayout(this);
-    _mainLayout->setSpacing(0);
-    _mainLayout->setContentsMargins(5, 5, 0, 0);
-    setLayout(_mainLayout);
-    setWindowTitle("New Format");
-
-    _fromViewerLine = new QWidget(this);
-    _fromViewerLineLayout = new QHBoxLayout(_fromViewerLine);
-    _fromViewerLine->setLayout(_fromViewerLineLayout);
-    
-    _copyFromViewerCombo = new ComboBox(_fromViewerLine);
-    const std::vector<Natron::Node*>& nodes = project->getCurrentNodes();
-
-    for(U32 i = 0 ; i < nodes.size(); ++i){
-        if(nodes[i]->pluginID() == "Viewer"){
-            _copyFromViewerCombo->addItem(nodes[i]->getName().c_str());
-        }
-    }
-    _fromViewerLineLayout->addWidget(_copyFromViewerCombo);
-
-    _copyFromViewerButton = new Button("Copy from",_fromViewerLine);
-    _copyFromViewerButton->setToolTip("Fill the new format with the currently"
-                                      " displayed region of definition of the viewer"
-                                      " indicated on the left.");
-    QObject::connect(_copyFromViewerButton,SIGNAL(clicked()),this,SLOT(onCopyFromViewer()));
-    _mainLayout->addWidget(_fromViewerLine);
-
-    _fromViewerLineLayout->addWidget(_copyFromViewerButton);
-    _parametersLine = new QWidget(this);
-    _parametersLineLayout = new QHBoxLayout(_parametersLine);
-    _mainLayout->addWidget(_parametersLine);
-    
-    _widthLabel = new QLabel("w:",_parametersLine);
-    _parametersLineLayout->addWidget(_widthLabel);
-    _widthSpinBox = new SpinBox(this,SpinBox::INT_SPINBOX);
-    _widthSpinBox->setMaximum(99999);
-    _widthSpinBox->setMinimum(1);
-    _widthSpinBox->setValue(1);
-    _parametersLineLayout->addWidget(_widthSpinBox);
-    
-    
-    _heightLabel = new QLabel("h:",_parametersLine);
-    _parametersLineLayout->addWidget(_heightLabel);
-    _heightSpinBox = new SpinBox(this,SpinBox::INT_SPINBOX);
-    _heightSpinBox->setMaximum(99999);
-    _heightSpinBox->setMinimum(1);
-    _heightSpinBox->setValue(1);
-    _parametersLineLayout->addWidget(_heightSpinBox);
-    
-    
-    _pixelAspectLabel = new QLabel("pixel aspect:",_parametersLine);
-    _parametersLineLayout->addWidget(_pixelAspectLabel);
-    _pixelAspectSpinBox = new SpinBox(this,SpinBox::DOUBLE_SPINBOX);
-    _pixelAspectSpinBox->setMinimum(0.);
-    _pixelAspectSpinBox->setValue(1.);
-    _parametersLineLayout->addWidget(_pixelAspectSpinBox);
-    
-    
-    _formatNameLine = new QWidget(this);
-    _formatNameLayout = new QHBoxLayout(_formatNameLine);
-    _formatNameLine->setLayout(_formatNameLayout);
-    _mainLayout->addWidget(_formatNameLine);
-    
-    
-    _nameLabel = new QLabel("Name:",_formatNameLine);
-    _formatNameLayout->addWidget(_nameLabel);
-    _nameLineEdit = new LineEdit(_formatNameLine);
-    _formatNameLayout->addWidget(_nameLineEdit);
-    
-    _buttonsLine = new QWidget(this);
-    _buttonsLineLayout = new QHBoxLayout(_buttonsLine);
-    _buttonsLine->setLayout(_buttonsLineLayout);
-    _mainLayout->addWidget(_buttonsLine);
-    
-    
-    _cancelButton = new Button("Cancel",_buttonsLine);
-    QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(reject()));
-    _buttonsLineLayout->addWidget(_cancelButton);
-    
-    _okButton = new Button("Ok",_buttonsLine);
-    QObject::connect(_okButton, SIGNAL(clicked()), this, SLOT(accept()));
-    _buttonsLineLayout->addWidget(_okButton);
-    
-}
-
-void AddFormatDialog::onCopyFromViewer(){
-    const std::vector<Natron::Node*>& nodes = _project->getCurrentNodes();
-
-    QString activeText = _copyFromViewerCombo->itemText(_copyFromViewerCombo->activeIndex());
-    for(U32 i = 0 ; i < nodes.size(); ++i){
-        if(nodes[i]->getName() == activeText.toStdString()){
-            ViewerInstance* v = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
-            const RectI& f = v->getUiContext()->viewer->getCurrentViewerInfos().getRoD();
-            const Format& format = v->getUiContext()->viewer->getCurrentViewerInfos().getDisplayWindow();
-            _widthSpinBox->setValue(f.width());
-            _heightSpinBox->setValue(f.height());
-            _pixelAspectSpinBox->setValue(format.getPixelAspect());
-        }
-    }
-}
-
-Format AddFormatDialog::getFormat() const{
-    int w = (int)_widthSpinBox->value();
-    int h = (int)_heightSpinBox->value();
-    double pa = _pixelAspectSpinBox->value();
-    QString name = _nameLineEdit->text();
-    return Format(0,0,w,h,name.toStdString(),pa);
 }
 
 

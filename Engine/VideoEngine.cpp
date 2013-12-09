@@ -364,76 +364,87 @@ void VideoEngine::run(){
         ViewerInstance* viewer = _tree.outputAsViewer();
         
         int firstFrame,lastFrame;
-        if(_tree.isOutputAViewer()){
+        if (viewer) {
             firstFrame = _timeline->leftBound();
             lastFrame = _timeline->rightBound();
-        }else{
+        } else {
             firstFrame = output->getFirstFrame();
             lastFrame = output->getLastFrame();
         }
-        
+
+        //////////////////////////////
+        // Set the current frame
+        //
         int currentFrame = 0;
 
         if (!_currentRunArgs._recursiveCall) {
             
             /*if writing on disk and not a recursive call, move back the timeline cursor to the start*/
-            if(!_tree.isOutputAViewer()){
+            if (viewer) {
+                currentFrame = _timeline->currentFrame();
+            } else {
                 output->setCurrentFrame(firstFrame);
                 currentFrame = firstFrame;
-            }else{
-                currentFrame = _timeline->currentFrame();
             }
-        } else if(!_currentRunArgs._sameFrame && _currentRunArgs._recursiveCall){
-            if(_tree.isOutputAViewer()){
-                if(_currentRunArgs._forward){
-                    currentFrame = _timeline->currentFrame();
-                    if(currentFrame >= lastFrame){
-                        QMutexLocker loopModeLocker(&_loopModeMutex);
-                        if(_loopMode){ // loop only for a viewer
-                            currentFrame = firstFrame;
-                            _timeline->seekFrame(currentFrame,output);
-                        }else{
-                            loopModeLocker.unlock();
-                            if(stopEngine())
-                                return;
-                            continue;
-                        }
-                    }else{
-                        _timeline->incrementCurrentFrame(output);
-                        ++currentFrame;
-                    }
-                    
-                }else{
-                    currentFrame = _timeline->currentFrame();
-                    if(currentFrame <= firstFrame){
-                        QMutexLocker loopModeLocker(&_loopModeMutex);
-                        if(_loopMode){ //loop only for a viewer
-                            currentFrame = lastFrame;
-                            _timeline->seekFrame(currentFrame,output);
-                        }else{
-                            loopModeLocker.unlock();
-                            if(stopEngine())
-                                return;
-                            continue;
-                        }
-                    }else{
-                        _timeline->decrementCurrentFrame(output);
-                        --currentFrame;
-                    }
-                }
-            }else{
+
+        } else if(!_currentRunArgs._sameFrame) {
+            assert(_currentRunArgs._recursiveCall); // we're in the else part
+            if (!viewer) {
                 output->setCurrentFrame(output->getCurrentFrame()+1);
                 currentFrame = output->getCurrentFrame();
                 if(currentFrame > lastFrame){
-                    if(stopEngine())
+                    if(stopEngine()) {
                         return;
+                    }
                     continue;
+                }
+            } else {
+                // viewer
+                assert(viewer);
+                if (_currentRunArgs._forward) {
+                    currentFrame = _timeline->currentFrame();
+                    if (currentFrame < lastFrame) {
+                        _timeline->incrementCurrentFrame(output);
+                        ++currentFrame;
+                    } else {
+                        QMutexLocker loopModeLocker(&_loopModeMutex);
+                        if (_loopMode) { // loop only for a viewer
+                            currentFrame = firstFrame;
+                            _timeline->seekFrame(currentFrame,output);
+                        } else {
+                            loopModeLocker.unlock();
+                            if (stopEngine()) {
+                                return;
+                            }
+                            continue;
+                        }
+                    }
+                    
+                } else {
+                    currentFrame = _timeline->currentFrame();
+                    if (currentFrame > firstFrame) {
+                        _timeline->decrementCurrentFrame(output);
+                        --currentFrame;
+                    } else {
+                        QMutexLocker loopModeLocker(&_loopModeMutex);
+                        if (_loopMode) { //loop only for a viewer
+                            currentFrame = lastFrame;
+                            _timeline->seekFrame(currentFrame,output);
+                        } else {
+                            loopModeLocker.unlock();
+                            if (stopEngine()) {
+                                return;
+                            }
+                            continue;
+                        }
+                    }
                 }
             }
         }
         
-        /*Check whether we need to stop the engine or not for various reasons.
-         */
+        ///////////////////////////////
+        // Check whether we need to stop the engine or not for various reasons.
+        //
         {
             QMutexLocker locker(&_abortedRequestedMutex);
             if(_abortRequested || // #1 aborted by the user
@@ -452,86 +463,90 @@ void VideoEngine::run(){
                 continue;
             }
         }
-        
-        
-        /*update the tree hash */
-        _tree.refreshKnobsAndHashAndClearPersistentMessage(currentFrame);
-        
-        /*pre process frame*/
-        
-        Status stat = _tree.preProcessFrame(currentFrame);
-        bool continueOnError = false;
+
+        ////////////////////////
+        // Render currentFrame
+        //
+        // TODO: everything inside the try..catch should be moved to a separate function
+
+        Status stat;
+        // if the output is a writer, _tree.outputAsWriter() returns a valid pointer/
         Writer* writer = _tree.outputAsWriter();
-        if(writer && writer->continueOnError()){
-            continueOnError = true;
+        bool continueOnError = (writer && writer->continueOnError());
+        assert(!viewer || !writer); // output cannot be both a viewer and a writer
+
+        try {
+            /*update the tree hash */
+            _tree.refreshKnobsAndHashAndClearPersistentMessage(currentFrame);
+
+            /*pre process frame*/
+
+            stat = _tree.preProcessFrame(currentFrame);
+            if (stat == StatFailed) {
+                if (viewer) {
+                    viewer->disconnectViewer();
+                }
+                throw std::runtime_error("preProcessFrame failed");
+            }
+
+            /*get the time at which we started rendering the frame*/
+            gettimeofday(&_startRenderFrameTime, 0);
+            if (viewer && !_tree.isOutputAnOpenFXNode()) {
+                assert(viewer);
+                stat = viewer->renderViewer(currentFrame, _currentRunArgs._fitToViewer);
+
+                if (!_currentRunArgs._sameFrame) {
+                    QMutexLocker timerLocker(&_timerMutex);
+                    _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
+                    if ((_timerFrameCount % NATRON_FPS_REFRESH_RATE) == 0) {
+                        emit fpsChanged(_timer->actualFrameRate()); // refreshing fps display on the GUI
+                        _timerFrameCount = 1; //reseting to 1
+                    } else {
+                        ++_timerFrameCount;
+                    }
+
+                }
+
+
+
+                if (stat == StatFailed) {
+                    viewer->disconnectViewer();
+                }
+            } else if (writer && !_tree.isOutputAnOpenFXNode()) {
+                stat = writer->renderWriter(currentFrame);
+            } else {
+                RenderScale scale;
+                scale.x = scale.y = 1.;
+                RectI rod;
+                stat = _tree.getOutput()->getRegionOfDefinition(currentFrame, &rod);
+                if(stat != StatFailed){
+                    int viewsCount = _tree.getOutput()->getApp()->getCurrentProjectViewsCount();
+                    for(int i = 0; i < viewsCount;++i){
+                        // Do not catch exceptions: if an exception occurs here it is probably fatal, since
+                        // it comes from Natron itself. All exceptions from plugins are already caught
+                        // by the HostSupport library.
+                        (void)_tree.getOutput()->renderRoI(currentFrame, scale,i ,rod);
+                    }
+                }
+
+            }
+        } catch (const std::exception &e) {
+            stat = StatFailed;
+            std::stringstream ss;
+            ss << "Error while rendering" << " frame " << currentFrame << ": " << e.what();
+            Natron::errorDialog("Error while rendering", ss.str());
+        } catch (...) {
+            stat = StatFailed;
+            std::stringstream ss;
+            ss << "Error while rendering" << " frame " << currentFrame;
+            Natron::errorDialog("Error while rendering", ss.str());
         }
-        if(stat == StatFailed){
-            if(continueOnError){
-                goto endLoop;
-            }
-            if(viewer){
-                viewer->disconnectViewer();
-            }
+        if (!continueOnError && stat == StatFailed) {
             if(stopEngine())
                 return;
             continue;
         }
-        /*get the time at which we started rendering the frame*/
-        gettimeofday(&_startRenderFrameTime, 0);
-        if (_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()) {
-            stat = viewer->renderViewer(currentFrame, _currentRunArgs._fitToViewer);
-            
-            if(!_currentRunArgs._sameFrame){
-                QMutexLocker timerLocker(&_timerMutex);
-                _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
-                if((_timerFrameCount % NATRON_FPS_REFRESH_RATE) == 0){
-                    emit fpsChanged(_timer->actualFrameRate()); // refreshing fps display on the GUI
-                    _timerFrameCount = 1; //reseting to 1
-                }else{
-                    ++_timerFrameCount;
-                }
-                
-            }
-            
-            
-            if(stat == StatFailed){
-                viewer->disconnectViewer();
-            }
-        }else if(!_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()){
-            stat = _tree.outputAsWriter()->renderWriter(currentFrame);
-            if(continueOnError){
-                goto endLoop;
-            }
-        }else{
-            RenderScale scale;
-            scale.x = scale.y = 1.;
-            RectI rod;
-            stat = _tree.getOutput()->getRegionOfDefinition(currentFrame, &rod);
-            if(stat != StatFailed){
-                int viewsCount = _tree.getOutput()->getApp()->getCurrentProjectViewsCount();
-                for(int i = 0; i < viewsCount;++i){
-                    // Do not catch exceptions: if an exception occurs here it is probably fatal, since
-                    // it comes from Natron itself. All exceptions from plugins are already caught
-                    // by the HostSupport library.
-                    //try{
-                    (void)_tree.getOutput()->renderRoI(currentFrame, scale,i ,rod);
-                    //}catch(...){
-                    //    stat = StatFailed;
-                    //}
-                }
-            }
-            
-        }
 
-        if(stat == StatFailed){
-
-            if(stopEngine())
-                return;
-            continue;
-        }
-        
-endLoop:
-        
         /*The frame has been rendered , we call engineLoop() which will reset all the flags,
          update viewers
          and appropriately increment counters for the next frame in the sequence.*/
