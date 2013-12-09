@@ -92,6 +92,7 @@ DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS
 SOURCES += \
     Engine/ChannelSet.cpp \
     Engine/Curve.cpp \
+    Engine/CurveSerialization.cpp \
     Engine/EffectInstance.cpp \
     Engine/Hash64.cpp \
     Engine/Image.cpp \
