@@ -50,7 +50,7 @@ public:
     template<typename T>
     void append(T value) {
         BOOST_STATIC_ASSERT(sizeof(T) <= 8);
-        alias_cast_t<T> ac = {}; // force initialization
+        alias_cast_t<T> ac;
         ac.data = value;
         node_values.push_back(ac.raw);
     }
@@ -67,6 +67,8 @@ private:
     template<typename T>
     struct alias_cast_t
     {
+        alias_cast_t() : raw(0) {}; // initialize to 0 in case sizeof(T) < 8
+
         union
         {
             U64 raw;
