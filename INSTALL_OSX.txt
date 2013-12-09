@@ -116,13 +116,12 @@ qmake CONFIG+=debug <srcPath>/Natron.pro
 *You can also enable logging by adding CONFIG+=log
 *You can also enable clang sanitizer by adding CONFIG+=sanitizer
 
+* If using Xcode to compile, and it doesn't find the necessary
+binaries (qmake, moc, pkg-config, just execute this line from a
+terminal and log in/out of your session (see
+http://www.emacswiki.org/emacs/EmacsApp for other options):
 
-You'll need to edit the file /etc/launchd.conf and add this line
-
-setenv PATH /opt/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
-
-And restart your computer so it takes it into account.
-
+launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
 
 ###(Optional) Build on QtCreator
 

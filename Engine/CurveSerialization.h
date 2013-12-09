@@ -131,13 +131,5 @@ void AnimatingParam::serialize(Archive & ar, const unsigned int version)
     (void)version;
     ar & boost::serialization::make_nvp("PIMPL",_imp);
 }
-template void AnimatingParam::serialize<boost::archive::xml_iarchive>(
-boost::archive::xml_iarchive & ar,
-const unsigned int file_version
-);
-template void AnimatingParam::serialize<boost::archive::xml_oarchive>(
-boost::archive::xml_oarchive & ar,
-const unsigned int file_version
-);
 
 #endif // NATRON_ENGINE_CURVESERIALIZATION_H_

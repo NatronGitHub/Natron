@@ -45,6 +45,7 @@ QMAKE_CXXFLAGS += -ftemplate-depth=500
 
 # When compiler is GCC check for at least version 4.7
 *g++*{
+  QMAKE_CXXFLAGS += -ftemplate-depth-500
   QMAKE_CXXFLAGS_RELEASE += -O3
   QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
   GCCVer = $$system($$QMAKE_CXX --version)
@@ -63,13 +64,14 @@ QMAKE_CXXFLAGS += -ftemplate-depth=500
   }
 }
 *clang* {
-sanitizer{
+  QMAKE_CXXFLAGS += -ftemplate-depth-500
+  sanitizer{
     QMAKE_CXXFLAGS += -fsanitize=address -fsanitize-undefined-trap-on-error -fno-omit-frame-pointer -fno-optimize-sibling-calls
     QMAKE_LFLAGS += -fsanitize=address -g
-}
-!sanitizer{
-  QMAKE_CXXFLAGS_RELEASE += -O3
-}
+  }
+  !sanitizer{
+    QMAKE_CXXFLAGS_RELEASE += -O3
+  }
   QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
   QMAKE_CXXFLAGS += -std=c++11
 }
@@ -90,6 +92,7 @@ DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS
 SOURCES += \
     Engine/ChannelSet.cpp \
     Engine/Curve.cpp \
+    Engine/CurveSerialization.cpp \
     Engine/EffectInstance.cpp \
     Engine/Hash64.cpp \
     Engine/Image.cpp \
