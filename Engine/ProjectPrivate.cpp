@@ -136,9 +136,9 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
         const std::map<int, std::string>& inputs = serializedNodes[i]->getInputs();
         Natron::Node* thisNode = NULL;
-        for (U32 i = 0; i < _currentNodes.size(); ++i) {
-            if (_currentNodes[i]->getName() == serializedNodes[i]->getPluginLabel()) {
-                thisNode = _currentNodes[i];
+        for (U32 j = 0; j < _currentNodes.size(); ++j) {
+            if (_currentNodes[j]->getName() == serializedNodes[i]->getPluginLabel()) {
+                thisNode = _currentNodes[j];
                 break;
             }
         }
