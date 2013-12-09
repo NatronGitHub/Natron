@@ -275,6 +275,7 @@ public:
     void unlink(int dimension);
     
     bool isCurveLinked(int dimension) const;
+    
 protected:
 
 

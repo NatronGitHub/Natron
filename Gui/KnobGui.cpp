@@ -30,7 +30,9 @@
 #include <QGroupBox>
 #include <QtGui/QVector4D>
 #include <QStyleFactory>
+#include <QLabel>
 #include <QMenu>
+#include <QComboBox>
 
 #include "Global/AppManager.h"
 #include "Global/LibraryBinary.h"
@@ -404,6 +406,95 @@ void KnobGui::onPasteActionTriggered(){
     
 }
 
-void KnobGui::onLinkToActionTriggered(){
+
+LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
+: QDialog(parent)
+{
     
+    _mainLayout = new QVBoxLayout(this);
+    setLayout(_mainLayout);
+    
+    _firstLine = new QWidget(this);
+    _firstLineLayout = new QHBoxLayout(_firstLine);
+    _firstLine->setLayout(_firstLineLayout);
+    
+    _mainLayout->addWidget(_firstLine);
+    
+    _buttonsWidget = new QWidget(this);
+    _buttonsLayout = new QHBoxLayout(_buttonsWidget);
+    _buttonsWidget->setLayout(_buttonsLayout);
+    
+    _mainLayout->addWidget(_buttonsWidget);
+    
+    _selectKnobLabel = new QLabel("Target:",_firstLine);
+    _firstLineLayout->addWidget(_selectKnobLabel);
+    
+    _selectionCombo = new QComboBox(_firstLine);
+    _firstLineLayout->addWidget(_selectionCombo);
+    _selectionCombo->setEditable(true);
+    
+    QStringList comboItems;
+    std::vector<Natron::Node*> allActiveNodes;
+    from->getKnob()->getHolder()->getApp()->getActiveNodes(&allActiveNodes);
+    for (U32 i = 0; i < allActiveNodes.size(); ++i) {
+        const std::vector< boost::shared_ptr<Knob> >& knobs = allActiveNodes[i]->getKnobs();
+        
+        for (U32 j = 0; j < knobs.size(); ++j) {
+            QString name(allActiveNodes[i]->getName().c_str());
+            name.append("/");
+            name.append(knobs[j]->getDescription().c_str());
+            _allKnobs.insert(std::make_pair(name,knobs[j]));
+            comboItems.push_back(name);
+        }
+    }
+    _selectionCombo->addItems(comboItems);
+    _selectionCombo->lineEdit()->selectAll();
+    _selectionCombo->setFocus();
+    
+    _cancelButton = new Button("Cancel",_buttonsWidget);
+    QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(reject()));
+    _buttonsLayout->addWidget(_cancelButton);
+    _okButton = new Button("Ok",_buttonsWidget);
+    QObject::connect(_okButton, SIGNAL(clicked()), this, SLOT(accept()));
+    _buttonsLayout->QLayout::addWidget(_okButton);
 }
+
+boost::shared_ptr<Knob> LinkToKnobDialog::getSelectedKnobs() const {
+    QString str = _selectionCombo->itemText(_selectionCombo->currentIndex());
+    std::map<QString,boost::shared_ptr<Knob> >::const_iterator it = _allKnobs.find(str);
+    if(it != _allKnobs.end()){
+        return it->second;
+    }else{
+        return boost::shared_ptr<Knob>();
+    }
+}
+
+void KnobGui::onLinkToActionTriggered(){
+    LinkToKnobDialog dialog(this,_animationButton->parentWidget());
+    
+    if(dialog.exec()){
+        boost::shared_ptr<Knob> otherKnob = dialog.getSelectedKnobs();
+        bool error = false;
+        if(otherKnob){
+            for(int i = 0; i < _knob->getDimension();++i){
+                if(!_knob->isCurveLinked(i)){
+                    _knob->link(i, otherKnob->getCurve(i));
+                }else{
+                    error = true;
+                    break;
+                }
+            }
+        }
+        if(error){
+            std::string err("Cannot link ");
+            err.append(_knob->getDescription());
+            err.append(" to ");
+            err.append(otherKnob->getDescription());
+            err.append(" \n because the knob is already linked.");
+            errorDialog("Knob Link", err);
+        }
+    }
+   
+}
+
+

@@ -24,6 +24,8 @@ class QGridLayout; //used by KnobGui
 class QVBoxLayout; //used by KnobGui
 class QHBoxLayout; //used by KnobGui
 class QMenu;
+class QComboBox;
+
 
 // Engine
 class Knob; //used by KnobGui
@@ -180,5 +182,31 @@ private:
 };
 Q_DECLARE_METATYPE(KnobGui*)
 
+
+class LinkToKnobDialog : public QDialog {
+    
+    Q_OBJECT
+    
+    QVBoxLayout* _mainLayout;
+    QHBoxLayout* _firstLineLayout;
+    QWidget* _firstLine;
+    QLabel* _selectKnobLabel;
+    QComboBox* _selectionCombo;
+    
+    QWidget* _buttonsWidget;
+    Button* _cancelButton;
+    Button* _okButton;
+    QHBoxLayout* _buttonsLayout;
+    
+    std::map<QString,boost::shared_ptr<Knob> > _allKnobs;
+public:
+    
+    LinkToKnobDialog(KnobGui* from,QWidget* parent);
+    
+    virtual ~LinkToKnobDialog(){ _allKnobs.clear(); }
+    
+    boost::shared_ptr<Knob> getSelectedKnobs() const;
+    
+};
 
 #endif // NATRON_GUI_KNOBGUI_H_
