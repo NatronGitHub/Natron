@@ -995,7 +995,7 @@ OfxStatus OfxCustomInstance::get(std::string &str) {
     return kOfxStatOK;
 }
 
-OfxStatus OfxCustomInstance::get(OfxTime time, std::string& str) {
+OfxStatus OfxCustomInstance::get(OfxTime /*time*/, std::string& str) {
     // FIXME: assert(!Custom_Knob::canAnimateStatic());
     // it should call _customParamInterpolationV1Entry
     assert(_node->effectInstance());

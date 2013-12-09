@@ -25,12 +25,6 @@
 #include <QTextEdit>
 #include <QtGui/QStyle>
 
-#if QT_VERSION < 0x050000
-#include "Global/Macros.h"
-CLANG_DIAG_OFF(unused-private-field);
-#include <QtGui/qmime.h>
-CLANG_DIAG_ON(unused-private-field);
-#endif
 #include <QKeyEvent>
 #include <QColorDialog>
 #include <QGroupBox>
