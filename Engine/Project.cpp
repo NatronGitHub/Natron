@@ -74,7 +74,9 @@ void Project::initializeKnobs(){
 
 
 void Project::evaluate(Knob* knob,bool /*isSignificant*/){
-    if(knob == _imp->_viewsCount){
+    if(!knob){
+        getApp()->checkViewersConnection();
+    }else if(knob == _imp->_viewsCount){
         int viewsCount = _imp->_viewsCount->getValue<int>();
         getApp()->setupViewersForViews(viewsCount);
     }else if(knob == _imp->_formatKnob){
@@ -86,8 +88,6 @@ void Project::evaluate(Knob* knob,bool /*isSignificant*/){
         }
     }else if(knob == _imp->_addFormatKnob){
         emit mustCreateFormat();
-    }else{
-        getApp()->checkViewersConnection();
     }
 }
 
