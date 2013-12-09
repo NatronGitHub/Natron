@@ -471,6 +471,11 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
         OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
         assert(natronClip);
         output = natronClip->getAssociatedNode()->getImage(natronClip->getInputNb(),inputtime,scale,view);
+        if (!output.get()) {
+            return StatFailed;
+        } else {
+            return StatOK;
+        }
     }
 
     stat = effect_->renderAction((OfxTime)time, field, ofxRoI, scale, view, viewsCount);
