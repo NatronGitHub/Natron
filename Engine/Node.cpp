@@ -191,7 +191,9 @@ void Node::onGUINameChanged(const QString& str){
 }
 
 void Node::initializeKnobs(){
+    _liveInstance->beginKnobsValuesChanged(Natron::USER_EDITED);
     _liveInstance->initializeKnobs();
+    _liveInstance->endKnobsValuesChanged(Natron::USER_EDITED);
     emit knobsInitialized();
 }
 
@@ -229,7 +231,9 @@ EffectInstance*  Node::createLiveInstanceClone()
 
     }
     assert(ret);
+    ret->beginKnobsValuesChanged(Natron::USER_EDITED);
     ret->initializeKnobs();
+    ret->endKnobsValuesChanged(Natron::USER_EDITED);
     ret->setAsRenderClone();
     return ret;
 }
