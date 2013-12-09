@@ -21,6 +21,8 @@
 #include "Global/AppManager.h"
 #include "Gui/MenuWithToolTips.h"
 
+using namespace Natron;
+
 ComboBox::ComboBox(QWidget* parent):QFrame(parent),_currentIndex(0),_maximumTextSize(0),pressed(false),animation(0){
     
     _mainLayout = new QHBoxLayout(this);
@@ -36,7 +38,7 @@ ComboBox::ComboBox(QWidget* parent):QFrame(parent),_currentIndex(0),_maximumText
         
     _dropDownIcon = new QLabel(this);
     QPixmap pixC;
-    appPTR->getIcon(Natron::COMBOBOX_PIXMAP, &pixC);
+    appPTR->getIcon(NATRON_PIXMAP_COMBOBOX, &pixC);
     _dropDownIcon->setPixmap(pixC);
     _mainLayout->addWidget(_dropDownIcon);
     
@@ -56,7 +58,7 @@ void ComboBox::paintEvent(QPaintEvent *e)
 
 void ComboBox::mousePressEvent(QMouseEvent* e){
     QPixmap pixC;
-    appPTR->getIcon(Natron::COMBOBOX_PRESSED_PIXMAP, &pixC);
+    appPTR->getIcon(NATRON_PIXMAP_COMBOBOX_PRESSED, &pixC);
     _dropDownIcon->setPixmap(pixC);
     setPressed(true);
     style()->unpolish(this);
@@ -67,7 +69,7 @@ void ComboBox::mousePressEvent(QMouseEvent* e){
 
 void ComboBox::mouseReleaseEvent(QMouseEvent* e){
     QPixmap pixC;
-    appPTR->getIcon(Natron::COMBOBOX_PIXMAP, &pixC);
+    appPTR->getIcon(NATRON_PIXMAP_COMBOBOX, &pixC);
     _dropDownIcon->setPixmap(pixC);
     setPressed(false);
     style()->unpolish(this);
@@ -95,7 +97,7 @@ void ComboBox::createMenu(){
     }
     
     QPixmap pixC;
-    appPTR->getIcon(Natron::COMBOBOX_PIXMAP, &pixC);
+    appPTR->getIcon(NATRON_PIXMAP_COMBOBOX, &pixC);
     _dropDownIcon->setPixmap(pixC);
     setPressed(false);
     style()->unpolish(this);

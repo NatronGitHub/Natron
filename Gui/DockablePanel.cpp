@@ -35,6 +35,7 @@
 #include "Gui/NodeGraph.h"
 
 using std::make_pair;
+using namespace Natron;
 
 DockablePanel::DockablePanel(KnobHolder* holder
                              ,QVBoxLayout* container
@@ -78,7 +79,7 @@ DockablePanel::DockablePanel(KnobHolder* holder
     
 
     QPixmap pixHelp ;
-    appPTR->getIcon(Natron::HELP_WIDGET_PIXMAP,&pixHelp);
+    appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
     _helpButton = new Button(QIcon(pixHelp),"",_headerWidget);
     
     QString tooltip = helpToolTip;
@@ -95,10 +96,10 @@ DockablePanel::DockablePanel(KnobHolder* holder
     
     
     QPixmap pixM;
-    appPTR->getIcon(Natron::MINIMIZE_WIDGET_PIXMAP,&pixM);
+    appPTR->getIcon(NATRON_PIXMAP_MINIMIZE_WIDGET,&pixM);
 
     QPixmap pixC;
-    appPTR->getIcon(Natron::CLOSE_WIDGET_PIXMAP,&pixC);
+    appPTR->getIcon(NATRON_PIXMAP_CLOSE_WIDGET,&pixC);
     _minimize=new Button(QIcon(pixM),"",_headerWidget);
     _minimize->setFixedSize(15,15);
     _minimize->setCheckable(true);
@@ -109,9 +110,9 @@ DockablePanel::DockablePanel(KnobHolder* holder
 
 
     QPixmap pixUndo ;
-    appPTR->getIcon(Natron::UNDO_PIXMAP,&pixUndo);
+    appPTR->getIcon(NATRON_PIXMAP_UNDO,&pixUndo);
     QPixmap pixUndo_gray ;
-    appPTR->getIcon(Natron::UNDO_GRAYSCALE_PIXMAP,&pixUndo_gray);
+    appPTR->getIcon(NATRON_PIXMAP_UNDO_GRAYSCALE,&pixUndo_gray);
     QIcon icUndo;
     icUndo.addPixmap(pixUndo,QIcon::Normal);
     icUndo.addPixmap(pixUndo_gray,QIcon::Disabled);
@@ -120,9 +121,9 @@ DockablePanel::DockablePanel(KnobHolder* holder
     _undoButton->setEnabled(false);
     
     QPixmap pixRedo ;
-    appPTR->getIcon(Natron::REDO_PIXMAP,&pixRedo);
+    appPTR->getIcon(NATRON_PIXMAP_REDO,&pixRedo);
     QPixmap pixRedo_gray;
-    appPTR->getIcon(Natron::REDO_GRAYSCALE_PIXMAP,&pixRedo_gray);
+    appPTR->getIcon(NATRON_PIXMAP_REDO_GRAYSCALE,&pixRedo_gray);
     QIcon icRedo;
     icRedo.addPixmap(pixRedo,QIcon::Normal);
     icRedo.addPixmap(pixRedo_gray,QIcon::Disabled);
@@ -303,12 +304,12 @@ void DockablePanel::minimizeOrMaximize(bool toggled){
     _minimized=toggled;
     if(_minimized){
         QPixmap pixM;
-        appPTR->getIcon(Natron::MAXIMIZE_WIDGET_PIXMAP,&pixM);
+        appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET,&pixM);
         _minimize->setIcon(QIcon(pixM));
         emit minimized();
     }else{
         QPixmap pixM;
-        appPTR->getIcon(Natron::MINIMIZE_WIDGET_PIXMAP,&pixM);
+        appPTR->getIcon(NATRON_PIXMAP_MINIMIZE_WIDGET,&pixM);
         _minimize->setIcon(QIcon(pixM));
         emit maximized();
     }

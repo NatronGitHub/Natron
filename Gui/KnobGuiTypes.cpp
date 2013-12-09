@@ -841,7 +841,7 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
     colorLayout->addWidget(_colorLabel);
 
     QPixmap buttonPix;
-    appPTR->getIcon(Natron::COLORWHEEL_PIXMAP, &buttonPix);
+    appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, &buttonPix);
 
     _colorDialogButton = new Button(QIcon(buttonPix), "", colorContainer);
     QObject::connect(_colorDialogButton, SIGNAL(pressed()), this, SLOT(showColorDialog()));
@@ -1086,9 +1086,9 @@ void GroupBoxLabel::setChecked(bool b)
     _checked = b;
     QPixmap pix;
     if (b) {
-        appPTR->getIcon(Natron::GROUPBOX_UNFOLDED_PIXMAP, &pix);
+        appPTR->getIcon(NATRON_PIXMAP_GROUPBOX_UNFOLDED, &pix);
     } else {
-        appPTR->getIcon(Natron::GROUPBOX_FOLDED_PIXMAP, &pix);
+        appPTR->getIcon(NATRON_PIXMAP_GROUPBOX_FOLDED, &pix);
     }
     setPixmap(pix);
 }

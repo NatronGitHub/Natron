@@ -56,7 +56,7 @@ void File_KnobGui::createWidget(QGridLayout *layout, int row)
     _openFileButton = new Button(layout->parentWidget());
 
     QPixmap pix;
-    appPTR->getIcon(Natron::OPEN_FILE_PIXMAP, &pix);
+    appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _openFileButton->setIcon(QIcon(pix));
     _openFileButton->setFixedSize(20, 20);
     QObject::connect(_openFileButton, SIGNAL(clicked()), this, SLOT(open_file()));
@@ -163,7 +163,7 @@ void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row)
     _openFileButton = new Button(layout->parentWidget());
 
     QPixmap pix;
-    appPTR->getIcon(Natron::OPEN_FILE_PIXMAP, &pix);
+    appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _openFileButton->setIcon(QIcon(pix));
     _openFileButton->setFixedSize(20, 20);
     QObject::connect(_openFileButton, SIGNAL(clicked()), this, SLOT(open_file()));

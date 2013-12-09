@@ -31,6 +31,8 @@
 #include "Gui/ViewerTab.h"
 #include "Engine/ViewerInstance.h"
 
+using namespace Natron;
+
 TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent):
     QFrame(parent),
     _gui(gui),
@@ -65,9 +67,9 @@ TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent
     
     
     QPixmap pixC,pixM,pixL;
-    appPTR->getIcon(Natron::CLOSE_WIDGET_PIXMAP,&pixC);
-    appPTR->getIcon(Natron::MAXIMIZE_WIDGET_PIXMAP,&pixM);
-    appPTR->getIcon(Natron::TAB_WIDGET_LAYOUT_BUTTON_PIXMAP,&pixL);
+    appPTR->getIcon(NATRON_PIXMAP_CLOSE_WIDGET,&pixC);
+    appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET,&pixM);
+    appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON,&pixL);
 
     if(decorations != NONE){
         
@@ -139,10 +141,10 @@ bool TabWidget::destroyTab(QWidget* tab) {
 void TabWidget::createMenu(){
     QMenu *menu = new QMenu(_gui);
     QPixmap pixV,pixM,pixH,pixC;
-    appPTR->getIcon(Natron::TAB_WIDGET_SPLIT_VERTICALLY_PIXMAP,&pixV);
-    appPTR->getIcon(Natron::TAB_WIDGET_SPLIT_HORIZONTALLY_PIXMAP,&pixH);
-    appPTR->getIcon(Natron::MAXIMIZE_WIDGET_PIXMAP,&pixM);
-    appPTR->getIcon(Natron::CLOSE_WIDGET_PIXMAP,&pixC);
+    appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_VERTICALLY,&pixV);
+    appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_HORIZONTALLY,&pixH);
+    appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET,&pixM);
+    appPTR->getIcon(NATRON_PIXMAP_CLOSE_WIDGET,&pixC);
     QAction* splitVerticallyAction = new QAction(QIcon(pixV),tr("Split vertical"),this);
     QObject::connect(splitVerticallyAction, SIGNAL(triggered()), this, SLOT(splitVertically()));
     menu->addAction(splitVerticallyAction);

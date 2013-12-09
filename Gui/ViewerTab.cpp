@@ -359,21 +359,21 @@ _channelsToDraw(Mask_RGBA)
     QPixmap pixLoopMode;
     QPixmap pixClipToProject ;
     
-    appPTR->getIcon(Natron::PLAYER_FIRST_FRAME_PIXMAP,&pixFirst);
-    appPTR->getIcon(Natron::PLAYER_PREVIOUS_KEY_PIXMAP,&pixPrevKF);
-    appPTR->getIcon(Natron::PLAYER_REWIND_PIXMAP,&pixRewind);
-    appPTR->getIcon(Natron::PLAYER_PREVIOUS_PIXMAP,&pixBack1);
-    appPTR->getIcon(Natron::PLAYER_STOP_PIXMAP,&pixStop);
-    appPTR->getIcon(Natron::PLAYER_NEXT_PIXMAP,&pixForward1);
-    appPTR->getIcon(Natron::PLAYER_PLAY_PIXMAP,&pixPlay);
-    appPTR->getIcon(Natron::PLAYER_NEXT_KEY_PIXMAP,&pixNextKF);
-    appPTR->getIcon(Natron::PLAYER_LAST_FRAME_PIXMAP,&pixLast);
-    appPTR->getIcon(Natron::PLAYER_PREVIOUS_INCR_PIXMAP,&pixPrevIncr);
-    appPTR->getIcon(Natron::PLAYER_NEXT_INCR_PIXMAP,&pixNextIncr);
-    appPTR->getIcon(Natron::VIEWER_REFRESH_PIXMAP,&pixRefresh);
-    appPTR->getIcon(Natron::VIEWER_CENTER_PIXMAP,&pixCenterViewer);
-    appPTR->getIcon(Natron::PLAYER_LOOP_MODE_PIXMAP,&pixLoopMode);
-    appPTR->getIcon(Natron::VIEWER_CLIP_TO_PROJECT_PIXMAP,&pixClipToProject);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_FIRST_FRAME,&pixFirst);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS_KEY,&pixPrevKF);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND,&pixRewind);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS,&pixBack1);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_STOP,&pixStop);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT,&pixForward1);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY,&pixPlay);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT_KEY,&pixNextKF);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_LAST_FRAME,&pixLast);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS_INCR,&pixPrevIncr);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT_INCR,&pixNextIncr);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH,&pixRefresh);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixCenterViewer);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE,&pixLoopMode);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_CLIP_TO_PROJECT,&pixClipToProject);
     
     firstFrame_Button->setIcon(QIcon(pixFirst));
     previousKeyFrame_Button->setIcon(QIcon(pixPrevKF));
