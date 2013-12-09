@@ -55,7 +55,7 @@ public:
     ///    - kOfxBitDepthByte
     ///    - kOfxBitDepthShort
     ///    - kOfxBitDepthFloat
-    const std::string &getUnmappedBitDepth() const OVERRIDE;
+    const std::string &getUnmappedBitDepth() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     /// Get the Raw Unmapped Components from the host
     ///
@@ -63,57 +63,57 @@ public:
     ///     - kOfxImageComponentNone (implying a clip is unconnected, not valid for an image)
     ///     - kOfxImageComponentRGBA
     ///     - kOfxImageComponentAlpha
-    virtual const std::string &getUnmappedComponents() const OVERRIDE;
+    virtual const std::string &getUnmappedComponents() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     // PreMultiplication -
     //
     //  kOfxImageOpaque - the image is opaque and so has no premultiplication state
     //  kOfxImagePreMultiplied - the image is premultiplied by it's alpha
     //  kOfxImageUnPreMultiplied - the image is unpremultiplied
-    virtual const std::string &getPremult() const OVERRIDE;
+    virtual const std::string &getPremult() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     // Pixel Aspect Ratio -
     //
     //  The pixel aspect ratio of a clip or image.
-    virtual double getAspectRatio() const OVERRIDE;
+    virtual double getAspectRatio() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     // Frame Rate -
     //
     //  The frame rate of a clip or instance's project.
-    virtual double getFrameRate() const OVERRIDE;
+    virtual double getFrameRate() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     // Frame Range (startFrame, endFrame) -
     //
     //  The frame range over which a clip has images.
-    virtual void getFrameRange(double &startFrame, double &endFrame) const OVERRIDE;
+    virtual void getFrameRange(double &startFrame, double &endFrame) const OVERRIDE FINAL;
     
     /// Field Order - Which spatial field occurs temporally first in a frame.
     /// \returns
     ///  - kOfxImageFieldNone - the clip material is unfielded
     ///  - kOfxImageFieldLower - the clip material is fielded, with image rows 0,2,4.... occuring first in a frame
     ///  - kOfxImageFieldUpper - the clip material is fielded, with image rows line 1,3,5.... occuring first in a frame
-    virtual const std::string &getFieldOrder() const OVERRIDE;
+    virtual const std::string &getFieldOrder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     // Connected -
     //
     //  Says whether the clip is actually connected at the moment.
-    virtual bool getConnected() const OVERRIDE;
+    virtual bool getConnected() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     // Unmapped Frame Rate -
     //
     //  The unmaped frame range over which an output clip has images.
-    virtual double getUnmappedFrameRate() const OVERRIDE;
+    virtual double getUnmappedFrameRate() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     // Unmapped Frame Range -
     //
     //  The unmaped frame range over which an output clip has images.
-    virtual void getUnmappedFrameRange(double &unmappedStartFrame, double &unmappedEndFrame) const OVERRIDE;
+    virtual void getUnmappedFrameRange(double &unmappedStartFrame, double &unmappedEndFrame) const OVERRIDE FINAL;
     
     // Continuous Samples -
     //
     //  0 if the images can only be sampled at discreet times (eg: the clip is a sequence of frames),
     //  1 if the images can only be sampled continuously (eg: the clip is infact an animating roto spline and can be rendered anywhen).
-    virtual bool getContinuousSamples() const OVERRIDE;
+    virtual bool getContinuousSamples() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     /// override this to fill in the image at the given time.
     /// The bounds of the image on the image plane should be
@@ -121,10 +121,10 @@ public:
     /// on the effect instance. Outside a render call, the optionalBounds should
     /// be 'appropriate' for the.
     /// If bounds is not null, fetch the indicated section of the canonical image plane.
-    virtual OFX::Host::ImageEffect::Image* getImage(OfxTime time, OfxRectD *optionalBounds) OVERRIDE;
+    virtual OFX::Host::ImageEffect::Image* getImage(OfxTime time, OfxRectD *optionalBounds) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     /// override this to return the rod on the clip
-    virtual OfxRectD getRegionOfDefinition(OfxTime time) const OVERRIDE;
+    virtual OfxRectD getRegionOfDefinition(OfxTime time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// override this to fill in the image at the given time from a specific view
     /// (using the standard callback gets you the current view being rendered, @see getImage).
@@ -133,7 +133,7 @@ public:
     /// on the effect instance. Outside a render call, the optionalBounds should
     /// be 'appropriate' for the.
     /// If bounds is not null, fetch the indicated section of the canonical image plane.
-    virtual  OFX::Host::ImageEffect::Image* getStereoscopicImage(OfxTime time, int view, OfxRectD *optionalBounds) OVERRIDE;
+    virtual  OFX::Host::ImageEffect::Image* getStereoscopicImage(OfxTime time, int view, OfxRectD *optionalBounds) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 
     /// override this to set the view to be returned by getImage()
@@ -141,12 +141,12 @@ public:
     /// kOfxImageEffectActionRender on the Instance.
     /// The view number has to be stored in the Clip, so this is typically not thread-safe,
     /// except if thread-local storage is used.
-    virtual void setView(int view) OVERRIDE;
+    virtual void setView(int view) OVERRIDE FINAL;
 
     //returns the index of this clip if it is an input clip, otherwise -1.
-    int getInputNb() const;
+    int getInputNb() const WARN_UNUSED_RETURN;
     
-    Natron::EffectInstance* getAssociatedNode() const;
+    Natron::EffectInstance* getAssociatedNode() const WARN_UNUSED_RETURN;
 
 private:
     
