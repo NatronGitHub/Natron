@@ -471,8 +471,9 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
         OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
         assert(natronClip);
         output = natronClip->getAssociatedNode()->getImage(natronClip->getInputNb(),inputtime,scale,view);
-        if (!output.get()) {
-            qDebug() << "Error in OfxEffectInstance::render(): getImage returned NULL";
+        if (!output) {
+            qDebug() << "Error in OfxEffectInstance::render(): getImage(" << natronClip->getInputNb() << ','
+                     << inputtime << ",(" << scale.x << ',' << scale.y << ")," << view<<") returned NULL";
             return StatFailed;
         } else {
             return StatOK;
