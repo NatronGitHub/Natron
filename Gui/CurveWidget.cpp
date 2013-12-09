@@ -2046,20 +2046,29 @@ void CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve(){
             }
         }
     }
-    
+    CurveGui* curve = NULL;
     for (Curves::iterator it = _imp->_curves.begin() ; it != _imp->_curves.end() ; ++it) {
         if((*it)->isSelected()){
-            for(U32 i = 0; i < _imp->_keyFramesClipBoard.size();++i){
-                std::pair<double,Variant>& toCopy = _imp->_keyFramesClipBoard[i];
-                if(!editor){
-                    addKeyFrame(*it,toCopy.second,toCopy.first);
-                    updateGL();
-                }else{
-                    editor->addKeyFrame(*it,toCopy.first,toCopy.second);
-                }
-            }
-            return;
+            curve = (*it);
+            break;
         }
+    }
+    if(!curve){
+        return;
+    }
+    std::vector<std::pair<SequenceTime,Variant> > keys;
+    for(U32 i = 0; i < _imp->_keyFramesClipBoard.size();++i){
+        std::pair<double,Variant>& toCopy = _imp->_keyFramesClipBoard[i];
+        if(!editor){
+            addKeyFrame(curve,toCopy.second,toCopy.first);
+        }else{
+            keys.push_back(toCopy);
+        }
+    }
+    if(editor){
+        editor->addKeyFrames(curve, keys);
+    }else{
+        updateGL();
     }
     warningDialog("Curve Editor","You must select a curve first.");
 }

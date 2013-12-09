@@ -257,6 +257,7 @@ void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrames::iterato
     }
 
     double vcurDerivLeft,vcurDerivRight;
+    try{
     Natron::autoComputeTangents<double>(prevType,
                                         (*key)->getInterpolation(),
                                         nextType,
@@ -266,7 +267,10 @@ void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrames::iterato
                                         vprevDerivRight,
                                         vnextDerivLeft,
                                         &vcurDerivLeft, &vcurDerivRight);
-
+    }catch(const std::exception& e){
+        std::cout << e.what() << std::endl;
+        assert(false);
+    }
     bool evaluateNeighboor = true;
     if(reason == TANGENT_CHANGED){
         evaluateNeighboor = false;

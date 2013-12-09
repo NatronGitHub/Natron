@@ -667,6 +667,7 @@ void PasteKeysCommand::undo(){
         _editor->removeKeyFrame(curve,_keys[i]->key);
         _keys[i]->element->checkVisibleState();
     }
+    _editor->updateGL();
 
     setText(QObject::tr("Add multiple keyframes"));
 }
@@ -682,6 +683,7 @@ void PasteKeysCommand::redo(){
         }
         _keys[i]->element->checkVisibleState();
     }
+    _editor->updateGL();
     setText(QObject::tr("Add multiple keyframes"));
 
 }
