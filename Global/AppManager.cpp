@@ -78,189 +78,153 @@ using std::make_pair;
 
 
 void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const{
-    Natron::PixmapEnum type;
     if(!QPixmapCache::find(QString::number(e),pix)){
         QImage img;
         switch(e){
-        case Natron::PLAYER_PREVIOUS_PIXMAP:
-            type = Natron::PLAYER_PREVIOUS_PIXMAP;
+        case NATRON_PIXMAP_PLAYER_PREVIOUS:
             img.load(NATRON_IMAGES_PATH"back1.png");
             *pix = QPixmap::fromImage(img).scaled(20,20);
             break;
-        case Natron::PLAYER_FIRST_FRAME_PIXMAP:
-            type = Natron::PLAYER_FIRST_FRAME_PIXMAP;
+        case NATRON_PIXMAP_PLAYER_FIRST_FRAME:
             img.load(NATRON_IMAGES_PATH"firstFrame.png");
             *pix = QPixmap::fromImage(img).scaled(20,20);
             break;
-        case Natron::PLAYER_NEXT_PIXMAP:
-            type = Natron::PLAYER_NEXT_PIXMAP;
+        case NATRON_PIXMAP_PLAYER_NEXT:
             img.load(NATRON_IMAGES_PATH"forward1.png");
             *pix = QPixmap::fromImage(img).scaled(20,20);
             break;
-        case Natron::PLAYER_LAST_FRAME_PIXMAP:
-            type = Natron::PLAYER_LAST_FRAME_PIXMAP;
+        case NATRON_PIXMAP_PLAYER_LAST_FRAME:
             img.load(NATRON_IMAGES_PATH"lastFrame.png");
             *pix = QPixmap::fromImage(img).scaled(20,20);
             break;
-        case Natron::PLAYER_NEXT_INCR_PIXMAP:
-            type = Natron::PLAYER_NEXT_INCR_PIXMAP;
+        case NATRON_PIXMAP_PLAYER_NEXT_INCR:
             img.load(NATRON_IMAGES_PATH"nextIncr.png");
             *pix = QPixmap::fromImage(img).scaled(20,20);
             break;
-        case Natron::PLAYER_NEXT_KEY_PIXMAP:
-            type = Natron::PLAYER_NEXT_KEY_PIXMAP;
+        case NATRON_PIXMAP_PLAYER_NEXT_KEY:
             img.load(NATRON_IMAGES_PATH"nextKF.png");
             *pix = QPixmap::fromImage(img).scaled(20,20);
             break;
-        case Natron::PLAYER_PREVIOUS_INCR_PIXMAP:
-            type = Natron::PLAYER_PREVIOUS_INCR_PIXMAP;
+        case NATRON_PIXMAP_PLAYER_PREVIOUS_INCR:
             img.load(NATRON_IMAGES_PATH"previousIncr.png");
             *pix = QPixmap::fromImage(img).scaled(20,20);
             break;
-        case Natron::PLAYER_PREVIOUS_KEY_PIXMAP:
-            type = Natron::PLAYER_PREVIOUS_KEY_PIXMAP;
+        case NATRON_PIXMAP_PLAYER_PREVIOUS_KEY:
             img.load(NATRON_IMAGES_PATH"prevKF.png");
             *pix = QPixmap::fromImage(img).scaled(20,20);
             break;
-        case Natron::PLAYER_REWIND_PIXMAP:
-            type = Natron::PLAYER_REWIND_PIXMAP;
+        case NATRON_PIXMAP_PLAYER_REWIND:
             img.load(NATRON_IMAGES_PATH"rewind.png");
             *pix = QPixmap::fromImage(img).scaled(20,20);
             break;
-        case Natron::PLAYER_PLAY_PIXMAP:
-            type = Natron::PLAYER_PLAY_PIXMAP;
+        case NATRON_PIXMAP_PLAYER_PLAY:
             img.load(NATRON_IMAGES_PATH"play.png");
             *pix = QPixmap::fromImage(img).scaled(20,20);
             break;
-        case Natron::PLAYER_STOP_PIXMAP:
-            type = Natron::PLAYER_STOP_PIXMAP;
+        case NATRON_PIXMAP_PLAYER_STOP:
             img.load(NATRON_IMAGES_PATH"stop.png");
             *pix = QPixmap::fromImage(img).scaled(20,20);
             break;
-        case Natron::PLAYER_LOOP_MODE_PIXMAP:
-            type = Natron::PLAYER_LOOP_MODE_PIXMAP;
+        case NATRON_PIXMAP_PLAYER_LOOP_MODE:
             img.load(NATRON_IMAGES_PATH"loopmode.png");
             *pix = QPixmap::fromImage(img).scaled(20,20);
             break;
-        case Natron::MAXIMIZE_WIDGET_PIXMAP:
-            type = Natron::MAXIMIZE_WIDGET_PIXMAP;
+        case NATRON_PIXMAP_MAXIMIZE_WIDGET:
             img.load(NATRON_IMAGES_PATH"maximize.png");
             *pix = QPixmap::fromImage(img).scaled(15,15);
             break;
-        case Natron::MINIMIZE_WIDGET_PIXMAP:
-            type = Natron::MINIMIZE_WIDGET_PIXMAP;
+        case NATRON_PIXMAP_MINIMIZE_WIDGET:
             img.load(NATRON_IMAGES_PATH"minimize.png");
             *pix = QPixmap::fromImage(img).scaled(15,15);
             break;
-        case Natron::CLOSE_WIDGET_PIXMAP:
-            type = Natron::CLOSE_WIDGET_PIXMAP;
+        case NATRON_PIXMAP_CLOSE_WIDGET:
             img.load(NATRON_IMAGES_PATH"close.png");
             *pix = QPixmap::fromImage(img).scaled(15,15);
             break;
-        case Natron::HELP_WIDGET_PIXMAP:
-            type = Natron::HELP_WIDGET_PIXMAP;
+        case NATRON_PIXMAP_HELP_WIDGET:
             img.load(NATRON_IMAGES_PATH"help.png");
             *pix = QPixmap::fromImage(img).scaled(15,15);
             break;
-        case Natron::GROUPBOX_FOLDED_PIXMAP:
-            type = Natron::GROUPBOX_FOLDED_PIXMAP;
+        case NATRON_PIXMAP_GROUPBOX_FOLDED:
             img.load(NATRON_IMAGES_PATH"groupbox_folded.png");
             *pix = QPixmap::fromImage(img).scaled(20, 20);
             break;
-        case Natron::GROUPBOX_UNFOLDED_PIXMAP:
-            type = Natron::GROUPBOX_UNFOLDED_PIXMAP;
+        case NATRON_PIXMAP_GROUPBOX_UNFOLDED:
             img.load(NATRON_IMAGES_PATH"groupbox_unfolded.png");
             *pix = QPixmap::fromImage(img).scaled(20, 20);
             break;
-        case Natron::UNDO_PIXMAP:
-            type = Natron::UNDO_PIXMAP;
+        case NATRON_PIXMAP_UNDO:
             img.load(NATRON_IMAGES_PATH"undo.png");
             *pix = QPixmap::fromImage(img).scaled(15, 15);
             break;
-        case Natron::REDO_PIXMAP:
-            type = Natron::REDO_PIXMAP;
+        case NATRON_PIXMAP_REDO:
             img.load(NATRON_IMAGES_PATH"redo.png");
             *pix = QPixmap::fromImage(img).scaled(15, 15);
             break;
-        case Natron::UNDO_GRAYSCALE_PIXMAP:
-            type = Natron::UNDO_GRAYSCALE_PIXMAP;
+        case NATRON_PIXMAP_UNDO_GRAYSCALE:
             img.load(NATRON_IMAGES_PATH"undo_grayscale.png");
             *pix = QPixmap::fromImage(img).scaled(15, 15);
             break;
-        case Natron::REDO_GRAYSCALE_PIXMAP:
-            type = Natron::REDO_GRAYSCALE_PIXMAP;
+        case NATRON_PIXMAP_REDO_GRAYSCALE:
             img.load(NATRON_IMAGES_PATH"redo_grayscale.png");
             *pix = QPixmap::fromImage(img).scaled(15, 15);
             break;
-        case Natron::TAB_WIDGET_LAYOUT_BUTTON_PIXMAP:
-            type = Natron::TAB_WIDGET_LAYOUT_BUTTON_PIXMAP;
+        case NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON:
             img.load(NATRON_IMAGES_PATH"layout.png");
             *pix = QPixmap::fromImage(img).scaled(12,12);
             break;
-        case Natron::TAB_WIDGET_SPLIT_HORIZONTALLY_PIXMAP:
-            type = Natron::TAB_WIDGET_SPLIT_HORIZONTALLY_PIXMAP;
+        case NATRON_PIXMAP_TAB_WIDGET_SPLIT_HORIZONTALLY:
             img.load(NATRON_IMAGES_PATH"splitHorizontally.png");
             *pix = QPixmap::fromImage(img).scaled(12,12);
             break;
-        case Natron::TAB_WIDGET_SPLIT_VERTICALLY_PIXMAP:
-            type = Natron::TAB_WIDGET_SPLIT_VERTICALLY_PIXMAP;
+        case NATRON_PIXMAP_TAB_WIDGET_SPLIT_VERTICALLY:
             img.load(NATRON_IMAGES_PATH"splitVertically.png");
             *pix = QPixmap::fromImage(img).scaled(12,12);
             break;
-        case Natron::VIEWER_CENTER_PIXMAP:
-            type = Natron::VIEWER_CENTER_PIXMAP;
+        case NATRON_PIXMAP_VIEWER_CENTER:
             img.load(NATRON_IMAGES_PATH"centerViewer.png");
             *pix = QPixmap::fromImage(img).scaled(50, 50);
             break;
-        case Natron::VIEWER_CLIP_TO_PROJECT_PIXMAP:
-            type = Natron::VIEWER_CLIP_TO_PROJECT_PIXMAP;
+        case NATRON_PIXMAP_VIEWER_CLIP_TO_PROJECT:
             img.load(NATRON_IMAGES_PATH"cliptoproject.png");
             *pix = QPixmap::fromImage(img).scaled(50, 50);
             break;
-        case Natron::VIEWER_REFRESH_PIXMAP:
-            type = Natron::VIEWER_REFRESH_PIXMAP;
+        case NATRON_PIXMAP_VIEWER_REFRESH:
             img.load(NATRON_IMAGES_PATH"refresh.png");
             *pix = QPixmap::fromImage(img).scaled(20,20);
             break;
-        case Natron::OPEN_FILE_PIXMAP:
-            type = Natron::OPEN_FILE_PIXMAP;
+        case NATRON_PIXMAP_OPEN_FILE:
             img.load(NATRON_IMAGES_PATH"open-file.png");
             *pix = QPixmap::fromImage(img).scaled(15,15);
             break;
-        case Natron::RGBA_CHANNELS_PIXMAP:
-            type = Natron::RGBA_CHANNELS_PIXMAP;
+        case NATRON_PIXMAP_RGBA_CHANNELS:
             img.load(NATRON_IMAGES_PATH"RGBAchannels.png");
             *pix = QPixmap::fromImage(img).scaled(10,10);
             break;
-        case Natron::COLORWHEEL_PIXMAP:
-            type = Natron::COLORWHEEL_PIXMAP;
+        case NATRON_PIXMAP_COLORWHEEL:
             img.load(NATRON_IMAGES_PATH"colorwheel.png");
             *pix = QPixmap::fromImage(img).scaled(25, 20);
             break;
-        case Natron::IO_GROUPING_PIXMAP:
-            type = Natron::IO_GROUPING_PIXMAP;
+        case NATRON_PIXMAP_IO_GROUPING:
             img.load(NATRON_IMAGES_PATH"ioGroupingIcon.png");
             *pix = QPixmap::fromImage(img);
             break;
-        case Natron::OPEN_EFFECTS_GROUPING_PIXMAP:
-            type = Natron::OPEN_EFFECTS_GROUPING_PIXMAP;
+        case NATRON_PIXMAP_OPEN_EFFECTS_GROUPING:
             img.load(NATRON_IMAGES_PATH"openeffects.png");
             *pix = QPixmap::fromImage(img);
             break;
-        case Natron::COMBOBOX_PIXMAP:
-            type = Natron::COMBOBOX_PIXMAP;
+        case NATRON_PIXMAP_COMBOBOX:
             img.load(NATRON_IMAGES_PATH"combobox.png");
             *pix = QPixmap::fromImage(img).scaled(10, 10);
             break;
-        case Natron::COMBOBOX_PRESSED_PIXMAP:
-            type = Natron::COMBOBOX_PRESSED_PIXMAP;
+        case NATRON_PIXMAP_COMBOBOX_PRESSED:
             img.load(NATRON_IMAGES_PATH"pressed_combobox.png");
             *pix = QPixmap::fromImage(img).scaled(10, 10);
             break;
         default:
             assert("Missing image.");
         }
-        QPixmapCache::insert(QString::number(type),*pix);
+        QPixmapCache::insert(QString::number(e),*pix);
     }
 }
 

@@ -60,6 +60,7 @@
 #include "Global/MemoryInfo.h"
 
 using std::make_pair;
+using namespace Natron;
 
 static inline bool nocase_equal_char (char c1, char c2)
 {
@@ -307,7 +308,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
         _filterLineEdit->setText(filter);
         QSize buttonSize(15,_filterLineEdit->sizeHint().height());
         QPixmap pixDropDown;
-        appPTR->getIcon(Natron::COMBOBOX_PIXMAP, &pixDropDown);
+        appPTR->getIcon(NATRON_PIXMAP_COMBOBOX, &pixDropDown);
         _filterDropDown = new Button(QIcon(pixDropDown),"",_filterWidget);
         _filterDropDown->setFixedSize(buttonSize);
         _filterLayout->addWidget(_filterDropDown);
@@ -1205,7 +1206,7 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,QWidget* parent):QDi
 
     
     QPixmap pix;
-    appPTR->getIcon(Natron::OPEN_FILE_PIXMAP,&pix);
+    appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE,&pix);
 
     _openDirButton = new Button(_secondLine);
     _openDirButton->setIcon(QIcon(pix));

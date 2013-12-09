@@ -40,6 +40,8 @@
 
 #define NATRON_STATE_INDICATOR_OFFSET 5
 
+using namespace Natron;
+
 using std::make_pair;
 
 static const double pi=3.14159265358979323846264338327950288419717;
@@ -93,7 +95,7 @@ NodeGui::NodeGui(NodeGraph* dag,
     _boundingBox->setZValue(-1);
 	
     QPixmap pixmap;
-    appPTR->getIcon(Natron::RGBA_CHANNELS_PIXMAP,&pixmap);
+    appPTR->getIcon(NATRON_PIXMAP_RGBA_CHANNELS,&pixmap);
     _channelsPixmap= new QGraphicsPixmapItem(pixmap,this);
 	
     _nameItem = new QGraphicsTextItem(_internalNode->getName().c_str(),this);
