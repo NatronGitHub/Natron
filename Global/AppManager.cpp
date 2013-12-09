@@ -472,7 +472,6 @@ void AppInstance::loadProjectInternal(const QString& path,const QString& name){
     if(!QFile::exists(filePath)){
         throw std::invalid_argument(QString(filePath + " : no such file.").toStdString());
     }
-    std::list<NodeSerialization> nodeStates;
     std::ifstream ifile;
     try{
         ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -855,6 +854,7 @@ void AppInstance::disconnectViewersFromViewerCache(){
 
 
 void AppInstance::clearNodes(){
+    _nodeMapping.clear();
     _currentProject->clearNodes();
 }
 
