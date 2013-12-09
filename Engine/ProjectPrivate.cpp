@@ -51,6 +51,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         QString formatStr = Natron::generateStringFromFormat(objAvailableFormats[i]);
         entries.push_back(formatStr.toStdString());
     }
+    _availableFormats = objAvailableFormats;
     _formatKnob->populate(entries);
     _autoSetProjectFormat = false;
     
