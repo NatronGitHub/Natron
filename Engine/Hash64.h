@@ -13,6 +13,7 @@
 #define NATRON_ENGINE_HASH64_H_
 
 #include <vector>
+#include <boost/static_assert.hpp>
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
@@ -46,19 +47,35 @@ public:
     
     bool valid() const {return hash != 0;}
     
-    void append(U64 hashValue) {
-        node_values.push_back(hashValue);
+    template<typename T>
+    void append(T value) {
+        BOOST_STATIC_ASSERT(sizeof(T) <= 8);
+        alias_cast_t<T> ac;
+        ac.data = value;
+        node_values.push_back(ac.raw);
     }
-    
-    bool 	operator== (const Hash64& h) const {
+
+    bool operator== (const Hash64& h) const {
         return this->hash==h.value();
     }
-    bool 	operator!= (const Hash64& h) const {
+    bool operator!= (const Hash64& h) const {
         return this->hash==h.value();
 
     }
     
 private:
+    template<typename T>
+    struct alias_cast_t
+    {
+        alias_cast_t() : raw(0) {}; // initialize to 0 in case sizeof(T) < 8
+
+        union
+        {
+            U64 raw;
+            T data;
+        };
+    };
+
     U64 hash;
     std::vector<U64> node_values;
 };

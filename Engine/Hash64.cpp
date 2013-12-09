@@ -36,7 +36,7 @@ void Hash64::reset(){
 
 void Hash64_appendQString(Hash64* hash, const QString& str) {
     for(int i =0 ; i< str.size();++i) {
-        hash->append((U64)str.at(i).unicode());
+        hash->append(str.at(i).unicode());
     }
 }
 
