@@ -208,5 +208,10 @@ void ProjectGui::load(const ProjectGuiSerialization& obj){
         }
         
     }
+    const std::vector<NodeGui*> nodesGui = _project->getApp()->getVisibleNodes();
+    for(U32 i = 0 ; i < nodesGui.size();++i){
+        nodesGui[i]->refreshEdges();
+    }
+
 
 }

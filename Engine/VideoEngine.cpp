@@ -51,34 +51,34 @@ using std::cout; using std::endl;
 
 
 VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
-: QThread(parent)
-, _tree(owner)
-, _threadStarted(false)
-, _abortBeingProcessedMutex()
-, _abortBeingProcessed(false)
-, _abortedRequestedCondition()
-, _abortedRequestedMutex()
-, _abortRequested(0)
-, _mustQuitCondition()
-, _mustQuitMutex()
-, _mustQuit(false)
-, _treeVersionValid(false)
-, _loopModeMutex()
-, _loopMode(true)
-, _restart(true)
-, _startCondition()
-, _startMutex()
-, _startCount(0)
-, _workingMutex()
-, _working(false)
-, _timerMutex()
-, _timer(new Timer)
-, _timerFrameCount(0)
-, _lastRequestedRunArgs()
-, _currentRunArgs()
-, _startRenderFrameTime()
-, _timeline(owner->getNode()->getApp()->getTimeLine())
-, _processAborter(NULL)
+    : QThread(parent)
+    , _tree(owner)
+    , _threadStarted(false)
+    , _abortBeingProcessedMutex()
+    , _abortBeingProcessed(false)
+    , _abortedRequestedCondition()
+    , _abortedRequestedMutex()
+    , _abortRequested(0)
+    , _mustQuitCondition()
+    , _mustQuitMutex()
+    , _mustQuit(false)
+    , _treeVersionValid(false)
+    , _loopModeMutex()
+    , _loopMode(true)
+    , _restart(true)
+    , _startCondition()
+    , _startMutex()
+    , _startCount(0)
+    , _workingMutex()
+    , _working(false)
+    , _timerMutex()
+    , _timer(new Timer)
+    , _timerFrameCount(0)
+    , _lastRequestedRunArgs()
+    , _currentRunArgs()
+    , _startRenderFrameTime()
+    , _timeline(owner->getNode()->getApp()->getTimeLine())
+    , _processAborter(NULL)
 {
 }
 
@@ -449,13 +449,13 @@ void VideoEngine::run(){
             QMutexLocker locker(&_abortedRequestedMutex);
             if(_abortRequested || // #1 aborted by the user
 
-               (_tree.isOutputAViewer() // #2 the Tree contains only 1 frame and we rendered it
-                &&  _currentRunArgs._recursiveCall
-                &&  firstFrame == lastFrame
-                && _currentRunArgs._frameRequestsCount == -1
-                && _currentRunArgs._frameRequestIndex == 1)
+                    (_tree.isOutputAViewer() // #2 the Tree contains only 1 frame and we rendered it
+                     &&  _currentRunArgs._recursiveCall
+                     &&  firstFrame == lastFrame
+                     && _currentRunArgs._frameRequestsCount == -1
+                     && _currentRunArgs._frameRequestIndex == 1)
 
-               || _currentRunArgs._frameRequestsCount == 0) // #3 the sequence ended and it was not an infinite run
+                    || _currentRunArgs._frameRequestsCount == 0) // #3 the sequence ended and it was not an infinite run
             {
                 locker.unlock();
                 if(stopEngine())
@@ -488,6 +488,7 @@ void VideoEngine::run(){
                 }
                 throw std::runtime_error("preProcessFrame failed");
             }
+
             /*get the time at which we started rendering the frame*/
             gettimeofday(&_startRenderFrameTime, 0);
             if (viewer && !_tree.isOutputAnOpenFXNode()) {
@@ -505,6 +506,7 @@ void VideoEngine::run(){
                     }
 
                 }
+
 
 
                 if (stat == StatFailed) {
@@ -567,10 +569,10 @@ void VideoEngine::run(){
 }
 void VideoEngine::onProgressUpdate(int /*i*/){
     // cout << "progress: index = " << i ;
-//    if(i < (int)_currentFrameInfos._rows.size()){
-//        //  cout <<" y = "<< _lastFrameInfos._rows[i] << endl;
-//        checkAndDisplayProgress(_currentFrameInfos._rows[i],i);
-//    }
+    //    if(i < (int)_currentFrameInfos._rows.size()){
+    //        //  cout <<" y = "<< _lastFrameInfos._rows[i] << endl;
+    //        checkAndDisplayProgress(_currentFrameInfos._rows[i],i);
+    //    }
 }
 
 
@@ -623,16 +625,16 @@ void VideoEngine::updateTreeAndContinueRender(bool initViewer){
 
 
 RenderTree::RenderTree(EffectInstance *output):
-_output(output)
-,_sorted()
-,_isViewer(false)
-,_isOutputOpenFXNode(false)
-,_treeMutex(QMutex::Recursive) /*recursive lock*/
-,_firstFrame(0)
-,_lastFrame(0)
-,_treeVersionValid(false)
-,_renderOutputFormat()
-,_projectViewsCount(1)
+    _output(output)
+  ,_sorted()
+  ,_isViewer(false)
+  ,_isOutputOpenFXNode(false)
+  ,_treeMutex(QMutex::Recursive) /*recursive lock*/
+  ,_firstFrame(0)
+  ,_lastFrame(0)
+  ,_treeVersionValid(false)
+  ,_renderOutputFormat()
+  ,_projectViewsCount(1)
 {
     assert(output);
 }
@@ -693,7 +695,7 @@ U64 RenderTree::cloneKnobsAndcomputeTreeHash(SequenceTime time,EffectInstance* e
     if(!effect->isHashValid()){
         effect->clone(time);
         ret = effect->computeHash(time,inputsHashs);
-      //  std::cout << effect->getName() << ": " << ret << std::endl;
+        //  std::cout << effect->getName() << ": " << ret << std::endl;
     }
     return ret;
 }
@@ -701,11 +703,11 @@ void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(SequenceTime time)
     _renderOutputFormat = _output->getApp()->getProjectFormat();
     _projectViewsCount = _output->getApp()->getCurrentProjectViewsCount();
     
-//    bool oldVersionValid = _treeVersionValid;
-//    U64 oldVersion = 0;
-//    if (oldVersionValid) {
-//        oldVersion = _output->hash().value();
-//    }
+    //    bool oldVersionValid = _treeVersionValid;
+    //    U64 oldVersion = 0;
+    //    if (oldVersionValid) {
+    //        oldVersion = _output->hash().value();
+    //    }
     
     /*Computing the hash of the tree in topological ordering.
      For each effect in the tree, the hash of its inputs is guaranteed to have
@@ -717,10 +719,10 @@ void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(SequenceTime time)
     }
     _treeVersionValid = true;
     
-//    /*If the hash changed we clear the playback cache.*/
-//    if((!oldVersionValid || (inputsHash.back() != oldVersion)) && !_output->getApp()->isBackground()){
-//        appPTR->clearPlaybackCache();
-//    }
+    //    /*If the hash changed we clear the playback cache.*/
+    //    if((!oldVersionValid || (inputsHash.back() != oldVersion)) && !_output->getApp()->isBackground()){
+    //        appPTR->clearPlaybackCache();
+    //    }
     
 
 }
@@ -776,21 +778,21 @@ Natron::Status RenderTree::preProcessFrame(SequenceTime time){
 
 
 bool VideoEngine::checkAndDisplayProgress(int /*y*/,int/* zoomedY*/){
-//    timeval now;
-//    gettimeofday(&now, 0);
-//    double t =  now.tv_sec  - _startRenderFrameTime.tv_sec +
-//    (now.tv_usec - _startRenderFrameTime.tv_usec) * 1e-6f;
-//    if(t >= 0.5){
-//        if(_tree.isOutputAViewer()){
-//            _tree.outputAsViewer()->getUiContext()->viewer->updateProgressOnViewer(_currentFrameInfos._textureRect, y,zoomedY);
-//        }else{
-//            emit progressChanged(floor(((double)y/(double)_currentFrameInfos._rows.size())*100));
-//            std::cout << kProgressChangedString << floor(((double)y/(double)_currentFrameInfos._rows.size())*100) << std::endl;
-//        }
-//        return true;
-//    }else{
-//        return false;
-//    }
+    //    timeval now;
+    //    gettimeofday(&now, 0);
+    //    double t =  now.tv_sec  - _startRenderFrameTime.tv_sec +
+    //    (now.tv_usec - _startRenderFrameTime.tv_usec) * 1e-6f;
+    //    if(t >= 0.5){
+    //        if(_tree.isOutputAViewer()){
+    //            _tree.outputAsViewer()->getUiContext()->viewer->updateProgressOnViewer(_currentFrameInfos._textureRect, y,zoomedY);
+    //        }else{
+    //            emit progressChanged(floor(((double)y/(double)_currentFrameInfos._rows.size())*100));
+    //            std::cout << kProgressChangedString << floor(((double)y/(double)_currentFrameInfos._rows.size())*100) << std::endl;
+    //        }
+    //        return true;
+    //    }else{
+    //        return false;
+    //    }
     return false;
 }
 
@@ -817,15 +819,15 @@ bool VideoEngine::mustQuit() const{
 }
 
 BackgroundProcessAborter::BackgroundProcessAborter(VideoEngine* engine)
-:
-  _engine(engine)
+    :
+      _engine(engine)
 {
     setTerminationEnabled();
 }
 
 void BackgroundProcessAborter::run(){
     for(;;){
-       
+
         QTextStream qstdin(stdin);
         QString line = qstdin.readLine();
         Log::beginFunction("ProcessAborter","run");

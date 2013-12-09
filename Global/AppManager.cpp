@@ -411,14 +411,13 @@ Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
     }
     
 
-    if(!_isBackground){
+    if(!_isBackground && !requestedByLoad){
+        node->openFilesForAllFileKnobs();
         if(_gui->getSelectedNode()){
             Node* selected = _gui->getSelectedNode()->getNode();
             autoConnect(selected, node);
         }
         _gui->selectNode(nodegui);
-        if(!requestedByLoad)
-            node->openFilesForAllFileKnobs();
     }
     
     return node;
@@ -473,7 +472,6 @@ void AppInstance::loadProjectInternal(const QString& path,const QString& name){
     if(!QFile::exists(filePath)){
         throw std::invalid_argument(QString(filePath + " : no such file.").toStdString());
     }
-    std::list<NodeSerialization> nodeStates;
     std::ifstream ifile;
     try{
         ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -549,7 +547,7 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
         filePath = AppInstance::autoSavesDir()+QDir::separator()+actualFileName;
         _currentProject->setProjectLastAutoSavePath(filePath);
     } else {
-        filePath = path+actualFileName;
+        filePath = path+filename;
     }
     std::ofstream ofile(filePath.toStdString().c_str(),std::ofstream::out);
     if (!ofile.good()) {
@@ -810,6 +808,7 @@ NodeGui* AppInstance::getNodeGui(Node* n) const {
     if(it==_nodeMapping.end()){
         return NULL;
     }else{
+        assert(it->second);
         return it->second;
     }
 }
@@ -817,6 +816,7 @@ NodeGui* AppInstance::getNodeGui(Node* n) const {
 NodeGui* AppInstance::getNodeGui(const std::string& nodeName) const{
     for(std::map<Node*,NodeGui*>::const_iterator it = _nodeMapping.begin();
         it != _nodeMapping.end();++it){
+        assert(it->first && it->second);
         if(it->first->getName() == nodeName){
             return it->second;
         }
@@ -854,6 +854,7 @@ void AppInstance::disconnectViewersFromViewerCache(){
 
 
 void AppInstance::clearNodes(){
+    _nodeMapping.clear();
     _currentProject->clearNodes();
 }
 

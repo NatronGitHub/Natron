@@ -35,8 +35,6 @@ void NodeSerialization::initialize(const Natron::Node* n){
     for(Natron::Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
         if(it->second){
             _inputs.insert(std::make_pair(it->first, it->second->getName()));
-        }else{
-            _inputs.insert(std::make_pair(it->first, ""));
         }
     }
     

@@ -51,6 +51,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         QString formatStr = Natron::generateStringFromFormat(objAvailableFormats[i]);
         entries.push_back(formatStr.toStdString());
     }
+    _availableFormats = objAvailableFormats;
     _formatKnob->populate(entries);
     _autoSetProjectFormat = false;
     
@@ -66,6 +67,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             projectKnobs[i]->onStartupRestoration(foundValue->second);
         }
     }
+    
     _project->endValuesChanged(AnimatingParam::PLUGIN_EDITED);
     
     
@@ -106,15 +108,15 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
         const NodeSerialization::KnobValues& knobsValues = serializedNodes[i]->getKnobsValues();
         //begin changes to params
-        for (NodeSerialization::KnobValues::const_iterator i = knobsValues.begin();
-             i != knobsValues.end();++i) {
-            boost::shared_ptr<Knob> knob = n->getKnobByDescription(i->first);
+        for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin();
+             it != knobsValues.end();++it) {
+            boost::shared_ptr<Knob> knob = n->getKnobByDescription(it->first);
             if (!knob) {
-                std::string message = std::string("Couldn't find knob ") + i->first;
+                std::string message = std::string("Couldn't find knob ") + it->first;
                 qDebug() << message.c_str();
                 throw std::runtime_error(message);
             }
-            knob->onStartupRestoration(i->second);
+            knob->onStartupRestoration(it->second);
         }
 
         n->getLiveInstance()->endValuesChanged(AnimatingParam::PLUGIN_EDITED);
@@ -135,15 +137,13 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
         const std::map<int, std::string>& inputs = serializedNodes[i]->getInputs();
         Natron::Node* thisNode = NULL;
-        for (U32 i = 0; i < _currentNodes.size(); ++i) {
-            if (_currentNodes[i]->getName() == serializedNodes[i]->getPluginLabel()) {
-                thisNode = _currentNodes[i];
+        for (U32 j = 0; j < _currentNodes.size(); ++j) {
+            if (_currentNodes[j]->getName() == serializedNodes[i]->getPluginLabel()) {
+                thisNode = _currentNodes[j];
                 break;
             }
         }
         for (std::map<int, std::string>::const_iterator input = inputs.begin(); input!=inputs.end(); ++input) {
-            if(input->second.empty())
-                continue;
             if(!_project->getApp()->connect(input->first, input->second,thisNode)) {
                 std::string message = std::string("Failed to connect node ") + serializedNodes[i]->getPluginLabel() + " to " + input->second;
                 qDebug() << message.c_str();
@@ -153,4 +153,5 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
     }
 }
-}
+
+} // namespace Natron
