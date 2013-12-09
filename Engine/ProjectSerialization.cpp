@@ -24,6 +24,12 @@ void ProjectSerialization::initialize(const Natron::Project* project){
     }
     _availableFormats = project->getProjectFormats();
     
+    const std::vector< boost::shared_ptr<Knob> >& knobs = project->getKnobs();
+    for(U32 i = 0; i < knobs.size();++i){
+        _projectKnobs.insert(std::make_pair(knobs[i]->getDescription(),
+                                            dynamic_cast<AnimatingParam&>(*knobs[i].get())));
+    }
+
     _timelineLeft = project->getTimeLine()->leftBound();
     _timelineRight = project->getTimeLine()->rightBound();
     _timelineCurrent = project->getTimeLine()->currentFrame();
