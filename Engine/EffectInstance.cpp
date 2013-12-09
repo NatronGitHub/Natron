@@ -147,7 +147,7 @@ U64 EffectInstance::computeHash(SequenceTime time, const std::vector<U64>& input
     _imp->hashAge = getAppAge();
     
     _imp->hashValue.reset();
-    _imp->hashValue.append(*(reinterpret_cast<U64*>(&time)));
+    _imp->hashValue.append(time);
     const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         ::Hash64_appendKnob(&_imp->hashValue, *knobs[i]);
