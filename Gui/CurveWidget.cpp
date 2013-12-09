@@ -1981,6 +1981,9 @@ void CurveWidget::breakTangentsForSelectedKeyFrames(){
 }
 
 void CurveWidget::deleteSelectedKeyFrames(){
+    if(_imp->_selectedKeyFrames.empty())
+        return;
+    
     _imp->_drawSelectedKeyFramesBbox = false;
     _imp->_selectedKeyFramesBbox.setBottomRight(QPointF(0,0));
     _imp->_selectedKeyFramesBbox.setTopLeft(_imp->_selectedKeyFramesBbox.bottomRight());
