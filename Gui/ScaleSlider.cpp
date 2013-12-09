@@ -15,6 +15,7 @@
 #include <QtGui/QMouseEvent>
 #include <QtGui/QPainter>
 
+#include "Global/GlobalDefines.h"
 #include "Gui/ticks.h"
 
 #define TICK_HEIGHT 7
