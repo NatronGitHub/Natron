@@ -248,6 +248,7 @@ void Project::save(ProjectSerialization* serializationObject) const {
 void Project::load(const ProjectSerialization& obj){
     try{
         _imp->restoreFromSerialization(obj);
+        emit formatChanged(getProjectDefaultFormat());
     }catch(const std::exception& e){
         throw e;
     }

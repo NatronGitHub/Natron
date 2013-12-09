@@ -66,6 +66,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             projectKnobs[i]->onStartupRestoration(foundValue->second);
         }
     }
+    
     _project->endValuesChanged(AnimatingParam::PLUGIN_EDITED);
     
     
@@ -135,15 +136,13 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
         const std::map<int, std::string>& inputs = serializedNodes[i]->getInputs();
         Natron::Node* thisNode = NULL;
-        for (U32 i = 0; i < _currentNodes.size(); ++i) {
-            if (_currentNodes[i]->getName() == serializedNodes[i]->getPluginLabel()) {
-                thisNode = _currentNodes[i];
+        for (U32 j = 0; j < _currentNodes.size(); ++j) {
+            if (_currentNodes[j]->getName() == serializedNodes[i]->getPluginLabel()) {
+                thisNode = _currentNodes[j];
                 break;
             }
         }
         for (std::map<int, std::string>::const_iterator input = inputs.begin(); input!=inputs.end(); ++input) {
-            if(input->second.empty())
-                continue;
             if(!_project->getApp()->connect(input->first, input->second,thisNode)) {
                 std::string message = std::string("Failed to connect node ") + serializedNodes[i]->getPluginLabel() + " to " + input->second;
                 qDebug() << message.c_str();

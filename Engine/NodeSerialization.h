@@ -64,9 +64,9 @@ private:
     {
         (void)version;
         ar & boost::serialization::make_nvp("Knobs_values_map", _knobsValues);
-        ar & boost::serialization::make_nvp("Node_instance_unique_name",_pluginLabel);
-        ar & boost::serialization::make_nvp("Node_class_name",_pluginID);
-        ar & boost::serialization::make_nvp("Input_nodes_map",_inputs);
+        ar & boost::serialization::make_nvp("Plugin_label",_pluginLabel);
+        ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
+        ar & boost::serialization::make_nvp("Inputs_map",_inputs);
     }
     
     
