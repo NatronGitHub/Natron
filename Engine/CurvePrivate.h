@@ -87,11 +87,13 @@ struct AnimatingParamPrivate{
 
     /* the keys for a specific dimension*/
     std::map<int, boost::shared_ptr<Curve> > _curves;
-
+    std::map<int, bool> _curvesLinked;
+    
     AnimatingParamPrivate(int dimension = 1):
         _value()
       , _dimension(dimension)
       , _curves()
+      , _curvesLinked()
     {
 
     }

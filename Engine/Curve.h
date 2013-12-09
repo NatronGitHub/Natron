@@ -168,9 +168,7 @@ private:
 struct AnimatingParamPrivate;
 class AnimatingParam {
 
-
 public:
-
 
     typedef std::map<int, boost::shared_ptr<Curve> > CurvesMap;
 
@@ -271,7 +269,12 @@ public:
 
     template<class Archive>
     void serialize(Archive & ar ,const unsigned int version);
-
+    
+    void link(int dimension,boost::shared_ptr<Curve> other);
+    
+    void unlink(int dimension);
+    
+    bool isCurveLinked(int dimension) const;
 protected:
 
 
