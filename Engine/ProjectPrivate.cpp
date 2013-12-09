@@ -107,15 +107,15 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
         const NodeSerialization::KnobValues& knobsValues = serializedNodes[i]->getKnobsValues();
         //begin changes to params
-        for (NodeSerialization::KnobValues::const_iterator i = knobsValues.begin();
-             i != knobsValues.end();++i) {
-            boost::shared_ptr<Knob> knob = n->getKnobByDescription(i->first);
+        for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin();
+             it != knobsValues.end();++it) {
+            boost::shared_ptr<Knob> knob = n->getKnobByDescription(it->first);
             if (!knob) {
-                std::string message = std::string("Couldn't find knob ") + i->first;
+                std::string message = std::string("Couldn't find knob ") + it->first;
                 qDebug() << message.c_str();
                 throw std::runtime_error(message);
             }
-            knob->onStartupRestoration(i->second);
+            knob->onStartupRestoration(it->second);
         }
 
         n->getLiveInstance()->endValuesChanged(AnimatingParam::PLUGIN_EDITED);
