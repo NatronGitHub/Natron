@@ -772,32 +772,27 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
     const OFX::Host::Property::Set &properties = getProperties();
     std::string mode = properties.getStringProperty(kOfxParamPropStringMode);
 
-    if(mode == kOfxParamStringIsFilePath){
-        if(_node->isGenerator()){
+    if (mode == kOfxParamStringIsFilePath) {
+        if (_node->isGenerator()) {
             _fileKnob = appPTR->getKnobFactory().createKnob<File_Knob>(node, getParamLabel(this));
             QObject::connect(_fileKnob, SIGNAL(frameRangeChanged(int,int)), this, SLOT(onFrameRangeChanged(int,int)));
 
-        }else{
+        } else {
             _node->setAsOutputNode(); // IMPORTANT ! 
             _outputFileKnob = appPTR->getKnobFactory().createKnob<OutputFile_Knob>(node, getParamLabel(this));
 
         }
-    }else if(mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel){
+    } else if (mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel) {
         
         _stringKnob = appPTR->getKnobFactory().createKnob<String_Knob>(node, getParamLabel(this));
-        if(mode == kOfxParamStringIsLabel){
+        if (mode == kOfxParamStringIsLabel) {
             _stringKnob->setEnabled(false);
         }
-
-        set(properties.getStringProperty(kOfxParamPropDefault,1).c_str());
-    }else if(mode == kOfxParamStringIsMultiLine){
+    } else if(mode == kOfxParamStringIsMultiLine) {
         _multiLineKnob = appPTR->getKnobFactory().createKnob<RichText_Knob>(node, getParamLabel(this));
-
-        set(properties.getStringProperty(kOfxParamPropDefault,1).c_str());
-
     }
     
-    
+    set(properties.getStringProperty(kOfxParamPropDefault).c_str());
 }
 
  void OfxStringInstance::onFrameRangeChanged(int f,int l){
@@ -989,7 +984,7 @@ OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::D
 
     _knob = appPTR->getKnobFactory().createKnob<Custom_Knob>(node, getParamLabel(this));
     
-    set(properties.getStringProperty(kOfxParamPropDefault,1).c_str());
+    set(properties.getStringProperty(kOfxParamPropDefault).c_str());
 
     _customParamInterpolationV1Entry = (customParamInterpolationV1Entry_t)properties.getPointerProperty(kOfxParamPropCustomInterpCallbackV1);
 }
