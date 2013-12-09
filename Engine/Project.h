@@ -123,6 +123,29 @@ public:
     
     void load(const ProjectSerialization& obj);
 
+    /**
+     * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
+     * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
+     * but this can lead to worse performance. You can overload this to make all changes to params at once.
+     **/
+    virtual void beginKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    
+    /**
+     * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
+     * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
+     * but this can lead to worse performance. You can overload this to make all changes to params at once.
+     **/
+    virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason)  OVERRIDE FINAL;
+    
+    /**
+     * @brief Called whenever a param changes. It calls the virtual
+     * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
+     * not done already.
+     **/
+    virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason)  OVERRIDE FINAL;
+    
+
+    
     void beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller);
 
     void stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHolder* caller, Knob *k, bool isSignificant);

@@ -73,21 +73,9 @@ void Project::initializeKnobs(){
 }
 
 
-void Project::evaluate(Knob* knob,bool /*isSignificant*/){
-    if(!knob){
+void Project::evaluate(Knob* /*knob*/,bool isSignificant){
+    if(isSignificant){
         getApp()->checkViewersConnection();
-    }else if(knob == _imp->_viewsCount){
-        int viewsCount = _imp->_viewsCount->getValue<int>();
-        getApp()->setupViewersForViews(viewsCount);
-    }else if(knob == _imp->_formatKnob){
-        const Format& f = _imp->_availableFormats[_imp->_formatKnob->getActiveEntry()];
-        for(U32 i = 0 ; i < _imp->_currentNodes.size() ; ++i){
-            if (_imp->_currentNodes[i]->pluginID() == "Viewer") {
-                emit formatChanged(f);
-            }
-        }
-    }else if(knob == _imp->_addFormatKnob){
-        emit mustCreateFormat();
     }
 }
 
@@ -207,9 +195,9 @@ void  Project::lock() const {_imp->_projectDataLock.lock();}
 void  Project::unlock() const { assert(!_imp->_projectDataLock.tryLock());_imp->_projectDataLock.unlock();}
 
 void Project::setProjectLastAutoSavePath(const QString& str){ _imp->_lastAutoSaveFilePath = str; }
-    
+
 const std::vector<Format>& Project::getProjectFormats() const {return _imp->_availableFormats;}
-    
+
 void Project::incrementKnobsAge() {
     if(_imp->_knobsAge < 99999)
         ++_imp->_knobsAge;
@@ -246,7 +234,7 @@ void Project::onTimeChanged(SequenceTime time,int reason){
 void Project::save(ProjectSerialization* serializationObject) const {
     serializationObject->initialize(this);
 }
-    
+
 void Project::load(const ProjectSerialization& obj){
     try{
         _imp->restoreFromSerialization(obj);
@@ -255,7 +243,7 @@ void Project::load(const ProjectSerialization& obj){
         throw e;
     }
 }
-    
+
 void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller){
     if(_imp->_isBetweenBeginAndEndValueChanged.first){
         return;
@@ -295,4 +283,28 @@ void Project::endProjectWideValueChanges(Natron::ValueChangedReason reason,KnobH
     caller->endKnobsValuesChanged(reason);
 }
 
+void Project::beginKnobsValuesChanged(Natron::ValueChangedReason reason){
+    beginProjectWideValueChanges(reason, this);
+}
+
+void Project::endKnobsValuesChanged(Natron::ValueChangedReason reason) {
+    endProjectWideValueChanges(reason,this);
+}
+
+void Project::onKnobValueChanged(Knob* knob,Natron::ValueChangedReason /*reason*/){
+    if(knob == _imp->_viewsCount){
+        int viewsCount = _imp->_viewsCount->getValue<int>();
+        getApp()->setupViewersForViews(viewsCount);
+    }else if(knob == _imp->_formatKnob){
+        const Format& f = _imp->_availableFormats[_imp->_formatKnob->getActiveEntry()];
+        for(U32 i = 0 ; i < _imp->_currentNodes.size() ; ++i){
+            if (_imp->_currentNodes[i]->pluginID() == "Viewer") {
+                emit formatChanged(f);
+            }
+        }
+    }else if(knob == _imp->_addFormatKnob){
+        emit mustCreateFormat();
+    }
+
+}
 } //namespace Natron
