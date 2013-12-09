@@ -862,7 +862,7 @@ MoveMultipleKeysCommand::MoveMultipleKeysCommand(CurveWidget* editor,
 }
 void MoveMultipleKeysCommand::undo(){
     for(U32 i = 0; i < _keys.size();++i){
-        _keys[i]->_knob->getKnob()->beginValueChange(AnimatingParam::USER_EDITED);
+        _keys[i]->_knob->getKnob()->beginValueChange(Natron::USER_EDITED);
 
     }
     for(U32 i = 0; i < _keys.size();++i){
@@ -870,7 +870,7 @@ void MoveMultipleKeysCommand::undo(){
         _curveWidget->setKeyPos(_keys[i]->_key,_keys[i]->_oldX,_keys[i]->_oldY);
     }
     for(U32 i = 0; i < _keys.size();++i){
-        _keys[i]->_knob->getKnob()->endValueChange(AnimatingParam::USER_EDITED);
+        _keys[i]->_knob->getKnob()->endValueChange(Natron::USER_EDITED);
 
     }
     _curveWidget->refreshDisplayedTangents();
@@ -880,7 +880,7 @@ void MoveMultipleKeysCommand::undo(){
 }
 void MoveMultipleKeysCommand::redo(){
     for(U32 i = 0; i < _keys.size();++i){
-        _keys[i]->_knob->getKnob()->beginValueChange(AnimatingParam::USER_EDITED);
+        _keys[i]->_knob->getKnob()->beginValueChange(Natron::USER_EDITED);
 
     }
     for(U32 i = 0; i < _keys.size();++i){
@@ -888,7 +888,7 @@ void MoveMultipleKeysCommand::redo(){
         _curveWidget->setKeyPos(_keys[i]->_key,_keys[i]->_newX,_keys[i]->_newY);
     }
     for(U32 i = 0; i < _keys.size();++i){
-        _keys[i]->_knob->getKnob()->endValueChange(AnimatingParam::USER_EDITED);
+        _keys[i]->_knob->getKnob()->endValueChange(Natron::USER_EDITED);
 
     }
     _curveWidget->refreshDisplayedTangents();

@@ -72,11 +72,13 @@ T interpolate(double tcur, const T vcur, //start control point
                 (t3 - 2 * t2 + t) * P0pr +
                 (-2 * t3 + 3 * t2) * P3 +
                 (t3 - t2) * P3pl);
-    case KEYFRAME_CONSTANT:
-        return t < tnext ? P0 : P3;
     case KEYFRAME_NONE:
         // t is normalized between 0 and 1, and P3pl is the derivative wrt currentTime
         return P3 - (1. - t) * P3pl;
+    case KEYFRAME_CONSTANT:
+    default:
+        return t < tnext ? P0 : P3;
+
     }
 }
 
@@ -178,8 +180,8 @@ void autoComputeTangents(Natron::KeyframeType interpPrev,
     const T P3 = vnext;
     const T Q0pr = vprevDerivRight;
     const T P3pl = vnextDerivLeft;
-    T P0pr;
-    T Q3pl;
+    T P0pr = T();
+    T Q3pl = T();
 
     // if there are no keyframes before and after, the derivatives are zero
     if (interpPrev == KEYFRAME_NONE && interpNext == KEYFRAME_NONE) {

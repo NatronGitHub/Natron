@@ -20,6 +20,9 @@
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 
+#include "Global/Macros.h"
+
+GCC_DIAG_OFF(strict-overflow)
 /**
  * @brief A rectangle where _l < _r and _b < _t such as width() == (_r - _l) && height() == (_t - _b)
  **/
@@ -171,9 +174,12 @@ public:
         std::cout << "right = " << _r << std::endl;
         std::cout << "top = " << _t << std::endl;
     }
-    
-    static std::vector<RectI> splitRectIntoSmallerRect(const RectI& rect,int splitsCount){
+
+    static std::vector<RectI> splitRectIntoSmallerRect(const RectI& rect,int splitsCount) {
         std::vector<RectI> ret;
+        if (rect.isNull()) {
+            return ret;
+        }
         int averagePixelsPerSplit = std::ceil(double(rect.area()) / (double)splitsCount);
         /*if the splits happen to have less pixels than 1 scan-line contains, just do scan-line rendering*/
         if(averagePixelsPerSplit < rect.width()){
@@ -184,7 +190,7 @@ public:
             //we round to the ceil
             int scanLinesCount = std::ceil((double)averagePixelsPerSplit/(double)rect.width());
             int startBox = rect.bottom();
-            while((startBox + scanLinesCount) < rect.top()){
+            while (startBox < rect.top() - scanLinesCount) {
                 ret.push_back(RectI(rect.left(),startBox,rect.right(),startBox+scanLinesCount));
                 startBox += scanLinesCount;
             }
@@ -194,8 +200,9 @@ public:
         }
         return ret;
     }
-    
 };
+GCC_DIAG_ON(strict-overflow)
+    
 
 /// equality of boxes
 inline bool operator==(const RectI& b1, const RectI& b2)

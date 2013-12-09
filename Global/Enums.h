@@ -157,6 +157,7 @@ namespace Natron{
         NATRON_PIXMAP_COMBOBOX_PRESSED
     };
 
+      enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1,TIME_CHANGED = 2};
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 

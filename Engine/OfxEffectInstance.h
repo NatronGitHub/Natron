@@ -134,11 +134,11 @@ public:
 
     virtual void onOverlayFocusLost() OVERRIDE FINAL;
 
-    virtual void beginKnobsValuesChanged(AnimatingParam::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void beginKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE FINAL;
 
-    virtual void endKnobsValuesChanged(AnimatingParam::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE FINAL;
 
-    virtual void onKnobValueChanged(Knob* k,AnimatingParam::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE FINAL;
 
     virtual Natron::Status render(SequenceTime time,RenderScale scale,
                                    const RectI& roi,int view,boost::shared_ptr<Natron::Image> output) OVERRIDE FINAL WARN_UNUSED_RETURN;

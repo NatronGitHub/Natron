@@ -97,7 +97,7 @@ void Reader::initializeKnobs(){
     _missingFrameChoice->turnOffAnimation();
 }
 
-void Reader::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
+void Reader::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
     if(k == _fileKnob){
         getNode()->refreshPreviewImage(getApp()->getTimeLine()->currentFrame());
     }

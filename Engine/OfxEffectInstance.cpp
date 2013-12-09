@@ -704,7 +704,7 @@ void OfxEffectInstance::onOverlayFocusLost(){
 }
 
 
-void OfxEffectInstance::onKnobValueChanged(Knob* k,AnimatingParam::ValueChangedReason reason){
+void OfxEffectInstance::onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason){
     if(!_initialized){
         return;
     }
@@ -713,13 +713,13 @@ void OfxEffectInstance::onKnobValueChanged(Knob* k,AnimatingParam::ValueChangedR
     OfxTime time = effect_->getFrameRecursive();
     OfxStatus stat = kOfxStatOK;
     switch (reason) {
-        case AnimatingParam::USER_EDITED:
+        case Natron::USER_EDITED:
             stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangeUserEdited,time,renderScale);
             break;
-        case AnimatingParam::TIME_CHANGED:
+        case Natron::TIME_CHANGED:
             stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangeTime,time,renderScale);
             break;
-        case AnimatingParam::PLUGIN_EDITED:
+        case Natron::PLUGIN_EDITED:
             stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangePluginEdited,time,renderScale);
             break;
     }
@@ -728,19 +728,19 @@ void OfxEffectInstance::onKnobValueChanged(Knob* k,AnimatingParam::ValueChangedR
 
 }
 
-void OfxEffectInstance::beginKnobsValuesChanged(AnimatingParam::ValueChangedReason reason) {
+void OfxEffectInstance::beginKnobsValuesChanged(Natron::ValueChangedReason reason) {
     if(!_initialized){
         return;
     }
     OfxStatus stat = kOfxStatOK;
     switch (reason) {
-        case AnimatingParam::USER_EDITED:
+        case Natron::USER_EDITED:
             stat = effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
             break;
-        case AnimatingParam::TIME_CHANGED:
+        case Natron::TIME_CHANGED:
             stat = effectInstance()->beginInstanceChangedAction(kOfxChangeTime);
             break;
-        case AnimatingParam::PLUGIN_EDITED:
+        case Natron::PLUGIN_EDITED:
             stat = effectInstance()->beginInstanceChangedAction(kOfxChangePluginEdited);
             break;
     }
@@ -748,19 +748,19 @@ void OfxEffectInstance::beginKnobsValuesChanged(AnimatingParam::ValueChangedReas
 
 }
 
-void OfxEffectInstance::endKnobsValuesChanged(AnimatingParam::ValueChangedReason reason){
+void OfxEffectInstance::endKnobsValuesChanged(Natron::ValueChangedReason reason){
     if(!_initialized){
         return;
     }
     OfxStatus stat = kOfxStatOK;
     switch (reason) {
-        case AnimatingParam::USER_EDITED:
+        case Natron::USER_EDITED:
             stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
             break;
-        case AnimatingParam::TIME_CHANGED:
+        case Natron::TIME_CHANGED:
             stat = effectInstance()->endInstanceChangedAction(kOfxChangeTime);
             break;
-        case AnimatingParam::PLUGIN_EDITED:
+        case Natron::PLUGIN_EDITED:
             stat = effectInstance()->endInstanceChangedAction(kOfxChangePluginEdited);
             break;
     }

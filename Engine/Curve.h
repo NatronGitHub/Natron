@@ -172,8 +172,6 @@ class AnimatingParam {
 public:
 
 
-    enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1,TIME_CHANGED = 2};
-
     typedef std::map<int, boost::shared_ptr<Curve> > CurvesMap;
 
     AnimatingParam();
@@ -198,17 +196,17 @@ public:
     }
 
 
-    void setValue(const Variant& v,int dimension,AnimatingParam::ValueChangedReason reason);
+    void setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason);
 
     template<typename T>
     void setValue(const T &value,int dimension = 0) {
-        setValue(Variant(value),dimension,AnimatingParam::PLUGIN_EDITED);
+        setValue(Variant(value),dimension,Natron::PLUGIN_EDITED);
     }
 
     template<typename T>
     void setValue(T variant[],int count){
         for(int i = 0; i < count; ++i){
-            setValue(Variant(variant[i]),i,AnimatingParam::PLUGIN_EDITED);
+            setValue(Variant(variant[i]),i,Natron::PLUGIN_EDITED);
         }
     }
 
@@ -255,21 +253,21 @@ public:
      * @brief Called when the curve has changed.
      * Can be implemented to evaluate any change (i.e: force a new render).
     **/
-    virtual void evaluateValueChange(int dimension,AnimatingParam::ValueChangedReason reason) {(void)dimension;(void)reason;}
+    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason) {(void)dimension;(void)reason;}
 
     /**
      * @brief Used to bracket calls to evaluateValueChange. This indicates than a series of calls will be made, and
      * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
      * to render.
     **/
-    virtual void beginValueChange(AnimatingParam::ValueChangedReason reason){(void)reason;}
+    virtual void beginValueChange(Natron::ValueChangedReason reason){(void)reason;}
 
     /**
      * @brief Used to bracket calls to evaluateValueChange. This indicates than a series of calls will be made, and
      * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
      * to render.
     **/
-    virtual void endValueChange(AnimatingParam::ValueChangedReason reason){(void)reason;}
+    virtual void endValueChange(Natron::ValueChangedReason reason){(void)reason;}
 
     template<class Archive>
     void serialize(Archive & ar ,const unsigned int version);

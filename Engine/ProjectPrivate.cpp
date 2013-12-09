@@ -35,13 +35,18 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , _project(project)
     , _knobsAge(0)
     , _lastTimelineSeekCaller(NULL)
-{
+    , _isSignificantChange(false)
 
+{
+    _isBetweenBeginAndEndValueChanged.second = NULL;
+    _isBetweenBeginAndEndValueChanged.first = false;
 }
 
 
 void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
+    _project->beginProjectWideValueChanges(Natron::PLUGIN_EDITED,_project);
+
     /*1st OFF RESTORE THE PROJECT KNOBS*/
     
     /*we must restore the entries in the combobox before restoring the value*/
@@ -60,7 +65,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
     
     //// restoring values
-    _project->beginValuesChanged(AnimatingParam::PLUGIN_EDITED, true);
+    ///
     for(U32 i = 0 ; i < projectKnobs.size();++i){
         std::map<std::string,AnimatingParam>::const_iterator foundValue = projectSerializedValues.find(projectKnobs[i]->getDescription());
         if(foundValue != projectSerializedValues.end()){
@@ -68,7 +73,6 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         }
     }
     
-    _project->endValuesChanged(AnimatingParam::PLUGIN_EDITED);
     
     
     /* 2nd RESTORE TIMELINE */
@@ -91,7 +95,6 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             Natron::errorDialog("Loading failed", "Cannot load node " + serializedNodes[i]->getPluginID());
             continue;
         }
-        n->getLiveInstance()->beginValuesChanged(AnimatingParam::PLUGIN_EDITED,true);
         if(n->pluginID() == "Writer" || (n->isOpenFXNode() && n->isOutputNode())){
             hasProjectAWriter = true;
         }
@@ -119,7 +122,6 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             knob->onStartupRestoration(it->second);
         }
 
-        n->getLiveInstance()->endValuesChanged(AnimatingParam::PLUGIN_EDITED);
     }
 
     if(!hasProjectAWriter && _project->getApp()->isBackground()){
@@ -152,6 +154,8 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         }
 
     }
+
+    _project->endProjectWideValueChanges(Natron::PLUGIN_EDITED,_project);
 }
 
 } // namespace Natron

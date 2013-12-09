@@ -18,6 +18,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Project.h"
 
 #include "Global/AppManager.h"
 #include "Global/LibraryBinary.h"
@@ -122,35 +123,30 @@ void Knob::remove(){
 
 void Knob::onStartupRestoration(const AnimatingParam& other){
     clone(other); //set the value
-    bool wasBeginCalled = true;
-    if(!_imp->_holder->wasBeginCalled()){
-        wasBeginCalled = false;
-        _imp->_holder->beginValuesChanged(AnimatingParam::PLUGIN_EDITED,true);
-    }
+
+    beginValueChange(Natron::PLUGIN_EDITED);
+
     for(int i = 0 ; i < getDimension();++i){
-        evaluateValueChange(i,AnimatingParam::PLUGIN_EDITED);
+        evaluateValueChange(i,Natron::PLUGIN_EDITED);
     }
-    if(!wasBeginCalled){
-        _imp->_holder->endValuesChanged(AnimatingParam::PLUGIN_EDITED);
-    }
+    endValueChange(Natron::PLUGIN_EDITED);
+
     emit restorationComplete();
 }
 
 
 
 void Knob::onValueChanged(int dimension,const Variant& variant){
-    setValue(variant, dimension,AnimatingParam::USER_EDITED);
+    setValue(variant, dimension,Natron::USER_EDITED);
 }
 
 
 void Knob::evaluateAnimationChange(){
     
     SequenceTime time = _imp->_holder->getApp()->getTimeLine()->currentFrame();
-    bool wasBeginCalled = true;
-    if(!_imp->_holder->wasBeginCalled()){
-        wasBeginCalled = false;
-        beginValueChange(AnimatingParam::PLUGIN_EDITED);
-    }
+
+    beginValueChange(Natron::PLUGIN_EDITED);
+
     for(int i = 0; i < getDimension();++i){
         boost::shared_ptr<Curve> curve = getCurve(i);
         if(curve && curve->isAnimated()){
@@ -158,32 +154,33 @@ void Knob::evaluateAnimationChange(){
             setValue(v,i);
         }
     }
-    if(!wasBeginCalled){
-        endValueChange(AnimatingParam::PLUGIN_EDITED);
-    }
+
+    endValueChange(Natron::PLUGIN_EDITED);
+
 }
 
-void Knob::beginValueChange(AnimatingParam::ValueChangedReason reason) {
-    _imp->_holder->beginValuesChanged(reason,!_imp->_isInsignificant);
+void Knob::beginValueChange(Natron::ValueChangedReason reason) {
+    _imp->_holder->getApp()->getProject()->beginProjectWideValueChanges(reason,_imp->_holder);
 }
 
-void Knob::endValueChange(AnimatingParam::ValueChangedReason reason) {
-    _imp->_holder->endValuesChanged(reason);
+void Knob::endValueChange(Natron::ValueChangedReason reason) {
+    _imp->_holder->getApp()->getProject()->endProjectWideValueChanges(reason,_imp->_holder);
 }
 
-void Knob::evaluateValueChange(int dimension,AnimatingParam::ValueChangedReason reason){
+
+void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
     if(!_imp->_isInsignificant)
         _imp->updateHash(getValueForEachDimension());
     processNewValue();
-    if(reason != AnimatingParam::USER_EDITED){
+    if(reason != Natron::USER_EDITED){
         emit valueChanged(dimension);
     }
-    _imp->_holder->onValueChanged(this,reason,!_imp->_isInsignificant);
+    _imp->_holder->getApp()->getProject()->stackEvaluateRequest(reason,_imp->_holder,this,!_imp->_isInsignificant);
 }
 
 void Knob::onTimeChanged(SequenceTime time){
     if(isAnimationEnabled()){
-        _imp->_holder->beginValuesChanged(AnimatingParam::TIME_CHANGED,false); // we do not want to force a re-evaluation
+        beginValueChange(Natron::TIME_CHANGED); // we do not want to force a re-evaluation
         for(int i = 0; i < getDimension();++i){
             boost::shared_ptr<Curve> curve = getCurve(i);
             if(curve && curve->isAnimated()){
@@ -191,7 +188,7 @@ void Knob::onTimeChanged(SequenceTime time){
                 setValue(v,i);
             }
         }
-        _imp->_holder->endValuesChanged(AnimatingParam::TIME_CHANGED);
+        endValueChange(Natron::TIME_CHANGED);
 
     }
 }
@@ -276,9 +273,6 @@ const std::string& Knob::getHintToolTip() const {return _imp->_tooltipHint;}
 KnobHolder::KnobHolder(AppInstance* appInstance):
     _app(appInstance)
   , _knobs()
-  , _betweenBeginEndParamChanged(false)
-  , _insignificantChange(false)
-  , _knobsChanged()
 {}
 
 KnobHolder::~KnobHolder(){
@@ -293,43 +287,6 @@ int KnobHolder::getAppAge() const{
 }
 
 
-void KnobHolder::beginValuesChanged(AnimatingParam::ValueChangedReason reason, bool isSignificant){
-    if(_betweenBeginEndParamChanged)
-        return;
-    _betweenBeginEndParamChanged = true ;
-    _insignificantChange = !isSignificant;
-    beginKnobsValuesChanged(reason);
-}
-
-void KnobHolder::endValuesChanged(AnimatingParam::ValueChangedReason reason){
-    if(!_betweenBeginEndParamChanged){
-        return;
-    }
-
-    if(reason == AnimatingParam::USER_EDITED){
-        triggerAutoSave();
-    }
-    _betweenBeginEndParamChanged = false ;
-    if(!_knobsChanged.empty() && reason != AnimatingParam::TIME_CHANGED){
-        evaluate(_knobsChanged.back(),!_insignificantChange);
-    }
-    _knobsChanged.clear();
-    endKnobsValuesChanged(reason);
-}
-
-void KnobHolder::onValueChanged(Knob* k, AnimatingParam::ValueChangedReason reason, bool isSignificant){
-    bool wasBeginCalled = true;
-    if(!_betweenBeginEndParamChanged){
-        beginValuesChanged(reason,isSignificant);
-        wasBeginCalled = false;
-    }
-    _knobsChanged.push_back(k);
-    onKnobValueChanged(k,reason);
-    if(!wasBeginCalled){
-        endValuesChanged(reason);
-    }
-
-}
 void KnobHolder::cloneKnobs(const KnobHolder& other){
     assert(_knobs.size() == other._knobs.size());
     for(U32 i = 0 ; i < other._knobs.size();++i){
@@ -346,10 +303,6 @@ void KnobHolder::removeKnob(Knob* knob){
             break;
         }
     }
-}
-
-void KnobHolder::triggerAutoSave(){
-    _app->triggerAutoSave();
 }
 
 void KnobHolder::refreshAfterTimeChange(SequenceTime time){

@@ -340,21 +340,21 @@ public:
      * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
      * but this can lead to worse performance. You can overload this to make all changes to params at once.
      **/
-    virtual void beginKnobsValuesChanged(AnimatingParam::ValueChangedReason reason) OVERRIDE {(void)reason;}
+    virtual void beginKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE {(void)reason;}
     
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
      * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
      * but this can lead to worse performance. You can overload this to make all changes to params at once.
      **/
-    virtual void endKnobsValuesChanged(AnimatingParam::ValueChangedReason reason) OVERRIDE {(void)reason;}
+    virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE {(void)reason;}
     
     /**
      * @brief Called whenever a param changes. It calls the virtual
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void onKnobValueChanged(Knob* k,AnimatingParam::ValueChangedReason reason) OVERRIDE {(void)k;(void)reason;}
+    virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE {(void)k;(void)reason;}
     
     /**
      * @brief When called, if the node holding this effect  is connected to any

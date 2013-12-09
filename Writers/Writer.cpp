@@ -260,7 +260,7 @@ std::string Writer::getOutputFileName() const{
     return _fileKnob->getFileName();
 }
 
-void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
+void Writer::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
     if(k == _filetypeCombo){
         const std::string& fileType = _filetypeCombo->getActiveEntryText();
         const std::string& fileName = _fileKnob->getFileName();
