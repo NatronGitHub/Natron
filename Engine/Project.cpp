@@ -86,6 +86,8 @@ void Project::evaluate(Knob* knob,bool /*isSignificant*/){
         }
     }else if(knob == _imp->_addFormatKnob){
         emit mustCreateFormat();
+    }else{
+        getApp()->checkViewersConnection();
     }
 }
 

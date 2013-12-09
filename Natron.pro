@@ -61,8 +61,14 @@ warning("Compiling in DEBUG mode.")
     }
   }
 }
-*clang* {
-  QMAKE_CXXFLAGS += -ftemplate-depth-500
+
+!*g++*{
+ QMAKE_CXXFLAGS += -ftemplate-depth-1024
+}
+
+
+*clang*{
+
   sanitizer{
     QMAKE_CXXFLAGS += -fsanitize=address -fsanitize-undefined-trap-on-error -fno-omit-frame-pointer -fno-optimize-sibling-calls
     QMAKE_LFLAGS += -fsanitize=address -g
