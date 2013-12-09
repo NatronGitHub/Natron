@@ -446,7 +446,7 @@ Natron::Status OfxEffectInstance::preProcessFrame(SequenceTime /*time*/){
 }
 
 Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
-                                         const RectI& roi,int view,boost::shared_ptr<Natron::Image>/* output*/){
+                                         const RectI& roi,int view,boost::shared_ptr<Natron::Image> output){
     if(!_initialized){
         return Natron::StatFailed;
     }
@@ -462,13 +462,15 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     std::string inputclip;
     stat = effect_->isIdentityAction(inputtime, field, ofxRoI, scale, inputclip);
     if (stat == kOfxStatOK) {
-
         OFX::Host::ImageEffect::ClipInstance* clip = effect_->getClip(inputclip);
-        assert(clip);
+        if (!clip) {
+            // this is a plugin-side error, don't crash
+            qDebug() << "Error: kOfxImageEffectActionIsIdentity returned an unknown clip: " << inputclip;
+            return StatFailed;
+        }
         OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
         assert(natronClip);
-        natronClip->getImage(inputtime,(OfxRectD*)NULL);
-
+        output = natronClip->getAssociatedNode()->getImage(natronClip->getInputNb(),inputtime,scale,view);
     }
 
     stat = effect_->renderAction((OfxTime)time, field, ofxRoI, scale, view, viewsCount);
