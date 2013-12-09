@@ -66,6 +66,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             projectKnobs[i]->onStartupRestoration(foundValue->second);
         }
     }
+    
     _project->endValuesChanged(AnimatingParam::PLUGIN_EDITED);
     
     
@@ -142,8 +143,6 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             }
         }
         for (std::map<int, std::string>::const_iterator input = inputs.begin(); input!=inputs.end(); ++input) {
-            if(input->second.empty())
-                continue;
             if(!_project->getApp()->connect(input->first, input->second,thisNode)) {
                 std::string message = std::string("Failed to connect node ") + serializedNodes[i]->getPluginLabel() + " to " + input->second;
                 qDebug() << message.c_str();
