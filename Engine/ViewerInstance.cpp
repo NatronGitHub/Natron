@@ -204,7 +204,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
                  dispW,
                  textureRect);
     
-    boost::shared_ptr<const FrameEntry> cachedFrame;
+    boost::shared_ptr<FrameEntry> cachedFrame;
     /*if we want to force a refresh, we by-pass the cache*/
     bool byPassCache = false;
     {

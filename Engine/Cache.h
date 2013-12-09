@@ -426,7 +426,7 @@ template<typename ValueType>
 class Cache {
 
 public:
-    typedef boost::shared_ptr<const ValueType> value_type;
+    typedef boost::shared_ptr<ValueType> value_type;
     typedef typename ValueType::hash_type hash_type;
     typedef typename ValueType::data_t data_t;
     typedef typename ValueType::key_t key_t;
@@ -783,7 +783,7 @@ private:
         /*if it is stored using mmap, remove it from memory*/
 
         if(evicted.second->isStoredOnDisk()){
-            boost::const_pointer_cast<ValueType>(evicted.second)->deallocate();
+           evicted.second->deallocate();
             /*insert it back into the disk portion */
 
             /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/

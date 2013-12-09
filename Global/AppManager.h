@@ -407,9 +407,9 @@ public:
 
     const Natron::Cache<Natron::Image>& getNodeCache() const WARN_UNUSED_RETURN {return *_nodeCache;}
 
-    void removeFromNodeCache(boost::shared_ptr<const Natron::Image> image);
+    void removeFromNodeCache(boost::shared_ptr<Natron::Image> image);
 
-    void removeFromViewerCache(boost::shared_ptr<const Natron::FrameEntry> texture);
+    void removeFromViewerCache(boost::shared_ptr<Natron::FrameEntry> texture);
 
     const KnobFactory& getKnobFactory() const WARN_UNUSED_RETURN {return *_knobFactory;}
 

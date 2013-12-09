@@ -190,7 +190,7 @@ std::string EffectInstance::inputLabel(int inputNb) const {
     return out;
 }
 
-boost::shared_ptr<const Natron::Image> EffectInstance::getImage(int inputNb,SequenceTime time,RenderScale scale,int view){
+boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTime time,RenderScale scale,int view){
     Natron::Log::beginFunction(getName(),"getImage");
     Natron::Log::print(QString("Input "+QString::number(inputNb)+
                                                       " Scale ("+QString::number(scale.x)+
@@ -208,10 +208,10 @@ boost::shared_ptr<const Natron::Image> EffectInstance::getImage(int inputNb,Sequ
     
     //if the node is not connected, return a NULL pointer!
     if(!n){
-        return boost::shared_ptr<const Natron::Image>();
+        return boost::shared_ptr<Natron::Image>();
     }
     Natron::ImageKey params = Natron::Image::makeKey(n->hash().value(), time,scale,view,RectI());
-    boost::shared_ptr<const Image > entry = cache.get(params);
+    boost::shared_ptr<Image > entry = cache.get(params);
     
 
     Natron::Log::print(QString("The image was found in the NodeCache with the following hash key: "+
@@ -283,7 +283,7 @@ void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last)
     }
 }
 
-boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime time,RenderScale scale,
+boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,RenderScale scale,
                                                                  int view,const RectI& renderWindow,
                                                                  bool byPassCache){
     Natron::Log::beginFunction(getName(),"renderRoI");
@@ -299,13 +299,13 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
     boost::shared_ptr<Image> image;
     Natron::ImageKey key = Natron::Image::makeKey(_imp->hashValue.value(), time, scale,view,RectI());
     if(!byPassCache){
-        image = boost::const_pointer_cast<Image>(appPTR->getNodeCache().get(key));
+        image = appPTR->getNodeCache().get(key);
     }
     /*if not cached, we store the freshly allocated image in this member*/
     if(!image){
         /*before allocating it we must fill the RoD of the image we want to render*/
         if(getRegionOfDefinition(time, &key._rod) == StatFailed){
-            return boost::shared_ptr<const Natron::Image>();
+            return boost::shared_ptr<Natron::Image>();
         }
         int cost = 0;
         /*should data be stored on a physical device ?*/
