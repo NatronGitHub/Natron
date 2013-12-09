@@ -547,7 +547,7 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
         filePath = AppInstance::autoSavesDir()+QDir::separator()+actualFileName;
         _currentProject->setProjectLastAutoSavePath(filePath);
     } else {
-        filePath = path+filename;
+        filePath = path+actualFileName;
     }
     std::ofstream ofile(filePath.toStdString().c_str(),std::ofstream::out);
     if (!ofile.good()) {
@@ -574,7 +574,7 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
         qDebug() << "Error while saving project";
         throw;
     }
-    _currentProject->setProjectName(actualFileName);
+    _currentProject->setProjectName(filename);
     _currentProject->setProjectPath(path);
     if(!autoSave){
         _currentProject->setHasProjectBeenSavedByUser(true);
