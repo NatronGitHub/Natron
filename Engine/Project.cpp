@@ -254,4 +254,43 @@ void Project::load(const ProjectSerialization& obj){
     }
 }
     
+void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller){
+    if(_imp->_isBetweenBeginAndEndValueChanged.first){
+        return;
+    }
+    _imp->_isBetweenBeginAndEndValueChanged.first = true;
+    _imp->_isBetweenBeginAndEndValueChanged.second = caller;
+    caller->beginKnobsValuesChanged(reason);
+}
+
+void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder* caller,Knob* k,bool isSignificant){
+    bool wasBeginCalled = true;
+    if(!_imp->_isBetweenBeginAndEndValueChanged.first){
+        beginProjectWideValueChanges(reason,caller);
+        wasBeginCalled = false;
+    }
+    if(!_imp->_isSignificantChange && isSignificant){
+        _imp->_isSignificantChange = true;
+    }
+    caller->onKnobValueChanged(k,reason);
+    if(!wasBeginCalled){
+        endProjectWideValueChanges(reason,caller);
+    }
+}
+
+void Project::endProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller){
+    if(_imp->_isBetweenBeginAndEndValueChanged.second != caller){
+        return;
+    }
+    if(reason == Natron::USER_EDITED){
+        getApp()->triggerAutoSave();
+    }
+    _imp->_isBetweenBeginAndEndValueChanged.first = false;
+    _imp->_isBetweenBeginAndEndValueChanged.second = NULL;
+    if(reason != Natron::TIME_CHANGED){
+        caller->evaluate(NULL,_imp->_isSignificantChange);
+    }
+    caller->endKnobsValuesChanged(reason);
+}
+
 } //namespace Natron

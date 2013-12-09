@@ -206,7 +206,7 @@ public:
 
     virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Natron::EffectInstance::FULLY_SAFE;}
 
-    virtual void onKnobValueChanged(Knob* k,Knob::ValueChangedReason reason) OVERRIDE;
+    virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE;
 
 
 

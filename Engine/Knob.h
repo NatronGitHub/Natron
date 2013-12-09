@@ -68,14 +68,14 @@ public:
      * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
      * to render.
     **/
-    virtual void beginValueChange(AnimatingParam::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void beginValueChange(Natron::ValueChangedReason reason) OVERRIDE FINAL;
 
     /**
      * @brief Used to bracket calls to evaluateValueChange. This indicates than a series of calls will be made, and
      * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
      * to render.
     **/
-    virtual void endValueChange(AnimatingParam::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void endValueChange(Natron::ValueChangedReason reason) OVERRIDE FINAL;
 
     /**
      * @brief Called on project loading. This copies the value from AnimatingParam to the knob.
@@ -191,8 +191,9 @@ private:
     /**
      * @brief Must be implemented to evaluate a value that has changed at the given dimension.
      * The reason can be of any type : time changed, user edited or plugin edited.
+     * This function is called everytimes something changes. This is a "catch all".
      **/
-    virtual void evaluateValueChange(int dimension,AnimatingParam::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
 
     virtual void evaluateAnimationChange() OVERRIDE FINAL;
 
@@ -213,9 +214,7 @@ class KnobHolder {
     
     AppInstance* _app;
     std::vector< boost::shared_ptr<Knob> > _knobs;
-    bool _betweenBeginEndParamChanged;
-    bool _insignificantChange;
-    std::vector <Knob*> _knobsChanged;
+
 public:
 
     friend class Knob;
@@ -236,20 +235,29 @@ public:
     
     const std::vector< boost::shared_ptr<Knob> >& getKnobs() const { return _knobs; }
 
-    void beginValuesChanged(AnimatingParam::ValueChangedReason reason, bool isSignificant);
-    
-    void endValuesChanged(AnimatingParam::ValueChangedReason reason);
-
     void refreshAfterTimeChange(SequenceTime time);
     
-private:
-    bool wasBeginCalled() const { return _betweenBeginEndParamChanged; }
+    /**
+     * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
+     * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
+     * but this can lead to worse performance. You can overload this to make all changes to params at once.
+     **/
+    virtual void beginKnobsValuesChanged(Natron::ValueChangedReason reason){(void)reason;}
 
     /**
-     * @brief Must be implemented to initialize any knob using the
-     * KnobFactory.
+     * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
+     * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
+     * but this can lead to worse performance. You can overload this to make all changes to params at once.
      **/
-    virtual void initializeKnobs() = 0;
+    virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason){(void)reason;}
+
+    /**
+     * @brief Called whenever a param changes. It calls the virtual
+     * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
+     * not done already.
+     **/
+    virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason){(void)k;(void)reason;}
+
 
     /**
      * @brief Must be implemented to evaluate a value change
@@ -257,6 +265,14 @@ private:
      * @param knob[in] The knob whose value changed.
      **/
     virtual void evaluate(Knob* knob,bool isSignificant) = 0;
+private:
+
+    /**
+     * @brief Must be implemented to initialize any knob using the
+     * KnobFactory.
+     **/
+    virtual void initializeKnobs() = 0;
+
 
     /**
      * @brief Should be implemented by any deriving class that maintains
@@ -264,30 +280,6 @@ private:
      **/
     void invalidateHash();
 
-    void onValueChanged(Knob* k,AnimatingParam::ValueChangedReason reason,bool isSignificant);
-
-    /**
-     * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
-     * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
-     * but this can lead to worse performance. You can overload this to make all changes to params at once.
-     **/
-    virtual void beginKnobsValuesChanged(AnimatingParam::ValueChangedReason reason){(void)reason;}
-    
-    /**
-     * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
-     * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
-     * but this can lead to worse performance. You can overload this to make all changes to params at once.
-     **/
-    virtual void endKnobsValuesChanged(AnimatingParam::ValueChangedReason reason){(void)reason;}
-    
-    /**
-     * @brief Called whenever a param changes. It calls the virtual
-     * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
-     * not done already.
-     **/
-    virtual void onKnobValueChanged(Knob* k,AnimatingParam::ValueChangedReason reason){(void)k;(void)reason;}
-
-    void triggerAutoSave();
     
     /*Add a knob to the vector. This is called by the
      Knob class.*/

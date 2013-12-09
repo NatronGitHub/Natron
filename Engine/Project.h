@@ -122,7 +122,13 @@ public:
     void save(ProjectSerialization* serializationObject) const;
     
     void load(const ProjectSerialization& obj);
-    
+
+    void beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller);
+
+    void stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHolder* caller, Knob *k, bool isSignificant);
+
+    void endProjectWideValueChanges(ValueChangedReason reason, KnobHolder* caller);
+
 public slots:
 
     void onTimeChanged(SequenceTime time,int reason);

@@ -62,6 +62,9 @@ struct ProjectPrivate{
     
     int _knobsAge; //< the age of the knobs in the app. This is updated on each value changed.
     Natron::OutputEffectInstance* _lastTimelineSeekCaller;
+
+    std::pair<bool,KnobHolder*> _isBetweenBeginAndEndValueChanged;
+    bool _isSignificantChange;
     
     ProjectPrivate(Natron::Project* project);
     

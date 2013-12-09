@@ -463,7 +463,7 @@ const Variant& AnimatingParam::getValue(int dimension) const{
     return it->second;
 }
 
-void AnimatingParam::setValue(const Variant& v, int dimension, ValueChangedReason reason){
+void AnimatingParam::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason){
     std::map<int,Variant>::iterator it = _imp->_value.find(dimension);
     assert(it != _imp->_value.end());
     it->second = v;

@@ -61,7 +61,7 @@ public:
     
     virtual int maximumInputs() const OVERRIDE {return 1;}
 
-    void onKnobValueChanged(Knob* k,Knob::ValueChangedReason reason) OVERRIDE;
+    void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE;
 
     bool continueOnError() const;
 

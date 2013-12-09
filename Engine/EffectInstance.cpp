@@ -450,10 +450,9 @@ void EffectInstance::evaluate(Knob* knob,bool isSignificant){
     if(!isOutput()){
         std::list<ViewerInstance*> viewers;
         _node->hasViewersConnected(&viewers);
-        bool fitToViewer = knob->typeName() == "InputFile";
+        bool fitToViewer = knob && knob->typeName() == "InputFile";
         for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
             if(isSignificant){
-                //(*it)->abortRendering();
                 (*it)->refreshAndContinueRender(fitToViewer);
             }else{
                 (*it)->redrawViewer();
@@ -463,7 +462,7 @@ void EffectInstance::evaluate(Knob* knob,bool isSignificant){
         /*if this is a writer (openfx or built-in writer)*/
         if (pluginID() != "Viewer") {
             /*if this is a button,we're safe to assume the plug-ins wants to start rendering.*/
-            if(knob->typeName() == "Button"){
+            if(knob && knob->typeName() == "Button"){
                 QStringList list;
                 list << getName().c_str();
                 getApp()->startWritersRendering(list);
