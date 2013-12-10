@@ -32,6 +32,8 @@ using std::make_pair; using std::pair;
 
 
 /***********************************KNOB BASE******************************************/
+typedef std::map<int, boost::shared_ptr<Knob> > MastersMap;
+typedef std::multimap<int, Knob* > SlavesMap;
 
 struct Knob::KnobPrivate {
     KnobHolder*  _holder;
@@ -51,6 +53,11 @@ struct Knob::KnobPrivate {
     std::string _tooltipHint;
     bool _isAnimationEnabled;
 
+    ////curve links
+    ///A slave link CANNOT be master at the same time (i.e: if _slaveLinks[i] != NULL  then _masterLinks[i] == NULL )
+    MastersMap _masters; //from what knob is slaved each curve if any
+    SlavesMap _slaves; //what knobs each curve will modify as a result of a link
+
     KnobPrivate(KnobHolder*  holder,const std::string& description)
         : _holder(holder)
         , _hashVector()
@@ -66,6 +73,8 @@ struct Knob::KnobPrivate {
         , _isPersistent(true)
         , _tooltipHint()
         , _isAnimationEnabled(true)
+        , _masters()
+        , _slaves()
     {
 
     }
@@ -111,14 +120,6 @@ void Knob::remove(){
         _imp->_holder->removeKnob(this);
     }
 }
-
-//void Knob::onKnobUndoneChange(){
-//    _imp->_holder->triggerAutoSave();
-//}
-
-//void Knob::onKnobRedoneChange(){
-//    _imp->_holder->triggerAutoSave();
-//}
 
 
 void Knob::onStartupRestoration(const AnimatingParam& other){
@@ -267,6 +268,67 @@ bool Knob::isInsignificant() const {return _imp->_isInsignificant;}
 void Knob::setHintToolTip(const std::string& hint) {_imp->_tooltipHint = hint;}
 
 const std::string& Knob::getHintToolTip() const {return _imp->_tooltipHint;}
+
+bool Knob::slaveTo(int dimension,boost::shared_ptr<Knob> other){
+    MastersMap::iterator itLinked = _imp->_masters.find(dimension);
+    if(itLinked != _imp->_masters.end()){
+        //the dimension is already linked! you must unSlave it before
+        return false;
+    }else{
+        _imp->_masters.insert(std::make_pair(dimension,other));
+    }
+    other->setAsMasterOf(dimension,this);
+    return true;
+}
+
+void Knob::setAsMasterOf(int dimension,Knob* other){
+    boost::shared_ptr<Knob> isOtherSlaved = other->isCurveSlave(dimension);
+    //if isOtherSlaved is not NULL check that it was set as slave to this knob...
+    // otherwise if it's NULL that means the caller didn't call slaveTo on other yet.
+    assert(!isOtherSlaved || isOtherSlaved.get() == this);
+
+    std::pair<SlavesMap::iterator,SlavesMap::iterator> range = _imp->_slaves.equal_range(dimension);
+    for(SlavesMap::iterator it = range.first; it!= range.second ;++it){
+        if(it->second == other){
+            // this knob is already a master of other
+            return;
+        }
+    }
+
+    ///registering other to be slaved to this knob.
+    _imp->_slaves.insert(std::make_pair(dimension,other));
+
+}
+
+void Knob::unSlave(int dimension){
+     MastersMap::iterator itLinked = _imp->_masters.find(dimension);
+     if(itLinked == _imp->_masters.end()){
+         //the dimension is out of range...
+         return ;
+     }
+     itLinked->second->unMaster(this);
+     _imp->_masters.erase(itLinked);
+
+}
+
+void Knob::unMaster(Knob* other){
+    for(SlavesMap::iterator it = _imp->_slaves.begin(); it!= _imp->_slaves.end() ;++it){
+        if(it->second == other){
+            _imp->_slaves.erase(it);
+            break;
+        }
+    }
+}
+
+boost::shared_ptr<Knob>  Knob::isCurveSlave(int dimension) const {
+    MastersMap::iterator itLinked = _imp->_masters.find(dimension);
+    if(itLinked == _imp->_masters.end()){
+        //the dimension is out of range...
+        return boost::shared_ptr<Knob>();
+    }
+
+    return itLinked->second;
+}
 
 /***************************KNOB HOLDER******************************************/
 

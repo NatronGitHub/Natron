@@ -200,6 +200,26 @@ public:
         return Natron::StatOK;
     }
     
+    /**
+     * @brief Can be overloaded to indicates whether the effect is an identity, i.e it doesn't produce
+     * any change in output.
+     * @param time The time of interest
+     * @param scale The scale of interest
+     * @param roi The region of interest
+     * @param view The view we 're interested in
+     * @param inputTime[out] the input time to which this plugin is identity of
+     * @param inputNb[out] the input number of the effect that is identity of
+     **/
+    virtual bool isIdentity(SequenceTime time,RenderScale scale,const RectI& roi,
+                            int view,SequenceTime* inputTime,int* inputNb){
+
+        (void)time;
+        (void)scale;
+        (void)roi;
+        (void)view;
+        (void)inputTime;
+        (void)inputNb;
+    }
     
     enum RenderSafety{UNSAFE = 0,INSTANCE_SAFE = 1,FULLY_SAFE = 2};
     /**

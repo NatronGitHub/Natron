@@ -140,6 +140,30 @@ public:
     
     const std::string& getHintToolTip() const;
 
+    /**
+     * @brief Slaves the curve for the given dimension to the curve
+     * at the same dimension for the knob 'other'.
+     * Note that this function doesn't notify other that it is now controlling
+     * the curve of this knob at the given dimension. You must explicitly call
+     * setAsMasterOf on the other knob for the link to take effect.
+     * See implementation for details.
+     * In case of success, this function returns true, otherwise false.
+    **/
+    bool slaveTo(int dimension,boost::shared_ptr<Knob> other);
+
+
+    /**
+     * @brief Unslave the curve at the given dimension if it was previously
+     * slaved to another knob using the slaveTo function.
+    **/
+    void unSlave(int dimension);
+
+    /**
+     * @brief Returns a valid pointer to a knob if the curve at
+     * the given dimension is slaved.
+    **/
+    boost::shared_ptr<Knob> isCurveSlave(int dimension) const;
+
 
 public slots:
     
@@ -147,10 +171,6 @@ public slots:
      This is called by the GUI hence does not change the value of any
      render thread storage.*/
     void onValueChanged(int dimension,const Variant& variant);
-    
-//    void onKnobUndoneChange();
-    
-//    void onKnobRedoneChange();
 
     void onTimeChanged(SequenceTime);
         
@@ -170,6 +190,15 @@ signals:
     
 private:
     
+    /**
+     * @brief Sets the curve at the given dimension to be the master of the
+     * curve at the same dimension for the knob other. Note that this function
+     * doesn't set the knob other to be slaved to this knob. You must explicitly
+     * call slaveTo on the other knob for the link to take effect.
+    **/
+    void setAsMasterOf(int dimension, Knob *other);
+
+    void unMaster(Knob* other);
     
     /** @brief This function can be implemented if you want to clone more data than just the value
      * of the knob. Cloning happens when a render request is made: all knobs values of the GUI

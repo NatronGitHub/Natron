@@ -477,12 +477,12 @@ void KnobGui::onLinkToActionTriggered(){
         bool error = false;
         if(otherKnob){
             for(int i = 0; i < _knob->getDimension();++i){
-                if(!_knob->isCurveLinked(i)){
-                    _knob->link(i, otherKnob->getCurve(i));
-                }else{
-                    error = true;
-                    break;
-                }
+//                if(!_knob->isCurveLinked(i)){
+//                    _knob->link(i, otherKnob->getCurve(i));
+//                }else{
+//                    error = true;
+//                    break;
+//                }
             }
         }
         if(error){

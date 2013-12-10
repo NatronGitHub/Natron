@@ -432,7 +432,6 @@ AnimatingParam::AnimatingParam(int dimension )
         _imp->_value.insert(std::make_pair(i,Variant()));
         boost::shared_ptr<Curve> c (new Curve(this));
         _imp->_curves.insert(std::make_pair(i,c));
-        _imp->_curvesLinked.insert(std::make_pair(i,false));
     }
 }
 
@@ -445,7 +444,6 @@ AnimatingParam::AnimatingParam(const AnimatingParam& other)
 void AnimatingParam::operator=(const AnimatingParam& other){
     _imp->_value.clear();
     _imp->_curves.clear();
-    _imp->_curvesLinked.clear();
     _imp->_dimension = other._imp->_dimension;
     for(int i = 0; i < other.getDimension() ; ++i){
         _imp->_value.insert(std::make_pair(i,other.getValue(i)));
@@ -455,7 +453,6 @@ void AnimatingParam::operator=(const AnimatingParam& other){
             c->clone(*otherCurve);
         }
         _imp->_curves.insert(std::make_pair(i,c));
-        _imp->_curvesLinked.insert(std::make_pair(i,other.isCurveLinked(i)));
     }
 
 }
@@ -529,42 +526,4 @@ const std::map<int,Variant>& AnimatingParam::getValueForEachDimension() const {r
 
 int AnimatingParam::getDimension() const {return _imp->_dimension;}
 
-void AnimatingParam::link(int dimension,boost::shared_ptr<Curve> other){
-    std::map<int,bool>::iterator itLinked = _imp->_curvesLinked.find(dimension);
-    CurvesMap::iterator found = _imp->_curves.find(dimension);
-    if(found != _imp->_curves.end()){
-        assert(!itLinked->second);
-        found->second = other;
-        itLinked->second = true;
-    }
-}
 
-void AnimatingParam::unlink(int dimension){
-    std::map<int,bool>::iterator itLinked = _imp->_curvesLinked.find(dimension);
-    if (itLinked == _imp->_curvesLinked.end()) {
-        return;
-    }
-    
-    if (itLinked->second == false) {
-        return;
-    }
-    
-    itLinked->second = false;
-    boost::shared_ptr<Curve> c(new Curve(this));
-    CurvesMap::iterator found = _imp->_curves.find(dimension);
-    assert(found != _imp->_curves.end());
-    if(found->second){
-        c->clone(*found->second);
-    }
-    found->second = c;
-
-}
-
-bool AnimatingParam::isCurveLinked(int dimension) const{
-    std::map<int,bool>::const_iterator found = _imp->_curvesLinked.find(dimension);
-    if(found != _imp->_curvesLinked.end()){
-        return found->second;
-    }else{
-        return false;
-    }
-}
