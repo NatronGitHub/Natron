@@ -294,6 +294,33 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                         " ymin= " + QString::number(renderWindow.bottom()) + " xmax= " + QString::number(renderWindow.right())
                         + " ymax= " + QString::number(renderWindow.top())).toStdString());
                         
+    /*first-off check whether the effect is identity, in which case we don't want
+    to cache anything or render anything for this effect.*/
+    SequenceTime inputTimeIdentity;
+    int inputNbIdentity;
+    bool identity = isIdentity(time,scale,renderWindow,view,&inputTimeIdentity,&inputNbIdentity);
+    if(identity){
+
+        boost::shared_ptr<Natron::Image> inputImage = getImage(inputNbIdentity,inputTimeIdentity,scale,view);
+        if(!inputImage){
+            QString err("Error in EffectInstance::renderRoI(): getImage(");
+            err.append(QString::number(inputNbIdentity));
+            err.append(",");
+            err.append(QString::number(inputTimeIdentity));
+            err.append(",(");
+            err.append(QString::number(scale.x));
+            err.append(",");
+            err.append(QString::number(scale.y));
+            err.append("),");
+            err.append(QString::number(view));
+            err.append(") returned NULL");
+            throw std::runtime_error(err.toStdString());
+        }else{
+            Natron::Log::print("The effect is an identity");
+            Natron::Log::endFunction(getName(),"renderRoI");
+            return inputImage;
+        }
+    }
 
     /*look-up the cache for any existing image already rendered*/
     boost::shared_ptr<Image> image;

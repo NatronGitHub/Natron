@@ -15,6 +15,8 @@
 #include <QtCore/QObject>
 #include <QtCore/QMetaType>
 
+#include <boost/shared_ptr.hpp>
+
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 

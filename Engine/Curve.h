@@ -270,11 +270,6 @@ public:
     template<class Archive>
     void serialize(Archive & ar ,const unsigned int version);
     
-    void link(int dimension,boost::shared_ptr<Curve> other);
-    
-    void unlink(int dimension);
-    
-    bool isCurveLinked(int dimension) const;
     
 protected:
 

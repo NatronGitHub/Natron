@@ -143,6 +143,9 @@ public:
     virtual Natron::Status render(SequenceTime time,RenderScale scale,
                                    const RectI& roi,int view,boost::shared_ptr<Natron::Image> output) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual bool isIdentity(SequenceTime time,RenderScale scale,const RectI& roi,
+                                int view,SequenceTime* inputTime,int* inputNb) OVERRIDE FINAL;
+
     virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 
