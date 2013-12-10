@@ -24,7 +24,7 @@ KeyFrame::KeyFrame()
 {}
 
 
-KeyFrame::KeyFrame(double time, const Variant& initialValue,Curve* curve)
+KeyFrame::KeyFrame(double time, const Variant& initialValue,const boost::shared_ptr<Curve>& curve)
     : _imp(new KeyFramePrivate(time,initialValue,curve))
 {
 }

@@ -25,10 +25,10 @@ KnobSerialization::KnobSerialization()
 void KnobSerialization::initialize(const Knob* knob){
     _values = knob->getValueForEachDimension();
     _dimension = knob->getDimension();
-    const std::map<int,boost::shared_ptr<Curve> >& curves = knob->getCurves();
-    for(std::map<int,boost::shared_ptr<Curve> >::const_iterator it = curves.begin(); it!=curves.end();++it){
-            if(it->second->isAnimated()){
-                _curves.insert(*it);
+    const std::vector<boost::shared_ptr<Curve> >& curves = knob->getCurves();
+    for(U32 i = 0; i < curves.size();++i){
+            if(curves[i]){
+                _curves.push_back(curves[i]);
             }
     }
 
@@ -40,11 +40,5 @@ void KnobSerialization::initialize(const Knob* knob){
         }
     }
 
-    const std::multimap<int,Knob*>& slaves = knob->getSlaves();
-    for(std::multimap<int,Knob*>::const_iterator it = slaves.begin();it!=slaves.end();++it){
-        if(it->second){
-            _slaves.insert(std::make_pair(it->first,it->second->getDescription()));
-        }
-    }
 
 }

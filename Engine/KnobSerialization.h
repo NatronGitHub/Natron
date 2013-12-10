@@ -15,7 +15,7 @@
 
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
-#include <boost/serialization/map.hpp>
+#include <boost/serialization/vector.hpp>
 
 #include "Engine/Variant.h"
 #include "Engine/CurveSerialization.h"
@@ -24,12 +24,11 @@
 class Curve;
 class KnobSerialization
 {
-    std::map<int,Variant> _values;
+    std::vector<Variant> _values;
     int _dimension;
     /* the keys for a specific dimension*/
-    std::map<int, boost::shared_ptr<Curve> > _curves;
-    std::map<int, std::string > _masters;
-    std::multimap<int, std::string > _slaves;
+    std::vector< boost::shared_ptr<Curve> > _curves;
+    std::vector< std::string > _masters;
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -40,7 +39,6 @@ class KnobSerialization
         ar & boost::serialization::make_nvp("Values",_values);
         ar & boost::serialization::make_nvp("Curves",_curves);
         ar & boost::serialization::make_nvp("Masters",_masters);
-        ar & boost::serialization::make_nvp("Slaves",_slaves);
     }
 
 
@@ -50,15 +48,14 @@ public:
 
     void initialize(const Knob* knob);
 
-    const std::map<int,Variant>& getValues() const { return _values; }
+    const std::vector<Variant>& getValues() const { return _values; }
 
     int getDimension() const { return _dimension; }
 
-    const std::map<int, boost::shared_ptr<Curve> >& getCurves() const { return _curves; }
+    const  std::vector< boost::shared_ptr<Curve> >& getCurves() const { return _curves; }
 
-    const std::map<int,std::string >& getMasters() const { return _masters; }
+    const std::vector< std::string > & getMasters() const { return _masters; }
 
-    const std::multimap<int, std::string >& getSlaves() const { return _slaves; }
 
 };
 

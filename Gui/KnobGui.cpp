@@ -487,6 +487,32 @@ void KnobGui::onLinkToActionTriggered(){
     if(dialog.exec()){
         boost::shared_ptr<Knob> otherKnob = dialog.getSelectedKnobs();
         if(otherKnob){
+
+            if(otherKnob->typeName() != _knob->typeName()){
+                std::string err("Cannot link ");
+                err.append(_knob->getDescription());
+                err.append(" of type ");
+                err.append(_knob->typeName());
+                err.append(" to ");
+                err.append(otherKnob->getDescription());
+                err.append(" which is of type ");
+                err.append(otherKnob->typeName());
+                errorDialog("Knob Link", err);
+                return;
+            }
+            if(otherKnob->getDimension() != _knob->getDimension()){
+                std::string err("Cannot link ");
+                err.append(_knob->getDescription());
+                err.append(" of dimension ");
+                err.append(_knob->getDimension());
+                err.append(" to ");
+                err.append(otherKnob->getDescription());
+                err.append(" which is of dimension ");
+                err.append(otherKnob->getDimension());
+                errorDialog("Knob Link", err);
+                return;
+            }
+
             for(int i = 0; i < _knob->getDimension();++i){
                 boost::shared_ptr<Knob> existingLink = _knob->isCurveSlave(i);
                 if(existingLink){

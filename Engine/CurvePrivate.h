@@ -25,18 +25,18 @@ struct KeyFramePrivate{
 
     Variant _leftTangent,_rightTangent;
     Natron::KeyframeType _interpolation;
-    Curve* _curve;
+    boost::shared_ptr<Curve> _curve;
 
 
     KeyFramePrivate()
     : _value()
     , _time(0)
     , _interpolation(Natron::KEYFRAME_LINEAR)
-    , _curve(NULL)
+    , _curve()
     {}
 
 
-    KeyFramePrivate(double time, const Variant& initialValue,Curve* curve)
+    KeyFramePrivate(double time, const Variant& initialValue,const boost::shared_ptr<Curve>& curve)
         : _value(initialValue)
         , _time(time)
         , _leftTangent()

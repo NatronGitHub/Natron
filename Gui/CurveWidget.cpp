@@ -1836,7 +1836,7 @@ void CurveWidget::addKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key){
 }
 
 boost::shared_ptr<KeyFrame> CurveWidget::addKeyFrame(CurveGui* curve,const Variant& y, int x){
-    boost::shared_ptr<KeyFrame> key(new KeyFrame(x,y,curve->getInternalCurve().get()));
+    boost::shared_ptr<KeyFrame> key(new KeyFrame(x,y,curve->getInternalCurve()));
     addKeyFrame(curve,key);
     return key;
 }

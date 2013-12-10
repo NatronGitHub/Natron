@@ -161,7 +161,7 @@ public:
 
     boost::shared_ptr<Curve> getCurve(int dimension) const;
 
-    const std::map<int, boost::shared_ptr<Curve>  >& getCurves() const;
+    const std::vector< boost::shared_ptr<Curve>  >& getCurves() const;
 
     void turnOffAnimation() ;
 
@@ -180,7 +180,7 @@ public:
     **/
     void cloneValue(const Knob& other);
 
-    const std::map<int,Variant>& getValueForEachDimension() const ;
+    const std::vector<Variant>& getValueForEachDimension() const ;
 
     int getDimension() const ;
 
@@ -246,9 +246,8 @@ public:
     boost::shared_ptr<Knob> isCurveSlave(int dimension) const;
 
 
-    const std::map<int,boost::shared_ptr<Knob> >& getMasters() const;
+    const std::vector<boost::shared_ptr<Knob> > &getMasters() const;
 
-    const std::multimap<int,Knob*>& getSlaves() const;
 
 public slots:
     
