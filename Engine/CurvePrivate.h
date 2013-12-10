@@ -65,11 +65,11 @@ struct KeyFramePrivate{
 
 
 class KeyFrame;
-class AnimatingParam;
+class Knob;
 struct CurvePrivate{
 
     std::list< boost::shared_ptr<KeyFrame> >  _keyFrames;
-    AnimatingParam* _owner;
+    Knob* _owner;
 
     CurvePrivate()
     : _keyFrames()
@@ -78,25 +78,6 @@ struct CurvePrivate{
 
 };
 
-struct AnimatingParamPrivate{
-
-     /* A variant storing all the values in any dimension. <dimension,value>*/
-    std::map<int,Variant> _value;
-
-    int _dimension;
-
-    /* the keys for a specific dimension*/
-    std::map<int, boost::shared_ptr<Curve> > _curves;
-
-    
-    AnimatingParamPrivate(int dimension = 1):
-        _value()
-      , _dimension(dimension)
-      , _curves()
-    {
-
-    }
-};
 
 
 #endif // NATRON_ENGINE_CURVEPRIVATE_H_

@@ -89,7 +89,7 @@ private:
   * @brief A CurvePath is a list of chained curves. Each curve is a set of 2 keyFrames and has its
   * own interpolation method (that can differ from other curves).
 **/
-class AnimatingParam;
+class Knob;
 struct CurvePrivate;
 class RectD;
 class Curve {
@@ -112,7 +112,7 @@ public:
     /**
      * @brief An empty curve, held by owner. This is the "normal" constructor.
     **/
-    Curve(AnimatingParam* owner);
+    Curve(Knob* owner);
 
     ~Curve();
 
@@ -159,128 +159,6 @@ private:
     boost::scoped_ptr<CurvePrivate> _imp;
 };
 
-
-
-/**
- * @brief A class based on Variant that can store a value across multiple dimension
- * and also have specific "keyframes".
- **/
-struct AnimatingParamPrivate;
-class AnimatingParam {
-
-public:
-
-    typedef std::map<int, boost::shared_ptr<Curve> > CurvesMap;
-
-    AnimatingParam();
-    
-    explicit AnimatingParam(int dimension);
-    
-    AnimatingParam(const AnimatingParam& other);
-    
-    void operator=(const AnimatingParam& other);
-
-    virtual ~AnimatingParam();
-
-    const std::map<int,Variant>& getValueForEachDimension() const ;
-
-    int getDimension() const ;
-
-    const Variant& getValue(int dimension = 0) const;
-
-    template <typename T>
-    T getValue(int dimension = 0) const {
-        return getValue(dimension).value<T>();
-    }
-
-
-    void setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason);
-
-    template<typename T>
-    void setValue(const T &value,int dimension = 0) {
-        setValue(Variant(value),dimension,Natron::PLUGIN_EDITED);
-    }
-
-    template<typename T>
-    void setValue(T variant[],int count){
-        for(int i = 0; i < count; ++i){
-            setValue(Variant(variant[i]),i,Natron::PLUGIN_EDITED);
-        }
-    }
-
-
-
-    /**
-     * @brief Set the value for a specific dimension at a specific time. By default dimension
-     * is 0. If there's a single dimension, it will set the dimension 0 regardless of the parameter dimension.
-     * Otherwise, it will attempt to set a key for only the dimension 'dimensionIndex'.
-     **/
-    boost::shared_ptr<KeyFrame> setValueAtTime(double time,const Variant& v,int dimension);
-
-    template<typename T>
-    boost::shared_ptr<KeyFrame> setValueAtTime(double time,const T& value,int dimensionIndex = 0){
-        assert(dimensionIndex < getDimension());
-        return setValueAtTime(time,Variant(value),dimensionIndex);
-    }
-
-    template<typename T>
-    void setValueAtTime(double time,T variant[],int count){
-        for(int i = 0; i < count; ++i){
-            setValueAtTime(time,Variant(variant[i]),i);
-        }
-    }
-
-    /**
-     * @brief Returns the value  in a specific dimension at a specific time. If
-     * there is no key in this dimension it will return the value at the requested dimension
-     **/
-    Variant getValueAtTime(double time, int dimension) const;
-
-    template<typename T>
-    T getValueAtTime(double time,int dimension = 0) const {
-        return getValueAtTime(time,dimension).value<T>();
-    }
-
-
-    boost::shared_ptr<Curve> getCurve(int dimension) const;
-
-
-    virtual void evaluateAnimationChange(){}
-
-    /**
-     * @brief Called when the curve has changed.
-     * Can be implemented to evaluate any change (i.e: force a new render).
-    **/
-    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason) {(void)dimension;(void)reason;}
-
-    /**
-     * @brief Used to bracket calls to evaluateValueChange. This indicates than a series of calls will be made, and
-     * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
-     * to render.
-    **/
-    virtual void beginValueChange(Natron::ValueChangedReason reason){(void)reason;}
-
-    /**
-     * @brief Used to bracket calls to evaluateValueChange. This indicates than a series of calls will be made, and
-     * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
-     * to render.
-    **/
-    virtual void endValueChange(Natron::ValueChangedReason reason){(void)reason;}
-
-    template<class Archive>
-    void serialize(Archive & ar ,const unsigned int version);
-    
-    
-protected:
-
-
-    void clone(const AnimatingParam& other);
-
-private:
-
-    boost::scoped_ptr<AnimatingParamPrivate> _imp;
-
-};
 
 
 #endif // NATRON_ENGINE_CURVE_H_

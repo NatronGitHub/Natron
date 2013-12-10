@@ -60,16 +60,17 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     _formatKnob->populate(entries);
     _autoSetProjectFormat = false;
     
-    const std::map<std::string,AnimatingParam>& projectSerializedValues = obj.getProjectKnobsValues();
+    const std::map<std::string,boost::shared_ptr<KnobSerialization> >& projectSerializedValues = obj.getProjectKnobsValues();
     const std::vector< boost::shared_ptr<Knob> >& projectKnobs = _project->getKnobs();
     
     
     //// restoring values
     ///
     for(U32 i = 0 ; i < projectKnobs.size();++i){
-        std::map<std::string,AnimatingParam>::const_iterator foundValue = projectSerializedValues.find(projectKnobs[i]->getDescription());
+        std::map<std::string,boost::shared_ptr<KnobSerialization> >::const_iterator foundValue =
+                projectSerializedValues.find(projectKnobs[i]->getDescription());
         if(foundValue != projectSerializedValues.end()){
-            projectKnobs[i]->onStartupRestoration(foundValue->second);
+            projectKnobs[i]->load(*foundValue->second);
         }
     }
     
@@ -119,7 +120,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
                 qDebug() << message.c_str();
                 throw std::runtime_error(message);
             }
-            knob->onStartupRestoration(it->second);
+            knob->load(*it->second);
         }
 
     }

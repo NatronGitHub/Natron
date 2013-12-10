@@ -22,6 +22,7 @@
 #include "Engine/Rect.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Variant.h"
+#include "Engine/Curve.h"
 
 #include "Gui/ScaleSlider.h"
 #include "Gui/ticks.h"

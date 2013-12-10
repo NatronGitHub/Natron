@@ -8,12 +8,21 @@
 
 // explicit template instantiations
 
-template void AnimatingParam::serialize<boost::archive::xml_iarchive>(
-    boost::archive::xml_iarchive & ar,
-    const unsigned int file_version
+template void KeyFrame::serialize<boost::archive::xml_iarchive>(
+boost::archive::xml_iarchive & ar,
+const unsigned int file_version
+);
+template void KeyFrame::serialize<boost::archive::xml_oarchive>(
+boost::archive::xml_oarchive & ar,
+const unsigned int file_version
 );
 
-template void AnimatingParam::serialize<boost::archive::xml_oarchive>(
-    boost::archive::xml_oarchive & ar,
-    const unsigned int file_version
+
+template void Curve::serialize<boost::archive::xml_iarchive>(
+boost::archive::xml_iarchive & ar,
+const unsigned int file_version
+);
+template void Curve::serialize<boost::archive::xml_oarchive>(
+boost::archive::xml_oarchive & ar,
+const unsigned int file_version
 );

@@ -101,6 +101,7 @@ SOURCES += \
     Engine/Hash64.cpp \
     Engine/Image.cpp \
     Engine/Knob.cpp \
+    Engine/KnobSerialization.cpp \
     Engine/KnobFactory.cpp \
     Engine/KnobFile.cpp \
     Engine/KnobTypes.cpp \
@@ -196,6 +197,7 @@ HEADERS += \
     Engine/Image.h \
     Engine/Interpolation.h \
     Engine/Knob.h \
+    Engine/KnobSerialization.h \
     Engine/KnobFactory.h \
     Engine/KnobFile.h \
     Engine/KnobTypes.h \

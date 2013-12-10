@@ -18,7 +18,6 @@
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/list.hpp>
-#include <boost/serialization/map.hpp>
 #include <boost/serialization/scoped_ptr.hpp>
 #include <boost/serialization/split_free.hpp>
 
@@ -49,48 +48,9 @@ void serialize(Archive & ar,CurvePrivate& c, const unsigned int version)
 }
 
 
-template<class Archive>
-void save(Archive & ar,const AnimatingParamPrivate& v ,const unsigned int version)
-{
-    (void)version;
-    ar & boost::serialization::make_nvp("dimension",v._dimension);
-    ar & boost::serialization::make_nvp("Values",v._value);
-    std::map<int,boost::shared_ptr<Curve> > toSerialize;
-    for(std::map<int,boost::shared_ptr<Curve> >::const_iterator it = v._curves.begin(); it!=v._curves.end();++it){
-        if(it->second->isAnimated()){
-            toSerialize.insert(*it);
-        }
-    }
-    ar & boost::serialization::make_nvp("Curves",toSerialize);
-}
-
-template<class Archive>
-void load(Archive & ar,AnimatingParamPrivate& v ,const unsigned int version)
-{
-    (void)version;
-    ar & boost::serialization::make_nvp("dimension",v._dimension);
-    ar & boost::serialization::make_nvp("Values",v._value);
-    
-    v._curves.clear();
-    for(int i = 0 ; i < v._dimension;++i){
-        boost::shared_ptr<Curve> c (new Curve());
-        v._curves.insert(std::make_pair(i,c));
-    }
-    std::map<int,boost::shared_ptr<Curve> > serializedCurves;
-    ar & boost::serialization::make_nvp("Curves",serializedCurves);
-    for(std::map<int,boost::shared_ptr<Curve> >::iterator it = v._curves.begin(); it!=v._curves.end();++it){
-        assert(it->second);
-        std::map<int,boost::shared_ptr<Curve> >::const_iterator found = serializedCurves.find(it->first);
-        if(found != serializedCurves.end()){
-            assert(found->second);
-            it->second->clone(*found->second);
-        }
-    }
-}
     
 }
 }
-BOOST_SERIALIZATION_SPLIT_FREE(AnimatingParamPrivate)
 
 
 template<class Archive>
@@ -99,14 +59,6 @@ void KeyFrame::serialize(Archive & ar, const unsigned int version)
     (void)version;
     ar & boost::serialization::make_nvp("PIMPL",_imp);
 }
-template void KeyFrame::serialize<boost::archive::xml_iarchive>(
-boost::archive::xml_iarchive & ar,
-const unsigned int file_version
-);
-template void KeyFrame::serialize<boost::archive::xml_oarchive>(
-boost::archive::xml_oarchive & ar,
-const unsigned int file_version
-);
 
 
 template<class Archive>
@@ -115,21 +67,8 @@ void Curve::serialize(Archive & ar, const unsigned int version)
     (void)version;
     ar & boost::serialization::make_nvp("PIMPL",_imp);
 }
-template void Curve::serialize<boost::archive::xml_iarchive>(
-boost::archive::xml_iarchive & ar,
-const unsigned int file_version
-);
-template void Curve::serialize<boost::archive::xml_oarchive>(
-boost::archive::xml_oarchive & ar,
-const unsigned int file_version
-);
 
 
-template<class Archive>
-void AnimatingParam::serialize(Archive & ar, const unsigned int version)
-{
-    (void)version;
-    ar & boost::serialization::make_nvp("PIMPL",_imp);
-}
+
 
 #endif // NATRON_ENGINE_CURVESERIALIZATION_H_

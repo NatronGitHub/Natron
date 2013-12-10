@@ -15,6 +15,7 @@
 
 #include "Engine/CurvePrivate.h"
 #include "Engine/Interpolation.h"
+#include "Engine/Knob.h"
 
 /************************************KEYFRAME************************************/
 
@@ -118,7 +119,7 @@ Curve::Curve()
 
 }
 
-Curve::Curve(AnimatingParam* owner)
+Curve::Curve(Knob *owner)
     : _imp(new CurvePrivate)
 {
     _imp->_owner = owner;
@@ -414,116 +415,4 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason,KeyFrame *k){
 
     _imp->_owner->evaluateAnimationChange();
 }
-
-
-
-/***********************************MULTIDIMENSIONAL VALUE*********************/
-AnimatingParam::AnimatingParam()
-    : _imp(new AnimatingParamPrivate(0))
-{
-    
-}
-
-AnimatingParam::AnimatingParam(int dimension )
-    : _imp(new AnimatingParamPrivate(dimension))
-{
-    //default initialize the values map
-    for(int i = 0; i < dimension ; ++i){
-        _imp->_value.insert(std::make_pair(i,Variant()));
-        boost::shared_ptr<Curve> c (new Curve(this));
-        _imp->_curves.insert(std::make_pair(i,c));
-    }
-}
-
-AnimatingParam::AnimatingParam(const AnimatingParam& other)
-    : _imp(new AnimatingParamPrivate(other.getDimension()))
-{
-    *this = other;
-}
-
-void AnimatingParam::operator=(const AnimatingParam& other){
-    _imp->_value.clear();
-    _imp->_curves.clear();
-    _imp->_dimension = other._imp->_dimension;
-    for(int i = 0; i < other.getDimension() ; ++i){
-        _imp->_value.insert(std::make_pair(i,other.getValue(i)));
-        boost::shared_ptr<Curve> c(new Curve(this));
-        boost::shared_ptr<Curve> otherCurve  = other.getCurve(i);
-        if(otherCurve){
-            c->clone(*otherCurve);
-        }
-        _imp->_curves.insert(std::make_pair(i,c));
-    }
-
-}
-
-
-AnimatingParam::~AnimatingParam() { _imp->_value.clear();_imp->_curves.clear(); }
-
-
-const Variant& AnimatingParam::getValue(int dimension) const{
-    std::map<int,Variant>::const_iterator it = _imp->_value.find(dimension);
-    assert(it != _imp->_value.end());
-    return it->second;
-}
-
-void AnimatingParam::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason){
-    std::map<int,Variant>::iterator it = _imp->_value.find(dimension);
-    assert(it != _imp->_value.end());
-    it->second = v;
-    evaluateValueChange(dimension,reason);
-}
-
-boost::shared_ptr<KeyFrame> AnimatingParam::setValueAtTime(double time, const Variant& v, int dimension){
-    CurvesMap::iterator foundDimension = _imp->_curves.find(dimension);
-    assert(foundDimension != _imp->_curves.end());
-    boost::shared_ptr<KeyFrame> k(new KeyFrame(time,v,foundDimension->second.get()));
-    foundDimension->second->addKeyFrame(k);
-    return k;
-}
-
-void AnimatingParam::clone(const AnimatingParam& other) {
-    assert(other.getDimension() == _imp->_dimension);
-    for(int i = 0; i < _imp->_dimension;++i){
-        std::map<int,Variant>::iterator it = _imp->_value.find(i);
-        assert(it != _imp->_value.end());
-        it->second = other.getValue(i);
-        boost::shared_ptr<Curve> curve = other.getCurve(i);
-        boost::shared_ptr<Curve> thisCurve = getCurve(i);
-        if(curve){
-            thisCurve->clone(*curve);
-        }
-    }
-}
-
-boost::shared_ptr<Curve> AnimatingParam::getCurve(int dimension) const {
-    CurvesMap::const_iterator foundDimension = _imp->_curves.find(dimension);
-    assert(foundDimension != _imp->_curves.end());
-    return foundDimension->second;
-}
-
-Variant AnimatingParam::getValueAtTime(double time,int dimension) const{
-    CurvesMap::const_iterator foundDimension = _imp->_curves.find(dimension);
-    boost::shared_ptr<Curve> curve = getCurve(dimension);
-    if (curve->isAnimated()) {
-        return foundDimension->second->getValueAt(time);
-    } else {
-        /*if the knob as no keys at this dimension, return the value
-        at the requested dimension.*/
-        std::map<int,Variant>::const_iterator it = _imp->_value.find(dimension);
-        if(it != _imp->_value.end()){
-            return it->second;
-        }else{
-            return Variant();
-        }
-    }
-}
-
-
-
-
-const std::map<int,Variant>& AnimatingParam::getValueForEachDimension() const {return _imp->_value;}
-
-int AnimatingParam::getDimension() const {return _imp->_dimension;}
-
 

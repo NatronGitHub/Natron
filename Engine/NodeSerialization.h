@@ -20,9 +20,7 @@
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/version.hpp>
 
-#include "Engine/CurveSerialization.h"
-#include "Engine/Curve.h"
-
+#include "Engine/KnobSerialization.h"
 namespace Natron {
     class Node;
 }
@@ -32,7 +30,7 @@ class NodeSerialization {
     
 public:
     
-    typedef std::map< std::string,AnimatingParam> KnobValues;
+    typedef std::map< std::string,boost::shared_ptr<KnobSerialization> > KnobValues;
     
     NodeSerialization(){}
     

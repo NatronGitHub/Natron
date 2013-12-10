@@ -24,13 +24,13 @@
 #include "Engine/TimeLine.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
-
+#include "Engine/KnobSerialization.h"
 
 class ProjectSerialization{
     
     std::vector< boost::shared_ptr<NodeSerialization> > _serializedNodes;
     std::vector<Format> _availableFormats;
-    std::map< std::string,AnimatingParam> _projectKnobs;
+    std::map< std::string,boost::shared_ptr<KnobSerialization> > _projectKnobs;
     SequenceTime _timelineLeft,_timelineRight,_timelineCurrent;
     
 public:
@@ -47,7 +47,7 @@ public:
         
     SequenceTime getRightBoundTime() const { return _timelineRight; }
     
-    const std::map< std::string,AnimatingParam>& getProjectKnobsValues() const { return _projectKnobs; }
+    const std::map< std::string,boost::shared_ptr<KnobSerialization> >& getProjectKnobsValues() const { return _projectKnobs; }
     
     const std::vector<Format>& getProjectFormats() const { return _availableFormats; }
     

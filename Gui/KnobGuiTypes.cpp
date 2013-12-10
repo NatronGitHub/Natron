@@ -21,6 +21,7 @@
 #include "Global/AppManager.h"
 
 #include "Engine/KnobTypes.h"
+#include "Engine/Curve.h"
 #include "Engine/TimeLine.h"
 
 #include "Gui/AnimatedCheckBox.h"

@@ -44,6 +44,7 @@
 #include "Engine/Settings.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobFile.h"
+#include "Engine/Curve.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
 

@@ -13,6 +13,7 @@
 #include "Engine/Project.h"
 #include "Global/AppManager.h"
 
+
 void ProjectSerialization::initialize(const Natron::Project* project){
     std::vector<Natron::Node*> activeNodes;
     project->getApp()->getActiveNodes(&activeNodes);
@@ -27,8 +28,9 @@ void ProjectSerialization::initialize(const Natron::Project* project){
     const std::vector< boost::shared_ptr<Knob> >& knobs = project->getKnobs();
     for(U32 i = 0; i < knobs.size();++i){
         if(knobs[i]->isPersistent()){
-            _projectKnobs.insert(std::make_pair(knobs[i]->getDescription(),
-                                            dynamic_cast<AnimatingParam&>(*knobs[i].get())));
+            boost::shared_ptr<KnobSerialization> newKnobSer(new KnobSerialization());
+            knobs[i]->save(newKnobSer.get());
+            _projectKnobs.insert(std::make_pair(knobs[i]->getDescription(), newKnobSer));
         }
     }
 

@@ -15,15 +15,20 @@
 #include <vector>
 #include <string>
 
-#include "Global/GlobalDefines.h"
-#include "Engine/Curve.h"
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 
+#include "Global/GlobalDefines.h"
+#include "Engine/Variant.h"
+
+class Curve;
+class KeyFrame;
 class KnobHolder;
 class AppInstance;
-
+class KnobSerialization;
 /******************************KNOB_BASE**************************************/
 
-class Knob : public QObject, public AnimatingParam
+class Knob : public QObject
 {
     Q_OBJECT
     
@@ -64,23 +69,93 @@ public:
     virtual std::string getDimensionName(int dimension) const {(void)dimension; return "";}
 
     /**
-     * @brief Used to bracket calls to evaluateValueChange. This indicates than a series of calls will be made, and
+     * @brief Used to bracket calls to setValue. This indicates than a series of calls will be made, and
      * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
      * to render.
     **/
-    virtual void beginValueChange(Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    void beginValueChange(Natron::ValueChangedReason reason);
+
 
     /**
-     * @brief Used to bracket calls to evaluateValueChange. This indicates than a series of calls will be made, and
+     * @brief Used to bracket calls to setValue. This indicates than a series of calls will be made, and
      * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
      * to render.
     **/
-    virtual void endValueChange(Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    void endValueChange(Natron::ValueChangedReason reason) ;
 
     /**
-     * @brief Called on project loading. This copies the value from AnimatingParam to the knob.
+     * @brief Called when a keyframe/tangent is modified, indicating that the curve has changed and we must
+     * evaluate any change (i.e: force a new render)
     **/
-    void onStartupRestoration(const AnimatingParam& other);
+    void evaluateAnimationChange();
+
+    /**
+     * @brief Called on project loading.
+    **/
+    void load(const KnobSerialization& serializationObj);
+
+    /**
+     * @brief Called on project save.
+    **/
+    void save(KnobSerialization* serializationObj) const;
+
+    const Variant& getValue(int dimension = 0) const;
+
+    template <typename T>
+    T getValue(int dimension = 0) const {
+        return getValue(dimension).value<T>();
+    }
+
+
+    void setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason);
+
+    template<typename T>
+    void setValue(const T &value,int dimension = 0) {
+        setValue(Variant(value),dimension,Natron::PLUGIN_EDITED);
+    }
+
+    template<typename T>
+    void setValue(T variant[],int count){
+        for(int i = 0; i < count; ++i){
+            setValue(Variant(variant[i]),i,Natron::PLUGIN_EDITED);
+        }
+    }
+
+    /**
+     * @brief Set the value for a specific dimension at a specific time. By default dimension
+     * is 0. If there's a single dimension, it will set the dimension 0 regardless of the parameter dimension.
+     * Otherwise, it will attempt to set a key for only the dimension 'dimensionIndex'.
+     **/
+    boost::shared_ptr<KeyFrame> setValueAtTime(double time,const Variant& v,int dimension);
+
+    template<typename T>
+    boost::shared_ptr<KeyFrame> setValueAtTime(double time,const T& value,int dimensionIndex = 0){
+        assert(dimensionIndex < getDimension());
+        return setValueAtTime(time,Variant(value),dimensionIndex);
+    }
+
+    template<typename T>
+    void setValueAtTime(double time,T variant[],int count){
+        for(int i = 0; i < count; ++i){
+            setValueAtTime(time,Variant(variant[i]),i);
+        }
+    }
+
+    /**
+     * @brief Returns the value  in a specific dimension at a specific time. If
+     * there is no key in this dimension it will return the value at the requested dimension
+     **/
+    Variant getValueAtTime(double time, int dimension) const;
+
+    template<typename T>
+    T getValueAtTime(double time,int dimension = 0) const {
+        return getValueAtTime(time,dimension).value<T>();
+    }
+
+
+    boost::shared_ptr<Curve> getCurve(int dimension) const;
+
+    const std::map<int, boost::shared_ptr<Curve>  >& getCurves() const;
 
     void turnOffAnimation() ;
 
@@ -98,6 +173,10 @@ public:
      * This ensures thread-safety.
     **/
     void cloneValue(const Knob& other);
+
+    const std::map<int,Variant>& getValueForEachDimension() const ;
+
+    int getDimension() const ;
 
     void turnOffNewLine();
     
@@ -143,10 +222,6 @@ public:
     /**
      * @brief Slaves the curve for the given dimension to the curve
      * at the same dimension for the knob 'other'.
-     * Note that this function doesn't notify other that it is now controlling
-     * the curve of this knob at the given dimension. You must explicitly call
-     * setAsMasterOf on the other knob for the link to take effect.
-     * See implementation for details.
      * In case of success, this function returns true, otherwise false.
     **/
     bool slaveTo(int dimension,boost::shared_ptr<Knob> other);
@@ -164,6 +239,10 @@ public:
     **/
     boost::shared_ptr<Knob> isCurveSlave(int dimension) const;
 
+
+    const std::map<int,boost::shared_ptr<Knob> >& getMasters() const;
+
+    const std::multimap<int,Knob*>& getSlaves() const;
 
 public slots:
     
@@ -189,16 +268,14 @@ signals:
     void restorationComplete();
     
 private:
-    
-    /**
-     * @brief Sets the curve at the given dimension to be the master of the
-     * curve at the same dimension for the knob other. Note that this function
-     * doesn't set the knob other to be slaved to this knob. You must explicitly
-     * call slaveTo on the other knob for the link to take effect.
-    **/
-    void setAsMasterOf(int dimension, Knob *other);
 
-    void unMaster(Knob* other);
+    /**
+     * @brief Must be implemented to evaluate a value that has changed at the given dimension.
+     * The reason can be of any type : time changed, user edited or plugin edited.
+     * This function is called everytimes something changes. This is a "catch all".
+     **/
+    void evaluateValueChange(int dimension,Natron::ValueChangedReason reason);
+
     
     /** @brief This function can be implemented if you want to clone more data than just the value
      * of the knob. Cloning happens when a render request is made: all knobs values of the GUI
@@ -217,14 +294,7 @@ private:
     **/
     virtual void processNewValue(){}
 
-    /**
-     * @brief Must be implemented to evaluate a value that has changed at the given dimension.
-     * The reason can be of any type : time changed, user edited or plugin edited.
-     * This function is called everytimes something changes. This is a "catch all".
-     **/
-    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
 
-    virtual void evaluateAnimationChange() OVERRIDE FINAL;
 
 private:
     struct KnobPrivate;

@@ -23,7 +23,9 @@ void NodeSerialization::initialize(const Natron::Node* n){
     
     for (U32 i  = 0; i < knobs.size(); ++i) {
         if(knobs[i]->isPersistent()){
-            _knobsValues.insert(std::make_pair(knobs[i]->getDescription(),dynamic_cast<AnimatingParam&>(*knobs[i].get())));
+            boost::shared_ptr<KnobSerialization> newKnobSer(new KnobSerialization);
+            knobs[i]->save(newKnobSer.get());
+            _knobsValues.insert(std::make_pair(knobs[i]->getDescription(),newKnobSer));
         }
     }
     
