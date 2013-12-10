@@ -300,6 +300,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
     int inputNbIdentity;
     bool identity = isIdentity(time,scale,renderWindow,view,&inputTimeIdentity,&inputNbIdentity);
     if(identity){
+
         boost::shared_ptr<Natron::Image> inputImage = getImage(inputNbIdentity,inputTimeIdentity,scale,view);
         if(!inputImage){
             QString err("Error in EffectInstance::renderRoI(): getImage(");
@@ -315,6 +316,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
             err.append(") returned NULL");
             throw std::runtime_error(err.toStdString());
         }else{
+            Natron::Log::print("The effect is an identity");
+            Natron::Log::endFunction(getName(),"renderRoI");
             return inputImage;
         }
     }
