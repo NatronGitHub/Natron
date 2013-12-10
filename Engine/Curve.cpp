@@ -209,6 +209,15 @@ void Curve::removeKeyFrame(boost::shared_ptr<KeyFrame> cp){
 
 }
 
+void Curve::removeKeyFrame(double time){
+    for(KeyFrames::iterator it = _imp->_keyFrames.begin();it!=_imp->_keyFrames.end();++it){
+        if((*it)->getTime() == time){
+            removeKeyFrame(*it);
+            break;
+        }
+    }
+}
+
 void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrames::iterator key){
     double tcur = (*key)->getTime();
     double vcur = (*key)->getValue().value<double>();

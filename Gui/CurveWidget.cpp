@@ -2055,6 +2055,7 @@ void CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve(){
         }
     }
     if(!curve){
+        warningDialog("Curve Editor","You must select a curve first.");
         return;
     }
     std::vector<std::pair<SequenceTime,Variant> > keys;
@@ -2071,7 +2072,6 @@ void CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve(){
     }else{
         updateGL();
     }
-    warningDialog("Curve Editor","You must select a curve first.");
 }
 
 void CurveWidget::selectAllKeyFrames(){

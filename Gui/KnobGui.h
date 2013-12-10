@@ -76,13 +76,17 @@ public:
     
     void setKeyframe(SequenceTime time,int dimension);
 
-
+    void removeKeyFrame(SequenceTime time,int dimension);
 public slots:
     /*Called when the value held by the knob is changed internally.
      This should in turn update the GUI but not emit the valueChanged()
      signal.*/
     void onInternalValueChanged(int dimension);
     
+    void onInternalKeySet(SequenceTime time,int dimension);
+
+    void onInternalKeyRemoved(SequenceTime time,int dimension);
+
     void deleteKnob(){
         delete this;
     }
@@ -138,6 +142,20 @@ signals:
     void knobUndoneChange();
     
     void knobRedoneChange();
+
+    void keyFrameSetByUser(SequenceTime,int);
+
+    void keyFrameRemovedByUser(SequenceTime,int);
+
+    /**
+     *@brief Emitted whenever a keyframe is set by the user or by the plugin.
+    **/
+    void keyFrameSet();
+
+    /**
+     *@brief Emitted whenever a keyframe is removed by the user or by the plugin.
+    **/
+    void keyFrameRemoved();
 
 protected:
     

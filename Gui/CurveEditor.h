@@ -60,7 +60,6 @@ public slots:
     
     void checkVisibleState();
     
-    
 private:
     
     

@@ -22,6 +22,8 @@ KnobMultipleUndosCommand::KnobMultipleUndosCommand(KnobGui *knob, const std::map
 , _oldValue(oldValue)
 , _newValue(newValue)
 , _knob(knob)
+, _hasCreateKeyFrame(false)
+, _timeOfCreation(0.)
 {
 }
 
@@ -29,8 +31,10 @@ void KnobMultipleUndosCommand::undo()
 {
     for (std::map<int, Variant>::const_iterator it = _oldValue.begin(); it != _oldValue.end(); ++it) {
         _knob->setValue(it->first, it->second);
-        //maybe we should also attempt to remove the keyframe if we added one in the redo() function ?
-        // Anyway the user can remove it by pressing CTRL-Z in the curve editor
+        if(_hasCreateKeyFrame){
+            _knob->removeKeyFrame(_timeOfCreation,it->first);
+        }
+
     }
     setText(QObject::tr("Set value of %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
@@ -47,6 +51,8 @@ void KnobMultipleUndosCommand::redo()
         _knob->setValue(it->first, it->second);
 
         if (c->keyFramesCount() >= 1) {
+            _hasCreateKeyFrame = true;
+            _timeOfCreation = time;
             _knob->setKeyframe(time, it->first);
         }
 
@@ -61,7 +67,9 @@ KnobUndoCommand::KnobUndoCommand(KnobGui *knob, int dimension, const Variant &ol
       _dimension(dimension),
       _oldValue(oldValue),
       _newValue(newValue),
-      _knob(knob)
+      _knob(knob),
+      _hasCreateKeyFrame(false),
+      _timeOfCreation(0.)
 {
 }
 
@@ -69,10 +77,9 @@ void KnobUndoCommand::undo()
 {
 
     _knob->setValue(_dimension, _oldValue);
-
-    //maybe we should also attempt to remove the keyframe if we added one in the redo() function ?
-    // Anyway the user can remove it by pressing CTRL-Z in the curve editor
-
+    if(_hasCreateKeyFrame){
+        _knob->removeKeyFrame(_timeOfCreation,_dimension);
+    }
     if (_knob->getKnob()->getDimension() > 1) {
         setText(QObject::tr("Set value of %1.%2")
                 .arg(_knob->getKnob()->getDescription().c_str()).arg(_knob->getKnob()->getDimensionName(_dimension).c_str()));
@@ -91,6 +98,8 @@ void KnobUndoCommand::redo()
 
     //the curve is animated, attempt to set a keyframe
     if (c->keyFramesCount() >= 1) {
+         _hasCreateKeyFrame = true;
+         _timeOfCreation = time;
         _knob->setKeyframe(time, _dimension);
     }
 

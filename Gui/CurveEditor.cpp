@@ -144,6 +144,9 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
             continue;
         }
 
+        QObject::connect(kgui,SIGNAL(keyFrameSet()),curveWidget,SLOT(updateGL()));
+        QObject::connect(kgui,SIGNAL(keyFrameRemoved()),curveWidget,SLOT(updateGL()));
+
         hasAtLeast1KnobWithACurve = true;
 
         QTreeWidgetItem* knobItem = new QTreeWidgetItem(nameItem);
@@ -177,6 +180,9 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
                 }
             }
         }
+
+
+
         if(hideKnob){
             knobItem->setHidden(true);
         }
@@ -275,7 +281,10 @@ NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree, CurveWidget* c
   ,_knob(knob)
   ,_dimension(dimension)
 {
-
+    if(knob){
+        QObject::connect(knob,SIGNAL(keyFrameSet()),this,SLOT(checkVisibleState()));
+        QObject::connect(knob,SIGNAL(keyFrameRemoved()),this,SLOT(checkVisibleState()));
+    }
     if(curve){
         if(curve->getInternalCurve()->keyFramesCount() > 1){
             _curveDisplayed = true;
@@ -289,6 +298,7 @@ NodeCurveEditorElement::~NodeCurveEditorElement(){
     _curveWidget->removeCurve(_curve);
     delete _treeItem;
 }
+
 
 void CurveEditor::centerOn(const std::vector<boost::shared_ptr<Curve> >& curves){
 
@@ -656,6 +666,7 @@ PasteKeysCommand::PasteKeysCommand(CurveWidget *editor, std::vector<NodeCurveEdi
         newKey->element = elements[i];
         newKey->time = keys[i].first;
         newKey->value = keys[i].second;
+        _keys.push_back(newKey);
     }
 
 }

@@ -81,6 +81,10 @@ KnobGui::KnobGui(Knob* knob,DockablePanel* container)
 {
     QObject::connect(knob,SIGNAL(valueChanged(int)),this,SLOT(onInternalValueChanged(int)));
     QObject::connect(this,SIGNAL(valueChanged(int,const Variant&)),knob,SLOT(onValueChanged(int,const Variant&)));
+    QObject::connect(knob,SIGNAL(keyFrameSet(SequenceTime,int)),this,SLOT(onInternalKeySet(SequenceTime,int)));
+    QObject::connect(this,SIGNAL(keyFrameSetByUser(SequenceTime,int)),knob,SLOT(onKeyFrameSet(SequenceTime,int)));
+    QObject::connect(knob,SIGNAL(keyFrameRemoved(SequenceTime,int)),this,SLOT(onInternalKeyRemoved(SequenceTime,int)));
+    QObject::connect(this,SIGNAL(keyFrameRemovedByUser(SequenceTime,int)),knob,SLOT(onKeyFrameRemoved(SequenceTime,int)));
     QObject::connect(knob,SIGNAL(secretChanged()),this,SLOT(setSecret()));
     QObject::connect(knob,SIGNAL(enabledChanged()),this,SLOT(setEnabledSlot()));
     QObject::connect(knob,SIGNAL(deleted()),this,SLOT(deleteKnob()));
@@ -335,7 +339,8 @@ void KnobGui::onHorizontalInterpActionTriggered(){
 }
 
 void KnobGui::setKeyframe(SequenceTime time,int dimension){
-     _knob->getHolder()->getApp()->getGui()->_curveEditor->addKeyFrame(this,time,dimension);
+    emit keyFrameSetByUser(time,dimension);
+    emit keyFrameSet();
 }
 
 void KnobGui::onSetKeyActionTriggered(){
@@ -348,19 +353,17 @@ void KnobGui::onSetKeyActionTriggered(){
     
 }
 
+void KnobGui::removeKeyFrame(SequenceTime time,int dimension){
+     emit keyFrameRemovedByUser(time,dimension);
+     emit keyFrameRemoved();
+     updateGUI(dimension,_knob->getValue(dimension));
+}
+
 void KnobGui::onRemoveKeyActionTriggered(){
     //get the current time on the global timeline
     SequenceTime time = _knob->getHolder()->getApp()->getTimeLine()->currentFrame();
-
     for(int i = 0; i < _knob->getDimension();++i){
-        CurveGui* c = _knob->getHolder()->getApp()->getGui()->_curveEditor->findCurve(this, i);
-        const Curve::KeyFrames& keys = c->getInternalCurve()->getKeyFrames();
-        for(Curve::KeyFrames::const_iterator it = keys.begin();it != keys.end();++it){
-            if((*it)->getTime() == time){
-                _knob->getHolder()->getApp()->getGui()->_curveEditor->removeKeyFrame(c ,*it);
-                break;
-            }
-        }
+        removeKeyFrame(time,i);
     }
 }
 
@@ -393,6 +396,14 @@ void KnobGui::setEnabledSlot(){
 void KnobGui::onInternalValueChanged(int dimension){
     if(_widgetCreated)
         updateGUI(dimension,_knob->getValue(dimension));
+}
+
+void KnobGui::onInternalKeySet(SequenceTime,int){
+    emit keyFrameSet();
+}
+
+void KnobGui::onInternalKeyRemoved(SequenceTime,int){
+    emit keyFrameRemoved();
 }
 
 void KnobGui::onCopyValuesActionTriggered(){
@@ -475,25 +486,22 @@ void KnobGui::onLinkToActionTriggered(){
     
     if(dialog.exec()){
         boost::shared_ptr<Knob> otherKnob = dialog.getSelectedKnobs();
-        bool error = false;
         if(otherKnob){
             for(int i = 0; i < _knob->getDimension();++i){
-//                if(!_knob->isCurveLinked(i)){
-//                    _knob->link(i, otherKnob->getCurve(i));
-//                }else{
-//                    error = true;
-//                    break;
-//                }
-            }
+                boost::shared_ptr<Knob> existingLink = _knob->isCurveSlave(i);
+                if(existingLink){
+                    std::string err("Cannot link ");
+                    err.append(_knob->getDescription());
+                    err.append(" \n because the knob is already linked to ");
+                    err.append(existingLink->getDescription());
+                    errorDialog("Knob Link", err);
+                    return;
+                }
+
+                _knob->slaveTo(i, otherKnob);
+              }
         }
-        if(error){
-            std::string err("Cannot link ");
-            err.append(_knob->getDescription());
-            err.append(" to ");
-            err.append(otherKnob->getDescription());
-            err.append(" \n because the knob is already linked.");
-            errorDialog("Knob Link", err);
-        }
+
     }
    
 }

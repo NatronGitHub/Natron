@@ -30,6 +30,8 @@ private:
     std::map<int, Variant> _oldValue;
     std::map<int, Variant> _newValue;
     KnobGui *_knob;
+    bool _hasCreateKeyFrame;
+    double _timeOfCreation;
 };
 
 class KnobUndoCommand : public QUndoCommand
@@ -51,6 +53,8 @@ private:
     Variant _oldValue;
     Variant _newValue;
     KnobGui *_knob;
+    bool _hasCreateKeyFrame;
+    double _timeOfCreation;
 };
 
 #endif // NATRON_GUI_KNOBUNDOCOMMAND_H_

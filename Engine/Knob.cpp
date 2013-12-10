@@ -39,6 +39,7 @@ typedef std::multimap<int, Knob* > SlavesMap;
 typedef std::map<int, boost::shared_ptr<Curve> > CurvesMap;
 
 struct Knob::KnobPrivate {
+    Knob* _publicInterface;
     KnobHolder*  _holder;
     std::vector<U64> _hashVector;
     std::string _description;//< the text label that will be displayed  on the GUI
@@ -67,7 +68,7 @@ struct Knob::KnobPrivate {
     MastersMap _masters; //from what knob is slaved each curve if any
     SlavesMap _slaves; //what knobs each curve will modify as a result of a link
 
-    KnobPrivate(KnobHolder*  holder,int dimension,const std::string& description)
+    KnobPrivate(Knob* publicInterface,KnobHolder*  holder,int dimension,const std::string& description)
         : _holder(holder)
         , _hashVector()
         , _description(description)
@@ -121,10 +122,12 @@ struct Knob::KnobPrivate {
     **/
     void unMaster(Knob* other);
 
+
+
 };
 
 Knob::Knob(KnobHolder* holder,const std::string& description,int dimension)
-    :_imp(new KnobPrivate(holder,dimension,description))
+    :_imp(new KnobPrivate(this,holder,dimension,description))
 {
     
     if(_imp->_holder){
@@ -154,20 +157,28 @@ void Knob::remove(){
 
 
 const Variant& Knob::getValue(int dimension) const{
+
+    ///if the knob is slaved to another knob, returns the other knob value
+    boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
+    if(isSlave){
+        return isSlave->getValue(dimension);
+    }
+
     std::map<int,Variant>::const_iterator it = _imp->_value.find(dimension);
     assert(it != _imp->_value.end());
     return it->second;
 }
 
-void Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason){
-    std::map<int,Variant>::iterator it = _imp->_value.find(dimension);
-    assert(it != _imp->_value.end());
-    it->second = v;
-    evaluateValueChange(dimension,reason);
-}
-
 
 Variant Knob::getValueAtTime(double time,int dimension) const{
+
+    ///if the knob is slaved to another knob, returns the other knob value
+    boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
+    if(isSlave){
+        return isSlave->getValueAtTime(time,dimension);
+    }
+
+
     CurvesMap::const_iterator foundDimension = _imp->_curves.find(dimension);
     boost::shared_ptr<Curve> curve = getCurve(dimension);
     if (curve->isAnimated()) {
@@ -184,15 +195,113 @@ Variant Knob::getValueAtTime(double time,int dimension) const{
     }
 }
 
+void Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason){
 
-boost::shared_ptr<KeyFrame> Knob::setValueAtTime(double time, const Variant& v, int dimension){
+    ///if the knob is slaved to another knob,return, because we don't want the
+    ///gui to be unsynchronized with what lies internally.
+    boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
+    if(isSlave && reason == Natron::PLUGIN_EDITED){
+        return;
+    }
+
+    std::map<int,Variant>::iterator it = _imp->_value.find(dimension);
+    assert(it != _imp->_value.end());
+    it->second = v;
+
+    ///also update slaves
+    std::pair<SlavesMap::iterator,SlavesMap::iterator> range = _imp->_slaves.equal_range(dimension);
+    for(SlavesMap::iterator it = range.first;it != range.second;++it){
+
+        ///for a slave, find out what is the dimension that is slaved to this knob
+        const MastersMap& slaveMasters = it->second->getMasters();
+        for(MastersMap::const_iterator it2 = slaveMasters.begin();it2 != slaveMasters.end();++it2){
+            if(it2->second.get() == this){
+                it->second->setValue(v,it2->first,Natron::OTHER_REASON);
+                break;
+            }
+        }
+    }
+
+    evaluateValueChange(dimension,reason);
+}
+
+boost::shared_ptr<KeyFrame> Knob::setValueAtTime(double time, const Variant& v, int dimension, Natron::ValueChangedReason reason){
+    ///if the knob is slaved to another knob,return, because we don't want the
+    ///gui to be unsynchronized with what lies internally.
+    boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
+    if(isSlave && reason == Natron::PLUGIN_EDITED){
+        return boost::shared_ptr<KeyFrame>();
+    }
+
+
     CurvesMap::iterator foundDimension = _imp->_curves.find(dimension);
     assert(foundDimension != _imp->_curves.end());
     boost::shared_ptr<KeyFrame> k(new KeyFrame(time,v,foundDimension->second.get()));
     foundDimension->second->addKeyFrame(k);
+
+
+    ///also update slaves
+    std::pair<SlavesMap::iterator,SlavesMap::iterator> range = _imp->_slaves.equal_range(dimension);
+    for(SlavesMap::iterator it = range.first;it != range.second;++it){
+        ///for a slave, find out what is the dimension that is slaved to this knob
+        const MastersMap& slaveMasters = it->second->getMasters();
+        for(MastersMap::const_iterator it2 = slaveMasters.begin();it2 != slaveMasters.end();++it2){
+            if(it2->second.get() == this){
+                it->second->setValueAtTime(time,v,it2->first,Natron::OTHER_REASON);
+                break;
+            }
+        }
+    }
+     if(reason != Natron::USER_EDITED){
+        emit keyFrameSet(time,dimension);
+     }
+
     return k;
 }
 
+void Knob::deleteValueAtTime(double time,int dimension,Natron::ValueChangedReason reason){
+    ///if the knob is slaved to another knob,return, because we don't want the
+    ///gui to be unsynchronized with what lies internally.
+    boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
+    if(isSlave && reason == Natron::PLUGIN_EDITED){
+        return;
+    }
+
+    CurvesMap::iterator foundDimension = _imp->_curves.find(dimension);
+    assert(foundDimension != _imp->_curves.end());
+    foundDimension->second->removeKeyFrame(time);
+
+    ///also update slaves
+    std::pair<SlavesMap::iterator,SlavesMap::iterator> range = _imp->_slaves.equal_range(dimension);
+    for(SlavesMap::iterator it = range.first;it != range.second;++it){
+        ///for a slave, find out what is the dimension that is slaved to this knob
+        const MastersMap& slaveMasters = it->second->getMasters();
+        for(MastersMap::const_iterator it2 = slaveMasters.begin();it2 != slaveMasters.end();++it2){
+            if(it2->second.get() == this){
+                it->second->deleteValueAtTime(time,it2->first,Natron::OTHER_REASON);
+                break;
+            }
+        }
+    }
+    if(reason != Natron::USER_EDITED){
+    emit keyFrameRemoved(time,dimension);
+    }
+}
+
+
+void Knob::setValue(const Variant& value,int dimension){
+    setValue(value,dimension,Natron::PLUGIN_EDITED);
+}
+
+boost::shared_ptr<KeyFrame> Knob::setValueAtTime(double time, const Variant& v, int dimension){
+   setValueAtTime(time,v,dimension,Natron::PLUGIN_EDITED);
+}
+
+
+
+void Knob::deleteValueAtTime(double time,int dimension){
+    deleteValueAtTime(time,dimension,Natron::PLUGIN_EDITED);
+}
 
 boost::shared_ptr<Curve> Knob::getCurve(int dimension) const {
     CurvesMap::const_iterator foundDimension = _imp->_curves.find(dimension);
@@ -271,6 +380,13 @@ void Knob::onValueChanged(int dimension,const Variant& variant){
     setValue(variant, dimension,Natron::USER_EDITED);
 }
 
+void Knob::onKeyFrameSet(SequenceTime time,int dimension){
+    setValueAtTime(time,getValue(dimension),dimension,Natron::USER_EDITED);
+}
+
+void Knob::onKeyFrameRemoved(SequenceTime time,int dimension){
+    deleteValueAtTime(time,dimension,Natron::USER_EDITED);
+}
 
 void Knob::evaluateAnimationChange(){
     

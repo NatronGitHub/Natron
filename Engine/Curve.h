@@ -127,6 +127,9 @@ public:
 
     void removeKeyFrame(boost::shared_ptr<KeyFrame> cp);
 
+    //removes a keyframe at this time, if any
+    void removeKeyFrame(double time);
+
     int keyFramesCount() const ;
 
     double getMinimumTimeCovered() const;

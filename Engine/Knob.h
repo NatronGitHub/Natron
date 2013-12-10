@@ -75,6 +75,10 @@ public:
     **/
     void beginValueChange(Natron::ValueChangedReason reason);
 
+    /**
+     * @brief Called by setValue to indicate that an evaluation is needed. This could be private.
+     **/
+    void evaluateValueChange(int dimension,Natron::ValueChangedReason reason);
 
     /**
      * @brief Used to bracket calls to setValue. This indicates than a series of calls will be made, and
@@ -107,17 +111,17 @@ public:
     }
 
 
-    void setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason);
+    void setValue(const Variant& value,int dimension);
 
     template<typename T>
     void setValue(const T &value,int dimension = 0) {
-        setValue(Variant(value),dimension,Natron::PLUGIN_EDITED);
+        setValue(Variant(value),dimension);
     }
 
     template<typename T>
     void setValue(T variant[],int count){
         for(int i = 0; i < count; ++i){
-            setValue(Variant(variant[i]),i,Natron::PLUGIN_EDITED);
+            setValue(Variant(variant[i]),i);
         }
     }
 
@@ -140,6 +144,8 @@ public:
             setValueAtTime(time,Variant(variant[i]),i);
         }
     }
+
+    void deleteValueAtTime(double time,int dimension);
 
     /**
      * @brief Returns the value  in a specific dimension at a specific time. If
@@ -247,9 +253,14 @@ public:
 public slots:
     
     /*Set the value of the knob but does NOT emit the valueChanged signal.
-     This is called by the GUI hence does not change the value of any
-     render thread storage.*/
+     This is called by the GUI.*/
     void onValueChanged(int dimension,const Variant& variant);
+
+    /*Set a keyframe for the knob but does NOT emit the keyframeSet signal.
+         This is called by the GUI .*/
+    void onKeyFrameSet(SequenceTime time,int dimension);
+
+    void onKeyFrameRemoved(SequenceTime time,int dimension);
 
     void onTimeChanged(SequenceTime);
         
@@ -266,16 +277,20 @@ signals:
     void enabledChanged();
     
     void restorationComplete();
+
+    void keyFrameSet(SequenceTime,int);
+
+    void keyFrameRemoved(SequenceTime,int);
     
 private:
+    //private because it emits a signal
+    void setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason);
 
-    /**
-     * @brief Must be implemented to evaluate a value that has changed at the given dimension.
-     * The reason can be of any type : time changed, user edited or plugin edited.
-     * This function is called everytimes something changes. This is a "catch all".
-     **/
-    void evaluateValueChange(int dimension,Natron::ValueChangedReason reason);
+     //private because it emits a signal
+    boost::shared_ptr<KeyFrame> setValueAtTime(double time,const Variant& v,int dimension,Natron::ValueChangedReason reason);
 
+     //private because it emits a signal
+    void deleteValueAtTime(double time,int dimension,Natron::ValueChangedReason reason);
     
     /** @brief This function can be implemented if you want to clone more data than just the value
      * of the knob. Cloning happens when a render request is made: all knobs values of the GUI
@@ -293,7 +308,6 @@ private:
      * <time,file> .
     **/
     virtual void processNewValue(){}
-
 
 
 private:
