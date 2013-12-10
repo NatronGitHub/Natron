@@ -1074,6 +1074,55 @@ void String_KnobGui::addToLayout(QHBoxLayout *layout)
     layout->addWidget(_lineEdit);
 
 }
+//=============================CUSTOM_KNOB_GUI===================================
+void Custom_KnobGui::createWidget(QGridLayout *layout, int row)
+{
+    _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
+    _descriptionLabel->setToolTip(getKnob()->getHintToolTip().c_str());
+    layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
+
+    _lineEdit = new LineEdit(layout->parentWidget());
+    _lineEdit->setToolTip(getKnob()->getHintToolTip().c_str());
+    _lineEdit->setReadOnly(true);
+    layout->addWidget(_lineEdit, row, 1, Qt::AlignLeft);
+}
+
+Custom_KnobGui::~Custom_KnobGui()
+{
+    delete _descriptionLabel;
+    delete _lineEdit;
+}
+
+void Custom_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
+{
+    _lineEdit->setText(variant.toString());
+}
+
+void Custom_KnobGui::_hide()
+{
+    _descriptionLabel->hide();
+    _lineEdit->hide();
+}
+
+void Custom_KnobGui::_show()
+{
+    _descriptionLabel->show();
+    _lineEdit->show();
+}
+
+void Custom_KnobGui::setEnabled()
+{
+    bool b = getKnob()->isEnabled();
+    _descriptionLabel->setEnabled(b);
+    _lineEdit->setEnabled(b);
+}
+
+void Custom_KnobGui::addToLayout(QHBoxLayout *layout)
+{
+    layout->addWidget(_descriptionLabel);
+    layout->addWidget(_lineEdit);
+}
+
 //=============================GROUP_KNOB_GUI===================================
 GroupBoxLabel::GroupBoxLabel(QWidget *parent):
     QLabel(parent),
