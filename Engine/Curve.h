@@ -50,13 +50,13 @@ public:
     
     double getTime() const ;
 
-    const Variant& getLeftTangent() const;
+    double getLeftTangent() const;
 
-    const Variant& getRightTangent() const ;
+    double getRightTangent() const ;
 
-    void setLeftTangent(const Variant& v);
+    void setLeftTangent(double v);
 
-    void setRightTangent(const Variant& v);
+    void setRightTangent(double v);
 
     void setValue(const Variant& v);
 
@@ -149,11 +149,11 @@ public:
     
     void setKeyFrameValueAndTime(double time,const Variant& value,boost::shared_ptr<KeyFrame> k);
     
-    void setKeyFrameLeftTangent(const Variant& value,boost::shared_ptr<KeyFrame> k);
+    void setKeyFrameLeftTangent(double value,boost::shared_ptr<KeyFrame> k);
     
-    void setKeyFrameRightTangent(const Variant& value,boost::shared_ptr<KeyFrame> k);
+    void setKeyFrameRightTangent(double value,boost::shared_ptr<KeyFrame> k);
     
-    void setKeyFrameTangents(const Variant& left,const Variant& right,boost::shared_ptr<KeyFrame> k);
+    void setKeyFrameTangents(double left, double right, boost::shared_ptr<KeyFrame> k);
     
     void setKeyFrameInterpolation(Natron::KeyframeType interp,boost::shared_ptr<KeyFrame> k);
 

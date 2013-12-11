@@ -23,7 +23,7 @@ struct KeyFramePrivate{
     Variant value; /// the value held by the key
     double time; /// a value ranging between 0 and 1
 
-    Variant leftTangent,rightTangent;
+    double leftTangent,rightTangent; // tangents are anly for double-valued keyframes
     Natron::KeyframeType interpolation;
 
 
@@ -37,12 +37,10 @@ struct KeyFramePrivate{
     KeyFramePrivate(double time, const Variant& initialValue)
         : value(initialValue)
         , time(time)
-        , leftTangent()
-        , rightTangent()
+        , leftTangent(0.)
+        , rightTangent(0.)
         , interpolation(Natron::KEYFRAME_SMOOTH)
     {
-        leftTangent = initialValue;
-        rightTangent = initialValue;
     }
 
     KeyFramePrivate(const KeyFramePrivate& other)

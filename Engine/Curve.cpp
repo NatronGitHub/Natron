@@ -66,12 +66,12 @@ bool KeyFrame::operator==(const KeyFrame& o) const {
 }
 
 
-void KeyFrame::setLeftTangent(const Variant& v){
+void KeyFrame::setLeftTangent(double v){
     _imp->leftTangent = v;
 }
 
 
-void KeyFrame::setRightTangent(const Variant& v){
+void KeyFrame::setRightTangent(double v){
     _imp->rightTangent = v;
 }
 
@@ -94,9 +94,9 @@ const Variant& KeyFrame::getValue() const { return _imp->value; }
 
 double KeyFrame::getTime() const { return _imp->time; }
 
-const Variant& KeyFrame::getLeftTangent() const { return _imp->leftTangent; }
+double KeyFrame::getLeftTangent() const { return _imp->leftTangent; }
 
-const Variant& KeyFrame::getRightTangent() const { return _imp->rightTangent; }
+double KeyFrame::getRightTangent() const { return _imp->rightTangent; }
 
 /************************************CURVEPATH************************************/
 
@@ -217,7 +217,7 @@ Variant Curve::getValueAt(double t) const {
     if (upper == _imp->keyFrames.begin()) {
         tnext = (*upper)->getTime();
         vnext = (*upper)->getValue().value<double>();
-        vnextDerivLeft = (*upper)->getLeftTangent().value<double>();
+        vnextDerivLeft = (*upper)->getLeftTangent();
         interpNext = (*upper)->getInterpolation();
         tcur = tnext - 1.;
         vcur = vnext;
@@ -227,7 +227,7 @@ Variant Curve::getValueAt(double t) const {
     } else if (upper == _imp->keyFrames.end()) {
         tcur = (*prev)->getTime();
         vcur = (*prev)->getValue().value<double>();
-        vcurDerivRight = (*prev)->getRightTangent().value<double>();
+        vcurDerivRight = (*prev)->getRightTangent();
         interp = (*prev)->getInterpolation();
         tnext = tcur + 1.;
         vnext = vcur;
@@ -236,11 +236,11 @@ Variant Curve::getValueAt(double t) const {
     } else {
         tcur = (*prev)->getTime();
         vcur = (*prev)->getValue().value<double>();
-        vcurDerivRight = (*prev)->getRightTangent().value<double>();
+        vcurDerivRight = (*prev)->getRightTangent();
         interp = (*prev)->getInterpolation();
         tnext = (*upper)->getTime();
         vnext = (*upper)->getValue().value<double>();
-        vnextDerivLeft = (*upper)->getLeftTangent().value<double>();
+        vnextDerivLeft = (*upper)->getLeftTangent();
         interpNext = (*upper)->getInterpolation();
     }
 
@@ -304,23 +304,23 @@ void Curve::setKeyFrameValueAndTime(double time,const Variant& value,boost::shar
 
 }
 
-void Curve::setKeyFrameLeftTangent(const Variant& value,boost::shared_ptr<KeyFrame> k){
-    if(value.toDouble() != k->getRightTangent().toDouble()){
+void Curve::setKeyFrameLeftTangent(double value,boost::shared_ptr<KeyFrame> k){
+    if(value != k->getLeftTangent()) {
         k->setLeftTangent(value);
         evaluateCurveChanged(TANGENT_CHANGED,k);
     }
     
 }
 
-void Curve::setKeyFrameRightTangent(const Variant& value,boost::shared_ptr<KeyFrame> k){
-    if(k->getLeftTangent().toDouble()  != value.toDouble()){
+void Curve::setKeyFrameRightTangent(double value,boost::shared_ptr<KeyFrame> k){
+    if(value != k->getRightTangent()) {
         k->setRightTangent(value);
         evaluateCurveChanged(TANGENT_CHANGED,k);
     }
 }
 
-void Curve::setKeyFrameTangents(const Variant& left,const Variant& right,boost::shared_ptr<KeyFrame> k){
-    if(k->getLeftTangent().toDouble()  != left.toDouble() || right.toDouble() != k->getRightTangent().toDouble()){
+void Curve::setKeyFrameTangents(double left, double right, boost::shared_ptr<KeyFrame> k){
+    if(k->getLeftTangent() != left || right != k->getRightTangent()){
         k->setLeftTangent(left);
         k->setRightTangent(right);
         evaluateCurveChanged(TANGENT_CHANGED,k);
@@ -354,7 +354,7 @@ void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrameSet::itera
         --prev;
         tprev = (*prev)->getTime();
         vprev = (*prev)->getValue().value<double>();
-        vprevDerivRight = (*prev)->getRightTangent().value<double>();
+        vprevDerivRight = (*prev)->getRightTangent();
         prevType = (*prev)->getInterpolation();
         
         //if prev is the first keyframe, and not edited by the user then interpolate linearly
@@ -374,7 +374,7 @@ void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrameSet::itera
     } else {
         tnext = (*next)->getTime();
         vnext = (*next)->getValue().value<double>();
-        vnextDerivLeft = (*next)->getLeftTangent().value<double>();
+        vnextDerivLeft = (*next)->getLeftTangent();
         nextType = (*next)->getInterpolation();
         
         KeyFrameSet::const_iterator nextnext = next;
@@ -401,8 +401,8 @@ void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrameSet::itera
         std::cout << e.what() << std::endl;
         assert(false);
     }
-    (*key)->setLeftTangent(Variant(vcurDerivLeft));
-    (*key)->setRightTangent(Variant(vcurDerivRight));
+    (*key)->setLeftTangent(vcurDerivLeft);
+    (*key)->setRightTangent(vcurDerivRight);
     if(reason != TANGENT_CHANGED){
         evaluateCurveChanged(TANGENT_CHANGED,*key);
     }
