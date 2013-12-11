@@ -1098,8 +1098,7 @@ void CurveWidgetPrivate::refreshKeyTangentsGUI(boost::shared_ptr<SelectedKey> ke
         if (prev != keyframes.end()) {
             double prevKeyXWidgetCoord = _widget->toWidgetCoordinates(prevTime, 0).x();
             //set the left tangent X to be at 1/3 of the interval [prev,k], and clamp it to 1/8 of the widget width.
-            double leftTanXWidgetDiffMax = std::min(leftTanXWidgetDiffMax,
-                                                    (keyWidgetCoord.x() - prevKeyXWidgetCoord) / 3.);
+            leftTanXWidgetDiffMax = std::min(leftTanXWidgetDiffMax, (keyWidgetCoord.x() - prevKeyXWidgetCoord) / 3.);
         }
         //clamp the left tangent Y to 1/8 of the widget height.
         double leftTanYWidgetDiffMax = std::min( h/8., leftTanXWidgetDiffMax);
@@ -1128,8 +1127,7 @@ void CurveWidgetPrivate::refreshKeyTangentsGUI(boost::shared_ptr<SelectedKey> ke
         if (next != keyframes.end()) {
             double nextKeyXWidgetCoord = _widget->toWidgetCoordinates(nextTime, 0).x();
             //set the right tangent X to be at 1/3 of the interval [k,next], and clamp it to 1/8 of the widget width.
-            double rightTanXWidgetDiffMax = std::min(rightTanXWidgetDiffMax,
-                                                     (nextKeyXWidgetCoord - keyWidgetCoord.x()) / 3.);
+            rightTanXWidgetDiffMax = std::min(rightTanXWidgetDiffMax, (nextKeyXWidgetCoord - keyWidgetCoord.x()) / 3.);
         }
         //clamp the right tangent Y to 1/8 of the widget height.
         double rightTanYWidgetDiffMax = std::min( h/8., rightTanXWidgetDiffMax);
