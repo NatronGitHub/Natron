@@ -178,12 +178,20 @@ void Curve::removeKeyFrame(boost::shared_ptr<KeyFrame> cp){
 
 }
 
-void Curve::removeKeyFrame(double time){
-    for(KeyFrames::iterator it = _imp->keyFrames.begin();it!=_imp->keyFrames.end();++it){
-        if((*it)->getTime() == time){
-            removeKeyFrame(*it);
-            break;
-        }
+class KeyFrameTimePredicate
+{
+public:
+    KeyFrameTimePredicate(double t) : _t(t) {};
+
+    bool operator()(const boost::shared_ptr<KeyFrame>& f) { return (f->getTime() == _t); }
+private:
+    double _t;
+};
+
+void Curve::removeKeyFrame(double time) {
+    KeyFrames::iterator it = std::find_if(_imp->keyFrames.begin(), _imp->keyFrames.end(), KeyFrameTimePredicate(time));
+    if (it != _imp->keyFrames.end()) {
+        removeKeyFrame(*it);
     }
 }
 
