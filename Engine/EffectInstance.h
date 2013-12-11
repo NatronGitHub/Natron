@@ -350,6 +350,12 @@ public:
     virtual void onKnobValueChanged(Knob* /*k*/, Natron::ValueChangedReason /*reason*/) OVERRIDE {}
     
     /**
+     * @brief Can be overloaded to clear any cache the plugin might be
+     * handling on his side.
+     **/
+    virtual void purgeCaches(){};
+    
+    /**
      * @brief When called, if the node holding this effect  is connected to any
      * viewer, it will render again the current frame. By default you don't have to
      * call this yourself as this is called automatically on a knob value changed,

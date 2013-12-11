@@ -793,6 +793,15 @@ void Node::serialize(NodeSerialization* serializationObject) const {
     serializationObject->initialize(this);
 }
 
+void Node::purgeAllInstancesCaches(){
+    for(std::map<RenderTree*,EffectInstance*>::iterator it = _imp->renderInstances.begin();
+        it != _imp->renderInstances.end();++it){
+        it->second->purgeCaches();
+    }
+    _imp->previewInstance->purgeCaches();
+    _liveInstance->purgeCaches();
+}
+
 InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin,const std::string& name)
     : Node(app,plugin,name)
     , _inputsCount(1)

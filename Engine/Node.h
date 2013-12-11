@@ -317,6 +317,8 @@ public:
      **/
     void serialize(NodeSerialization* serializationObject) const;
     
+    void purgeAllInstancesCaches();
+    
 public slots:
     
     void onGUINameChanged(const QString& str);

@@ -89,8 +89,7 @@ For Image Effects, it is generally a bad idea to call this after each render, bu
 \f0\fs32 \cf0 . Some effects, typically those flagged with the \cf3 \ul \ulc3 kOfxImageEffectInstancePropSequentialRender\cf0 \ulnone  property, may need to cache information from previously rendered frames to function correctly, or have data structures that are expensive to reconstruct at each frame (eg: a particle system). Ideally, such effect should free such structures during the 
 \f1\fs26 kOfxImageEffectActionEndSequenceRender
 \f0\fs32  action.\
-\pard\pardeftab720\sa320
-\cf4 UNSUPPORTED\
+\cf2 SUPPORTED\cf4 \
 \pard\pardeftab720\sa320
 
 \b\fs48 \cf0 \
@@ -186,7 +185,7 @@ If the effect does not need to process any pixels, it should set the value of th
 \f1\fs26 outArgs
 \f0\fs32  to be the time at which the frame should be fetched from a clip.\
 \pard\pardeftab720\sa320
-\cf4 UNSUPPORTED\
+\cf2 SUPPORTED\cf4 \
 \
 \pard\pardeftab720\sa380
 

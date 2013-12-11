@@ -114,7 +114,7 @@ void EffectInstance::setAsRenderClone()
     _imp->isRenderClone = true;
 }
 
-void EffectInstance::clone(SequenceTime time){
+void EffectInstance::clone(SequenceTime /*time*/){
     if(!_imp->isRenderClone)
         return;
     cloneKnobs(*(_node->getLiveInstance()));
@@ -298,6 +298,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
     to cache anything or render anything for this effect.*/
     SequenceTime inputTimeIdentity;
     int inputNbIdentity;
+
     bool identity = isIdentity(time,scale,renderWindow,view,&inputTimeIdentity,&inputNbIdentity);
     if(identity){
 
@@ -328,6 +329,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
     if(!byPassCache){
         image = appPTR->getNodeCache().get(key);
     }
+
     /*if not cached, we store the freshly allocated image in this member*/
     if(!image){
         /*before allocating it we must fill the RoD of the image we want to render*/

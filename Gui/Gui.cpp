@@ -564,6 +564,9 @@ void Gui::setupUi()
     QObject::connect(actionClearDiskCache, SIGNAL(triggered()),appPTR,SLOT(clearDiskCache()));
     QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),appPTR,SLOT(clearPlaybackCache()));
     QObject::connect(actionClearNodeCache, SIGNAL(triggered()),appPTR,SLOT(clearNodeCache()));
+    
+    //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
+    QObject::connect(actionClearNodeCache, SIGNAL(triggered()),_appInstance,SLOT(clearOpenFXPluginsCaches()));
     QObject::connect(actionExit,SIGNAL(triggered()),this,SLOT(exit()));
     QObject::connect(actionProject_settings,SIGNAL(triggered()),this,SLOT(setVisibleProjectSettingsPanel()));
     

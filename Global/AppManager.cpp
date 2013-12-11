@@ -840,9 +840,9 @@ void AppManager::clearDiskCache(){
 }
 
 
-void  AppManager::clearNodeCache(){
+void AppManager::clearNodeCache(){
     _nodeCache->clear();
-
+    
 }
 
 
@@ -1655,6 +1655,13 @@ void AppManager::removeFromViewerCache(boost::shared_ptr<Natron::FrameEntry> tex
 }
 
 
+
+void AppInstance::clearOpenFXPluginsCaches(){
+    const std::vector<Node*>& activeNodes = _currentProject->getCurrentNodes();
+    for (U32 i = 0; i < activeNodes.size(); ++i) {
+        activeNodes[i]->purgeAllInstancesCaches();
+    }
+}
 
 namespace Natron{
 

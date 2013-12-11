@@ -794,3 +794,8 @@ std::string OfxEffectInstance::getOutputFileName() const{
     }
     return "";
 }
+
+void OfxEffectInstance::purgeCaches(){
+    OfxStatus stat =  effect_->purgeCachesAction();
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+}

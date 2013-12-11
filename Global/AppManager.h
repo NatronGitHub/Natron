@@ -211,6 +211,8 @@ public slots:
     /*Used in background mode only*/
     void startWritersRendering(const QStringList& writers);
 
+    void clearOpenFXPluginsCaches();
+
 signals:
 
     void pluginsPopulated();
