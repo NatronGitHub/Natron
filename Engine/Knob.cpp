@@ -331,17 +331,16 @@ void Knob::evaluateAnimationChange(){
             setValue(v,i);
         }
     }
-    std::cout << "RENDER!!" << std::endl;
     endValueChange(Natron::PLUGIN_EDITED);
 
 }
 
 void Knob::beginValueChange(Natron::ValueChangedReason reason) {
-    _imp->_holder->getApp()->getProject()->beginProjectWideValueChanges(reason,_imp->_holder);
+    _imp->_holder->notifyProjectBeginKnobsValuesChanged(reason);
 }
 
 void Knob::endValueChange(Natron::ValueChangedReason reason) {
-    _imp->_holder->getApp()->getProject()->endProjectWideValueChanges(reason,_imp->_holder);
+    _imp->_holder->notifyProjectEndKnobsValuesChanged(reason);
 }
 
 
@@ -352,7 +351,7 @@ void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
     if(reason != Natron::USER_EDITED){
         emit valueChanged(dimension);
     }
-    _imp->_holder->getApp()->getProject()->stackEvaluateRequest(reason,_imp->_holder,this,!_imp->_isInsignificant);
+    _imp->_holder->notifyProjectEvaluationRequested(reason, this, !_imp->_isInsignificant);
 }
 
 void Knob::onTimeChanged(SequenceTime time){
@@ -541,4 +540,16 @@ void KnobHolder::refreshAfterTimeChange(SequenceTime time){
     for(U32 i = 0; i < _knobs.size() ; ++i){
         _knobs[i]->onTimeChanged(time);
     }
+}
+
+void KnobHolder::notifyProjectBeginKnobsValuesChanged(Natron::ValueChangedReason reason){
+    getApp()->getProject()->beginProjectWideValueChanges(reason, this);
+}
+
+void KnobHolder::notifyProjectEndKnobsValuesChanged(Natron::ValueChangedReason reason){
+    getApp()->getProject()->endProjectWideValueChanges(reason,this);
+}
+
+void KnobHolder::notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,Knob* k,bool significant){
+    getApp()->getProject()->stackEvaluateRequest(reason,this,k,significant);
 }

@@ -132,14 +132,16 @@ Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
         _liveInstance         = func.second(this);
         _imp->previewInstance = func.second(this);
     } else { //ofx plugin
-        _liveInstance         = appPTR->getOfxHost()->createOfxEffect(name,this);
+        _liveInstance = appPTR->getOfxHost()->createOfxEffect(name,this);
         _imp->previewInstance = appPTR->getOfxHost()->createOfxEffect(name,this);
     }
     assert(_liveInstance);
     assert(_imp->previewInstance);
 
     _imp->previewInstance->setAsRenderClone();
+    _imp->previewInstance->notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
     _imp->previewInstance->initializeKnobs();
+    _imp->previewInstance->notifyProjectEndKnobsValuesChanged(Natron::OTHER_REASON);
     _imp->previewRenderTree = new RenderTree(_imp->previewInstance);
     _imp->renderInstances.insert(std::make_pair(_imp->previewRenderTree,_imp->previewInstance));
 }
@@ -191,9 +193,9 @@ void Node::onGUINameChanged(const QString& str){
 }
 
 void Node::initializeKnobs(){
-    _liveInstance->beginKnobsValuesChanged(Natron::USER_EDITED);
+    _liveInstance->notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
     _liveInstance->initializeKnobs();
-    _liveInstance->endKnobsValuesChanged(Natron::USER_EDITED);
+    _liveInstance->notifyProjectEndKnobsValuesChanged(Natron::OTHER_REASON);
     emit knobsInitialized();
 }
 
@@ -228,12 +230,11 @@ EffectInstance*  Node::createLiveInstanceClone()
         ret =  func.second(this);
     } else {
         ret = appPTR->getOfxHost()->createOfxEffect(_liveInstance->pluginID(),this);
-
     }
     assert(ret);
-    ret->beginKnobsValuesChanged(Natron::USER_EDITED);
+    ret->notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
     ret->initializeKnobs();
-    ret->endKnobsValuesChanged(Natron::USER_EDITED);
+    ret->notifyProjectEndKnobsValuesChanged(Natron::OTHER_REASON);
     ret->setAsRenderClone();
     return ret;
 }

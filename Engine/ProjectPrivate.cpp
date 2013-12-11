@@ -35,11 +35,12 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , _project(project)
     , _knobsAge(0)
     , _lastTimelineSeekCaller(NULL)
+    , _beginEndBracketsCount(0)
+    , _evaluationsCount(0)
+    , _holdersWhoseBeginWasCalled()
     , _isSignificantChange(false)
 
 {
-    _isBetweenBeginAndEndValueChanged.second = NULL;
-    _isBetweenBeginAndEndValueChanged.first = false;
 }
 
 

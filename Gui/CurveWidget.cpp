@@ -1260,8 +1260,8 @@ void CurveWidgetPrivate::setKeysInterpolation(const std::vector<std::pair<CurveG
         for(U32 i = 0; i < keys.size();++i){
             keys[i].first->getInternalCurve()->setKeyFrameInterpolation(keys[i].second->getInterpolation(), keys[i].second);
         }
+        _widget->updateGL();
     }
-    _widget->updateGL();
 }
 
 

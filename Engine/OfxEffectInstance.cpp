@@ -92,7 +92,9 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
             effect_ = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
             assert(effect_);
             effect_->setOfxEffectInstancePointer(this);
+            notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
             OfxStatus stat = effect_->populate();
+            notifyProjectEndKnobsValuesChanged(Natron::OTHER_REASON);
 
             if (stat != kOfxStatOK) {
                 throw std::runtime_error("Error while populating the Ofx image effect");

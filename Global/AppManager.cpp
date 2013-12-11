@@ -247,7 +247,11 @@ AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectNam
         // cannot start a background process without a file
         throw std::invalid_argument("Project file name empty");
     }
+    
+    _currentProject->notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
     _currentProject->initializeKnobs();
+    _currentProject->notifyProjectEndKnobsValuesChanged(Natron::OTHER_REASON);
+
     
     if(!_isBackground){
         _gui->createGui();

@@ -245,23 +245,25 @@ void Project::load(const ProjectSerialization& obj){
 }
 
 void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller){
-    if(_imp->_isBetweenBeginAndEndValueChanged.first){
-        return;
-    }
-    _imp->_isBetweenBeginAndEndValueChanged.first = true;
-    _imp->_isBetweenBeginAndEndValueChanged.second = caller;
-    caller->beginKnobsValuesChanged(reason);
+    //std::cout <<"Begin: " << _imp->_beginEndBracketsCount << std::endl;
+    ++_imp->_beginEndBracketsCount;
+    
+//    std::set<KnobHolder*>::const_iterator found = _imp->_holdersWhoseBeginWasCalled.find(caller);
+//    if(found == _imp->_holdersWhoseBeginWasCalled.end()){
+        caller->beginKnobsValuesChanged(reason);
+    //}
 }
 
 void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder* caller,Knob* k,bool isSignificant){
     bool wasBeginCalled = true;
-    if(!_imp->_isBetweenBeginAndEndValueChanged.first){
+    if(_imp->_beginEndBracketsCount == 0){
         beginProjectWideValueChanges(reason,caller);
         wasBeginCalled = false;
     }
     if(!_imp->_isSignificantChange && isSignificant){
         _imp->_isSignificantChange = true;
     }
+    ++_imp->_evaluationsCount;
     caller->onKnobValueChanged(k,reason);
     if(!wasBeginCalled){
         endProjectWideValueChanges(reason,caller);
@@ -269,26 +271,29 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
 }
 
 void Project::endProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller){
-    if(_imp->_isBetweenBeginAndEndValueChanged.second != caller){
+    --_imp->_beginEndBracketsCount;
+    //   std::cout <<"End: " << _imp->_beginEndBracketsCount << std::endl;
+    caller->endKnobsValuesChanged(reason);
+    if(_imp->_beginEndBracketsCount != 0){
         return;
     }
-    if(reason == Natron::USER_EDITED){
-        getApp()->triggerAutoSave();
+    if(_imp->_evaluationsCount != 0){
+        _imp->_evaluationsCount = 0;
+        if(reason == Natron::USER_EDITED){
+            getApp()->triggerAutoSave();
+        }
+        if(reason != Natron::TIME_CHANGED && reason != Natron::OTHER_REASON){
+            caller->evaluate(NULL,_imp->_isSignificantChange);
+        }
     }
-    _imp->_isBetweenBeginAndEndValueChanged.first = false;
-    _imp->_isBetweenBeginAndEndValueChanged.second = NULL;
-    if(reason != Natron::TIME_CHANGED){
-        caller->evaluate(NULL,_imp->_isSignificantChange);
-    }
-    caller->endKnobsValuesChanged(reason);
 }
 
-void Project::beginKnobsValuesChanged(Natron::ValueChangedReason reason){
-    beginProjectWideValueChanges(reason, this);
+void Project::beginKnobsValuesChanged(Natron::ValueChangedReason /*reason*/){
+    //beginProjectWideValueChanges(reason, this);
 }
 
-void Project::endKnobsValuesChanged(Natron::ValueChangedReason reason) {
-    endProjectWideValueChanges(reason,this);
+void Project::endKnobsValuesChanged(Natron::ValueChangedReason /*reason*/) {
+    //endProjectWideValueChanges(reason,this);
 }
 
 void Project::onKnobValueChanged(Knob* knob,Natron::ValueChangedReason /*reason*/){

@@ -11,9 +11,12 @@
 #ifndef PROJECTPRIVATE_H
 #define PROJECTPRIVATE_H
 
+#include <map>
+
 #include <QDateTime>
 #include <QMutex>
 #include <QString>
+
 
 #include "Engine/Format.h"
 #include "Engine/KnobTypes.h"
@@ -63,7 +66,9 @@ struct ProjectPrivate{
     int _knobsAge; //< the age of the knobs in the app. This is updated on each value changed.
     Natron::OutputEffectInstance* _lastTimelineSeekCaller;
 
-    std::pair<bool,KnobHolder*> _isBetweenBeginAndEndValueChanged;
+    int _beginEndBracketsCount;
+    int _evaluationsCount;
+    std::multimap<KnobHolder*,int> _holdersWhoseBeginWasCalled;
     bool _isSignificantChange;
     
     ProjectPrivate(Natron::Project* project);
