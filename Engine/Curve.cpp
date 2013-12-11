@@ -18,7 +18,7 @@
 
 namespace {
     struct KeyFrameCloner {
-        boost::shared_ptr<KeyFrame> operator()(const boost::shared_ptr<KeyFrame>& kf) const { return boost::shared_ptr<KeyFrame>(new KeyFrame(kf->getTime(),kf->getValue())); }
+        boost::shared_ptr<KeyFrame> operator()(const boost::shared_ptr<KeyFrame>& kf) const { return boost::shared_ptr<KeyFrame>(new KeyFrame(*kf)); }
     };
 
     class KeyFrameTimePredicate
