@@ -50,7 +50,7 @@ enum EventState {
     DRAGGING_TIMELINE = 4,
     NONE = 5
 };
-    
+
 }
 
 struct SelectedKey {
@@ -833,9 +833,9 @@ std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator > CurveWidgetPr
                 pt.y() >= (leftTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)) {
             return std::make_pair(CurveGui::LEFT_TANGENT,it);
         } else if (pt.x() >= (rightTanPt.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
-                 pt.x() <= (rightTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
-                 pt.y() <= (rightTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
-                 pt.y() >= (rightTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)) {
+                   pt.x() <= (rightTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
+                   pt.y() <= (rightTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
+                   pt.y() >= (rightTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)) {
             return std::make_pair(CurveGui::RIGHT_TANGENT,it);
         }
 
@@ -858,9 +858,9 @@ bool CurveWidgetPrivate::isNearbySelectedKeyFramesCrossWidget(const QPoint& pt) 
         //is nearby horizontal line
         return true;
     } else if(pt.y() >= (middleBtm.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
-             pt.y() <= (middleTop.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
-             pt.x() <= (middleBtm.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
-             pt.x() >= (middleBtm.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)) {
+              pt.y() <= (middleTop.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
+              pt.x() <= (middleBtm.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
+              pt.x() >= (middleBtm.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)) {
         //is nearby vertical line
         return true;
     } else {
@@ -1208,7 +1208,7 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
     {
         const KeyFrames& leftMostCurveKeys = leftMost->curve->getInternalCurve()->getKeyFrames();
         KeyFrames::const_iterator foundLeft = std::find(leftMostCurveKeys.begin(),
-                                                               leftMostCurveKeys.end(),leftMost->key);
+                                                        leftMostCurveKeys.end(),leftMost->key);
         assert(foundLeft != leftMostCurveKeys.end());
         if (foundLeft == leftMostCurveKeys.begin()) {
             _keyDragMaxMovement.setX(INT_MIN);
@@ -1222,7 +1222,7 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
     {
         const KeyFrames& rightMostCurveKeys = rightMost->curve->getInternalCurve()->getKeyFrames();
         KeyFrames::const_iterator foundRight = std::find(rightMostCurveKeys.begin(),
-                                                                rightMostCurveKeys.end(),rightMost->key);
+                                                         rightMostCurveKeys.end(),rightMost->key);
         assert(foundRight != rightMostCurveKeys.end());
         KeyFrames::const_iterator foundRightNext = foundRight;
         ++foundRightNext;
@@ -1571,7 +1571,7 @@ void CurveWidget::mousePressEvent(QMouseEvent *event) {
         // yes, select it and don't start any other action, the user can then do per-curve specific actions
         // like centering on it on the viewport or pasting previously copied keyframes.
         // This is kind of the last resort action before the default behaviour (which is to draw
-        // a selection rectangle), because we'd rather select a keyframe than the nearby curve 
+        // a selection rectangle), because we'd rather select a keyframe than the nearby curve
         _imp->selectCurve(*foundCurveNearby);
         updateGL();
         return;
@@ -2059,16 +2059,18 @@ void CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve(){
 void CurveWidget::selectAllKeyFrames(){
     _imp->_drawSelectedKeyFramesBbox = true;
     for (Curves::iterator it = _imp->_curves.begin() ; it != _imp->_curves.end() ; ++it) {
-        const KeyFrames& keys = (*it)->getInternalCurve()->getKeyFrames();
-        for( KeyFrames::const_iterator it2 = keys.begin(); it2!=keys.end();++it2){
+        if((*it)->isVisible()){
+            const KeyFrames& keys = (*it)->getInternalCurve()->getKeyFrames();
+            for( KeyFrames::const_iterator it2 = keys.begin(); it2!=keys.end();++it2){
 
-            std::pair<SelectedKeys::const_iterator,bool> found = isKeySelected(*it2);
-            if(!found.second){
-                boost::shared_ptr<SelectedKey> newSelected(new SelectedKey);
-                newSelected->key = *it2;
-                newSelected->curve = *it;
-                _imp->refreshKeyTangentsGUI(newSelected);
-                _imp->_selectedKeyFrames.push_back(newSelected);
+                std::pair<SelectedKeys::const_iterator,bool> found = isKeySelected(*it2);
+                if(!found.second){
+                    boost::shared_ptr<SelectedKey> newSelected(new SelectedKey);
+                    newSelected->key = *it2;
+                    newSelected->curve = *it;
+                    _imp->refreshKeyTangentsGUI(newSelected);
+                    _imp->_selectedKeyFrames.push_back(newSelected);
+                }
             }
         }
     }
