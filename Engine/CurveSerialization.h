@@ -17,7 +17,7 @@
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/shared_ptr.hpp>
-#include <boost/serialization/list.hpp>
+#include <boost/serialization/set.hpp>
 #include <boost/serialization/scoped_ptr.hpp>
 #include <boost/serialization/split_free.hpp>
 
@@ -44,7 +44,7 @@ template<class Archive>
 void serialize(Archive & ar,CurvePrivate& c, const unsigned int version)
 {
     (void)version;
-    ar & boost::serialization::make_nvp("KeyFrames",c.keyFrames);
+    ar & boost::serialization::make_nvp("KeyFrameSet",c.keyFrames);
 }
 
 

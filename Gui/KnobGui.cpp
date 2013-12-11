@@ -266,8 +266,8 @@ void KnobGui::onRemoveAnyAnimationActionTriggered(){
     std::vector<std::pair<CurveGui *, boost::shared_ptr<KeyFrame> > > toRemove;
     for(int i = 0; i < _knob->getDimension();++i){
         CurveGui* curve = _knob->getHolder()->getApp()->getGui()->_curveEditor->findCurve(this, i);
-        const KeyFrames& keys = curve->getInternalCurve()->getKeyFrames();
-        for(KeyFrames::const_iterator it = keys.begin();it!=keys.end();++it){
+        const KeyFrameSet& keys = curve->getInternalCurve()->getKeyFrames();
+        for(KeyFrameSet::const_iterator it = keys.begin();it!=keys.end();++it){
             toRemove.push_back(std::make_pair(curve,*it));
         }
     }
@@ -281,8 +281,8 @@ void KnobGui::onRemoveAnyAnimationActionTriggered(){
 void KnobGui::setInterpolationForDimensions(const std::vector<int>& dimensions,Natron::KeyframeType interp){
     for(U32 i = 0; i < dimensions.size();++i){
         boost::shared_ptr<Curve> c = _knob->getCurve(dimensions[i]);
-        const KeyFrames& keyframes = c->getKeyFrames();
-        for(KeyFrames::const_iterator it = keyframes.begin();it!=keyframes.end();++it){
+        const KeyFrameSet& keyframes = c->getKeyFrames();
+        for(KeyFrameSet::const_iterator it = keyframes.begin();it!=keyframes.end();++it){
             c->setKeyFrameInterpolation(interp, *it);
         }
     }
