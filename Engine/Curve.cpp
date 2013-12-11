@@ -293,10 +293,9 @@ void Curve::setKeyFrameTimeNoUpdate(double time, boost::shared_ptr<KeyFrame> k) 
         KeyFrameSet::const_iterator it = std::find(ks.begin(), ks.end(), k);
         assert(it != ks.end());
         double oldTime = k->getTime();
-        double prevTime = (it != ks.begin()) ? (*std::prev(it))->getTime() : (oldTime - 1.);
-        double nextTime = (it != std::prev(ks.end())) ? (*std::next(it))->getTime() : (oldTime + 1.);
 
         // DON'T REMOVE THE FOLLOWING ASSERTS, if there is a problem it has to be fixed upstream
+        // (probably in CurveWidgetPrivate::moveSelectedKeyFrames()).
         // If only one keyframe is moved, oldTime and time should be between prevTime and nextTime,
         // the GUI should make sure of this.
         // If several frames are moved, the order in which they are updated depends on the direction
@@ -305,17 +304,27 @@ void Curve::setKeyFrameTimeNoUpdate(double time, boost::shared_ptr<KeyFrame> k) 
         //   time order
         // - if the motion if towards negative time, the the keyframes should be updated in increasing
         //   time order
-        assert(prevTime < oldTime && oldTime < nextTime);
-        assert(prevTime < time && time < nextTime); // may break if the keyframe is moved fast
-        double oldLeftTan = k->getLeftTangent();
-        double oldRightTan = k->getRightTangent();
-        // denormalize the derivatives (which are for a [0,1] time interval)
-        // and renormalize them
-        double newLeftTan = (oldLeftTan / (oldTime - prevTime)) * (time - prevTime);
-        double newRightTan = (oldRightTan / (nextTime - oldTime)) * (nextTime - time);
-        k->setLeftTangent(newLeftTan);
-        k->setRightTangent(newRightTan);
-    }
+        if (it != ks.begin()) {
+            double prevTime = (*std::prev(it))->getTime();
+            assert(prevTime < oldTime);
+            assert(prevTime < time); // may break if the keyframe is moved fast
+            double oldLeftTan = k->getLeftTangent();
+            // denormalize the derivatives (which are for a [0,1] time interval)
+            // and renormalize them
+            double newLeftTan = (oldLeftTan / (oldTime - prevTime)) * (time - prevTime);
+            k->setLeftTangent(newLeftTan);
+        }
+        if (it != std::prev(ks.end())) {
+            double nextTime = (*std::next(it))->getTime();
+            assert(oldTime < nextTime);
+            assert(time < nextTime); // may break if the keyframe is moved fast
+            double oldRightTan = k->getRightTangent();
+            // denormalize the derivatives (which are for a [0,1] time interval)
+            // and renormalize them
+            double newRightTan = (oldRightTan / (nextTime - oldTime)) * (nextTime - time);
+            k->setRightTangent(newRightTan);
+        }
+   }
     k->setTime(time);
 }
 
