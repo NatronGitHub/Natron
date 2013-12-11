@@ -24,6 +24,10 @@ log{
     DEFINES += NATRON_LOG
 }
 
+trace_ofx_actions{
+    DEFINES += OFX_DEBUG_ACTIONS
+}
+
 unix {
      #  on Unix systems, only the "boost" option needs to be defined in config.pri
      QT_CONFIG -= no-pkg-config
