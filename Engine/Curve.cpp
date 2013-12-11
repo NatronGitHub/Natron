@@ -139,8 +139,14 @@ double Curve::getMaximumTimeCovered() const{
 
 void Curve::addKeyFrame(boost::shared_ptr<KeyFrame> cp)
 {
-    std::pair<KeyFrameSet::iterator,bool> newKey = _imp->keyFrames.insert(cp);
-    if (newKey.second) {
+    KeyFrameSet::iterator it = std::find_if(_imp->keyFrames.begin(), _imp->keyFrames.end(), KeyFrameTimePredicate(cp->getTime()));
+    if (it != _imp->keyFrames.end()) {
+        // keyframe at same time exists, just modify it
+        *(*it) = *cp;
+        refreshTangents(KEYFRAME_CHANGED, it);
+    } else {
+        std::pair<KeyFrameSet::iterator,bool> newKey = _imp->keyFrames.insert(cp);
+        assert(newKey.second);
         refreshTangents(KEYFRAME_CHANGED, newKey.first);
     }else{
         (*newKey.first)->setValue(cp->getValue());
