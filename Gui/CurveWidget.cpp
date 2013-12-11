@@ -113,8 +113,8 @@ boost::shared_ptr<KeyFrame> CurveGui::nextPointForSegment(double x1, double* x2)
         double t = ( x1 - (*lower)->getTime() ) / ((*upper)->getTime() - (*lower)->getTime());
         double P3 = (*upper)->getValue().value<double>();
         double P0 = (*lower)->getValue().value<double>();
-        double P3pl = (*upper)->getLeftTangent().value<double>();
-        double P0pr = (*lower)->getRightTangent().value<double>();
+        double P3pl = (*upper)->getLeftTangent();
+        double P0pr = (*lower)->getRightTangent();
         double secondDer = 6. * (1. - t) *(P3 - P3pl / 3. - P0 - 2. * P0pr / 3.) +
                 6.* t * (P0 - P3 + 2 * P3pl / 3. + P0pr / 3. );
         double secondDerWidgetCoord = std::abs(_curveWidget->toWidgetCoordinates(0,secondDer).y()
@@ -1034,7 +1034,7 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
         } else {
             rightTan = dy / dx;
         }
-        key->curve->getInternalCurve()->setKeyFrameTangents(Variant(leftTan),Variant(rightTan),key->key);
+        key->curve->getInternalCurve()->setKeyFrameTangents(leftTan, rightTan, key->key);
 
     } else {
         key->key->setInterpolation(KEYFRAME_BROKEN);
@@ -1050,7 +1050,7 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
             } else {
                 leftTan = dy / dx;
             }
-            key->curve->getInternalCurve()->setKeyFrameLeftTangent(Variant(leftTan),key->key);
+            key->curve->getInternalCurve()->setKeyFrameLeftTangent(leftTan, key->key);
 
         } else {
             //if dx is not of the good sign it would make the curve uncontrollable
@@ -1064,7 +1064,7 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
             } else {
                 rightTan = dy / dx;
             }
-            key->curve->getInternalCurve()->setKeyFrameRightTangent(Variant(rightTan),key->key);
+            key->curve->getInternalCurve()->setKeyFrameRightTangent(rightTan,key->key);
         }
     }
     refreshKeyTangentsGUI(key);
@@ -1094,7 +1094,7 @@ void CurveWidgetPrivate::refreshKeyTangentsGUI(boost::shared_ptr<SelectedKey> ke
     double leftTanX, leftTanY;
     {
         double prevTime = (prev == keyframes.end()) ? (x - 1.) : (*prev)->getTime();
-        double leftTan = key->key->getLeftTangent().toDouble()/(x - prevTime);
+        double leftTan = key->key->getLeftTangent()/(x - prevTime);
         double leftTanXWidgetDiffMax = w / 8.;
         if (prev != keyframes.end()) {
             double prevKeyXWidgetCoord = _widget->toWidgetCoordinates(prevTime, 0).x();
@@ -1123,7 +1123,7 @@ void CurveWidgetPrivate::refreshKeyTangentsGUI(boost::shared_ptr<SelectedKey> ke
     double rightTanX, rightTanY;
     {
         double nextTime = (next == keyframes.end()) ? (x + 1.) : (*next)->getTime();
-        double rightTan = key->key->getRightTangent().toDouble()/(nextTime - x );
+        double rightTan = key->key->getRightTangent()/(nextTime - x );
         double rightTanXWidgetDiffMax = w / 8.;
         if (next != keyframes.end()) {
             double nextKeyXWidgetCoord = _widget->toWidgetCoordinates(nextTime, 0).x();
