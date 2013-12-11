@@ -962,6 +962,7 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
     if (editor && _selectedKeyFrames.size() > 1) {
         editor->setKeyFrames(moves);
         //the editor redo() call will call refreshSelectedKeysBbox() for us
+        //and also call refreshDisplayedTangents()
     } else {
         _widget->refreshSelectedKeysBbox();
         //refresh now the tangents positions
