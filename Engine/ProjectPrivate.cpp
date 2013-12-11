@@ -21,24 +21,24 @@
 
 namespace Natron{
 ProjectPrivate::ProjectPrivate(Natron::Project* project)
-    : _projectName("Untitled." NATRON_PROJECT_FILE_EXT)
-    , _hasProjectBeenSavedByUser(false)
-    , _ageSinceLastSave(QDateTime::currentDateTime())
-    , _formatKnob(NULL)
-    , _addFormatKnob(NULL)
-    , _viewsCount(NULL)
-    , _timeline(new TimeLine(project))
-    , _autoSetProjectFormat(true)
-    , _projectDataLock()
-    , _currentNodes()
-    , _availableFormats()
-    , _project(project)
+    : projectName("Untitled." NATRON_PROJECT_FILE_EXT)
+    , hasProjectBeenSavedByUser(false)
+    , ageSinceLastSave(QDateTime::currentDateTime())
+    , formatKnob(NULL)
+    , addFormatKnob(NULL)
+    , viewsCount(NULL)
+    , timeline(new TimeLine(project))
+    , autoSetProjectFormat(true)
+    , projectDataLock()
+    , currentNodes()
+    , availableFormats()
+    , project(project)
     , _knobsAge(0)
-    , _lastTimelineSeekCaller(NULL)
-    , _beginEndBracketsCount(0)
-    , _evaluationsCount(0)
-    , _holdersWhoseBeginWasCalled()
-    , _isSignificantChange(false)
+    , lastTimelineSeekCaller(NULL)
+    , beginEndBracketsCount(0)
+    , evaluationsCount(0)
+    , holdersWhoseBeginWasCalled()
+    , isSignificantChange(false)
 
 {
 }
@@ -46,7 +46,7 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
 
 void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
-    _project->beginProjectWideValueChanges(Natron::PLUGIN_EDITED,_project);
+    project->beginProjectWideValueChanges(Natron::PLUGIN_EDITED,project);
 
     /*1st OFF RESTORE THE PROJECT KNOBS*/
     
@@ -57,12 +57,12 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         QString formatStr = Natron::generateStringFromFormat(objAvailableFormats[i]);
         entries.push_back(formatStr.toStdString());
     }
-    _availableFormats = objAvailableFormats;
-    _formatKnob->populate(entries);
-    _autoSetProjectFormat = false;
+    availableFormats = objAvailableFormats;
+    formatKnob->populate(entries);
+    autoSetProjectFormat = false;
     
     const std::map<std::string,boost::shared_ptr<KnobSerialization> >& projectSerializedValues = obj.getProjectKnobsValues();
-    const std::vector< boost::shared_ptr<Knob> >& projectKnobs = _project->getKnobs();
+    const std::vector< boost::shared_ptr<Knob> >& projectKnobs = project->getKnobs();
     
     
     //// restoring values
@@ -78,8 +78,8 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
     
     /* 2nd RESTORE TIMELINE */
-    _timeline->setBoundaries(obj.getLeftBoundTime(), obj.getRightBoundTime());
-    _timeline->seekFrame(obj.getCurrentTime(),NULL);
+    timeline->setBoundaries(obj.getLeftBoundTime(), obj.getRightBoundTime());
+    timeline->seekFrame(obj.getCurrentTime(),NULL);
 
     /* 3rd RESTORE NODES */
     const std::vector< boost::shared_ptr<NodeSerialization> >& serializedNodes = obj.getNodesSerialization();
@@ -87,12 +87,12 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     /*first create all nodes and restore the knobs values*/
     for (U32 i = 0; i <  serializedNodes.size() ; ++i){
 
-        if (_project->getApp()->isBackground() && serializedNodes[i]->getPluginID() == "Viewer") {
+        if (project->getApp()->isBackground() && serializedNodes[i]->getPluginID() == "Viewer") {
             //if the node is a viewer, don't try to load it in background mode
             continue;
         }
 
-        Natron::Node* n = _project->getApp()->createNode(serializedNodes[i]->getPluginID().c_str(),true);
+        Natron::Node* n = project->getApp()->createNode(serializedNodes[i]->getPluginID().c_str(),true);
         if(!n){
             Natron::errorDialog("Loading failed", "Cannot load node " + serializedNodes[i]->getPluginID());
             continue;
@@ -102,7 +102,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         }
 
         if(!n){
-            _project->clearNodes();
+            project->clearNodes();
             QString text("Failed to restore the graph! \n The node ");
             text.append(serializedNodes[i]->getPluginID().c_str());
             text.append(" was found in the auto-save script but doesn't seem \n"
@@ -126,29 +126,29 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
     }
 
-    if(!hasProjectAWriter && _project->getApp()->isBackground()){
-        _project->clearNodes();
+    if(!hasProjectAWriter && project->getApp()->isBackground()){
+        project->clearNodes();
         throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
     }
 
     /*now that we have all nodes, just connect them*/
     for(U32 i = 0; i <  serializedNodes.size() ; ++i){
 
-        if(_project->getApp()->isBackground() && serializedNodes[i]->getPluginID() == "Viewer"){
+        if(project->getApp()->isBackground() && serializedNodes[i]->getPluginID() == "Viewer"){
             //ignore viewers on background mode
             continue;
         }
 
         const std::map<int, std::string>& inputs = serializedNodes[i]->getInputs();
         Natron::Node* thisNode = NULL;
-        for (U32 j = 0; j < _currentNodes.size(); ++j) {
-            if (_currentNodes[j]->getName() == serializedNodes[i]->getPluginLabel()) {
-                thisNode = _currentNodes[j];
+        for (U32 j = 0; j < currentNodes.size(); ++j) {
+            if (currentNodes[j]->getName() == serializedNodes[i]->getPluginLabel()) {
+                thisNode = currentNodes[j];
                 break;
             }
         }
         for (std::map<int, std::string>::const_iterator input = inputs.begin(); input!=inputs.end(); ++input) {
-            if(!_project->getApp()->connect(input->first, input->second,thisNode)) {
+            if(!project->getApp()->connect(input->first, input->second,thisNode)) {
                 std::string message = std::string("Failed to connect node ") + serializedNodes[i]->getPluginLabel() + " to " + input->second;
                 qDebug() << message.c_str();
                 throw std::runtime_error(message);
@@ -157,7 +157,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
     }
 
-    _project->endProjectWideValueChanges(Natron::PLUGIN_EDITED,_project);
+    project->endProjectWideValueChanges(Natron::PLUGIN_EDITED,project);
 }
 
 } // namespace Natron

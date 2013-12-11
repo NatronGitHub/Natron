@@ -38,12 +38,12 @@ namespace Imf_ = OPENEXR_IMF_NAMESPACE;
 
 struct ExrEncoder::Implementation {
     Implementation();
-    Imf_::OutputFile* _outputFile;
-    int _depth;
-    Natron::ChannelSet _channels;
-    Imath::Box2i _exrDataW;
-    Imath::Box2i _exrDispW;
-    QMutex _lock;
+    Imf_::OutputFile* outputFile;
+    int depth;
+    Natron::ChannelSet channels;
+    Imath::Box2i exrDataW;
+    Imath::Box2i exrDispW;
+    QMutex lock;
 };
 
 namespace EXR {
@@ -156,10 +156,10 @@ ExrEncoder::ExrEncoder(Writer* writer)
 }
 
 ExrEncoder::Implementation::Implementation()
-: _outputFile(NULL)
-,_depth(0)
-,_channels()
-,_lock()
+: outputFile(NULL)
+,depth(0)
+,channels()
+,lock()
 {
 }
 
@@ -231,7 +231,7 @@ Natron::Status ExrEncoder::render(boost::shared_ptr<const Natron::Image> inputIm
             Natron::Row row(roi.left(),y,roi.right(),Natron::Mask_RGBA);
             const float* src_pixels = inputImage->pixelAt(roi.left(), exrY);
             if(exrY < inputImage->getRoD().height()){
-                foreachChannels(z, _imp->_channels){
+                foreachChannels(z, _imp->channels){
                     float* to = row.begin(z);
                     for (int i = 0; i < roi.width(); ++i) {
                         if( i < inputImage->getRoD().width()){
@@ -254,8 +254,8 @@ Natron::Status ExrEncoder::render(boost::shared_ptr<const Natron::Image> inputIm
             /*we create the frame buffer*/
             Imf_::FrameBuffer fbuf;
             Imf_::Array2D<half>* halfwriterow = 0 ;
-            if ( _imp->_depth == 32) {
-                foreachChannels(z, _imp->_channels){
+            if ( _imp->depth == 32) {
+                foreachChannels(z, _imp->channels){
                   
                     std::string channame = EXR::toExrChannel(z);
                     fbuf.insert(channame.c_str(),
@@ -263,26 +263,26 @@ Natron::Status ExrEncoder::render(boost::shared_ptr<const Natron::Image> inputIm
                                             sizeof(float), 0));
                 }
             } else {
-                halfwriterow = new Imf_::Array2D<half>(_imp->_channels.size() ,roi.width());
+                halfwriterow = new Imf_::Array2D<half>(_imp->channels.size() ,roi.width());
                 
                 int channelCount = 0;
-                foreachChannels(z, _imp->_channels){
+                foreachChannels(z, _imp->channels){
                     std::string channame = EXR::toExrChannel(z);
                     fbuf.insert(channame.c_str(),
                                 Imf_::Slice(Imf_::HALF,
-                                            (char*)(&(*halfwriterow)[channelCount][0] - _imp->_exrDataW.min.x),
+                                            (char*)(&(*halfwriterow)[channelCount][0] - _imp->exrDataW.min.x),
                                             sizeof((*halfwriterow)[channelCount][0]), 0));
                     const float* from = row.begin(z);
-                    for (int i = _imp->_exrDataW.min.x; i < _imp->_exrDataW.max.x ; ++i) {
-                        (*halfwriterow)[channelCount][i - _imp->_exrDataW.min.x] = from[i];
+                    for (int i = _imp->exrDataW.min.x; i < _imp->exrDataW.max.x ; ++i) {
+                        (*halfwriterow)[channelCount][i - _imp->exrDataW.min.x] = from[i];
                     }
                     ++channelCount;
                 }
                 delete halfwriterow;
             }
-            QMutexLocker locker(&_imp->_lock);
-            _imp->_outputFile->setFrameBuffer(fbuf);
-            _imp->_outputFile->writePixels(1);
+            QMutexLocker locker(&_imp->lock);
+            _imp->outputFile->setFrameBuffer(fbuf);
+            _imp->outputFile->writePixels(1);
         }
     } catch (const std::exception& e) {
         _writer->setPersistentMessage(Natron::ERROR_MESSAGE, std::string("OpenEXR error") + ": " + e.what());
@@ -302,7 +302,7 @@ Natron::Status ExrEncoder::setupFile(const QString& filename, const RectI& rod) 
     try {
         ExrEncoderKnobs* knobs = dynamic_cast<ExrEncoderKnobs*>(_optionalKnobs);
         Imf_::Compression compression(EXR::stringToCompression(knobs->_compression));
-        _imp->_depth = EXR::depthNameToInt(knobs->_dataType);
+        _imp->depth = EXR::depthNameToInt(knobs->_dataType);
         Imath::Box2i exrDataW;
         exrDataW.min.x = rod.left();
         exrDataW.min.y = rod.height() - rod.top();
@@ -314,23 +314,23 @@ Natron::Status ExrEncoder::setupFile(const QString& filename, const RectI& rod) 
         exrDispW.min.y = 0;
         exrDispW.max.x = rod.width() - 1;
         exrDispW.max.y = rod.height() - 1;
-        _imp->_channels  = _writer->requestedChannels();
+        _imp->channels  = _writer->requestedChannels();
         Imf_::Header exrheader(exrDispW, exrDataW, 1.,
                                Imath::V2f(0, 0), 1, Imf_::INCREASING_Y, compression);
         
-        foreachChannels(z, _imp->_channels){
+        foreachChannels(z, _imp->channels){
             std::string channame = EXR::toExrChannel(z);
-            if (_imp->_depth == 32) {
+            if (_imp->depth == 32) {
                 exrheader.channels().insert(channame.c_str(), Imf_::Channel(Imf_::FLOAT));
             } else {
-                assert(_imp->_depth == 16);
+                assert(_imp->depth == 16);
                 exrheader.channels().insert(channame.c_str(), Imf_::Channel(Imf_::HALF));
             }
         }
         
-        _imp->_outputFile = new Imf_::OutputFile(filename.toStdString().c_str(),exrheader);
-        _imp->_exrDataW = exrDataW;
-        _imp->_exrDispW = exrDispW;
+        _imp->outputFile = new Imf_::OutputFile(filename.toStdString().c_str(),exrheader);
+        _imp->exrDataW = exrDataW;
+        _imp->exrDispW = exrDispW;
     } catch (const std::exception& e) {
         qDebug() << "OpenEXR error" << ": " << e.what();
         return Natron::StatFailed;
