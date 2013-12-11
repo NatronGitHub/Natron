@@ -295,7 +295,17 @@ void Curve::setKeyFrameTimeNoUpdate(double time, boost::shared_ptr<KeyFrame> k) 
         double oldTime = k->getTime();
         double prevTime = (it != ks.begin()) ? (*std::prev(it))->getTime() : (oldTime - 1.);
         double nextTime = (it != std::prev(ks.end())) ? (*std::next(it))->getTime() : (oldTime + 1.);
-        assert(prevTime < oldTime && oldTime < nextTime); // may break if the keyframe is moved fast
+
+        // DON'T REMOVE THE FOLLOWING ASSERTS, if there is a problem it has to be fixed upstream
+        // If only one keyframe is moved, oldTime and time should be between prevTime and nextTime,
+        // the GUI should make sure of this.
+        // If several frames are moved, the order in which they are updated depends on the direction
+        // of motion:
+        // - if the motion if towards positive time, the the keyframes should be updated in decreasing
+        //   time order
+        // - if the motion if towards negative time, the the keyframes should be updated in increasing
+        //   time order
+        assert(prevTime < oldTime && oldTime < nextTime);
         assert(prevTime < time && time < nextTime); // may break if the keyframe is moved fast
         double oldLeftTan = k->getLeftTangent();
         double oldRightTan = k->getRightTangent();
