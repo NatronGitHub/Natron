@@ -351,7 +351,10 @@ void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
     if(reason != Natron::USER_EDITED){
         emit valueChanged(dimension);
     }
-    _imp->_holder->notifyProjectEvaluationRequested(reason, this, !_imp->_isInsignificant);
+
+    bool significant = reason == Natron::TIME_CHANGED ? false : !_imp->_isInsignificant;
+
+    _imp->_holder->notifyProjectEvaluationRequested(reason, this, significant);
 }
 
 void Knob::onTimeChanged(SequenceTime time){
@@ -360,7 +363,7 @@ void Knob::onTimeChanged(SequenceTime time){
         for(U32 i = 0 ; i < _imp->_curves.size();++i){
             if(_imp->_curves[i]->isAnimated()){
                 Variant v = getValueAtTime(time,i);
-                setValue(v,i);
+                setValue(v,i,Natron::TIME_CHANGED);
             }
         }
     }

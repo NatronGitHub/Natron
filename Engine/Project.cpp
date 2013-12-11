@@ -212,14 +212,23 @@ void Project::setLastTimelineSeekCaller(Natron::OutputEffectInstance* output){
 }
 
 void Project::onTimeChanged(SequenceTime time,int /*reason*/){
-
+    std::vector<ViewerInstance*> viewers;
     beginProjectWideValueChanges(Natron::TIME_CHANGED,this);
     refreshAfterTimeChange(time); //refresh project knobs
     for (U32 i = 0; i < _imp->_currentNodes.size(); ++i) {     
         //refresh all knobs
+        if(_imp->_currentNodes[i]->pluginID() == "Viewer"){
+            viewers.push_back(dynamic_cast<ViewerInstance*>(_imp->_currentNodes[i]->getLiveInstance()));
+        }
         _imp->_currentNodes[i]->getLiveInstance()->refreshAfterTimeChange(time);
     }
     endProjectWideValueChanges(Natron::TIME_CHANGED,this);
+
+    for(U32 i = 0; i < viewers.size();++i){
+        if(viewers[i] != _imp->_lastTimelineSeekCaller){
+            viewers[i]->refreshAndContinueRender();
+        }
+    }
 
 }
 void Project::save(ProjectSerialization* serializationObject) const {
