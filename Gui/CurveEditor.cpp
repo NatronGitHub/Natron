@@ -146,7 +146,8 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
 
         QObject::connect(kgui,SIGNAL(keyFrameSet()),curveWidget,SLOT(updateGL()));
         QObject::connect(kgui,SIGNAL(keyFrameRemoved()),curveWidget,SLOT(updateGL()));
-
+        QObject::connect(kgui, SIGNAL(keyInterpolationChanged()),curveWidget, SLOT(refreshDisplayedTangents()));
+        
         hasAtLeast1KnobWithACurve = true;
 
         QTreeWidgetItem* knobItem = new QTreeWidgetItem(nameItem);
@@ -238,6 +239,8 @@ static void checkIfHiddenRecursivly(QTreeWidget* tree,QTreeWidgetItem* item){
         checkIfHiddenRecursivly(tree,item->parent());
     }
 }
+
+
 
 void NodeCurveEditorElement::checkVisibleState(){
     if(!_curve)
@@ -472,7 +475,7 @@ class MoveKeyCommand : public QUndoCommand{
 
 public:
 
-    MoveKeyCommand(CurveWidget* editor,boost::shared_ptr<KeyFrame> key,double oldx,const Variant& oldy,
+    MoveKeyCommand(CurveWidget* editor,CurveGui* curve,boost::shared_ptr<KeyFrame> key,double oldx,const Variant& oldy,
                    double newx,const Variant& newy,
                    QUndoCommand *parent = 0);
     virtual void undo();
@@ -482,6 +485,7 @@ public:
 
 private:
 
+    CurveGui* _curve;
     double _newX,_oldX;
     Variant _newY,_oldY;
     boost::shared_ptr<KeyFrame> _key;
@@ -493,6 +497,7 @@ private:
 class MoveMultipleKeysCommand : public QUndoCommand{
 
     struct KeyMove{
+        CurveGui* _curve;
         KnobGui* _knob;
         boost::shared_ptr<KeyFrame> _key;
         double _oldX,_newX;
@@ -502,7 +507,7 @@ class MoveMultipleKeysCommand : public QUndoCommand{
 public:
 
     MoveMultipleKeysCommand(CurveWidget* editor,
-                            const std::vector<KnobGui*>& knobs,
+                            const std::vector<std::pair<KnobGui*,CurveGui*> >& knobs,
                             const std::vector< std::pair< boost::shared_ptr<KeyFrame> , std::pair<double,Variant> > >& keys
                             ,QUndoCommand *parent = 0);
     virtual ~MoveMultipleKeysCommand(){ _keys.clear(); }
@@ -524,6 +529,7 @@ class SetKeyInterpolationCommand : public QUndoCommand{
 public:
 
     SetKeyInterpolationCommand(CurveWidget* editor,Natron::KeyframeType newInterp,
+                               CurveGui* curve,
                                boost::shared_ptr<KeyFrame> key,
                                QUndoCommand *parent = 0);
     virtual void undo();
@@ -531,6 +537,7 @@ public:
 
 private:
 
+    CurveGui* _curve;
     Natron::KeyframeType _oldInterp;
     Natron::KeyframeType _newInterp;
     boost::shared_ptr<KeyFrame> _key;
@@ -542,14 +549,14 @@ class SetMultipleKeysInterpolationCommand : public QUndoCommand{
 public:
 
     SetMultipleKeysInterpolationCommand(CurveWidget* editor, Natron::KeyframeType newInterp,
-                               const std::vector<boost::shared_ptr<KeyFrame> >& keys,
+                                        const std::vector<std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > >& keys,
                                QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
 
 private:
 
-    std::vector<std::pair<boost::shared_ptr<KeyFrame>,Natron::KeyframeType> > _oldInterp;
+    std::vector< std::pair< CurveGui*,std::pair<boost::shared_ptr<KeyFrame>,Natron::KeyframeType> > > _oldInterp;
     Natron::KeyframeType _newInterp;
     CurveWidget* _curveWidget;
 };
@@ -800,13 +807,15 @@ void RemoveMultipleKeysCommand::redo(){
 }
 
 
-void CurveEditor::setKeyFrame(boost::shared_ptr<KeyFrame> key,double x,const Variant& y){
-    _undoStack->push(new MoveKeyCommand(_curveWidget,key,key->getTime(),key->getValue(), x,y));
+void CurveEditor::setKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key,double x,const Variant& y){
+    _undoStack->push(new MoveKeyCommand(_curveWidget,curve,key,key->getTime(),key->getValue(), x,y));
 }
 
 
-MoveKeyCommand::MoveKeyCommand(CurveWidget* editor, boost::shared_ptr<KeyFrame> key, double oldx, const Variant &oldy, double newx, const Variant &newy, QUndoCommand *parent)
+MoveKeyCommand::MoveKeyCommand(CurveWidget* editor,CurveGui* curve, boost::shared_ptr<KeyFrame> key,
+                               double oldx, const Variant &oldy, double newx, const Variant &newy, QUndoCommand *parent)
     : QUndoCommand(parent)
+    , _curve(curve)
     , _newX(newx)
     , _oldX(oldx)
     , _newY(newy)
@@ -818,12 +827,14 @@ MoveKeyCommand::MoveKeyCommand(CurveWidget* editor, boost::shared_ptr<KeyFrame> 
 }
 void MoveKeyCommand::undo(){
     assert(_key);
-    _curveWidget->setKeyPos(_key,_oldX,_oldY);
+    _curve->getInternalCurve()->setKeyFrameValueAndTime(_oldX, _oldY, _key);
+    _curveWidget->refreshDisplayedTangents();
     setText(QObject::tr("Move keyframe"));
 }
 void MoveKeyCommand::redo(){
     assert(_key);
-    _curveWidget->setKeyPos(_key,_newX,_newY);
+    _curve->getInternalCurve()->setKeyFrameValueAndTime(_newX, _newY, _key);
+    _curveWidget->refreshDisplayedTangents();
     setText(QObject::tr("Move keyframe"));
 }
 bool MoveKeyCommand::mergeWith(const QUndoCommand * command){
@@ -838,14 +849,14 @@ bool MoveKeyCommand::mergeWith(const QUndoCommand * command){
 }
 
 void CurveEditor::setKeyFrames(const std::vector<std::pair< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> >, std::pair<double, Variant> > > &keys){
-    std::vector<KnobGui*> knobs;
+    std::vector<std::pair<KnobGui*,CurveGui*> > knobs;
     std::vector< std::pair< boost::shared_ptr<KeyFrame> , std::pair<double,Variant> > > moves;
     for(U32 i = 0 ; i< keys.size() ;++i){
         for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
             it!=_nodes.end();++it){
             NodeCurveEditorElement* elem = (*it)->findElement(keys[i].first.first);
             if(elem){
-                knobs.push_back(elem->getKnob());
+                knobs.push_back(std::make_pair(elem->getKnob(),keys[i].first.first));
                 moves.push_back(std::make_pair(keys[i].first.second,keys[i].second));
                 break;
             }
@@ -855,7 +866,7 @@ void CurveEditor::setKeyFrames(const std::vector<std::pair< std::pair<CurveGui*,
     _undoStack->push(new MoveMultipleKeysCommand(_curveWidget,knobs,moves));
 }
 MoveMultipleKeysCommand::MoveMultipleKeysCommand(CurveWidget* editor,
-                                                 const std::vector<KnobGui*>& knobs,
+                                                 const std::vector<std::pair<KnobGui*,CurveGui*> >& knobs,
                                                  const std::vector< std::pair< boost::shared_ptr<KeyFrame> , std::pair<double,Variant> > >& keys
                                                  ,QUndoCommand *parent )
     : QUndoCommand(parent)
@@ -865,7 +876,8 @@ MoveMultipleKeysCommand::MoveMultipleKeysCommand(CurveWidget* editor,
     assert(knobs.size() == keys.size());
     for(U32 i = 0; i < keys.size();++i){
         boost::shared_ptr<KeyMove> move(new KeyMove());
-        move->_knob = knobs[i];
+        move->_curve = knobs[i].second;
+        move->_knob = knobs[i].first;
         move->_key = keys[i].first;
         move->_oldX = move->_key->getTime();
         move->_newX = keys[i].second.first;
@@ -882,7 +894,7 @@ void MoveMultipleKeysCommand::undo(){
     }
     for(U32 i = 0; i < _keys.size();++i){
         assert(_keys[i]->_key);
-        _curveWidget->setKeyPos(_keys[i]->_key,_keys[i]->_oldX,_keys[i]->_oldY);
+        _keys[i]->_curve->getInternalCurve()->setKeyFrameValueAndTime(_keys[i]->_oldX, _keys[i]->_oldY, _keys[i]->_key);
     }
     for(U32 i = 0; i < _keys.size();++i){
         _keys[i]->_knob->getKnob()->endValueChange(Natron::USER_EDITED);
@@ -900,7 +912,7 @@ void MoveMultipleKeysCommand::redo(){
     }
     for(U32 i = 0; i < _keys.size();++i){
         assert(_keys[i]->_key);
-        _curveWidget->setKeyPos(_keys[i]->_key,_keys[i]->_newX,_keys[i]->_newY);
+        _keys[i]->_curve->getInternalCurve()->setKeyFrameValueAndTime(_keys[i]->_newX, _keys[i]->_newY, _keys[i]->_key);
     }
     for(U32 i = 0; i < _keys.size();++i){
         _keys[i]->_knob->getKnob()->endValueChange(Natron::USER_EDITED);
@@ -927,19 +939,21 @@ bool MoveMultipleKeysCommand::mergeWith(const QUndoCommand * command){
     }
 }
 
-void CurveEditor::setKeyInterpolation(boost::shared_ptr<KeyFrame> key,Natron::KeyframeType interp){
-    _undoStack->push(new SetKeyInterpolationCommand(_curveWidget,interp,key));
+void CurveEditor::setKeyInterpolation(CurveGui* curve,boost::shared_ptr<KeyFrame> key,Natron::KeyframeType interp){
+    _undoStack->push(new SetKeyInterpolationCommand(_curveWidget,interp,curve,key));
 }
 
-void CurveEditor::setKeysInterpolation(const std::vector< boost::shared_ptr<KeyFrame> >& keys,Natron::KeyframeType interp){
+void CurveEditor::setKeysInterpolation(const std::vector<std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > >& keys,Natron::KeyframeType interp){
     _undoStack->push(new SetMultipleKeysInterpolationCommand(_curveWidget,interp,keys));
 }
 
 
 SetKeyInterpolationCommand::SetKeyInterpolationCommand(CurveWidget* editor,Natron::KeyframeType newInterp,
+                                                       CurveGui* curve,
                                                        boost::shared_ptr<KeyFrame> key,
                                                        QUndoCommand *parent)
     : QUndoCommand(parent)
+    , _curve(curve)
     , _oldInterp(key->getInterpolation())
     , _newInterp(newInterp)
     , _key(key)
@@ -949,43 +963,43 @@ SetKeyInterpolationCommand::SetKeyInterpolationCommand(CurveWidget* editor,Natro
 }
 
 void SetKeyInterpolationCommand::undo(){
-    _curveWidget->setKeyInterpolation(_key,_oldInterp);
-    _curveWidget->updateGL();
+    _curve->getInternalCurve()->setKeyFrameInterpolation(_oldInterp, _key);
+    _curveWidget->refreshDisplayedTangents();
     setText(QObject::tr("Set key interpolation"));
 }
 
 void SetKeyInterpolationCommand::redo(){
-    _curveWidget->setKeyInterpolation(_key,_newInterp);
-    _curveWidget->updateGL();
+    _curve->getInternalCurve()->setKeyFrameInterpolation(_newInterp, _key);
+    _curveWidget->refreshDisplayedTangents();
     setText(QObject::tr("Set key interpolation"));
 }
 
 SetMultipleKeysInterpolationCommand::SetMultipleKeysInterpolationCommand(CurveWidget* editor,Natron::KeyframeType newInterp,
-                           const std::vector<boost::shared_ptr<KeyFrame> >& keys,
-                           QUndoCommand *parent)
+                        const std::vector<std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > >& keys,
+                        QUndoCommand *parent)
     : QUndoCommand(parent)
     , _oldInterp()
     , _newInterp(newInterp)
     , _curveWidget(editor)
 {
     for(U32 i = 0; i < keys.size();++i){
-        _oldInterp.push_back(std::make_pair(keys[i],keys[i]->getInterpolation()));
+        _oldInterp.push_back(std::make_pair(keys[i].first,std::make_pair(keys[i].second,keys[i].second->getInterpolation())));
     }
 }
 
 void SetMultipleKeysInterpolationCommand::undo(){
      for(U32 i = 0; i < _oldInterp.size();++i){
-        _curveWidget->setKeyInterpolation(_oldInterp[i].first,_oldInterp[i].second);
+         _oldInterp[i].first->getInternalCurve()->setKeyFrameInterpolation(_oldInterp[i].second.second, _oldInterp[i].second.first);
      }
-    _curveWidget->updateGL();
+    _curveWidget->refreshDisplayedTangents();
     setText(QObject::tr("Set multiple keys interpolation"));
 }
 
 void SetMultipleKeysInterpolationCommand::redo(){
     for(U32 i = 0; i < _oldInterp.size();++i){
-       _curveWidget->setKeyInterpolation(_oldInterp[i].first,_newInterp);
+       _oldInterp[i].first->getInternalCurve()->setKeyFrameInterpolation(_newInterp, _oldInterp[i].second.first);
     }
-    _curveWidget->updateGL();
+    _curveWidget->refreshDisplayedTangents();
     setText(QObject::tr("Set multiple keys interpolation"));
 }
 

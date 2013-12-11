@@ -38,7 +38,6 @@ typedef std::vector< boost::shared_ptr<Knob> > MastersMap;
 typedef std::vector< boost::shared_ptr<Curve> > CurvesMap;
 
 struct Knob::KnobPrivate {
-    Knob* _publicInterface;
     KnobHolder*  _holder;
     std::vector<U64> _hashVector;
     std::string _description;//< the text label that will be displayed  on the GUI
@@ -66,7 +65,7 @@ struct Knob::KnobPrivate {
     ///A slave link CANNOT be master at the same time (i.e: if _slaveLinks[i] != NULL  then _masterLinks[i] == NULL )
     MastersMap _masters; //from what knob is slaved each curve if any
 
-    KnobPrivate(Knob* publicInterface,KnobHolder*  holder,int dimension,const std::string& description)
+    KnobPrivate(KnobHolder*  holder,int dimension,const std::string& description)
         : _holder(holder)
         , _hashVector()
         , _description(description)
@@ -89,14 +88,14 @@ struct Knob::KnobPrivate {
 
     }
 
-    void updateHash(const std::map<int,Variant>& value){
+    void updateHash(const std::vector<Variant>& value){
 
         _hashVector.clear();
 
-        for(std::map<int,Variant>::const_iterator it = value.begin();it!=value.end();++it){
+        for(U32 i = 0 ; i < value.size();++i){
             QByteArray data;
             QDataStream ds(&data,QIODevice::WriteOnly);
-            ds << it->second;
+            ds <<  value[i];
             data = data.toBase64();
             QString str(data);
             for (int i = 0; i < str.size(); ++i) {
@@ -107,24 +106,10 @@ struct Knob::KnobPrivate {
         _holder->invalidateHash();
     }
 
-    /**
-     * @brief Sets the curve at the given dimension to be the master of the
-     * curve at the same dimension for the knob other. This is called internally
-     * by slaveTo
-    **/
-    void setAsMasterOf(int dimension, Knob *other);
-
-    /**
-     * @brief Called internally by unSlave
-    **/
-    void unMaster(Knob* other);
-
-
-
 };
 
 Knob::Knob(KnobHolder* holder,const std::string& description,int dimension)
-    :_imp(new KnobPrivate(this,holder,dimension,description))
+    :_imp(new KnobPrivate(holder,dimension,description))
 {
     
     if(_imp->_holder){
@@ -222,7 +207,8 @@ boost::shared_ptr<KeyFrame> Knob::setValueAtTime(double time, const Variant& v, 
 
 
     boost::shared_ptr<Curve> curve = _imp->_curves[dimension];
-    curve->addKeyFrame(boost::shared_ptr<KeyFrame>(new KeyFrame(time,v,curve)));
+    boost::shared_ptr<KeyFrame> k(new KeyFrame(time,v));
+    curve->addKeyFrame(k);
 
 
      if(reason != Natron::USER_EDITED){
@@ -258,7 +244,7 @@ void Knob::setValue(const Variant& value,int dimension){
 }
 
 boost::shared_ptr<KeyFrame> Knob::setValueAtTime(double time, const Variant& v, int dimension){
-   setValueAtTime(time,v,dimension,Natron::PLUGIN_EDITED);
+   return setValueAtTime(time,v,dimension,Natron::PLUGIN_EDITED);
 }
 
 
@@ -397,24 +383,27 @@ void Knob::cloneValue(const Knob& other){
     //we cannot copy directly the map of curves because the curves hold a pointer to the knob
     //we must explicitly call clone() on them
     for(U32 i = 0 ; i < _imp->_curves.size();++i){
+        assert(_imp->_curves[i] && other._imp->_curves[i]);
         _imp->_curves[i]->clone(*(other._imp->_curves[i]));
     }
-
+    
     //same for masters : the knobs are not refered to the same KnobHolder (i.e the same effect instance)
     //so we need to copy with the good pointers
     const MastersMap& otherMasters = other.getMasters();
     for(U32 j = 0 ; j < otherMasters.size();++j){
-        const std::vector< boost::shared_ptr<Knob> >& holderKnobs = _imp->_holder->getKnobs();
-        for(U32 i = 0 ; i < holderKnobs.size();++i)
-        {
-            if(holderKnobs[i]->getDescription() == otherMasters[i]->getDescription()){
-                _imp->_masters[j] = holderKnobs[i];
-                break;
+        if(otherMasters[j]){
+            const std::vector< boost::shared_ptr<Knob> >& holderKnobs = _imp->_holder->getKnobs();
+            for(U32 i = 0 ; i < holderKnobs.size();++i)
+            {
+                if(holderKnobs[i]->getDescription() == otherMasters[i]->getDescription()){
+                    _imp->_masters[j] = holderKnobs[i];
+                    break;
+                }
             }
         }
     }
-
-
+    
+    
     cloneExtraData(other);
 }
 
@@ -485,7 +474,7 @@ void Knob::setHintToolTip(const std::string& hint) {_imp->_tooltipHint = hint;}
 const std::string& Knob::getHintToolTip() const {return _imp->_tooltipHint;}
 
 bool Knob::slaveTo(int dimension,boost::shared_ptr<Knob> other){
-    assert(dimension < _imp->_masters.size());
+    assert(dimension < (int)_imp->_masters.size());
     assert(!other->isCurveSlave(dimension));
     if(_imp->_masters[dimension]){
         return false;

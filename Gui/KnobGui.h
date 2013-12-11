@@ -156,6 +156,11 @@ signals:
      *@brief Emitted whenever a keyframe is removed by the user or by the plugin.
     **/
     void keyFrameRemoved();
+    
+    /**
+     *@brief Emitted whenever a keyframe's interpolation method is changed by the user or by the plugin.
+     **/
+    void keyInterpolationChanged();
 
 protected:
     

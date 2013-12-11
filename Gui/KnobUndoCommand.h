@@ -19,7 +19,7 @@ class KnobGui;
 class KnobMultipleUndosCommand : public QUndoCommand
 {
 public:
-    KnobMultipleUndosCommand(KnobGui *knob, const std::map<int, Variant> &oldValue, const std::map<int, Variant> &newValue, QUndoCommand *parent = 0);
+    KnobMultipleUndosCommand(KnobGui *knob, const std::vector<Variant> &oldValue, const std::vector<Variant> &newValue, QUndoCommand *parent = 0);
 
     virtual void undo();
 
@@ -27,8 +27,8 @@ public:
 
 private:
     // TODO: PIMPL
-    std::map<int, Variant> _oldValue;
-    std::map<int, Variant> _newValue;
+    std::vector<Variant> _oldValue;
+    std::vector<Variant> _newValue;
     KnobGui *_knob;
     bool _hasCreateKeyFrame;
     double _timeOfCreation;

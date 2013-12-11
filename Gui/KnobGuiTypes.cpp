@@ -163,8 +163,8 @@ void Int_KnobGui::updateGUI(int dimension, const Variant &variant)
     boost::shared_ptr<Curve> c = getKnob()->getCurve(dimension);
     SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     if (c->keyFramesCount() >= 1) {
-        const Curve::KeyFrames &keys = c->getKeyFrames();
-        for (Curve::KeyFrames::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        const KeyFrames &keys = c->getKeyFrames();
+        for (KeyFrames::const_iterator it = keys.begin(); it != keys.end(); ++it) {
             if ((*it)->getTime() == time) {
                 _spinBoxes[dimension].first->setAnimation(2);
                 setIsOnKeyframe(true);
@@ -187,9 +187,9 @@ void Int_KnobGui::onSliderValueChanged(double d)
 
 void Int_KnobGui::onSpinBoxValueChanged()
 {
-    std::map<int, Variant> newValues;
+    std::vector<Variant> newValues;
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
-        newValues.insert(std::make_pair(i, Variant(_spinBoxes[i].first->value())));
+        newValues.push_back(Variant(_spinBoxes[i].first->value()));
     }
 
     pushUndoCommand(new KnobMultipleUndosCommand(this, getKnob()->getValueForEachDimension(), newValues));
@@ -281,8 +281,8 @@ void Bool_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
     boost::shared_ptr<Curve> c = getKnob()->getCurve(0);
     SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     if (c->keyFramesCount() >= 1) {
-        const Curve::KeyFrames &keys = c->getKeyFrames();
-        for (Curve::KeyFrames::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        const KeyFrames &keys = c->getKeyFrames();
+        for (KeyFrames::const_iterator it = keys.begin(); it != keys.end(); ++it) {
             if ((*it)->getTime() == time) {
                 _checkBox->setAnimation(2);
                 setIsOnKeyframe(true);
@@ -463,8 +463,8 @@ void Double_KnobGui::updateGUI(int dimension, const Variant &variant)
     boost::shared_ptr<Curve> c = getKnob()->getCurve(dimension);
     SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     if (c->keyFramesCount() >= 1) {
-        const Curve::KeyFrames &keys = c->getKeyFrames();
-        for (Curve::KeyFrames::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        const KeyFrames &keys = c->getKeyFrames();
+        for (KeyFrames::const_iterator it = keys.begin(); it != keys.end(); ++it) {
             if ((*it)->getTime() == time) {
                 _spinBoxes[dimension].first->setAnimation(2);
                 setIsOnKeyframe(true);
@@ -486,9 +486,9 @@ void Double_KnobGui::onSliderValueChanged(double d)
 }
 void Double_KnobGui::onSpinBoxValueChanged()
 {
-    std::map<int, Variant> newValues;
+    std::vector<Variant> newValues;
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
-        newValues.insert(std::make_pair(i, Variant(_spinBoxes[i].first->value())));
+        newValues.push_back(Variant(_spinBoxes[i].first->value()));
     }
     pushUndoCommand(new KnobMultipleUndosCommand(this, getKnob()->getValueForEachDimension(), newValues));
 }
@@ -647,8 +647,8 @@ void Choice_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
     boost::shared_ptr<Curve> c = getKnob()->getCurve(0);
     SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     if (c->keyFramesCount() >= 1) {
-        const Curve::KeyFrames &keys = c->getKeyFrames();
-        for (Curve::KeyFrames::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        const KeyFrames &keys = c->getKeyFrames();
+        for (KeyFrames::const_iterator it = keys.begin(); it != keys.end(); ++it) {
             if ((*it)->getTime() == time) {
                 _comboBox->setAnimation(2);
                 setIsOnKeyframe(true);
@@ -935,17 +935,17 @@ void Color_KnobGui::onColorChanged()
     color.setRedF(_rBox->value());
     color.setGreenF(color.redF());
     color.setBlueF(color.greenF());
-    std::map<int, Variant> newValues;
-    newValues.insert(make_pair(0, Variant(color.redF())));
+    std::vector<Variant> newValues;
+    newValues.push_back(Variant(color.redF()));
     if (_dimension >= 3) {
         color.setGreenF(_gBox->value());
         color.setBlueF(_bBox->value());
-        newValues.insert(make_pair(1, Variant(color.greenF())));
-        newValues.insert(make_pair(2, Variant(color.blueF())));
+        newValues.push_back( Variant(color.greenF()));
+        newValues.push_back(Variant(color.blueF()));
     }
     if (_dimension >= 4) {
         color.setAlphaF(_aBox->value());
-        newValues.insert(make_pair(3, Variant(color.alphaF())));
+        newValues.push_back(Variant(color.alphaF()));
     }
     pushUndoCommand(new KnobMultipleUndosCommand(this, getKnob()->getValueForEachDimension(), newValues));
 }
@@ -1304,9 +1304,7 @@ void RichText_KnobGui::addToLayout(QHBoxLayout *layout)
 
 void RichText_KnobGui::onTextChanged()
 {
-    std::map<int, Variant> newV;
-    newV.insert(make_pair(0, Variant(_textEdit->toPlainText())));
-    pushUndoCommand(new KnobMultipleUndosCommand(this, getKnob()->getValueForEachDimension(), newV));
+    pushUndoCommand(new KnobUndoCommand(this,0,getKnob()->getValue(),Variant(_textEdit->toPlainText())));
 }
 
 

@@ -122,9 +122,9 @@ void KnobGui::createGUI(QGridLayout* layout,int row){
         createAnimationButton(layout,row);
     }
     _widgetCreated = true;
-    const std::map<int,Variant>& values = _knob->getValueForEachDimension();
-    for(std::map<int,Variant>::const_iterator it = values.begin();it!=values.end();++it){
-        updateGUI(it->first,it->second);
+    const std::vector<Variant>& values = _knob->getValueForEachDimension();
+    for(U32 i = 0; i < values.size();++i){
+        updateGUI(i,values[i]);
     }
     setEnabled();
     setSecret();
@@ -266,8 +266,8 @@ void KnobGui::onRemoveAnyAnimationActionTriggered(){
     std::vector<std::pair<CurveGui *, boost::shared_ptr<KeyFrame> > > toRemove;
     for(int i = 0; i < _knob->getDimension();++i){
         CurveGui* curve = _knob->getHolder()->getApp()->getGui()->_curveEditor->findCurve(this, i);
-        const Curve::KeyFrames& keys = curve->getInternalCurve()->getKeyFrames();
-        for(Curve::KeyFrames::const_iterator it = keys.begin();it!=keys.end();++it){
+        const KeyFrames& keys = curve->getInternalCurve()->getKeyFrames();
+        for(KeyFrames::const_iterator it = keys.begin();it!=keys.end();++it){
             toRemove.push_back(std::make_pair(curve,*it));
         }
     }
@@ -279,15 +279,14 @@ void KnobGui::onRemoveAnyAnimationActionTriggered(){
 }
 
 void KnobGui::setInterpolationForDimensions(const std::vector<int>& dimensions,Natron::KeyframeType interp){
-    std::vector<boost::shared_ptr<KeyFrame> > keys;
     for(U32 i = 0; i < dimensions.size();++i){
         boost::shared_ptr<Curve> c = _knob->getCurve(dimensions[i]);
-        const Curve::KeyFrames& keyframes = c->getKeyFrames();
-        for(Curve::KeyFrames::const_iterator it = keyframes.begin();it!=keyframes.end();++it){
-            keys.push_back(*it);
+        const KeyFrames& keyframes = c->getKeyFrames();
+        for(KeyFrames::const_iterator it = keyframes.begin();it!=keyframes.end();++it){
+            c->setKeyFrameInterpolation(interp, *it);
         }
     }
-    _knob->getHolder()->getApp()->getGui()->_curveEditor->setKeysInterpolation(keys,interp);
+    emit keyInterpolationChanged();
 }
 
 void KnobGui::onConstantInterpActionTriggered(){
@@ -504,11 +503,11 @@ void KnobGui::onLinkToActionTriggered(){
                 std::string err("Cannot link ");
                 err.append(_knob->getDescription());
                 err.append(" of dimension ");
-                err.append(_knob->getDimension());
+                err.append(QString::number(_knob->getDimension()).toStdString());
                 err.append(" to ");
                 err.append(otherKnob->getDescription());
                 err.append(" which is of dimension ");
-                err.append(otherKnob->getDimension());
+                err.append(QString::number(otherKnob->getDimension()).toStdString());
                 errorDialog("Knob Link", err);
                 return;
             }

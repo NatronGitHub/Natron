@@ -15,7 +15,6 @@
 
 #include "Engine/CurvePrivate.h"
 #include "Engine/Interpolation.h"
-#include "Engine/Knob.h"
 
 /************************************KEYFRAME************************************/
 
@@ -24,18 +23,23 @@ KeyFrame::KeyFrame()
 {}
 
 
-KeyFrame::KeyFrame(double time, const Variant& initialValue,const boost::shared_ptr<Curve>& curve)
-    : _imp(new KeyFramePrivate(time,initialValue,curve))
+KeyFrame::KeyFrame(double time, const Variant& initialValue)
+    : _imp(new KeyFramePrivate(time,initialValue))
 {
 }
 
 KeyFrame::KeyFrame(const KeyFrame& other)
-    : _imp(new KeyFramePrivate(*other._imp.get()))
+    : _imp(new KeyFramePrivate(*(other._imp)))
 {
 }
 
-void KeyFrame::clone(const KeyFrame& other){
-    _imp->clone(other._imp->_value,other._imp->_time,other._imp->_leftTangent,other._imp->_rightTangent,other._imp->_interpolation);
+void KeyFrame::operator=(const KeyFrame& o)
+{
+    _imp->_time = o._imp->_time;
+    _imp->_value = o._imp->_value;
+    _imp->_leftTangent = o._imp->_leftTangent;
+    _imp->_rightTangent = o._imp->_rightTangent;
+    _imp->_interpolation = o._imp->_interpolation;
 }
 
 KeyFrame::~KeyFrame(){}
@@ -46,59 +50,26 @@ bool KeyFrame::operator==(const KeyFrame& o) const {
 }
 
 
-
-void KeyFrame::setTangents(const Variant& left,const Variant& right,bool evaluateNeighboors){
-    assert(_imp->_curve);
-     _imp->_leftTangent = left;
-    _imp->_rightTangent = right;
-    if(evaluateNeighboors){
-        _imp->_curve->evaluateCurveChanged(Curve::TANGENT_CHANGED,this);
-    }
-}
-
-void KeyFrame::setLeftTangent(const Variant& v,bool evaluateNeighboors){
+void KeyFrame::setLeftTangent(const Variant& v){
     _imp->_leftTangent = v;
-    assert(_imp->_curve);
-    if(evaluateNeighboors){
-        _imp->_curve->evaluateCurveChanged(Curve::TANGENT_CHANGED,this);
-    }
 }
 
 
-void KeyFrame::setRightTangent(const Variant& v, bool evaluateNeighboors){
+void KeyFrame::setRightTangent(const Variant& v){
     _imp->_rightTangent = v;
-    assert(_imp->_curve);
-    if(evaluateNeighboors){
-        _imp->_curve->evaluateCurveChanged(Curve::TANGENT_CHANGED,this);
-    }
 }
+
 
 void KeyFrame::setValue(const Variant& v){
     _imp->_value = v;
-    assert(_imp->_curve);
-    _imp->_curve->evaluateCurveChanged(Curve::KEYFRAME_CHANGED,this);
 }
 
 void KeyFrame::setTime(double time){
     _imp->_time = time;
-    assert(_imp->_curve);
-    _imp->_curve->evaluateCurveChanged(Curve::KEYFRAME_CHANGED,this);
 }
 
-void KeyFrame::setTimeAndValue(double time,const Variant& v){
-    _imp->_time = time;
-    _imp->_value = v;
-    assert(_imp->_curve);
-    _imp->_curve->evaluateCurveChanged(Curve::KEYFRAME_CHANGED,this);
-}
 
 void KeyFrame::setInterpolation(Natron::KeyframeType interp) { _imp->_interpolation = interp; }
-
-void KeyFrame::setInterpolationAndEvaluate(Natron::KeyframeType interp){
-    _imp->_interpolation = interp;
-     assert(_imp->_curve);
-    _imp->_curve->evaluateCurveChanged(Curve::KEYFRAME_CHANGED,this);
-}
 
 Natron::KeyframeType KeyFrame::getInterpolation() const { return _imp->_interpolation; }
 
@@ -135,9 +106,7 @@ void Curve::clone(const Curve& other){
     clearKeyFrames();
     const KeyFrames& otherKeys = other.getKeyFrames();
     for(KeyFrames::const_iterator it = otherKeys.begin();it!=otherKeys.end();++it){
-        boost::shared_ptr<KeyFrame> key(new KeyFrame(0,Variant(0),this));
-        key->clone(*(*it));
-        _imp->_keyFrames.push_back(key);
+        _imp->_keyFrames.push_back(boost::shared_ptr<KeyFrame>(new KeyFrame((*it)->getTime(),(*it)->getValue())));
     }
 }
 
@@ -218,76 +187,6 @@ void Curve::removeKeyFrame(double time){
     }
 }
 
-void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrames::iterator key){
-    double tcur = (*key)->getTime();
-    double vcur = (*key)->getValue().value<double>();
-
-    double tprev, vprev, tnext, vnext, vprevDerivRight, vnextDerivLeft;
-    Natron::KeyframeType prevType, nextType;
-    if (key == _imp->_keyFrames.begin()) {
-        tprev = tcur;
-        vprev = vcur;
-        vprevDerivRight = 0.;
-        prevType = Natron::KEYFRAME_NONE;
-    } else {
-        KeyFrames::const_iterator prev = key;
-        --prev;
-        tprev = (*prev)->getTime();
-        vprev = (*prev)->getValue().value<double>();
-        vprevDerivRight = (*prev)->getRightTangent().value<double>();
-        prevType = (*prev)->getInterpolation();
-
-        //if prev is the first keyframe, and not edited by the user then interpolate linearly
-        if(prev == _imp->_keyFrames.begin() && prevType != Natron::KEYFRAME_FREE &&
-                prevType != Natron::KEYFRAME_BROKEN){
-            prevType = Natron::KEYFRAME_LINEAR;
-        }
-    }
-
-    KeyFrames::const_iterator next = key;
-    ++next;
-    if (next == _imp->_keyFrames.end()) {
-        tnext = tcur;
-        vnext = vcur;
-        vnextDerivLeft = 0.;
-        nextType = Natron::KEYFRAME_NONE;
-    } else {
-        tnext = (*next)->getTime();
-        vnext = (*next)->getValue().value<double>();
-        vnextDerivLeft = (*next)->getLeftTangent().value<double>();
-        nextType = (*next)->getInterpolation();
-
-        KeyFrames::const_iterator nextnext = next;
-        ++nextnext;
-        //if next is thelast keyframe, and not edited by the user then interpolate linearly
-        if(nextnext == _imp->_keyFrames.end() && nextType != Natron::KEYFRAME_FREE &&
-                nextType != Natron::KEYFRAME_BROKEN){
-            nextType = Natron::KEYFRAME_LINEAR;
-        }
-    }
-
-    double vcurDerivLeft,vcurDerivRight;
-    try{
-    Natron::autoComputeTangents<double>(prevType,
-                                        (*key)->getInterpolation(),
-                                        nextType,
-                                        tprev, vprev,
-                                        tcur, vcur,
-                                        tnext, vnext,
-                                        vprevDerivRight,
-                                        vnextDerivLeft,
-                                        &vcurDerivLeft, &vcurDerivRight);
-    }catch(const std::exception& e){
-        std::cout << e.what() << std::endl;
-        assert(false);
-    }
-    bool evaluateNeighboor = true;
-    if(reason == TANGENT_CHANGED){
-        evaluateNeighboor = false;
-    }
-    (*key)->setLeftTangent(Variant(vcurDerivLeft),evaluateNeighboor);
-    (*key)->setRightTangent(Variant(vcurDerivRight),evaluateNeighboor);
-}
 
 
 
@@ -377,39 +276,155 @@ Variant Curve::getValueAt(double t) const {
 }
 
 
+bool Curve::isAnimated() const { return _imp->_keyFrames.size() > 1; }
+
+int Curve::keyFramesCount() const { return (int)_imp->_keyFrames.size(); }
+
+const KeyFrames& Curve::getKeyFrames() const { return _imp->_keyFrames; }
+
+void Curve::setKeyFrameValue(const Variant& value,boost::shared_ptr<KeyFrame> k){
+    k->setValue(value);
+    evaluateCurveChanged(KEYFRAME_CHANGED,k);
+
+}
+
+void Curve::setKeyFrameTime(double time,boost::shared_ptr<KeyFrame> k){
+    k->setTime(time);
+    evaluateCurveChanged(KEYFRAME_CHANGED,k);
+}
+
+
+void Curve::setKeyFrameValueAndTime(double time,const Variant& value,boost::shared_ptr<KeyFrame> k){
+    k->setTime(time);
+    k->setValue(value);
+    evaluateCurveChanged(KEYFRAME_CHANGED,k);
+
+}
+
+void Curve::setKeyFrameLeftTangent(const Variant& value,boost::shared_ptr<KeyFrame> k){
+    k->setLeftTangent(value);
+    evaluateCurveChanged(TANGENT_CHANGED,k);
+    
+}
+
+void Curve::setKeyFrameRightTangent(const Variant& value,boost::shared_ptr<KeyFrame> k){
+    k->setRightTangent(value);
+    evaluateCurveChanged(TANGENT_CHANGED,k);
+}
+
+void Curve::setKeyFrameTangents(const Variant& left,const Variant& right,boost::shared_ptr<KeyFrame> k){
+    k->setLeftTangent(left);
+    k->setRightTangent(right);
+
+   evaluateCurveChanged(TANGENT_CHANGED,k);
+    
+}
+
+
+void Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,boost::shared_ptr<KeyFrame> k){
+    k->setInterpolation(interp);
+    evaluateCurveChanged(KEYFRAME_CHANGED,k);
+}
+
+
+
+void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrames::iterator key){
+    double tcur = (*key)->getTime();
+    double vcur = (*key)->getValue().value<double>();
+    
+    double tprev, vprev, tnext, vnext, vprevDerivRight, vnextDerivLeft;
+    Natron::KeyframeType prevType, nextType;
+    if (key == _imp->_keyFrames.begin()) {
+        tprev = tcur;
+        vprev = vcur;
+        vprevDerivRight = 0.;
+        prevType = Natron::KEYFRAME_NONE;
+    } else {
+        KeyFrames::const_iterator prev = key;
+        --prev;
+        tprev = (*prev)->getTime();
+        vprev = (*prev)->getValue().value<double>();
+        vprevDerivRight = (*prev)->getRightTangent().value<double>();
+        prevType = (*prev)->getInterpolation();
+        
+        //if prev is the first keyframe, and not edited by the user then interpolate linearly
+        if(prev == _imp->_keyFrames.begin() && prevType != Natron::KEYFRAME_FREE &&
+           prevType != Natron::KEYFRAME_BROKEN){
+            prevType = Natron::KEYFRAME_LINEAR;
+        }
+    }
+    
+    KeyFrames::const_iterator next = key;
+    ++next;
+    if (next == _imp->_keyFrames.end()) {
+        tnext = tcur;
+        vnext = vcur;
+        vnextDerivLeft = 0.;
+        nextType = Natron::KEYFRAME_NONE;
+    } else {
+        tnext = (*next)->getTime();
+        vnext = (*next)->getValue().value<double>();
+        vnextDerivLeft = (*next)->getLeftTangent().value<double>();
+        nextType = (*next)->getInterpolation();
+        
+        KeyFrames::const_iterator nextnext = next;
+        ++nextnext;
+        //if next is thelast keyframe, and not edited by the user then interpolate linearly
+        if(nextnext == _imp->_keyFrames.end() && nextType != Natron::KEYFRAME_FREE &&
+           nextType != Natron::KEYFRAME_BROKEN){
+            nextType = Natron::KEYFRAME_LINEAR;
+        }
+    }
+    
+    double vcurDerivLeft,vcurDerivRight;
+    try{
+        Natron::autoComputeTangents<double>(prevType,
+                                            (*key)->getInterpolation(),
+                                            nextType,
+                                            tprev, vprev,
+                                            tcur, vcur,
+                                            tnext, vnext,
+                                            vprevDerivRight,
+                                            vnextDerivLeft,
+                                            &vcurDerivLeft, &vcurDerivRight);
+    }catch(const std::exception& e){
+        std::cout << e.what() << std::endl;
+        assert(false);
+    }
+    (*key)->setLeftTangent(Variant(vcurDerivLeft));
+    (*key)->setRightTangent(Variant(vcurDerivRight));
+    if(reason != TANGENT_CHANGED){
+        evaluateCurveChanged(TANGENT_CHANGED,*key);
+    }
+
+}
+
 void Curve::refreshTangents(CurveChangedReason reason, boost::shared_ptr<KeyFrame> k){
     KeyFrames::iterator it = std::find(_imp->_keyFrames.begin(),_imp->_keyFrames.end(),k);
     assert(it!=_imp->_keyFrames.end());
     refreshTangents(reason,it);
 }
 
-bool Curve::isAnimated() const { return _imp->_keyFrames.size() > 1; }
-
-int Curve::keyFramesCount() const { return (int)_imp->_keyFrames.size(); }
-
-const Curve::KeyFrames& Curve::getKeyFrames() const { return _imp->_keyFrames; }
-
-
-void Curve::evaluateCurveChanged(CurveChangedReason reason,KeyFrame *k){
+void Curve::evaluateCurveChanged(CurveChangedReason reason,boost::shared_ptr<KeyFrame> k){
     KeyFrames::iterator found = _imp->_keyFrames.end();
     for(KeyFrames::iterator it =  _imp->_keyFrames.begin();it!=_imp->_keyFrames.end();++it){
-        if((*it).get() == k){
+        if((*it) == k){
             found = it;
             break;
         }
     }
     assert(found!=_imp->_keyFrames.end());
-
-
+    
+    
     if(k->getInterpolation()!= Natron::KEYFRAME_BROKEN && k->getInterpolation() != Natron::KEYFRAME_FREE
-            && reason != TANGENT_CHANGED ){
+       && reason != TANGENT_CHANGED ){
         refreshTangents(TANGENT_CHANGED,found);
     }
     KeyFrames::iterator prev = found;
     if(found != _imp->_keyFrames.begin()){
         --prev;
         if((*prev)->getInterpolation()!= Natron::KEYFRAME_BROKEN &&
-                (*prev)->getInterpolation()!= Natron::KEYFRAME_FREE){
+           (*prev)->getInterpolation()!= Natron::KEYFRAME_FREE){
             refreshTangents(TANGENT_CHANGED,prev);
         }
     }
@@ -417,11 +432,10 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason,KeyFrame *k){
     ++next;
     if(next != _imp->_keyFrames.end()){
         if((*next)->getInterpolation()!= Natron::KEYFRAME_BROKEN &&
-                (*next)->getInterpolation()!= Natron::KEYFRAME_FREE){
+           (*next)->getInterpolation()!= Natron::KEYFRAME_FREE){
             refreshTangents(TANGENT_CHANGED,next);
         }
     }
-
+    
     _imp->_owner->evaluateAnimationChange();
 }
-

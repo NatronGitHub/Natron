@@ -727,6 +727,9 @@ void OfxEffectInstance::onKnobValueChanged(Knob* k,Natron::ValueChangedReason re
         case Natron::PLUGIN_EDITED:
             stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangePluginEdited,time,renderScale);
             break;
+        case Natron::OTHER_REASON:
+        default:
+            break;
     }
     // note: DON'T remove the following assert()s, unless you replace them with proper error feedback.
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
@@ -748,6 +751,9 @@ void OfxEffectInstance::beginKnobsValuesChanged(Natron::ValueChangedReason reaso
         case Natron::PLUGIN_EDITED:
             stat = effectInstance()->beginInstanceChangedAction(kOfxChangePluginEdited);
             break;
+        case Natron::OTHER_REASON:
+        default:
+            break;
     }
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
 
@@ -767,6 +773,9 @@ void OfxEffectInstance::endKnobsValuesChanged(Natron::ValueChangedReason reason)
             break;
         case Natron::PLUGIN_EDITED:
             stat = effectInstance()->endInstanceChangedAction(kOfxChangePluginEdited);
+            break;
+        case Natron::OTHER_REASON:
+        default:
             break;
     }
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);

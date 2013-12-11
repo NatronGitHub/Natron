@@ -59,7 +59,7 @@ public:
 public slots:
     
     void checkVisibleState();
-    
+        
 private:
     
     
@@ -136,7 +136,7 @@ public:
 
     void removeKeyFrames(const std::vector<std::pair<CurveGui *, boost::shared_ptr<KeyFrame> > > &keys);
 
-    void setKeyFrame(boost::shared_ptr<KeyFrame> key, double x, const Variant& y);
+    void setKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key, double x, const Variant& y);
 
     void setKeyFrames(const std::vector<std::pair< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> >, std::pair<double, Variant> > >& keys);
     
@@ -146,9 +146,9 @@ public:
     
     void showCurves(KnobGui* knob);
     
-    void setKeyInterpolation(boost::shared_ptr<KeyFrame> key,Natron::KeyframeType interp);
+    void setKeyInterpolation(CurveGui* curve,boost::shared_ptr<KeyFrame> key,Natron::KeyframeType interp);
     
-    void setKeysInterpolation(const std::vector< boost::shared_ptr<KeyFrame> >& keys,Natron::KeyframeType interp);
+    void setKeysInterpolation(const std::vector<std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > >& keys,Natron::KeyframeType interp);
     
     
     

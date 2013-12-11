@@ -15,7 +15,7 @@
 
 #include "Engine/Rect.h"
 #include "Engine/Variant.h"
-
+#include "Engine/Knob.h"
 
 class Curve;
 struct KeyFramePrivate{
@@ -25,42 +25,36 @@ struct KeyFramePrivate{
 
     Variant _leftTangent,_rightTangent;
     Natron::KeyframeType _interpolation;
-    boost::shared_ptr<Curve> _curve;
 
 
     KeyFramePrivate()
     : _value()
     , _time(0)
     , _interpolation(Natron::KEYFRAME_LINEAR)
-    , _curve()
     {}
 
 
-    KeyFramePrivate(double time, const Variant& initialValue,const boost::shared_ptr<Curve>& curve)
+    KeyFramePrivate(double time, const Variant& initialValue)
         : _value(initialValue)
         , _time(time)
         , _leftTangent()
         , _rightTangent()
         , _interpolation(Natron::KEYFRAME_SMOOTH)
-        , _curve(curve)
     {
         _leftTangent = initialValue;
         _rightTangent = initialValue;
     }
 
-    KeyFramePrivate(const KeyFramePrivate& other): _curve(other._curve)
+    KeyFramePrivate(const KeyFramePrivate& other)
     {
-        clone(other._value,other._time,other._leftTangent,other._rightTangent,other._interpolation);
+        _value = other._value;
+        _leftTangent = other._leftTangent;
+        _rightTangent = other._rightTangent;
+        _interpolation = other._interpolation;
+        _time = other._time;
     }
 
-    void clone(const Variant& oValue,double oTime,const Variant& oLeftTan,const Variant& oRightTan,
-               Natron::KeyframeType oInterp){
-        _value = oValue;
-        _time = oTime;
-        _rightTangent = oRightTan;
-        _leftTangent = oLeftTan;
-        _interpolation = oInterp;
-    }
+
 };
 
 
@@ -68,15 +62,19 @@ class KeyFrame;
 class Knob;
 struct CurvePrivate{
 
+   
+
     std::list< boost::shared_ptr<KeyFrame> >  _keyFrames;
     Knob* _owner;
 
+    
     CurvePrivate()
     : _keyFrames()
     , _owner(NULL)
     {}
 
 };
+
 
 
 

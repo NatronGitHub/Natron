@@ -32,11 +32,10 @@ void KnobSerialization::initialize(const Knob* knob){
             }
     }
 
-    const std::map<int,boost::shared_ptr<Knob> >& masters = knob->getMasters();
-    for(std::map<int,boost::shared_ptr<Knob> >::const_iterator it = masters.begin();
-        it!=masters.end();++it){
-        if(it->second){
-            _masters.insert(std::make_pair(it->first,it->second->getDescription()));
+    const std::vector<boost::shared_ptr<Knob> >& masters = knob->getMasters();
+    for(U32 i = 0; i < masters.size();++i){
+        if(masters[i]){
+            _masters.push_back(masters[i]->getDescription());
         }
     }
 

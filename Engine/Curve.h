@@ -36,13 +36,13 @@ public:
 
     KeyFrame();
 
-    KeyFrame(double time, const Variant& initialValue, const boost::shared_ptr<Curve> &curve);
+    KeyFrame(double time, const Variant& initialValue);
 
     KeyFrame(const KeyFrame& other);
 
     ~KeyFrame();
-
-    void clone(const KeyFrame& other);
+    
+    void operator=(const KeyFrame& o);
 
     bool operator==(const KeyFrame& o) const ;
 
@@ -54,21 +54,15 @@ public:
 
     const Variant& getRightTangent() const ;
 
-    void setTangents(const Variant& left,const Variant& right,bool evaluateNeighboors);
+    void setLeftTangent(const Variant& v);
 
-    void setLeftTangent(const Variant& v,bool evaluateNeighboors);
-
-    void setRightTangent(const Variant& v,bool evaluateNeighboors);
+    void setRightTangent(const Variant& v);
 
     void setValue(const Variant& v);
 
     void setTime(double time);
 
-    void setTimeAndValue(double time,const Variant& v);
-
     void setInterpolation(Natron::KeyframeType interp) ;
-
-    void setInterpolationAndEvaluate(Natron::KeyframeType interp) ;
 
     Natron::KeyframeType getInterpolation() const;
 
@@ -83,6 +77,7 @@ private:
 
 };
 
+typedef std::list< boost::shared_ptr<KeyFrame> > KeyFrames;
 
 
 /**
@@ -94,15 +89,13 @@ struct CurvePrivate;
 class RectD;
 class Curve {
 
-public:
-
     enum CurveChangedReason{
         TANGENT_CHANGED = 0,
         KEYFRAME_CHANGED = 1
     };
+    
+public:
 
-    //each segment of curve between a keyframe and the next can have a different interpolation method
-    typedef std::list< boost::shared_ptr<KeyFrame> > KeyFrames;
 
     /**
      * @brief An empty curve, held by no one. This constructor is used by the serialization.
@@ -142,22 +135,36 @@ public:
 
     const KeyFrames& getKeyFrames() const;
 
-    void refreshTangents(CurveChangedReason reason, boost::shared_ptr<KeyFrame> k);
-
-    void refreshTangents(CurveChangedReason reason, KeyFrames::iterator key);
-
     void clearKeyFrames();
+    
+    void setKeyFrameValue(const Variant& value,boost::shared_ptr<KeyFrame> k);
+    
+    void setKeyFrameTime(double time,boost::shared_ptr<KeyFrame> k);
+    
+    void setKeyFrameValueAndTime(double time,const Variant& value,boost::shared_ptr<KeyFrame> k);
+    
+    void setKeyFrameLeftTangent(const Variant& value,boost::shared_ptr<KeyFrame> k);
+    
+    void setKeyFrameRightTangent(const Variant& value,boost::shared_ptr<KeyFrame> k);
+    
+    void setKeyFrameTangents(const Variant& left,const Variant& right,boost::shared_ptr<KeyFrame> k);
+    
+    void setKeyFrameInterpolation(Natron::KeyframeType interp,boost::shared_ptr<KeyFrame> k);
 
-    /**
-     * @brief Called when a keyframe/tangent is modified, indicating that the curve has changed and we must
-     * evaluate any change (i.e: force a new render)
-    **/
-    void evaluateCurveChanged(CurveChangedReason reason, KeyFrame *k);
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 private:
 
+    /**
+     * @brief Called when a keyframe/tangent is modified, indicating that the curve has changed and we must
+     * evaluate any change (i.e: force a new render)
+     **/
+    void evaluateCurveChanged(CurveChangedReason reason, boost::shared_ptr<KeyFrame> k);
+    
+    void refreshTangents(CurveChangedReason reason, boost::shared_ptr<KeyFrame> k);
+    
+    void refreshTangents(CurveChangedReason reason, KeyFrames::iterator key);
 
     boost::scoped_ptr<CurvePrivate> _imp;
 };

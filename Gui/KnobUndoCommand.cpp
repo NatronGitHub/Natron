@@ -17,7 +17,7 @@
 //================================================================
 
 
-KnobMultipleUndosCommand::KnobMultipleUndosCommand(KnobGui *knob, const std::map<int, Variant> &oldValue, const std::map<int, Variant> &newValue, QUndoCommand *parent)
+KnobMultipleUndosCommand::KnobMultipleUndosCommand(KnobGui *knob,  const std::vector<Variant> &oldValue, const std::vector<Variant> &newValue, QUndoCommand *parent)
 : QUndoCommand(parent)
 , _oldValue(oldValue)
 , _newValue(newValue)
@@ -29,10 +29,10 @@ KnobMultipleUndosCommand::KnobMultipleUndosCommand(KnobGui *knob, const std::map
 
 void KnobMultipleUndosCommand::undo()
 {
-    for (std::map<int, Variant>::const_iterator it = _oldValue.begin(); it != _oldValue.end(); ++it) {
-        _knob->setValue(it->first, it->second);
+    for (U32 i = 0 ; i < _oldValue.size();++i) {
+        _knob->setValue(i,_oldValue[i]);
         if(_hasCreateKeyFrame){
-            _knob->removeKeyFrame(_timeOfCreation,it->first);
+            _knob->removeKeyFrame(_timeOfCreation,i);
         }
 
     }
@@ -45,15 +45,15 @@ void KnobMultipleUndosCommand::redo()
 
     SequenceTime time = _knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
 
-    for (std::map<int, Variant>::const_iterator it = _newValue.begin(); it != _newValue.end(); ++it) {
-        boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(it->first);
+    for (U32 i = 0; i < _newValue.size();++i) {
+        boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(i);
 
-        _knob->setValue(it->first, it->second);
+        _knob->setValue(i,_newValue[i]);
 
         if (c->keyFramesCount() >= 1) {
             _hasCreateKeyFrame = true;
             _timeOfCreation = time;
-            _knob->setKeyframe(time, it->first);
+            _knob->setKeyframe(time, i);
         }
 
     }

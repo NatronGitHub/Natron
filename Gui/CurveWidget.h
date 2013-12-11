@@ -130,14 +130,11 @@ public:
     boost::shared_ptr<KeyFrame> addKeyFrame(CurveGui* curve,const Variant& y, int x);
 
     void removeKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key);
-
-    void setKeyPos(boost::shared_ptr<KeyFrame> key,double x,const Variant& y);
     
-    void setKeyInterpolation(boost::shared_ptr<KeyFrame> key,Natron::KeyframeType interpolation);
-
-    void refreshDisplayedTangents(); //< need to be called if you call setKeyPos() externally
     
 public slots:
+    
+    void refreshDisplayedTangents();
 
     void deleteSelectedKeyFrames();
 
