@@ -191,14 +191,7 @@ public:
      * Note that this function can be called concurrently for the same output image but with different
      * rois, depending on the threading-affinity of the plug-in.
      **/
-    virtual Natron::Status render(SequenceTime time,RenderScale scale,const RectI& roi,int view,boost::shared_ptr<Natron::Image> output) WARN_UNUSED_RETURN {
-        (void)time;
-        (void)scale;
-        (void)roi;
-        (void)view;
-        (void)output;
-        return Natron::StatOK;
-    }
+    virtual Natron::Status render(SequenceTime /*time*/, RenderScale /*scale*/, const RectI& /*roi*/, int /*view*/, boost::shared_ptr<Natron::Image> /*output*/) WARN_UNUSED_RETURN { return Natron::StatOK; }
     
     /**
      * @brief Can be overloaded to indicates whether the effect is an identity, i.e it doesn't produce
@@ -210,16 +203,8 @@ public:
      * @param inputTime[out] the input time to which this plugin is identity of
      * @param inputNb[out] the input number of the effect that is identity of
      **/
-    virtual bool isIdentity(SequenceTime time,RenderScale scale,const RectI& roi,
-                            int view,SequenceTime* inputTime,int* inputNb){
-
-        (void)time;
-        (void)scale;
-        (void)roi;
-        (void)view;
-        (void)inputTime;
-        (void)inputNb;
-    }
+    virtual bool isIdentity(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& /*roi*/,
+                            int /*view*/,SequenceTime* /*inputTime*/,int* /*inputNb*/) WARN_UNUSED_RETURN { return false; }
     
     enum RenderSafety{UNSAFE = 0,INSTANCE_SAFE = 1,FULLY_SAFE = 2};
     /**
@@ -258,7 +243,7 @@ public:
      * the render will stop.
      * If the status is StatFailed a message should be posted by the plugin.
      **/
-    virtual Natron::Status preProcessFrame(SequenceTime time) WARN_UNUSED_RETURN { (void)time; return Natron::StatReplyDefault; }
+    virtual Natron::Status preProcessFrame(SequenceTime /*time*/) WARN_UNUSED_RETURN { return Natron::StatReplyDefault; }
     
     
     /**
@@ -296,29 +281,17 @@ public:
      */
     virtual void drawOverlay(){}
     
-    virtual bool onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
-        (void)viewportPos;
-        (void)pos;
-        return false;
-    }
+    virtual bool onOverlayPenDown(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) { return false; }
     
-    virtual bool onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
-        (void)viewportPos;
-        (void)pos;
-        return false;
-    }
+    virtual bool onOverlayPenMotion(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) { return false; }
     
-    virtual bool onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos){
-        (void)viewportPos;
-        (void)pos;
-        return false;
-    }
+    virtual bool onOverlayPenUp(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) { return false; }
     
-    virtual void onOverlayKeyDown(QKeyEvent* e){ (void)e; }
+    virtual void onOverlayKeyDown(QKeyEvent* /*e*/) {}
     
-    virtual void onOverlayKeyUp(QKeyEvent* e){ (void)e; }
+    virtual void onOverlayKeyUp(QKeyEvent* /*e*/) {}
     
-    virtual void onOverlayKeyRepeat(QKeyEvent* e){ (void)e; }
+    virtual void onOverlayKeyRepeat(QKeyEvent* /*e*/) {}
     
     virtual void onOverlayFocusGained(){}
     
@@ -360,21 +333,21 @@ public:
      * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
      * but this can lead to worse performance. You can overload this to make all changes to params at once.
      **/
-    virtual void beginKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE {(void)reason;}
+    virtual void beginKnobsValuesChanged(Natron::ValueChangedReason /*reason*/) OVERRIDE {}
     
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
      * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
      * but this can lead to worse performance. You can overload this to make all changes to params at once.
      **/
-    virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE {(void)reason;}
+    virtual void endKnobsValuesChanged(Natron::ValueChangedReason /*reason*/) OVERRIDE {}
     
     /**
      * @brief Called whenever a param changes. It calls the virtual
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE {(void)k;(void)reason;}
+    virtual void onKnobValueChanged(Knob* /*k*/, Natron::ValueChangedReason /*reason*/) OVERRIDE {}
     
     /**
      * @brief When called, if the node holding this effect  is connected to any
