@@ -172,6 +172,8 @@ private:
     
     void refreshTangents(CurveChangedReason reason, KeyFrameSet::iterator key);
 
+    void setKeyFrameTimeNoUpdate(double time,boost::shared_ptr<KeyFrame> k);
+
     boost::scoped_ptr<CurvePrivate> _imp;
 };
 

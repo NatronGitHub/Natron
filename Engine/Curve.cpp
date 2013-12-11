@@ -287,21 +287,50 @@ void Curve::setKeyFrameValue(const Variant& value,boost::shared_ptr<KeyFrame> k)
 
 }
 
-void Curve::setKeyFrameTime(double time,boost::shared_ptr<KeyFrame> k){
-    if(time != k->getTime()){
-        k->setTime(time);
+void Curve::setKeyFrameTimeNoUpdate(double time, boost::shared_ptr<KeyFrame> k) {
+    if (k->getInterpolation() == Natron::KEYFRAME_FREE ||
+        k->getInterpolation() == Natron::KEYFRAME_BROKEN) {
+        const KeyFrameSet& ks = getKeyFrames();
+        // FIXME: all these functions (see evaluateCurveChanged) should take an iterator as parameter, rather than a pointer, this would avoid doing find() here and in evaluateCurveChanged"
+        KeyFrameSet::const_iterator it = std::find(ks.begin(), ks.end(), k);
+        assert(it != ks.end());
+        double oldTime = k->getTime();
+        double prevTime = (it != ks.begin()) ? (*std::prev(it))->getTime() : (oldTime - 1.);
+        double nextTime = (it != std::prev(ks.end())) ? (*std::next(it))->getTime() : (oldTime + 1.);
+        assert(prevTime < oldTime && oldTime < nextTime); // may break if the keyframe is moved fast
+        assert(prevTime < time && time < nextTime); // may break if the keyframe is moved fast
+        double oldLeftTan = k->getLeftTangent();
+        double oldRightTan = k->getRightTangent();
+        // denormalize the derivatives (which are for a [0,1] time interval)
+        // and renormalize them
+        double newLeftTan = (oldLeftTan / (oldTime - prevTime)) * (time - prevTime);
+        double newRightTan = (oldRightTan / (nextTime - oldTime)) * (nextTime - time);
+        k->setLeftTangent(newLeftTan);
+        k->setRightTangent(newRightTan);
+    }
+    k->setTime(time);
+}
+
+void Curve::setKeyFrameTime(double time, boost::shared_ptr<KeyFrame> k) {
+    if(time != k->getTime()) {
+        setKeyFrameTimeNoUpdate(time, k);
         evaluateCurveChanged(KEYFRAME_CHANGED,k);
     }
 }
 
 
-void Curve::setKeyFrameValueAndTime(double time,const Variant& value,boost::shared_ptr<KeyFrame> k){
-    if(time != k->getTime() || value.toDouble() != k->getValue().toDouble()){
-        k->setTime(time);
+void Curve::setKeyFrameValueAndTime(double time,const Variant& value,boost::shared_ptr<KeyFrame> k) {
+    bool setTime = (time != k->getTime());
+    bool setValue = (value.toDouble() != k->getValue().toDouble());
+    if(setTime) {
+        setKeyFrameTimeNoUpdate(time, k);
+    }
+    if (setValue) {
         k->setValue(value);
+    }
+    if (setTime || setValue) {
         evaluateCurveChanged(KEYFRAME_CHANGED,k);
     }
-
 }
 
 void Curve::setKeyFrameLeftTangent(double value,boost::shared_ptr<KeyFrame> k){
