@@ -68,7 +68,7 @@ struct ProjectPrivate{
 
     int _beginEndBracketsCount;
     int _evaluationsCount;
-    std::multimap<KnobHolder*,int> _holdersWhoseBeginWasCalled;
+    std::map<KnobHolder*,int> _holdersWhoseBeginWasCalled;
     bool _isSignificantChange;
     
     ProjectPrivate(Natron::Project* project);

@@ -248,10 +248,13 @@ void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,Kno
     //std::cout <<"Begin: " << _imp->_beginEndBracketsCount << std::endl;
     ++_imp->_beginEndBracketsCount;
     
-//    std::set<KnobHolder*>::const_iterator found = _imp->_holdersWhoseBeginWasCalled.find(caller);
-//    if(found == _imp->_holdersWhoseBeginWasCalled.end()){
+    std::map<KnobHolder*,int>::iterator found = _imp->_holdersWhoseBeginWasCalled.find(caller);
+    if(found == _imp->_holdersWhoseBeginWasCalled.end()){
         caller->beginKnobsValuesChanged(reason);
-    //}
+        _imp->_holdersWhoseBeginWasCalled.insert(std::make_pair(caller, 1));
+    }else{
+        ++found->second;
+    }
 }
 
 void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder* caller,Knob* k,bool isSignificant){
@@ -273,7 +276,13 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
 void Project::endProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller){
     --_imp->_beginEndBracketsCount;
     //   std::cout <<"End: " << _imp->_beginEndBracketsCount << std::endl;
-    caller->endKnobsValuesChanged(reason);
+    std::map<KnobHolder*,int>::iterator found = _imp->_holdersWhoseBeginWasCalled.find(caller);
+    assert(found != _imp->_holdersWhoseBeginWasCalled.end());
+    if(found->second == 1){
+        caller->endKnobsValuesChanged(reason);
+    }else{
+        --found->second;
+    }
     if(_imp->_beginEndBracketsCount != 0){
         return;
     }
