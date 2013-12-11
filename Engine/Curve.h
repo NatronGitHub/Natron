@@ -23,7 +23,7 @@
 #include "Global/Enums.h"
 /**
  * @brief A KeyFrame is a pair <time,value>. These are the value that are used
- * to interpolate an AnimationCurve. The _leftTangent and _rightTangent can be
+ * to interpolate a Curve. The _leftTangent and _rightTangent can be
  * used by the interpolation method of the curve.
 **/
 class Curve;

@@ -358,15 +358,14 @@ void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
 }
 
 void Knob::onTimeChanged(SequenceTime time){
-    if(isAnimationEnabled()){
-        //setValue's calls compression is taken care of above.
-        for(U32 i = 0 ; i < _imp->_curves.size();++i){
-            if(_imp->_curves[i]->isAnimated()){
-                Variant v = getValueAtTime(time,i);
-                setValue(v,i,Natron::TIME_CHANGED);
-            }
+    //setValue's calls compression is taken care of above.
+    for(U32 i = 0 ; i < _imp->_curves.size();++i){
+        if(_imp->_curves[i]->keyFramesCount() > 0){
+            Variant v = getValueAtTime(time,i);
+            setValue(v,i,Natron::TIME_CHANGED);
         }
     }
+
 }
 
 

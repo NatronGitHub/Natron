@@ -142,6 +142,8 @@ void Curve::addKeyFrame(boost::shared_ptr<KeyFrame> cp)
     std::pair<KeyFrameSet::iterator,bool> newKey = _imp->keyFrames.insert(cp);
     if (newKey.second) {
         refreshTangents(KEYFRAME_CHANGED, newKey.first);
+    }else{
+        (*newKey.first)->setValue(cp->getValue());
     }
 }
 
