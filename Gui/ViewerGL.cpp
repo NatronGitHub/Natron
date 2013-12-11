@@ -1480,7 +1480,6 @@ void ViewerGL::setClipToDisplayWindow(bool b) {
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
     if (viewer->getUiContext()) {
-        _imp->viewerTab->abortRendering();
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
     }
 }

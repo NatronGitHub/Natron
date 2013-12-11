@@ -552,7 +552,6 @@ void ViewerTab::startBackward(bool b){
 void ViewerTab::seek(SequenceTime time){
     _currentFrameBox->setValue(time);
     _timeLineGui->seek(time);
-    //   abortRendering();
     _viewerNode->refreshAndContinueRender();
 }
 
@@ -577,14 +576,10 @@ void ViewerTab::lastFrame(){
 
 void ViewerTab::onTimeLineTimeChanged(SequenceTime time,int /*reason*/){
     _currentFrameBox->setValue(time);
-    // abortRendering();
-    //_viewerNode->refreshAndContinueRender();
 }
 
 void ViewerTab::onCurrentTimeSpinBoxChanged(double time){
     _timeLineGui->seek(time);
-    // abortRendering();
-    //_viewerNode->refreshAndContinueRender();
 }
 
 
@@ -599,7 +594,6 @@ void ViewerTab::centerViewer(){
 }
 
 void ViewerTab::refresh(){
-    //abortRendering();
     _viewerNode->forceFullComputationOnNextFrame();
     _viewerNode->updateTreeAndRender();
 }

@@ -295,7 +295,7 @@ void Project::endProjectWideValueChanges(Natron::ValueChangedReason reason,KnobH
         if(reason == Natron::USER_EDITED){
             getApp()->triggerAutoSave();
         }
-        if(reason != Natron::OTHER_REASON){
+        if(reason != Natron::OTHER_REASON && reason != Natron::TIME_CHANGED){
             caller->evaluate(NULL,_imp->_isSignificantChange);
         }
     }

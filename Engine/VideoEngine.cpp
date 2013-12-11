@@ -202,7 +202,10 @@ bool VideoEngine::startEngine() {
         return false;
     }
     
-    
+    {
+        QMutexLocker workingLocker(&_workingMutex);
+        _working = true;
+    }
 
     /*beginRenderAction for all openFX nodes*/
     for (RenderTree::TreeIterator it = _tree.begin(); it!=_tree.end(); ++it) {
@@ -220,10 +223,6 @@ bool VideoEngine::startEngine() {
         }
     }
     
-    {
-        QMutexLocker workingLocker(&_workingMutex);
-        _working = true;
-    }
     if(!_currentRunArgs._sameFrame){
         emit engineStarted(_currentRunArgs._forward);
         _timer->playState = RUNNING; /*activating the timer*/
@@ -264,12 +263,14 @@ bool VideoEngine::stopEngine() {
         _restart = true;
         _timer->playState = PAUSE;
         
+
         {
             QMutexLocker workingLocker(&_workingMutex);
             _working = false;
         }
+
         _abortBeingProcessed = false;
-        
+
     }
     
     
@@ -578,8 +579,7 @@ void VideoEngine::onProgressUpdate(int /*i*/){
 
 void VideoEngine::abortRendering(){
     {
-        QMutexLocker workingLocker(&_workingMutex);
-        if(!_working){
+        if(!isWorking()){
             return;
         }
     }
@@ -599,25 +599,29 @@ void VideoEngine::abortRendering(){
 
 
 void VideoEngine::refreshAndContinueRender(bool initViewer){
-    bool wasPlaybackRunning;
-    {
-        QMutexLocker startedLocker(&_workingMutex);
-        wasPlaybackRunning = _working && _currentRunArgs._frameRequestsCount == -1;
-    }
-    if(wasPlaybackRunning){
-        render(-1,false,initViewer,_currentRunArgs._forward,false);
-    }else{
+    //the changes will occur upon the next frame rendered. If the playback is running indefinately
+    //we're sure that there will be a refresh. If the playback is for a determined amount of frame
+    //we've to make sure the playback is not rendering the last frame, in which case we wouldn't see
+    //the last changes.
+    //The default case is if the playback is not running: just render the current frame
+
+    bool isPlaybackRunning = isWorking() && (_currentRunArgs._frameRequestsCount == -1 ||
+                                             (_currentRunArgs._frameRequestsCount > 1 && _currentRunArgs._frameRequestIndex < _currentRunArgs._frameRequestsCount - 1));
+    if(!isPlaybackRunning){
         render(1,false,initViewer,_currentRunArgs._forward,true);
     }
 }
 void VideoEngine::updateTreeAndContinueRender(bool initViewer){
-    bool wasPlaybackRunning;
-    {
-        QMutexLocker startedLocker(&_workingMutex);
-        wasPlaybackRunning = _working && _currentRunArgs._frameRequestsCount == -1;
-    }
-    if(wasPlaybackRunning){
-        render(-1,true,initViewer,_currentRunArgs._forward,false);
+    //this is a bit more trickier than refreshAndContinueRender, we've to stop
+    //the playback, and request a new render
+    bool isPlaybackRunning = isWorking() && (_currentRunArgs._frameRequestsCount == -1 ||
+                                             (_currentRunArgs._frameRequestsCount > 1 && _currentRunArgs._frameRequestIndex < _currentRunArgs._frameRequestsCount - 1));
+
+    if(isPlaybackRunning){
+        int count = _currentRunArgs._frameRequestsCount == - 1 ? -1 :
+                                                                 _currentRunArgs._frameRequestsCount - _currentRunArgs._frameRequestIndex ;
+        abortRendering();
+        render(count,true,initViewer,_currentRunArgs._forward,false);
     }else{
         render(1,true,initViewer,_currentRunArgs._forward,true);
     }
