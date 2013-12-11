@@ -271,6 +271,8 @@ void NodeCurveEditorElement::checkVisibleState(){
             _curve->setVisibleAndRefresh(false);
         }
     }
+    _knob->onInternalValueChanged(_dimension);//< also update the gui of the knob to indicate the animation is gone
+
 }
 
 

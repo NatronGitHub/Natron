@@ -964,12 +964,11 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
         //the editor redo() call will call refreshSelectedKeysBbox() for us
     } else {
         _widget->refreshSelectedKeysBbox();
+        //refresh now the tangents positions
+        _widget->refreshDisplayedTangents();
     }
 
-    //refresh now the tangents positions
-    for (SelectedKeys::iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-        refreshKeyTangentsGUI(*it);
-    }
+
 }
 
 void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
@@ -1082,7 +1081,6 @@ void CurveWidgetPrivate::refreshKeyTangentsGUI(boost::shared_ptr<SelectedKey> ke
     KeyFrames::const_iterator k = std::find(keyframes.begin(),keyframes.end(),key->key);
     assert(k != keyframes.end());
 
-    //DRAWING TANGENTS
     //find the previous and next keyframes on the curve to find out the  position of the tangents
     KeyFrames::const_iterator prev = k;
     if (k != keyframes.begin()) {
@@ -1156,6 +1154,7 @@ void CurveWidgetPrivate::refreshKeyTangentsGUI(boost::shared_ptr<SelectedKey> ke
     key->leftTan.second = leftTanY;
     key->rightTan.first = rightTanX;
     key->rightTan.second = rightTanY;
+
 }
 
 void CurveWidgetPrivate::refreshSelectionRectangle(double x,double y) {

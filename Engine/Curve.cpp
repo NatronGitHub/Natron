@@ -428,7 +428,6 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason,boost::shared_ptr<Key
     }
     assert(found!=_imp->_keyFrames.end());
     
-    
     if(k->getInterpolation()!= Natron::KEYFRAME_BROKEN && k->getInterpolation() != Natron::KEYFRAME_FREE
        && reason != TANGENT_CHANGED ){
         refreshTangents(TANGENT_CHANGED,found);
