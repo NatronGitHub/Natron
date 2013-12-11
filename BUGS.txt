@@ -20,9 +20,6 @@ single component (all other components are 0, except alpha which is 1)
 
 ** Here is a list of non-blocking bugs / wanted features:
 
-- when time is changed, there are lost of calls to
-  kOfxActionBeginInstanceChanged/kOfxActionEndInstanceChanged (one for
-  each Knob), which should be concatenated intojust  one.
 
 - String animation is not yet supported. An animated string can only
   have "constant" interpolation, and could be represented in the curve

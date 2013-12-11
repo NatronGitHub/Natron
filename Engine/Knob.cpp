@@ -356,16 +356,13 @@ void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
 
 void Knob::onTimeChanged(SequenceTime time){
     if(isAnimationEnabled()){
-        beginValueChange(Natron::TIME_CHANGED); // we do not want to force a re-evaluation
-        for(int i = 0; i < getDimension();++i){
-            boost::shared_ptr<Curve> curve = getCurve(i);
-            if(curve && curve->isAnimated()){
+        //setValue's calls compression is taken care of above.
+        for(U32 i = 0 ; i < _imp->_curves.size();++i){
+            if(_imp->_curves[i]->isAnimated()){
                 Variant v = getValueAtTime(time,i);
                 setValue(v,i);
             }
         }
-        endValueChange(Natron::TIME_CHANGED);
-
     }
 }
 

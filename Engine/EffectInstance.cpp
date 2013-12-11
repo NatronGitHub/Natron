@@ -118,7 +118,7 @@ void EffectInstance::clone(SequenceTime time){
     if(!_imp->isRenderClone)
         return;
     cloneKnobs(*(_node->getLiveInstance()));
-    refreshAfterTimeChange(time);
+    //refreshAfterTimeChange(time);
     cloneExtras();
     _imp->previewEnabled = _node->getLiveInstance()->isPreviewEnabled();
 }

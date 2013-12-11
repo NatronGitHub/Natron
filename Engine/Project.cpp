@@ -211,25 +211,16 @@ void Project::setLastTimelineSeekCaller(Natron::OutputEffectInstance* output){
     _imp->_lastTimelineSeekCaller = output;
 }
 
-void Project::onTimeChanged(SequenceTime time,int reason){
-    std::list<ViewerInstance*> viewers;
+void Project::onTimeChanged(SequenceTime time,int /*reason*/){
 
-    refreshAfterTimeChange(time);
-
-    for (U32 i = 0; i < _imp->_currentNodes.size(); ++i) {
-        if(_imp->_currentNodes[i]->pluginID() == "Viewer"){
-            viewers.push_back(dynamic_cast<ViewerInstance*>(_imp->_currentNodes[i]->getLiveInstance()));
-        }
+    beginProjectWideValueChanges(Natron::TIME_CHANGED,this);
+    refreshAfterTimeChange(time); //refresh project knobs
+    for (U32 i = 0; i < _imp->_currentNodes.size(); ++i) {     
+        //refresh all knobs
         _imp->_currentNodes[i]->getLiveInstance()->refreshAfterTimeChange(time);
     }
-    //Notify all knobs that the current time changed.
-    //It lets a chance for an animated knob to change its value according to the current time
-    for (std::list<ViewerInstance*>::const_iterator it = viewers.begin(); it != viewers.end() ;++it)  {
-        if((Natron::TIMELINE_CHANGE_REASON)reason == Natron::PLAYBACK_SEEK && (*it) == _imp->_lastTimelineSeekCaller){
-            continue;
-        }
-        (*it)->refreshAndContinueRender();
-    }
+    endProjectWideValueChanges(Natron::TIME_CHANGED,this);
+
 }
 void Project::save(ProjectSerialization* serializationObject) const {
     serializationObject->initialize(this);
@@ -259,10 +250,13 @@ void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,Kno
 
 void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder* caller,Knob* k,bool isSignificant){
     bool wasBeginCalled = true;
-    if(_imp->_beginEndBracketsCount == 0){
+
+    std::map<KnobHolder*,int>::iterator found = _imp->_holdersWhoseBeginWasCalled.find(caller);
+    if(found == _imp->_holdersWhoseBeginWasCalled.end() || _imp->_beginEndBracketsCount == 0){
         beginProjectWideValueChanges(reason,caller);
         wasBeginCalled = false;
     }
+
     if(!_imp->_isSignificantChange && isSignificant){
         _imp->_isSignificantChange = true;
     }
@@ -280,6 +274,7 @@ void Project::endProjectWideValueChanges(Natron::ValueChangedReason reason,KnobH
     assert(found != _imp->_holdersWhoseBeginWasCalled.end());
     if(found->second == 1){
         caller->endKnobsValuesChanged(reason);
+        _imp->_holdersWhoseBeginWasCalled.erase(found);
     }else{
         --found->second;
     }
@@ -291,7 +286,7 @@ void Project::endProjectWideValueChanges(Natron::ValueChangedReason reason,KnobH
         if(reason == Natron::USER_EDITED){
             getApp()->triggerAutoSave();
         }
-        if(reason != Natron::TIME_CHANGED && reason != Natron::OTHER_REASON){
+        if(reason != Natron::OTHER_REASON){
             caller->evaluate(NULL,_imp->_isSignificantChange);
         }
     }
