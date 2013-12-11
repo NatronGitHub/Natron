@@ -12,7 +12,6 @@
 #include "Curve.h"
 
 #include <algorithm>
-
 #include "Engine/CurvePrivate.h"
 #include "Engine/Interpolation.h"
 
@@ -304,8 +303,14 @@ void Curve::setKeyFrameTimeNoUpdate(double time, boost::shared_ptr<KeyFrame> k) 
         //   time order
         // - if the motion if towards negative time, the the keyframes should be updated in increasing
         //   time order
+
+
+        if(it != ks.begin()){
+        }
         if (it != ks.begin()) {
-            double prevTime = (*std::prev(it))->getTime();
+            KeyFrameSet::const_iterator prev = it;
+            --prev;
+            double prevTime = (*prev)->getTime();
             assert(prevTime < oldTime);
             assert(prevTime < time); // may break if the keyframe is moved fast
             double oldLeftTan = k->getLeftTangent();
@@ -314,8 +319,10 @@ void Curve::setKeyFrameTimeNoUpdate(double time, boost::shared_ptr<KeyFrame> k) 
             double newLeftTan = (oldLeftTan / (oldTime - prevTime)) * (time - prevTime);
             k->setLeftTangent(newLeftTan);
         }
-        if (it != std::prev(ks.end())) {
-            double nextTime = (*std::next(it))->getTime();
+        KeyFrameSet::const_iterator next = it;
+        ++next;
+        if (next != ks.end()) {
+            double nextTime = (*next)->getTime();
             assert(oldTime < nextTime);
             assert(time < nextTime); // may break if the keyframe is moved fast
             double oldRightTan = k->getRightTangent();
