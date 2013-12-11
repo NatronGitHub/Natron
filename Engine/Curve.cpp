@@ -283,47 +283,60 @@ int Curve::keyFramesCount() const { return (int)_imp->_keyFrames.size(); }
 const KeyFrames& Curve::getKeyFrames() const { return _imp->_keyFrames; }
 
 void Curve::setKeyFrameValue(const Variant& value,boost::shared_ptr<KeyFrame> k){
-    k->setValue(value);
-    evaluateCurveChanged(KEYFRAME_CHANGED,k);
+    if(value.toDouble() != k->getValue().toDouble()){
+        k->setValue(value);
+        evaluateCurveChanged(KEYFRAME_CHANGED,k);
+    }
 
 }
 
 void Curve::setKeyFrameTime(double time,boost::shared_ptr<KeyFrame> k){
-    k->setTime(time);
-    evaluateCurveChanged(KEYFRAME_CHANGED,k);
+    if(time != k->getTime()){
+        k->setTime(time);
+        evaluateCurveChanged(KEYFRAME_CHANGED,k);
+    }
 }
 
 
 void Curve::setKeyFrameValueAndTime(double time,const Variant& value,boost::shared_ptr<KeyFrame> k){
-    k->setTime(time);
-    k->setValue(value);
-    evaluateCurveChanged(KEYFRAME_CHANGED,k);
+    if(time != k->getTime() || value.toDouble() != k->getValue().toDouble()){
+        k->setTime(time);
+        k->setValue(value);
+        evaluateCurveChanged(KEYFRAME_CHANGED,k);
+    }
 
 }
 
 void Curve::setKeyFrameLeftTangent(const Variant& value,boost::shared_ptr<KeyFrame> k){
-    k->setLeftTangent(value);
-    evaluateCurveChanged(TANGENT_CHANGED,k);
+    if(value.toDouble() != k->getRightTangent().toDouble()){
+        k->setLeftTangent(value);
+        evaluateCurveChanged(TANGENT_CHANGED,k);
+    }
     
 }
 
 void Curve::setKeyFrameRightTangent(const Variant& value,boost::shared_ptr<KeyFrame> k){
-    k->setRightTangent(value);
-    evaluateCurveChanged(TANGENT_CHANGED,k);
+    if(k->getLeftTangent().toDouble()  != value.toDouble()){
+        k->setRightTangent(value);
+        evaluateCurveChanged(TANGENT_CHANGED,k);
+    }
 }
 
 void Curve::setKeyFrameTangents(const Variant& left,const Variant& right,boost::shared_ptr<KeyFrame> k){
-    k->setLeftTangent(left);
-    k->setRightTangent(right);
-
-   evaluateCurveChanged(TANGENT_CHANGED,k);
+    if(k->getLeftTangent().toDouble()  != left.toDouble() || right.toDouble() != k->getRightTangent().toDouble()){
+        k->setLeftTangent(left);
+        k->setRightTangent(right);
+        evaluateCurveChanged(TANGENT_CHANGED,k);
+    }
     
 }
 
 
 void Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,boost::shared_ptr<KeyFrame> k){
-    k->setInterpolation(interp);
-    evaluateCurveChanged(KEYFRAME_CHANGED,k);
+    if(k->getInterpolation() != interp){
+        k->setInterpolation(interp);
+        evaluateCurveChanged(KEYFRAME_CHANGED,k);
+    }
 }
 
 

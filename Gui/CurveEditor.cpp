@@ -900,9 +900,8 @@ void MoveMultipleKeysCommand::undo(){
         _keys[i]->_knob->getKnob()->endValueChange(Natron::USER_EDITED);
 
     }
-    _curveWidget->refreshDisplayedTangents();
     _curveWidget->refreshSelectedKeysBbox();
-    _curveWidget->updateGL(); //refresh the widget
+    _curveWidget->refreshDisplayedTangents();
     setText(QObject::tr("Move multiple keys"));
 }
 void MoveMultipleKeysCommand::redo(){
@@ -918,8 +917,8 @@ void MoveMultipleKeysCommand::redo(){
         _keys[i]->_knob->getKnob()->endValueChange(Natron::USER_EDITED);
 
     }
-    _curveWidget->refreshDisplayedTangents();
     _curveWidget->refreshSelectedKeysBbox();
+    _curveWidget->refreshDisplayedTangents();
 
     setText(QObject::tr("Move multiple keys"));
 }

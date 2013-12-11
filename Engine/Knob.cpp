@@ -331,7 +331,7 @@ void Knob::evaluateAnimationChange(){
             setValue(v,i);
         }
     }
-
+    std::cout << "RENDER!!" << std::endl;
     endValueChange(Natron::PLUGIN_EDITED);
 
 }
