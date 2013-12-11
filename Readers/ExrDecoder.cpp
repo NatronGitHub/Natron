@@ -41,13 +41,13 @@ using std::cout; using std::endl;
 struct ExrDecoder::Implementation {
     Implementation();
 
-    Imf::InputFile* _inputfile;
-    std::map<Natron::Channel, std::string> _channel_map;
-    std::vector<std::string> _views;
-    int _dataOffset;
+    Imf::InputFile* inputfile;
+    std::map<Natron::Channel, std::string> channel_map;
+    std::vector<std::string> views;
+    int dataOffset;
 #ifdef __NATRON_WIN32__
-    std::ifstream* _inputStr;
-    Imf::StdIFStream* _inputStdStream;
+    std::ifstream* inputStr;
+    Imf::StdIFStream* inputStdStream;
 #endif
 	QMutex _lock;
 };
@@ -205,29 +205,29 @@ private:
 
 Natron::Status ExrDecoder::readHeader(const QString& filename){
     
-    _imp->_channel_map.clear();
-    _imp->_views.clear();
+    _imp->channel_map.clear();
+    _imp->views.clear();
     try {
 #ifdef __NATRON_WIN32__
         QByteArray ba = filename.toLocal8Bit();
-        if(_imp->_inputStr){
-            delete _imp->_inputStr;
+        if(_imp->inputStr){
+            delete _imp->inputStr;
         }
-        if(_imp->_inputStdStream){
-            delete _imp->_inputStdStream;
+        if(_imp->inputStdStream){
+            delete _imp->inputStdStream;
         }
         if(_imp->_inputfile){
             delete _imp->_inputfile;
         }
-        _imp->_inputStr = new std::ifstream(NatronWindows::s2ws(ba.data()),std::ios_base::binary);
-        _imp->_inputStdStream = new Imf_::StdIFStream(*_inputStr,ba.data());
-        _imp->_inputfile = new Imf_::InputFile(*_inputStdStream);
+        _imp->inputStr = new std::ifstream(NatronWindows::s2ws(ba.data()),std::ios_base::binary);
+        _imp->inputStdStream = new Imf_::StdIFStream(*inputStr,ba.data());
+        _imp->_inputfile = new Imf_::InputFile(*inputStdStream);
 #else
         QByteArray ba = filename.toLatin1();
-        if(_imp->_inputfile){
-            delete _imp->_inputfile;
+        if(_imp->inputfile){
+            delete _imp->inputfile;
         }
-        _imp->_inputfile = new Imf_::InputFile(ba.constData());
+        _imp->inputfile = new Imf_::InputFile(ba.constData());
 #endif
 
         // multiview is only supported with OpenEXR >= 1.7.0
@@ -269,14 +269,14 @@ Natron::Status ExrDecoder::readHeader(const QString& filename){
         std::map<Imf_::PixelType, int> pixelTypes;
         // convert exr channels to powiter channels
         Natron::ChannelSet mask;
-        const Imf_::ChannelList& imfchannels = _imp->_inputfile->header().channels();
+        const Imf_::ChannelList& imfchannels = _imp->inputfile->header().channels();
         Imf_::ChannelList::ConstIterator chan;
         for (chan = imfchannels.begin(); chan != imfchannels.end(); ++chan) {
             std::string chanName(chan.name());
             if(chanName.empty())
                 continue;
             pixelTypes[chan.channel().type]++;
-            EXR::ChannelExtractor exrExctractor(chan.name(), _imp->_views);
+            EXR::ChannelExtractor exrExctractor(chan.name(), _imp->views);
             std::set<Natron::Channel> channels;
             if (exrExctractor.isValid()) {
                 channels.insert(exrExctractor._mappedChannel);
@@ -285,8 +285,8 @@ Natron::Status ExrDecoder::readHeader(const QString& filename){
                     Natron::Channel channel = *it;
                     //cout <<" channel_map[" << Natron::getChannelName(channel) << "] = " << chan.name() << endl;
                     bool writeChannelMapping = true;
-                    ChannelsMap::const_iterator found = _imp->_channel_map.find(channel);
-                    if(found != _imp->_channel_map.end()){
+                    ChannelsMap::const_iterator found = _imp->channel_map.find(channel);
+                    if(found != _imp->channel_map.end()){
                         int existingLength = found->second.size();
                         int newLength = chanName.size();
                         if ((existingLength > 0) && found->second.at(0) == '.' && existingLength == (newLength + 1)) {                                writeChannelMapping = true;
@@ -296,7 +296,7 @@ Natron::Status ExrDecoder::readHeader(const QString& filename){
                         }
                     }
                     if(writeChannelMapping){
-                        _imp->_channel_map.insert(make_pair(channel,chanName));
+                        _imp->channel_map.insert(make_pair(channel,chanName));
                     }
                     mask += channel;
                 }
@@ -307,25 +307,25 @@ Natron::Status ExrDecoder::readHeader(const QString& filename){
             
         }
         
-        const Imath::Box2i& datawin = _imp->_inputfile->header().dataWindow();
-        const Imath::Box2i& dispwin = _imp->_inputfile->header().displayWindow();
+        const Imath::Box2i& datawin = _imp->inputfile->header().dataWindow();
+        const Imath::Box2i& dispwin = _imp->inputfile->header().displayWindow();
         Imath::Box2i formatwin(dispwin);
         formatwin.min.x = 0;
         formatwin.min.y = 0;
-        _imp->_dataOffset = 0;
+        _imp->dataOffset = 0;
         if (dispwin.min.x != 0) {
             // Shift both to get dispwindow over to 0,0.
-            _imp->_dataOffset = -dispwin.min.x;
-            formatwin.max.x = dispwin.max.x + _imp->_dataOffset;
+            _imp->dataOffset = -dispwin.min.x;
+            formatwin.max.x = dispwin.max.x + _imp->dataOffset;
         }
         formatwin.max.y = dispwin.max.y - dispwin.min.y;
-        double aspect = _imp->_inputfile->header().pixelAspectRatio();
+        double aspect = _imp->inputfile->header().pixelAspectRatio();
         Format imageFormat(0,0,formatwin.max.x + 1 ,formatwin.max.y + 1,"",aspect);
         RectI rod;
         
-        int left = datawin.min.x + _imp->_dataOffset;
+        int left = datawin.min.x + _imp->dataOffset;
         int bottom = dispwin.max.y - datawin.max.y;
-        int right = datawin.max.x + _imp->_dataOffset;
+        int right = datawin.max.x + _imp->dataOffset;
         int top = dispwin.max.y - datawin.min.y;
         if (datawin.min.x != dispwin.min.x || datawin.max.x != dispwin.max.x ||
                 datawin.min.y != dispwin.min.y || datawin.max.y != dispwin.max.y) {
@@ -340,13 +340,13 @@ Natron::Status ExrDecoder::readHeader(const QString& filename){
         return Natron::StatOK;
     } catch (const std::exception& e) {
         qDebug() << "OpenEXR error" << ": " << e.what();
-        delete _imp->_inputfile;
-        _imp->_inputfile = 0;
+        delete _imp->inputfile;
+        _imp->inputfile = 0;
         return Natron::StatFailed;
     } catch (...) {
         qDebug() << "OpenEXR error";
-        delete _imp->_inputfile;
-        _imp->_inputfile = 0;
+        delete _imp->inputfile;
+        _imp->inputfile = 0;
         return Natron::StatFailed;
     }
 }
@@ -359,11 +359,11 @@ ExrDecoder::ExrDecoder(Reader* op)
 }
 
 ExrDecoder::Implementation::Implementation()
-: _inputfile(0)
-, _dataOffset(0)
+: inputfile(0)
+, dataOffset(0)
 #ifdef __NATRON_WIN32__
-, _inputStr(NULL)
-, _inputStdStream(NULL)
+, inputStr(NULL)
+, inputStdStream(NULL)
 #endif
 {
 }
@@ -374,24 +374,24 @@ void ExrDecoder::initializeColorSpace(){
 
 ExrDecoder::~ExrDecoder(){
 #ifdef __NATRON_WIN32__
-    delete _imp->_inputStr ;
-    delete _imp->_inputStdStream ;
+    delete _imp->inputStr ;
+    delete _imp->inputStdStream ;
 #endif
-    delete _imp->_inputfile;
+    delete _imp->inputfile;
 }
 
 Natron::Status ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& roi,boost::shared_ptr<Natron::Image> output){
     for (int y = roi.bottom(); y < roi.top(); ++y) {
         Natron::ChannelSet channels(Natron::Mask_RGBA);
         Natron::Row row(output->getRoD().left(),y,output->getRoD().right(),channels);
-        const Imath::Box2i& dispwin = _imp->_inputfile->header().displayWindow();
-        const Imath::Box2i& datawin = _imp->_inputfile->header().dataWindow();
+        const Imath::Box2i& dispwin = _imp->inputfile->header().displayWindow();
+        const Imath::Box2i& datawin = _imp->inputfile->header().dataWindow();
         int exrY = dispwin.max.y - row.y();
         int r = row.right();
         int x = row.left();
         
-        const int X = std::max(x, datawin.min.x + _imp->_dataOffset);
-        const int R = std::min(r, datawin.max.x + _imp->_dataOffset +1);
+        const int X = std::max(x, datawin.min.x + _imp->dataOffset);
+        const int R = std::min(r, datawin.max.x + _imp->dataOffset +1);
         
         // if we're below or above the data window
         if(exrY < datawin.min.y || exrY > datawin.max.y || R <= X) {
@@ -407,8 +407,8 @@ Natron::Status ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,co
                 dest[xx] = 0;
             for (int xx = R; xx < r; xx++)
                 dest[xx] = 0;
-            ChannelsMap::const_iterator found = _imp->_channel_map.find(z);
-            if(found != _imp->_channel_map.end()){
+            ChannelsMap::const_iterator found = _imp->channel_map.find(z);
+            if(found != _imp->channel_map.end()){
                 if(found->second != "BY" && found->second != "RY"){ // if it is NOT a subsampled buffer
                     fbuf.insert(found->second.c_str(),Imf_::Slice(Imf_::FLOAT, (char*)(dest /*+_imp->_dataOffset*/),sizeof(float), 0));
                 }else{
@@ -427,8 +427,8 @@ Natron::Status ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,co
         {
             QMutexLocker locker(&_imp->_lock);
             try {
-                _imp->_inputfile->setFrameBuffer(fbuf);
-                _imp->_inputfile->readPixels(exrY);
+                _imp->inputfile->setFrameBuffer(fbuf);
+                _imp->inputfile->readPixels(exrY);
             } catch (const std::exception& e) {
                 _reader->setPersistentMessage(Natron::ERROR_MESSAGE, std::string("OpenEXR error") + ": " + e.what());
                 return Natron::StatFailed;

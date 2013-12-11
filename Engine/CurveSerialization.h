@@ -32,11 +32,11 @@ template<class Archive>
 void serialize(Archive & ar, KeyFramePrivate& k,const unsigned int version)
 {
     (void)version;
-    ar & boost::serialization::make_nvp("Time",k._time);
-    ar & boost::serialization::make_nvp("Value",k._value);
-    ar & boost::serialization::make_nvp("InterpolationMethod",k._interpolation);
-    ar & boost::serialization::make_nvp("LeftTangent",k._leftTangent);
-    ar & boost::serialization::make_nvp("RightTangent",k._rightTangent);
+    ar & boost::serialization::make_nvp("Time",k.time);
+    ar & boost::serialization::make_nvp("Value",k.value);
+    ar & boost::serialization::make_nvp("InterpolationMethod",k.interpolation);
+    ar & boost::serialization::make_nvp("LeftTangent",k.leftTangent);
+    ar & boost::serialization::make_nvp("RightTangent",k.rightTangent);
 }
 
 
@@ -44,7 +44,7 @@ template<class Archive>
 void serialize(Archive & ar,CurvePrivate& c, const unsigned int version)
 {
     (void)version;
-    ar & boost::serialization::make_nvp("KeyFrames",c._keyFrames);
+    ar & boost::serialization::make_nvp("KeyFrames",c.keyFrames);
 }
 
 

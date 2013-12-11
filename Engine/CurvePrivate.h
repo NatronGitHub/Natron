@@ -20,38 +20,38 @@
 class Curve;
 struct KeyFramePrivate{
 
-    Variant _value; /// the value held by the key
-    double _time; /// a value ranging between 0 and 1
+    Variant value; /// the value held by the key
+    double time; /// a value ranging between 0 and 1
 
-    Variant _leftTangent,_rightTangent;
-    Natron::KeyframeType _interpolation;
+    Variant leftTangent,rightTangent;
+    Natron::KeyframeType interpolation;
 
 
     KeyFramePrivate()
-    : _value()
-    , _time(0)
-    , _interpolation(Natron::KEYFRAME_LINEAR)
+    : value()
+    , time(0)
+    , interpolation(Natron::KEYFRAME_LINEAR)
     {}
 
 
     KeyFramePrivate(double time, const Variant& initialValue)
-        : _value(initialValue)
-        , _time(time)
-        , _leftTangent()
-        , _rightTangent()
-        , _interpolation(Natron::KEYFRAME_SMOOTH)
+        : value(initialValue)
+        , time(time)
+        , leftTangent()
+        , rightTangent()
+        , interpolation(Natron::KEYFRAME_SMOOTH)
     {
-        _leftTangent = initialValue;
-        _rightTangent = initialValue;
+        leftTangent = initialValue;
+        rightTangent = initialValue;
     }
 
     KeyFramePrivate(const KeyFramePrivate& other)
     {
-        _value = other._value;
-        _leftTangent = other._leftTangent;
-        _rightTangent = other._rightTangent;
-        _interpolation = other._interpolation;
-        _time = other._time;
+        value = other.value;
+        leftTangent = other.leftTangent;
+        rightTangent = other.rightTangent;
+        interpolation = other.interpolation;
+        time = other.time;
     }
 
 
@@ -64,13 +64,13 @@ struct CurvePrivate{
 
    
 
-    std::list< boost::shared_ptr<KeyFrame> >  _keyFrames;
-    Knob* _owner;
+    std::list< boost::shared_ptr<KeyFrame> >  keyFrames;
+    Knob* owner;
 
     
     CurvePrivate()
-    : _keyFrames()
-    , _owner(NULL)
+    : keyFrames()
+    , owner(NULL)
     {}
 
 };

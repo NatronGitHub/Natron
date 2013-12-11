@@ -43,33 +43,33 @@ inline QString generateStringFromFormat(const Format& f){
 }
 
 struct ProjectPrivate{
-    QString _projectName;
-    QString _projectPath;
-    QString _lastAutoSaveFilePath;
-    bool _hasProjectBeenSavedByUser;
-    QDateTime _ageSinceLastSave;
-    QDateTime _lastAutoSave;
-    Choice_Knob* _formatKnob;
-    Button_Knob* _addFormatKnob;
-    Int_Knob* _viewsCount;
-    boost::shared_ptr<TimeLine> _timeline; // global timeline
+    QString projectName;
+    QString projectPath;
+    QString lastAutoSaveFilePath;
+    bool hasProjectBeenSavedByUser;
+    QDateTime ageSinceLastSave;
+    QDateTime lastAutoSave;
+    Choice_Knob* formatKnob;
+    Button_Knob* addFormatKnob;
+    Int_Knob* viewsCount;
+    boost::shared_ptr<TimeLine> timeline; // global timeline
     
-    std::map<std::string,int> _nodeCounters;
-    bool _autoSetProjectFormat;
-    mutable QMutex _projectDataLock;
-    std::vector<Natron::Node*> _currentNodes;
+    std::map<std::string,int> nodeCounters;
+    bool autoSetProjectFormat;
+    mutable QMutex projectDataLock;
+    std::vector<Natron::Node*> currentNodes;
     
-    std::vector<Format> _availableFormats;
+    std::vector<Format> availableFormats;
     
-    Natron::Project* _project;
+    Natron::Project* project;
     
     int _knobsAge; //< the age of the knobs in the app. This is updated on each value changed.
-    Natron::OutputEffectInstance* _lastTimelineSeekCaller;
+    Natron::OutputEffectInstance* lastTimelineSeekCaller;
 
-    int _beginEndBracketsCount;
-    int _evaluationsCount;
-    std::map<KnobHolder*,int> _holdersWhoseBeginWasCalled;
-    bool _isSignificantChange;
+    int beginEndBracketsCount;
+    int evaluationsCount;
+    std::map<KnobHolder*,int> holdersWhoseBeginWasCalled;
+    bool isSignificantChange;
     
     ProjectPrivate(Natron::Project* project);
     
