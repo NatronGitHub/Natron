@@ -60,11 +60,16 @@ struct KeyFramePrivate{
 
 class KeyFrame;
 class Knob;
+
 struct CurvePrivate{
+    struct KeyFrame_compare_time {
+        bool operator() (const boost::shared_ptr<KeyFrame>& lhs, const boost::shared_ptr<KeyFrame>& rhs) const {
+            return lhs->getTime() < rhs->getTime();
+        }
+    };
 
-   
+    KeyFrameSet keyFrames;
 
-    std::list< boost::shared_ptr<KeyFrame> >  keyFrames;
     Knob* owner;
 
     

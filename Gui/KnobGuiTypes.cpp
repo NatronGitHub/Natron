@@ -163,8 +163,8 @@ void Int_KnobGui::updateGUI(int dimension, const Variant &variant)
     boost::shared_ptr<Curve> c = getKnob()->getCurve(dimension);
     SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     if (c->keyFramesCount() >= 1) {
-        const KeyFrames &keys = c->getKeyFrames();
-        for (KeyFrames::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        const KeyFrameSet &keys = c->getKeyFrames();
+        for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
             if ((*it)->getTime() == time) {
                 _spinBoxes[dimension].first->setAnimation(2);
                 setIsOnKeyframe(true);
@@ -281,8 +281,8 @@ void Bool_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
     boost::shared_ptr<Curve> c = getKnob()->getCurve(0);
     SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     if (c->keyFramesCount() >= 1) {
-        const KeyFrames &keys = c->getKeyFrames();
-        for (KeyFrames::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        const KeyFrameSet &keys = c->getKeyFrames();
+        for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
             if ((*it)->getTime() == time) {
                 _checkBox->setAnimation(2);
                 setIsOnKeyframe(true);
@@ -463,8 +463,8 @@ void Double_KnobGui::updateGUI(int dimension, const Variant &variant)
     boost::shared_ptr<Curve> c = getKnob()->getCurve(dimension);
     SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     if (c->keyFramesCount() >= 1) {
-        const KeyFrames &keys = c->getKeyFrames();
-        for (KeyFrames::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        const KeyFrameSet &keys = c->getKeyFrames();
+        for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
             if ((*it)->getTime() == time) {
                 _spinBoxes[dimension].first->setAnimation(2);
                 setIsOnKeyframe(true);
@@ -647,8 +647,8 @@ void Choice_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
     boost::shared_ptr<Curve> c = getKnob()->getCurve(0);
     SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     if (c->keyFramesCount() >= 1) {
-        const KeyFrames &keys = c->getKeyFrames();
-        for (KeyFrames::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        const KeyFrameSet &keys = c->getKeyFrames();
+        for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
             if ((*it)->getTime() == time) {
                 _comboBox->setAnimation(2);
                 setIsOnKeyframe(true);

@@ -16,6 +16,22 @@
 #include "Engine/CurvePrivate.h"
 #include "Engine/Interpolation.h"
 
+namespace {
+    struct KeyFrameCloner {
+        boost::shared_ptr<KeyFrame> operator()(const boost::shared_ptr<KeyFrame>& kf) const { return boost::shared_ptr<KeyFrame>(new KeyFrame(kf->getTime(),kf->getValue())); }
+    };
+
+    class KeyFrameTimePredicate
+    {
+    public:
+        KeyFrameTimePredicate(double t) : _t(t) {};
+
+        bool operator()(const boost::shared_ptr<KeyFrame>& f) { return (f->getTime() == _t); }
+    private:
+        double _t;
+    };
+}
+
 /************************************KEYFRAME************************************/
 
 KeyFrame::KeyFrame()
@@ -102,68 +118,43 @@ void Curve::clearKeyFrames(){
     _imp->keyFrames.clear();
 }
 
+
+
 void Curve::clone(const Curve& other){
     clearKeyFrames();
-    const KeyFrames& otherKeys = other.getKeyFrames();
-    for(KeyFrames::const_iterator it = otherKeys.begin();it!=otherKeys.end();++it){
-        _imp->keyFrames.push_back(boost::shared_ptr<KeyFrame>(new KeyFrame((*it)->getTime(),(*it)->getValue())));
-    }
+    const KeyFrameSet& otherKeys = other.getKeyFrames();
+    std::transform(otherKeys.begin(), otherKeys.end(), std::inserter(_imp->keyFrames, _imp->keyFrames.begin()), KeyFrameCloner());
 }
 
 
 double Curve::getMinimumTimeCovered() const{
     assert(!_imp->keyFrames.empty());
-    return _imp->keyFrames.front()->getTime();
+    return (*_imp->keyFrames.begin())->getTime();
 }
 
 double Curve::getMaximumTimeCovered() const{
     assert(!_imp->keyFrames.empty());
-    return _imp->keyFrames.back()->getTime();
+    return (*_imp->keyFrames.rbegin())->getTime();
 }
 
 void Curve::addKeyFrame(boost::shared_ptr<KeyFrame> cp)
 {
-    KeyFrames::iterator newKeyIt = _imp->keyFrames.end();
-    if(_imp->keyFrames.empty()){
-        newKeyIt = _imp->keyFrames.insert(_imp->keyFrames.end(),cp);
-    }else{
-        //finding a matching or the first greater key
-        KeyFrames::iterator upper = _imp->keyFrames.end();
-        for(KeyFrames::iterator it = _imp->keyFrames.begin();it!=_imp->keyFrames.end();++it){
-            if((*it)->getTime() > cp->getTime()){
-                upper = it;
-                break;
-            }else if((*it)->getTime() == cp->getTime()){
-                //if the key already exists at this time, just modify it.
-                (*it)->setValue(cp->getValue());
-                return;
-            }
-        }
-        if(upper == _imp->keyFrames.end()){
-            //if we found no key that has a greater time, just append the key
-            newKeyIt = _imp->keyFrames.insert(_imp->keyFrames.end(),cp);
-        }else if(upper == _imp->keyFrames.begin()){
-            //if all the keys have a greater time, just insert this key at the begining
-            newKeyIt = _imp->keyFrames.insert(_imp->keyFrames.begin(),cp);
-        }else{
-            newKeyIt = _imp->keyFrames.insert(upper,cp);
-        }
-
+    std::pair<KeyFrameSet::iterator,bool> newKey = _imp->keyFrames.insert(cp);
+    if (newKey.second) {
+        refreshTangents(KEYFRAME_CHANGED, newKey.first);
     }
-    refreshTangents(KEYFRAME_CHANGED,newKeyIt);
 }
 
-void Curve::removeKeyFrame(boost::shared_ptr<KeyFrame> cp){
-
-    KeyFrames::iterator it = std::find(_imp->keyFrames.begin(),_imp->keyFrames.end(),cp);
-    KeyFrames::iterator prev = it;
+void Curve::removeKeyFrame(boost::shared_ptr<KeyFrame> cp) {
+    KeyFrameSet::iterator it = std::find(_imp->keyFrames.begin(),_imp->keyFrames.end(),cp);
+    KeyFrameSet::iterator prev = it;
     boost::shared_ptr<KeyFrame> prevCp;
     boost::shared_ptr<KeyFrame> nextCp;
     if(it != _imp->keyFrames.begin()){
         --prev;
         prevCp = (*prev);
     }
-    KeyFrames::iterator next = it;
+    KeyFrameSet::iterator next = it;
     ++next;
     if(next != _imp->keyFrames.end()){
         nextCp = (*next);
@@ -178,18 +169,8 @@ void Curve::removeKeyFrame(boost::shared_ptr<KeyFrame> cp){
 
 }
 
-class KeyFrameTimePredicate
-{
-public:
-    KeyFrameTimePredicate(double t) : _t(t) {};
-
-    bool operator()(const boost::shared_ptr<KeyFrame>& f) { return (f->getTime() == _t); }
-private:
-    double _t;
-};
-
 void Curve::removeKeyFrame(double time) {
-    KeyFrames::iterator it = std::find_if(_imp->keyFrames.begin(), _imp->keyFrames.end(), KeyFrameTimePredicate(time));
+    KeyFrameSet::iterator it = std::find_if(_imp->keyFrames.begin(), _imp->keyFrames.end(), KeyFrameTimePredicate(time));
     if (it != _imp->keyFrames.end()) {
         removeKeyFrame(*it);
     }
@@ -207,8 +188,8 @@ Variant Curve::getValueAt(double t) const {
     double tcur,tnext;
     double vcurDerivRight ,vnextDerivLeft ,vcur ,vnext ;
     Natron::KeyframeType interp ,interpNext;
-    KeyFrames::const_iterator upper = _imp->keyFrames.end();
-    for(KeyFrames::const_iterator it = _imp->keyFrames.begin();it!=_imp->keyFrames.end();++it){
+    KeyFrameSet::const_iterator upper = _imp->keyFrames.end();
+    for(KeyFrameSet::const_iterator it = _imp->keyFrames.begin();it!=_imp->keyFrames.end();++it){
         if((*it)->getTime() > t){
             upper = it;
             break;
@@ -220,7 +201,7 @@ Variant Curve::getValueAt(double t) const {
 
 
     //if all keys have a greater time (i.e: we search after the last keyframe)
-    KeyFrames::const_iterator prev = upper;
+    KeyFrameSet::const_iterator prev = upper;
     --prev;
 
 
@@ -264,7 +245,7 @@ Variant Curve::getValueAt(double t) const {
                                            interpNext);
 
     
-    const Variant& firstKeyValue = _imp->keyFrames.front()->getValue();
+    const Variant& firstKeyValue = (*_imp->keyFrames.begin())->getValue();
     switch(firstKeyValue.type()){
     case QVariant::Int :
         return Variant((int)std::floor(v+0.5));
@@ -288,7 +269,7 @@ bool Curve::isAnimated() const { return _imp->keyFrames.size() > 1; }
 
 int Curve::keyFramesCount() const { return (int)_imp->keyFrames.size(); }
 
-const KeyFrames& Curve::getKeyFrames() const { return _imp->keyFrames; }
+const KeyFrameSet& Curve::getKeyFrames() const { return _imp->keyFrames; }
 
 void Curve::setKeyFrameValue(const Variant& value,boost::shared_ptr<KeyFrame> k){
     if(value.toDouble() != k->getValue().toDouble()){
@@ -349,7 +330,7 @@ void Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,boost::shared_p
 
 
 
-void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrames::iterator key){
+void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrameSet::iterator key){
     double tcur = (*key)->getTime();
     double vcur = (*key)->getValue().value<double>();
     
@@ -361,7 +342,7 @@ void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrames::iterato
         vprevDerivRight = 0.;
         prevType = Natron::KEYFRAME_NONE;
     } else {
-        KeyFrames::const_iterator prev = key;
+        KeyFrameSet::const_iterator prev = key;
         --prev;
         tprev = (*prev)->getTime();
         vprev = (*prev)->getValue().value<double>();
@@ -375,7 +356,7 @@ void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrames::iterato
         }
     }
     
-    KeyFrames::const_iterator next = key;
+    KeyFrameSet::const_iterator next = key;
     ++next;
     if (next == _imp->keyFrames.end()) {
         tnext = tcur;
@@ -388,7 +369,7 @@ void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrames::iterato
         vnextDerivLeft = (*next)->getLeftTangent().value<double>();
         nextType = (*next)->getInterpolation();
         
-        KeyFrames::const_iterator nextnext = next;
+        KeyFrameSet::const_iterator nextnext = next;
         ++nextnext;
         //if next is thelast keyframe, and not edited by the user then interpolate linearly
         if(nextnext == _imp->keyFrames.end() && nextType != Natron::KEYFRAME_FREE &&
@@ -421,14 +402,14 @@ void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrames::iterato
 }
 
 void Curve::refreshTangents(CurveChangedReason reason, boost::shared_ptr<KeyFrame> k){
-    KeyFrames::iterator it = std::find(_imp->keyFrames.begin(),_imp->keyFrames.end(),k);
+    KeyFrameSet::iterator it = std::find(_imp->keyFrames.begin(),_imp->keyFrames.end(),k);
     assert(it!=_imp->keyFrames.end());
     refreshTangents(reason,it);
 }
 
 void Curve::evaluateCurveChanged(CurveChangedReason reason,boost::shared_ptr<KeyFrame> k){
-    KeyFrames::iterator found = _imp->keyFrames.end();
-    for(KeyFrames::iterator it =  _imp->keyFrames.begin();it!=_imp->keyFrames.end();++it){
+    KeyFrameSet::iterator found = _imp->keyFrames.end();
+    for(KeyFrameSet::iterator it =  _imp->keyFrames.begin();it!=_imp->keyFrames.end();++it){
         if((*it) == k){
             found = it;
             break;
@@ -440,7 +421,7 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason,boost::shared_ptr<Key
        && reason != TANGENT_CHANGED ){
         refreshTangents(TANGENT_CHANGED,found);
     }
-    KeyFrames::iterator prev = found;
+    KeyFrameSet::iterator prev = found;
     if(found != _imp->keyFrames.begin()){
         --prev;
         if((*prev)->getInterpolation()!= Natron::KEYFRAME_BROKEN &&
@@ -448,7 +429,7 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason,boost::shared_ptr<Key
             refreshTangents(TANGENT_CHANGED,prev);
         }
     }
-    KeyFrames::iterator next = found;
+    KeyFrameSet::iterator next = found;
     ++next;
     if(next != _imp->keyFrames.end()){
         if((*next)->getInterpolation()!= Natron::KEYFRAME_BROKEN &&

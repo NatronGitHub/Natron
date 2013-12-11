@@ -77,7 +77,13 @@ private:
 
 };
 
-typedef std::list< boost::shared_ptr<KeyFrame> > KeyFrames;
+struct KeyFrame_compare_time {
+    bool operator() (const boost::shared_ptr<KeyFrame>& lhs, const boost::shared_ptr<KeyFrame>& rhs) const {
+        return lhs->getTime() < rhs->getTime();
+    }
+};
+
+typedef std::set<boost::shared_ptr<KeyFrame>, KeyFrame_compare_time> KeyFrameSet;
 
 
 /**
@@ -133,7 +139,7 @@ public:
 
     const RectD& getBoundingBox() const ;
 
-    const KeyFrames& getKeyFrames() const;
+    const KeyFrameSet& getKeyFrames() const;
 
     void clearKeyFrames();
     
@@ -164,7 +170,7 @@ private:
     
     void refreshTangents(CurveChangedReason reason, boost::shared_ptr<KeyFrame> k);
     
-    void refreshTangents(CurveChangedReason reason, KeyFrames::iterator key);
+    void refreshTangents(CurveChangedReason reason, KeyFrameSet::iterator key);
 
     boost::scoped_ptr<CurvePrivate> _imp;
 };
