@@ -55,8 +55,6 @@ ScaleSlider::~ScaleSlider(){
 
 void ScaleSlider::initializeGL(){
 
-    seekScalePosition(_value);
-    _initialized = true;
 }
 
 void ScaleSlider::resizeGL(int width,int height){
@@ -69,6 +67,8 @@ void ScaleSlider::paintGL(){
     if(_mustInitializeSliderPosition){
         _mustInitializeSliderPosition = false;
         seekScalePosition(_value);
+        _initialized = true;
+
     }
     double w = (double)width();
     double h = (double)height();
@@ -264,7 +264,7 @@ void ScaleSlider::seekScalePosition(double v){
     if(v < _minimum || v > _maximum)
         return;
 
-    if(v == _value){
+    if(v == _value && _initialized){
         return;
     }
     _value = v;
@@ -294,7 +294,7 @@ void ScaleSlider::seekInternal(double v){
     double displayedRange = _maximum - _minimum + 2*padding;
     double zoomFactor = width() /displayedRange;
     zoomFactor = (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01);
-    assert(zoomFactor>=0.01 && zoomFactor <= 1024);
+   // assert(zoomFactor>=0.01 && zoomFactor <= 1024);
     _zoomCtx.zoomFactor = zoomFactor;
     _zoomCtx.left = _minimum - padding ;
     _zoomCtx.bottom = 0;
