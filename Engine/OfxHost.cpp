@@ -181,12 +181,28 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
     if (!plugin) {
         return NULL;
     }
+
+    // getPluginHandle() must be called befor getContexts():
+    // it calls kOfxActionLoad on the plugin, which may set properties (including supported contexts)
+    bool rval = false;
+    try {
+        rval = plugin->getPluginHandle();
+    } catch (const std::exception& e) {
+        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin") + ": " + e.what());
+    } catch (...) {
+        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin"));
+    }
+
     const std::set<std::string>& contexts = plugin->getContexts();
     std::string context;
     
-    if (contexts.size() == 1) {
+    if (contexts.size() == 0) {
+        throw std::runtime_error(std::string("Error: Plugins supports no context"));
+        //context = kOfxImageEffectContextGeneral;
+        //plugin->addContext(kOfxImageEffectContextGeneral);
+    } else if (contexts.size() == 1) {
         context = (*contexts.begin());
-    }else{
+    } else {
         std::set<std::string>::iterator found = contexts.find(kOfxImageEffectContextGeneral);
         if(found != contexts.end()){
             context = *found;
@@ -212,14 +228,6 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
     }
     
     
-    bool rval = false;
-    try {
-        rval = plugin->getPluginHandle();
-    } catch (const std::exception& e) {
-        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin") + ": " + e.what());
-    } catch (...) {
-        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin"));
-    }
 
     if(!rval) {
         return NULL;
