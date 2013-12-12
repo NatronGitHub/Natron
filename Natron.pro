@@ -12,6 +12,8 @@ QT += gui core opengl
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
 # Use Precompiled headers (PCH)
+# we specify PRECOMPILED_DIR, or qmake places precompiled headers in Natron/c++.pch, thus blocking the creation of the Unix executable
+PRECOMPILED_DIR = pch
 PRECOMPILED_HEADER = pch.h
 
 win32{

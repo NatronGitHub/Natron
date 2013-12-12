@@ -7,7 +7,7 @@
 #define NATRON_GUI_CLICKABLELABEL_H_
 
 #include <QtCore/QObject>
-#include <QtGui/QLabel>
+#include <QLabel> // in QtGui on Qt4, in QtWidgets on Qt5
 
 #include "Global/Macros.h"
 

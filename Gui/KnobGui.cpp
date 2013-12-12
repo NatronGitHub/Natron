@@ -23,7 +23,7 @@
 #include <QPushButton>
 #include <QFileDialog>
 #include <QTextEdit>
-#include <QtGui/QStyle>
+#include <QStyle> // in QtGui on Qt4, in QtWidgets on Qt5
 
 #include <QKeyEvent>
 #include <QColorDialog>

@@ -21,8 +21,8 @@
 #include <QtCore/QWaitCondition>
 #include <QtGui/QPainter>
 #include <QtGui/QImage>
-#include <QtGui/QMenu>
-#include <QtGui/QDockWidget>
+#include <QMenu> // in QtGui on Qt4, in QtWidgets on Qt5
+#include <QDockWidget> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QtGui/QPainter>
 #include <QtGui/QKeyEvent>
 #include <QtGui/QVector4D>

@@ -6,7 +6,7 @@
 #ifndef NATRON_GUI_ANIMATEDCHECKBOX_H_
 #define NATRON_GUI_ANIMATEDCHECKBOX_H_
 
-#include <QtGui/QCheckBox>
+#include <QCheckBox>
 
 class AnimatedCheckBox : public QCheckBox
 {

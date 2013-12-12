@@ -12,10 +12,12 @@
 #ifndef CURVEEDITOR_H
 #define CURVEEDITOR_H
 
-#include <QWidget>
-#include <QtGui/QUndoCommand>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+
+#include <QWidget>
+#include <QUndoCommand> // in QtGui on Qt4, in QtWidgets on Qt5
+
 #include "Global/GlobalDefines.h"
 
 class RectD;
