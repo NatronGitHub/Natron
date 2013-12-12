@@ -1,5 +1,8 @@
 ** Here is a list of know bugs, ordered by priority from high to low:
 
+- kOfxImagePropUniqueIdentifier (Uniquely labels an image) must be
+  supported (serialize the hash?)
+
 - a plugin that returns an error during the "load" or "describe" actions,
   for example if it requires a missing suite
   (e.g. ParametricParameterSuite for OFX/Color/RGBLut), should *not*
@@ -40,3 +43,7 @@ OfxParameterSuiteV1::paramGetKeyIndex — Finds the index of a keyframe at/befor
 OfxParameterSuiteV1::paramDeleteKey — Deletes a keyframe if one exists at the given time.
 OfxParameterSuiteV1::paramDeleteAllKeys — Deletes all keyframes from a parameter.
 
+- support more image components:
+  kOfxImageComponentAlpha
+   "uk.co.thefoundry.OfxImageComponentMotionVectors" (forward motion?  backward motion? both?)
+   "uk.co.thefoundry.OfxImageComponentStereoDisparity"(left-to-right? right-to-left? both?)
