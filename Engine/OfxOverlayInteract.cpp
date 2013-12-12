@@ -43,3 +43,9 @@ void OfxOverlayInteract::getPixelScale(double& xScale, double& yScale) const{
 void OfxOverlayInteract::getBackgroundColour(double &r, double &g, double &b) const{
     _node->backgroundColorOfAttachedViewer(r, g, b);
 }
+
+#ifdef OFX_EXTENSIONS_NUKE
+void OfxOverlayInteract::getOverlayColour(double &r, double &g, double &b) const{
+    r = g = b = 1.;
+}
+#endif

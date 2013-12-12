@@ -44,8 +44,11 @@ public:
     
     // hooks to kOfxInteractPropBackgroundColour in the property set
     virtual void getBackgroundColour(double &r, double &g, double &b) const ;
-
-
+    
+#ifdef OFX_EXTENSIONS_NUKE
+    // hooks to kOfxPropOverlayColour in the property set
+    virtual void getOverlayColour(double &r, double &g, double &b) const ;
+#endif
 };
 
 }
