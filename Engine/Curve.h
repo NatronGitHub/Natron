@@ -166,13 +166,15 @@ private:
      * @brief Called when a keyframe/tangent is modified, indicating that the curve has changed and we must
      * evaluate any change (i.e: force a new render)
      **/
-    void evaluateCurveChanged(CurveChangedReason reason, boost::shared_ptr<KeyFrame> k);
+    void evaluateCurveChanged(CurveChangedReason reason,KeyFrameSet::iterator key);
+
+    void evaluateCurveChanged(CurveChangedReason reason,boost::shared_ptr<KeyFrame> k);
     
     void refreshTangents(CurveChangedReason reason, boost::shared_ptr<KeyFrame> k);
     
     void refreshTangents(CurveChangedReason reason, KeyFrameSet::iterator key);
 
-    void setKeyFrameTimeNoUpdate(double time,boost::shared_ptr<KeyFrame> k);
+    void setKeyFrameTimeNoUpdate(double time, KeyFrameSet::iterator k);
 
     boost::scoped_ptr<CurvePrivate> _imp;
 };

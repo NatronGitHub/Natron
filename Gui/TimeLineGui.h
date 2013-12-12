@@ -77,7 +77,7 @@ public slots:
 
     void onFrameChanged(SequenceTime,int);
     void onFrameRangeChanged(SequenceTime first, SequenceTime last);
-    void onBoundariesChanged(SequenceTime, SequenceTime);
+    void onBoundariesChanged(SequenceTime, SequenceTime, int);
     void onCachedFrameAdded(SequenceTime time);
     void onCachedFrameRemoved(SequenceTime time);
     void onLRUCachedFrameRemoved();

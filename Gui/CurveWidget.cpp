@@ -1276,7 +1276,7 @@ CurveWidget::CurveWidget(boost::shared_ptr<TimeLine> timeline, QWidget* parent, 
 
     if(timeline){
         QObject::connect(timeline.get(),SIGNAL(frameChanged(SequenceTime,int)),this,SLOT(onTimeLineFrameChanged(SequenceTime,int)));
-        QObject::connect(timeline.get(),SIGNAL(boundariesChanged(SequenceTime,SequenceTime)),this,SLOT(onTimeLineBoundariesChanged(SequenceTime,SequenceTime)));
+        QObject::connect(timeline.get(),SIGNAL(boundariesChanged(SequenceTime,SequenceTime,int)),this,SLOT(onTimeLineBoundariesChanged(SequenceTime,SequenceTime,int)));
     }
 }
 
@@ -2096,7 +2096,7 @@ void CurveWidget::onTimeLineFrameChanged(SequenceTime,int /*reason*/){
     _imp->refreshTimelinePositions();
     updateGL();
 }
-void CurveWidget::onTimeLineBoundariesChanged(SequenceTime,SequenceTime){
+void CurveWidget::onTimeLineBoundariesChanged(SequenceTime,SequenceTime,int){
     updateGL();
 }
 

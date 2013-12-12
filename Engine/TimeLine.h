@@ -63,7 +63,7 @@ public slots:
 signals:
 
     void frameRangeChanged(SequenceTime,SequenceTime);
-    void boundariesChanged(SequenceTime,SequenceTime);
+    void boundariesChanged(SequenceTime,SequenceTime,int reason);
     //reason being a Natron::TIMELINE_CHANGE_REASON
     void frameChanged(SequenceTime,int reason);
 

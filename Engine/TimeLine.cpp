@@ -54,11 +54,12 @@ void TimeLine::onFrameChanged(SequenceTime frame){
 void TimeLine::setBoundaries(SequenceTime leftBound,SequenceTime rightBound){
     _leftBoundary = leftBound;
     _rightBoundary = rightBound;
-    emit boundariesChanged(_leftBoundary,_rightBoundary);
+    emit boundariesChanged(_leftBoundary,_rightBoundary,Natron::PLUGIN_EDITED);
 
 }
 
 void TimeLine::onBoundariesChanged(SequenceTime left,SequenceTime right){
     _leftBoundary = left;
     _rightBoundary = right;
+     emit boundariesChanged(_leftBoundary,_rightBoundary,Natron::USER_EDITED);
 }

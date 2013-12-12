@@ -565,8 +565,10 @@ void TimeLineGui::setBoundaries(SequenceTime first,SequenceTime last){
     }
 }
 
-void TimeLineGui::onBoundariesChanged(SequenceTime ,SequenceTime ){
-    updateGL();
+void TimeLineGui::onBoundariesChanged(SequenceTime ,SequenceTime,int reason){
+    if(reason == Natron::PLUGIN_EDITED){
+        updateGL();
+    }
 }
 
 void TimeLineGui::centerOn(SequenceTime left,SequenceTime right){
