@@ -46,8 +46,8 @@ warning("Compiling in DEBUG mode.")
 }
 
 # When compiler is GCC check for at least version 4.7
-*g++*{
-  QMAKE_CXXFLAGS += -ftemplate-depth-500
+*g++* {
+  QMAKE_CXXFLAGS += -ftemplate-depth-1024
   QMAKE_CXXFLAGS_RELEASE += -O3
   QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
   GCCVer = $$system($$QMAKE_CXX --version)
@@ -66,13 +66,8 @@ warning("Compiling in DEBUG mode.")
   }
 }
 
-!*g++*{
- QMAKE_CXXFLAGS += -ftemplate-depth-1024
-}
-
-
-*clang*{
-
+*clang* {
+  QMAKE_CXXFLAGS += -ftemplate-depth-1024
   sanitizer{
     QMAKE_CXXFLAGS += -fsanitize=address -fsanitize-undefined-trap-on-error -fno-omit-frame-pointer -fno-optimize-sibling-calls
     QMAKE_LFLAGS += -fsanitize=address -g
