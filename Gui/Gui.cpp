@@ -1239,9 +1239,8 @@ void Gui::informationDialog(const std::string& title,const std::string& text){
 }
 void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB){
     
-    if(QThread::currentThread() != QCoreApplication::instance()->thread()){
-        _uiUsingMainThreadMutex.lock();
-    }
+    _uiUsingMainThreadMutex.lock();
+
     if(type == 0){
         QMessageBox::critical(this, title, content);
     }else if(type == 1){
@@ -1254,10 +1253,9 @@ void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron
                                                                                   (QMessageBox::StandardButtons)defaultB);
     }
     _uiUsingMainThread = false;
-    if(QThread::currentThread() != QCoreApplication::instance()->thread()){
-        _uiUsingMainThreadCond.wakeOne();
-        _uiUsingMainThreadMutex.unlock();
-    }
+    _uiUsingMainThreadCond.wakeOne();
+    _uiUsingMainThreadMutex.unlock();
+    
 }
 
 Natron::StandardButton Gui::questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons,
