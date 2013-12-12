@@ -87,34 +87,35 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
     (void)ph;
     OFX::Host::ImageEffect::Descriptor* desc = NULL;
     desc = plugin->getContext(context);
-    if (desc) {
-        try {
-            effect_ = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
-            assert(effect_);
-            effect_->setOfxEffectInstancePointer(this);
-            notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
-            OfxStatus stat = effect_->populate();
-            notifyProjectEndKnobsValuesChanged(Natron::OTHER_REASON);
+    if (!desc) {
+        throw std::runtime_error(std::string("Failed to get description for OFX plugin in context ") + context);
+    }
+    try {
+        effect_ = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
+        assert(effect_);
+        effect_->setOfxEffectInstancePointer(this);
+        notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
+        OfxStatus stat = effect_->populate();
+        notifyProjectEndKnobsValuesChanged(Natron::OTHER_REASON);
 
-            if (stat != kOfxStatOK) {
-                throw std::runtime_error("Error while populating the Ofx image effect");
-            }
-            
-            stat = effect_->createInstanceAction();
-            if(stat != kOfxStatOK && stat != kOfxStatReplyDefault){
-                throw std::runtime_error("Could not create effect instance for plugin");
-            }
-            
-            /*must be called AFTER createInstanceAction!*/
-            tryInitializeOverlayInteracts();
-            
-        } catch (const std::exception& e) {
-            qDebug() << "Error: Caught exception while creating OfxImageEffectInstance" << ": " << e.what();
-            throw;
-        } catch (...) {
-            qDebug() << "Error: Caught exception while creating OfxImageEffectInstance";
-            throw;
+        if (stat != kOfxStatOK) {
+            throw std::runtime_error("Error while populating the Ofx image effect");
         }
+
+        stat = effect_->createInstanceAction();
+        if(stat != kOfxStatOK && stat != kOfxStatReplyDefault){
+            throw std::runtime_error("Could not create effect instance for plugin");
+        }
+
+        /*must be called AFTER createInstanceAction!*/
+        tryInitializeOverlayInteracts();
+
+    } catch (const std::exception& e) {
+        qDebug() << "Error: Caught exception while creating OfxImageEffectInstance" << ": " << e.what();
+        throw;
+    } catch (...) {
+        qDebug() << "Error: Caught exception while creating OfxImageEffectInstance";
+        throw;
     }
     _initialized = true;
 }
@@ -226,13 +227,15 @@ std::string OfxEffectInstance::generateImageEffectClassName(const std::string& s
 }
 
 std::string OfxEffectInstance::pluginID() const {
+    assert(effect_);
     return generateImageEffectClassName(effect_->getShortLabel(),
                                         effect_->getLabel(),
                                         effect_->getLongLabel(),
                                         effect_->getPluginGrouping());
 }
 
-std::string OfxEffectInstance::pluginLabel() const{
+std::string OfxEffectInstance::pluginLabel() const {
+    assert(effect_);
     return getPluginLabel( effect_->getShortLabel(),effect_->getLabel(),effect_->getLongLabel());
 }
 
