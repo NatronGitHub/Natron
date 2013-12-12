@@ -65,8 +65,6 @@ GCC_DIAG_ON(unused-parameter);
 using namespace Natron;
 using std::cout; using std::endl;
 
-static const double pi= 3.14159265358979323846264338327950288419717;
-
 namespace {
 /**
  *@class ZoomContext
