@@ -454,7 +454,7 @@ void AppInstance::loadProjectInternal(const QString& path,const QString& name){
         ProjectSerialization projectSerializationObj;
         iArchive >> boost::serialization::make_nvp("Project",projectSerializationObj);
         _currentProject->load(projectSerializationObj);
-        if(!bgProject){
+        if(!bgProject && !_isBackground){
             ProjectGuiSerialization projectGuiSerializationObj;
             iArchive >> boost::serialization::make_nvp("ProjectGui",projectGuiSerializationObj);
             _gui->_projectGui->load(projectGuiSerializationObj);

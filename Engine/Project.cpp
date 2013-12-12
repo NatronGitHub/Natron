@@ -271,6 +271,7 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
         _imp->isSignificantChange = true;
     }
     ++_imp->evaluationsCount;
+    _imp->lastKnobChanged = k;
     caller->onKnobValueChanged(k,reason);
     if(!wasBeginCalled){
         endProjectWideValueChanges(reason,caller);
@@ -297,7 +298,7 @@ void Project::endProjectWideValueChanges(Natron::ValueChangedReason reason,KnobH
             getApp()->triggerAutoSave();
         }
         if(reason != Natron::OTHER_REASON && reason != Natron::TIME_CHANGED){
-            caller->evaluate(NULL,_imp->isSignificantChange);
+            caller->evaluate(_imp->lastKnobChanged,_imp->isSignificantChange);
         }
     }
 }

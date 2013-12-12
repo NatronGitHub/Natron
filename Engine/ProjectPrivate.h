@@ -70,6 +70,7 @@ struct ProjectPrivate{
     int evaluationsCount;
     std::map<KnobHolder*,int> holdersWhoseBeginWasCalled;
     bool isSignificantChange;
+    Knob* lastKnobChanged;
     
     ProjectPrivate(Natron::Project* project);
     

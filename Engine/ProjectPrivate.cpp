@@ -39,6 +39,7 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , evaluationsCount(0)
     , holdersWhoseBeginWasCalled()
     , isSignificantChange(false)
+    , lastKnobChanged(NULL)
 
 {
 }

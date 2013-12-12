@@ -588,6 +588,9 @@ void EffectInstance::clearPersistentMessage() {
 OutputEffectInstance::OutputEffectInstance(Node* node)
 : Natron::EffectInstance(node)
 , _videoEngine(node?new VideoEngine(this):0)
+, _writerCurrentFrame(0)
+, _writerFirstFrame(0)
+, _writerLastFrame(0)
 {
 }
 

@@ -392,13 +392,14 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
             *last = INT_MAX;
         }else{
             //the union of all the frame ranges of the non optional input clips.
+            bool firstValidClip = true;
             for (int i = 0; i < nthClip ; ++i) {
                 OFX::Host::ImageEffect::ClipInstance* clip = effect_->getNthClip(i);
                 assert(clip);
                 if (!clip->isOutput() && !clip->isOptional()) {
                     double f,l;
                     clip->getFrameRange(f, l);
-                    if (i != 0) {
+                    if (!firstValidClip) {
                         if (f < *first) {
                             *first = f;
                         }
@@ -406,6 +407,7 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
                             *last = l;
                         }
                     } else {
+                        firstValidClip = false;
                         *first = f;
                         *last = l;
                     }
