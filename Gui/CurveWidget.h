@@ -12,6 +12,8 @@
 #ifndef CURVE_WIDGET_H
 #define CURVE_WIDGET_H
 
+#include <set>
+
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
 
@@ -95,8 +97,18 @@ private:
 
 };
 
-struct SelectedKey;
-typedef std::list< boost::shared_ptr<SelectedKey> > SelectedKeys;
+struct SelectedKey {
+    CurveGui* curve;
+    boost::shared_ptr<KeyFrame> key;
+    std::pair<double,double> leftTan, rightTan;
+};
+struct SelectedKeyFrame_compare_time {
+    bool operator() (const boost::shared_ptr<SelectedKey>& lhs, const boost::shared_ptr<SelectedKey>& rhs) const {
+        return lhs->key->getTime() < rhs->key->getTime();
+    }
+};
+
+typedef std::set<boost::shared_ptr<SelectedKey>, SelectedKeyFrame_compare_time> SelectedKeys;
 
 class QMenu;
 class CurveWidgetPrivate;

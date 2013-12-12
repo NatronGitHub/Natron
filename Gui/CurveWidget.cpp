@@ -53,11 +53,7 @@ enum EventState {
 
 }
 
-struct SelectedKey {
-    CurveGui* curve;
-    boost::shared_ptr<KeyFrame> key;
-    std::pair<double,double> leftTan, rightTan;
-};
+
 
 CurveGui::CurveGui(const CurveWidget *curveWidget,
                    boost::shared_ptr<Curve> curve,
@@ -400,6 +396,7 @@ private:
     QColor _baseAxisColor;
     QColor _scaleColor;
     QPointF _keyDragMaxMovement;
+    double _keyDragLastMovement;
     QPolygonF _timelineTopPoly;
     QPolygonF _timelineBtmPoly;
     CurveWidget* _widget;
@@ -433,6 +430,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(boost::shared_ptr<TimeLine> timeline,Curv
     , _baseAxisColor(118,215,90,255)
     , _scaleColor(67,123,52,255)
     , _keyDragMaxMovement()
+    , _keyDragLastMovement(0.)
     , _timelineTopPoly()
     , _timelineBtmPoly()
     , _widget(widget)
@@ -934,16 +932,11 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
         totalMovement = std::min(totalMovement,_keyDragMaxMovement.y());
     }
 
-    double lastMovement = std::floor(oldClick_opengl.x() - dragStartPointOpenGL.x() + 0.5);
-    if (lastMovement < 0) {
-        lastMovement = std::max(lastMovement,_keyDragMaxMovement.x());
-    } else {
-        lastMovement = std::min(lastMovement,_keyDragMaxMovement.y());
-    }
+
     for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
         double newX;
         if (_mouseDragOrientation.x() != 0) {
-            newX = (*it)->key->getTime() + totalMovement - lastMovement;
+            newX = (*it)->key->getTime() + totalMovement - _keyDragLastMovement;
         } else {
             newX = (*it)->key->getTime();
         }
@@ -969,7 +962,9 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
         _widget->refreshDisplayedTangents();
     }
 
-
+    if (_mouseDragOrientation.x() != 0) {
+       _keyDragLastMovement = totalMovement;
+    }
 }
 
 void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
@@ -979,7 +974,7 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
     boost::shared_ptr<SelectedKey> key = (*_selectedTangent.second);
     const KeyFrameSet& keys = key->curve->getInternalCurve()->getKeyFrames();
 
-    KeyFrameSet::const_iterator cur = std::find(keys.begin(),keys.end(),key->key);
+    KeyFrameSet::const_iterator cur = keys.find(key->key);
     assert(cur != keys.end());
     double dy = key->key->getValue().toDouble() - pos.y();
     double dx = key->key->getTime() - pos.x();
@@ -1079,7 +1074,7 @@ void CurveWidgetPrivate::refreshKeyTangentsGUI(boost::shared_ptr<SelectedKey> ke
     double y = key->key->getValue().toDouble();
     QPointF keyWidgetCoord = _widget->toWidgetCoordinates(x,y);
     const KeyFrameSet& keyframes = key->curve->getInternalCurve()->getKeyFrames();
-    KeyFrameSet::const_iterator k = std::find(keyframes.begin(),keyframes.end(),key->key);
+    KeyFrameSet::const_iterator k = keyframes.find(key->key);
     assert(k != keyframes.end());
 
     //find the previous and next keyframes on the curve to find out the  position of the tangents
@@ -1202,26 +1197,25 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
         }
 
     }
-
+    //FIXME: bug we need to take the minimum of the _keyDragMaxMovement of all curves
     //find out for leftMost and rightMost of how much they can move respectively on the left and on the right
     {
         const KeyFrameSet& leftMostCurveKeys = leftMost->curve->getInternalCurve()->getKeyFrames();
-        KeyFrameSet::const_iterator foundLeft = std::find(leftMostCurveKeys.begin(),
-                                                        leftMostCurveKeys.end(),leftMost->key);
+        KeyFrameSet::const_iterator foundLeft = leftMostCurveKeys.find(leftMost->key);
         assert(foundLeft != leftMostCurveKeys.end());
         if (foundLeft == leftMostCurveKeys.begin()) {
-            _keyDragMaxMovement.setX(INT_MIN);
+            _keyDragMaxMovement.setX(-INT_MIN);
         } else {
             KeyFrameSet::const_iterator foundLeftPrev = foundLeft;
             --foundLeftPrev;
+            assert((*foundLeftPrev)->getTime() < leftMost->key->getTime());
             _keyDragMaxMovement.setX(((*foundLeftPrev)->getTime() + 1) - leftMost->key->getTime());
         }
     }
 
     {
         const KeyFrameSet& rightMostCurveKeys = rightMost->curve->getInternalCurve()->getKeyFrames();
-        KeyFrameSet::const_iterator foundRight = std::find(rightMostCurveKeys.begin(),
-                                                         rightMostCurveKeys.end(),rightMost->key);
+        KeyFrameSet::const_iterator foundRight = rightMostCurveKeys.find(rightMost->key);
         assert(foundRight != rightMostCurveKeys.end());
         KeyFrameSet::const_iterator foundRightNext = foundRight;
         ++foundRightNext;
@@ -1229,10 +1223,11 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
         if (foundRightNext == rightMostCurveKeys.end()) {
             _keyDragMaxMovement.setY(INT_MAX);
         } else {
+            assert(rightMost->key->getTime() < (*foundRightNext)->getTime());
             _keyDragMaxMovement.setY((*foundRightNext)->getTime() - 1 - rightMost->key->getTime());
         }
     }
-
+    _keyDragLastMovement = 0.;
 
 }
 

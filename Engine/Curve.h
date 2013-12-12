@@ -22,13 +22,12 @@
 
 #include "Global/Enums.h"
 /**
- * @brief A KeyFrame is a pair <time,value>. These are the value that are used
+ * @brief A KeyFrame is a lightweight pair <time,value>. These are the values that are used
  * to interpolate a Curve. The _leftTangent and _rightTangent can be
  * used by the interpolation method of the curve.
 **/
 class Curve;
 class Variant;
-struct KeyFramePrivate;
 class KeyFrame  {
 
 
@@ -36,7 +35,7 @@ public:
 
     KeyFrame();
 
-    KeyFrame(double time, const Variant& initialValue);
+    KeyFrame(int time, double initialValue);
 
     KeyFrame(const KeyFrame& other);
 
@@ -44,11 +43,9 @@ public:
     
     void operator=(const KeyFrame& o);
 
-    bool operator==(const KeyFrame& o) const ;
-
-    const Variant& getValue() const;
+    double getValue() const;
     
-    double getTime() const ;
+    int getTime() const ;
 
     double getLeftTangent() const;
 
@@ -60,30 +57,29 @@ public:
 
     void setValue(const Variant& v);
 
-    void setTime(double time);
+    void setTime(int time);
 
     void setInterpolation(Natron::KeyframeType interp) ;
 
     Natron::KeyframeType getInterpolation() const;
 
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
 
 private:
 
-
-    boost::scoped_ptr<KeyFramePrivate> _imp;
-
-
+    int _time;
+    double _value;
+    double _leftTangent;
+    double _rightTangent;
+    Natron::KeyframeType _interpolation;
 };
 
 struct KeyFrame_compare_time {
-    bool operator() (const boost::shared_ptr<KeyFrame>& lhs, const boost::shared_ptr<KeyFrame>& rhs) const {
-        return lhs->getTime() < rhs->getTime();
+    bool operator() (const KeyFrame& lhs, const KeyFrame& rhs) const {
+        return lhs.getTime() < rhs.getTime();
     }
 };
 
-typedef std::set<boost::shared_ptr<KeyFrame>, KeyFrame_compare_time> KeyFrameSet;
+typedef std::set<KeyFrame, KeyFrame_compare_time> KeyFrameSet;
 
 
 /**
@@ -143,20 +139,27 @@ public:
 
     void clearKeyFrames();
     
-    void setKeyFrameValue(const Variant& value,boost::shared_ptr<KeyFrame> k);
+    void setKeyFrameValue(double value,int index);
     
-    void setKeyFrameTime(double time,boost::shared_ptr<KeyFrame> k);
+    void setKeyFrameTime(double time,int index);
     
-    void setKeyFrameValueAndTime(double time,const Variant& value,boost::shared_ptr<KeyFrame> k);
+    void setKeyFrameValueAndTime(double time,double value,int index);
     
-    void setKeyFrameLeftTangent(double value,boost::shared_ptr<KeyFrame> k);
+    void setKeyFrameLeftTangent(double value,int index);
     
-    void setKeyFrameRightTangent(double value,boost::shared_ptr<KeyFrame> k);
+    void setKeyFrameRightTangent(double value,,int index);
     
-    void setKeyFrameTangents(double left, double right, boost::shared_ptr<KeyFrame> k);
+    void setKeyFrameTangents(double left, double right, ,int index);
     
-    void setKeyFrameInterpolation(Natron::KeyframeType interp,boost::shared_ptr<KeyFrame> k);
+    void setKeyFrameInterpolation(Natron::KeyframeType interp,int index);
 
+    KeyFrameSet::const_iterator find(int time) const;
+
+    KeyFrameSet::iterator find(int time);
+
+    KeyFrameSet::const_iterator end() const;
+
+    KeyFrameSet::iterator end();
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);

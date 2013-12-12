@@ -18,44 +18,6 @@
 #include "Engine/Knob.h"
 
 class Curve;
-struct KeyFramePrivate{
-
-    Variant value; /// the value held by the key
-    double time; /// a value ranging between 0 and 1
-
-    double leftTangent,rightTangent; // tangents are anly for double-valued keyframes
-    Natron::KeyframeType interpolation;
-
-
-    KeyFramePrivate()
-    : value()
-    , time(0)
-    , interpolation(Natron::KEYFRAME_LINEAR)
-    {}
-
-
-    KeyFramePrivate(double time, const Variant& initialValue)
-        : value(initialValue)
-        , time(time)
-        , leftTangent(0.)
-        , rightTangent(0.)
-        , interpolation(Natron::KEYFRAME_SMOOTH)
-    {
-    }
-
-    KeyFramePrivate(const KeyFramePrivate& other)
-    {
-        value = other.value;
-        leftTangent = other.leftTangent;
-        rightTangent = other.rightTangent;
-        interpolation = other.interpolation;
-        time = other.time;
-    }
-
-
-};
-
-
 class KeyFrame;
 class Knob;
 
