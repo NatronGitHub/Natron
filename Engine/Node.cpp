@@ -840,6 +840,7 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
     if(found!=_inputs.end() && found->second && !autoConnection &&
             ((inputAlreadyConnected!=_inputs.end()) )){
         setActiveInputAndRefresh(found->first);
+        _liveInstance->updateInputs(NULL);
         return false;
     }
     /*#2:second case: Before connecting the appropriate edge we search for any other edge connected with the
@@ -847,6 +848,7 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
     for (InputMap::const_iterator i = _inputs.begin(); i!=_inputs.end(); ++i) {
         if(i->second && i->second == input){
             setActiveInputAndRefresh(i->first);
+            _liveInstance->updateInputs(NULL);
             return false;
         }
     }

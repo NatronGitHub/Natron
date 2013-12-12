@@ -34,8 +34,8 @@ void TimeLine::setFrameRange(SequenceTime first,SequenceTime last){
 void TimeLine::seekFrame(SequenceTime frame,Natron::OutputEffectInstance* caller){
     QMutexLocker l(&_lock);
     _currentFrame = frame;
-    emit frameChanged(_currentFrame,(int)Natron::PLAYBACK_SEEK);
     _project->setLastTimelineSeekCaller(caller);
+    emit frameChanged(_currentFrame,(int)Natron::PLAYBACK_SEEK);
 }
 
 void TimeLine::incrementCurrentFrame(Natron::OutputEffectInstance* caller) { seekFrame(_currentFrame+1,caller); }

@@ -217,6 +217,9 @@ void Project::onTimeChanged(SequenceTime time,int /*reason*/){
     refreshAfterTimeChange(time); //refresh project knobs
     for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {     
         //refresh all knobs
+        if(!_imp->currentNodes[i]->isActivated()){
+            continue;
+        }
         if(_imp->currentNodes[i]->pluginID() == "Viewer"){
             viewers.push_back(dynamic_cast<ViewerInstance*>(_imp->currentNodes[i]->getLiveInstance()));
         }
