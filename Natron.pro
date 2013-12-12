@@ -5,12 +5,13 @@
 
 TARGET = Natron
 TEMPLATE = app
-CONFIG += app warn_on c++11
+CONFIG += app warn_on c++11 precompile_header
 CONFIG += moc rcc
 CONFIG += openexr boost glew opengl qt expat
 QT += gui core opengl
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
+# Use Precompiled headers (PCH)
 PRECOMPILED_HEADER = pch.h
 
 win32{
