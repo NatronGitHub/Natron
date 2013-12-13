@@ -130,22 +130,22 @@ public:
      * is 0. If there's a single dimension, it will set the dimension 0 regardless of the parameter dimension.
      * Otherwise, it will attempt to set a key for only the dimension 'dimensionIndex'.
      **/
-    boost::shared_ptr<KeyFrame> setValueAtTime(double time,const Variant& v,int dimension);
+    void setValueAtTime(int time,const Variant& v,int dimension);
 
     template<typename T>
-    boost::shared_ptr<KeyFrame> setValueAtTime(double time,const T& value,int dimensionIndex = 0){
+    void setValueAtTime(int time,const T& value,int dimensionIndex = 0){
         assert(dimensionIndex < getDimension());
-        return setValueAtTime(time,Variant(value),dimensionIndex);
+        setValueAtTime(time,Variant(value),dimensionIndex);
     }
 
     template<typename T>
-    void setValueAtTime(double time,T variant[],int count){
+    void setValueAtTime(int time,T variant[],int count){
         for(int i = 0; i < count; ++i){
             setValueAtTime(time,Variant(variant[i]),i);
         }
     }
 
-    void deleteValueAtTime(double time,int dimension);
+    void deleteValueAtTime(int time,int dimension);
 
     /**
      * @brief Returns the value  in a specific dimension at a specific time. If
@@ -286,10 +286,10 @@ private:
     void setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason);
 
      //private because it emits a signal
-    boost::shared_ptr<KeyFrame> setValueAtTime(double time,const Variant& v,int dimension,Natron::ValueChangedReason reason);
+    void setValueAtTime(int time,const Variant& v,int dimension,Natron::ValueChangedReason reason);
 
      //private because it emits a signal
-    void deleteValueAtTime(double time,int dimension,Natron::ValueChangedReason reason);
+    void deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason reason);
     
     /** @brief This function can be implemented if you want to clone more data than just the value
      * of the knob. Cloning happens when a render request is made: all knobs values of the GUI

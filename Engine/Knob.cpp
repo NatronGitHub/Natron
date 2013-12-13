@@ -165,7 +165,9 @@ Variant Knob::getValueAtTime(double time,int dimension) const{
 
     boost::shared_ptr<Curve> curve  = _imp->_curves[dimension];
     if (curve->isAnimated()) {
-        return curve->getValueAt(time);
+#warning "We should query the variant's type of the curve to construct  an appropriate return value"
+        //FIXME: clamp to min/max
+        return Variant(curve->getValueAt(time));
     } else {
         /*if the knob as no keys at this dimension, return the value
         at the requested dimension.*/
@@ -192,7 +194,7 @@ void Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason 
     evaluateValueChange(dimension,reason);
 }
 
-boost::shared_ptr<KeyFrame> Knob::setValueAtTime(double time, const Variant& v, int dimension, Natron::ValueChangedReason reason){
+void Knob::setValueAtTime(int time, const Variant& v, int dimension, Natron::ValueChangedReason reason){
 
     if(dimension > (int)_imp->_curves.size()){
         throw std::invalid_argument("Knob::setValueAtTime(): Dimension out of range");
@@ -202,23 +204,22 @@ boost::shared_ptr<KeyFrame> Knob::setValueAtTime(double time, const Variant& v, 
     ///gui to be unsynchronized with what lies internally.
     boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
     if(isSlave){
-        return boost::shared_ptr<KeyFrame>();
+        return;
     }
 
 
     boost::shared_ptr<Curve> curve = _imp->_curves[dimension];
-    boost::shared_ptr<KeyFrame> k(new KeyFrame(time,v));
-    curve->addKeyFrame(k);
+#warning "We should query the variant's type passed in parameter to construct a keyframe with an appropriate value"
+    curve->addKeyFrame(KeyFrame(time,v.toDouble()));
 
 
      if(reason != Natron::USER_EDITED){
         emit keyFrameSet(time,dimension);
      }
 
-    return k;
 }
 
-void Knob::deleteValueAtTime(double time,int dimension,Natron::ValueChangedReason reason){
+void Knob::deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason reason){
 
     if(dimension > (int)_imp->_curves.size()){
         throw std::invalid_argument("Knob::deleteValueAtTime(): Dimension out of range");
@@ -243,13 +244,13 @@ void Knob::setValue(const Variant& value,int dimension){
     setValue(value,dimension,Natron::PLUGIN_EDITED);
 }
 
-boost::shared_ptr<KeyFrame> Knob::setValueAtTime(double time, const Variant& v, int dimension){
-   return setValueAtTime(time,v,dimension,Natron::PLUGIN_EDITED);
+void Knob::setValueAtTime(int time, const Variant& v, int dimension){
+    setValueAtTime(time,v,dimension,Natron::PLUGIN_EDITED);
 }
 
 
 
-void Knob::deleteValueAtTime(double time,int dimension){
+void Knob::deleteValueAtTime(int time,int dimension){
     deleteValueAtTime(time,dimension,Natron::PLUGIN_EDITED);
 }
 

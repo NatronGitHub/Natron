@@ -126,19 +126,19 @@ public:
     
     std::pair<QAction*,QAction*> getUndoRedoActions() const;
 
-    void addKeyFrame(KnobGui* knob,SequenceTime time,int dimension);
+    void addKeyFrame(KnobGui* knob,const KeyFrame& key,int dimension);
 
-    void addKeyFrame(CurveGui* curve,SequenceTime time,const Variant& value);
+    void addKeyFrame(CurveGui* curve, const KeyFrame& key);
 
-    void addKeyFrames(CurveGui* curve,const std::vector<std::pair<SequenceTime,Variant> >& keys);
+    void addKeyFrames(CurveGui* curve,const std::vector< KeyFrame >& keys);
 
-    void removeKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key);
+    void removeKeyFrame(CurveGui* curve,const KeyFrame& key);
 
-    void removeKeyFrames(const std::vector<std::pair<CurveGui *, boost::shared_ptr<KeyFrame> > > &keys);
+    void removeKeyFrames(const std::vector< std::pair<CurveGui *, KeyFrame > > &keys);
 
-    void setKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key, double x, const Variant& y);
+    void setKeyFrame(CurveGui* curve,int oldTime,double oldValue,int newTime,double newValue);
 
-    void setKeyFrames(const std::vector<std::pair< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> >, std::pair<double, Variant> > >& keys);
+    void setKeyFrames(const std::vector<std::pair< CurveGui*,std::pair< std::pair<int,double >, std::pair<int, double> > > >& keys);
     
     CurveGui* findCurve(KnobGui* knob,int dimension);
     
@@ -146,9 +146,9 @@ public:
     
     void showCurves(KnobGui* knob);
     
-    void setKeyInterpolation(CurveGui* curve,boost::shared_ptr<KeyFrame> key,Natron::KeyframeType interp);
+    void setKeyInterpolation(CurveGui* curve,const KeyFrame& key,Natron::KeyframeType interp);
     
-    void setKeysInterpolation(const std::vector<std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > >& keys,Natron::KeyframeType interp);
+    void setKeysInterpolation(const std::vector<std::pair<CurveGui*, KeyFrame > >& keys,Natron::KeyframeType interp);
     
     
     

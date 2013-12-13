@@ -22,6 +22,16 @@ class KeyFrame;
 class Knob;
 
 struct CurvePrivate{
+    
+    enum CurveType{
+        DOUBLE_CURVE = 0, //< the values held by the keyframes can be any real
+        INT_CURVE, //< the values held by the keyframes can only be integers
+        BOOL_CURVE, //< the values held by the keyframes can be either 0 or 1
+        STRING_CURVE //< the values held by the keyframes can only be integers and keyframes are ordered by increasing values
+                     // and times
+    };
+
+    
     struct KeyFrame_compare_time {
         bool operator() (const boost::shared_ptr<KeyFrame>& lhs, const boost::shared_ptr<KeyFrame>& rhs) const {
             return lhs->getTime() < rhs->getTime();
@@ -32,10 +42,12 @@ struct CurvePrivate{
 
     Knob* owner;
 
+    CurveType curveType;
     
     CurvePrivate()
     : keyFrames()
     , owner(NULL)
+    , curveType(DOUBLE_CURVE)
     {}
 
 };

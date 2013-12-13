@@ -165,7 +165,7 @@ void Int_KnobGui::updateGUI(int dimension, const Variant &variant)
     if (c->keyFramesCount() >= 1) {
         const KeyFrameSet &keys = c->getKeyFrames();
         for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-            if ((*it)->getTime() == time) {
+            if (it->getTime() == time) {
                 _spinBoxes[dimension].first->setAnimation(2);
                 setIsOnKeyframe(true);
                 return;
@@ -283,7 +283,7 @@ void Bool_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
     if (c->keyFramesCount() >= 1) {
         const KeyFrameSet &keys = c->getKeyFrames();
         for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-            if ((*it)->getTime() == time) {
+            if (it->getTime() == time) {
                 _checkBox->setAnimation(2);
                 setIsOnKeyframe(true);
                 return;
@@ -465,7 +465,7 @@ void Double_KnobGui::updateGUI(int dimension, const Variant &variant)
     if (c->keyFramesCount() >= 1) {
         const KeyFrameSet &keys = c->getKeyFrames();
         for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-            if ((*it)->getTime() == time) {
+            if (it->getTime() == time) {
                 _spinBoxes[dimension].first->setAnimation(2);
                 setIsOnKeyframe(true);
                 return;
@@ -649,7 +649,7 @@ void Choice_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
     if (c->keyFramesCount() >= 1) {
         const KeyFrameSet &keys = c->getKeyFrames();
         for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-            if ((*it)->getTime() == time) {
+            if (it->getTime() == time) {
                 _comboBox->setAnimation(2);
                 setIsOnKeyframe(true);
                 return;

@@ -21,12 +21,10 @@
 #include <boost/shared_ptr.hpp>
 
 #include "Global/GlobalDefines.h"
+#include "Engine/Curve.h"
 
 
-
-class Curve;
 class Variant;
-class KeyFrame;
 class TimeLine;
 class CurveWidget;
 class CurveGui : public QObject {
@@ -85,7 +83,7 @@ signals:
     
 private:
 
-    boost::shared_ptr<KeyFrame> nextPointForSegment(double x1,double* x2);
+    std::pair<KeyFrame,bool> nextPointForSegment(double x1,double* x2);
 
     boost::shared_ptr<Curve> _internalCurve; ///ptr to the internal curve
     QString _name; /// the name of the curve
@@ -99,16 +97,35 @@ private:
 
 struct SelectedKey {
     CurveGui* curve;
-    boost::shared_ptr<KeyFrame> key;
+    KeyFrame key;
     std::pair<double,double> leftTan, rightTan;
+    
+    SelectedKey(CurveGui* c,const KeyFrame& k)
+    : curve(c)
+    , key(k)
+    {
+        
+    }
+    
+    SelectedKey(const SelectedKey& o)
+    : curve(o.curve)
+    , key(o.key)
+    , leftTan(o.leftTan)
+    , rightTan(o.rightTan)
+    {
+        
+    }
+    
 };
-struct SelectedKeyFrame_compare_time {
-    bool operator() (const boost::shared_ptr<SelectedKey>& lhs, const boost::shared_ptr<SelectedKey>& rhs) const {
-        return lhs->key->getTime() < rhs->key->getTime();
+
+struct SelectedKey_compare_time{
+    bool operator() (const SelectedKey& lhs, const SelectedKey& rhs) const {
+        return lhs.key.getTime() < rhs.key.getTime();
     }
 };
 
-typedef std::set<boost::shared_ptr<SelectedKey>, SelectedKeyFrame_compare_time> SelectedKeys;
+
+typedef std::set< SelectedKey,SelectedKey_compare_time > SelectedKeys;
 
 class QMenu;
 class CurveWidgetPrivate;
@@ -137,11 +154,9 @@ public:
 
     void showCurvesAndHideOthers(const std::vector<CurveGui*>& curves);
 
-    void addKeyFrame(CurveGui* curve, boost::shared_ptr<KeyFrame> key);
+    void addKeyFrame(CurveGui* curve, const KeyFrame& key);
 
-    boost::shared_ptr<KeyFrame> addKeyFrame(CurveGui* curve,const Variant& y, int x);
-
-    void removeKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key);
+    void removeKeyFrame(CurveGui* curve,const KeyFrame& key);
     
     
 public slots:
@@ -219,9 +234,6 @@ private:
     const SelectedKeys& getSelectedKeyFrames() const ;
 
     bool isSupportingOpenGLVAO() const ;
-
-    std::pair<SelectedKeys::const_iterator,bool> isKeySelected(boost::shared_ptr<KeyFrame> key) const;
-
 
 private:
 

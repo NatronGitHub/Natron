@@ -263,7 +263,9 @@ void KnobGui::onShowInCurveEditorActionTriggered(){
 }
 
 void KnobGui::onRemoveAnyAnimationActionTriggered(){
-    std::vector<std::pair<CurveGui *, boost::shared_ptr<KeyFrame> > > toRemove;
+    
+#warning "FIXME: we don't want to use the curve editor's undo/redo stack, we want to use the node's panel undo/redo stack instead"
+    std::vector<std::pair<CurveGui *, KeyFrame > > toRemove;
     for(int i = 0; i < _knob->getDimension();++i){
         CurveGui* curve = _knob->getHolder()->getApp()->getGui()->_curveEditor->findCurve(this, i);
         const KeyFrameSet& keys = curve->getInternalCurve()->getKeyFrames();
@@ -283,7 +285,7 @@ void KnobGui::setInterpolationForDimensions(const std::vector<int>& dimensions,N
         boost::shared_ptr<Curve> c = _knob->getCurve(dimensions[i]);
         const KeyFrameSet& keyframes = c->getKeyFrames();
         for(KeyFrameSet::const_iterator it = keyframes.begin();it!=keyframes.end();++it){
-            c->setKeyFrameInterpolation(interp, *it);
+            c->setKeyFrameInterpolation(interp, it->getTime());
         }
     }
     emit keyInterpolationChanged();

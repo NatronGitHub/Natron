@@ -17,8 +17,8 @@
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
-
-#include "Engine/Variant.h"
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
 
 #include "Global/Enums.h"
 /**
@@ -27,7 +27,6 @@
  * used by the interpolation method of the curve.
 **/
 class Curve;
-class Variant;
 class KeyFrame  {
 
 
@@ -42,6 +41,14 @@ public:
     ~KeyFrame();
     
     void operator=(const KeyFrame& o);
+    
+    bool operator==(const KeyFrame& o) const {
+        return o._time == _time &&
+        o._value == _value &&
+        o._interpolation == _interpolation &&
+        o._leftTangent == _leftTangent &&
+        o._rightTangent == _rightTangent;
+    }
 
     double getValue() const;
     
@@ -55,7 +62,7 @@ public:
 
     void setRightTangent(double v);
 
-    void setValue(const Variant& v);
+    void setValue(double v);
 
     void setTime(int time);
 
@@ -71,6 +78,19 @@ private:
     double _leftTangent;
     double _rightTangent;
     Natron::KeyframeType _interpolation;
+    
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar,const unsigned int version)
+    {
+        (void)version;
+        ar & boost::serialization::make_nvp("Time",_time);
+        ar & boost::serialization::make_nvp("Value",_value);
+        ar & boost::serialization::make_nvp("InterpolationMethod",_interpolation);
+        ar & boost::serialization::make_nvp("LeftTangent",_leftTangent);
+        ar & boost::serialization::make_nvp("RightTangent",_rightTangent);
+    }
+
 };
 
 struct KeyFrame_compare_time {
@@ -90,7 +110,7 @@ class Knob;
 struct CurvePrivate;
 class RectD;
 class Curve {
-
+    
     enum CurveChangedReason{
         TANGENT_CHANGED = 0,
         KEYFRAME_CHANGED = 1
@@ -118,12 +138,9 @@ public:
 
     bool isAnimated() const;
 
-    void addKeyFrame(boost::shared_ptr<KeyFrame> cp);
+    KeyFrameSet::iterator addKeyFrame(const KeyFrame& cp);
 
-    void removeKeyFrame(boost::shared_ptr<KeyFrame> cp);
-
-    //removes a keyframe at this time, if any
-    void removeKeyFrame(double time);
+    void removeKeyFrame(int time);
 
     int keyFramesCount() const ;
 
@@ -131,7 +148,7 @@ public:
 
     double getMaximumTimeCovered() const;
 
-    Variant getValueAt(double t) const;
+    double getValueAt(double t) const;
 
     const RectD& getBoundingBox() const ;
 
@@ -147,17 +164,13 @@ public:
     
     void setKeyFrameLeftTangent(double value,int index);
     
-    void setKeyFrameRightTangent(double value,,int index);
+    void setKeyFrameRightTangent(double value,int index);
     
-    void setKeyFrameTangents(double left, double right, ,int index);
+    void setKeyFrameTangents(double left, double right,int index);
     
     void setKeyFrameInterpolation(Natron::KeyframeType interp,int index);
 
-    KeyFrameSet::const_iterator find(int time) const;
-
     KeyFrameSet::iterator find(int time);
-
-    KeyFrameSet::const_iterator end() const;
 
     KeyFrameSet::iterator end();
 
@@ -170,14 +183,10 @@ private:
      * evaluate any change (i.e: force a new render)
      **/
     void evaluateCurveChanged(CurveChangedReason reason,KeyFrameSet::iterator key);
-
-    void evaluateCurveChanged(CurveChangedReason reason,boost::shared_ptr<KeyFrame> k);
-    
-    void refreshTangents(CurveChangedReason reason, boost::shared_ptr<KeyFrame> k);
     
     void refreshTangents(CurveChangedReason reason, KeyFrameSet::iterator key);
 
-    void setKeyFrameTimeNoUpdate(double time, KeyFrameSet::iterator k);
+    KeyFrameSet::iterator setKeyFrameValueAndTimeNoUpdate(double value,double time, KeyFrameSet::iterator k);
 
     boost::scoped_ptr<CurvePrivate> _imp;
 };
