@@ -241,6 +241,12 @@ OFX::Host::ImageEffect::Image(clip)
     // row bytes
     setIntProperty(kOfxImagePropRowBytes, rod.width()*4*sizeof(float));
     setStringProperty(kOfxImageEffectPropComponents, kOfxImageComponentRGBA);
+    setStringProperty(kOfxImageEffectPropPixelDepth, clip.getPixelDepth());
+    setStringProperty(kOfxImageEffectPropPreMultiplication, clip.getPremult());
+    setStringProperty(kOfxImagePropField, kOfxImageFieldNone);
+#warning "FIXME: set image unique identified (serialize Hash?)"
+    //setStringProperty(kOfxImagePropUniqueIdentifier, ???);
+    setDoubleProperty(kOfxImagePropPixelAspectRatio, clip.getAspectRatio());
 }
 
 OfxRGBAColourF* OfxImage::pixelF(int x, int y) const{
