@@ -159,7 +159,7 @@ public:
     }
 
 
-    boost::shared_ptr<Curve> getCurve(int dimension) const;
+    boost::shared_ptr<Curve> getCurve(int dimension = 0) const;
 
     const std::vector< boost::shared_ptr<Curve>  >& getCurves() const;
 

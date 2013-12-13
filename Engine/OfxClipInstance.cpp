@@ -244,8 +244,7 @@ OFX::Host::ImageEffect::Image(clip)
     setStringProperty(kOfxImageEffectPropPixelDepth, clip.getPixelDepth());
     setStringProperty(kOfxImageEffectPropPreMultiplication, clip.getPremult());
     setStringProperty(kOfxImagePropField, kOfxImageFieldNone);
-#warning "FIXME: set image unique identified (serialize Hash?)"
-    //setStringProperty(kOfxImagePropUniqueIdentifier, ???);
+    setStringProperty(kOfxImagePropUniqueIdentifier,QString::number(internalImage->getHashKey()).toStdString());
     setDoubleProperty(kOfxImagePropPixelAspectRatio, clip.getAspectRatio());
 }
 

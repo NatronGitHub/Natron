@@ -13,10 +13,13 @@
 #define CURVEEDITOR_H
 
 #include <QWidget>
-#include <QtGui/QUndoCommand>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+
 #include "Global/GlobalDefines.h"
+
+#include "Gui/CurveEditorUndoRedo.h"
 
 class RectD;
 class NodeGui;
@@ -136,9 +139,11 @@ public:
 
     void removeKeyFrames(const std::vector< std::pair<CurveGui *, KeyFrame > > &keys);
 
-    void setKeyFrame(CurveGui* curve,int oldTime,double oldValue,int newTime,double newValue);
+    //not a const-ref because we modify it
+    void setKeyFrame(KeyMove& move);
 
-    void setKeyFrames(const std::vector<std::pair< CurveGui*,std::pair< std::pair<int,double >, std::pair<int, double> > > >& keys);
+    //not a const-ref because we modify it
+    void setKeyFrames(std::vector<KeyMove> &keyMoves);
     
     CurveGui* findCurve(KnobGui* knob,int dimension);
     
@@ -146,9 +151,11 @@ public:
     
     void showCurves(KnobGui* knob);
     
-    void setKeyInterpolation(CurveGui* curve,const KeyFrame& key,Natron::KeyframeType interp);
+    //not a const-ref because we modify it
+    void setKeyInterpolation(KeyInterpolationChange& change);
     
-    void setKeysInterpolation(const std::vector<std::pair<CurveGui*, KeyFrame > >& keys,Natron::KeyframeType interp);
+    //not a const-ref because we modify it
+    void setKeysInterpolation(std::vector<KeyInterpolationChange> &changes);
     
     
     

@@ -28,6 +28,7 @@
 #include "Gui/ticks.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/TextRenderer.h"
+#include "Gui/CurveEditorUndoRedo.h"
 
 using namespace Natron;
 
@@ -916,6 +917,8 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
     translation.rx() *= _mouseDragOrientation.x();
     translation.ry() *= _mouseDragOrientation.y();
 
+    //the CurveEditor is reponsible for the undo/redo. In case this is the curveWidget's that belongs to the
+    //curve editor, use its undo/redo stack
     CurveEditor* editor = NULL;
     if (_widget->parentWidget()) {
         if (_widget->parentWidget()->parentWidget()) {
@@ -924,9 +927,9 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
             }
         }
     }
-    std::vector<std::pair< CurveGui*,std::pair< std::pair<int,double >, std::pair<int, double> > > > moves;
-    //1st off, round to the nearest integer the keyframes total motion
 
+
+    //1st off, round to the nearest integer the keyframes total motion
     double totalMovement = std::floor(newClick_opengl.x() - dragStartPointOpenGL.x() + 0.5);
     // clamp totalMovement to _keyDragMaxMovement
     if (totalMovement < 0) {
@@ -935,38 +938,69 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
         totalMovement = std::min(totalMovement,_keyDragMaxMovement.y());
     }
 
-
-    for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-        double newX;
-        if (_mouseDragOrientation.x() != 0) {
-            newX = it->key.getTime() + totalMovement - _keyDragLastMovement;
-        } else {
-            newX = it->key.getTime();
-        }
-        double newY = it->key.getValue() + translation.y();
-
-        if (!editor) {
-            it->curve->getInternalCurve()->setKeyFrameValueAndTime(newX,newY, it->key.getTime());
-        } else {
-            if (_selectedKeyFrames.size() > 1) {
-                moves.push_back(std::make_pair(it->curve,
-                                               std::make_pair(std::make_pair(it->key.getTime(),it->key.getValue()),
-                                                              std::make_pair(newX,newY))));
+    if(!editor){
+        //no editor for undo/redo, just set keyframes positions 1 by 1
+        for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
+            double newX;
+            if (_mouseDragOrientation.x() != 0) {
+                newX = it->key.getTime() + totalMovement - _keyDragLastMovement;
             } else {
-                editor->setKeyFrame(it->curve,it->key.getTime(),it->key.getValue(),newX,newY);
+                newX = it->key.getTime();
             }
+            double newY = it->key.getValue() + translation.y();
+            it->curve->getInternalCurve()->setKeyFrameValueAndTime(newX,newY, it->key.getTime());
         }
-    }
-    if (editor && _selectedKeyFrames.size() > 1) {
-        editor->setKeyFrames(moves);
-        //the editor redo() call will call refreshSelectedKeysBbox() for us
-        //and also call refreshDisplayedTangents()
-    } else {
+
         _widget->refreshSelectedKeysBbox();
         //refresh now the tangents positions
         _widget->refreshDisplayedTangents();
+    }else{
+        if(_selectedKeyFrames.size() == 1){
+            //only 1 keyframe, do a single move undo command
+            SelectedKeys::const_iterator it = _selectedKeyFrames.begin();
+            double newX;
+            if (_mouseDragOrientation.x() != 0) {
+                newX = it->key.getTime() + totalMovement - _keyDragLastMovement;
+            } else {
+                newX = it->key.getTime();
+            }
+            double newY = it->key.getValue() + translation.y();
+            //the editor redo() call will call refreshSelectedKeysBbox() for us
+            //and also call refreshDisplayedTangents()
+            KeyMove move;
+            move.curve = it->curve;
+            move.oldX = it->key.getTime();
+            move.oldY = it->key.getValue();
+            move.newX = newX;
+            move.newY = newY;
+            editor->setKeyFrame(move);
+        }else{
+            //several keys, do a multiple move command
+            std::vector<KeyMove> moves;
+            for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
+                double newX;
+                if (_mouseDragOrientation.x() != 0) {
+                    newX = it->key.getTime() + totalMovement - _keyDragLastMovement;
+                } else {
+                    newX = it->key.getTime();
+                }
+                double newY = it->key.getValue() + translation.y();
+                KeyMove move;
+                move.curve = it->curve;
+                move.oldX = it->key.getTime();
+                move.oldY = it->key.getValue();
+                move.newX = newX;
+                move.newY = newY;
+                moves.push_back(move);
+            }
+            //the editor redo() call will call refreshSelectedKeysBbox() for us
+            //and also call refreshDisplayedTangents()
+            editor->setKeyFrames(moves);
+        }
+
     }
 
+    //update last drag movement
     if (_mouseDragOrientation.x() != 0) {
         _keyDragLastMovement = totalMovement;
     }
@@ -1288,6 +1322,7 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
 
 void CurveWidgetPrivate::setKeysInterpolation(const std::vector<std::pair<CurveGui*,KeyFrame> >& keys,Natron::KeyframeType type){
     
+    //if the parent widget is the editor, use its undo/redo stack.
     CurveEditor* editor = NULL;
     if (_widget->parentWidget()) {
         if (_widget->parentWidget()->parentWidget()) {
@@ -1300,11 +1335,29 @@ void CurveWidgetPrivate::setKeysInterpolation(const std::vector<std::pair<CurveG
     //if the curve widget is the one owned by the curve editor use the undo/redo stack
     if(editor){
         if(keys.size() > 1){
-            editor->setKeysInterpolation(keys, type);
+            //do a multiple change at once
+            std::vector<KeyInterpolationChange> changes;
+            for(U32 i = 0; i < keys.size();++i){
+                KeyInterpolationChange change;
+                change.curve = keys[i].first;
+                change.oldInterp = keys[i].second.getInterpolation();
+                change.newInterp = type;
+                change.time = keys[i].second.getTime();
+                changes.push_back(change);
+            }
+            editor->setKeysInterpolation(changes);
         }else if(keys.size() == 1){
-            editor->setKeyInterpolation(keys.front().first,keys.front().second,type);
+            //just do 1 undo/redo change
+
+            KeyInterpolationChange change;
+            change.curve = keys.front().first;
+            change.oldInterp = keys.front().second.getInterpolation();
+            change.newInterp = type;
+            change.time = keys.front().second.getTime();
+            editor->setKeyInterpolation(change);
         }
     }else{
+        //just change interpolation 1 by 1
         for(U32 i = 0; i < keys.size();++i){
             keys[i].first->getInternalCurve()->setKeyFrameInterpolation(keys[i].second.getInterpolation(), keys[i].second.getTime());
         }

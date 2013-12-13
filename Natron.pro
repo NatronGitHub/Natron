@@ -137,6 +137,7 @@ SOURCES += \
     Gui/ClickableLabel.cpp \
     Gui/ComboBox.cpp \
     Gui/CurveEditor.cpp \
+    Gui/CurveEditorUndoRedo.cpp \
     Gui/CurveWidget.cpp \
     Gui/Edge.cpp \
     Gui/GroupBoxLabel.cpp \
@@ -243,6 +244,7 @@ HEADERS += \
     Gui/ClickableLabel.h \
     Gui/ComboBox.h \
     Gui/CurveEditor.h \
+    Gui/CurveEditorUndoRedo.h \
     Gui/CurveWidget.h \
     Gui/Edge.h \
     Gui/GroupBoxLabel.h \
