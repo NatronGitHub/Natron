@@ -100,6 +100,8 @@ struct SelectedKey {
     KeyFrame key;
     std::pair<double,double> leftTan, rightTan;
     
+    SelectedKey() : curve(NULL), key(){}
+
     SelectedKey(CurveGui* c,const KeyFrame& k)
     : curve(c)
     , key(k)
@@ -123,6 +125,8 @@ struct SelectedKey_compare_time{
         return lhs.key.getTime() < rhs.key.getTime();
     }
 };
+
+
 
 
 typedef std::set< SelectedKey,SelectedKey_compare_time > SelectedKeys;
@@ -158,6 +162,7 @@ public:
 
     void removeKeyFrame(CurveGui* curve,const KeyFrame& key);
     
+    void setSelectedKeys(const SelectedKeys& keys);
     
 public slots:
     

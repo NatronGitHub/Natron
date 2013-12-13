@@ -348,10 +348,11 @@ KeyFrameSet::iterator Curve::setKeyFrameValueAndTimeNoUpdate(double value,double
    }
     newKey.setTime(time);
     newKey.setValue(value);
+    _imp->keyFrames.erase(k);
     return addKeyFrame(newKey);
 }
 
-void Curve::setKeyFrameValue(double value,int index){
+const KeyFrame &Curve::setKeyFrameValue(double value,int index){
     KeyFrameSet::iterator it = find(index);
     assert(it != _imp->keyFrames.end());
     KeyFrame newKey(*it);
@@ -359,10 +360,11 @@ void Curve::setKeyFrameValue(double value,int index){
     it = addKeyFrame(newKey);
     
     evaluateCurveChanged(KEYFRAME_CHANGED,it);
+    return *it;
 }
 
 
-void Curve::setKeyFrameTime(double time, int index) {
+const KeyFrame &Curve::setKeyFrameTime(double time, int index) {
     KeyFrameSet::iterator it = find(index);
     assert(it != _imp->keyFrames.end());
 
@@ -370,10 +372,11 @@ void Curve::setKeyFrameTime(double time, int index) {
         it = setKeyFrameValueAndTimeNoUpdate(it->getValue(),time, it);
         evaluateCurveChanged(KEYFRAME_CHANGED,it);
     }
+    return *it;
 }
 
 
-void Curve::setKeyFrameValueAndTime(double time, double value, int index) {
+const KeyFrame &Curve::setKeyFrameValueAndTime(double time, double value, int index) {
     KeyFrameSet::iterator it = find(index);
     assert(it != _imp->keyFrames.end());
 
@@ -384,9 +387,10 @@ void Curve::setKeyFrameValueAndTime(double time, double value, int index) {
         it = setKeyFrameValueAndTimeNoUpdate(value,time, it);
         evaluateCurveChanged(KEYFRAME_CHANGED,it);
     }
+    return *it;
 }
 
-void Curve::setKeyFrameLeftTangent(double value, int index){
+const KeyFrame& Curve::setKeyFrameLeftTangent(double value, int index){
     
     KeyFrameSet::iterator it = find(index);
     assert(it != _imp->keyFrames.end());
@@ -397,9 +401,10 @@ void Curve::setKeyFrameLeftTangent(double value, int index){
         it = addKeyFrame(newKey);
         evaluateCurveChanged(TANGENT_CHANGED,it);
     }
+    return *it;
 }
 
-void Curve::setKeyFrameRightTangent(double value, int index){
+const KeyFrame &Curve::setKeyFrameRightTangent(double value, int index){
     KeyFrameSet::iterator it = find(index);
     assert(it != _imp->keyFrames.end());
     
@@ -409,9 +414,10 @@ void Curve::setKeyFrameRightTangent(double value, int index){
         it = addKeyFrame(newKey);
         evaluateCurveChanged(TANGENT_CHANGED,it);
     }
+    return *it;
 }
 
-void Curve::setKeyFrameTangents(double left, double right, int index){
+const KeyFrame &Curve::setKeyFrameTangents(double left, double right, int index){
     KeyFrameSet::iterator it = find(index);
     assert(it != _imp->keyFrames.end());
     
@@ -422,11 +428,11 @@ void Curve::setKeyFrameTangents(double left, double right, int index){
         it = addKeyFrame(newKey);
         evaluateCurveChanged(TANGENT_CHANGED,it);
     }
-    
+    return *it;
 }
 
 
-void Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,int index){
+const KeyFrame &Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,int index){
     KeyFrameSet::iterator it = find(index);
     assert(it != _imp->keyFrames.end());
     
@@ -436,6 +442,7 @@ void Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,int index){
         it = addKeyFrame(newKey);
         evaluateCurveChanged(KEYFRAME_CHANGED,it);
     }
+    return *it;
 }
 
 

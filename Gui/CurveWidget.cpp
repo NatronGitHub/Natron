@@ -54,9 +54,16 @@ enum EventState {
     NONE = 5
 };
 
+
+struct SelectedKey_belongs_to_curve{
+    const CurveGui* _curve;
+    SelectedKey_belongs_to_curve(const CurveGui* curve) : _curve(curve){}
+
+    bool operator() (const SelectedKey& k) const {
+        return k.curve == _curve;
+    }
+};
 }
-
-
 
 CurveGui::CurveGui(const CurveWidget *curveWidget,
                    boost::shared_ptr<Curve> curve,
@@ -335,7 +342,7 @@ public:
 
     std::pair<CurveGui*,KeyFrame> isNearbyKeyFrame(const QPoint& pt) const;
 
-    std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator > isNearByTangent(const QPoint& pt) const;
+    std::pair<CurveGui::SelectedTangent, SelectedKey> isNearByTangent(const QPoint& pt) const;
 
     bool isNearbySelectedKeyFramesCrossWidget(const QPoint& pt) const;
 
@@ -358,7 +365,7 @@ public:
 
     void updateSelectedKeysMaxMovement();
     
-    void setKeysInterpolation(const std::vector<std::pair<CurveGui*,KeyFrame > >& keys,Natron::KeyframeType type);
+    void setSelectedKeysInterpolation(Natron::KeyframeType type);
 
 private:
 
@@ -393,7 +400,7 @@ public:
     QLineF _selectedKeyFramesCrossHorizLine;
     boost::shared_ptr<TimeLine> _timeline;
     bool _timelineEnabled;
-    std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator> _selectedTangent;
+    std::pair<CurveGui::SelectedTangent,SelectedKey> _selectedTangent;
     
 private:
 
@@ -825,7 +832,7 @@ std::pair<CurveGui*,KeyFrame> CurveWidgetPrivate::isNearbyKeyFrame(const QPoint&
     return std::make_pair((CurveGui*)NULL,KeyFrame());
 }
 
-std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator > CurveWidgetPrivate::isNearByTangent(const QPoint& pt) const {
+std::pair<CurveGui::SelectedTangent,SelectedKey > CurveWidgetPrivate::isNearByTangent(const QPoint& pt) const {
     for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it!=_selectedKeyFrames.end(); ++it) {
         QPointF leftTanPt = _widget->toWidgetCoordinates(it->leftTan.first,it->leftTan.second);
         QPointF rightTanPt = _widget->toWidgetCoordinates(it->rightTan.first,it->rightTan.second);
@@ -833,16 +840,16 @@ std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator > CurveWidgetPr
                 pt.x() <= (leftTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
                 pt.y() <= (leftTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
                 pt.y() >= (leftTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)) {
-            return std::make_pair(CurveGui::LEFT_TANGENT,it);
+            return std::make_pair(CurveGui::LEFT_TANGENT,*it);
         } else if (pt.x() >= (rightTanPt.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
                    pt.x() <= (rightTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
                    pt.y() <= (rightTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
                    pt.y() >= (rightTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE)) {
-            return std::make_pair(CurveGui::RIGHT_TANGENT,it);
+            return std::make_pair(CurveGui::RIGHT_TANGENT,*it);
         }
 
     }
-    return std::make_pair(CurveGui::LEFT_TANGENT,_selectedKeyFrames.end());
+    return std::make_pair(CurveGui::LEFT_TANGENT,SelectedKey());
 }
 
 bool CurveWidgetPrivate::isNearbySelectedKeyFramesCrossWidget(const QPoint& pt) const {
@@ -911,6 +918,33 @@ void CurveWidgetPrivate::keyFramesWithinRect(const QRectF& rect,std::vector< std
     }
 }
 
+struct MoveKey_functor{
+    bool _moveX;
+    double _lastKeyDrag;
+    double _totalDrag;
+    double _yTranslation;
+
+    MoveKey_functor(bool moveX,double lastKeyDrag,double totalDrag,double yTranslation)
+        : _moveX(moveX)
+        , _lastKeyDrag(lastKeyDrag)
+        , _totalDrag(totalDrag)
+        , _yTranslation(yTranslation)
+    {}
+
+    SelectedKey operator()(SelectedKey key){
+        double newX;
+        if (_moveX) {
+            newX = key.key.getTime() + _totalDrag - _lastKeyDrag;
+        } else {
+            newX = key.key.getTime();
+        }
+        double newY = key.key.getValue() + _yTranslation;
+        key.key = key.curve->getInternalCurve()->setKeyFrameValueAndTime(
+                    newX,newY, key.key.getTime());
+        return key;
+    }
+};
+
 void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,const QPointF& newClick_opengl) {
     QPointF dragStartPointOpenGL = _widget->toScaleCoordinates(_dragStartPoint.x(),_dragStartPoint.y());
     QPointF translation = (newClick_opengl - oldClick_opengl);
@@ -940,17 +974,12 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
 
     if(!editor){
         //no editor for undo/redo, just set keyframes positions 1 by 1
-        for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-            double newX;
-            if (_mouseDragOrientation.x() != 0) {
-                newX = it->key.getTime() + totalMovement - _keyDragLastMovement;
-            } else {
-                newX = it->key.getTime();
-            }
-            double newY = it->key.getValue() + translation.y();
-            it->curve->getInternalCurve()->setKeyFrameValueAndTime(newX,newY, it->key.getTime());
-        }
-
+        SelectedKeys copy;
+        std::transform(_selectedKeyFrames.begin(),_selectedKeyFrames.end(),
+                       std::inserter(copy,copy.begin()),
+                       MoveKey_functor(_mouseDragOrientation.x() != 0,_keyDragLastMovement
+                                       ,totalMovement,translation.y()));
+        _selectedKeyFrames = copy;
         _widget->refreshSelectedKeysBbox();
         //refresh now the tangents positions
         _widget->refreshDisplayedTangents();
@@ -969,10 +998,8 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
             //and also call refreshDisplayedTangents()
             KeyMove move;
             move.curve = it->curve;
-            move.oldX = it->key.getTime();
-            move.oldY = it->key.getValue();
-            move.newX = newX;
-            move.newY = newY;
+            move._old = it->key;
+            move._new = KeyFrame(newX,newY);
             editor->setKeyFrame(move);
         }else{
             //several keys, do a multiple move command
@@ -987,10 +1014,8 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
                 double newY = it->key.getValue() + translation.y();
                 KeyMove move;
                 move.curve = it->curve;
-                move.oldX = it->key.getTime();
-                move.oldY = it->key.getValue();
-                move.newX = newX;
-                move.newY = newY;
+                move._old = it->key;
+                move._new = KeyFrame(newX,newY);
                 moves.push_back(move);
             }
             //the editor redo() call will call refreshSelectedKeysBbox() for us
@@ -1008,9 +1033,10 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
 
 void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
 
-    assert(_selectedTangent.second != _selectedKeyFrames.end());
+    SelectedKeys::iterator existingKey = _selectedKeyFrames.find(_selectedTangent.second);
+    assert(existingKey != _selectedKeyFrames.end());
 
-    const SelectedKey& key = *_selectedTangent.second;
+    SelectedKey& key = _selectedTangent.second;
     const KeyFrameSet& keys = key.curve->getInternalCurve()->getKeyFrames();
 
     
@@ -1045,7 +1071,7 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
     // - if they KEYFRAME_BROKEN, move only one tangent
     // - else change to KEYFRAME_FREE and move both tangents
     if (setBothTangent) {
-        key.curve->getInternalCurve()->setKeyFrameInterpolation(KEYFRAME_FREE, key.key.getTime());
+        key.key = key.curve->getInternalCurve()->setKeyFrameInterpolation(KEYFRAME_FREE, key.key.getTime());
 
         //if dx is not of the good sign it would make the curve uncontrollable
         if (_selectedTangent.first == CurveGui::LEFT_TANGENT) {
@@ -1069,10 +1095,10 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
         } else {
             rightTan = dy / dx;
         }
-        key.curve->getInternalCurve()->setKeyFrameTangents(leftTan, rightTan, key.key.getTime());
+        key.key = key.curve->getInternalCurve()->setKeyFrameTangents(leftTan, rightTan, key.key.getTime());
 
     } else {
-        key.curve->getInternalCurve()->setKeyFrameInterpolation(KEYFRAME_BROKEN, key.key.getTime());
+        key.key = key.curve->getInternalCurve()->setKeyFrameInterpolation(KEYFRAME_BROKEN, key.key.getTime());
         if (_selectedTangent.first == CurveGui::LEFT_TANGENT) {
             //if dx is not of the good sign it would make the curve uncontrollable
             if (dx < 0) {
@@ -1085,7 +1111,7 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
             } else {
                 leftTan = dy / dx;
             }
-            key.curve->getInternalCurve()->setKeyFrameLeftTangent(leftTan, key.key.getTime());
+            key.key = key.curve->getInternalCurve()->setKeyFrameLeftTangent(leftTan, key.key.getTime());
 
         } else {
             //if dx is not of the good sign it would make the curve uncontrollable
@@ -1099,17 +1125,14 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
             } else {
                 rightTan = dy / dx;
             }
-            key.curve->getInternalCurve()->setKeyFrameRightTangent(rightTan,key.key.getTime());
+            key.key = key.curve->getInternalCurve()->setKeyFrameRightTangent(rightTan,key.key.getTime());
         }
     }
-    SelectedKey newSelectedKey(key);
-    refreshKeyTangentsGUI(&newSelectedKey);
-
+    refreshKeyTangentsGUI(&key);
     //erase the existing key in the set and replace it with the new one
-    _selectedKeyFrames.erase(_selectedTangent.second);
-    std::pair<SelectedKeys::iterator,bool> ret = _selectedKeyFrames.insert(newSelectedKey);
+    _selectedKeyFrames.erase(existingKey);
+    std::pair<SelectedKeys::iterator,bool> ret = _selectedKeyFrames.insert(key);
     assert(ret.second);
-    _selectedTangent.second = ret.first;
 }
 
 void CurveWidgetPrivate::refreshKeyTangentsGUI(SelectedKey* key) {
@@ -1242,53 +1265,45 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
             const KeyFrameSet& ks = it->curve->getInternalCurve()->getKeyFrames();
             
             //find out in this set what is the first key selected
-            KeyFrameSet::const_iterator leftMostSelected = ks.end();
-            KeyFrameSet::const_reverse_iterator rightMostSelected = ks.rend();//< watch out this is a reverse iterator
-            
-            //find in increasing order what is the first selected
-            for (KeyFrameSet::const_iterator it2 = ks.begin(); it2 != ks.end(); ++it2) {
-                //search it in the _keyframeSelected
-                SelectedKeys::const_iterator foundAsSelected = _selectedKeyFrames.find(SelectedKey(it->curve,*it2));
-                if(foundAsSelected != _selectedKeyFrames.end()){
-                    leftMostSelected = it2;
-                    break;
-                }
-            }
-            
-            //find in reverse order what is the last selected
-            
-            for (KeyFrameSet::const_reverse_iterator it2 = ks.rbegin(); it2 != ks.rend(); ++it2) {
-                //search it in the _keyframeSelected
-                SelectedKeys::const_iterator foundAsSelected = _selectedKeyFrames.find(SelectedKey(it->curve,*it2));
-                if(foundAsSelected != _selectedKeyFrames.end()){
-                    rightMostSelected = it2;
-                    break;
-                }
-            }
+            SelectedKeys::const_iterator leftMostSelected = std::find_if(
+                        _selectedKeyFrames.begin(),_selectedKeyFrames.end(),SelectedKey_belongs_to_curve(it->curve));
+
+            // watch out this is a reverse iterator
+            SelectedKeys::const_reverse_iterator rightMostSelected = std::find_if(
+                        _selectedKeyFrames.rbegin(),_selectedKeyFrames.rend(),SelectedKey_belongs_to_curve(it->curve));
             
             //there must be a left most and right most! but they can be the same key
-            assert(leftMostSelected != ks.end() && rightMostSelected != ks.rend());
+            assert(leftMostSelected != _selectedKeyFrames.end() && rightMostSelected != _selectedKeyFrames.rend());
+
+            KeyFrameSet::const_iterator leftMost = ks.find(leftMostSelected->key);
+            KeyFrameSet::const_iterator rightMost = ks.find(rightMostSelected->key);
+
+            assert(leftMost != ks.end() && rightMost != ks.end());
 
             QPointF curveMaxMovement;
             //now get leftMostSelected's previous key to determine the max left movement for this curve
             {
-                if(leftMostSelected == ks.begin()){
+                if(leftMost == ks.begin()){
                     curveMaxMovement.setX(INT_MIN);
                 }else{
-                    KeyFrameSet::const_iterator prev = leftMostSelected;
+                    KeyFrameSet::const_iterator prev = leftMost;
                     --prev;
-                    curveMaxMovement.setX(prev->getTime() + 1 - leftMostSelected->getTime());
+                    curveMaxMovement.setX(prev->getTime() + 1 - leftMost->getTime());
+                    assert(curveMaxMovement.x() <= 0);
                 }
             }
             
             //now get rightMostSelected's next key to determine the max right movement for this curve
             {
-                if(rightMostSelected == ks.rbegin()){
-                    curveMaxMovement.setX(INT_MAX);
+                KeyFrameSet::const_iterator next = rightMost;
+                ++next;
+                if(next == ks.end()){
+                    curveMaxMovement.setY(INT_MAX);
                 }else{
-                    KeyFrameSet::const_reverse_iterator next = rightMostSelected;
-                    --next; //< because it is reverse
-                    curveMaxMovement.setX(next->getTime() - 1 - rightMostSelected->getTime());
+
+                    curveMaxMovement.setY(next->getTime() - 1 - rightMost->getTime());
+                    assert(curveMaxMovement.y() >= 0);
+
                 }
             }
             curvesMaxMovements.insert(std::make_pair(it->curve, curveMaxMovement));
@@ -1304,24 +1319,40 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
     
     for (std::map<CurveGui*,QPointF>::const_iterator it = curvesMaxMovements.begin(); it!= curvesMaxMovements.end(); ++it) {
         const QPointF& pt = it->second;
-        
+        assert(pt.x() <= 0 && _keyDragMaxMovement.x() <= 0);
         //get the minimum for the left movement (numbers are all negatives here)
         if(pt.x() > _keyDragMaxMovement.x()){
             _keyDragMaxMovement.setX(pt.x());
         }
         
+        assert(pt.y() >= 0 && _keyDragMaxMovement.y() >= 0);
         //get the minimum for the right movement (numbers are all positives here)
         if(pt.y() < _keyDragMaxMovement.y()){
             _keyDragMaxMovement.setY(pt.y());
         }
         
     }
-    
+    assert(_keyDragMaxMovement.x() <= 0 && _keyDragMaxMovement.y() >= 0);
+
     _keyDragLastMovement = 0.;
 
 }
 
-void CurveWidgetPrivate::setKeysInterpolation(const std::vector<std::pair<CurveGui*,KeyFrame> >& keys,Natron::KeyframeType type){
+
+struct ChangeInterpolation_functor{
+    Natron::KeyframeType _type;
+    ChangeInterpolation_functor(Natron::KeyframeType type)
+        : _type(type)
+    {}
+
+    SelectedKey operator()(SelectedKey key){
+        key.key = key.curve->getInternalCurve()->setKeyFrameInterpolation(_type,key.key.getTime());
+        return key;
+    }
+};
+
+
+void CurveWidgetPrivate::setSelectedKeysInterpolation(Natron::KeyframeType type){
     
     //if the parent widget is the editor, use its undo/redo stack.
     CurveEditor* editor = NULL;
@@ -1335,34 +1366,35 @@ void CurveWidgetPrivate::setKeysInterpolation(const std::vector<std::pair<CurveG
     
     //if the curve widget is the one owned by the curve editor use the undo/redo stack
     if(editor){
-        if(keys.size() > 1){
+        if(_selectedKeyFrames.size() > 1){
             //do a multiple change at once
             std::vector<KeyInterpolationChange> changes;
-            for(U32 i = 0; i < keys.size();++i){
+            for(SelectedKeys::iterator it = _selectedKeyFrames.begin();it!=_selectedKeyFrames.end();++it){
                 KeyInterpolationChange change;
-                change.curve = keys[i].first;
-                change.oldInterp = keys[i].second.getInterpolation();
+                change.curve = it->curve;
+                change.oldInterp = it->key.getInterpolation();
                 change.newInterp = type;
-                change.time = keys[i].second.getTime();
+                change.key = it->key;
                 changes.push_back(change);
             }
             editor->setKeysInterpolation(changes);
-        }else if(keys.size() == 1){
+        }else if(_selectedKeyFrames.size() == 1){
             //just do 1 undo/redo change
 
             KeyInterpolationChange change;
-            change.curve = keys.front().first;
-            change.oldInterp = keys.front().second.getInterpolation();
+            change.curve = _selectedKeyFrames.begin()->curve;
+            change.oldInterp = _selectedKeyFrames.begin()->key.getInterpolation();
             change.newInterp = type;
-            change.time = keys.front().second.getTime();
+            change.key = _selectedKeyFrames.begin()->key;
             editor->setKeyInterpolation(change);
         }
     }else{
         //just change interpolation 1 by 1
-        for(U32 i = 0; i < keys.size();++i){
-            keys[i].first->getInternalCurve()->setKeyFrameInterpolation(keys[i].second.getInterpolation(), keys[i].second.getTime());
-        }
-        _widget->updateGL();
+        SelectedKeys copy;
+        std::transform(_selectedKeyFrames.begin(),_selectedKeyFrames.end(),
+                       std::inserter(copy,copy.begin()),ChangeInterpolation_functor(type));
+        _selectedKeyFrames = copy;
+        _widget->refreshDisplayedTangents();
     }
 }
 
@@ -1621,9 +1653,9 @@ void CurveWidget::mousePressEvent(QMouseEvent *event) {
         }
         SelectedKey selected(selectedKey.first,selectedKey.second);
         
-         _imp->refreshKeyTangentsGUI(&selected);
+        _imp->refreshKeyTangentsGUI(&selected);
 
-         //insert it into the _selectedKeyFrames
+        //insert it into the _selectedKeyFrames
         std::pair<SelectedKeys::iterator,bool> insertRet = _imp->_selectedKeyFrames.insert(selected);
         if(!insertRet.second){
             _imp->_selectedKeyFrames.erase(insertRet.first);
@@ -1639,10 +1671,10 @@ void CurveWidget::mousePressEvent(QMouseEvent *event) {
     }
     ////
     // is the click near a tangent manipulator?
-    std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator > selectedTan = _imp->isNearByTangent(event->pos());
+    std::pair<CurveGui::SelectedTangent,SelectedKey > selectedTan = _imp->isNearByTangent(event->pos());
     
     //select the tangent only if it is not a constant keyframe
-    if (selectedTan.second != _imp->_selectedKeyFrames.end() && selectedTan.second->key.getInterpolation() != KEYFRAME_CONSTANT) {
+    if (selectedTan.second.curve && selectedTan.second.key.getInterpolation() != KEYFRAME_CONSTANT) {
         _imp->_mustSetDragOrientation = true;
         _imp->_state = DRAGGING_TANGENT;
         _imp->_selectedTangent = selectedTan;
@@ -1705,7 +1737,7 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
     //set cursor depending on the situation
 
     //find out if there is a nearby  tangent handle
-    std::pair<CurveGui::SelectedTangent,SelectedKeys::const_iterator > selectedTan = _imp->isNearByTangent(event->pos());
+    std::pair<CurveGui::SelectedTangent,SelectedKey > selectedTan = _imp->isNearByTangent(event->pos());
 
     //if the selected keyframes rectangle is drawn and we're nearby the cross
     if( _imp->_drawSelectedKeyFramesBbox && _imp->isNearbySelectedKeyFramesCrossWidget(event->pos())){
@@ -1716,7 +1748,7 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
         std::pair<CurveGui*,KeyFrame > selectedKey = _imp->isNearbyKeyFrame(event->pos());
 
         //if there's a keyframe or tangent handle nearby set the cursor to cross
-        if(selectedKey.first || selectedTan.second != _imp->_selectedKeyFrames.end()){
+        if(selectedKey.first || selectedTan.second.curve){
             setCursor(QCursor(Qt::CrossCursor));
         }else{
 
@@ -1987,75 +2019,56 @@ void CurveWidget::enterEvent(QEvent */*event*/){
     setFocus();
 }
 
+struct RefreshTangent_functor{
+    CurveWidgetPrivate* _imp;
+
+    RefreshTangent_functor(CurveWidgetPrivate* imp): _imp(imp){}
+
+    SelectedKey operator()(SelectedKey key){
+        _imp->refreshKeyTangentsGUI(&key);
+        return key;
+    }
+};
+
 void CurveWidget::refreshDisplayedTangents(){
     SelectedKeys copy;
-    for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        SelectedKey keyCopy(*it);
-        _imp->refreshKeyTangentsGUI(&keyCopy);
-        copy.insert(keyCopy);
-    }
-    _imp->_selectedKeyFrames.clear();
+    std::transform( _imp->_selectedKeyFrames.begin(), _imp->_selectedKeyFrames.end(),
+                    std::inserter(copy,copy.begin()),RefreshTangent_functor(_imp.get()));
+
     _imp->_selectedKeyFrames = copy;
     updateGL();
 }
 
-
-
-void CurveWidget::constantInterpForSelectedKeyFrames(){
-    
-    std::vector<std::pair<CurveGui*,KeyFrame > >keys;
-    for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        keys.push_back(std::make_pair(it->curve,it->key));
-    }
-    _imp->setKeysInterpolation(keys,KEYFRAME_CONSTANT);
+void CurveWidget::setSelectedKeys(const SelectedKeys& keys){
+    _imp->_selectedKeyFrames = keys;
 }
 
-void CurveWidget::linearInterpForSelectedKeyFrames(){
-    std::vector<std::pair<CurveGui*,KeyFrame > >keys;
-    for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        keys.push_back(std::make_pair(it->curve,it->key));
-    }
-    _imp->setKeysInterpolation(keys,KEYFRAME_LINEAR);
+void CurveWidget::constantInterpForSelectedKeyFrames(){  
+    _imp->setSelectedKeysInterpolation(KEYFRAME_CONSTANT);
+}
+
+void CurveWidget::linearInterpForSelectedKeyFrames(){ 
+    _imp->setSelectedKeysInterpolation(KEYFRAME_LINEAR);
 }
 
 void CurveWidget::smoothForSelectedKeyFrames(){
-    std::vector<std::pair<CurveGui*,KeyFrame > >keys;
-    for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        keys.push_back(std::make_pair(it->curve,it->key));
-    }
-    _imp->setKeysInterpolation(keys,KEYFRAME_SMOOTH);
+    _imp->setSelectedKeysInterpolation(KEYFRAME_SMOOTH);
 }
 
 void CurveWidget::catmullromInterpForSelectedKeyFrames(){
-    std::vector<std::pair<CurveGui*,KeyFrame > >keys;
-    for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        keys.push_back(std::make_pair(it->curve,it->key));
-    }
-    _imp->setKeysInterpolation(keys,KEYFRAME_CATMULL_ROM);
+    _imp->setSelectedKeysInterpolation(KEYFRAME_CATMULL_ROM);
 }
 
 void CurveWidget::cubicInterpForSelectedKeyFrames(){
-    std::vector<std::pair<CurveGui*,KeyFrame > >keys;
-    for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        keys.push_back(std::make_pair(it->curve,it->key));
-    }
-    _imp->setKeysInterpolation(keys,KEYFRAME_CUBIC);
+    _imp->setSelectedKeysInterpolation(KEYFRAME_CUBIC);
 }
 
 void CurveWidget::horizontalInterpForSelectedKeyFrames(){
-    std::vector<std::pair<CurveGui*,KeyFrame > >keys;
-    for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        keys.push_back(std::make_pair(it->curve,it->key));
-    }
-    _imp->setKeysInterpolation(keys,KEYFRAME_HORIZONTAL);
+    _imp->setSelectedKeysInterpolation(KEYFRAME_HORIZONTAL);
 }
 
 void CurveWidget::breakTangentsForSelectedKeyFrames(){
-    std::vector<std::pair<CurveGui*,KeyFrame > >keys;
-    for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        keys.push_back(std::make_pair(it->curve,it->key));
-    }
-    _imp->setKeysInterpolation(keys,KEYFRAME_BROKEN);
+    _imp->setSelectedKeysInterpolation(KEYFRAME_BROKEN);
 }
 
 void CurveWidget::deleteSelectedKeyFrames(){
@@ -2143,7 +2156,7 @@ void CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve(){
         //this function will call updateGL() for us
         editor->addKeyFrames(curve, _imp->_keyFramesClipBoard);
     }
-   
+
 }
 
 void CurveWidget::selectAllKeyFrames(){

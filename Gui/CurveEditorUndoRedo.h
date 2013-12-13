@@ -99,8 +99,7 @@ private:
 struct KeyMove{
     CurveGui* curve;
     KnobGui* knob;
-    int oldX,newX;
-    double oldY,newY;
+    KeyFrame _old,_new;
 };
 
 
@@ -149,7 +148,7 @@ struct KeyInterpolationChange{
     Natron::KeyframeType oldInterp;
     Natron::KeyframeType newInterp;
     CurveGui* curve;
-    int time;
+    KeyFrame key;
     KnobGui* knob;
 };
 

@@ -156,19 +156,19 @@ public:
 
     void clearKeyFrames();
     
-    void setKeyFrameValue(double value,int index);
+    const KeyFrame &setKeyFrameValue(double value,int index);
     
-    void setKeyFrameTime(double time,int index);
+    const KeyFrame &setKeyFrameTime(double time,int index);
     
-    void setKeyFrameValueAndTime(double time,double value,int index);
+    const KeyFrame &setKeyFrameValueAndTime(double time,double value,int index);
+
+    const KeyFrame &setKeyFrameLeftTangent(double value,int index);
     
-    void setKeyFrameLeftTangent(double value,int index);
+    const KeyFrame &setKeyFrameRightTangent(double value,int index);
     
-    void setKeyFrameRightTangent(double value,int index);
+    const KeyFrame &setKeyFrameTangents(double left, double right,int index);
     
-    void setKeyFrameTangents(double left, double right,int index);
-    
-    void setKeyFrameInterpolation(Natron::KeyframeType interp,int index);
+    const KeyFrame &setKeyFrameInterpolation(Natron::KeyframeType interp,int index);
 
     KeyFrameSet::iterator find(int time);
 
