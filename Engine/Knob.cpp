@@ -259,6 +259,10 @@ boost::shared_ptr<Curve> Knob::getCurve(int dimension) const {
     return _imp->_curves[dimension];
 }
 
+bool Knob::isAnimated(int dimension) const {
+    return getCurve(dimension)->isAnimated();
+}
+
 const std::vector<boost::shared_ptr<Curve> >& Knob::getCurves() const{
     return _imp->_curves;
 }

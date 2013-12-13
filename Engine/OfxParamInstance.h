@@ -104,6 +104,7 @@ public:
     
     Knob* getKnob() const;
 
+    bool isAnimated() const;
 private:
     Double_Knob* _knob;
 };
@@ -158,7 +159,9 @@ public:
     OfxStatus get(OfxTime time, double&,double&,double&,double&);
     OfxStatus set(double,double,double,double);
     OfxStatus set(OfxTime time, double,double,double,double);
-    
+    OfxStatus derive(OfxTime time, double&, double&, double&, double&);
+    OfxStatus integrate(OfxTime time1, OfxTime time2, double&, double&, double&, double&);
+
     // callback which should set enabled state as appropriate
     virtual void setEnabled();
     
@@ -167,6 +170,8 @@ public:
     
     Knob* getKnob() const;
 
+    bool isAnimated(int dimension) const;
+    bool isAnimated() const;
 private:
     Color_Knob* _knob;
 };
@@ -179,7 +184,9 @@ public:
     OfxStatus get(OfxTime time, double&,double&,double&);
     OfxStatus set(double,double,double);
     OfxStatus set(OfxTime time, double,double,double);
-    
+    OfxStatus derive(OfxTime time, double&, double&, double&);
+    OfxStatus integrate(OfxTime time1, OfxTime time2, double&, double&, double&);
+
     // callback which should set enabled state as appropriate
     virtual void setEnabled();
     
@@ -188,6 +195,8 @@ public:
     
     Knob* getKnob() const;
 
+    bool isAnimated(int dimension) const;
+    bool isAnimated() const;
 private:
     Color_Knob* _knob;
 };
@@ -199,7 +208,9 @@ public:
     OfxStatus get(OfxTime time,double&,double&);
     OfxStatus set(double,double);
     OfxStatus set(OfxTime time,double,double);
-    
+    OfxStatus derive(OfxTime time, double&, double&);
+    OfxStatus integrate(OfxTime time1, OfxTime time2, double&, double&);
+
     // callback which should set enabled state as appropriate
     virtual void setEnabled();
     
@@ -208,6 +219,8 @@ public:
     
     Knob* getKnob() const;
 
+    bool isAnimated(int dimension) const;
+    bool isAnimated() const;
 private:
     Double_Knob* _knob;
 };
@@ -240,6 +253,8 @@ public:
     OfxStatus get(OfxTime time,double&,double&,double&);
     OfxStatus set(double,double,double);
     OfxStatus set(OfxTime time,double,double,double);
+    OfxStatus derive(OfxTime time, double&, double&, double&);
+    OfxStatus integrate(OfxTime time1, OfxTime time2, double&, double&, double&);
 
     // callback which should set enabled state as appropriate
     virtual void setEnabled();
@@ -249,6 +264,8 @@ public:
 
     Knob* getKnob() const;
 
+    bool isAnimated(int dimension) const;
+    bool isAnimated() const;
 private:
     Double_Knob* _knob;
 };
