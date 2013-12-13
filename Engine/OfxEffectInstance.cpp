@@ -171,9 +171,8 @@ bool OfxEffectInstance::isGeneratorAndFilter() const {
  This functions extracts the all parts of such a grouping, e.g in this case
  it would return [Toto,Superplugins,blabla].*/
 QStringList ofxExtractAllPartsOfGrouping(const QString& pluginLabel,const QString& str) {
-    
     QStringList out;
-    if(str.startsWith("Sapphire ")){
+    if (str.startsWith("Sapphire ") || str.startsWith(" Sapphire ")) {
         out.push_back("Sapphire");
     }
     int pos = 0;
