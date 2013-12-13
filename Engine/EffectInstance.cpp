@@ -415,6 +415,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                     image->markForRendered(*it);
                 }
             }else{ // fully_safe, we do multi-threaded rendering on small tiles
+#warning "FIXME: it is only possible in OFX if effect_->getHostFrameThreading() is 1"
                 std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(*it, QThread::idealThreadCount());
                 QFuture<Natron::Status> ret = QtConcurrent::mapped(splitRects,
                                           boost::bind(&EffectInstance::tiledRenderingFunctor,this,args,_1,image));
