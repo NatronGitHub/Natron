@@ -21,6 +21,7 @@
 #include <boost/archive/xml_oarchive.hpp>
 
 #include "Global/Enums.h"
+#include "Global/Macros.h"
 /**
  * @brief A KeyFrame is a lightweight pair <time,value>. These are the values that are used
  * to interpolate a Curve. The _leftTangent and _rightTangent can be
@@ -138,7 +139,7 @@ public:
 
     bool isAnimated() const;
 
-    KeyFrameSet::iterator addKeyFrame(const KeyFrame& cp);
+    void addKeyFrame(const KeyFrame key);
 
     void removeKeyFrame(int time);
 
@@ -166,17 +167,20 @@ public:
     
     const KeyFrame &setKeyFrameRightTangent(double value,int index);
     
-    const KeyFrame &setKeyFrameTangents(double left, double right,int index);
+    const KeyFrame &setKeyFrameTangents(double left, double right,int index) ;
     
     const KeyFrame &setKeyFrameInterpolation(Natron::KeyframeType interp,int index);
 
-    KeyFrameSet::iterator find(int time);
+    KeyFrameSet::const_iterator find(int time) const;
 
     KeyFrameSet::iterator end();
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 private:
+
+    KeyFrameSet::iterator addKeyFrameNoUpdate(const KeyFrame& cp);
+
 
     /**
      * @brief Called when a keyframe/tangent is modified, indicating that the curve has changed and we must

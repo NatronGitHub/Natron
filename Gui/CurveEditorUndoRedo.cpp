@@ -167,16 +167,13 @@ MoveMultipleKeysCommand::MoveMultipleKeysCommand(CurveWidget* editor, const KeyM
 void MoveMultipleKeysCommand::move(int dt,double dv){
     SelectedKeys newSelectedKeys;
     if(dt < 0){
-
         for(KeyMoveV::iterator it = _keys.begin();it!= _keys.end();++it){
             it->knob->getKnob()->beginValueChange(Natron::USER_EDITED);
             int newX = it->oldPos.getTime() + dt;
             double newY = it->oldPos.getValue() + dv;
-            it->curve->getInternalCurve()->setKeyFrameValueAndTime(newX, newY, it->oldPos.getTime());
-            KeyFrame newKey(it->oldPos);
-            newKey.setTime(newX);
-            newKey.setValue(newY);
-            newSelectedKeys.insert(SelectedKey(it->curve,newKey));
+            it->curve->getInternalCurve()->setKeyFrameValueAndTime(
+                        newX, newY, it->oldPos.getTime());
+
         }
 
     }else{
@@ -185,15 +182,18 @@ void MoveMultipleKeysCommand::move(int dt,double dv){
             it->knob->getKnob()->beginValueChange(Natron::USER_EDITED);
             int newX = it->oldPos.getTime() + dt;
             double newY = it->oldPos.getValue() + dv;
-            it->curve->getInternalCurve()->setKeyFrameValueAndTime(newX, newY, it->oldPos.getTime());
-            KeyFrame newKey(it->oldPos);
-            newKey.setTime(newX);
-            newKey.setValue(newY);
-            newSelectedKeys.insert(SelectedKey(it->curve,newKey));
+            it->curve->getInternalCurve()->setKeyFrameValueAndTime(
+                        newX, newY, it->oldPos.getTime());
+
+
         }
     }
 
+
+    //copy back the modified keyframes to the selectd keys
     for(KeyMoveV::iterator it = _keys.begin();it!= _keys.end();++it){
+        const Curve& c = *(it->curve->getInternalCurve());
+        newSelectedKeys.insert(SelectedKey(it->curve,*(c.find(it->oldPos.getTime() + dt))));
         it->knob->getKnob()->endValueChange(Natron::USER_EDITED);
 
     }
@@ -271,15 +271,16 @@ SetMultipleKeysInterpolationCommand::SetMultipleKeysInterpolationCommand(CurveWi
 
 void SetMultipleKeysInterpolationCommand::undo(){
     SelectedKeys newSelectedKeys;
-    for (U32 i = 0; i < _oldInterp.size();++i) {
-        _oldInterp[i].knob->getKnob()->beginValueChange(Natron::USER_EDITED);
-    }
+
     for(U32 i = 0; i < _oldInterp.size();++i){
+        _oldInterp[i].knob->getKnob()->beginValueChange(Natron::USER_EDITED);
         _oldInterp[i].key =  _oldInterp[i].curve->getInternalCurve()->setKeyFrameInterpolation(
                     _oldInterp[i].oldInterp, _oldInterp[i].key.getTime());
         newSelectedKeys.insert(SelectedKey(_oldInterp[i].curve,_oldInterp[i].key));
     }
     for (U32 i = 0; i < _oldInterp.size();++i) {
+        const Curve& c = *(_oldInterp[i].curve->getInternalCurve());
+        newSelectedKeys.insert(SelectedKey(_oldInterp[i].curve,*(c.find(_oldInterp[i].key.getTime()))));
         _oldInterp[i].knob->getKnob()->endValueChange(Natron::USER_EDITED);
     }
     _curveWidget->setSelectedKeys(newSelectedKeys);
@@ -289,15 +290,14 @@ void SetMultipleKeysInterpolationCommand::undo(){
 
 void SetMultipleKeysInterpolationCommand::redo(){
     SelectedKeys newSelectedKeys;
-    for (U32 i = 0; i < _oldInterp.size();++i) {
-        _oldInterp[i].knob->getKnob()->beginValueChange(Natron::USER_EDITED);
-    }
     for(U32 i = 0; i < _oldInterp.size();++i){
+        _oldInterp[i].knob->getKnob()->beginValueChange(Natron::USER_EDITED);
         _oldInterp[i].key = _oldInterp[i].curve->getInternalCurve()->setKeyFrameInterpolation(
                     _oldInterp[i].newInterp, _oldInterp[i].key.getTime());
-        newSelectedKeys.insert(SelectedKey(_oldInterp[i].curve,_oldInterp[i].key));
     }
     for (U32 i = 0; i < _oldInterp.size();++i) {
+        const Curve& c = *(_oldInterp[i].curve->getInternalCurve());
+        newSelectedKeys.insert(SelectedKey(_oldInterp[i].curve,*(c.find(_oldInterp[i].key.getTime()))));
         _oldInterp[i].knob->getKnob()->endValueChange(Natron::USER_EDITED);
     }
     _curveWidget->setSelectedKeys(newSelectedKeys);
