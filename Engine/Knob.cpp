@@ -398,7 +398,7 @@ void Knob::cloneValue(const Knob& other){
             const std::vector< boost::shared_ptr<Knob> >& holderKnobs = _imp->_holder->getKnobs();
             for(U32 i = 0 ; i < holderKnobs.size();++i)
             {
-                if(holderKnobs[i]->getDescription() == otherMasters[i]->getDescription()){
+                if(holderKnobs[i]->getDescription() == otherMasters[j]->getDescription()){
                     _imp->_masters[j] = holderKnobs[i];
                     break;
                 }
@@ -483,13 +483,20 @@ bool Knob::slaveTo(int dimension,boost::shared_ptr<Knob> other){
         return false;
     }
     _imp->_masters[dimension] = other;
-        //copy values and add keyframes
+    
+    //copy values and add keyframes
+//    _imp->_values[dimension] = other->getValue(dimension);
+//    _imp->_curves[dimension]->clone(*(other->getCurve(dimension)));
     return true;
 }
 
 
 void Knob::unSlave(int dimension){
     assert(isCurveSlave(dimension));
+    //copy the state before cloning
+    _imp->_values[dimension] =  _imp->_masters[dimension]->getValue(dimension);
+    _imp->_curves[dimension]->clone(*( _imp->_masters[dimension]->getCurve(dimension)));
+    
     _imp->_masters[dimension].reset();
 }
 
