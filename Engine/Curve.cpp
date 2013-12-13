@@ -175,7 +175,6 @@ KeyFrameSet::iterator Curve::addKeyFrame(const KeyFrame& cp)
         newKey = _imp->keyFrames.insert(cp);
         assert(newKey.second);
     }
-    refreshTangents(KEYFRAME_CHANGED, newKey.first);
     return newKey.first;
 }
 
@@ -441,7 +440,7 @@ void Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,int index){
 
 
 
-void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrameSet::iterator key){
+KeyFrameSet::iterator Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrameSet::iterator key){
     double tcur = key->getTime();
     double vcur = key->getValue();
     
@@ -490,21 +489,20 @@ void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrameSet::itera
     }
     
     double vcurDerivLeft,vcurDerivRight;
-    try{
-        Natron::autoComputeTangents<double>(prevType,
-                                            key->getInterpolation(),
-                                            nextType,
-                                            tprev, vprev,
-                                            tcur, vcur,
-                                            tnext, vnext,
-                                            vprevDerivRight,
-                                            vnextDerivLeft,
-                                            &vcurDerivLeft, &vcurDerivRight);
-    }catch(const std::exception& e){
-        std::cout << e.what() << std::endl;
-        assert(false);
-    }
-    
+
+    assert(key->getInterpolation() != Natron::KEYFRAME_NONE &&
+            key->getInterpolation() != Natron::KEYFRAME_BROKEN &&
+            key->getInterpolation() != Natron::KEYFRAME_FREE);
+    Natron::autoComputeTangents<double>(prevType,
+                                        key->getInterpolation(),
+                                        nextType,
+                                        tprev, vprev,
+                                        tcur, vcur,
+                                        tnext, vnext,
+                                        vprevDerivRight,
+                                        vnextDerivLeft,
+                                        &vcurDerivLeft, &vcurDerivRight);
+
     
     KeyFrame newKey(*key);
     newKey.setLeftTangent(vcurDerivLeft);
@@ -523,7 +521,7 @@ void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrameSet::itera
     if(reason != TANGENT_CHANGED){
         evaluateCurveChanged(TANGENT_CHANGED,key);
     }
-
+    return key;
 }
 
 

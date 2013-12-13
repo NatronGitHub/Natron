@@ -184,7 +184,7 @@ private:
      **/
     void evaluateCurveChanged(CurveChangedReason reason,KeyFrameSet::iterator key);
     
-    void refreshTangents(CurveChangedReason reason, KeyFrameSet::iterator key);
+    KeyFrameSet::iterator refreshTangents(CurveChangedReason reason, KeyFrameSet::iterator key);
 
     KeyFrameSet::iterator setKeyFrameValueAndTimeNoUpdate(double value,double time, KeyFrameSet::iterator k);
 
