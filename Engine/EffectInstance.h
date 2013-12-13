@@ -206,7 +206,7 @@ public:
     virtual bool isIdentity(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& /*roi*/,
                             int /*view*/,SequenceTime* /*inputTime*/,int* /*inputNb*/) WARN_UNUSED_RETURN { return false; }
     
-    enum RenderSafety{UNSAFE = 0,INSTANCE_SAFE = 1,FULLY_SAFE = 2};
+    enum RenderSafety{UNSAFE = 0,INSTANCE_SAFE = 1,FULLY_SAFE = 2,FULLY_SAFE_FRAME = 3};
     /**
      * @brief Indicates how many simultaneous renders the plugin can deal with.
      * RenderSafety::UNSAFE - indicating that only a single 'render' call can be made at any time amoung all instances,

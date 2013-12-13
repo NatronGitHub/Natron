@@ -394,37 +394,49 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
             /*depending on the thread-safety of the plug-in we render with a different
              amount of threads*/
             EffectInstance::RenderSafety safety = renderThreadSafety();
-            if(safety == UNSAFE){
-                QMutex* pluginLock = appPTR->getMutexForPlugin(pluginID().c_str());
-                assert(pluginLock);
-                pluginLock->lock();
-                Natron::Status st = render(time, scale, *it,view, image);
-                pluginLock->unlock();
-                if(st != Natron::StatOK){
-                    throw std::runtime_error("rendering failed");
-                }
-                if(!aborted()){
-                    image->markForRendered(*it);
-                }
-            }else if(safety == INSTANCE_SAFE){
-                Natron::Status st = render(time, scale, *it,view, image);
-                if(st != Natron::StatOK){
-                    throw std::runtime_error("rendering failed");
-                }
-                if(!aborted()){
-                    image->markForRendered(*it);
-                }
-            }else{ // fully_safe, we do multi-threaded rendering on small tiles
-#warning "FIXME: it is only possible in OFX if effect_->getHostFrameThreading() is 1"
-                std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(*it, QThread::idealThreadCount());
-                QFuture<Natron::Status> ret = QtConcurrent::mapped(splitRects,
-                                          boost::bind(&EffectInstance::tiledRenderingFunctor,this,args,_1,image));
-                ret.waitForFinished();
-                for (QFuture<Natron::Status>::const_iterator it = ret.begin(); it!=ret.end(); ++it) {
-                    if ((*it) == Natron::StatFailed) {
+            switch (safety) {
+                case FULLY_SAFE_FRAME: // the plugin will perform any per frame SMP threading
+                {
+                    // we can split the frame in tiles and do per frame SMP threading (see kOfxImageEffectPluginPropHostFrameThreading)
+                    std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(*it, QThread::idealThreadCount());
+                    QFuture<Natron::Status> ret = QtConcurrent::mapped(splitRects,
+                                                                       boost::bind(&EffectInstance::tiledRenderingFunctor,this,args,_1,image));
+                    ret.waitForFinished();
+                    for (QFuture<Natron::Status>::const_iterator it = ret.begin(); it!=ret.end(); ++it) {
+                        if ((*it) == Natron::StatFailed) {
+                            throw std::runtime_error("rendering failed");
+                        }
+                    }
+                } break;
+
+                case INSTANCE_SAFE: // indicating that any instance can have a single 'render' call at any one time,
+                case FULLY_SAFE:    // indicating that any instance of a plugin can have multiple renders running simultaneously
+                {
+                    Natron::Status st = render(time, scale, *it,view, image);
+                    if(st != Natron::StatOK){
                         throw std::runtime_error("rendering failed");
                     }
-                }
+                    if(!aborted()){
+                        image->markForRendered(*it);
+                    }
+                } break;
+
+
+                case UNSAFE: // indicating that only a single 'render' call can be made at any time amoung all instances
+                default:
+                {
+                    QMutex* pluginLock = appPTR->getMutexForPlugin(pluginID().c_str());
+                    assert(pluginLock);
+                    pluginLock->lock();
+                    Natron::Status st = render(time, scale, *it,view, image);
+                    pluginLock->unlock();
+                    if(st != Natron::StatOK){
+                        throw std::runtime_error("rendering failed");
+                    }
+                    if(!aborted()){
+                        image->markForRendered(*it);
+                    }
+                } break;
             }
         }
     } else {

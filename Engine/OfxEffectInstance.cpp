@@ -495,19 +495,21 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
 }
 
 EffectInstance::RenderSafety OfxEffectInstance::renderThreadSafety() const{
-    if(!effect_->getHostFrameThreading()){
-        return EffectInstance::INSTANCE_SAFE;
-    }
-    
     const std::string& safety = effect_->getRenderThreadSafety();
+    // TODO: cache this result
     if (safety == kOfxImageEffectRenderUnsafe) {
         return EffectInstance::UNSAFE;
-    }else if(safety == kOfxImageEffectRenderInstanceSafe){
+    }else if(safety == kOfxImageEffectRenderInstanceSafe) {
         return EffectInstance::INSTANCE_SAFE;
-    }else{
-        return EffectInstance::FULLY_SAFE;
+    }else if(safety == kOfxImageEffectRenderInstanceSafe) {
+        if (effect_->getHostFrameThreading()) {
+            return EffectInstance::FULLY_SAFE_FRAME;
+        } else {
+            return EffectInstance::FULLY_SAFE;
+        }
     }
-    
+    qDebug() << "Unknown thread safety level: " << safety.c_str();
+    return EffectInstance::UNSAFE;
 }
 
 bool OfxEffectInstance::makePreviewByDefault() const { return isGenerator() || isGeneratorAndFilter(); }
