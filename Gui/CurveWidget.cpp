@@ -1119,6 +1119,28 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
     _selectedKeyFrames.erase(existingKey);
     std::pair<SelectedKeys::iterator,bool> ret = _selectedKeyFrames.insert(key);
     assert(ret.second);
+    
+    //also refresh prev/next tangents gui if there're selected
+    if(prev != keys.begin()){
+        SelectedKey prevSelected(key.curve,*prev);
+        SelectedKeys::const_iterator foundPrev = _selectedKeyFrames.find(prevSelected);
+        if(foundPrev != _selectedKeyFrames.end()){
+            refreshKeyTangentsGUI(&prevSelected);
+            _selectedKeyFrames.erase(foundPrev);
+            _selectedKeyFrames.insert(prevSelected);
+        }
+    }
+    if(next != keys.end()){
+        SelectedKey nextSelected(key.curve,*next);
+        SelectedKeys::const_iterator foundNext = _selectedKeyFrames.find(nextSelected);
+        if(foundNext != _selectedKeyFrames.end()){
+            refreshKeyTangentsGUI(&nextSelected);
+            _selectedKeyFrames.erase(foundNext);
+            _selectedKeyFrames.insert(nextSelected);
+        }
+
+    }
+    
 }
 
 void CurveWidgetPrivate::refreshKeyTangentsGUI(SelectedKey* key) {
