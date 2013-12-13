@@ -1859,7 +1859,7 @@ void CurveWidget::wheelEvent(QWheelEvent *event) {
     double newZoomFactor = oldZoomFactor;
     const double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
 
-    if (event->modifiers().testFlag(Qt::AltModifier) && event->modifiers().testFlag(Qt::ShiftModifier)) {
+    if (event->modifiers().testFlag(Qt::ControlModifier) && event->modifiers().testFlag(Qt::ShiftModifier)) {
         // Alt + Shift + Wheel: zoom values only, keep point under mouse
         newAspectRatio *= scaleFactor;
         if (newAspectRatio <= 0.0001) {
@@ -1867,7 +1867,7 @@ void CurveWidget::wheelEvent(QWheelEvent *event) {
         } else if (newAspectRatio > 10000.) {
             newAspectRatio = 10000.;
         }
-    } else if (event->modifiers().testFlag(Qt::AltModifier)) {
+    } else if (event->modifiers().testFlag(Qt::ControlModifier)) {
         // Alt + Wheel: zoom time only, keep point under mouse
         newAspectRatio *= scaleFactor;
         newZoomFactor *= scaleFactor;
