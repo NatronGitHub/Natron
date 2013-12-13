@@ -352,7 +352,7 @@ public:
 
     void moveSelectedTangent(const QPointF& pos);
     
-    void refreshKeyTangentsGUI(const SelectedKey& key);
+    void refreshKeyTangentsGUI(SelectedKey* key);
 
     void refreshSelectionRectangle(double x,double y);
 
@@ -1102,17 +1102,24 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
             key.curve->getInternalCurve()->setKeyFrameRightTangent(rightTan,key.key.getTime());
         }
     }
-    refreshKeyTangentsGUI(key);
+    SelectedKey newSelectedKey(key);
+    refreshKeyTangentsGUI(&newSelectedKey);
+
+    //erase the existing key in the set and replace it with the new one
+    _selectedKeyFrames.erase(_selectedTangent.second);
+    std::pair<SelectedKeys::iterator,bool> ret = _selectedKeyFrames.insert(newSelectedKey);
+    assert(ret.second);
+    _selectedTangent.second = ret.first;
 }
 
-void CurveWidgetPrivate::refreshKeyTangentsGUI(const SelectedKey& key) {
+void CurveWidgetPrivate::refreshKeyTangentsGUI(SelectedKey* key) {
     double w = (double)_widget->width();
     double h = (double)_widget->height();
-    double x = key.key.getTime();
-    double y = key.key.getValue();
+    double x = key->key.getTime();
+    double y = key->key.getValue();
     QPointF keyWidgetCoord = _widget->toWidgetCoordinates(x,y);
-    const KeyFrameSet& keyframes = key.curve->getInternalCurve()->getKeyFrames();
-    KeyFrameSet::const_iterator k = keyframes.find(key.key);
+    const KeyFrameSet& keyframes = key->curve->getInternalCurve()->getKeyFrames();
+    KeyFrameSet::const_iterator k = keyframes.find(key->key);
     assert(k != keyframes.end());
 
     //find the previous and next keyframes on the curve to find out the  position of the tangents
@@ -1127,7 +1134,7 @@ void CurveWidgetPrivate::refreshKeyTangentsGUI(const SelectedKey& key) {
     double leftTanX, leftTanY;
     {
         double prevTime = (prev == keyframes.end()) ? (x - 1.) : prev->getTime();
-        double leftTan = key.key.getLeftTangent()/(x - prevTime);
+        double leftTan = key->key.getLeftTangent()/(x - prevTime);
         double leftTanXWidgetDiffMax = w / 8.;
         if (prev != keyframes.end()) {
             double prevKeyXWidgetCoord = _widget->toWidgetCoordinates(prevTime, 0).x();
@@ -1156,7 +1163,7 @@ void CurveWidgetPrivate::refreshKeyTangentsGUI(const SelectedKey& key) {
     double rightTanX, rightTanY;
     {
         double nextTime = (next == keyframes.end()) ? (x + 1.) : next->getTime();
-        double rightTan = key.key.getRightTangent()/(nextTime - x );
+        double rightTan = key->key.getRightTangent()/(nextTime - x );
         double rightTanXWidgetDiffMax = w / 8.;
         if (next != keyframes.end()) {
             double nextKeyXWidgetCoord = _widget->toWidgetCoordinates(nextTime, 0).x();
@@ -1182,19 +1189,10 @@ void CurveWidgetPrivate::refreshKeyTangentsGUI(const SelectedKey& key) {
         assert(std::abs(rightTanX - x) <= tanMax.x()*1.001); // check that they are effectively clamped (taking into account rounding errors)
         assert(std::abs(rightTanY - y) <= tanMax.y()*1.001);
     }
-    SelectedKey newKey(key);
-    newKey.leftTan.first = leftTanX;
-    newKey.leftTan.second = leftTanY;
-    newKey.rightTan.first = rightTanX;
-    newKey.rightTan.second = rightTanY;
-    
-    //remove 'key' and insert 'newKey'
-    SelectedKeys::const_iterator found = _selectedKeyFrames.find(key);
-    if(found != _selectedKeyFrames.end()){
-        _selectedKeyFrames.erase(found);
-    }
-    _selectedKeyFrames.insert(newKey);
-    
+    key->leftTan.first = leftTanX;
+    key->leftTan.second = leftTanY;
+    key->rightTan.first = rightTanX;
+    key->rightTan.second = rightTanY;
 }
 
 void CurveWidgetPrivate::refreshSelectionRectangle(double x,double y) {
@@ -1204,16 +1202,19 @@ void CurveWidgetPrivate::refreshSelectionRectangle(double x,double y) {
     double ymax = std::max(_dragStartPoint.y(),y);
     _selectionRectangle.setBottomRight(_widget->toScaleCoordinates(xmax,ymin));
     _selectionRectangle.setTopLeft(_widget->toScaleCoordinates(xmin,ymax));
+    _selectedKeyFrames.clear();
     std::vector< std::pair<CurveGui*,KeyFrame > > keyframesSelected;
     keyFramesWithinRect(_selectionRectangle,&keyframesSelected);
     for (U32 i = 0; i < keyframesSelected.size(); ++i) {
         SelectedKey newSelectedKey(keyframesSelected[i].first,keyframesSelected[i].second);
-        SelectedKeys::iterator it = _selectedKeyFrames.find(newSelectedKey);
-        if (it != _selectedKeyFrames.end()) {
-            _selectedKeyFrames.erase(it);
+        refreshKeyTangentsGUI(&newSelectedKey);
+        //insert it into the _selectedKeyFrames
+        std::pair<SelectedKeys::iterator,bool> insertRet = _selectedKeyFrames.insert(newSelectedKey);
+        if(!insertRet.second){
+            _selectedKeyFrames.erase(insertRet.first);
+            insertRet = _selectedKeyFrames.insert(newSelectedKey);
+            assert(insertRet.second);
         }
-        //this function will insert the newSelectedKey into the _selectedKeyFrames
-        refreshKeyTangentsGUI(newSelectedKey);
         
     }
     _widget->refreshSelectedKeysBbox();
@@ -1620,8 +1621,16 @@ void CurveWidget::mousePressEvent(QMouseEvent *event) {
         }
         SelectedKey selected(selectedKey.first,selectedKey.second);
         
-        //this function will insert the selected into _selectedKeyframes
-        _imp->refreshKeyTangentsGUI(selected);
+         _imp->refreshKeyTangentsGUI(&selected);
+
+         //insert it into the _selectedKeyFrames
+        std::pair<SelectedKeys::iterator,bool> insertRet = _imp->_selectedKeyFrames.insert(selected);
+        if(!insertRet.second){
+            _imp->_selectedKeyFrames.erase(insertRet.first);
+            insertRet = _imp->_selectedKeyFrames.insert(selected);
+            assert(insertRet.second);
+        }
+
         _imp->updateSelectedKeysMaxMovement();
         _imp->_zoomCtx._oldClick = event->pos();
         _imp->_dragStartPoint = event->pos();
@@ -1979,9 +1988,14 @@ void CurveWidget::enterEvent(QEvent */*event*/){
 }
 
 void CurveWidget::refreshDisplayedTangents(){
+    SelectedKeys copy;
     for(SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end();++it){
-        _imp->refreshKeyTangentsGUI(*it);
+        SelectedKey keyCopy(*it);
+        _imp->refreshKeyTangentsGUI(&keyCopy);
+        copy.insert(keyCopy);
     }
+    _imp->_selectedKeyFrames.clear();
+    _imp->_selectedKeyFrames = copy;
     updateGL();
 }
 
@@ -2134,13 +2148,21 @@ void CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve(){
 
 void CurveWidget::selectAllKeyFrames(){
     _imp->_drawSelectedKeyFramesBbox = true;
+    _imp->_selectedKeyFrames.clear();
     for (Curves::iterator it = _imp->_curves.begin() ; it != _imp->_curves.end() ; ++it) {
         if((*it)->isVisible()){
             const KeyFrameSet& keys = (*it)->getInternalCurve()->getKeyFrames();
             for( KeyFrameSet::const_iterator it2 = keys.begin(); it2!=keys.end();++it2){
                 SelectedKey newSelected(*it,*it2);
-                //this call will add the keyframe to the selected keyframes for us
-                _imp->refreshKeyTangentsGUI(newSelected);
+                _imp->refreshKeyTangentsGUI(&newSelected);
+
+                std::pair<SelectedKeys::iterator,bool> insertRet = _imp->_selectedKeyFrames.insert(newSelected);
+                if(!insertRet.second){
+                    _imp->_selectedKeyFrames.erase(insertRet.first);
+                    insertRet = _imp->_selectedKeyFrames.insert(newSelected);
+                    assert(insertRet.second);
+                }
+
             }
         }
     }
