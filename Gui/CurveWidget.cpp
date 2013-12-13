@@ -984,44 +984,26 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
         //refresh now the tangents positions
         _widget->refreshDisplayedTangents();
     }else{
-        if(_selectedKeyFrames.size() == 1){
-            //only 1 keyframe, do a single move undo command
-            SelectedKeys::const_iterator it = _selectedKeyFrames.begin();
-            double newX;
-            if (_mouseDragOrientation.x() != 0) {
-                newX = it->key.getTime() + totalMovement - _keyDragLastMovement;
-            } else {
-                newX = it->key.getTime();
-            }
-            double newY = it->key.getValue() + translation.y();
-            //the editor redo() call will call refreshSelectedKeysBbox() for us
-            //and also call refreshDisplayedTangents()
+
+        //several keys, do a multiple move command
+        std::vector<KeyMove> moves;
+        double dt;
+        if (_mouseDragOrientation.x() != 0) {
+            dt =  totalMovement - _keyDragLastMovement;
+        } else {
+            dt = 0;
+        }
+        double dv = translation.y();
+        for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
             KeyMove move;
             move.curve = it->curve;
-            move._old = it->key;
-            move._new = KeyFrame(newX,newY);
-            editor->setKeyFrame(move);
-        }else{
-            //several keys, do a multiple move command
-            std::vector<KeyMove> moves;
-            for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-                double newX;
-                if (_mouseDragOrientation.x() != 0) {
-                    newX = it->key.getTime() + totalMovement - _keyDragLastMovement;
-                } else {
-                    newX = it->key.getTime();
-                }
-                double newY = it->key.getValue() + translation.y();
-                KeyMove move;
-                move.curve = it->curve;
-                move._old = it->key;
-                move._new = KeyFrame(newX,newY);
-                moves.push_back(move);
-            }
-            //the editor redo() call will call refreshSelectedKeysBbox() for us
-            //and also call refreshDisplayedTangents()
-            editor->setKeyFrames(moves);
+            move.oldPos = it->key;
+            moves.push_back(move);
         }
+        //the editor redo() call will call refreshSelectedKeysBbox() for us
+        //and also call refreshDisplayedTangents()
+        editor->setKeyFrames(moves,dt,dv);
+
 
     }
 
@@ -1921,6 +1903,9 @@ void CurveWidget::wheelEvent(QWheelEvent *event) {
     _imp->_zoomCtx.aspectRatio = newAspectRatio;
     _imp->_zoomCtx.zoomFactor = newZoomFactor;
     
+    if(_imp->_drawSelectedKeyFramesBbox){
+        refreshSelectedKeysBbox();
+    }
     refreshDisplayedTangents();
     
     updateGL();

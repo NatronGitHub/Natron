@@ -490,7 +490,7 @@ void CurveEditor::removeKeyFrames(const std::vector< std::pair<CurveGui *,KeyFra
 
 
 
-void CurveEditor::setKeyFrame(KeyMove &move){
+void CurveEditor::setKeyFrame(KeyMove &move, int dt, double dv){
 
     //find the knob for this key
     for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
@@ -502,12 +502,15 @@ void CurveEditor::setKeyFrame(KeyMove &move){
         }
     }
 
-    _undoStack->push(new MoveKeyCommand(_curveWidget,move));
+    std::vector<KeyMove> moves;
+    moves.push_back(move);
+
+    _undoStack->push(new MoveMultipleKeysCommand(_curveWidget,moves,dt,dv));
 }
 
 
 
-void CurveEditor::setKeyFrames(std::vector<KeyMove> &keyMoves){
+void CurveEditor::setKeyFrames(std::vector<KeyMove> &keyMoves, int dt, double dv){
 
     //find the knob for each key
     for(U32 i = 0 ; i< keyMoves.size() ;++i){
@@ -520,7 +523,7 @@ void CurveEditor::setKeyFrames(std::vector<KeyMove> &keyMoves){
             }
         }
     }
-    _undoStack->push(new MoveMultipleKeysCommand(_curveWidget,keyMoves));
+    _undoStack->push(new MoveMultipleKeysCommand(_curveWidget,keyMoves,dt,dv));
 }
 
 

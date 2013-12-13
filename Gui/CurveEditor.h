@@ -140,10 +140,10 @@ public:
     void removeKeyFrames(const std::vector< std::pair<CurveGui *, KeyFrame > > &keys);
 
     //not a const-ref because we modify it
-    void setKeyFrame(KeyMove& move);
+    void setKeyFrame(KeyMove& move,int dt,double dv);
 
     //not a const-ref because we modify it
-    void setKeyFrames(std::vector<KeyMove> &keyMoves);
+    void setKeyFrames(std::vector<KeyMove> &keyMoves,int dt,double dv);
     
     CurveGui* findCurve(KnobGui* knob,int dimension);
     

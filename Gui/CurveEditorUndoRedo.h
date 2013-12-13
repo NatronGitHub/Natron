@@ -99,28 +99,11 @@ private:
 struct KeyMove{
     CurveGui* curve;
     KnobGui* knob;
-    KeyFrame _old,_new;
+    KeyFrame oldPos;
 };
 
 
-class MoveKeyCommand : public QUndoCommand{
-
-public:
-
-    MoveKeyCommand(CurveWidget* editor,const KeyMove& move,QUndoCommand *parent = 0);
-    virtual void undo();
-    virtual void redo();
-    virtual int id() const ;
-    virtual bool mergeWith(const QUndoCommand * command);
-
-private:
-
-    KeyMove _move;
-    CurveWidget* _curveWidget;
-};
-
-
-//////////////////////////////MOVE MULTIPLE KEYS COMMAND//////////////////////////////////////////////
+typedef std::vector< KeyMove > KeyMoveV;
 
 class MoveMultipleKeysCommand : public QUndoCommand{
 
@@ -128,7 +111,7 @@ class MoveMultipleKeysCommand : public QUndoCommand{
 
 public:
 
-    MoveMultipleKeysCommand(CurveWidget* editor,const std::vector< KeyMove >& keys,QUndoCommand *parent = 0);
+    MoveMultipleKeysCommand(CurveWidget* editor,const KeyMoveV& keys,int dt,double dv,QUndoCommand *parent = 0);
     virtual ~MoveMultipleKeysCommand(){ _keys.clear(); }
     virtual void undo();
     virtual void redo();
@@ -137,7 +120,11 @@ public:
 
 private:
 
-    std::vector< KeyMove > _keys;
+    void move(int dt,double dv);
+
+    int _dt;
+    double _dv;
+    KeyMoveV _keys;
     CurveWidget* _curveWidget;
 };
 
