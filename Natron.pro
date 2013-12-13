@@ -29,6 +29,14 @@ trace_ofx_actions{
     DEFINES += OFX_DEBUG_ACTIONS
 }
 
+trace_ofx_params{
+    DEFINES += OFX_DEBUG_PARAMETERS
+}
+
+trace_ofx_properties{
+    DEFINES += OFX_DEBUG_PROPERTIES
+}
+
 unix {
      #  on Unix systems, only the "boost" option needs to be defined in config.pri
      QT_CONFIG -= no-pkg-config
