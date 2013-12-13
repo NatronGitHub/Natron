@@ -555,7 +555,8 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason, KeyFrameSet::iterato
     if(key != _imp->keyFrames.begin()){
         --prev;
         if(prev->getInterpolation()!= Natron::KEYFRAME_BROKEN &&
-           prev->getInterpolation()!= Natron::KEYFRAME_FREE){
+           prev->getInterpolation()!= Natron::KEYFRAME_FREE &&
+           prev->getInterpolation()!= Natron::KEYFRAME_NONE){
             refreshTangents(TANGENT_CHANGED,prev);
         }
     }
@@ -563,7 +564,8 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason, KeyFrameSet::iterato
     ++next;
     if(next != _imp->keyFrames.end()){
         if(next->getInterpolation()!= Natron::KEYFRAME_BROKEN &&
-           next->getInterpolation()!= Natron::KEYFRAME_FREE){
+           next->getInterpolation()!= Natron::KEYFRAME_FREE &&
+           next->getInterpolation()!= Natron::KEYFRAME_NONE){
             refreshTangents(TANGENT_CHANGED,next);
         }
     }
