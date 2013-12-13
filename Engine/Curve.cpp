@@ -509,7 +509,16 @@ void Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrameSet::itera
     KeyFrame newKey(*key);
     newKey.setLeftTangent(vcurDerivLeft);
     newKey.setRightTangent(vcurDerivRight);
-    key = addKeyFrame(newKey);
+
+    std::pair<KeyFrameSet::iterator,bool> newKeyIt = _imp->keyFrames.insert(newKey);
+
+    // keyframe at this time exists, erase and insert again
+    if(!newKeyIt.second){
+        _imp->keyFrames.erase(newKeyIt.first);
+        newKeyIt = _imp->keyFrames.insert(newKey);
+        assert(newKeyIt.second);
+    }
+    key = newKeyIt.first;
     
     if(reason != TANGENT_CHANGED){
         evaluateCurveChanged(TANGENT_CHANGED,key);
