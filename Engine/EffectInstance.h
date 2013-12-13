@@ -44,6 +44,7 @@ public:
     typedef std::map<EffectInstance*,RectI> RoIMap;
 public:
     
+    enum CachePolicy { ALWAYS_CACHE = 0 , NEVER_CACHE };
     
     /**
      * @brief Constructor used once for each node created. Its purpose is to create the "live instance".
@@ -354,6 +355,12 @@ public:
      * handling on his side.
      **/
     virtual void purgeCaches(){};
+    
+    /**
+     * @brief Can be overloaded to indicate whether a plug-in wants to cache
+     * a frame rendered or not.
+     **/
+    virtual CachePolicy getCachePolicy(SequenceTime /*time*/) const { return ALWAYS_CACHE; }
     
     /**
      * @brief When called, if the node holding this effect  is connected to any

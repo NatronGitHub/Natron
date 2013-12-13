@@ -28,7 +28,7 @@ namespace Natron{
     
     class FrameKey : public KeyHelper<U64>{
     public:
-        SequenceTime _frameNb;
+        SequenceTime _time;
         U64 _treeVersion;
         double _zoomFactor;
         double _exposure;
@@ -43,7 +43,7 @@ namespace Natron{
         
         FrameKey()
 		: KeyHelper<U64>()
-        , _frameNb(0)
+        , _time(0)
         , _treeVersion(0)
         , _zoomFactor(0)
         , _exposure(0)
@@ -58,7 +58,7 @@ namespace Natron{
         
         FrameKey(KeyHelper<U64>::hash_type hash)
 		: KeyHelper<U64>(hash)
-        , _frameNb(0)
+        , _time(0)
         , _treeVersion(0)
         , _zoomFactor(0)
         , _exposure(0)
@@ -71,11 +71,11 @@ namespace Natron{
         , _textureRect()
         {}
         
-        FrameKey(SequenceTime frameNb,U64 treeVersion,double zoomFactor,double exposure,
+        FrameKey(SequenceTime time,U64 treeVersion,double zoomFactor,double exposure,
                  double lut,double byteMode,int channels,int view,
                  const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect):
         KeyHelper<U64>()
-        ,_frameNb(frameNb)
+        ,_time(time)
         ,_treeVersion(treeVersion)
         ,_zoomFactor(zoomFactor)
         ,_exposure(exposure)
@@ -91,12 +91,13 @@ namespace Natron{
         }
         
         void fillHash(Hash64* hash) const {
-            hash->append(_frameNb);
+            //time doesn't belong to the hash because it is already involved in the _treeVersion
+            
             hash->append(_treeVersion);
-            hash->append(_zoomFactor);
-            hash->append(_exposure);
-            hash->append(_lut);
-            hash->append(_byteMode);
+            hash->append(*reinterpret_cast<const U64*>(&_zoomFactor));
+            hash->append(*reinterpret_cast<const U64*>(&_exposure));
+            hash->append(_lut); //not really a double
+            hash->append(_byteMode); // not really a double
             hash->append(_channels);
             hash->append(_view);
             hash->append(_dataWindow.left());
@@ -107,7 +108,8 @@ namespace Natron{
             hash->append(_displayWindow.right());
             hash->append(_displayWindow.top());
             hash->append(_displayWindow.bottom());
-            hash->append(_displayWindow.getPixelAspect());
+            double ap = _displayWindow.getPixelAspect();
+            hash->append(*reinterpret_cast<const U64*>(&ap));
             hash->append(_textureRect.x);
             hash->append(_textureRect.y);
             hash->append(_textureRect.r);
@@ -117,8 +119,7 @@ namespace Natron{
         }
         
         bool operator==(const FrameKey& other) const {
-            return _frameNb == other._frameNb &&
-                    _treeVersion == other._treeVersion &&
+            return  _treeVersion == other._treeVersion &&
                     _zoomFactor == other._zoomFactor &&
                     _exposure == other._exposure &&
                     _lut == other._lut &&
@@ -139,7 +140,7 @@ namespace boost {
         void serialize(Archive & ar, Natron::FrameKey & f, const unsigned int version)
         {
             (void)version;
-            ar & f._frameNb;
+            ar & f._time;
             ar & f._treeVersion;
             ar & f._zoomFactor;
             ar & f._exposure;
@@ -172,10 +173,10 @@ namespace Natron{
       
         ~FrameEntry(){ }
         
-        static FrameKey makeKey(SequenceTime frameNb,U64 treeVersion,double zoomFactor,double exposure,
+        static FrameKey makeKey(SequenceTime time,U64 treeVersion,double zoomFactor,double exposure,
                                 double lut,double byteMode,int channels,int view,
                                 const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect){
-            return FrameKey(frameNb,treeVersion,zoomFactor,exposure,lut,byteMode,channels,view,dataWindow,displayWindow,textureRect);
+            return FrameKey(time,treeVersion,zoomFactor,exposure,lut,byteMode,channels,view,dataWindow,displayWindow,textureRect);
         }
         
         U8* data() const {return _data.writable();}

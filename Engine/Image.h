@@ -67,8 +67,8 @@ namespace Natron{
         
         void fillHash(Hash64* hash) const{
             hash->append(_nodeHashKey);
-            hash->append(_renderScale.x);
-            hash->append(_renderScale.y);
+            hash->append(*reinterpret_cast<const U64*>(&_renderScale.x));
+            hash->append(*reinterpret_cast<const U64*>(&_renderScale.y));
             hash->append(_time);
             hash->append(_view);
         }

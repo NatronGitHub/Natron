@@ -695,6 +695,7 @@ void ViewerTab::onViewerChannelsChanged(int i){
             channels = ViewerInstance::A;
             break;
         default:
+            channels = ViewerInstance::RGBA;
             break;
     }
     _viewerNode->setDisplayChannels(channels);

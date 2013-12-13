@@ -216,3 +216,15 @@ Natron::Status Reader::render(SequenceTime time,RenderScale scale,const RectI& r
     return found->render(time,scale,roi,output);
 }
 
+Natron::EffectInstance::CachePolicy Reader::getCachePolicy(SequenceTime time) const {
+    //if we're in nearest mode and the frame could not be found do not cache it, otherwise
+    //we would cache multiple copies of the same frame
+    if(_missingFrameChoice->getValue<int>() == 0){
+        QString filename = _fileKnob->getRandomFrameName(time,false);
+        if(filename.isEmpty()){
+            return NEVER_CACHE;
+        }
+    }
+    return ALWAYS_CACHE;
+    
+}

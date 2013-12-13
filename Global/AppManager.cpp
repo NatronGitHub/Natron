@@ -1651,7 +1651,7 @@ void AppManager::removeFromNodeCache(boost::shared_ptr<Natron::Image> image){
 
 void AppManager::removeFromViewerCache(boost::shared_ptr<Natron::FrameEntry> texture){
     _viewerCache->removeEntry(texture);
-    emit imageRemovedFromNodeCache(texture->getKey()._frameNb);
+    emit imageRemovedFromNodeCache(texture->getKey()._time);
 }
 
 

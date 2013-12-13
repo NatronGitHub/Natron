@@ -208,7 +208,7 @@ public:
 
     virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE;
 
-
+    virtual Natron::EffectInstance::CachePolicy getCachePolicy(SequenceTime time) const OVERRIDE;
 
 private:
     
