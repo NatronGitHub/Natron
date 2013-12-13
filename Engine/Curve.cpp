@@ -197,13 +197,17 @@ void Curve::removeKeyFrame(int time) {
         KeyFrameSet::iterator prev = it;
         --prev;
         prevKey = *prev;
-        mustRefreshPrev = true;
+        mustRefreshPrev = prevKey.getInterpolation() != Natron::KEYFRAME_BROKEN &&
+                 prevKey.getInterpolation() != Natron::KEYFRAME_FREE &&
+                 prevKey.getInterpolation() != Natron::KEYFRAME_NONE;
     }
     KeyFrameSet::iterator next = it;
     ++next;
     if(next != _imp->keyFrames.end()){
         nextKey = *next;
-        mustRefreshNext = true;
+        mustRefreshNext = nextKey.getInterpolation() != Natron::KEYFRAME_BROKEN &&
+                nextKey.getInterpolation() != Natron::KEYFRAME_FREE &&
+                nextKey.getInterpolation() != Natron::KEYFRAME_NONE;
     }
     
     _imp->keyFrames.erase(it);
