@@ -167,10 +167,18 @@ OfxStatus OfxDoubleInstance::set(OfxTime time, double v){
 }
 
 OfxStatus OfxDoubleInstance::derive(OfxTime /*time*/, double& v) {
+#warning "TODO: Double, Double2D, Double3D, RGBA, RGB derive and integrate for animated params"
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
     v = 0;
     return kOfxStatOK;
 }
+
 OfxStatus OfxDoubleInstance::integrate(OfxTime time1, OfxTime time2, double& v) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
     v = _knob->getValue<double>() * (time2 - time1);
     return kOfxStatOK;
 }
@@ -187,6 +195,10 @@ void OfxDoubleInstance::setSecret() {
 
 Knob* OfxDoubleInstance::getKnob() const{
     return _knob;
+}
+
+bool OfxDoubleInstance::isAnimated() const {
+    return _knob->isAnimated(0);
 }
 
 OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
@@ -344,6 +356,24 @@ OfxStatus OfxRGBAInstance::set(OfxTime time, double r ,double g,double b,double 
     return kOfxStatOK;
 }
 
+OfxStatus OfxRGBAInstance::derive(OfxTime /*time*/, double&r ,double& g, double& b, double& a) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
+    r = g = b = a = 0;
+    return kOfxStatOK;
+}
+
+OfxStatus OfxRGBAInstance::integrate(OfxTime time1, OfxTime time2, double&r ,double& g, double& b, double& a) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
+    r = _knob->getValue<double>(0) * (time2 - time1);
+    g = _knob->getValue<double>(1) * (time2 - time1);
+    b = _knob->getValue<double>(2) * (time2 - time1);
+    a = _knob->getValue<double>(3) * (time2 - time1);
+    return kOfxStatOK;
+}
 
 // callback which should set enabled state as appropriate
 void OfxRGBAInstance::setEnabled(){
@@ -359,6 +389,13 @@ Knob* OfxRGBAInstance::getKnob() const{
     return _knob;
 }
 
+bool OfxRGBAInstance::isAnimated(int dimension) const {
+    return _knob->isAnimated(dimension);
+}
+
+bool OfxRGBAInstance::isAnimated() const {
+    return _knob->isAnimated(0) || _knob->isAnimated(1) || _knob->isAnimated(2) || _knob->isAnimated(3);
+}
 
 OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::RGBInstance(descriptor,node->effectInstance())
@@ -396,6 +433,24 @@ OfxStatus OfxRGBInstance::set(OfxTime time, double r,double g,double b){
     return kOfxStatOK;
 }
 
+OfxStatus OfxRGBInstance::derive(OfxTime /*time*/, double&r ,double& g, double& b) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
+    r = g = b  = 0;
+    return kOfxStatOK;
+}
+
+OfxStatus OfxRGBInstance::integrate(OfxTime time1, OfxTime time2, double&r ,double& g, double& b) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
+    r = _knob->getValue<double>(0) * (time2 - time1);
+    g = _knob->getValue<double>(1) * (time2 - time1);
+    b = _knob->getValue<double>(2) * (time2 - time1);
+    return kOfxStatOK;
+}
+
 // callback which should set enabled state as appropriate
 void OfxRGBInstance::setEnabled(){
     _knob->setEnabled(getEnabled());
@@ -410,6 +465,13 @@ Knob* OfxRGBInstance::getKnob() const{
     return _knob;
 }
 
+bool OfxRGBInstance::isAnimated(int dimension) const {
+    return _knob->isAnimated(dimension);
+}
+
+bool OfxRGBInstance::isAnimated() const {
+    return _knob->isAnimated(0) || _knob->isAnimated(1) || _knob->isAnimated(2);
+}
 
 OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance())
@@ -474,6 +536,23 @@ OfxStatus OfxDouble2DInstance::set(OfxTime time,double x1,double x2){
 	return kOfxStatOK;
 }
 
+OfxStatus OfxDouble2DInstance::derive(OfxTime /*time*/, double&x1 ,double& x2) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
+    x1 = x2 = 0;
+    return kOfxStatOK;
+}
+
+OfxStatus OfxDouble2DInstance::integrate(OfxTime time1, OfxTime time2, double&x1 ,double& x2) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
+    x1 = _knob->getValue<double>(0) * (time2 - time1);
+    x2 = _knob->getValue<double>(1) * (time2 - time1);
+    return kOfxStatOK;
+}
+
 // callback which should set enabled state as appropriate
 void OfxDouble2DInstance::setEnabled(){
     _knob->setEnabled(getEnabled());
@@ -488,6 +567,13 @@ Knob* OfxDouble2DInstance::getKnob() const{
     return _knob;
 }
 
+bool OfxDouble2DInstance::isAnimated(int dimension) const {
+    return _knob->isAnimated(dimension);
+}
+
+bool OfxDouble2DInstance::isAnimated() const {
+    return _knob->isAnimated(0) || _knob->isAnimated(1);
+}
 
 OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Integer2DInstance(descriptor,node->effectInstance())
@@ -626,6 +712,24 @@ OfxStatus OfxDouble3DInstance::set(OfxTime time, double x1, double x2, double x3
 	return kOfxStatOK;
 }
 
+OfxStatus OfxDouble3DInstance::derive(OfxTime /*time*/, double&x1 ,double& x2,double& x3) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
+    x1 = x2 = x3 = 0;
+    return kOfxStatOK;
+}
+
+OfxStatus OfxDouble3DInstance::integrate(OfxTime time1, OfxTime time2, double&x1 ,double& x2,double& x3) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
+    x1 = _knob->getValue<double>(0) * (time2 - time1);
+    x2 = _knob->getValue<double>(1) * (time2 - time1);
+    x3 = _knob->getValue<double>(2) * (time2 - time1);
+    return kOfxStatOK;
+}
+
 // callback which should set enabled state as appropriate
 void OfxDouble3DInstance::setEnabled() {
     _knob->setEnabled(getEnabled());
@@ -640,6 +744,13 @@ Knob* OfxDouble3DInstance::getKnob() const {
     return _knob;
 }
 
+bool OfxDouble3DInstance::isAnimated(int dimension) const {
+    return _knob->isAnimated(dimension);
+}
+
+bool OfxDouble3DInstance::isAnimated() const {
+    return _knob->isAnimated(0) || _knob->isAnimated(1) || _knob->isAnimated(2);
+}
 
 OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Integer3DInstance(descriptor,node->effectInstance())

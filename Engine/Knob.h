@@ -161,6 +161,8 @@ public:
 
     boost::shared_ptr<Curve> getCurve(int dimension = 0) const;
 
+    bool isAnimated(int dimension) const;
+
     const std::vector< boost::shared_ptr<Curve>  >& getCurves() const;
 
     void turnOffAnimation() ;
