@@ -49,7 +49,7 @@ public:
 
     PasteKeysCommand(CurveWidget *editor,NodeCurveEditorElement* element, const std::vector<KeyFrame> &keys, QUndoCommand *parent = 0);
 
-    virtual ~PasteKeysCommand() { _keys.clear() ;}
+    virtual ~PasteKeysCommand() {}
     virtual void undo();
     virtual void redo();
 private:
@@ -85,7 +85,7 @@ class RemoveMultipleKeysCommand : public QUndoCommand{
 public:
     RemoveMultipleKeysCommand(CurveWidget* editor,const std::vector< std::pair<NodeCurveEditorElement*,KeyFrame > >& curveEditorElement
                               ,QUndoCommand *parent = 0);
-    virtual ~RemoveMultipleKeysCommand() { _keys.clear(); }
+    virtual ~RemoveMultipleKeysCommand() { }
     virtual void undo();
     virtual void redo();
 
@@ -112,7 +112,7 @@ class MoveMultipleKeysCommand : public QUndoCommand{
 public:
 
     MoveMultipleKeysCommand(CurveWidget* editor,const KeyMoveV& keys,int dt,double dv,QUndoCommand *parent = 0);
-    virtual ~MoveMultipleKeysCommand(){ _keys.clear(); }
+    virtual ~MoveMultipleKeysCommand(){ }
     virtual void undo();
     virtual void redo();
     virtual int id() const ;
@@ -120,13 +120,31 @@ public:
 
 private:
 
-    void move(int dt,double dv);
+    void move(int dt, double dv, bool isundo);
 
+    bool _merge;
     int _dt;
     double _dv;
     KeyMoveV _keys;
     CurveWidget* _curveWidget;
 };
+
+
+//////////////////////////////SELECT COMMAND//////////////////////////////////////////////
+//stub command to break move cycles
+class SelectKeysCommand : public QUndoCommand{
+
+
+
+public:
+
+    SelectKeysCommand(QUndoCommand *parent = 0);
+    virtual ~SelectKeysCommand(){ }
+    virtual void undo(){}
+    virtual void redo(){}
+
+};
+
 
 
 //////////////////////////////SET KEY INTERPOLATION COMMAND//////////////////////////////////////////////

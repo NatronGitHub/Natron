@@ -169,6 +169,7 @@ void RemoveMultipleKeysCommand::redo(){
 MoveMultipleKeysCommand::MoveMultipleKeysCommand(CurveWidget* editor, const KeyMoveV &keys, int dt, double dv,
                                                  QUndoCommand *parent )
     : QUndoCommand(parent)
+    , _merge(!keys.empty())
     , _dt(dt)
     , _dv(dv)
     , _keys(keys)
@@ -176,16 +177,18 @@ MoveMultipleKeysCommand::MoveMultipleKeysCommand(CurveWidget* editor, const KeyM
 {
 }
 
-void MoveMultipleKeysCommand::move(int dt,double dv){
+void MoveMultipleKeysCommand::move(int dt,double dv, bool isundo){
     SelectedKeys newSelectedKeys;
     if(dt < 0){
         for(KeyMoveV::iterator it = _keys.begin();it!= _keys.end();++it){
             it->knob->getKnob()->beginValueChange(Natron::USER_EDITED);
             int newX = it->oldPos.getTime() + dt;
             double newY = it->oldPos.getValue() + dv;
-            it->curve->getInternalCurve()->setKeyFrameValueAndTime(
-                        newX, newY, it->oldPos.getTime());
-
+            std::cout << "move " << (isundo ? newX : it->oldPos.getTime()) << " to " << (isundo ? it->oldPos.getTime() : newX) <<std::endl;
+            it->oldPos = it->curve->getInternalCurve()->setKeyFrameValueAndTime(
+                        isundo ? it->oldPos.getTime() : newX,
+                        isundo ? it->oldPos.getValue() : newY,
+                        isundo ? newX : it->oldPos.getTime());
         }
 
     }else{
@@ -194,9 +197,11 @@ void MoveMultipleKeysCommand::move(int dt,double dv){
             it->knob->getKnob()->beginValueChange(Natron::USER_EDITED);
             int newX = it->oldPos.getTime() + dt;
             double newY = it->oldPos.getValue() + dv;
-            it->curve->getInternalCurve()->setKeyFrameValueAndTime(
-                        newX, newY, it->oldPos.getTime());
-
+            std::cout << "move " << (isundo ? newX : it->oldPos.getTime()) << " to " << (isundo ? it->oldPos.getTime() : newX) <<std::endl;
+            it->oldPos = it->curve->getInternalCurve()->setKeyFrameValueAndTime(
+                        isundo ? it->oldPos.getTime() : newX,
+                        isundo ? it->oldPos.getValue() : newY,
+                        isundo ? newX : it->oldPos.getTime());
 
         }
     }
@@ -205,23 +210,25 @@ void MoveMultipleKeysCommand::move(int dt,double dv){
     //copy back the modified keyframes to the selectd keys
     for(KeyMoveV::iterator it = _keys.begin();it!= _keys.end();++it){
         const Curve& c = *(it->curve->getInternalCurve());
-        newSelectedKeys.insert(SelectedKey(it->curve,*(c.find(it->oldPos.getTime() + dt))));
+        newSelectedKeys.insert(SelectedKey(it->curve,*(c.find(it->oldPos.getTime()))));
         it->knob->getKnob()->endValueChange(Natron::USER_EDITED);
 
     }
-    _curveWidget->setSelectedKeys(newSelectedKeys);
-    _curveWidget->refreshSelectedKeysBbox();
-    _curveWidget->refreshDisplayedTangents();
+    if(!_keys.empty()){
+        _curveWidget->setSelectedKeys(newSelectedKeys);
+        _curveWidget->refreshSelectedKeysBbox();
+        _curveWidget->refreshDisplayedTangents();
+    }
 
 }
 
 void MoveMultipleKeysCommand::undo(){
-    move(-_dt,-_dv);
+    move(_dt,_dv,true);
     setText(QObject::tr("Move multiple keys"));
 }
 
 void MoveMultipleKeysCommand::redo(){
-    move(_dt,_dv);
+    move(_dt,_dv,false);
     setText(QObject::tr("Move multiple keys"));
 
 }
@@ -229,7 +236,7 @@ void MoveMultipleKeysCommand::redo(){
 bool MoveMultipleKeysCommand::mergeWith(const QUndoCommand * command){
     const MoveMultipleKeysCommand* cmd = dynamic_cast<const MoveMultipleKeysCommand*>(command);
     if(cmd && cmd->id() == id()){
-        if(_keys.size() != cmd->_keys.size()){
+        if(!cmd->_merge){
             return false;
         }
         _dt += cmd->_dt;

@@ -557,6 +557,8 @@ void CurveEditor::setKeysInterpolation(std::vector<KeyInterpolationChange> &chan
     _undoStack->push(new SetMultipleKeysInterpolationCommand(_curveWidget,changes));
 }
 
+
+
 void CurveEditor::hideCurves(KnobGui* knob){
     for(int i = 0 ; i < knob->getKnob()->getDimension();++i){
         for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();

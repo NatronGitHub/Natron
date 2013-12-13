@@ -158,7 +158,6 @@ public:
     void setKeysInterpolation(std::vector<KeyInterpolationChange> &changes);
     
     
-    
 public slots:
     
     void onCurrentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*);

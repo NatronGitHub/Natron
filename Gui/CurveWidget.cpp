@@ -406,8 +406,8 @@ private:
 
     QColor _baseAxisColor;
     QColor _scaleColor;
-    QPointF _keyDragMaxMovement;
-    double _keyDragLastMovement;
+    QPoint _keyDragMaxMovement;
+    int _keyDragLastMovement;
     QPolygonF _timelineTopPoly;
     QPolygonF _timelineBtmPoly;
     CurveWidget* _widget;
@@ -964,7 +964,7 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
 
 
     //1st off, round to the nearest integer the keyframes total motion
-    double totalMovement = std::floor(newClick_opengl.x() - dragStartPointOpenGL.x() + 0.5);
+    int totalMovement = std::floor(newClick_opengl.x() - dragStartPointOpenGL.x() + 0.5);
     // clamp totalMovement to _keyDragMaxMovement
     if (totalMovement < 0) {
         totalMovement = std::max(totalMovement,_keyDragMaxMovement.x());
@@ -987,23 +987,27 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
 
         //several keys, do a multiple move command
         std::vector<KeyMove> moves;
-        double dt;
+        int dt;
         if (_mouseDragOrientation.x() != 0) {
             dt =  totalMovement - _keyDragLastMovement;
         } else {
             dt = 0;
         }
         double dv = translation.y();
-        for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-            KeyMove move;
-            move.curve = it->curve;
-            move.oldPos = it->key;
-            moves.push_back(move);
-        }
-        //the editor redo() call will call refreshSelectedKeysBbox() for us
-        //and also call refreshDisplayedTangents()
-        editor->setKeyFrames(moves,dt,dv);
 
+        if(dt != 0 || dv != 0){
+
+            for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
+                KeyMove move;
+                move.curve = it->curve;
+                move.oldPos = it->key;
+                moves.push_back(move);
+            }
+            //the editor redo() call will call refreshSelectedKeysBbox() for us
+            //and also call refreshDisplayedTangents()
+            editor->setKeyFrames(moves,dt,dv);
+
+        }
 
     }
 
@@ -1222,6 +1226,25 @@ void CurveWidgetPrivate::refreshSelectionRectangle(double x,double y) {
         }
         
     }
+
+    //the CurveEditor is reponsible for the undo/redo. In case this is the curveWidget's that belongs to the
+    //curve editor, use its undo/redo stack
+    CurveEditor* editor = NULL;
+    if (_widget->parentWidget()) {
+        if (_widget->parentWidget()->parentWidget()) {
+            if (_widget->parentWidget()->parentWidget()->objectName() == kCurveEditorObjectName) {
+                editor = dynamic_cast<CurveEditor*>(_widget->parentWidget()->parentWidget());
+            }
+        }
+    }
+    //we notify the undo stack of the editor that the selection changed and that it needs to stop merging
+    //move commands.
+    if(editor){
+        std::vector<KeyMove> empty;
+        editor->setKeyFrames(empty,0,0);
+    }
+
+
     _widget->refreshSelectedKeysBbox();
 }
 
@@ -1230,14 +1253,14 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
         return;
     }
 
-    std::map<CurveGui*,QPointF> curvesMaxMovements;
+    std::map<CurveGui*,QPoint> curvesMaxMovements;
     
     //for each curve that has keyframes selected,we want to find out the max movement possible on left/right
     // that means looking at the first selected key and last selected key of each curve and determining of
     //how much they can move
     for(SelectedKeys::const_iterator it = _selectedKeyFrames.begin();it!=_selectedKeyFrames.end();++it){
         
-        std::map<CurveGui*,QPointF>::iterator foundCurveMovement = curvesMaxMovements.find(it->curve);
+        std::map<CurveGui*,QPoint>::iterator foundCurveMovement = curvesMaxMovements.find(it->curve);
         
         if(foundCurveMovement != curvesMaxMovements.end()){
             //if we already computed the max movement for this curve, move on
@@ -1262,7 +1285,7 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
 
             assert(leftMost != ks.end() && rightMost != ks.end());
 
-            QPointF curveMaxMovement;
+            QPoint curveMaxMovement;
             //now get leftMostSelected's previous key to determine the max left movement for this curve
             {
                 if(leftMost == ks.begin()){
@@ -1299,8 +1322,8 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
     _keyDragMaxMovement.ry() = INT_MAX;
     
     
-    for (std::map<CurveGui*,QPointF>::const_iterator it = curvesMaxMovements.begin(); it!= curvesMaxMovements.end(); ++it) {
-        const QPointF& pt = it->second;
+    for (std::map<CurveGui*,QPoint>::const_iterator it = curvesMaxMovements.begin(); it!= curvesMaxMovements.end(); ++it) {
+        const QPoint& pt = it->second;
         assert(pt.x() <= 0 && _keyDragMaxMovement.x() <= 0);
         //get the minimum for the left movement (numbers are all negatives here)
         if(pt.x() > _keyDragMaxMovement.x()){
@@ -1630,6 +1653,17 @@ void CurveWidget::mousePressEvent(QMouseEvent *event) {
         _imp->_mustSetDragOrientation = true;
         _imp->_state = DRAGGING_KEYS;
         setCursor(QCursor(Qt::CrossCursor));
+
+        //get the previous selected key to determine whether we need to stop merging move commands
+        SelectedKey previouslySelectedKey;
+        bool hadASelectedKey = false;
+        if(_imp->_selectedKeyFrames.size() == 1){
+            previouslySelectedKey = *(_imp->_selectedKeyFrames.begin());
+            hadASelectedKey = true;
+        }
+
+
+
         if (!event->modifiers().testFlag(Qt::ControlModifier)) {
             _imp->_selectedKeyFrames.clear();
         }
@@ -1637,12 +1671,36 @@ void CurveWidget::mousePressEvent(QMouseEvent *event) {
         
         _imp->refreshKeyTangentsGUI(&selected);
 
+        bool mustStopMergingMoveCommands = hadASelectedKey && (
+                    previouslySelectedKey.curve != selected.curve ||
+                    previouslySelectedKey.key.getTime() != selected.key.getTime());
+
+
         //insert it into the _selectedKeyFrames
         std::pair<SelectedKeys::iterator,bool> insertRet = _imp->_selectedKeyFrames.insert(selected);
         if(!insertRet.second){
             _imp->_selectedKeyFrames.erase(insertRet.first);
             insertRet = _imp->_selectedKeyFrames.insert(selected);
             assert(insertRet.second);
+        }
+
+        if(mustStopMergingMoveCommands){
+            //the CurveEditor is reponsible for the undo/redo. In case this is the curveWidget's that belongs to the
+            //curve editor, use its undo/redo stack
+            CurveEditor* editor = NULL;
+            if (parentWidget()) {
+                if (parentWidget()->parentWidget()) {
+                    if (parentWidget()->parentWidget()->objectName() == kCurveEditorObjectName) {
+                        editor = dynamic_cast<CurveEditor*>(parentWidget()->parentWidget());
+                    }
+                }
+            }
+            //we notify the undo stack of the editor that the selection changed and that it needs to stop merging
+            //move commands.
+            if(editor){
+                std::vector<KeyMove> empty;
+                editor->setKeyFrames(empty,0,0);
+            }
         }
 
         _imp->updateSelectedKeysMaxMovement();
