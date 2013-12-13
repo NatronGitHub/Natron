@@ -242,11 +242,6 @@ public:
      **/
     void disconnectViewer();
     
-    /**
-     *@brief set the channels the viewer should display
-     **/
-    void setDisplayChannel(const Natron::ChannelSet& channels,bool yMode = false);
-    
     void stopDisplayingProgressBar();
     
     void backgroundColor(double &r,double &g,double &b);

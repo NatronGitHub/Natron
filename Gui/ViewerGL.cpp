@@ -186,7 +186,6 @@ struct ViewerGL::Implementation {
     , textFont(new QFont(NATRON_FONT, NATRON_FONT_SIZE_13))
     , overlay(true)
     , supportsGLSL(true)
-    , displayChannels(0.f)
     , drawProgressBar(false)
     , updatingTexture(false)
     , progressBarY(-1)
@@ -248,9 +247,6 @@ struct ViewerGL::Implementation {
     bool overlay;/*!< True if the user enabled overlay dispay*/
 
     bool supportsGLSL;/*!< True if the user has a GLSL version supporting everything requested.*/
-
-    // FIXME-seeabove: why a float to really represent an enum????
-    float displayChannels;
 
     bool drawProgressBar;
 
@@ -1010,8 +1006,6 @@ void ViewerGL::activateShaderRGB()
     _imp->shaderRGB->setUniformValue("expMult",  (GLfloat)_imp->viewerTab->getInternalNode()->getExposure());
     // FIXME-seeabove: why a float to really represent an enum????
     _imp->shaderRGB->setUniformValue("lut", (GLfloat)_imp->viewerTab->getInternalNode()->getLutType());
-    // FIXME-seeabove: why a float to really represent an enum????
-    _imp->shaderRGB->setUniformValue("channels", (GLfloat)_imp->displayChannels);
     
     
 }
@@ -1527,26 +1521,6 @@ float ViewerGL::byteMode() const {
     return appPTR->getCurrentSettings()._viewerSettings.byte_mode;
 }
 
-void ViewerGL::setDisplayChannel(const ChannelSet& channels,bool yMode){
-    if(yMode){
-        _imp->displayChannels = 5.f;
-        
-    }else{
-        if(channels == Natron::Mask_RGB || channels == Natron::Mask_RGBA)
-            _imp->displayChannels = 0.f;
-        else if((channels & Natron::Channel_red) == Natron::Channel_red)
-            _imp->displayChannels = 1.f;
-        else if((channels & Natron::Channel_green) == Natron::Channel_green)
-            _imp->displayChannels = 2.f;
-        else if((channels & Natron::Channel_blue) == Natron::Channel_blue)
-            _imp->displayChannels = 3.f;
-        else if((channels & Natron::Channel_alpha) == Natron::Channel_alpha)
-            _imp->displayChannels = 4.f;
-        
-    }
-    updateGL();
-    
-}
 
 void ViewerGL::stopDisplayingProgressBar()
 {

@@ -47,8 +47,7 @@ using namespace Natron;
 
 ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(parent),
 _gui(gui),
-_viewerNode(node),
-_channelsToDraw(Mask_RGBA)
+_viewerNode(node)
 {
     
     installEventFilter(this);
@@ -675,29 +674,30 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
 }
 
 void ViewerTab::onViewerChannelsChanged(int i){
+    ViewerInstance::DisplayChannels channels;
     switch (i) {
         case 0:
-            _channelsToDraw = Mask_RGBA;
+            channels = ViewerInstance::LUMINANCE;
             break;
         case 1:
-            _channelsToDraw = Mask_RGBA;
+            channels = ViewerInstance::RGBA;
             break;
         case 2:
-            _channelsToDraw = Channel_red;
+            channels = ViewerInstance::R;
             break;
         case 3:
-            _channelsToDraw = Channel_green;
+            channels = ViewerInstance::G;
             break;
         case 4:
-            _channelsToDraw = Channel_blue;
+            channels = ViewerInstance::B;
             break;
         case 5:
-            _channelsToDraw = Channel_alpha;
+            channels = ViewerInstance::A;
             break;
         default:
             break;
     }
-    viewer->setDisplayChannel(_channelsToDraw, !i ? true : false);
+    _viewerNode->setDisplayChannels(channels);
 }
 bool ViewerTab::eventFilter(QObject *target, QEvent *event){
     if (event->type() == QEvent::MouseButtonPress) {

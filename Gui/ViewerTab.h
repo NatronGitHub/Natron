@@ -14,7 +14,7 @@
 
 #include <QWidget>
 
-#include "Engine/ChannelSet.h"
+#include "Global/GlobalDefines.h"
 /*The ViewerTab encapsulates a viewer with all the graphical interface surrounding it. It should be instantiable as
  a tab , and several ViewerTab should run in parallel seemlessly.*/
 
@@ -44,8 +44,6 @@ class ViewerTab: public QWidget
     
     ViewerInstance* _viewerNode;// < pointer to the internal node
     
-    Natron::ChannelSet _channelsToDraw;
-
     
 public:
     explicit ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent=0);
@@ -103,9 +101,7 @@ public:
     
 	/*frame seeker*/
     TimeLineGui* _timeLineGui;
-    
-    /*these are the channels the viewer wants to display*/
-	const Natron::ChannelSet& displayChannels(){return _channelsToDraw;}
+   
     
     Gui* getGui() const {return _gui;}
     

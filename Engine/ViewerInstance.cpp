@@ -60,6 +60,7 @@ Natron::OutputEffectInstance(node)
 ,_exposure(1.)
 ,_colorSpace(Color::getLut(Color::LUT_DEFAULT_VIEWER))
 ,_lut(1)
+,_channels(RGBA)
 {
     connectSlotsToViewerCache();
     connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
@@ -199,6 +200,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
                  _exposure,
                  _lut,
                  viewer->byteMode(),
+                 _channels,
                  view,
                  rod,
                  dispW,
@@ -333,13 +335,47 @@ void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputI
     if(aborted()){
         return;
     }
+    
+    int rOffset = 0,gOffset = 0,bOffset = 0;
+    bool luminance = false;
+    switch (_channels) {
+        case RGBA:
+            rOffset = 0;
+            gOffset = 1;
+            bOffset = 2;
+            break;
+        case LUMINANCE:
+            luminance = true;
+            break;
+        case R:
+            rOffset = 0;
+            gOffset = 0;
+            bOffset = 0;
+            break;
+        case G:
+            rOffset = 1;
+            gOffset = 1;
+            bOffset = 1;
+            break;
+        case B:
+            rOffset = 2;
+            gOffset = 2;
+            bOffset = 2;
+            break;
+        case A:
+            rOffset = 3;
+            gOffset = 3;
+            bOffset = 3;
+            break;
+    }
+
     for(U32 i = 0; i < rows.size();++i){
         const float* data = inputImage->pixelAt(0, rows[i].first);
         if(_uiContext->viewer->byteMode() == 0 && _uiContext->viewer->supportsGLSL()){
-            convertRowToFitTextureBGRA_fp(data,columns,rows[i].second);
+            convertRowToFitTextureBGRA_fp(data,columns,rows[i].second,rOffset,gOffset,bOffset,luminance);
         }
         else{
-            convertRowToFitTextureBGRA(data,columns,rows[i].second);
+            convertRowToFitTextureBGRA(data,columns,rows[i].second,rOffset,gOffset,bOffset,luminance);
         }
     }
 }
@@ -496,7 +532,8 @@ bool ViewerInstance::isInputOptional(int n) const{
         return true;
 }
 
-void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vector<int>& columnSpan,int yOffset){
+void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vector<int>& columnSpan,int yOffset,
+                                                int rOffset,int gOffset,int bOffset,bool luminance){
     /*Converting one row (float32) to 8bit BGRA portion of texture. We apply a dithering algorithm based on error diffusion.
      This error diffusion will produce stripes in any image that has identical scanlines.
      To prevent this, a random horizontal position is chosen to start the error diffusion at,
@@ -513,23 +550,37 @@ void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vec
         /* go fowards from starting point to end of line: */
         for(unsigned int i = start ; i < row_width; ++i) {
             int col = columnSpan[i]*4;
-            double  _a = data[col+3];
             U8 a_,r_,g_,b_;
-            a_ = (U8)std::min((int)(_a*256),255);
-            r_ = (U8)std::min((int)((data[col])*_exposure*256),255);
-            g_ = (U8)std::min((int)((data[col+1])*_exposure*256),255);
-            b_ = (U8)std::min((int)((data[col+2])*_exposure*256),255);
+            a_ = 255;
+            double r = data[col+rOffset] * _exposure;
+            double g = data[col+gOffset] * _exposure;
+            double b = data[col+bOffset] * _exposure;
+            if(luminance){
+                r = 0.299 * r + 0.587 * g + 0.114 * b;
+                g = r;
+                b = r;
+            }
+            r_ = (U8)std::min((int)( r * 256 ),255);
+            g_ = (U8)std::min((int)( g * 256 ),255);
+            b_ = (U8)std::min((int)( b * 256 ),255);
             output[i] = toBGRA(r_,g_,b_,a_);
         }
         /* go backwards from starting point to start of line: */
         for(int i = start-1 ; i >= 0 ; --i){
             int col = columnSpan[i]*4;
-            double  _a = data[col+3];
             U8 a_,r_,g_,b_;
-            a_ = (U8)std::min((int)(_a*256),255);
-            r_ = (U8)std::min((int)((data[col])*_exposure*256),255);
-            g_ = (U8)std::min((int)((data[col+1])*_exposure*256),255);
-            b_ = (U8)std::min((int)((data[col+2])*_exposure*256),255);
+            a_ = 255;
+            double r = data[col+rOffset] * _exposure;
+            double g = data[col+gOffset] * _exposure;
+            double b = data[col+bOffset] * _exposure;
+            if(luminance){
+                r = 0.299 * r + 0.587 * g + 0.114 * b;
+                g = r;
+                b = r;
+            }
+            r_ = (U8)std::min((int)( r * 256 ),255);
+            g_ = (U8)std::min((int)( g * 256 ),255);
+            b_ = (U8)std::min((int)( b * 256 ),255);
             output[i] = toBGRA(r_,g_,b_,a_);
         }
     }else{ // !linear
@@ -544,11 +595,19 @@ void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vec
         for (unsigned int i = start ; i < columnSpan.size() ; ++i) {
             int col = columnSpan[i]*4;
             U8 r_,g_,b_,a_;
-            double _a =  data[col+3];
-            error_r = (error_r&0xff) + _colorSpace->toFloatFast(data[col]*_exposure);
-            error_g = (error_g&0xff) + _colorSpace->toFloatFast(data[col+1]*_exposure);
-            error_b = (error_b&0xff) + _colorSpace->toFloatFast(data[col+2]*_exposure);
-            a_ = (U8)std::min(_a*256.,255.);
+            double r = data[col+rOffset]*_exposure;
+            double g = data[col+gOffset]*_exposure;
+            double b = data[col+bOffset]*_exposure;
+            if(luminance){
+                r = 0.299 * r + 0.587 * g + 0.114 * b;
+                g = r;
+                b = r;
+
+            }
+            error_r = (error_r&0xff) + _colorSpace->toFloatFast(r);
+            error_g = (error_g&0xff) + _colorSpace->toFloatFast(g);
+            error_b = (error_b&0xff) + _colorSpace->toFloatFast(b);
+            a_ = 255;
             r_ = (U8)(error_r >> 8);
             g_ = (U8)(error_g >> 8);
             b_ = (U8)(error_b >> 8);
@@ -562,11 +621,20 @@ void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vec
         for (int i = start-1 ; i >= 0 ; --i) {
             int col = columnSpan[i]*4;
             U8 r_,g_,b_,a_;
-            double _a =  data[col+3];
-            error_r = (error_r&0xff) + _colorSpace->toFloatFast(data[col]*_exposure);
-            error_g = (error_g&0xff) + _colorSpace->toFloatFast(data[col+1]*_exposure);
-            error_b = (error_b&0xff) + _colorSpace->toFloatFast(data[col+2]*_exposure);
-            a_ = (U8)std::min(_a*256.,255.);
+            double r = data[col+rOffset]*_exposure;
+            double g = data[col+gOffset]*_exposure;
+            double b = data[col+bOffset]*_exposure;
+            if(luminance){
+                r = 0.299 * r + 0.587 * g + 0.114 * b;
+                g = r;
+                b = r;
+                
+            }
+            error_r = (error_r&0xff) + _colorSpace->toFloatFast(r);
+            error_g = (error_g&0xff) + _colorSpace->toFloatFast(g);
+            error_b = (error_b&0xff) + _colorSpace->toFloatFast(b);
+
+            a_ = 255;
             r_ = (U8)(error_r >> 8);
             g_ = (U8)(error_g >> 8);
             b_ = (U8)(error_b >> 8);
@@ -577,7 +645,8 @@ void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vec
 }
 
 // nbbytesoutput is the size in bytes of 1 channel for the row
-void ViewerInstance::convertRowToFitTextureBGRA_fp(const float* data,const std::vector<int>& columnSpan,int yOffset){
+void ViewerInstance::convertRowToFitTextureBGRA_fp(const float* data,const std::vector<int>& columnSpan,int yOffset,
+                                                   int rOffset,int gOffset,int bOffset,bool luminance){
     assert(_buffer);
     float* output = reinterpret_cast<float*>(_buffer);
     // offset in the buffer : (y)*(w) where y is the zoomedY of the row and w=nbbytes/sizeof(float)*4 = nbbytes
@@ -586,10 +655,19 @@ void ViewerInstance::convertRowToFitTextureBGRA_fp(const float* data,const std::
     int index = 0;
     for (unsigned int i = 0 ; i < columnSpan.size(); ++i) {
         int col = columnSpan[i]*4;
-        output[index++] = data[col];
-        output[index++] = data[col+1];
-        output[index++] = data[col+2];
-        output[index++] = data[col+3];
+        double r = data[col+rOffset];
+        double g = data[col+gOffset];
+        double b = data[col+bOffset];
+        if(luminance){
+            r = 0.299 * r + 0.587 * g + 0.114 * b;
+            g = r;
+            b = r;
+            
+        }
+        output[index++] = r;
+        output[index++] = g;
+        output[index++] = b;
+        output[index++] = 1.;
     }
     
 }
@@ -645,4 +723,9 @@ void ViewerInstance::onColorSpaceChanged(const QString& colorspaceName){
 
 void ViewerInstance::onViewerCacheFrameAdded(){
     emit addedCachedFrame(getApp()->getTimeLine()->currentFrame());
+}
+
+void ViewerInstance::setDisplayChannels(DisplayChannels channels) {
+    _channels = channels;
+    refreshAndContinueRender();
 }

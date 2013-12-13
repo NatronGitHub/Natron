@@ -8,13 +8,6 @@
   (e.g. ParametricParameterSuite for OFX/Color/RGBLut), should *not*
   appear in the menus.
 
-- When viewing a single component (R, G, or B), is should be displayed
-  as grayscale, because blue has a very low luminance. Another
-  solution would be a channel-specific display, where for example for
-  the blue channel the values 0-0.0722 would be mapped linearly to
-  (0,0,0)-(0,0,255), and the values 0.0722-1.0 would be mapped
-  linearly to (0,0,255)-(255,255,255). This gives the same luminance
-  as the grayscale version, but with a blue clor. 
 
 - The color picker displays the wrong information when viewing a
 single component (all other components are 0, except alpha which is 1)

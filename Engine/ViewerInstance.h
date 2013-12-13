@@ -35,9 +35,24 @@ class FrameEntry;
 
 class QKeyEvent;
 
+
+
 class ViewerInstance : public QObject, public Natron::OutputEffectInstance {
     
+
     Q_OBJECT
+    
+public:
+    enum DisplayChannels{
+        RGBA = 0,
+        R,
+        G,
+        B,
+        A,
+        LUMINANCE
+    };
+
+private:
     
     
     struct InterThreadInfos{
@@ -78,6 +93,9 @@ class ViewerInstance : public QObject, public Natron::OutputEffectInstance {
     // FIXME: why a float to really represent an enum????
     float _lut; /*!< a value coding the current color-space used to render.
                  0 = NONE , 1 = sRGB , 2 = Rec 709*/
+    
+    DisplayChannels _channels;
+    
 public:
     
     
@@ -201,6 +219,8 @@ public:
  **/
     static U32 toBGRA(U32 r,U32 g,U32 b,U32 a);
 
+    void setDisplayChannels(DisplayChannels channels) ;
+
 protected:
 
     virtual void cloneExtras() OVERRIDE;
@@ -255,7 +275,8 @@ private:
  *it will apply a "Nearest neighboor" algorithm to fill the buffer. Note that during the
  *conversion to 8bit in the viewer color-space, a dithering algorithm is used.
  **/
-    void convertRowToFitTextureBGRA(const float* data,const std::vector<int>& columnSpan,int yOffset);
+    void convertRowToFitTextureBGRA(const float* data,const std::vector<int>& columnSpan,int yOffset,
+                                    int rOffset,int gOffset,int bOffset,bool luminance);
 
 /**
  *@brief This function fills the member frameData with the buffer in parameters.
@@ -265,7 +286,8 @@ private:
  *int w,int yOffset,const float* alpha) except that it does not apply any dithering nor color-space
  *since the data are stored as 32bit floating points. The color-space will be applied by the shaders.
  **/
-    void convertRowToFitTextureBGRA_fp(const float* data,const std::vector<int>& columnSpan,int yOffset);
+    void convertRowToFitTextureBGRA_fp(const float* data,const std::vector<int>& columnSpan,int yOffset,
+                                       int rOffset,int gOffset,int bOffset,bool luminance);
 
 
 
