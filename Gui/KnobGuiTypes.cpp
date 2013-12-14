@@ -17,6 +17,7 @@
 #include <QStyle>
 #include <QColorDialog>
 #include <QTextEdit>
+#include <QLabel>
 
 #include "Global/AppManager.h"
 
@@ -1031,6 +1032,10 @@ ColorPickerLabel::ColorPickerLabel(QWidget* parent)
 : QLabel(parent)
 {
     
+}
+
+void ColorPickerLabel::mousePressEvent(QMouseEvent*) {
+    _pickingEnabled = ! _pickingEnabled;
 }
 
 //=============================STRING_KNOB_GUI===================================

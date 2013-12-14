@@ -91,8 +91,7 @@ namespace Natron{
         }
         
         void fillHash(Hash64* hash) const {
-            //time doesn't belong to the hash because it is already involved in the _treeVersion
-            
+            hash->append(_time);
             hash->append(_treeVersion);
             hash->append(*reinterpret_cast<const U64*>(&_zoomFactor));
             hash->append(*reinterpret_cast<const U64*>(&_exposure));

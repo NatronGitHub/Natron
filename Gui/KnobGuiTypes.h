@@ -308,6 +308,18 @@ public:
     ColorPickerLabel(QWidget* parent = NULL);
     
     virtual ~ColorPickerLabel(){}
+    
+    bool isPickingEnabled() const { return _pickingEnabled; }
+
+protected:
+    
+    virtual void mousePressEvent(QMouseEvent*) ;
+
+    
+    
+private:
+
+    bool _pickingEnabled;
 };
 
 
