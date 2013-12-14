@@ -27,7 +27,7 @@ class InfoViewerWidget: public QWidget{
 public:
     explicit InfoViewerWidget(ViewerGL* v,QWidget* parent=0);
     virtual ~InfoViewerWidget();
-    void setColor(QVector4D v){colorUnderMouse = v;}
+    void setColor(float r,float g,float b,float a);
     void setMousePos(QPoint p){mousePos =p;}
     void setUserRect(QPoint p){rectUser=p;}
     bool colorAndMouseVisible(){return _colorAndMouseVisible;}

@@ -219,5 +219,11 @@ void InfoViewerWidget::changeDataWindow(){
 void InfoViewerWidget::changeUserRect(){
     cout << "NOT IMPLEMENTED YET" << endl;
 }
+void InfoViewerWidget::setColor(float r,float g,float b,float a){
+    colorUnderMouse.setX(r);
+    colorUnderMouse.setY(g);
+    colorUnderMouse.setZ(b);
+    colorUnderMouse.setW(a);
+}
 
 

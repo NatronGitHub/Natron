@@ -287,10 +287,10 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
         
         
         QString openfxId = p->getIdentifier().c_str();
-        std::string grouping = p->getDescriptor().getPluginGrouping().c_str();
+        const std::string& grouping = p->getDescriptor().getPluginGrouping();
         
-        std::string bundlePath = p->getBinary()->getBundlePath();
-        std::string pluginLabel = OfxEffectInstance::getPluginLabel(p->getDescriptor().getShortLabel(),
+        const std::string& bundlePath = p->getBinary()->getBundlePath();
+        const std::string& pluginLabel = OfxEffectInstance::getPluginLabel(p->getDescriptor().getShortLabel(),
                                                                     p->getDescriptor().getLabel(),
                                                                     p->getDescriptor().getLongLabel());
      

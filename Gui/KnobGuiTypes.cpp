@@ -838,7 +838,7 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
     colorLayout->setContentsMargins(0, 0, 0, 0);
     colorLayout->setSpacing(0);
 
-    _colorLabel = new QLabel(colorContainer);
+    _colorLabel = new ColorPickerLabel(colorContainer);
     _colorLabel->setToolTip(getKnob()->getHintToolTip().c_str());
     colorLayout->addWidget(_colorLabel);
 
@@ -909,21 +909,26 @@ void Color_KnobGui::showColorDialog()
 {
     QColorDialog dialog(_rBox->parentWidget());
     if (dialog.exec()) {
-        QColor color = dialog.getColor();
-        color.setGreen(color.red());
-        color.setBlue(color.red());
-        color.setAlpha(255);
-        _rBox->setValue(color.redF());
+        QColor userColor = dialog.currentColor();
+        QColor realColor = userColor;
+        realColor.setGreen(userColor.red());
+        realColor.setBlue(userColor.red());
+        realColor.setAlpha(255);
+        _rBox->setValue(realColor.redF());
 
         if (_dimension >= 3) {
-            color.setAlpha(255);
-            _gBox->setValue(color.greenF());
-            _bBox->setValue(color.blueF());
+            _gBox->setValue(userColor.greenF());
+            _bBox->setValue(userColor.blueF());
+            realColor.setGreen(userColor.green());
+            realColor.setBlue(userColor.blue());
         }
         if (_dimension >= 4) {
-            _aBox->setValue(color.alphaF());
+            _aBox->setValue(userColor.alphaF());
+            realColor.setGreen(userColor.green());
+            realColor.setBlue(userColor.blue());
+            realColor.setAlpha(userColor.alpha());
         }
-        updateLabel(color);
+        updateLabel(realColor);
 
         onColorChanged();
     }
@@ -1021,6 +1026,12 @@ void Color_KnobGui::addToLayout(QHBoxLayout *layout)
     layout->addWidget(_colorDialogButton);
 }
 
+
+ColorPickerLabel::ColorPickerLabel(QWidget* parent)
+: QLabel(parent)
+{
+    
+}
 
 //=============================STRING_KNOB_GUI===================================
 void String_KnobGui::createWidget(QGridLayout *layout, int row)

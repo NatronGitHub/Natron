@@ -729,3 +729,28 @@ void ViewerInstance::setDisplayChannels(DisplayChannels channels) {
     _channels = channels;
     refreshAndContinueRender();
 }
+
+void ViewerInstance::disconnectViewer(){
+    emit viewerDisconnected();
+}
+
+void ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear){
+    
+    _uiContext->viewer->getColorAt(x, y, r, g, b, a);
+    if(forceLinear){
+        float from[3];
+        from[0] = *r;
+        from[1] = *g;
+        from[2] = *b;
+        float to[3];
+        _colorSpace->from_float(to, from, 3);
+        *r = to[0];
+        *g = to[1];
+        *b = to[2];
+    }else{
+        *r = std::min(*r / 255.,1.);
+        *g = std::min(*g / 255.,1.);
+        *b = std::min(*b / 255.,1.);
+    }
+    *a = std::min(*a / 255.,1.);
+}

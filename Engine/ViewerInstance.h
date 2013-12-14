@@ -30,7 +30,6 @@ namespace Natron{
 namespace Color{
 class Lut;
 }
-class FrameEntry;
 }
 
 class QKeyEvent;
@@ -189,9 +188,7 @@ public:
 
     void disconnectSlotsToViewerCache();
 
-    void disconnectViewer(){
-        emit viewerDisconnected();
-    }
+    void disconnectViewer();
 
     void wakeUpAnySleepingThread();
 
@@ -220,6 +217,14 @@ public:
     static U32 toBGRA(U32 r,U32 g,U32 b,U32 a);
 
     void setDisplayChannels(DisplayChannels channels) ;
+
+    /**
+     * @brief Get the color of the currently displayed image at position x,y. 
+     * If forceLinear is true, then it will not use the viewer current colorspace
+     * to get r,g and b values, otherwise the color returned will be in the same color-space
+     * than the one chosen by the user on the gui.
+    **/
+    void getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear);
 
 protected:
 

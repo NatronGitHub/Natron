@@ -14,6 +14,8 @@
 
 #include <vector> // Int_KnobGui
 
+#include <QLabel>
+
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
@@ -25,7 +27,6 @@
 // Qt
 class QString;
 class QFrame;
-class QLabel;
 class QGridLayout;
 class QTextEdit;
 
@@ -298,6 +299,18 @@ private:
     QLabel *_descriptionLabel;
 };
 
+class ColorPickerLabel : public QLabel {
+    
+    Q_OBJECT
+    
+public:
+    
+    ColorPickerLabel(QWidget* parent = NULL);
+    
+    virtual ~ColorPickerLabel(){}
+};
+
+
 /******************************/
 class Color_KnobGui : public KnobGui
 {
@@ -356,7 +369,7 @@ private:
     SpinBox *_bBox;
     SpinBox *_aBox;
 
-    QLabel *_colorLabel;
+    ColorPickerLabel *_colorLabel;
     Button *_colorDialogButton;
 
     int _dimension;

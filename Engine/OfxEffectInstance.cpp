@@ -227,15 +227,15 @@ std::string OfxEffectInstance::generateImageEffectClassName(const std::string& s
 
 std::string OfxEffectInstance::pluginID() const {
     assert(effect_);
-    return generateImageEffectClassName(effect_->getShortLabel(),
-                                        effect_->getLabel(),
-                                        effect_->getLongLabel(),
-                                        effect_->getPluginGrouping());
+    return generateImageEffectClassName(effect_->getDescriptor().getShortLabel(),
+                                        effect_->getDescriptor().getLabel(),
+                                        effect_->getDescriptor().getLongLabel(),
+                                        effect_->getDescriptor().getPluginGrouping());
 }
 
 std::string OfxEffectInstance::pluginLabel() const {
     assert(effect_);
-    return getPluginLabel( effect_->getShortLabel(),effect_->getLabel(),effect_->getLongLabel());
+    return getPluginLabel( effect_->getDescriptor().getShortLabel(),effect_->getDescriptor().getLabel(),effect_->getDescriptor().getLongLabel());
 }
 
 std::string OfxEffectInstance::inputLabel(int inputNb) const {
