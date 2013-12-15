@@ -234,9 +234,15 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
     }
     
     OfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
-    
     if(node){
         hostSideEffect->createOfxImageEffectInstance(plugin, context);
+    }else{
+        
+        //if node is NULL that means we're just checking if the effect is describing and loading OK
+        OFX::Host::ImageEffect::Descriptor* desc = plugin->getContext(context);
+        if(!desc){
+            return NULL;
+        }
     }
 
     return hostSideEffect;
@@ -318,9 +324,9 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
             groupIconFilename.append(".png");
         }
         
-        _ofxPlugins.insert(make_pair(pluginId, make_pair(openfxId.toStdString(), grouping)));
+        std::pair<OFXPluginsMap::iterator,bool> insertRet = _ofxPlugins.insert(make_pair(pluginId, make_pair(openfxId.toStdString(), grouping)));
 
-        
+    
         //try to instantiate an effect for this plugin, if it crashes, don't add it
         try {
             OfxEffectInstance* tryInstance = createOfxEffect(pluginId, NULL);
@@ -328,10 +334,12 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
                 delete tryInstance;
             }else{
                 std::cout << "Error loading " << pluginId << std::endl;
+                _ofxPlugins.erase(insertRet.first);
                 continue;
             }
         } catch (const std::exception& e) {
             std::cout << "Error loading " << pluginId << " " << e.what() << std::endl;
+            _ofxPlugins.erase(insertRet.first);
             continue;
         }
 

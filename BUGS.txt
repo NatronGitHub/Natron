@@ -7,12 +7,6 @@
 - is kOfxInteractPropSlaveToParam / Instance::getSlaveToParam() supported?
   there is no reference to it in the code
 
-- a plugin that returns an error during the "load" or "describe" actions,
-  for example if it requires a missing suite
-  (e.g. ParametricParameterSuite for OFX/Color/RGBLut), should *not*
-  appear in the menus.
-
-
 - On OSX dragging the viewer pane will freeze the GUI (Qt5 only)
 
 ** Here is a list of non-blocking bugs / wanted features:
