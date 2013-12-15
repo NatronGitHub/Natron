@@ -184,7 +184,9 @@ DockablePanel::~DockablePanel(){
     ///Delete the knob gui if they weren't before
     ///normally the onKnobDeletion() function should have cleared them
     for(std::map<boost::shared_ptr<Knob>,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it){
-        delete it->second;
+        if(it->second){
+            delete it->second;
+        }
     }
 }
 
@@ -426,8 +428,9 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
     QObject::connect(knob.get(),SIGNAL(deleted(Knob*)),this,SLOT(onKnobDeletion(Knob*)));
     
     KnobGui* ret =  appPTR->getKnobGuiFactory().createGuiForKnob(knob,this);
-    if(!ret){
+    if(!ret && knob->typeName() != "Tab"){
         // this should happen for Custom Knobs, which have no GUI (only an interact)
+        // this should happen for tab Knobs, which have no GUI
         std::cout << "Failed to create gui for Knob " << knob->getName() << " of type " << knob->typeName() << std::endl;
         return NULL;
     }
@@ -439,7 +442,9 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
 void DockablePanel::onKnobDeletion(Knob* k){
     for(std::map<boost::shared_ptr<Knob>,KnobGui*>::iterator it = _knobs.begin();it!=_knobs.end();++it){
         if (it->first.get() == k) {
-            delete it->second;
+            if(it->second){
+                delete it->second;
+            }
             _knobs.erase(it);
             return;
         }
