@@ -570,7 +570,8 @@ void OfxEffectInstance::drawOverlay(){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
-        _overlayInteract->drawAction(1.0, rs);
+        OfxTime time = effect_->getFrameRecursive();
+        _overlayInteract->drawAction(time, rs);
     }
 }
 
@@ -589,7 +590,8 @@ bool OfxEffectInstance::onOverlayPenDown(const QPointF& viewportPos,const QPoint
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
         
-        OfxStatus stat = _overlayInteract->penDownAction(1.0, rs, penPos, penPosViewport, 1.);
+        OfxTime time = effect_->getFrameRecursive();
+        OfxStatus stat = _overlayInteract->penDownAction(time, rs, penPos, penPosViewport, 1.);
         if (stat == kOfxStatOK) {
             _penDown = true;
             return true;
@@ -611,8 +613,8 @@ bool OfxEffectInstance::onOverlayPenMotion(const QPointF& viewportPos,const QPoi
         OfxPointI penPosViewport;
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
-        
-        OfxStatus stat = _overlayInteract->penMotionAction(1.0, rs, penPos, penPosViewport, 1.);
+        OfxTime time = effect_->getFrameRecursive();
+        OfxStatus stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -634,8 +636,8 @@ bool OfxEffectInstance::onOverlayPenUp(const QPointF& viewportPos,const QPointF&
         OfxPointI penPosViewport;
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
-        
-        OfxStatus stat = _overlayInteract->penUpAction(1.0, rs, penPos, penPosViewport, 1.);
+        OfxTime time = effect_->getFrameRecursive();
+        OfxStatus stat = _overlayInteract->penUpAction(time, rs, penPos, penPosViewport, 1.);
         if (stat == kOfxStatOK) {
             _penDown = false;
             return true;
@@ -651,7 +653,8 @@ void OfxEffectInstance::onOverlayKeyDown(QKeyEvent* e){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
-        OfxStatus stat = _overlayInteract->keyDownAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+        OfxTime time = effect_->getFrameRecursive();
+        OfxStatus stat = _overlayInteract->keyDownAction(time, rs, e->nativeVirtualKey(), e->text().toLatin1().data());
         if (stat == kOfxStatOK) {
             //requestRender();
         }
@@ -666,7 +669,8 @@ void OfxEffectInstance::onOverlayKeyUp(QKeyEvent* e){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
-        OfxStatus stat = _overlayInteract->keyUpAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+        OfxTime time = effect_->getFrameRecursive();
+        OfxStatus stat = _overlayInteract->keyUpAction(time, rs, e->nativeVirtualKey(), e->text().toLatin1().data());
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             //requestRender();
@@ -681,7 +685,8 @@ void OfxEffectInstance::onOverlayKeyRepeat(QKeyEvent* e){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
-        OfxStatus stat = _overlayInteract->keyRepeatAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+        OfxTime time = effect_->getFrameRecursive();
+        OfxStatus stat = _overlayInteract->keyRepeatAction(time, rs, e->nativeVirtualKey(), e->text().toLatin1().data());
         if (stat == kOfxStatOK) {
             //requestRender();
         }
@@ -695,7 +700,8 @@ void OfxEffectInstance::onOverlayFocusGained(){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
-        OfxStatus stat = _overlayInteract->gainFocusAction(1., rs);
+        OfxTime time = effect_->getFrameRecursive();
+        OfxStatus stat = _overlayInteract->gainFocusAction(time, rs);
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             //requestRender();
@@ -707,7 +713,8 @@ void OfxEffectInstance::onOverlayFocusLost(){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
-        OfxStatus stat = _overlayInteract->loseFocusAction(1., rs);
+        OfxTime time = effect_->getFrameRecursive();
+        OfxStatus stat = _overlayInteract->loseFocusAction(time, rs);
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             //requestRender();
@@ -786,6 +793,7 @@ void OfxEffectInstance::endKnobsValuesChanged(Natron::ValueChangedReason reason)
             break;
     }
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    //effectInstance()->syncPrivateDataAction();
 
 }
 
