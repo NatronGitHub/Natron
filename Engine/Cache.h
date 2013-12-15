@@ -687,7 +687,7 @@ public:
 
     }
     
-    void setMaximumCacheSize(U64 newSize) { _maximumCacheSize = newSize; }
+    void setMaximumCacheSize(U64 newSize) { _maximumCacheSize = newSize;}
     
     void setMaximumInMemorySize(double percentage) { _maximumInMemorySize = _maximumCacheSize * percentage; }
 

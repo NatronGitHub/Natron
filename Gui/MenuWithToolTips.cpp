@@ -18,7 +18,11 @@ bool MenuWithToolTips::event (QEvent * e)
     const QHelpEvent *helpEvent = static_cast <QHelpEvent *>(e);
     if (helpEvent->type() == QEvent::ToolTip) {
         QAction* action = activeAction();
+        if(!action){
+            return false;
+        }
         if(action->text() != action->toolTip()){
+
             QToolTip::showText(helpEvent->globalPos(), action->toolTip());
         }
     } else {

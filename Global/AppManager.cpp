@@ -925,6 +925,7 @@ AppManager::AppManager()
     , _nodeCache()
     , _viewerCache()
     ,_colorPickerCursor(NULL)
+    ,_initialized(false)
 {
     
     _settings->initializeKnobs();
@@ -933,11 +934,17 @@ AppManager::AppManager()
     
     connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString,QString)),
             this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString,QString)));
+    size_t maxCacheRAM = _settings->getRamMaximumPercent() * getSystemTotalRAM();
+    U64 maxDiskCache = _settings->getMaximumDiskCacheSize();
+    U64 playbackSize = maxCacheRAM * _settings->getRamPlaybackMaximumPercent();
     
-    _nodeCache.reset(new Cache<Image>("NodeCache",0x1, (_settings->getRamMaximumPercent() -
-                                                        _settings->getRamPlaybackMaximumPercent())*getSystemTotalRAM(),1));
-    _viewerCache.reset(new Cache<FrameEntry>("ViewerCache",0x1,_settings->getMaximumDiskCacheSize()
-                                             ,_settings->getRamPlaybackMaximumPercent()));
+    _nodeCache.reset(new Cache<Image>("NodeCache",0x1, maxCacheRAM - playbackSize,1));
+    _viewerCache.reset(new Cache<FrameEntry>("ViewerCache",0x1,maxDiskCache,(double)playbackSize / (double)maxDiskCache));
+    
+    qDebug() << "NodeCache RAM size: " << printAsRAM(_nodeCache->getMaximumMemorySize());
+    qDebug() << "ViewerCache RAM size (playback-cache): " << printAsRAM(_viewerCache->getMaximumMemorySize());
+    qDebug() << "ViewerCache disk size: " << printAsRAM(maxDiskCache);
+    
     
     /*loading all plugins*/
     loadAllPlugins();
@@ -948,7 +955,7 @@ AppManager::AppManager()
     
     createColorPickerCursor();
     
-
+    _initialized = true;
 }
 
 void AppManager::registerAppInstance(AppInstance* app){
@@ -956,15 +963,40 @@ void AppManager::registerAppInstance(AppInstance* app){
 }
 
 void AppManager::setApplicationsCachesMaximumMemoryPercent(double p){
-    _nodeCache->setMaximumCacheSize((p - _settings->getRamPlaybackMaximumPercent()) * getSystemTotalRAM());
+    size_t maxCacheRAM = p * getSystemTotalRAM();
+    U64 playbackSize = maxCacheRAM * _settings->getRamPlaybackMaximumPercent();
+    _nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
+    _nodeCache->setMaximumInMemorySize(1);
+    U64 maxDiskCacheSize = _settings->getMaximumDiskCacheSize();
+    _viewerCache->setMaximumInMemorySize((double)playbackSize / (double)maxDiskCacheSize);
+    
+    qDebug() << "NodeCache RAM size: " << printAsRAM(_nodeCache->getMaximumMemorySize());
+    qDebug() << "ViewerCache RAM size (playback-cache): " << printAsRAM(_viewerCache->getMaximumMemorySize());
+    qDebug() << "ViewerCache disk size: " << printAsRAM(maxDiskCacheSize);
 }
 
 void AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size){
+    size_t maxCacheRAM = _settings->getRamMaximumPercent() * getSystemTotalRAM();
+    U64 playbackSize = maxCacheRAM * _settings->getRamPlaybackMaximumPercent();
     _viewerCache->setMaximumCacheSize(size);
+    _viewerCache->setMaximumInMemorySize((double)playbackSize / (double)size);
+    
+    qDebug() << "NodeCache RAM size: " << printAsRAM(_nodeCache->getMaximumMemorySize());
+    qDebug() << "ViewerCache RAM size (playback-cache): " << printAsRAM(_viewerCache->getMaximumMemorySize());
+    qDebug() << "ViewerCache disk size: " << printAsRAM(size);
 }
 
 void AppManager::setPlaybackCacheMaximumSize(double p){
-    _viewerCache->setMaximumInMemorySize(p);
+    size_t maxCacheRAM = _settings->getRamMaximumPercent() * getSystemTotalRAM();
+    U64 playbackSize = maxCacheRAM * p;
+    _nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
+    _nodeCache->setMaximumInMemorySize(1);
+    U64 maxDiskCacheSize = _settings->getMaximumDiskCacheSize();
+    _viewerCache->setMaximumInMemorySize((double)playbackSize / (double)maxDiskCacheSize);
+    
+    qDebug() << "NodeCache RAM size: " << printAsRAM(_nodeCache->getMaximumMemorySize());
+    qDebug() << "ViewerCache RAM size (playback-cache): " << printAsRAM(_viewerCache->getMaximumMemorySize());
+    qDebug() << "ViewerCache disk size: " << printAsRAM(maxDiskCacheSize);
 }
 
 AppManager::~AppManager(){

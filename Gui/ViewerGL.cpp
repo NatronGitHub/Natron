@@ -979,10 +979,8 @@ void ViewerGL::activateShaderRGB()
     }
     
     _imp->shaderRGB->setUniformValue("Tex", 0);
-    // FIXME-seeabove: why a float to really represent an enum????
-    _imp->shaderRGB->setUniformValue("byteMode", (GLint)bitDepth());
+    _imp->shaderRGB->setUniformValue("bitDepth", (GLint)bitDepth());
     _imp->shaderRGB->setUniformValue("expMult",  (GLfloat)_imp->viewerTab->getInternalNode()->getExposure());
-    // FIXME-seeabove: why a float to really represent an enum????
     _imp->shaderRGB->setUniformValue("lut", (GLint)_imp->viewerTab->getInternalNode()->getLutType());
     
     

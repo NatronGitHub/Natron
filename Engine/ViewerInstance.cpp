@@ -186,7 +186,9 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     }
     _interThreadInfos._textureRect = textureRect;
     _interThreadInfos._bytesCount = _interThreadInfos._textureRect.w * _interThreadInfos._textureRect.h * 4;
-    if(viewer->bitDepth() == FLOAT){
+    
+    //half float is not supported yet so it is the same as float
+    if(viewer->bitDepth() == FLOAT || viewer->bitDepth() == HALF_FLOAT){
         _interThreadInfos._bytesCount *= sizeof(float);
     }
 
@@ -371,7 +373,9 @@ void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputI
 
     for(U32 i = 0; i < rows.size();++i){
         const float* data = inputImage->pixelAt(0, rows[i].first);
-        if(_uiContext->viewer->bitDepth() == FLOAT){
+        
+        //half float not supported yet.
+        if(_uiContext->viewer->bitDepth() == FLOAT || _uiContext->viewer->bitDepth() == HALF_FLOAT){
             convertRowToFitTextureBGRA_fp(data,columns,rows[i].second,rOffset,gOffset,bOffset,luminance);
         }
         else{
@@ -526,10 +530,7 @@ void ViewerInstance::notifyOverlaysFocusLost(){
 }
 
 bool ViewerInstance::isInputOptional(int n) const{
-    if(n == activeInput())
-        return false;
-    else
-        return true;
+    return n != activeInput();
 }
 
 void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vector<int>& columnSpan,int yOffset,
@@ -750,4 +751,8 @@ void ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,
         *g = to[1];
         *b = to[2];
     }
+}
+
+bool ViewerInstance::supportsGLSL() const{
+    return _uiContext->viewer->supportsGLSL();
 }

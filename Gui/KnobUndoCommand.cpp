@@ -31,7 +31,7 @@ void KnobMultipleUndosCommand::undo()
 {
     for (U32 i = 0 ; i < _oldValue.size();++i) {
         _knob->setValue(i,_oldValue[i]);
-        if(_hasCreateKeyFrame){
+        if(_knob->getKnob()->getHolder()->getApp() && _hasCreateKeyFrame){
             _knob->removeKeyFrame(_timeOfCreation,i);
         }
         
@@ -42,15 +42,18 @@ void KnobMultipleUndosCommand::undo()
 
 void KnobMultipleUndosCommand::redo()
 {
-    assert(_knob->getKnob()->getHolder()->getApp());
-    SequenceTime time = _knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    
+    SequenceTime time = 0;
+    if(_knob->getKnob()->getHolder()->getApp()){
+        time = _knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    }
     
     for (U32 i = 0; i < _newValue.size();++i) {
         boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(i);
         
         _knob->setValue(i,_newValue[i]);
         
-        if (c->keyFramesCount() >= 1) {
+        if (_knob->getKnob()->getHolder()->getApp() && c->keyFramesCount() >= 1) {
             _hasCreateKeyFrame = true;
             _timeOfCreation = time;
             _knob->setKeyframe(time, i);

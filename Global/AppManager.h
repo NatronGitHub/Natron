@@ -443,6 +443,7 @@ public:
 
     boost::shared_ptr<Settings> getCurrentSettings() const {return _settings;}
 
+    bool isInitialized() const { return _initialized; }
 
 public slots:
 
@@ -537,6 +538,8 @@ private:
     boost::shared_ptr<Natron::Cache<Natron::FrameEntry> > _viewerCache;
 
     QCursor* _colorPickerCursor;
+
+    bool _initialized;
 
 };
 

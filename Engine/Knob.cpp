@@ -586,6 +586,8 @@ void KnobHolder::notifyProjectEndKnobsValuesChanged(Natron::ValueChangedReason r
 void KnobHolder::notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,Knob* k,bool significant){
     if(_app){
         getApp()->getProject()->stackEvaluateRequest(reason,this,k,significant);
+    }else{
+        onKnobValueChanged(k, reason);
     }
 }
 

@@ -22,7 +22,8 @@
 /*Contains the definitions of the display shaders*/
 
 
-static const char* fragRGB ="uniform sampler2D Tex;\n"
+static const char* fragRGB =
+"uniform sampler2D Tex;\n"
 "uniform int bitDepth;\n"
 "uniform float expMult;\n"
 "uniform int lut;\n"
@@ -33,7 +34,7 @@ static const char* fragRGB ="uniform sampler2D Tex;\n"
 "if(bitDepth != 0){\n"
 "    \n"
 "    color_tmp.rgb = color_tmp.rgb ;\n"
-"   if(lut == 1){ // srgb\n"
+"   if(lut == 0){ // srgb\n"
 "           \n" // << TO SRGB
 "       if (color_tmp.r<=0.0031308){\n"
 "           color_tmp.r=(12.92*color_tmp.r);\n"
@@ -81,7 +82,7 @@ static const char* vertRGB =
 "void main()\n"
 "{\n"
 "\n"
-"    gl_TexCoord[0] = gl_MultiTexCoord0;\n"
+"   gl_TexCoord[0] = gl_MultiTexCoord0;\n"
 "	gl_Position = ftransform();\n"
 "}\n"
 "\n"
