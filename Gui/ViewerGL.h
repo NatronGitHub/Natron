@@ -107,8 +107,7 @@ public:
      *@returns Returns 1.f if the viewer is using 8bit textures.
      *Returns 0.f if the viewer is using 32bit f.p textures.
      **/
-    // FIXME-seeabove: why a float to really represent an enum????
-    float byteMode() const;
+    int bitDepth() const;
     
     /**
      *@brief Hack to allow the resizeEvent to be publicly used elsewhere.
@@ -387,11 +386,6 @@ private:
      *@brief Starts using the RGB shader to display the frame
      **/
     void activateShaderRGB();
-    
-    /**
-     *@brief Starts using the luminance/chroma shader
-     **/
-    void activateShaderLC();
     
     /**
      *@brief Fill the rendering VAO with vertices and texture coordinates

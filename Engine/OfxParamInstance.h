@@ -57,10 +57,10 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    boost::shared_ptr<Knob> getKnob() const;
 
 private:
-    Button_Knob *_knob;
+    boost::shared_ptr<Button_Knob> _knob;
 };
 
 
@@ -80,10 +80,10 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    boost::shared_ptr<Knob> getKnob() const;
 
 private:
-    Int_Knob* _knob;
+    boost::shared_ptr<Int_Knob> _knob;
 };
 
 class OfxDoubleInstance : public OFX::Host::Param::DoubleInstance {
@@ -102,11 +102,11 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    boost::shared_ptr<Knob> getKnob() const;
 
     bool isAnimated() const;
 private:
-    Double_Knob* _knob;
+    boost::shared_ptr<Double_Knob> _knob;
 };
 
 class OfxBooleanInstance : public OFX::Host::Param::BooleanInstance {
@@ -125,10 +125,10 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    boost::shared_ptr<Knob> getKnob() const;
 
 private:
-    Bool_Knob* _knob;
+    boost::shared_ptr<Bool_Knob> _knob;
 };
 
 class OfxChoiceInstance : public OFX::Host::Param::ChoiceInstance {
@@ -145,11 +145,11 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    boost::shared_ptr<Knob> getKnob() const;
 
 private:
     std::vector<std::string> _entries;
-    Choice_Knob* _knob;
+    boost::shared_ptr<Choice_Knob> _knob;
 };
 
 class OfxRGBAInstance :public OFX::Host::Param::RGBAInstance {
@@ -168,12 +168,12 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    boost::shared_ptr<Knob> getKnob() const;
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
 private:
-    Color_Knob* _knob;
+    boost::shared_ptr<Color_Knob> _knob;
 };
 
 
@@ -193,12 +193,12 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    boost::shared_ptr<Knob> getKnob() const;
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
 private:
-    Color_Knob* _knob;
+    boost::shared_ptr<Color_Knob> _knob;
 };
 
 class OfxDouble2DInstance :public OFX::Host::Param::Double2DInstance {
@@ -217,12 +217,12 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    boost::shared_ptr<Knob> getKnob() const;
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
 private:
-    Double_Knob* _knob;
+    boost::shared_ptr<Double_Knob> _knob;
 };
 
 
@@ -240,10 +240,10 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
 
-    Knob* getKnob() const;
+    boost::shared_ptr<Knob> getKnob() const;
 
 private:
-    Int_Knob *_knob;
+    boost::shared_ptr<Int_Knob> _knob;
 };
 
 class OfxDouble3DInstance :public OFX::Host::Param::Double3DInstance {
@@ -262,12 +262,12 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
 
-    Knob* getKnob() const;
+    boost::shared_ptr<Knob> getKnob() const;
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
 private:
-    Double_Knob* _knob;
+    boost::shared_ptr<Double_Knob> _knob;
 };
 
 class OfxInteger3DInstance : public OFX::Host::Param::Integer3DInstance {
@@ -284,10 +284,10 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
 
-    Knob* getKnob() const;
+    boost::shared_ptr<Knob> getKnob() const;
 
 private:
-    Int_Knob *_knob;
+    boost::shared_ptr<Int_Knob> _knob;
 };
 
 class OfxGroupInstance : public OFX::Host::Param::GroupInstance {
@@ -295,15 +295,16 @@ public:
 
     OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
 
-    void addKnob(Knob* k);
+    void addKnob(boost::shared_ptr<Knob> k);
 
-    Knob* getKnob() const;
+    boost::shared_ptr<Knob> getKnob() const;
 
     virtual ~OfxGroupInstance(){}
 
 private:
     OfxEffectInstance* _node;
-    Group_Knob* _groupKnob;
+    boost::shared_ptr<Group_Knob> _groupKnob;
+    boost::shared_ptr<Tab_Knob> _tabKnob;
 };
 
 class OfxStringInstance : public QObject, public OFX::Host::Param::StringInstance {
@@ -351,7 +352,7 @@ public:
      */
     const QString getRandomFrameName(int f) const;
     
-    Knob* getKnob() const;
+    boost::shared_ptr<Knob> getKnob() const;
     
     virtual ~OfxStringInstance(){}
     
@@ -360,10 +361,10 @@ public slots:
 
 private:
     OfxEffectInstance* _node;
-    File_Knob* _fileKnob;
-    OutputFile_Knob* _outputFileKnob;
-    String_Knob* _stringKnob;
-    RichText_Knob* _multiLineKnob;
+    boost::shared_ptr<File_Knob> _fileKnob;
+    boost::shared_ptr<OutputFile_Knob> _outputFileKnob;
+    boost::shared_ptr<String_Knob> _stringKnob;
+    boost::shared_ptr<RichText_Knob> _multiLineKnob;
     QThreadStorage<std::string> _localString;
 };
 
@@ -395,7 +396,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
 
-    Knob* getKnob() const;
+    boost::shared_ptr<Knob> getKnob() const;
 
     virtual ~OfxCustomInstance(){}
 
@@ -406,7 +407,7 @@ private:
                                                            OfxPropertySetHandle   outArgsRaw);
 
     OfxEffectInstance* _node;
-    Custom_Knob* _knob;
+    boost::shared_ptr<Custom_Knob> _knob;
     customParamInterpolationV1Entry_t _customParamInterpolationV1Entry;
     QThreadStorage<std::string> _localString;
 };

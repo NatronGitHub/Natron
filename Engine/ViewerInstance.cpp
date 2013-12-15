@@ -59,7 +59,7 @@ Natron::OutputEffectInstance(node)
 ,_renderArgsMutex()
 ,_exposure(1.)
 ,_colorSpace(Color::getLut(Color::LUT_DEFAULT_VIEWER))
-,_lut(1)
+,_lut(sRGB)
 ,_channels(RGBA)
 {
     connectSlotsToViewerCache();
@@ -186,7 +186,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     }
     _interThreadInfos._textureRect = textureRect;
     _interThreadInfos._bytesCount = _interThreadInfos._textureRect.w * _interThreadInfos._textureRect.h * 4;
-    if(viewer->byteMode() == 0 && viewer->supportsGLSL()){
+    if(viewer->bitDepth() == FLOAT){
         _interThreadInfos._bytesCount *= sizeof(float);
     }
 
@@ -199,7 +199,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
                  zoomFactor,
                  _exposure,
                  _lut,
-                 viewer->byteMode(),
+                 viewer->bitDepth(),
                  _channels,
                  view,
                  rod,
@@ -371,7 +371,7 @@ void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputI
 
     for(U32 i = 0; i < rows.size();++i){
         const float* data = inputImage->pixelAt(0, rows[i].first);
-        if(_uiContext->viewer->byteMode() == 0 && _uiContext->viewer->supportsGLSL()){
+        if(_uiContext->viewer->bitDepth() == FLOAT){
             convertRowToFitTextureBGRA_fp(data,columns,rows[i].second,rOffset,gOffset,bOffset,luminance);
         }
         else{
@@ -685,7 +685,8 @@ void ViewerInstance::onExposureChanged(double exp){
     QMutexLocker l(&_renderArgsMutex);
     _exposure = exp;
     
-    if((_uiContext->viewer->byteMode() == 1  || !_uiContext->viewer->supportsGLSL()) && input(activeInput()) != NULL){
+    if((_uiContext->viewer->bitDepth() == BYTE  || !_uiContext->viewer->supportsGLSL())
+       && input(activeInput()) != NULL){
         refreshAndContinueRender();
     }else{
         emit mustRedraw();
@@ -697,24 +698,25 @@ void ViewerInstance::onColorSpaceChanged(const QString& colorspaceName){
     QMutexLocker l(&_renderArgsMutex);
     
     if (colorspaceName == "Linear(None)") {
-        if(_lut != 0){ // if it wasnt already this setting
+        if(_lut != Linear){ // if it wasnt already this setting
             _colorSpace = Color::getLut(Color::LUT_DEFAULT_FLOAT);
         }
-        _lut = 0;
+        _lut = Linear;
     }else if(colorspaceName == "sRGB"){
-        if(_lut != 1){ // if it wasnt already this setting
+        if(_lut != sRGB){ // if it wasnt already this setting
             _colorSpace = Color::getLut(Color::LUT_DEFAULT_VIEWER);
         }
         
-        _lut = 1;
+        _lut = sRGB;
     }else if(colorspaceName == "Rec.709"){
-        if(_lut != 2){ // if it wasnt already this setting
+        if(_lut != Rec709){ // if it wasnt already this setting
             _colorSpace = Color::getLut(Color::LUT_DEFAULT_MONITOR);
         }
-        _lut = 2;
+        _lut = Rec709;
     }
     
-    if((_uiContext->viewer->byteMode() == 1  || !_uiContext->viewer->supportsGLSL()) && input(activeInput()) != NULL){
+    if((_uiContext->viewer->bitDepth() == BYTE  || !_uiContext->viewer->supportsGLSL())
+       && input(activeInput()) != NULL){
         refreshAndContinueRender();
     }else{
         emit mustRedraw();

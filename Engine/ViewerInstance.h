@@ -50,6 +50,18 @@ public:
         A,
         LUMINANCE
     };
+    
+    enum ViewerColorSpace{
+        sRGB = 0,
+        Linear,
+        Rec709
+    };
+    
+    enum BitDepth{
+        BYTE = 0,
+        HALF_FLOAT ,
+        FLOAT
+    };
 
 private:
     
@@ -90,7 +102,7 @@ private:
     
     const Natron::Color::Lut* _colorSpace;/*!< The lut used to do the viewer colorspace conversion when we can't use shaders*/
     // FIXME: why a float to really represent an enum????
-    float _lut; /*!< a value coding the current color-space used to render.
+    ViewerColorSpace _lut; /*!< a value coding the current color-space used to render.
                  0 = NONE , 1 = sRGB , 2 = Rec 709*/
     
     DisplayChannels _channels;
@@ -204,7 +216,7 @@ public:
 
     int activeInput() const;
 
-    float getLutType() const {return _lut;}
+    int getLutType() const {return _lut;}
 
     double getExposure() const {return _exposure;}
 

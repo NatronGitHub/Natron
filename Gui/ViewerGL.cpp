@@ -55,7 +55,7 @@ GCC_DIAG_ON(unused-parameter);
 #include "Gui/TextRenderer.h"
 #include "Gui/TimeLineGui.h"
 #include "Gui/ViewerTab.h"
-
+#include "Gui/ProjectGui.h"
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
  Everything related to OpenGL will (almost always) be in this class */
@@ -166,7 +166,6 @@ struct ViewerGL::Implementation {
     , textureMutex()
     , blackTex(0)
     , shaderRGB(0)
-    , shaderLC(0)
     , shaderBlack(0)
     , shaderLoaded(false)
     , infoViewer(0)
@@ -215,7 +214,6 @@ struct ViewerGL::Implementation {
     Texture* blackTex;/*!< the texture used to render a black screen when nothing is connected.*/
 
     QGLShaderProgram* shaderRGB;/*!< The shader program used to render RGB data*/
-    QGLShaderProgram* shaderLC;/*!< The shader program used to render YCbCr data*/
     QGLShaderProgram* shaderBlack;/*!< The shader program used when the viewer is disconnected.*/
 
     bool shaderLoaded;/*!< Flag to check whether the shaders have already been loaded.*/
@@ -416,11 +414,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 
 
 ViewerGL::~ViewerGL(){
-    if(_imp->shaderLC){
-        _imp->shaderLC->removeAllShaders();
-        delete _imp->shaderLC;
-        
-    }
+    
     if(_imp->shaderRGB){
         _imp->shaderRGB->removeAllShaders();
         delete _imp->shaderRGB;
@@ -972,22 +966,6 @@ void ViewerGL::initAndCheckGlExtensions()
     }
 }
 
-void ViewerGL::activateShaderLC()
-{
-    assert(QGLContext::currentContext() == context());
-    if(!_imp->supportsGLSL) return;
-    if(!_imp->shaderLC->bind()){
-        cout << qPrintable(_imp->shaderLC->log()) << endl;
-    }
-    _imp->shaderLC->setUniformValue("Tex", 0);
-    _imp->shaderLC->setUniformValue("yw",1.0,1.0,1.0);
-    _imp->shaderLC->setUniformValue("expMult",  (GLfloat)_imp->viewerTab->getInternalNode()->getExposure());
-    // FIXME: why a float to really represent an enum????
-    _imp->shaderLC->setUniformValue("lut", (GLfloat)_imp->viewerTab->getInternalNode()->getLutType());
-    // FIXME-seeabove: why a float to really represent an enum????
-    _imp->shaderLC->setUniformValue("byteMode", (GLfloat)byteMode());
-    
-}
 
 void ViewerGL::activateShaderRGB()
 {
@@ -1002,10 +980,10 @@ void ViewerGL::activateShaderRGB()
     
     _imp->shaderRGB->setUniformValue("Tex", 0);
     // FIXME-seeabove: why a float to really represent an enum????
-    _imp->shaderRGB->setUniformValue("byteMode", (GLfloat)byteMode());
+    _imp->shaderRGB->setUniformValue("byteMode", (GLint)bitDepth());
     _imp->shaderRGB->setUniformValue("expMult",  (GLfloat)_imp->viewerTab->getInternalNode()->getExposure());
     // FIXME-seeabove: why a float to really represent an enum????
-    _imp->shaderRGB->setUniformValue("lut", (GLfloat)_imp->viewerTab->getInternalNode()->getLutType());
+    _imp->shaderRGB->setUniformValue("lut", (GLint)_imp->viewerTab->getInternalNode()->getLutType());
     
     
 }
@@ -1020,14 +998,6 @@ void ViewerGL::initShaderGLSL()
             cout << qPrintable(_imp->shaderRGB->log()) << endl;
         if(!_imp->shaderRGB->addShaderFromSourceCode(QGLShader::Fragment,fragRGB))
             cout << qPrintable(_imp->shaderRGB->log()) << endl;
-        
-        _imp->shaderLC = new QGLShaderProgram(context());
-        if (!_imp->shaderLC->addShaderFromSourceCode(QGLShader::Vertex, vertLC)){
-            cout << qPrintable(_imp->shaderLC->log()) << endl;
-        }
-        if(!_imp->shaderLC->addShaderFromSourceCode(QGLShader::Fragment,fragLC))
-            cout << qPrintable(_imp->shaderLC->log())<< endl;
-        
         
         if(!_imp->shaderRGB->link()){
             cout << qPrintable(_imp->shaderRGB->log()) << endl;
@@ -1108,9 +1078,11 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();
     
-    if(byteMode() == 1.f || !_imp->supportsGLSL){
+    if(bitDepth() == ViewerInstance::BYTE){
         _imp->defaultDisplayTexture->fillOrAllocateTexture(region,Texture::BYTE);
-    }else{
+    }else if((bitDepth() == ViewerInstance::FLOAT || bitDepth() == ViewerInstance::HALF_FLOAT)){
+        
+        //do 32bit fp textures either way, don't bother with half float. We might support it further on.
         _imp->defaultDisplayTexture->fillOrAllocateTexture(region,Texture::FLOAT);
     }
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,0);
@@ -1140,18 +1112,28 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
     _imp->zoomCtx.oldClick = event->pos();
     if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
         _imp->ms = DRAGGING;
-    } else if (event->button() == Qt::LeftButton) {
+    } else if (event->button() == Qt::LeftButton && !event->modifiers().testFlag(Qt::ControlModifier)) {
         _imp->viewerTab->getInternalNode()->notifyOverlaysPenDown(QMouseEventLocalPos(event),
                                                              toImgCoordinates_fast(event->x(), event->y()));
+    }else if(event->button() == Qt::LeftButton && event->modifiers().testFlag(Qt::ControlModifier)){
+        float r,g,b,a;
+        QPointF imgPos = toImgCoordinates_fast(event->x(), event->y());
+        bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
+        _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
+        QColor pickerColor;
+        pickerColor.setRedF(r);
+        pickerColor.setGreenF(g);
+        pickerColor.setBlueF(b);
+        pickerColor.setAlphaF(a);
+        _imp->viewerTab->getGui()->_projectGui->setPickersColor(pickerColor);
     }
-    QGLWidget::mousePressEvent(event);
+    
 }
 
 void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
     _imp->ms = UNDEFINED;
     _imp->viewerTab->getInternalNode()->notifyOverlaysPenUp(QMouseEventLocalPos(event),
                                                        toImgCoordinates_fast(event->x(), event->y()));
-    QGLWidget::mouseReleaseEvent(event);
 }
 void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
     QPointF pos = toImgCoordinates_fast(event->x(), event->y());
@@ -1197,7 +1179,15 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
     } else {
         _imp->viewerTab->getInternalNode()->notifyOverlaysPenMotion(QMouseEventLocalPos(event),pos);
     }
+
+    //FIXME: This is bugged, somehow we can't set our custom picker cursor...
+//    if(_imp->viewerTab->getGui()->_projectGui->hasPickers()){
+//        setCursor(appPTR->getColorPickerCursor());
+//    }else{
+//        setCursor(QCursor(Qt::ArrowCursor));
+//    }
 }
+
 
 void ViewerGL::updateColorPicker(int x,int y){
     QPoint pos;
@@ -1359,7 +1349,7 @@ void ViewerGL::getColorAt(int x,int y,float* r,float *g,float* b,float* a,int vi
         return ;
     }
     
-    if(byteMode()==1 || !_imp->supportsGLSL){
+    if(bitDepth() == ViewerInstance::BYTE){
         U32 pixel;
         glReadBuffer(GL_FRONT);
         glReadPixels( viewPortX, height()- viewPortY, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
@@ -1538,8 +1528,12 @@ void ViewerGL::keyReleaseEvent(QKeyEvent* event){
 }
 
 
-float ViewerGL::byteMode() const {
-    return appPTR->getCurrentSettings()._viewerSettings.byte_mode;
+int ViewerGL::bitDepth() const {
+    ViewerInstance::BitDepth e = (ViewerInstance::BitDepth)appPTR->getCurrentSettings()->getViewersBitDepth();
+    if(!_imp->supportsGLSL){
+        e = ViewerInstance::BYTE;
+    }
+    return e;
 }
 
 

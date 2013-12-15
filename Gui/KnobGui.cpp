@@ -70,7 +70,7 @@ using namespace Natron;
 
 /////////////// KnobGui
 
-KnobGui::KnobGui(Knob* knob,DockablePanel* container)
+KnobGui::KnobGui(boost::shared_ptr<Knob> knob,DockablePanel* container)
 : _knob(knob)
 , _triggerNewLine(true)
 , _spacingBetweenItems(0)
@@ -79,20 +79,18 @@ KnobGui::KnobGui(Knob* knob,DockablePanel* container)
 , _animationMenu(NULL)
 , _animationButton(NULL)
 {
-    QObject::connect(knob,SIGNAL(valueChanged(int)),this,SLOT(onInternalValueChanged(int)));
-    QObject::connect(this,SIGNAL(valueChanged(int,const Variant&)),knob,SLOT(onValueChanged(int,const Variant&)));
-    QObject::connect(knob,SIGNAL(keyFrameSet(SequenceTime,int)),this,SLOT(onInternalKeySet(SequenceTime,int)));
-    QObject::connect(this,SIGNAL(keyFrameSetByUser(SequenceTime,int)),knob,SLOT(onKeyFrameSet(SequenceTime,int)));
-    QObject::connect(knob,SIGNAL(keyFrameRemoved(SequenceTime,int)),this,SLOT(onInternalKeyRemoved(SequenceTime,int)));
-    QObject::connect(this,SIGNAL(keyFrameRemovedByUser(SequenceTime,int)),knob,SLOT(onKeyFrameRemoved(SequenceTime,int)));
-    QObject::connect(knob,SIGNAL(secretChanged()),this,SLOT(setSecret()));
-    QObject::connect(knob,SIGNAL(enabledChanged()),this,SLOT(setEnabledSlot()));
-    QObject::connect(knob,SIGNAL(deleted()),this,SLOT(deleteKnob()));
+    QObject::connect(knob.get(),SIGNAL(valueChanged(int)),this,SLOT(onInternalValueChanged(int)));
+    QObject::connect(this,SIGNAL(valueChanged(int,const Variant&)),knob.get(),SLOT(onValueChanged(int,const Variant&)));
+    QObject::connect(knob.get(),SIGNAL(keyFrameSet(SequenceTime,int)),this,SLOT(onInternalKeySet(SequenceTime,int)));
+    QObject::connect(this,SIGNAL(keyFrameSetByUser(SequenceTime,int)),knob.get(),SLOT(onKeyFrameSet(SequenceTime,int)));
+    QObject::connect(knob.get(),SIGNAL(keyFrameRemoved(SequenceTime,int)),this,SLOT(onInternalKeyRemoved(SequenceTime,int)));
+    QObject::connect(this,SIGNAL(keyFrameRemovedByUser(SequenceTime,int)),knob.get(),SLOT(onKeyFrameRemoved(SequenceTime,int)));
+    QObject::connect(knob.get(),SIGNAL(secretChanged()),this,SLOT(setSecret()));
+    QObject::connect(knob.get(),SIGNAL(enabledChanged()),this,SLOT(setEnabledSlot()));
 }
 
 KnobGui::~KnobGui(){
     
-    emit deleted(this);
     delete _animationButton;
     delete _animationMenu;
 }
@@ -204,12 +202,12 @@ void KnobGui::createAnimationMenu(){
     QAction* pasteAction = new QAction(tr("Paste"),copyMenu);
     QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(onPasteActionTriggered()));
     copyMenu->addAction(pasteAction);
- 
+    
     
     QAction* linkToAction = new QAction(tr("Link to"),_animationMenu);
     QObject::connect(linkToAction,SIGNAL(triggered()),this,SLOT(onLinkToActionTriggered()));
     _animationMenu->addAction(linkToAction);
-
+    
 }
 
 void KnobGui::setIsOnKeyframe(bool e){
@@ -223,7 +221,7 @@ void KnobGui::setSecret() {
     //  VISIBILITY is different from SECRETNESS. The code considers that both things are equivalent, which is wrong.
     // Of course, this check has to be *recursive* (in case the group is within a folded group)
     bool showit = !_knob->isSecret();
-    Knob* parentKnob = _knob->getParentKnob();
+    boost::shared_ptr<Knob> parentKnob = _knob->getParentKnob();
     while (showit && parentKnob && parentKnob->typeName() == "Group") {
         Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(_container->findKnobGuiOrCreate(parentKnob));
         assert(parentGui);
@@ -247,6 +245,7 @@ void KnobGui::showAnimationMenu(){
 }
 
 void KnobGui::onShowInCurveEditorActionTriggered(){
+    assert(_knob->getHolder()->getApp());
     _knob->getHolder()->getApp()->getGui()->setCurveEditorOnTop();
     std::vector<boost::shared_ptr<Curve> > curves;
     for(int i = 0; i < _knob->getDimension();++i){
@@ -263,7 +262,7 @@ void KnobGui::onShowInCurveEditorActionTriggered(){
 }
 
 void KnobGui::onRemoveAnyAnimationActionTriggered(){
-    
+    assert(_knob->getHolder()->getApp());
 #warning "FIXME: we don't want to use the curve editor's undo/redo stack, we want to use the node's panel undo/redo stack instead"
     std::vector<std::pair<CurveGui *, KeyFrame > > toRemove;
     for(int i = 0; i < _knob->getDimension();++i){
@@ -345,7 +344,7 @@ void KnobGui::setKeyframe(SequenceTime time,int dimension){
 }
 
 void KnobGui::onSetKeyActionTriggered(){
-    
+    assert(_knob->getHolder()->getApp());
     //get the current time on the global timeline
     SequenceTime time = _knob->getHolder()->getApp()->getTimeLine()->currentFrame();
     for(int i = 0; i < _knob->getDimension();++i){
@@ -355,12 +354,13 @@ void KnobGui::onSetKeyActionTriggered(){
 }
 
 void KnobGui::removeKeyFrame(SequenceTime time,int dimension){
-     emit keyFrameRemovedByUser(time,dimension);
-     emit keyFrameRemoved();
-     updateGUI(dimension,_knob->getValue(dimension));
+    emit keyFrameRemovedByUser(time,dimension);
+    emit keyFrameRemoved();
+    updateGUI(dimension,_knob->getValue(dimension));
 }
 
 void KnobGui::onRemoveKeyActionTriggered(){
+    assert(_knob->getHolder()->getApp());
     //get the current time on the global timeline
     SequenceTime time = _knob->getHolder()->getApp()->getTimeLine()->currentFrame();
     for(int i = 0; i < _knob->getDimension();++i){
@@ -373,7 +373,9 @@ void KnobGui::hide(){
     if(_animationButton)
         _animationButton->hide();
     //also  hide the curve from the curve editor if there's any
-    _knob->getHolder()->getApp()->getGui()->_curveEditor->hideCurves(this);
+    if(_knob->getHolder()->getApp()){
+        _knob->getHolder()->getApp()->getGui()->_curveEditor->hideCurves(this);
+    }
     
 }
 
@@ -382,15 +384,19 @@ void KnobGui::show(){
     if(_animationButton)
         _animationButton->show();
     //also show the curve from the curve editor if there's any
-    _knob->getHolder()->getApp()->getGui()->_curveEditor->showCurves(this);
+    if(_knob->getHolder()->getApp()){
+        _knob->getHolder()->getApp()->getGui()->_curveEditor->showCurves(this);
+    }
 }
 
 void KnobGui::setEnabledSlot(){
     setEnabled();
-    if(!_knob->isEnabled()){
-        _knob->getHolder()->getApp()->getGui()->_curveEditor->hideCurves(this);
-    }else{
-        _knob->getHolder()->getApp()->getGui()->_curveEditor->showCurves(this);
+    if(_knob->getHolder()->getApp()){
+        if(!_knob->isEnabled()){
+            _knob->getHolder()->getApp()->getGui()->_curveEditor->hideCurves(this);
+        }else{
+            _knob->getHolder()->getApp()->getGui()->_curveEditor->showCurves(this);
+        }
     }
 }
 
@@ -424,6 +430,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
 : QDialog(parent)
 {
     
+    
     _mainLayout = new QVBoxLayout(this);
     setLayout(_mainLayout);
     
@@ -448,6 +455,9 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
     
     QStringList comboItems;
     std::vector<Natron::Node*> allActiveNodes;
+    
+    assert(from->getKnob()->getHolder()->getApp());
+
     from->getKnob()->getHolder()->getApp()->getActiveNodes(&allActiveNodes);
     for (U32 i = 0; i < allActiveNodes.size(); ++i) {
         const std::vector< boost::shared_ptr<Knob> >& knobs = allActiveNodes[i]->getKnobs();
@@ -488,7 +498,7 @@ void KnobGui::onLinkToActionTriggered(){
     if(dialog.exec()){
         boost::shared_ptr<Knob> otherKnob = dialog.getSelectedKnobs();
         if(otherKnob){
-
+            
             if(otherKnob->typeName() != _knob->typeName()){
                 std::string err("Cannot link ");
                 err.append(_knob->getDescription());
@@ -513,7 +523,7 @@ void KnobGui::onLinkToActionTriggered(){
                 errorDialog("Knob Link", err);
                 return;
             }
-
+            
             for(int i = 0; i < _knob->getDimension();++i){
                 boost::shared_ptr<Knob> existingLink = _knob->isCurveSlave(i);
                 if(existingLink){
@@ -524,13 +534,13 @@ void KnobGui::onLinkToActionTriggered(){
                     errorDialog("Knob Link", err);
                     return;
                 }
-
+                
                 _knob->slaveTo(i, otherKnob);
-              }
+            }
         }
-
+        
     }
-   
+    
 }
 
 

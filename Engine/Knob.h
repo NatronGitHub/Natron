@@ -36,20 +36,8 @@ public:
 
     explicit Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
     
-    /**
-     * @brief Never delete a knob on your ownn. If you need to delete a knob pre-emptivly
-     * see Knob::remove() , otherwise the KnobFactory will take care of allocation / deallocation
-     * for you;
-    **/
     virtual ~Knob();
 
-    /**
-     * @brief Call this if you want to remove the Knob dynamically (for example in response to
-     * another knob value changed). You must not call the delete operator as the factory is
-     * responsible for allocation/deallocation.
-     **/
-    void remove();
-    
     /**
      * @brief Must return the type name of the knob. This name will be used by the KnobFactory
      * to create an instance of this knob.
@@ -201,9 +189,9 @@ public:
     
     std::string getName() const;
     
-    void setParentKnob(Knob* knob);
+    void setParentKnob(boost::shared_ptr<Knob> knob);
     
-    Knob* getParentKnob() const;
+    boost::shared_ptr<Knob> getParentKnob() const;
     
     int determineHierarchySize() const;
     
@@ -268,7 +256,7 @@ public slots:
 
 signals:
     
-    void deleted();
+    void deleted(Knob*);
     
     /*Emitted when the value is changed internally by a call to setValue*/
     void valueChanged(int dimension);
@@ -316,6 +304,8 @@ private:
     boost::scoped_ptr<KnobPrivate> _imp;
 };
 
+Q_DECLARE_METATYPE(Knob*)
+
 /**
  * @brief A Knob holder is a class that stores Knobs and interact with them in some way.
  * It serves 2 purpose:
@@ -330,9 +320,12 @@ class KnobHolder {
     std::vector< boost::shared_ptr<Knob> > _knobs;
     
 public:
-
-    friend class Knob;
     
+    /**
+     *@brief A holder is a class managing a bunch of knobs and interacting with an appInstance.
+     * When appInstance is NULL the holder will be considered "application global" in which case
+     * the knob holder will interact directly with the AppManager singleton.
+     **/
     KnobHolder(AppInstance* appInstance);
     
     virtual ~KnobHolder();
@@ -357,6 +350,13 @@ public:
      * but this can lead to worse performance.
      **/
     void notifyProjectBeginKnobsValuesChanged(Natron::ValueChangedReason reason);
+    
+    /**
+     * @brief Called whenever a value changes. It brakcets the call by a begin/end if it was
+     * not done already and requests an evaluation (i.e: probably a render).
+     **/
+    void notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,Knob* k,bool significant);
+
     
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
@@ -396,13 +396,26 @@ public:
      * @param knob[in] The knob whose value changed.
      **/
     virtual void evaluate(Knob* knob,bool isSignificant) = 0;
-private:
+    
+    /*Add a knob to the vector. This is called by the
+     Knob class. Don't call this*/
+    void addKnob(boost::shared_ptr<Knob> k){ _knobs.push_back(k); }
+    
+    
+    /*Removes a knob to the vector. This is called by the
+     Knob class. Don't call this*/
+    void removeKnob(Knob* k);
+    
 
     /**
-     * @brief Called whenever a value changes. It brakcets the call by a begin/end if it was
-     * not done already and requests an evaluation (i.e: probably a render).
+     * @brief Should be implemented by any deriving class that maintains
+     * a hash value based on the knobs.
      **/
-    void notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,Knob* k,bool significant);
+    void invalidateHash();
+    
+
+private:
+
     
     /**
      * @brief Must be implemented to initialize any knob using the
@@ -411,22 +424,7 @@ private:
     virtual void initializeKnobs() = 0;
 
 
-    /**
-     * @brief Should be implemented by any deriving class that maintains
-     * a hash value based on the knobs.
-     **/
-    void invalidateHash();
-
-    
-    /*Add a knob to the vector. This is called by the
-     Knob class.*/
-    void addKnob(boost::shared_ptr<Knob> k){ _knobs.push_back(k); }
-    
-    /*Removes a knob to the vector. This is called by the
-     Knob class.*/
-    void removeKnob(Knob* k);
-
-};
+   };
 
 
 #endif // NATRON_ENGINE_KNOB_H_

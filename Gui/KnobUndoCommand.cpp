@@ -42,7 +42,7 @@ void KnobMultipleUndosCommand::undo()
 
 void KnobMultipleUndosCommand::redo()
 {
-
+    assert(_knob->getKnob()->getHolder()->getApp());
     SequenceTime time = _knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
 
     for (U32 i = 0; i < _newValue.size();++i) {
@@ -93,6 +93,7 @@ void KnobUndoCommand::redo()
 {
 
     boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(_dimension);
+    assert(_knob->getKnob()->getHolder()->getApp());
     SequenceTime time = _knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     _knob->setValue(_dimension, _newValue);
 

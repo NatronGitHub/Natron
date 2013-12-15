@@ -65,6 +65,7 @@ class PluginToolButton;
 class ComboBox;
 class CurveEditor;
 class DockablePanel;
+class PreferencesPanel;
 
 namespace Natron{
     class Node;
@@ -283,7 +284,6 @@ public:
     /*set the curve editor as the active widget of its pane*/
     void setCurveEditorOnTop();
         
-
 private:
     
     void restoreGuiGeometry();
@@ -343,6 +343,8 @@ public slots:
     void putSettingsPanelFirst(DockablePanel* panel);
     
     void addToolButttonsToToolBar();
+
+    void showSettings();
 
 private:
 
@@ -443,6 +445,8 @@ public:
     
     /*Registered tabs: for drag&drop purpose*/
     std::map<std::string,QWidget*> _registeredTabs;
+    
+    PreferencesPanel* _settingsGui;
     
     ProjectGui* _projectGui;
     

@@ -39,12 +39,12 @@ using std::make_pair;
 Writer::Writer(Node* node):
     Natron::OutputEffectInstance(node)
   , _requestedChannels(Mask_RGBA) // temporary
-  , _premultKnob(0)
-  , _writeOptions(0)
-  , _frameRangeChoosal(0)
-  , _firstFrameKnob(0)
-  , _lastFrameKnob(0)
-  , _continueOnError(0)
+  , _premultKnob()
+  , _writeOptions()
+  , _frameRangeChoosal()
+  , _firstFrameKnob()
+  , _lastFrameKnob()
+  , _continueOnError()
 {
     if(node){
         QObject::connect(getNode()->getApp()->getTimeLine().get(),
@@ -88,7 +88,7 @@ static QString viewToString(int view,int viewsCount){
 boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,int view,int totalViews,const RectI& rod){
     const std::string& fileType = _filetypeCombo->getActiveEntryText();
     const std::string& fileName = _fileKnob->getFileName();
-    Natron::LibraryBinary* binary = appPTR->getCurrentSettings()._writersSettings.encoderForFiletype(fileType);
+    Natron::LibraryBinary* binary = appPTR->getCurrentSettings()->writersSettings.encoderForFiletype(fileType);
     Encoder* encoder = NULL;
     if(!binary){
         std::string exc("Couldn't find an appropriate encoder for filetype: ");
@@ -148,7 +148,7 @@ void Writer::initializeKnobs(){
     
     std::string filetypeStr("File type");
     _filetypeCombo = appPTR->getKnobFactory().createKnob<Choice_Knob>(this, filetypeStr);
-    const std::map<std::string,Natron::LibraryBinary*>& _encoders = appPTR->getCurrentSettings()._writersSettings.getFileTypesMap();
+    const std::map<std::string,Natron::LibraryBinary*>& _encoders = appPTR->getCurrentSettings()->writersSettings.getFileTypesMap();
     std::map<std::string,Natron::LibraryBinary*>::const_iterator it = _encoders.begin();
     std::vector<std::string> fileTypes;
     for(;it!=_encoders.end();++it) {
@@ -261,7 +261,7 @@ std::string Writer::getOutputFileName() const{
 }
 
 void Writer::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
-    if(k == _filetypeCombo){
+    if(k == _filetypeCombo.get()){
         const std::string& fileType = _filetypeCombo->getActiveEntryText();
         const std::string& fileName = _fileKnob->getFileName();
         if(_writeOptions){
@@ -269,7 +269,7 @@ void Writer::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
             delete _writeOptions;
             _writeOptions = 0;
         }
-        Natron::LibraryBinary* isValid = appPTR->getCurrentSettings()._writersSettings.encoderForFiletype(fileType);
+        Natron::LibraryBinary* isValid = appPTR->getCurrentSettings()->writersSettings.encoderForFiletype(fileType);
         if(!isValid) return;
         
         QString file(fileName.c_str());
@@ -292,16 +292,14 @@ void Writer::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
             delete write;
         }
 
-    }else if(k == _frameRangeChoosal){
+    }else if(k == _frameRangeChoosal.get()){
         int index = _frameRangeChoosal->getValue<int>();
         if(index != 2){
             if(_firstFrameKnob){
-                _firstFrameKnob->remove();;
-                _firstFrameKnob = 0;
+                _firstFrameKnob.reset();
             }
             if(_lastFrameKnob){
-                _lastFrameKnob->remove();
-                _lastFrameKnob = 0;
+                _lastFrameKnob.reset();
             }
         }else{
             int first = getApp()->getTimeLine()->firstFrame();

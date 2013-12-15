@@ -144,7 +144,8 @@ class CurveWidget : public QGLWidget
 public:
     
     /*Pass a null timeline ptr if you don't want interaction with the global timeline. */
-    CurveWidget(boost::shared_ptr<TimeLine> timeline = boost::shared_ptr<TimeLine>() ,QWidget* parent = NULL, const QGLWidget* shareWidget = NULL);
+    CurveWidget(boost::shared_ptr<TimeLine> timeline = boost::shared_ptr<TimeLine>() ,
+                QWidget* parent = NULL, const QGLWidget* shareWidget = NULL);
 
     virtual ~CurveWidget();
 

@@ -200,9 +200,9 @@ void ExrEncoderKnobs::initKnobs(const std::string& fileType) {
     EncoderKnobs::initKnobs(fileType);
 }
 void ExrEncoderKnobs::cleanUpKnobs(){
-    sepKnob->remove();
-    compressionCBKnob->remove();
-    depthCBKnob->remove();
+    sepKnob.reset();
+    compressionCBKnob.reset();
+    depthCBKnob.reset();
 }
 
 bool ExrEncoderKnobs::allValid(){

@@ -719,12 +719,12 @@ const std::string& Group_Knob::typeName() const
     return typeNameStatic();
 }
 
-void Group_Knob::addKnob(Knob *k)
+void Group_Knob::addKnob(boost::shared_ptr<Knob> k)
 {
     _children.push_back(k);
 }
 
-const std::vector<Knob *> &Group_Knob::getChildren() const
+const std::vector< boost::shared_ptr<Knob> > &Group_Knob::getChildren() const
 {
     return _children;
 }
@@ -754,27 +754,16 @@ const std::string& Tab_Knob::typeName() const
     return typeNameStatic();
 }
 
-void Tab_Knob::addTab(const std::string &name)
-{
-    _knobs.insert(make_pair(name, std::vector<Knob *>()));
-}
 
-void Tab_Knob::addKnob(const std::string &tabName, Knob *k)
+
+void Tab_Knob::addKnob(boost::shared_ptr<Knob> k)
 {
-    std::map<std::string, std::vector<Knob *> >::iterator it = _knobs.find(tabName);
-    if (it == _knobs.end()) {
-        pair<std::map<std::string, std::vector<Knob *> >::iterator, bool> ret = _knobs.insert(make_pair(tabName, std::vector<Knob *>()));
-        ret.first->second.push_back(k);
-    } else {
-        it->second.push_back(k);
+    std::vector<boost::shared_ptr<Knob> >::iterator found = std::find(_children.begin(), _children.end(), k);
+    if(found == _children.end()){
+        _children.push_back(k);
     }
 }
 
-
-const std::map<std::string, std::vector<Knob *> > &Tab_Knob::getKnobs() const
-{
-    return _knobs;
-}
 
 
 /******************************RichText_Knob**************************************/

@@ -13,23 +13,70 @@
 
 #include <QDir>
 
+#include "Global/AppManager.h"
 #include "Global/LibraryBinary.h"
-
+#include "Engine/KnobTypes.h"
+#include "Engine/KnobFactory.h"
+#include "Engine/Project.h"
 using namespace Natron;
 
-Settings::CachingSettings::CachingSettings(){
-    maxCacheMemoryPercent=0.5;
-    maxPlayBackMemoryPercent = 0.14;
-    maxDiskCache = 9000000000ULL;
+
+Settings::Settings(AppInstance* appInstance)
+: KnobHolder(appInstance)
+{
+    
 }
 
-Settings::ViewerSettings::ViewerSettings(){
-    byte_mode = 1;
+void Settings::initializeKnobs(){
+    _generalTab = appPTR->getKnobFactory().createKnob<Tab_Knob>(this, "General");
+    
+    _linearPickers = appPTR->getKnobFactory().createKnob<Bool_Knob>(this, "Linear color pickers");
+    _linearPickers->turnOffAnimation();
+    _linearPickers->setValue<bool>(true);
+    _generalTab->addKnob(_linearPickers);
+    
+    _viewersTab = appPTR->getKnobFactory().createKnob<Tab_Knob>(this, "Viewers");
+    
+    _texturesMode = appPTR->getKnobFactory().createKnob<Choice_Knob>(this, "Textures bit depth");
+    _texturesMode->turnOffAnimation();
+    std::vector<std::string> textureModes;
+    std::vector<std::string> helpStringsTextureModes;
+    textureModes.push_back("Byte");
+    helpStringsTextureModes.push_back("Viewer's post-process like color-space conversion will be done\n"
+                                      "by the software. Cached textures will be smaller in  the viewer cache.");
+    textureModes.push_back("32bits fp");
+    helpStringsTextureModes.push_back("Viewer's post-process like color-space conversion will be done\n"
+                                      "by the hardware using GLSL. Cached textures will be larger in the viewer cache.");
+    _texturesMode->populate(textureModes,helpStringsTextureModes);
+    _texturesMode->setValue<int>(0);
+    _viewersTab->addKnob(_texturesMode);
+    
+    _cachingTab = appPTR->getKnobFactory().createKnob<Tab_Knob>(this, "Caching");
+    
+    _maxRAMPercent = appPTR->getKnobFactory().createKnob<Int_Knob>(this, "Maximum system's RAM for caching");
+    _maxRAMPercent->turnOffAnimation();
+    _maxRAMPercent->setMinimum(0);
+    _maxRAMPercent->setMaximum(100);
+    _maxRAMPercent->setValue<int>(50);
+    _cachingTab->addKnob(_maxRAMPercent);
+    
+    _maxPlayBackPercent = appPTR->getKnobFactory().createKnob<Int_Knob>(this, "Playback cache RAM percentage");
+    _maxPlayBackPercent->turnOffAnimation();
+    _maxPlayBackPercent->setMinimum(0);
+    _maxPlayBackPercent->setMaximum(100);
+    _maxPlayBackPercent->setValue(25);
+    _cachingTab->addKnob(_maxPlayBackPercent);
+    
+    _maxDiskCacheGB = appPTR->getKnobFactory().createKnob<Int_Knob>(this, "Maximum disk cache size");
+    _maxDiskCacheGB->turnOffAnimation();
+    _maxDiskCacheGB->setMinimum(0);
+    _maxDiskCacheGB->setValue<int>(10);
+    _maxDiskCacheGB->setMaximum(100);
+    _cachingTab->addKnob(_maxDiskCacheGB);
+    
+    
+    
 }
-
-Settings::GeneralSettings::GeneralSettings(){
-}
-
 
 Settings::ReadersSettings::ReadersSettings(){
     
@@ -95,4 +142,86 @@ std::vector<std::string> Settings::ReadersSettings::supportedFileTypes() const {
         out.push_back(it->first);
     }
     return out;
+}
+
+void Settings::saveSettings(){
+    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    settings.beginGroup("General");
+    settings.setValue("LinearColorPickers",_linearPickers->getValue<bool>());
+    settings.endGroup();
+    
+    settings.beginGroup("Caching");
+    settings.setValue("MaximumRAMUsagePercentage", _maxRAMPercent->getValue<int>());
+    settings.setValue("MaximumPlaybackRAMUsage", _maxPlayBackPercent->getValue<int>());
+    settings.setValue("MaximumDiskSizeUsage", _maxDiskCacheGB->getValue<int>());
+    settings.endGroup();
+    
+    settings.beginGroup("Viewers");
+    settings.setValue("ByteTextures", _texturesMode->getValue<int>());
+    settings.endGroup();
+    
+    //not serialiazing readers/writers settings as they are meaningless for now
+}
+
+void Settings::restoreSettings(){
+    notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
+    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    settings.beginGroup("General");
+    if(settings.contains("LinearColorPickers")){
+        _linearPickers->setValue<bool>(settings.value("LinearColorPickers").toBool());
+    }
+    settings.endGroup();
+    
+    settings.beginGroup("Caching");
+    if(settings.contains("MaximumRAMUsagePercentage")){
+        _maxRAMPercent->setValue<int>(settings.value("MaximumRAMUsagePercentage").toInt());
+    }
+    if(settings.contains("MaximumPlaybackRAMUsage")){
+        _maxPlayBackPercent->setValue<int>(settings.value("MaximumRAMUsagePercentage").toInt());
+    }
+    if(settings.contains("MaximumDiskSizeUsage")){
+        _maxDiskCacheGB->setValue<int>(settings.value("MaximumDiskSizeUsage").toInt());
+    }
+    settings.endGroup();
+    
+    settings.beginGroup("Viewers");
+    if(settings.contains("ByteTextures")){
+        _texturesMode->setValue<int>(settings.value("ByteTextures").toFloat());
+    }
+    settings.endGroup();
+    notifyProjectEndKnobsValuesChanged(Natron::OTHER_REASON);
+
+}
+
+void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
+    if(k == _texturesMode.get()){
+        std::map<int,AppInstance*> apps = appPTR->getAppInstances();
+        for(std::map<int,AppInstance*>::iterator it = apps.begin();it!=apps.end();++it){
+            it->second->checkViewersConnection();
+        }
+    }else if(k == _maxDiskCacheGB.get()){
+        appPTR->setApplicationsCachesMaximumDiskSpace(getMaximumDiskCacheSize());
+    }else if(k == _maxRAMPercent.get()){
+        appPTR->setApplicationsCachesMaximumMemoryPercent(getRamMaximumPercent());
+    }else if(k == _maxPlayBackPercent.get()){
+        appPTR->setPlaybackCacheMaximumSize(getRamPlaybackMaximumPercent());
+    }
+}
+
+int Settings::getViewersBitDepth() const{
+    return _texturesMode->getValue<int>();
+}
+
+double Settings::getRamMaximumPercent() const{
+    return (double)_maxRAMPercent->getValue<int>() / 100.;
+}
+double Settings::getRamPlaybackMaximumPercent() const{
+    return (double)_maxPlayBackPercent->getValue<int>() / 100.;
+}
+
+U64 Settings::getMaximumDiskCacheSize() const{
+    return (U64)(_maxDiskCacheGB->getValue<int>()) * 100000;
+}
+bool Settings::getColorPickerLinear() const{
+    return _linearPickers->getValue<bool>();
 }

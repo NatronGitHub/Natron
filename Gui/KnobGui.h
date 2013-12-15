@@ -13,7 +13,6 @@
 #define NATRON_GUI_KNOBGUI_H_
 
 #include <QtCore/QObject>
-#include <QtCore/QMetaType>
 
 #include <boost/shared_ptr.hpp>
 
@@ -46,7 +45,7 @@ public:
     friend class KnobMultipleUndosCommand;
     friend class KnobUndoCommand;
     
-    KnobGui(Knob* knob,DockablePanel* container);
+    KnobGui(boost::shared_ptr<Knob> knob,DockablePanel* container);
     
     virtual ~KnobGui();
         
@@ -54,7 +53,7 @@ public:
     
     void turnOffNewLine() { _triggerNewLine = false; }
     
-    Knob* getKnob() const { return _knob; }
+    boost::shared_ptr<Knob> getKnob() const { return _knob; }
     
     /*Set the spacing between items in the layout*/
     void setSpacingBetweenItems(int spacing){ _spacingBetweenItems = spacing; }
@@ -86,10 +85,6 @@ public slots:
     void onInternalKeySet(SequenceTime time,int dimension);
 
     void onInternalKeyRemoved(SequenceTime time,int dimension);
-
-    void deleteKnob(){
-        delete this;
-    }
 
     void setSecret();
 
@@ -133,7 +128,6 @@ public slots:
     /******************************************************/
 
 signals:
-    void deleted(KnobGui*);
     
     /*Must be emitted when a value is changed by the user or by
      an external source.*/
@@ -196,7 +190,7 @@ private:
     void setInterpolationForDimensions(const std::vector<int>& dimensions,Natron::KeyframeType interp);
     
 private:
-    Knob* const _knob;
+    boost::shared_ptr<Knob> _knob;
     bool _triggerNewLine;
     int _spacingBetweenItems;
     bool _widgetCreated;
@@ -205,7 +199,6 @@ private:
     Button* _animationButton;
     bool _isOnKeyFrame; //< true when the value of the knob is exactly the value of a keyframe
 };
-Q_DECLARE_METATYPE(KnobGui*)
 
 
 class LinkToKnobDialog : public QDialog {

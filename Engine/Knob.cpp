@@ -42,11 +42,11 @@ struct Knob::KnobPrivate {
     std::vector<U64> _hashVector;
     std::string _description;//< the text label that will be displayed  on the GUI
     QString _name;//< the knob can have a name different than the label displayed on GUI.
-    //By default this is the same as _description but can be set by calling setName().
+                  //By default this is the same as _description but can be set by calling setName().
     bool _newLine;
     int _itemSpacing;
-
-    Knob* _parentKnob;
+    
+    boost::shared_ptr<Knob> _parentKnob;
     bool _secret;
     bool _enabled;
     bool _canUndo;
@@ -54,44 +54,44 @@ struct Knob::KnobPrivate {
     bool _isPersistent;//will it be serialized?
     std::string _tooltipHint;
     bool _isAnimationEnabled;
-
+    
     /* A variant storing all the values in any dimension. <dimension,value>*/
-   std::vector<Variant> _values;
-   int _dimension;
-   /* the keys for a specific dimension*/
-   CurvesMap _curves;
-
+    std::vector<Variant> _values;
+    int _dimension;
+    /* the keys for a specific dimension*/
+    CurvesMap _curves;
+    
     ////curve links
     ///A slave link CANNOT be master at the same time (i.e: if _slaveLinks[i] != NULL  then _masterLinks[i] == NULL )
     MastersMap _masters; //from what knob is slaved each curve if any
-
+    
     KnobPrivate(KnobHolder*  holder,int dimension,const std::string& description)
-        : _holder(holder)
-        , _hashVector()
-        , _description(description)
-        , _name(description.c_str())
-        , _newLine(true)
-        , _itemSpacing(0)
-        , _parentKnob(NULL)
-        , _secret(false)
-        , _enabled(true)
-        , _canUndo(true)
-        , _isInsignificant(false)
-        , _isPersistent(true)
-        , _tooltipHint()
-        , _isAnimationEnabled(true)
-        , _values(dimension)
-        , _dimension(dimension)
-        , _curves(dimension)
-        , _masters(dimension)
+    : _holder(holder)
+    , _hashVector()
+    , _description(description)
+    , _name(description.c_str())
+    , _newLine(true)
+    , _itemSpacing(0)
+    , _parentKnob()
+    , _secret(false)
+    , _enabled(true)
+    , _canUndo(true)
+    , _isInsignificant(false)
+    , _isPersistent(true)
+    , _tooltipHint()
+    , _isAnimationEnabled(true)
+    , _values(dimension)
+    , _dimension(dimension)
+    , _curves(dimension)
+    , _masters(dimension)
     {
-
+        
     }
-
+    
     void updateHash(const std::vector<Variant>& value){
-
+        
         _hashVector.clear();
-
+        
         for(U32 i = 0 ; i < value.size();++i){
             QByteArray data;
             QDataStream ds(&data,QIODevice::WriteOnly);
@@ -102,37 +102,31 @@ struct Knob::KnobPrivate {
                 _hashVector.push_back(str.at(i).unicode());
             }
         }
-
+        
         _holder->invalidateHash();
     }
-
+    
 };
 
 Knob::Knob(KnobHolder* holder,const std::string& description,int dimension)
-    :_imp(new KnobPrivate(holder,dimension,description))
+:_imp(new KnobPrivate(holder,dimension,description))
 {
     
-    if(_imp->_holder){
-        _imp->_holder->addKnob(boost::shared_ptr<Knob>(this));
-    }
-
+    
     for(int i = 0; i < dimension ; ++i){
         _imp->_values[i] = Variant();
         _imp->_curves[i] = boost::shared_ptr<Curve>(new Curve(this));
-
+        
     }
 }
 
 
-Knob::~Knob(){    
-    remove();
-}
-
-void Knob::remove(){
-    emit deleted();
+Knob::~Knob(){
+    emit deleted(this);
     if(_imp->_holder){
         _imp->_holder->removeKnob(this);
     }
+    
 }
 
 
@@ -145,24 +139,24 @@ const Variant& Knob::getValue(int dimension) const {
     if(isSlave){
         return isSlave->getValue(dimension);
     }
-
+    
     return _imp->_values[dimension];
 }
 
 
 Variant Knob::getValueAtTime(double time,int dimension) const{
-
+    
     if(dimension > (int)_imp->_curves.size()){
         throw std::invalid_argument("Knob::getValueAtTime(): Dimension out of range");
     }
-
+    
     ///if the knob is slaved to another knob, returns the other knob value
     boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
     if(isSlave){
         return isSlave->getValueAtTime(time,dimension);
     }
-
-
+    
+    
     boost::shared_ptr<Curve> curve  = _imp->_curves[dimension];
     if (curve->isAnimated()) {
 #warning "We should query the variant's type of the curve to construct  an appropriate return value"
@@ -170,62 +164,62 @@ Variant Knob::getValueAtTime(double time,int dimension) const{
         return Variant(curve->getValueAt(time));
     } else {
         /*if the knob as no keys at this dimension, return the value
-        at the requested dimension.*/
+         at the requested dimension.*/
         return _imp->_values[dimension];
     }
 }
 
 void Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason){
-
+    
     if(dimension > (int)_imp->_values.size()){
         throw std::invalid_argument("Knob::setValue(): Dimension out of range");
     }
-
+    
     ///if the knob is slaved to another knob,return, because we don't want the
     ///gui to be unsynchronized with what lies internally.
     boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
     if(isSlave){
         return;
     }
-
+    
     _imp->_values[dimension] = v;
-
-
+    
+    
     evaluateValueChange(dimension,reason);
 }
 
 void Knob::setValueAtTime(int time, const Variant& v, int dimension, Natron::ValueChangedReason reason){
-
+    
     if(dimension > (int)_imp->_curves.size()){
         throw std::invalid_argument("Knob::setValueAtTime(): Dimension out of range");
     }
-
+    
     ///if the knob is slaved to another knob,return, because we don't want the
     ///gui to be unsynchronized with what lies internally.
     boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
     if(isSlave){
         return;
     }
-
-
+    
+    
     boost::shared_ptr<Curve> curve = _imp->_curves[dimension];
 #warning "We should query the variant's type passed in parameter to construct a keyframe with an appropriate value"
     curve->addKeyFrame(KeyFrame(time,v.toDouble()));
-
-
-     if(reason != Natron::USER_EDITED){
+    
+    
+    if(reason != Natron::USER_EDITED){
         emit keyFrameSet(time,dimension);
-     }
-
+    }
+    
 }
 
 void Knob::deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason reason){
-
+    
     if(dimension > (int)_imp->_curves.size()){
         throw std::invalid_argument("Knob::deleteValueAtTime(): Dimension out of range");
     }
-
-
+    
+    
     ///if the knob is slaved to another knob,return, because we don't want the
     ///gui to be unsynchronized with what lies internally.
     boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
@@ -233,7 +227,7 @@ void Knob::deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason r
         return;
     }
     _imp->_curves[dimension]->removeKeyFrame(time);
-
+    
     if(reason != Natron::USER_EDITED){
         emit keyFrameRemoved(time,dimension);
     }
@@ -272,9 +266,9 @@ const std::vector<Variant>& Knob::getValueForEachDimension() const { return _imp
 int Knob::getDimension() const { return _imp->_dimension; }
 
 void Knob::load(const KnobSerialization& serializationObj){
-
+    
     assert(_imp->_dimension == serializationObj.getDimension());
-
+    
     ///restore masters
     const std::vector< std::string >& serializedMasters = serializationObj.getMasters();
     for(U32 i = 0 ; i < serializedMasters.size();++i){
@@ -287,21 +281,21 @@ void Knob::load(const KnobSerialization& serializationObj){
             }
         }
     }
-
+    
     ///bracket value changes
     beginValueChange(Natron::PLUGIN_EDITED);
-
+    
     const std::vector< boost::shared_ptr<Curve> >& serializedCurves = serializationObj.getCurves();
     for(U32 i = 0 ; i< serializedCurves.size();++i){
         assert(serializedCurves[i]);
         _imp->_curves[i]->clone(*serializedCurves[i]);
     }
-
+    
     const std::vector<Variant>& serializedValues = serializationObj.getValues();
     for(U32 i = 0 ; i < serializedValues.size();++i){
         setValue(serializedValues[i],i,Natron::PLUGIN_EDITED);
     }
-
+    
     ///end bracket
     endValueChange(Natron::PLUGIN_EDITED);
     emit restorationComplete();
@@ -325,10 +319,12 @@ void Knob::onKeyFrameRemoved(SequenceTime time,int dimension){
 
 void Knob::evaluateAnimationChange(){
     
+    //the holder cannot be a global holder(i.e: it cannot be tied application wide)
+    assert(_imp->_holder->getApp());
     SequenceTime time = _imp->_holder->getApp()->getTimeLine()->currentFrame();
-
+    
     beginValueChange(Natron::PLUGIN_EDITED);
-
+    
     for(int i = 0; i < getDimension();++i){
         boost::shared_ptr<Curve> curve = getCurve(i);
         if(curve && curve->isAnimated()){
@@ -337,7 +333,7 @@ void Knob::evaluateAnimationChange(){
         }
     }
     endValueChange(Natron::PLUGIN_EDITED);
-
+    
 }
 
 void Knob::beginValueChange(Natron::ValueChangedReason reason) {
@@ -356,9 +352,9 @@ void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
     if(reason != Natron::USER_EDITED){
         emit valueChanged(dimension);
     }
-
+    
     bool significant = reason == Natron::TIME_CHANGED ? false : !_imp->_isInsignificant;
-
+    
     _imp->_holder->notifyProjectEvaluationRequested(reason, this, significant);
 }
 
@@ -370,7 +366,7 @@ void Knob::onTimeChanged(SequenceTime time){
             setValue(v,i,Natron::TIME_CHANGED);
         }
     }
-
+    
 }
 
 
@@ -378,11 +374,11 @@ void Knob::onTimeChanged(SequenceTime time){
 void Knob::cloneValue(const Knob& other){
     assert(_imp->_name == other._imp->_name);
     _imp->_hashVector = other._imp->_hashVector;
-
+    
     _imp->_values = other._imp->_values;
-
+    
     assert(_imp->_curves.size() == other._imp->_curves.size());
-
+    
     //we cannot copy directly the map of curves because the curves hold a pointer to the knob
     //we must explicitly call clone() on them
     for(U32 i = 0 ; i < _imp->_curves.size();++i){
@@ -429,7 +425,7 @@ void Knob::setSecret(bool b){
 
 int Knob::determineHierarchySize() const{
     int ret = 0;
-    Knob* current = getParentKnob();
+    boost::shared_ptr<Knob> current = getParentKnob();
     while(current){
         ++ret;
         current = current->getParentKnob();
@@ -452,9 +448,9 @@ void Knob::setName(const std::string& name) {_imp->_name = QString(name.c_str())
 
 std::string Knob::getName() const {return _imp->_name.toStdString();}
 
-void Knob::setParentKnob(Knob* knob){ _imp->_parentKnob = knob;}
+void Knob::setParentKnob(boost::shared_ptr<Knob> knob){ _imp->_parentKnob = knob;}
 
-Knob* Knob::getParentKnob() const {return _imp->_parentKnob;}
+boost::shared_ptr<Knob> Knob::getParentKnob() const {return _imp->_parentKnob;}
 
 bool Knob::isSecret() const {return _imp->_secret;}
 
@@ -485,8 +481,8 @@ bool Knob::slaveTo(int dimension,boost::shared_ptr<Knob> other){
     _imp->_masters[dimension] = other;
     
     //copy values and add keyframes
-//    _imp->_values[dimension] = other->getValue(dimension);
-//    _imp->_curves[dimension]->clone(*(other->getCurve(dimension)));
+    //    _imp->_values[dimension] = other->getValue(dimension);
+    //    _imp->_curves[dimension]->clone(*(other->getCurve(dimension)));
     return true;
 }
 
@@ -513,19 +509,23 @@ const std::vector<boost::shared_ptr<Knob> >& Knob::getMasters() const{
 /***************************KNOB HOLDER******************************************/
 
 KnobHolder::KnobHolder(AppInstance* appInstance):
-    _app(appInstance)
-  , _knobs()
+_app(appInstance)
+, _knobs()
 {}
 
-KnobHolder::~KnobHolder(){
-    _knobs.clear();
-}
+KnobHolder::~KnobHolder(){ }
 
 void KnobHolder::invalidateHash(){
-    _app->incrementKnobsAge();
+    if(_app){
+        _app->incrementKnobsAge();
+    }
 }
 int KnobHolder::getAppAge() const{
-    return _app->getKnobsAge();
+    if(_app){
+        return _app->getKnobsAge();
+    }else{
+        return -1;
+    }
 }
 
 
@@ -554,13 +554,19 @@ void KnobHolder::refreshAfterTimeChange(SequenceTime time){
 }
 
 void KnobHolder::notifyProjectBeginKnobsValuesChanged(Natron::ValueChangedReason reason){
-    getApp()->getProject()->beginProjectWideValueChanges(reason, this);
+    if(_app){
+        getApp()->getProject()->beginProjectWideValueChanges(reason, this);
+    }
 }
 
 void KnobHolder::notifyProjectEndKnobsValuesChanged(Natron::ValueChangedReason reason){
-    getApp()->getProject()->endProjectWideValueChanges(reason,this);
+    if(_app){
+        getApp()->getProject()->endProjectWideValueChanges(reason,this);
+    }
 }
 
 void KnobHolder::notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,Knob* k,bool significant){
-    getApp()->getProject()->stackEvaluateRequest(reason,this,k,significant);
+    if(_app){
+        getApp()->getProject()->stackEvaluateRequest(reason,this,k,significant);
+    }
 }

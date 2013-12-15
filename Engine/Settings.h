@@ -19,6 +19,8 @@
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
+#include "Engine/Knob.h"
+
 /*The current settings in the preferences menu.
  @todo Move this class to QSettings instead*/
 
@@ -27,30 +29,27 @@ namespace Natron {
     class LibraryBinary;
 }
 
-class Settings
+class Tab_Knob;
+class Double_Knob;
+class Int_Knob;
+class Bool_Knob;
+class Choice_Knob;
+
+class Settings : public KnobHolder
 {
 public:
 
-    Settings():_cacheSettings(),_viewerSettings(),_generalSettings(),_readersSettings(){}
+    Settings(AppInstance* appInstance);
+    
+    virtual ~Settings(){}
         
-    class CachingSettings{
-    public:
-        double maxCacheMemoryPercent ; // percentage of the total  RAM
-        double maxPlayBackMemoryPercent; //percentage of maxCacheMemoryPercent
-        U64 maxDiskCache ; // total size of disk space used
+    virtual void evaluate(Knob* /*knob*/,bool /*isSignificant*/) OVERRIDE FINAL {}
+    
+    virtual void initializeKnobs() OVERRIDE FINAL;
         
-        CachingSettings();
-    };
-    class ViewerSettings{
-    public:
-        float byte_mode;
-        
-        ViewerSettings();
-    };
-    class GeneralSettings{
-    public:        
-        GeneralSettings();
-    };
+    virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    
+    ///This class should go away and we should move readers to OpenFX plugins.
     class ReadersSettings{
     public:
         
@@ -72,6 +71,7 @@ public:
         std::map<std::string,Natron::LibraryBinary* > _fileTypesMap;
     };
     
+    ///This class should go away and we should move writers to OpenFX plugins.
     class WritersSettings{
     public:
         WritersSettings();
@@ -98,11 +98,38 @@ public:
         
     };
     
-    CachingSettings _cacheSettings;
-    ViewerSettings _viewerSettings;
-    GeneralSettings _generalSettings;
-    ReadersSettings _readersSettings;
-    WritersSettings _writersSettings;
+    int getViewersBitDepth() const;
+    
+    double getRamMaximumPercent() const;
+    
+    double getRamPlaybackMaximumPercent() const;
+    
+    U64 getMaximumDiskCacheSize() const;
+    
+    bool getColorPickerLinear() const;
+   
+    ///save the settings to the application's settings
+    void saveSettings();
+    
+    ///restores the settings from disk
+    void restoreSettings();
+    
+    ///deprecated members
+    ReadersSettings readersSettings;
+    WritersSettings writersSettings;
+    
+private:
+    
+    boost::shared_ptr<Tab_Knob> _generalTab;
+    boost::shared_ptr<Bool_Knob> _linearPickers;
+    
+    boost::shared_ptr<Tab_Knob> _cachingTab;
+    boost::shared_ptr<Int_Knob> _maxPlayBackPercent;
+    boost::shared_ptr<Int_Knob> _maxRAMPercent;
+    boost::shared_ptr<Int_Knob> _maxDiskCacheGB;
+    
+    boost::shared_ptr<Tab_Knob> _viewersTab;
+    boost::shared_ptr<Choice_Knob> _texturesMode;
 };
 
 #endif // NATRON_ENGINE_SETTINGS_H_

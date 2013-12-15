@@ -58,12 +58,12 @@ class Int_KnobGui : public KnobGui
     Q_OBJECT
 public:
 
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Int_KnobGui(knob, container);
     }
 
 
-    Int_KnobGui(Knob *knob, DockablePanel *container);
+    Int_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
     virtual ~Int_KnobGui() OVERRIDE FINAL;
 
@@ -110,12 +110,12 @@ class Bool_KnobGui : public KnobGui
     Q_OBJECT
 public:
 
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Bool_KnobGui(knob, container);
     }
 
 
-    Bool_KnobGui(Knob *knob, DockablePanel *container): KnobGui(knob, container) {}
+    Bool_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
     virtual ~Bool_KnobGui() OVERRIDE FINAL;
 
@@ -150,12 +150,12 @@ class Double_KnobGui : public KnobGui
     Q_OBJECT
 public:
 
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Double_KnobGui(knob, container);
     }
 
 
-    Double_KnobGui(Knob *knob, DockablePanel *container);
+    Double_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
     virtual ~Double_KnobGui() OVERRIDE FINAL;
 
@@ -196,12 +196,12 @@ class Button_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Button_KnobGui(knob, container);
     }
 
 
-    Button_KnobGui(Knob *knob, DockablePanel *container): KnobGui(knob, container) {}
+    Button_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
     virtual ~Button_KnobGui() OVERRIDE FINAL;
 
@@ -233,12 +233,12 @@ class Choice_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Choice_KnobGui(knob, container);
     }
 
 
-    Choice_KnobGui(Knob *knob, DockablePanel *container);
+    Choice_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
     virtual ~Choice_KnobGui() OVERRIDE FINAL;
 
@@ -272,11 +272,11 @@ private:
 class Separator_KnobGui : public KnobGui
 {
 public:
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Separator_KnobGui(knob, container);
     }
 
-    Separator_KnobGui(Knob *knob, DockablePanel *container): KnobGui(knob, container) {}
+    Separator_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
     virtual ~Separator_KnobGui() OVERRIDE FINAL;
 
@@ -298,6 +298,7 @@ private:
     QFrame *_line;
     QLabel *_descriptionLabel;
 };
+/******************************/
 
 class ColorPickerLabel : public QLabel {
     
@@ -311,29 +312,37 @@ public:
     
     bool isPickingEnabled() const { return _pickingEnabled; }
 
+    void setColor(const QColor& color);
+    
 protected:
     
-    virtual void mousePressEvent(QMouseEvent*) ;
-
+    virtual void enterEvent(QEvent*);
     
+    virtual void leaveEvent(QEvent*);
+        
+    virtual void mousePressEvent(QMouseEvent*) ;    
+
+signals:
+    
+    void pickingEnabled(bool);
     
 private:
 
     bool _pickingEnabled;
+    QColor _currentColor;
 };
 
 
-/******************************/
 class Color_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Color_KnobGui(knob, container);
     }
 
 
-    Color_KnobGui(Knob *knob, DockablePanel *container);
+    Color_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
     virtual ~Color_KnobGui() OVERRIDE FINAL;
 
@@ -342,6 +351,8 @@ public slots:
     void onColorChanged();
 
     void showColorDialog();
+    
+    void onPickingEnabled(bool enabled);
 
 private:
 
@@ -392,12 +403,12 @@ class String_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new String_KnobGui(knob, container);
     }
 
 
-    String_KnobGui(Knob *knob, DockablePanel *container): KnobGui(knob, container) {}
+    String_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
     virtual ~String_KnobGui() OVERRIDE FINAL;
 
@@ -428,12 +439,12 @@ private:
 class Custom_KnobGui : public KnobGui
 {
 public:
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Custom_KnobGui(knob, container);
     }
 
 
-    Custom_KnobGui(Knob *knob, DockablePanel *container): KnobGui(knob, container) {}
+    Custom_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
     virtual ~Custom_KnobGui() OVERRIDE FINAL;
 
@@ -463,12 +474,12 @@ class Group_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Group_KnobGui(knob, container);
     }
 
 
-    Group_KnobGui(Knob *knob, DockablePanel *container): KnobGui(knob, container), _checked(false) {}
+    Group_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container), _checked(false) {}
 
     virtual ~Group_KnobGui() OVERRIDE FINAL;
 
@@ -512,12 +523,12 @@ class RichText_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new RichText_KnobGui(knob, container);
     }
 
 
-    RichText_KnobGui(Knob *knob, DockablePanel *container): KnobGui(knob, container) {}
+    RichText_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
     virtual ~RichText_KnobGui() OVERRIDE FINAL;
 

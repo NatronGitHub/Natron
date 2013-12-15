@@ -161,6 +161,7 @@ SOURCES += \
     Gui/NodeGraph.cpp \
     Gui/NodeGui.cpp \
     Gui/NodeGuiSerialization.cpp \
+    Gui/PreferencesPanel.cpp \
     Gui/ProjectGui.cpp \
     Gui/ProjectGuiSerialization.cpp \
     Gui/ScaleSlider.cpp \
@@ -194,7 +195,6 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
     libs/OpenFX/HostSupport/src/ofxhUtilities.cpp
-
 HEADERS += \
     Engine/Cache.h \
     Engine/Curve.h \
@@ -268,6 +268,7 @@ HEADERS += \
     Gui/NodeGraph.h \
     Gui/NodeGui.h \
     Gui/NodeGuiSerialization.h \
+    Gui/PreferencesPanel.h \
     Gui/ProjectGui.h \
     Gui/ProjectGuiSerialization.h \
     Gui/ScaleSlider.h \
@@ -324,8 +325,6 @@ HEADERS += \
     libs/OpenFX_extensions//tuttle/ofxParam.h \
     libs/OpenFX_extensions//tuttle/ofxParamAPI.h \
     libs/OpenFX_extensions//tuttle/ofxReadWrite.h
-
-
 INSTALLS += target
 
 RESOURCES += \

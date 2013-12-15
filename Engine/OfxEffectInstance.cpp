@@ -64,7 +64,6 @@ OfxEffectInstance::OfxEffectInstance(Natron::Node* node)
     , _isOutput(false)
     , _penDown(false)
     , _overlayInteract()
-    , _tabKnob(0)
     , _lastKnobLayoutWithNoNewLine(0)
     , _initialized(false)
 {

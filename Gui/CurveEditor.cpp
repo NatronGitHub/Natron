@@ -131,14 +131,14 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
     nameItem->setText(0,_node->getNode()->getName().c_str());
 
     QObject::connect(node,SIGNAL(nameChanged(QString)),this,SLOT(onNameChanged(QString)));
-    const std::map<Knob*,KnobGui*>& knobs = node->getKnobs();
+    const std::map<boost::shared_ptr<Knob>,KnobGui*>& knobs = node->getKnobs();
 
     bool hasAtLeast1KnobWithACurve = false;
     bool hasAtLeast1KnobWithACurveShown = false;
 
-    for(std::map<Knob*,KnobGui*>::const_iterator it = knobs.begin();it!=knobs.end();++it){
+    for(std::map<boost::shared_ptr<Knob>,KnobGui*>::const_iterator it = knobs.begin();it!=knobs.end();++it){
 
-        Knob* k = it->first;
+        const boost::shared_ptr<Knob>& k = it->first;
         KnobGui* kgui = it->second;
         if(!k->canAnimate()){
             continue;
@@ -171,7 +171,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
                 QString curveName = QString(k->getDescription().c_str()) + "." + QString(k->getDimensionName(j).c_str());
                 CurveGui* dimCurve = curveWidget->createCurve(k->getCurve(j),curveName);
                 NodeCurveEditorElement* elem = new NodeCurveEditorElement(tree,curveWidget,kgui,j,dimItem,dimCurve);
-                QObject::connect(k,SIGNAL(restorationComplete()),elem,SLOT(checkVisibleState()));
+                QObject::connect(k.get(),SIGNAL(restorationComplete()),elem,SLOT(checkVisibleState()));
                 _nodeElements.push_back(elem);
                 if(!dimCurve->getInternalCurve()->isAnimated()){
                     dimItem->setHidden(true);
@@ -188,7 +188,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
             knobItem->setHidden(true);
         }
         NodeCurveEditorElement* elem = new NodeCurveEditorElement(tree,curveWidget,kgui,0,knobItem,knobCurve);
-        QObject::connect(k,SIGNAL(restorationComplete()),elem,SLOT(checkVisibleState()));
+        QObject::connect(k.get(),SIGNAL(restorationComplete()),elem,SLOT(checkVisibleState()));
         _nodeElements.push_back(elem);
     }
     if(hasAtLeast1KnobWithACurve){

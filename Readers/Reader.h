@@ -215,8 +215,8 @@ private:
     
     boost::shared_ptr<Decoder> decoderForFileType(const QString& fileName);
     Buffer _buffer;
-    File_Knob* _fileKnob;
-    Choice_Knob* _missingFrameChoice;
+    boost::shared_ptr<File_Knob> _fileKnob;
+    boost::shared_ptr<Choice_Knob> _missingFrameChoice;
     QMutex _lock;
     boost::scoped_ptr<QFutureWatcher<void> > _previewWatcher;
 };

@@ -588,7 +588,7 @@ void NodeGui::populateMenu(){
     _menu->addAction(deleteAction);
 
 }
-const std::map<Knob*,KnobGui*>& NodeGui::getKnobs() const{
+const std::map<boost::shared_ptr<Knob> ,KnobGui*>& NodeGui::getKnobs() const{
     return _settingsPanel->getKnobs();
 }
 

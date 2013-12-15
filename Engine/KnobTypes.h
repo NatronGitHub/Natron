@@ -388,7 +388,7 @@ class Group_Knob: public Knob
 {
     Q_OBJECT
 
-    std::vector<Knob *> _children;
+    std::vector< boost::shared_ptr<Knob> > _children;
 public:
 
     static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
@@ -397,9 +397,9 @@ public:
 
     Group_Knob(KnobHolder *holder, const std::string &description, int dimension);
 
-    void addKnob(Knob *k);
+    void addKnob(boost::shared_ptr<Knob> k);
 
-    const std::vector<Knob *> &getChildren() const;
+    const std::vector< boost::shared_ptr<Knob> > &getChildren() const;
 
     static const std::string& typeNameStatic();
 
@@ -426,11 +426,9 @@ public:
 
     Tab_Knob(KnobHolder *holder, const std::string &description, int dimension);
 
-    void addTab(const std::string &typeName);
+    void addKnob(boost::shared_ptr<Knob> k);
 
-    void addKnob(const std::string &tabName, Knob *k);
-
-    const std::map<std::string, std::vector<Knob *> > &getKnobs() const;
+    const std::vector< boost::shared_ptr<Knob> >  &getKnobs() const { return _children; }
 
     static const std::string& typeNameStatic();
 
@@ -440,7 +438,9 @@ private:
     virtual const std::string& typeName() const OVERRIDE FINAL;
 
 private:
-    std::map<std::string, std::vector<Knob *> > _knobs;
+    
+    std::vector< boost::shared_ptr<Knob> > _children;
+    
     static const std::string _typeNameStr;
 };
 

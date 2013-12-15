@@ -24,6 +24,7 @@
 #include <QtConcurrentRun>
 #include <QtConcurrentMap>
 #include <QtGui/QPixmapCache>
+#include <QBitmap>
 
 #if QT_VERSION < 0x050000
 #include <QtGui/QDesktopServices>
@@ -205,6 +206,11 @@ void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const{
             img.load(NATRON_IMAGES_PATH"colorwheel.png");
             *pix = QPixmap::fromImage(img).scaled(25, 20);
             break;
+        case NATRON_PIXMAP_COLOR_PICKER:
+            img.load(NATRON_IMAGES_PATH"color_picker.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+
         case NATRON_PIXMAP_IO_GROUPING:
             img.load(NATRON_IMAGES_PATH"ioGroupingIcon.png");
             *pix = QPixmap::fromImage(img);
@@ -415,7 +421,7 @@ void AppInstance::getActiveNodes(std::vector<Natron::Node*>* activeNodes) const{
 }
 bool AppInstance::loadProject(const QString& path,const QString& name){
     try {
-       loadProjectInternal(path,name);
+        loadProjectInternal(path,name);
     } catch (const std::exception& e) {
         Natron::errorDialog("Project loader", std::string("Error while loading project") + ": " + e.what());
         if(!_isBackground)
@@ -735,6 +741,11 @@ AppInstance* AppManager::getAppInstance(int appID) const{
         return NULL;
     }
 }
+
+const std::map<int,AppInstance*>&  AppManager::getAppInstances() const{
+    return _appInstances;
+}
+
 void AppManager::removeInstance(int appID){
     _appInstances.erase(appID);
 }
@@ -900,10 +911,10 @@ AppInstance* AppManager::getTopLevelInstance () const{
 AppManager::AppManager()
     : QObject()
     , Singleton<AppManager>()
-    , _settings(new Settings())
     , _appInstances()
     , _availableID(0)
     , _topLevelInstanceID(0)
+    , _settings(new Settings(NULL))
     , _readPluginsLoaded()
     , _writePluginsLoaded()
     , _formats()
@@ -912,14 +923,22 @@ AppManager::AppManager()
     , _toolButtons()
     , _knobFactory(new KnobFactory())
     , _knobGuiFactory(new KnobGuiFactory())
-    ,_nodeCache(new Cache<Image>("NodeCache",0x1, (_settings->_cacheSettings.maxCacheMemoryPercent -
-                                                   _settings->_cacheSettings.maxPlayBackMemoryPercent)*getSystemTotalRAM(),1))
-    ,_viewerCache(new Cache<FrameEntry>("ViewerCache",0x1,_settings->_cacheSettings.maxDiskCache
-                                        ,_settings->_cacheSettings.maxPlayBackMemoryPercent))
+    , _nodeCache()
+    , _viewerCache()
+    ,_colorPickerCursor(NULL)
 {
+    
+    _settings->initializeKnobs();
+    
+    _settings->restoreSettings();
+    
     connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString,QString)),
             this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString,QString)));
     
+    _nodeCache.reset(new Cache<Image>("NodeCache",0x1, (_settings->getRamMaximumPercent() -
+                                                        _settings->getRamPlaybackMaximumPercent())*getSystemTotalRAM(),1));
+    _viewerCache.reset(new Cache<FrameEntry>("ViewerCache",0x1,_settings->getMaximumDiskCacheSize()
+                                             ,_settings->getRamPlaybackMaximumPercent()));
     
     /*loading all plugins*/
     loadAllPlugins();
@@ -928,10 +947,31 @@ AppManager::AppManager()
     /*Adjusting multi-threading for OpenEXR library.*/
     Imf::setGlobalThreadCount(QThread::idealThreadCount());
     
+    createColorPickerCursor();
+    
 
 }
 
+void AppManager::registerAppInstance(AppInstance* app){
+    _appInstances.insert(std::make_pair(app->getAppID(),app));
+}
+
+void AppManager::setApplicationsCachesMaximumMemoryPercent(double p){
+    _nodeCache->setMaximumCacheSize((p - _settings->getRamPlaybackMaximumPercent()) * getSystemTotalRAM());
+}
+
+void AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size){
+    _viewerCache->setMaximumCacheSize(size);
+}
+
+void AppManager::setPlaybackCacheMaximumSize(double p){
+    _viewerCache->setMaximumInMemorySize(p);
+}
+
 AppManager::~AppManager(){
+    
+    _settings->saveSettings();
+    
     for(ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); ++it) {
         delete it->second.second;
     }
@@ -1002,7 +1042,7 @@ void AppManager::loadReadPlugins(){
             }
         }
     }
-    _settings->_readersSettings.fillMap(defaultMapping);
+    _settings->readersSettings.fillMap(defaultMapping);
 }
 
 void AppManager::loadBuiltinReads(){
@@ -1135,7 +1175,7 @@ void AppManager::loadWritePlugins(){
             }
         }
     }
-    _settings->_writersSettings.fillMap(defaultMapping);
+    _settings->writersSettings.fillMap(defaultMapping);
 }
 
 /*loads writes that are built-ins*/
@@ -1248,6 +1288,14 @@ Format* AppManager::findExistingFormat(int w, int h, double pixel_aspect) const 
         }
     }
     return NULL;
+}
+
+void AppManager::createColorPickerCursor(){
+    QPixmap pickerPix;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_COLOR_PICKER, &pickerPix);
+    pickerPix = pickerPix.scaled(16, 16);
+    pickerPix.setMask(pickerPix.createHeuristicMask());
+    _colorPickerCursor = new QCursor(pickerPix,0,pickerPix.height());
 }
 
 
@@ -1721,6 +1769,7 @@ Natron::StandardButton questionDialog(const std::string& title,const std::string
     Log::print(message);
     Log::endFunction(title,"QUESTION");
 }
+    
 
 Plugin::~Plugin(){
     if(_lock){

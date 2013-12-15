@@ -27,9 +27,9 @@ class Writer;
  createKnobDynamically interface there. We must use an extra class.
  Class inheriting*/
 class ExrEncoderKnobs : public EncoderKnobs{
-    Separator_Knob* sepKnob;
-    Choice_Knob *compressionCBKnob;
-    Choice_Knob *depthCBKnob ;
+    boost::shared_ptr<Separator_Knob> sepKnob;
+    boost::shared_ptr<Choice_Knob> compressionCBKnob;
+    boost::shared_ptr<Choice_Knob> depthCBKnob ;
     
 public:
     

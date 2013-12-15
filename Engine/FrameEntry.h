@@ -32,8 +32,8 @@ namespace Natron{
         U64 _treeVersion;
         double _zoomFactor;
         double _exposure;
-        double _lut;
-        double _byteMode;
+        int _lut;
+        int _bitDepth;
         int _channels;
         int _view;
         RectI _dataWindow;//RoD
@@ -48,7 +48,7 @@ namespace Natron{
         , _zoomFactor(0)
         , _exposure(0)
         , _lut(0)
-        , _byteMode(0)
+        , _bitDepth(0)
         , _channels(0)
         , _view(0)
         , _dataWindow()
@@ -63,7 +63,7 @@ namespace Natron{
         , _zoomFactor(0)
         , _exposure(0)
         , _lut(0)
-        , _byteMode(0)
+        , _bitDepth(0)
         , _channels(0)
         , _view(0)
         , _dataWindow()
@@ -72,7 +72,7 @@ namespace Natron{
         {}
         
         FrameKey(SequenceTime time,U64 treeVersion,double zoomFactor,double exposure,
-                 double lut,double byteMode,int channels,int view,
+                 int lut,int bitDepth,int channels,int view,
                  const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect):
         KeyHelper<U64>()
         ,_time(time)
@@ -80,7 +80,7 @@ namespace Natron{
         ,_zoomFactor(zoomFactor)
         ,_exposure(exposure)
         ,_lut(lut)
-        ,_byteMode(byteMode)
+        ,_bitDepth(bitDepth)
         ,_channels(channels)
         ,_view(view)
         ,_dataWindow(dataWindow)
@@ -95,8 +95,8 @@ namespace Natron{
             hash->append(_treeVersion);
             hash->append(*reinterpret_cast<const U64*>(&_zoomFactor));
             hash->append(*reinterpret_cast<const U64*>(&_exposure));
-            hash->append(_lut); //not really a double
-            hash->append(_byteMode); // not really a double
+            hash->append(_lut);
+            hash->append(_bitDepth);
             hash->append(_channels);
             hash->append(_view);
             hash->append(_dataWindow.left());
@@ -122,7 +122,7 @@ namespace Natron{
                     _zoomFactor == other._zoomFactor &&
                     _exposure == other._exposure &&
                     _lut == other._lut &&
-                    _byteMode == other._byteMode &&
+                    _bitDepth == other._bitDepth &&
                     _channels == other._channels &&
                     _view == other._view &&
                     _dataWindow == other._dataWindow &&
@@ -144,7 +144,7 @@ namespace boost {
             ar & f._zoomFactor;
             ar & f._exposure;
             ar & f._lut;
-            ar & f._byteMode;
+            ar & f._bitDepth;
             ar & f._channels;
             ar & f._view;
             ar & f._dataWindow;
@@ -173,9 +173,9 @@ namespace Natron{
         ~FrameEntry(){ }
         
         static FrameKey makeKey(SequenceTime time,U64 treeVersion,double zoomFactor,double exposure,
-                                double lut,double byteMode,int channels,int view,
+                                int lut,int bitDepth,int channels,int view,
                                 const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect){
-            return FrameKey(time,treeVersion,zoomFactor,exposure,lut,byteMode,channels,view,dataWindow,displayWindow,textureRect);
+            return FrameKey(time,treeVersion,zoomFactor,exposure,lut,bitDepth,channels,view,dataWindow,displayWindow,textureRect);
         }
         
         U8* data() const {return _data.writable();}

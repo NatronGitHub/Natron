@@ -49,9 +49,9 @@ struct ProjectPrivate{
     bool hasProjectBeenSavedByUser;
     QDateTime ageSinceLastSave;
     QDateTime lastAutoSave;
-    Choice_Knob* formatKnob;
-    Button_Knob* addFormatKnob;
-    Int_Knob* viewsCount;
+    boost::shared_ptr<Choice_Knob> formatKnob;
+    boost::shared_ptr<Button_Knob> addFormatKnob;
+    boost::shared_ptr<Int_Knob> viewsCount;
     boost::shared_ptr<TimeLine> timeline; // global timeline
     
     std::map<std::string,int> nodeCounters;

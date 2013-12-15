@@ -315,17 +315,17 @@ void Project::endKnobsValuesChanged(Natron::ValueChangedReason /*reason*/) {
 }
 
 void Project::onKnobValueChanged(Knob* knob,Natron::ValueChangedReason /*reason*/){
-    if(knob == _imp->viewsCount){
+    if(knob == _imp->viewsCount.get()){
         int viewsCount = _imp->viewsCount->getValue<int>();
         getApp()->setupViewersForViews(viewsCount);
-    }else if(knob == _imp->formatKnob){
+    }else if(knob == _imp->formatKnob.get()){
         const Format& f = _imp->availableFormats[_imp->formatKnob->getActiveEntry()];
         for(U32 i = 0 ; i < _imp->currentNodes.size() ; ++i){
             if (_imp->currentNodes[i]->pluginID() == "Viewer") {
                 emit formatChanged(f);
             }
         }
-    }else if(knob == _imp->addFormatKnob){
+    }else if(knob == _imp->addFormatKnob.get()){
         emit mustCreateFormat();
     }
 

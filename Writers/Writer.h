@@ -88,15 +88,15 @@ private:
     boost::shared_ptr<Encoder> makeEncoder(SequenceTime time,int view,int totalViews,const RectI& rod);
     
     Natron::ChannelSet _requestedChannels;
-    Bool_Knob* _premultKnob;
+    boost::shared_ptr<Bool_Knob> _premultKnob;
     EncoderKnobs* _writeOptions;
         
-    OutputFile_Knob* _fileKnob;
-    Choice_Knob* _filetypeCombo;
-    Choice_Knob* _frameRangeChoosal;
-    Int_Knob* _firstFrameKnob;
-    Int_Knob* _lastFrameKnob;
-    Button_Knob* _renderKnob;
-    Bool_Knob* _continueOnError;
+    boost::shared_ptr<OutputFile_Knob> _fileKnob;
+    boost::shared_ptr<Choice_Knob> _filetypeCombo;
+    boost::shared_ptr<Choice_Knob> _frameRangeChoosal;
+    boost::shared_ptr<Int_Knob> _firstFrameKnob;
+    boost::shared_ptr<Int_Knob> _lastFrameKnob;
+    boost::shared_ptr<Button_Knob> _renderKnob;
+    boost::shared_ptr<Bool_Knob> _continueOnError;
 };
 #endif /* defined(NATRON_WRITERS_WRITER_H_) */

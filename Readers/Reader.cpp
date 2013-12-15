@@ -50,7 +50,7 @@ using std::cout; using std::endl;
 Reader::Reader(Node* node)
 : Natron::EffectInstance(node)
 , _buffer()
-, _fileKnob(0)
+, _fileKnob()
 {
 }
 
@@ -98,7 +98,7 @@ void Reader::initializeKnobs(){
 }
 
 void Reader::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
-    if(k == _fileKnob){
+    if(k == _fileKnob.get()){
         getNode()->refreshPreviewImage(getApp()->getTimeLine()->currentFrame());
     }
 }
@@ -111,7 +111,7 @@ void Reader::getFrameRange(SequenceTime *first,SequenceTime *last){
 boost::shared_ptr<Decoder> Reader::decoderForFileType(const QString& fileName){
     QString fileNameCopy = fileName;
     QString extension = Natron::removeFileExtension(fileNameCopy);
-    Natron::LibraryBinary* decoder = appPTR->getCurrentSettings()._readersSettings.decoderForFiletype(extension.toStdString());
+    Natron::LibraryBinary* decoder = appPTR->getCurrentSettings()->readersSettings.decoderForFiletype(extension.toStdString());
     if (!decoder) {
         std::string err("Couldn't find an appropriate decoder for this filetype");
         err.append(extension.toStdString());

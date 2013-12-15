@@ -51,6 +51,7 @@
 #include "Gui/CurveEditor.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/DockablePanel.h"
+#include "Gui/PreferencesPanel.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH"openeffects.png"
@@ -120,6 +121,7 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
     viewersMenu(0),
     viewerInputsMenu(0),
     cacheMenu(0),
+    _settingsGui(0),
     _projectGui(0)
 {
     QObject::connect(this,SIGNAL(doDialog(int,QString,QString,Natron::StandardButtons,int)),this,
@@ -246,7 +248,7 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
     assert(actionSaveAs_project);
     actionSaveAs_project->setText(tr("Save Project As..."));
     assert(actionPreferences);
-    actionPreferences->setText(tr("Preferences..."));
+    actionPreferences->setText(tr("Preferences"));
     assert(actionExit);
     actionExit->setText(tr("E&xit"));
     assert(actionProject_settings);
@@ -280,7 +282,6 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
     actionConnectInput9 ->setText(tr("Connect to input 9"));
     assert(actionConnectInput10);
     actionConnectInput10 ->setText(tr("Connect to input 10"));
-    
     
     //WorkShop->setTabText(WorkShop->indexOf(CurveEditor), tr("Motion Editor"));
     
@@ -522,6 +523,11 @@ void Gui::setupUi()
     _projectGui->create(_appInstance->getProject(),
                         _layoutPropertiesBin,
                         _propertiesContainer);
+    
+
+    _settingsGui = new PreferencesPanel(appPTR->getCurrentSettings(),this);
+    _settingsGui->hide();
+
     setVisibleProjectSettingsPanel();
     
     menubar->addAction(menuFile->menuAction());
@@ -534,9 +540,10 @@ void Gui::setupUi()
     menuFile->addAction(actionSave_project);
     menuFile->addAction(actionSaveAs_project);
     menuFile->addSeparator();
-    menuFile->addAction(actionPreferences);
     menuFile->addSeparator();
     menuFile->addAction(actionExit);
+
+    menuEdit->addAction(actionPreferences);
 
     menuOptions->addAction(actionProject_settings);
     menuDisplay->addAction(viewersMenu->menuAction());
@@ -581,6 +588,8 @@ void Gui::setupUi()
     QObject::connect(actionConnectInput9, SIGNAL(triggered()),this,SLOT(connectInput9()));
     QObject::connect(actionConnectInput10, SIGNAL(triggered()),this,SLOT(connectInput10()));
     
+    QObject::connect(actionPreferences,SIGNAL(triggered()),this,SLOT(showSettings()));
+
     QMetaObject::connectSlotsByName(this);
     
     restoreGuiGeometry();
@@ -1488,3 +1497,8 @@ void Gui::setCurveEditorOnTop(){
         }
     }
 }
+
+void Gui::showSettings(){
+    _settingsGui->show();
+}
+

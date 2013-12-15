@@ -257,7 +257,7 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
 {
     // note: the order for parameter types is the same as in ofxParam.h
     OFX::Host::Param::Instance* instance = NULL;
-    Knob* knob = NULL;
+    boost::shared_ptr<Knob> knob;
 
     if (descriptor.getType() == kOfxParamTypeInteger) {
         OfxIntegerInstance *ret = new OfxIntegerInstance(node(), descriptor);

@@ -123,7 +123,7 @@ public:
         
     void markInputNull(Edge* e);
     
-    const std::map<Knob*,KnobGui*>& getKnobs() const;
+    const std::map<boost::shared_ptr<Knob>,KnobGui*>& getKnobs() const;
     
     static const int NODE_LENGTH = 80;
     static const int NODE_HEIGHT = 30;

@@ -30,7 +30,7 @@ using std::pair;
 /*Class inheriting KnobGui, must have a function named BuildKnobGui with the following signature.
  This function should in turn call a specific class-based static function with the appropriate param.*/
 typedef Knob *(*KnobBuilder)(KnobHolder  *holder, const std::string &description, int dimension);
-typedef KnobGui *(*KnobGuiBuilder)(Knob *knob, DockablePanel *);
+typedef KnobGui *(*KnobGuiBuilder)(boost::shared_ptr<Knob> knob, DockablePanel* panel);
 
 /***********************************FACTORY******************************************/
 KnobGuiFactory::KnobGuiFactory()
@@ -98,7 +98,7 @@ void KnobGuiFactory::loadBultinKnobs()
 }
 
 
-KnobGui *KnobGuiFactory::createGuiForKnob(Knob *knob, DockablePanel *container) const
+KnobGui *KnobGuiFactory::createGuiForKnob(boost::shared_ptr<Knob> knob, DockablePanel *container) const
 {
     assert(knob);
     std::map<std::string, LibraryBinary *>::const_iterator it = _loadedKnobs.find(knob->typeName());

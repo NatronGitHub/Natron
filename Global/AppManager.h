@@ -42,6 +42,7 @@
 class AppInstance;
 class KnobFactory;
 class KnobGuiFactory;
+class KnobHolder;
 class NodeGui;
 class ViewerInstance;
 class ViewerTab;
@@ -382,13 +383,15 @@ public:
 
     AppInstance* newAppInstance(bool background,const QString& projectName = QString(),const QStringList& writers = QStringList());
 
-    void registerAppInstance(AppInstance* app){ _appInstances.insert(std::make_pair(app->getAppID(),app));}
+    void registerAppInstance(AppInstance* app);
 
     AppInstance* getAppInstance(int appID) const;
 
     void removeInstance(int appID);
 
     void setAsTopLevelInstance(int appID);
+
+    const std::map<int,AppInstance*>& getAppInstances() const;
 
     AppInstance* getTopLevelInstance () const WARN_UNUSED_RETURN;
 
@@ -418,6 +421,12 @@ public:
 
     const Natron::Cache<Natron::Image>& getNodeCache() const WARN_UNUSED_RETURN {return *_nodeCache;}
 
+    void setApplicationsCachesMaximumMemoryPercent(double p);
+
+    void setApplicationsCachesMaximumDiskSpace(unsigned long long size);
+
+    void setPlaybackCacheMaximumSize(double p);
+
     void removeFromNodeCache(boost::shared_ptr<Natron::Image> image);
 
     void removeFromViewerCache(boost::shared_ptr<Natron::FrameEntry> texture);
@@ -426,11 +435,14 @@ public:
 
     const KnobGuiFactory& getKnobGuiFactory() const WARN_UNUSED_RETURN {return *_knobGuiFactory;}
 
-    const Settings& getCurrentSettings() const {return *_settings;}
-
     PluginToolButton* findPluginToolButtonOrCreate(const QString& pluginID,const QString& name,const QString& iconPath);
 
     void getIcon(Natron::PixmapEnum e,QPixmap* pix) const;
+
+    const QCursor& getColorPickerCursor() const { return *_colorPickerCursor; }
+
+    boost::shared_ptr<Settings> getCurrentSettings() const {return _settings;}
+
 
 public slots:
 
@@ -456,6 +468,7 @@ signals:
     void imageRemovedFromViewerCache(SequenceTime time);
 
 private:
+
 
     /*Loads all kind of plugins*/
     void loadAllPlugins();
@@ -490,13 +503,16 @@ private:
 
      void populateIcons();
 
-    boost::scoped_ptr<Settings> _settings;
+    void createColorPickerCursor();
 
     std::map<int,AppInstance*> _appInstances;
 
     int _availableID;
 
     int _topLevelInstanceID;
+
+    boost::shared_ptr<Settings> _settings;
+
 
     /*map< decoder name, pair< vector<file type decoded>, decoder library> >*/
     std::map< std::string,std::pair< std::vector<std::string> ,Natron::LibraryBinary*> > _readPluginsLoaded;
@@ -516,10 +532,11 @@ private:
 
     boost::scoped_ptr<KnobGuiFactory> _knobGuiFactory;
 
-    boost::scoped_ptr<Natron::Cache<Natron::Image> >  _nodeCache;
+    boost::shared_ptr<Natron::Cache<Natron::Image> >  _nodeCache;
 
-    boost::scoped_ptr<Natron::Cache<Natron::FrameEntry> > _viewerCache;
+    boost::shared_ptr<Natron::Cache<Natron::FrameEntry> > _viewerCache;
 
+    QCursor* _colorPickerCursor;
 
 };
 
@@ -534,6 +551,7 @@ void informationDialog(const std::string& title,const std::string& message);
 Natron::StandardButton questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons =
         Natron::StandardButtons(Natron::Yes | Natron::No),
                                       Natron::StandardButton defaultButton = Natron::NoButton);
+
 
 } // namespace Natron
 

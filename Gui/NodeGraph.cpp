@@ -1189,7 +1189,7 @@ void NodeGraph::dropEvent(QDropEvent* event){
     }
     
     QStringList supportedExtensions;
-    std::vector<std::string> supportedFileTypes = appPTR->getCurrentSettings()._readersSettings.supportedFileTypes();
+    std::vector<std::string> supportedFileTypes = appPTR->getCurrentSettings()->readersSettings.supportedFileTypes();
     for(U32 i = 0 ; i < supportedFileTypes.size();++i){
         supportedExtensions.append(QString(supportedFileTypes[i].c_str()));
     }

@@ -65,7 +65,7 @@ void OfxPushButtonInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxPushButtonInstance::getKnob() const {
+boost::shared_ptr<Knob> OfxPushButtonInstance::getKnob() const {
     return _knob;
 }
 
@@ -117,7 +117,7 @@ void OfxIntegerInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxIntegerInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxIntegerInstance::getKnob() const{
     return _knob;
 }
 
@@ -193,7 +193,7 @@ void OfxDoubleInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxDoubleInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxDoubleInstance::getKnob() const{
     return _knob;
 }
 
@@ -243,7 +243,7 @@ void OfxBooleanInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxBooleanInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxBooleanInstance::getKnob() const{
     return _knob;
 }
 
@@ -309,7 +309,7 @@ void OfxChoiceInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxChoiceInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxChoiceInstance::getKnob() const{
     return _knob;
 }
 
@@ -385,7 +385,7 @@ void OfxRGBAInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxRGBAInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxRGBAInstance::getKnob() const{
     return _knob;
 }
 
@@ -461,7 +461,7 @@ void OfxRGBInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxRGBInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxRGBInstance::getKnob() const{
     return _knob;
 }
 
@@ -563,7 +563,7 @@ void OfxDouble2DInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxDouble2DInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxDouble2DInstance::getKnob() const{
     return _knob;
 }
 
@@ -641,7 +641,7 @@ void OfxInteger2DInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxInteger2DInstance::getKnob() const {
+boost::shared_ptr<Knob> OfxInteger2DInstance::getKnob() const {
     return _knob;
 }
 
@@ -740,7 +740,7 @@ void OfxDouble3DInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxDouble3DInstance::getKnob() const {
+boost::shared_ptr<Knob> OfxDouble3DInstance::getKnob() const {
     return _knob;
 }
 
@@ -822,7 +822,7 @@ void OfxInteger3DInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxInteger3DInstance::getKnob() const {
+boost::shared_ptr<Knob> OfxInteger3DInstance::getKnob() const {
     return _knob;
 }
 
@@ -831,43 +831,38 @@ Knob* OfxInteger3DInstance::getKnob() const {
 OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::GroupInstance(descriptor,node->effectInstance())
 , _node(node)
+, _groupKnob()
+, _tabKnob()
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
     int isTab = properties.getIntProperty(kFnOfxParamPropGroupIsTab);
     if(isTab){
-        Tab_Knob* _tabKnob = _node->getTabKnob();
-        std::string name = getParamLabel(this);
-        if(!_tabKnob){
-            _tabKnob = appPTR->getKnobFactory().createKnob<Tab_Knob>(node, name);
-            _node->setTabKnob(_tabKnob);
-        }
-        _groupKnob = 0;
+        _tabKnob = appPTR->getKnobFactory().createKnob<Tab_Knob>(node, getParamLabel(this));
 
     }else{
         _groupKnob = appPTR->getKnobFactory().createKnob<Group_Knob>(node, getParamLabel(this));
         int opened = properties.getIntProperty(kOfxParamPropGroupOpen);
         _groupKnob->setValue((bool)opened);
-
     }
     
     
 }
-void OfxGroupInstance::addKnob(Knob *k) {
+void OfxGroupInstance::addKnob(boost::shared_ptr<Knob> k) {
     if(_groupKnob){
         k->setParentKnob(_groupKnob);
         _groupKnob->addKnob(k);
     }else{
-        k->setParentKnob(_node->getTabKnob());
-        _node->getTabKnob()->addKnob(_paramName, k);
+        k->setParentKnob(_tabKnob);
+        _tabKnob->addKnob(k);
     }
 }
 
-Knob* OfxGroupInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxGroupInstance::getKnob() const{
     if(_groupKnob){
         return _groupKnob;
     }else{
-        return _node->getTabKnob();
+        return _tabKnob;
     }
 }
 
@@ -875,10 +870,10 @@ Knob* OfxGroupInstance::getKnob() const{
 OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::StringInstance(descriptor,node->effectInstance())
 , _node(node)
-, _fileKnob(0)
-, _outputFileKnob(0)
-, _stringKnob(0)
-, _multiLineKnob(0)
+, _fileKnob()
+, _outputFileKnob()
+, _stringKnob()
+, _multiLineKnob()
 {
     const OFX::Host::Property::Set &properties = getProperties();
     std::string mode = properties.getStringProperty(kOfxParamPropStringMode);
@@ -886,7 +881,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
     if (mode == kOfxParamStringIsFilePath) {
         if (_node->isGenerator()) {
             _fileKnob = appPTR->getKnobFactory().createKnob<File_Knob>(node, getParamLabel(this));
-            QObject::connect(_fileKnob, SIGNAL(frameRangeChanged(int,int)), this, SLOT(onFrameRangeChanged(int,int)));
+            QObject::connect(_fileKnob.get(), SIGNAL(frameRangeChanged(int,int)), this, SLOT(onFrameRangeChanged(int,int)));
 
         } else {
             _node->setAsOutputNode(); // IMPORTANT ! 
@@ -989,7 +984,7 @@ OfxStatus OfxStringInstance::getV(OfxTime time, va_list arg){
     return stat;
 }
 
-Knob* OfxStringInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxStringInstance::getKnob() const{
     
     if(_fileKnob){
         return _fileKnob;
@@ -1003,7 +998,7 @@ Knob* OfxStringInstance::getKnob() const{
     if(_multiLineKnob){
         return _multiLineKnob;
     }
-    return NULL;
+    return boost::shared_ptr<Knob>();
 }
 // callback which should set enabled state as appropriate
 void OfxStringInstance::setEnabled(){
@@ -1087,7 +1082,7 @@ void OfxStringInstance::ifFileKnobPopDialog(){
 OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::CustomInstance(descriptor,node->effectInstance())
 , _node(node)
-, _knob(0)
+, _knob()
 , _customParamInterpolationV1Entry(0)
 {
     const OFX::Host::Property::Set &properties = getProperties();
@@ -1141,7 +1136,7 @@ OfxStatus OfxCustomInstance::getV(OfxTime time, va_list arg) {
     return stat;
 }
 
-Knob* OfxCustomInstance::getKnob() const {
+boost::shared_ptr<Knob> OfxCustomInstance::getKnob() const {
     return _knob;
 }
 

@@ -3,10 +3,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
 #include "DockablePanel.h"
 
@@ -38,12 +38,12 @@ using std::make_pair;
 using namespace Natron;
 
 DockablePanel::DockablePanel(KnobHolder* holder
-                             ,QVBoxLayout* container
-                             ,bool readOnlyName
-                             ,const QString& initialName
-                             ,const QString& helpToolTip
-                             ,const QString& defaultTab
-                             ,QWidget *parent)
+                             , QVBoxLayout* container
+                             , HeaderMode headerMode
+                             , const QString& initialName
+                             , const QString& helpToolTip
+                             , bool createDefaultTab, const QString& defaultTab
+                             , QWidget *parent)
 :QFrame(parent)
 ,_container(container)
 ,_mainLayout(NULL)
@@ -69,179 +69,219 @@ DockablePanel::DockablePanel(KnobHolder* holder
     setLayout(_mainLayout);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     setFrameShape(QFrame::Box);
-
-    _headerWidget = new QFrame(this);
-    _headerWidget->setFrameShape(QFrame::Box);
-    _headerLayout = new QHBoxLayout(_headerWidget);
-    _headerLayout->setContentsMargins(0, 0, 0, 0);
-    _headerLayout->setSpacing(0);
-    _headerWidget->setLayout(_headerLayout);
     
-
-    QPixmap pixHelp ;
-    appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
-    _helpButton = new Button(QIcon(pixHelp),"",_headerWidget);
-    
-    QString tooltip = helpToolTip;
-    for (int i = 0; i < tooltip.size();++i) {
-        if (i%100 == 0 && i!=0) {
-            /*Find closest word end and insert a new line*/
-            while(i < tooltip.size() && tooltip.at(i)!=QChar(' ')) ++i;
-            tooltip.insert(i, QChar('\n'));
+    if(headerMode != NO_HEADER){
+        
+        _headerWidget = new QFrame(this);
+        _headerWidget->setFrameShape(QFrame::Box);
+        _headerLayout = new QHBoxLayout(_headerWidget);
+        _headerLayout->setContentsMargins(0, 0, 0, 0);
+        _headerLayout->setSpacing(0);
+        _headerWidget->setLayout(_headerLayout);
+        
+        
+        QPixmap pixHelp ;
+        appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
+        _helpButton = new Button(QIcon(pixHelp),"",_headerWidget);
+        
+        QString tooltip = helpToolTip;
+        for (int i = 0; i < tooltip.size();++i) {
+            if (i%100 == 0 && i!=0) {
+                /*Find closest word end and insert a new line*/
+                while(i < tooltip.size() && tooltip.at(i)!=QChar(' ')) ++i;
+                tooltip.insert(i, QChar('\n'));
+            }
         }
+        _helpButton->setToolTip(tooltip);
+        _helpButton->setFixedSize(15, 15);
+        QObject::connect(_helpButton, SIGNAL(clicked()), this, SLOT(showHelp()));
+        
+        
+        QPixmap pixM;
+        appPTR->getIcon(NATRON_PIXMAP_MINIMIZE_WIDGET,&pixM);
+        
+        QPixmap pixC;
+        appPTR->getIcon(NATRON_PIXMAP_CLOSE_WIDGET,&pixC);
+        _minimize=new Button(QIcon(pixM),"",_headerWidget);
+        _minimize->setFixedSize(15,15);
+        _minimize->setCheckable(true);
+        QObject::connect(_minimize,SIGNAL(toggled(bool)),this,SLOT(minimizeOrMaximize(bool)));
+        _cross=new Button(QIcon(pixC),"",_headerWidget);
+        _cross->setFixedSize(15,15);
+        QObject::connect(_cross,SIGNAL(clicked()),this,SLOT(close()));
+        
+        
+        QPixmap pixUndo ;
+        appPTR->getIcon(NATRON_PIXMAP_UNDO,&pixUndo);
+        QPixmap pixUndo_gray ;
+        appPTR->getIcon(NATRON_PIXMAP_UNDO_GRAYSCALE,&pixUndo_gray);
+        QIcon icUndo;
+        icUndo.addPixmap(pixUndo,QIcon::Normal);
+        icUndo.addPixmap(pixUndo_gray,QIcon::Disabled);
+        _undoButton = new Button(icUndo,"",_headerWidget);
+        _undoButton->setToolTip("Undo the last change made to this operator");
+        _undoButton->setEnabled(false);
+        
+        QPixmap pixRedo ;
+        appPTR->getIcon(NATRON_PIXMAP_REDO,&pixRedo);
+        QPixmap pixRedo_gray;
+        appPTR->getIcon(NATRON_PIXMAP_REDO_GRAYSCALE,&pixRedo_gray);
+        QIcon icRedo;
+        icRedo.addPixmap(pixRedo,QIcon::Normal);
+        icRedo.addPixmap(pixRedo_gray,QIcon::Disabled);
+        _redoButton = new Button(icRedo,"",_headerWidget);
+        _redoButton->setToolTip("Redo the last change undone to this operator");
+        _redoButton->setEnabled(false);
+        
+        
+        QObject::connect(_undoButton, SIGNAL(pressed()),this, SLOT(onUndoPressed()));
+        QObject::connect(_redoButton, SIGNAL(pressed()),this, SLOT(onRedoPressed()));
+        
+        if(headerMode != READ_ONLY_NAME){
+            _nameLineEdit = new LineEdit(_headerWidget);
+            _nameLineEdit->setText(initialName);
+            QObject::connect(_nameLineEdit,SIGNAL(textEdited(QString)),this,SIGNAL(nameChanged(QString)));
+            _headerLayout->addWidget(_nameLineEdit);
+        }else{
+            _nameLabel = new QLabel(initialName,_headerWidget);
+            _headerLayout->addWidget(_nameLabel);
+        }
+        
+        _headerLayout->addStretch();
+        
+        _headerLayout->addWidget(_undoButton);
+        _headerLayout->addWidget(_redoButton);
+        
+        _headerLayout->addStretch();
+        _headerLayout->addWidget(_helpButton);
+        _headerLayout->addWidget(_minimize);
+        _headerLayout->addWidget(_cross);
+        
+        _mainLayout->addWidget(_headerWidget);
+        
     }
-    _helpButton->setToolTip(tooltip);
-    _helpButton->setFixedSize(15, 15);
-    QObject::connect(_helpButton, SIGNAL(clicked()), this, SLOT(showHelp()));
     
-    
-    QPixmap pixM;
-    appPTR->getIcon(NATRON_PIXMAP_MINIMIZE_WIDGET,&pixM);
-
-    QPixmap pixC;
-    appPTR->getIcon(NATRON_PIXMAP_CLOSE_WIDGET,&pixC);
-    _minimize=new Button(QIcon(pixM),"",_headerWidget);
-    _minimize->setFixedSize(15,15);
-    _minimize->setCheckable(true);
-    QObject::connect(_minimize,SIGNAL(toggled(bool)),this,SLOT(minimizeOrMaximize(bool)));
-    _cross=new Button(QIcon(pixC),"",_headerWidget);
-    _cross->setFixedSize(15,15);
-    QObject::connect(_cross,SIGNAL(clicked()),this,SLOT(close()));
-
-
-    QPixmap pixUndo ;
-    appPTR->getIcon(NATRON_PIXMAP_UNDO,&pixUndo);
-    QPixmap pixUndo_gray ;
-    appPTR->getIcon(NATRON_PIXMAP_UNDO_GRAYSCALE,&pixUndo_gray);
-    QIcon icUndo;
-    icUndo.addPixmap(pixUndo,QIcon::Normal);
-    icUndo.addPixmap(pixUndo_gray,QIcon::Disabled);
-    _undoButton = new Button(icUndo,"",_headerWidget);
-    _undoButton->setToolTip("Undo the last change made to this operator");
-    _undoButton->setEnabled(false);
-    
-    QPixmap pixRedo ;
-    appPTR->getIcon(NATRON_PIXMAP_REDO,&pixRedo);
-    QPixmap pixRedo_gray;
-    appPTR->getIcon(NATRON_PIXMAP_REDO_GRAYSCALE,&pixRedo_gray);
-    QIcon icRedo;
-    icRedo.addPixmap(pixRedo,QIcon::Normal);
-    icRedo.addPixmap(pixRedo_gray,QIcon::Disabled);
-    _redoButton = new Button(icRedo,"",_headerWidget);
-    _redoButton->setToolTip("Redo the last change undone to this operator");
-    _redoButton->setEnabled(false);
-    
-    
-    QObject::connect(_undoButton, SIGNAL(pressed()),this, SLOT(onUndoPressed()));
-    QObject::connect(_redoButton, SIGNAL(pressed()),this, SLOT(onRedoPressed()));
-    
-    if(!readOnlyName){
-        _nameLineEdit = new LineEdit(_headerWidget);
-        _nameLineEdit->setText(initialName);
-        QObject::connect(_nameLineEdit,SIGNAL(textEdited(QString)),this,SIGNAL(nameChanged(QString)));
-        _headerLayout->addWidget(_nameLineEdit);
-    }else{
-        _nameLabel = new QLabel(initialName,_headerWidget);
-        _headerLayout->addWidget(_nameLabel);
-    }
-    
-    _headerLayout->addStretch();
-    
-    _headerLayout->addWidget(_undoButton);
-    _headerLayout->addWidget(_redoButton);
-    
-    _headerLayout->addStretch();
-    _headerLayout->addWidget(_helpButton);
-    _headerLayout->addWidget(_minimize);
-    _headerLayout->addWidget(_cross);
-
-    _mainLayout->addWidget(_headerWidget);
-
     _tabWidget = new QTabWidget(this);
     _mainLayout->addWidget(_tabWidget);
     
-    
-    addTab(defaultTab);
+    if(createDefaultTab){
+        addTab(defaultTab);
+    }
 }
 
 DockablePanel::~DockablePanel(){
     delete _undoStack;
-    //removing parentship otherwise Qt will attempt to delete knobs a second time
-    for(std::map<Knob*,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it){
-        it->second->setParent(NULL);
-        QObject::disconnect(it->second,SIGNAL(deleted(KnobGui*)),this,SLOT(onKnobDeletion(KnobGui*)));
-
+    
+    ///Delete the knob gui if they weren't before
+    ///normally the onKnobDeletion() function should have cleared them
+    for(std::map<boost::shared_ptr<Knob>,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it){
+        delete it->second;
     }
 }
 
 void DockablePanel::initializeKnobs(){
-    /*We now have all knobs in a vector, just add them to the layout.*/
-    const std::vector<boost::shared_ptr<Knob> >& knobs = _holder->getKnobs();
-    for(U32 i = 0 ; i < knobs.size(); ++i){
-         if(knobs[i]->typeName() == "Tab"){
-             bool found = false;
-             QString tabName(knobs[i]->getDescription().c_str());
-             for(int j = 0 ; j < _tabWidget->count(); ++j){
-                 if(_tabWidget->tabText(j) == tabName){
-                     found = true;
-                     break;
-                 }
-             }
-             if(!found)
-                 addTab(tabName);
-         }else{
-             KnobGui* gui = findKnobGuiOrCreate(knobs[i].get());
-             if(!gui){
-                 // this should happen for Custom Knobs, which have no GUI (only an interact)
-                 return;
-             }
-             if(!gui->hasWidgetBeenCreated()){
-                 /*Defaults to the first tab*/
-                 int offsetColumn = knobs[i]->determineHierarchySize();
-                 std::map<QString,std::pair<QWidget*,int> >::iterator parentTab = _tabs.begin();
-                 Knob* parentKnob = knobs[i]->getParentKnob();
-                 if(parentKnob && parentKnob->typeName() == "Tab"){
-                     std::map<QString,std::pair<QWidget*,int> >::iterator it = _tabs.find(parentKnob->getDescription().c_str());
-                     if(it!=_tabs.end()){
-                         parentTab = it;
-                     }
-                 }
-                 ++parentTab->second.second;
-                 
-                 gui->setParent(parentTab->second.first);
-                 if(!gui->triggerNewLine() && i!=0) --parentTab->second.second;
-                 gui->createGUI(dynamic_cast<QGridLayout*>(parentTab->second.first->layout()),parentTab->second.second);
-                 // if this knob is within a group, check that the group is visible, i.e. the toplevel group is unfolded
-                 if (parentKnob && parentKnob->typeName() == "Group") {
-                     Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
-                     assert(parentGui);
-                     parentGui->addKnob(gui,parentTab->second.second,offsetColumn);
-                     bool showit = true;
-                     // see KnobGui::setSecret() for a very similar code
-                     while (showit && parentKnob && parentKnob->typeName() == "Group") {
-                         assert(parentGui);
-                         // check for secretness and visibility of the group
-                         if (parentKnob->isSecret() || !parentGui->isChecked()) {
-                             showit = false; // one of the including groups is folder, so this item is hidden
-                         }
-                         // prepare for next loop iteration
-                         parentKnob = parentKnob->getParentKnob();
-                         if (parentKnob) {
-                             parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
-                         }
-                     }
-                     if (showit) {
-                         gui->show();
-                     } else {
-                         //gui->hide(); // already hidden? please comment if it's not.
-                     }
-                 }
-                 
-
-             }
-            
-         }
+   
+    /// function called to create the gui for each knob. It can be called several times in a row
+    /// without any damage
     
+    const std::vector<boost::shared_ptr<Knob> >& knobs = _holder->getKnobs();
+    
+    for(U32 i = 0 ; i < knobs.size(); ++i){
+        
+        if(knobs[i]->typeName() == "Tab"){
+            
+            ///if the knob is a tab, look-up the tab widget to check whether the tab already exists or not
+            
+            bool found = false;
+            QString tabName(knobs[i]->getDescription().c_str());
+            for(int j = 0 ; j < _tabWidget->count(); ++j){
+                if(_tabWidget->tabText(j) == tabName){
+                    found = true;
+                    break;
+                }
+            }
+            if(!found){
+                ///if it doesn't exist, create it
+                addTab(tabName);
+            }
+        }else{
+            
+            ///this is not a tab knob
+            
+            KnobGui* gui = findKnobGuiOrCreate(knobs[i]);
+            if(!gui){
+                // this should happen for Custom Knobs, which have no GUI (only an interact)
+                return;
+            }
+            
+            ///if widgets for the KnobGui have already been created, don't do this
+            if(!gui->hasWidgetBeenCreated()){
+                
+                
+                ///find to what to belongs the knob. by default it belongs to the default tab.
+                std::map<QString,std::pair<QWidget*,int> >::iterator parentTab = _tabs.begin();
+                boost::shared_ptr<Knob> parentKnob = knobs[i]->getParentKnob();
+                if(parentKnob && parentKnob->typeName() == "Tab"){
+                    std::map<QString,std::pair<QWidget*,int> >::iterator it = _tabs.find(parentKnob->getDescription().c_str());
+                    if(it!=_tabs.end()){
+                        parentTab = it;
+                    }
+                }
+                ++parentTab->second.second;
+                
+                ///this might be wrong we don't want to use Qt's parenting !
+                //gui->setParent(parentTab->second.first);
+                
+                ///if the knob has specified that it didn't want to trigger a new line, decrement the current row
+                /// index of the tab
+                ///FIXME: this is bugged because we don't tell to the createGui() function that it is going to need
+                ///to put its widgets on the right of others, so it is going to corrupt the layout. Commenting for now.
+//                if(!gui->triggerNewLine() && i!=0){
+//                    --parentTab->second.second;
+//                }
+//                
+                gui->createGUI(dynamic_cast<QGridLayout*>(parentTab->second.first->layout()),//< ptr to the grid layout
+                               parentTab->second.second); //< the row index
+                
+                /// if this knob is within a group, check that the group is visible, i.e. the toplevel group is unfolded
+                if (parentKnob && parentKnob->typeName() == "Group") {
+                    
+                    Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
+                    assert(parentGui);
+                    
+                    
+                    ///FIXME: this offsetColumn is never really used. Shall we use this anyway? It seems
+                    ///to work fine without it.
+                    int offsetColumn = knobs[i]->determineHierarchySize();
+                    parentGui->addKnob(gui,parentTab->second.second,offsetColumn);
+                    
+                    
+                    bool showit = true;
+                    // see KnobGui::setSecret() for a very similar code
+                    while (showit && parentKnob && parentKnob->typeName() == "Group") {
+                        assert(parentGui);
+                        // check for secretness and visibility of the group
+                        if (parentKnob->isSecret() || !parentGui->isChecked()) {
+                            showit = false; // one of the including groups is folder, so this item is hidden
+                        }
+                        // prepare for next loop iteration
+                        parentKnob = parentKnob->getParentKnob();
+                        if (parentKnob) {
+                            parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
+                        }
+                    }
+                    if (showit) {
+                        gui->show();
+                    } else {
+                        //gui->hide(); // already hidden? please comment if it's not.
+                    }
+                }
+                
+                
+            }
+            
+        }
+        
     }
 }
 
@@ -343,14 +383,15 @@ Button* DockablePanel::insertHeaderButton(int headerPosition){
     return ret;
 }
 
-KnobGui* DockablePanel::findKnobGuiOrCreate(Knob* knob) {
+KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
     assert(knob);
-    for (std::map<Knob*,KnobGui*>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
+    for (std::map<boost::shared_ptr<Knob>,KnobGui*>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
         if(it->first == knob){
             return it->second;
         }
     }
     
+    QObject::connect(knob.get(),SIGNAL(deleted(Knob*)),this,SLOT(onKnobDeletion(Knob*)));
     
     KnobGui* ret =  appPTR->getKnobGuiFactory().createGuiForKnob(knob,this);
     if(!ret){
@@ -358,15 +399,15 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(Knob* knob) {
         std::cout << "Failed to create gui for Knob " << knob->getName() << " of type " << knob->typeName() << std::endl;
         return NULL;
     }
-    QObject::connect(ret,SIGNAL(deleted(KnobGui*)),this,SLOT(onKnobDeletion(KnobGui*)));
     _knobs.insert(make_pair(knob, ret));
     return ret;
     
 }
 
-void DockablePanel::onKnobDeletion(KnobGui* k){
-    for(std::map<Knob*,KnobGui*>::iterator it = _knobs.begin();it!=_knobs.end();++it){
-        if (it->second == k) {
+void DockablePanel::onKnobDeletion(Knob* k){
+    for(std::map<boost::shared_ptr<Knob>,KnobGui*>::iterator it = _knobs.begin();it!=_knobs.end();++it){
+        if (it->first.get() == k) {
+            delete it->second;
             _knobs.erase(it);
             return;
         }
@@ -380,9 +421,10 @@ void DockablePanel::onKnobDeletion(KnobGui* k){
 NodeSettingsPanel::NodeSettingsPanel(NodeGui* NodeUi ,QVBoxLayout* container,QWidget *parent)
 :DockablePanel(NodeUi->getNode()->getLiveInstance(),
                container,
-               false,
+               DockablePanel::FULLY_FEATURED,
                NodeUi->getNode()->getName().c_str(),
                NodeUi->getNode()->description().c_str(),
+               true,
                "Settings",
                parent)
 ,_nodeGUI(NodeUi)

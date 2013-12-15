@@ -71,7 +71,7 @@ class DockablePanel : public QFrame{
     QUndoStack* _undoStack; /*!< undo/redo stack*/
     
     /*a map storing for each knob a pointer to their GUI.*/
-    std::map<Knob*,KnobGui*> _knobs;
+    std::map<boost::shared_ptr<Knob>,KnobGui*> _knobs;
     KnobHolder* _holder;
     
     /* map<tab name, pair<tab , row count> >*/
@@ -79,12 +79,19 @@ class DockablePanel : public QFrame{
     
 public:
     
+    enum HeaderMode{
+        FULLY_FEATURED = 0,
+        READ_ONLY_NAME,
+        NO_HEADER
+    };
+    
     explicit DockablePanel(KnobHolder* holder
                   ,QVBoxLayout* container
-                  ,bool readOnlyName
-                  ,const QString& initialName
-                  ,const QString& helpToolTip
-                  ,const QString& defaultTab
+                  ,HeaderMode headerMode
+                  ,const QString& initialName = QString()
+                  ,const QString& helpToolTip = QString()
+                  ,bool createDefaultTab = false
+                  ,const QString& defaultTab = QString()
                   ,QWidget *parent = 0);
     
     virtual ~DockablePanel();
@@ -94,7 +101,7 @@ public:
     /*inserts a new tab to the dockable panel.*/
     void addTab(const QString& name);
 
-    const std::map<Knob*,KnobGui*>& getKnobs() const { return _knobs; }
+    const std::map<boost::shared_ptr<Knob>,KnobGui*>& getKnobs() const { return _knobs; }
     
     /*Creates a new button and inserts it in the header
      at position headerPosition. You can then take
@@ -109,7 +116,7 @@ public:
 
     /*Search an existing knob GUI in the map, otherwise creates
      the gui for the knob.*/
-    KnobGui* findKnobGuiOrCreate(Knob* knob);
+    KnobGui* findKnobGuiOrCreate(boost::shared_ptr<Knob> knob);
 
 public slots:
     
@@ -130,7 +137,7 @@ public slots:
     void initializeKnobs();
     
     /*Internal slot, not meant to be called externally.*/
-    void onKnobDeletion(KnobGui* k);
+    void onKnobDeletion(Knob* knob);
     
     /*Internal slot, not meant to be called externally.*/
     void onUndoPressed();

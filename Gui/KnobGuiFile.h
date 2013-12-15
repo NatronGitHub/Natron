@@ -39,11 +39,11 @@ class File_KnobGui: public KnobGui
 
 public:
 
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new File_KnobGui(knob, container);
     }
 
-    File_KnobGui(Knob *knob, DockablePanel *container);
+    File_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
     virtual ~File_KnobGui() OVERRIDE FINAL;
 
@@ -81,11 +81,11 @@ class OutputFile_KnobGui : public KnobGui
     Q_OBJECT
 public:
 
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new OutputFile_KnobGui(knob, container);
     }
 
-    OutputFile_KnobGui(Knob *knob, DockablePanel *container);
+    OutputFile_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
     virtual ~OutputFile_KnobGui() OVERRIDE FINAL;
 
