@@ -747,6 +747,18 @@ void OfxEffectInstance::onKnobValueChanged(Knob* k,Natron::ValueChangedReason re
     }
     // note: DON'T remove the following assert()s, unless you replace them with proper error feedback.
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    
+    if(_overlayInteract){
+        std::vector<std::string> params;
+        _overlayInteract->getSlaveToParam(params);
+        for (U32 i = 0; i < params.size(); ++i) {
+            if(params[i] == k->getDescription()){
+                stat = _overlayInteract->redraw();
+                assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+            }
+        }
+    }
+   
 
 }
 
