@@ -67,7 +67,7 @@ OfxEffectInstance::OfxEffectInstance(Natron::Node* node)
     , _lastKnobLayoutWithNoNewLine(0)
     , _initialized(false)
 {
-    if(!node->getLiveInstance()){
+    if(node && !node->getLiveInstance()){
         node->setLiveInstance(this);
     }
 }

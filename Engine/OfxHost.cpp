@@ -232,9 +232,12 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
     if(!rval) {
         return NULL;
     }
+    
     OfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
     
-    hostSideEffect->createOfxImageEffectInstance(plugin, context);
+    if(node){
+        hostSideEffect->createOfxImageEffectInstance(plugin, context);
+    }
 
     return hostSideEffect;
 }
@@ -284,8 +287,6 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
         if(p->getContexts().size() == 0)
             continue;
        
-        
-        
         QString openfxId = p->getIdentifier().c_str();
         const std::string& grouping = p->getDescriptor().getPluginGrouping();
         
@@ -300,6 +301,8 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
                                                                                p->getDescriptor().getLongLabel(),
                                                                            grouping);
 
+       
+        
         QStringList groups = OfxEffectInstance::getPluginGrouping(pluginLabel, grouping);
         
         assert(p->getBinary());
@@ -314,8 +317,26 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
             groupIconFilename.append(groups[0]);
             groupIconFilename.append(".png");
         }
-        emit toolButtonAdded(groups,pluginId.c_str(), pluginLabel.c_str(), iconFilename, groupIconFilename);
+        
         _ofxPlugins.insert(make_pair(pluginId, make_pair(openfxId.toStdString(), grouping)));
+
+        
+        //try to instantiate an effect for this plugin, if it crashes, don't add it
+        try {
+            OfxEffectInstance* tryInstance = createOfxEffect(pluginId, NULL);
+            if(tryInstance){
+                delete tryInstance;
+            }else{
+                std::cout << "Error loading " << pluginId << std::endl;
+                continue;
+            }
+        } catch (const std::exception& e) {
+            std::cout << "Error loading " << pluginId << " " << e.what() << std::endl;
+            continue;
+        }
+
+        
+        emit toolButtonAdded(groups,pluginId.c_str(), pluginLabel.c_str(), iconFilename, groupIconFilename);
         QMutex* pluginMutex = NULL;
         if(p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe){
             pluginMutex = new QMutex;

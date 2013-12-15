@@ -220,6 +220,7 @@ bool VideoEngine::startEngine() {
                                                           true, //is interactive
                                                           renderScale); //scale
             assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+            
         }
     }
     

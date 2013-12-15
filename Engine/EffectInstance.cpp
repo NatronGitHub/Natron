@@ -23,6 +23,8 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
+#include "Engine/OfxEffectInstance.h"
+#include "Engine/OfxImageEffectInstance.h"
 
 #include "Writers/Writer.h"
 
@@ -121,6 +123,9 @@ void EffectInstance::clone(SequenceTime /*time*/){
     //refreshAfterTimeChange(time);
     cloneExtras();
     _imp->previewEnabled = _node->getLiveInstance()->isPreviewEnabled();
+    if(isOpenFX()){
+        dynamic_cast<OfxEffectInstance*>(this)->effectInstance()->syncPrivateDataAction();
+    }
 }
 
 
