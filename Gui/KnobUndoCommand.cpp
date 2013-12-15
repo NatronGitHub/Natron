@@ -34,7 +34,7 @@ void KnobMultipleUndosCommand::undo()
         if(_hasCreateKeyFrame){
             _knob->removeKeyFrame(_timeOfCreation,i);
         }
-
+        
     }
     setText(QObject::tr("Set value of %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
@@ -44,18 +44,18 @@ void KnobMultipleUndosCommand::redo()
 {
     assert(_knob->getKnob()->getHolder()->getApp());
     SequenceTime time = _knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-
+    
     for (U32 i = 0; i < _newValue.size();++i) {
         boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(i);
-
+        
         _knob->setValue(i,_newValue[i]);
-
+        
         if (c->keyFramesCount() >= 1) {
             _hasCreateKeyFrame = true;
             _timeOfCreation = time;
             _knob->setKeyframe(time, i);
         }
-
+        
     }
     setText(QObject::tr("Set value of %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
@@ -63,22 +63,27 @@ void KnobMultipleUndosCommand::redo()
 
 
 KnobUndoCommand::KnobUndoCommand(KnobGui *knob, int dimension, const Variant &oldValue, const Variant &newValue, QUndoCommand *parent)
-    : QUndoCommand(parent),
-      _dimension(dimension),
-      _oldValue(oldValue),
-      _newValue(newValue),
-      _knob(knob),
-      _hasCreateKeyFrame(false),
-      _timeOfCreation(0.)
+: QUndoCommand(parent),
+_dimension(dimension),
+_oldValue(oldValue),
+_newValue(newValue),
+_knob(knob),
+_hasCreateKeyFrame(false),
+_timeOfCreation(0.)
 {
 }
 
 void KnobUndoCommand::undo()
 {
-
+    
     _knob->setValue(_dimension, _oldValue);
-    if(_hasCreateKeyFrame){
-        _knob->removeKeyFrame(_timeOfCreation,_dimension);
+    
+    if(_knob->getKnob()->getHolder()->getApp()){
+        
+        if(_hasCreateKeyFrame){
+            _knob->removeKeyFrame(_timeOfCreation,_dimension);
+        }
+        
     }
     if (_knob->getKnob()->getDimension() > 1) {
         setText(QObject::tr("Set value of %1.%2")
@@ -91,19 +96,22 @@ void KnobUndoCommand::undo()
 
 void KnobUndoCommand::redo()
 {
-
+    
     boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(_dimension);
-    assert(_knob->getKnob()->getHolder()->getApp());
-    SequenceTime time = _knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    
     _knob->setValue(_dimension, _newValue);
-
-    //the curve is animated, attempt to set a keyframe
-    if (c->keyFramesCount() >= 1) {
-         _hasCreateKeyFrame = true;
-         _timeOfCreation = time;
-        _knob->setKeyframe(time, _dimension);
+    
+    
+    if(_knob->getKnob()->getHolder()->getApp()){
+        SequenceTime time = _knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+        
+        //the curve is animated, attempt to set a keyframe
+        if (c->keyFramesCount() >= 1) {
+            _hasCreateKeyFrame = true;
+            _timeOfCreation = time;
+            _knob->setKeyframe(time, _dimension);
+        }
     }
-
     if (_knob->getKnob()->getDimension() > 1) {
         setText(QObject::tr("Set value of %1.%2")
                 .arg(_knob->getKnob()->getDescription().c_str()).arg(_knob->getKnob()->getDimensionName(_dimension).c_str()));
@@ -124,7 +132,7 @@ bool KnobUndoCommand::mergeWith(const QUndoCommand *command)
     if (!knobCommand || command->id() != id()) {
         return false;
     }
-
+    
     KnobGui *knob = knobCommand->_knob;
     if (_knob != knob) {
         return false;

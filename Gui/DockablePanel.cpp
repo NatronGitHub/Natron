@@ -300,21 +300,27 @@ void DockablePanel::addTab(const QString& name){
 
 void DockablePanel::pushUndoCommand(QUndoCommand* cmd){
     _undoStack->push(cmd);
-    _undoButton->setEnabled(_undoStack->canUndo());
-    _redoButton->setEnabled(_undoStack->canRedo());
+    if(_undoButton && _redoButton){
+        _undoButton->setEnabled(_undoStack->canUndo());
+        _redoButton->setEnabled(_undoStack->canRedo());
+    }
 }
 
 void DockablePanel::onUndoPressed(){
     _undoStack->undo();
-    _undoButton->setEnabled(_undoStack->canUndo());
-    _redoButton->setEnabled(_undoStack->canRedo());
+    if(_undoButton && _redoButton){
+        _undoButton->setEnabled(_undoStack->canUndo());
+        _redoButton->setEnabled(_undoStack->canRedo());
+    }
     emit undoneChange();
 }
 
 void DockablePanel::onRedoPressed(){
     _undoStack->redo();
-    _undoButton->setEnabled(_undoStack->canUndo());
-    _redoButton->setEnabled(_undoStack->canRedo());
+    if(_undoButton && _redoButton){
+        _undoButton->setEnabled(_undoStack->canUndo());
+        _redoButton->setEnabled(_undoStack->canRedo());
+    }
     emit redoneChange();
 }
 

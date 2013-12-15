@@ -749,10 +749,5 @@ void ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,
         *r = to[0];
         *g = to[1];
         *b = to[2];
-    }else{
-        *r = std::min(*r / 255.,1.);
-        *g = std::min(*g / 255.,1.);
-        *b = std::min(*b / 255.,1.);
     }
-    *a = std::min(*a / 255.,1.);
 }
