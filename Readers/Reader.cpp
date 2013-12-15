@@ -84,10 +84,10 @@ Natron::Status Reader::preProcessFrame(SequenceTime time){
 }
 
 void Reader::initializeKnobs(){
-    _fileKnob = appPTR->getKnobFactory().createKnob<File_Knob>(this, "File");
+    _fileKnob = Natron::createKnob<File_Knob>(this, "File");
     assert(_fileKnob);
 
-    _missingFrameChoice = appPTR->getKnobFactory().createKnob<Choice_Knob>(this, "On missing frame");
+    _missingFrameChoice = Natron::createKnob<Choice_Knob>(this, "On missing frame");
     std::vector<std::string> missingFrameChoices;
     missingFrameChoices.push_back("Load nearest");
     missingFrameChoices.push_back("Error");

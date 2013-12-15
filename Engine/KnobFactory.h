@@ -16,11 +16,9 @@
 #include <map>
 
 #include "Global/GlobalDefines.h"
-#include "Engine/Curve.h"
 
 class Knob;
-class AppInstance;
-
+class KnobHolder;
 namespace Natron
 {
 class LibraryBinary;
@@ -28,7 +26,6 @@ class LibraryBinary;
 
 /******************************KNOB_FACTORY**************************************/
 
-class KnobHolder;
 
 class KnobFactory
 {

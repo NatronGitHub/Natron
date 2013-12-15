@@ -28,16 +28,16 @@ Settings::Settings(AppInstance* appInstance)
 }
 
 void Settings::initializeKnobs(){
-    _generalTab = appPTR->getKnobFactory().createKnob<Tab_Knob>(this, "General");
+    _generalTab = Natron::createKnob<Tab_Knob>(this, "General");
     
-    _linearPickers = appPTR->getKnobFactory().createKnob<Bool_Knob>(this, "Linear color pickers");
+    _linearPickers = Natron::createKnob<Bool_Knob>(this, "Linear color pickers");
     _linearPickers->turnOffAnimation();
     _linearPickers->setValue<bool>(true);
     _generalTab->addKnob(_linearPickers);
     
-    _viewersTab = appPTR->getKnobFactory().createKnob<Tab_Knob>(this, "Viewers");
+    _viewersTab = Natron::createKnob<Tab_Knob>(this, "Viewers");
     
-    _texturesMode = appPTR->getKnobFactory().createKnob<Choice_Knob>(this, "Textures bit depth");
+    _texturesMode = Natron::createKnob<Choice_Knob>(this, "Textures bit depth");
     _texturesMode->turnOffAnimation();
     std::vector<std::string> textureModes;
     std::vector<std::string> helpStringsTextureModes;
@@ -51,23 +51,23 @@ void Settings::initializeKnobs(){
     _texturesMode->setValue<int>(0);
     _viewersTab->addKnob(_texturesMode);
     
-    _cachingTab = appPTR->getKnobFactory().createKnob<Tab_Knob>(this, "Caching");
+    _cachingTab = Natron::createKnob<Tab_Knob>(this, "Caching");
     
-    _maxRAMPercent = appPTR->getKnobFactory().createKnob<Int_Knob>(this, "Maximum system's RAM for caching");
+    _maxRAMPercent = Natron::createKnob<Int_Knob>(this, "Maximum system's RAM for caching");
     _maxRAMPercent->turnOffAnimation();
     _maxRAMPercent->setMinimum(0);
     _maxRAMPercent->setMaximum(100);
     _maxRAMPercent->setValue<int>(50);
     _cachingTab->addKnob(_maxRAMPercent);
     
-    _maxPlayBackPercent = appPTR->getKnobFactory().createKnob<Int_Knob>(this, "Playback cache RAM percentage");
+    _maxPlayBackPercent = Natron::createKnob<Int_Knob>(this, "Playback cache RAM percentage");
     _maxPlayBackPercent->turnOffAnimation();
     _maxPlayBackPercent->setMinimum(0);
     _maxPlayBackPercent->setMaximum(100);
     _maxPlayBackPercent->setValue(25);
     _cachingTab->addKnob(_maxPlayBackPercent);
     
-    _maxDiskCacheGB = appPTR->getKnobFactory().createKnob<Int_Knob>(this, "Maximum disk cache size");
+    _maxDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum disk cache size");
     _maxDiskCacheGB->turnOffAnimation();
     _maxDiskCacheGB->setMinimum(0);
     _maxDiskCacheGB->setValue<int>(10);

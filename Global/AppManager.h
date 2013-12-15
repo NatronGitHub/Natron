@@ -35,12 +35,12 @@
 #include "Engine/Image.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Format.h"
+#include "Engine/KnobFactory.h"
 
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
 
 class AppInstance;
-class KnobFactory;
 class KnobGuiFactory;
 class KnobHolder;
 class NodeGui;
@@ -501,7 +501,7 @@ private:
 
     void printPluginsLoaded();
 
-     void populateIcons();
+    void populateIcons();
 
     void createColorPickerCursor();
 
@@ -552,6 +552,10 @@ Natron::StandardButton questionDialog(const std::string& title,const std::string
         Natron::StandardButtons(Natron::Yes | Natron::No),
                                       Natron::StandardButton defaultButton = Natron::NoButton);
 
+template <class K>
+boost::shared_ptr<K> createKnob(KnobHolder  *holder, const std::string &description, int dimension = 1){
+    return appPTR->getKnobFactory().createKnob<K>(holder,description,dimension);
+}
 
 } // namespace Natron
 

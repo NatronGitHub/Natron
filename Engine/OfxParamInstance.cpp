@@ -51,7 +51,7 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
                                              OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::PushbuttonInstance(descriptor, node->effectInstance())
 {
-    _knob = appPTR->getKnobFactory().createKnob<Button_Knob>(node, getParamLabel(this));
+    _knob = Natron::createKnob<Button_Knob>(node, getParamLabel(this));
 }
 
 
@@ -75,7 +75,7 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param:
 : OFX::Host::Param::IntegerInstance(descriptor, node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();
-    _knob = appPTR->getKnobFactory().createKnob<Int_Knob>(node, getParamLabel(this));
+    _knob = Natron::createKnob<Int_Knob>(node, getParamLabel(this));
 
     int min = properties.getIntProperty(kOfxParamPropMin);
     int max = properties.getIntProperty(kOfxParamPropMax);
@@ -126,7 +126,7 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    _knob = appPTR->getKnobFactory().createKnob<Double_Knob>(node, getParamLabel(this));
+    _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this));
 
     double min = properties.getDoubleProperty(kOfxParamPropMin);
     double max = properties.getDoubleProperty(kOfxParamPropMax);
@@ -206,7 +206,7 @@ OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    _knob = appPTR->getKnobFactory().createKnob<Bool_Knob>(node, getParamLabel(this));
+    _knob = Natron::createKnob<Bool_Knob>(node, getParamLabel(this));
     int def = properties.getIntProperty(kOfxParamPropDefault);
     set((bool)def);
     
@@ -254,7 +254,7 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    _knob = appPTR->getKnobFactory().createKnob<Choice_Knob>(node, getParamLabel(this));
+    _knob = Natron::createKnob<Choice_Knob>(node, getParamLabel(this));
 
     std::vector<std::string> helpStrings;
     for (int i = 0 ; i < properties.getDimension(kOfxParamPropChoiceOption) ; ++i) {
@@ -319,7 +319,7 @@ OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descr
 : OFX::Host::Param::RGBAInstance(descriptor,node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();  
-    _knob = appPTR->getKnobFactory().createKnob<Color_Knob>(node, getParamLabel(this),4);
+    _knob = Natron::createKnob<Color_Knob>(node, getParamLabel(this),4);
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
     double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
     double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);
@@ -402,7 +402,7 @@ OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descr
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    _knob = appPTR->getKnobFactory().createKnob<Color_Knob>(node, getParamLabel(this),3);
+    _knob = Natron::createKnob<Color_Knob>(node, getParamLabel(this),3);
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
     double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
     double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);   
@@ -480,7 +480,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    _knob = appPTR->getKnobFactory().createKnob<Double_Knob>(node, getParamLabel(this),dims);
+    _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this),dims);
 
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);
@@ -582,7 +582,7 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::P
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    _knob = appPTR->getKnobFactory().createKnob<Int_Knob>(node, getParamLabel(this), dims);
+    _knob = Natron::createKnob<Int_Knob>(node, getParamLabel(this), dims);
 
     std::vector<int> minimum(dims);
     std::vector<int> maximum(dims);
@@ -652,7 +652,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Par
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    _knob = appPTR->getKnobFactory().createKnob<Double_Knob>(node, getParamLabel(this),dims);
+    _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this),dims);
 
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);
@@ -759,7 +759,7 @@ OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::P
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    _knob = appPTR->getKnobFactory().createKnob<Int_Knob>(node, getParamLabel(this), dims);
+    _knob = Natron::createKnob<Int_Knob>(node, getParamLabel(this), dims);
 
     std::vector<int> minimum(dims);
     std::vector<int> maximum(dims);
@@ -838,10 +838,10 @@ OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Des
 
     int isTab = properties.getIntProperty(kFnOfxParamPropGroupIsTab);
     if(isTab){
-        _tabKnob = appPTR->getKnobFactory().createKnob<Tab_Knob>(node, getParamLabel(this));
+        _tabKnob = Natron::createKnob<Tab_Knob>(node, getParamLabel(this));
 
     }else{
-        _groupKnob = appPTR->getKnobFactory().createKnob<Group_Knob>(node, getParamLabel(this));
+        _groupKnob = Natron::createKnob<Group_Knob>(node, getParamLabel(this));
         int opened = properties.getIntProperty(kOfxParamPropGroupOpen);
         _groupKnob->setValue((bool)opened);
     }
@@ -880,22 +880,22 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
 
     if (mode == kOfxParamStringIsFilePath) {
         if (_node->isGenerator()) {
-            _fileKnob = appPTR->getKnobFactory().createKnob<File_Knob>(node, getParamLabel(this));
+            _fileKnob = Natron::createKnob<File_Knob>(node, getParamLabel(this));
             QObject::connect(_fileKnob.get(), SIGNAL(frameRangeChanged(int,int)), this, SLOT(onFrameRangeChanged(int,int)));
 
         } else {
             _node->setAsOutputNode(); // IMPORTANT ! 
-            _outputFileKnob = appPTR->getKnobFactory().createKnob<OutputFile_Knob>(node, getParamLabel(this));
+            _outputFileKnob = Natron::createKnob<OutputFile_Knob>(node, getParamLabel(this));
 
         }
     } else if (mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel) {
         
-        _stringKnob = appPTR->getKnobFactory().createKnob<String_Knob>(node, getParamLabel(this));
+        _stringKnob = Natron::createKnob<String_Knob>(node, getParamLabel(this));
         if (mode == kOfxParamStringIsLabel) {
             _stringKnob->setEnabled(false);
         }
     } else if(mode == kOfxParamStringIsMultiLine) {
-        _multiLineKnob = appPTR->getKnobFactory().createKnob<RichText_Knob>(node, getParamLabel(this));
+        _multiLineKnob = Natron::createKnob<RichText_Knob>(node, getParamLabel(this));
     }
     
     set(properties.getStringProperty(kOfxParamPropDefault).c_str());
@@ -1088,7 +1088,7 @@ OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::D
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    _knob = appPTR->getKnobFactory().createKnob<Custom_Knob>(node, getParamLabel(this));
+    _knob = Natron::createKnob<Custom_Knob>(node, getParamLabel(this));
     
     set(properties.getStringProperty(kOfxParamPropDefault).c_str());
 

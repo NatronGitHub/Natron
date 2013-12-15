@@ -47,7 +47,7 @@ Project::~Project(){
 }
 
 void Project::initializeKnobs(){
-    _imp->formatKnob = appPTR->getKnobFactory().createKnob<Choice_Knob>(this, "Output Format");
+    _imp->formatKnob = Natron::createKnob<Choice_Knob>(this, "Output Format");
     const std::vector<Format*>& appFormats = appPTR->getFormats();
     std::vector<std::string> entries;
     for (U32 i = 0; i < appFormats.size(); ++i) {
@@ -62,10 +62,10 @@ void Project::initializeKnobs(){
     
     _imp->formatKnob->populate(entries);
     _imp->formatKnob->turnOffAnimation();
-    _imp->addFormatKnob = appPTR->getKnobFactory().createKnob<Button_Knob>(this,"New format...");
+    _imp->addFormatKnob = Natron::createKnob<Button_Knob>(this,"New format...");
     
 
-    _imp->viewsCount = appPTR->getKnobFactory().createKnob<Int_Knob>(this,"Number of views");
+    _imp->viewsCount = Natron::createKnob<Int_Knob>(this,"Number of views");
     _imp->viewsCount->turnOffAnimation();
     _imp->viewsCount->setMinimum(1);
     _imp->viewsCount->setValue(1);

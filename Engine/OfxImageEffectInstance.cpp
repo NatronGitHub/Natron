@@ -383,7 +383,7 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
     knob->setSpacingBetweenItems(descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     int layoutHint = descriptor.getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if (layoutHint == 1) {
-        (void)appPTR->getKnobFactory().createKnob<Separator_Knob>(node(), knob->getDescription());
+        (void)Natron::createKnob<Separator_Knob>(node(), knob->getDescription());
     }else if(layoutHint == 2){
         knob->turnOffNewLine();
     }

@@ -135,19 +135,19 @@ boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,int view,int to
 
 void Writer::initializeKnobs(){
     std::string fileDesc("File");
-    _fileKnob = appPTR->getKnobFactory().createKnob<OutputFile_Knob>(this, fileDesc);
+    _fileKnob = Natron::createKnob<OutputFile_Knob>(this, fileDesc);
     assert(_fileKnob);
     
     std::string renderDesc("Render");
-    _renderKnob = appPTR->getKnobFactory().createKnob<Button_Knob>(this, renderDesc);
+    _renderKnob = Natron::createKnob<Button_Knob>(this, renderDesc);
     assert(_renderKnob);
     
     std::string premultString("Premultiply by alpha");
-    _premultKnob = appPTR->getKnobFactory().createKnob<Bool_Knob>(this, premultString);
+    _premultKnob = Natron::createKnob<Bool_Knob>(this, premultString);
     _premultKnob->setValue(false);
     
     std::string filetypeStr("File type");
-    _filetypeCombo = appPTR->getKnobFactory().createKnob<Choice_Knob>(this, filetypeStr);
+    _filetypeCombo = Natron::createKnob<Choice_Knob>(this, filetypeStr);
     const std::map<std::string,Natron::LibraryBinary*>& _encoders = appPTR->getCurrentSettings()->writersSettings.getFileTypesMap();
     std::map<std::string,Natron::LibraryBinary*>::const_iterator it = _encoders.begin();
     std::vector<std::string> fileTypes;
@@ -157,7 +157,7 @@ void Writer::initializeKnobs(){
     _filetypeCombo->populate(fileTypes);
     _filetypeCombo->turnOffAnimation();
     
-    _frameRangeChoosal = appPTR->getKnobFactory().createKnob<Choice_Knob>(this, "Frame range");
+    _frameRangeChoosal = Natron::createKnob<Choice_Knob>(this, "Frame range");
     std::vector<std::string> frameRangeChoosalEntries;
     frameRangeChoosalEntries.push_back("Inputs union");
     frameRangeChoosalEntries.push_back("Timeline bounds");
@@ -165,7 +165,7 @@ void Writer::initializeKnobs(){
     _frameRangeChoosal->populate(frameRangeChoosalEntries);
     _frameRangeChoosal->turnOffAnimation();
     
-    _continueOnError = appPTR->getKnobFactory().createKnob<Bool_Knob>(this, "Continue on error");
+    _continueOnError = Natron::createKnob<Bool_Knob>(this, "Continue on error");
     _continueOnError->setHintToolTip("If true, when an error arises for a frame,it will skip that frame and resume rendering.");
     _continueOnError->setInsignificant(true);
     _continueOnError->setValue(false);
@@ -305,7 +305,7 @@ void Writer::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
             int first = getApp()->getTimeLine()->firstFrame();
             int last = getApp()->getTimeLine()->lastFrame();
             if(!_firstFrameKnob){
-                _firstFrameKnob = appPTR->getKnobFactory().createKnob<Int_Knob>(this, "First frame");
+                _firstFrameKnob = Natron::createKnob<Int_Knob>(this, "First frame");
                 _firstFrameKnob->turnOffAnimation();
                 _firstFrameKnob->setValue(first);
                 _firstFrameKnob->setDisplayMinimum(first);
@@ -313,7 +313,7 @@ void Writer::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
                 
             }
             if(!_lastFrameKnob){
-                _lastFrameKnob = appPTR->getKnobFactory().createKnob<Int_Knob>(this, "Last frame");
+                _lastFrameKnob = Natron::createKnob<Int_Knob>(this, "Last frame");
                 _lastFrameKnob->turnOffAnimation();
                 _lastFrameKnob->setValue(last);
                 _lastFrameKnob->setDisplayMinimum(first);

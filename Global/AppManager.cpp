@@ -44,7 +44,6 @@
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/Knob.h"
-#include "Engine/KnobFactory.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
