@@ -241,7 +241,7 @@ double OfxImageEffectInstance::getFrameRate() const {
 /// the recursive instanceChangedAction will be fed the correct frame
 double OfxImageEffectInstance::getFrameRecursive() const {
     assert(node());
-    return 0.0;
+    return node()->getApp()->getTimeLine()->currentFrame();
 }
 
 /// This is called whenever a param is changed by the plugin so that

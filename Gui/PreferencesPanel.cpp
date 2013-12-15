@@ -20,7 +20,7 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,QWidget 
     , _settings(settings)
 {
     setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
-
+    setWindowTitle("Preferences");
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setContentsMargins(0,0,0,0);
 

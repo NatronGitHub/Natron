@@ -524,28 +524,26 @@ void ViewerTab::updateZoomComboBox(int value){
 /*In case they're several viewer around, we need to reset the dag and tell it
  explicitly we want to use this viewer and not another one.*/
 void ViewerTab::startPause(bool b){
+    abortRendering();
     if(b){
         _viewerNode->getVideoEngine()->render(-1, /*frame count*/
                                               true,/*rebuild tree?*/
                                               false, /*fit to viewer ?*/
                                               true, /*forward ?*/
                                               false); /*same frame ?*/
-    }else{
-        abortRendering();
     }
 }
 void ViewerTab::abortRendering(){
     _viewerNode->getVideoEngine()->abortRendering();
 }
 void ViewerTab::startBackward(bool b){
+    abortRendering();
     if(b){
         _viewerNode->getVideoEngine()->render(-1, /*frame count*/
                                               true,/*rebuild tree?*/
                                               false,/*fit to viewer?*/
                                               false,/*forward?*/
                                               false);/*same frame ?*/
-    }else{
-        abortRendering();
     }
 }
 void ViewerTab::seek(SequenceTime time){
