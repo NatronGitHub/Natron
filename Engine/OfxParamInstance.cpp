@@ -29,6 +29,7 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/Curve.h"
 
 using namespace Natron;
 
@@ -46,6 +47,92 @@ static std::string getParamLabel(OFX::Host::Param::Instance* param){
     }
     return label;
 }
+
+///anonymous namespace to handle keyframes communication support for Ofx plugins
+/// in a generalized manner
+namespace OfxKeyFrame{
+    
+    OfxStatus getNumKeys(boost::shared_ptr<Knob> knob,unsigned int &nKeys) {
+        int sum = 0;
+        for (int i = 0 ; i < knob->getDimension(); ++i) {
+            sum += knob->getCurve(i)->keyFramesCount();
+        }
+        nKeys =  sum;
+        return kOfxStatOK;
+    }
+    OfxStatus getKeyTime(boost::shared_ptr<Knob> knob,int nth, OfxTime& time)
+    {
+        int dimension = 0;
+        int indexSoFar = 0;
+        while(dimension < knob->getDimension()){
+            const KeyFrameSet& set = knob->getCurve(dimension)->getKeyFrames();
+            ++dimension;
+            if(nth >= (int)(set.size() + indexSoFar)){
+                indexSoFar += set.size();
+                continue;
+            }else{
+                KeyFrameSet::const_iterator it = set.begin();
+                while(it != set.end()){
+                    if(indexSoFar == nth){
+                        time = it->getTime();
+                        return kOfxStatOK;
+                    }
+                    ++indexSoFar;
+                    ++it;
+                }
+            }
+        }
+        
+        return kOfxStatErrBadIndex;
+    }
+    OfxStatus getKeyIndex(boost::shared_ptr<Knob> knob,OfxTime time, int direction, int& index) {
+        int c = 0;
+        for(int i = 0; i < knob->getDimension();++i){
+            const KeyFrameSet& set = knob->getCurve(i)->getKeyFrames();
+            for (KeyFrameSet::const_iterator it = set.begin(); it!=set.end(); ++it) {
+                if(it->getTime() == time){
+                    
+                    if(direction == 0){
+                        index = c;
+                    }else if(direction < 0){
+                        if(it == set.begin()){
+                            index = -1;
+                        }else{
+                            index = c - 1;
+                        }
+                    }else{
+                        KeyFrameSet::const_iterator next = it;
+                        ++next;
+                        if(next != set.end()){
+                            index = c + 1;
+                        }else{
+                            index = -1;
+                        }
+                    }
+                    
+                    return kOfxStatOK;
+                }
+                ++c;
+            }
+
+        }
+        return kOfxStatErrValue;
+    }
+    OfxStatus deleteKey(boost::shared_ptr<Knob> knob,OfxTime time) {
+        for(int i = 0; i < knob->getDimension();++i){
+            knob->deleteValueAtTime(time, i);
+        }
+        return kOfxStatOK;
+    }
+    OfxStatus deleteAllKeys(boost::shared_ptr<Knob> knob){
+        for(int i = 0; i < knob->getDimension();++i){
+            knob->removeAnimation(i);
+        }
+        return kOfxStatOK;
+    }
+}
+
+////////////////////////// OfxPushButtonInstance /////////////////////////////////////////////////
 
 OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
                                              OFX::Host::Param::Descriptor& descriptor)
@@ -69,6 +156,7 @@ boost::shared_ptr<Knob> OfxPushButtonInstance::getKnob() const {
     return _knob;
 }
 
+////////////////////////// OfxIntegerInstance /////////////////////////////////////////////////
 
 
 OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
@@ -120,6 +208,26 @@ void OfxIntegerInstance::setSecret() {
 boost::shared_ptr<Knob> OfxIntegerInstance::getKnob() const{
     return _knob;
 }
+
+
+OfxStatus OfxIntegerInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxIntegerInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxIntegerInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxIntegerInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxIntegerInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+////////////////////////// OfxDoubleInstance /////////////////////////////////////////////////
+
 
 OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance())
@@ -201,6 +309,26 @@ bool OfxDoubleInstance::isAnimated() const {
     return _knob->isAnimated(0);
 }
 
+OfxStatus OfxDoubleInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxDoubleInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxDoubleInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxDoubleInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxDoubleInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+
+////////////////////////// OfxBooleanInstance /////////////////////////////////////////////////
+
+
 OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::BooleanInstance(descriptor,node->effectInstance())
 {
@@ -246,6 +374,24 @@ void OfxBooleanInstance::setSecret() {
 boost::shared_ptr<Knob> OfxBooleanInstance::getKnob() const{
     return _knob;
 }
+
+OfxStatus OfxBooleanInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxBooleanInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxBooleanInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxBooleanInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxBooleanInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+////////////////////////// OfxChoiceInstance /////////////////////////////////////////////////
 
 
 OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
@@ -313,6 +459,24 @@ boost::shared_ptr<Knob> OfxChoiceInstance::getKnob() const{
     return _knob;
 }
 
+
+OfxStatus OfxChoiceInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxChoiceInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxChoiceInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxChoiceInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxChoiceInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+////////////////////////// OfxRGBAInstance /////////////////////////////////////////////////
 
 
 OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
@@ -397,6 +561,25 @@ bool OfxRGBAInstance::isAnimated() const {
     return _knob->isAnimated(0) || _knob->isAnimated(1) || _knob->isAnimated(2) || _knob->isAnimated(3);
 }
 
+OfxStatus OfxRGBAInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxRGBAInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxRGBAInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxRGBAInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxRGBAInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+////////////////////////// OfxRGBInstance /////////////////////////////////////////////////
+
+
 OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::RGBInstance(descriptor,node->effectInstance())
 {
@@ -472,6 +655,25 @@ bool OfxRGBInstance::isAnimated(int dimension) const {
 bool OfxRGBInstance::isAnimated() const {
     return _knob->isAnimated(0) || _knob->isAnimated(1) || _knob->isAnimated(2);
 }
+
+OfxStatus OfxRGBInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxRGBInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxRGBInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxRGBInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxRGBInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+////////////////////////// OfxDouble2DInstance /////////////////////////////////////////////////
+
 
 OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance())
@@ -575,6 +777,25 @@ bool OfxDouble2DInstance::isAnimated() const {
     return _knob->isAnimated(0) || _knob->isAnimated(1);
 }
 
+OfxStatus OfxDouble2DInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxDouble2DInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxDouble2DInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxDouble2DInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxDouble2DInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+////////////////////////// OfxInteger2DInstance /////////////////////////////////////////////////
+
+
 OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Integer2DInstance(descriptor,node->effectInstance())
 {
@@ -644,6 +865,25 @@ void OfxInteger2DInstance::setSecret() {
 boost::shared_ptr<Knob> OfxInteger2DInstance::getKnob() const {
     return _knob;
 }
+
+OfxStatus OfxInteger2DInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxInteger2DInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxInteger2DInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxInteger2DInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxInteger2DInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+////////////////////////// OfxDouble3DInstance /////////////////////////////////////////////////
+
 
 OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Double3DInstance(descriptor,node->effectInstance())
@@ -752,6 +992,25 @@ bool OfxDouble3DInstance::isAnimated() const {
     return _knob->isAnimated(0) || _knob->isAnimated(1) || _knob->isAnimated(2);
 }
 
+OfxStatus OfxDouble3DInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxDouble3DInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxDouble3DInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxDouble3DInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxDouble3DInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+////////////////////////// OfxInteger3DInstance /////////////////////////////////////////////////
+
+
 OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Integer3DInstance(descriptor,node->effectInstance())
 {
@@ -826,8 +1085,24 @@ boost::shared_ptr<Knob> OfxInteger3DInstance::getKnob() const {
     return _knob;
 }
 
+OfxStatus OfxInteger3DInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxInteger3DInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxInteger3DInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxInteger3DInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxInteger3DInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
 
-/***********/
+////////////////////////// OfxGroupInstance /////////////////////////////////////////////////
+
 OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::GroupInstance(descriptor,node->effectInstance())
 , _node(node)
@@ -863,6 +1138,9 @@ boost::shared_ptr<Knob> OfxGroupInstance::getKnob() const{
         return _tabKnob;
     }
 }
+
+
+////////////////////////// OfxStringInstance /////////////////////////////////////////////////
 
 
 OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
@@ -1062,6 +1340,65 @@ void OfxStringInstance::ifFileKnobPopDialog(){
 }
 
 
+OfxStatus OfxStringInstance::getNumKeys(unsigned int &nKeys) const {
+    boost::shared_ptr<Knob> knob;
+    if(_stringKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+    }else if(_multiLineKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_multiLineKnob);
+    }else{
+        return kOfxStatErrUnsupported;
+    }
+    return OfxKeyFrame::getNumKeys(knob, nKeys);
+}
+OfxStatus OfxStringInstance::getKeyTime(int nth, OfxTime& time) const {
+    boost::shared_ptr<Knob> knob;
+    if(_stringKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+    }else if(_multiLineKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_multiLineKnob);
+    }else{
+        return kOfxStatErrUnsupported;
+    }
+    return OfxKeyFrame::getKeyTime(knob, nth, time);
+}
+OfxStatus OfxStringInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    boost::shared_ptr<Knob> knob;
+    if(_stringKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+    }else if(_multiLineKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_multiLineKnob);
+    }else{
+        return kOfxStatErrUnsupported;
+    }
+    return OfxKeyFrame::getKeyIndex(knob, time, direction, index);
+}
+OfxStatus OfxStringInstance::deleteKey(OfxTime time) {
+    boost::shared_ptr<Knob> knob;
+    if(_stringKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+    }else if(_multiLineKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_multiLineKnob);
+    }else{
+        return kOfxStatErrUnsupported;
+    }
+    return OfxKeyFrame::deleteKey(knob, time);
+}
+OfxStatus OfxStringInstance::deleteAllKeys(){
+    boost::shared_ptr<Knob> knob;
+    if(_stringKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+    }else if(_multiLineKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_multiLineKnob);
+    }else{
+        return kOfxStatErrUnsupported;
+    }
+    return OfxKeyFrame::deleteAllKeys(knob);
+}
+
+////////////////////////// OfxCustomInstance /////////////////////////////////////////////////
+
+
 /*
  http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamTypeCustom
 
@@ -1076,6 +1413,8 @@ void OfxStringInstance::ifFileKnobPopDialog(){
 
  Custom parameters are mandatory, as they are simply ASCII C strings. However, animation of custom parameters an support for an in editor interact is optional.
  */
+
+
 
 OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::CustomInstance(descriptor,node->effectInstance())
@@ -1146,4 +1485,20 @@ void OfxCustomInstance::setEnabled() {
 // callback which should set secret state as appropriate
 void OfxCustomInstance::setSecret() {
     _knob->setSecret(getSecret());
+}
+
+OfxStatus OfxCustomInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxCustomInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxCustomInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxCustomInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxCustomInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
 }

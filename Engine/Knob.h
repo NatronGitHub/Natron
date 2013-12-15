@@ -135,6 +135,8 @@ public:
 
     void deleteValueAtTime(int time,int dimension);
 
+    void removeAnimation(int dimension);
+    
     /**
      * @brief Returns the value  in a specific dimension at a specific time. If
      * there is no key in this dimension it will return the value at the requested dimension
@@ -252,7 +254,8 @@ public slots:
     void onKeyFrameRemoved(SequenceTime time,int dimension);
 
     void onTimeChanged(SequenceTime);
-        
+    
+    void onAnimationRemoved(int dimension);
 
 signals:
     
@@ -271,6 +274,8 @@ signals:
 
     void keyFrameRemoved(SequenceTime,int);
     
+    void animationRemoved(int);
+    
 private:
     //private because it emits a signal
     void setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason);
@@ -280,6 +285,8 @@ private:
 
      //private because it emits a signal
     void deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason reason);
+    
+    void removeAnimation(int dimension,Natron::ValueChangedReason reason);
     
     /** @brief This function can be implemented if you want to clone more data than just the value
      * of the knob. Cloning happens when a render request is made: all knobs values of the GUI

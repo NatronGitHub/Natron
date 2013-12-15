@@ -233,6 +233,25 @@ void Knob::deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason r
     }
 }
 
+void Knob::removeAnimation(int dimension,Natron::ValueChangedReason reason){
+    if(dimension > (int)_imp->_curves.size()){
+        throw std::invalid_argument("Knob::deleteValueAtTime(): Dimension out of range");
+    }
+
+    
+    ///if the knob is slaved to another knob,return, because we don't want the
+    ///gui to be unsynchronized with what lies internally.
+    boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
+    if(isSlave){
+        return;
+    }
+    
+    _imp->_curves[dimension]->clearKeyFrames();
+    
+    if(reason != Natron::USER_EDITED){
+        emit animationRemoved(dimension);
+    }
+}
 
 void Knob::setValue(const Variant& value,int dimension){
     setValue(value,dimension,Natron::PLUGIN_EDITED);
@@ -246,6 +265,10 @@ void Knob::setValueAtTime(int time, const Variant& v, int dimension){
 
 void Knob::deleteValueAtTime(int time,int dimension){
     deleteValueAtTime(time,dimension,Natron::PLUGIN_EDITED);
+}
+
+void Knob::removeAnimation(int dimension){
+    removeAnimation(dimension,Natron::PLUGIN_EDITED);
 }
 
 boost::shared_ptr<Curve> Knob::getCurve(int dimension) const {
@@ -315,6 +338,10 @@ void Knob::onKeyFrameSet(SequenceTime time,int dimension){
 
 void Knob::onKeyFrameRemoved(SequenceTime time,int dimension){
     deleteValueAtTime(time,dimension,Natron::USER_EDITED);
+}
+
+void Knob::onAnimationRemoved(int dimension){
+    removeAnimation(dimension, Natron::USER_EDITED);
 }
 
 void Knob::evaluateAnimationChange(){

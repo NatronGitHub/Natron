@@ -80,6 +80,13 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
+    
     boost::shared_ptr<Knob> getKnob() const;
 
 private:
@@ -101,6 +108,14 @@ public:
     
     // callback which should set secret state as appropriate
     virtual void setSecret();
+    
+    
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
     
     boost::shared_ptr<Knob> getKnob() const;
 
@@ -125,6 +140,14 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
+
+    
     boost::shared_ptr<Knob> getKnob() const;
 
 private:
@@ -145,6 +168,13 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
+
     boost::shared_ptr<Knob> getKnob() const;
 
 private:
@@ -167,6 +197,14 @@ public:
     
     // callback which should set secret state as appropriate
     virtual void setSecret();
+    
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
+
     
     boost::shared_ptr<Knob> getKnob() const;
 
@@ -193,6 +231,14 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
+
+    
     boost::shared_ptr<Knob> getKnob() const;
 
     bool isAnimated(int dimension) const;
@@ -217,6 +263,14 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
+
+    
     boost::shared_ptr<Knob> getKnob() const;
 
     bool isAnimated(int dimension) const;
@@ -239,6 +293,14 @@ public:
 
     // callback which should set secret state as appropriate
     virtual void setSecret();
+    
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
+
 
     boost::shared_ptr<Knob> getKnob() const;
 
@@ -262,6 +324,14 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
 
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
+    
+
     boost::shared_ptr<Knob> getKnob() const;
 
     bool isAnimated(int dimension) const;
@@ -283,6 +353,14 @@ public:
 
     // callback which should set secret state as appropriate
     virtual void setSecret();
+    
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
+
 
     boost::shared_ptr<Knob> getKnob() const;
 
@@ -352,6 +430,14 @@ public:
      */
     const QString getRandomFrameName(int f) const;
     
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
+
+    
     boost::shared_ptr<Knob> getKnob() const;
     
     virtual ~OfxStringInstance(){}
@@ -399,6 +485,14 @@ public:
     boost::shared_ptr<Knob> getKnob() const;
 
     virtual ~OfxCustomInstance(){}
+    
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
+
 
 private:
     typedef OfxStatus (*customParamInterpolationV1Entry_t)(
