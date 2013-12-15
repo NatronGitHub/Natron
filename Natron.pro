@@ -54,14 +54,22 @@ warning("Compiling in DEBUG mode.")
     DEFINES += NATRON_DEBUG
 }
 
+CONFIG(release, debug|release){
+warning("Compiling in RELEASE mode.")
+  QMAKE_CXXFLAGS_RELEASE += -O3
+  QMAKE_CFLAGS_RELEASE += -O3
+}
+
 *xcode* {
+#redefine cxx flags as qmake tends to automatically add -O2 to xcode projects
+  QMAKE_CFLAGS -= -O2
+  QMAKE_CXXFLAGS -= -O2
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
 }
 
 # When compiler is GCC check for at least version 4.7
 *g++* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
-  QMAKE_CXXFLAGS_RELEASE += -O3
   QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
   GCCVer = $$system($$QMAKE_CXX --version)
   contains(GCCVer,[0-3]\\.[0-9]+.*) {
