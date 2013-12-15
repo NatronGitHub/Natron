@@ -230,6 +230,15 @@ NodeGraph::~NodeGraph(){
     _nodeCreationShortcutEnabled = false;
     _nodes.clear();
     _nodesTrash.clear();
+    
+    for (U32 i = 0; i < _nodes.size(); ++i) {
+        delete _nodes[i];
+    }
+    
+    for (U32 i = 0; i < _nodesTrash.size(); ++i) {
+        delete _nodesTrash[i];
+    }
+
 }
 
 std::pair<QAction*,QAction*> NodeGraph::getUndoRedoActions() const{
@@ -1237,6 +1246,24 @@ void NodeGraph::turnOffPreviewForAllNodes(){
             if(!_nodes[i]->getNode()->isPreviewEnabled() && _nodes[i]->getNode()->makePreviewByDefault()){
                 _nodes[i]->togglePreview();
             }
+        }
+    }
+}
+
+void NodeGraph::deleteNode(Natron::Node* n){
+    for (U32 i = 0; i < _nodes.size(); ++i) {
+        if(_nodes[i]->getNode() == n){
+            delete _nodes[i];
+            _nodes.erase(_nodes.begin()+i);
+            return;
+        }
+    }
+    
+    for (U32 i = 0; i < _nodesTrash.size(); ++i) {
+        if(_nodesTrash[i]->getNode() == n){
+            delete _nodesTrash[i];
+            _nodesTrash.erase(_nodesTrash.begin()+i);
+            break;
         }
     }
 }

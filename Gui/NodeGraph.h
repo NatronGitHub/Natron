@@ -141,6 +141,8 @@ public slots:
     void toggleCacheInfos();
     
     void turnOffPreviewForAllNodes();
+    
+    void deleteNode(Natron::Node*);
 
 protected:
 

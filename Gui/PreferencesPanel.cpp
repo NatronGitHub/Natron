@@ -26,6 +26,7 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,QWidget 
 
     _panel = new DockablePanel(_settings.get(),_mainLayout,DockablePanel::NO_HEADER,
                                "","",false,"",this);
+    _panel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     _mainLayout->addWidget(_panel);
 
     _panel->initializeKnobs();

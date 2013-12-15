@@ -167,9 +167,7 @@ public slots:
     void onPersistentMessageChanged(int type,const QString& message);
     
     void onPersistentMessageCleared();
-    
-    void deleteNode();
-        
+            
     void refreshEdges();
     
     /*initialises the input edges*/

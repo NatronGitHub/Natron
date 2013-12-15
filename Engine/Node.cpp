@@ -154,7 +154,7 @@ Node::~Node()
     }
     delete _liveInstance;
     delete _imp->previewRenderTree;
-    emit deleteWanted();
+    emit deleteWanted(this);
 }
 
 const std::map<int, std::string>& Node::getInputLabels() const

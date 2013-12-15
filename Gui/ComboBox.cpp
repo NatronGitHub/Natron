@@ -36,7 +36,9 @@ ComboBox::ComboBox(QWidget* parent):QFrame(parent),_currentIndex(0),_maximumText
     setCurrentIndex(-1);
     _currentText->setMinimumWidth(10);
     _mainLayout->addWidget(_currentText);
-        
+    _currentText->setFixedHeight(fontMetrics().height() + 8);
+
+    
     _dropDownIcon = new QLabel(this);
     _dropDownIcon->setObjectName("ComboBoxDropDownLabel");
     QPixmap pixC;
@@ -45,6 +47,8 @@ ComboBox::ComboBox(QWidget* parent):QFrame(parent),_currentIndex(0),_maximumText
     _mainLayout->addWidget(_dropDownIcon);
     
     _menu = new MenuWithToolTips(this);
+    
+    setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
 }
 
 

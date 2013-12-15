@@ -23,6 +23,7 @@
 #include "Engine/ChannelSet.h"
 #include "Engine/Log.h"
 #include "Engine/Settings.h"
+#include "Engine/Node.h"
 
 #include "Gui/KnobGui.h"
 
@@ -34,7 +35,7 @@ void registerMetaTypes(){
     qRegisterMetaType<Natron::StandardButtons>();
     qRegisterMetaType<SequenceTime>("SequenceTime");
     qRegisterMetaType<Knob*>();
-
+    qRegisterMetaType<Natron::Node*>();
 }
 
 void printBackGroundWelcomeMessage(){
