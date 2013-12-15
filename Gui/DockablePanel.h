@@ -77,6 +77,8 @@ class DockablePanel : public QFrame{
     /* map<tab name, pair<tab , row count> >*/
     std::map<QString,std::pair<QWidget*,int> > _tabs;
     
+    QString _defaultTabName;
+    
 public:
     
     enum HeaderMode{

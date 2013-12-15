@@ -45,6 +45,7 @@
 #endif
 
 #include <QtCore/QString>
+#include <QFileSystemModel>
 
 inline size_t getSystemTotalRAM(){
 #if defined(__APPLE__)
@@ -74,27 +75,23 @@ inline size_t getSystemTotalRAM(){
     
 }
 // prints RAM value as KB, MB or GB
-inline std::string printAsRAM(size_t v,int precision = 6){
-    QString toStr = QString::number(v);
-    QString outStr;
-    if(toStr.size()<=9 && toStr.size()>=7){ 
-        double res = (double)v/1000000.0;
-        toStr = QString::number(res,'f',precision);
-        outStr.append(toStr);
-        outStr.append(" MB");
-    }else if(toStr.size()>=10){
-        double res = v/1000000000.0;
-        toStr = QString::number(res,'f',precision);
-        outStr.append(toStr);
-        outStr.append(" GB");
-    }else{
-        double res = v/ 1000.0;
-        toStr = QString::number(res,'f',precision);
-        outStr.append(toStr);
-        outStr.append(" KB");
-    }
+inline QString printAsRAM(U64 bytes){
     
-    return outStr.toStdString();
+    // According to the Si standard KB is 1000 bytes, KiB is 1024
+    // but on windows sizes are calulated by dividing by 1024 so we do what they do.
+    const U64 kb = 1024;
+    const U64 mb = 1024 * kb;
+    const U64 gb = 1024 * mb;
+    const U64 tb = 1024 * gb;
+    if (bytes >= tb)
+        return QFileSystemModel::tr("%1 TB").arg(QLocale().toString(qreal(bytes) / tb, 'f', 3));
+    if (bytes >= gb)
+        return QFileSystemModel::tr("%1 GB").arg(QLocale().toString(qreal(bytes) / gb, 'f', 2));
+    if (bytes >= mb)
+        return QFileSystemModel::tr("%1 MB").arg(QLocale().toString(qreal(bytes) / mb, 'f', 1));
+    if (bytes >= kb)
+        return QFileSystemModel::tr("%1 KB").arg(QLocale().toString(bytes / kb));
+    return QFileSystemModel::tr("%1 byte(s)").arg(QLocale().toString(bytes));
 }
 
 

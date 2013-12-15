@@ -721,7 +721,12 @@ const std::string& Group_Knob::typeName() const
 
 void Group_Knob::addKnob(boost::shared_ptr<Knob> k)
 {
-    _children.push_back(k);
+    std::vector<boost::shared_ptr<Knob> >::iterator found = std::find(_children.begin(), _children.end(), k);
+    if(found == _children.end()){
+        _children.push_back(k);
+        k->setParentKnob(getHolder()->getKnobByDescription(getDescription()));
+    }
+
 }
 
 const std::vector< boost::shared_ptr<Knob> > &Group_Knob::getChildren() const
@@ -761,6 +766,7 @@ void Tab_Knob::addKnob(boost::shared_ptr<Knob> k)
     std::vector<boost::shared_ptr<Knob> >::iterator found = std::find(_children.begin(), _children.end(), k);
     if(found == _children.end()){
         _children.push_back(k);
+        k->setParentKnob(getHolder()->getKnobByDescription(getDescription()));
     }
 }
 

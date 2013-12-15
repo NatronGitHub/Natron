@@ -109,6 +109,7 @@ SOURCES += \
     Engine/ChannelSet.cpp \
     Engine/Curve.cpp \
     Engine/CurveSerialization.cpp \
+    Gui/DockablePanel.cpp \
     Engine/EffectInstance.cpp \
     Engine/Hash64.cpp \
     Engine/Image.cpp \
@@ -166,7 +167,6 @@ SOURCES += \
     Gui/ProjectGuiSerialization.cpp \
     Gui/ScaleSlider.cpp \
     Gui/SequenceFileDialog.cpp \
-    Gui/DockablePanel.cpp \
     Gui/SpinBox.cpp \
     Gui/TabWidget.cpp \
     Gui/TextRenderer.cpp \
@@ -254,6 +254,7 @@ HEADERS += \
     Gui/CurveEditor.h \
     Gui/CurveEditorUndoRedo.h \
     Gui/CurveWidget.h \
+    Gui/DockablePanel.h \
     Gui/Edge.h \
     Gui/GroupBoxLabel.h \
     Gui/Gui.h \
@@ -273,7 +274,6 @@ HEADERS += \
     Gui/ProjectGuiSerialization.h \
     Gui/ScaleSlider.h \
     Gui/SequenceFileDialog.h \
-    Gui/DockablePanel.h \
     Gui/Shaders.h \
     Gui/SpinBox.h \
     Gui/TabWidget.h \

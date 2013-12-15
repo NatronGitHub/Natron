@@ -62,6 +62,7 @@ DockablePanel::DockablePanel(KnobHolder* holder
 ,_knobs()
 ,_holder(holder)
 ,_tabs()
+,_defaultTabName(defaultTab)
 {
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setSpacing(0);
@@ -85,10 +86,18 @@ DockablePanel::DockablePanel(KnobHolder* holder
         _helpButton = new Button(QIcon(pixHelp),"",_headerWidget);
         
         QString tooltip = helpToolTip;
+        int countSinceLastNewLine = 0;
         for (int i = 0; i < tooltip.size();++i) {
-            if (i%100 == 0 && i!=0) {
+            if(tooltip.at(i) != QChar('\n')){
+                ++countSinceLastNewLine;
+            }else{
+                countSinceLastNewLine = 0;
+            }
+            if (countSinceLastNewLine%80 == 0 && i!=0) {
                 /*Find closest word end and insert a new line*/
-                while(i < tooltip.size() && tooltip.at(i)!=QChar(' ')) ++i;
+                while(i < tooltip.size() && tooltip.at(i)!=QChar(' ')){
+                    ++i;
+                }
                 tooltip.insert(i, QChar('\n'));
             }
         }
@@ -165,7 +174,7 @@ DockablePanel::DockablePanel(KnobHolder* holder
     _mainLayout->addWidget(_tabWidget);
     
     if(createDefaultTab){
-        addTab(defaultTab);
+        addTab(_defaultTabName);
     }
 }
 
@@ -219,15 +228,32 @@ void DockablePanel::initializeKnobs(){
                 
                 
                 ///find to what to belongs the knob. by default it belongs to the default tab.
-                std::map<QString,std::pair<QWidget*,int> >::iterator parentTab = _tabs.begin();
+                std::map<QString,std::pair<QWidget*,int> >::iterator parentTab = _tabs.end() ;
+                
+                
                 boost::shared_ptr<Knob> parentKnob = knobs[i]->getParentKnob();
+                
+                ///if the parent is a tab find it
                 if(parentKnob && parentKnob->typeName() == "Tab"){
+                    //make sure the tab has been created;
+                    (void)findKnobGuiOrCreate(parentKnob);
                     std::map<QString,std::pair<QWidget*,int> >::iterator it = _tabs.find(parentKnob->getDescription().c_str());
-                    if(it!=_tabs.end()){
-                        parentTab = it;
-                    }
+                    
+                    ///if it crashes there's serious problem because findKnobGuiOrCreate(parentKnob) should have registered
+                    ///the tab. Maybe you passed incorrect pointers ?
+                    assert(it != _tabs.end());
+                    parentTab = it;
+                    
+                }else{
+                    ///defaults to the default tab
+                    parentTab = _tabs.find(_defaultTabName);
+                    ///The dockpanel must have a default tab if you didn't declare your own tab to
+                    ///put your knobs into!
+                    assert(parentTab != _tabs.end());
                 }
-                ++parentTab->second.second;
+                if(parentTab != _tabs.end()){
+                    ++parentTab->second.second;
+                }
                 
                 ///this might be wrong we don't want to use Qt's parenting !
                 //gui->setParent(parentTab->second.first);

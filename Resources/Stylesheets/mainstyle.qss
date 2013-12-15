@@ -194,7 +194,7 @@ border-radius : 5px;
 }
 TabWidget{background-color: %2;}
 
-QWidget#_propertiesContainer{
+QWidget{
 background-color: %2;
 }
 NodeSettingsPanel{

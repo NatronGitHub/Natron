@@ -850,10 +850,8 @@ OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Des
 }
 void OfxGroupInstance::addKnob(boost::shared_ptr<Knob> k) {
     if(_groupKnob){
-        k->setParentKnob(_groupKnob);
         _groupKnob->addKnob(k);
     }else{
-        k->setParentKnob(_tabKnob);
         _tabKnob->addKnob(k);
     }
 }

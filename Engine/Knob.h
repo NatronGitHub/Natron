@@ -340,6 +340,8 @@ public:
 
     int getAppAge() const;
     
+    boost::shared_ptr<Knob> getKnobByDescription(const std::string& desc) const WARN_UNUSED_RETURN;
+    
     const std::vector< boost::shared_ptr<Knob> >& getKnobs() const { return _knobs; }
 
     void refreshAfterTimeChange(SequenceTime time);

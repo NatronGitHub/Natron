@@ -468,7 +468,25 @@ bool Knob::canBeUndone() const {return _imp->_canUndo;}
 
 bool Knob::isInsignificant() const {return _imp->_isInsignificant;}
 
-void Knob::setHintToolTip(const std::string& hint) {_imp->_tooltipHint = hint;}
+void Knob::setHintToolTip(const std::string& hint) {
+    QString tooltip(hint.c_str());
+    int countSinceLastNewLine = 0;
+    for (int i = 0; i < tooltip.size();++i) {
+        if(tooltip.at(i) != QChar('\n')){
+            ++countSinceLastNewLine;
+        }else{
+            countSinceLastNewLine = 0;
+        }
+        if (countSinceLastNewLine%80 == 0 && i!=0) {
+            /*Find closest word end and insert a new line*/
+            while(i < tooltip.size() && tooltip.at(i)!=QChar(' ')){
+                ++i;
+            }
+            tooltip.insert(i, QChar('\n'));
+        }
+    }
+    _imp->_tooltipHint = tooltip.toStdString();
+}
 
 const std::string& Knob::getHintToolTip() const {return _imp->_tooltipHint;}
 
@@ -569,4 +587,17 @@ void KnobHolder::notifyProjectEvaluationRequested(Natron::ValueChangedReason rea
     if(_app){
         getApp()->getProject()->stackEvaluateRequest(reason,this,k,significant);
     }
+}
+
+
+
+boost::shared_ptr<Knob> KnobHolder::getKnobByDescription(const std::string& desc) const {
+    
+    const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
+    for(U32 i = 0; i < knobs.size() ; ++i){
+        if (knobs[i]->getDescription() == desc) {
+            return knobs[i];
+        }
+    }
+    return boost::shared_ptr<Knob>();
 }

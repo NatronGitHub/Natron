@@ -579,16 +579,6 @@ void EffectInstance::updateInputs(RenderTree* tree) {
 
 
 
-boost::shared_ptr<Knob> EffectInstance::getKnobByDescription(const std::string& desc) const{
-
-    const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
-    for(U32 i = 0; i < knobs.size() ; ++i){
-        if (knobs[i]->getDescription() == desc) {
-            return knobs[i];
-        }
-    }
-    return boost::shared_ptr<Knob>();
-}
 
 bool EffectInstance::message(Natron::MessageType type,const std::string& content) const{
     return _node->message(type,content);

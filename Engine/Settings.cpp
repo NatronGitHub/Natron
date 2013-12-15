@@ -14,7 +14,9 @@
 #include <QDir>
 
 #include "Global/AppManager.h"
+#include "Global/MemoryInfo.h"
 #include "Global/LibraryBinary.h"
+
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/Project.h"
@@ -58,6 +60,12 @@ void Settings::initializeKnobs(){
     _maxRAMPercent->setMinimum(0);
     _maxRAMPercent->setMaximum(100);
     _maxRAMPercent->setValue<int>(50);
+    std::string ramHint("This setting indicates the percentage of the system's total RAM "
+                        NATRON_APPLICATION_NAME "'s caches are allowed to use."
+                        " Your system has ");
+    ramHint.append(printAsRAM(getSystemTotalRAM()).toStdString());
+    ramHint.append(" of RAM.");
+    _maxRAMPercent->setHintToolTip(ramHint);
     _cachingTab->addKnob(_maxRAMPercent);
     
     _maxPlayBackPercent = Natron::createKnob<Int_Knob>(this, "Playback cache RAM percentage");
@@ -65,6 +73,10 @@ void Settings::initializeKnobs(){
     _maxPlayBackPercent->setMinimum(0);
     _maxPlayBackPercent->setMaximum(100);
     _maxPlayBackPercent->setValue(25);
+    _maxPlayBackPercent->setHintToolTip("This setting indicates the percentage of the Maximum system's RAM for caching"
+                                        " dedicated for the playback cache. Normally you shouldn't change this value"
+                                        " as it is tuned automatically by the Maximum system's RAM for caching, but"
+                                        " this is made possible for convenience.");
     _cachingTab->addKnob(_maxPlayBackPercent);
     
     _maxDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum disk cache size");
@@ -72,6 +84,7 @@ void Settings::initializeKnobs(){
     _maxDiskCacheGB->setMinimum(0);
     _maxDiskCacheGB->setValue<int>(10);
     _maxDiskCacheGB->setMaximum(100);
+    _maxDiskCacheGB->setHintToolTip("The maximum disk space the caches can use. (in GB)");
     _cachingTab->addKnob(_maxDiskCacheGB);
     
     
