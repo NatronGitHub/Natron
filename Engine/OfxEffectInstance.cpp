@@ -801,6 +801,10 @@ std::string OfxEffectInstance::getOutputFileName() const{
 }
 
 void OfxEffectInstance::purgeCaches(){
+    // The kOfxActionPurgeCaches is an action that may be passed to a plug-in instance from time to time in low memory situations. Instances recieving this action should destroy any data structures they may have and release the associated memory, they can later reconstruct this from the effect's parameter set and associated information. http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxActionPurgeCaches
     OfxStatus stat =  effect_->purgeCachesAction();
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    // The kOfxActionSyncPrivateData action is called when a plugin should synchronise any private data structures to its parameter set. This generally occurs when an effect is about to be saved or copied, but it could occur in other situations as well. http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxActionSyncPrivateData
+    stat =  effect_->syncPrivateDataAction();
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
 }
