@@ -500,7 +500,7 @@ EffectInstance::RenderSafety OfxEffectInstance::renderThreadSafety() const{
         return EffectInstance::UNSAFE;
     }else if(safety == kOfxImageEffectRenderInstanceSafe) {
         return EffectInstance::INSTANCE_SAFE;
-    }else if(safety == kOfxImageEffectRenderInstanceSafe) {
+    }else if(safety == kOfxImageEffectRenderFullySafe) {
         if (effect_->getHostFrameThreading()) {
             return EffectInstance::FULLY_SAFE_FRAME;
         } else {
