@@ -3,6 +3,13 @@
 - kOfxImagePropUniqueIdentifier (Uniquely labels an image) must be
   supported (serialize the hash?)
 
+- serialization: the major version of each plugin must be serialized,
+  and the following behaviour has to be implemented at load time:
+  http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParametersPersistance
+
+- is kOfxInteractPropSlaveToParam / Instance::getSlaveToParam() supported?
+  there is no reference to it in the code
+
 - a plugin that returns an error during the "load" or "describe" actions,
   for example if it requires a missing suite
   (e.g. ParametricParameterSuite for OFX/Color/RGBLut), should *not*
@@ -35,6 +42,21 @@ OfxParameterSuiteV1::paramGetKeyTime — Returns the time of the nth key
 OfxParameterSuiteV1::paramGetKeyIndex — Finds the index of a keyframe at/before/after a specified time.
 OfxParameterSuiteV1::paramDeleteKey — Deletes a keyframe if one exists at the given time.
 OfxParameterSuiteV1::paramDeleteAllKeys — Deletes all keyframes from a parameter.
+
+- support Parameter Interacts, which are integrated in the parameters panel
+http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParametersInteracts
+
+- support absolute/normalized double parameters:
+http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParameterPropertiesDoubleTypes
+
+- implement Parametric Parameters:
+  http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParametersParametric
+
+- implement Fields and Field Rendering:
+  http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ImageEffectsFieldRendering
+
+- implement framerate support
+  (look for various instances of "temporal coordinates", "framerate" and "frame rate" in the documentation)
 
 - support more image components:
   kOfxImageComponentAlpha
