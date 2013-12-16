@@ -14,6 +14,16 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 # Use Precompiled headers (PCH)
 PRECOMPILED_HEADER = pch.h
 
+macx {
+### custom variables for the Info.plist file
+# use a custom Info.plist template
+#QMAKE_INFO_PLIST = ...
+# Set the application icon
+#ICON = ...
+# replace com.yourcompany with something more meaningful
+QMAKE_TARGET_BUNDLE_PREFIX = fr.inria
+}
+
 win32{
 #ofx needs WINDOWS def
 #microsoft compiler needs _MBCS to compile with the multi-byte character set.
