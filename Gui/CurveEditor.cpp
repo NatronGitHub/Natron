@@ -56,12 +56,6 @@ void CurveEditor::recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *c
     }
 }
 
-static void recursiveDeselect(QTreeWidgetItem* current){
-    current->setSelected(false);
-    for (int j = 0; j < current->childCount(); ++j) {
-        recursiveDeselect(current->child(j));
-    }
-}
 
 
 CurveEditor::CurveEditor(boost::shared_ptr<TimeLine> timeline, QWidget *parent)
