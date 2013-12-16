@@ -46,12 +46,17 @@ public:
     
     const std::map<int,std::string>& getInputs() const {return _inputs;}
     
+    int getPluginMajorVersion() const { return _pluginMajorVersion; }
+    
+    int getPluginMinorVersion() const { return _pluginMinorVersion; }
     
 private:
     
     KnobValues _knobsValues;
     std::string _pluginLabel;
     std::string _pluginID;
+    int _pluginMajorVersion;
+    int _pluginMinorVersion;
     
     std::map<int,std::string> _inputs;
 
@@ -61,10 +66,13 @@ private:
     void serialize(Archive & ar, const unsigned int version)
     {
         (void)version;
-        ar & boost::serialization::make_nvp("Knobs_values_map", _knobsValues);
         ar & boost::serialization::make_nvp("Plugin_label",_pluginLabel);
         ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
+        ar & boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
+        ar & boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);
+        ar & boost::serialization::make_nvp("Knobs_values_map", _knobsValues);
         ar & boost::serialization::make_nvp("Inputs_map",_inputs);
+        
     }
     
     

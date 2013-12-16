@@ -104,11 +104,19 @@ public:
 
     bool isBackground() const {return _isBackground;}
 
-    /*Create a new node  in the node graph.
-     The name passed in parameter must match a valid node name,
-     otherwise an exception is thrown. You should encapsulate the call
-     by a try-catch block.*/
-    Natron::Node* createNode(const QString& name,bool requestedByLoad = false);
+    /** @brief Create a new node  in the node graph.
+      * The name passed in parameter must match a valid node name,
+      * otherwise an exception is thrown. You should encapsulate the call
+      * by a try-catch block.
+      * If the majorVersion is not -1 then this function will attempt to find a plugin with the matching
+      * majorVersion, or otherwise it will throw an exception.
+      * If the minorVersion is not -1 then this function will attempt to load a plugin with the greatest minorVersion
+      * greater or equal to this minorVersion. 
+      * By default this function also create the node's graphical user interface and attempts to automatically
+      * connect this node to other nodes selected. 
+      * If requestedByLoad is true then it will never attempt to do this auto-connection.
+     **/
+    Natron::Node* createNode(const QString& name,int majorVersion = -1,int minorVersion = -1,bool requestedByLoad = false);
 
     /*Pointer to the GUI*/
     Gui* getGui() WARN_UNUSED_RETURN {return _gui;}
@@ -325,6 +333,8 @@ class Plugin {
     QString _id;
     QString _label;
     QMutex* _lock;
+    int _majorVersion;
+    int _minorVersion;
 
 public:
 
@@ -332,17 +342,24 @@ public:
         _binary(NULL)
       , _id()
       , _label()
-      , _lock() {}
+      , _lock()
+      , _majorVersion(0)
+      , _minorVersion(0)
+    {}
 
     Plugin(Natron::LibraryBinary* binary,
            const QString& id,
            const QString& label,
-           QMutex* lock
+           QMutex* lock,
+           int majorVersion,
+           int minorVersion
            ):
         _binary(binary)
       , _id(id)
       , _label(label)
       , _lock(lock)
+      , _majorVersion(majorVersion)
+      , _minorVersion(minorVersion)
     {
 
     }
@@ -360,6 +377,10 @@ public:
     QMutex* getPluginLock() const { return _lock; }
 
     Natron::LibraryBinary* getLibraryBinary() const { return _binary; }
+    
+    int getMajorVersion() const { return _majorVersion; }
+    
+    int getMinorVersion() const { return _minorVersion; }
 
 };
 }
@@ -400,7 +421,7 @@ public:
 
     QMutex* getMutexForPlugin(const QString& pluginId) const;
 
-    Natron::LibraryBinary* getPluginBinary(const QString& pluginId) const;
+    Natron::LibraryBinary* getPluginBinary(const QString& pluginId,int majorVersion,int minorVersion) const;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0) const WARN_UNUSED_RETURN;

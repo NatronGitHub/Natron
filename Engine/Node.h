@@ -79,6 +79,16 @@ public:
     /*Returns in viewers the list of all the viewers connected to this node*/
     void hasViewersConnected(std::list<ViewerInstance*>* viewers) const;
     
+    /**
+     * @brief Forwarded to the live effect instance
+     **/
+    int majorVersion() const;
+    
+    /**
+     * @brief Forwarded to the live effect instance
+     **/
+    int minorVersion() const;
+
     
     /**
      * @brief Forwarded to the live effect instance

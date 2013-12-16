@@ -85,7 +85,6 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row)
     boost::shared_ptr<Int_Knob> intKnob = boost::dynamic_pointer_cast<Int_Knob>(getKnob());
     assert(intKnob);
     
-    QString subLabels_XYZW[] = {"x:", "y:", "z:", "w:"};
     
     const std::vector<int> &maximums = intKnob->getMaximums();
     const std::vector<int> &minimums = intKnob->getMinimums();
@@ -95,11 +94,12 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row)
     for (int i = 0; i < dim; ++i) {
         QWidget *boxContainer = new QWidget(layout->parentWidget());
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
+        boxContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
         QLabel *subDesc = 0;
         if (dim != 1) {
-            subDesc = new QLabel(subLabels_XYZW[i], boxContainer);
+            subDesc = new QLabel(getKnob()->getDimensionName(i).c_str(), boxContainer);
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::INT_SPINBOX);
@@ -382,7 +382,6 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row)
     assert(dbl_knob);
     int dim = getKnob()->getDimension();
     
-    QString subLabels_XYZW[] = {"x:", "y:", "z:", "w:"};
     
     const std::vector<double> &maximums = dbl_knob->getMaximums();
     const std::vector<double> &minimums = dbl_knob->getMinimums();
@@ -394,11 +393,12 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row)
     for (int i = 0; i < dim; ++i) {
         QWidget *boxContainer = new QWidget(layout->parentWidget());
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
+        boxContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
         QLabel *subDesc = 0;
         if (dim != 1) {
-            subDesc = new QLabel(subLabels_XYZW[i], boxContainer);
+            subDesc = new QLabel(getKnob()->getDimensionName(i).c_str(), boxContainer);
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::DOUBLE_SPINBOX);

@@ -165,6 +165,10 @@ public:
 
     virtual bool makePreviewByDefault() const OVERRIDE {return true;}
 
+    virtual int majorVersion() const OVERRIDE { return 1; }
+
+    virtual int minorVersion() const OVERRIDE { return 0;}
+
     virtual std::string pluginID() const OVERRIDE;
 
     virtual std::string pluginLabel() const OVERRIDE;
@@ -209,6 +213,8 @@ public:
     virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE;
 
     virtual Natron::EffectInstance::CachePolicy getCachePolicy(SequenceTime time) const OVERRIDE;
+
+
 
 private:
     

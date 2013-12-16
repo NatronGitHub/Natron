@@ -135,6 +135,10 @@ public:
 
     virtual bool isInputOptional(int /*n*/) const OVERRIDE;
 
+    virtual int majorVersion() const OVERRIDE { return 1; }
+
+    virtual int minorVersion() const OVERRIDE { return 0; }
+
     virtual std::string pluginID() const OVERRIDE {return "Viewer";}
 
     virtual std::string pluginLabel() const OVERRIDE {return "Viewer";}

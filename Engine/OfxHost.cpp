@@ -350,7 +350,8 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
             pluginMutex = new QMutex;
         }
         Natron::Plugin* plugin = new Natron::Plugin(new Natron::LibraryBinary(Natron::LibraryBinary::BUILTIN),
-                                                    pluginId.c_str(),pluginLabel.c_str(),pluginMutex);
+                                                    pluginId.c_str(),pluginLabel.c_str(),pluginMutex,p->getVersionMajor(),
+                                                    p->getVersionMinor());
         plugins->push_back(plugin);
     }
 }
@@ -377,3 +378,7 @@ void Natron::OfxHost::writeOFXCache(){
     OFX::Host::PluginCache::clearPluginCache();
 }
 
+
+void Natron::OfxHost::loadingStatus(const std::string & /*pluginId*/){
+    //not implemented yet
+}

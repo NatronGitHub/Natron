@@ -46,7 +46,11 @@ public:
     virtual ~Writer();
     
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE {return false;}
-    
+
+    virtual int majorVersion() const OVERRIDE { return 1; }
+
+    virtual int minorVersion() const OVERRIDE { return 0;}
+
     virtual std::string pluginID() const OVERRIDE;
 
     virtual std::string pluginLabel() const OVERRIDE;

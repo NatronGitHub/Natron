@@ -71,6 +71,8 @@ public:
     /// clearPersistentMessage
     virtual OfxStatus clearPersistentMessage() OVERRIDE;
 
+    virtual void loadingStatus(const std::string &) OVERRIDE;
+    
     OfxEffectInstance* createOfxEffect(const std::string& name,Node* node);
 
     /*Reads OFX plugin cache and scan plugins directories
