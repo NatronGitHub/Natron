@@ -402,7 +402,7 @@ void ViewerInstance::updateViewer(){
     }
         
     viewer->updateColorPicker();
-    viewer->updateGL();
+    viewer->update();
     
     _usingOpenGL = false;
     _usingOpenGLCond.wakeOne();

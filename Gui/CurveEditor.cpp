@@ -169,8 +169,8 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
             continue;
         }
 
-        QObject::connect(kgui,SIGNAL(keyFrameSet()),curveWidget,SLOT(updateGL()));
-        QObject::connect(kgui,SIGNAL(keyFrameRemoved()),curveWidget,SLOT(updateGL()));
+        QObject::connect(kgui,SIGNAL(keyFrameSet()),curveWidget,SLOT(update()));
+        QObject::connect(kgui,SIGNAL(keyFrameRemoved()),curveWidget,SLOT(update()));
         QObject::connect(kgui, SIGNAL(keyInterpolationChanged()),curveWidget, SLOT(refreshDisplayedTangents()));
         
         hasAtLeast1KnobWithACurve = true;
@@ -631,6 +631,6 @@ void CurveEditor::showCurves(KnobGui* knob){
             }
         }
     }
-    _curveWidget->updateGL();
+    _curveWidget->update();
 
 }

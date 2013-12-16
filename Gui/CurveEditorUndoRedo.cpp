@@ -38,7 +38,7 @@ void AddKeyCommand::undo(){
     assert(curve);
     _curveWidget->removeKeyFrame(curve,_key);
     _element->checkVisibleState();
-    _curveWidget->updateGL();
+    _curveWidget->update();
     setText(QObject::tr("Add keyframe to %1")
             .arg(_actionName.c_str()));
 
@@ -47,7 +47,7 @@ void AddKeyCommand::redo(){
     CurveGui* curve = _element->getCurve();
     _curveWidget->addKeyFrame(curve, _key);
     _element->checkVisibleState();
-    _curveWidget->updateGL();
+    _curveWidget->update();
 
     setText(QObject::tr("Add keyframe to %1")
             .arg(_actionName.c_str()));
@@ -74,7 +74,7 @@ void PasteKeysCommand::undo(){
     }
     _element->getKnob()->getKnob()->endValueChange(Natron::USER_EDITED);
     _element->checkVisibleState();
-    _curveWidget->updateGL();
+    _curveWidget->update();
 
     setText(QObject::tr("Add multiple keyframes"));
 }
@@ -88,7 +88,7 @@ void PasteKeysCommand::redo(){
     }
     _element->getKnob()->getKnob()->endValueChange(Natron::USER_EDITED);
     _element->checkVisibleState();
-    _curveWidget->updateGL();
+    _curveWidget->update();
     setText(QObject::tr("Add multiple keyframes"));
 
 }
@@ -110,7 +110,7 @@ RemoveKeyCommand::RemoveKeyCommand(CurveWidget *editor, NodeCurveEditorElement *
 void RemoveKeyCommand::undo(){
     _curveWidget->addKeyFrame(_element->getCurve(),_key);
     _element->checkVisibleState();
-    _curveWidget->updateGL();
+    _curveWidget->update();
     setText(QObject::tr("Remove keyframe from %1.%2")
             .arg(_element->getKnob()->getKnob()->getDescription().c_str())
             .arg(_element->getKnob()->getKnob()->getDimensionName(_element->getDimension()).c_str()));
@@ -120,7 +120,7 @@ void RemoveKeyCommand::undo(){
 void RemoveKeyCommand::redo(){
     _curveWidget->removeKeyFrame(_element->getCurve(),_key);
     _element->checkVisibleState();
-    _curveWidget->updateGL();
+    _curveWidget->update();
 
     setText(QObject::tr("Remove keyframe from %1.%2")
             .arg(_element->getKnob()->getKnob()->getDescription().c_str())
@@ -145,7 +145,7 @@ void RemoveMultipleKeysCommand::undo(){
         _keys[i].first->getKnob()->getKnob()->endValueChange(Natron::USER_EDITED);
     }
 
-    _curveWidget->updateGL();
+    _curveWidget->update();
     setText(QObject::tr("Remove multiple keyframes"));
 
 
@@ -160,7 +160,7 @@ void RemoveMultipleKeysCommand::redo(){
     for(U32 i = 0 ; i < _keys.size();++i){
         _keys[i].first->getKnob()->getKnob()->endValueChange(Natron::USER_EDITED);
     }
-    _curveWidget->updateGL();
+    _curveWidget->update();
     setText(QObject::tr("Remove multiple keyframes"));;
 
 }

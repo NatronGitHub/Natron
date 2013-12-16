@@ -83,6 +83,8 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
      OfxImageEffect BEFORE calling populate().
      */
     OFX::Host::PluginHandle* ph = plugin->getPluginHandle();
+    assert(ph->getOfxPlugin());
+    assert(ph->getOfxPlugin()->mainEntry);
     (void)ph;
     OFX::Host::ImageEffect::Descriptor* desc = NULL;
     desc = plugin->getContext(context);
@@ -100,7 +102,10 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         if (stat != kOfxStatOK) {
             throw std::runtime_error("Error while populating the Ofx image effect");
         }
-
+        assert(effect_->getPlugin());
+        assert(effect_->getPlugin()->getPluginHandle());
+        assert(effect_->getPlugin()->getPluginHandle()->getOfxPlugin());
+        assert(effect_->getPlugin()->getPluginHandle()->getOfxPlugin()->mainEntry);
         stat = effect_->createInstanceAction();
         if(stat != kOfxStatOK && stat != kOfxStatReplyDefault){
             throw std::runtime_error("Could not create effect instance for plugin");

@@ -83,7 +83,7 @@ CurveGui::CurveGui(const CurveWidget *curveWidget,
         _visible = true;
     }
     
-    QObject::connect(this,SIGNAL(curveChanged()),curveWidget,SLOT(updateGL()));
+    QObject::connect(this,SIGNAL(curveChanged()),curveWidget,SLOT(update()));
     
 }
 
@@ -253,6 +253,7 @@ void CurveGui::drawCurve(){
                 QFontMetrics m(_curveWidget->getFont());
                 yWidgetCoord += (m.height() + 4);
                 glColor4f(1., 1., 1., 1.);
+                checkGLFrameBuffer();
                 _curveWidget->renderText(x, _curveWidget->toScaleCoordinates(0, yWidgetCoord).y(),
                                          coordStr, QColor(240,240,240), _curveWidget->getFont());
                 
@@ -1455,7 +1456,7 @@ void CurveWidget::initializeGL(){
 }
 
 CurveGui* CurveWidget::createCurve(boost::shared_ptr<Curve> curve,const QString& name){
-    updateGL(); //force initializeGL to be called if it wasn't before.
+    //updateGL(); //force initializeGL to be called if it wasn't before.
     CurveGui* curveGui = new CurveGui(this,curve,name,QColor(255,255,255),1);
     _imp->_curves.push_back(curveGui);
     curveGui->setColor(_imp->_nextCurveAddedColor);
@@ -1521,7 +1522,7 @@ void CurveWidget::showCurvesAndHideOthers(const std::vector<CurveGui*>& curves){
         }
     }
     
-    updateGL();
+    update();
 }
 
 void CurveWidget::getVisibleCurves(std::vector<CurveGui*>* curves) const{
@@ -1549,7 +1550,7 @@ void CurveWidget::centerOn(double xmin,double xmax,double ymin,double ymax){
     
     refreshDisplayedTangents();
 
-    updateGL();
+    update();
 }
 
 void CurveWidget::resizeGL(int width,int height){
@@ -1741,7 +1742,7 @@ void CurveWidget::mousePressEvent(QMouseEvent *event) {
         _imp->updateSelectedKeysMaxMovement();
         _imp->_zoomCtx._oldClick = event->pos();
         _imp->_dragStartPoint = event->pos();
-        updateGL(); // the keyframe changes color and the tangents must be drawn
+        update(); // the keyframe changes color and the tangents must be drawn
         return;
     }
     ////
@@ -1755,7 +1756,7 @@ void CurveWidget::mousePressEvent(QMouseEvent *event) {
         _imp->_selectedTangent = selectedTan;
         _imp->_zoomCtx._oldClick = event->pos();
         //no need to set _imp->_dragStartPoint
-        updateGL();
+        update();
         return;
     }
     ////
@@ -1778,7 +1779,7 @@ void CurveWidget::mousePressEvent(QMouseEvent *event) {
         // This is kind of the last resort action before the default behaviour (which is to draw
         // a selection rectangle), because we'd rather select a keyframe than the nearby curve
         _imp->selectCurve(*foundCurveNearby);
-        updateGL();
+        update();
         return;
     }
     
@@ -1791,7 +1792,7 @@ void CurveWidget::mousePressEvent(QMouseEvent *event) {
     _imp->_state = SELECTING;
     _imp->_zoomCtx._oldClick = event->pos();
     _imp->_dragStartPoint = event->pos();
-    updateGL();
+    update();
 }
 
 void CurveWidget::mouseReleaseEvent(QMouseEvent*) {
@@ -1803,7 +1804,7 @@ void CurveWidget::mouseReleaseEvent(QMouseEvent*) {
         _imp->_drawSelectedKeyFramesBbox = true;
     }
     if (prevState == SELECTING) { // should other cases be considered?
-        updateGL();
+        update();
     }
 }
 
@@ -1896,7 +1897,7 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
 
     _imp->_zoomCtx._oldClick = event->pos();
     
-    updateGL();
+    update();
 }
 
 void CurveWidget::refreshSelectedKeysBbox(){
@@ -2001,7 +2002,7 @@ void CurveWidget::wheelEvent(QWheelEvent *event) {
     }
     refreshDisplayedTangents();
     
-    updateGL();
+    update();
 }
 
 QPointF CurveWidget::toScaleCoordinates(double x,double y) const {
@@ -2114,7 +2115,7 @@ void CurveWidget::refreshDisplayedTangents(){
                     std::inserter(copy,copy.begin()),RefreshTangent_functor(_imp.get()));
 
     _imp->_selectedKeyFrames = copy;
-    updateGL();
+    update();
 }
 
 void CurveWidget::setSelectedKeys(const SelectedKeys& keys){
@@ -2194,7 +2195,7 @@ void CurveWidget::deleteSelectedKeyFrames(){
         }
     }
     
-    updateGL();
+    update();
 }
 
 void CurveWidget::copySelectedKeyFrames(){
@@ -2229,7 +2230,7 @@ void CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve(){
             addKeyFrame(curve,_imp->_keyFramesClipBoard[i]);
             
         }
-        updateGL();
+        update();
     }else{
         //this function will call updateGL() for us
         editor->addKeyFrames(curve, _imp->_keyFramesClipBoard);
@@ -2258,7 +2259,7 @@ void CurveWidget::selectAllKeyFrames(){
         }
     }
     refreshSelectedKeysBbox();
-    updateGL();
+    update();
 }
 
 void CurveWidget::frameSelectedCurve() {
@@ -2278,10 +2279,11 @@ void CurveWidget::onTimeLineFrameChanged(SequenceTime,int /*reason*/){
         _imp->_timelineEnabled = true;
     }
     _imp->refreshTimelinePositions();
-    updateGL();
+    update();
 }
+
 void CurveWidget::onTimeLineBoundariesChanged(SequenceTime,SequenceTime,int){
-    updateGL();
+    update();
 }
 
 

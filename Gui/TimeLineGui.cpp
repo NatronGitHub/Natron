@@ -412,12 +412,12 @@ void TimeLineGui::renderText(double x,double y,const QString& text,const QColor&
 
 
 void TimeLineGui::onFrameChanged(SequenceTime ,int ){
-    updateGL();
+    update();
 }
 
 void TimeLineGui::seek(SequenceTime time){
     emit frameChanged(time);
-    updateGL();
+    update();
 
 }
 
@@ -479,21 +479,21 @@ void TimeLineGui::mouseMoveEvent(QMouseEvent* e){
         }else if(c > rightMost){
             centerOn(leftMost,c);
         }else{
-            updateGL();
+            update();
         }
     }else{
-        updateGL();
+        update();
     }
 
 }
 void TimeLineGui::enterEvent(QEvent* e){
     _imp->_alphaCursor = true;
-    updateGL();
+    update();
     QGLWidget::enterEvent(e);
 }
 void TimeLineGui::leaveEvent(QEvent* e){
     _imp->_alphaCursor = false;
-    updateGL();
+    update();
     QGLWidget::leaveEvent(e);
 }
 
@@ -521,7 +521,7 @@ void TimeLineGui::wheelEvent(QWheelEvent *event){
 
     _imp->_zoomCtx.zoomFactor = newZoomFactor;
 
-    updateGL();
+    update();
 
 }
 
@@ -530,7 +530,7 @@ void TimeLineGui::onCachedFrameAdded(SequenceTime time){
     std::list<SequenceTime>::iterator it = std::find(_imp->_cached.begin(),_imp->_cached.end(),time);
     if(it == _imp->_cached.end()){
         _imp->_cached.push_back(time);
-        updateGL();
+        update();
     }
 }
 
@@ -538,7 +538,7 @@ void TimeLineGui::onCachedFrameRemoved(SequenceTime time){
     std::list<SequenceTime>::iterator it = std::find(_imp->_cached.begin(),_imp->_cached.end(),time);
     if(it != _imp->_cached.end()){
         _imp->_cached.erase(it);
-        updateGL();
+        update();
     }
 }
 void TimeLineGui::onLRUCachedFrameRemoved(){
@@ -549,7 +549,7 @@ void TimeLineGui::onLRUCachedFrameRemoved(){
 
 void TimeLineGui::onCachedFramesCleared(){
     _imp->_cached.clear();
-    updateGL();
+    update();
 }
 
 void TimeLineGui::onFrameRangeChanged(SequenceTime first , SequenceTime last ){
@@ -561,13 +561,13 @@ void TimeLineGui::onFrameRangeChanged(SequenceTime first , SequenceTime last ){
 void TimeLineGui::setBoundaries(SequenceTime first,SequenceTime last){
     if(first <= last){
         emit boundariesChanged(first,last);
-        updateGL();
+        update();
     }
 }
 
 void TimeLineGui::onBoundariesChanged(SequenceTime ,SequenceTime,int reason){
     if(reason == Natron::PLUGIN_EDITED){
-        updateGL();
+        update();
     }
 }
 
@@ -577,7 +577,7 @@ void TimeLineGui::centerOn(SequenceTime left,SequenceTime right){
     _imp->_zoomCtx.left = left - 5;
     _imp->_zoomCtx.zoomFactor = w / curveWidth;
 
-    updateGL();
+    update();
 }
 
 SequenceTime TimeLineGui::firstFrame() const { return _imp->_timeline->firstFrame(); }
