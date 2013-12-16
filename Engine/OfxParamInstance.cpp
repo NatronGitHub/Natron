@@ -1596,3 +1596,80 @@ void OfxCustomInstance::onKnobAnimationLevelChanged(int lvl){
     }
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
 }
+
+
+////////////////////////// OfxParametricInstance /////////////////////////////////////////////////
+
+OfxParametricInstance::OfxParametricInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
+: OFX::Host::ParametricParam::ParametricInstance(descriptor,node->effectInstance())
+{
+    const OFX::Host::Property::Set &properties = getProperties();
+    _knob = Natron::createKnob<Parametric_Knob>(node, getParamLabel(this));
+    
+}
+
+boost::shared_ptr<Knob> OfxParametricInstance::getKnob() const{
+    return _knob;
+}
+
+// callback which should set enabled state as appropriate
+void OfxParametricInstance::setEnabled() {
+     _knob->setEnabled(getEnabled());
+}
+
+// callback which should set secret state as appropriate
+void OfxParametricInstance::setSecret() {
+    _knob->setSecret(getSecret());
+}
+
+/// callback which should update label
+void OfxParametricInstance::setLabel() {
+    _knob->setName(getLabel());
+}
+
+void OfxParametricInstance::setDisplayRange() {
+    
+}
+
+OfxStatus OfxParametricInstance::getValue(int curveIndex,OfxTime time,double parametricPosition,double *returnValue){
+    
+}
+
+OfxStatus OfxParametricInstance::getNControlPoints(int curveIndex,double time,int *returnValue){
+    
+}
+
+OfxStatus OfxParametricInstance::getNthControlPoint(int curveIndex,
+                             double time,
+                             int    nthCtl,
+                             double *key,
+                             double *value){
+    
+}
+
+OfxStatus OfxParametricInstance::setNthControlPoint(int   curveIndex,
+                             double time,
+                             int   nthCtl,
+                             double key,
+                             double value,
+                             bool addAnimationKey
+                             ){
+    
+}
+
+
+OfxStatus OfxParametricInstance::addControlPoint(int   curveIndex,
+                          double time,
+                          double key,
+                          double value,
+                          bool addAnimationKey){
+    
+}
+
+OfxStatus  OfxParametricInstance::deleteControlPoint(int   curveIndex,int   nthCtl){
+    
+}
+
+OfxStatus  OfxParametricInstance::deleteAllControlPoints(int   curveIndex){
+    
+}

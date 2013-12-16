@@ -590,7 +590,7 @@ class OfxParametricInstance : public OFX::Host::ParametricParam::ParametricInsta
     
 public:
     
-    OfxParametricInstance(OfxEffectInstance* node, OFX::Host::ParametricParam::ParametricDescriptor& descriptor);
+    explicit OfxParametricInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     
     // callback which should set enabled state as appropriate
     virtual void setEnabled() OVERRIDE;

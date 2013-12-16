@@ -18,6 +18,9 @@
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
 
+//for parametric params properties
+#include <ofxParametricParam.h>
+
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxParamInstance.h"
@@ -359,6 +362,11 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
 
     } else if (descriptor.getType() == kOfxParamTypePushButton) {
         OfxPushButtonInstance *ret = new OfxPushButtonInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
+    } else if (descriptor.getType() == kOfxParamTypeParametric) {
+        OFX::Host::ParametricParam::addParametricProperties(descriptor);
+        OfxParametricInstance* ret = new OfxParametricInstance(node(), descriptor);
         knob = ret->getKnob();
         instance = ret;
     }

@@ -469,4 +469,26 @@ private:
     static const std::string _typeNameStr;
 };
 
+/******************************Parametric_Knob**************************************/
+
+class Parametric_Knob : public Knob{
+public:
+    
+    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+        return new Parametric_Knob(holder, description, dimension);
+    }
+    
+    Parametric_Knob(KnobHolder *holder, const std::string &description, int dimension);
+    
+    static const std::string& typeNameStatic();
+    
+private:
+    virtual bool canAnimate() const OVERRIDE FINAL;
+    
+    virtual const std::string& typeName() const OVERRIDE FINAL;
+    
+private:
+    static const std::string _typeNameStr;
+};
+
 #endif // NATRON_ENGINE_KNOBTYPES_H_

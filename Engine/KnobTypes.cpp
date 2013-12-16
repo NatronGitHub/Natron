@@ -18,8 +18,8 @@ using std::pair;
 
 /******************************INT_KNOB**************************************/
 Int_Knob::Int_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
-    , _disableSlider(false)
+Knob(holder, description, dimension)
+, _disableSlider(false)
 {}
 
 void Int_Knob::disableSlider()
@@ -57,7 +57,7 @@ void Int_Knob::setMinimum(int mini, int index)
 
 void Int_Knob::setMaximum(int maxi, int index)
 {
-
+    
     if (_maximums.size() > (U32)index) {
         _maximums[index] = maxi;
     } else {
@@ -98,7 +98,7 @@ void Int_Knob::setDisplayMinimum(int mini, int index)
 
 void Int_Knob::setDisplayMaximum(int maxi, int index)
 {
-
+    
     if (_displayMaxs.size() > (U32)index) {
         _displayMaxs[index] = maxi;
     } else {
@@ -194,16 +194,16 @@ const std::vector<int> &Int_Knob::getDisplayMaximums() const
 std::string Int_Knob::getDimensionName(int dimension) const
 {
     switch (dimension) {
-    case 0:
-        return "x";
-    case 1:
-        return "y";
-    case 2:
-        return "z";
-    case 3:
-        return "w";
-    default:
-        return QString::number(dimension).toStdString();
+        case 0:
+            return "x";
+        case 1:
+            return "y";
+        case 2:
+            return "z";
+        case 3:
+            return "w";
+        default:
+            return QString::number(dimension).toStdString();
     }
 }
 
@@ -228,7 +228,7 @@ const std::string& Int_Knob::typeName() const
 /******************************BOOL_KNOB**************************************/
 
 Bool_Knob::Bool_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
+Knob(holder, description, dimension)
 {}
 
 bool Bool_Knob::canAnimate() const
@@ -253,23 +253,23 @@ const std::string& Bool_Knob::typeName() const
 
 
 Double_Knob::Double_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
-    , _disableSlider(false)
+Knob(holder, description, dimension)
+, _disableSlider(false)
 {}
 
 std::string Double_Knob::getDimensionName(int dimension) const
 {
     switch (dimension) {
-    case 0:
-        return "x";
-    case 1:
-        return "y";
-    case 2:
-        return "z";
-    case 3:
-        return "w";
-    default:
-        return QString::number(dimension).toStdString();
+        case 0:
+            return "x";
+        case 1:
+            return "y";
+        case 2:
+            return "z";
+        case 3:
+            return "w";
+        default:
+            return QString::number(dimension).toStdString();
     }
 }
 
@@ -395,7 +395,7 @@ void Double_Knob::setDisplayMinimum(double mini, int index)
 
 void Double_Knob::setDisplayMaximum(double maxi, int index)
 {
-
+    
     if (_displayMaxs.size() > (U32)index) {
         _displayMaxs[index] = maxi;
     } else {
@@ -484,7 +484,7 @@ void Double_Knob::setDecimals(const std::vector<int> &decis)
 /******************************BUTTON_KNOB**************************************/
 
 Button_Knob::Button_Knob(KnobHolder  *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
+Knob(holder, description, dimension)
 {
     setPersistent(false);
 }
@@ -510,9 +510,9 @@ const std::string& Button_Knob::typeName() const
 /******************************CHOICE_KNOB**************************************/
 
 Choice_Knob::Choice_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
+Knob(holder, description, dimension)
 {
-
+    
 }
 
 bool Choice_Knob::canAnimate() const
@@ -566,7 +566,7 @@ const std::string &Choice_Knob::getActiveEntryText() const
 Separator_Knob::Separator_Knob(KnobHolder *holder, const std::string &description, int dimension)
 : Knob(holder, description, dimension)
 {
-
+    
 }
 
 bool Separator_Knob::canAnimate() const
@@ -596,7 +596,7 @@ const std::string& Separator_Knob::typeName() const
  **/
 
 Color_Knob::Color_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
+Knob(holder, description, dimension)
 {
     //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
     assert(dimension <= 4 && dimension != 2);
@@ -605,16 +605,16 @@ Color_Knob::Color_Knob(KnobHolder *holder, const std::string &description, int d
 std::string Color_Knob::getDimensionName(int dimension) const
 {
     switch (dimension) {
-    case 0:
-        return "r";
-    case 1:
-        return "g";
-    case 2:
-        return "b";
-    case 3:
-        return "a";
-    default:
-        return QString::number(dimension).toStdString();
+        case 0:
+            return "r";
+        case 1:
+            return "g";
+        case 2:
+            return "b";
+        case 3:
+            return "a";
+        default:
+            return QString::number(dimension).toStdString();
     }
 }
 
@@ -638,9 +638,9 @@ const std::string& Color_Knob::typeName() const
 /******************************STRING_KNOB**************************************/
 
 String_Knob::String_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
+Knob(holder, description, dimension)
 {
-
+    
 }
 
 bool String_Knob::canAnimate() const
@@ -697,9 +697,9 @@ std::string Custom_Knob::getString() const
 /******************************GROUP_KNOB**************************************/
 
 Group_Knob::Group_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
+Knob(holder, description, dimension)
 {
-
+    
 }
 
 bool Group_Knob::canAnimate() const
@@ -726,7 +726,7 @@ void Group_Knob::addKnob(boost::shared_ptr<Knob> k)
         _children.push_back(k);
         k->setParentKnob(getHolder()->getKnobByDescription(getDescription()));
     }
-
+    
 }
 
 const std::vector< boost::shared_ptr<Knob> > &Group_Knob::getChildren() const
@@ -737,9 +737,9 @@ const std::vector< boost::shared_ptr<Knob> > &Group_Knob::getChildren() const
 /******************************TAB_KNOB**************************************/
 
 Tab_Knob::Tab_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
+Knob(holder, description, dimension)
 {
-
+    
 }
 
 bool Tab_Knob::canAnimate() const
@@ -775,9 +775,9 @@ void Tab_Knob::addKnob(boost::shared_ptr<Knob> k)
 /******************************RichText_Knob**************************************/
 
 RichText_Knob::RichText_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
+Knob(holder, description, dimension)
 {
-
+    
 }
 
 bool RichText_Knob::canAnimate() const
@@ -802,3 +802,25 @@ std::string RichText_Knob::getString() const
     return getValue<QString>().toStdString();
 }
 
+/******************************Parametric_Knob**************************************/
+
+
+Parametric_Knob::Parametric_Knob(KnobHolder *holder, const std::string &description, int dimension)
+: Knob(holder,description,dimension)
+{
+    
+}
+
+const std::string Parametric_Knob::_typeNameStr("Parametric");
+
+const std::string& Parametric_Knob::typeNameStatic(){
+    return _typeNameStr;
+}
+
+bool Parametric_Knob::canAnimate() const {
+    return false;
+}
+
+const std::string& Parametric_Knob::typeName() const {
+    return typeNameStatic();
+}
