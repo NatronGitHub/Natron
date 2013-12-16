@@ -46,7 +46,7 @@ class RichText_Knob;
 class OfxEffectInstance;
 class Knob;
 
-class OfxPushButtonInstance :public OFX::Host::Param::PushbuttonInstance {
+class OfxPushButtonInstance : public OFX::Host::Param::PushbuttonInstance {
     
 public:
     OfxPushButtonInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
@@ -65,7 +65,10 @@ private:
 
 
 
-class OfxIntegerInstance :public OFX::Host::Param::IntegerInstance {
+class OfxIntegerInstance :  public QObject, public OFX::Host::Param::IntegerInstance {
+    
+    Q_OBJECT
+    
 public:
     
     OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
@@ -89,11 +92,18 @@ public:
     
     boost::shared_ptr<Knob> getKnob() const;
 
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
+    
 private:
     boost::shared_ptr<Int_Knob> _knob;
 };
 
-class OfxDoubleInstance : public OFX::Host::Param::DoubleInstance {
+class OfxDoubleInstance :  public QObject,  public OFX::Host::Param::DoubleInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxDoubleInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&);
@@ -120,11 +130,19 @@ public:
     boost::shared_ptr<Knob> getKnob() const;
 
     bool isAnimated() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
+    
 private:
     boost::shared_ptr<Double_Knob> _knob;
 };
 
-class OfxBooleanInstance : public OFX::Host::Param::BooleanInstance {
+class OfxBooleanInstance :  public QObject,  public OFX::Host::Param::BooleanInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(bool&);
@@ -149,12 +167,19 @@ public:
 
     
     boost::shared_ptr<Knob> getKnob() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 
 private:
     boost::shared_ptr<Bool_Knob> _knob;
 };
 
-class OfxChoiceInstance : public OFX::Host::Param::ChoiceInstance {
+class OfxChoiceInstance : public QObject, public OFX::Host::Param::ChoiceInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxChoiceInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&);
@@ -176,13 +201,20 @@ public:
     virtual OfxStatus deleteAllKeys();
 
     boost::shared_ptr<Knob> getKnob() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 
 private:
     std::vector<std::string> _entries;
     boost::shared_ptr<Choice_Knob> _knob;
 };
 
-class OfxRGBAInstance :public OFX::Host::Param::RGBAInstance {
+class OfxRGBAInstance :  public QObject, public OFX::Host::Param::RGBAInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxRGBAInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&,double&,double&);
@@ -210,12 +242,20 @@ public:
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
+    
 private:
     boost::shared_ptr<Color_Knob> _knob;
 };
 
 
-class OfxRGBInstance : public OFX::Host::Param::RGBInstance {
+class OfxRGBInstance :  public QObject,  public OFX::Host::Param::RGBInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxRGBInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&,double&);
@@ -243,11 +283,19 @@ public:
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
+    
 private:
     boost::shared_ptr<Color_Knob> _knob;
 };
 
-class OfxDouble2DInstance :public OFX::Host::Param::Double2DInstance {
+class OfxDouble2DInstance :  public QObject, public OFX::Host::Param::Double2DInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxDouble2DInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&);
@@ -275,12 +323,18 @@ public:
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 private:
     boost::shared_ptr<Double_Knob> _knob;
 };
 
 
-class OfxInteger2DInstance : public OFX::Host::Param::Integer2DInstance {
+class OfxInteger2DInstance :  public QObject, public OFX::Host::Param::Integer2DInstance {
+    Q_OBJECT
+    
 public:
     OfxInteger2DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&,int&);
@@ -303,12 +357,18 @@ public:
 
 
     boost::shared_ptr<Knob> getKnob() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 
 private:
     boost::shared_ptr<Int_Knob> _knob;
 };
 
-class OfxDouble3DInstance :public OFX::Host::Param::Double3DInstance {
+class OfxDouble3DInstance :  public QObject, public OFX::Host::Param::Double3DInstance {
+    Q_OBJECT
+    
 public:
     OfxDouble3DInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&,double&);
@@ -336,11 +396,17 @@ public:
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 private:
     boost::shared_ptr<Double_Knob> _knob;
 };
 
-class OfxInteger3DInstance : public OFX::Host::Param::Integer3DInstance {
+class OfxInteger3DInstance :  public QObject, public OFX::Host::Param::Integer3DInstance {
+    Q_OBJECT
+    
 public:
     OfxInteger3DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&,int&,int&);
@@ -364,6 +430,9 @@ public:
 
     boost::shared_ptr<Knob> getKnob() const;
 
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 private:
     boost::shared_ptr<Int_Knob> _knob;
 };
@@ -380,7 +449,6 @@ public:
     virtual ~OfxGroupInstance(){}
 
 private:
-    OfxEffectInstance* _node;
     boost::shared_ptr<Group_Knob> _groupKnob;
     boost::shared_ptr<Tab_Knob> _tabKnob;
 };
@@ -443,6 +511,10 @@ public:
     virtual ~OfxStringInstance(){}
     
 public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
+    
+public slots:
     void onFrameRangeChanged(int,int);
 
 private:
@@ -456,7 +528,7 @@ private:
 
 
 class OfxCustomInstance : public QObject, public OFX::Host::Param::CustomInstance {
-
+Q_OBJECT
 public:
     OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
 
@@ -494,6 +566,10 @@ public:
     virtual OfxStatus deleteAllKeys();
 
 
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
+    
 private:
     typedef OfxStatus (*customParamInterpolationV1Entry_t)(
                                                            const void*            handleRaw,

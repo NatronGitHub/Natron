@@ -240,13 +240,22 @@ public:
 
     const std::vector<boost::shared_ptr<Knob> > &getMasters() const;
 
+    /**
+     * @brief Called by the GUI whenever the animation level changes (due to a time change
+     * or a value changed).
+     **/
+    void setAnimationLevel(int dimension,Natron::AnimationLevel level);
+    
+    Natron::AnimationLevel getAnimationLevel(int dimension) const;
 
-public slots:
     
     /*Set the value of the knob but does NOT emit the valueChanged signal.
      This is called by the GUI.*/
-    void onValueChanged(int dimension,const Variant& variant);
+    bool onValueChanged(int dimension,const Variant& variant,KeyFrame* newKey);
 
+public slots:
+    
+  
     /*Set a keyframe for the knob but does NOT emit the keyframeSet signal.
          This is called by the GUI .*/
     void onKeyFrameSet(SequenceTime time,int dimension);
@@ -258,6 +267,10 @@ public slots:
     void onAnimationRemoved(int dimension);
 
 signals:
+    
+    ///emitted whenever setAnimationLevel is called. It is meant to notify
+    ///openfx params whether it is auto-keying or not.
+    void animationLevelChanged(int);
     
     void deleted(Knob*);
     
@@ -278,10 +291,10 @@ signals:
     
 private:
     //private because it emits a signal
-    void setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason);
+    bool setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
 
      //private because it emits a signal
-    void setValueAtTime(int time,const Variant& v,int dimension,Natron::ValueChangedReason reason);
+    void setValueAtTime(int time,const Variant& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
 
      //private because it emits a signal
     void deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason reason);
@@ -422,7 +435,8 @@ public:
      **/
     void invalidateHash();
     
-
+   
+    
 private:
 
     

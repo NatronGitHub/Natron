@@ -80,7 +80,6 @@ KnobGui::KnobGui(boost::shared_ptr<Knob> knob,DockablePanel* container)
 , _animationButton(NULL)
 {
     QObject::connect(knob.get(),SIGNAL(valueChanged(int)),this,SLOT(onInternalValueChanged(int)));
-    QObject::connect(this,SIGNAL(valueChanged(int,const Variant&)),knob.get(),SLOT(onValueChanged(int,const Variant&)));
     QObject::connect(knob.get(),SIGNAL(keyFrameSet(SequenceTime,int)),this,SLOT(onInternalKeySet(SequenceTime,int)));
     QObject::connect(this,SIGNAL(keyFrameSetByUser(SequenceTime,int)),knob.get(),SLOT(onKeyFrameSet(SequenceTime,int)));
     QObject::connect(knob.get(),SIGNAL(keyFrameRemoved(SequenceTime,int)),this,SLOT(onInternalKeyRemoved(SequenceTime,int)));
@@ -123,6 +122,7 @@ void KnobGui::createGUI(QGridLayout* layout,int row){
     const std::vector<Variant>& values = _knob->getValueForEachDimension();
     for(U32 i = 0; i < values.size();++i){
         updateGUI(i,values[i]);
+        checkAnimationLevel(i);
     }
     setEnabled();
     setSecret();
@@ -138,8 +138,14 @@ void KnobGui::createAnimationButton(QGridLayout* layout,int row){
 
 void KnobGui::createAnimationMenu(){
     _animationMenu->clear();
-    
-    if(!_isOnKeyFrame){
+    bool isOnKeyFrame = false;
+    for(int i = 0; i < getKnob()->getDimension();++i){
+        if(_knob->getAnimationLevel(i) == Natron::ON_KEYFRAME){
+            isOnKeyFrame = true;
+            break;
+        }
+    }
+    if(!isOnKeyFrame){
         QAction* setKeyAction = new QAction(tr("Set Key"),_animationMenu);
         QObject::connect(setKeyAction,SIGNAL(triggered()),this,SLOT(onSetKeyActionTriggered()));
         _animationMenu->addAction(setKeyAction);
@@ -208,10 +214,6 @@ void KnobGui::createAnimationMenu(){
     QObject::connect(linkToAction,SIGNAL(triggered()),this,SLOT(onLinkToActionTriggered()));
     _animationMenu->addAction(linkToAction);
     
-}
-
-void KnobGui::setIsOnKeyframe(bool e){
-    _isOnKeyFrame = e;
 }
 
 void KnobGui::setSecret() {
@@ -357,6 +359,7 @@ void KnobGui::removeKeyFrame(SequenceTime time,int dimension){
     emit keyFrameRemovedByUser(time,dimension);
     emit keyFrameRemoved();
     updateGUI(dimension,_knob->getValue(dimension));
+    checkAnimationLevel(dimension);
 }
 
 void KnobGui::onRemoveKeyActionTriggered(){
@@ -401,8 +404,10 @@ void KnobGui::setEnabledSlot(){
 }
 
 void KnobGui::onInternalValueChanged(int dimension){
-    if(_widgetCreated)
+    if(_widgetCreated){
         updateGUI(dimension,_knob->getValue(dimension));
+        checkAnimationLevel(dimension);
+    }
 }
 
 void KnobGui::onInternalKeySet(SequenceTime,int){
@@ -543,4 +548,37 @@ void KnobGui::onLinkToActionTriggered(){
     
 }
 
+void KnobGui::checkAnimationLevel(int dimension){
+    AnimationLevel level = Natron::NO_ANIMATION;
+    if(getKnob()->getHolder()->getApp()){
+        
+        boost::shared_ptr<Curve> c = getKnob()->getCurve(dimension);
+        SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+        if (c->keyFramesCount() >= 1) {
+            const KeyFrameSet &keys = c->getKeyFrames();
+            bool found = false;
+            for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+                if (it->getTime() == time) {
+                    found = true;
+                    break;
+                }
+            }
+            if(found){
+                level = Natron::ON_KEYFRAME;
+            }else{
+                level = Natron::INTERPOLATED_VALUE;
+            }
+        } else {
+            level = Natron::NO_ANIMATION;
+        }
+    }
+    _knob->setAnimationLevel(dimension,level);
+    reflectAnimationLevel(dimension, level);
+}
 
+bool KnobGui::setValue(int dimension,const Variant& variant,KeyFrame* newKey){
+    bool ret = _knob->onValueChanged(dimension, variant, newKey);
+    updateGUI(dimension,variant);
+    checkAnimationLevel(dimension);
+    return ret;
+}

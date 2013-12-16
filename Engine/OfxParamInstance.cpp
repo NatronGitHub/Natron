@@ -226,6 +226,14 @@ OfxStatus OfxIntegerInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
+void OfxIntegerInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+
 ////////////////////////// OfxDoubleInstance /////////////////////////////////////////////////
 
 
@@ -325,6 +333,13 @@ OfxStatus OfxDoubleInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
+void OfxDoubleInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
 
 ////////////////////////// OfxBooleanInstance /////////////////////////////////////////////////
 
@@ -389,6 +404,14 @@ OfxStatus OfxBooleanInstance::deleteKey(OfxTime time) {
 }
 OfxStatus OfxBooleanInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+void OfxBooleanInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
 }
 
 ////////////////////////// OfxChoiceInstance /////////////////////////////////////////////////
@@ -475,6 +498,15 @@ OfxStatus OfxChoiceInstance::deleteKey(OfxTime time) {
 OfxStatus OfxChoiceInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
+
+void OfxChoiceInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+
 
 ////////////////////////// OfxRGBAInstance /////////////////////////////////////////////////
 
@@ -577,6 +609,13 @@ OfxStatus OfxRGBAInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
+void OfxRGBAInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
 ////////////////////////// OfxRGBInstance /////////////////////////////////////////////////
 
 
@@ -672,6 +711,13 @@ OfxStatus OfxRGBInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
+void OfxRGBInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
 ////////////////////////// OfxDouble2DInstance /////////////////////////////////////////////////
 
 
@@ -793,6 +839,14 @@ OfxStatus OfxDouble2DInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
+void OfxDouble2DInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+
 ////////////////////////// OfxInteger2DInstance /////////////////////////////////////////////////
 
 
@@ -882,6 +936,13 @@ OfxStatus OfxInteger2DInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
+void OfxInteger2DInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
 ////////////////////////// OfxDouble3DInstance /////////////////////////////////////////////////
 
 
@@ -1008,6 +1069,14 @@ OfxStatus OfxDouble3DInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
+void OfxDouble3DInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+
 ////////////////////////// OfxInteger3DInstance /////////////////////////////////////////////////
 
 
@@ -1101,11 +1170,19 @@ OfxStatus OfxInteger3DInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
+void OfxInteger3DInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+
+
 ////////////////////////// OfxGroupInstance /////////////////////////////////////////////////
 
 OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::GroupInstance(descriptor,node->effectInstance())
-, _node(node)
 , _groupKnob()
 , _tabKnob()
 {
@@ -1396,6 +1473,15 @@ OfxStatus OfxStringInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(knob);
 }
 
+void OfxStringInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+
+
 ////////////////////////// OfxCustomInstance /////////////////////////////////////////////////
 
 
@@ -1501,4 +1587,12 @@ OfxStatus OfxCustomInstance::deleteKey(OfxTime time) {
 }
 OfxStatus OfxCustomInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+void OfxCustomInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
 }

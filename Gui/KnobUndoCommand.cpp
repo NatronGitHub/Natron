@@ -23,16 +23,16 @@ KnobMultipleUndosCommand::KnobMultipleUndosCommand(KnobGui *knob,  const std::ve
 , _newValue(newValue)
 , _knob(knob)
 , _hasCreateKeyFrame(false)
-, _timeOfCreation(0.)
+, _newKeys(oldValue.size())
 {
 }
 
 void KnobMultipleUndosCommand::undo()
 {
     for (U32 i = 0 ; i < _oldValue.size();++i) {
-        _knob->setValue(i,_oldValue[i]);
+        _knob->setValue(i,_oldValue[i],NULL);
         if(_knob->getKnob()->getHolder()->getApp() && _hasCreateKeyFrame){
-            _knob->removeKeyFrame(_timeOfCreation,i);
+            _knob->removeKeyFrame(_newKeys[i].getTime(),i);
         }
         
     }
@@ -50,14 +50,7 @@ void KnobMultipleUndosCommand::redo()
     
     for (U32 i = 0; i < _newValue.size();++i) {
         boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(i);
-        
-        _knob->setValue(i,_newValue[i]);
-        
-        if (_knob->getKnob()->getHolder()->getApp() && c->keyFramesCount() >= 1) {
-            _hasCreateKeyFrame = true;
-            _timeOfCreation = time;
-            _knob->setKeyframe(time, i);
-        }
+        _hasCreateKeyFrame = _knob->setValue(i,_newValue[i],&_newKeys[i]);
         
     }
     setText(QObject::tr("Set value of %1")
@@ -72,19 +65,19 @@ _oldValue(oldValue),
 _newValue(newValue),
 _knob(knob),
 _hasCreateKeyFrame(false),
-_timeOfCreation(0.)
+_newKey()
 {
 }
 
 void KnobUndoCommand::undo()
 {
     
-    _knob->setValue(_dimension, _oldValue);
+    _knob->setValue(_dimension, _oldValue,NULL);
     
     if(_knob->getKnob()->getHolder()->getApp()){
         
         if(_hasCreateKeyFrame){
-            _knob->removeKeyFrame(_timeOfCreation,_dimension);
+            _knob->removeKeyFrame(_newKey.getTime(),_dimension);
         }
         
     }
@@ -102,19 +95,9 @@ void KnobUndoCommand::redo()
     
     boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(_dimension);
     
-    _knob->setValue(_dimension, _newValue);
+    _hasCreateKeyFrame = _knob->setValue(_dimension,_newValue,&_newKey);
     
     
-    if(_knob->getKnob()->getHolder()->getApp()){
-        SequenceTime time = _knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-        
-        //the curve is animated, attempt to set a keyframe
-        if (c->keyFramesCount() >= 1) {
-            _hasCreateKeyFrame = true;
-            _timeOfCreation = time;
-            _knob->setKeyframe(time, _dimension);
-        }
-    }
     if (_knob->getKnob()->getDimension() > 1) {
         setText(QObject::tr("Set value of %1.%2")
                 .arg(_knob->getKnob()->getDescription().c_str()).arg(_knob->getKnob()->getDimensionName(_dimension).c_str()));

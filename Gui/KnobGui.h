@@ -16,7 +16,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 // Qt
@@ -31,6 +30,7 @@ class QComboBox;
 // Engine
 class Knob; //used by KnobGui
 class Variant; //used by KnobGui
+class KeyFrame;
 
 // Gui
 class Button; //used by KnobGui
@@ -41,6 +41,7 @@ class KnobGui : public QObject
     Q_OBJECT
 
 public:
+    
     
     friend class KnobMultipleUndosCommand;
     friend class KnobUndoCommand;
@@ -129,10 +130,6 @@ public slots:
 
 signals:
     
-    /*Must be emitted when a value is changed by the user or by
-     an external source.*/
-    void valueChanged(int dimension,const Variant& variant);
-    
     void knobUndoneChange();
     
     void knobRedoneChange();
@@ -155,11 +152,7 @@ signals:
      *@brief Emitted whenever a keyframe's interpolation method is changed by the user or by the plugin.
      **/
     void keyInterpolationChanged();
-
-protected:
     
-    void setIsOnKeyframe(bool e);
-
 private:
 
     virtual void _hide() = 0;
@@ -175,17 +168,22 @@ private:
     /*Called by the onInternalValueChanged slot. This should update
      the widget to reflect the new internal value held by variant.*/
     virtual void updateGUI(int dimension,const Variant& variant) = 0;
+    
+    /*Called right away after updateGUI(). Depending in the animation level
+     the widget for the knob could display its gui a bit differently.
+     */
+    virtual void reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevel /*level*/) {}
 
+    /*Calls reflectAnimationLevel with good parameters. Called right away after updateGUI() */
+    void checkAnimationLevel(int dimension);
+    
     void createAnimationMenu();
     
     void createAnimationButton(QGridLayout* layout,int row);
     
     /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
      signal/slot sequence can cause an infinite loop.*/
-    void setValue(int dimension,const Variant& variant){
-        updateGUI(dimension,variant);
-        emit valueChanged(dimension,variant);
-    }
+    bool setValue(int dimension,const Variant& variant,KeyFrame* newKey);
     
     void setInterpolationForDimensions(const std::vector<int>& dimensions,Natron::KeyframeType interp);
     
@@ -197,7 +195,6 @@ private:
     DockablePanel* const _container;
     QMenu* _animationMenu;
     Button* _animationButton;
-    bool _isOnKeyFrame; //< true when the value of the knob is exactly the value of a keyframe
 };
 
 

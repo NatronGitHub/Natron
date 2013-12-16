@@ -65,6 +65,8 @@ struct Knob::KnobPrivate {
     ///A slave link CANNOT be master at the same time (i.e: if _slaveLinks[i] != NULL  then _masterLinks[i] == NULL )
     MastersMap _masters; //from what knob is slaved each curve if any
     
+    std::vector<Natron::AnimationLevel> _animationLevel;//< indicates for each dimension whether it is static/interpolated/onkeyframe
+    
     KnobPrivate(KnobHolder*  holder,int dimension,const std::string& description)
     : _holder(holder)
     , _hashVector()
@@ -84,6 +86,7 @@ struct Knob::KnobPrivate {
     , _dimension(dimension)
     , _curves(dimension)
     , _masters(dimension)
+    , _animationLevel(dimension)
     {
         
     }
@@ -116,7 +119,7 @@ Knob::Knob(KnobHolder* holder,const std::string& description,int dimension)
     for(int i = 0; i < dimension ; ++i){
         _imp->_values[i] = Variant();
         _imp->_curves[i] = boost::shared_ptr<Curve>(new Curve(this));
-        
+        _imp->_animationLevel[i] = Natron::NO_ANIMATION;
     }
 }
 
@@ -169,7 +172,7 @@ Variant Knob::getValueAtTime(double time,int dimension) const{
     }
 }
 
-void Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason){
+bool Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason,KeyFrame* newKey){
     
     if(dimension > (int)_imp->_values.size()){
         throw std::invalid_argument("Knob::setValue(): Dimension out of range");
@@ -179,16 +182,25 @@ void Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason 
     ///gui to be unsynchronized with what lies internally.
     boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
     if(isSlave){
-        return;
+        return false;
     }
     
     _imp->_values[dimension] = v;
     
+    ///Add automatically a new keyframe
+    if(getAnimationLevel(dimension) != Natron::NO_ANIMATION && _imp->_holder->getApp() &&
+       (reason == Natron::USER_EDITED || reason == Natron::PLUGIN_EDITED) && newKey != NULL){
+        SequenceTime time = _imp->_holder->getApp()->getTimeLine()->currentFrame();
+        setValueAtTime(time, v, dimension,reason,newKey);
+        return true;
+    }
+    
     
     evaluateValueChange(dimension,reason);
+    return false;
 }
 
-void Knob::setValueAtTime(int time, const Variant& v, int dimension, Natron::ValueChangedReason reason){
+void Knob::setValueAtTime(int time, const Variant& v, int dimension, Natron::ValueChangedReason reason,KeyFrame* newKey){
     
     if(dimension > (int)_imp->_curves.size()){
         throw std::invalid_argument("Knob::setValueAtTime(): Dimension out of range");
@@ -204,8 +216,8 @@ void Knob::setValueAtTime(int time, const Variant& v, int dimension, Natron::Val
     
     boost::shared_ptr<Curve> curve = _imp->_curves[dimension];
 #warning "We should query the variant's type passed in parameter to construct a keyframe with an appropriate value"
-    curve->addKeyFrame(KeyFrame(time,v.toDouble()));
-    
+    *newKey = KeyFrame(time,v.toDouble());
+    curve->addKeyFrame(*newKey);
     
     if(reason != Natron::USER_EDITED){
         emit keyFrameSet(time,dimension);
@@ -254,11 +266,13 @@ void Knob::removeAnimation(int dimension,Natron::ValueChangedReason reason){
 }
 
 void Knob::setValue(const Variant& value,int dimension){
-    setValue(value,dimension,Natron::PLUGIN_EDITED);
+    KeyFrame k;
+    setValue(value,dimension,Natron::PLUGIN_EDITED,&k);
 }
 
 void Knob::setValueAtTime(int time, const Variant& v, int dimension){
-    setValueAtTime(time,v,dimension,Natron::PLUGIN_EDITED);
+    KeyFrame k;
+    setValueAtTime(time,v,dimension,Natron::PLUGIN_EDITED,&k);
 }
 
 
@@ -316,7 +330,7 @@ void Knob::load(const KnobSerialization& serializationObj){
     
     const std::vector<Variant>& serializedValues = serializationObj.getValues();
     for(U32 i = 0 ; i < serializedValues.size();++i){
-        setValue(serializedValues[i],i,Natron::PLUGIN_EDITED);
+        setValue(serializedValues[i],i,Natron::OTHER_REASON,NULL);
     }
     
     ///end bracket
@@ -328,12 +342,13 @@ void Knob::save(KnobSerialization* serializationObj) const {
     serializationObj->initialize(this);
 }
 
-void Knob::onValueChanged(int dimension,const Variant& variant){
-    setValue(variant, dimension,Natron::USER_EDITED);
+bool Knob::onValueChanged(int dimension,const Variant& variant,KeyFrame* newKey){
+    return setValue(variant, dimension,Natron::USER_EDITED,newKey);
 }
 
 void Knob::onKeyFrameSet(SequenceTime time,int dimension){
-    setValueAtTime(time,getValue(dimension),dimension,Natron::USER_EDITED);
+    KeyFrame k;
+    setValueAtTime(time,getValue(dimension),dimension,Natron::USER_EDITED,&k);
 }
 
 void Knob::onKeyFrameRemoved(SequenceTime time,int dimension){
@@ -356,7 +371,7 @@ void Knob::evaluateAnimationChange(){
         boost::shared_ptr<Curve> curve = getCurve(i);
         if(curve && curve->isAnimated()){
             Variant v = getValueAtTime(time,i);
-            setValue(v,i);
+            setValue(v,i,Natron::OTHER_REASON,NULL);
         }
     }
     endValueChange(Natron::PLUGIN_EDITED);
@@ -390,7 +405,7 @@ void Knob::onTimeChanged(SequenceTime time){
     for(U32 i = 0 ; i < _imp->_curves.size();++i){
         if(_imp->_curves[i]->keyFramesCount() > 0){
             Variant v = getValueAtTime(time,i);
-            setValue(v,i,Natron::TIME_CHANGED);
+            setValue(v,i,Natron::TIME_CHANGED,NULL);
         }
     }
     
@@ -550,7 +565,20 @@ const std::vector<boost::shared_ptr<Knob> >& Knob::getMasters() const{
     return _imp->_masters;
 }
 
+void Knob::setAnimationLevel(int dimension,Natron::AnimationLevel level){
+    assert(dimension < (int)_imp->_animationLevel.size());
+    
+    _imp->_animationLevel[dimension] = level;
+    animationLevelChanged((int)level);
+}
 
+Natron::AnimationLevel Knob::getAnimationLevel(int dimension) const{
+    if(dimension > (int)_imp->_animationLevel.size()){
+        throw std::invalid_argument("Knob::getAnimationLevel(): Dimension out of range");
+    }
+    
+    return _imp->_animationLevel[dimension];
+}
 /***************************KNOB HOLDER******************************************/
 
 KnobHolder::KnobHolder(AppInstance* appInstance):

@@ -11,7 +11,7 @@
 #include <QUndoCommand>
 
 #include "Engine/Variant.h"
-
+#include "Engine/Curve.h"
 class KnobGui;
 
 //================================================================
@@ -32,7 +32,7 @@ private:
     std::vector<Variant> _newValue;
     KnobGui *_knob;
     bool _hasCreateKeyFrame;
-    double _timeOfCreation;
+    std::vector<KeyFrame> _newKeys;
 };
 
 class KnobUndoCommand : public QUndoCommand
@@ -55,7 +55,7 @@ private:
     Variant _newValue;
     KnobGui *_knob;
     bool _hasCreateKeyFrame;
-    double _timeOfCreation;
+    KeyFrame _newKey;
 };
 
 #endif // NATRON_GUI_KNOBUNDOCOMMAND_H_
