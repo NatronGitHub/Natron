@@ -176,6 +176,7 @@ void ScaleSlider::drawScale(){
                 }
                 QColor c = _textColor;
                 c.setAlpha(255*alphaText);
+                checkGLFrameBuffer();
                 renderText(value, btmLeft.y(), s, c, *_font);
             }
         }
@@ -277,7 +278,7 @@ void ScaleSlider::seekScalePosition(double v){
     _zoomCtx.left = _minimum - padding ;
     _zoomCtx.bottom = 0;
     if(_initialized)
-        updateGL();
+        update();
 }
 
 void ScaleSlider::seekInternal(double v){
@@ -299,7 +300,7 @@ void ScaleSlider::seekInternal(double v){
     _zoomCtx.left = _minimum - padding ;
     _zoomCtx.bottom = 0;
     if(_initialized)
-        updateGL();
+        update();
     emit positionChanged(v);
 }
 
