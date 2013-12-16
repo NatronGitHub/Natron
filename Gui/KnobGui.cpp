@@ -577,7 +577,11 @@ void KnobGui::checkAnimationLevel(int dimension){
 }
 
 bool KnobGui::setValue(int dimension,const Variant& variant,KeyFrame* newKey){
+    
     bool ret = _knob->onValueChanged(dimension, variant, newKey);
+    if(ret){
+        emit keyFrameSet();
+    }
     updateGUI(dimension,variant);
     checkAnimationLevel(dimension);
     return ret;
