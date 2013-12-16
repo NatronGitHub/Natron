@@ -184,14 +184,18 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
 
     // getPluginHandle() must be called befor getContexts():
     // it calls kOfxActionLoad on the plugin, which may set properties (including supported contexts)
-    bool rval = false;
+    OFX::Host::PluginHandle *ph;
     try {
-        rval = plugin->getPluginHandle();
+        ph = plugin->getPluginHandle();
     } catch (const std::exception& e) {
         throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin") + ": " + e.what());
     } catch (...) {
         throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin"));
     }
+    if(!ph) {
+        return NULL;
+    }
+    assert(ph->getOfxPlugin() && ph->getOfxPlugin()->mainEntry);
 
     const std::set<std::string>& contexts = plugin->getContexts();
     std::string context;
@@ -226,13 +230,7 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
         }
         
     }
-    
-    
 
-    if(!rval) {
-        return NULL;
-    }
-    
     OfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
     if(node){
         hostSideEffect->createOfxImageEffectInstance(plugin, context);
