@@ -137,6 +137,7 @@ SOURCES += \
     Engine/OfxEffectInstance.cpp \
     Engine/OfxOverlayInteract.cpp \
     Engine/OfxParamInstance.cpp \
+    Engine/ofxhParametricParamSuite.cpp \
     Engine/Project.cpp \
     Engine/ProjectPrivate.cpp \
     Engine/ProjectSerialization.cpp \
@@ -203,6 +204,7 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
     libs/OpenFX/HostSupport/src/ofxhUtilities.cpp
+
 HEADERS += \
     Engine/Cache.h \
     Engine/Curve.h \
@@ -234,6 +236,7 @@ HEADERS += \
     Engine/OfxEffectInstance.h \
     Engine/OfxOverlayInteract.h \
     Engine/OfxParamInstance.h \
+    Engine/ofxhParametricParamSuite.h \
     Engine/Project.h \
     Engine/ProjectPrivate.h \
     Engine/ProjectSerialization.h \
