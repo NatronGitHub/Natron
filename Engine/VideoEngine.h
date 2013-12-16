@@ -486,6 +486,8 @@ private:
      **/
     bool startEngine();
     
+    Natron::Status renderFrame(SequenceTime time);
+    
 };
 
 

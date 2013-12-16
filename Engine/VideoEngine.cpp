@@ -469,85 +469,41 @@ void VideoEngine::run(){
         ////////////////////////
         // Render currentFrame
         //
-        // TODO: everything inside the try..catch should be moved to a separate function
-
-        Status stat;
         // if the output is a writer, _tree.outputAsWriter() returns a valid pointer/
         Writer* writer = _tree.outputAsWriter();
         bool continueOnError = (writer && writer->continueOnError());
         assert(!viewer || !writer); // output cannot be both a viewer and a writer
-
+        Status stat;
         try {
-            /*update the tree hash */
-            _tree.refreshKnobsAndHashAndClearPersistentMessage(currentFrame);
-
-            /*pre process frame*/
-
-            stat = _tree.preProcessFrame(currentFrame);
-            if (stat == StatFailed) {
-                if (viewer) {
-                    viewer->disconnectViewer();
-                }
-                throw std::runtime_error("preProcessFrame failed");
-            }
-
-            /*get the time at which we started rendering the frame*/
-            gettimeofday(&_startRenderFrameTime, 0);
-            if (viewer && !_tree.isOutputAnOpenFXNode()) {
-                assert(viewer);
-                stat = viewer->renderViewer(currentFrame, _currentRunArgs._fitToViewer);
-
-                if (!_currentRunArgs._sameFrame) {
-                    QMutexLocker timerLocker(&_timerMutex);
-                    _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
-                    if ((_timerFrameCount % NATRON_FPS_REFRESH_RATE) == 0) {
-                        emit fpsChanged(_timer->actualFrameRate()); // refreshing fps display on the GUI
-                        _timerFrameCount = 1; //reseting to 1
-                    } else {
-                        ++_timerFrameCount;
-                    }
-
-                }
-
-
-
-                if (stat == StatFailed) {
-                    viewer->disconnectViewer();
-                }
-            } else if (writer && !_tree.isOutputAnOpenFXNode()) {
-                stat = writer->renderWriter(currentFrame);
-            } else {
-                RenderScale scale;
-                scale.x = scale.y = 1.;
-                RectI rod;
-                stat = _tree.getOutput()->getRegionOfDefinition(currentFrame, &rod);
-                if(stat != StatFailed){
-                    int viewsCount = _tree.getOutput()->getApp()->getCurrentProjectViewsCount();
-                    for(int i = 0; i < viewsCount;++i){
-                        // Do not catch exceptions: if an exception occurs here it is probably fatal, since
-                        // it comes from Natron itself. All exceptions from plugins are already caught
-                        // by the HostSupport library.
-                        (void)_tree.getOutput()->renderRoI(currentFrame, scale,i ,rod);
-                    }
-                }
-
-            }
+           stat =  renderFrame(currentFrame);
         } catch (const std::exception &e) {
-            stat = StatFailed;
             std::stringstream ss;
             ss << "Error while rendering" << " frame " << currentFrame << ": " << e.what();
             Natron::errorDialog("Error while rendering", ss.str());
-        } catch (...) {
-            stat = StatFailed;
-            std::stringstream ss;
-            ss << "Error while rendering" << " frame " << currentFrame;
-            Natron::errorDialog("Error while rendering", ss.str());
+            if (viewer) {
+                viewer->disconnectViewer();
+            }
+            if (!continueOnError) {
+                if(stopEngine()){
+                    return;
+                }
+                continue;
+            }
         }
-        if (!continueOnError && stat == StatFailed) {
-            if(stopEngine())
-                return;
-            continue;
+        
+        if(stat == StatFailed){
+            if (viewer) {
+                viewer->disconnectViewer();
+            }
+            if (!continueOnError) {
+                if(stopEngine()){
+                    return;
+                }
+                continue;
+            }
+
         }
+        
 
         /*The frame has been rendered , we call engineLoop() which will reset all the flags,
          update viewers
@@ -569,6 +525,67 @@ void VideoEngine::run(){
     } // end for(;;)
     
 }
+
+Natron::Status VideoEngine::renderFrame(SequenceTime time){
+    Status stat;
+    
+    /*update the tree hash */
+    _tree.refreshKnobsAndHashAndClearPersistentMessage(time);
+    
+    /*pre process frame*/
+    
+    stat = _tree.preProcessFrame(time);
+    if (stat == StatFailed) {
+        return stat;
+        //don't throw an exception here, this is regular behaviour when a mandatory input is not connected.
+        // We don't want to popup a dialog everytime it occurs
+        //      throw std::runtime_error("PreProcessFrame failed, mandatory inputs are probably not connected.");
+    }
+    
+    /*get the time at which we started rendering the frame*/
+    gettimeofday(&_startRenderFrameTime, 0);
+    if (_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()) {
+        
+        stat = _tree.outputAsViewer()->renderViewer(time, _currentRunArgs._fitToViewer);
+        
+        if (!_currentRunArgs._sameFrame) {
+            QMutexLocker timerLocker(&_timerMutex);
+            _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
+            if ((_timerFrameCount % NATRON_FPS_REFRESH_RATE) == 0) {
+                emit fpsChanged(_timer->actualFrameRate()); // refreshing fps display on the GUI
+                _timerFrameCount = 1; //reseting to 1
+            } else {
+                ++_timerFrameCount;
+            }
+            
+        }
+        
+    } else if (!_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()) {
+        stat = _tree.outputAsWriter()->renderWriter(time);
+    } else {
+        RenderScale scale;
+        scale.x = scale.y = 1.;
+        RectI rod;
+        stat = _tree.getOutput()->getRegionOfDefinition(time, &rod);
+        if(stat != StatFailed){
+            int viewsCount = _tree.getOutput()->getApp()->getCurrentProjectViewsCount();
+            for(int i = 0; i < viewsCount;++i){
+                // Do not catch exceptions: if an exception occurs here it is probably fatal, since
+                // it comes from Natron itself. All exceptions from plugins are already caught
+                // by the HostSupport library.
+                (void)_tree.getOutput()->renderRoI(time, scale,i ,rod);
+            }
+        }
+        
+    }
+    
+    if (stat == StatFailed) {
+        throw std::runtime_error("Render failed");
+    }
+    return stat;
+
+}
+
 void VideoEngine::onProgressUpdate(int /*i*/){
     // cout << "progress: index = " << i ;
     //    if(i < (int)_currentFrameInfos._rows.size()){
