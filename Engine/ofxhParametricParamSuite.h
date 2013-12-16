@@ -12,6 +12,19 @@
 #ifndef OFXHPARAMETRICPARAMSUITE_H
 #define OFXHPARAMETRICPARAMSUITE_H
 
+namespace OFX{
 
+namespace Host{
+
+namespace ParametricParam{
+
+/// fetch the parametric params suite
+void *GetSuite(int version);
+
+} //namespace ParametricParam
+
+} //namespace Host
+
+} //namespace OFX
 
 #endif // OFXHPARAMETRICPARAMSUITE_H
