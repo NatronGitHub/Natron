@@ -23,6 +23,7 @@
 #include "Global/GlobalDefines.h"
 //ofx
 #include "ofxhImageEffect.h"
+#include "Engine/ofxhParametricParamSuite.h"
 
 
 /*This file contains the classes that connect the knobs to the OpenFX params.
@@ -43,6 +44,7 @@ class Choice_Knob;
 class Group_Knob;
 class Custom_Knob;
 class RichText_Knob;
+class Parametric_Knob;
 class OfxEffectInstance;
 class Knob;
 
@@ -580,6 +582,145 @@ private:
     boost::shared_ptr<Custom_Knob> _knob;
     customParamInterpolationV1Entry_t _customParamInterpolationV1Entry;
     QThreadStorage<std::string> _localString;
+};
+
+
+class OfxParametricInstance : public OFX::Host::ParametricParam::ParametricInstance {
+    
+    
+public:
+    
+    OfxParametricInstance(OfxEffectInstance* node, OFX::Host::ParametricParam::ParametricDescriptor& descriptor);
+    
+    // callback which should set enabled state as appropriate
+    virtual void setEnabled() OVERRIDE;
+    
+    // callback which should set secret state as appropriate
+    virtual void setSecret() OVERRIDE;
+    
+    /// callback which should update label
+    virtual void setLabel() OVERRIDE;
+    
+    /// callback which should set
+    virtual void setDisplayRange() OVERRIDE;
+    
+    
+    /** @brief Evaluates a parametric parameter
+     
+     \arg curveIndex            which dimension to evaluate
+     \arg time                  the time to evaluate to the parametric param at
+     \arg parametricPosition    the position to evaluate the parametric param at
+     \arg returnValue           pointer to a double where a value is returned
+     
+     @returns
+     - ::kOfxStatOK            - all was fine
+     - ::kOfxStatErrBadIndex   - the curve index was invalid
+     */
+    virtual OfxStatus getValue(int curveIndex,OfxTime time,double parametricPosition,double *returnValue);
+    
+    
+    /** @brief Returns the number of control points in the parametric param.
+     
+     \arg curveIndex            which dimension to check
+     \arg time                  the time to check
+     \arg returnValue           pointer to an integer where the value is returned.
+     
+     @returns
+     - ::kOfxStatOK            - all was fine
+     - ::kOfxStatErrBadIndex   - the curve index was invalid
+     */
+    virtual OfxStatus getNControlPoints(int curveIndex,double time,int *returnValue);
+    
+    
+    /** @brief Returns the key/value pair of the nth control point.
+     
+     \arg curveIndex            which dimension to check
+     \arg time                  the time to check
+     \arg nthCtl                the nth control point to get the value of
+     \arg key                   pointer to a double where the key will be returned
+     \arg value                 pointer to a double where the value will be returned
+     
+     @returns
+     - ::kOfxStatOK            - all was fine
+     - ::kOfxStatErrUnknown    - if the type is unknown
+     */
+    virtual OfxStatus getNthControlPoint(int curveIndex,
+                                         double time,
+                                         int    nthCtl,
+                                         double *key,
+                                         double *value);
+    
+    
+    /** @brief Modifies an existing control point on a curve
+     
+     \arg curveIndex            which dimension to set
+     \arg time                  the time to set the value at
+     \arg nthCtl                the control point to modify
+     \arg key                   key of the control point
+     \arg value                 value of the control point
+     \arg addAnimationKey       if the param is an animatable, setting this to true will
+     force an animation keyframe to be set as well as a curve key,
+     otherwise if false, a key will only be added if the curve is already
+     animating.
+     
+     @returns
+     - ::kOfxStatOK            - all was fine
+     - ::kOfxStatErrUnknown    - if the type is unknown
+     
+     This modifies an existing control point. Note that by changing key, the order of the
+     control point may be modified (as you may move it before or after anther point). So be
+     careful when iterating over a curves control points and you change a key.
+     */
+    virtual OfxStatus setNthControlPoint(int   curveIndex,
+                                         double time,
+                                         int   nthCtl,
+                                         double key,
+                                         double value,
+                                         bool addAnimationKey
+                                         );
+    
+    /** @brief Adds a control point to the curve.
+     
+     \arg curveIndex            which dimension to set
+     \arg time                  the time to set the value at
+     \arg key                   key of the control point
+     \arg value                 value of the control point
+     \arg addAnimationKey       if the param is an animatable, setting this to true will
+     force an animation keyframe to be set as well as a curve key,
+     otherwise if false, a key will only be added if the curve is already
+     animating.
+     
+     @returns
+     - ::kOfxStatOK            - all was fine
+     - ::kOfxStatErrUnknown    - if the type is unknown
+     
+     This will add a new control point to the given dimension of a parametric parameter. If a key exists
+     sufficiently close to 'key', then it will be set to the indicated control point.
+     */
+    virtual OfxStatus addControlPoint(int   curveIndex,
+                                      double time,
+                                      double key,
+                                      double value,
+                                      bool addAnimationKey);
+    
+    /** @brief Deletes the nth control point from a parametric param.
+     
+     \arg curveIndex            which dimension to delete
+     \arg nthCtl                the control point to delete
+     */
+    virtual OfxStatus  deleteControlPoint(int   curveIndex,int   nthCtl);
+    
+    /** @brief Delete all curve control points on the given param.
+     
+     \arg curveIndex            which dimension to clear
+     */
+    virtual OfxStatus  deleteAllControlPoints(int   curveIndex);
+    
+    boost::shared_ptr<Knob> getKnob() const;
+    
+   
+private:
+    boost::shared_ptr<Parametric_Knob> _knob;
 };
 
 #endif // NATRON_ENGINE_OFXPARAMINSTANCE_H_

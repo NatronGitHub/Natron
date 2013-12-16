@@ -26,144 +26,144 @@ namespace Host {
 
 namespace ParametricParam{
 
-    
-   
-    ParametricDescriptor::ParametricDescriptor(const std::string &type, const std::string &name)
-    : Param::Descriptor(type,name)
-    {
-        Property::PropSpec parametricProps[] = {
-            /* name                                         type            dim. r/o default value */
-            { kOfxParamPropAnimates,                    Property::eInt,     1,  false, "1" },
-            { kOfxParamPropPersistant,                  Property::eInt,     1,  false, "1" },
-            { kOfxParamPropEvaluateOnChange,            Property::eInt,     1,  false, "1" },
-            { kOfxParamPropPluginMayWrite,              Property::eInt,     1,  false, "0" },
-            { kOfxParamPropCacheInvalidation,           Property::eString,  1,  false, kOfxParamInvalidateValueChange },
-            { kOfxParamPropCanUndo,                     Property::eInt,     1,  false, "1" },
-            { kOfxParamPropParametricDimension,         Property::eInt,     1,  false, "1" },
-            { kOfxParamPropParametricUIColour,          Property::eDouble,  0,  false, ""  },
-            { kOfxParamPropParametricInteractBackground,Property::ePointer, 1,  false, 0   },
-            { kOfxParamPropParametricRange,             Property::eDouble,  2,  false, "0"/*do not knob how to set default values
-                                                                             across all dimensions*/ },
-            Property::propSpecEnd
-        };
-        _properties.addProperties(parametricProps);
-    }
-    
-    ParametricInstance::ParametricInstance(Param::Descriptor& descriptor, Param::SetInstance* instance)
+void addParametricProperties(Param::Base& propertySetHolder){
+
+    bool isDescriptor = dynamic_cast<Param::Descriptor*>(&propertySetHolder) != NULL;
+    Property::PropSpec parametricProps[] = {
+        /* name                                         type            dim. r/o default value */
+        { kOfxParamPropAnimates,                    Property::eInt,     1,  !isDescriptor, "1" },
+        { kOfxParamPropPersistant,                  Property::eInt,     1,  !isDescriptor, "1" },
+        { kOfxParamPropEvaluateOnChange,            Property::eInt,     1,  !isDescriptor, "1" },
+        { kOfxParamPropPluginMayWrite,              Property::eInt,     1,  !isDescriptor, "0" },
+        { kOfxParamPropCacheInvalidation,           Property::eString,  1,  !isDescriptor, kOfxParamInvalidateValueChange },
+        { kOfxParamPropCanUndo,                     Property::eInt,     1,  !isDescriptor, "1" },
+        { kOfxParamPropParametricDimension,         Property::eInt,     1,  !isDescriptor, "1" },
+        { kOfxParamPropParametricUIColour,          Property::eDouble,  0,  !isDescriptor, ""  },
+        { kOfxParamPropParametricInteractBackground,Property::ePointer, 1,  !isDescriptor, 0   },
+        { kOfxParamPropParametricRange,             Property::eDouble,  2,  !isDescriptor, "0"/*do not knob how to set default values
+                                                                                                 across all dimensions*/ },
+        Property::propSpecEnd
+    };
+
+    propertySetHolder.getProperties().addProperties(parametricProps);
+}
+
+
+ParametricInstance::ParametricInstance(Param::Descriptor& descriptor, Param::SetInstance* instance)
     : Param::Instance(descriptor,instance)
-    {
-        
-    }
-    // copy one parameter to another
-    OfxStatus ParametricInstance::copy(const Param::Instance &/*instance*/, OfxTime /*offset*/)
-    {
-        return kOfxStatErrMissingHostFeature;
-    }
-    
-    // copy one parameter to another, with a range
-    OfxStatus ParametricInstance::copy(const Param::Instance &/*instance*/, OfxTime /*offset*/, OfxRangeD /*range*/)
-    {
-        return kOfxStatErrMissingHostFeature;
-    }
-    
-    // callback which should set enabled state as appropriate
-    void ParametricInstance::setEnabled()
-    {
-        
-    }
-    
-    // callback which should set secret state as appropriate
-    void ParametricInstance::setSecret()
-    {
-        
-    }
-    
-    /// callback which should update label
-    void ParametricInstance::setLabel()
-    {
-        
-    }
-    
-    /// callback which should set
-    void ParametricInstance::setDisplayRange()
-    {
+{
+    addParametricProperties(*this);
+}
+// copy one parameter to another
+OfxStatus ParametricInstance::copy(const Param::Instance &/*instance*/, OfxTime /*offset*/)
+{
+    return kOfxStatErrMissingHostFeature;
+}
 
-    }
-    
-    OfxStatus ParametricInstance::getNumKeys(unsigned int &/*nKeys*/) const
-    {
-       return kOfxStatErrMissingHostFeature;
-    }
-    
-    OfxStatus ParametricInstance::getKeyTime(int /*nth*/, OfxTime& /*time*/) const
-    {
-        return kOfxStatErrMissingHostFeature;
-    }
-    
-    OfxStatus ParametricInstance::getKeyIndex(OfxTime /*time*/, int /*direction*/, int & /*index*/) const
-    {
-        return kOfxStatErrMissingHostFeature;
-    }
-    
-    OfxStatus ParametricInstance::deleteKey(OfxTime /*time*/)
-    {
-        return kOfxStatErrMissingHostFeature;
-    }
-    
-    OfxStatus ParametricInstance::deleteAllKeys()
-    {
-        return kOfxStatErrMissingHostFeature;
-    }
+// copy one parameter to another, with a range
+OfxStatus ParametricInstance::copy(const Param::Instance &/*instance*/, OfxTime /*offset*/, OfxRangeD /*range*/)
+{
+    return kOfxStatErrMissingHostFeature;
+}
 
-    OfxStatus ParametricInstance::getValue(int /*curveIndex*/,OfxTime /*time*/,double /*parametricPosition*/,double */*returnValue*/)
-    {
-        return kOfxStatErrMissingHostFeature;
-    }
-    
-    OfxStatus ParametricInstance::getNControlPoints(int /*curveIndex*/,double /*time*/,int */*returnValue*/)
-    {
-        return kOfxStatErrMissingHostFeature;
-    }
-    
-    OfxStatus ParametricInstance::getNthControlPoint(int /*curveIndex*/,
-                                 double /*time*/,
-                                 int    /*nthCtl*/,
-                                 double */*key*/,
-                                 double */*value*/)
-    {
-        return kOfxStatErrMissingHostFeature;
-    }
-    
-    OfxStatus ParametricInstance::setNthControlPoint(int   /*curveIndex*/,
-                                 double /*time*/,
-                                 int   /*nthCtl*/,
-                                 double /*key*/,
-                                 double /*value*/,
-                                 bool /*addAnimationKey*/
-                                 )
-    {
-        return kOfxStatErrMissingHostFeature;
-    }
-    
-    OfxStatus ParametricInstance::addControlPoint(int   /*curveIndex*/,
-                              double /*time*/,
-                              double /*key*/,
-                              double /*value*/,
-                              bool /*addAnimationKey*/)
-    {
-        return kOfxStatErrMissingHostFeature;
-    }
-    
-    OfxStatus  ParametricInstance::deleteControlPoint(int   /*curveIndex*/,int  /* nthCtl*/)
-    {
-        return kOfxStatErrMissingHostFeature;
-    }
-    
-    OfxStatus  ParametricInstance::deleteAllControlPoints(int   /*curveIndex*/)
-    {
-        return kOfxStatErrMissingHostFeature;
-    }
-    
+// callback which should set enabled state as appropriate
+void ParametricInstance::setEnabled()
+{
+
+}
+
+// callback which should set secret state as appropriate
+void ParametricInstance::setSecret()
+{
+
+}
+
+/// callback which should update label
+void ParametricInstance::setLabel()
+{
+
+}
+
+/// callback which should set
+void ParametricInstance::setDisplayRange()
+{
+
+}
+
+OfxStatus ParametricInstance::getNumKeys(unsigned int &/*nKeys*/) const
+{
+    return kOfxStatErrMissingHostFeature;
+}
+
+OfxStatus ParametricInstance::getKeyTime(int /*nth*/, OfxTime& /*time*/) const
+{
+    return kOfxStatErrMissingHostFeature;
+}
+
+OfxStatus ParametricInstance::getKeyIndex(OfxTime /*time*/, int /*direction*/, int & /*index*/) const
+{
+    return kOfxStatErrMissingHostFeature;
+}
+
+OfxStatus ParametricInstance::deleteKey(OfxTime /*time*/)
+{
+    return kOfxStatErrMissingHostFeature;
+}
+
+OfxStatus ParametricInstance::deleteAllKeys()
+{
+    return kOfxStatErrMissingHostFeature;
+}
+
+OfxStatus ParametricInstance::getValue(int /*curveIndex*/,OfxTime /*time*/,double /*parametricPosition*/,double */*returnValue*/)
+{
+    return kOfxStatErrMissingHostFeature;
+}
+
+OfxStatus ParametricInstance::getNControlPoints(int /*curveIndex*/,double /*time*/,int */*returnValue*/)
+{
+    return kOfxStatErrMissingHostFeature;
+}
+
+OfxStatus ParametricInstance::getNthControlPoint(int /*curveIndex*/,
+                                                 double /*time*/,
+                                                 int    /*nthCtl*/,
+                                                 double */*key*/,
+                                                 double */*value*/)
+{
+    return kOfxStatErrMissingHostFeature;
+}
+
+OfxStatus ParametricInstance::setNthControlPoint(int   /*curveIndex*/,
+                                                 double /*time*/,
+                                                 int   /*nthCtl*/,
+                                                 double /*key*/,
+                                                 double /*value*/,
+                                                 bool /*addAnimationKey*/
+                                                 )
+{
+    return kOfxStatErrMissingHostFeature;
+}
+
+OfxStatus ParametricInstance::addControlPoint(int   /*curveIndex*/,
+                                              double /*time*/,
+                                              double /*key*/,
+                                              double /*value*/,
+                                              bool /*addAnimationKey*/)
+{
+    return kOfxStatErrMissingHostFeature;
+}
+
+OfxStatus  ParametricInstance::deleteControlPoint(int   /*curveIndex*/,int  /* nthCtl*/)
+{
+    return kOfxStatErrMissingHostFeature;
+}
+
+OfxStatus  ParametricInstance::deleteAllControlPoints(int   /*curveIndex*/)
+{
+    return kOfxStatErrMissingHostFeature;
+}
+
 /** @brief Evaluates a parametric parameter
 
       \arg param                 handle to the parametric parameter
