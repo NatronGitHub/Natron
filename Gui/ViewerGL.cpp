@@ -404,11 +404,11 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 
     
     _imp->blankViewerInfos.setChannels(Natron::Mask_RGBA);
-    Format frmt(0, 0, 1920, 1080,"HD",1.0);
-    _imp->blankViewerInfos.setRoD(RectI(0, 0, 1920, 1080));
-    _imp->blankViewerInfos.setDisplayWindow(frmt);
+    const Format& projectFormat = parent->getGui()->getApp()->getProject()->getProjectDefaultFormat();
+    _imp->blankViewerInfos.setRoD(projectFormat);
+    _imp->blankViewerInfos.setDisplayWindow(projectFormat);
     setRod(_imp->blankViewerInfos.getRoD());
-    onProjectFormatChanged(frmt);
+    onProjectFormatChanged(projectFormat);
 
 }
 
