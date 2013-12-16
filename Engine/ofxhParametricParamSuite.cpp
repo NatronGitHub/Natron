@@ -16,16 +16,44 @@
 #include "ofxCore.h"
 #include "ofxParam.h"
 
+#include <ofxhParam.h>
+#include <ofxhPropertySuite.h>
+
+//ofx h
+#include "ofxhPropertySuite.h"
+
 // parametric params
 #include "ofxParametricParam.h"
 
-namespace OFX{
+namespace OFX {
 
-namespace Host{
+namespace Host {
 
 namespace ParametricParam{
 
-
+    
+   
+    ParametricDescriptor::ParametricDescriptor(const std::string &type, const std::string &name)
+    : Param::Descriptor(type,name)
+    {
+        Property::PropSpec parametricProps[] = {
+            /* name                                         type            dim. r/o default value */
+            { kOfxParamPropAnimates,                    Property::eInt,     1,  false, "1" },
+            { kOfxParamPropPersistant,                  Property::eInt,     1,  false, "1" },
+            { kOfxParamPropEvaluateOnChange,            Property::eInt,     1,  false, "1" },
+            { kOfxParamPropPluginMayWrite,              Property::eInt,     1,  false, "0" },
+            { kOfxParamPropCacheInvalidation,           Property::eString,  1,  false, kOfxParamInvalidateValueChange },
+            { kOfxParamPropCanUndo,                     Property::eInt,     1,  false, "1" },
+            { kOfxParamPropParametricDimension,         Property::eInt,     1,  false, "1" },
+            { kOfxParamPropParametricUIColour,          Property::eDouble,  0,  false, ""  },
+            { kOfxParamPropParametricInteractBackground,Property::ePointer, 1,  false, 0   },
+            { kOfxParamPropParametricRange,             Property::eDouble,  2,  false, "0"/*do not knob how to set default values
+                                                                             across all dimensions*/ },
+            Property::propSpecEnd
+        };
+        _properties.addProperties(parametricProps);
+    }
+    
 /** @brief Evaluates a parametric parameter
 
       \arg param                 handle to the parametric parameter

@@ -12,11 +12,27 @@
 #ifndef OFXHPARAMETRICPARAMSUITE_H
 #define OFXHPARAMETRICPARAMSUITE_H
 
-namespace OFX{
+#include <ofxhParam.h>
 
-namespace Host{
+namespace OFX {
 
-namespace ParametricParam{
+namespace Host {
+
+namespace ParametricParam {
+    
+    /// the Descriptor of a plugin parametric parameter
+    ///it overloads the base param version to add properties
+    ///specific to parametric parameters
+    class ParametricDescriptor : public Param::Descriptor
+    {
+    public:
+        
+        /// make a parametric parameter, with the given type and name
+        ParametricDescriptor(const std::string &type, const std::string &name);
+        
+    };
+    
+
 
 /// fetch the parametric params suite
 void *GetSuite(int version);
