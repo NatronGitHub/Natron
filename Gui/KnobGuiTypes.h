@@ -94,6 +94,8 @@ private:
     virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
+    
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
 
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
@@ -137,6 +139,7 @@ private:
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
 private:
 
     AnimatedCheckBox *_checkBox;
@@ -183,6 +186,8 @@ private:
     virtual void addToLayout(QHBoxLayout *layout);
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
+
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
 
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
@@ -261,6 +266,8 @@ private:
     virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
+
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
 
 private:
     std::vector<std::string> _entries;
@@ -368,6 +375,8 @@ private:
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
+    
     void updateLabel(const QColor &color);
 
 private:

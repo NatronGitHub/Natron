@@ -113,6 +113,16 @@ public:
     bool hasOutputConnected() const WARN_UNUSED_RETURN;
     
     /**
+     * @brief Must return the plugin's major version.
+     **/
+    virtual int majorVersion() const WARN_UNUSED_RETURN = 0;
+    
+    /**
+     * @brief Must return the plugin's minor version.
+     **/
+    virtual int minorVersion() const WARN_UNUSED_RETURN = 0;
+    
+    /**
      * @brief Is this node an input node ? An input node means
      * it has no input.
      **/

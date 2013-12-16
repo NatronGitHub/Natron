@@ -833,3 +833,11 @@ void OfxEffectInstance::purgeCaches(){
     stat =  effect_->syncPrivateDataAction();
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
 }
+
+int OfxEffectInstance::majorVersion() const {
+    return effectInstance()->getPlugin()->getVersionMajor();
+}
+
+int OfxEffectInstance::minorVersion() const {
+    return effectInstance()->getPlugin()->getVersionMinor();
+}

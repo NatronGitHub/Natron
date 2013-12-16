@@ -1525,6 +1525,14 @@ void CurveWidget::showCurvesAndHideOthers(const std::vector<CurveGui*>& curves){
     update();
 }
 
+void CurveWidget::getVisibleCurves(std::vector<CurveGui*>* curves) const{
+    for(std::list<CurveGui* >::iterator it = _imp->_curves.begin();it!=_imp->_curves.end();++it){
+        if((*it)->isVisible()){
+            curves->push_back(*it);
+        }
+    }
+}
+
 void CurveWidget::centerOn(double xmin,double xmax,double ymin,double ymax){
     double curveWidth = xmax - xmin;
     double curveHeight = (ymax - ymin);
@@ -1549,7 +1557,12 @@ void CurveWidget::resizeGL(int width,int height){
     if(height == 0)
         height = 1;
     glViewport (0, 0, width , height);
-    centerOn(-10,500,-10,10);
+    
+
+    ///find out what are the selected curves and center on them
+    std::vector<CurveGui*> curves;
+    getVisibleCurves(&curves);
+    centerOn(curves);
 }
 
 void CurveWidget::paintGL()

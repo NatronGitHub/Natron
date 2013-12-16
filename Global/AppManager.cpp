@@ -320,11 +320,11 @@ AppInstance::~AppInstance(){
 }
 
 
-Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
+Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVersion,bool requestedByLoad ) {
     Node* node = 0;
     LibraryBinary* pluginBinary = 0;
     try {
-        pluginBinary = appPTR->getPluginBinary(name);
+        pluginBinary = appPTR->getPluginBinary(name,majorVersion,minorVersion);
     } catch (const std::exception& e) {
         Natron::errorDialog("Plugin error", std::string("Cannot load plugin executable") + ": " + e.what());
         return node;
@@ -1123,7 +1123,7 @@ void AppManager::loadNodePlugins(){
                 pluginMutex = new QMutex;
             }
             Natron::Plugin* plugin = new Natron::Plugin(plugins[i],effect->pluginID().c_str(),effect->pluginLabel().c_str(),
-                                                        pluginMutex);
+                                                        pluginMutex,effect->majorVersion(),effect->minorVersion());
             _plugins.push_back(plugin);
             delete effect;
         }
@@ -1144,7 +1144,7 @@ void AppManager::loadBuiltinNodePlugins(){
         LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
         assert(readerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin(readerPlugin,reader->pluginID().c_str(),reader->pluginLabel().c_str(),
-                                                    (QMutex*)NULL);
+                                                    (QMutex*)NULL,reader->majorVersion(),reader->minorVersion());
         _plugins.push_back(plugin);
         addPluginToolButtons(grouping,reader->pluginID().c_str(),reader->pluginLabel().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete reader;
@@ -1157,7 +1157,7 @@ void AppManager::loadBuiltinNodePlugins(){
         LibraryBinary *viewerPlugin = new LibraryBinary(viewerFunctions);
         assert(viewerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin(viewerPlugin,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(),
-                                                    (QMutex*)NULL);
+                                                    (QMutex*)NULL,viewer->majorVersion(),viewer->minorVersion());
         _plugins.push_back(plugin);
         addPluginToolButtons(grouping,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete viewer;
@@ -1170,7 +1170,7 @@ void AppManager::loadBuiltinNodePlugins(){
         LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
         assert(writerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin(writerPlugin,writer->pluginID().c_str(),writer->pluginLabel().c_str(),
-                                                    (QMutex*)NULL);
+                                                    (QMutex*)NULL,writer->majorVersion(),writer->minorVersion());
         _plugins.push_back(plugin);
         addPluginToolButtons(grouping,writer->pluginID().c_str(),writer->pluginLabel().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete writer;
@@ -1497,15 +1497,29 @@ void AppManager::printPluginsLoaded(){
     }
 }
 
-Natron::LibraryBinary* AppManager::getPluginBinary(const QString& pluginId) const{
+Natron::LibraryBinary* AppManager::getPluginBinary(const QString& pluginId,int majorVersion,int minorVersion) const{
+    std::map<int,Natron::Plugin*> matches;
     for (U32 i = 0; i < _plugins.size(); ++i) {
-        if(_plugins[i]->getPluginID() == pluginId){
-            return _plugins[i]->getLibraryBinary();
+        if(_plugins[i]->getPluginID() != pluginId){
+            continue;
         }
+        if(majorVersion != -1 && _plugins[i]->getMajorVersion() != majorVersion){
+            continue;
+        }
+        matches.insert(std::make_pair(_plugins[i]->getMinorVersion(),_plugins[i]));
     }
-    std::string exc("Couldn't find a plugin named ");
-    exc.append(pluginId.toStdString());
-    throw std::invalid_argument(exc);
+    
+    if(matches.empty()){
+        QString exc = QString("Couldn't find a plugin named %1, with a major version of %2 and a minor version greater or equal to %3.")
+        .arg(pluginId)
+        .arg(majorVersion)
+        .arg(minorVersion);
+        throw std::invalid_argument(exc.toStdString());
+    }else{
+        std::map<int,Natron::Plugin*>::iterator greatest = matches.end();
+        --greatest;
+        return greatest->second->getLibraryBinary();
+    }
 }
 int AppInstance::getKnobsAge() const{
     return _currentProject->getKnobsAge();

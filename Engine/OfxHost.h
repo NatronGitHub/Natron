@@ -1,7 +1,9 @@
 //
 //  OfxHost.h
 //  Natron
-//
+/* This Source Code Form is subject to the terms of the Mozilla Public
+* License, v. 2.0. If a copy of the MPL was not distributed with this
+* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 //  Created by Frédéric Devernay on 03/09/13.
 //
 //
@@ -29,7 +31,9 @@ class OfxHost : public QObject,public OFX::Host::ImageEffect::Host {
     Q_OBJECT
     
 public:
+    
     OfxHost();
+    
     virtual ~OfxHost();
 
     /// Create a new instance of an image effect plug-in.
@@ -71,6 +75,11 @@ public:
     /// clearPersistentMessage
     virtual OfxStatus clearPersistentMessage() OVERRIDE;
 
+    virtual void loadingStatus(const std::string &) OVERRIDE;
+    
+    ///fetch the parametric parameters suite or returns the base class version
+    virtual void* fetchSuite(const char *suiteName, int suiteVersion) OVERRIDE;
+    
     OfxEffectInstance* createOfxEffect(const std::string& name,Node* node);
 
     /*Reads OFX plugin cache and scan plugins directories

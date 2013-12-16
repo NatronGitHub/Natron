@@ -34,6 +34,30 @@ using std::make_pair;
 using std::cout;
 using std::endl;
 
+void CurveEditor::recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *curves){
+    if(!cur){
+        return;
+    }
+    cur->setSelected(true);
+    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
+        it!=_nodes.end();++it){
+        NodeCurveEditorElement* elem = (*it)->findElement(cur);
+        if(elem){
+            CurveGui* curve = elem->getCurve();
+            if (curve && curve->getInternalCurve()->isAnimated()) {
+                curves->push_back(curve);
+            }
+            break;
+        }
+        
+    }
+    for (int j = 0; j < cur->childCount(); ++j) {
+        recursiveSelect(cur->child(j),curves);
+    }
+}
+
+
+
 CurveEditor::CurveEditor(boost::shared_ptr<TimeLine> timeline, QWidget *parent)
     : QWidget(parent)
     , _nodes()
@@ -59,6 +83,7 @@ CurveEditor::CurveEditor(boost::shared_ptr<TimeLine> timeline, QWidget *parent)
     _curveWidget = new CurveWidget(timeline,_splitter);
 
     _tree = new QTreeWidget(_splitter);
+    _tree->setSelectionMode(QAbstractItemView::NoSelection);
     _tree->setColumnCount(1);
     _tree->header()->close();
 
@@ -250,7 +275,6 @@ void NodeCurveEditorElement::checkVisibleState(){
         //show the item
         if(!_curveDisplayed){
             _curveDisplayed = true;
-            _curve->setVisibleAndRefresh(true);
             _treeItem->setHidden(false);
             _treeItem->parent()->setHidden(false);
             _treeItem->parent()->setExpanded(true);
@@ -258,8 +282,45 @@ void NodeCurveEditorElement::checkVisibleState(){
                 _treeItem->parent()->parent()->setHidden(false);
                 _treeItem->parent()->parent()->setExpanded(true);
             }
+            
         }
-        _treeWidget->setCurrentItem(_treeItem);
+        
+        
+        QList<QTreeWidgetItem*> selectedItems = _treeWidget->selectedItems();
+        bool wasEmpty = false;
+        
+        ///if there was no selection so far, select this item and its parents
+        if(selectedItems.empty()){
+            _treeItem->setSelected(true);
+            if(_treeItem->parent()){
+                _treeItem->parent()->setSelected(true);
+            }
+            if(_treeItem->parent()->parent()){
+                _treeItem->parent()->parent()->setSelected(true);
+            }
+            wasEmpty = true;
+        }else{
+            
+            for (int i = 0; i < selectedItems.size(); ++i) {
+                if(selectedItems.at(i) == _treeItem->parent() ||
+                   selectedItems.at(i) == _treeItem->parent()->parent()){
+                    _treeItem->setSelected(true);
+                }
+            }
+        }
+        
+        if(_treeItem->isSelected()){
+            std::vector<CurveGui*> curves;
+            _curveWidget->getVisibleCurves(&curves);
+            curves.push_back(_curve);
+            _curveWidget->showCurvesAndHideOthers(curves);
+            if(wasEmpty){
+                _curveWidget->centerOn(curves);
+            }
+        }
+        
+
+        
     }else{
         //hide the item
         //hiding is a bit more complex because we do not always hide the parent too,it also
@@ -334,39 +395,12 @@ void CurveEditor::centerOn(const std::vector<boost::shared_ptr<Curve> >& curves)
 }
 
 
-void CurveEditor::recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *curves){
-    if(!cur){
-        return;
-    }
-    cur->setSelected(true);
-    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
-        it!=_nodes.end();++it){
-        NodeCurveEditorElement* elem = (*it)->findElement(cur);
-        if(elem){
-            CurveGui* curve = elem->getCurve();
-            if (curve && curve->getInternalCurve()->isAnimated()) {
-                curves->push_back(curve);
-            }
-            break;
-        }
 
-    }
-    for (int j = 0; j < cur->childCount(); ++j) {
-        recursiveSelect(cur->child(j),curves);
-    }
-}
-
-static void recursiveDeselect(QTreeWidgetItem* current){
-    current->setSelected(false);
-    for (int j = 0; j < current->childCount(); ++j) {
-        recursiveDeselect(current->child(j));
-    }
-}
-
-void CurveEditor::onCurrentItemChanged(QTreeWidgetItem* current,QTreeWidgetItem* previous){
+void CurveEditor::onCurrentItemChanged(QTreeWidgetItem* current,QTreeWidgetItem* /*previous*/){
     std::vector<CurveGui*> curves;
-    if(previous){
-        recursiveDeselect(previous);
+    QList<QTreeWidgetItem*> selectedItems = _tree->selectedItems();
+    for(int i = 0 ; i < selectedItems.size();++i){
+        selectedItems.at(i)->setSelected(false);
     }
     recursiveSelect(current,&curves);
 

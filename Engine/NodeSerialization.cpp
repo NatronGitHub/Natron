@@ -33,6 +33,10 @@ void NodeSerialization::initialize(const Natron::Node* n){
     
     _pluginID = n->pluginID();
     
+    _pluginMajorVersion = n->majorVersion();
+    
+    _pluginMinorVersion = n->minorVersion();
+    
     const Natron::Node::InputMap& inputs = n->getInputs();
     for(Natron::Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
         if(it->second){

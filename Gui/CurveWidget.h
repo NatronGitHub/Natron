@@ -158,6 +158,8 @@ public:
     void centerOn(const std::vector<CurveGui*>& curves);
 
     void showCurvesAndHideOthers(const std::vector<CurveGui*>& curves);
+    
+    void getVisibleCurves(std::vector<CurveGui*>* curves) const;
 
     void addKeyFrame(CurveGui* curve, const KeyFrame& key);
 

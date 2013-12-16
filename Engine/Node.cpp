@@ -276,6 +276,14 @@ void Node::hasViewersConnected(std::list<ViewerInstance*>* viewers) const
     }
 }
 
+int Node::majorVersion() const{
+    return _liveInstance->majorVersion();
+}
+
+int Node::minorVersion() const{
+    return _liveInstance->minorVersion();
+}
+
 void Node::initializeInputs()
 {
     int inputCount = maximumInputs();

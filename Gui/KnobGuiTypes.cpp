@@ -85,7 +85,6 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row)
     boost::shared_ptr<Int_Knob> intKnob = boost::dynamic_pointer_cast<Int_Knob>(getKnob());
     assert(intKnob);
     
-    QString subLabels_XYZW[] = {"x:", "y:", "z:", "w:"};
     
     const std::vector<int> &maximums = intKnob->getMaximums();
     const std::vector<int> &minimums = intKnob->getMinimums();
@@ -95,11 +94,12 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row)
     for (int i = 0; i < dim; ++i) {
         QWidget *boxContainer = new QWidget(layout->parentWidget());
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
+        boxContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
         QLabel *subDesc = 0;
         if (dim != 1) {
-            subDesc = new QLabel(subLabels_XYZW[i], boxContainer);
+            subDesc = new QLabel(getKnob()->getDimensionName(i).c_str(), boxContainer);
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::INT_SPINBOX);
@@ -164,26 +164,22 @@ void Int_KnobGui::updateGUI(int dimension, const Variant &variant)
         _slider->seekScalePosition(v);
     }
     _spinBoxes[dimension].first->setValue(v);
-    
-    if(getKnob()->getHolder()->getApp()){
-        
-        boost::shared_ptr<Curve> c = getKnob()->getCurve(dimension);
-        SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-        if (c->keyFramesCount() >= 1) {
-            const KeyFrameSet &keys = c->getKeyFrames();
-            for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-                if (it->getTime() == time) {
-                    _spinBoxes[dimension].first->setAnimation(2);
-                    setIsOnKeyframe(true);
-                    return;
-                }
-            }
-            _spinBoxes[dimension].first->setAnimation(1);
-        } else {
+}
+
+void Int_KnobGui::reflectAnimationLevel(int dimension,Natron::AnimationLevel level) {
+    switch (level) {
+        case Natron::NO_ANIMATION:
             _spinBoxes[dimension].first->setAnimation(0);
-        }
+            break;
+        case Natron::INTERPOLATED_VALUE:
+            _spinBoxes[dimension].first->setAnimation(1);
+            break;
+        case Natron::ON_KEYFRAME:
+            _spinBoxes[dimension].first->setAnimation(2);
+            break;
+        default:
+            break;
     }
-    setIsOnKeyframe(false);
 }
 
 void Int_KnobGui::onSliderValueChanged(double d)
@@ -286,26 +282,22 @@ void Bool_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
     bool b = variant.toBool();
     _checkBox->setChecked(b);
     _descriptionLabel->setClicked(b);
-    
-    if(getKnob()->getHolder()->getApp()){
-        
-        boost::shared_ptr<Curve> c = getKnob()->getCurve(0);
-        SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-        if (c->keyFramesCount() >= 1) {
-            const KeyFrameSet &keys = c->getKeyFrames();
-            for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-                if (it->getTime() == time) {
-                    _checkBox->setAnimation(2);
-                    setIsOnKeyframe(true);
-                    return;
-                }
-            }
-            _checkBox->setAnimation(1);
-        } else {
+}
+
+void Bool_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevel level) {
+    switch (level) {
+        case Natron::NO_ANIMATION:
             _checkBox->setAnimation(0);
-        }
+            break;
+        case Natron::INTERPOLATED_VALUE:
+            _checkBox->setAnimation(1);
+            break;
+        case Natron::ON_KEYFRAME:
+            _checkBox->setAnimation(2);
+            break;
+        default:
+            break;
     }
-    setIsOnKeyframe(false);
 }
 
 
@@ -382,7 +374,6 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row)
     assert(dbl_knob);
     int dim = getKnob()->getDimension();
     
-    QString subLabels_XYZW[] = {"x:", "y:", "z:", "w:"};
     
     const std::vector<double> &maximums = dbl_knob->getMaximums();
     const std::vector<double> &minimums = dbl_knob->getMinimums();
@@ -394,11 +385,12 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row)
     for (int i = 0; i < dim; ++i) {
         QWidget *boxContainer = new QWidget(layout->parentWidget());
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
+        boxContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
         QLabel *subDesc = 0;
         if (dim != 1) {
-            subDesc = new QLabel(subLabels_XYZW[i], boxContainer);
+            subDesc = new QLabel(getKnob()->getDimensionName(i).c_str(), boxContainer);
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::DOUBLE_SPINBOX);
@@ -472,27 +464,22 @@ void Double_KnobGui::updateGUI(int dimension, const Variant &variant)
         _slider->seekScalePosition(v);
     }
     _spinBoxes[dimension].first->setValue(v);
-    
-    if(getKnob()->getHolder()->getApp()){
-        
-        boost::shared_ptr<Curve> c = getKnob()->getCurve(dimension);
-        SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-        if (c->keyFramesCount() >= 1) {
-            const KeyFrameSet &keys = c->getKeyFrames();
-            for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-                if (it->getTime() == time) {
-                    _spinBoxes[dimension].first->setAnimation(2);
-                    setIsOnKeyframe(true);
-                    return;
-                }
-            }
-            _spinBoxes[dimension].first->setAnimation(1);
-        } else {
+}
+
+void Double_KnobGui::reflectAnimationLevel(int dimension,Natron::AnimationLevel level) {
+    switch (level) {
+        case Natron::NO_ANIMATION:
             _spinBoxes[dimension].first->setAnimation(0);
-        }
-        
+            break;
+        case Natron::INTERPOLATED_VALUE:
+            _spinBoxes[dimension].first->setAnimation(1);
+            break;
+        case Natron::ON_KEYFRAME:
+            _spinBoxes[dimension].first->setAnimation(2);
+            break;
+        default:
+            break;
     }
-    setIsOnKeyframe(false);
 }
 
 void Double_KnobGui::onSliderValueChanged(double d)
@@ -584,7 +571,7 @@ Button_KnobGui::~Button_KnobGui()
 
 void Button_KnobGui::emitValueChanged()
 {
-    emit valueChanged(0, Variant());
+    getKnob()->onValueChanged(0, Variant(), NULL);
 }
 void Button_KnobGui::_hide()
 {
@@ -660,27 +647,25 @@ void Choice_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
     int i = variant.toInt();
     assert(i < (int)_entries.size());
     _comboBox->setCurrentText(_entries[i].c_str());
-    
-    if(getKnob()->getHolder()->getApp()){
-        
-        boost::shared_ptr<Curve> c = getKnob()->getCurve(0);
-        SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-        if (c->keyFramesCount() >= 1) {
-            const KeyFrameSet &keys = c->getKeyFrames();
-            for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-                if (it->getTime() == time) {
-                    _comboBox->setAnimation(2);
-                    setIsOnKeyframe(true);
-                    return;
-                }
-            }
-            _comboBox->setAnimation(1);
-        } else {
-            _comboBox->setAnimation(0);
-        }
-    }
-    setIsOnKeyframe(false);
 }
+
+void Choice_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevel level) {
+    switch (level) {
+        case Natron::NO_ANIMATION:
+            _comboBox->setAnimation(0);
+            break;
+        case Natron::INTERPOLATED_VALUE:
+            _comboBox->setAnimation(1);
+            break;
+        case Natron::ON_KEYFRAME:
+            _comboBox->setAnimation(2);
+            break;
+        default:
+            break;
+    }
+}
+
+
 void Choice_KnobGui::_hide()
 {
     _descriptionLabel->hide();
@@ -923,6 +908,71 @@ void Color_KnobGui::updateGUI(int dimension, const Variant &variant)
     }
     QColor color(r, g, b, a);
     updateLabel(color);
+}
+
+void Color_KnobGui::reflectAnimationLevel(int dimension,Natron::AnimationLevel level) {
+    switch (level) {
+        case Natron::NO_ANIMATION:
+            switch (dimension) {
+                case 0:
+                    _rBox->setAnimation(0);
+                    break;
+                case 1:
+                    _gBox->setAnimation(0);
+                    break;
+                case 2:
+                    _bBox->setAnimation(0);
+                    break;
+                case 3:
+                    _aBox->setAnimation(0);
+                    break;
+                default:
+                    assert(false && "Dimension out of range");
+                    break;
+            }
+            break;
+        case Natron::INTERPOLATED_VALUE:
+            switch (dimension) {
+                case 0:
+                    _rBox->setAnimation(1);
+                    break;
+                case 1:
+                    _gBox->setAnimation(1);
+                    break;
+                case 2:
+                    _bBox->setAnimation(1);
+                    break;
+                case 3:
+                    _aBox->setAnimation(1);
+                    break;
+                default:
+                    assert(false && "Dimension out of range");
+                    break;
+            }
+            break;
+        case Natron::ON_KEYFRAME:
+            switch (dimension) {
+                case 0:
+                    _rBox->setAnimation(2);
+                    break;
+                case 1:
+                    _gBox->setAnimation(2);
+                    break;
+                case 2:
+                    _bBox->setAnimation(2);
+                    break;
+                case 3:
+                    _aBox->setAnimation(2);
+                    break;
+                default:
+                    assert(false && "Dimension out of range");
+                    break;
+            }
+            break;
+            
+        default:
+            break;
+    }
 }
 
 void Color_KnobGui::showColorDialog()

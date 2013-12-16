@@ -23,6 +23,7 @@
 #include "Global/GlobalDefines.h"
 //ofx
 #include "ofxhImageEffect.h"
+#include "Engine/ofxhParametricParamSuite.h"
 
 
 /*This file contains the classes that connect the knobs to the OpenFX params.
@@ -43,10 +44,11 @@ class Choice_Knob;
 class Group_Knob;
 class Custom_Knob;
 class RichText_Knob;
+class Parametric_Knob;
 class OfxEffectInstance;
 class Knob;
 
-class OfxPushButtonInstance :public OFX::Host::Param::PushbuttonInstance {
+class OfxPushButtonInstance : public OFX::Host::Param::PushbuttonInstance {
     
 public:
     OfxPushButtonInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
@@ -65,7 +67,10 @@ private:
 
 
 
-class OfxIntegerInstance :public OFX::Host::Param::IntegerInstance {
+class OfxIntegerInstance :  public QObject, public OFX::Host::Param::IntegerInstance {
+    
+    Q_OBJECT
+    
 public:
     
     OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
@@ -89,11 +94,18 @@ public:
     
     boost::shared_ptr<Knob> getKnob() const;
 
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
+    
 private:
     boost::shared_ptr<Int_Knob> _knob;
 };
 
-class OfxDoubleInstance : public OFX::Host::Param::DoubleInstance {
+class OfxDoubleInstance :  public QObject,  public OFX::Host::Param::DoubleInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxDoubleInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&);
@@ -120,11 +132,19 @@ public:
     boost::shared_ptr<Knob> getKnob() const;
 
     bool isAnimated() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
+    
 private:
     boost::shared_ptr<Double_Knob> _knob;
 };
 
-class OfxBooleanInstance : public OFX::Host::Param::BooleanInstance {
+class OfxBooleanInstance :  public QObject,  public OFX::Host::Param::BooleanInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(bool&);
@@ -149,12 +169,19 @@ public:
 
     
     boost::shared_ptr<Knob> getKnob() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 
 private:
     boost::shared_ptr<Bool_Knob> _knob;
 };
 
-class OfxChoiceInstance : public OFX::Host::Param::ChoiceInstance {
+class OfxChoiceInstance : public QObject, public OFX::Host::Param::ChoiceInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxChoiceInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&);
@@ -176,13 +203,20 @@ public:
     virtual OfxStatus deleteAllKeys();
 
     boost::shared_ptr<Knob> getKnob() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 
 private:
     std::vector<std::string> _entries;
     boost::shared_ptr<Choice_Knob> _knob;
 };
 
-class OfxRGBAInstance :public OFX::Host::Param::RGBAInstance {
+class OfxRGBAInstance :  public QObject, public OFX::Host::Param::RGBAInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxRGBAInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&,double&,double&);
@@ -210,12 +244,20 @@ public:
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
+    
 private:
     boost::shared_ptr<Color_Knob> _knob;
 };
 
 
-class OfxRGBInstance : public OFX::Host::Param::RGBInstance {
+class OfxRGBInstance :  public QObject,  public OFX::Host::Param::RGBInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxRGBInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&,double&);
@@ -243,11 +285,19 @@ public:
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
+    
 private:
     boost::shared_ptr<Color_Knob> _knob;
 };
 
-class OfxDouble2DInstance :public OFX::Host::Param::Double2DInstance {
+class OfxDouble2DInstance :  public QObject, public OFX::Host::Param::Double2DInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxDouble2DInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&);
@@ -275,12 +325,18 @@ public:
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 private:
     boost::shared_ptr<Double_Knob> _knob;
 };
 
 
-class OfxInteger2DInstance : public OFX::Host::Param::Integer2DInstance {
+class OfxInteger2DInstance :  public QObject, public OFX::Host::Param::Integer2DInstance {
+    Q_OBJECT
+    
 public:
     OfxInteger2DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&,int&);
@@ -303,12 +359,18 @@ public:
 
 
     boost::shared_ptr<Knob> getKnob() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 
 private:
     boost::shared_ptr<Int_Knob> _knob;
 };
 
-class OfxDouble3DInstance :public OFX::Host::Param::Double3DInstance {
+class OfxDouble3DInstance :  public QObject, public OFX::Host::Param::Double3DInstance {
+    Q_OBJECT
+    
 public:
     OfxDouble3DInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&,double&);
@@ -336,11 +398,17 @@ public:
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 private:
     boost::shared_ptr<Double_Knob> _knob;
 };
 
-class OfxInteger3DInstance : public OFX::Host::Param::Integer3DInstance {
+class OfxInteger3DInstance :  public QObject, public OFX::Host::Param::Integer3DInstance {
+    Q_OBJECT
+    
 public:
     OfxInteger3DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&,int&,int&);
@@ -364,6 +432,9 @@ public:
 
     boost::shared_ptr<Knob> getKnob() const;
 
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 private:
     boost::shared_ptr<Int_Knob> _knob;
 };
@@ -380,7 +451,6 @@ public:
     virtual ~OfxGroupInstance(){}
 
 private:
-    OfxEffectInstance* _node;
     boost::shared_ptr<Group_Knob> _groupKnob;
     boost::shared_ptr<Tab_Knob> _tabKnob;
 };
@@ -443,6 +513,10 @@ public:
     virtual ~OfxStringInstance(){}
     
 public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
+    
+public slots:
     void onFrameRangeChanged(int,int);
 
 private:
@@ -456,7 +530,7 @@ private:
 
 
 class OfxCustomInstance : public QObject, public OFX::Host::Param::CustomInstance {
-
+Q_OBJECT
 public:
     OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
 
@@ -494,6 +568,10 @@ public:
     virtual OfxStatus deleteAllKeys();
 
 
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
+    
 private:
     typedef OfxStatus (*customParamInterpolationV1Entry_t)(
                                                            const void*            handleRaw,
@@ -504,6 +582,145 @@ private:
     boost::shared_ptr<Custom_Knob> _knob;
     customParamInterpolationV1Entry_t _customParamInterpolationV1Entry;
     QThreadStorage<std::string> _localString;
+};
+
+
+class OfxParametricInstance : public OFX::Host::ParametricParam::ParametricInstance {
+    
+    
+public:
+    
+    OfxParametricInstance(OfxEffectInstance* node, OFX::Host::ParametricParam::ParametricDescriptor& descriptor);
+    
+    // callback which should set enabled state as appropriate
+    virtual void setEnabled() OVERRIDE;
+    
+    // callback which should set secret state as appropriate
+    virtual void setSecret() OVERRIDE;
+    
+    /// callback which should update label
+    virtual void setLabel() OVERRIDE;
+    
+    /// callback which should set
+    virtual void setDisplayRange() OVERRIDE;
+    
+    
+    /** @brief Evaluates a parametric parameter
+     
+     \arg curveIndex            which dimension to evaluate
+     \arg time                  the time to evaluate to the parametric param at
+     \arg parametricPosition    the position to evaluate the parametric param at
+     \arg returnValue           pointer to a double where a value is returned
+     
+     @returns
+     - ::kOfxStatOK            - all was fine
+     - ::kOfxStatErrBadIndex   - the curve index was invalid
+     */
+    virtual OfxStatus getValue(int curveIndex,OfxTime time,double parametricPosition,double *returnValue);
+    
+    
+    /** @brief Returns the number of control points in the parametric param.
+     
+     \arg curveIndex            which dimension to check
+     \arg time                  the time to check
+     \arg returnValue           pointer to an integer where the value is returned.
+     
+     @returns
+     - ::kOfxStatOK            - all was fine
+     - ::kOfxStatErrBadIndex   - the curve index was invalid
+     */
+    virtual OfxStatus getNControlPoints(int curveIndex,double time,int *returnValue);
+    
+    
+    /** @brief Returns the key/value pair of the nth control point.
+     
+     \arg curveIndex            which dimension to check
+     \arg time                  the time to check
+     \arg nthCtl                the nth control point to get the value of
+     \arg key                   pointer to a double where the key will be returned
+     \arg value                 pointer to a double where the value will be returned
+     
+     @returns
+     - ::kOfxStatOK            - all was fine
+     - ::kOfxStatErrUnknown    - if the type is unknown
+     */
+    virtual OfxStatus getNthControlPoint(int curveIndex,
+                                         double time,
+                                         int    nthCtl,
+                                         double *key,
+                                         double *value);
+    
+    
+    /** @brief Modifies an existing control point on a curve
+     
+     \arg curveIndex            which dimension to set
+     \arg time                  the time to set the value at
+     \arg nthCtl                the control point to modify
+     \arg key                   key of the control point
+     \arg value                 value of the control point
+     \arg addAnimationKey       if the param is an animatable, setting this to true will
+     force an animation keyframe to be set as well as a curve key,
+     otherwise if false, a key will only be added if the curve is already
+     animating.
+     
+     @returns
+     - ::kOfxStatOK            - all was fine
+     - ::kOfxStatErrUnknown    - if the type is unknown
+     
+     This modifies an existing control point. Note that by changing key, the order of the
+     control point may be modified (as you may move it before or after anther point). So be
+     careful when iterating over a curves control points and you change a key.
+     */
+    virtual OfxStatus setNthControlPoint(int   curveIndex,
+                                         double time,
+                                         int   nthCtl,
+                                         double key,
+                                         double value,
+                                         bool addAnimationKey
+                                         );
+    
+    /** @brief Adds a control point to the curve.
+     
+     \arg curveIndex            which dimension to set
+     \arg time                  the time to set the value at
+     \arg key                   key of the control point
+     \arg value                 value of the control point
+     \arg addAnimationKey       if the param is an animatable, setting this to true will
+     force an animation keyframe to be set as well as a curve key,
+     otherwise if false, a key will only be added if the curve is already
+     animating.
+     
+     @returns
+     - ::kOfxStatOK            - all was fine
+     - ::kOfxStatErrUnknown    - if the type is unknown
+     
+     This will add a new control point to the given dimension of a parametric parameter. If a key exists
+     sufficiently close to 'key', then it will be set to the indicated control point.
+     */
+    virtual OfxStatus addControlPoint(int   curveIndex,
+                                      double time,
+                                      double key,
+                                      double value,
+                                      bool addAnimationKey);
+    
+    /** @brief Deletes the nth control point from a parametric param.
+     
+     \arg curveIndex            which dimension to delete
+     \arg nthCtl                the control point to delete
+     */
+    virtual OfxStatus  deleteControlPoint(int   curveIndex,int   nthCtl);
+    
+    /** @brief Delete all curve control points on the given param.
+     
+     \arg curveIndex            which dimension to clear
+     */
+    virtual OfxStatus  deleteAllControlPoints(int   curveIndex);
+    
+    boost::shared_ptr<Knob> getKnob() const;
+    
+   
+private:
+    boost::shared_ptr<Parametric_Knob> _knob;
 };
 
 #endif // NATRON_ENGINE_OFXPARAMINSTANCE_H_
