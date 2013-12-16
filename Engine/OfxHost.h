@@ -31,7 +31,9 @@ class OfxHost : public QObject,public OFX::Host::ImageEffect::Host {
     Q_OBJECT
     
 public:
+    
     OfxHost();
+    
     virtual ~OfxHost();
 
     /// Create a new instance of an image effect plug-in.
@@ -74,6 +76,9 @@ public:
     virtual OfxStatus clearPersistentMessage() OVERRIDE;
 
     virtual void loadingStatus(const std::string &) OVERRIDE;
+    
+    ///fetch the parametric parameters suite or returns the base class version
+    virtual void* fetchSuite(const char *suiteName, int suiteVersion) OVERRIDE;
     
     OfxEffectInstance* createOfxEffect(const std::string& name,Node* node);
 

@@ -20,10 +20,15 @@
 #include <QStandardPaths>
 #endif
 
+//ofx
+#include <ofxParametricParam.h>
+
+//ofx host support
 #include <ofxhPluginAPICache.h>
 #include <ofxhImageEffect.h>
 #include <ofxhImageEffectAPI.h>
 #include <ofxhHost.h>
+
 
 #include "Global/AppManager.h"
 #include "Global/LibraryBinary.h"
@@ -31,6 +36,9 @@
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/KnobTypes.h"
+
+//our version of parametric param suite support
+#include "Engine/ofxhParametricParamSuite.h"
 
 using namespace Natron;
 
@@ -381,4 +389,12 @@ void Natron::OfxHost::writeOFXCache(){
 
 void Natron::OfxHost::loadingStatus(const std::string & /*pluginId*/){
     //not implemented yet
+}
+
+void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
+    if (strcmp(suiteName, kOfxParametricParameterSuite)==0  && suiteVersion == 1) {
+        return OFX::Host::ParametricParam::GetSuite(suiteVersion);
+    }else{
+        return OFX::Host::ImageEffect::Host::fetchSuite(suiteName, suiteVersion);
+    }
 }

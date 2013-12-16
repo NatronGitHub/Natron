@@ -19,6 +19,13 @@
 // parametric params
 #include "ofxParametricParam.h"
 
+namespace OFX{
+
+namespace Host{
+
+namespace ParametricParam{
+
+
 /** @brief Evaluates a parametric parameter
 
       \arg param                 handle to the parametric parameter
@@ -181,6 +188,8 @@ static OfxParametricParameterSuiteV1 gSuite = {
     parametricParamDeleteAllControlPoints
 };
 
+
+
 /// return the OFX function suite that manages parametric params
 void *GetSuite(int version)
 {
@@ -188,3 +197,9 @@ void *GetSuite(int version)
         return (void *)(&gSuite);
     return NULL;
 }
+
+} //namespace ParametricParam
+
+} //namespace Host
+
+} //namespace OFX
