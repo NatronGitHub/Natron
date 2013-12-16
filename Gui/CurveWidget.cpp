@@ -1562,7 +1562,11 @@ void CurveWidget::resizeGL(int width,int height){
     ///find out what are the selected curves and center on them
     std::vector<CurveGui*> curves;
     getVisibleCurves(&curves);
-    centerOn(curves);
+    if(curves.empty()){
+        centerOn(-10,500,-10,10);
+    }else{
+        centerOn(curves);
+    }
 }
 
 void CurveWidget::paintGL()
