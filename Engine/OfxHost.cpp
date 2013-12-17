@@ -28,7 +28,7 @@
 #include <ofxhImageEffect.h>
 #include <ofxhImageEffectAPI.h>
 #include <ofxhHost.h>
-
+#include <ofxhParam.h>
 
 #include "Global/AppManager.h"
 #include "Global/LibraryBinary.h"
@@ -78,7 +78,9 @@ Natron::OfxHost::OfxHost()
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 0 );
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
     _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 0);
+    _properties.setIntProperty(kOfxParamHostPropSupportsParametricAnimation, 0);
     
+    registerExtraParamTypeSupported(kOfxParamTypeParametric,OFX::Host::Property::eDouble,0);
 }
 
 Natron::OfxHost::~OfxHost()
@@ -409,3 +411,5 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
         return OFX::Host::ImageEffect::Host::fetchSuite(suiteName, suiteVersion);
     }
 }
+
+

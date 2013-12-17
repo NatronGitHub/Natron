@@ -127,13 +127,6 @@ void File_KnobGui::_show()
     _lineEdit->show();
 }
 
-void File_KnobGui::addToLayout(QHBoxLayout *layout)
-{
-    layout->addWidget(_descriptionLabel);
-    layout->addWidget(_lineEdit);
-    layout->addWidget(_openFileButton);
-}
-
 
 //============================OUTPUT_FILE_KNOB_GUI====================================
 OutputFile_KnobGui::OutputFile_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
@@ -224,11 +217,4 @@ void OutputFile_KnobGui::_show()
     _openFileButton->show();
     _descriptionLabel->show();
     _lineEdit->show();
-}
-
-void OutputFile_KnobGui::addToLayout(QHBoxLayout *layout)
-{
-    layout->addWidget(_descriptionLabel);
-    layout->addWidget(_lineEdit);
-    layout->addWidget(_openFileButton);
 }

@@ -17,6 +17,7 @@
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
 
+#include <ofxParametricParam.h>
 
 #include "Global/AppManager.h"
 
@@ -30,6 +31,7 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/Curve.h"
+#include "Engine/OfxOverlayInteract.h"
 
 using namespace Natron;
 
@@ -114,7 +116,7 @@ namespace OfxKeyFrame{
                 }
                 ++c;
             }
-
+            
         }
         return kOfxStatErrValue;
     }
@@ -164,7 +166,7 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param:
 {
     const OFX::Host::Property::Set &properties = getProperties();
     _knob = Natron::createKnob<Int_Knob>(node, getParamLabel(this));
-
+    
     int min = properties.getIntProperty(kOfxParamPropMin);
     int max = properties.getIntProperty(kOfxParamPropMax);
     int def = properties.getIntProperty(kOfxParamPropDefault);
@@ -172,7 +174,7 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param:
     int displayMax = properties.getIntProperty(kOfxParamPropDisplayMax);
     _knob->setDisplayMinimum(displayMin);
     _knob->setDisplayMaximum(displayMax);
-
+    
     _knob->setMinimum(min);
     _knob->setIncrement(1); // kOfxParamPropIncrement only exists for Double
     _knob->setMaximum(max);
@@ -241,9 +243,9 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
 : OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();
-
+    
     _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this));
-
+    
     double min = properties.getDoubleProperty(kOfxParamPropMin);
     double max = properties.getDoubleProperty(kOfxParamPropMax);
     double incr = properties.getDoubleProperty(kOfxParamPropIncrement);
@@ -261,7 +263,7 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
     if(decimals > 0) {
         _knob->setDecimals(decimals);
     }
-
+    
     set(def);
     
 }
@@ -348,7 +350,7 @@ OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param
 : OFX::Host::Param::BooleanInstance(descriptor,node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();
-
+    
     _knob = Natron::createKnob<Bool_Knob>(node, getParamLabel(this));
     int def = properties.getIntProperty(kOfxParamPropDefault);
     set((bool)def);
@@ -421,20 +423,20 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::
 : OFX::Host::Param::ChoiceInstance(descriptor,node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();
-
-
+    
+    
     _knob = Natron::createKnob<Choice_Knob>(node, getParamLabel(this));
-
+    
     std::vector<std::string> helpStrings;
     for (int i = 0 ; i < properties.getDimension(kOfxParamPropChoiceOption) ; ++i) {
         std::string str = properties.getStringProperty(kOfxParamPropChoiceOption,i);
         std::string help = properties.getStringProperty(kOfxParamPropChoiceLabelOption,i);
-
+        
         _entries.push_back(str);
         helpStrings.push_back(help);
     }
     _knob->populate(_entries,helpStrings);
-
+    
     int def = properties.getIntProperty(kOfxParamPropDefault);
     set(def);
 }
@@ -514,7 +516,7 @@ void OfxChoiceInstance::onKnobAnimationLevelChanged(int lvl){
 OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::RGBAInstance(descriptor,node->effectInstance())
 {
-    const OFX::Host::Property::Set &properties = getProperties();  
+    const OFX::Host::Property::Set &properties = getProperties();
     _knob = Natron::createKnob<Color_Knob>(node, getParamLabel(this),4);
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
     double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
@@ -523,7 +525,7 @@ OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descr
     set(defR, defG, defB, defA);
 }
 OfxStatus OfxRGBAInstance::get(double& r, double& g, double& b, double& a) {
-  
+    
     r = _knob->getValue<double>(0);
     g = _knob->getValue<double>(1);
     b = _knob->getValue<double>(2);
@@ -623,11 +625,11 @@ OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descr
 : OFX::Host::Param::RGBInstance(descriptor,node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();
-
+    
     _knob = Natron::createKnob<Color_Knob>(node, getParamLabel(this),3);
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
     double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
-    double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);   
+    double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);
     set(defR, defG, defB);
 }
 OfxStatus OfxRGBInstance::get(double& r, double& g, double& b) {
@@ -726,10 +728,10 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
 {
     const int dims = 2;
     const OFX::Host::Property::Set &properties = getProperties();
-
-
+    
+    
     _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this),dims);
-
+    
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);
     std::vector<double> increment(dims);
@@ -737,7 +739,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
     std::vector<double> displayMaxs(dims);
     std::vector<int> decimals(dims);
     boost::scoped_array<double> def(new double[dims]);
-
+    
     // kOfxParamPropIncrement and kOfxParamPropDigits only have one dimension,
     // @see Descriptor::addNumericParamProps() in ofxhParam.cpp
     // @see gDoubleParamProps in ofxsPropertyValidation.cpp
@@ -752,7 +754,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
         decimals[i] = dig;
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
     }
-
+    
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setIncrement(increment);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
@@ -855,17 +857,17 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::P
 {
     const int dims = 2;
     const OFX::Host::Property::Set &properties = getProperties();
-
-
+    
+    
     _knob = Natron::createKnob<Int_Knob>(node, getParamLabel(this), dims);
-
+    
     std::vector<int> minimum(dims);
     std::vector<int> maximum(dims);
     std::vector<int> increment(dims);
     std::vector<int> displayMins(dims);
     std::vector<int> displayMaxs(dims);
     boost::scoped_array<int> def(new int[dims]);
-
+    
     for (int i = 0; i < dims; ++i) {
         minimum[i] = properties.getIntProperty(kOfxParamPropMin,i);
         displayMins[i] = properties.getIntProperty(kOfxParamPropDisplayMin,i);
@@ -951,10 +953,10 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Par
 {
     const int dims = 3;
     const OFX::Host::Property::Set &properties = getProperties();
-
-
+    
+    
     _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this),dims);
-
+    
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);
     std::vector<double> increment(dims);
@@ -962,7 +964,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Par
     std::vector<double> displayMaxs(dims);
     std::vector<int> decimals(dims);
     boost::scoped_array<double> def(new double[dims]);
-
+    
     // kOfxParamPropIncrement and kOfxParamPropDigits only have one dimension,
     // @see Descriptor::addNumericParamProps() in ofxhParam.cpp
     // @see gDoubleParamProps in ofxsPropertyValidation.cpp
@@ -977,7 +979,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Par
         decimals[i] = dig;
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
     }
-
+    
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setIncrement(increment);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
@@ -1085,17 +1087,17 @@ OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::P
 {
     const int dims = 3;
     const OFX::Host::Property::Set &properties = getProperties();
-
-
+    
+    
     _knob = Natron::createKnob<Int_Knob>(node, getParamLabel(this), dims);
-
+    
     std::vector<int> minimum(dims);
     std::vector<int> maximum(dims);
     std::vector<int> increment(dims);
     std::vector<int> displayMins(dims);
     std::vector<int> displayMaxs(dims);
     boost::scoped_array<int> def(new int[dims]);
-
+    
     for (int i = 0; i < dims; ++i) {
         minimum[i] = properties.getIntProperty(kOfxParamPropMin,i);
         displayMins[i] = properties.getIntProperty(kOfxParamPropDisplayMin,i);
@@ -1105,7 +1107,7 @@ OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::P
         increment[i] = incr != 0 ?  incr : 1;
         def[i] = properties.getIntProperty(kOfxParamPropDefault,i);
     }
-
+    
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setIncrement(increment);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
@@ -1187,11 +1189,11 @@ OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Des
 , _tabKnob()
 {
     const OFX::Host::Property::Set &properties = getProperties();
-
+    
     int isTab = properties.getIntProperty(kFnOfxParamPropGroupIsTab);
     if(isTab){
         _tabKnob = Natron::createKnob<Tab_Knob>(node, getParamLabel(this));
-
+        
     }else{
         _groupKnob = Natron::createKnob<Group_Knob>(node, getParamLabel(this));
         int opened = properties.getIntProperty(kOfxParamPropGroupOpen);
@@ -1230,16 +1232,16 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
 {
     const OFX::Host::Property::Set &properties = getProperties();
     std::string mode = properties.getStringProperty(kOfxParamPropStringMode);
-
+    
     if (mode == kOfxParamStringIsFilePath) {
         if (_node->isGenerator()) {
             _fileKnob = Natron::createKnob<File_Knob>(node, getParamLabel(this));
             QObject::connect(_fileKnob.get(), SIGNAL(frameRangeChanged(int,int)), this, SLOT(onFrameRangeChanged(int,int)));
-
+            
         } else {
-            _node->setAsOutputNode(); // IMPORTANT ! 
+            _node->setAsOutputNode(); // IMPORTANT !
             _outputFileKnob = Natron::createKnob<OutputFile_Knob>(node, getParamLabel(this));
-
+            
         }
     } else if (mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel) {
         
@@ -1254,9 +1256,9 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
     set(properties.getStringProperty(kOfxParamPropDefault).c_str());
 }
 
- void OfxStringInstance::onFrameRangeChanged(int f,int l){
-     _node->notifyFrameRangeChanged(f,l);
- }
+void OfxStringInstance::onFrameRangeChanged(int f,int l){
+    _node->notifyFrameRangeChanged(f,l);
+}
 
 OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
@@ -1311,7 +1313,7 @@ OfxStatus OfxStringInstance::set(OfxTime /*time*/, const char* str) {
         _fileKnob->setValue(str);
     }
     if(_outputFileKnob){
-         _outputFileKnob->setValue(str);
+        _outputFileKnob->setValue(str);
     }
     if(_stringKnob){
         _stringKnob->setValue(str);
@@ -1327,7 +1329,7 @@ OfxStatus OfxStringInstance::getV(va_list arg){
     OfxStatus stat = get(_localString.localData());
     *value = _localString.localData().c_str();
     return stat;
-
+    
 }
 OfxStatus OfxStringInstance::getV(OfxTime time, va_list arg){
     const char **value = va_arg(arg, const char **);
@@ -1487,16 +1489,16 @@ void OfxStringInstance::onKnobAnimationLevelChanged(int lvl){
 
 /*
  http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamTypeCustom
-
+ 
  Custom parameters contain null terminated char * C strings, and may animate. They are designed to provide plugins with a way of storing data that is too complicated or impossible to store in a set of ordinary parameters.
-
+ 
  If a custom parameter animates, it must set its kOfxParamPropCustomInterpCallbackV1 property, which points to a OfxCustomParamInterpFuncV1 function. This function is used to interpolate keyframes in custom params.
-
+ 
  Custom parameters have no interface by default. However,
-
+ 
  * if they animate, the host's animation sheet/editor should present a keyframe/curve representation to allow positioning of keys and control of interpolation. The 'normal' (ie: paged or hierarchical) interface should not show any gui.
  * if the custom param sets its kOfxParamPropInteractV1 property, this should be used by the host in any normal (ie: paged or hierarchical) interface for the parameter.
-
+ 
  Custom parameters are mandatory, as they are simply ASCII C strings. However, animation of custom parameters an support for an in editor interact is optional.
  */
 
@@ -1509,12 +1511,12 @@ OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::D
 , _customParamInterpolationV1Entry(0)
 {
     const OFX::Host::Property::Set &properties = getProperties();
-
-
+    
+    
     _knob = Natron::createKnob<Custom_Knob>(node, getParamLabel(this));
     
     set(properties.getStringProperty(kOfxParamPropDefault).c_str());
-
+    
     _customParamInterpolationV1Entry = (customParamInterpolationV1Entry_t)properties.getPointerProperty(kOfxParamPropCustomInterpCallbackV1);
 }
 
@@ -1545,15 +1547,15 @@ OfxStatus OfxCustomInstance::set(OfxTime /*time*/, const char* str) {
 
 OfxStatus OfxCustomInstance::getV(va_list arg) {
     const char **value = va_arg(arg, const char **);
-
+    
     OfxStatus stat = get(_localString.localData());
     *value = _localString.localData().c_str();
     return stat;
-
+    
 }
 OfxStatus OfxCustomInstance::getV(OfxTime time, va_list arg) {
     const char **value = va_arg(arg, const char **);
-
+    
     OfxStatus stat = get(time,_localString.localData());
     *value = _localString.localData().c_str();
     return stat;
@@ -1602,11 +1604,56 @@ void OfxCustomInstance::onKnobAnimationLevelChanged(int lvl){
 
 OfxParametricInstance::OfxParametricInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::ParametricParam::ParametricInstance(descriptor,node->effectInstance())
+, _overlayInteract(NULL)
+, _effect(node)
 {
-    const OFX::Host::Property::Set &properties = getProperties();
-    _knob = Natron::createKnob<Parametric_Knob>(node, getParamLabel(this));
     
+    
+    
+    const OFX::Host::Property::Set &properties = getProperties();
+    int parametricDimension = properties.getIntProperty(kOfxParamPropParametricDimension);
+    
+    std::string paramLabel;
+    for (int i = 0; i < _knob->getDimension(); ++i) {
+        const std::string& curveName = getProperties().getStringProperty(kOfxPropLabel,i);
+        paramLabel.append(curveName);
+    }
+    paramLabel.append("_curves");
+
+    
+    _knob = Natron::createKnob<Parametric_Knob>(node, paramLabel,parametricDimension);
+
+    setLabel();//set label on all curves
+    
+    double color[3*parametricDimension];
+    properties.getDoublePropertyN(kOfxParamPropParametricUIColour, color, 3*parametricDimension);
+    
+    for (int i = 0; i < parametricDimension; ++i) {
+        _knob->setCurveColor(i, color[i*3], color[i*3+1], color[i*3+2]);
+    }
+    
+    QObject::connect(_knob.get(),SIGNAL(mustInitializeOverlayInteract(CurveWidget*)),this,SLOT(initializeInteract(CurveWidget*)));
+    
+    setDisplayRange();
 }
+
+void OfxParametricInstance::initializeInteract(CurveWidget* widget){
+    
+    OfxPluginEntryPoint* interactEntryPoint = (OfxPluginEntryPoint*)getProperties().getPointerProperty(kOfxParamPropParametricInteractBackground);
+    if(interactEntryPoint){
+        _overlayInteract = new Natron::OfxOverlayInteract((*_effect->effectInstance()),8,true,widget);
+        _overlayInteract->createInstanceAction();
+        QObject::connect(_knob.get(), SIGNAL(customBackgroundRequested()), this, SLOT(onCustomBackgroundDrawingRequested()));
+    }
+
+}
+
+OfxParametricInstance::~OfxParametricInstance(){
+    if(_overlayInteract){
+        delete _overlayInteract;
+    }
+}
+
 
 boost::shared_ptr<Knob> OfxParametricInstance::getKnob() const{
     return _knob;
@@ -1614,7 +1661,7 @@ boost::shared_ptr<Knob> OfxParametricInstance::getKnob() const{
 
 // callback which should set enabled state as appropriate
 void OfxParametricInstance::setEnabled() {
-     _knob->setEnabled(getEnabled());
+    _knob->setEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
@@ -1624,52 +1671,95 @@ void OfxParametricInstance::setSecret() {
 
 /// callback which should update label
 void OfxParametricInstance::setLabel() {
-    _knob->setName(getLabel());
+    std::string paramLabel;
+    for (int i = 0; i < _knob->getDimension(); ++i) {
+        const std::string& curveName = getProperties().getStringProperty(kOfxPropLabel,i);
+        _knob->setCurveLabel(i, curveName);
+        paramLabel.append(curveName);
+    }
+    paramLabel.append("_curves");
 }
 
 void OfxParametricInstance::setDisplayRange() {
+    double range_min = getProperties().getDoubleProperty(kOfxParamPropParametricRange,0);
+    double range_max = getProperties().getDoubleProperty(kOfxParamPropParametricRange,1);
     
+    assert(range_max > range_min);
+    
+    _knob->setParametricRange(range_min, range_max);
 }
 
-OfxStatus OfxParametricInstance::getValue(int curveIndex,OfxTime time,double parametricPosition,double *returnValue){
-    
+OfxStatus OfxParametricInstance::getValue(int curveIndex,OfxTime /*time*/,double parametricPosition,double *returnValue){
+    *returnValue = _knob->getValueAtTime<double>(parametricPosition, curveIndex);
+    return kOfxStatOK;
 }
 
-OfxStatus OfxParametricInstance::getNControlPoints(int curveIndex,double time,int *returnValue){
-    
+OfxStatus OfxParametricInstance::getNControlPoints(int curveIndex,double /*time*/,int *returnValue){
+    *returnValue = _knob->getCurve(curveIndex)->keyFramesCount();
+    return kOfxStatOK;
 }
 
 OfxStatus OfxParametricInstance::getNthControlPoint(int curveIndex,
-                             double time,
-                             int    nthCtl,
-                             double *key,
-                             double *value){
-    
+                                                    double /*time*/,
+                                                    int    nthCtl,
+                                                    double *key,
+                                                    double *value){
+    const KeyFrameSet& set = _knob->getCurve(curveIndex)->getKeyFrames();
+    int index = 0;
+    for(KeyFrameSet::const_iterator it = set.begin();it!=set.end();++it){
+        if (index == nthCtl) {
+            *key = it->getTime();
+            *value = it->getValue();
+            return kOfxStatOK;
+        }
+    }
+    return kOfxStatErrValue;
 }
 
 OfxStatus OfxParametricInstance::setNthControlPoint(int   curveIndex,
-                             double time,
-                             int   nthCtl,
-                             double key,
-                             double value,
-                             bool addAnimationKey
-                             ){
-    
+                                                    double /*time*/,
+                                                    int   /*nthCtl*/,
+                                                    double key,
+                                                    double value,
+                                                    bool /*addAnimationKey*/)
+{
+    //mby we could also check that nthCtl is not out of range
+    _knob->setValueAtTime<double>(key, value,curveIndex);
+    return kOfxStatOK;
 }
 
 
 OfxStatus OfxParametricInstance::addControlPoint(int   curveIndex,
-                          double time,
-                          double key,
-                          double value,
-                          bool addAnimationKey){
+                                                 double /*time*/,
+                                                 double key,
+                                                 double value,
+                                                 bool /*addAnimationKey*/){
     
+    _knob->setValueAtTime<double>(key, value,curveIndex);
+    return kOfxStatOK;
 }
 
 OfxStatus  OfxParametricInstance::deleteControlPoint(int   curveIndex,int   nthCtl){
-    
+    const KeyFrameSet& set = _knob->getCurve(curveIndex)->getKeyFrames();
+    int index = 0;
+    for(KeyFrameSet::const_iterator it = set.begin();it!=set.end();++it){
+        if (index == nthCtl) {
+            _knob->deleteValueAtTime(it->getTime(), curveIndex);
+            return kOfxStatOK;
+        }
+    }
+    return kOfxStatErrValue;
 }
 
 OfxStatus  OfxParametricInstance::deleteAllControlPoints(int   curveIndex){
-    
+    _knob->removeAnimation(curveIndex);
+    return kOfxStatOK;
+}
+
+void OfxParametricInstance::onCustomBackgroundDrawingRequested(){
+    if(_overlayInteract){
+        RenderScale s;
+        _overlayInteract->getPixelScale(s.x, s.y);
+        _overlayInteract->drawAction(_effect->effectInstance()->getFrameRecursive(), s);
+    }
 }

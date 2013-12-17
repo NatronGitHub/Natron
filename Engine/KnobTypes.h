@@ -19,8 +19,9 @@
 
 #include "Engine/Knob.h"
 
-#include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
 
+class CurveWidget;
 /******************************INT_KNOB**************************************/
 
 class Int_Knob: public Knob
@@ -472,6 +473,13 @@ private:
 /******************************Parametric_Knob**************************************/
 
 class Parametric_Knob : public Knob{
+    
+    Q_OBJECT
+    
+    std::vector<RGBAColourF> _curvesColor;
+    std::vector<std::string> _curveLabels;
+    double _range[2];
+    
 public:
     
     static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
@@ -480,14 +488,45 @@ public:
     
     Parametric_Knob(KnobHolder *holder, const std::string &description, int dimension);
     
+    void setCurveColor(int dimension,double r,double g,double b);
+    
+    void getCurveColor(int dimension,double* r,double* g,double* b);
+    
+    void setCurveLabel(int dimension,const std::string& str);
+    
+    const std::string& getCurveLabel(int dimension) const;
+    
+    void setParametricRange(double min,double max);
+    
+    void getParametricRange(double* min,double* max);
+    
     static const std::string& typeNameStatic();
     
+public slots:
+
+    virtual void drawCustomBackground(){
+        emit customBackgroundRequested();
+    }
+    
+    virtual void initializeOverlayInteract(CurveWidget* widget){
+        emit mustInitializeOverlayInteract(widget);
+    }
+    
+signals:
+    
+    //emitted by drawCustomBackground()
+    //if you can't overload drawCustomBackground()
+    void customBackgroundRequested();
+    
+    void mustInitializeOverlayInteract(CurveWidget*);
+    
 private:
+    
     virtual bool canAnimate() const OVERRIDE FINAL;
     
     virtual const std::string& typeName() const OVERRIDE FINAL;
     
-private:
+    
     static const std::string _typeNameStr;
 };
 

@@ -1553,6 +1553,16 @@ void CurveWidget::centerOn(double xmin,double xmax,double ymin,double ymax){
     update();
 }
 
+double CurveWidget::getPixelAspectRatio() const{
+    return _imp->_zoomCtx.aspectRatio;
+}
+
+void CurveWidget::getBackgroundColor(double *r,double *g,double* b) const{
+    *r = _imp->_clearColor.redF();
+    *g = _imp->_clearColor.greenF();
+    *b = _imp->_clearColor.blueF();
+}
+
 void CurveWidget::resizeGL(int width,int height){
     if(height == 0)
         height = 1;

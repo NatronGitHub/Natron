@@ -23,6 +23,7 @@
 #include "Global/GlobalDefines.h"
 //ofx
 #include "ofxhImageEffect.h"
+#include "ofxCore.h"
 #include "Engine/ofxhParametricParamSuite.h"
 
 
@@ -46,7 +47,12 @@ class Custom_Knob;
 class RichText_Knob;
 class Parametric_Knob;
 class OfxEffectInstance;
+class CurveWidget;
 class Knob;
+
+namespace Natron{
+    class OfxOverlayInteract;
+}
 
 class OfxPushButtonInstance : public OFX::Host::Param::PushbuttonInstance {
     
@@ -585,12 +591,18 @@ private:
 };
 
 
-class OfxParametricInstance : public OFX::Host::ParametricParam::ParametricInstance {
+class OfxParametricInstance : public QObject, public OFX::Host::ParametricParam::ParametricInstance {
     
+    Q_OBJECT
     
+    Natron::OfxOverlayInteract* _overlayInteract;
+    OfxEffectInstance* _effect;
+
 public:
     
     explicit OfxParametricInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
+    
+    virtual ~OfxParametricInstance();
     
     // callback which should set enabled state as appropriate
     virtual void setEnabled() OVERRIDE;
@@ -718,6 +730,12 @@ public:
     
     boost::shared_ptr<Knob> getKnob() const;
     
+public slots:
+    
+    void onCustomBackgroundDrawingRequested();
+    
+    void initializeInteract(CurveWidget* widget);
+
    
 private:
     boost::shared_ptr<Parametric_Knob> _knob;

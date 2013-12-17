@@ -61,8 +61,6 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL {}
 
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
-
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
     void updateLastOpened(const QString &str);
@@ -102,8 +100,6 @@ private:
     virtual void _show() OVERRIDE FINAL;
 
     virtual void setEnabled() OVERRIDE FINAL {}
-
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 

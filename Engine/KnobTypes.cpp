@@ -807,8 +807,16 @@ std::string RichText_Knob::getString() const
 
 Parametric_Knob::Parametric_Knob(KnobHolder *holder, const std::string &description, int dimension)
 : Knob(holder,description,dimension)
+, _curvesColor(dimension)
+, _curveLabels(dimension)
 {
-    
+    for (int i = 0; i < dimension; ++i) {
+        RGBAColourF color;
+        color.r = color.g = color.b = color.a = 1.;
+        _curvesColor[i] = color;
+    }
+    _range[0] = 0.;
+    _range[1] = 1.;
 }
 
 const std::string Parametric_Knob::_typeNameStr("Parametric");
@@ -823,4 +831,38 @@ bool Parametric_Knob::canAnimate() const {
 
 const std::string& Parametric_Knob::typeName() const {
     return typeNameStatic();
+}
+
+void Parametric_Knob::setCurveColor(int dimension,double r,double g,double b){
+    assert(dimension < (int)_curvesColor.size());
+    _curvesColor[dimension].r = r;
+    _curvesColor[dimension].g = g;
+    _curvesColor[dimension].b = b;
+}
+
+void Parametric_Knob::getCurveColor(int dimension,double* r,double* g,double* b){
+    assert(dimension < (int)_curvesColor.size());
+    *r = _curvesColor[dimension].r ;
+    *g = _curvesColor[dimension].g ;
+    *b = _curvesColor[dimension].b ;
+}
+
+void Parametric_Knob::setCurveLabel(int dimension,const std::string& str){
+    assert(dimension < (int)_curveLabels.size());
+    _curveLabels[dimension] = str;
+}
+
+const std::string& Parametric_Knob::getCurveLabel(int dimension) const{
+    assert(dimension < (int)_curveLabels.size());
+    return _curveLabels[dimension];
+}
+
+void Parametric_Knob::setParametricRange(double min,double max){
+    _range[0] = min;
+    _range[1] = max;
+}
+
+void Parametric_Knob::getParametricRange(double* min,double* max){
+    *min = _range[0];
+    *max = _range[1];
 }

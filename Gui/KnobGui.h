@@ -62,14 +62,7 @@ public:
     int getSpacingBetweenItems() const { return _spacingBetweenItems; }
     
     void createGUI(QGridLayout* layout,int row);
-    
-    void moveToLayout(QVBoxLayout* layout);
-    
-    /*Used by Tab_KnobGui to insert already existing widgets
-     in a tab.*/
-    virtual void addToLayout(QHBoxLayout* layout)=0;
-    
-    
+        
     void pushUndoCommand(QUndoCommand* cmd);
     
     bool hasWidgetBeenCreated() const {return _widgetCreated;}

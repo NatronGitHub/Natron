@@ -26,6 +26,7 @@
 #include "Engine/Node.h"
 
 #include "Gui/KnobGui.h"
+#include "Gui/CurveWidget.h"
 
 
 void registerMetaTypes(){
@@ -36,6 +37,7 @@ void registerMetaTypes(){
     qRegisterMetaType<SequenceTime>("SequenceTime");
     qRegisterMetaType<Knob*>();
     qRegisterMetaType<Natron::Node*>();
+    qRegisterMetaType<CurveWidget*>();
 }
 
 void printBackGroundWelcomeMessage(){

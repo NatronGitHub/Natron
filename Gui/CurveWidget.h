@@ -16,6 +16,7 @@
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
+#include <QMetaType>
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -167,6 +168,10 @@ public:
     
     void setSelectedKeys(const SelectedKeys& keys);
     
+    double getPixelAspectRatio() const;
+    
+    void getBackgroundColor(double *r,double *g,double* b) const;
+    
 public slots:
     
     void refreshDisplayedTangents();
@@ -248,6 +253,8 @@ private:
     boost::scoped_ptr<CurveWidgetPrivate> _imp;
         
 };
+
+Q_DECLARE_METATYPE(CurveWidget*)
 
 
 #endif // CURVE_WIDGET_H

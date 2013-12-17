@@ -146,7 +146,7 @@ void OfxEffectInstance::tryInitializeOverlayInteracts(){
     if(isLiveInstance()){
         OfxPluginEntryPoint *overlayEntryPoint = effect_->getOverlayInteractMainEntry();
         if(overlayEntryPoint){
-            _overlayInteract.reset(new OfxOverlayInteract(*effect_,8,true));
+            _overlayInteract.reset(new OfxOverlayInteract(*effect_,8,true,NULL));
             _overlayInteract->createInstanceAction();
         }
     }
