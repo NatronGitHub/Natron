@@ -38,7 +38,7 @@
 #include "Engine/KnobTypes.h"
 
 //our version of parametric param suite support
-#include "Engine/ofxhParametricParam.h"
+#include "ofxhParametricParam.h"
 
 using namespace Natron;
 
