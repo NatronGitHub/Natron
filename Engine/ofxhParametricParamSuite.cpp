@@ -41,12 +41,13 @@ void addParametricProperties(Param::Base& propertySetHolder){
         { kOfxParamPropParametricDimension,         Property::eInt,     1,  !isDescriptor, "1" },
         { kOfxParamPropParametricUIColour,          Property::eDouble,  0,  !isDescriptor, ""  },
         { kOfxParamPropParametricInteractBackground,Property::ePointer, 1,  !isDescriptor, 0   },
-        { kOfxParamPropParametricRange,             Property::eDouble,  2,  !isDescriptor, "0"/*do not knob how to set default values
-                                                                                                 across all dimensions*/ },
+        { kOfxParamPropParametricRange,             Property::eDouble,  2,  !isDescriptor, "0"},
         Property::propSpecEnd
     };
 
     propertySetHolder.getProperties().addProperties(parametricProps);
+    propertySetHolder.getProperties().setDoubleProperty(kOfxParamPropParametricRange, 0., 0);
+    propertySetHolder.getProperties().setDoubleProperty(kOfxParamPropParametricRange, 1., 1);
 }
 
 
