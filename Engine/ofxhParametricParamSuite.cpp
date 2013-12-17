@@ -26,6 +26,7 @@ namespace Host {
 
 namespace ParametricParam{
 
+    //to be moved to host support.
 void addParametricProperties(Param::Base& propertySetHolder){
 
     bool isDescriptor = dynamic_cast<Param::Descriptor*>(&propertySetHolder) != NULL;
