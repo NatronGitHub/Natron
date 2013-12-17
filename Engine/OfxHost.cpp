@@ -83,7 +83,6 @@ Natron::OfxHost::OfxHost()
 
 Natron::OfxHost::~OfxHost()
 {
-    writeOFXCache();
 }
 
 OFX::Host::ImageEffect::Instance* Natron::OfxHost::newInstance(void* ,
@@ -290,7 +289,11 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
         ifs.close();
     }
     OFX::Host::PluginCache::getPluginCache()->scanPluginFiles();
-    
+
+    // write the cache NOW (it won't change anyway)
+    /// flush out the current cache
+    writeOFXCache();
+
     /*Filling node name list and plugin grouping*/
     const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& ofxPlugins = _imageEffectPluginCache.getPlugins();
     for (unsigned int i = 0 ; i < ofxPlugins.size(); ++i) {
