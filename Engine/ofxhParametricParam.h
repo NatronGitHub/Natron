@@ -14,6 +14,8 @@
 
 #include "ofxParametricParam.h"
 
+#include "ofxhParam.h"
+
 namespace OFX {
 
 namespace Host {
