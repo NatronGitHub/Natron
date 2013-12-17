@@ -181,6 +181,7 @@ OfxStatus Natron::OfxHost::clearPersistentMessage(){
 }
 
 OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natron::Node* node) {
+    assert(node); // the efgfect_ member should be owned by a Node
     // throws out_of_range if the plugin does not exist
     const OFXPluginEntry& ofxPlugin = _ofxPlugins.at(name);
 
@@ -331,7 +332,12 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
         
         _ofxPlugins[pluginId] = OFXPluginEntry(openfxId.toStdString(), grouping);
 
-    
+        // The following was commented out because:
+        // - loading all plugins on startup may take a LOT of time
+        // - it makes the plugin cache basically useless
+        // - all OfxEffectInstance should be owned by a node in Natron (this is crazy. where are the smart pointers?)
+        // If a plugin is not supported, the user gets an error when instanciating the plugin, which is the Right Thing To Do (TM).
+#if 0
         //try to instantiate an effect for this plugin, if it crashes, don't add it
         OfxEffectInstance* tryInstance = 0;
         try {
@@ -349,18 +355,20 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
         if (!tryInstance) {
             qDebug() << "Error loading " << pluginId.c_str();
             _ofxPlugins.erase(pluginId);
+            continue;
         } else {
             delete tryInstance;
-            emit toolButtonAdded(groups,pluginId.c_str(), pluginLabel.c_str(), iconFilename, groupIconFilename);
-            QMutex* pluginMutex = NULL;
-            if(p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe){
-                pluginMutex = new QMutex;
-            }
-            Natron::Plugin* plugin = new Natron::Plugin(new Natron::LibraryBinary(Natron::LibraryBinary::BUILTIN),
-                                                        pluginId.c_str(),pluginLabel.c_str(),pluginMutex,p->getVersionMajor(),
-                                                        p->getVersionMinor());
-            plugins->push_back(plugin);
         }
+#endif
+        emit toolButtonAdded(groups,pluginId.c_str(), pluginLabel.c_str(), iconFilename, groupIconFilename);
+        QMutex* pluginMutex = NULL;
+        if(p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe){
+            pluginMutex = new QMutex;
+        }
+        Natron::Plugin* plugin = new Natron::Plugin(new Natron::LibraryBinary(Natron::LibraryBinary::BUILTIN),
+                                                    pluginId.c_str(),pluginLabel.c_str(),pluginMutex,p->getVersionMajor(),
+                                                    p->getVersionMinor());
+        plugins->push_back(plugin);
     }
 }
 
