@@ -14,6 +14,7 @@
 #include <ofxhImageEffect.h>
 
 class OfxEffectInstance;
+class CurveWidget;
 namespace Natron {
    
     
@@ -21,11 +22,12 @@ class OfxImageEffectInstance;
 class OfxOverlayInteract :  public OFX::Host::ImageEffect::OverlayInteract
 {
     
+    CurveWidget* _curveWidget;
     OfxEffectInstance* _node;
     
 public:
     
-    OfxOverlayInteract(OfxImageEffectInstance &v, int bitDepthPerComponent = 8, bool hasAlpha = false);
+    OfxOverlayInteract(OfxImageEffectInstance &v, int bitDepthPerComponent = 8, bool hasAlpha = false,CurveWidget* curveWidget = NULL);
     
     virtual ~OfxOverlayInteract(){}
     

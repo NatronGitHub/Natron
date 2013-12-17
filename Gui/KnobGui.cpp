@@ -103,16 +103,6 @@ void KnobGui::pushUndoCommand(QUndoCommand* cmd){
 }
 
 
-
-void KnobGui::moveToLayout(QVBoxLayout* layout){
-    QWidget* container = new QWidget(layout->parentWidget());
-    QHBoxLayout* containerLayout = new QHBoxLayout(container);
-    container->setLayout(containerLayout);
-    containerLayout->setContentsMargins(0, 0, 0, 0);
-    addToLayout(containerLayout);
-    layout->addWidget(container);
-}
-
 void KnobGui::createGUI(QGridLayout* layout,int row){
     createWidget(layout, row);
     if(_knob->isAnimationEnabled() && !_knob->isSecret()){

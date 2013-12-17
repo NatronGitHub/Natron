@@ -19,6 +19,9 @@
 #include <QTextEdit>
 #include <QLabel>
 #include <QToolTip>
+#include <QTreeWidget>
+#include <QTreeWidgetItem>
+#include <QHeaderView>
 
 #include "Global/AppManager.h"
 
@@ -36,6 +39,7 @@
 #include "Gui/GroupBoxLabel.h"
 #include "Gui/Gui.h"
 #include "Gui/ProjectGui.h"
+#include "Gui/CurveWidget.h"
 
 #define SLIDER_MAX_RANGE 100000
 
@@ -243,20 +247,7 @@ void Int_KnobGui::setEnabled()
     }
     
 }
-void Int_KnobGui::addToLayout(QHBoxLayout *layout)
-{
-    layout->addWidget(_descriptionLabel);
-    for (U32 i = 0; i < _spinBoxes.size(); ++i) {
-        layout->addWidget(_spinBoxes[i].first);
-        if (_spinBoxes[i].second) {
-            layout->addWidget(_spinBoxes[i].second);
-        }
-    }
-    if (_slider) {
-        layout->addWidget(_slider);
-    }
-    
-}
+
 //==========================BOOL_KNOB_GUI======================================
 
 void Bool_KnobGui::createWidget(QGridLayout *layout, int row)
@@ -323,12 +314,6 @@ void Bool_KnobGui::setEnabled()
     bool b = getKnob()->isEnabled();
     _descriptionLabel->setEnabled(b);
     _checkBox->setEnabled(b);
-}
-
-void Bool_KnobGui::addToLayout(QHBoxLayout *layout)
-{
-    layout->addWidget(_descriptionLabel);
-    layout->addWidget(_checkBox);
 }
 
 void AnimatedCheckBox::setAnimation(int i)
@@ -541,19 +526,8 @@ void Double_KnobGui::setEnabled()
     }
     
 }
-void Double_KnobGui::addToLayout(QHBoxLayout *layout)
-{
-    layout->addWidget(_descriptionLabel);
-    for (U32 i = 0; i < _spinBoxes.size(); ++i) {
-        layout->addWidget(_spinBoxes[i].first);
-        if (_spinBoxes[i].second) {
-            layout->addWidget(_spinBoxes[i].second);
-        }
-    }
-    if (_slider) {
-        layout->addWidget(_slider);
-    }
-}
+
+
 
 //=============================BUTTON_KNOB_GUI===================================
 void Button_KnobGui::createWidget(QGridLayout *layout, int row)
@@ -586,10 +560,6 @@ void Button_KnobGui::setEnabled()
 {
     bool b = getKnob()->isEnabled();
     _button->setEnabled(b);
-}
-void Button_KnobGui::addToLayout(QHBoxLayout *layout)
-{
-    layout->addWidget(_button);
 }
 
 
@@ -683,12 +653,7 @@ void Choice_KnobGui::setEnabled()
     _descriptionLabel->setEnabled(b);
     _comboBox->setEnabled(b);
 }
-void Choice_KnobGui::addToLayout(QHBoxLayout *layout)
-{
-    layout->addWidget(_descriptionLabel);
-    layout->addWidget(_comboBox);
-    
-}
+
 
 //=============================SEPARATOR_KNOB_GUI===================================
 void Separator_KnobGui::createWidget(QGridLayout *layout, int row)
@@ -722,12 +687,7 @@ void Separator_KnobGui::_show()
 }
 
 
-void Separator_KnobGui::addToLayout(QHBoxLayout *layout)
-{
-    layout->addWidget(_descriptionLabel);
-    layout->addWidget(_line);
-    
-}
+
 //=============================RGBA_KNOB_GUI===================================
 
 Color_KnobGui::Color_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
@@ -1072,26 +1032,7 @@ void Color_KnobGui::_show()
     _colorDialogButton->show();
     
 }
-void Color_KnobGui::addToLayout(QHBoxLayout *layout)
-{
-    layout->addWidget(_descriptionLabel);
-    
-    layout->addWidget(_rLabel);
-    layout->addWidget(_rBox);
-    if (_dimension >= 3) {
-        layout->addWidget(_gLabel);
-        layout->addWidget(_gBox);
-        layout->addWidget(_bLabel);
-        layout->addWidget(_bBox);
-    }
-    if (_dimension >= 4) {
-        layout->addWidget(_aLabel);
-        layout->addWidget(_aBox);
-    }
-    
-    layout->addWidget(_colorLabel);
-    layout->addWidget(_colorDialogButton);
-}
+
 
 
 ColorPickerLabel::ColorPickerLabel(QWidget* parent)
@@ -1215,12 +1156,6 @@ void String_KnobGui::setEnabled()
     _lineEdit->setEnabled(b);
 }
 
-void String_KnobGui::addToLayout(QHBoxLayout *layout)
-{
-    layout->addWidget(_descriptionLabel);
-    layout->addWidget(_lineEdit);
-    
-}
 //=============================CUSTOM_KNOB_GUI===================================
 void Custom_KnobGui::createWidget(QGridLayout *layout, int row)
 {
@@ -1262,12 +1197,6 @@ void Custom_KnobGui::setEnabled()
     bool b = getKnob()->isEnabled();
     _descriptionLabel->setEnabled(b);
     _lineEdit->setEnabled(b);
-}
-
-void Custom_KnobGui::addToLayout(QHBoxLayout *layout)
-{
-    layout->addWidget(_descriptionLabel);
-    layout->addWidget(_lineEdit);
 }
 
 //=============================GROUP_KNOB_GUI===================================
@@ -1376,33 +1305,6 @@ void Group_KnobGui::_show()
     
 }
 
-void Group_KnobGui::addToLayout(QHBoxLayout *layout)
-{
-    QWidget *mainWidget = new QWidget(_layout->parentWidget());
-    QVBoxLayout *mainLayout = new QVBoxLayout(mainWidget);
-    mainWidget->setLayout(mainLayout);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
-    
-    QWidget *header = new QWidget(mainWidget);
-    QHBoxLayout *headerLayout = new QHBoxLayout(mainWidget);
-    header->setLayout(headerLayout);
-    headerLayout->setContentsMargins(0, 0, 0, 0);
-    headerLayout->addWidget(_button);
-    headerLayout->addWidget(_descriptionLabel);
-    
-    mainLayout->addWidget(header);
-    for (U32 i = 0; i < _children.size(); ++i) {
-        QWidget *container = new QWidget(_layout->parentWidget());
-        QHBoxLayout *containerLayout = new QHBoxLayout(container);
-        container->setLayout(containerLayout);
-        containerLayout->setContentsMargins(0, 0, 0, 0);
-        containerLayout->addStretch();
-        _children[i].first->addToLayout(containerLayout);
-        mainLayout->addWidget(container);
-    }
-    layout->addWidget(mainWidget);
-}
-
 //=============================RICH_TEXT_KNOBGUI===================================
 
 void RichText_KnobGui::createWidget(QGridLayout *layout, int row)
@@ -1443,12 +1345,6 @@ void RichText_KnobGui::setEnabled()
     _textEdit->setEnabled(b);
 }
 
-void RichText_KnobGui::addToLayout(QHBoxLayout *layout)
-{
-    layout->addWidget(_descriptionLabel);
-    layout->addWidget(_textEdit);
-}
-
 void RichText_KnobGui::onTextChanged()
 {
     pushUndoCommand(new KnobUndoCommand(this,0,getKnob()->getValue(),Variant(_textEdit->toPlainText())));
@@ -1469,3 +1365,69 @@ void RichText_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
     
 }
 
+//=============================Parametric_KnobGui===================================
+
+Parametric_KnobGui::Parametric_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
+: KnobGui(knob, container)
+, _curveWidget(NULL)
+, _tree(NULL)
+, _curves()
+{
+    
+}
+
+Parametric_KnobGui::~Parametric_KnobGui(){
+    delete _curveWidget;
+    delete _tree;
+}
+
+void Parametric_KnobGui::createWidget(QGridLayout *layout, int row) {
+    
+    boost::shared_ptr<Parametric_Knob> parametricKnob = boost::dynamic_pointer_cast<Parametric_Knob>(getKnob());
+    
+    _tree = new QTreeWidget(layout->parentWidget());
+    _tree->setSelectionMode(QAbstractItemView::NoSelection);
+    _tree->setColumnCount(1);
+    _tree->header()->close();
+    
+    layout->addWidget(_tree, row, 0);
+    
+    _curveWidget = new CurveWidget(boost::shared_ptr<TimeLine>(),layout->parentWidget());
+
+    layout->addWidget(_curveWidget,row,1);
+    
+    
+    for (int i = 0; i < getKnob()->getDimension(); ++i) {
+        CurveGui* curve =  _curveWidget->createCurve(parametricKnob->getCurve(i), parametricKnob->getDimensionName(i).c_str());
+        QColor color;
+        double r,g,b;
+        parametricKnob->getCurveColor(i, &r, &g, &b);
+        color.setRedF(r);
+        color.setGreenF(g);
+        color.setBlueF(b);
+        curve->setColor(color);
+        QTreeWidgetItem* item = new QTreeWidgetItem(_tree);
+        item->setSelected(true);
+        _curves.insert(std::make_pair(curve, item));
+    }
+}
+
+void Parametric_KnobGui::_hide() {
+    _curveWidget->hide();
+    _tree->hide();
+}
+
+void Parametric_KnobGui::_show() {
+    _curveWidget->show();
+    _tree->show();
+}
+
+void Parametric_KnobGui::setEnabled() {
+    bool b = getKnob()->isEnabled();
+    _tree->setEnabled(b);
+}
+
+
+void Parametric_KnobGui::updateGUI(int /*dimension*/, const Variant &/*variant*/) {
+    _curveWidget->update();
+}

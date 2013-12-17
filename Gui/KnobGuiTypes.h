@@ -29,6 +29,8 @@ class QString;
 class QFrame;
 class QGridLayout;
 class QTextEdit;
+class QTreeWidget;
+class QTreeWidgetItem;
 
 // Engine
 class Knob;
@@ -41,6 +43,8 @@ class SpinBox;
 class ComboBox;
 class ScaleSlider;
 class GroupBoxLabel;
+class CurveWidget;
+class CurveGui;
 
 // private classes, defined in KnobGuiTypes.cpp
 class ClickableLabel;
@@ -91,8 +95,6 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
 
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
-
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
     
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
@@ -134,8 +136,6 @@ private:
     virtual void _show() OVERRIDE FINAL;
 
     virtual void setEnabled() OVERRIDE FINAL;
-
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
@@ -183,8 +183,6 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
 
-    virtual void addToLayout(QHBoxLayout *layout);
-
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
@@ -224,8 +222,6 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
 
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
-
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL {(void)dimension; Q_UNUSED(variant);}
 
 
@@ -263,8 +259,6 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
 
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
-
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
@@ -296,8 +290,6 @@ private:
     virtual void _show() OVERRIDE FINAL;
 
     virtual void setEnabled() OVERRIDE FINAL {}
-
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL {(void)dimension; (void)variant;}
 
@@ -371,8 +363,6 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
 
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
-
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
@@ -434,8 +424,6 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
 
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
-
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
 private:
@@ -466,8 +454,6 @@ private:
     virtual void _show() OVERRIDE FINAL;
 
     virtual void setEnabled() OVERRIDE FINAL;
-
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
@@ -507,9 +493,6 @@ private:
     virtual void _show() OVERRIDE FINAL;
 
     virtual void setEnabled()  OVERRIDE FINAL {}
-
-    virtual void addToLayout(QHBoxLayout *layout);
-
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
@@ -554,8 +537,6 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
 
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
-
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
 private:
@@ -564,6 +545,38 @@ private:
 
 };
 
+
+/*****************************/
+class Parametric_KnobGui : public KnobGui
+{
+public:
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
+        return new Parametric_KnobGui(knob, container);
+    }
+    
+    
+    Parametric_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
+    
+    virtual ~Parametric_KnobGui() OVERRIDE FINAL;
+    
+private:
+    
+    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+    
+    virtual void _hide() OVERRIDE FINAL;
+    
+    virtual void _show() OVERRIDE FINAL;
+    
+    virtual void setEnabled() OVERRIDE FINAL;
+    
+    virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
+    
+private:
+    
+    CurveWidget* _curveWidget;
+    QTreeWidget* _tree;
+    std::map<CurveGui*,QTreeWidgetItem*> _curves;
+};
 
 
 #endif // NATRON_GUI_KNOBGUITYPES_H_
