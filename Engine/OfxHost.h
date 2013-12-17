@@ -103,7 +103,16 @@ private:
      1)Invert [OFX]  with plugin id net.sourceforge.openfx.invert and grouping OFX/
      2)Invert [Toto] with plugin id com.toto.invert and grouping Toto/SuperPlugins/OFX/
      */
-    typedef std::map<std::string,std::pair<std::string,std::string> > OFXPluginsMap;
+    struct OFXPluginEntry {
+        std::string openfxId;
+        std::string grouping;
+        OFXPluginEntry(const std::string &ofxid, const std::string &grp)
+        : openfxId(ofxid)
+        , grouping(grp)
+        {}
+        OFXPluginEntry() {}
+    };
+    typedef std::map<std::string,OFXPluginEntry> OFXPluginsMap;
     typedef OFXPluginsMap::const_iterator OFXPluginsIterator;
 
     OFXPluginsMap _ofxPlugins;
