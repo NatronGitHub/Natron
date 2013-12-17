@@ -80,7 +80,7 @@ Natron::OfxHost::OfxHost()
     _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 0);
     _properties.setIntProperty(kOfxParamHostPropSupportsParametricAnimation, 0);
     
-    registerExtraParamTypeSupported(kOfxParamTypeParametric,,OFX::Host::Property::eDouble,0);
+    registerExtraParamTypeSupported(kOfxParamTypeParametric,OFX::Host::Property::eDouble,0);
 }
 
 Natron::OfxHost::~OfxHost()
@@ -334,9 +334,6 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
         
         std::pair<OFXPluginsMap::iterator,bool> insertRet = _ofxPlugins.insert(make_pair(pluginId, make_pair(openfxId.toStdString(), grouping)));
 
-        if(QString(pluginId.c_str()).contains("RGBLut")){
-            std::cout << "b";
-        }
         
         //try to instantiate an effect for this plugin, if it crashes, don't add it
         try {
