@@ -80,7 +80,6 @@ Natron::OfxHost::OfxHost()
     _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 0);
     _properties.setIntProperty(kOfxParamHostPropSupportsParametricAnimation, 0);
     
-    registerExtraParamTypeSupported(kOfxParamTypeParametric,OFX::Host::Property::eDouble,0);
 }
 
 Natron::OfxHost::~OfxHost()

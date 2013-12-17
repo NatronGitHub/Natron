@@ -95,6 +95,10 @@ void Reader::initializeKnobs(){
     _missingFrameChoice->populate(missingFrameChoices);
     _missingFrameChoice->setValue(0);
     _missingFrameChoice->turnOffAnimation();
+    
+    boost::shared_ptr<Parametric_Knob> test = Natron::createKnob<Parametric_Knob>(this, "test",2);
+    test->setCurveLabel(0, "First");
+    test->setCurveLabel(1, "Second");
 }
 
 void Reader::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){

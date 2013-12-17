@@ -1389,11 +1389,11 @@ void Parametric_KnobGui::createWidget(QGridLayout *layout, int row) {
     _tree->setSelectionMode(QAbstractItemView::NoSelection);
     _tree->setColumnCount(1);
     _tree->header()->close();
+
     
     layout->addWidget(_tree, row, 0);
     
     _curveWidget = new CurveWidget(boost::shared_ptr<TimeLine>(),layout->parentWidget());
-
     layout->addWidget(_curveWidget,row,1);
     
     

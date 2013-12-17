@@ -500,6 +500,8 @@ public:
     
     void getParametricRange(double* min,double* max);
     
+    virtual std::string getDimensionName(int dimension) const;
+    
     static const std::string& typeNameStatic();
     
 public slots:

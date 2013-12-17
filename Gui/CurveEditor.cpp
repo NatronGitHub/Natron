@@ -81,11 +81,13 @@ CurveEditor::CurveEditor(boost::shared_ptr<TimeLine> timeline, QWidget *parent)
     _splitter = new QSplitter(Qt::Horizontal,this);
 
     _curveWidget = new CurveWidget(timeline,_splitter);
-
+    _curveWidget->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+    
     _tree = new QTreeWidget(_splitter);
     _tree->setSelectionMode(QAbstractItemView::NoSelection);
     _tree->setColumnCount(1);
     _tree->header()->close();
+    _tree->setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Expanding);
 
     _splitter->addWidget(_tree);
     _splitter->addWidget(_curveWidget);

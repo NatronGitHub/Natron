@@ -2040,7 +2040,7 @@ QPointF CurveWidget::toWidgetCoordinates(double x, double y) const {
 }
 
 QSize CurveWidget::sizeHint() const{
-    return QSize(1000,1000);
+    return QSize(300,300);
 }
 
 void CurveWidget::addKeyFrame(CurveGui* curve,const KeyFrame& key){

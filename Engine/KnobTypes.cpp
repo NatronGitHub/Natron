@@ -866,3 +866,7 @@ void Parametric_Knob::getParametricRange(double* min,double* max){
     *min = _range[0];
     *max = _range[1];
 }
+
+std::string Parametric_Knob::getDimensionName(int dimension) const{
+    return getCurveLabel(dimension);
+}
