@@ -38,7 +38,7 @@
 #include "Engine/KnobTypes.h"
 
 //our version of parametric param suite support
-#include "Engine/ofxhParametricParamSuite.h"
+#include "Engine/ofxhParametricParam.h"
 
 using namespace Natron;
 
@@ -79,8 +79,6 @@ Natron::OfxHost::OfxHost()
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
     _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 0);
     _properties.setIntProperty(kOfxParamHostPropSupportsParametricAnimation, 0);
-    
-    registerExtraParamTypeSupported(kOfxParamTypeParametric,OFX::Host::Property::eDouble,0);
 }
 
 Natron::OfxHost::~OfxHost()

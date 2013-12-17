@@ -24,7 +24,7 @@
 //ofx
 #include "ofxhImageEffect.h"
 #include "ofxCore.h"
-#include "Engine/ofxhParametricParamSuite.h"
+#include "Engine/ofxhParametricParam.h"
 
 
 /*This file contains the classes that connect the knobs to the OpenFX params.
