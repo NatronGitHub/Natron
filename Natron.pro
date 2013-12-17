@@ -147,7 +147,7 @@ SOURCES += \
     Engine/OfxEffectInstance.cpp \
     Engine/OfxOverlayInteract.cpp \
     Engine/OfxParamInstance.cpp \
-    Engine/ofxhParametricParamSuite.cpp \
+    Engine/ofxhParametricParam.cpp \
     Engine/Project.cpp \
     Engine/ProjectPrivate.cpp \
     Engine/ProjectSerialization.cpp \
@@ -245,7 +245,7 @@ HEADERS += \
     Engine/OfxEffectInstance.h \
     Engine/OfxOverlayInteract.h \
     Engine/OfxParamInstance.h \
-    Engine/ofxhParametricParamSuite.h \
+    Engine/ofxhParametricParam.h \
     Engine/Project.h \
     Engine/ProjectPrivate.h \
     Engine/ProjectSerialization.h \

@@ -10,7 +10,7 @@
  */
 
 
-#include "ofxhParametricParamSuite.h"
+#include "ofxhParametricParam.h"
 
 // ofx
 #include "ofxCore.h"
