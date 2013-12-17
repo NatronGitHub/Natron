@@ -76,7 +76,7 @@ public:
     void endValueChange(Natron::ValueChangedReason reason) ;
 
     /**
-     * @brief Called when a keyframe/tangent is modified, indicating that the curve has changed and we must
+     * @brief Called when a keyframe/derivative is modified, indicating that the curve has changed and we must
      * evaluate any change (i.e: force a new render)
     **/
     void evaluateAnimationChange();

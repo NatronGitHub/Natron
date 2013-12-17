@@ -220,7 +220,7 @@ void MoveMultipleKeysCommand::move(int dt,double dv, bool isundo){
     if(!_keys.empty()){
         _curveWidget->setSelectedKeys(newSelectedKeys);
         _curveWidget->refreshSelectedKeysBbox();
-        _curveWidget->refreshDisplayedTangents();
+        _curveWidget->refreshDisplayedDerivatives();
     }
 
 }
@@ -269,7 +269,7 @@ void SetKeyInterpolationCommand::undo(){
     _change.key = _change.curve->getInternalCurve()->setKeyFrameInterpolation(_change.oldInterp, _change.key.getTime());
     newSelectedKeys.insert(SelectedKey(_change.curve,_change.key));
     _curveWidget->setSelectedKeys(newSelectedKeys);
-    _curveWidget->refreshDisplayedTangents();
+    _curveWidget->refreshDisplayedDerivatives();
     setText(QObject::tr("Set key interpolation"));
 }
 
@@ -278,7 +278,7 @@ void SetKeyInterpolationCommand::redo(){
     _change.key = _change.curve->getInternalCurve()->setKeyFrameInterpolation(_change.newInterp, _change.key.getTime());
     newSelectedKeys.insert(SelectedKey(_change.curve,_change.key));
     _curveWidget->setSelectedKeys(newSelectedKeys);
-    _curveWidget->refreshDisplayedTangents();
+    _curveWidget->refreshDisplayedDerivatives();
     setText(QObject::tr("Set key interpolation"));
 }
 
@@ -306,7 +306,7 @@ void SetMultipleKeysInterpolationCommand::undo(){
         _oldInterp[i].knob->getKnob()->endValueChange(Natron::USER_EDITED);
     }
     _curveWidget->setSelectedKeys(newSelectedKeys);
-    _curveWidget->refreshDisplayedTangents();
+    _curveWidget->refreshDisplayedDerivatives();
     setText(QObject::tr("Set multiple keys interpolation"));
 }
 
@@ -323,6 +323,6 @@ void SetMultipleKeysInterpolationCommand::redo(){
         _oldInterp[i].knob->getKnob()->endValueChange(Natron::USER_EDITED);
     }
     _curveWidget->setSelectedKeys(newSelectedKeys);
-    _curveWidget->refreshDisplayedTangents();
+    _curveWidget->refreshDisplayedDerivatives();
     setText(QObject::tr("Set multiple keys interpolation"));
 }

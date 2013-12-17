@@ -34,7 +34,7 @@ class CurveGui : public QObject {
 
 public:
     
-    enum SelectedTangent{LEFT_TANGENT = 0,RIGHT_TANGENT = 1};
+    enum SelectedDerivative{LEFT_TANGENT = 0,RIGHT_TANGENT = 1};
     
     CurveGui(const CurveWidget *curveWidget,boost::shared_ptr<Curve>  curve,
              const QString& name,
@@ -174,7 +174,7 @@ public:
     
 public slots:
     
-    void refreshDisplayedTangents();
+    void refreshDisplayedDerivatives();
 
     void deleteSelectedKeyFrames();
 
@@ -196,7 +196,7 @@ public slots:
 
     void horizontalInterpForSelectedKeyFrames();
 
-    void breakTangentsForSelectedKeyFrames();
+    void breakDerivativesForSelectedKeyFrames();
 
     void frameSelectedCurve();
 

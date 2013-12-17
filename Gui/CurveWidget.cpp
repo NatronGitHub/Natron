@@ -119,13 +119,14 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1, double* x2){
         double t = ( x1 - lower->getTime() ) / (upper->getTime() - lower->getTime());
         double P3 = upper->getValue();
         double P0 = lower->getValue();
-        double P3pl = upper->getLeftTangent();
-        double P0pr = lower->getRightTangent();
+        // Hermite coefficients P0' and P3' are for t normalized in [0,1]
+        double P3pl = upper->getLeftDerivative() / (upper->getTime() - lower->getTime()); // normalize for t \in [0,1]
+        double P0pr = lower->getRightDerivative() / (upper->getTime() - lower->getTime()); // normalize for t \in [0,1]
         double secondDer = 6. * (1. - t) *(P3 - P3pl / 3. - P0 - 2. * P0pr / 3.) +
                 6.* t * (P0 - P3 + 2 * P3pl / 3. + P0pr / 3. );
         double secondDerWidgetCoord = std::abs(_curveWidget->toWidgetCoordinates(0,secondDer).y()
                                                / (upper->getTime() - lower->getTime()));
-        // compute delta_x so that the y difference between the tangent and the curve is at most
+        // compute delta_x so that the y difference between the derivative and the curve is at most
         // 1 pixel (use the second order Taylor expansion of the function)
         double delta_x = std::max(2. / std::max(std::sqrt(secondDerWidgetCoord),0.1), 1.);
         
@@ -230,7 +231,7 @@ void CurveGui::drawCurve(){
         glEnd();
         if(isSelected != selectedKeyFrames.end() && key.getInterpolation() != KEYFRAME_CONSTANT){
 
-            //draw the tangents lines
+            //draw the derivatives lines
             if(key.getInterpolation() != KEYFRAME_FREE && key.getInterpolation() != KEYFRAME_BROKEN){
                 glLineStipple(2, 0xAAAA);
                 glEnable(GL_LINE_STIPPLE);
@@ -343,7 +344,7 @@ public:
 
     std::pair<CurveGui*,KeyFrame> isNearbyKeyFrame(const QPoint& pt) const;
 
-    std::pair<CurveGui::SelectedTangent, SelectedKey> isNearByTangent(const QPoint& pt) const;
+    std::pair<CurveGui::SelectedDerivative, SelectedKey> isNearbyTangent(const QPoint& pt) const;
 
     bool isNearbySelectedKeyFramesCrossWidget(const QPoint& pt) const;
 
@@ -360,7 +361,7 @@ public:
 
     void moveSelectedTangent(const QPointF& pos);
     
-    void refreshKeyTangentsGUI(SelectedKey* key);
+    void refreshKeyTangents(SelectedKey* key);
 
     void refreshSelectionRectangle(double x,double y);
 
@@ -401,7 +402,7 @@ public:
     QLineF _selectedKeyFramesCrossHorizLine;
     boost::shared_ptr<TimeLine> _timeline;
     bool _timelineEnabled;
-    std::pair<CurveGui::SelectedTangent,SelectedKey> _selectedTangent;
+    std::pair<CurveGui::SelectedDerivative,SelectedKey> _selectedDerivative;
     
 private:
 
@@ -438,7 +439,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(boost::shared_ptr<TimeLine> timeline,Curv
     , _selectedKeyFramesCrossHorizLine()
     , _timeline(timeline)
     , _timelineEnabled(false)
-    , _selectedTangent()
+    , _selectedDerivative()
     , _baseAxisColor(118,215,90,255)
     , _scaleColor(67,123,52,255)
     , _keyDragMaxMovement()
@@ -528,10 +529,10 @@ void CurveWidgetPrivate::createMenu() {
     interpMenu->addAction(horizontalInterp);
 
 
-    QAction* breakTangents = new QAction("Break",_widget);
-    breakTangents->setShortcut(QKeySequence(Qt::Key_X));
-    QObject::connect(breakTangents,SIGNAL(triggered()),_widget,SLOT(breakTangentsForSelectedKeyFrames()));
-    interpMenu->addAction(breakTangents);
+    QAction* breakDerivatives = new QAction("Break",_widget);
+    breakDerivatives->setShortcut(QKeySequence(Qt::Key_X));
+    QObject::connect(breakDerivatives,SIGNAL(triggered()),_widget,SLOT(breakDerivativesForSelectedKeyFrames()));
+    interpMenu->addAction(breakDerivatives);
 
     QAction* frameCurve = new QAction("Frame selected curve",_widget);
     frameCurve->setShortcut(QKeySequence(Qt::Key_F));
@@ -833,7 +834,7 @@ std::pair<CurveGui*,KeyFrame> CurveWidgetPrivate::isNearbyKeyFrame(const QPoint&
     return std::make_pair((CurveGui*)NULL,KeyFrame());
 }
 
-std::pair<CurveGui::SelectedTangent,SelectedKey > CurveWidgetPrivate::isNearByTangent(const QPoint& pt) const {
+std::pair<CurveGui::SelectedDerivative,SelectedKey > CurveWidgetPrivate::isNearbyTangent(const QPoint& pt) const {
     for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it!=_selectedKeyFrames.end(); ++it) {
         QPointF leftTanPt = _widget->toWidgetCoordinates(it->leftTan.first,it->leftTan.second);
         QPointF rightTanPt = _widget->toWidgetCoordinates(it->rightTan.first,it->rightTan.second);
@@ -982,8 +983,8 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
                                        ,totalMovement,translation.y()));
         _selectedKeyFrames = copy;
         _widget->refreshSelectedKeysBbox();
-        //refresh now the tangents positions
-        _widget->refreshDisplayedTangents();
+        //refresh now the derivatives positions
+        _widget->refreshDisplayedDerivatives();
     }else{
 
         //several keys, do a multiple move command
@@ -1005,7 +1006,7 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
                 moves.push_back(move);
             }
             //the editor redo() call will call refreshSelectedKeysBbox() for us
-            //and also call refreshDisplayedTangents()
+            //and also call refreshDisplayedDerivatives()
             editor->setKeyFrames(moves,dt,dv);
 
         }
@@ -1020,10 +1021,10 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
 
 void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
 
-    SelectedKeys::iterator existingKey = _selectedKeyFrames.find(_selectedTangent.second);
+    SelectedKeys::iterator existingKey = _selectedKeyFrames.find(_selectedDerivative.second);
     assert(existingKey != _selectedKeyFrames.end());
 
-    SelectedKey& key = _selectedTangent.second;
+    SelectedKey& key = _selectedDerivative.second;
     const KeyFrameSet& keys = key.curve->getInternalCurve()->getKeyFrames();
 
     
@@ -1051,17 +1052,17 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
     bool interpIsCatmullRomOrCubicOrFree = (interp == KEYFRAME_CATMULL_ROM ||
                                             interp == KEYFRAME_CUBIC ||
                                             interp == KEYFRAME_FREE);
-    bool setBothTangent = keyframeIsFirstOrLast ? interpIsCatmullRomOrCubicOrFree : interpIsNotBroken;
+    bool setBothDerivative = keyframeIsFirstOrLast ? interpIsCatmullRomOrCubicOrFree : interpIsNotBroken;
 
 
     // For other keyframes:
-    // - if they KEYFRAME_BROKEN, move only one tangent
-    // - else change to KEYFRAME_FREE and move both tangents
-    if (setBothTangent) {
+    // - if they KEYFRAME_BROKEN, move only one derivative
+    // - else change to KEYFRAME_FREE and move both derivatives
+    if (setBothDerivative) {
         key.key = key.curve->getInternalCurve()->setKeyFrameInterpolation(KEYFRAME_FREE, key.key.getTime());
 
         //if dx is not of the good sign it would make the curve uncontrollable
-        if (_selectedTangent.first == CurveGui::LEFT_TANGENT) {
+        if (_selectedDerivative.first == CurveGui::LEFT_TANGENT) {
             if (dx < 0) {
                 dx = 1e-8;
             }
@@ -1071,34 +1072,19 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
             }
         }
 
-        double leftTan,rightTan;
-        if (prev != keys.end()) {
-            leftTan = (dy * (cur->getTime() - prev->getTime())) / dx;
-        } else {
-            leftTan = dy / dx;
-        }
-        if (next != keys.end()) {
-            rightTan = (dy * (next->getTime() - cur->getTime())) / dx;
-        } else {
-            rightTan = dy / dx;
-        }
-        key.key = key.curve->getInternalCurve()->setKeyFrameTangents(leftTan, rightTan, key.key.getTime());
+        double derivative = dy / dx;
+        key.key = key.curve->getInternalCurve()->setKeyFrameDerivatives(derivative, derivative, key.key.getTime());
 
     } else {
         key.key = key.curve->getInternalCurve()->setKeyFrameInterpolation(KEYFRAME_BROKEN, key.key.getTime());
-        if (_selectedTangent.first == CurveGui::LEFT_TANGENT) {
+        if (_selectedDerivative.first == CurveGui::LEFT_TANGENT) {
             //if dx is not of the good sign it would make the curve uncontrollable
             if (dx < 0) {
                 dx = 0.0001;
             }
 
-            double leftTan;
-            if (prev != keys.end()) {
-                leftTan = (dy * (cur->getTime() - prev->getTime())) / dx;
-            } else {
-                leftTan = dy / dx;
-            }
-            key.key = key.curve->getInternalCurve()->setKeyFrameLeftTangent(leftTan, key.key.getTime());
+            double derivative = dy / dx;
+            key.key = key.curve->getInternalCurve()->setKeyFrameLeftDerivative(derivative, key.key.getTime());
 
         } else {
             //if dx is not of the good sign it would make the curve uncontrollable
@@ -1106,27 +1092,22 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
                 dx = -0.0001;
             }
 
-            double rightTan;
-            if (next != keys.end()) {
-                rightTan = (dy * (next->getTime() - cur->getTime())) / dx;
-            } else {
-                rightTan = dy / dx;
-            }
-            key.key = key.curve->getInternalCurve()->setKeyFrameRightTangent(rightTan,key.key.getTime());
+            double derivative = dy / dx;
+            key.key = key.curve->getInternalCurve()->setKeyFrameRightDerivative(derivative,key.key.getTime());
         }
     }
-    refreshKeyTangentsGUI(&key);
+    refreshKeyTangents(&key);
     //erase the existing key in the set and replace it with the new one
     _selectedKeyFrames.erase(existingKey);
     std::pair<SelectedKeys::iterator,bool> ret = _selectedKeyFrames.insert(key);
     assert(ret.second);
     
-    //also refresh prev/next tangents gui if there're selected
+    //also refresh prev/next derivatives gui if there're selected
     if(prev != keys.begin()){
         SelectedKey prevSelected(key.curve,*prev);
         SelectedKeys::const_iterator foundPrev = _selectedKeyFrames.find(prevSelected);
         if(foundPrev != _selectedKeyFrames.end()){
-            refreshKeyTangentsGUI(&prevSelected);
+            refreshKeyTangents(&prevSelected);
             _selectedKeyFrames.erase(foundPrev);
             _selectedKeyFrames.insert(prevSelected);
         }
@@ -1135,7 +1116,7 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
         SelectedKey nextSelected(key.curve,*next);
         SelectedKeys::const_iterator foundNext = _selectedKeyFrames.find(nextSelected);
         if(foundNext != _selectedKeyFrames.end()){
-            refreshKeyTangentsGUI(&nextSelected);
+            refreshKeyTangents(&nextSelected);
             _selectedKeyFrames.erase(foundNext);
             _selectedKeyFrames.insert(nextSelected);
         }
@@ -1144,7 +1125,7 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
     
 }
 
-void CurveWidgetPrivate::refreshKeyTangentsGUI(SelectedKey* key) {
+void CurveWidgetPrivate::refreshKeyTangents(SelectedKey* key) {
     double w = (double)_widget->width();
     double h = (double)_widget->height();
     double x = key->key.getTime();
@@ -1154,7 +1135,7 @@ void CurveWidgetPrivate::refreshKeyTangentsGUI(SelectedKey* key) {
     KeyFrameSet::const_iterator k = keyframes.find(key->key);
     assert(k != keyframes.end());
 
-    //find the previous and next keyframes on the curve to find out the  position of the tangents
+    //find the previous and next keyframes on the curve to find out the  position of the derivatives
     KeyFrameSet::const_iterator prev = k;
     if (k != keyframes.begin()) {
         --prev;
@@ -1166,14 +1147,14 @@ void CurveWidgetPrivate::refreshKeyTangentsGUI(SelectedKey* key) {
     double leftTanX, leftTanY;
     {
         double prevTime = (prev == keyframes.end()) ? (x - 1.) : prev->getTime();
-        double leftTan = key->key.getLeftTangent()/(x - prevTime);
+        double leftTan = key->key.getLeftDerivative();
         double leftTanXWidgetDiffMax = w / 8.;
         if (prev != keyframes.end()) {
             double prevKeyXWidgetCoord = _widget->toWidgetCoordinates(prevTime, 0).x();
-            //set the left tangent X to be at 1/3 of the interval [prev,k], and clamp it to 1/8 of the widget width.
+            //set the left derivative X to be at 1/3 of the interval [prev,k], and clamp it to 1/8 of the widget width.
             leftTanXWidgetDiffMax = std::min(leftTanXWidgetDiffMax, (keyWidgetCoord.x() - prevKeyXWidgetCoord) / 3.);
         }
-        //clamp the left tangent Y to 1/8 of the widget height.
+        //clamp the left derivative Y to 1/8 of the widget height.
         double leftTanYWidgetDiffMax = std::min( h/8., leftTanXWidgetDiffMax);
         assert(leftTanXWidgetDiffMax >= 0.); // both bounds should be positive
         assert(leftTanYWidgetDiffMax >= 0.);
@@ -1195,14 +1176,14 @@ void CurveWidgetPrivate::refreshKeyTangentsGUI(SelectedKey* key) {
     double rightTanX, rightTanY;
     {
         double nextTime = (next == keyframes.end()) ? (x + 1.) : next->getTime();
-        double rightTan = key->key.getRightTangent()/(nextTime - x );
+        double rightTan = key->key.getRightDerivative();
         double rightTanXWidgetDiffMax = w / 8.;
         if (next != keyframes.end()) {
             double nextKeyXWidgetCoord = _widget->toWidgetCoordinates(nextTime, 0).x();
-            //set the right tangent X to be at 1/3 of the interval [k,next], and clamp it to 1/8 of the widget width.
+            //set the right derivative X to be at 1/3 of the interval [k,next], and clamp it to 1/8 of the widget width.
             rightTanXWidgetDiffMax = std::min(rightTanXWidgetDiffMax, (nextKeyXWidgetCoord - keyWidgetCoord.x()) / 3.);
         }
-        //clamp the right tangent Y to 1/8 of the widget height.
+        //clamp the right derivative Y to 1/8 of the widget height.
         double rightTanYWidgetDiffMax = std::min( h/8., rightTanXWidgetDiffMax);
         assert(rightTanXWidgetDiffMax >= 0.); // both bounds should be positive
         assert(rightTanYWidgetDiffMax >= 0.);
@@ -1239,7 +1220,7 @@ void CurveWidgetPrivate::refreshSelectionRectangle(double x,double y) {
     keyFramesWithinRect(_selectionRectangle,&keyframesSelected);
     for (U32 i = 0; i < keyframesSelected.size(); ++i) {
         SelectedKey newSelectedKey(keyframesSelected[i].first,keyframesSelected[i].second);
-        refreshKeyTangentsGUI(&newSelectedKey);
+        refreshKeyTangents(&newSelectedKey);
         //insert it into the _selectedKeyFrames
         std::pair<SelectedKeys::iterator,bool> insertRet = _selectedKeyFrames.insert(newSelectedKey);
         if(!insertRet.second){
@@ -1422,7 +1403,7 @@ void CurveWidgetPrivate::setSelectedKeysInterpolation(Natron::KeyframeType type)
         std::transform(_selectedKeyFrames.begin(),_selectedKeyFrames.end(),
                        std::inserter(copy,copy.begin()),ChangeInterpolation_functor(type));
         _selectedKeyFrames = copy;
-        _widget->refreshDisplayedTangents();
+        _widget->refreshDisplayedDerivatives();
     }
 }
 
@@ -1548,7 +1529,7 @@ void CurveWidget::centerOn(double xmin,double xmax,double ymin,double ymax){
         _imp->_zoomCtx.left = (xmax + xmin) / 2. - ((w / h) * curveHeight / 2.);
     }
     
-    refreshDisplayedTangents();
+    refreshDisplayedDerivatives();
 
     update();
 }
@@ -1719,7 +1700,7 @@ void CurveWidget::mousePressEvent(QMouseEvent *event) {
         }
         SelectedKey selected(selectedKey.first,selectedKey.second);
         
-        _imp->refreshKeyTangentsGUI(&selected);
+        _imp->refreshKeyTangents(&selected);
 
         bool mustStopMergingMoveCommands = hadASelectedKey && (
                     previouslySelectedKey.curve != selected.curve ||
@@ -1756,18 +1737,18 @@ void CurveWidget::mousePressEvent(QMouseEvent *event) {
         _imp->updateSelectedKeysMaxMovement();
         _imp->_zoomCtx._oldClick = event->pos();
         _imp->_dragStartPoint = event->pos();
-        update(); // the keyframe changes color and the tangents must be drawn
+        update(); // the keyframe changes color and the derivatives must be drawn
         return;
     }
     ////
-    // is the click near a tangent manipulator?
-    std::pair<CurveGui::SelectedTangent,SelectedKey > selectedTan = _imp->isNearByTangent(event->pos());
+    // is the click near a derivative manipulator?
+    std::pair<CurveGui::SelectedDerivative,SelectedKey > selectedTan = _imp->isNearbyTangent(event->pos());
     
-    //select the tangent only if it is not a constant keyframe
+    //select the derivative only if it is not a constant keyframe
     if (selectedTan.second.curve && selectedTan.second.key.getInterpolation() != KEYFRAME_CONSTANT) {
         _imp->_mustSetDragOrientation = true;
         _imp->_state = DRAGGING_TANGENT;
-        _imp->_selectedTangent = selectedTan;
+        _imp->_selectedDerivative = selectedTan;
         _imp->_zoomCtx._oldClick = event->pos();
         //no need to set _imp->_dragStartPoint
         update();
@@ -1826,8 +1807,8 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
 
     //set cursor depending on the situation
 
-    //find out if there is a nearby  tangent handle
-    std::pair<CurveGui::SelectedTangent,SelectedKey > selectedTan = _imp->isNearByTangent(event->pos());
+    //find out if there is a nearby  derivative handle
+    std::pair<CurveGui::SelectedDerivative,SelectedKey > selectedTan = _imp->isNearbyTangent(event->pos());
 
     //if the selected keyframes rectangle is drawn and we're nearby the cross
     if( _imp->_drawSelectedKeyFramesBbox && _imp->isNearbySelectedKeyFramesCrossWidget(event->pos())){
@@ -1837,7 +1818,7 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event){
         //if there's a keyframe handle nearby
         std::pair<CurveGui*,KeyFrame > selectedKey = _imp->isNearbyKeyFrame(event->pos());
 
-        //if there's a keyframe or tangent handle nearby set the cursor to cross
+        //if there's a keyframe or derivative handle nearby set the cursor to cross
         if(selectedKey.first || selectedTan.second.curve){
             setCursor(QCursor(Qt::CrossCursor));
         }else{
@@ -2014,7 +1995,7 @@ void CurveWidget::wheelEvent(QWheelEvent *event) {
     if(_imp->_drawSelectedKeyFramesBbox){
         refreshSelectedKeysBbox();
     }
-    refreshDisplayedTangents();
+    refreshDisplayedDerivatives();
     
     update();
 }
@@ -2093,7 +2074,7 @@ void CurveWidget::keyPressEvent(QKeyEvent *event){
     else if(event->key() == Qt::Key_H){
         horizontalInterpForSelectedKeyFrames();
     }else if(event->key() == Qt::Key_X){
-        breakTangentsForSelectedKeyFrames();
+        breakDerivativesForSelectedKeyFrames();
     }else if(event->key() == Qt::Key_F){
         frameSelectedCurve();
     }else if(event->key() == Qt::Key_A && event->modifiers().testFlag(Qt::ControlModifier)){
@@ -2112,21 +2093,21 @@ void CurveWidget::enterEvent(QEvent */*event*/){
     setFocus();
 }
 
-struct RefreshTangent_functor{
+struct RefreshDerivative_functor{
     CurveWidgetPrivate* _imp;
 
-    RefreshTangent_functor(CurveWidgetPrivate* imp): _imp(imp){}
+    RefreshDerivative_functor(CurveWidgetPrivate* imp): _imp(imp){}
 
     SelectedKey operator()(SelectedKey key){
-        _imp->refreshKeyTangentsGUI(&key);
+        _imp->refreshKeyTangents(&key);
         return key;
     }
 };
 
-void CurveWidget::refreshDisplayedTangents(){
+void CurveWidget::refreshDisplayedDerivatives(){
     SelectedKeys copy;
     std::transform( _imp->_selectedKeyFrames.begin(), _imp->_selectedKeyFrames.end(),
-                    std::inserter(copy,copy.begin()),RefreshTangent_functor(_imp.get()));
+                    std::inserter(copy,copy.begin()),RefreshDerivative_functor(_imp.get()));
 
     _imp->_selectedKeyFrames = copy;
     update();
@@ -2160,7 +2141,7 @@ void CurveWidget::horizontalInterpForSelectedKeyFrames(){
     _imp->setSelectedKeysInterpolation(KEYFRAME_HORIZONTAL);
 }
 
-void CurveWidget::breakTangentsForSelectedKeyFrames(){
+void CurveWidget::breakDerivativesForSelectedKeyFrames(){
     _imp->setSelectedKeysInterpolation(KEYFRAME_BROKEN);
 }
 
@@ -2260,7 +2241,7 @@ void CurveWidget::selectAllKeyFrames(){
             const KeyFrameSet& keys = (*it)->getInternalCurve()->getKeyFrames();
             for( KeyFrameSet::const_iterator it2 = keys.begin(); it2!=keys.end();++it2){
                 SelectedKey newSelected(*it,*it2);
-                _imp->refreshKeyTangentsGUI(&newSelected);
+                _imp->refreshKeyTangents(&newSelected);
 
                 std::pair<SelectedKeys::iterator,bool> insertRet = _imp->_selectedKeyFrames.insert(newSelected);
                 if(!insertRet.second){
