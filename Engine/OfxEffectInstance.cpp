@@ -125,7 +125,10 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
 }
 
 OfxEffectInstance::~OfxEffectInstance(){
-    // delete effect_;
+    // if there's no associated node, the effect is not "owned" by anyone else
+    if (!getNode()) {
+        delete effect_;
+    }
 }
 
 
