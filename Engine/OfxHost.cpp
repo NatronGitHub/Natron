@@ -83,6 +83,8 @@ Natron::OfxHost::OfxHost()
 
 Natron::OfxHost::~OfxHost()
 {
+    //Clean up, to be polite.
+    OFX::Host::PluginCache::clearPluginCache();
 }
 
 OFX::Host::ImageEffect::Instance* Natron::OfxHost::newInstance(void* ,
@@ -393,8 +395,6 @@ void Natron::OfxHost::writeOFXCache(){
     assert(OFX::Host::PluginCache::getPluginCache());
     OFX::Host::PluginCache::getPluginCache()->writePluginCache(of);
     of.close();
-    //Clean up, to be polite.
-    OFX::Host::PluginCache::clearPluginCache();
 }
 
 
