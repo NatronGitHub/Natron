@@ -147,7 +147,6 @@ SOURCES += \
     Engine/OfxEffectInstance.cpp \
     Engine/OfxOverlayInteract.cpp \
     Engine/OfxParamInstance.cpp \
-    Engine/ofxhParametricParam.cpp \
     Engine/Project.cpp \
     Engine/ProjectPrivate.cpp \
     Engine/ProjectSerialization.cpp \
@@ -213,7 +212,9 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhPluginAPICache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
-    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp
+    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
+    libs/OpenFX_extensions/ofxhParametricParam.cpp
+
 HEADERS += \
     Engine/Cache.h \
     Engine/Curve.h \
@@ -245,7 +246,6 @@ HEADERS += \
     Engine/OfxEffectInstance.h \
     Engine/OfxOverlayInteract.h \
     Engine/OfxParamInstance.h \
-    Engine/ofxhParametricParam.h \
     Engine/Project.h \
     Engine/ProjectPrivate.h \
     Engine/ProjectSerialization.h \
@@ -340,11 +340,12 @@ HEADERS += \
     libs/OpenFX/include/ofxProgress.h \
     libs/OpenFX/include/ofxProperty.h \
     libs/OpenFX/include/ofxTimeLine.h \
-    libs/OpenFX_extensions//tuttle/ofxGraphAPI.h \
-    libs/OpenFX_extensions//tuttle/ofxMetadata.h \
-    libs/OpenFX_extensions//tuttle/ofxParam.h \
-    libs/OpenFX_extensions//tuttle/ofxParamAPI.h \
-    libs/OpenFX_extensions//tuttle/ofxReadWrite.h
+    libs/OpenFX_extensions/tuttle/ofxGraphAPI.h \
+    libs/OpenFX_extensions/tuttle/ofxMetadata.h \
+    libs/OpenFX_extensions/tuttle/ofxParam.h \
+    libs/OpenFX_extensions/tuttle/ofxParamAPI.h \
+    libs/OpenFX_extensions/tuttle/ofxReadWrite.h \
+    libs/OpenFX_extensions/ofxhParametricParam.h
 
 INSTALLS += target
 
