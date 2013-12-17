@@ -174,7 +174,7 @@ public:
     
 public slots:
     
-    void refreshDisplayedDerivatives();
+    void refreshDisplayedTangents();
 
     void deleteSelectedKeyFrames();
 

@@ -984,7 +984,7 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
         _selectedKeyFrames = copy;
         _widget->refreshSelectedKeysBbox();
         //refresh now the derivatives positions
-        _widget->refreshDisplayedDerivatives();
+        _widget->refreshDisplayedTangents();
     }else{
 
         //several keys, do a multiple move command
@@ -1006,7 +1006,7 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
                 moves.push_back(move);
             }
             //the editor redo() call will call refreshSelectedKeysBbox() for us
-            //and also call refreshDisplayedDerivatives()
+            //and also call refreshDisplayedTangents()
             editor->setKeyFrames(moves,dt,dv);
 
         }
@@ -1403,7 +1403,7 @@ void CurveWidgetPrivate::setSelectedKeysInterpolation(Natron::KeyframeType type)
         std::transform(_selectedKeyFrames.begin(),_selectedKeyFrames.end(),
                        std::inserter(copy,copy.begin()),ChangeInterpolation_functor(type));
         _selectedKeyFrames = copy;
-        _widget->refreshDisplayedDerivatives();
+        _widget->refreshDisplayedTangents();
     }
 }
 
@@ -1529,7 +1529,7 @@ void CurveWidget::centerOn(double xmin,double xmax,double ymin,double ymax){
         _imp->_zoomCtx.left = (xmax + xmin) / 2. - ((w / h) * curveHeight / 2.);
     }
     
-    refreshDisplayedDerivatives();
+    refreshDisplayedTangents();
 
     update();
 }
@@ -1995,7 +1995,7 @@ void CurveWidget::wheelEvent(QWheelEvent *event) {
     if(_imp->_drawSelectedKeyFramesBbox){
         refreshSelectedKeysBbox();
     }
-    refreshDisplayedDerivatives();
+    refreshDisplayedTangents();
     
     update();
 }
@@ -2093,10 +2093,10 @@ void CurveWidget::enterEvent(QEvent */*event*/){
     setFocus();
 }
 
-struct RefreshDerivative_functor{
+struct RefreshTangent_functor{
     CurveWidgetPrivate* _imp;
 
-    RefreshDerivative_functor(CurveWidgetPrivate* imp): _imp(imp){}
+    RefreshTangent_functor(CurveWidgetPrivate* imp): _imp(imp){}
 
     SelectedKey operator()(SelectedKey key){
         _imp->refreshKeyTangents(&key);
@@ -2104,10 +2104,10 @@ struct RefreshDerivative_functor{
     }
 };
 
-void CurveWidget::refreshDisplayedDerivatives(){
+void CurveWidget::refreshDisplayedTangents(){
     SelectedKeys copy;
     std::transform( _imp->_selectedKeyFrames.begin(), _imp->_selectedKeyFrames.end(),
-                    std::inserter(copy,copy.begin()),RefreshDerivative_functor(_imp.get()));
+                    std::inserter(copy,copy.begin()),RefreshTangent_functor(_imp.get()));
 
     _imp->_selectedKeyFrames = copy;
     update();
