@@ -9,6 +9,7 @@
  *
  */
 
+#include <cassert>
 
 #include "ofxhParametricParam.h"
 
@@ -26,35 +27,218 @@ namespace Host {
 
 namespace ParametricParam{
 
-    //to be moved to host support.
-void addParametricProperties(Param::Base& propertySetHolder){
 
-    bool isDescriptor = dynamic_cast<Param::Descriptor*>(&propertySetHolder) != NULL;
-    Property::PropSpec parametricProps[] = {
-        /* name                                         type            dim. r/o default value */
-        { kOfxParamPropAnimates,                    Property::eInt,     1,  !isDescriptor, "1" },
-        { kOfxParamPropPersistant,                  Property::eInt,     1,  !isDescriptor, "1" },
-        { kOfxParamPropEvaluateOnChange,            Property::eInt,     1,  !isDescriptor, "1" },
-        { kOfxParamPropPluginMayWrite,              Property::eInt,     1,  !isDescriptor, "0" },
-        { kOfxParamPropCacheInvalidation,           Property::eString,  1,  !isDescriptor, kOfxParamInvalidateValueChange },
-        { kOfxParamPropCanUndo,                     Property::eInt,     1,  !isDescriptor, "1" },
-        { kOfxParamPropParametricDimension,         Property::eInt,     1,  !isDescriptor, "1" },
-        { kOfxParamPropParametricUIColour,          Property::eDouble,  0,  !isDescriptor, ""  },
-        { kOfxParamPropParametricInteractBackground,Property::ePointer, 1,  !isDescriptor, 0   },
-        { kOfxParamPropParametricRange,             Property::eDouble,  2,  !isDescriptor, "0"},
-        Property::propSpecEnd
-    };
+CurvesHolder::CurvesHolder()
+    : _curves()
+{
 
-    propertySetHolder.getProperties().addProperties(parametricProps);
-    propertySetHolder.getProperties().setDoubleProperty(kOfxParamPropParametricRange, 0., 0);
-    propertySetHolder.getProperties().setDoubleProperty(kOfxParamPropParametricRange, 1., 1);
 }
 
+void CurvesHolder::setDimension(int dimension)
+{
+    _curves.clear();
+    for(int i = 0; i < dimension;++i)
+    {
+        ControlPointSet emptySet;
+        _curves.push_back(emptySet);
+    }
+}
+
+const CurvesHolder::Curves& CurvesHolder::getCurves() const
+{
+    return _curves;
+}
+
+OfxStatus CurvesHolder::getNControlPoints(int curveIndex,double /*time*/,int *returnValue)
+{
+    assert(curveIndex < (int)_curves.size());
+
+    *returnValue = (int)_curves[curveIndex].size();
+
+    return kOfxStatOK;
+}
+
+OfxStatus CurvesHolder::getNthControlPoint(int curveIndex,
+                                           double /*time*/,
+                                           int    nthCtl,
+                                           double *key,
+                                           double *value)
+{
+    assert(curveIndex < (int)_curves.size());
+
+    const ControlPointSet& set = _curves[curveIndex];
+    int index = 0;
+    for(ControlPointSet::const_iterator it = set.begin();it!=set.end();++it){
+        if (index == nthCtl) {
+            *key = it->key;
+            *value = it->value;
+            return kOfxStatOK;
+        }
+        ++index;
+    }
+
+    return kOfxStatErrBadIndex;
+}
+
+OfxStatus CurvesHolder::setNthControlPoint(int   curveIndex,
+                                           double time,
+                                           int   nthCtl,
+                                           double key,
+                                           double value,
+                                           bool addAnimationKey
+                                           )
+{
+    assert(curveIndex < (int)_curves.size());
+
+    ControlPointSet& set = _curves[curveIndex];
+    int index = 0;
+    for(ControlPointSet::iterator it = set.begin();it!=set.end();++it){
+        if (index == nthCtl) {
+            ControlPoint newCp;
+            newCp.time = time;
+            newCp.key = key;
+            newCp.value = value;
+            newCp.createAnimationKey = addAnimationKey;
+            set.erase(it);
+            set.insert(newCp);
+            onNthControlPointSet(curveIndex,newCp);
+            return kOfxStatOK;
+        }
+        ++index;
+    }
+
+    return kOfxStatErrBadIndex;
+}
+
+void CurvesHolder::onNthControlPointSet(int /*curveIndex*/,const ControlPoint& /*cp*/)
+{
+    //nothing to do here
+}
+
+#define OFX_CONTROL_POINTS_EQUALITY_EPSILON 1e-2
+
+OfxStatus CurvesHolder::addControlPoint(int   curveIndex,
+                                        double time,
+                                        double key,
+                                        double value,
+                                        bool addAnimationKey)
+{
+    assert(curveIndex < (int)_curves.size());
+
+    ControlPoint newCp;
+    newCp.time = time;
+    newCp.key = key;
+    newCp.value = value;
+    newCp.createAnimationKey = addAnimationKey;
+
+    ControlPointSet& set = _curves[curveIndex];
+    for(ControlPointSet::iterator it = set.begin();it!=set.end();++it){
+        if (std::abs(it->key - key) < OFX_CONTROL_POINTS_EQUALITY_EPSILON) {
+            set.erase(it);
+            set.insert(newCp);
+            onNthControlPointSet(curveIndex,newCp);
+            return kOfxStatOK;
+        }
+    }
+
+    ///we found no close control point so far, add a new one
+    set.insert(newCp);
+    onControlPointAdded(curveIndex,newCp);
+    return kOfxStatOK;
+}
+
+void CurvesHolder::onControlPointAdded(int /*curveIndex*/,const ControlPoint& /*cp*/)
+{
+    //nothing to do here
+}
+
+OfxStatus  CurvesHolder::deleteControlPoint(int   curveIndex,int  nthCtl)
+{
+    assert(curveIndex < (int)_curves.size());
+
+    ControlPointSet& set = _curves[curveIndex];
+    int index = 0;
+    for(ControlPointSet::const_iterator it = set.begin();it!=set.end();++it){
+        if (index == nthCtl) {
+            ControlPoint cp = *it;
+            set.erase(it);
+            onControlPointDeleted(curveIndex,cp);
+            return kOfxStatOK;
+        }
+        ++index;
+    }
+
+    return kOfxStatErrBadIndex;
+}
+
+void CurvesHolder::onControlPointDeleted(int /*curveIndex*/,const ControlPoint& /*cp*/)
+{
+    //nothing to do here
+}
+
+OfxStatus  CurvesHolder::deleteAllControlPoints(int curveIndex)
+{
+
+    assert(curveIndex < (int)_curves.size());
+    _curves[curveIndex].clear();
+    onCurveCleared(curveIndex);
+    return kOfxStatOK;
+}
+
+void CurvesHolder::onCurveCleared(int /*curveIndex*/)
+{
+    //nothing to do here
+}
+
+/////////////////////////////////////////ParametricDescriptor/////////////////////////////////////////
+
+
+ParametricDescriptor::ParametricDescriptor(const std::string &type, const std::string &name)
+    : Descriptor(type,name)
+    , CurvesHolder()
+{
+    
+    ///the properties must be added first before being able to set a notify hook
+    static const Property::PropSpec allParametric[] = {
+        { kOfxParamPropParametricDimension,         Property::eInt,     1,  false, "1" },
+        { kOfxParamPropParametricUIColour,          Property::eDouble,  0,  false, ""  },
+        { kOfxParamPropParametricInteractBackground,Property::ePointer, 1,  false, 0   },
+        { kOfxParamPropParametricRange,             Property::eDouble,  2,  false, "0" },
+        Property::propSpecEnd
+    };
+    
+    getProperties().addProperties(allParametric);
+    
+    getProperties().setDoubleProperty(kOfxParamPropParametricRange, 0., 0);
+    getProperties().setDoubleProperty(kOfxParamPropParametricRange, 1., 1);
+    
+    ///listen to the changes made to this property so we can add curves in response to the change of dimension.
+    getProperties().addNotifyHook(kOfxParamPropParametricDimension, this);
+}
+    
+void ParametricDescriptor::notify(const std::string &name, bool /*single*/, int /*num*/) OFX_EXCEPTION_SPEC
+{
+    if(name == kOfxParamPropParametricDimension){
+        setDimension(getProperties().getIntProperty(kOfxParamPropParametricDimension));
+    }
+}
+
+OfxStatus ParametricDescriptor::getValue(int /*curveIndex*/,OfxTime /*time*/,double /*parametricPosition*/,double */*returnValue*/)
+{
+    //nothing to do
+    return kOfxStatErrMissingHostFeature;
+}
+
+/////////////////////////////////////////ParametricInstance/////////////////////////////////////////
 
 ParametricInstance::ParametricInstance(Param::Descriptor& descriptor, Param::SetInstance* instance)
     : Param::Instance(descriptor,instance)
 {
-    addParametricProperties(*this);
+    ParametricDescriptor &parametricDesc = dynamic_cast<ParametricDescriptor&>(descriptor);
+
+    ///copy all the curves defined in the descriptor to initialize them
+    _curves = parametricDesc.getCurves();
+
 }
 // copy one parameter to another
 OfxStatus ParametricInstance::copy(const Param::Instance &/*instance*/, OfxTime /*offset*/)
@@ -117,68 +301,40 @@ OfxStatus ParametricInstance::deleteAllKeys()
     return kOfxStatErrMissingHostFeature;
 }
 
-OfxStatus ParametricInstance::getValue(int /*curveIndex*/,OfxTime /*time*/,double /*parametricPosition*/,double */*returnValue*/)
+void ParametricInstance::onNthControlPointSet(int /*curveIndex*/,const ControlPoint& /*cp*/)
 {
-    return kOfxStatErrMissingHostFeature;
+    //nothing do to here
 }
 
-OfxStatus ParametricInstance::getNControlPoints(int /*curveIndex*/,double /*time*/,int */*returnValue*/)
+void ParametricInstance::onControlPointAdded(int /*curveIndex*/,const ControlPoint& /*cp*/)
 {
-    return kOfxStatErrMissingHostFeature;
+    //nothing do to here
 }
 
-OfxStatus ParametricInstance::getNthControlPoint(int /*curveIndex*/,
-                                                 double /*time*/,
-                                                 int    /*nthCtl*/,
-                                                 double */*key*/,
-                                                 double */*value*/)
+void ParametricInstance::onControlPointDeleted(int /*curveIndex*/,const ControlPoint& /*cp*/)
 {
-    return kOfxStatErrMissingHostFeature;
+    //nothing do to here
 }
 
-OfxStatus ParametricInstance::setNthControlPoint(int   /*curveIndex*/,
-                                                 double /*time*/,
-                                                 int   /*nthCtl*/,
-                                                 double /*key*/,
-                                                 double /*value*/,
-                                                 bool /*addAnimationKey*/
-                                                 )
+void ParametricInstance::onCurveCleared(int /*curveIndex*/)
 {
-    return kOfxStatErrMissingHostFeature;
+    //nothing do to here
 }
 
-OfxStatus ParametricInstance::addControlPoint(int   /*curveIndex*/,
-                                              double /*time*/,
-                                              double /*key*/,
-                                              double /*value*/,
-                                              bool /*addAnimationKey*/)
-{
-    return kOfxStatErrMissingHostFeature;
-}
-
-OfxStatus  ParametricInstance::deleteControlPoint(int   /*curveIndex*/,int  /* nthCtl*/)
-{
-    return kOfxStatErrMissingHostFeature;
-}
-
-OfxStatus  ParametricInstance::deleteAllControlPoints(int   /*curveIndex*/)
-{
-    return kOfxStatErrMissingHostFeature;
-}
 
 /** @brief Evaluates a parametric parameter
 
-      \arg param                 handle to the parametric parameter
-      \arg curveIndex            which dimension to evaluate
-      \arg time                  the time to evaluate to the parametric param at
-      \arg parametricPosition    the position to evaluate the parametric param at
-      \arg returnValue           pointer to a double where a value is returned
-
-      @returns
-        - ::kOfxStatOK            - all was fine
-        - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
-        - ::kOfxStatErrBadIndex   - the curve index was invalid
-  */
+             \arg param                 handle to the parametric parameter
+             \arg curveIndex            which dimension to evaluate
+             \arg time                  the time to evaluate to the parametric param at
+             \arg parametricPosition    the position to evaluate the parametric param at
+             \arg returnValue           pointer to a double where a value is returned
+             
+             @returns
+             - ::kOfxStatOK            - all was fine
+             - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
+             - ::kOfxStatErrBadIndex   - the curve index was invalid
+             */
 static OfxStatus parametricParamGetValue(OfxParamHandle param,
                                          int   curveIndex,
                                          OfxTime time,
@@ -187,19 +343,19 @@ static OfxStatus parametricParamGetValue(OfxParamHandle param,
 #       ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamGetValue - " << param << " ...";
 #       endif
-    ParametricInstance *paramInstance = reinterpret_cast<ParametricInstance*>(param);
-    if(!paramInstance || !paramInstance->verifyMagic()) {
+    CurvesHolder *curveHolder = reinterpret_cast<CurvesHolder*>(param);
+    if(!curveHolder) {
 #         ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
 #         endif
         return kOfxStatErrBadHandle;
     }
-    
-    
+
+
     OfxStatus stat = kOfxStatErrUnsupported;
-    
-    stat = paramInstance->getValue(curveIndex, time,parametricPosition,returnValue);
-    
+
+    stat = curveHolder->getValue(curveIndex, time,parametricPosition,returnValue);
+
 #       ifdef OFX_DEBUG_PARAMETERS
     std::cout << ' ' << StatStr(stat) << std::endl;
 #       endif
@@ -210,16 +366,16 @@ static OfxStatus parametricParamGetValue(OfxParamHandle param,
 
 /** @brief Returns the number of control points in the parametric param.
 
-      \arg param                 handle to the parametric parameter
-      \arg curveIndex            which dimension to check
-      \arg time                  the time to check
-      \arg returnValue           pointer to an integer where the value is returned.
-
-      @returns
-        - ::kOfxStatOK            - all was fine
-        - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
-        - ::kOfxStatErrBadIndex   - the curve index was invalid
-   */
+             \arg param                 handle to the parametric parameter
+             \arg curveIndex            which dimension to check
+             \arg time                  the time to check
+             \arg returnValue           pointer to an integer where the value is returned.
+             
+             @returns
+             - ::kOfxStatOK            - all was fine
+             - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
+             - ::kOfxStatErrBadIndex   - the curve index was invalid
+             */
 static  OfxStatus parametricParamGetNControlPoints(OfxParamHandle param,
                                                    int   curveIndex,
                                                    double time,
@@ -227,19 +383,19 @@ static  OfxStatus parametricParamGetNControlPoints(OfxParamHandle param,
 #       ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamGetNControlPoints - " << param << " ...";
 #       endif
-    ParametricInstance *paramInstance = reinterpret_cast<ParametricInstance*>(param);
-    if(!paramInstance || !paramInstance->verifyMagic()) {
+    CurvesHolder *curveHolder = reinterpret_cast<CurvesHolder*>(param);
+    if(!curveHolder) {
 #         ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
 #         endif
         return kOfxStatErrBadHandle;
     }
-    
-    
+
+
     OfxStatus stat = kOfxStatErrUnsupported;
-    
-    stat = paramInstance->getNControlPoints(curveIndex, time,returnValue);
-    
+
+    stat = curveHolder->getNControlPoints(curveIndex, time,returnValue);
+
 #       ifdef OFX_DEBUG_PARAMETERS
     std::cout << ' ' << StatStr(stat) << std::endl;
 #       endif
@@ -249,18 +405,18 @@ static  OfxStatus parametricParamGetNControlPoints(OfxParamHandle param,
 
 /** @brief Returns the key/value pair of the nth control point.
 
-      \arg param                 handle to the parametric parameter
-      \arg curveIndex            which dimension to check
-      \arg time                  the time to check
-      \arg nthCtl                the nth control point to get the value of
-      \arg key                   pointer to a double where the key will be returned
-      \arg value                 pointer to a double where the value will be returned
-
-      @returns
-        - ::kOfxStatOK            - all was fine
-        - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
-        - ::kOfxStatErrUnknown    - if the type is unknown
-   */
+             \arg param                 handle to the parametric parameter
+             \arg curveIndex            which dimension to check
+             \arg time                  the time to check
+             \arg nthCtl                the nth control point to get the value of
+             \arg key                   pointer to a double where the key will be returned
+             \arg value                 pointer to a double where the value will be returned
+             
+             @returns
+             - ::kOfxStatOK            - all was fine
+             - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
+             - ::kOfxStatErrUnknown    - if the type is unknown
+             */
 static  OfxStatus parametricParamGetNthControlPoint(OfxParamHandle param,
                                                     int    curveIndex,
                                                     double time,
@@ -270,19 +426,19 @@ static  OfxStatus parametricParamGetNthControlPoint(OfxParamHandle param,
 #       ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamGetNthControlPoint - " << param << " ...";
 #       endif
-    ParametricInstance *paramInstance = reinterpret_cast<ParametricInstance*>(param);
-    if(!paramInstance || !paramInstance->verifyMagic()) {
+    CurvesHolder *curveHolder = reinterpret_cast<CurvesHolder*>(param);
+    if(!curveHolder) {
 #         ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
 #         endif
         return kOfxStatErrBadHandle;
     }
-    
-    
+
+
     OfxStatus stat = kOfxStatErrUnsupported;
-    
-    stat = paramInstance->getNthControlPoint(curveIndex, time,nthCtl,key,value);
-    
+
+    stat = curveHolder->getNthControlPoint(curveIndex, time,nthCtl,key,value);
+
 #       ifdef OFX_DEBUG_PARAMETERS
     std::cout << ' ' << StatStr(stat) << std::endl;
 #       endif
@@ -292,26 +448,26 @@ static  OfxStatus parametricParamGetNthControlPoint(OfxParamHandle param,
 
 /** @brief Modifies an existing control point on a curve
 
-      \arg param                 handle to the parametric parameter
-      \arg curveIndex            which dimension to set
-      \arg time                  the time to set the value at
-      \arg nthCtl                the control point to modify
-      \arg key                   key of the control point
-      \arg value                 value of the control point
-      \arg addAnimationKey       if the param is an animatable, setting this to true will
-                                 force an animation keyframe to be set as well as a curve key,
-                                 otherwise if false, a key will only be added if the curve is already
-                                 animating.
-
-      @returns
-        - ::kOfxStatOK            - all was fine
-        - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
-        - ::kOfxStatErrUnknown    - if the type is unknown
-
-      This modifies an existing control point. Note that by changing key, the order of the
-      control point may be modified (as you may move it before or after anther point). So be
-      careful when iterating over a curves control points and you change a key.
-   */
+             \arg param                 handle to the parametric parameter
+             \arg curveIndex            which dimension to set
+             \arg time                  the time to set the value at
+             \arg nthCtl                the control point to modify
+             \arg key                   key of the control point
+             \arg value                 value of the control point
+             \arg addAnimationKey       if the param is an animatable, setting this to true will
+             force an animation keyframe to be set as well as a curve key,
+             otherwise if false, a key will only be added if the curve is already
+             animating.
+             
+             @returns
+             - ::kOfxStatOK            - all was fine
+             - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
+             - ::kOfxStatErrUnknown    - if the type is unknown
+             
+             This modifies an existing control point. Note that by changing key, the order of the
+             control point may be modified (as you may move it before or after anther point). So be
+             careful when iterating over a curves control points and you change a key.
+             */
 static OfxStatus parametricParamSetNthControlPoint(OfxParamHandle param,
                                                    int   curveIndex,
                                                    double time,
@@ -322,19 +478,19 @@ static OfxStatus parametricParamSetNthControlPoint(OfxParamHandle param,
 #       ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamSetNthControlPoint - " << param << " ...";
 #       endif
-    ParametricInstance *paramInstance = reinterpret_cast<ParametricInstance*>(param);
-    if(!paramInstance || !paramInstance->verifyMagic()) {
+    CurvesHolder *curveHolder = reinterpret_cast<CurvesHolder*>(param);
+    if(!curveHolder) {
 #         ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
 #         endif
         return kOfxStatErrBadHandle;
     }
-    
-    
+
+
     OfxStatus stat = kOfxStatErrUnsupported;
-    
-    stat = paramInstance->setNthControlPoint(curveIndex, time, nthCtl, key, value, addAnimationKey);
-    
+
+    stat = curveHolder->setNthControlPoint(curveIndex, time, nthCtl, key, value, addAnimationKey);
+
 #       ifdef OFX_DEBUG_PARAMETERS
     std::cout << ' ' << StatStr(stat) << std::endl;
 #       endif
@@ -344,24 +500,24 @@ static OfxStatus parametricParamSetNthControlPoint(OfxParamHandle param,
 
 /** @brief Adds a control point to the curve.
 
-       \arg param                 handle to the parametric parameter
-       \arg curveIndex            which dimension to set
-       \arg time                  the time to set the value at
-       \arg key                   key of the control point
-       \arg value                 value of the control point
-       \arg addAnimationKey       if the param is an animatable, setting this to true will
-                                  force an animation keyframe to be set as well as a curve key,
-                                  otherwise if false, a key will only be added if the curve is already
-                                  animating.
-
-       @returns
-         - ::kOfxStatOK            - all was fine
-         - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
-         - ::kOfxStatErrUnknown    - if the type is unknown
-
-       This will add a new control point to the given dimension of a parametric parameter. If a key exists
-       sufficiently close to 'key', then it will be set to the indicated control point.
-    */
+             \arg param                 handle to the parametric parameter
+             \arg curveIndex            which dimension to set
+             \arg time                  the time to set the value at
+             \arg key                   key of the control point
+             \arg value                 value of the control point
+             \arg addAnimationKey       if the param is an animatable, setting this to true will
+             force an animation keyframe to be set as well as a curve key,
+             otherwise if false, a key will only be added if the curve is already
+             animating.
+             
+             @returns
+             - ::kOfxStatOK            - all was fine
+             - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
+             - ::kOfxStatErrUnknown    - if the type is unknown
+             
+             This will add a new control point to the given dimension of a parametric parameter. If a key exists
+             sufficiently close to 'key', then it will be set to the indicated control point.
+             */
 static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
                                                 int   curveIndex,
                                                 double time,
@@ -371,19 +527,19 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
 #       ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamAddControlPoint - " << param << " ...";
 #       endif
-    ParametricInstance *paramInstance = reinterpret_cast<ParametricInstance*>(param);
-    if(!paramInstance || !paramInstance->verifyMagic()) {
+    CurvesHolder *curveHolder = reinterpret_cast<CurvesHolder*>(param);
+    if(!curveHolder) {
 #         ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
 #         endif
         return kOfxStatErrBadHandle;
     }
-    
-    
+
+
     OfxStatus stat = kOfxStatErrUnsupported;
-    
-    stat = paramInstance->addControlPoint(curveIndex,time,key,value,addAnimationKey);
-    
+
+    stat = curveHolder->addControlPoint(curveIndex,time,key,value,addAnimationKey);
+
 #       ifdef OFX_DEBUG_PARAMETERS
     std::cout << ' ' << StatStr(stat) << std::endl;
 #       endif
@@ -393,29 +549,29 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
 
 /** @brief Deletes the nth control point from a parametric param.
 
-      \arg param                 handle to the parametric parameter
-      \arg curveIndex            which dimension to delete
-      \arg nthCtl                the control point to delete
-   */
+             \arg param                 handle to the parametric parameter
+             \arg curveIndex            which dimension to delete
+             \arg nthCtl                the control point to delete
+             */
 static OfxStatus parametricParamDeleteControlPoint(OfxParamHandle param,
                                                    int   curveIndex,
                                                    int   nthCtl){
 #       ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamDeleteControlPoint - " << param << " ...";
 #       endif
-    ParametricInstance *paramInstance = reinterpret_cast<ParametricInstance*>(param);
-    if(!paramInstance || !paramInstance->verifyMagic()) {
+    CurvesHolder *curveHolder= reinterpret_cast<CurvesHolder*>(param);
+    if(!curveHolder) {
 #         ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
 #         endif
         return kOfxStatErrBadHandle;
     }
-    
-    
+
+
     OfxStatus stat = kOfxStatErrUnsupported;
-    
-    stat = paramInstance->deleteControlPoint(curveIndex, nthCtl);
-    
+
+    stat = curveHolder->deleteControlPoint(curveIndex, nthCtl);
+
 #       ifdef OFX_DEBUG_PARAMETERS
     std::cout << ' ' << StatStr(stat) << std::endl;
 #       endif
@@ -425,27 +581,27 @@ static OfxStatus parametricParamDeleteControlPoint(OfxParamHandle param,
 
 /** @brief Delete all curve control points on the given param.
 
-      \arg param                 handle to the parametric parameter
-      \arg curveIndex            which dimension to clear
-   */
+             \arg param                 handle to the parametric parameter
+             \arg curveIndex            which dimension to clear
+             */
 static OfxStatus parametricParamDeleteAllControlPoints(OfxParamHandle param,
                                                        int   curveIndex){
 #       ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamDeleteAllControlPoints - " << param << " ...";
 #       endif
-    ParametricInstance *paramInstance = reinterpret_cast<ParametricInstance*>(param);
-    if(!paramInstance || !paramInstance->verifyMagic()) {
+    CurvesHolder *curveHolder = reinterpret_cast<CurvesHolder*>(param);
+    if(!curveHolder) {
 #         ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
 #         endif
         return kOfxStatErrBadHandle;
     }
-    
-    
+
+
     OfxStatus stat = kOfxStatErrUnsupported;
-    
-    stat = paramInstance->deleteAllControlPoints(curveIndex);
-    
+
+    stat = curveHolder->deleteAllControlPoints(curveIndex);
+
 #       ifdef OFX_DEBUG_PARAMETERS
     std::cout << ' ' << StatStr(stat) << std::endl;
 #       endif

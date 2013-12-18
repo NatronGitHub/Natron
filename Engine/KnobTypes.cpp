@@ -12,6 +12,8 @@
 
 #include <cfloat>
 
+#include "Engine/Curve.h"
+
 using namespace Natron;
 using std::make_pair;
 using std::pair;
@@ -807,6 +809,7 @@ std::string RichText_Knob::getString() const
 
 Parametric_Knob::Parametric_Knob(KnobHolder *holder, const std::string &description, int dimension)
 : Knob(holder,description,dimension)
+, _curves(dimension)
 , _curvesColor(dimension)
 , _curveLabels(dimension)
 {
@@ -814,6 +817,7 @@ Parametric_Knob::Parametric_Knob(KnobHolder *holder, const std::string &descript
         RGBAColourF color;
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;
+        _curves[i] = boost::shared_ptr<Curve>(new Curve(this));
     }
     _range[0] = 0.;
     _range[1] = 1.;

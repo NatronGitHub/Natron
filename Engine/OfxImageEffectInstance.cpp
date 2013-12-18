@@ -365,7 +365,6 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
         knob = ret->getKnob();
         instance = ret;
     } else if (descriptor.getType() == kOfxParamTypeParametric) {
-        OFX::Host::ParametricParam::addParametricProperties(descriptor);
         OfxParametricInstance* ret = new OfxParametricInstance(node(), descriptor);
         knob = ret->getKnob();
         instance = ret;

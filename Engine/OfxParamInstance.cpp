@@ -1612,16 +1612,9 @@ OfxParametricInstance::OfxParametricInstance(OfxEffectInstance* node, OFX::Host:
     
     const OFX::Host::Property::Set &properties = getProperties();
     int parametricDimension = properties.getIntProperty(kOfxParamPropParametricDimension);
-    
-    std::string paramLabel;
-    for (int i = 0; i < _knob->getDimension(); ++i) {
-        const std::string& curveName = getProperties().getStringProperty(kOfxPropLabel,i);
-        paramLabel.append(curveName);
-    }
-    paramLabel.append("_curves");
 
     
-    _knob = Natron::createKnob<Parametric_Knob>(node, paramLabel,parametricDimension);
+    _knob = Natron::createKnob<Parametric_Knob>(node, getParamLabel(this),parametricDimension);
 
     setLabel();//set label on all curves
     
@@ -1671,13 +1664,11 @@ void OfxParametricInstance::setSecret() {
 
 /// callback which should update label
 void OfxParametricInstance::setLabel() {
-    std::string paramLabel;
+    _knob->setName(getParamLabel(this));
     for (int i = 0; i < _knob->getDimension(); ++i) {
-        const std::string& curveName = getProperties().getStringProperty(kOfxPropLabel,i);
+        const std::string& curveName = getProperties().getStringProperty(kOfxParamPropDimensionLabel,i);
         _knob->setCurveLabel(i, curveName);
-        paramLabel.append(curveName);
     }
-    paramLabel.append("_curves");
 }
 
 void OfxParametricInstance::setDisplayRange() {
@@ -1689,72 +1680,32 @@ void OfxParametricInstance::setDisplayRange() {
     _knob->setParametricRange(range_min, range_max);
 }
 
-OfxStatus OfxParametricInstance::getValue(int curveIndex,OfxTime /*time*/,double parametricPosition,double *returnValue){
-    *returnValue = _knob->getValueAtTime<double>(parametricPosition, curveIndex);
-    return kOfxStatOK;
-}
-
-OfxStatus OfxParametricInstance::getNControlPoints(int curveIndex,double /*time*/,int *returnValue){
-    *returnValue = _knob->getCurve(curveIndex)->keyFramesCount();
-    return kOfxStatOK;
-}
-
-OfxStatus OfxParametricInstance::getNthControlPoint(int curveIndex,
-                                                    double /*time*/,
-                                                    int    nthCtl,
-                                                    double *key,
-                                                    double *value){
-    const KeyFrameSet& set = _knob->getCurve(curveIndex)->getKeyFrames();
-    int index = 0;
-    for(KeyFrameSet::const_iterator it = set.begin();it!=set.end();++it){
-        if (index == nthCtl) {
-            *key = it->getTime();
-            *value = it->getValue();
-            return kOfxStatOK;
-        }
-    }
-    return kOfxStatErrValue;
-}
-
-OfxStatus OfxParametricInstance::setNthControlPoint(int   curveIndex,
-                                                    double /*time*/,
-                                                    int   /*nthCtl*/,
-                                                    double key,
-                                                    double value,
-                                                    bool /*addAnimationKey*/)
+OfxStatus OfxParametricInstance::getValue(int curveIndex,OfxTime time,double parametricPosition,double *returnValue)
 {
-    //mby we could also check that nthCtl is not out of range
-    _knob->setValueAtTime<double>(key, value,curveIndex);
-    return kOfxStatOK;
-}
-
-
-OfxStatus OfxParametricInstance::addControlPoint(int   curveIndex,
-                                                 double /*time*/,
-                                                 double key,
-                                                 double value,
-                                                 bool /*addAnimationKey*/){
     
-    _knob->setValueAtTime<double>(key, value,curveIndex);
-    return kOfxStatOK;
 }
 
-OfxStatus  OfxParametricInstance::deleteControlPoint(int   curveIndex,int   nthCtl){
-    const KeyFrameSet& set = _knob->getCurve(curveIndex)->getKeyFrames();
-    int index = 0;
-    for(KeyFrameSet::const_iterator it = set.begin();it!=set.end();++it){
-        if (index == nthCtl) {
-            _knob->deleteValueAtTime(it->getTime(), curveIndex);
-            return kOfxStatOK;
-        }
-    }
-    return kOfxStatErrValue;
+void OfxParametricInstance::onNthControlPointSet(int curveIndex,const OFX::Host::ParametricParam::ControlPoint& cp)
+{
+    
 }
 
-OfxStatus  OfxParametricInstance::deleteAllControlPoints(int   curveIndex){
-    _knob->removeAnimation(curveIndex);
-    return kOfxStatOK;
+void OfxParametricInstance::onControlPointAdded(int curveIndex,const OFX::Host::ParametricParam::ControlPoint& cp)
+{
+    
 }
+
+void OfxParametricInstance::onControlPointDeleted(int curveIndex,const OFX::Host::ParametricParam::ControlPoint& cp)
+{
+    
+}
+
+void OfxParametricInstance::onCurveCleared(int curveIndex)
+{
+    
+}
+
+
 
 void OfxParametricInstance::onCustomBackgroundDrawingRequested(){
     if(_overlayInteract){
