@@ -589,3 +589,11 @@ const std::map<boost::shared_ptr<Knob> ,KnobGui*>& NodeGui::getKnobs() const{
 void NodeGui::serialize(NodeGuiSerialization* serializationObject) const{
     serializationObject->initialize(this);
 }
+
+QUndoStack* NodeGui::getUndoStack() const{
+    if(_settingsPanel){
+        return _settingsPanel->getUndoStack();
+    }else{
+        return NULL;
+    }
+}

@@ -172,17 +172,19 @@ Variant Knob::getValueAtTime(double time,int dimension) const{
     }
 }
 
-bool Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason,KeyFrame* newKey){
+Knob::ValueChangedReturnCode Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason,KeyFrame* newKey){
     
     if(dimension > (int)_imp->_values.size()){
         throw std::invalid_argument("Knob::setValue(): Dimension out of range");
     }
     
+    Knob::ValueChangedReturnCode  ret = NO_KEYFRAME_ADDED;
+    
     ///if the knob is slaved to another knob,return, because we don't want the
     ///gui to be unsynchronized with what lies internally.
     boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
     if(isSlave){
-        return false;
+        return ret;
     }
     
     _imp->_values[dimension] = v;
@@ -191,16 +193,21 @@ bool Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason 
     if(getAnimationLevel(dimension) != Natron::NO_ANIMATION && _imp->_holder->getApp() &&
        (reason == Natron::USER_EDITED || reason == Natron::PLUGIN_EDITED) && newKey != NULL){
         SequenceTime time = _imp->_holder->getApp()->getTimeLine()->currentFrame();
-        setValueAtTime(time, v, dimension,reason,newKey);
-        return true;
+        bool addedKeyFrame = setValueAtTime(time, v, dimension,reason,newKey);
+        if(addedKeyFrame){
+            ret = KEYFRAME_ADDED;
+        }else{
+            ret = KEYFRAME_MODIFIED;
+        }
     }
     
-    
-    evaluateValueChange(dimension,reason);
-    return false;
+    if(ret == NO_KEYFRAME_ADDED){ //the other cases already called this in setValueAtTime()
+        evaluateValueChange(dimension,reason);
+    }
+    return ret;
 }
 
-void Knob::setValueAtTime(int time, const Variant& v, int dimension, Natron::ValueChangedReason reason,KeyFrame* newKey){
+bool Knob::setValueAtTime(int time, const Variant& v, int dimension, Natron::ValueChangedReason reason,KeyFrame* newKey){
     
     if(dimension > (int)_imp->_curves.size()){
         throw std::invalid_argument("Knob::setValueAtTime(): Dimension out of range");
@@ -210,19 +217,19 @@ void Knob::setValueAtTime(int time, const Variant& v, int dimension, Natron::Val
     ///gui to be unsynchronized with what lies internally.
     boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
     if(isSlave){
-        return;
+        return false;
     }
     
     
     boost::shared_ptr<Curve> curve = _imp->_curves[dimension];
 #warning "We should query the variant's type passed in parameter to construct a keyframe with an appropriate value"
     *newKey = KeyFrame(time,v.toDouble());
-    curve->addKeyFrame(*newKey);
+    bool ret = curve->addKeyFrame(*newKey);
     
     if(reason != Natron::USER_EDITED){
         emit keyFrameSet(time,dimension);
     }
-    
+    return ret;
 }
 
 void Knob::deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason reason){
@@ -342,7 +349,7 @@ void Knob::save(KnobSerialization* serializationObj) const {
     serializationObj->initialize(this);
 }
 
-bool Knob::onValueChanged(int dimension,const Variant& variant,KeyFrame* newKey){
+Knob::ValueChangedReturnCode Knob::onValueChanged(int dimension,const Variant& variant,KeyFrame* newKey){
     return setValue(variant, dimension,Natron::USER_EDITED,newKey);
 }
 

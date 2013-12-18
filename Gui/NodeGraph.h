@@ -123,8 +123,6 @@ public:
     void refreshAllEdges();
 
     bool areAllPreviewTurnedOff() const { return _previewsTurnedOff; }
-
-    std::pair<QAction*,QAction*> getUndoRedoActions() const;
     
 public slots:
     
@@ -210,9 +208,7 @@ private:
     QGraphicsProxyWidget* _navigatorProxy;
     
     QUndoStack* _undoStack;
-    
-    QAction* _undoAction,*_redoAction;
-    
+        
     QMenu* _menu;
     
     QGraphicsItem *_tL,*_tR,*_bR,*_bL;

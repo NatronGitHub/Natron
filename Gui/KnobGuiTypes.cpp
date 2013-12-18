@@ -190,7 +190,7 @@ void Int_KnobGui::onSliderValueChanged(double d)
 {
     assert(getKnob()->getDimension() == 1);
     _spinBoxes[0].first->setValue(d);
-    pushUndoCommand(new KnobUndoCommand(this, 0, getKnob()->getValue(0), Variant(d)));
+    pushValueChangedCommand(Variant(d));
 }
 
 void Int_KnobGui::onSpinBoxValueChanged()
@@ -199,8 +199,7 @@ void Int_KnobGui::onSpinBoxValueChanged()
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         newValues.push_back(Variant(_spinBoxes[i].first->value()));
     }
-    
-    pushUndoCommand(new KnobMultipleUndosCommand(this, getKnob()->getValueForEachDimension(), newValues));
+    pushValueChangedCommand(newValues);
 }
 
 void Int_KnobGui::_hide()
@@ -294,8 +293,7 @@ void Bool_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLeve
 
 void Bool_KnobGui::onCheckBoxStateChanged(bool b)
 {
-    std::map<int, Variant> newValues;
-    pushUndoCommand(new KnobUndoCommand(this, 0, getKnob()->getValue(0), Variant(b)));
+    pushValueChangedCommand(Variant(b));
 }
 void Bool_KnobGui::_hide()
 {
@@ -471,7 +469,7 @@ void Double_KnobGui::onSliderValueChanged(double d)
 {
     assert(getKnob()->getDimension() == 1);
     _spinBoxes[0].first->setValue(d);
-    pushUndoCommand(new KnobUndoCommand(this, 0, getKnob()->getValue(0), Variant(d)));
+    pushValueChangedCommand(Variant(d));
 }
 void Double_KnobGui::onSpinBoxValueChanged()
 {
@@ -479,7 +477,7 @@ void Double_KnobGui::onSpinBoxValueChanged()
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         newValues.push_back(Variant(_spinBoxes[i].first->value()));
     }
-    pushUndoCommand(new KnobMultipleUndosCommand(this, getKnob()->getValueForEachDimension(), newValues));
+    pushValueChangedCommand(newValues);
 }
 void Double_KnobGui::_hide()
 {
@@ -597,7 +595,7 @@ void Choice_KnobGui::createWidget(QGridLayout *layout, int row)
 }
 void Choice_KnobGui::onCurrentIndexChanged(int i)
 {
-    pushUndoCommand(new KnobUndoCommand(this, 0, getKnob()->getValue(0), Variant(i)));
+    pushValueChangedCommand(Variant(i));
     
 }
 void Choice_KnobGui::onEntriesPopulated()
@@ -982,7 +980,7 @@ void Color_KnobGui::onColorChanged()
         color.setAlphaF(_aBox->value());
         newValues.push_back(Variant(color.alphaF()));
     }
-    pushUndoCommand(new KnobMultipleUndosCommand(this, getKnob()->getValueForEachDimension(), newValues));
+    pushUndoCommand(new KnobUndoCommand(this, getKnob()->getValueForEachDimension(), newValues));
 }
 
 
@@ -1132,7 +1130,7 @@ String_KnobGui::~String_KnobGui()
 
 void String_KnobGui::onStringChanged(const QString &str)
 {
-    pushUndoCommand(new KnobUndoCommand(this, 0, getKnob()->getValue(0), Variant(str)));
+    pushValueChangedCommand(Variant(str));
 }
 void String_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 {
@@ -1347,7 +1345,7 @@ void RichText_KnobGui::setEnabled()
 
 void RichText_KnobGui::onTextChanged()
 {
-    pushUndoCommand(new KnobUndoCommand(this,0,getKnob()->getValue(),Variant(_textEdit->toPlainText())));
+    pushValueChangedCommand(Variant(_textEdit->toPlainText()));
 }
 
 
@@ -1397,19 +1395,19 @@ void Parametric_KnobGui::createWidget(QGridLayout *layout, int row) {
     layout->addWidget(_curveWidget,row,1);
     
     
-    for (int i = 0; i < getKnob()->getDimension(); ++i) {
-        CurveGui* curve =  _curveWidget->createCurve(parametricKnob->getCurve(i), parametricKnob->getDimensionName(i).c_str());
-        QColor color;
-        double r,g,b;
-        parametricKnob->getCurveColor(i, &r, &g, &b);
-        color.setRedF(r);
-        color.setGreenF(g);
-        color.setBlueF(b);
-        curve->setColor(color);
-        QTreeWidgetItem* item = new QTreeWidgetItem(_tree);
-        item->setSelected(true);
-        _curves.insert(std::make_pair(curve, item));
-    }
+//    for (int i = 0; i < getKnob()->getDimension(); ++i) {
+//        CurveGui* curve =  _curveWidget->createCurve(parametricKnob->getCurve(i), parametricKnob->getDimensionName(i).c_str());
+//        QColor color;
+//        double r,g,b;
+//        parametricKnob->getCurveColor(i, &r, &g, &b);
+//        color.setRedF(r);
+//        color.setGreenF(g);
+//        color.setBlueF(b);
+//        curve->setColor(color);
+//        QTreeWidgetItem* item = new QTreeWidgetItem(_tree);
+//        item->setSelected(true);
+//        _curves.insert(std::make_pair(curve, item));
+//    }
 }
 
 void Parametric_KnobGui::_hide() {

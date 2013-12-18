@@ -1040,7 +1040,7 @@ void AppManager::loadAllPlugins() {
     loadWritePlugins();
     
     /*loading ofx plugins*/
-    //  ofxHost->loadOFXPlugins(&_plugins);
+    ofxHost->loadOFXPlugins(&_plugins);
     
 }
 

@@ -64,6 +64,8 @@ class ProjectGui;
 class PluginToolButton;
 class ComboBox;
 class CurveEditor;
+class QUndoGroup;
+class QUndoStack;
 class DockablePanel;
 class PreferencesPanel;
 
@@ -254,9 +256,8 @@ public:
     ToolButton* findOrCreateToolButton(PluginToolButton* plugin);
     
     const std::vector<ToolButton*>& getToolButtons() const {return _toolButtons;}
-    
-    void setUndoRedoActions(QAction* undoAction,QAction* redoAction);
 
+    void registerNewUndoStack(QUndoStack* stack);
     
     bool isGraphWorthless() const;
     
@@ -285,6 +286,8 @@ public:
     void setCurveEditorOnTop();
         
 private:
+    
+    void setUndoRedoActions(QAction* undoAction,QAction* redoAction);
     
     void restoreGuiGeometry();
     
@@ -344,6 +347,8 @@ public slots:
     
     void addToolButttonsToToolBar();
 
+    void onCurrentUndoStackChanged(QUndoStack* stack);
+    
     void showSettings();
 
 private:
@@ -357,6 +362,10 @@ private:
 
     QAction* _currentUndoAction;
     QAction* _currentRedoAction;
+    
+    QUndoGroup* _undoStacksGroup;
+    std::map<QUndoStack*,std::pair<QAction*,QAction*> > _undoStacksActions;
+    
 public:
     // FIXME: public pointer members are the sign of a serious design flaw!!! should at least be shared_ptr!
     /*TOOL BAR ACTIONS*/

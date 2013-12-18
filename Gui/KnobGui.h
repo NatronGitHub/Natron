@@ -65,11 +65,15 @@ public:
         
     void pushUndoCommand(QUndoCommand* cmd);
     
+    const QUndoCommand* getLastUndoCommand() const;
+    
     bool hasWidgetBeenCreated() const {return _widgetCreated;}
     
     void setKeyframe(SequenceTime time,int dimension);
 
     void removeKeyFrame(SequenceTime time,int dimension);
+    
+    
 public slots:
     /*Called when the value held by the knob is changed internally.
      This should in turn update the GUI but not emit the valueChanged()
@@ -146,6 +150,13 @@ signals:
      **/
     void keyInterpolationChanged();
     
+protected:
+    
+    
+    void pushValueChangedCommand(const std::vector<Variant>& newValues);
+    
+    void pushValueChangedCommand(const Variant& v, int dimension = 0);
+    
 private:
 
     virtual void _hide() = 0;
@@ -176,7 +187,7 @@ private:
     
     /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
      signal/slot sequence can cause an infinite loop.*/
-    bool setValue(int dimension,const Variant& variant,KeyFrame* newKey);
+     int setValue(int dimension,const Variant& variant,KeyFrame* newKey);
     
     void setInterpolationForDimensions(const std::vector<int>& dimensions,Natron::KeyframeType interp);
     

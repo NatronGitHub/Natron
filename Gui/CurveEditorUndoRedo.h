@@ -23,96 +23,69 @@ class KnobGui;
 class CurveWidget;
 class NodeCurveEditorElement;
 
-
-//////////////////////////////ADD KEY COMMAND//////////////////////////////////////////////
-class AddKeyCommand : public QUndoCommand {
-public:
-
-    AddKeyCommand(CurveWidget *editor, NodeCurveEditorElement *curveEditorElement, const std::string& actionName,
-                  const KeyFrame& key, QUndoCommand *parent = 0);
-
-    virtual void undo();
-    virtual void redo();
-
-private:
-
-    std::string _actionName;
-    KeyFrame _key;
-    NodeCurveEditorElement* _element;
-    CurveWidget *_curveWidget;
-};
-
 //////////////////////////////ADD MULTIPLE KEYS COMMAND//////////////////////////////////////////////
 
-class PasteKeysCommand : public QUndoCommand {
+class AddKeysCommand : public QUndoCommand {
 public:
 
-    PasteKeysCommand(CurveWidget *editor,NodeCurveEditorElement* element, const std::vector<KeyFrame> &keys, QUndoCommand *parent = 0);
+    AddKeysCommand(CurveWidget *editor,CurveGui* curve, const std::vector<KeyFrame> &keys, QUndoCommand *parent = 0);
 
-    virtual ~PasteKeysCommand() {}
+    virtual ~AddKeysCommand() {}
     virtual void undo();
     virtual void redo();
 private:
+    
+    void addOrRemoveKeyframe(bool add);
 
-    std::string _actionName;
-    NodeCurveEditorElement* _element;
+    CurveGui* _curve;
     std::vector<KeyFrame> _keys;
     CurveWidget *_curveWidget;
 };
 
 
-//////////////////////////////REMOVE KEY COMMAND//////////////////////////////////////////////
-
-class RemoveKeyCommand : public QUndoCommand{
-public:
-
-    RemoveKeyCommand(CurveWidget* editor,NodeCurveEditorElement* curveEditorElement
-                     ,const KeyFrame& key,QUndoCommand *parent = 0);
-    virtual void undo();
-    virtual void redo();
-
-private:
-
-    NodeCurveEditorElement* _element;
-    KeyFrame _key;
-    CurveWidget* _curveWidget;
-};
-
 
 //////////////////////////////REMOVE  MULTIPLE KEYS COMMAND//////////////////////////////////////////////
 
-class RemoveMultipleKeysCommand : public QUndoCommand{
+class RemoveKeysCommand : public QUndoCommand{
 public:
-    RemoveMultipleKeysCommand(CurveWidget* editor,const std::vector< std::pair<NodeCurveEditorElement*,KeyFrame > >& curveEditorElement
+    RemoveKeysCommand(CurveWidget* editor,const std::vector< std::pair<CurveGui*,KeyFrame > >& curveEditorElement
                               ,QUndoCommand *parent = 0);
-    virtual ~RemoveMultipleKeysCommand() { }
+    virtual ~RemoveKeysCommand() { }
     virtual void undo();
     virtual void redo();
 
 private:
 
-    std::vector<std::pair<NodeCurveEditorElement*,KeyFrame > > _keys;
+    void addOrRemoveKeyframe(bool add);
+    
+    std::vector<std::pair<CurveGui*,KeyFrame > > _keys;
     CurveWidget* _curveWidget;
 };
 
 //////////////////////////////MOVE KEY COMMAND//////////////////////////////////////////////
 struct KeyMove{
     CurveGui* curve;
-    KnobGui* knob;
-    KeyFrame oldPos;
+    KeyFrame key;
+    
+    KeyMove(CurveGui* c,const KeyFrame& k)
+    : curve(c)
+    , key(k)
+    {
+        
+    }
 };
 
 
 typedef std::vector< KeyMove > KeyMoveV;
 
-class MoveMultipleKeysCommand : public QUndoCommand{
+class MoveKeysCommand : public QUndoCommand{
 
 
 
 public:
 
-    MoveMultipleKeysCommand(CurveWidget* editor,const KeyMoveV& keys,int dt,double dv,QUndoCommand *parent = 0);
-    virtual ~MoveMultipleKeysCommand(){ }
+    MoveKeysCommand(CurveWidget* editor,const KeyMoveV& keys,int dt,double dv,QUndoCommand *parent = 0);
+    virtual ~MoveKeysCommand(){ }
     virtual void undo();
     virtual void redo();
     virtual int id() const ;
@@ -130,63 +103,38 @@ private:
 };
 
 
-//////////////////////////////SELECT COMMAND//////////////////////////////////////////////
-//stub command to break move cycles
-class SelectKeysCommand : public QUndoCommand{
-
-
-
-public:
-
-    SelectKeysCommand(QUndoCommand *parent = 0);
-    virtual ~SelectKeysCommand(){ }
-    virtual void undo(){}
-    virtual void redo(){}
-
-};
-
-
-
-//////////////////////////////SET KEY INTERPOLATION COMMAND//////////////////////////////////////////////
+//////////////////////////////SET MULTIPLE KEYS INTERPOLATION COMMAND//////////////////////////////////////////////
 
 struct KeyInterpolationChange{
     Natron::KeyframeType oldInterp;
     Natron::KeyframeType newInterp;
     CurveGui* curve;
     KeyFrame key;
-    KnobGui* knob;
+    
+    KeyInterpolationChange(Natron::KeyframeType oldType,Natron::KeyframeType newType,CurveGui* c,const KeyFrame& k)
+    : oldInterp(oldType)
+    , newInterp(newType)
+    , curve(c)
+    , key(k)
+    {
+        
+    }
 };
 
-class SetKeyInterpolationCommand : public QUndoCommand{
+
+
+class SetKeysInterpolationCommand : public QUndoCommand{
 
 public:
 
-    SetKeyInterpolationCommand(CurveWidget* editor,
-                               const KeyInterpolationChange& change,
-                               QUndoCommand *parent = 0);
+    SetKeysInterpolationCommand(CurveWidget* editor,const std::vector< KeyInterpolationChange >& keys,QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
 
 private:
 
-    KeyInterpolationChange _change;
-    CurveWidget* _curveWidget;
-};
-
-
-
-//////////////////////////////SET MULTIPLE KEYS INTERPOLATION COMMAND//////////////////////////////////////////////
-
-class SetMultipleKeysInterpolationCommand : public QUndoCommand{
-
-public:
-
-    SetMultipleKeysInterpolationCommand(CurveWidget* editor,const std::vector< KeyInterpolationChange >& keys,QUndoCommand *parent = 0);
-    virtual void undo();
-    virtual void redo();
-
-private:
-
+    void setNewInterpolation(bool undo);
+    
     std::vector< KeyInterpolationChange > _oldInterp;
     CurveWidget* _curveWidget;
 };

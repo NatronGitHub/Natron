@@ -32,6 +32,7 @@ class QAction;
 class Knob;
 class NodeGuiSerialization;
 class KnobGui;
+class QUndoStack;
 class QMenu;
 namespace Natron {
 class ChannelSet;
@@ -143,6 +144,9 @@ public:
     void setSelectedGradient(const QLinearGradient& gradient);
     
     void setDefaultGradient(const QLinearGradient& gradient);
+    
+    QUndoStack* getUndoStack() const;
+    
 public slots:
   
     void togglePreview();

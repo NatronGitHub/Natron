@@ -94,6 +94,10 @@ KnobGui::~KnobGui(){
     delete _animationMenu;
 }
 
+const QUndoCommand* KnobGui::getLastUndoCommand() const{
+    return _container->getLastUndoCommand();
+}
+
 void KnobGui::pushUndoCommand(QUndoCommand* cmd){
     if(_knob->canBeUndone() && !_knob->isInsignificant()){
         _container->pushUndoCommand(cmd);
@@ -255,7 +259,6 @@ void KnobGui::onShowInCurveEditorActionTriggered(){
 
 void KnobGui::onRemoveAnyAnimationActionTriggered(){
     assert(_knob->getHolder()->getApp());
-#warning "FIXME: we don't want to use the curve editor's undo/redo stack, we want to use the node's panel undo/redo stack instead"
     std::vector<std::pair<CurveGui *, KeyFrame > > toRemove;
     for(int i = 0; i < _knob->getDimension();++i){
         CurveGui* curve = _knob->getHolder()->getApp()->getGui()->_curveEditor->findCurve(this, i);
@@ -264,7 +267,8 @@ void KnobGui::onRemoveAnyAnimationActionTriggered(){
             toRemove.push_back(std::make_pair(curve,*it));
         }
     }
-    _knob->getHolder()->getApp()->getGui()->_curveEditor->removeKeyFrames(toRemove);
+    pushUndoCommand(new RemoveKeysCommand(_knob->getHolder()->getApp()->getGui()->_curveEditor->getCurveWidget(),
+                                          toRemove));
     //refresh the gui so it doesn't indicate the parameter is animated anymore
     for(int i = 0; i < _knob->getDimension();++i){
         onInternalValueChanged(i);
@@ -340,7 +344,11 @@ void KnobGui::onSetKeyActionTriggered(){
     //get the current time on the global timeline
     SequenceTime time = _knob->getHolder()->getApp()->getTimeLine()->currentFrame();
     for(int i = 0; i < _knob->getDimension();++i){
-        setKeyframe(time,i);
+        CurveGui* curve = _knob->getHolder()->getApp()->getGui()->_curveEditor->findCurve(this, i);
+        std::vector<KeyFrame> kVec;
+        kVec.push_back(KeyFrame(time,_knob->getValue<double>(i)));
+        pushUndoCommand(new AddKeysCommand(_knob->getHolder()->getApp()->getGui()->_curveEditor->getCurveWidget(),
+                                           curve,kVec));
     }
     
 }
@@ -356,9 +364,13 @@ void KnobGui::onRemoveKeyActionTriggered(){
     assert(_knob->getHolder()->getApp());
     //get the current time on the global timeline
     SequenceTime time = _knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+    std::vector<std::pair<CurveGui*,KeyFrame> > toRemove;
     for(int i = 0; i < _knob->getDimension();++i){
-        removeKeyFrame(time,i);
+        CurveGui* curve = _knob->getHolder()->getApp()->getGui()->_curveEditor->findCurve(this, i);
+        toRemove.push_back(std::make_pair(curve,KeyFrame(time,_knob->getValue<double>(i))));
     }
+    pushUndoCommand(new RemoveKeysCommand(_knob->getHolder()->getApp()->getGui()->_curveEditor->getCurveWidget(),
+                                          toRemove));
 }
 
 void KnobGui::hide(){
@@ -566,13 +578,36 @@ void KnobGui::checkAnimationLevel(int dimension){
     reflectAnimationLevel(dimension, level);
 }
 
-bool KnobGui::setValue(int dimension,const Variant& variant,KeyFrame* newKey){
+int KnobGui::setValue(int dimension,const Variant& variant,KeyFrame* newKey){
     
-    bool ret = _knob->onValueChanged(dimension, variant, newKey);
-    if(ret){
+    Knob::ValueChangedReturnCode ret = _knob->onValueChanged(dimension, variant, newKey);
+    if(ret > 0){
         emit keyFrameSet();
+//        //even though the onValueChanged() added a key, we call this to
+//        //register it in the undo stack
+//        CurveGui* curve = _knob->getHolder()->getApp()->getGui()->_curveEditor->findCurve(this, dimension);
+//        std::vector<KeyFrame> kVec;
+//        kVec.push_back(*newKey);
+//        pushUndoCommand(new AddKeysCommand(_knob->getHolder()->getApp()->getGui()->_curveEditor->getCurveWidget(),
+//                                           curve,kVec));
     }
     updateGUI(dimension,variant);
     checkAnimationLevel(dimension);
-    return ret;
+    return (int)ret;
+}
+
+void KnobGui::pushValueChangedCommand(const std::vector<Variant>& newValues){
+    pushUndoCommand(new KnobUndoCommand(this, getKnob()->getValueForEachDimension(),newValues));
+}
+
+void KnobGui::pushValueChangedCommand(const Variant& v, int dimension){
+    std::vector<Variant> vec(getKnob()->getDimension());
+    for (int i = 0; i < getKnob()->getDimension(); ++i) {
+        if(i != dimension){
+            vec[i] = getKnob()->getValue(i);
+        }else{
+            vec[i] = v;
+        }
+    }
+    pushUndoCommand(new KnobUndoCommand(this, getKnob()->getValueForEachDimension(),vec));
 }

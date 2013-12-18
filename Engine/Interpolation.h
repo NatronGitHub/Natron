@@ -23,11 +23,12 @@ namespace Natron
 
 /**
  * @brief Interpolates using the control points P0(t0,v0) , P3(t3,v3)
- * and the tangents P1(t1,v1) (being the tangent of P0) and P2(t2,v2)
- * (being the tangent of P3) the value at 'currentTime' using the
+ * and the derivatives P1(t1,v1) (being the derivative at P0 with respect to
+ * t \in [t1,t2]) and P2(t2,v2) (being the derivative at P3 with respect to
+ * t \in [t1,t2]) the value at 'currentTime' using the
  * interpolation method "interp".
  * Note that for CATMULL-ROM you must use the function interpolate_catmullRom
- * which will compute the tangents for you.
+ * which will compute the derivatives for you.
  **/
 template <typename T>
 T interpolate(double tcur, const T vcur, //start control point
@@ -39,9 +40,10 @@ T interpolate(double tcur, const T vcur, //start control point
               KeyframeType interpNext)
 {
     const T P0 = vcur;
-    const T P0pr = vcurDerivRight;
-    const T P3pl = vnextDerivLeft;
     const T P3 = vnext;
+    // Hermite coefficients P0' and P3' are the derivatives with respect to x \in [0,1]
+    const T P0pr = vcurDerivRight*(tnext-tcur); // normalize for x \in [0,1]
+    const T P3pl = vnextDerivLeft*(tnext-tcur); // normalize for x \in [0,1]
     assert((interp == KEYFRAME_NONE || currentTime >= tcur) && (interpNext == KEYFRAME_NONE || currentTime <= tnext));
     // after the last / before the first keyframe, derivatives are wrt currentTime (i.e. non-normalized)
     if (interp == KEYFRAME_NONE) {
@@ -84,7 +86,7 @@ T interpolate(double tcur, const T vcur, //start control point
 
 
 /**
- * @brief This function will set the left and right tangent of 'cur', depending on the interpolation method 'interp' and the
+ * @brief This function will set the left and right derivative of 'cur', depending on the interpolation method 'interp' and the
  * previous and next key frames.
  * ----------------------------------------------------------------------------
  * Using the Bezier cubic equation, its 2nd derivative can be expressed as such:
@@ -99,8 +101,8 @@ T interpolate(double tcur, const T vcur, //start control point
  * and for t = 1 , we have:
  * Q''(1) = 6(Q0 - Q3 + 2Q3'_l / 3 + Q0'_r / 3)
  *
- * We also know that the 1st derivative of B(t) at 0 is the tangent to P0
- * and the 1st derivative of B(t) at 1 is the tangent to P3, i.e:
+ * We also know that the 1st derivative of B(t) at 0 is the derivative to P0
+ * and the 1st derivative of B(t) at 1 is the derivative to P3, i.e:
  * B'(0) = P0'_r
  * B'(1) = P3'_l
  **/
@@ -122,10 +124,10 @@ Q1 := Q0 + Q0pr / 3:
 P2 := P3 - P3pl / 3:
 Q3 := P0:
 
-tangentAtCurRight := dP(0)/(tnext-tcur):
+derivativeAtCurRight := dP(0)/(tnext-tcur):
 curvatureAtCurRight := dP2(0)/(tnext-tcur):
 curvatureAtNextLeft:= dP2(1)/(tnext - tcur):
- tangentAtCurLeft := dQ(1)/(tcur-tprev):
+ derivativeAtCurLeft := dQ(1)/(tcur-tprev):
 curvatureAtCurLeft:= dQ2(1)/(tcur - tprev):
 curvatureAtPrevRight:= dQ2(0)/(tcur - tprev):
 
@@ -146,24 +148,24 @@ solve({curvatureAtCurRight = 0, curvatureAtCurLeft = 0, curvatureAtPrevRight = 0
 map(C,%):
 
 printf("cubic, general case:"):
-solve({curvatureAtCurRight = curvatureAtCurLeft, tangentAtCurRight = tangentAtCurLeft}, {P0pr, Q3pl});
+solve({curvatureAtCurRight = curvatureAtCurLeft, derivativeAtCurRight = derivativeAtCurLeft}, {P0pr, Q3pl});
 map(C,%):
 
 printf("cubic, prev is linear:"):
-solve({curvatureAtCurRight = curvatureAtCurLeft, tangentAtCurRight = tangentAtCurLeft, curvatureAtPrevRight = 0},{P0pr, Q3pl, Q0pr});
+solve({curvatureAtCurRight = curvatureAtCurLeft, derivativeAtCurRight = derivativeAtCurLeft, curvatureAtPrevRight = 0},{P0pr, Q3pl, Q0pr});
 map(C,%):
 
 printf("cubic, next is linear:"):
-solve({curvatureAtCurRight = curvatureAtCurLeft, tangentAtCurRight = tangentAtCurLeft, curvatureAtNextLeft = 0}, {P0pr, Q3pl, P3pl});
+solve({curvatureAtCurRight = curvatureAtCurLeft, derivativeAtCurRight = derivativeAtCurLeft, curvatureAtNextLeft = 0}, {P0pr, Q3pl, P3pl});
 map(C,%):
 
 printf("cubic, prev and next are linear"):
-solve({curvatureAtCurRight = curvatureAtCurLeft, tangentAtCurRight = tangentAtCurLeft, curvatureAtPrevRight = 0, curvatureAtNextLeft = 0},{P0pr, Q3pl, Q0pr, P3pl});
+solve({curvatureAtCurRight = curvatureAtCurLeft, derivativeAtCurRight = derivativeAtCurLeft, curvatureAtPrevRight = 0, curvatureAtNextLeft = 0},{P0pr, Q3pl, Q0pr, P3pl});
 map(C,%):
 
 */
 template <typename T>
-void autoComputeTangents(Natron::KeyframeType interpPrev,
+void autoComputeDerivatives(Natron::KeyframeType interpPrev,
                          Natron::KeyframeType interp,
                          Natron::KeyframeType interpNext,
                          double tprev, const T vprev, // vprev = Q0
@@ -178,8 +180,15 @@ void autoComputeTangents(Natron::KeyframeType interpPrev,
     const T Q3 = vcur;
     const T P0 = vcur;
     const T P3 = vnext;
-    const T Q0pr = vprevDerivRight;
-    const T P3pl = vnextDerivLeft;
+    // Hermite coefficients P0' and P3' are the derivatives with respect to x \in [0,1]
+    if (interpPrev == KEYFRAME_NONE) {
+        tprev = tcur - 1.;
+    }
+    if (interpNext == KEYFRAME_NONE) {
+        tnext = tcur + 1.;
+    }
+    const T Q0pr = vprevDerivRight*(tcur-tprev); // normalize for x \in [0,1]
+    const T P3pl = vnextDerivLeft*(tnext-tcur); // normalize for x \in [0,1]
     T P0pr = T();
     T Q3pl = T();
 
@@ -229,7 +238,7 @@ void autoComputeTangents(Natron::KeyframeType interpPrev,
 
     case KEYFRAME_CATMULL_ROM:
         {
-            /* http://en.wikipedia.org/wiki/Cubic_Hermite_spline We use the formula given to compute the tangents*/
+            /* http://en.wikipedia.org/wiki/Cubic_Hermite_spline We use the formula given to compute the derivatives*/
             T deriv = (vnext - vprev) / (tnext - tprev);
             P0pr = deriv * (tnext - tcur);
             Q3pl = deriv * (tcur - tprev);
@@ -244,13 +253,13 @@ void autoComputeTangents(Natron::KeyframeType interpPrev,
             Q3pl = 0.;
         } else {
             // Catmull-Rom interpolatio, see above
-            /* http://en.wikipedia.org/wiki/Cubic_Hermite_spline We use the formula given to compute the tangents*/
+            /* http://en.wikipedia.org/wiki/Cubic_Hermite_spline We use the formula given to compute the derivatives*/
             T deriv = (vnext - vprev) / (tnext - tprev);
             P0pr = deriv * (tnext - tcur);
             Q3pl = deriv * (tcur - tprev);
 
-            /*Now that we have the tangent by catmull-rom's formula, we compute the bezier
-              point on the left and on the right from the tangents (i.e: P1 and Q2, Q being the segment before P)
+            /*Now that we have the derivative by catmull-rom's formula, we compute the bezier
+              point on the left and on the right from the derivatives (i.e: P1 and Q2, Q being the segment before P)
             */
             T P1 = P0 + P0pr / 3.;
             T Q2 = Q3 - Q3pl / 3.;
@@ -273,7 +282,7 @@ void autoComputeTangents(Natron::KeyframeType interpPrev,
                 P1 = P1new;
             }
 
-            /*We recompute the tangents from the new clamped control points*/
+            /*We recompute the derivatives from the new clamped control points*/
 
             P0pr = 3. * (P1 - P0);
             Q3pl = 3. * (Q3 - Q2);
@@ -312,8 +321,9 @@ void autoComputeTangents(Natron::KeyframeType interpPrev,
         throw std::runtime_error("Cannot compute derivatives at KEYFRAME_NONE, KEYFRAME_FREE or KEYFRAME_BROKEN");
     }
 
-    *vcurDerivRight = P0pr;
-    *vcurDerivLeft = Q3pl;
+    *vcurDerivRight = P0pr/(tnext-tcur); // denormalize for t \in [tcur,tnext]
+    *vcurDerivLeft = Q3pl/(tcur-tprev); // denormalize for t \in [tprev,tcur]
+    assert(!std::isnan(*vcurDerivRight) && !std::isnan(*vcurDerivLeft));
 }
 
 }

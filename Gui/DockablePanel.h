@@ -119,6 +119,10 @@ public:
     /*Search an existing knob GUI in the map, otherwise creates
      the gui for the knob.*/
     KnobGui* findKnobGuiOrCreate(boost::shared_ptr<Knob> knob);
+    
+    QUndoStack* getUndoStack() const { return _undoStack; }
+    
+    const QUndoCommand* getLastUndoCommand() const;
 
 public slots:
     

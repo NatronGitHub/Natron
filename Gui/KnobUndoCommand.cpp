@@ -17,30 +17,36 @@
 //================================================================
 
 
-KnobMultipleUndosCommand::KnobMultipleUndosCommand(KnobGui *knob,  const std::vector<Variant> &oldValue, const std::vector<Variant> &newValue, QUndoCommand *parent)
+KnobUndoCommand::KnobUndoCommand(KnobGui *knob,  const std::vector<Variant> &oldValue, const std::vector<Variant> &newValue, QUndoCommand *parent)
 : QUndoCommand(parent)
 , _oldValue(oldValue)
 , _newValue(newValue)
 , _knob(knob)
-, _hasCreateKeyFrame(false)
+, _valueChangedReturnCode(oldValue.size())
 , _newKeys(oldValue.size())
 {
 }
 
-void KnobMultipleUndosCommand::undo()
+void KnobUndoCommand::undo()
 {
+    _knob->getKnob()->beginValueChange(Natron::USER_EDITED);
     for (U32 i = 0 ; i < _oldValue.size();++i) {
         _knob->setValue(i,_oldValue[i],NULL);
-        if(_knob->getKnob()->getHolder()->getApp() && _hasCreateKeyFrame){
-            _knob->removeKeyFrame(_newKeys[i].getTime(),i);
+        if(_knob->getKnob()->getHolder()->getApp()){
+           if(_valueChangedReturnCode[i] == 2 ){ //the value change also added a keyframe
+               _knob->removeKeyFrame(_newKeys[i].getTime(),i);
+           }else if(_valueChangedReturnCode[i] == 1){
+               _knob->setKeyframe(_newKeys[i].getTime(), i);
+           }
         }
         
     }
+    _knob->getKnob()->endValueChange(Natron::USER_EDITED);
     setText(QObject::tr("Set value of %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
 }
 
-void KnobMultipleUndosCommand::redo()
+void KnobUndoCommand::redo()
 {
     
     SequenceTime time = 0;
@@ -48,64 +54,17 @@ void KnobMultipleUndosCommand::redo()
         time = _knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     }
     
+    _knob->getKnob()->beginValueChange(Natron::USER_EDITED);
     for (U32 i = 0; i < _newValue.size();++i) {
         boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(i);
-        _hasCreateKeyFrame = _knob->setValue(i,_newValue[i],&_newKeys[i]);
+        _valueChangedReturnCode[i] = _knob->setValue(i,_newValue[i],&_newKeys[i]);
         
     }
+    _knob->getKnob()->endValueChange(Natron::USER_EDITED);
     setText(QObject::tr("Set value of %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
 }
 
-
-KnobUndoCommand::KnobUndoCommand(KnobGui *knob, int dimension, const Variant &oldValue, const Variant &newValue, QUndoCommand *parent)
-: QUndoCommand(parent),
-_dimension(dimension),
-_oldValue(oldValue),
-_newValue(newValue),
-_knob(knob),
-_hasCreateKeyFrame(false),
-_newKey()
-{
-}
-
-void KnobUndoCommand::undo()
-{
-    
-    _knob->setValue(_dimension, _oldValue,NULL);
-    
-    if(_knob->getKnob()->getHolder()->getApp()){
-        
-        if(_hasCreateKeyFrame){
-            _knob->removeKeyFrame(_newKey.getTime(),_dimension);
-        }
-        
-    }
-    if (_knob->getKnob()->getDimension() > 1) {
-        setText(QObject::tr("Set value of %1.%2")
-                .arg(_knob->getKnob()->getDescription().c_str()).arg(_knob->getKnob()->getDimensionName(_dimension).c_str()));
-    } else {
-        setText(QObject::tr("Set value of %1")
-                .arg(_knob->getKnob()->getDescription().c_str()));
-    }
-}
-
-void KnobUndoCommand::redo()
-{
-    
-    boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(_dimension);
-    
-    _hasCreateKeyFrame = _knob->setValue(_dimension,_newValue,&_newKey);
-    
-    
-    if (_knob->getKnob()->getDimension() > 1) {
-        setText(QObject::tr("Set value of %1.%2")
-                .arg(_knob->getKnob()->getDescription().c_str()).arg(_knob->getKnob()->getDimensionName(_dimension).c_str()));
-    } else {
-        setText(QObject::tr("Set value of %1")
-                .arg(_knob->getKnob()->getDescription().c_str()));
-    }
-}
 
 int KnobUndoCommand::id() const
 {

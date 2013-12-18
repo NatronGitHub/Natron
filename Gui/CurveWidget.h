@@ -22,11 +22,12 @@
 #include <boost/shared_ptr.hpp>
 
 #include "Global/GlobalDefines.h"
-#include "Engine/Curve.h"
+#include "Gui/CurveEditorUndoRedo.h"
 
 
 class Variant;
 class TimeLine;
+class KnobGui;
 class CurveWidget;
 class CurveGui : public QObject {
     
@@ -34,9 +35,11 @@ class CurveGui : public QObject {
 
 public:
     
-    enum SelectedTangent{LEFT_TANGENT = 0,RIGHT_TANGENT = 1};
+    enum SelectedDerivative{LEFT_TANGENT = 0,RIGHT_TANGENT = 1};
     
     CurveGui(const CurveWidget *curveWidget,boost::shared_ptr<Curve>  curve,
+             KnobGui* knob,
+             int dimension,
              const QString& name,
              const QColor& color,
              int thickness = 1);
@@ -67,6 +70,10 @@ public:
     bool isSelected() const { return _selected; }
 
     void setSelected(bool s) const { _selected = s; }
+    
+    KnobGui* getKnob() const { return _knob; }
+    
+    int getDimension() const { return _dimension; }
 
     /**
       * @brief Evaluates the curve and returns the y position corresponding to the given x.
@@ -93,6 +100,8 @@ private:
     bool _visible; /// should we draw this curve ?
     mutable bool _selected; /// is this curve selected
     const CurveWidget* _curveWidget;
+    KnobGui* _knob; //< ptr to the knob holding this curve
+    int _dimension; //< which dimension is this curve representing
 
 };
 
@@ -152,7 +161,7 @@ public:
 
     void centerOn(double xmin,double xmax,double ymin,double ymax);
 
-    CurveGui *createCurve(boost::shared_ptr<Curve> curve, const QString &name);
+    CurveGui *createCurve(boost::shared_ptr<Curve> curve,KnobGui* knob,int dimension, const QString &name);
 
     void removeCurve(CurveGui* curve);
 
@@ -166,6 +175,8 @@ public:
 
     void removeKeyFrame(CurveGui* curve,const KeyFrame& key);
     
+    void moveKeyFrame(CurveGui* curve,const KeyFrame& key,double dt,double dv);
+        
     void setSelectedKeys(const SelectedKeys& keys);
     
     double getPixelAspectRatio() const;
@@ -196,7 +207,7 @@ public slots:
 
     void horizontalInterpForSelectedKeyFrames();
 
-    void breakTangentsForSelectedKeyFrames();
+    void breakDerivativesForSelectedKeyFrames();
 
     void frameSelectedCurve();
 
@@ -205,7 +216,9 @@ public slots:
     void onTimeLineFrameChanged(SequenceTime time, int reason);
 
     void onTimeLineBoundariesChanged(SequenceTime left, SequenceTime right, int);
-
+    
+    void onCurveChanged();
+    
 private:
     
     virtual void initializeGL() OVERRIDE FINAL;

@@ -24,7 +24,7 @@
 #include "Global/Macros.h"
 /**
  * @brief A KeyFrame is a lightweight pair <time,value>. These are the values that are used
- * to interpolate a Curve. The _leftTangent and _rightTangent can be
+ * to interpolate a Curve. The _leftDerivative and _rightDerivative can be
  * used by the interpolation method of the curve.
 **/
 class Curve;
@@ -47,21 +47,21 @@ public:
         return o._time == _time &&
         o._value == _value &&
         o._interpolation == _interpolation &&
-        o._leftTangent == _leftTangent &&
-        o._rightTangent == _rightTangent;
+        o._leftDerivative == _leftDerivative &&
+        o._rightDerivative == _rightDerivative;
     }
 
     double getValue() const;
     
     int getTime() const ;
 
-    double getLeftTangent() const;
+    double getLeftDerivative() const;
 
-    double getRightTangent() const ;
+    double getRightDerivative() const ;
 
-    void setLeftTangent(double v);
+    void setLeftDerivative(double v);
 
-    void setRightTangent(double v);
+    void setRightDerivative(double v);
 
     void setValue(double v);
 
@@ -76,8 +76,8 @@ private:
 
     int _time;
     double _value;
-    double _leftTangent;
-    double _rightTangent;
+    double _leftDerivative;
+    double _rightDerivative;
     Natron::KeyframeType _interpolation;
     
     friend class boost::serialization::access;
@@ -88,8 +88,8 @@ private:
         ar & boost::serialization::make_nvp("Time",_time);
         ar & boost::serialization::make_nvp("Value",_value);
         ar & boost::serialization::make_nvp("InterpolationMethod",_interpolation);
-        ar & boost::serialization::make_nvp("LeftTangent",_leftTangent);
-        ar & boost::serialization::make_nvp("RightTangent",_rightTangent);
+        ar & boost::serialization::make_nvp("LeftDerivative",_leftDerivative);
+        ar & boost::serialization::make_nvp("RightDerivative",_rightDerivative);
     }
 
 };
@@ -113,7 +113,7 @@ class RectD;
 class Curve {
     
     enum CurveChangedReason{
-        TANGENT_CHANGED = 0,
+        DERIVATIVES_CHANGED = 0,
         KEYFRAME_CHANGED = 1
     };
     
@@ -139,7 +139,9 @@ public:
 
     bool isAnimated() const;
 
-    void addKeyFrame(const KeyFrame key);
+    ///returns true if a keyframe was successfully added, false if it just replaced an already
+    ///existing key at this time.
+    bool addKeyFrame(const KeyFrame key);
 
     void removeKeyFrame(int time);
 
@@ -163,11 +165,11 @@ public:
     
     const KeyFrame &setKeyFrameValueAndTime(double time,double value,int index);
 
-    const KeyFrame &setKeyFrameLeftTangent(double value,int index);
+    const KeyFrame &setKeyFrameLeftDerivative(double value,int index);
     
-    const KeyFrame &setKeyFrameRightTangent(double value,int index);
+    const KeyFrame &setKeyFrameRightDerivative(double value,int index);
     
-    const KeyFrame &setKeyFrameTangents(double left, double right,int index) ;
+    const KeyFrame &setKeyFrameDerivatives(double left, double right,int index) ;
     
     const KeyFrame &setKeyFrameInterpolation(Natron::KeyframeType interp,int index);
 
@@ -179,16 +181,18 @@ public:
     void serialize(Archive & ar, const unsigned int version);
 private:
 
-    KeyFrameSet::iterator addKeyFrameNoUpdate(const KeyFrame& cp);
+    ///returns an iterator to the new keyframe in the keyframe set and
+    ///a boolean indicating whether it removed a keyframe already existing at this time or not
+    std::pair<KeyFrameSet::iterator,bool> addKeyFrameNoUpdate(const KeyFrame& cp);
 
 
     /**
-     * @brief Called when a keyframe/tangent is modified, indicating that the curve has changed and we must
+     * @brief Called when a keyframe/derivative is modified, indicating that the curve has changed and we must
      * evaluate any change (i.e: force a new render)
      **/
     void evaluateCurveChanged(CurveChangedReason reason,KeyFrameSet::iterator key);
     
-    KeyFrameSet::iterator refreshTangents(CurveChangedReason reason, KeyFrameSet::iterator key);
+    KeyFrameSet::iterator refreshDerivatives(CurveChangedReason reason, KeyFrameSet::iterator key);
 
     KeyFrameSet::iterator setKeyFrameValueAndTimeNoUpdate(double value,double time, KeyFrameSet::iterator k);
 

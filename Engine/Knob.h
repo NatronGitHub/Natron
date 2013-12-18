@@ -33,6 +33,12 @@ class Knob : public QObject
     Q_OBJECT
     
 public:
+    
+    enum ValueChangedReturnCode {
+        NO_KEYFRAME_ADDED = 0,
+        KEYFRAME_MODIFIED,
+        KEYFRAME_ADDED
+    };
 
     explicit Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
     
@@ -76,7 +82,7 @@ public:
     void endValueChange(Natron::ValueChangedReason reason) ;
 
     /**
-     * @brief Called when a keyframe/tangent is modified, indicating that the curve has changed and we must
+     * @brief Called when a keyframe/derivative is modified, indicating that the curve has changed and we must
      * evaluate any change (i.e: force a new render)
     **/
     void evaluateAnimationChange();
@@ -251,7 +257,7 @@ public:
     
     /*Set the value of the knob but does NOT emit the valueChanged signal.
      This is called by the GUI.*/
-    bool onValueChanged(int dimension,const Variant& variant,KeyFrame* newKey);
+    ValueChangedReturnCode onValueChanged(int dimension,const Variant& variant,KeyFrame* newKey);
 
 public slots:
     
@@ -291,10 +297,10 @@ signals:
     
 private:
     //private because it emits a signal
-    bool setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
+    ValueChangedReturnCode setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
 
      //private because it emits a signal
-    void setValueAtTime(int time,const Variant& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
+    bool setValueAtTime(int time,const Variant& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
 
      //private because it emits a signal
     void deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason reason);

@@ -26,6 +26,7 @@
 #include <QProgressBar>
 #include <QSettings>
 #include <QScrollBar>
+#include <QUndoGroup>
 #include <QDropEvent>
 
 #include "Global/AppManager.h"
@@ -76,6 +77,8 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
     _lastQuestionDialogAnswer(Natron::No),
     _currentUndoAction(0),
     _currentRedoAction(0),
+    _undoStacksGroup(0),
+    _undoStacksActions(),
     actionNew_project(0),
     actionOpen_project(0),
     actionSave_project(0),
@@ -131,6 +134,7 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
 
 Gui::~Gui()
 {
+    delete _undoStacksGroup;
     delete _appInstance;
     _viewerTabs.clear();
     for(U32 i = 0; i < _toolButtons.size();++i){
@@ -315,6 +319,10 @@ void Gui::setupUi()
     assert(!isDockNestingEnabled()); // should be false by default
     
     loadStyleSheet();
+    
+    
+    _undoStacksGroup = new QUndoGroup;
+    QObject::connect(_undoStacksGroup, SIGNAL(activeStackChanged(QUndoStack*)), this, SLOT(onCurrentUndoStackChanged(QUndoStack*)));
     
     /*TOOL BAR menus*/
     //======================
@@ -1500,5 +1508,23 @@ void Gui::setCurveEditorOnTop(){
 
 void Gui::showSettings(){
     _settingsGui->show();
+}
+
+void Gui::registerNewUndoStack(QUndoStack* stack){
+    _undoStacksGroup->addStack(stack);
+    QAction* undo = stack->createUndoAction(stack);
+    undo->setShortcut(QKeySequence::Undo);
+    QAction* redo = stack->createRedoAction(stack);
+    redo->setShortcut(QKeySequence::Redo);
+    _undoStacksActions.insert(std::make_pair(stack, std::make_pair(undo, redo)));
+}
+
+void Gui::onCurrentUndoStackChanged(QUndoStack* stack){
+    std::map<QUndoStack*,std::pair<QAction*,QAction*> >::iterator it = _undoStacksActions.find(stack);
+    
+    //the stack must have been registered first with registerNewUndoStack()
+    assert(it != _undoStacksActions.end());
+    
+    setUndoRedoActions(it->second.first, it->second.second);
 }
 

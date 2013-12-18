@@ -89,7 +89,7 @@ void File_KnobGui::open_file()
     }
     if (!filesList.isEmpty()) {
         updateLastOpened(filesList.at(0));
-        pushUndoCommand(new KnobUndoCommand(this, 0, getKnob()->getValue(0), Variant(filesList)));
+        pushValueChangedCommand(Variant(filesList));
     }
 }
 
@@ -103,7 +103,7 @@ void File_KnobGui::onReturnPressed()
     if (newList.isEmpty()) {
         return;
     }
-    pushUndoCommand(new KnobUndoCommand(this, 0, getKnob()->getValue(0), Variant(newList)));
+    pushValueChangedCommand(Variant(newList));
 }
 
 void File_KnobGui::updateLastOpened(const QString &str)
@@ -187,7 +187,7 @@ void OutputFile_KnobGui::open_file()
         QString newPattern = dialog.filesToSave();
         updateLastOpened(SequenceFileDialog::removePath(oldPattern));
 
-        pushUndoCommand(new KnobUndoCommand(this, 0, getKnob()->getValue(0), Variant(newPattern)));
+        pushValueChangedCommand(Variant(newPattern));
     }
 }
 
@@ -195,7 +195,7 @@ void OutputFile_KnobGui::onReturnPressed()
 {
     QString newPattern = _lineEdit->text();
 
-    pushUndoCommand(new KnobUndoCommand(this, 0, getKnob()->getValue(0), Variant(newPattern)));
+    pushValueChangedCommand(Variant(newPattern));
 }
 
 void OutputFile_KnobGui::updateLastOpened(const QString &str)

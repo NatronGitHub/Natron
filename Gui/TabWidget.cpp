@@ -390,13 +390,6 @@ void TabWidget::makeCurrentTab(int index){
     _currentWidget->setParent(this);
     _tabBar->setCurrentIndex(index);
 
-    if(tab == _gui->_curveEditor){
-        std::pair<QAction*,QAction*> p = _gui->_curveEditor->getUndoRedoActions();
-        _gui->setUndoRedoActions(p.first,p.second);
-    }else if(tab == _gui->_nodeGraphArea){
-        std::pair<QAction*,QAction*> p = _gui->_nodeGraphArea->getUndoRedoActions();
-        _gui->setUndoRedoActions(p.first,p.second);
-    }
 }
 
 void TabWidget::dragEnterEvent(QDragEnterEvent* event){

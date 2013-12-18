@@ -326,7 +326,12 @@ void DockablePanel::addTab(const QString& name){
     _tabs.insert(make_pair(name,make_pair(newTab,0)));
 }
 
+const QUndoCommand* DockablePanel::getLastUndoCommand() const{
+        return _undoStack->command(_undoStack->index()-1);
+}
+
 void DockablePanel::pushUndoCommand(QUndoCommand* cmd){
+    _undoStack->setActive();
     _undoStack->push(cmd);
     if(_undoButton && _redoButton){
         _undoButton->setEnabled(_undoStack->canUndo());

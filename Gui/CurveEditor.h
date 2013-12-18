@@ -129,34 +129,13 @@ public:
     
     std::pair<QAction*,QAction*> getUndoRedoActions() const;
 
-    void addKeyFrame(KnobGui* knob,const KeyFrame& key,int dimension);
-
-    void addKeyFrame(CurveGui* curve, const KeyFrame& key);
-
-    void addKeyFrames(CurveGui* curve,const std::vector< KeyFrame >& keys);
-
-    void removeKeyFrame(CurveGui* curve,const KeyFrame& key);
-
-    void removeKeyFrames(const std::vector< std::pair<CurveGui *, KeyFrame > > &keys);
-
-    //not a const-ref because we modify it
-    void setKeyFrame(KeyMove& move,int dt,double dv);
-
-    //not a const-ref because we modify it
-    void setKeyFrames(std::vector<KeyMove> &keyMoves,int dt,double dv);
-    
     CurveGui* findCurve(KnobGui* knob,int dimension);
     
     void hideCurves(KnobGui* knob);
     
     void showCurves(KnobGui* knob);
     
-    //not a const-ref because we modify it
-    void setKeyInterpolation(KeyInterpolationChange& change);
-    
-    //not a const-ref because we modify it
-    void setKeysInterpolation(std::vector<KeyInterpolationChange> &changes);
-    
+    CurveWidget* getCurveWidget() const;
     
 public slots:
     

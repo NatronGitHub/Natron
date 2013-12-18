@@ -183,7 +183,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
         CurveGui* knobCurve = NULL;
         bool hideKnob = true;
         if(k->getDimension() == 1){
-            knobCurve = curveWidget->createCurve(k->getCurve(0),k->getDescription().c_str());
+            knobCurve = curveWidget->createCurve(k->getCurve(0),kgui,0,k->getDescription().c_str());
             if(!k->getCurve(0)->isAnimated()){
                 knobItem->setHidden(true);
             }else{
@@ -196,7 +196,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
                 QTreeWidgetItem* dimItem = new QTreeWidgetItem(knobItem);
                 dimItem->setText(0,k->getDimensionName(j).c_str());
                 QString curveName = QString(k->getDescription().c_str()) + "." + QString(k->getDimensionName(j).c_str());
-                CurveGui* dimCurve = curveWidget->createCurve(k->getCurve(j),curveName);
+                CurveGui* dimCurve = curveWidget->createCurve(k->getCurve(j),kgui,j,curveName);
                 NodeCurveEditorElement* elem = new NodeCurveEditorElement(tree,curveWidget,kgui,j,dimItem,dimCurve);
                 QObject::connect(k.get(),SIGNAL(restorationComplete()),elem,SLOT(checkVisibleState()));
                 _nodeElements.push_back(elem);
@@ -450,150 +450,6 @@ CurveGui* CurveEditor::findCurve(KnobGui* knob,int dimension){
     return (CurveGui*)NULL;
 }
 
-void CurveEditor::addKeyFrame(KnobGui* knob, const KeyFrame& key,int dimension){
-    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
-        it!=_nodes.end();++it){
-        NodeCurveEditorElement* elem = (*it)->findElement(knob,dimension);
-        if(elem){
-            std::string actionName(knob->getKnob()->getDescription()+knob->getKnob()->getDimensionName(dimension));
-            _undoStack->push(new AddKeyCommand(_curveWidget,elem,actionName,key));
-            return;
-        }
-    }
-}
-
-void CurveEditor::addKeyFrame(CurveGui* curve, const KeyFrame& key){
-    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
-        it!=_nodes.end();++it){
-        NodeCurveEditorElement* elem = (*it)->findElement(curve);
-        if(elem){
-            std::string actionName(elem->getKnob()->getKnob()->getDescription()
-                                   + "." + elem->getKnob()->getKnob()->getDimensionName(elem->getDimension()));
-
-            _undoStack->push(new AddKeyCommand(_curveWidget,elem,actionName,key));
-            return;
-        }
-    }
-}
-
-void CurveEditor::addKeyFrames(CurveGui* curve,const std::vector< KeyFrame >& keys){
-
-    NodeCurveEditorElement* elem = NULL;
-    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
-        it!=_nodes.end();++it){
-        elem = (*it)->findElement(curve);
-        if(elem){
-            break;
-        }
-    }
-
-    _undoStack->push(new PasteKeysCommand(_curveWidget,elem,keys));
-
-}
-
-
-void CurveEditor::removeKeyFrame(CurveGui* curve,const KeyFrame& key){
-    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
-        it!=_nodes.end();++it){
-        NodeCurveEditorElement* elem = (*it)->findElement(curve);
-        if(elem){
-            _undoStack->push(new RemoveKeyCommand(_curveWidget,elem,key));
-            return;
-        }
-    }
-}
-
-void CurveEditor::removeKeyFrames(const std::vector< std::pair<CurveGui *,KeyFrame > > &keys){
-    if(keys.empty()){
-        return;
-    }
-    std::vector< std::pair<NodeCurveEditorElement*,KeyFrame> > keyFrames;
-    for(U32 i = 0 ; i< keys.size() ;++i){
-        for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
-            it!=_nodes.end();++it){
-            NodeCurveEditorElement* elem = (*it)->findElement(keys[i].first);
-            if(elem){
-                keyFrames.push_back(std::make_pair(elem,keys[i].second));
-                break;
-            }
-        }
-    }
-    if(!keyFrames.empty()){
-        _undoStack->push(new RemoveMultipleKeysCommand(_curveWidget,keyFrames));
-    }
-}
-
-
-
-
-void CurveEditor::setKeyFrame(KeyMove &move, int dt, double dv){
-
-    //find the knob for this key
-    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
-        it!=_nodes.end();++it){
-        NodeCurveEditorElement* elem = (*it)->findElement(move.curve);
-        if(elem){
-            move.knob = elem->getKnob();
-            break;
-        }
-    }
-
-    std::vector<KeyMove> moves;
-    moves.push_back(move);
-
-    _undoStack->push(new MoveMultipleKeysCommand(_curveWidget,moves,dt,dv));
-}
-
-
-
-void CurveEditor::setKeyFrames(std::vector<KeyMove> &keyMoves, int dt, double dv){
-
-    //find the knob for each key
-    for(U32 i = 0 ; i< keyMoves.size() ;++i){
-        for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
-            it!=_nodes.end();++it){
-            NodeCurveEditorElement* elem = (*it)->findElement(keyMoves[i].curve);
-            if(elem){
-                keyMoves[i].knob = elem->getKnob();
-                break;
-            }
-        }
-    }
-    _undoStack->push(new MoveMultipleKeysCommand(_curveWidget,keyMoves,dt,dv));
-}
-
-
-void CurveEditor::setKeyInterpolation(KeyInterpolationChange &change){
-    //find the knob for this key
-    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
-        it!=_nodes.end();++it){
-        NodeCurveEditorElement* elem = (*it)->findElement(change.curve);
-        if(elem){
-            change.knob = elem->getKnob();
-            break;
-        }
-    }
-    _undoStack->push(new SetKeyInterpolationCommand(_curveWidget,change));
-}
-
-void CurveEditor::setKeysInterpolation(std::vector<KeyInterpolationChange> &changes){
-
-     //find the knob for each key
-    for(U32 i = 0 ; i< changes.size() ;++i){
-        for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
-            it!=_nodes.end();++it){
-            NodeCurveEditorElement* elem = (*it)->findElement(changes[i].curve);
-            if(elem){
-                changes[i].knob = elem->getKnob();
-                break;
-            }
-        }
-    }
-
-    _undoStack->push(new SetMultipleKeysInterpolationCommand(_curveWidget,changes));
-}
-
-
 
 void CurveEditor::hideCurves(KnobGui* knob){
     for(int i = 0 ; i < knob->getKnob()->getDimension();++i){
@@ -635,4 +491,8 @@ void CurveEditor::showCurves(KnobGui* knob){
     }
     _curveWidget->update();
 
+}
+
+CurveWidget* CurveEditor::getCurveWidget() const{
+    return _curveWidget;
 }

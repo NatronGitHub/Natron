@@ -17,45 +17,27 @@ class KnobGui;
 //================================================================
 
 
-class KnobMultipleUndosCommand : public QUndoCommand
-{
-public:
-    KnobMultipleUndosCommand(KnobGui *knob, const std::vector<Variant> &oldValue, const std::vector<Variant> &newValue, QUndoCommand *parent = 0);
-
-    virtual void undo();
-
-    virtual void redo();
-
-private:
-    // TODO: PIMPL
-    std::vector<Variant> _oldValue;
-    std::vector<Variant> _newValue;
-    KnobGui *_knob;
-    bool _hasCreateKeyFrame;
-    std::vector<KeyFrame> _newKeys;
-};
-
 class KnobUndoCommand : public QUndoCommand
 {
 public:
-    KnobUndoCommand(KnobGui *knob, int dimension, const Variant &oldValue, const Variant &newValue, QUndoCommand *parent = 0);
+    KnobUndoCommand(KnobGui *knob, const std::vector<Variant> &oldValue, const std::vector<Variant> &newValue, QUndoCommand *parent = 0);
 
     virtual void undo();
 
     virtual void redo();
 
     virtual int id() const;
-
+    
     virtual bool mergeWith(const QUndoCommand *command);
-
+    
 private:
     // TODO: PIMPL
-    int _dimension;
-    Variant _oldValue;
-    Variant _newValue;
+    std::vector<Variant> _oldValue;
+    std::vector<Variant> _newValue;
     KnobGui *_knob;
-    bool _hasCreateKeyFrame;
-    KeyFrame _newKey;
+    std::vector<int> _valueChangedReturnCode;
+    std::vector<KeyFrame> _newKeys;
 };
+
 
 #endif // NATRON_GUI_KNOBUNDOCOMMAND_H_

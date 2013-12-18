@@ -36,8 +36,8 @@ namespace {
 KeyFrame::KeyFrame()
     : _time(0.)
     , _value(0.)
-    , _leftTangent(0.)
-    , _rightTangent(0.)
+    , _leftDerivative(0.)
+    , _rightDerivative(0.)
     , _interpolation(Natron::KEYFRAME_SMOOTH)
 {}
 
@@ -45,8 +45,8 @@ KeyFrame::KeyFrame()
 KeyFrame::KeyFrame(int time, double initialValue)
     : _time(time)
     , _value(initialValue)
-    , _leftTangent(0.)
-    , _rightTangent(0.)
+    , _leftDerivative(0.)
+    , _rightDerivative(0.)
     , _interpolation(Natron::KEYFRAME_SMOOTH)
 {
 }
@@ -54,8 +54,8 @@ KeyFrame::KeyFrame(int time, double initialValue)
 KeyFrame::KeyFrame(const KeyFrame& other)
     : _time(other._time)
     , _value(other._value)
-    , _leftTangent(other._leftTangent)
-    , _rightTangent(other._rightTangent)
+    , _leftDerivative(other._leftDerivative)
+    , _rightDerivative(other._rightDerivative)
     , _interpolation(other._interpolation)
 {
 }
@@ -64,25 +64,28 @@ void KeyFrame::operator=(const KeyFrame& o)
 {
     _time = o._time;
     _value = o._value;
-    _leftTangent = o._leftTangent;
-    _rightTangent = o._rightTangent;
+    _leftDerivative = o._leftDerivative;
+    _rightDerivative = o._rightDerivative;
     _interpolation = o._interpolation;
 }
 
 KeyFrame::~KeyFrame(){}
 
 
-void KeyFrame::setLeftTangent(double v){
-    _leftTangent = v;
+void KeyFrame::setLeftDerivative(double v){
+    assert(!std::isnan(v));
+    _leftDerivative = v;
 }
 
 
-void KeyFrame::setRightTangent(double v){
-    _rightTangent = v;
+void KeyFrame::setRightDerivative(double v){
+    assert(!std::isnan(v));
+    _rightDerivative = v;
 }
 
 
 void KeyFrame::setValue(double v){
+    assert(!std::isnan(v));
     _value = v;
 }
 
@@ -100,9 +103,9 @@ double KeyFrame::getValue() const { return _value; }
 
 int KeyFrame::getTime() const { return _time; }
 
-double KeyFrame::getLeftTangent() const { return _leftTangent; }
+double KeyFrame::getLeftDerivative() const { return _leftDerivative; }
 
-double KeyFrame::getRightTangent() const { return _rightTangent; }
+double KeyFrame::getRightDerivative() const { return _rightDerivative; }
 
 /************************************CURVEPATH************************************/
 
@@ -165,22 +168,25 @@ double Curve::getMaximumTimeCovered() const{
     return (*_imp->keyFrames.rbegin()).getTime();
 }
 
-void Curve::addKeyFrame(const KeyFrame key){
-    KeyFrameSet::iterator it = addKeyFrameNoUpdate(key);
-    evaluateCurveChanged(KEYFRAME_CHANGED,it);
+bool Curve::addKeyFrame(const KeyFrame key){
+    std::pair<KeyFrameSet::iterator,bool> it = addKeyFrameNoUpdate(key);
+    evaluateCurveChanged(KEYFRAME_CHANGED,it.first);
+    return it.second;
 }
 
-KeyFrameSet::iterator Curve::addKeyFrameNoUpdate(const KeyFrame& cp)
+std::pair<KeyFrameSet::iterator,bool> Curve::addKeyFrameNoUpdate(const KeyFrame& cp)
 {
     std::pair<KeyFrameSet::iterator,bool> newKey = _imp->keyFrames.insert(cp);
     
     // keyframe at this time exists, erase and insert again
+    bool addedKey = true;
     if(!newKey.second){
         _imp->keyFrames.erase(newKey.first);
         newKey = _imp->keyFrames.insert(cp);
         assert(newKey.second);
+        addedKey = false;
     }
-    return newKey.first;
+    return std::make_pair(newKey.first,addedKey);
 }
 
 void Curve::removeKeyFrame(int time) {
@@ -214,10 +220,10 @@ void Curve::removeKeyFrame(int time) {
 
     
     if(mustRefreshPrev){
-        refreshTangents(TANGENT_CHANGED,find(prevKey.getTime()));
+        refreshDerivatives(DERIVATIVES_CHANGED,find(prevKey.getTime()));
     }
     if(mustRefreshNext){
-        refreshTangents(TANGENT_CHANGED,find(nextKey.getTime()));
+        refreshDerivatives(DERIVATIVES_CHANGED,find(nextKey.getTime()));
     }
     
 }
@@ -255,7 +261,7 @@ double Curve::getValueAt(double t) const {
     if (upper == _imp->keyFrames.begin()) {
         tnext = upper->getTime();
         vnext = upper->getValue();
-        vnextDerivLeft = upper->getLeftTangent();
+        vnextDerivLeft = upper->getLeftDerivative();
         interpNext = upper->getInterpolation();
         tcur = tnext - 1.;
         vcur = vnext;
@@ -265,7 +271,7 @@ double Curve::getValueAt(double t) const {
     } else if (upper == _imp->keyFrames.end()) {
         tcur = prev->getTime();
         vcur = prev->getValue();
-        vcurDerivRight = prev->getRightTangent();
+        vcurDerivRight = prev->getRightDerivative();
         interp = prev->getInterpolation();
         tnext = tcur + 1.;
         vnext = vcur;
@@ -274,11 +280,11 @@ double Curve::getValueAt(double t) const {
     } else {
         tcur = prev->getTime();
         vcur = prev->getValue();
-        vcurDerivRight = prev->getRightTangent();
+        vcurDerivRight = prev->getRightDerivative();
         interp = prev->getInterpolation();
         tnext = upper->getTime();
         vnext = upper->getValue();
-        vnextDerivLeft = upper->getLeftTangent();
+        vnextDerivLeft = upper->getLeftDerivative();
         interpNext = upper->getInterpolation();
     }
 
@@ -312,54 +318,12 @@ const KeyFrameSet& Curve::getKeyFrames() const { return _imp->keyFrames; }
 
 KeyFrameSet::iterator Curve::setKeyFrameValueAndTimeNoUpdate(double value,double time, KeyFrameSet::iterator k) {
     KeyFrame newKey(*k);
-    if (k->getInterpolation() == Natron::KEYFRAME_FREE ||
-        k->getInterpolation() == Natron::KEYFRAME_BROKEN) {
-        const KeyFrameSet& ks = getKeyFrames();
 
-        assert(k != ks.end());
-
-        double oldTime = k->getTime();
-
-        // DON'T REMOVE THE FOLLOWING ASSERTS, if there is a problem it has to be fixed upstream
-        // (probably in CurveWidgetPrivate::moveSelectedKeyFrames()).
-        // If only one keyframe is moved, oldTime and time should be between prevTime and nextTime,
-        // the GUI should make sure of this.
-        // If several frames are moved, the order in which they are updated depends on the direction
-        // of motion:
-        // - if the motion if towards positive time, the the keyframes should be updated in decreasing
-        //   time order
-        // - if the motion if towards negative time, the the keyframes should be updated in increasing
-        //   time order
-
-        if (k != ks.begin()) {
-            KeyFrameSet::const_iterator prev = k;
-            --prev;
-            double prevTime = prev->getTime();
-            assert(prevTime < oldTime);
-            assert(prevTime < time); // may break if the keyframe is moved fast
-            double oldLeftTan = k->getLeftTangent();
-            // denormalize the derivatives (which are for a [0,1] time interval)
-            // and renormalize them
-            double newLeftTan = (oldLeftTan / (oldTime - prevTime)) * (time - prevTime);
-            newKey.setLeftTangent(newLeftTan);
-        }
-        KeyFrameSet::const_iterator next = k;
-        ++next;
-        if (next != ks.end()) {
-            double nextTime = next->getTime();
-            assert(oldTime < nextTime);
-            assert(time < nextTime); // may break if the keyframe is moved fast
-            double oldRightTan = k->getRightTangent();
-            // denormalize the derivatives (which are for a [0,1] time interval)
-            // and renormalize them
-            double newRightTan = (oldRightTan / (nextTime - oldTime)) * (nextTime - time);
-            newKey.setRightTangent(newRightTan);
-        }
-   }
+    // nothing special has to be done, since the derivatives are with respect to t
     newKey.setTime(time);
     newKey.setValue(value);
     _imp->keyFrames.erase(k);
-    return addKeyFrameNoUpdate(newKey);
+    return addKeyFrameNoUpdate(newKey).first;
 }
 
 const KeyFrame &Curve::setKeyFrameValue(double value,int index){
@@ -367,7 +331,7 @@ const KeyFrame &Curve::setKeyFrameValue(double value,int index){
     assert(it != _imp->keyFrames.end());
     KeyFrame newKey(*it);
     newKey.setValue(value);
-    it = addKeyFrameNoUpdate(newKey);
+    it = addKeyFrameNoUpdate(newKey).first;
     
     evaluateCurveChanged(KEYFRAME_CHANGED,it);
     return *it;
@@ -400,43 +364,43 @@ const KeyFrame &Curve::setKeyFrameValueAndTime(double time, double value, int in
     return *it;
 }
 
-const KeyFrame& Curve::setKeyFrameLeftTangent(double value, int index){
+const KeyFrame& Curve::setKeyFrameLeftDerivative(double value, int index){
     
     KeyFrameSet::iterator it = find(index);
     assert(it != _imp->keyFrames.end());
     
-    if(value != it->getLeftTangent()) {
+    if(value != it->getLeftDerivative()) {
         KeyFrame newKey(*it);
-        newKey.setLeftTangent(value);
-        it = addKeyFrameNoUpdate(newKey);
-        evaluateCurveChanged(TANGENT_CHANGED,it);
+        newKey.setLeftDerivative(value);
+        it = addKeyFrameNoUpdate(newKey).first;
+        evaluateCurveChanged(DERIVATIVES_CHANGED,it);
     }
     return *it;
 }
 
-const KeyFrame &Curve::setKeyFrameRightTangent(double value, int index){
+const KeyFrame &Curve::setKeyFrameRightDerivative(double value, int index){
     KeyFrameSet::iterator it = find(index);
     assert(it != _imp->keyFrames.end());
     
-    if(value != it->getRightTangent()) {
+    if(value != it->getRightDerivative()) {
         KeyFrame newKey(*it);
-        newKey.setRightTangent(value);
-        it = addKeyFrameNoUpdate(newKey);
-        evaluateCurveChanged(TANGENT_CHANGED,it);
+        newKey.setRightDerivative(value);
+        it = addKeyFrameNoUpdate(newKey).first;
+        evaluateCurveChanged(DERIVATIVES_CHANGED,it);
     }
     return *it;
 }
 
-const KeyFrame &Curve::setKeyFrameTangents(double left, double right, int index){
+const KeyFrame &Curve::setKeyFrameDerivatives(double left, double right, int index){
     KeyFrameSet::iterator it = find(index);
     assert(it != _imp->keyFrames.end());
     
-    if(left != it->getLeftTangent() || right != it->getRightTangent()) {
+    if(left != it->getLeftDerivative() || right != it->getRightDerivative()) {
         KeyFrame newKey(*it);
-        newKey.setLeftTangent(left);
-        newKey.setRightTangent(right);
-        it = addKeyFrameNoUpdate(newKey);
-        evaluateCurveChanged(TANGENT_CHANGED,it);
+        newKey.setLeftDerivative(left);
+        newKey.setRightDerivative(right);
+        it = addKeyFrameNoUpdate(newKey).first;
+        evaluateCurveChanged(DERIVATIVES_CHANGED,it);
     }
     return *it;
 }
@@ -449,7 +413,7 @@ const KeyFrame &Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,int 
     if(interp != it->getInterpolation()) {
         KeyFrame newKey(*it);
         newKey.setInterpolation(interp);
-        it = addKeyFrameNoUpdate(newKey);
+        it = addKeyFrameNoUpdate(newKey).first;
         evaluateCurveChanged(KEYFRAME_CHANGED,it);
     }
     return *it;
@@ -457,7 +421,7 @@ const KeyFrame &Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,int 
 
 
 
-KeyFrameSet::iterator Curve::refreshTangents(Curve::CurveChangedReason reason, KeyFrameSet::iterator key){
+KeyFrameSet::iterator Curve::refreshDerivatives(Curve::CurveChangedReason reason, KeyFrameSet::iterator key){
     double tcur = key->getTime();
     double vcur = key->getValue();
     
@@ -473,7 +437,7 @@ KeyFrameSet::iterator Curve::refreshTangents(Curve::CurveChangedReason reason, K
         --prev;
         tprev = prev->getTime();
         vprev = prev->getValue();
-        vprevDerivRight = prev->getRightTangent();
+        vprevDerivRight = prev->getRightDerivative();
         prevType = prev->getInterpolation();
         
         //if prev is the first keyframe, and not edited by the user then interpolate linearly
@@ -493,7 +457,7 @@ KeyFrameSet::iterator Curve::refreshTangents(Curve::CurveChangedReason reason, K
     } else {
         tnext = next->getTime();
         vnext = next->getValue();
-        vnextDerivLeft = next->getLeftTangent();
+        vnextDerivLeft = next->getLeftDerivative();
         nextType = next->getInterpolation();
         
         KeyFrameSet::const_iterator nextnext = next;
@@ -510,7 +474,7 @@ KeyFrameSet::iterator Curve::refreshTangents(Curve::CurveChangedReason reason, K
     assert(key->getInterpolation() != Natron::KEYFRAME_NONE &&
             key->getInterpolation() != Natron::KEYFRAME_BROKEN &&
             key->getInterpolation() != Natron::KEYFRAME_FREE);
-    Natron::autoComputeTangents<double>(prevType,
+    Natron::autoComputeDerivatives<double>(prevType,
                                         key->getInterpolation(),
                                         nextType,
                                         tprev, vprev,
@@ -522,8 +486,8 @@ KeyFrameSet::iterator Curve::refreshTangents(Curve::CurveChangedReason reason, K
 
     
     KeyFrame newKey(*key);
-    newKey.setLeftTangent(vcurDerivLeft);
-    newKey.setRightTangent(vcurDerivRight);
+    newKey.setLeftDerivative(vcurDerivLeft);
+    newKey.setRightDerivative(vcurDerivRight);
 
     std::pair<KeyFrameSet::iterator,bool> newKeyIt = _imp->keyFrames.insert(newKey);
 
@@ -535,8 +499,8 @@ KeyFrameSet::iterator Curve::refreshTangents(Curve::CurveChangedReason reason, K
     }
     key = newKeyIt.first;
     
-    if(reason != TANGENT_CHANGED){
-        evaluateCurveChanged(TANGENT_CHANGED,key);
+    if(reason != DERIVATIVES_CHANGED){
+        evaluateCurveChanged(DERIVATIVES_CHANGED,key);
     }
     return key;
 }
@@ -548,8 +512,8 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason, KeyFrameSet::iterato
     assert(key!=_imp->keyFrames.end());
 
     if(key->getInterpolation()!= Natron::KEYFRAME_BROKEN && key->getInterpolation() != Natron::KEYFRAME_FREE
-       && reason != TANGENT_CHANGED ){
-        refreshTangents(TANGENT_CHANGED,key);
+       && reason != DERIVATIVES_CHANGED ){
+        refreshDerivatives(DERIVATIVES_CHANGED,key);
     }
     KeyFrameSet::iterator prev = key;
     if(key != _imp->keyFrames.begin()){
@@ -557,7 +521,7 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason, KeyFrameSet::iterato
         if(prev->getInterpolation()!= Natron::KEYFRAME_BROKEN &&
            prev->getInterpolation()!= Natron::KEYFRAME_FREE &&
            prev->getInterpolation()!= Natron::KEYFRAME_NONE){
-            refreshTangents(TANGENT_CHANGED,prev);
+            refreshDerivatives(DERIVATIVES_CHANGED,prev);
         }
     }
     KeyFrameSet::iterator next = key;
@@ -566,7 +530,7 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason, KeyFrameSet::iterato
         if(next->getInterpolation()!= Natron::KEYFRAME_BROKEN &&
            next->getInterpolation()!= Natron::KEYFRAME_FREE &&
            next->getInterpolation()!= Natron::KEYFRAME_NONE){
-            refreshTangents(TANGENT_CHANGED,next);
+            refreshDerivatives(DERIVATIVES_CHANGED,next);
         }
     }
     

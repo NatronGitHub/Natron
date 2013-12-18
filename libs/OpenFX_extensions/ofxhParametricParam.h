@@ -12,7 +12,9 @@
 #ifndef OFXHPARAMETRICPARAMSUITE_H
 #define OFXHPARAMETRICPARAMSUITE_H
 
-#include <ofxhParam.h>
+#include "ofxParametricParam.h"
+
+#include "ofxhParam.h"
 
 namespace OFX {
 
