@@ -77,6 +77,7 @@ OfxStatus ParametricInstance::defaultInitializeFromDescriptor(const Param::Descr
             return stat;
         }
     }
+    _curvesDefaultInitialized = true;
     return kOfxStatOK;
 }
     
