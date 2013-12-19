@@ -1,4 +1,4 @@
-//  Natron
+ //  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,6 +38,7 @@ typedef std::vector< boost::shared_ptr<Knob> > MastersMap;
 typedef std::vector< boost::shared_ptr<Curve> > CurvesMap;
 
 struct Knob::KnobPrivate {
+    Knob* _publicInterface;
     KnobHolder*  _holder;
     std::vector<U64> _hashVector;
     std::string _description;//< the text label that will be displayed  on the GUI
@@ -67,8 +68,9 @@ struct Knob::KnobPrivate {
     
     std::vector<Natron::AnimationLevel> _animationLevel;//< indicates for each dimension whether it is static/interpolated/onkeyframe
     
-    KnobPrivate(KnobHolder*  holder,int dimension,const std::string& description)
-    : _holder(holder)
+    KnobPrivate(Knob* publicInterface,KnobHolder*  holder,int dimension,const std::string& description)
+    : _publicInterface(publicInterface)
+    , _holder(holder)
     , _hashVector()
     , _description(description)
     , _name(description.c_str())
@@ -95,6 +97,8 @@ struct Knob::KnobPrivate {
         
         _hashVector.clear();
         
+        _publicInterface->appendExtraDataToHash(&_hashVector);
+        
         for(U32 i = 0 ; i < value.size();++i){
             QByteArray data;
             QDataStream ds(&data,QIODevice::WriteOnly);
@@ -106,13 +110,14 @@ struct Knob::KnobPrivate {
             }
         }
         
+        
         _holder->invalidateHash();
     }
     
 };
 
 Knob::Knob(KnobHolder* holder,const std::string& description,int dimension)
-:_imp(new KnobPrivate(holder,dimension,description))
+:_imp(new KnobPrivate(this,holder,dimension,description))
 {
     
     
@@ -373,14 +378,19 @@ void Knob::evaluateAnimationChange(){
     SequenceTime time = _imp->_holder->getApp()->getTimeLine()->currentFrame();
     
     beginValueChange(Natron::PLUGIN_EDITED);
-    
+    bool hasEvaluatedOnce = false;
     for(int i = 0; i < getDimension();++i){
         boost::shared_ptr<Curve> curve = getCurve(i);
         if(curve && curve->isAnimated()){
             Variant v = getValueAtTime(time,i);
             setValue(v,i,Natron::OTHER_REASON,NULL);
+            hasEvaluatedOnce = true;
         }
     }
+    if(!hasEvaluatedOnce){
+        evaluateValueChange(0, Natron::PLUGIN_EDITED);
+    }
+    
     endValueChange(Natron::PLUGIN_EDITED);
     
 }

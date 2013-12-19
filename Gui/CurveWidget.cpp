@@ -927,13 +927,23 @@ void CurveWidgetPrivate::keyFramesWithinRect(const QRectF& rect,std::vector< std
 
 
 void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,const QPointF& newClick_opengl) {
+    if(_selectedKeyFrames.empty()){
+        return;
+    }
+    
     QPointF dragStartPointOpenGL = _widget->toScaleCoordinates(_dragStartPoint.x(),_dragStartPoint.y());
     QPointF translation = (newClick_opengl - oldClick_opengl);
     translation.rx() *= _mouseDragOrientation.x();
     translation.ry() *= _mouseDragOrientation.y();
     
     //1st off, round to the nearest integer the keyframes total motion
-    double totalMovement = std::floor(newClick_opengl.x() - dragStartPointOpenGL.x() + 0.5);
+    double totalMovement;
+    bool clampToIntegers = _selectedKeyFrames.begin()->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers();
+    if(clampToIntegers){
+        totalMovement = std::floor(newClick_opengl.x() - dragStartPointOpenGL.x() + 0.5);
+    }else{
+        totalMovement = newClick_opengl.x() - dragStartPointOpenGL.x();
+    }
     // clamp totalMovement to _keyDragMaxMovement
     if (totalMovement < 0) {
         totalMovement = std::max(totalMovement,_keyDragMaxMovement.x());
@@ -1452,33 +1462,29 @@ void CurveWidget::showCurvesAndHideOthers(const std::vector<CurveGui*>& curves){
     
 }
 
-struct RefreshSelectedKeys_functor{
-    CurveWidgetPrivate* _imp;
-    
-    RefreshSelectedKeys_functor(CurveWidgetPrivate* imp): _imp(imp){}
-    
-    SelectedKey operator()(SelectedKey key){
-        KeyFrameSet::iterator found = key.curve->getInternalCurve()->find(key.key.getTime());
-        assert(found != key.curve->getInternalCurve()->end());
-        if(found->getValue() != key.key.getValue()){
-            key.key = *found;
-        }
-        _imp->refreshKeyTangents(&key);
-        return key;
-    }
-
-};
 
 void CurveWidget::onCurveChanged(){
     ///check whether selected keyframes have changed
     SelectedKeys copy;
-    std::transform(_imp->_selectedKeyFrames.begin(), _imp->_selectedKeyFrames.end(),
-                   std::inserter(copy,copy.begin()),RefreshSelectedKeys_functor(_imp.get()));
+    ///we cannot use std::transform here because a keyframe might have disappeared from a curve
+    ///hence the number of keyframes selected would decrease
+    for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it!=_imp->_selectedKeyFrames.end(); ++it) {
+        KeyFrameSet::iterator found = it->curve->getInternalCurve()->find(it->key.getTime());
+        SelectedKey newKey(*it);
+        if(found != it->curve->getInternalCurve()->end()){
+            if(found->getValue() != newKey.key.getValue()){
+                newKey.key = *found;
+            }
+            _imp->refreshKeyTangents(&newKey);
+            copy.insert(newKey);
+        }
+        
+    }
     _imp->_selectedKeyFrames = copy;
     update();
 }
 
-void CurveWidget::getVisibleCurves(std::vector<CurveGui*>* curves) const{
+void CurveWidget::getVisibleCurves(std::vector<CurveGui*>* curves) const {
     for(std::list<CurveGui* >::iterator it = _imp->_curves.begin();it!=_imp->_curves.end();++it){
         if((*it)->isVisible()){
             curves->push_back(*it);
@@ -1990,7 +1996,7 @@ QPointF CurveWidget::toWidgetCoordinates(double x, double y) const {
 }
 
 QSize CurveWidget::sizeHint() const{
-    return QSize(300,300);
+    return QSize(400,400);
 }
 
 void CurveWidget::addKeyFrame(CurveGui* curve,const KeyFrame& key){

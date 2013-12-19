@@ -503,6 +503,8 @@ public:
     
     virtual std::string getDimensionName(int dimension) const;
     
+    boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
+    
     Natron::Status addControlPoint(int dimension,double key,double value);
     
     Natron::Status getValue(int dimension,double parametricPosition,double *returnValue);
@@ -549,6 +551,7 @@ private:
     
     virtual const std::string& typeName() const OVERRIDE FINAL;
     
+    virtual void appendExtraDataToHash(std::vector<U64>* hash) const OVERRIDE FINAL;
     
     static const std::string _typeNameStr;
 };

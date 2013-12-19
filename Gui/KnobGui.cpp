@@ -583,13 +583,6 @@ int KnobGui::setValue(int dimension,const Variant& variant,KeyFrame* newKey){
     Knob::ValueChangedReturnCode ret = _knob->onValueChanged(dimension, variant, newKey);
     if(ret > 0){
         emit keyFrameSet();
-//        //even though the onValueChanged() added a key, we call this to
-//        //register it in the undo stack
-//        CurveGui* curve = _knob->getHolder()->getApp()->getGui()->_curveEditor->findCurve(this, dimension);
-//        std::vector<KeyFrame> kVec;
-//        kVec.push_back(*newKey);
-//        pushUndoCommand(new AddKeysCommand(_knob->getHolder()->getApp()->getGui()->_curveEditor->getCurveWidget(),
-//                                           curve,kVec));
     }
     updateGUI(dimension,variant);
     checkAnimationLevel(dimension);
@@ -597,6 +590,7 @@ int KnobGui::setValue(int dimension,const Variant& variant,KeyFrame* newKey){
 }
 
 void KnobGui::pushValueChangedCommand(const std::vector<Variant>& newValues){
+    
     pushUndoCommand(new KnobUndoCommand(this, getKnob()->getValueForEachDimension(),newValues));
 }
 

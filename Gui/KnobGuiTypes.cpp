@@ -1395,19 +1395,22 @@ void Parametric_KnobGui::createWidget(QGridLayout *layout, int row) {
     layout->addWidget(_curveWidget,row,1);
     
     
-//    for (int i = 0; i < getKnob()->getDimension(); ++i) {
-//        CurveGui* curve =  _curveWidget->createCurve(parametricKnob->getCurve(i), parametricKnob->getDimensionName(i).c_str());
-//        QColor color;
-//        double r,g,b;
-//        parametricKnob->getCurveColor(i, &r, &g, &b);
-//        color.setRedF(r);
-//        color.setGreenF(g);
-//        color.setBlueF(b);
-//        curve->setColor(color);
-//        QTreeWidgetItem* item = new QTreeWidgetItem(_tree);
-//        item->setSelected(true);
-//        _curves.insert(std::make_pair(curve, item));
-//    }
+    for (int i = 0; i < getKnob()->getDimension(); ++i) {
+        CurveGui* curve =  _curveWidget->createCurve(parametricKnob->getParametricCurve(i),
+                                                     this,
+                                                     i,
+                                                     parametricKnob->getDimensionName(i).c_str());
+        QColor color;
+        double r,g,b;
+        parametricKnob->getCurveColor(i, &r, &g, &b);
+        color.setRedF(r);
+        color.setGreenF(g);
+        color.setBlueF(b);
+        curve->setColor(color);
+        QTreeWidgetItem* item = new QTreeWidgetItem(_tree);
+        item->setSelected(true);
+        _curves.insert(std::make_pair(curve, item));
+    }
 }
 
 void Parametric_KnobGui::_hide() {

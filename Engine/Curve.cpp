@@ -252,7 +252,10 @@ void Curve::removeKeyFrameWithIndex(int index){
 void Curve::removeKeyFrame(double time) {
     
     KeyFrameSet::iterator it = find(time);
-    assert(it != _imp->keyFrames.end());
+    
+    if(it == _imp->keyFrames.end()){
+        return;
+    }
     
     KeyFrame prevKey;
     bool mustRefreshPrev = false;
@@ -388,8 +391,8 @@ KeyFrameSet::iterator Curve::setKeyFrameValueAndTimeNoUpdate(double value,double
     return addKeyFrameNoUpdate(newKey).first;
 }
 
-const KeyFrame &Curve::setKeyFrameValue(double value,int index){
-    KeyFrameSet::iterator it = find(index);
+const KeyFrame &Curve::setKeyFrameValue(double value,double oldTime){
+    KeyFrameSet::iterator it = find(oldTime);
     assert(it != _imp->keyFrames.end());
     KeyFrame newKey(*it);
     newKey.setValue(value);
@@ -400,8 +403,8 @@ const KeyFrame &Curve::setKeyFrameValue(double value,int index){
 }
 
 
-const KeyFrame &Curve::setKeyFrameTime(double time, int index) {
-    KeyFrameSet::iterator it = find(index);
+const KeyFrame &Curve::setKeyFrameTime(double time,double oldTime) {
+    KeyFrameSet::iterator it = find(oldTime);
     assert(it != _imp->keyFrames.end());
 
     if(time != it->getTime()) {
@@ -412,8 +415,8 @@ const KeyFrame &Curve::setKeyFrameTime(double time, int index) {
 }
 
 
-const KeyFrame &Curve::setKeyFrameValueAndTime(double time, double value, int index) {
-    KeyFrameSet::iterator it = find(index);
+const KeyFrame &Curve::setKeyFrameValueAndTime(double time, double value,double oldTime) {
+    KeyFrameSet::iterator it = find(oldTime);
     assert(it != _imp->keyFrames.end());
 
     bool setTime = (time != it->getTime());
@@ -426,9 +429,9 @@ const KeyFrame &Curve::setKeyFrameValueAndTime(double time, double value, int in
     return *it;
 }
 
-const KeyFrame& Curve::setKeyFrameLeftDerivative(double value, int index){
+const KeyFrame& Curve::setKeyFrameLeftDerivative(double value,double oldTime){
     
-    KeyFrameSet::iterator it = find(index);
+    KeyFrameSet::iterator it = find(oldTime);
     assert(it != _imp->keyFrames.end());
     
     if(value != it->getLeftDerivative()) {
@@ -440,8 +443,8 @@ const KeyFrame& Curve::setKeyFrameLeftDerivative(double value, int index){
     return *it;
 }
 
-const KeyFrame &Curve::setKeyFrameRightDerivative(double value, int index){
-    KeyFrameSet::iterator it = find(index);
+const KeyFrame &Curve::setKeyFrameRightDerivative(double value,double oldTime){
+    KeyFrameSet::iterator it = find(oldTime);
     assert(it != _imp->keyFrames.end());
     
     if(value != it->getRightDerivative()) {
@@ -453,8 +456,8 @@ const KeyFrame &Curve::setKeyFrameRightDerivative(double value, int index){
     return *it;
 }
 
-const KeyFrame &Curve::setKeyFrameDerivatives(double left, double right, int index){
-    KeyFrameSet::iterator it = find(index);
+const KeyFrame &Curve::setKeyFrameDerivatives(double left, double right,double oldTime){
+    KeyFrameSet::iterator it = find(oldTime);
     assert(it != _imp->keyFrames.end());
     
     if(left != it->getLeftDerivative() || right != it->getRightDerivative()) {
@@ -468,8 +471,8 @@ const KeyFrame &Curve::setKeyFrameDerivatives(double left, double right, int ind
 }
 
 
-const KeyFrame &Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,int index){
-    KeyFrameSet::iterator it = find(index);
+const KeyFrame &Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,double oldTime){
+    KeyFrameSet::iterator it = find(oldTime);
     assert(it != _imp->keyFrames.end());
     
     if(interp != it->getInterpolation()) {
@@ -599,10 +602,21 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason, KeyFrameSet::iterato
     _imp->owner->evaluateAnimationChange();
 }
 
-KeyFrameSet::const_iterator Curve::find(int time) const {
+KeyFrameSet::const_iterator Curve::find(double time) const {
     return _imp->keyFrames.find(KeyFrame(time,0.));
 }
 
-KeyFrameSet::iterator Curve::end(){
+KeyFrameSet::const_iterator Curve::keyframeAt(int index) const {
+    int i = 0;
+    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it!=_imp->keyFrames.end(); ++it) {
+        if(i == index){
+            return it;
+        }
+        ++i;
+    }
+    return _imp->keyFrames.end();
+}
+
+KeyFrameSet::const_iterator Curve::end() const {
     return _imp->keyFrames.end();
 }

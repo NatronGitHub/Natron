@@ -108,11 +108,11 @@ void MoveKeysCommand::move(double dt,double dv, bool isundo){
             it->curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
             double newX = it->key.getTime() + dt;
             double newY = it->key.getValue() + dv;
-            it->curve->getInternalCurve()->setKeyFrameValueAndTime(
+            newKeyTimes.push_back(it->curve->getInternalCurve()->setKeyFrameValueAndTime(
                         isundo ? it->key.getTime() : newX,
                         isundo ? it->key.getValue() : newY,
-                        isundo ? newX : it->key.getTime());
-            newKeyTimes.push_back(isundo ? it->key.getTime() : newX);
+                        isundo ? newX : it->key.getTime()).getTime());
+            //            newKeyTimes.push_back(isundo ? it->key.getTime() : newX);
         }
 
     }else{
@@ -121,11 +121,11 @@ void MoveKeysCommand::move(double dt,double dv, bool isundo){
             it->curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
             double newX = it->key.getTime() + dt;
             double newY = it->key.getValue() + dv;
-            it->curve->getInternalCurve()->setKeyFrameValueAndTime(
+            newKeyTimes.push_back(it->curve->getInternalCurve()->setKeyFrameValueAndTime(
                         isundo ? it->key.getTime() : newX,
                         isundo ? it->key.getValue() : newY,
-                        isundo ? newX : it->key.getTime());
-            newKeyTimes.push_back(isundo ? it->key.getTime() : newX);
+                        isundo ? newX : it->key.getTime()).getTime());
+            //   newKeyTimes.push_back(isundo ? it->key.getTime() : newX);
         }
     }
 
@@ -134,8 +134,12 @@ void MoveKeysCommand::move(double dt,double dv, bool isundo){
     assert(newKeyTimes.size() == _keys.size());
     int i = 0;
     for(KeyMoveV::iterator it = _keys.begin();it!= _keys.end();++it){
+        
+        ///we must find the keyframe that has just been inserted into the curve
         const Curve& c = *(it->curve->getInternalCurve());
-        newSelectedKeys.insert(SelectedKey(it->curve,*(c.find(newKeyTimes[i]))));
+        KeyFrameSet::const_iterator foundKey = c.find(newKeyTimes[i]);
+        assert(foundKey != c.end());
+        newSelectedKeys.insert(SelectedKey(it->curve,*foundKey));
         it->curve->getKnob()->getKnob()->endValueChange(Natron::USER_EDITED);
         ++i;
     }

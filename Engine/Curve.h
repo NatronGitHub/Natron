@@ -168,23 +168,25 @@ public:
 
     void clearKeyFrames();
     
-    const KeyFrame &setKeyFrameValue(double value,int index);
+    const KeyFrame &setKeyFrameValue(double value,double oldTime);
     
-    const KeyFrame &setKeyFrameTime(double time,int index);
+    const KeyFrame &setKeyFrameTime(double time,double oldTime);
     
-    const KeyFrame &setKeyFrameValueAndTime(double time,double value,int index);
+    const KeyFrame &setKeyFrameValueAndTime(double time,double value,double oldTime);
 
-    const KeyFrame &setKeyFrameLeftDerivative(double value,int index);
+    const KeyFrame &setKeyFrameLeftDerivative(double value,double oldTime);
     
-    const KeyFrame &setKeyFrameRightDerivative(double value,int index);
+    const KeyFrame &setKeyFrameRightDerivative(double value,double oldTime);
     
-    const KeyFrame &setKeyFrameDerivatives(double left, double right,int index) ;
+    const KeyFrame &setKeyFrameDerivatives(double left, double right,double oldTime) ;
     
-    const KeyFrame &setKeyFrameInterpolation(Natron::KeyframeType interp,int index);
+    const KeyFrame &setKeyFrameInterpolation(Natron::KeyframeType interp,double oldTime);
 
-    KeyFrameSet::const_iterator find(int time) const;
+    KeyFrameSet::const_iterator find(double time) const;
+    
+    KeyFrameSet::const_iterator keyframeAt(int index) const;
 
-    KeyFrameSet::iterator end();
+    KeyFrameSet::const_iterator end() const;
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);

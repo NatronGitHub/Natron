@@ -295,6 +295,7 @@ signals:
     
     void animationRemoved(int);
     
+    
 private:
     //private because it emits a signal
     ValueChangedReturnCode setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
@@ -323,6 +324,12 @@ private:
      * <time,file> .
     **/
     virtual void processNewValue(){}
+    
+    /** @brief This function is called when a value is changed a the hash for this knob is recomputed.
+     * It lets the derived class a chance to add any extra info that would be needed to differentiate 
+     * 2 values from each other.
+    **/
+    virtual void appendExtraDataToHash(std::vector<U64>* hash) const {}
 
 
 private:

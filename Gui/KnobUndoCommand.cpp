@@ -24,6 +24,8 @@ KnobUndoCommand::KnobUndoCommand(KnobGui *knob,  const std::vector<Variant> &old
 , _knob(knob)
 , _valueChangedReturnCode(oldValue.size())
 , _newKeys(oldValue.size())
+, _oldKeys(oldValue.size())
+, _merge(true)
 {
 }
 
@@ -33,10 +35,12 @@ void KnobUndoCommand::undo()
     for (U32 i = 0 ; i < _oldValue.size();++i) {
         _knob->setValue(i,_oldValue[i],NULL);
         if(_knob->getKnob()->getHolder()->getApp()){
-           if(_valueChangedReturnCode[i] == 2 ){ //the value change also added a keyframe
+           if(_valueChangedReturnCode[i] == 1 ){ //the value change also added a keyframe
                _knob->removeKeyFrame(_newKeys[i].getTime(),i);
-           }else if(_valueChangedReturnCode[i] == 1){
-               _knob->setKeyframe(_newKeys[i].getTime(), i);
+           }else if(_valueChangedReturnCode[i] == 2){
+               //the value change moved a keyframe
+               _knob->removeKeyFrame(_newKeys[i].getTime(),i);
+               _knob->setKeyframe(_oldKeys[i].getTime(), i);
            }
         }
         
@@ -57,7 +61,18 @@ void KnobUndoCommand::redo()
     _knob->getKnob()->beginValueChange(Natron::USER_EDITED);
     for (U32 i = 0; i < _newValue.size();++i) {
         boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(i);
+        //find out if there's already an existing keyframe before calling setValue
+        KeyFrameSet::const_iterator foundKey = c->find(time);
+        if(foundKey != c->end()){
+            _oldKeys[i] = *foundKey;
+        }
+        
         _valueChangedReturnCode[i] = _knob->setValue(i,_newValue[i],&_newKeys[i]);
+        
+        ///if we added a keyframe, prevent this command to merge with any other command
+        if (_valueChangedReturnCode[i] == Knob::KEYFRAME_ADDED) {
+            _merge = false;
+        }
         
     }
     _knob->getKnob()->endValueChange(Natron::USER_EDITED);
@@ -79,9 +94,12 @@ bool KnobUndoCommand::mergeWith(const QUndoCommand *command)
     }
     
     KnobGui *knob = knobCommand->_knob;
-    if (_knob != knob) {
+    if (_knob != knob || !_merge || !knobCommand->_merge) {
         return false;
     }
+    
+    
+    
     _newValue = knobCommand->_newValue;
     return true;
 }

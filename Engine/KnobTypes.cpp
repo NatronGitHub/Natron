@@ -875,6 +875,11 @@ std::string Parametric_Knob::getDimensionName(int dimension) const{
     return getCurveLabel(dimension);
 }
 
+boost::shared_ptr<Curve> Parametric_Knob::getParametricCurve(int dimension) const{
+    assert(dimension < (int)_curves.size());
+    return _curves[dimension];
+}
+
 Natron::Status Parametric_Knob::addControlPoint(int dimension,double key,double value){
     if(dimension >= (int)_curves.size()){
         return StatFailed;
@@ -962,4 +967,20 @@ Natron::Status  Parametric_Knob::deleteAllControlPoints(int   dimension){
     }
     _curves[dimension]->clearKeyFrames();
     return StatOK;
+}
+
+void Parametric_Knob::appendExtraDataToHash(std::vector<U64>* hash) const {
+    for (U32 i = 0; i < _curves.size(); ++i) {
+        const KeyFrameSet& set = _curves[i]->getKeyFrames();
+        for (KeyFrameSet::const_iterator it = set.begin(); it!=set.end(); ++it) {
+            double k = it->getTime();
+            double v = it->getValue();
+            double ld = it->getLeftDerivative();
+            double rd = it->getRightDerivative();
+            hash->push_back(*reinterpret_cast<U64*>(&k));
+            hash->push_back(*reinterpret_cast<U64*>(&v));
+            hash->push_back(*reinterpret_cast<U64*>(&ld));
+            hash->push_back(*reinterpret_cast<U64*>(&rd));
+        }
+    }
 }
