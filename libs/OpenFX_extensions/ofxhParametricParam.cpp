@@ -208,22 +208,22 @@ static OfxStatus parametricParamGetValue(OfxParamHandle param,
                                          OfxTime time,
                                          double parametricPosition,
                                          double *returnValue){
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamGetValue - " << param << " ...";
-#       endif
+#   endif
     Param::Base *base = reinterpret_cast<Param::Base*>(param);
     if(!base || !base->verifyMagic()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
     
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
     if(!instance || !instance->isInitialized()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
@@ -232,9 +232,9 @@ static OfxStatus parametricParamGetValue(OfxParamHandle param,
 
     stat = instance->getValue(curveIndex, time,parametricPosition,returnValue);
 
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << ' ' << StatStr(stat) << std::endl;
-#       endif
+#   endif
     return stat;
 
 }
@@ -256,22 +256,22 @@ static  OfxStatus parametricParamGetNControlPoints(OfxParamHandle param,
                                                    int   curveIndex,
                                                    double time,
                                                    int *returnValue){
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamGetNControlPoints - " << param << " ...";
-#       endif
+#   endif
     Param::Base *base = reinterpret_cast<Param::Base*>(param);
     if(!base || !base->verifyMagic()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
     if(!instance || !instance->isInitialized()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
@@ -279,9 +279,9 @@ static  OfxStatus parametricParamGetNControlPoints(OfxParamHandle param,
 
     stat = instance->getNControlPoints(curveIndex, time,returnValue);
 
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << ' ' << StatStr(stat) << std::endl;
-#       endif
+#   endif
     return stat;
 }
 
@@ -306,22 +306,22 @@ static  OfxStatus parametricParamGetNthControlPoint(OfxParamHandle param,
                                                     int    nthCtl,
                                                     double *key,
                                                     double *value){
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamGetNthControlPoint - " << param << " ...";
-#       endif
+#   endif
     Param::Base *base = reinterpret_cast<Param::Base*>(param);
     if(!base || !base->verifyMagic()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
     if(!instance || !instance->isInitialized()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
@@ -330,9 +330,9 @@ static  OfxStatus parametricParamGetNthControlPoint(OfxParamHandle param,
 
     stat = instance->getNthControlPoint(curveIndex, time,nthCtl,key,value);
 
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << ' ' << StatStr(stat) << std::endl;
-#       endif
+#   endif
     return stat;
 }
 
@@ -366,22 +366,22 @@ static OfxStatus parametricParamSetNthControlPoint(OfxParamHandle param,
                                                    double key,
                                                    double value,
                                                    bool addAnimationKey){
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamSetNthControlPoint - " << param << " ...";
-#       endif
+#   endif
     Param::Base *base = reinterpret_cast<Param::Base*>(param);
     if(!base || !base->verifyMagic()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
     if(!instance || !instance->isInitialized()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
@@ -390,9 +390,9 @@ static OfxStatus parametricParamSetNthControlPoint(OfxParamHandle param,
 
     stat = instance->setNthControlPoint(curveIndex, time, nthCtl, key, value, addAnimationKey);
 
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << ' ' << StatStr(stat) << std::endl;
-#       endif
+#   endif
     return stat;
 }
     
@@ -423,14 +423,14 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
                                                 double key,
                                                 double value,
                                                 bool addAnimationKey){
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamAddControlPoint - " << param << " ...";
-#       endif
+#   endif
     Param::Base *base = reinterpret_cast<Param::Base*>(param);
     if(!base || !base->verifyMagic()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
@@ -506,9 +506,9 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
         
     }
 
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << ' ' << StatStr(stat) << std::endl;
-#       endif
+#   endif
     return stat;
 
 }
@@ -522,22 +522,22 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
 static OfxStatus parametricParamDeleteControlPoint(OfxParamHandle param,
                                                    int   curveIndex,
                                                    int   nthCtl){
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamDeleteControlPoint - " << param << " ...";
-#       endif
+#   endif
     Param::Base *base = reinterpret_cast<Param::Base*>(param);
     if(!base || !base->verifyMagic()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
     
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
     if(!instance || !instance->isInitialized()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
@@ -545,9 +545,9 @@ static OfxStatus parametricParamDeleteControlPoint(OfxParamHandle param,
 
     stat = instance->deleteControlPoint(curveIndex, nthCtl);
 
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << ' ' << StatStr(stat) << std::endl;
-#       endif
+#   endif
     return stat;
 }
 
@@ -559,22 +559,22 @@ static OfxStatus parametricParamDeleteControlPoint(OfxParamHandle param,
              */
 static OfxStatus parametricParamDeleteAllControlPoints(OfxParamHandle param,
                                                        int   curveIndex){
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamDeleteAllControlPoints - " << param << " ...";
-#       endif
+#   endif
     Param::Base *base = reinterpret_cast<Param::Base*>(param);
     if(!base || !base->verifyMagic()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
     
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
     if(!instance || !instance->isInitialized()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
@@ -584,9 +584,9 @@ static OfxStatus parametricParamDeleteAllControlPoints(OfxParamHandle param,
 
     stat = instance->deleteAllControlPoints(curveIndex);
 
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << ' ' << StatStr(stat) << std::endl;
-#       endif
+#   endif
     return stat;
 }
 
