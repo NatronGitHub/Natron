@@ -23,6 +23,31 @@
 
 #include "ofxhUtilities.h"
 
+/** @brief The initial control points for a parametric params.
+ A control point is a double triplet (curveID, key, value).
+ 1) If curveID is not in the range [0,kOfxParamPropParametricDimension]
+ then the function parametricParamAddControlPoint will fail.
+ 
+ 
+ - Type - double xN
+ - Property Set - parametric param descriptor (read/write) and instance (read only)
+ - Value Values - Any multiple of 3 doubles validating 1)
+ 
+ This indicates the dimension of the parametric param.
+ */
+#define kOfxParamPropControlPoints "OfxParamPropControlPoints"
+
+/** @brief How many control points is there in the property set.
+ 
+ - Type - int x1
+ - Property Set - parametric param descriptor (read/write) and instance (read only)
+ - Value Values - Any number >= 0
+ - Default value - 1. This property is added upon the addition of the 1st control point.
+ This indicates the dimension of the parametric param.
+ */
+#define kOfxParamPropControlPointsCount "kOfxParamPropControlPointsCount"
+
+
 namespace OFX {
 
 namespace Host {
@@ -31,9 +56,30 @@ namespace ParametricParam{
 
 ParametricInstance::ParametricInstance(Param::Descriptor& descriptor, Param::SetInstance* instance)
     : Param::Instance(descriptor,instance)
+    , _curvesDefaultInitialized(false)
 {
 
 }
+    
+bool ParametricInstance::isInitialized() const{
+    return _curvesDefaultInitialized;
+}
+    
+OfxStatus ParametricInstance::defaultInitializeFromDescriptor(const Param::Descriptor& descriptor)
+{
+    int cpsCount = descriptor.getProperties().getIntProperty(kOfxParamPropControlPointsCount);
+    double cps[cpsCount*3];
+    descriptor.getProperties().getDoublePropertyN(kOfxParamPropControlPoints, cps, cpsCount*3);
+    
+    for(int i = 0; i < cpsCount;++i){
+        OfxStatus stat = addControlPoint(cps[i*3], 0., cps[i*3+1], cps[i*3+2], false);
+        if(stat == kOfxStatFailed){
+            return stat;
+        }
+    }
+    return kOfxStatOK;
+}
+    
 // copy one parameter to another
 OfxStatus ParametricInstance::copy(const Param::Instance &/*instance*/, OfxTime /*offset*/)
 {
@@ -173,7 +219,7 @@ static OfxStatus parametricParamGetValue(OfxParamHandle param,
     }
     
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
-    if(!instance) {
+    if(!instance || !instance->isInitialized()) {
 #         ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
 #         endif
@@ -221,7 +267,7 @@ static  OfxStatus parametricParamGetNControlPoints(OfxParamHandle param,
     }
 
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
-    if(!instance) {
+    if(!instance || !instance->isInitialized()) {
 #         ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
 #         endif
@@ -271,7 +317,7 @@ static  OfxStatus parametricParamGetNthControlPoint(OfxParamHandle param,
     }
 
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
-    if(!instance) {
+    if(!instance || !instance->isInitialized()) {
 #         ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
 #         endif
@@ -331,7 +377,7 @@ static OfxStatus parametricParamSetNthControlPoint(OfxParamHandle param,
     }
 
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
-    if(!instance) {
+    if(!instance || !instance->isInitialized()) {
 #         ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
 #         endif
@@ -349,29 +395,6 @@ static OfxStatus parametricParamSetNthControlPoint(OfxParamHandle param,
     return stat;
 }
     
-    /** @brief The initial control points for a parametric params.
-      A control point is a double triplet (curveID, key, value).
-      1) If curveID is not in the range [0,kOfxParamPropParametricDimension]
-      then the function parametricParamAddControlPoint will fail.
-     
-     
-     - Type - double xN
-     - Property Set - parametric param descriptor (read/write) and instance (read only)
-     - Value Values - Any multiple of 3 doubles validating 1)
-     
-     This indicates the dimension of the parametric param.
-     */
-#define kOfxParamPropControlPoints "OfxParamPropControlPoints"
-
-    /** @brief How many control points is there in the property set.
-     
-     - Type - int x1
-     - Property Set - parametric param descriptor (read/write) and instance (read only)
-     - Value Values - Any number >= 0
-     - Default value - 1. This property is added upon the addition of the 1st control point.
-     This indicates the dimension of the parametric param.
-     */
-#define kOfxParamPropControlPointsCount "kOfxParamPropControlPointsCount"
 
 /** @brief Adds a control point to the curve.
 
@@ -467,12 +490,13 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
                 memcpy(newCps, existingCPs, sizeof(double) * cpCount * 3);
                 
                 //set the new control point
-                newCps[cpCount] = curveIndex;
-                newCps[cpCount+1] = key;
-                newCps[cpCount+2] = value;
+                newCps[cpCount*3] = curveIndex;
+                newCps[cpCount*3+ 1] = key;
+                newCps[cpCount*3 +2] = value;
                 
                 //set back the property
                 desc->getProperties().setDoublePropertyN(kOfxParamPropControlPoints, newCps, (cpCount+1)*3);
+                desc->getProperties().setIntProperty(kOfxParamPropControlPointsCount, cpCount+1);
                 
             }
             
@@ -509,7 +533,7 @@ static OfxStatus parametricParamDeleteControlPoint(OfxParamHandle param,
     }
     
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
-    if(!instance) {
+    if(!instance || !instance->isInitialized()) {
 #         ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
 #         endif
@@ -546,7 +570,7 @@ static OfxStatus parametricParamDeleteAllControlPoints(OfxParamHandle param,
     }
     
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
-    if(!instance) {
+    if(!instance || !instance->isInitialized()) {
 #         ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
 #         endif

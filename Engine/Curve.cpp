@@ -15,6 +15,7 @@
 #include "Engine/CurvePrivate.h"
 #include "Engine/Interpolation.h"
 
+#include "Engine/KnobTypes.h"
 namespace {
     struct KeyFrameCloner {
         KeyFrame operator()(const KeyFrame& kf) const { return KeyFrame(kf); }
@@ -151,7 +152,7 @@ void Curve::clearKeyFrames(){
 
 
 bool Curve::areKeyFramesTimeClampedToIntegers() const{
-    return _imp->owner->typeName() != "Parametric";
+    return _imp->owner->typeName() != Parametric_Knob::typeNameStatic();
 }
 
 void Curve::clone(const Curve& other){

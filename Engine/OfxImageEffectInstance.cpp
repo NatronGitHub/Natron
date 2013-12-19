@@ -366,6 +366,11 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
         instance = ret;
     } else if (descriptor.getType() == kOfxParamTypeParametric) {
         OfxParametricInstance* ret = new OfxParametricInstance(node(), descriptor);
+        OfxStatus stat = ret->defaultInitializeFromDescriptor(descriptor);
+        if(stat == kOfxStatFailed){
+            throw std::runtime_error("The parameter failed to create curves from their default\n"
+                                     "initialized by the plugin.");
+        }
         knob = ret->getKnob();
         instance = ret;
     }

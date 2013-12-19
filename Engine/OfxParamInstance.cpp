@@ -1680,7 +1680,7 @@ void OfxParametricInstance::setDisplayRange() {
     _knob->setParametricRange(range_min, range_max);
 }
 
-OfxStatus OfxParametricInstance::getValue(int curveIndex,OfxTime time,double parametricPosition,double *returnValue)
+OfxStatus OfxParametricInstance::getValue(int curveIndex,OfxTime /*time*/,double parametricPosition,double *returnValue)
 {
     Natron::Status stat = _knob->getValue(curveIndex, parametricPosition, returnValue);
     if(stat == Natron::StatOK){
