@@ -42,7 +42,7 @@ KeyFrame::KeyFrame()
 {}
 
 
-KeyFrame::KeyFrame(int time, double initialValue)
+KeyFrame::KeyFrame(double time, double initialValue)
     : _time(time)
     , _value(initialValue)
     , _leftDerivative(0.)
@@ -89,7 +89,7 @@ void KeyFrame::setValue(double v){
     _value = v;
 }
 
-void KeyFrame::setTime(int time){
+void KeyFrame::setTime(double time){
      _time = time;
 }
 
@@ -101,7 +101,7 @@ Natron::KeyframeType KeyFrame::getInterpolation() const { return _interpolation;
 
 double KeyFrame::getValue() const { return _value; }
 
-int KeyFrame::getTime() const { return _time; }
+double KeyFrame::getTime() const { return _time; }
 
 double KeyFrame::getLeftDerivative() const { return _leftDerivative; }
 
@@ -150,6 +150,9 @@ void Curve::clearKeyFrames(){
 }
 
 
+bool Curve::areKeyFramesTimeClampedToIntegers() const{
+    return _imp->owner->typeName() != "Parametric";
+}
 
 void Curve::clone(const Curve& other){
     clearKeyFrames();
@@ -174,22 +177,78 @@ bool Curve::addKeyFrame(const KeyFrame key){
     return it.second;
 }
 
+
 std::pair<KeyFrameSet::iterator,bool> Curve::addKeyFrameNoUpdate(const KeyFrame& cp)
 {
-    std::pair<KeyFrameSet::iterator,bool> newKey = _imp->keyFrames.insert(cp);
     
-    // keyframe at this time exists, erase and insert again
-    bool addedKey = true;
-    if(!newKey.second){
-        _imp->keyFrames.erase(newKey.first);
-        newKey = _imp->keyFrames.insert(cp);
-        assert(newKey.second);
-        addedKey = false;
+    if(areKeyFramesTimeClampedToIntegers()){
+        std::pair<KeyFrameSet::iterator,bool> newKey = _imp->keyFrames.insert(cp);
+        // keyframe at this time exists, erase and insert again
+        bool addedKey = true;
+        if(!newKey.second){
+            _imp->keyFrames.erase(newKey.first);
+            newKey = _imp->keyFrames.insert(cp);
+            assert(newKey.second);
+            addedKey = false;
+        }
+        return std::make_pair(newKey.first,addedKey);
+    }else{
+        bool addedKey = true;
+        for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it!= _imp->keyFrames.end(); ++it) {
+            if (std::abs(it->getTime() - cp.getTime()) < CONTROL_POINTS_EQUALITY_EPSILON) {
+                _imp->keyFrames.erase(it);
+                addedKey = false;
+                break;
+            }
+        }
+        std::pair<KeyFrameSet::iterator,bool> newKey = _imp->keyFrames.insert(cp);
+        newKey.second = addedKey;
+        return newKey;
     }
-    return std::make_pair(newKey.first,addedKey);
 }
 
-void Curve::removeKeyFrame(int time) {
+void Curve::removeKeyFrameWithIndex(int index){
+    int i = 0;
+    for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it!= _imp->keyFrames.end(); ++it) {
+        if(i == index){
+            KeyFrame prevKey;
+            bool mustRefreshPrev = false;
+            KeyFrame nextKey;
+            bool mustRefreshNext = false;
+            
+            if(it != _imp->keyFrames.begin()){
+                KeyFrameSet::iterator prev = it;
+                --prev;
+                prevKey = *prev;
+                mustRefreshPrev = prevKey.getInterpolation() != Natron::KEYFRAME_BROKEN &&
+                prevKey.getInterpolation() != Natron::KEYFRAME_FREE &&
+                prevKey.getInterpolation() != Natron::KEYFRAME_NONE;
+            }
+            KeyFrameSet::iterator next = it;
+            ++next;
+            if(next != _imp->keyFrames.end()){
+                nextKey = *next;
+                mustRefreshNext = nextKey.getInterpolation() != Natron::KEYFRAME_BROKEN &&
+                nextKey.getInterpolation() != Natron::KEYFRAME_FREE &&
+                nextKey.getInterpolation() != Natron::KEYFRAME_NONE;
+            }
+            
+            _imp->keyFrames.erase(it);
+            
+            
+            if(mustRefreshPrev){
+                refreshDerivatives(DERIVATIVES_CHANGED,find(prevKey.getTime()));
+            }
+            if(mustRefreshNext){
+                refreshDerivatives(DERIVATIVES_CHANGED,find(nextKey.getTime()));
+            }
+
+        }
+        ++i;
+    }
+}
+
+void Curve::removeKeyFrame(double time) {
     
     KeyFrameSet::iterator it = find(time);
     assert(it != _imp->keyFrames.end());
@@ -230,7 +289,9 @@ void Curve::removeKeyFrame(int time) {
 
 
 double Curve::getValueAt(double t) const {
-    assert(!_imp->keyFrames.empty());
+    if(_imp->keyFrames.empty()){
+        throw std::runtime_error("Curve has no control points!");
+    }
     if (_imp->keyFrames.size() == 1) {
         //if there's only 1 keyframe, don't bother interpolating
         return (*_imp->keyFrames.begin()).getValue();

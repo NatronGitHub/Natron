@@ -874,3 +874,92 @@ void Parametric_Knob::getParametricRange(double* min,double* max){
 std::string Parametric_Knob::getDimensionName(int dimension) const{
     return getCurveLabel(dimension);
 }
+
+Natron::Status Parametric_Knob::addControlPoint(int dimension,double key,double value){
+    if(dimension >= (int)_curves.size()){
+        return StatFailed;
+    }
+    
+    _curves[dimension]->addKeyFrame(KeyFrame(key,value));
+    return StatOK;
+}
+
+Natron::Status Parametric_Knob::getValue(int dimension,double parametricPosition,double *returnValue){
+    if(dimension >= (int)_curves.size()){
+        return StatFailed;
+    }
+    try {
+        *returnValue = _curves[dimension]->getValueAt(parametricPosition);
+    }catch(...){
+        return Natron::StatFailed;
+    }
+    return Natron::StatOK;
+}
+
+Natron::Status Parametric_Knob::getNControlPoints(int dimension,int *returnValue){
+    if(dimension >= (int)_curves.size()){
+        return StatFailed;
+    }
+    *returnValue =  _curves[dimension]->keyFramesCount();
+    return StatOK;
+}
+
+Natron::Status Parametric_Knob::getNthControlPoint(int dimension,
+                                  int    nthCtl,
+                                  double *key,
+                                  double *value){
+    if(dimension >= (int)_curves.size()){
+        return StatFailed;
+    }
+    const KeyFrameSet& set = _curves[dimension]->getKeyFrames();
+    int index = 0;
+    for (KeyFrameSet::const_iterator it = set.begin(); it!=set.end(); ++it) {
+        if(index == nthCtl){
+            *key = it->getTime();
+            *value = it->getValue();
+            return StatOK;
+        }
+        ++index;
+    }
+    
+    return StatFailed;
+}
+
+Natron::Status Parametric_Knob::setNthControlPoint(int   dimension,
+                                  int   nthCtl,
+                                  double key,
+                                  double value)
+{
+    if(dimension >= (int)_curves.size()){
+        return StatFailed;
+    }
+    const KeyFrameSet& set = _curves[dimension]->getKeyFrames();
+    int index = 0;
+    for (KeyFrameSet::const_iterator it = set.begin(); it!=set.end(); ++it) {
+        if(index == nthCtl){
+            _curves[dimension]->setKeyFrameValueAndTime(key, value, it->getTime());
+            return StatOK;
+        }
+        ++index;
+    }
+    
+    return StatFailed;
+
+}
+
+Natron::Status  Parametric_Knob::deleteControlPoint(int   dimension,int   nthCtl){
+    if(dimension >= (int)_curves.size()){
+        return StatFailed;
+    }
+    
+    _curves[dimension]->removeKeyFrameWithIndex(nthCtl);
+    return StatOK;
+}
+
+Natron::Status  Parametric_Knob::deleteAllControlPoints(int   dimension){
+    if(dimension >= (int)_curves.size()){
+        return StatFailed;
+    }
+    _curves[dimension]->clearKeyFrames();
+    return StatOK;
+}

@@ -88,7 +88,7 @@ void RemoveKeysCommand::redo(){
 }
 
 //////////////////////////////MOVE MULTIPLE KEYS COMMAND//////////////////////////////////////////////
-MoveKeysCommand::MoveKeysCommand(CurveWidget* editor, const KeyMoveV &keys, int dt, double dv,
+MoveKeysCommand::MoveKeysCommand(CurveWidget* editor, const KeyMoveV &keys, double dt, double dv,
                                                  QUndoCommand *parent )
     : QUndoCommand(parent)
     , _merge(!keys.empty())
@@ -99,14 +99,14 @@ MoveKeysCommand::MoveKeysCommand(CurveWidget* editor, const KeyMoveV &keys, int 
 {
 }
 
-void MoveKeysCommand::move(int dt,double dv, bool isundo){
+void MoveKeysCommand::move(double dt,double dv, bool isundo){
     SelectedKeys newSelectedKeys;
     
-    std::vector<int> newKeyTimes;
+    std::vector<double> newKeyTimes;
     if(dt < 0){
         for(KeyMoveV::iterator it = _keys.begin();it!= _keys.end();++it){
             it->curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
-            int newX = it->key.getTime() + dt;
+            double newX = it->key.getTime() + dt;
             double newY = it->key.getValue() + dv;
             it->curve->getInternalCurve()->setKeyFrameValueAndTime(
                         isundo ? it->key.getTime() : newX,
@@ -119,7 +119,7 @@ void MoveKeysCommand::move(int dt,double dv, bool isundo){
 
         for(KeyMoveV::reverse_iterator it = _keys.rbegin();it!= _keys.rend();++it){
             it->curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
-            int newX = it->key.getTime() + dt;
+            double newX = it->key.getTime() + dt;
             double newY = it->key.getValue() + dv;
             it->curve->getInternalCurve()->setKeyFrameValueAndTime(
                         isundo ? it->key.getTime() : newX,

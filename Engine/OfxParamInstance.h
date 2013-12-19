@@ -616,15 +616,33 @@ public:
     
     
     ///derived from CurveHolder
-    virtual OfxStatus getValue(int curveIndex,OfxTime time,double parametricPosition,double *returnValue);
+    virtual OfxStatus getValue(int curveIndex,OfxTime time,double parametricPosition,double *returnValue) OVERRIDE;
     
-    virtual void onNthControlPointSet(int curveIndex,const OFX::Host::ParametricParam::ControlPoint& cp);
+    virtual OfxStatus getNControlPoints(int curveIndex,double time,int *returnValue) OVERRIDE;
     
-    virtual void onControlPointAdded(int curveIndex,const OFX::Host::ParametricParam::ControlPoint& cp);
+    virtual OfxStatus getNthControlPoint(int curveIndex,
+                                         double time,
+                                         int    nthCtl,
+                                         double *key,
+                                         double *value) OVERRIDE;
     
-    virtual void onControlPointDeleted(int curveIndex,const OFX::Host::ParametricParam::ControlPoint& cp);
+    virtual OfxStatus setNthControlPoint(int   curveIndex,
+                                         double time,
+                                         int   nthCtl,
+                                         double key,
+                                         double value,
+                                         bool addAnimationKey
+                                         ) OVERRIDE;
     
-    virtual void onCurveCleared(int curveIndex);
+    virtual OfxStatus addControlPoint(int   curveIndex,
+                                      double time,
+                                      double key,
+                                      double value,
+                                      bool addAnimationKey) OVERRIDE;
+    
+    virtual OfxStatus  deleteControlPoint(int   curveIndex,int   nthCtl) OVERRIDE;
+    
+    virtual OfxStatus  deleteAllControlPoints(int   curveIndex) OVERRIDE;
     
     boost::shared_ptr<Knob> getKnob() const;
     

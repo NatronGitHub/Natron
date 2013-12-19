@@ -1612,10 +1612,10 @@ OfxParametricInstance::OfxParametricInstance(OfxEffectInstance* node, OFX::Host:
     
     const OFX::Host::Property::Set &properties = getProperties();
     int parametricDimension = properties.getIntProperty(kOfxParamPropParametricDimension);
-
+    
     
     _knob = Natron::createKnob<Parametric_Knob>(node, getParamLabel(this),parametricDimension);
-
+    
     setLabel();//set label on all curves
     
     double color[3*parametricDimension];
@@ -1638,7 +1638,7 @@ void OfxParametricInstance::initializeInteract(CurveWidget* widget){
         _overlayInteract->createInstanceAction();
         QObject::connect(_knob.get(), SIGNAL(customBackgroundRequested()), this, SLOT(onCustomBackgroundDrawingRequested()));
     }
-
+    
 }
 
 OfxParametricInstance::~OfxParametricInstance(){
@@ -1682,29 +1682,80 @@ void OfxParametricInstance::setDisplayRange() {
 
 OfxStatus OfxParametricInstance::getValue(int curveIndex,OfxTime time,double parametricPosition,double *returnValue)
 {
-    
+    Natron::Status stat = _knob->getValue(curveIndex, parametricPosition, returnValue);
+    if(stat == Natron::StatOK){
+        return kOfxStatOK;
+    }else{
+        return kOfxStatFailed;
+    }
 }
 
-void OfxParametricInstance::onNthControlPointSet(int curveIndex,const OFX::Host::ParametricParam::ControlPoint& cp)
-{
-    
+OfxStatus OfxParametricInstance::getNControlPoints(int curveIndex,double /*time*/,int *returnValue){
+    Natron::Status stat = _knob->getNControlPoints(curveIndex, returnValue);
+    if(stat == Natron::StatOK){
+        return kOfxStatOK;
+    }else{
+        return kOfxStatFailed;
+    }
 }
 
-void OfxParametricInstance::onControlPointAdded(int curveIndex,const OFX::Host::ParametricParam::ControlPoint& cp)
-{
-    
+OfxStatus OfxParametricInstance::getNthControlPoint(int curveIndex,
+                                                    double /*time*/,
+                                                    int    nthCtl,
+                                                    double *key,
+                                                    double *value) {
+    Natron::Status stat = _knob->getNthControlPoint(curveIndex, nthCtl, key, value);
+    if(stat == Natron::StatOK){
+        return kOfxStatOK;
+    }else{
+        return kOfxStatFailed;
+    }
 }
 
-void OfxParametricInstance::onControlPointDeleted(int curveIndex,const OFX::Host::ParametricParam::ControlPoint& cp)
-{
-    
+OfxStatus OfxParametricInstance::setNthControlPoint(int   curveIndex,
+                                                    double /*time*/,
+                                                    int   nthCtl,
+                                                    double key,
+                                                    double value,
+                                                    bool /*addAnimationKey*/
+) {
+    Natron::Status stat = _knob->setNthControlPoint(curveIndex, nthCtl, key, value);
+    if(stat == Natron::StatOK){
+        return kOfxStatOK;
+    }else{
+        return kOfxStatFailed;
+    }
+}
+OfxStatus OfxParametricInstance::addControlPoint(int   curveIndex,
+                                                 double /*time*/,
+                                                 double key,
+                                                 double value,
+                                                 bool/* addAnimationKey*/) {
+    Natron::Status stat = _knob->addControlPoint(curveIndex, key, value);
+    if(stat == Natron::StatOK){
+        return kOfxStatOK;
+    }else{
+        return kOfxStatFailed;
+    }
 }
 
-void OfxParametricInstance::onCurveCleared(int curveIndex)
-{
-    
+OfxStatus  OfxParametricInstance::deleteControlPoint(int   curveIndex,int   nthCtl) {
+    Natron::Status stat = _knob->deleteControlPoint(curveIndex, nthCtl);
+    if(stat == Natron::StatOK){
+        return kOfxStatOK;
+    }else{
+        return kOfxStatFailed;
+    }
 }
 
+OfxStatus  OfxParametricInstance::deleteAllControlPoints(int   curveIndex) {
+    Natron::Status stat = _knob->deleteAllControlPoints(curveIndex);
+    if(stat == Natron::StatOK){
+        return kOfxStatOK;
+    }else{
+        return kOfxStatFailed;
+    }
+}
 
 
 void OfxParametricInstance::onCustomBackgroundDrawingRequested(){

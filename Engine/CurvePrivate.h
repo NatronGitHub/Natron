@@ -43,7 +43,7 @@ struct CurvePrivate{
     Knob* owner;
 
     CurveType curveType;
-    
+        
     CurvePrivate()
     : keyFrames()
     , owner(NULL)

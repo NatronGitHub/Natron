@@ -142,7 +142,7 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1, double* x2){
             *x2 = x1 + delta_x;
         }
     }
-    return std::make_pair(KeyFrame(0,0),false);
+    return std::make_pair(KeyFrame(0.,0.),false);
     
     
 }
@@ -413,8 +413,8 @@ private:
     
     QColor _baseAxisColor;
     QColor _scaleColor;
-    QPoint _keyDragMaxMovement;
-    int _keyDragLastMovement;
+    QPointF _keyDragMaxMovement;
+    double _keyDragLastMovement;
     QPolygonF _timelineTopPoly;
     QPolygonF _timelineBtmPoly;
     CurveWidget* _widget;
@@ -933,7 +933,7 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
     translation.ry() *= _mouseDragOrientation.y();
     
     //1st off, round to the nearest integer the keyframes total motion
-    int totalMovement = std::floor(newClick_opengl.x() - dragStartPointOpenGL.x() + 0.5);
+    double totalMovement = std::floor(newClick_opengl.x() - dragStartPointOpenGL.x() + 0.5);
     // clamp totalMovement to _keyDragMaxMovement
     if (totalMovement < 0) {
         totalMovement = std::max(totalMovement,_keyDragMaxMovement.x());
@@ -941,7 +941,7 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
         totalMovement = std::min(totalMovement,_keyDragMaxMovement.y());
     }
     
-    int dt;
+    double dt;
     if (_mouseDragOrientation.x() != 0) {
         dt =  totalMovement - _keyDragLastMovement;
     } else {
@@ -1235,14 +1235,14 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
         return;
     }
     
-    std::map<CurveGui*,QPoint> curvesMaxMovements;
+    std::map<CurveGui*,QPointF> curvesMaxMovements;
     
     //for each curve that has keyframes selected,we want to find out the max movement possible on left/right
     // that means looking at the first selected key and last selected key of each curve and determining of
     //how much they can move
     for(SelectedKeys::const_iterator it = _selectedKeyFrames.begin();it!=_selectedKeyFrames.end();++it){
         
-        std::map<CurveGui*,QPoint>::iterator foundCurveMovement = curvesMaxMovements.find(it->curve);
+        std::map<CurveGui*,QPointF>::iterator foundCurveMovement = curvesMaxMovements.find(it->curve);
         
         if(foundCurveMovement != curvesMaxMovements.end()){
             //if we already computed the max movement for this curve, move on
@@ -1267,7 +1267,13 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
             
             assert(leftMost != ks.end() && rightMost != ks.end());
             
-            QPoint curveMaxMovement;
+            QPointF curveMaxMovement;
+            
+            double minimumTimeSpanBetween2Keys = 1.;
+            if(!it->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers()){
+                minimumTimeSpanBetween2Keys = CONTROL_POINTS_EQUALITY_EPSILON;
+            }
+            
             //now get leftMostSelected's previous key to determine the max left movement for this curve
             {
                 if(leftMost == ks.begin()){
@@ -1275,7 +1281,7 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
                 }else{
                     KeyFrameSet::const_iterator prev = leftMost;
                     --prev;
-                    curveMaxMovement.setX(prev->getTime() + 1 - leftMost->getTime());
+                    curveMaxMovement.setX(prev->getTime() + minimumTimeSpanBetween2Keys - leftMost->getTime());
                     assert(curveMaxMovement.x() <= 0);
                 }
             }
@@ -1288,7 +1294,7 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
                     curveMaxMovement.setY(INT_MAX);
                 }else{
                     
-                    curveMaxMovement.setY(next->getTime() - 1 - rightMost->getTime());
+                    curveMaxMovement.setY(next->getTime() - minimumTimeSpanBetween2Keys - rightMost->getTime());
                     assert(curveMaxMovement.y() >= 0);
                     
                 }
@@ -1304,8 +1310,8 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
     _keyDragMaxMovement.ry() = INT_MAX;
     
     
-    for (std::map<CurveGui*,QPoint>::const_iterator it = curvesMaxMovements.begin(); it!= curvesMaxMovements.end(); ++it) {
-        const QPoint& pt = it->second;
+    for (std::map<CurveGui*,QPointF>::const_iterator it = curvesMaxMovements.begin(); it!= curvesMaxMovements.end(); ++it) {
+        const QPointF& pt = it->second;
         assert(pt.x() <= 0 && _keyDragMaxMovement.x() <= 0);
         //get the minimum for the left movement (numbers are all negatives here)
         if(pt.x() > _keyDragMaxMovement.x()){

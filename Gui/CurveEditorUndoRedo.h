@@ -84,7 +84,7 @@ class MoveKeysCommand : public QUndoCommand{
 
 public:
 
-    MoveKeysCommand(CurveWidget* editor,const KeyMoveV& keys,int dt,double dv,QUndoCommand *parent = 0);
+    MoveKeysCommand(CurveWidget* editor,const KeyMoveV& keys,double dt,double dv,QUndoCommand *parent = 0);
     virtual ~MoveKeysCommand(){ }
     virtual void undo();
     virtual void redo();
@@ -93,10 +93,10 @@ public:
 
 private:
 
-    void move(int dt, double dv, bool isundo);
+    void move(double dt, double dv, bool isundo);
 
     bool _merge;
-    int _dt;
+    double _dt;
     double _dv;
     KeyMoveV _keys;
     CurveWidget* _curveWidget;

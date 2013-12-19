@@ -346,7 +346,7 @@ void KnobGui::onSetKeyActionTriggered(){
     for(int i = 0; i < _knob->getDimension();++i){
         CurveGui* curve = _knob->getHolder()->getApp()->getGui()->_curveEditor->findCurve(this, i);
         std::vector<KeyFrame> kVec;
-        kVec.push_back(KeyFrame(time,_knob->getValue<double>(i)));
+        kVec.push_back(KeyFrame((double)time,_knob->getValue<double>(i)));
         pushUndoCommand(new AddKeysCommand(_knob->getHolder()->getApp()->getGui()->_curveEditor->getCurveWidget(),
                                            curve,kVec));
     }

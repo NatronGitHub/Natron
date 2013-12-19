@@ -223,7 +223,7 @@ bool Knob::setValueAtTime(int time, const Variant& v, int dimension, Natron::Val
     
     boost::shared_ptr<Curve> curve = _imp->_curves[dimension];
 #warning "We should query the variant's type passed in parameter to construct a keyframe with an appropriate value"
-    *newKey = KeyFrame(time,v.toDouble());
+    *newKey = KeyFrame((double)time,v.toDouble());
     bool ret = curve->addKeyFrame(*newKey);
     
     if(reason != Natron::USER_EDITED){
@@ -245,7 +245,7 @@ void Knob::deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason r
     if(isSlave){
         return;
     }
-    _imp->_curves[dimension]->removeKeyFrame(time);
+    _imp->_curves[dimension]->removeKeyFrame((double)time);
     
     if(reason != Natron::USER_EDITED){
         emit keyFrameRemoved(time,dimension);
