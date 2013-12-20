@@ -198,9 +198,9 @@ std::pair<KeyFrameSet::iterator,bool> Curve::addKeyFrameNoUpdate(const KeyFrame&
         return std::make_pair(newKey.first,addedKey);
     }else{
         bool addedKey = true;
+        double paramEps = 1e-4 * std::abs(_imp->curveMax - _imp->curveMin);
         for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it!= _imp->keyFrames.end(); ++it) {
-#pragma message WARN("FIXME: the epsilon depends on the curve! imagine a ParametricParam that goes from 0 to 0.1: 1e-2 is not a valid epsilon! All uses of CONTROL_POINTS_QUALITY_EPSILON should be changed to reflect that")
-            if (std::abs(it->getTime() - cp.getTime()) < CONTROL_POINTS_EQUALITY_EPSILON) {
+            if (std::abs(it->getTime() - cp.getTime()) < paramEps) {
                 _imp->keyFrames.erase(it);
                 addedKey = false;
                 break;
@@ -380,6 +380,10 @@ double Curve::getValueAt(double t) const {
 
 
 bool Curve::isAnimated() const { return _imp->keyFrames.size() > 1; }
+
+void Curve::setParametricRange(double a,double b) { _imp->curveMin = a; _imp->curveMax = b; }
+
+void Curve::getParametricRange(double* a,double* b) { *a = _imp->curveMin; *b = _imp->curveMax; }
 
 int Curve::keyFramesCount() const { return (int)_imp->keyFrames.size(); }
 
@@ -655,8 +659,9 @@ KeyFrameSet::const_iterator Curve::keyframeAt(int index) const {
 
 int Curve::keyFrameIndex(double time) const {
     int i = 0;
+    double paramEps = 1e-4 * std::abs(_imp->curveMax - _imp->curveMin);
     for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it!=_imp->keyFrames.end(); ++it) {
-        if(std::abs(it->getTime() - time) < CONTROL_POINTS_EQUALITY_EPSILON){
+        if(std::abs(it->getTime() - time) < paramEps){
             return i;
         }
         ++i;

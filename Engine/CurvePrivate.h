@@ -43,11 +43,15 @@ struct CurvePrivate{
     Knob* owner;
 
     CurveType curveType;
+    
+    double curveMin,curveMax;
         
     CurvePrivate()
     : keyFrames()
     , owner(NULL)
     , curveType(DOUBLE_CURVE)
+    , curveMin(INT_MIN)
+    , curveMax(INT_MAX)
     {}
 };
 

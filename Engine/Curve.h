@@ -23,8 +23,6 @@
 #include "Global/Enums.h"
 #include "Global/Macros.h"
 
-#define CONTROL_POINTS_EQUALITY_EPSILON 1e-2
-
 /**
  * @brief A KeyFrame is a lightweight pair <time,value>. These are the values that are used
  * to interpolate a Curve. The _leftDerivative and _rightDerivative can be
@@ -146,6 +144,10 @@ public:
     /**whether the curve will clamp possible keyframe X values to integers or not.**/
     bool areKeyFramesTimeClampedToIntegers() const;
 
+    void setParametricRange(double a,double b);
+    
+    void getParametricRange(double* a,double* b);
+    
     ///returns true if a keyframe was successfully added, false if it just replaced an already
     ///existing key at this time.
     bool addKeyFrame(const KeyFrame key);

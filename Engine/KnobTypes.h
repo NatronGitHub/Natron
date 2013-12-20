@@ -479,7 +479,6 @@ class Parametric_Knob : public Knob{
     std::vector< boost::shared_ptr<Curve> > _curves;
     std::vector<RGBAColourF> _curvesColor;
     std::vector<std::string> _curveLabels;
-    double _range[2];
     
 public:
     

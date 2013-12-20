@@ -1297,13 +1297,18 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
             
             double minimumTimeSpanBetween2Keys = 1.;
             if(!it->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers()){
-                minimumTimeSpanBetween2Keys = CONTROL_POINTS_EQUALITY_EPSILON;
+                double curveMin,curveMax;
+                it->curve->getInternalCurve()->getParametricRange(&curveMin, &curveMax);
+                minimumTimeSpanBetween2Keys = 1e-4 * std::abs(curveMax - curveMin) * 10;//< be safe
             }
+            
+            double curveMin,curveMax;
+            leftMostSelected->curve->getInternalCurve()->getParametricRange(&curveMin, &curveMax);
             
             //now get leftMostSelected's previous key to determine the max left movement for this curve
             {
                 if(leftMost == ks.begin()){
-                    curveMaxMovement.setX(INT_MIN);
+                    curveMaxMovement.setX(curveMin - leftMost->getTime());
                 }else{
                     KeyFrameSet::const_iterator prev = leftMost;
                     --prev;
@@ -1317,7 +1322,7 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
                 KeyFrameSet::const_iterator next = rightMost;
                 ++next;
                 if(next == ks.end()){
-                    curveMaxMovement.setY(INT_MAX);
+                    curveMaxMovement.setY(curveMax - rightMost->getTime());
                 }else{
                     
                     curveMaxMovement.setY(next->getTime() - minimumTimeSpanBetween2Keys - rightMost->getTime());

@@ -821,8 +821,7 @@ Parametric_Knob::Parametric_Knob(KnobHolder *holder, const std::string &descript
         _curvesColor[i] = color;
         _curves[i] = boost::shared_ptr<Curve>(new Curve(this));
     }
-    _range[0] = 0.;
-    _range[1] = 1.;
+
 }
 
 const std::string Parametric_Knob::_typeNameStr("Parametric");
@@ -864,13 +863,14 @@ const std::string& Parametric_Knob::getCurveLabel(int dimension) const{
 }
 
 void Parametric_Knob::setParametricRange(double min,double max){
-    _range[0] = min;
-    _range[1] = max;
+    for (U32 i = 0; i < _curves.size(); ++i) {
+        _curves[i]->setParametricRange(min, max);
+    }
 }
 
 void Parametric_Knob::getParametricRange(double* min,double* max){
-    *min = _range[0];
-    *max = _range[1];
+    assert(!_curves.empty());
+    _curves.front()->getParametricRange(min, max);
 }
 
 std::string Parametric_Knob::getDimensionName(int dimension) const{
@@ -886,7 +886,7 @@ Natron::Status Parametric_Knob::addControlPoint(int dimension,double key,double 
     if(dimension >= (int)_curves.size()){
         return StatFailed;
     }
-#pragma message WARN("FIXME: check that no element has a key sufficiently close to this key - this requires an access to the range of the parametric, see how it is done for descriptors in parametricParamAddControlPoint")
+
     _curves[dimension]->addKeyFrame(KeyFrame(key,value));
     emit curveChanged(dimension);
     return StatOK;
