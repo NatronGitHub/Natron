@@ -12,10 +12,10 @@
 #ifndef CURVEEDITOR_H
 #define CURVEEDITOR_H
 
-#include <QWidget>
-
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+
+#include <QWidget>
 
 #include "Global/GlobalDefines.h"
 

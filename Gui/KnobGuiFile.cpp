@@ -10,9 +10,9 @@
 
 #include "Gui/KnobGuiFile.h"
 
-#include <QtGui/QLabel>
-#include <QtGui/QGridLayout>
-#include <QtGui/QHBoxLayout>
+#include <QLabel> // in QtGui on Qt4, in QtWidgets on Qt5
+#include <QGridLayout> // in QtGui on Qt4, in QtWidgets on Qt5
+#include <QHBoxLayout> // in QtGui on Qt4, in QtWidgets on Qt5
 
 #include "Global/AppManager.h"
 #include "Engine/Settings.h"

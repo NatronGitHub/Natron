@@ -11,11 +11,14 @@
 #include "SpinBox.h"
 
 #include <cfloat>
-#include "Global/Macros.h"
+
 #include <QtGui/QWheelEvent>
 #include <QtGui/QDoubleValidator>
 #include <QtGui/QIntValidator>
-#include <QtGui/QStyle>
+#include <QStyle> // in QtGui on Qt4, in QtWidgets on Qt5
+
+#include "Global/Macros.h"
+
 SpinBox::SpinBox(QWidget* parent,SPINBOX_TYPE type):
 LineEdit(parent)
 ,_type(type)

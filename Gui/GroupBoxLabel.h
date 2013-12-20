@@ -6,7 +6,7 @@
 #ifndef NATRON_GUI_GROUPBOXLABEL_H_
 #define NATRON_GUI_GROUPBOXLABEL_H_
 
-#include <QtGui/QLabel>
+#include <QLabel> // in QtGui on Qt4, in QtWidgets on Qt5
 
 #include "Global/Macros.h"
 

@@ -13,8 +13,7 @@
 #define CURVEEDITORUNDOREDO_H
 
 
-#include <QtGui/QUndoCommand>
-
+#include <QUndoCommand> // in QtGui on Qt4, in QtWidgets on Qt5
 
 #include "Engine/Curve.h"
 

@@ -18,7 +18,7 @@
 #include <QTreeWidgetItem>
 #include <QSplitter>
 #include <QHeaderView>
-#include <QtGui/QUndoStack>
+#include <QUndoStack> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QAction>
 
 #include "Engine/Knob.h"

@@ -90,8 +90,8 @@ inline QString printAsRAM(U64 bytes){
     if (bytes >= mb)
         return QFileSystemModel::tr("%1 MB").arg(QLocale().toString(qreal(bytes) / mb, 'f', 1));
     if (bytes >= kb)
-        return QFileSystemModel::tr("%1 KB").arg(QLocale().toString(bytes / kb));
-    return QFileSystemModel::tr("%1 byte(s)").arg(QLocale().toString(bytes));
+        return QFileSystemModel::tr("%1 KB").arg(QLocale().toString((uint)(bytes / kb)));
+    return QFileSystemModel::tr("%1 byte(s)").arg(QLocale().toString((uint)bytes));
 }
 
 
