@@ -402,8 +402,8 @@ const KeyFrame& Curve::setKeyFrameValue(double value,int index,int* newIndex) {
     
     evaluateCurveChanged(KEYFRAME_CHANGED,it);
     
-    if(newIndex){
-        *newIndex =  _imp->indexFromIterator(it);
+    if (newIndex) {
+        *newIndex = std::distance(_imp->keyFrames.begin(),it);
     }
     return *it;
 
@@ -419,8 +419,8 @@ const KeyFrame& Curve::setKeyFrameTime(double time,int index,int* newIndex) {
         it = setKeyFrameValueAndTimeNoUpdate(it->getValue(),time, it);
         evaluateCurveChanged(KEYFRAME_CHANGED,it);
     }
-    if(newIndex){
-        *newIndex =  _imp->indexFromIterator(it);
+    if (newIndex) {
+        *newIndex = std::distance(_imp->keyFrames.begin(),it);
     }
 
     return *it;
@@ -439,8 +439,8 @@ const KeyFrame& Curve::setKeyFrameValueAndTime(double time,double value,int inde
         it = setKeyFrameValueAndTimeNoUpdate(value,time, it);
         evaluateCurveChanged(KEYFRAME_CHANGED,it);
     }
-    if(newIndex){
-        *newIndex =  _imp->indexFromIterator(it);
+    if (newIndex) {
+        *newIndex = std::distance(_imp->keyFrames.begin(),it);
     }
 
     return *it;
@@ -458,8 +458,8 @@ const KeyFrame& Curve::setKeyFrameLeftDerivative(double value,int index,int* new
         it = addKeyFrameNoUpdate(newKey).first;
         evaluateCurveChanged(DERIVATIVES_CHANGED,it);
     }
-    if(newIndex){
-        *newIndex =  _imp->indexFromIterator(it);
+    if (newIndex) {
+        *newIndex = std::distance(_imp->keyFrames.begin(),it);
     }
 
     return *it;
@@ -476,8 +476,8 @@ const KeyFrame& Curve::setKeyFrameRightDerivative(double value,int index,int* ne
         it = addKeyFrameNoUpdate(newKey).first;
         evaluateCurveChanged(DERIVATIVES_CHANGED,it);
     }
-    if(newIndex){
-        *newIndex =  _imp->indexFromIterator(it);
+    if (newIndex) {
+        *newIndex = std::distance(_imp->keyFrames.begin(),it);
     }
 
     return *it;
@@ -495,8 +495,8 @@ const KeyFrame& Curve::setKeyFrameDerivatives(double left, double right,int inde
         it = addKeyFrameNoUpdate(newKey).first;
         evaluateCurveChanged(DERIVATIVES_CHANGED,it);
     }
-    if(newIndex){
-        *newIndex =  _imp->indexFromIterator(it);
+    if (newIndex) {
+        *newIndex = std::distance(_imp->keyFrames.begin(),it);
     }
 
     return *it;
@@ -511,8 +511,8 @@ const KeyFrame& Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,int 
         it = addKeyFrameNoUpdate(newKey).first;
         evaluateCurveChanged(KEYFRAME_CHANGED,it);
     }
-    if(newIndex){
-        *newIndex =  _imp->indexFromIterator(it);
+    if (newIndex) {
+        *newIndex = std::distance(_imp->keyFrames.begin(),it);
     }
 
     return *it;
