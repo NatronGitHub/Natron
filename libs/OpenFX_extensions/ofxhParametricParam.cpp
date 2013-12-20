@@ -10,6 +10,7 @@
  */
 
 #include <cassert>
+#include <sstream>
 
 #include "ofxhParametricParam.h"
 
@@ -24,29 +25,51 @@
 #include "ofxhUtilities.h"
 
 /** @brief The initial control points for a parametric params.
- A control point is a double triplet (curveID, key, value).
+ A control point is a double pair (key, value).
+ The properties are each named "OfxParamPropControlPoints_" with the curveID post pended
  1) If curveID is not in the range [0,kOfxParamPropParametricDimension]
  then the function parametricParamAddControlPoint will fail.
  
  
  - Type - double xN
  - Property Set - parametric param descriptor (read/write) and instance (read only)
- - Value Values - Any multiple of 3 doubles validating 1)
+ - Value Values - Any multiple of 2 doubles validating 1)
  
  This indicates the dimension of the parametric param.
  */
 #define kOfxParamPropControlPoints "OfxParamPropControlPoints"
 
-/** @brief How many control points is there in the property set.
- 
- - Type - int x1
- - Property Set - parametric param descriptor (read/write) and instance (read only)
- - Value Values - Any number >= 0
- - Default value - 1. This property is added upon the addition of the 1st control point.
- This indicates the dimension of the parametric param.
- */
-#define kOfxParamPropControlPointsCount "kOfxParamPropControlPointsCount"
+namespace {
+    struct ControlPoint {
+        double key;
+        double value;
+    };
+    typedef std::vector<ControlPoint> ControlPointV;
+    struct ControlPoint_LessThan {
+        bool operator() (const ControlPoint & left, const ControlPoint & right)
+        {
+            return left.key < right.key;
+        }
+    };
+    struct ControlPoint_IsClose {
+        const ControlPoint& _refcp;
+        double _eps;
+        ControlPoint_IsClose(const ControlPoint& refcp, double eps) : _refcp(refcp), _eps(eps){}
 
+        bool operator() (const ControlPoint& cp) const {
+            return std::abs(cp.key - _refcp.key) < _eps;
+        }
+    };
+    struct ControlPoint_MuchLessThan {
+        double _eps;
+        ControlPoint_MuchLessThan(double eps) : _eps(eps){}
+        bool operator() (const ControlPoint & left, const ControlPoint & right)
+        {
+            return left.key < (right.key - _eps);
+        }
+    };
+
+}
 
 namespace OFX {
 
@@ -67,16 +90,27 @@ bool ParametricInstance::isInitialized() const{
     
 OfxStatus ParametricInstance::defaultInitializeFromDescriptor(const Param::Descriptor& descriptor)
 {
-    int cpsCount = descriptor.getProperties().getIntProperty(kOfxParamPropControlPointsCount);
-    double cps[cpsCount*3];
-    descriptor.getProperties().getDoublePropertyN(kOfxParamPropControlPoints, cps, cpsCount*3);
-    
-    for(int i = 0; i < cpsCount;++i){
-        OfxStatus stat = addControlPoint(cps[i*3], 0., cps[i*3+1], cps[i*3+2], false);
-        if(stat == kOfxStatFailed){
-            return stat;
+    const Property::Set &descProps = descriptor.getProperties();
+    int curveCount = descProps.getIntProperty(kOfxParamPropParametricDimension);
+
+    for (int curveIndex = 0; curveIndex < curveCount; ++curveIndex) {
+        std::stringstream name;
+        name << kOfxParamPropControlPoints << '_' << curveIndex;
+        Property::PropertyTemplate<Property::DoubleValue> *prop;
+        if (descProps.fetchTypedProperty(name.str(), prop)) {
+            // there is a curve for dimension curveIndex
+            int cpsCount = descProps.getDimension(name.str()) / 2;
+            ControlPointV cps(cpsCount);
+            descProps.getDoublePropertyN(name.str(), &cps[0].key, cpsCount*2);
+            for (int i = 0; i < cpsCount; ++i) {
+                OfxStatus stat = addControlPoint(curveIndex, 0., cps[i].key, cps[i].value, false);
+                if (stat == kOfxStatFailed) {
+                    return stat;
+                }
+            }
         }
     }
+
     _curvesDefaultInitialized = true;
     return kOfxStatOK;
 }
@@ -208,33 +242,31 @@ static OfxStatus parametricParamGetValue(OfxParamHandle param,
                                          OfxTime time,
                                          double parametricPosition,
                                          double *returnValue){
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamGetValue - " << param << " ...";
-#       endif
+#   endif
     Param::Base *base = reinterpret_cast<Param::Base*>(param);
     if(!base || !base->verifyMagic()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
     
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
     if(!instance || !instance->isInitialized()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
 
-    OfxStatus stat = kOfxStatErrUnsupported;
+    OfxStatus stat = instance->getValue(curveIndex, time,parametricPosition,returnValue);
 
-    stat = instance->getValue(curveIndex, time,parametricPosition,returnValue);
-
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << ' ' << StatStr(stat) << std::endl;
-#       endif
+#   endif
     return stat;
 
 }
@@ -256,32 +288,62 @@ static  OfxStatus parametricParamGetNControlPoints(OfxParamHandle param,
                                                    int   curveIndex,
                                                    double time,
                                                    int *returnValue){
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamGetNControlPoints - " << param << " ...";
-#       endif
+#   endif
     Param::Base *base = reinterpret_cast<Param::Base*>(param);
     if(!base || !base->verifyMagic()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
-    if(!instance || !instance->isInitialized()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+    if (instance) {
+        if(!instance->isInitialized()) {
+#           ifdef OFX_DEBUG_PARAMETERS
+            std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
+#           endif
+            return kOfxStatErrBadHandle;
+        }
+
+        OfxStatus stat = instance->getNControlPoints(curveIndex, time,returnValue);
+#       ifdef OFX_DEBUG_PARAMETERS
+        std::cout << ' ' << StatStr(stat) << std::endl;
+#       endif
+        return stat;
+    }
+
+    Param::Descriptor* descriptor = dynamic_cast<Param::Descriptor*>(base);
+    //if it's also not a descriptor this is a bad pointer then
+    if (!descriptor) {
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
-    OfxStatus stat = kOfxStatErrUnsupported;
-
-    stat = instance->getNControlPoints(curveIndex, time,returnValue);
-
+    Property::Set &descProps = descriptor->getProperties();
+    int curveCount = descProps.getIntProperty(kOfxParamPropParametricDimension);
+    if (curveIndex < 0 || curveIndex >= curveCount ) {
 #       ifdef OFX_DEBUG_PARAMETERS
-    std::cout << ' ' << StatStr(stat) << std::endl;
+        std::cout << ' ' << StatStr(kOfxStatErrBadIndex) << std::endl;
 #       endif
+        return kOfxStatErrBadIndex;
+    }
+
+    ///check whether the property already exists in the property set
+    std::stringstream name;
+    name << kOfxParamPropControlPoints << '_' << curveIndex;
+    std::string namestr = name.str();
+    // getDimension returns 0 if the property does not exist
+    *returnValue = descProps.getDimension(name.str()) / 2;
+    OfxStatus stat = kOfxStatOK;
+
+#   ifdef OFX_DEBUG_PARAMETERS
+    std::cout << ' ' << StatStr(stat) << std::endl;
+#   endif
     return stat;
 }
 
@@ -298,7 +360,7 @@ static  OfxStatus parametricParamGetNControlPoints(OfxParamHandle param,
              @returns
              - ::kOfxStatOK            - all was fine
              - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
-             - ::kOfxStatErrUnknown    - if the type is unknown
+             - ::kOfxStatErrBadIndex   - the curve index or the control point index was invalid
              */
 static  OfxStatus parametricParamGetNthControlPoint(OfxParamHandle param,
                                                     int    curveIndex,
@@ -306,33 +368,73 @@ static  OfxStatus parametricParamGetNthControlPoint(OfxParamHandle param,
                                                     int    nthCtl,
                                                     double *key,
                                                     double *value){
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamGetNthControlPoint - " << param << " ...";
-#       endif
+#   endif
     Param::Base *base = reinterpret_cast<Param::Base*>(param);
     if(!base || !base->verifyMagic()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
-    if(!instance || !instance->isInitialized()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+    if (instance) {
+        if(!instance->isInitialized()) {
+#           ifdef OFX_DEBUG_PARAMETERS
+            std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
+#           endif
+            return kOfxStatErrBadHandle;
+        }
+
+        OfxStatus stat = instance->getNthControlPoint(curveIndex, time,nthCtl,key,value);
+
+#       ifdef OFX_DEBUG_PARAMETERS
+        std::cout << ' ' << StatStr(stat) << std::endl;
+#       endif
+        return stat;
+    }
+
+    Param::Descriptor* descriptor = dynamic_cast<Param::Descriptor*>(base);
+    //if it's also not a descriptor this is a bad pointer then
+    if (!descriptor) {
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
-
-    OfxStatus stat = kOfxStatErrUnsupported;
-
-    stat = instance->getNthControlPoint(curveIndex, time,nthCtl,key,value);
-
+    Property::Set &descProps = descriptor->getProperties();
+    int curveCount = descProps.getIntProperty(kOfxParamPropParametricDimension);
+    if (curveIndex < 0 || curveIndex >= curveCount ) {
 #       ifdef OFX_DEBUG_PARAMETERS
-    std::cout << ' ' << StatStr(stat) << std::endl;
+        std::cout << ' ' << StatStr(kOfxStatErrBadIndex) << std::endl;
 #       endif
+        return kOfxStatErrBadIndex;
+    }
+
+    ///check whether the property already exists in the property set
+    std::stringstream name;
+    name << kOfxParamPropControlPoints << '_' << curveIndex;
+    std::string namestr = name.str();
+    // getDimension returns 0 if the property does not exist
+    int cpsCount = descProps.getDimension(name.str()) / 2;
+    if (nthCtl < 0 || nthCtl >= cpsCount ) {
+#       ifdef OFX_DEBUG_PARAMETERS
+        std::cout << ' ' << StatStr(kOfxStatErrBadIndex) << std::endl;
+#       endif
+        return kOfxStatErrBadIndex;
+    }
+
+    *key = descProps.getDoubleProperty(namestr, 2*nthCtl);
+    *value = descProps.getDoubleProperty(namestr, 2*nthCtl+1);
+
+    OfxStatus stat = kOfxStatOK;
+
+#   ifdef OFX_DEBUG_PARAMETERS
+    std::cout << ' ' << StatStr(stat) << std::endl;
+#   endif
     return stat;
 }
 
@@ -366,33 +468,73 @@ static OfxStatus parametricParamSetNthControlPoint(OfxParamHandle param,
                                                    double key,
                                                    double value,
                                                    bool addAnimationKey){
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamSetNthControlPoint - " << param << " ...";
-#       endif
+#   endif
     Param::Base *base = reinterpret_cast<Param::Base*>(param);
     if(!base || !base->verifyMagic()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
-    if(!instance || !instance->isInitialized()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+    if (instance) {
+        if(!instance->isInitialized()) {
+#           ifdef OFX_DEBUG_PARAMETERS
+            std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
+#           endif
+            return kOfxStatErrBadHandle;
+        }
+
+        OfxStatus stat = instance->setNthControlPoint(curveIndex, time, nthCtl, key, value, addAnimationKey);
+
+#       ifdef OFX_DEBUG_PARAMETERS
+        std::cout << ' ' << StatStr(stat) << std::endl;
+#       endif
+        return stat;
+    }
+
+    Param::Descriptor* descriptor = dynamic_cast<Param::Descriptor*>(base);
+    //if it's also not a descriptor this is a bad pointer then
+    if (!descriptor) {
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
-
-    OfxStatus stat = kOfxStatErrUnsupported;
-
-    stat = instance->setNthControlPoint(curveIndex, time, nthCtl, key, value, addAnimationKey);
-
+    Property::Set &descProps = descriptor->getProperties();
+    int curveCount = descProps.getIntProperty(kOfxParamPropParametricDimension);
+    if (curveIndex < 0 || curveIndex >= curveCount ) {
 #       ifdef OFX_DEBUG_PARAMETERS
-    std::cout << ' ' << StatStr(stat) << std::endl;
+        std::cout << ' ' << StatStr(kOfxStatErrBadIndex) << std::endl;
 #       endif
+        return kOfxStatErrBadIndex;
+    }
+
+    ///check whether the property already exists in the property set
+    std::stringstream name;
+    name << kOfxParamPropControlPoints << '_' << curveIndex;
+    std::string namestr = name.str();
+    // getDimension returns 0 if the property does not exist
+    int cpsCount = descProps.getDimension(name.str()) / 2;
+    if (nthCtl < 0 || nthCtl >= cpsCount ) {
+#       ifdef OFX_DEBUG_PARAMETERS
+        std::cout << ' ' << StatStr(kOfxStatErrBadIndex) << std::endl;
+#       endif
+        return kOfxStatErrBadIndex;
+    }
+
+    descProps.setDoubleProperty(namestr, key, 2*nthCtl);
+    descProps.setDoubleProperty(namestr, value, 2*nthCtl+1);
+
+    OfxStatus stat = kOfxStatOK;
+
+#   ifdef OFX_DEBUG_PARAMETERS
+    std::cout << ' ' << StatStr(stat) << std::endl;
+#   endif
     return stat;
 }
     
@@ -423,14 +565,14 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
                                                 double key,
                                                 double value,
                                                 bool addAnimationKey){
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamAddControlPoint - " << param << " ...";
-#       endif
+#   endif
     Param::Base *base = reinterpret_cast<Param::Base*>(param);
     if(!base || !base->verifyMagic()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
@@ -441,76 +583,95 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
     ///if the handle is an instance call the virtual function, otherwise store a new double3D property
     /// to indicate a new control point was added.
-    if(instance){
-        stat = instance->addControlPoint(curveIndex, time, key, value, addAnimationKey);
-    }else{
-        
-        Param::Descriptor* desc = dynamic_cast<Param::Descriptor*>(base);
-        //if it's also not a descriptor this is a bad pointer then
-        if(!desc){
-            stat = kOfxStatErrBadHandle;
-        }else{
-            
-            ///check whether the property already exists in the property set
-            double initialCp[3];
-            initialCp[0] = -1.; //< initialises to -1 the curve index, if it hasn't change after the
-                                //call to getDoublePropertyN, that means the property didn't exist already.
-            desc->getProperties().getDoublePropertyN(kOfxParamPropControlPoints,initialCp,3);
-            
-            ///the property didn't exist, add it
-            if(initialCp[0] == -1){
-                
-                static const Property::PropSpec parametricControlPoints[] = {
-                    { kOfxParamPropControlPoints, Property::eDouble, 0, false, ""},
-                    { kOfxParamPropControlPointsCount, Property::eInt, 1,false, "1"},
-                    Property::propSpecEnd
-                };
-                desc->getProperties().addProperties(parametricControlPoints);
-                
-                initialCp[0] = curveIndex;
-                initialCp[1] = key;
-                initialCp[2] = value;
-                
-                desc->getProperties().setDoublePropertyN(kOfxParamPropControlPoints, initialCp, 3);
-            }else{
-                //the property already exists, append a triplet
-                //get the number of already existing cp's
-                
-                int cpCount = desc->getProperties().getIntProperty(kOfxParamPropControlPointsCount);
-                
-                //if the property exists it must be > 0 !
-                assert(cpCount > 0);
-                
-                //get the existing cps to copy and make a new array greater that can contain a new control point.
-                double existingCPs[cpCount * 3];
-                desc->getProperties().getDoublePropertyN(kOfxParamPropControlPoints, existingCPs, cpCount*3);
-                
-                
-                double newCps[(cpCount+1) *3];
-                //copy over the existing values
-                memcpy(newCps, existingCPs, sizeof(double) * cpCount * 3);
-                
-                //set the new control point
-                newCps[cpCount*3] = curveIndex;
-                newCps[cpCount*3+ 1] = key;
-                newCps[cpCount*3 +2] = value;
-                
-                //set back the property
-                desc->getProperties().setDoublePropertyN(kOfxParamPropControlPoints, newCps, (cpCount+1)*3);
-                desc->getProperties().setIntProperty(kOfxParamPropControlPointsCount, cpCount+1);
-                
-            }
-            
+    if (instance) {
+        if (!instance->isInitialized()) {
+#           ifdef OFX_DEBUG_PARAMETERS
+            std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
+#           endif
+            return kOfxStatErrBadHandle;
         }
-        stat = kOfxStatOK;
-        
+
+        stat = instance->addControlPoint(curveIndex, time, key, value, addAnimationKey);
+#       ifdef OFX_DEBUG_PARAMETERS
+        std::cout << ' ' << StatStr(stat) << std::endl;
+#       endif
+        return stat;
     }
 
+    Param::Descriptor* descriptor = dynamic_cast<Param::Descriptor*>(base);
+    //if it's also not a descriptor this is a bad pointer then
+    if (!descriptor) {
 #       ifdef OFX_DEBUG_PARAMETERS
-    std::cout << ' ' << StatStr(stat) << std::endl;
+        std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
 #       endif
-    return stat;
+        return kOfxStatErrBadHandle;
+    }
 
+    Property::Set &descProps = descriptor->getProperties();
+    int curveCount = descProps.getIntProperty(kOfxParamPropParametricDimension);
+    if (curveIndex < 0 || curveIndex >= curveCount ) {
+#       ifdef OFX_DEBUG_PARAMETERS
+        std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
+#       endif
+        return kOfxStatErrBadIndex;
+    }
+
+    ///check whether the property already exists in the property set
+    std::stringstream name;
+    name << kOfxParamPropControlPoints << '_' << curveIndex;
+    std::string namestr = name.str();
+    Property::PropertyTemplate<Property::DoubleValue> *prop;
+
+    if (!descProps.fetchTypedProperty(namestr, prop)) {
+        // the property does not exist, create it
+        const Property::PropSpec parametricControlPoints = {namestr.c_str(), Property::eDouble, 0, false, ""};
+        descProps.createProperty(parametricControlPoints);
+        double initialCp[2];
+        descProps.setDoublePropertyN(namestr, initialCp, 2);
+    } else {
+        //the property already exists
+        int cpsCount = descProps.getDimension(name.str()) / 2;
+        //if the property exists it must be > 0 !
+        assert(cpsCount > 0);
+
+        //get the existing cps
+        ControlPointV cps(cpsCount);
+        descProps.getDoublePropertyN(namestr, &cps[0].key, cps.size());
+
+        // Note: an optimal implementation could work on a std::set (which is an ordered container),
+        // but we propose this suboptimal implementation based on std::vector, given the fact that
+        // there are usually not many control points.
+
+        // if this key or the next one is almost equal, then replace it:
+        // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxParametricParameterSuiteV1_parametricParamAddControlPoint
+        // "If a key exists sufficiently close to 'key', then it will be set to the indicated control point."
+        // As a definition of "sufficiently close", we use:
+        // "the distance to the closest key is less than 1/10000 of the parametric range"
+        double paramMin = descProps.getDoubleProperty(kOfxParamPropParametricRange, 0);
+        double paramMax = descProps.getDoubleProperty(kOfxParamPropParametricRange, 1);
+        double paramEps = 1e-4 * std::abs(paramMax - paramMin);
+        ControlPoint cp = { key, value };
+        // std::lower_bound finds the element in a sorted vector in logarithmic time
+        ControlPointV::iterator it = std::lower_bound(cps.begin(), cps.end(), cp, ControlPoint_MuchLessThan(paramEps));
+        // lower_bound returned the first element for which the key is >= cp.key-paramEps.
+        // now check that its key is also <= cp.key+paramEps
+        if (it != cps.end() && it->key <= cp.key + paramEps) {
+            // found a "sufficiently close" element, replace it
+            *it = cp;
+        } else {
+            // insert it
+            cps.insert(it, cp);
+        }
+        //set back the property
+        descProps.setDoublePropertyN(kOfxParamPropControlPoints, &cps[0].key, cps.size());
+    }
+
+    stat = kOfxStatOK;
+
+#   ifdef OFX_DEBUG_PARAMETERS
+    std::cout << ' ' << StatStr(stat) << std::endl;
+#   endif
+    return stat;
 }
 
 /** @brief Deletes the nth control point from a parametric param.
@@ -522,32 +683,79 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
 static OfxStatus parametricParamDeleteControlPoint(OfxParamHandle param,
                                                    int   curveIndex,
                                                    int   nthCtl){
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamDeleteControlPoint - " << param << " ...";
-#       endif
+#   endif
     Param::Base *base = reinterpret_cast<Param::Base*>(param);
     if(!base || !base->verifyMagic()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
     
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
-    if(!instance || !instance->isInitialized()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+    if (instance) {
+        if (!instance->isInitialized()) {
+#           ifdef OFX_DEBUG_PARAMETERS
+            std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
+#           endif
+            return kOfxStatErrBadHandle;
+        }
+
+        OfxStatus stat = instance->deleteControlPoint(curveIndex, nthCtl);
+#       ifdef OFX_DEBUG_PARAMETERS
+        std::cout << ' ' << StatStr(stat) << std::endl;
+#       endif
+        return stat;
+    }
+
+    Param::Descriptor* descriptor = dynamic_cast<Param::Descriptor*>(base);
+    //if it's also not a descriptor this is a bad pointer then
+    if (!descriptor) {
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
-    OfxStatus stat = kOfxStatErrUnsupported;
-
-    stat = instance->deleteControlPoint(curveIndex, nthCtl);
-
+    Property::Set &descProps = descriptor->getProperties();
+    int curveCount = descProps.getIntProperty(kOfxParamPropParametricDimension);
+    if (curveIndex < 0 || curveIndex >= curveCount ) {
 #       ifdef OFX_DEBUG_PARAMETERS
-    std::cout << ' ' << StatStr(stat) << std::endl;
+        std::cout << ' ' << StatStr(kOfxStatErrBadIndex) << std::endl;
 #       endif
+        return kOfxStatErrBadIndex;
+    }
+
+    ///check whether the property already exists in the property set
+    std::stringstream name;
+    name << kOfxParamPropControlPoints << '_' << curveIndex;
+    std::string namestr = name.str();
+    // getDimension returns 0 if the property does not exist
+    int cpsCount = descProps.getDimension(name.str()) / 2;
+    if (nthCtl < 0 || nthCtl >= cpsCount ) {
+#       ifdef OFX_DEBUG_PARAMETERS
+        std::cout << ' ' << StatStr(kOfxStatErrBadIndex) << std::endl;
+#       endif
+        return kOfxStatErrBadIndex;
+    }
+
+    //get the existing cps
+    ControlPointV cps(cpsCount);
+    descProps.getDoublePropertyN(namestr, &cps[0].key, cps.size());
+
+    // delete the control point
+    cps.erase(cps.begin()+nthCtl);
+
+    //set back the property
+    descProps.setDoublePropertyN(kOfxParamPropControlPoints, &cps[0].key, cps.size());
+
+    OfxStatus stat = kOfxStatOK;
+
+#   ifdef OFX_DEBUG_PARAMETERS
+    std::cout << ' ' << StatStr(stat) << std::endl;
+#   endif
     return stat;
 }
 
@@ -559,34 +767,62 @@ static OfxStatus parametricParamDeleteControlPoint(OfxParamHandle param,
              */
 static OfxStatus parametricParamDeleteAllControlPoints(OfxParamHandle param,
                                                        int   curveIndex){
-#       ifdef OFX_DEBUG_PARAMETERS
+#   ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamDeleteAllControlPoints - " << param << " ...";
-#       endif
+#   endif
     Param::Base *base = reinterpret_cast<Param::Base*>(param);
     if(!base || !base->verifyMagic()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
     
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
-    if(!instance || !instance->isInitialized()) {
-#         ifdef OFX_DEBUG_PARAMETERS
+    if (instance) {
+        if (!instance->isInitialized()) {
+#           ifdef OFX_DEBUG_PARAMETERS
+            std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
+#           endif
+            return kOfxStatErrBadHandle;
+        }
+
+        OfxStatus stat = instance->deleteAllControlPoints(curveIndex);
+#       ifdef OFX_DEBUG_PARAMETERS
+        std::cout << ' ' << StatStr(stat) << std::endl;
+#       endif
+        return stat;
+    }
+
+    Param::Descriptor* descriptor = dynamic_cast<Param::Descriptor*>(base);
+    //if it's also not a descriptor this is a bad pointer then
+    if (!descriptor) {
+#       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
-#         endif
+#       endif
         return kOfxStatErrBadHandle;
     }
 
-
-
-    OfxStatus stat = kOfxStatErrUnsupported;
-
-    stat = instance->deleteAllControlPoints(curveIndex);
-
+    Property::Set &descProps = descriptor->getProperties();
+    int curveCount = descProps.getIntProperty(kOfxParamPropParametricDimension);
+    if (curveIndex < 0 || curveIndex >= curveCount ) {
 #       ifdef OFX_DEBUG_PARAMETERS
-    std::cout << ' ' << StatStr(stat) << std::endl;
+        std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
 #       endif
+        return kOfxStatErrBadIndex;
+    }
+
+    std::stringstream name;
+    name << kOfxParamPropControlPoints << '_' << curveIndex;
+    std::string namestr = name.str();
+    // set the property dimension to 0
+    descProps.setDoublePropertyN(namestr, NULL, 0);
+
+    OfxStatus stat = kOfxStatOK;
+
+#   ifdef OFX_DEBUG_PARAMETERS
+    std::cout << ' ' << StatStr(stat) << std::endl;
+#   endif
     return stat;
 }
 
