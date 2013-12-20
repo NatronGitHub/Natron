@@ -222,17 +222,20 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
 NodeGraph::~NodeGraph(){
     QObject::disconnect(&_refreshCacheTextTimer,SIGNAL(timeout()),this,SLOT(updateCacheSizeText()));
     _nodeCreationShortcutEnabled = false;
-    _nodes.clear();
-    _nodesTrash.clear();
-    
+
+    clearActiveAndTrashNodes();
+
+}
+
+void NodeGraph::clearActiveAndTrashNodes(){
     for (U32 i = 0; i < _nodes.size(); ++i) {
         delete _nodes[i];
     }
-    
+    _nodes.clear();
     for (U32 i = 0; i < _nodesTrash.size(); ++i) {
         delete _nodesTrash[i];
     }
-
+    _nodesTrash.clear();
 }
 
 void NodeGraph::resizeEvent(QResizeEvent* event){

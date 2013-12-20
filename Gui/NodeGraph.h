@@ -114,6 +114,8 @@ public:
     
     void restoreFromTrash(NodeGui* node);
     
+    void clearActiveAndTrashNodes();
+    
     /*Returns true if the graph has no value, i.e:
      this is just output nodes*/
     bool isGraphWorthLess() const;

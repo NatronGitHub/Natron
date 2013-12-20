@@ -419,6 +419,9 @@ void AppInstance::getActiveNodes(std::vector<Natron::Node*>* activeNodes) const{
     }
 }
 bool AppInstance::loadProject(const QString& path,const QString& name){
+    if(!_isBackground){
+        _gui->_nodeGraphArea->deselect();
+    }
     try {
         loadProjectInternal(path,name);
     } catch (const std::exception& e) {
@@ -834,6 +837,9 @@ void AppInstance::disconnectViewersFromViewerCache(){
 void AppInstance::clearNodes(){
     _nodeMapping.clear();
     _currentProject->clearNodes();
+    if(!_isBackground){
+        _gui->_nodeGraphArea->clearActiveAndTrashNodes();
+    }
 }
 
 

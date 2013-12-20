@@ -567,6 +567,10 @@ private:
     
     virtual void cloneExtraData(const Knob& other) OVERRIDE FINAL;
     
+    virtual void loadExtraData(const QString& str) OVERRIDE FINAL;
+    
+    virtual QString saveExtraData() const OVERRIDE FINAL;
+    
     static const std::string _typeNameStr;
 };
 

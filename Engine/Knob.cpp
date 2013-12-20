@@ -345,6 +345,11 @@ void Knob::load(const KnobSerialization& serializationObj){
         setValue(serializedValues[i],i,Natron::OTHER_REASON,NULL);
     }
     
+    const std::string& extraData = serializationObj.getExtraData();
+    if(!extraData.empty()){
+        loadExtraData(extraData.c_str());
+    }
+    
     ///end bracket
     endValueChange(Natron::PLUGIN_EDITED);
     emit restorationComplete();

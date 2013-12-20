@@ -93,9 +93,22 @@ public:
     void load(const KnobSerialization& serializationObj);
 
     /**
+     * @brief Called by load(const KnobSerialization*&) to deserialize your own extra data.
+     * You must implement the parsing yourself.
+     **/
+    virtual void loadExtraData(const QString& /*str*/) {}
+    
+    /**
      * @brief Called on project save.
     **/
     void save(KnobSerialization* serializationObj) const;
+    
+    /**
+     * @brief Called by save(KnobSerialization*) if you want to serialize more data.
+     * You must return a string with your serialized data
+     **/
+    virtual QString saveExtraData() const { return ""; }
+    
 
     const Variant& getValue(int dimension = 0) const;
 

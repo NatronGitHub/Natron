@@ -39,5 +39,5 @@ void KnobSerialization::initialize(const Knob* knob){
         }
     }
 
-
+    _extraData = knob->saveExtraData().toStdString();
 }

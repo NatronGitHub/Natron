@@ -70,6 +70,7 @@ CONFIG(release, debug|release){
 warning("Compiling in RELEASE mode.")
   QMAKE_CXXFLAGS_RELEASE += -O3
   QMAKE_CFLAGS_RELEASE += -O3
+  DEFINES += NDEBUG
 }
 
 *xcode* {
