@@ -567,6 +567,8 @@ public slots:
     void onCurveChanged(int dimension);
     
     void onItemsSelectionChanged();
+    
+    
 private:
     
     virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
@@ -582,6 +584,7 @@ private:
     
     CurveWidget* _curveWidget;
     QTreeWidget* _tree;
+    Button* _resetButton;
     
     struct CurveDescriptor{
         CurveGui* curve;

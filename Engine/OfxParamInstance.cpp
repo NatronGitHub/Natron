@@ -1604,6 +1604,7 @@ void OfxCustomInstance::onKnobAnimationLevelChanged(int lvl){
 
 OfxParametricInstance::OfxParametricInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::ParametricParam::ParametricInstance(descriptor,node->effectInstance())
+, _descriptor(descriptor)
 , _overlayInteract(NULL)
 , _effect(node)
 {
@@ -1626,8 +1627,16 @@ OfxParametricInstance::OfxParametricInstance(OfxEffectInstance* node, OFX::Host:
     }
     
     QObject::connect(_knob.get(),SIGNAL(mustInitializeOverlayInteract(CurveWidget*)),this,SLOT(initializeInteract(CurveWidget*)));
-    
+    QObject::connect(_knob.get(), SIGNAL(mustResetToDefault()), this, SLOT(onResetToDefault()));
     setDisplayRange();
+}
+
+
+void OfxParametricInstance::onResetToDefault(){
+    for (int i = 0; i < _knob->getDimension(); ++i) {
+        _knob->deleteAllControlPoints(i);
+    }
+    defaultInitializeFromDescriptor(_descriptor);
 }
 
 void OfxParametricInstance::initializeInteract(CurveWidget* widget){

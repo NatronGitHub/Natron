@@ -1369,6 +1369,7 @@ Parametric_KnobGui::Parametric_KnobGui(boost::shared_ptr<Knob> knob, DockablePan
 : KnobGui(knob, container)
 , _curveWidget(NULL)
 , _tree(NULL)
+, _resetButton(NULL)
 , _curves()
 {
     
@@ -1385,18 +1386,30 @@ void Parametric_KnobGui::createWidget(QGridLayout *layout, int row) {
     
     QObject::connect(parametricKnob.get(), SIGNAL(curveChanged(int)), this, SLOT(onCurveChanged(int)));
     
+    QWidget* treeColumn = new QWidget(layout->parentWidget());
+    QVBoxLayout* treeColumnLayout = new QVBoxLayout(treeColumn);
+    treeColumnLayout->setContentsMargins(0, 0, 0, 0);
+    
     _tree = new QTreeWidget(layout->parentWidget());
     _tree->setSelectionMode(QAbstractItemView::ContiguousSelection);
     _tree->setColumnCount(1);
     _tree->header()->close();
-
+    _tree->setToolTip(parametricKnob->getHintToolTip().c_str());
+    treeColumnLayout->addWidget(_tree);
     
-    layout->addWidget(_tree, row, 0);
+    _resetButton = new Button("Reset",treeColumn);
+    _resetButton->setToolTip("Reset the curves to their default shape");
+    QObject::connect(_resetButton, SIGNAL(pressed()), parametricKnob.get(), SLOT(resetToDefault()));
+    treeColumnLayout->addWidget(_resetButton);
+    
+    layout->addWidget(treeColumn, row, 0);
     
     _curveWidget = new CurveWidget(boost::shared_ptr<TimeLine>(),layout->parentWidget());
+    _curveWidget->setToolTip(parametricKnob->getHintToolTip().c_str());
     layout->addWidget(_curveWidget,row,1);
     
     
+    std::vector<CurveGui*> visibleCurves;
     for (int i = 0; i < getKnob()->getDimension(); ++i) {
         QString curveName = parametricKnob->getDimensionName(i).c_str();
         CurveGui* curve =  _curveWidget->createCurve(parametricKnob->getParametricCurve(i),
@@ -1417,8 +1430,12 @@ void Parametric_KnobGui::createWidget(QGridLayout *layout, int row) {
         desc.curve = curve;
         desc.treeItem = item;
         _curves.insert(std::make_pair(i, desc));
+        if(curve->isVisible()){
+            visibleCurves.push_back(curve);
+        }
     }
     
+    _curveWidget->centerOn(visibleCurves);
     QObject::connect(_tree, SIGNAL(itemSelectionChanged()),this,SLOT(onItemsSelectionChanged()));
 
 }
@@ -1427,11 +1444,13 @@ void Parametric_KnobGui::createWidget(QGridLayout *layout, int row) {
 void Parametric_KnobGui::_hide() {
     _curveWidget->hide();
     _tree->hide();
+    _resetButton->hide();
 }
 
 void Parametric_KnobGui::_show() {
     _curveWidget->show();
     _tree->show();
+    _resetButton->show();
 }
 
 void Parametric_KnobGui::setEnabled() {

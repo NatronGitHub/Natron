@@ -662,10 +662,11 @@ public slots:
     
     void initializeInteract(CurveWidget* widget);
 
-   
+    void onResetToDefault();
+    
 private:
     
-    
+    OFX::Host::Param::Descriptor& _descriptor;
     Natron::OfxOverlayInteract* _overlayInteract;
     OfxEffectInstance* _effect;
     boost::shared_ptr<Parametric_Knob> _knob;
