@@ -196,7 +196,7 @@ std::pair<KeyFrameSet::iterator,bool> Curve::addKeyFrameNoUpdate(const KeyFrame&
     }else{
         bool addedKey = true;
         for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it!= _imp->keyFrames.end(); ++it) {
-#warning "FIXME: the epsilon depends on the curve! imagine a ParametricParam that goes from 0 to 0.1: 1e-2 is not a valid epsilon! All uses of CONTROL_POINTS_QUALITY_EPSILON should be changed to reflect that"
+#pragma message WARN("FIXME: the epsilon depends on the curve! imagine a ParametricParam that goes from 0 to 0.1: 1e-2 is not a valid epsilon! All uses of CONTROL_POINTS_QUALITY_EPSILON should be changed to reflect that")
             if (std::abs(it->getTime() - cp.getTime()) < CONTROL_POINTS_EQUALITY_EPSILON) {
                 _imp->keyFrames.erase(it);
                 addedKey = false;

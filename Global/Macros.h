@@ -48,7 +48,20 @@
 #define NATRON_FONT_SIZE_12 12
 #define NATRON_FONT_SIZE_13 13
 
-// The following was grabbed from WTF/wtf/Compiler.h (where WTF was replaced by POWITER)
+
+// compiler_warning.h
+#define STRINGISE_IMPL(x) #x
+#define STRINGISE(x) STRINGISE_IMPL(x)
+
+// Use: #pragma message WARN("My message")
+#if _MSC_VER
+#   define FILE_LINE_LINK __FILE__ "(" STRINGISE(__LINE__) ") : "
+#   define WARN(exp) (FILE_LINE_LINK "WARNING: " exp)
+#else//__GNUC__ - may need other defines for different compilers
+#   define WARN(exp) ("WARNING: " exp)
+#endif
+
+// The following was grabbed from WTF/wtf/Compiler.h (where WTF was replaced by NATRON)
 
 /* COMPILER() - the compiler being used to build the project */
 #define COMPILER(NATRON_FEATURE) (defined NATRON_COMPILER_##NATRON_FEATURE && NATRON_COMPILER_##NATRON_FEATURE)

@@ -70,7 +70,7 @@ public:
 
     Int_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
-    virtual ~Int_KnobGui() OVERRIDE FINAL;
+    virtual ~Int_KnobGui();
 
 public slots:
 
@@ -122,7 +122,7 @@ public:
 
     Bool_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
-    virtual ~Bool_KnobGui() OVERRIDE FINAL;
+    virtual ~Bool_KnobGui();
 
 public slots:
 
@@ -207,7 +207,7 @@ public:
 
     Button_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
-    virtual ~Button_KnobGui() OVERRIDE FINAL;
+    virtual ~Button_KnobGui();
 
 public slots:
 
@@ -242,7 +242,7 @@ public:
 
     Choice_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
-    virtual ~Choice_KnobGui() OVERRIDE FINAL;
+    virtual ~Choice_KnobGui();
 
 public slots:
 
@@ -280,7 +280,7 @@ public:
 
     Separator_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
-    virtual ~Separator_KnobGui() OVERRIDE FINAL;
+    virtual ~Separator_KnobGui();
 
 private:
 
@@ -344,7 +344,7 @@ public:
 
     Color_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
-    virtual ~Color_KnobGui() OVERRIDE FINAL;
+    virtual ~Color_KnobGui();
 
 public slots:
 
@@ -410,7 +410,7 @@ public:
 
     String_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
-    virtual ~String_KnobGui() OVERRIDE FINAL;
+    virtual ~String_KnobGui();
 
 public slots:
     void onStringChanged(const QString &str);
@@ -444,7 +444,7 @@ public:
 
     Custom_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
-    virtual ~Custom_KnobGui() OVERRIDE FINAL;
+    virtual ~Custom_KnobGui() ;
 
 private:
 
@@ -477,7 +477,7 @@ public:
 
     Group_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container), _checked(false) {}
 
-    virtual ~Group_KnobGui() OVERRIDE FINAL;
+    virtual ~Group_KnobGui();
 
     void addKnob(KnobGui *child, int row, int column);
 
@@ -523,7 +523,7 @@ public:
 
     RichText_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
-    virtual ~RichText_KnobGui() OVERRIDE FINAL;
+    virtual ~RichText_KnobGui();
 
 public slots:
     void onTextChanged();
@@ -560,7 +560,7 @@ public:
     
     Parametric_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
     
-    virtual ~Parametric_KnobGui() OVERRIDE FINAL;
+    virtual ~Parametric_KnobGui();
     
 public slots:
     

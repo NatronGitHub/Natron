@@ -89,7 +89,7 @@ void KnobFactory::loadBultinKnobs()
     _loadedKnobs.insert(knobFactoryEntry<Tab_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<Color_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<String_Knob>());
-#warning "activate CustomParam support here"
+#pragma message WARN("activate CustomParam support here")
     _loadedKnobs.insert(knobFactoryEntry<Custom_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<RichText_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<Bool_Knob>());

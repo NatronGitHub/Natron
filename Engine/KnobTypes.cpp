@@ -886,7 +886,7 @@ Natron::Status Parametric_Knob::addControlPoint(int dimension,double key,double 
     if(dimension >= (int)_curves.size()){
         return StatFailed;
     }
-#warning "FIXME: check that no element has a key "sufficiently close" to this key - this requires an access to the range of the parametric, see how it is done for descriptors in parametricParamAddControlPoint"
+#pragma message WARN("FIXME: check that no element has a key "sufficiently close" to this key - this requires an access to the range of the parametric, see how it is done for descriptors in parametricParamAddControlPoint")
     _curves[dimension]->addKeyFrame(KeyFrame(key,value));
     emit curveChanged(dimension);
     return StatOK;

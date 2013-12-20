@@ -159,7 +159,7 @@ file_mapping_handle_(INVALID_HANDLE_VALUE)
             windows_open_mode = CREATE_ALWAYS;
             break;
         default:
-            string str("MemoryFile EXC : Invalid open mode. ");
+            std::string str("MemoryFile EXC : Invalid open mode. ");
             str.append(pathname);
             throw std::runtime_error(str);
             

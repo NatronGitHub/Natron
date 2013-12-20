@@ -167,7 +167,7 @@ Variant Knob::getValueAtTime(double time,int dimension) const{
     
     boost::shared_ptr<Curve> curve  = _imp->_curves[dimension];
     if (curve->isAnimated()) {
-#warning "We should query the variant's type of the curve to construct  an appropriate return value"
+#pragma message WARN("We should query the variant's type of the curve to construct  an appropriate return value")
         //FIXME: clamp to min/max
         return Variant(curve->getValueAt(time));
     } else {
@@ -227,7 +227,7 @@ bool Knob::setValueAtTime(int time, const Variant& v, int dimension, Natron::Val
     
     
     boost::shared_ptr<Curve> curve = _imp->_curves[dimension];
-#warning "We should query the variant's type passed in parameter to construct a keyframe with an appropriate value"
+#pragma message WARN("We should query the variant's type passed in parameter to construct a keyframe with an appropriate value")
     *newKey = KeyFrame((double)time,v.toDouble());
     bool ret = curve->addKeyFrame(*newKey);
     

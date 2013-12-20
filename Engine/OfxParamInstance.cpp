@@ -285,7 +285,7 @@ OfxStatus OfxDoubleInstance::set(OfxTime time, double v){
 }
 
 OfxStatus OfxDoubleInstance::derive(OfxTime /*time*/, double& v) {
-#warning "TODO: Double, Double2D, Double3D, RGBA, RGB derive and integrate for animated params"
+#pragma message WARN("TODO: Double, Double2D, Double3D, RGBA, RGB derive and integrate for animated params")
     if (isAnimated()) {
         return kOfxStatErrUnsupported;
     }
