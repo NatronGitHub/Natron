@@ -96,8 +96,7 @@ OfxStatus ParametricInstance::defaultInitializeFromDescriptor(const Param::Descr
     for (int curveIndex = 0; curveIndex < curveCount; ++curveIndex) {
         std::stringstream name;
         name << kOfxParamPropControlPoints << '_' << curveIndex;
-        Property::PropertyTemplate<Property::DoubleValue> *prop;
-        if (descProps.fetchTypedProperty(name.str(), prop)) {
+        if (descProps.fetchProperty(name.str())) {
             // there is a curve for dimension curveIndex
             int cpsCount = descProps.getDimension(name.str()) / 2;
             ControlPointV cps(cpsCount);
@@ -620,10 +619,9 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
     std::stringstream name;
     name << kOfxParamPropControlPoints << '_' << curveIndex;
     std::string namestr = name.str();
-    Property::PropertyTemplate<Property::DoubleValue> *prop;
     ControlPoint cp = { key, value };
 
-    if (!descProps.fetchTypedProperty(namestr, prop)) {
+    if (!descProps.fetchProperty(namestr)) {
         // the property does not exist, create it
         const Property::PropSpec parametricControlPoints = {namestr.c_str(), Property::eDouble, 0, false, ""};
         descProps.createProperty(parametricControlPoints);
