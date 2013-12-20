@@ -216,12 +216,12 @@ Natron::Status ExrDecoder::readHeader(const QString& filename){
         if(_imp->inputStdStream){
             delete _imp->inputStdStream;
         }
-        if(_imp->_inputfile){
-            delete _imp->_inputfile;
+        if(_imp->inputfile){
+            delete _imp->inputfile;
         }
         _imp->inputStr = new std::ifstream(NatronWindows::s2ws(ba.data()),std::ios_base::binary);
-        _imp->inputStdStream = new Imf_::StdIFStream(*inputStr,ba.data());
-        _imp->_inputfile = new Imf_::InputFile(*inputStdStream);
+        _imp->inputStdStream = new Imf_::StdIFStream(*_imp->inputStr,ba.data());
+        _imp->inputfile = new Imf_::InputFile(*_imp->inputStdStream);
 #else
         QByteArray ba = filename.toLatin1();
         if(_imp->inputfile){

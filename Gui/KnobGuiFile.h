@@ -45,7 +45,7 @@ public:
 
     File_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
-    virtual ~File_KnobGui() OVERRIDE FINAL;
+    virtual ~File_KnobGui();
 
 public slots:
     void open_file();
@@ -85,7 +85,7 @@ public:
 
     OutputFile_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
-    virtual ~OutputFile_KnobGui() OVERRIDE FINAL;
+    virtual ~OutputFile_KnobGui() ;
 
 public slots:
 

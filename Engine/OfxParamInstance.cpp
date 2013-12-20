@@ -1619,8 +1619,8 @@ OfxParametricInstance::OfxParametricInstance(OfxEffectInstance* node, OFX::Host:
     
     setLabel();//set label on all curves
     
-    double color[3*parametricDimension];
-    properties.getDoublePropertyN(kOfxParamPropParametricUIColour, color, 3*parametricDimension);
+   std::vector<double> color(3*parametricDimension);
+    properties.getDoublePropertyN(kOfxParamPropParametricUIColour, &color[0], 3*parametricDimension);
     
     for (int i = 0; i < parametricDimension; ++i) {
         _knob->setCurveColor(i, color[i*3], color[i*3+1], color[i*3+2]);
