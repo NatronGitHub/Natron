@@ -17,21 +17,52 @@
 #ifndef NATRON_DEBUG
 #define checkGLErrors() ((void)0)
 #define assert_checkGLErrors() ((void)0)
+#define checkGLFrameBuffer() ((void)0)
 #else
-#define checkGLErrors() \
-{ \
-GLenum _glerror_ = glGetError(); \
-if(_glerror_ != GL_NO_ERROR) { \
-std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl; \
-} \
-}
-#define assert_checkGLErrors() \
-{ \
-GLenum _glerror_ = glGetError(); \
-if(_glerror_ != GL_NO_ERROR) { \
-std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl; abort(); \
-} \
-}
+#define checkGLErrors()                                                 \
+  {                                                                     \
+    GLenum _glerror_ = glGetError();                                    \
+    if(_glerror_ != GL_NO_ERROR) {                                      \
+      std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl; \
+    }                                                                   \
+  }
+#define assert_checkGLErrors()                                          \
+  {                                                                     \
+    GLenum _glerror_ = glGetError();                                    \
+    if(_glerror_ != GL_NO_ERROR) {                                      \
+      std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl; abort(); \
+    }                                                                   \
+  }
+#define checkGLFrameBuffer()                                            \
+  {                                                                     \
+    GLenum error = glCheckFramebufferStatus(GL_FRAMEBUFFER);            \
+    if (error != GL_FRAMEBUFFER_COMPLETE) {                             \
+      std::cout << "GL_FRAMEBUFFER_ERROR :" << __FILE__ << " "<< __LINE__ << " "; \
+      if( error == GL_FRAMEBUFFER_UNDEFINED)                            \
+        std::cout << "Framebuffer undefined" << std::endl;              \
+      else if(error == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)            \
+        std::cout << "Framebuffer incomplete attachment " << std::endl; \
+      else if(error == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)    \
+        std::cout << "Framebuffer incomplete missing attachment" << std::endl; \
+      else if( error == GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER)          \
+        std::cout << "Framebuffer incomplete draw buffer" << std::endl; \
+      else if( error == GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER)          \
+        std::cout << "Framebuffer incomplete read buffer" << std::endl; \
+      else if( error == GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE)          \
+        std::cout << "Framebuffer incomplete read buffer" << std::endl; \
+      else if( error== GL_FRAMEBUFFER_UNSUPPORTED)                      \
+        std::cout << "Framebuffer unsupported" << std::endl;            \
+      else if( error == GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE)          \
+        std::cout << "Framebuffer incomplete multisample" << std::endl; \
+      else if( error == GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS_EXT)    \
+        std::cout << "Framebuffer incomplete layer targets" << std::endl; \
+      else if ( error == 0)                                             \
+        std::cout << "an error occured determining the status of the framebuffer" <<  std::endl; \
+      else                                                              \
+        std::cout << "undefined framebuffer status (" << error << ")" << std::endl; \
+      checkGLErrors();                                                  \
+    }                                                                   \
+  }
 #endif
 
 #endif

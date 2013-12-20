@@ -18,48 +18,20 @@
 #include "Engine/Knob.h"
 
 class Curve;
-struct KeyFramePrivate{
-
-    Variant value; /// the value held by the key
-    double time; /// a value ranging between 0 and 1
-
-    double leftTangent,rightTangent; // tangents are anly for double-valued keyframes
-    Natron::KeyframeType interpolation;
-
-
-    KeyFramePrivate()
-    : value()
-    , time(0)
-    , interpolation(Natron::KEYFRAME_LINEAR)
-    {}
-
-
-    KeyFramePrivate(double time, const Variant& initialValue)
-        : value(initialValue)
-        , time(time)
-        , leftTangent(0.)
-        , rightTangent(0.)
-        , interpolation(Natron::KEYFRAME_SMOOTH)
-    {
-    }
-
-    KeyFramePrivate(const KeyFramePrivate& other)
-    {
-        value = other.value;
-        leftTangent = other.leftTangent;
-        rightTangent = other.rightTangent;
-        interpolation = other.interpolation;
-        time = other.time;
-    }
-
-
-};
-
-
 class KeyFrame;
 class Knob;
 
 struct CurvePrivate{
+    
+    enum CurveType{
+        DOUBLE_CURVE = 0, //< the values held by the keyframes can be any real
+        INT_CURVE, //< the values held by the keyframes can only be integers
+        BOOL_CURVE, //< the values held by the keyframes can be either 0 or 1
+        STRING_CURVE //< the values held by the keyframes can only be integers and keyframes are ordered by increasing values
+                     // and times
+    };
+
+    
     struct KeyFrame_compare_time {
         bool operator() (const boost::shared_ptr<KeyFrame>& lhs, const boost::shared_ptr<KeyFrame>& rhs) const {
             return lhs->getTime() < rhs->getTime();
@@ -70,12 +42,24 @@ struct CurvePrivate{
 
     Knob* owner;
 
-    
+    CurveType curveType;
+        
     CurvePrivate()
     : keyFrames()
     , owner(NULL)
+    , curveType(DOUBLE_CURVE)
     {}
 
+    int indexFromIterator(KeyFrameSet::iterator it) const {
+        int i = 0;
+        for(KeyFrameSet::iterator it2 = keyFrames.begin();it2!=keyFrames.end();++it2){
+            if(it2 == it){
+                return i;
+            }
+            ++i;
+        }
+        assert(false);//< a bad iterator was provided
+    }
 };
 
 

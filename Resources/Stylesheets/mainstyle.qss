@@ -1,6 +1,16 @@
 /*%1 = selection-color  %2 = medium background  %3 = soft background %4 = strong background %5 = text colour*/
 /*%6 = interpolated value color %7 = keyframe value color*/
 /*You have to fill the arguments with  stylesheet-representable colours.*/
+
+QWidget{
+background-color: %2;
+}
+QLabel{
+color: %5;
+}
+QLabel#ComboBoxLabel,QLabel#ComboBoxDropDownLabel{
+background-color: %3;
+}
 NodeSettingsPanel[_selected="true"]{
 border:1px solid yellow;
 border-radius : 2px;
@@ -194,9 +204,6 @@ border-radius : 5px;
 }
 TabWidget{background-color: %2;}
 
-QWidget#_propertiesContainer{
-background-color: %2;
-}
 NodeSettingsPanel{
 background-color : %2;
 color: %5;
@@ -281,9 +288,7 @@ color: %5;
 QTabWidget::pane{
 border:0px;
 }
-QLabel{
-color: %5;
-}
+
 QLineEdit{
 border:1px solid;
 border-radius:1;

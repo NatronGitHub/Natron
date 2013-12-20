@@ -12,20 +12,22 @@
 #ifndef CURVE_WIDGET_H
 #define CURVE_WIDGET_H
 
+#include <set>
+
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
+#include <QMetaType>
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "Global/GlobalDefines.h"
+#include "Gui/CurveEditorUndoRedo.h"
 
-
-
-class Curve;
+class QFont;
 class Variant;
-class KeyFrame;
 class TimeLine;
+class KnobGui;
 class CurveWidget;
 class CurveGui : public QObject {
     
@@ -33,9 +35,11 @@ class CurveGui : public QObject {
 
 public:
     
-    enum SelectedTangent{LEFT_TANGENT = 0,RIGHT_TANGENT = 1};
+    enum SelectedDerivative{LEFT_TANGENT = 0,RIGHT_TANGENT = 1};
     
     CurveGui(const CurveWidget *curveWidget,boost::shared_ptr<Curve>  curve,
+             KnobGui* knob,
+             int dimension,
              const QString& name,
              const QColor& color,
              int thickness = 1);
@@ -66,6 +70,10 @@ public:
     bool isSelected() const { return _selected; }
 
     void setSelected(bool s) const { _selected = s; }
+    
+    KnobGui* getKnob() const { return _knob; }
+    
+    int getDimension() const { return _dimension; }
 
     /**
       * @brief Evaluates the curve and returns the y position corresponding to the given x.
@@ -75,7 +83,7 @@ public:
 
     boost::shared_ptr<Curve>  getInternalCurve() const { return _internalCurve; }
 
-    void drawCurve();
+    void drawCurve(int curveIndex,int curvesCount);
 
 signals:
 
@@ -83,7 +91,7 @@ signals:
     
 private:
 
-    boost::shared_ptr<KeyFrame> nextPointForSegment(double x1,double* x2);
+    std::pair<KeyFrame,bool> nextPointForSegment(double x1,double* x2);
 
     boost::shared_ptr<Curve> _internalCurve; ///ptr to the internal curve
     QString _name; /// the name of the curve
@@ -92,11 +100,46 @@ private:
     bool _visible; /// should we draw this curve ?
     mutable bool _selected; /// is this curve selected
     const CurveWidget* _curveWidget;
+    KnobGui* _knob; //< ptr to the knob holding this curve
+    int _dimension; //< which dimension is this curve representing
 
 };
 
-struct SelectedKey;
-typedef std::list< boost::shared_ptr<SelectedKey> > SelectedKeys;
+struct SelectedKey {
+    CurveGui* curve;
+    KeyFrame key;
+    std::pair<double,double> leftTan, rightTan;
+    
+    SelectedKey() : curve(NULL), key(){}
+
+    SelectedKey(CurveGui* c,const KeyFrame& k)
+    : curve(c)
+    , key(k)
+    {
+        
+    }
+    
+    SelectedKey(const SelectedKey& o)
+    : curve(o.curve)
+    , key(o.key)
+    , leftTan(o.leftTan)
+    , rightTan(o.rightTan)
+    {
+        
+    }
+    
+};
+
+struct SelectedKey_compare_time{
+    bool operator() (const SelectedKey& lhs, const SelectedKey& rhs) const {
+        return lhs.key.getTime() < rhs.key.getTime();
+    }
+};
+
+
+
+
+typedef std::set< SelectedKey,SelectedKey_compare_time > SelectedKeys;
 
 class QMenu;
 class CurveWidgetPrivate;
@@ -111,27 +154,41 @@ class CurveWidget : public QGLWidget
 public:
     
     /*Pass a null timeline ptr if you don't want interaction with the global timeline. */
-    CurveWidget(boost::shared_ptr<TimeLine> timeline = boost::shared_ptr<TimeLine>() ,QWidget* parent = NULL, const QGLWidget* shareWidget = NULL);
+    CurveWidget(boost::shared_ptr<TimeLine> timeline = boost::shared_ptr<TimeLine>() ,
+                QWidget* parent = NULL, const QGLWidget* shareWidget = NULL);
 
     virtual ~CurveWidget();
+    
+    const QFont& getTextFont() const;
 
     void centerOn(double xmin,double xmax,double ymin,double ymax);
 
-    CurveGui *createCurve(boost::shared_ptr<Curve> curve, const QString &name);
+    CurveGui *createCurve(boost::shared_ptr<Curve> curve,KnobGui* knob,int dimension, const QString &name);
 
     void removeCurve(CurveGui* curve);
 
     void centerOn(const std::vector<CurveGui*>& curves);
 
     void showCurvesAndHideOthers(const std::vector<CurveGui*>& curves);
-
-    void addKeyFrame(CurveGui* curve, boost::shared_ptr<KeyFrame> key);
-
-    boost::shared_ptr<KeyFrame> addKeyFrame(CurveGui* curve,const Variant& y, int x);
-
-    void removeKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key);
     
+    void getVisibleCurves(std::vector<CurveGui*>* curves) const;
+
+    void addKeyFrame(CurveGui* curve, const KeyFrame& key);
+
+    void removeKeyFrame(CurveGui* curve,const KeyFrame& key);
     
+    void moveKeyFrame(CurveGui* curve,const KeyFrame& key,double dt,double dv);
+        
+    void setSelectedKeys(const SelectedKeys& keys);
+    
+    double getPixelAspectRatio() const;
+    
+    void getBackgroundColor(double *r,double *g,double* b) const;
+    
+    bool isCurveNameAlreadyAtPosition(const QRectF& position) const;
+    
+    void registerCurveNamePosition(const QRectF& position) const;
+        
 public slots:
     
     void refreshDisplayedTangents();
@@ -156,7 +213,7 @@ public slots:
 
     void horizontalInterpForSelectedKeyFrames();
 
-    void breakTangentsForSelectedKeyFrames();
+    void breakDerivativesForSelectedKeyFrames();
 
     void frameSelectedCurve();
 
@@ -165,7 +222,9 @@ public slots:
     void onTimeLineFrameChanged(SequenceTime time, int reason);
 
     void onTimeLineBoundariesChanged(SequenceTime left, SequenceTime right, int);
-
+    
+    void onCurveChanged();
+    
 private:
     
     virtual void initializeGL() OVERRIDE FINAL;
@@ -208,14 +267,13 @@ private:
 
     bool isSupportingOpenGLVAO() const ;
 
-    std::pair<SelectedKeys::const_iterator,bool> isKeySelected(boost::shared_ptr<KeyFrame> key) const;
-
-
 private:
 
     boost::scoped_ptr<CurveWidgetPrivate> _imp;
         
 };
+
+Q_DECLARE_METATYPE(CurveWidget*)
 
 
 #endif // CURVE_WIDGET_H

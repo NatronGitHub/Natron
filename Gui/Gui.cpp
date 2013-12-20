@@ -26,6 +26,7 @@
 #include <QProgressBar>
 #include <QSettings>
 #include <QScrollBar>
+#include <QUndoGroup>
 #include <QDropEvent>
 
 #include "Global/AppManager.h"
@@ -51,6 +52,7 @@
 #include "Gui/CurveEditor.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/DockablePanel.h"
+#include "Gui/PreferencesPanel.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH"openeffects.png"
@@ -75,6 +77,8 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
     _lastQuestionDialogAnswer(Natron::No),
     _currentUndoAction(0),
     _currentRedoAction(0),
+    _undoStacksGroup(0),
+    _undoStacksActions(),
     actionNew_project(0),
     actionOpen_project(0),
     actionSave_project(0),
@@ -120,6 +124,7 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
     viewersMenu(0),
     viewerInputsMenu(0),
     cacheMenu(0),
+    _settingsGui(0),
     _projectGui(0)
 {
     QObject::connect(this,SIGNAL(doDialog(int,QString,QString,Natron::StandardButtons,int)),this,
@@ -129,6 +134,7 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
 
 Gui::~Gui()
 {
+    delete _undoStacksGroup;
     delete _appInstance;
     _viewerTabs.clear();
     for(U32 i = 0; i < _toolButtons.size();++i){
@@ -246,7 +252,7 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
     assert(actionSaveAs_project);
     actionSaveAs_project->setText(tr("Save Project As..."));
     assert(actionPreferences);
-    actionPreferences->setText(tr("Preferences..."));
+    actionPreferences->setText(tr("Preferences"));
     assert(actionExit);
     actionExit->setText(tr("E&xit"));
     assert(actionProject_settings);
@@ -281,7 +287,6 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
     assert(actionConnectInput10);
     actionConnectInput10 ->setText(tr("Connect to input 10"));
     
-    
     //WorkShop->setTabText(WorkShop->indexOf(CurveEditor), tr("Motion Editor"));
     
     //WorkShop->setTabText(WorkShop->indexOf(GraphEditor), tr("Graph Editor"));
@@ -314,6 +319,10 @@ void Gui::setupUi()
     assert(!isDockNestingEnabled()); // should be false by default
     
     loadStyleSheet();
+    
+    
+    _undoStacksGroup = new QUndoGroup;
+    QObject::connect(_undoStacksGroup, SIGNAL(activeStackChanged(QUndoStack*)), this, SLOT(onCurrentUndoStackChanged(QUndoStack*)));
     
     /*TOOL BAR menus*/
     //======================
@@ -522,6 +531,11 @@ void Gui::setupUi()
     _projectGui->create(_appInstance->getProject(),
                         _layoutPropertiesBin,
                         _propertiesContainer);
+    
+
+    _settingsGui = new PreferencesPanel(appPTR->getCurrentSettings(),this);
+    _settingsGui->hide();
+
     setVisibleProjectSettingsPanel();
     
     menubar->addAction(menuFile->menuAction());
@@ -534,9 +548,10 @@ void Gui::setupUi()
     menuFile->addAction(actionSave_project);
     menuFile->addAction(actionSaveAs_project);
     menuFile->addSeparator();
-    menuFile->addAction(actionPreferences);
     menuFile->addSeparator();
     menuFile->addAction(actionExit);
+
+    menuEdit->addAction(actionPreferences);
 
     menuOptions->addAction(actionProject_settings);
     menuDisplay->addAction(viewersMenu->menuAction());
@@ -581,6 +596,8 @@ void Gui::setupUi()
     QObject::connect(actionConnectInput9, SIGNAL(triggered()),this,SLOT(connectInput9()));
     QObject::connect(actionConnectInput10, SIGNAL(triggered()),this,SLOT(connectInput10()));
     
+    QObject::connect(actionPreferences,SIGNAL(triggered()),this,SLOT(showSettings()));
+
     QMetaObject::connectSlotsByName(this);
     
     restoreGuiGeometry();
@@ -1488,3 +1505,26 @@ void Gui::setCurveEditorOnTop(){
         }
     }
 }
+
+void Gui::showSettings(){
+    _settingsGui->show();
+}
+
+void Gui::registerNewUndoStack(QUndoStack* stack){
+    _undoStacksGroup->addStack(stack);
+    QAction* undo = stack->createUndoAction(stack);
+    undo->setShortcut(QKeySequence::Undo);
+    QAction* redo = stack->createRedoAction(stack);
+    redo->setShortcut(QKeySequence::Redo);
+    _undoStacksActions.insert(std::make_pair(stack, std::make_pair(undo, redo)));
+}
+
+void Gui::onCurrentUndoStackChanged(QUndoStack* stack){
+    std::map<QUndoStack*,std::pair<QAction*,QAction*> >::iterator it = _undoStacksActions.find(stack);
+    
+    //the stack must have been registered first with registerNewUndoStack()
+    assert(it != _undoStacksActions.end());
+    
+    setUndoRedoActions(it->second.first, it->second.second);
+}
+

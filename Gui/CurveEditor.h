@@ -16,9 +16,10 @@
 #include <boost/scoped_ptr.hpp>
 
 #include <QWidget>
-#include <QUndoCommand> // in QtGui on Qt4, in QtWidgets on Qt5
 
 #include "Global/GlobalDefines.h"
+
+#include "Gui/CurveEditorUndoRedo.h"
 
 class RectD;
 class NodeGui;
@@ -128,31 +129,13 @@ public:
     
     std::pair<QAction*,QAction*> getUndoRedoActions() const;
 
-    void addKeyFrame(KnobGui* knob,SequenceTime time,int dimension);
-
-    void addKeyFrame(CurveGui* curve,SequenceTime time,const Variant& value);
-
-    void addKeyFrames(CurveGui* curve,const std::vector<std::pair<SequenceTime,Variant> >& keys);
-
-    void removeKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key);
-
-    void removeKeyFrames(const std::vector<std::pair<CurveGui *, boost::shared_ptr<KeyFrame> > > &keys);
-
-    void setKeyFrame(CurveGui* curve,boost::shared_ptr<KeyFrame> key, double x, const Variant& y);
-
-    void setKeyFrames(const std::vector<std::pair< std::pair<CurveGui*,boost::shared_ptr<KeyFrame> >, std::pair<double, Variant> > >& keys);
-    
     CurveGui* findCurve(KnobGui* knob,int dimension);
     
     void hideCurves(KnobGui* knob);
     
     void showCurves(KnobGui* knob);
     
-    void setKeyInterpolation(CurveGui* curve,boost::shared_ptr<KeyFrame> key,Natron::KeyframeType interp);
-    
-    void setKeysInterpolation(const std::vector<std::pair<CurveGui*,boost::shared_ptr<KeyFrame> > >& keys,Natron::KeyframeType interp);
-    
-    
+    CurveWidget* getCurveWidget() const;
     
 public slots:
     

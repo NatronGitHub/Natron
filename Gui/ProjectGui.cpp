@@ -17,11 +17,11 @@
 #include <QHBoxLayout>
 #include <QLabel>
 
-
 #include "Global/AppManager.h"
 
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/KnobTypes.h"
 
 #include "Gui/Gui.h"
 #include "Gui/ComboBox.h"
@@ -38,6 +38,7 @@ ProjectGui::ProjectGui()
 : _project()
 , _panel(NULL)
 , _created(false)
+, _colorPickersEnabled()
 {
     
 }
@@ -51,9 +52,10 @@ void ProjectGui::create(boost::shared_ptr<Natron::Project> projectInternal,QVBox
     
     _panel = new DockablePanel(projectInternal.get(),
                                container,
-                               true,
+                               DockablePanel::READ_ONLY_NAME,
                                "Project Settings",
                                "The settings of the current project.",
+                               true,
                                "Rendering",
                                parent);
     _panel->initializeKnobs();
@@ -214,4 +216,38 @@ void ProjectGui::load(const ProjectGuiSerialization& obj){
     }
 
 
+}
+
+
+void ProjectGui::registerNewColorPicker(boost::shared_ptr<Color_Knob> knob){
+    _colorPickersEnabled.push_back(knob);
+    
+}
+
+void ProjectGui::removeColorPicker(boost::shared_ptr<Color_Knob> knob){
+    std::vector<boost::shared_ptr<Color_Knob> >::iterator found = std::find(_colorPickersEnabled.begin(), _colorPickersEnabled.end(), knob);
+    if(found != _colorPickersEnabled.end()){
+        _colorPickersEnabled.erase(found);
+    }
+}
+
+void ProjectGui::setPickersColor(const QColor& color){
+    if(_colorPickersEnabled.empty()){
+        return;
+    }
+    boost::shared_ptr<Color_Knob> first = _colorPickersEnabled.front();
+    first->beginValueChange(Natron::USER_EDITED);
+    for(U32 i = 0; i < _colorPickersEnabled.size();++i){
+        _colorPickersEnabled[i]->beginValueChange(Natron::USER_EDITED);
+        _colorPickersEnabled[i]->setValue(color.redF(), 0);
+        if(_colorPickersEnabled[i]->getDimension() >= 3){
+            _colorPickersEnabled[i]->setValue(color.greenF(), 1);
+            _colorPickersEnabled[i]->setValue(color.blueF(), 2);
+        }
+        if(_colorPickersEnabled[i]->getDimension() >= 4){
+            _colorPickersEnabled[i]->setValue(color.alphaF(), 3);
+        }
+        _colorPickersEnabled[i]->endValueChange(Natron::USER_EDITED);
+    }
+    first->endValueChange(Natron::USER_EDITED);
 }

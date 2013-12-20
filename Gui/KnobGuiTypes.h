@@ -14,6 +14,9 @@
 
 #include <vector> // Int_KnobGui
 
+#include <QLabel>
+#include <QObject>
+
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
@@ -25,9 +28,10 @@
 // Qt
 class QString;
 class QFrame;
-class QLabel;
 class QGridLayout;
 class QTextEdit;
+class QTreeWidget;
+class QTreeWidgetItem;
 
 // Engine
 class Knob;
@@ -40,6 +44,8 @@ class SpinBox;
 class ComboBox;
 class ScaleSlider;
 class GroupBoxLabel;
+class CurveWidget;
+class CurveGui;
 
 // private classes, defined in KnobGuiTypes.cpp
 class ClickableLabel;
@@ -57,12 +63,12 @@ class Int_KnobGui : public KnobGui
     Q_OBJECT
 public:
 
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Int_KnobGui(knob, container);
     }
 
 
-    Int_KnobGui(Knob *knob, DockablePanel *container);
+    Int_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
     virtual ~Int_KnobGui() OVERRIDE FINAL;
 
@@ -90,9 +96,9 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
 
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
-
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
+    
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
 
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
@@ -109,12 +115,12 @@ class Bool_KnobGui : public KnobGui
     Q_OBJECT
 public:
 
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Bool_KnobGui(knob, container);
     }
 
 
-    Bool_KnobGui(Knob *knob, DockablePanel *container): KnobGui(knob, container) {}
+    Bool_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
     virtual ~Bool_KnobGui() OVERRIDE FINAL;
 
@@ -132,10 +138,9 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
 
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
-
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
 private:
 
     AnimatedCheckBox *_checkBox;
@@ -149,12 +154,12 @@ class Double_KnobGui : public KnobGui
     Q_OBJECT
 public:
 
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Double_KnobGui(knob, container);
     }
 
 
-    Double_KnobGui(Knob *knob, DockablePanel *container);
+    Double_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
     virtual ~Double_KnobGui() OVERRIDE FINAL;
 
@@ -179,9 +184,9 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
 
-    virtual void addToLayout(QHBoxLayout *layout);
-
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
+
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
 
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
@@ -195,12 +200,12 @@ class Button_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Button_KnobGui(knob, container);
     }
 
 
-    Button_KnobGui(Knob *knob, DockablePanel *container): KnobGui(knob, container) {}
+    Button_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
     virtual ~Button_KnobGui() OVERRIDE FINAL;
 
@@ -218,8 +223,6 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
 
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
-
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL {(void)dimension; Q_UNUSED(variant);}
 
 
@@ -232,12 +235,12 @@ class Choice_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Choice_KnobGui(knob, container);
     }
 
 
-    Choice_KnobGui(Knob *knob, DockablePanel *container);
+    Choice_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
     virtual ~Choice_KnobGui() OVERRIDE FINAL;
 
@@ -257,9 +260,9 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
 
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
-
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
+
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
 
 private:
     std::vector<std::string> _entries;
@@ -271,11 +274,11 @@ private:
 class Separator_KnobGui : public KnobGui
 {
 public:
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Separator_KnobGui(knob, container);
     }
 
-    Separator_KnobGui(Knob *knob, DockablePanel *container): KnobGui(knob, container) {}
+    Separator_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
     virtual ~Separator_KnobGui() OVERRIDE FINAL;
 
@@ -289,26 +292,57 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL {}
 
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
-
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL {(void)dimension; (void)variant;}
 
 private:
     QFrame *_line;
     QLabel *_descriptionLabel;
 };
-
 /******************************/
+
+class ColorPickerLabel : public QLabel {
+    
+    Q_OBJECT
+    
+public:
+    
+    ColorPickerLabel(QWidget* parent = NULL);
+    
+    virtual ~ColorPickerLabel(){}
+    
+    bool isPickingEnabled() const { return _pickingEnabled; }
+
+    void setColor(const QColor& color);
+    
+protected:
+    
+    virtual void enterEvent(QEvent*);
+    
+    virtual void leaveEvent(QEvent*);
+        
+    virtual void mousePressEvent(QMouseEvent*) ;    
+
+signals:
+    
+    void pickingEnabled(bool);
+    
+private:
+
+    bool _pickingEnabled;
+    QColor _currentColor;
+};
+
+
 class Color_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Color_KnobGui(knob, container);
     }
 
 
-    Color_KnobGui(Knob *knob, DockablePanel *container);
+    Color_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
     virtual ~Color_KnobGui() OVERRIDE FINAL;
 
@@ -317,6 +351,8 @@ public slots:
     void onColorChanged();
 
     void showColorDialog();
+    
+    void onPickingEnabled(bool enabled);
 
 private:
 
@@ -328,10 +364,10 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
 
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
-
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
+    
     void updateLabel(const QColor &color);
 
 private:
@@ -356,7 +392,7 @@ private:
     SpinBox *_bBox;
     SpinBox *_aBox;
 
-    QLabel *_colorLabel;
+    ColorPickerLabel *_colorLabel;
     Button *_colorDialogButton;
 
     int _dimension;
@@ -367,12 +403,12 @@ class String_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new String_KnobGui(knob, container);
     }
 
 
-    String_KnobGui(Knob *knob, DockablePanel *container): KnobGui(knob, container) {}
+    String_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
     virtual ~String_KnobGui() OVERRIDE FINAL;
 
@@ -389,8 +425,6 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
 
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
-
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
 private:
@@ -403,12 +437,12 @@ private:
 class Custom_KnobGui : public KnobGui
 {
 public:
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Custom_KnobGui(knob, container);
     }
 
 
-    Custom_KnobGui(Knob *knob, DockablePanel *container): KnobGui(knob, container) {}
+    Custom_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
     virtual ~Custom_KnobGui() OVERRIDE FINAL;
 
@@ -421,8 +455,6 @@ private:
     virtual void _show() OVERRIDE FINAL;
 
     virtual void setEnabled() OVERRIDE FINAL;
-
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
@@ -438,12 +470,12 @@ class Group_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Group_KnobGui(knob, container);
     }
 
 
-    Group_KnobGui(Knob *knob, DockablePanel *container): KnobGui(knob, container), _checked(false) {}
+    Group_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container), _checked(false) {}
 
     virtual ~Group_KnobGui() OVERRIDE FINAL;
 
@@ -462,9 +494,6 @@ private:
     virtual void _show() OVERRIDE FINAL;
 
     virtual void setEnabled()  OVERRIDE FINAL {}
-
-    virtual void addToLayout(QHBoxLayout *layout);
-
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
@@ -487,12 +516,12 @@ class RichText_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
-    static KnobGui *BuildKnobGui(Knob *knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new RichText_KnobGui(knob, container);
     }
 
 
-    RichText_KnobGui(Knob *knob, DockablePanel *container): KnobGui(knob, container) {}
+    RichText_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
     virtual ~RichText_KnobGui() OVERRIDE FINAL;
 
@@ -509,8 +538,6 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
 
-    virtual void addToLayout(QHBoxLayout *layout) OVERRIDE FINAL;
-
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
 private:
@@ -519,6 +546,51 @@ private:
 
 };
 
+
+/*****************************/
+class Parametric_KnobGui : public KnobGui
+{
+    Q_OBJECT
+    
+public:
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
+        return new Parametric_KnobGui(knob, container);
+    }
+    
+    
+    Parametric_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
+    
+    virtual ~Parametric_KnobGui() OVERRIDE FINAL;
+    
+public slots:
+    
+    void onCurveChanged(int dimension);
+    
+    void onItemsSelectionChanged();
+private:
+    
+    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+    
+    virtual void _hide() OVERRIDE FINAL;
+    
+    virtual void _show() OVERRIDE FINAL;
+    
+    virtual void setEnabled() OVERRIDE FINAL;
+    
+    virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
+    
+    
+    CurveWidget* _curveWidget;
+    QTreeWidget* _tree;
+    
+    struct CurveDescriptor{
+        CurveGui* curve;
+        QTreeWidgetItem* treeItem;
+    };
+    
+    typedef std::map<int,CurveDescriptor> CurveGuis;
+    CurveGuis _curves;
+};
 
 
 #endif // NATRON_GUI_KNOBGUITYPES_H_

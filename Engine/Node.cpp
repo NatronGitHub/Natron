@@ -154,7 +154,7 @@ Node::~Node()
     }
     delete _liveInstance;
     delete _imp->previewRenderTree;
-    emit deleteWanted();
+    emit deleteWanted(this);
 }
 
 const std::map<int, std::string>& Node::getInputLabels() const
@@ -274,6 +274,14 @@ void Node::hasViewersConnected(std::list<ViewerInstance*>* viewers) const
             }
         }
     }
+}
+
+int Node::majorVersion() const{
+    return _liveInstance->majorVersion();
+}
+
+int Node::minorVersion() const{
+    return _liveInstance->minorVersion();
 }
 
 void Node::initializeInputs()

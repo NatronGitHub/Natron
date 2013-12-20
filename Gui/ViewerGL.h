@@ -107,8 +107,7 @@ public:
      *@returns Returns 1.f if the viewer is using 8bit textures.
      *Returns 0.f if the viewer is using 32bit f.p textures.
      **/
-    // FIXME-seeabove: why a float to really represent an enum????
-    float byteMode() const;
+    int bitDepth() const;
     
     /**
      *@brief Hack to allow the resizeEvent to be publicly used elsewhere.
@@ -175,8 +174,14 @@ public:
      **/
     QPointF toImgCoordinates_fast(double x, double y);
     
+    
     /**
      *@brief Returns the rgba components of the pixel located at position (x,y) in viewport coordinates.
+    **/
+    void getColorUnderMouse(int x,int y,float* r,float *g,float* b,float* a);
+    
+    /**
+     *@brief Returns the rgba components of the pixel located at position (x,y) in image coordinates.
      *This function unprojects the x and y coordinates to retrieve the OpenGL coordinates
      *of the point. Then it makes a call to glReadPixels to retrieve the intensities stored at this location.
      *This function may slow down a little bit the rendering pipeline since it forces the OpenGL context to
@@ -185,7 +190,7 @@ public:
      *@param y[in] The y coordinate of the pixel in viewport coordinates.
      *@returns Returns the RGBA components of the pixel at (x,y).
      **/
-    QVector4D getColorUnderMouse(int x,int y);
+    void getColorAt(int x,int y,float* r,float *g,float* b,float* a,int viewPortX = INT_MAX,int viewPortY = INT_MAX);
     
     /**
      *@brief Set the pointer to the InfoViewerWidget. This is called once after creation
@@ -241,11 +246,6 @@ public:
      *function while the engine is processing will abort the engine.
      **/
     void disconnectViewer();
-    
-    /**
-     *@brief set the channels the viewer should display
-     **/
-    void setDisplayChannel(const Natron::ChannelSet& channels,bool yMode = false);
     
     void stopDisplayingProgressBar();
     
@@ -386,11 +386,6 @@ private:
      *@brief Starts using the RGB shader to display the frame
      **/
     void activateShaderRGB();
-    
-    /**
-     *@brief Starts using the luminance/chroma shader
-     **/
-    void activateShaderLC();
     
     /**
      *@brief Fill the rendering VAO with vertices and texture coordinates

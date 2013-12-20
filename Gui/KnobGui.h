@@ -13,11 +13,9 @@
 #define NATRON_GUI_KNOBGUI_H_
 
 #include <QtCore/QObject>
-#include <QtCore/QMetaType>
 
 #include <boost/shared_ptr.hpp>
 
-#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 // Qt
@@ -32,6 +30,7 @@ class QComboBox;
 // Engine
 class Knob; //used by KnobGui
 class Variant; //used by KnobGui
+class KeyFrame;
 
 // Gui
 class Button; //used by KnobGui
@@ -43,10 +42,11 @@ class KnobGui : public QObject
 
 public:
     
+    
     friend class KnobMultipleUndosCommand;
     friend class KnobUndoCommand;
     
-    KnobGui(Knob* knob,DockablePanel* container);
+    KnobGui(boost::shared_ptr<Knob> knob,DockablePanel* container);
     
     virtual ~KnobGui();
         
@@ -54,7 +54,7 @@ public:
     
     void turnOffNewLine() { _triggerNewLine = false; }
     
-    Knob* getKnob() const { return _knob; }
+    boost::shared_ptr<Knob> getKnob() const { return _knob; }
     
     /*Set the spacing between items in the layout*/
     void setSpacingBetweenItems(int spacing){ _spacingBetweenItems = spacing; }
@@ -62,21 +62,18 @@ public:
     int getSpacingBetweenItems() const { return _spacingBetweenItems; }
     
     void createGUI(QGridLayout* layout,int row);
-    
-    void moveToLayout(QVBoxLayout* layout);
-    
-    /*Used by Tab_KnobGui to insert already existing widgets
-     in a tab.*/
-    virtual void addToLayout(QHBoxLayout* layout)=0;
-    
-    
+        
     void pushUndoCommand(QUndoCommand* cmd);
+    
+    const QUndoCommand* getLastUndoCommand() const;
     
     bool hasWidgetBeenCreated() const {return _widgetCreated;}
     
     void setKeyframe(SequenceTime time,int dimension);
 
     void removeKeyFrame(SequenceTime time,int dimension);
+    
+    
 public slots:
     /*Called when the value held by the knob is changed internally.
      This should in turn update the GUI but not emit the valueChanged()
@@ -86,10 +83,6 @@ public slots:
     void onInternalKeySet(SequenceTime time,int dimension);
 
     void onInternalKeyRemoved(SequenceTime time,int dimension);
-
-    void deleteKnob(){
-        delete this;
-    }
 
     void setSecret();
 
@@ -133,11 +126,6 @@ public slots:
     /******************************************************/
 
 signals:
-    void deleted(KnobGui*);
-    
-    /*Must be emitted when a value is changed by the user or by
-     an external source.*/
-    void valueChanged(int dimension,const Variant& variant);
     
     void knobUndoneChange();
     
@@ -161,11 +149,14 @@ signals:
      *@brief Emitted whenever a keyframe's interpolation method is changed by the user or by the plugin.
      **/
     void keyInterpolationChanged();
-
+    
 protected:
     
-    void setIsOnKeyframe(bool e);
-
+    
+    void pushValueChangedCommand(const std::vector<Variant>& newValues);
+    
+    void pushValueChangedCommand(const Variant& v, int dimension = 0);
+    
 private:
 
     virtual void _hide() = 0;
@@ -181,31 +172,34 @@ private:
     /*Called by the onInternalValueChanged slot. This should update
      the widget to reflect the new internal value held by variant.*/
     virtual void updateGUI(int dimension,const Variant& variant) = 0;
+    
+    /*Called right away after updateGUI(). Depending in the animation level
+     the widget for the knob could display its gui a bit differently.
+     */
+    virtual void reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevel /*level*/) {}
 
+    /*Calls reflectAnimationLevel with good parameters. Called right away after updateGUI() */
+    void checkAnimationLevel(int dimension);
+    
     void createAnimationMenu();
     
     void createAnimationButton(QGridLayout* layout,int row);
     
     /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
      signal/slot sequence can cause an infinite loop.*/
-    void setValue(int dimension,const Variant& variant){
-        updateGUI(dimension,variant);
-        emit valueChanged(dimension,variant);
-    }
+     int setValue(int dimension,const Variant& variant,KeyFrame* newKey);
     
     void setInterpolationForDimensions(const std::vector<int>& dimensions,Natron::KeyframeType interp);
     
 private:
-    Knob* const _knob;
+    boost::shared_ptr<Knob> _knob;
     bool _triggerNewLine;
     int _spacingBetweenItems;
     bool _widgetCreated;
     DockablePanel* const _container;
     QMenu* _animationMenu;
     Button* _animationButton;
-    bool _isOnKeyFrame; //< true when the value of the knob is exactly the value of a keyframe
 };
-Q_DECLARE_METATYPE(KnobGui*)
 
 
 class LinkToKnobDialog : public QDialog {

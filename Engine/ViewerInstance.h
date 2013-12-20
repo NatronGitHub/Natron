@@ -30,14 +30,40 @@ namespace Natron{
 namespace Color{
 class Lut;
 }
-class FrameEntry;
 }
 
 class QKeyEvent;
 
+
+
 class ViewerInstance : public QObject, public Natron::OutputEffectInstance {
     
+
     Q_OBJECT
+    
+public:
+    enum DisplayChannels{
+        RGBA = 0,
+        R,
+        G,
+        B,
+        A,
+        LUMINANCE
+    };
+    
+    enum ViewerColorSpace{
+        sRGB = 0,
+        Linear,
+        Rec709
+    };
+    
+    enum BitDepth{
+        BYTE = 0,
+        HALF_FLOAT ,
+        FLOAT
+    };
+
+private:
     
     
     struct InterThreadInfos{
@@ -76,8 +102,11 @@ class ViewerInstance : public QObject, public Natron::OutputEffectInstance {
     
     const Natron::Color::Lut* _colorSpace;/*!< The lut used to do the viewer colorspace conversion when we can't use shaders*/
     // FIXME: why a float to really represent an enum????
-    float _lut; /*!< a value coding the current color-space used to render.
+    ViewerColorSpace _lut; /*!< a value coding the current color-space used to render.
                  0 = NONE , 1 = sRGB , 2 = Rec 709*/
+    
+    DisplayChannels _channels;
+    
 public:
     
     
@@ -105,6 +134,10 @@ public:
     virtual int maximumInputs() const OVERRIDE {return getNode()->maximumInputs();}
 
     virtual bool isInputOptional(int /*n*/) const OVERRIDE;
+
+    virtual int majorVersion() const OVERRIDE { return 1; }
+
+    virtual int minorVersion() const OVERRIDE { return 0; }
 
     virtual std::string pluginID() const OVERRIDE {return "Viewer";}
 
@@ -171,9 +204,7 @@ public:
 
     void disconnectSlotsToViewerCache();
 
-    void disconnectViewer(){
-        emit viewerDisconnected();
-    }
+    void disconnectViewer();
 
     void wakeUpAnySleepingThread();
 
@@ -189,17 +220,28 @@ public:
 
     int activeInput() const;
 
-    float getLutType() const {return _lut;}
+    int getLutType() const {return _lut;}
 
     double getExposure() const {return _exposure;}
 
     const Natron::Color::Lut* getLut() const {return _colorSpace;}
 
+    bool supportsGLSL() const;
 /**
  *@brief Actually converting to ARGB... but it is called BGRA by
  the texture format GL_UNSIGNED_INT_8_8_8_8_REV
  **/
     static U32 toBGRA(U32 r,U32 g,U32 b,U32 a);
+
+    void setDisplayChannels(DisplayChannels channels) ;
+
+    /**
+     * @brief Get the color of the currently displayed image at position x,y. 
+     * If forceLinear is true, then it will not use the viewer current colorspace
+     * to get r,g and b values, otherwise the color returned will be in the same color-space
+     * than the one chosen by the user on the gui.
+    **/
+    void getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear);
 
 protected:
 
@@ -255,7 +297,8 @@ private:
  *it will apply a "Nearest neighboor" algorithm to fill the buffer. Note that during the
  *conversion to 8bit in the viewer color-space, a dithering algorithm is used.
  **/
-    void convertRowToFitTextureBGRA(const float* data,const std::vector<int>& columnSpan,int yOffset);
+    void convertRowToFitTextureBGRA(const float* data,const std::vector<int>& columnSpan,int yOffset,
+                                    int rOffset,int gOffset,int bOffset,bool luminance);
 
 /**
  *@brief This function fills the member frameData with the buffer in parameters.
@@ -265,7 +308,8 @@ private:
  *int w,int yOffset,const float* alpha) except that it does not apply any dithering nor color-space
  *since the data are stored as 32bit floating points. The color-space will be applied by the shaders.
  **/
-    void convertRowToFitTextureBGRA_fp(const float* data,const std::vector<int>& columnSpan,int yOffset);
+    void convertRowToFitTextureBGRA_fp(const float* data,const std::vector<int>& columnSpan,int yOffset,
+                                       int rOffset,int gOffset,int bOffset,bool luminance);
 
 
 

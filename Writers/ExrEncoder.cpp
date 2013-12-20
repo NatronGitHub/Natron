@@ -176,10 +176,10 @@ std::vector<std::string> ExrEncoder::fileTypesEncoded() const {
 void ExrEncoderKnobs::initKnobs(const std::string& fileType) {
     std::string separatorDesc(fileType);
     separatorDesc.append(" Options");
-    sepKnob = appPTR->getKnobFactory().createKnob<Separator_Knob>(_writer, separatorDesc);
+    sepKnob = Natron::createKnob<Separator_Knob>(_writer, separatorDesc);
     
     std::string compressionCBDesc("Compression");
-    compressionCBKnob = appPTR->getKnobFactory().createKnob<Choice_Knob>(_writer, compressionCBDesc);
+    compressionCBKnob = Natron::createKnob<Choice_Knob>(_writer, compressionCBDesc);
     std::vector<std::string> list;
     for (int i =0; i < 6; ++i) {
         list.push_back(EXR::compressionNames[i].c_str());
@@ -188,7 +188,7 @@ void ExrEncoderKnobs::initKnobs(const std::string& fileType) {
     compressionCBKnob->setValue(3);
     
     std::string depthCBDesc("Data type");
-    depthCBKnob = appPTR->getKnobFactory().createKnob<Choice_Knob>(_writer,depthCBDesc);
+    depthCBKnob = Natron::createKnob<Choice_Knob>(_writer,depthCBDesc);
     list.clear();
     for(int i = 0 ; i < 2 ; ++i) {
         list.push_back(EXR::depthNames[i].c_str());
@@ -200,9 +200,9 @@ void ExrEncoderKnobs::initKnobs(const std::string& fileType) {
     EncoderKnobs::initKnobs(fileType);
 }
 void ExrEncoderKnobs::cleanUpKnobs(){
-    sepKnob->remove();
-    compressionCBKnob->remove();
-    depthCBKnob->remove();
+    sepKnob.reset();
+    compressionCBKnob.reset();
+    depthCBKnob.reset();
 }
 
 bool ExrEncoderKnobs::allValid(){

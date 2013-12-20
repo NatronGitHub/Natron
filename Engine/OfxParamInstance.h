@@ -23,6 +23,8 @@
 #include "Global/GlobalDefines.h"
 //ofx
 #include "ofxhImageEffect.h"
+#include "ofxCore.h"
+#include "ofxhParametricParam.h"
 
 
 /*This file contains the classes that connect the knobs to the OpenFX params.
@@ -43,10 +45,16 @@ class Choice_Knob;
 class Group_Knob;
 class Custom_Knob;
 class RichText_Knob;
+class Parametric_Knob;
 class OfxEffectInstance;
+class CurveWidget;
 class Knob;
 
-class OfxPushButtonInstance :public OFX::Host::Param::PushbuttonInstance {
+namespace Natron{
+    class OfxOverlayInteract;
+}
+
+class OfxPushButtonInstance : public OFX::Host::Param::PushbuttonInstance {
     
 public:
     OfxPushButtonInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
@@ -57,15 +65,18 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    boost::shared_ptr<Knob> getKnob() const;
 
 private:
-    Button_Knob *_knob;
+    boost::shared_ptr<Button_Knob> _knob;
 };
 
 
 
-class OfxIntegerInstance :public OFX::Host::Param::IntegerInstance {
+class OfxIntegerInstance :  public QObject, public OFX::Host::Param::IntegerInstance {
+    
+    Q_OBJECT
+    
 public:
     
     OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
@@ -80,13 +91,27 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
+    
+    boost::shared_ptr<Knob> getKnob() const;
 
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
+    
 private:
-    Int_Knob* _knob;
+    boost::shared_ptr<Int_Knob> _knob;
 };
 
-class OfxDoubleInstance : public OFX::Host::Param::DoubleInstance {
+class OfxDoubleInstance :  public QObject,  public OFX::Host::Param::DoubleInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxDoubleInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&);
@@ -102,13 +127,30 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
+    
+    boost::shared_ptr<Knob> getKnob() const;
 
+    bool isAnimated() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
+    
 private:
-    Double_Knob* _knob;
+    boost::shared_ptr<Double_Knob> _knob;
 };
 
-class OfxBooleanInstance : public OFX::Host::Param::BooleanInstance {
+class OfxBooleanInstance :  public QObject,  public OFX::Host::Param::BooleanInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(bool&);
@@ -124,13 +166,28 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
+
+    
+    boost::shared_ptr<Knob> getKnob() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 
 private:
-    Bool_Knob* _knob;
+    boost::shared_ptr<Bool_Knob> _knob;
 };
 
-class OfxChoiceInstance : public OFX::Host::Param::ChoiceInstance {
+class OfxChoiceInstance : public QObject, public OFX::Host::Param::ChoiceInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxChoiceInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&);
@@ -144,76 +201,148 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
+
+    boost::shared_ptr<Knob> getKnob() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 
 private:
     std::vector<std::string> _entries;
-    Choice_Knob* _knob;
+    boost::shared_ptr<Choice_Knob> _knob;
 };
 
-class OfxRGBAInstance :public OFX::Host::Param::RGBAInstance {
+class OfxRGBAInstance :  public QObject, public OFX::Host::Param::RGBAInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxRGBAInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&,double&,double&);
     OfxStatus get(OfxTime time, double&,double&,double&,double&);
     OfxStatus set(double,double,double,double);
     OfxStatus set(OfxTime time, double,double,double,double);
-    
+    OfxStatus derive(OfxTime time, double&, double&, double&, double&);
+    OfxStatus integrate(OfxTime time1, OfxTime time2, double&, double&, double&, double&);
+
     // callback which should set enabled state as appropriate
     virtual void setEnabled();
     
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
 
+    
+    boost::shared_ptr<Knob> getKnob() const;
+
+    bool isAnimated(int dimension) const;
+    bool isAnimated() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
+    
 private:
-    Color_Knob* _knob;
+    boost::shared_ptr<Color_Knob> _knob;
 };
 
 
-class OfxRGBInstance : public OFX::Host::Param::RGBInstance {
+class OfxRGBInstance :  public QObject,  public OFX::Host::Param::RGBInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxRGBInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&,double&);
     OfxStatus get(OfxTime time, double&,double&,double&);
     OfxStatus set(double,double,double);
     OfxStatus set(OfxTime time, double,double,double);
-    
+    OfxStatus derive(OfxTime time, double&, double&, double&);
+    OfxStatus integrate(OfxTime time1, OfxTime time2, double&, double&, double&);
+
     // callback which should set enabled state as appropriate
     virtual void setEnabled();
     
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
 
+    
+    boost::shared_ptr<Knob> getKnob() const;
+
+    bool isAnimated(int dimension) const;
+    bool isAnimated() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
+    
 private:
-    Color_Knob* _knob;
+    boost::shared_ptr<Color_Knob> _knob;
 };
 
-class OfxDouble2DInstance :public OFX::Host::Param::Double2DInstance {
+class OfxDouble2DInstance :  public QObject, public OFX::Host::Param::Double2DInstance {
+    
+    Q_OBJECT
+    
 public:
     OfxDouble2DInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&);
     OfxStatus get(OfxTime time,double&,double&);
     OfxStatus set(double,double);
     OfxStatus set(OfxTime time,double,double);
-    
+    OfxStatus derive(OfxTime time, double&, double&);
+    OfxStatus integrate(OfxTime time1, OfxTime time2, double&, double&);
+
     // callback which should set enabled state as appropriate
     virtual void setEnabled();
     
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
 
+    
+    boost::shared_ptr<Knob> getKnob() const;
+
+    bool isAnimated(int dimension) const;
+    bool isAnimated() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 private:
-    Double_Knob* _knob;
+    boost::shared_ptr<Double_Knob> _knob;
 };
 
 
-class OfxInteger2DInstance : public OFX::Host::Param::Integer2DInstance {
+class OfxInteger2DInstance :  public QObject, public OFX::Host::Param::Integer2DInstance {
+    Q_OBJECT
+    
 public:
     OfxInteger2DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&,int&);
@@ -226,20 +355,36 @@ public:
 
     // callback which should set secret state as appropriate
     virtual void setSecret();
+    
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
 
-    Knob* getKnob() const;
+
+    boost::shared_ptr<Knob> getKnob() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 
 private:
-    Int_Knob *_knob;
+    boost::shared_ptr<Int_Knob> _knob;
 };
 
-class OfxDouble3DInstance :public OFX::Host::Param::Double3DInstance {
+class OfxDouble3DInstance :  public QObject, public OFX::Host::Param::Double3DInstance {
+    Q_OBJECT
+    
 public:
     OfxDouble3DInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&,double&);
     OfxStatus get(OfxTime time,double&,double&,double&);
     OfxStatus set(double,double,double);
     OfxStatus set(OfxTime time,double,double,double);
+    OfxStatus derive(OfxTime time, double&, double&, double&);
+    OfxStatus integrate(OfxTime time1, OfxTime time2, double&, double&, double&);
 
     // callback which should set enabled state as appropriate
     virtual void setEnabled();
@@ -247,13 +392,29 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
 
-    Knob* getKnob() const;
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
+    
 
+    boost::shared_ptr<Knob> getKnob() const;
+
+    bool isAnimated(int dimension) const;
+    bool isAnimated() const;
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 private:
-    Double_Knob* _knob;
+    boost::shared_ptr<Double_Knob> _knob;
 };
 
-class OfxInteger3DInstance : public OFX::Host::Param::Integer3DInstance {
+class OfxInteger3DInstance :  public QObject, public OFX::Host::Param::Integer3DInstance {
+    Q_OBJECT
+    
 public:
     OfxInteger3DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&,int&,int&);
@@ -266,11 +427,22 @@ public:
 
     // callback which should set secret state as appropriate
     virtual void setSecret();
+    
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
 
-    Knob* getKnob() const;
 
+    boost::shared_ptr<Knob> getKnob() const;
+
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
 private:
-    Int_Knob *_knob;
+    boost::shared_ptr<Int_Knob> _knob;
 };
 
 class OfxGroupInstance : public OFX::Host::Param::GroupInstance {
@@ -278,15 +450,15 @@ public:
 
     OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
 
-    void addKnob(Knob* k);
+    void addKnob(boost::shared_ptr<Knob> k);
 
-    Knob* getKnob() const;
+    boost::shared_ptr<Knob> getKnob() const;
 
     virtual ~OfxGroupInstance(){}
 
 private:
-    OfxEffectInstance* _node;
-    Group_Knob* _groupKnob;
+    boost::shared_ptr<Group_Knob> _groupKnob;
+    boost::shared_ptr<Tab_Knob> _tabKnob;
 };
 
 class OfxStringInstance : public QObject, public OFX::Host::Param::StringInstance {
@@ -334,25 +506,37 @@ public:
      */
     const QString getRandomFrameName(int f) const;
     
-    Knob* getKnob() const;
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
+
+    
+    boost::shared_ptr<Knob> getKnob() const;
     
     virtual ~OfxStringInstance(){}
+    
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
     
 public slots:
     void onFrameRangeChanged(int,int);
 
 private:
     OfxEffectInstance* _node;
-    File_Knob* _fileKnob;
-    OutputFile_Knob* _outputFileKnob;
-    String_Knob* _stringKnob;
-    RichText_Knob* _multiLineKnob;
+    boost::shared_ptr<File_Knob> _fileKnob;
+    boost::shared_ptr<OutputFile_Knob> _outputFileKnob;
+    boost::shared_ptr<String_Knob> _stringKnob;
+    boost::shared_ptr<RichText_Knob> _multiLineKnob;
     QThreadStorage<std::string> _localString;
 };
 
 
 class OfxCustomInstance : public QObject, public OFX::Host::Param::CustomInstance {
-
+Q_OBJECT
 public:
     OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
 
@@ -378,10 +562,22 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
 
-    Knob* getKnob() const;
+    boost::shared_ptr<Knob> getKnob() const;
 
     virtual ~OfxCustomInstance(){}
+    
+    ///keyframes support
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
+    virtual OfxStatus deleteKey(OfxTime time) ;
+    virtual OfxStatus deleteAllKeys();
 
+
+public slots:
+    
+    void onKnobAnimationLevelChanged(int lvl);
+    
 private:
     typedef OfxStatus (*customParamInterpolationV1Entry_t)(
                                                            const void*            handleRaw,
@@ -389,9 +585,80 @@ private:
                                                            OfxPropertySetHandle   outArgsRaw);
 
     OfxEffectInstance* _node;
-    Custom_Knob* _knob;
+    boost::shared_ptr<Custom_Knob> _knob;
     customParamInterpolationV1Entry_t _customParamInterpolationV1Entry;
     QThreadStorage<std::string> _localString;
+};
+
+
+class OfxParametricInstance : public QObject, public OFX::Host::ParametricParam::ParametricInstance {
+    
+    Q_OBJECT
+    
+
+public:
+    
+    explicit OfxParametricInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
+    
+    virtual ~OfxParametricInstance();
+    
+    // callback which should set enabled state as appropriate
+    virtual void setEnabled() OVERRIDE;
+    
+    // callback which should set secret state as appropriate
+    virtual void setSecret() OVERRIDE;
+    
+    /// callback which should update label
+    virtual void setLabel() OVERRIDE;
+    
+    /// callback which should set
+    virtual void setDisplayRange() OVERRIDE;
+    
+    
+    ///derived from CurveHolder
+    virtual OfxStatus getValue(int curveIndex,OfxTime time,double parametricPosition,double *returnValue) OVERRIDE;
+    
+    virtual OfxStatus getNControlPoints(int curveIndex,double time,int *returnValue) OVERRIDE;
+    
+    virtual OfxStatus getNthControlPoint(int curveIndex,
+                                         double time,
+                                         int    nthCtl,
+                                         double *key,
+                                         double *value) OVERRIDE;
+    
+    virtual OfxStatus setNthControlPoint(int   curveIndex,
+                                         double time,
+                                         int   nthCtl,
+                                         double key,
+                                         double value,
+                                         bool addAnimationKey
+                                         ) OVERRIDE;
+    
+    virtual OfxStatus addControlPoint(int   curveIndex,
+                                      double time,
+                                      double key,
+                                      double value,
+                                      bool addAnimationKey) OVERRIDE;
+    
+    virtual OfxStatus  deleteControlPoint(int   curveIndex,int   nthCtl) OVERRIDE;
+    
+    virtual OfxStatus  deleteAllControlPoints(int   curveIndex) OVERRIDE;
+    
+    boost::shared_ptr<Knob> getKnob() const;
+    
+public slots:
+    
+    void onCustomBackgroundDrawingRequested();
+    
+    void initializeInteract(CurveWidget* widget);
+
+   
+private:
+    
+    
+    Natron::OfxOverlayInteract* _overlayInteract;
+    OfxEffectInstance* _effect;
+    boost::shared_ptr<Parametric_Knob> _knob;
 };
 
 #endif // NATRON_ENGINE_OFXPARAMINSTANCE_H_

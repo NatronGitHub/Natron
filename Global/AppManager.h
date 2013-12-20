@@ -35,13 +35,14 @@
 #include "Engine/Image.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Format.h"
+#include "Engine/KnobFactory.h"
 
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
 
 class AppInstance;
-class KnobFactory;
 class KnobGuiFactory;
+class KnobHolder;
 class NodeGui;
 class ViewerInstance;
 class ViewerTab;
@@ -103,11 +104,19 @@ public:
 
     bool isBackground() const {return _isBackground;}
 
-    /*Create a new node  in the node graph.
-     The name passed in parameter must match a valid node name,
-     otherwise an exception is thrown. You should encapsulate the call
-     by a try-catch block.*/
-    Natron::Node* createNode(const QString& name,bool requestedByLoad = false);
+    /** @brief Create a new node  in the node graph.
+      * The name passed in parameter must match a valid node name,
+      * otherwise an exception is thrown. You should encapsulate the call
+      * by a try-catch block.
+      * If the majorVersion is not -1 then this function will attempt to find a plugin with the matching
+      * majorVersion, or otherwise it will throw an exception.
+      * If the minorVersion is not -1 then this function will attempt to load a plugin with the greatest minorVersion
+      * greater or equal to this minorVersion. 
+      * By default this function also create the node's graphical user interface and attempts to automatically
+      * connect this node to other nodes selected. 
+      * If requestedByLoad is true then it will never attempt to do this auto-connection.
+     **/
+    Natron::Node* createNode(const QString& name,int majorVersion = -1,int minorVersion = -1,bool requestedByLoad = false);
 
     /*Pointer to the GUI*/
     Gui* getGui() WARN_UNUSED_RETURN {return _gui;}
@@ -324,6 +333,8 @@ class Plugin {
     QString _id;
     QString _label;
     QMutex* _lock;
+    int _majorVersion;
+    int _minorVersion;
 
 public:
 
@@ -331,17 +342,24 @@ public:
         _binary(NULL)
       , _id()
       , _label()
-      , _lock() {}
+      , _lock()
+      , _majorVersion(0)
+      , _minorVersion(0)
+    {}
 
     Plugin(Natron::LibraryBinary* binary,
            const QString& id,
            const QString& label,
-           QMutex* lock
+           QMutex* lock,
+           int majorVersion,
+           int minorVersion
            ):
         _binary(binary)
       , _id(id)
       , _label(label)
       , _lock(lock)
+      , _majorVersion(majorVersion)
+      , _minorVersion(minorVersion)
     {
 
     }
@@ -359,6 +377,10 @@ public:
     QMutex* getPluginLock() const { return _lock; }
 
     Natron::LibraryBinary* getLibraryBinary() const { return _binary; }
+    
+    int getMajorVersion() const { return _majorVersion; }
+    
+    int getMinorVersion() const { return _minorVersion; }
 
 };
 }
@@ -382,13 +404,15 @@ public:
 
     AppInstance* newAppInstance(bool background,const QString& projectName = QString(),const QStringList& writers = QStringList());
 
-    void registerAppInstance(AppInstance* app){ _appInstances.insert(std::make_pair(app->getAppID(),app));}
+    void registerAppInstance(AppInstance* app);
 
     AppInstance* getAppInstance(int appID) const;
 
     void removeInstance(int appID);
 
     void setAsTopLevelInstance(int appID);
+
+    const std::map<int,AppInstance*>& getAppInstances() const;
 
     AppInstance* getTopLevelInstance () const WARN_UNUSED_RETURN;
 
@@ -397,7 +421,7 @@ public:
 
     QMutex* getMutexForPlugin(const QString& pluginId) const;
 
-    Natron::LibraryBinary* getPluginBinary(const QString& pluginId) const;
+    Natron::LibraryBinary* getPluginBinary(const QString& pluginId,int majorVersion,int minorVersion) const;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0) const WARN_UNUSED_RETURN;
@@ -418,6 +442,12 @@ public:
 
     const Natron::Cache<Natron::Image>& getNodeCache() const WARN_UNUSED_RETURN {return *_nodeCache;}
 
+    void setApplicationsCachesMaximumMemoryPercent(double p);
+
+    void setApplicationsCachesMaximumDiskSpace(unsigned long long size);
+
+    void setPlaybackCacheMaximumSize(double p);
+
     void removeFromNodeCache(boost::shared_ptr<Natron::Image> image);
 
     void removeFromViewerCache(boost::shared_ptr<Natron::FrameEntry> texture);
@@ -426,11 +456,15 @@ public:
 
     const KnobGuiFactory& getKnobGuiFactory() const WARN_UNUSED_RETURN {return *_knobGuiFactory;}
 
-    const Settings& getCurrentSettings() const {return *_settings;}
-
     PluginToolButton* findPluginToolButtonOrCreate(const QString& pluginID,const QString& name,const QString& iconPath);
 
     void getIcon(Natron::PixmapEnum e,QPixmap* pix) const;
+
+    const QCursor& getColorPickerCursor() const { return *_colorPickerCursor; }
+
+    boost::shared_ptr<Settings> getCurrentSettings() const {return _settings;}
+
+    bool isInitialized() const { return _initialized; }
 
 public slots:
 
@@ -456,6 +490,7 @@ signals:
     void imageRemovedFromViewerCache(SequenceTime time);
 
 private:
+
 
     /*Loads all kind of plugins*/
     void loadAllPlugins();
@@ -488,15 +523,18 @@ private:
 
     void printPluginsLoaded();
 
-     void populateIcons();
+    void populateIcons();
 
-    boost::scoped_ptr<Settings> _settings;
+    void createColorPickerCursor();
 
     std::map<int,AppInstance*> _appInstances;
 
     int _availableID;
 
     int _topLevelInstanceID;
+
+    boost::shared_ptr<Settings> _settings;
+
 
     /*map< decoder name, pair< vector<file type decoded>, decoder library> >*/
     std::map< std::string,std::pair< std::vector<std::string> ,Natron::LibraryBinary*> > _readPluginsLoaded;
@@ -516,10 +554,13 @@ private:
 
     boost::scoped_ptr<KnobGuiFactory> _knobGuiFactory;
 
-    boost::scoped_ptr<Natron::Cache<Natron::Image> >  _nodeCache;
+    boost::shared_ptr<Natron::Cache<Natron::Image> >  _nodeCache;
 
-    boost::scoped_ptr<Natron::Cache<Natron::FrameEntry> > _viewerCache;
+    boost::shared_ptr<Natron::Cache<Natron::FrameEntry> > _viewerCache;
 
+    QCursor* _colorPickerCursor;
+
+    bool _initialized;
 
 };
 
@@ -534,6 +575,11 @@ void informationDialog(const std::string& title,const std::string& message);
 Natron::StandardButton questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons =
         Natron::StandardButtons(Natron::Yes | Natron::No),
                                       Natron::StandardButton defaultButton = Natron::NoButton);
+
+template <class K>
+boost::shared_ptr<K> createKnob(KnobHolder  *holder, const std::string &description, int dimension = 1){
+    return appPTR->getKnobFactory().createKnob<K>(holder,description,dimension);
+}
 
 } // namespace Natron
 

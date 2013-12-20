@@ -26,11 +26,11 @@
 using namespace Natron;
 
 //===========================FILE_KNOB_GUI=====================================
-File_KnobGui::File_KnobGui(Knob *knob, DockablePanel *container)
+File_KnobGui::File_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
 : KnobGui(knob, container)
 {
-    File_Knob *fileKnob = dynamic_cast<File_Knob *>(knob);
-    QObject::connect(fileKnob, SIGNAL(shouldOpenFile()), this, SLOT(open_file()));
+    boost::shared_ptr<File_Knob> fileKnob = boost::dynamic_pointer_cast<File_Knob>(knob);
+    QObject::connect(fileKnob.get(), SIGNAL(shouldOpenFile()), this, SLOT(open_file()));
 }
 
 File_KnobGui::~File_KnobGui()
@@ -81,7 +81,7 @@ void File_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 void File_KnobGui::open_file()
 {
     QStringList filesList;
-    std::vector<std::string> filters = appPTR->getCurrentSettings()._readersSettings.supportedFileTypes();
+    std::vector<std::string> filters = appPTR->getCurrentSettings()->readersSettings.supportedFileTypes();
 
     SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, true, SequenceFileDialog::OPEN_DIALOG, _lastOpened.toStdString());
     if (dialog.exec()) {
@@ -89,7 +89,7 @@ void File_KnobGui::open_file()
     }
     if (!filesList.isEmpty()) {
         updateLastOpened(filesList.at(0));
-        pushUndoCommand(new KnobUndoCommand(this, 0, getKnob()->getValue(0), Variant(filesList)));
+        pushValueChangedCommand(Variant(filesList));
     }
 }
 
@@ -103,7 +103,7 @@ void File_KnobGui::onReturnPressed()
     if (newList.isEmpty()) {
         return;
     }
-    pushUndoCommand(new KnobUndoCommand(this, 0, getKnob()->getValue(0), Variant(newList)));
+    pushValueChangedCommand(Variant(newList));
 }
 
 void File_KnobGui::updateLastOpened(const QString &str)
@@ -127,20 +127,13 @@ void File_KnobGui::_show()
     _lineEdit->show();
 }
 
-void File_KnobGui::addToLayout(QHBoxLayout *layout)
-{
-    layout->addWidget(_descriptionLabel);
-    layout->addWidget(_lineEdit);
-    layout->addWidget(_openFileButton);
-}
-
 
 //============================OUTPUT_FILE_KNOB_GUI====================================
-OutputFile_KnobGui::OutputFile_KnobGui(Knob *knob, DockablePanel *container)
+OutputFile_KnobGui::OutputFile_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
 : KnobGui(knob, container)
 {
-    OutputFile_Knob *fileKnob = dynamic_cast<OutputFile_Knob *>(knob);
-    QObject::connect(fileKnob, SIGNAL(shouldOpenFile()), this, SLOT(open_file()));
+    boost::shared_ptr<OutputFile_Knob> fileKnob = boost::dynamic_pointer_cast<OutputFile_Knob>(knob);
+    QObject::connect(fileKnob.get(), SIGNAL(shouldOpenFile()), this, SLOT(open_file()));
 }
 
 OutputFile_KnobGui::~OutputFile_KnobGui()
@@ -187,14 +180,14 @@ void OutputFile_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 
 void OutputFile_KnobGui::open_file()
 {
-    std::vector<std::string> filters = appPTR->getCurrentSettings()._readersSettings.supportedFileTypes();
+    std::vector<std::string> filters = appPTR->getCurrentSettings()->readersSettings.supportedFileTypes();
     SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, true, SequenceFileDialog::SAVE_DIALOG, _lastOpened.toStdString());
     if (dialog.exec()) {
         QString oldPattern = _lineEdit->text();
         QString newPattern = dialog.filesToSave();
         updateLastOpened(SequenceFileDialog::removePath(oldPattern));
 
-        pushUndoCommand(new KnobUndoCommand(this, 0, getKnob()->getValue(0), Variant(newPattern)));
+        pushValueChangedCommand(Variant(newPattern));
     }
 }
 
@@ -202,7 +195,7 @@ void OutputFile_KnobGui::onReturnPressed()
 {
     QString newPattern = _lineEdit->text();
 
-    pushUndoCommand(new KnobUndoCommand(this, 0, getKnob()->getValue(0), Variant(newPattern)));
+    pushValueChangedCommand(Variant(newPattern));
 }
 
 void OutputFile_KnobGui::updateLastOpened(const QString &str)
@@ -224,11 +217,4 @@ void OutputFile_KnobGui::_show()
     _openFileButton->show();
     _descriptionLabel->show();
     _lineEdit->show();
-}
-
-void OutputFile_KnobGui::addToLayout(QHBoxLayout *layout)
-{
-    layout->addWidget(_descriptionLabel);
-    layout->addWidget(_lineEdit);
-    layout->addWidget(_openFileButton);
 }

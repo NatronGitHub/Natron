@@ -16,6 +16,16 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 PRECOMPILED_DIR = pch
 PRECOMPILED_HEADER = pch.h
 
+macx {
+### custom variables for the Info.plist file
+# use a custom Info.plist template
+#QMAKE_INFO_PLIST = ...
+# Set the application icon
+#ICON = ...
+# replace com.yourcompany with something more meaningful
+QMAKE_TARGET_BUNDLE_PREFIX = fr.inria
+}
+
 win32{
 #ofx needs WINDOWS def
 #microsoft compiler needs _MBCS to compile with the multi-byte character set.
@@ -29,6 +39,14 @@ log{
 
 trace_ofx_actions{
     DEFINES += OFX_DEBUG_ACTIONS
+}
+
+trace_ofx_params{
+    DEFINES += OFX_DEBUG_PARAMETERS
+}
+
+trace_ofx_properties{
+    DEFINES += OFX_DEBUG_PROPERTIES
 }
 
 unix {
@@ -48,10 +66,22 @@ warning("Compiling in DEBUG mode.")
     DEFINES += NATRON_DEBUG
 }
 
-# When compiler is GCC check for at least version 4.7
-*g++*{
-  QMAKE_CXXFLAGS += -ftemplate-depth-500
+CONFIG(release, debug|release){
+warning("Compiling in RELEASE mode.")
   QMAKE_CXXFLAGS_RELEASE += -O3
+  QMAKE_CFLAGS_RELEASE += -O3
+}
+
+*xcode* {
+#redefine cxx flags as qmake tends to automatically add -O2 to xcode projects
+  QMAKE_CFLAGS -= -O2
+  QMAKE_CXXFLAGS -= -O2
+  QMAKE_CXXFLAGS += -ftemplate-depth-1024
+}
+
+# When compiler is GCC check for at least version 4.7
+*g++* {
+  QMAKE_CXXFLAGS += -ftemplate-depth-1024
   QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
   GCCVer = $$system($$QMAKE_CXX --version)
   contains(GCCVer,[0-3]\\.[0-9]+.*) {
@@ -69,13 +99,8 @@ warning("Compiling in DEBUG mode.")
   }
 }
 
-!*g++*{
- QMAKE_CXXFLAGS += -ftemplate-depth-1024
-}
-
-
-*clang*{
-
+*clang* {
+  QMAKE_CXXFLAGS += -ftemplate-depth-1024
   sanitizer{
     QMAKE_CXXFLAGS += -fsanitize=address -fsanitize-undefined-trap-on-error -fno-omit-frame-pointer -fno-optimize-sibling-calls
     QMAKE_LFLAGS += -fsanitize=address -g
@@ -98,12 +123,13 @@ INCLUDEPATH += $$PWD/libs/OpenFX/HostSupport/include
 INCLUDEPATH += $$PWD/
 
 
-DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS
+DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SUPPORTS_PARAMETRIC
 
 SOURCES += \
     Engine/ChannelSet.cpp \
     Engine/Curve.cpp \
     Engine/CurveSerialization.cpp \
+    Gui/DockablePanel.cpp \
     Engine/EffectInstance.cpp \
     Engine/Hash64.cpp \
     Engine/Image.cpp \
@@ -140,6 +166,7 @@ SOURCES += \
     Gui/ClickableLabel.cpp \
     Gui/ComboBox.cpp \
     Gui/CurveEditor.cpp \
+    Gui/CurveEditorUndoRedo.cpp \
     Gui/CurveWidget.cpp \
     Gui/Edge.cpp \
     Gui/GroupBoxLabel.cpp \
@@ -155,11 +182,11 @@ SOURCES += \
     Gui/NodeGraph.cpp \
     Gui/NodeGui.cpp \
     Gui/NodeGuiSerialization.cpp \
+    Gui/PreferencesPanel.cpp \
     Gui/ProjectGui.cpp \
     Gui/ProjectGuiSerialization.cpp \
     Gui/ScaleSlider.cpp \
     Gui/SequenceFileDialog.cpp \
-    Gui/DockablePanel.cpp \
     Gui/SpinBox.cpp \
     Gui/TabWidget.cpp \
     Gui/TextRenderer.cpp \
@@ -187,7 +214,8 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhPluginAPICache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
-    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp
+    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
+    libs/OpenFX_extensions/ofxhParametricParam.cpp
 
 HEADERS += \
     Engine/Cache.h \
@@ -246,7 +274,9 @@ HEADERS += \
     Gui/ClickableLabel.h \
     Gui/ComboBox.h \
     Gui/CurveEditor.h \
+    Gui/CurveEditorUndoRedo.h \
     Gui/CurveWidget.h \
+    Gui/DockablePanel.h \
     Gui/Edge.h \
     Gui/GroupBoxLabel.h \
     Gui/Gui.h \
@@ -261,11 +291,11 @@ HEADERS += \
     Gui/NodeGraph.h \
     Gui/NodeGui.h \
     Gui/NodeGuiSerialization.h \
+    Gui/PreferencesPanel.h \
     Gui/ProjectGui.h \
     Gui/ProjectGuiSerialization.h \
     Gui/ScaleSlider.h \
     Gui/SequenceFileDialog.h \
-    Gui/DockablePanel.h \
     Gui/Shaders.h \
     Gui/SpinBox.h \
     Gui/TabWidget.h \
@@ -312,12 +342,12 @@ HEADERS += \
     libs/OpenFX/include/ofxProgress.h \
     libs/OpenFX/include/ofxProperty.h \
     libs/OpenFX/include/ofxTimeLine.h \
-    libs/OpenFX_extensions//tuttle/ofxGraphAPI.h \
-    libs/OpenFX_extensions//tuttle/ofxMetadata.h \
-    libs/OpenFX_extensions//tuttle/ofxParam.h \
-    libs/OpenFX_extensions//tuttle/ofxParamAPI.h \
-    libs/OpenFX_extensions//tuttle/ofxReadWrite.h
-
+    libs/OpenFX_extensions/tuttle/ofxGraphAPI.h \
+    libs/OpenFX_extensions/tuttle/ofxMetadata.h \
+    libs/OpenFX_extensions/tuttle/ofxParam.h \
+    libs/OpenFX_extensions/tuttle/ofxParamAPI.h \
+    libs/OpenFX_extensions/tuttle/ofxReadWrite.h \
+    libs/OpenFX_extensions/ofxhParametricParam.h
 
 INSTALLS += target
 

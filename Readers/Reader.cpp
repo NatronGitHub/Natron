@@ -50,7 +50,7 @@ using std::cout; using std::endl;
 Reader::Reader(Node* node)
 : Natron::EffectInstance(node)
 , _buffer()
-, _fileKnob(0)
+, _fileKnob()
 {
 }
 
@@ -84,10 +84,10 @@ Natron::Status Reader::preProcessFrame(SequenceTime time){
 }
 
 void Reader::initializeKnobs(){
-    _fileKnob = appPTR->getKnobFactory().createKnob<File_Knob>(this, "File");
+    _fileKnob = Natron::createKnob<File_Knob>(this, "File");
     assert(_fileKnob);
 
-    _missingFrameChoice = appPTR->getKnobFactory().createKnob<Choice_Knob>(this, "On missing frame");
+    _missingFrameChoice = Natron::createKnob<Choice_Knob>(this, "On missing frame");
     std::vector<std::string> missingFrameChoices;
     missingFrameChoices.push_back("Load nearest");
     missingFrameChoices.push_back("Error");
@@ -95,10 +95,11 @@ void Reader::initializeKnobs(){
     _missingFrameChoice->populate(missingFrameChoices);
     _missingFrameChoice->setValue(0);
     _missingFrameChoice->turnOffAnimation();
+    
 }
 
 void Reader::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
-    if(k == _fileKnob){
+    if(k == _fileKnob.get()){
         getNode()->refreshPreviewImage(getApp()->getTimeLine()->currentFrame());
     }
 }
@@ -111,7 +112,7 @@ void Reader::getFrameRange(SequenceTime *first,SequenceTime *last){
 boost::shared_ptr<Decoder> Reader::decoderForFileType(const QString& fileName){
     QString fileNameCopy = fileName;
     QString extension = Natron::removeFileExtension(fileNameCopy);
-    Natron::LibraryBinary* decoder = appPTR->getCurrentSettings()._readersSettings.decoderForFiletype(extension.toStdString());
+    Natron::LibraryBinary* decoder = appPTR->getCurrentSettings()->readersSettings.decoderForFiletype(extension.toStdString());
     if (!decoder) {
         std::string err("Couldn't find an appropriate decoder for this filetype");
         err.append(extension.toStdString());
@@ -216,3 +217,15 @@ Natron::Status Reader::render(SequenceTime time,RenderScale scale,const RectI& r
     return found->render(time,scale,roi,output);
 }
 
+Natron::EffectInstance::CachePolicy Reader::getCachePolicy(SequenceTime time) const {
+    //if we're in nearest mode and the frame could not be found do not cache it, otherwise
+    //we would cache multiple copies of the same frame
+    if(_missingFrameChoice->getValue<int>() == 0){
+        QString filename = _fileKnob->getRandomFrameName(time,false);
+        if(filename.isEmpty()){
+            return NEVER_CACHE;
+        }
+    }
+    return ALWAYS_CACHE;
+    
+}

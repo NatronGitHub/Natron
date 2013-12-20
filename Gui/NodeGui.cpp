@@ -75,7 +75,6 @@ NodeGui::NodeGui(NodeGraph* dag,
     QObject::connect(this, SIGNAL(nameChanged(QString)), _internalNode, SLOT(onGUINameChanged(QString)));
     
     QObject::connect(_internalNode, SIGNAL(nameChanged(QString)), this, SLOT(onInternalNameChanged(QString)));
-    QObject::connect(_internalNode, SIGNAL(deleteWanted()), this, SLOT(deleteNode()));
     QObject::connect(_internalNode, SIGNAL(refreshEdgesGUI()),this,SLOT(refreshEdges()));
     QObject::connect(_internalNode, SIGNAL(knobsInitialized()),this,SLOT(initializeKnobs()));
     QObject::connect(_internalNode, SIGNAL(inputsInitialized()),this,SLOT(initializeInputs()));
@@ -165,12 +164,7 @@ void NodeGui::togglePreview(){
     }
 }
 
-void NodeGui::deleteNode(){
-    delete this;
-}
-
 NodeGui::~NodeGui(){
-    _graph->removeNode(this);
     for(InputEdgesMap::const_iterator it = _inputEdges.begin();it!=_inputEdges.end();++it){
         Edge* e = it->second;
         if(e){
@@ -588,10 +582,18 @@ void NodeGui::populateMenu(){
     _menu->addAction(deleteAction);
 
 }
-const std::map<Knob*,KnobGui*>& NodeGui::getKnobs() const{
+const std::map<boost::shared_ptr<Knob> ,KnobGui*>& NodeGui::getKnobs() const{
     return _settingsPanel->getKnobs();
 }
 
 void NodeGui::serialize(NodeGuiSerialization* serializationObject) const{
     serializationObject->initialize(this);
+}
+
+QUndoStack* NodeGui::getUndoStack() const{
+    if(_settingsPanel){
+        return _settingsPanel->getUndoStack();
+    }else{
+        return NULL;
+    }
 }

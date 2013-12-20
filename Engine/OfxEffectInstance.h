@@ -26,7 +26,6 @@
 #include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
 
-class Tab_Knob;
 class QHBoxLayout;
 class QImage;
 class OfxClipInstance;
@@ -46,7 +45,6 @@ class OfxEffectInstance : public Natron::OutputEffectInstance {
     bool _penDown; // true when the overlay trapped a penDow action
     boost::scoped_ptr<Natron::OfxOverlayInteract> _overlayInteract; // ptr to the overlay interact if any
 
-    Tab_Knob* _tabKnob; // for nuke tab extension: it creates all Group param as a tab and put it into this knob.
     QHBoxLayout* _lastKnobLayoutWithNoNewLine; // for nuke layout hint extension
     bool _initialized; //true when the image effect instance has been created and populated
 public:
@@ -65,10 +63,6 @@ public:
 
     void setAsOutputNode() {_isOutput = true;}
 
-    void setTabKnob(Tab_Knob* k){_tabKnob = k;}
-
-    Tab_Knob* getTabKnob() const WARN_UNUSED_RETURN {return _tabKnob;}
-
     void setLastKnobLayoutWithNoNewLine(QHBoxLayout* layout) {_lastKnobLayoutWithNoNewLine = layout;}
 
     QHBoxLayout* getLastKnobLayoutWithNoNewLine() const WARN_UNUSED_RETURN {return _lastKnobLayoutWithNoNewLine;}
@@ -86,6 +80,10 @@ public:
     std::string getOutputFileName() const WARN_UNUSED_RETURN;
 
     /********OVERRIDEN FROM EFFECT INSTANCE*************/
+    virtual int majorVersion() const OVERRIDE  FINAL WARN_UNUSED_RETURN;
+
+    virtual int minorVersion() const OVERRIDE  FINAL WARN_UNUSED_RETURN;
+
     virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -149,6 +147,7 @@ public:
     virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual void purgeCaches() OVERRIDE;
+
 
     /*********OVERLAY INTERACT FUNCTIONS********/
 

@@ -18,6 +18,9 @@
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
 
+//for parametric params properties
+#include <ofxParametricParam.h>
+
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxParamInstance.h"
@@ -241,7 +244,7 @@ double OfxImageEffectInstance::getFrameRate() const {
 /// the recursive instanceChangedAction will be fed the correct frame
 double OfxImageEffectInstance::getFrameRecursive() const {
     assert(node());
-    return 0.0;
+    return node()->getApp()->getTimeLine()->currentFrame();
 }
 
 /// This is called whenever a param is changed by the plugin so that
@@ -257,61 +260,72 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
 {
     // note: the order for parameter types is the same as in ofxParam.h
     OFX::Host::Param::Instance* instance = NULL;
-    Knob* knob = NULL;
+    boost::shared_ptr<Knob> knob;
 
     if (descriptor.getType() == kOfxParamTypeInteger) {
         OfxIntegerInstance *ret = new OfxIntegerInstance(node(), descriptor);
         knob = ret->getKnob();
+        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeDouble) {
         OfxDoubleInstance  *ret = new OfxDoubleInstance(node(), descriptor);
         knob = ret->getKnob();
+        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeBoolean) {
         OfxBooleanInstance *ret = new OfxBooleanInstance(node(), descriptor);
         knob = ret->getKnob();
+        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeChoice) {
         OfxChoiceInstance *ret = new OfxChoiceInstance(node(), descriptor);
         knob = ret->getKnob();
+        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeRGBA) {
         OfxRGBAInstance *ret = new OfxRGBAInstance(node(), descriptor);
         knob = ret->getKnob();
+        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeRGB) {
         OfxRGBInstance *ret = new OfxRGBInstance(node(), descriptor);
         knob = ret->getKnob();
+        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeDouble2D) {
         OfxDouble2DInstance *ret = new OfxDouble2DInstance(node(), descriptor);
         knob = ret->getKnob();
+        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeInteger2D) {
         OfxInteger2DInstance *ret = new OfxInteger2DInstance(node(), descriptor);
         knob = ret->getKnob();
+        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeDouble3D) {
         OfxDouble3DInstance *ret = new OfxDouble3DInstance(node(), descriptor);
         knob = ret->getKnob();
+        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeInteger3D) {
         OfxInteger3DInstance *ret = new OfxInteger3DInstance(node(), descriptor);
         knob = ret->getKnob();
+        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeString) {
         OfxStringInstance *ret = new OfxStringInstance(node(), descriptor);
         knob = ret->getKnob();
+        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeCustom) {
@@ -333,6 +347,7 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
         //throw std::runtime_error(std::string("Parameter ") + paramName + std::string(" has unsupported OFX type ") + descriptor.getType());
         OfxCustomInstance *ret = new OfxCustomInstance(node(), descriptor);
         knob = ret->getKnob();
+        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeGroup) {
@@ -347,6 +362,15 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
 
     } else if (descriptor.getType() == kOfxParamTypePushButton) {
         OfxPushButtonInstance *ret = new OfxPushButtonInstance(node(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
+    } else if (descriptor.getType() == kOfxParamTypeParametric) {
+        OfxParametricInstance* ret = new OfxParametricInstance(node(), descriptor);
+        OfxStatus stat = ret->defaultInitializeFromDescriptor(descriptor);
+        if(stat == kOfxStatFailed){
+            throw std::runtime_error("The parameter failed to create curves from their default\n"
+                                     "initialized by the plugin.");
+        }
         knob = ret->getKnob();
         instance = ret;
     }
@@ -383,10 +407,12 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
     knob->setSpacingBetweenItems(descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     int layoutHint = descriptor.getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if (layoutHint == 1) {
-        (void)appPTR->getKnobFactory().createKnob<Separator_Knob>(node(), knob->getDescription());
+        (void)Natron::createKnob<Separator_Knob>(node(), knob->getDescription());
     }else if(layoutHint == 2){
         knob->turnOffNewLine();
     }
+    
+    
     return instance;
 
 }

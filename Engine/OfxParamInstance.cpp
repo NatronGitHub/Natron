@@ -17,6 +17,7 @@
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
 
+#include <ofxParametricParam.h>
 
 #include "Global/AppManager.h"
 
@@ -29,6 +30,8 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/Curve.h"
+#include "Engine/OfxOverlayInteract.h"
 
 using namespace Natron;
 
@@ -47,11 +50,97 @@ static std::string getParamLabel(OFX::Host::Param::Instance* param){
     return label;
 }
 
+///anonymous namespace to handle keyframes communication support for Ofx plugins
+/// in a generalized manner
+namespace OfxKeyFrame{
+    
+    OfxStatus getNumKeys(boost::shared_ptr<Knob> knob,unsigned int &nKeys) {
+        int sum = 0;
+        for (int i = 0 ; i < knob->getDimension(); ++i) {
+            sum += knob->getCurve(i)->keyFramesCount();
+        }
+        nKeys =  sum;
+        return kOfxStatOK;
+    }
+    OfxStatus getKeyTime(boost::shared_ptr<Knob> knob,int nth, OfxTime& time)
+    {
+        int dimension = 0;
+        int indexSoFar = 0;
+        while(dimension < knob->getDimension()){
+            const KeyFrameSet& set = knob->getCurve(dimension)->getKeyFrames();
+            ++dimension;
+            if(nth >= (int)(set.size() + indexSoFar)){
+                indexSoFar += set.size();
+                continue;
+            }else{
+                KeyFrameSet::const_iterator it = set.begin();
+                while(it != set.end()){
+                    if(indexSoFar == nth){
+                        time = it->getTime();
+                        return kOfxStatOK;
+                    }
+                    ++indexSoFar;
+                    ++it;
+                }
+            }
+        }
+        
+        return kOfxStatErrBadIndex;
+    }
+    OfxStatus getKeyIndex(boost::shared_ptr<Knob> knob,OfxTime time, int direction, int& index) {
+        int c = 0;
+        for(int i = 0; i < knob->getDimension();++i){
+            const KeyFrameSet& set = knob->getCurve(i)->getKeyFrames();
+            for (KeyFrameSet::const_iterator it = set.begin(); it!=set.end(); ++it) {
+                if(it->getTime() == time){
+                    
+                    if(direction == 0){
+                        index = c;
+                    }else if(direction < 0){
+                        if(it == set.begin()){
+                            index = -1;
+                        }else{
+                            index = c - 1;
+                        }
+                    }else{
+                        KeyFrameSet::const_iterator next = it;
+                        ++next;
+                        if(next != set.end()){
+                            index = c + 1;
+                        }else{
+                            index = -1;
+                        }
+                    }
+                    
+                    return kOfxStatOK;
+                }
+                ++c;
+            }
+            
+        }
+        return kOfxStatErrValue;
+    }
+    OfxStatus deleteKey(boost::shared_ptr<Knob> knob,OfxTime time) {
+        for(int i = 0; i < knob->getDimension();++i){
+            knob->deleteValueAtTime(time, i);
+        }
+        return kOfxStatOK;
+    }
+    OfxStatus deleteAllKeys(boost::shared_ptr<Knob> knob){
+        for(int i = 0; i < knob->getDimension();++i){
+            knob->removeAnimation(i);
+        }
+        return kOfxStatOK;
+    }
+}
+
+////////////////////////// OfxPushButtonInstance /////////////////////////////////////////////////
+
 OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
                                              OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::PushbuttonInstance(descriptor, node->effectInstance())
 {
-    _knob = appPTR->getKnobFactory().createKnob<Button_Knob>(node, getParamLabel(this));
+    _knob = Natron::createKnob<Button_Knob>(node, getParamLabel(this));
 }
 
 
@@ -65,18 +154,19 @@ void OfxPushButtonInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxPushButtonInstance::getKnob() const {
+boost::shared_ptr<Knob> OfxPushButtonInstance::getKnob() const {
     return _knob;
 }
 
+////////////////////////// OfxIntegerInstance /////////////////////////////////////////////////
 
 
 OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::IntegerInstance(descriptor, node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();
-    _knob = appPTR->getKnobFactory().createKnob<Int_Knob>(node, getParamLabel(this));
-
+    _knob = Natron::createKnob<Int_Knob>(node, getParamLabel(this));
+    
     int min = properties.getIntProperty(kOfxParamPropMin);
     int max = properties.getIntProperty(kOfxParamPropMax);
     int def = properties.getIntProperty(kOfxParamPropDefault);
@@ -84,7 +174,7 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param:
     int displayMax = properties.getIntProperty(kOfxParamPropDisplayMax);
     _knob->setDisplayMinimum(displayMin);
     _knob->setDisplayMaximum(displayMax);
-
+    
     _knob->setMinimum(min);
     _knob->setIncrement(1); // kOfxParamPropIncrement only exists for Double
     _knob->setMaximum(max);
@@ -117,17 +207,45 @@ void OfxIntegerInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxIntegerInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxIntegerInstance::getKnob() const{
     return _knob;
 }
+
+
+OfxStatus OfxIntegerInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxIntegerInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxIntegerInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxIntegerInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxIntegerInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+void OfxIntegerInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+
+////////////////////////// OfxDoubleInstance /////////////////////////////////////////////////
+
 
 OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();
-
-    _knob = appPTR->getKnobFactory().createKnob<Double_Knob>(node, getParamLabel(this));
-
+    
+    _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this));
+    
     double min = properties.getDoubleProperty(kOfxParamPropMin);
     double max = properties.getDoubleProperty(kOfxParamPropMax);
     double incr = properties.getDoubleProperty(kOfxParamPropIncrement);
@@ -145,7 +263,7 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
     if(decimals > 0) {
         _knob->setDecimals(decimals);
     }
-
+    
     set(def);
     
 }
@@ -167,10 +285,18 @@ OfxStatus OfxDoubleInstance::set(OfxTime time, double v){
 }
 
 OfxStatus OfxDoubleInstance::derive(OfxTime /*time*/, double& v) {
+#warning "TODO: Double, Double2D, Double3D, RGBA, RGB derive and integrate for animated params"
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
     v = 0;
     return kOfxStatOK;
 }
+
 OfxStatus OfxDoubleInstance::integrate(OfxTime time1, OfxTime time2, double& v) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
     v = _knob->getValue<double>() * (time2 - time1);
     return kOfxStatOK;
 }
@@ -185,16 +311,47 @@ void OfxDoubleInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxDoubleInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxDoubleInstance::getKnob() const{
     return _knob;
 }
+
+bool OfxDoubleInstance::isAnimated() const {
+    return _knob->isAnimated(0);
+}
+
+OfxStatus OfxDoubleInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxDoubleInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxDoubleInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxDoubleInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxDoubleInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+void OfxDoubleInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+
+////////////////////////// OfxBooleanInstance /////////////////////////////////////////////////
+
 
 OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::BooleanInstance(descriptor,node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();
-
-    _knob = appPTR->getKnobFactory().createKnob<Bool_Knob>(node, getParamLabel(this));
+    
+    _knob = Natron::createKnob<Bool_Knob>(node, getParamLabel(this));
     int def = properties.getIntProperty(kOfxParamPropDefault);
     set((bool)def);
     
@@ -231,29 +388,55 @@ void OfxBooleanInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxBooleanInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxBooleanInstance::getKnob() const{
     return _knob;
 }
+
+OfxStatus OfxBooleanInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxBooleanInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxBooleanInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxBooleanInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxBooleanInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+void OfxBooleanInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+
+////////////////////////// OfxChoiceInstance /////////////////////////////////////////////////
 
 
 OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::ChoiceInstance(descriptor,node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();
-
-
-    _knob = appPTR->getKnobFactory().createKnob<Choice_Knob>(node, getParamLabel(this));
-
+    
+    
+    _knob = Natron::createKnob<Choice_Knob>(node, getParamLabel(this));
+    
     std::vector<std::string> helpStrings;
     for (int i = 0 ; i < properties.getDimension(kOfxParamPropChoiceOption) ; ++i) {
         std::string str = properties.getStringProperty(kOfxParamPropChoiceOption,i);
         std::string help = properties.getStringProperty(kOfxParamPropChoiceLabelOption,i);
-
+        
         _entries.push_back(str);
         helpStrings.push_back(help);
     }
     _knob->populate(_entries,helpStrings);
-
+    
     int def = properties.getIntProperty(kOfxParamPropDefault);
     set(def);
 }
@@ -297,17 +480,44 @@ void OfxChoiceInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxChoiceInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxChoiceInstance::getKnob() const{
     return _knob;
 }
 
+
+OfxStatus OfxChoiceInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxChoiceInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxChoiceInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxChoiceInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxChoiceInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+void OfxChoiceInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+
+
+////////////////////////// OfxRGBAInstance /////////////////////////////////////////////////
 
 
 OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::RGBAInstance(descriptor,node->effectInstance())
 {
-    const OFX::Host::Property::Set &properties = getProperties();  
-    _knob = appPTR->getKnobFactory().createKnob<Color_Knob>(node, getParamLabel(this),4);
+    const OFX::Host::Property::Set &properties = getProperties();
+    _knob = Natron::createKnob<Color_Knob>(node, getParamLabel(this),4);
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
     double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
     double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);
@@ -315,7 +525,7 @@ OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descr
     set(defR, defG, defB, defA);
 }
 OfxStatus OfxRGBAInstance::get(double& r, double& g, double& b, double& a) {
-  
+    
     r = _knob->getValue<double>(0);
     g = _knob->getValue<double>(1);
     b = _knob->getValue<double>(2);
@@ -344,6 +554,24 @@ OfxStatus OfxRGBAInstance::set(OfxTime time, double r ,double g,double b,double 
     return kOfxStatOK;
 }
 
+OfxStatus OfxRGBAInstance::derive(OfxTime /*time*/, double&r ,double& g, double& b, double& a) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
+    r = g = b = a = 0;
+    return kOfxStatOK;
+}
+
+OfxStatus OfxRGBAInstance::integrate(OfxTime time1, OfxTime time2, double&r ,double& g, double& b, double& a) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
+    r = _knob->getValue<double>(0) * (time2 - time1);
+    g = _knob->getValue<double>(1) * (time2 - time1);
+    b = _knob->getValue<double>(2) * (time2 - time1);
+    a = _knob->getValue<double>(3) * (time2 - time1);
+    return kOfxStatOK;
+}
 
 // callback which should set enabled state as appropriate
 void OfxRGBAInstance::setEnabled(){
@@ -355,20 +583,53 @@ void OfxRGBAInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxRGBAInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxRGBAInstance::getKnob() const{
     return _knob;
 }
+
+bool OfxRGBAInstance::isAnimated(int dimension) const {
+    return _knob->isAnimated(dimension);
+}
+
+bool OfxRGBAInstance::isAnimated() const {
+    return _knob->isAnimated(0) || _knob->isAnimated(1) || _knob->isAnimated(2) || _knob->isAnimated(3);
+}
+
+OfxStatus OfxRGBAInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxRGBAInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxRGBAInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxRGBAInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxRGBAInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+void OfxRGBAInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+////////////////////////// OfxRGBInstance /////////////////////////////////////////////////
 
 
 OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::RGBInstance(descriptor,node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();
-
-    _knob = appPTR->getKnobFactory().createKnob<Color_Knob>(node, getParamLabel(this),3);
+    
+    _knob = Natron::createKnob<Color_Knob>(node, getParamLabel(this),3);
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
     double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
-    double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);   
+    double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);
     set(defR, defG, defB);
 }
 OfxStatus OfxRGBInstance::get(double& r, double& g, double& b) {
@@ -396,6 +657,24 @@ OfxStatus OfxRGBInstance::set(OfxTime time, double r,double g,double b){
     return kOfxStatOK;
 }
 
+OfxStatus OfxRGBInstance::derive(OfxTime /*time*/, double&r ,double& g, double& b) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
+    r = g = b  = 0;
+    return kOfxStatOK;
+}
+
+OfxStatus OfxRGBInstance::integrate(OfxTime time1, OfxTime time2, double&r ,double& g, double& b) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
+    r = _knob->getValue<double>(0) * (time2 - time1);
+    g = _knob->getValue<double>(1) * (time2 - time1);
+    b = _knob->getValue<double>(2) * (time2 - time1);
+    return kOfxStatOK;
+}
+
 // callback which should set enabled state as appropriate
 void OfxRGBInstance::setEnabled(){
     _knob->setEnabled(getEnabled());
@@ -406,9 +685,42 @@ void OfxRGBInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxRGBInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxRGBInstance::getKnob() const{
     return _knob;
 }
+
+bool OfxRGBInstance::isAnimated(int dimension) const {
+    return _knob->isAnimated(dimension);
+}
+
+bool OfxRGBInstance::isAnimated() const {
+    return _knob->isAnimated(0) || _knob->isAnimated(1) || _knob->isAnimated(2);
+}
+
+OfxStatus OfxRGBInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxRGBInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxRGBInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxRGBInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxRGBInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+void OfxRGBInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+////////////////////////// OfxDouble2DInstance /////////////////////////////////////////////////
 
 
 OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
@@ -416,10 +728,10 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
 {
     const int dims = 2;
     const OFX::Host::Property::Set &properties = getProperties();
-
-
-    _knob = appPTR->getKnobFactory().createKnob<Double_Knob>(node, getParamLabel(this),dims);
-
+    
+    
+    _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this),dims);
+    
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);
     std::vector<double> increment(dims);
@@ -427,7 +739,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
     std::vector<double> displayMaxs(dims);
     std::vector<int> decimals(dims);
     boost::scoped_array<double> def(new double[dims]);
-
+    
     // kOfxParamPropIncrement and kOfxParamPropDigits only have one dimension,
     // @see Descriptor::addNumericParamProps() in ofxhParam.cpp
     // @see gDoubleParamProps in ofxsPropertyValidation.cpp
@@ -442,7 +754,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
         decimals[i] = dig;
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
     }
-
+    
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setIncrement(increment);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
@@ -474,6 +786,23 @@ OfxStatus OfxDouble2DInstance::set(OfxTime time,double x1,double x2){
 	return kOfxStatOK;
 }
 
+OfxStatus OfxDouble2DInstance::derive(OfxTime /*time*/, double&x1 ,double& x2) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
+    x1 = x2 = 0;
+    return kOfxStatOK;
+}
+
+OfxStatus OfxDouble2DInstance::integrate(OfxTime time1, OfxTime time2, double&x1 ,double& x2) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
+    x1 = _knob->getValue<double>(0) * (time2 - time1);
+    x2 = _knob->getValue<double>(1) * (time2 - time1);
+    return kOfxStatOK;
+}
+
 // callback which should set enabled state as appropriate
 void OfxDouble2DInstance::setEnabled(){
     _knob->setEnabled(getEnabled());
@@ -484,9 +813,43 @@ void OfxDouble2DInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxDouble2DInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxDouble2DInstance::getKnob() const{
     return _knob;
 }
+
+bool OfxDouble2DInstance::isAnimated(int dimension) const {
+    return _knob->isAnimated(dimension);
+}
+
+bool OfxDouble2DInstance::isAnimated() const {
+    return _knob->isAnimated(0) || _knob->isAnimated(1);
+}
+
+OfxStatus OfxDouble2DInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxDouble2DInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxDouble2DInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxDouble2DInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxDouble2DInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+void OfxDouble2DInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+
+////////////////////////// OfxInteger2DInstance /////////////////////////////////////////////////
 
 
 OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::Param::Descriptor& descriptor)
@@ -494,17 +857,17 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::P
 {
     const int dims = 2;
     const OFX::Host::Property::Set &properties = getProperties();
-
-
-    _knob = appPTR->getKnobFactory().createKnob<Int_Knob>(node, getParamLabel(this), dims);
-
+    
+    
+    _knob = Natron::createKnob<Int_Knob>(node, getParamLabel(this), dims);
+    
     std::vector<int> minimum(dims);
     std::vector<int> maximum(dims);
     std::vector<int> increment(dims);
     std::vector<int> displayMins(dims);
     std::vector<int> displayMaxs(dims);
     boost::scoped_array<int> def(new int[dims]);
-
+    
     for (int i = 0; i < dims; ++i) {
         minimum[i] = properties.getIntProperty(kOfxParamPropMin,i);
         displayMins[i] = properties.getIntProperty(kOfxParamPropDisplayMin,i);
@@ -555,19 +918,45 @@ void OfxInteger2DInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxInteger2DInstance::getKnob() const {
+boost::shared_ptr<Knob> OfxInteger2DInstance::getKnob() const {
     return _knob;
 }
+
+OfxStatus OfxInteger2DInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxInteger2DInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxInteger2DInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxInteger2DInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxInteger2DInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+void OfxInteger2DInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+////////////////////////// OfxDouble3DInstance /////////////////////////////////////////////////
+
 
 OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Double3DInstance(descriptor,node->effectInstance())
 {
     const int dims = 3;
     const OFX::Host::Property::Set &properties = getProperties();
-
-
-    _knob = appPTR->getKnobFactory().createKnob<Double_Knob>(node, getParamLabel(this),dims);
-
+    
+    
+    _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this),dims);
+    
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);
     std::vector<double> increment(dims);
@@ -575,7 +964,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Par
     std::vector<double> displayMaxs(dims);
     std::vector<int> decimals(dims);
     boost::scoped_array<double> def(new double[dims]);
-
+    
     // kOfxParamPropIncrement and kOfxParamPropDigits only have one dimension,
     // @see Descriptor::addNumericParamProps() in ofxhParam.cpp
     // @see gDoubleParamProps in ofxsPropertyValidation.cpp
@@ -590,7 +979,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Par
         decimals[i] = dig;
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
     }
-
+    
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setIncrement(increment);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
@@ -626,6 +1015,24 @@ OfxStatus OfxDouble3DInstance::set(OfxTime time, double x1, double x2, double x3
 	return kOfxStatOK;
 }
 
+OfxStatus OfxDouble3DInstance::derive(OfxTime /*time*/, double&x1 ,double& x2,double& x3) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
+    x1 = x2 = x3 = 0;
+    return kOfxStatOK;
+}
+
+OfxStatus OfxDouble3DInstance::integrate(OfxTime time1, OfxTime time2, double&x1 ,double& x2,double& x3) {
+    if (isAnimated()) {
+        return kOfxStatErrUnsupported;
+    }
+    x1 = _knob->getValue<double>(0) * (time2 - time1);
+    x2 = _knob->getValue<double>(1) * (time2 - time1);
+    x3 = _knob->getValue<double>(2) * (time2 - time1);
+    return kOfxStatOK;
+}
+
 // callback which should set enabled state as appropriate
 void OfxDouble3DInstance::setEnabled() {
     _knob->setEnabled(getEnabled());
@@ -636,9 +1043,43 @@ void OfxDouble3DInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxDouble3DInstance::getKnob() const {
+boost::shared_ptr<Knob> OfxDouble3DInstance::getKnob() const {
     return _knob;
 }
+
+bool OfxDouble3DInstance::isAnimated(int dimension) const {
+    return _knob->isAnimated(dimension);
+}
+
+bool OfxDouble3DInstance::isAnimated() const {
+    return _knob->isAnimated(0) || _knob->isAnimated(1) || _knob->isAnimated(2);
+}
+
+OfxStatus OfxDouble3DInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxDouble3DInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxDouble3DInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxDouble3DInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxDouble3DInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+void OfxDouble3DInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+
+////////////////////////// OfxInteger3DInstance /////////////////////////////////////////////////
 
 
 OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::Param::Descriptor& descriptor)
@@ -646,17 +1087,17 @@ OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::P
 {
     const int dims = 3;
     const OFX::Host::Property::Set &properties = getProperties();
-
-
-    _knob = appPTR->getKnobFactory().createKnob<Int_Knob>(node, getParamLabel(this), dims);
-
+    
+    
+    _knob = Natron::createKnob<Int_Knob>(node, getParamLabel(this), dims);
+    
     std::vector<int> minimum(dims);
     std::vector<int> maximum(dims);
     std::vector<int> increment(dims);
     std::vector<int> displayMins(dims);
     std::vector<int> displayMaxs(dims);
     boost::scoped_array<int> def(new int[dims]);
-
+    
     for (int i = 0; i < dims; ++i) {
         minimum[i] = properties.getIntProperty(kOfxParamPropMin,i);
         displayMins[i] = properties.getIntProperty(kOfxParamPropDisplayMin,i);
@@ -666,7 +1107,7 @@ OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::P
         increment[i] = incr != 0 ?  incr : 1;
         def[i] = properties.getIntProperty(kOfxParamPropDefault,i);
     }
-
+    
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setIncrement(increment);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
@@ -711,93 +1152,113 @@ void OfxInteger3DInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-Knob* OfxInteger3DInstance::getKnob() const {
+boost::shared_ptr<Knob> OfxInteger3DInstance::getKnob() const {
     return _knob;
 }
 
+OfxStatus OfxInteger3DInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxInteger3DInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxInteger3DInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxInteger3DInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxInteger3DInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
 
-/***********/
+void OfxInteger3DInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+
+
+////////////////////////// OfxGroupInstance /////////////////////////////////////////////////
+
 OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::GroupInstance(descriptor,node->effectInstance())
-, _node(node)
+, _groupKnob()
+, _tabKnob()
 {
     const OFX::Host::Property::Set &properties = getProperties();
-
+    
     int isTab = properties.getIntProperty(kFnOfxParamPropGroupIsTab);
     if(isTab){
-        Tab_Knob* _tabKnob = _node->getTabKnob();
-        std::string name = getParamLabel(this);
-        if(!_tabKnob){
-            _tabKnob = appPTR->getKnobFactory().createKnob<Tab_Knob>(node, name);
-            _node->setTabKnob(_tabKnob);
-        }
-        _groupKnob = 0;
-
+        _tabKnob = Natron::createKnob<Tab_Knob>(node, getParamLabel(this));
+        
     }else{
-        _groupKnob = appPTR->getKnobFactory().createKnob<Group_Knob>(node, getParamLabel(this));
+        _groupKnob = Natron::createKnob<Group_Knob>(node, getParamLabel(this));
         int opened = properties.getIntProperty(kOfxParamPropGroupOpen);
         _groupKnob->setValue((bool)opened);
-
     }
     
     
 }
-void OfxGroupInstance::addKnob(Knob *k) {
+void OfxGroupInstance::addKnob(boost::shared_ptr<Knob> k) {
     if(_groupKnob){
-        k->setParentKnob(_groupKnob);
         _groupKnob->addKnob(k);
     }else{
-        k->setParentKnob(_node->getTabKnob());
-        _node->getTabKnob()->addKnob(_paramName, k);
+        _tabKnob->addKnob(k);
     }
 }
 
-Knob* OfxGroupInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxGroupInstance::getKnob() const{
     if(_groupKnob){
         return _groupKnob;
     }else{
-        return _node->getTabKnob();
+        return _tabKnob;
     }
 }
+
+
+////////////////////////// OfxStringInstance /////////////////////////////////////////////////
 
 
 OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::StringInstance(descriptor,node->effectInstance())
 , _node(node)
-, _fileKnob(0)
-, _outputFileKnob(0)
-, _stringKnob(0)
-, _multiLineKnob(0)
+, _fileKnob()
+, _outputFileKnob()
+, _stringKnob()
+, _multiLineKnob()
 {
     const OFX::Host::Property::Set &properties = getProperties();
     std::string mode = properties.getStringProperty(kOfxParamPropStringMode);
-
+    
     if (mode == kOfxParamStringIsFilePath) {
         if (_node->isGenerator()) {
-            _fileKnob = appPTR->getKnobFactory().createKnob<File_Knob>(node, getParamLabel(this));
-            QObject::connect(_fileKnob, SIGNAL(frameRangeChanged(int,int)), this, SLOT(onFrameRangeChanged(int,int)));
-
+            _fileKnob = Natron::createKnob<File_Knob>(node, getParamLabel(this));
+            QObject::connect(_fileKnob.get(), SIGNAL(frameRangeChanged(int,int)), this, SLOT(onFrameRangeChanged(int,int)));
+            
         } else {
-            _node->setAsOutputNode(); // IMPORTANT ! 
-            _outputFileKnob = appPTR->getKnobFactory().createKnob<OutputFile_Knob>(node, getParamLabel(this));
-
+            _node->setAsOutputNode(); // IMPORTANT !
+            _outputFileKnob = Natron::createKnob<OutputFile_Knob>(node, getParamLabel(this));
+            
         }
     } else if (mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel) {
         
-        _stringKnob = appPTR->getKnobFactory().createKnob<String_Knob>(node, getParamLabel(this));
+        _stringKnob = Natron::createKnob<String_Knob>(node, getParamLabel(this));
         if (mode == kOfxParamStringIsLabel) {
             _stringKnob->setEnabled(false);
         }
     } else if(mode == kOfxParamStringIsMultiLine) {
-        _multiLineKnob = appPTR->getKnobFactory().createKnob<RichText_Knob>(node, getParamLabel(this));
+        _multiLineKnob = Natron::createKnob<RichText_Knob>(node, getParamLabel(this));
     }
     
     set(properties.getStringProperty(kOfxParamPropDefault).c_str());
 }
 
- void OfxStringInstance::onFrameRangeChanged(int f,int l){
-     _node->notifyFrameRangeChanged(f,l);
- }
+void OfxStringInstance::onFrameRangeChanged(int f,int l){
+    _node->notifyFrameRangeChanged(f,l);
+}
 
 OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
@@ -852,7 +1313,7 @@ OfxStatus OfxStringInstance::set(OfxTime /*time*/, const char* str) {
         _fileKnob->setValue(str);
     }
     if(_outputFileKnob){
-         _outputFileKnob->setValue(str);
+        _outputFileKnob->setValue(str);
     }
     if(_stringKnob){
         _stringKnob->setValue(str);
@@ -868,7 +1329,7 @@ OfxStatus OfxStringInstance::getV(va_list arg){
     OfxStatus stat = get(_localString.localData());
     *value = _localString.localData().c_str();
     return stat;
-
+    
 }
 OfxStatus OfxStringInstance::getV(OfxTime time, va_list arg){
     const char **value = va_arg(arg, const char **);
@@ -878,7 +1339,7 @@ OfxStatus OfxStringInstance::getV(OfxTime time, va_list arg){
     return stat;
 }
 
-Knob* OfxStringInstance::getKnob() const{
+boost::shared_ptr<Knob> OfxStringInstance::getKnob() const{
     
     if(_fileKnob){
         return _fileKnob;
@@ -892,7 +1353,7 @@ Knob* OfxStringInstance::getKnob() const{
     if(_multiLineKnob){
         return _multiLineKnob;
     }
-    return NULL;
+    return boost::shared_ptr<Knob>();
 }
 // callback which should set enabled state as appropriate
 void OfxStringInstance::setEnabled(){
@@ -958,34 +1419,104 @@ void OfxStringInstance::ifFileKnobPopDialog(){
 }
 
 
+OfxStatus OfxStringInstance::getNumKeys(unsigned int &nKeys) const {
+    boost::shared_ptr<Knob> knob;
+    if(_stringKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+    }else if(_multiLineKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_multiLineKnob);
+    }else{
+        return kOfxStatErrUnsupported;
+    }
+    return OfxKeyFrame::getNumKeys(knob, nKeys);
+}
+OfxStatus OfxStringInstance::getKeyTime(int nth, OfxTime& time) const {
+    boost::shared_ptr<Knob> knob;
+    if(_stringKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+    }else if(_multiLineKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_multiLineKnob);
+    }else{
+        return kOfxStatErrUnsupported;
+    }
+    return OfxKeyFrame::getKeyTime(knob, nth, time);
+}
+OfxStatus OfxStringInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    boost::shared_ptr<Knob> knob;
+    if(_stringKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+    }else if(_multiLineKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_multiLineKnob);
+    }else{
+        return kOfxStatErrUnsupported;
+    }
+    return OfxKeyFrame::getKeyIndex(knob, time, direction, index);
+}
+OfxStatus OfxStringInstance::deleteKey(OfxTime time) {
+    boost::shared_ptr<Knob> knob;
+    if(_stringKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+    }else if(_multiLineKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_multiLineKnob);
+    }else{
+        return kOfxStatErrUnsupported;
+    }
+    return OfxKeyFrame::deleteKey(knob, time);
+}
+OfxStatus OfxStringInstance::deleteAllKeys(){
+    boost::shared_ptr<Knob> knob;
+    if(_stringKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+    }else if(_multiLineKnob){
+        knob = boost::dynamic_pointer_cast<Knob>(_multiLineKnob);
+    }else{
+        return kOfxStatErrUnsupported;
+    }
+    return OfxKeyFrame::deleteAllKeys(knob);
+}
+
+void OfxStringInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+
+
+////////////////////////// OfxCustomInstance /////////////////////////////////////////////////
+
+
 /*
  http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamTypeCustom
-
+ 
  Custom parameters contain null terminated char * C strings, and may animate. They are designed to provide plugins with a way of storing data that is too complicated or impossible to store in a set of ordinary parameters.
-
+ 
  If a custom parameter animates, it must set its kOfxParamPropCustomInterpCallbackV1 property, which points to a OfxCustomParamInterpFuncV1 function. This function is used to interpolate keyframes in custom params.
-
+ 
  Custom parameters have no interface by default. However,
-
+ 
  * if they animate, the host's animation sheet/editor should present a keyframe/curve representation to allow positioning of keys and control of interpolation. The 'normal' (ie: paged or hierarchical) interface should not show any gui.
  * if the custom param sets its kOfxParamPropInteractV1 property, this should be used by the host in any normal (ie: paged or hierarchical) interface for the parameter.
-
+ 
  Custom parameters are mandatory, as they are simply ASCII C strings. However, animation of custom parameters an support for an in editor interact is optional.
  */
+
+
 
 OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::CustomInstance(descriptor,node->effectInstance())
 , _node(node)
-, _knob(0)
+, _knob()
 , _customParamInterpolationV1Entry(0)
 {
     const OFX::Host::Property::Set &properties = getProperties();
-
-
-    _knob = appPTR->getKnobFactory().createKnob<Custom_Knob>(node, getParamLabel(this));
+    
+    
+    _knob = Natron::createKnob<Custom_Knob>(node, getParamLabel(this));
     
     set(properties.getStringProperty(kOfxParamPropDefault).c_str());
-
+    
     _customParamInterpolationV1Entry = (customParamInterpolationV1Entry_t)properties.getPointerProperty(kOfxParamPropCustomInterpCallbackV1);
 }
 
@@ -1016,21 +1547,21 @@ OfxStatus OfxCustomInstance::set(OfxTime /*time*/, const char* str) {
 
 OfxStatus OfxCustomInstance::getV(va_list arg) {
     const char **value = va_arg(arg, const char **);
-
+    
     OfxStatus stat = get(_localString.localData());
     *value = _localString.localData().c_str();
     return stat;
-
+    
 }
 OfxStatus OfxCustomInstance::getV(OfxTime time, va_list arg) {
     const char **value = va_arg(arg, const char **);
-
+    
     OfxStatus stat = get(time,_localString.localData());
     *value = _localString.localData().c_str();
     return stat;
 }
 
-Knob* OfxCustomInstance::getKnob() const {
+boost::shared_ptr<Knob> OfxCustomInstance::getKnob() const {
     return _knob;
 }
 
@@ -1042,4 +1573,195 @@ void OfxCustomInstance::setEnabled() {
 // callback which should set secret state as appropriate
 void OfxCustomInstance::setSecret() {
     _knob->setSecret(getSecret());
+}
+
+OfxStatus OfxCustomInstance::getNumKeys(unsigned int &nKeys) const {
+    return OfxKeyFrame::getNumKeys(_knob, nKeys);
+}
+OfxStatus OfxCustomInstance::getKeyTime(int nth, OfxTime& time) const {
+    return OfxKeyFrame::getKeyTime(_knob, nth, time);
+}
+OfxStatus OfxCustomInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+    return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
+}
+OfxStatus OfxCustomInstance::deleteKey(OfxTime time) {
+    return OfxKeyFrame::deleteKey(_knob, time);
+}
+OfxStatus OfxCustomInstance::deleteAllKeys(){
+    return OfxKeyFrame::deleteAllKeys(_knob);
+}
+
+void OfxCustomInstance::onKnobAnimationLevelChanged(int lvl){
+    int autoKeying = 0;
+    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
+        autoKeying = 1;
+    }
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+}
+
+
+////////////////////////// OfxParametricInstance /////////////////////////////////////////////////
+
+OfxParametricInstance::OfxParametricInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
+: OFX::Host::ParametricParam::ParametricInstance(descriptor,node->effectInstance())
+, _overlayInteract(NULL)
+, _effect(node)
+{
+    
+    
+    
+    const OFX::Host::Property::Set &properties = getProperties();
+    int parametricDimension = properties.getIntProperty(kOfxParamPropParametricDimension);
+    
+    
+    _knob = Natron::createKnob<Parametric_Knob>(node, getParamLabel(this),parametricDimension);
+    
+    setLabel();//set label on all curves
+    
+    double color[3*parametricDimension];
+    properties.getDoublePropertyN(kOfxParamPropParametricUIColour, color, 3*parametricDimension);
+    
+    for (int i = 0; i < parametricDimension; ++i) {
+        _knob->setCurveColor(i, color[i*3], color[i*3+1], color[i*3+2]);
+    }
+    
+    QObject::connect(_knob.get(),SIGNAL(mustInitializeOverlayInteract(CurveWidget*)),this,SLOT(initializeInteract(CurveWidget*)));
+    
+    setDisplayRange();
+}
+
+void OfxParametricInstance::initializeInteract(CurveWidget* widget){
+    
+    OfxPluginEntryPoint* interactEntryPoint = (OfxPluginEntryPoint*)getProperties().getPointerProperty(kOfxParamPropParametricInteractBackground);
+    if(interactEntryPoint){
+        _overlayInteract = new Natron::OfxOverlayInteract((*_effect->effectInstance()),8,true,widget);
+        _overlayInteract->createInstanceAction();
+        QObject::connect(_knob.get(), SIGNAL(customBackgroundRequested()), this, SLOT(onCustomBackgroundDrawingRequested()));
+    }
+    
+}
+
+OfxParametricInstance::~OfxParametricInstance(){
+    if(_overlayInteract){
+        delete _overlayInteract;
+    }
+}
+
+
+boost::shared_ptr<Knob> OfxParametricInstance::getKnob() const{
+    return _knob;
+}
+
+// callback which should set enabled state as appropriate
+void OfxParametricInstance::setEnabled() {
+    _knob->setEnabled(getEnabled());
+}
+
+// callback which should set secret state as appropriate
+void OfxParametricInstance::setSecret() {
+    _knob->setSecret(getSecret());
+}
+
+/// callback which should update label
+void OfxParametricInstance::setLabel() {
+    _knob->setName(getParamLabel(this));
+    for (int i = 0; i < _knob->getDimension(); ++i) {
+        const std::string& curveName = getProperties().getStringProperty(kOfxParamPropDimensionLabel,i);
+        _knob->setCurveLabel(i, curveName);
+    }
+}
+
+void OfxParametricInstance::setDisplayRange() {
+    double range_min = getProperties().getDoubleProperty(kOfxParamPropParametricRange,0);
+    double range_max = getProperties().getDoubleProperty(kOfxParamPropParametricRange,1);
+    
+    assert(range_max > range_min);
+    
+    _knob->setParametricRange(range_min, range_max);
+}
+
+OfxStatus OfxParametricInstance::getValue(int curveIndex,OfxTime /*time*/,double parametricPosition,double *returnValue)
+{
+    Natron::Status stat = _knob->getValue(curveIndex, parametricPosition, returnValue);
+    if(stat == Natron::StatOK){
+        return kOfxStatOK;
+    }else{
+        return kOfxStatFailed;
+    }
+}
+
+OfxStatus OfxParametricInstance::getNControlPoints(int curveIndex,double /*time*/,int *returnValue){
+    Natron::Status stat = _knob->getNControlPoints(curveIndex, returnValue);
+    if(stat == Natron::StatOK){
+        return kOfxStatOK;
+    }else{
+        return kOfxStatFailed;
+    }
+}
+
+OfxStatus OfxParametricInstance::getNthControlPoint(int curveIndex,
+                                                    double /*time*/,
+                                                    int    nthCtl,
+                                                    double *key,
+                                                    double *value) {
+    Natron::Status stat = _knob->getNthControlPoint(curveIndex, nthCtl, key, value);
+    if(stat == Natron::StatOK){
+        return kOfxStatOK;
+    }else{
+        return kOfxStatFailed;
+    }
+}
+
+OfxStatus OfxParametricInstance::setNthControlPoint(int   curveIndex,
+                                                    double /*time*/,
+                                                    int   nthCtl,
+                                                    double key,
+                                                    double value,
+                                                    bool /*addAnimationKey*/
+) {
+    Natron::Status stat = _knob->setNthControlPoint(curveIndex, nthCtl, key, value);
+    if(stat == Natron::StatOK){
+        return kOfxStatOK;
+    }else{
+        return kOfxStatFailed;
+    }
+}
+OfxStatus OfxParametricInstance::addControlPoint(int   curveIndex,
+                                                 double /*time*/,
+                                                 double key,
+                                                 double value,
+                                                 bool/* addAnimationKey*/) {
+    Natron::Status stat = _knob->addControlPoint(curveIndex, key, value);
+    if(stat == Natron::StatOK){
+        return kOfxStatOK;
+    }else{
+        return kOfxStatFailed;
+    }
+}
+
+OfxStatus  OfxParametricInstance::deleteControlPoint(int   curveIndex,int   nthCtl) {
+    Natron::Status stat = _knob->deleteControlPoint(curveIndex, nthCtl);
+    if(stat == Natron::StatOK){
+        return kOfxStatOK;
+    }else{
+        return kOfxStatFailed;
+    }
+}
+
+OfxStatus  OfxParametricInstance::deleteAllControlPoints(int   curveIndex) {
+    Natron::Status stat = _knob->deleteAllControlPoints(curveIndex);
+    if(stat == Natron::StatOK){
+        return kOfxStatOK;
+    }else{
+        return kOfxStatFailed;
+    }
+}
+
+
+void OfxParametricInstance::onCustomBackgroundDrawingRequested(){
+    if(_overlayInteract){
+        RenderScale s;
+        _overlayInteract->getPixelScale(s.x, s.y);
+        _overlayInteract->drawAction(_effect->effectInstance()->getFrameRecursive(), s);
+    }
 }

@@ -20,10 +20,15 @@
 #include <QStandardPaths>
 #endif
 
+//ofx
+#include <ofxParametricParam.h>
+
+//ofx host support
 #include <ofxhPluginAPICache.h>
 #include <ofxhImageEffect.h>
 #include <ofxhImageEffectAPI.h>
 #include <ofxhHost.h>
+#include <ofxhParam.h>
 
 #include "Global/AppManager.h"
 #include "Global/LibraryBinary.h"
@@ -32,12 +37,15 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/KnobTypes.h"
 
+//our version of parametric param suite support
+#include "ofxhParametricParam.h"
+
 using namespace Natron;
 
 Natron::OfxHost::OfxHost()
 :_imageEffectPluginCache(*this)
 {
-    _properties.setStringProperty(kOfxPropName,"uk.co.thefoundry.nuke");//NATRON_APPLICATION_NAME "Host");
+    _properties.setStringProperty(kOfxPropName,NATRON_APPLICATION_NAME "Host");
     _properties.setStringProperty(kOfxPropLabel, NATRON_APPLICATION_NAME);
     _properties.setIntProperty(kOfxPropAPIVersion, 1 , 0); //API v1.0
     _properties.setIntProperty(kOfxPropAPIVersion, 0 , 1);
@@ -70,12 +78,14 @@ Natron::OfxHost::OfxHost()
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 0 );
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
     _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 0);
-    
+    _properties.setIntProperty(kOfxParamHostPropSupportsParametricAnimation, 0);
+
 }
 
 Natron::OfxHost::~OfxHost()
 {
-    writeOFXCache();
+    //Clean up, to be polite.
+    OFX::Host::PluginCache::clearPluginCache();
 }
 
 OFX::Host::ImageEffect::Instance* Natron::OfxHost::newInstance(void* ,
@@ -173,20 +183,40 @@ OfxStatus Natron::OfxHost::clearPersistentMessage(){
 }
 
 OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natron::Node* node) {
-    OFXPluginsIterator ofxPlugin = _ofxPlugins.find(name);
-    if (ofxPlugin == _ofxPlugins.end()) {
-        return NULL;
-    }
-    OFX::Host::ImageEffect::ImageEffectPlugin* plugin = _imageEffectPluginCache.getPluginById(ofxPlugin->second.first);
+    assert(node); // the efgfect_ member should be owned by a Node
+    // throws out_of_range if the plugin does not exist
+    const OFXPluginEntry& ofxPlugin = _ofxPlugins.at(name);
+
+    OFX::Host::ImageEffect::ImageEffectPlugin* plugin = _imageEffectPluginCache.getPluginById(ofxPlugin.openfxId);
     if (!plugin) {
-        return NULL;
+        throw std::runtime_error(std::string("Error: Could not get plugin ") + ofxPlugin.openfxId);
     }
+
+    // getPluginHandle() must be called before getContexts():
+    // it calls kOfxActionLoad on the plugin, which may set properties (including supported contexts)
+    OFX::Host::PluginHandle *ph;
+    try {
+        ph = plugin->getPluginHandle();
+    } catch (const std::exception& e) {
+        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + name + ": " + e.what());
+    } catch (...) {
+        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + name);
+    }
+    if(!ph) {
+        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + name);
+    }
+    assert(ph->getOfxPlugin() && ph->getOfxPlugin()->mainEntry);
+
     const std::set<std::string>& contexts = plugin->getContexts();
     std::string context;
     
-    if (contexts.size() == 1) {
+    if (contexts.size() == 0) {
+        throw std::runtime_error(std::string("Error: Plugins supports no context"));
+        //context = kOfxImageEffectContextGeneral;
+        //plugin->addContext(kOfxImageEffectContextGeneral);
+    } else if (contexts.size() == 1) {
         context = (*contexts.begin());
-    }else{
+    } else {
         std::set<std::string>::iterator found = contexts.find(kOfxImageEffectContextGeneral);
         if(found != contexts.end()){
             context = *found;
@@ -210,23 +240,18 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
         }
         
     }
-    
-    
-    bool rval = false;
-    try {
-        rval = plugin->getPluginHandle();
-    } catch (const std::exception& e) {
-        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin") + ": " + e.what());
-    } catch (...) {
-        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin"));
-    }
 
-    if(!rval) {
-        return NULL;
-    }
     OfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
-    
-    hostSideEffect->createOfxImageEffectInstance(plugin, context);
+    if(node){
+        hostSideEffect->createOfxImageEffectInstance(plugin, context);
+    }else{
+        
+        //if node is NULL that means we're just checking if the effect is describing and loading OK
+        OFX::Host::ImageEffect::Descriptor* desc = plugin->getContext(context);
+        if(!desc){
+            throw std::runtime_error(std::string("Error: Could not get description for plugin ") + name + " in context " + context);
+        }
+    }
 
     return hostSideEffect;
 }
@@ -267,7 +292,11 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
         ifs.close();
     }
     OFX::Host::PluginCache::getPluginCache()->scanPluginFiles();
-    
+
+    // write the cache NOW (it won't change anyway)
+    /// flush out the current cache
+    writeOFXCache();
+
     /*Filling node name list and plugin grouping*/
     const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& ofxPlugins = _imageEffectPluginCache.getPlugins();
     for (unsigned int i = 0 ; i < ofxPlugins.size(); ++i) {
@@ -276,13 +305,11 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
         if(p->getContexts().size() == 0)
             continue;
        
-        
-        
         QString openfxId = p->getIdentifier().c_str();
-        std::string grouping = p->getDescriptor().getPluginGrouping().c_str();
+        const std::string& grouping = p->getDescriptor().getPluginGrouping();
         
-        std::string bundlePath = p->getBinary()->getBundlePath();
-        std::string pluginLabel = OfxEffectInstance::getPluginLabel(p->getDescriptor().getShortLabel(),
+        const std::string& bundlePath = p->getBinary()->getBundlePath();
+        const std::string& pluginLabel = OfxEffectInstance::getPluginLabel(p->getDescriptor().getShortLabel(),
                                                                     p->getDescriptor().getLabel(),
                                                                     p->getDescriptor().getLongLabel());
      
@@ -292,6 +319,8 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
                                                                                p->getDescriptor().getLongLabel(),
                                                                            grouping);
 
+       
+        
         QStringList groups = OfxEffectInstance::getPluginGrouping(pluginLabel, grouping);
         
         assert(p->getBinary());
@@ -306,14 +335,45 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
             groupIconFilename.append(groups[0]);
             groupIconFilename.append(".png");
         }
+        
+        _ofxPlugins[pluginId] = OFXPluginEntry(openfxId.toStdString(), grouping);
+
+        // The following was commented out because:
+        // - loading all plugins on startup may take a LOT of time
+        // - it makes the plugin cache basically useless
+        // - all OfxEffectInstance should be owned by a node in Natron (this is crazy. where are the smart pointers?)
+        // If a plugin is not supported, the user gets an error when instanciating the plugin, which is the Right Thing To Do (TM).
+#if 0
+        //try to instantiate an effect for this plugin, if it crashes, don't add it
+        OfxEffectInstance* tryInstance = 0;
+        try {
+            tryInstance = createOfxEffect(pluginId, NULL);
+        } catch (const std::exception& e) {
+            qDebug() << "Exception while loading " << pluginId.c_str() << ": " << e.what();
+            delete tryInstance;
+            tryInstance = 0;
+        } catch (...) {
+            qDebug() << "Exception while loading " << pluginId.c_str();
+            delete tryInstance;
+            tryInstance = 0;
+        }
+
+        if (!tryInstance) {
+            qDebug() << "Error loading " << pluginId.c_str();
+            _ofxPlugins.erase(pluginId);
+            continue;
+        } else {
+            delete tryInstance;
+        }
+#endif
         emit toolButtonAdded(groups,pluginId.c_str(), pluginLabel.c_str(), iconFilename, groupIconFilename);
-        _ofxPlugins.insert(make_pair(pluginId, make_pair(openfxId.toStdString(), grouping)));
         QMutex* pluginMutex = NULL;
         if(p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe){
             pluginMutex = new QMutex;
         }
         Natron::Plugin* plugin = new Natron::Plugin(new Natron::LibraryBinary(Natron::LibraryBinary::BUILTIN),
-                                                    pluginId.c_str(),pluginLabel.c_str(),pluginMutex);
+                                                    pluginId.c_str(),pluginLabel.c_str(),pluginMutex,p->getVersionMajor(),
+                                                    p->getVersionMinor());
         plugins->push_back(plugin);
     }
 }
@@ -336,7 +396,19 @@ void Natron::OfxHost::writeOFXCache(){
     assert(OFX::Host::PluginCache::getPluginCache());
     OFX::Host::PluginCache::getPluginCache()->writePluginCache(of);
     of.close();
-    //Clean up, to be polite.
-    OFX::Host::PluginCache::clearPluginCache();
 }
+
+
+void Natron::OfxHost::loadingStatus(const std::string & pluginId) {
+    qDebug() << "Loading OFX plugin " << pluginId.c_str();
+}
+
+void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
+    if (strcmp(suiteName, kOfxParametricParameterSuite)==0  && suiteVersion == 1) {
+        return OFX::Host::ParametricParam::GetSuite(suiteVersion);
+    }else{
+        return OFX::Host::ImageEffect::Host::fetchSuite(suiteName, suiteVersion);
+    }
+}
+
 

@@ -83,9 +83,12 @@ CLANG_DIAG_ON(deprecated-register);
 ///System/Library/Frameworks/OpenGL.framework/Headers/glu.h:260:24: note: 'gluErrorString' declared here
 //extern const GLubyte * gluErrorString (GLenum error) OPENGL_DEPRECATED(10_0, 10_9);
 //                       ^
+#include <AvailabilityMacros.h> 
+#ifdef MAC_OS_X_VERSION_10_9
 #include <OpenGL/OpenGLAvailability.h>
 #undef OPENGL_DEPRECATED
 #define OPENGL_DEPRECATED(from, to)
+#endif // MAC_OS_X_VERSION_10_9
 #endif
 
 #include <QtCore>

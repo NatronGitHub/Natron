@@ -241,6 +241,11 @@ OFX::Host::ImageEffect::Image(clip)
     // row bytes
     setIntProperty(kOfxImagePropRowBytes, rod.width()*4*sizeof(float));
     setStringProperty(kOfxImageEffectPropComponents, kOfxImageComponentRGBA);
+    setStringProperty(kOfxImageEffectPropPixelDepth, clip.getPixelDepth());
+    setStringProperty(kOfxImageEffectPropPreMultiplication, clip.getPremult());
+    setStringProperty(kOfxImagePropField, kOfxImageFieldNone);
+    setStringProperty(kOfxImagePropUniqueIdentifier,QString::number(internalImage->getHashKey()).toStdString());
+    setDoubleProperty(kOfxImagePropPixelAspectRatio, clip.getAspectRatio());
 }
 
 OfxRGBAColourF* OfxImage::pixelF(int x, int y) const{

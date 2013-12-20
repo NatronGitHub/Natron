@@ -149,6 +149,7 @@ namespace Natron{
         NATRON_PIXMAP_OPEN_FILE,
         NATRON_PIXMAP_RGBA_CHANNELS,
         NATRON_PIXMAP_COLORWHEEL,
+        NATRON_PIXMAP_COLOR_PICKER,
 
         NATRON_PIXMAP_IO_GROUPING,
         NATRON_PIXMAP_OPEN_EFFECTS_GROUPING,
@@ -157,7 +158,13 @@ namespace Natron{
         NATRON_PIXMAP_COMBOBOX_PRESSED
     };
 
-      enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1,TIME_CHANGED = 2,OTHER_REASON =3};
+    enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1,TIME_CHANGED = 2,OTHER_REASON =3};
+    
+    enum AnimationLevel {
+        NO_ANIMATION = 0,
+        INTERPOLATED_VALUE = 1,
+        ON_KEYFRAME = 2
+    };
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 

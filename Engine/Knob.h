@@ -33,23 +33,17 @@ class Knob : public QObject
     Q_OBJECT
     
 public:
+    
+    enum ValueChangedReturnCode {
+        NO_KEYFRAME_ADDED = 0,
+        KEYFRAME_MODIFIED,
+        KEYFRAME_ADDED
+    };
 
     explicit Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
     
-    /**
-     * @brief Never delete a knob on your ownn. If you need to delete a knob pre-emptivly
-     * see Knob::remove() , otherwise the KnobFactory will take care of allocation / deallocation
-     * for you;
-    **/
     virtual ~Knob();
 
-    /**
-     * @brief Call this if you want to remove the Knob dynamically (for example in response to
-     * another knob value changed). You must not call the delete operator as the factory is
-     * responsible for allocation/deallocation.
-     **/
-    void remove();
-    
     /**
      * @brief Must return the type name of the knob. This name will be used by the KnobFactory
      * to create an instance of this knob.
@@ -88,7 +82,7 @@ public:
     void endValueChange(Natron::ValueChangedReason reason) ;
 
     /**
-     * @brief Called when a keyframe/tangent is modified, indicating that the curve has changed and we must
+     * @brief Called when a keyframe/derivative is modified, indicating that the curve has changed and we must
      * evaluate any change (i.e: force a new render)
     **/
     void evaluateAnimationChange();
@@ -130,23 +124,25 @@ public:
      * is 0. If there's a single dimension, it will set the dimension 0 regardless of the parameter dimension.
      * Otherwise, it will attempt to set a key for only the dimension 'dimensionIndex'.
      **/
-    boost::shared_ptr<KeyFrame> setValueAtTime(double time,const Variant& v,int dimension);
+    void setValueAtTime(int time,const Variant& v,int dimension);
 
     template<typename T>
-    boost::shared_ptr<KeyFrame> setValueAtTime(double time,const T& value,int dimensionIndex = 0){
+    void setValueAtTime(int time,const T& value,int dimensionIndex = 0){
         assert(dimensionIndex < getDimension());
-        return setValueAtTime(time,Variant(value),dimensionIndex);
+        setValueAtTime(time,Variant(value),dimensionIndex);
     }
 
     template<typename T>
-    void setValueAtTime(double time,T variant[],int count){
+    void setValueAtTime(int time,T variant[],int count){
         for(int i = 0; i < count; ++i){
             setValueAtTime(time,Variant(variant[i]),i);
         }
     }
 
-    void deleteValueAtTime(double time,int dimension);
+    void deleteValueAtTime(int time,int dimension);
 
+    void removeAnimation(int dimension);
+    
     /**
      * @brief Returns the value  in a specific dimension at a specific time. If
      * there is no key in this dimension it will return the value at the requested dimension
@@ -159,7 +155,9 @@ public:
     }
 
 
-    boost::shared_ptr<Curve> getCurve(int dimension) const;
+    boost::shared_ptr<Curve> getCurve(int dimension = 0) const;
+
+    bool isAnimated(int dimension) const;
 
     const std::vector< boost::shared_ptr<Curve>  >& getCurves() const;
 
@@ -199,9 +197,9 @@ public:
     
     std::string getName() const;
     
-    void setParentKnob(Knob* knob);
+    void setParentKnob(boost::shared_ptr<Knob> knob);
     
-    Knob* getParentKnob() const;
+    boost::shared_ptr<Knob> getParentKnob() const;
     
     int determineHierarchySize() const;
     
@@ -248,13 +246,22 @@ public:
 
     const std::vector<boost::shared_ptr<Knob> > &getMasters() const;
 
+    /**
+     * @brief Called by the GUI whenever the animation level changes (due to a time change
+     * or a value changed).
+     **/
+    void setAnimationLevel(int dimension,Natron::AnimationLevel level);
+    
+    Natron::AnimationLevel getAnimationLevel(int dimension) const;
 
-public slots:
     
     /*Set the value of the knob but does NOT emit the valueChanged signal.
      This is called by the GUI.*/
-    void onValueChanged(int dimension,const Variant& variant);
+    ValueChangedReturnCode onValueChanged(int dimension,const Variant& variant,KeyFrame* newKey);
 
+public slots:
+    
+  
     /*Set a keyframe for the knob but does NOT emit the keyframeSet signal.
          This is called by the GUI .*/
     void onKeyFrameSet(SequenceTime time,int dimension);
@@ -262,11 +269,16 @@ public slots:
     void onKeyFrameRemoved(SequenceTime time,int dimension);
 
     void onTimeChanged(SequenceTime);
-        
+    
+    void onAnimationRemoved(int dimension);
 
 signals:
     
-    void deleted();
+    ///emitted whenever setAnimationLevel is called. It is meant to notify
+    ///openfx params whether it is auto-keying or not.
+    void animationLevelChanged(int);
+    
+    void deleted(Knob*);
     
     /*Emitted when the value is changed internally by a call to setValue*/
     void valueChanged(int dimension);
@@ -281,15 +293,20 @@ signals:
 
     void keyFrameRemoved(SequenceTime,int);
     
+    void animationRemoved(int);
+    
+    
 private:
     //private because it emits a signal
-    void setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason);
+    ValueChangedReturnCode setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
 
      //private because it emits a signal
-    boost::shared_ptr<KeyFrame> setValueAtTime(double time,const Variant& v,int dimension,Natron::ValueChangedReason reason);
+    bool setValueAtTime(int time,const Variant& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
 
      //private because it emits a signal
-    void deleteValueAtTime(double time,int dimension,Natron::ValueChangedReason reason);
+    void deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason reason);
+    
+    void removeAnimation(int dimension,Natron::ValueChangedReason reason);
     
     /** @brief This function can be implemented if you want to clone more data than just the value
      * of the knob. Cloning happens when a render request is made: all knobs values of the GUI
@@ -307,12 +324,20 @@ private:
      * <time,file> .
     **/
     virtual void processNewValue(){}
+    
+    /** @brief This function is called when a value is changed a the hash for this knob is recomputed.
+     * It lets the derived class a chance to add any extra info that would be needed to differentiate 
+     * 2 values from each other.
+    **/
+    virtual void appendExtraDataToHash(std::vector<U64>* /*hash*/) const {}
 
 
 private:
     struct KnobPrivate;
     boost::scoped_ptr<KnobPrivate> _imp;
 };
+
+Q_DECLARE_METATYPE(Knob*)
 
 /**
  * @brief A Knob holder is a class that stores Knobs and interact with them in some way.
@@ -328,9 +353,12 @@ class KnobHolder {
     std::vector< boost::shared_ptr<Knob> > _knobs;
     
 public:
-
-    friend class Knob;
     
+    /**
+     *@brief A holder is a class managing a bunch of knobs and interacting with an appInstance.
+     * When appInstance is NULL the holder will be considered "application global" in which case
+     * the knob holder will interact directly with the AppManager singleton.
+     **/
     KnobHolder(AppInstance* appInstance);
     
     virtual ~KnobHolder();
@@ -345,6 +373,8 @@ public:
 
     int getAppAge() const;
     
+    boost::shared_ptr<Knob> getKnobByDescription(const std::string& desc) const WARN_UNUSED_RETURN;
+    
     const std::vector< boost::shared_ptr<Knob> >& getKnobs() const { return _knobs; }
 
     void refreshAfterTimeChange(SequenceTime time);
@@ -355,6 +385,13 @@ public:
      * but this can lead to worse performance.
      **/
     void notifyProjectBeginKnobsValuesChanged(Natron::ValueChangedReason reason);
+    
+    /**
+     * @brief Called whenever a value changes. It brakcets the call by a begin/end if it was
+     * not done already and requests an evaluation (i.e: probably a render).
+     **/
+    void notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,Knob* k,bool significant);
+
     
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
@@ -394,13 +431,27 @@ public:
      * @param knob[in] The knob whose value changed.
      **/
     virtual void evaluate(Knob* knob,bool isSignificant) = 0;
-private:
+    
+    /*Add a knob to the vector. This is called by the
+     Knob class. Don't call this*/
+    void addKnob(boost::shared_ptr<Knob> k){ _knobs.push_back(k); }
+    
+    
+    /*Removes a knob to the vector. This is called by the
+     Knob class. Don't call this*/
+    void removeKnob(Knob* k);
+    
 
     /**
-     * @brief Called whenever a value changes. It brakcets the call by a begin/end if it was
-     * not done already and requests an evaluation (i.e: probably a render).
+     * @brief Should be implemented by any deriving class that maintains
+     * a hash value based on the knobs.
      **/
-    void notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,Knob* k,bool significant);
+    void invalidateHash();
+    
+   
+    
+private:
+
     
     /**
      * @brief Must be implemented to initialize any knob using the
@@ -409,22 +460,7 @@ private:
     virtual void initializeKnobs() = 0;
 
 
-    /**
-     * @brief Should be implemented by any deriving class that maintains
-     * a hash value based on the knobs.
-     **/
-    void invalidateHash();
-
-    
-    /*Add a knob to the vector. This is called by the
-     Knob class.*/
-    void addKnob(boost::shared_ptr<Knob> k){ _knobs.push_back(k); }
-    
-    /*Removes a knob to the vector. This is called by the
-     Knob class.*/
-    void removeKnob(Knob* k);
-
-};
+   };
 
 
 #endif // NATRON_ENGINE_KNOB_H_

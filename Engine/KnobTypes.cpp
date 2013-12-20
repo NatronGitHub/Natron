@@ -12,14 +12,16 @@
 
 #include <cfloat>
 
+#include "Engine/Curve.h"
+
 using namespace Natron;
 using std::make_pair;
 using std::pair;
 
 /******************************INT_KNOB**************************************/
 Int_Knob::Int_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
-    , _disableSlider(false)
+Knob(holder, description, dimension)
+, _disableSlider(false)
 {}
 
 void Int_Knob::disableSlider()
@@ -57,7 +59,7 @@ void Int_Knob::setMinimum(int mini, int index)
 
 void Int_Knob::setMaximum(int maxi, int index)
 {
-
+    
     if (_maximums.size() > (U32)index) {
         _maximums[index] = maxi;
     } else {
@@ -98,7 +100,7 @@ void Int_Knob::setDisplayMinimum(int mini, int index)
 
 void Int_Knob::setDisplayMaximum(int maxi, int index)
 {
-
+    
     if (_displayMaxs.size() > (U32)index) {
         _displayMaxs[index] = maxi;
     } else {
@@ -194,16 +196,16 @@ const std::vector<int> &Int_Knob::getDisplayMaximums() const
 std::string Int_Knob::getDimensionName(int dimension) const
 {
     switch (dimension) {
-    case 0:
-        return "x";
-    case 1:
-        return "y";
-    case 2:
-        return "z";
-    case 3:
-        return "w";
-    default:
-        return QString::number(dimension).toStdString();
+        case 0:
+            return "x";
+        case 1:
+            return "y";
+        case 2:
+            return "z";
+        case 3:
+            return "w";
+        default:
+            return QString::number(dimension).toStdString();
     }
 }
 
@@ -228,7 +230,7 @@ const std::string& Int_Knob::typeName() const
 /******************************BOOL_KNOB**************************************/
 
 Bool_Knob::Bool_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
+Knob(holder, description, dimension)
 {}
 
 bool Bool_Knob::canAnimate() const
@@ -253,23 +255,23 @@ const std::string& Bool_Knob::typeName() const
 
 
 Double_Knob::Double_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
-    , _disableSlider(false)
+Knob(holder, description, dimension)
+, _disableSlider(false)
 {}
 
 std::string Double_Knob::getDimensionName(int dimension) const
 {
     switch (dimension) {
-    case 0:
-        return "x";
-    case 1:
-        return "y";
-    case 2:
-        return "z";
-    case 3:
-        return "w";
-    default:
-        return QString::number(dimension).toStdString();
+        case 0:
+            return "x";
+        case 1:
+            return "y";
+        case 2:
+            return "z";
+        case 3:
+            return "w";
+        default:
+            return QString::number(dimension).toStdString();
     }
 }
 
@@ -395,7 +397,7 @@ void Double_Knob::setDisplayMinimum(double mini, int index)
 
 void Double_Knob::setDisplayMaximum(double maxi, int index)
 {
-
+    
     if (_displayMaxs.size() > (U32)index) {
         _displayMaxs[index] = maxi;
     } else {
@@ -484,7 +486,7 @@ void Double_Knob::setDecimals(const std::vector<int> &decis)
 /******************************BUTTON_KNOB**************************************/
 
 Button_Knob::Button_Knob(KnobHolder  *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
+Knob(holder, description, dimension)
 {
     setPersistent(false);
 }
@@ -510,9 +512,9 @@ const std::string& Button_Knob::typeName() const
 /******************************CHOICE_KNOB**************************************/
 
 Choice_Knob::Choice_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
+Knob(holder, description, dimension)
 {
-
+    
 }
 
 bool Choice_Knob::canAnimate() const
@@ -566,7 +568,7 @@ const std::string &Choice_Knob::getActiveEntryText() const
 Separator_Knob::Separator_Knob(KnobHolder *holder, const std::string &description, int dimension)
 : Knob(holder, description, dimension)
 {
-
+    
 }
 
 bool Separator_Knob::canAnimate() const
@@ -596,7 +598,7 @@ const std::string& Separator_Knob::typeName() const
  **/
 
 Color_Knob::Color_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
+Knob(holder, description, dimension)
 {
     //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
     assert(dimension <= 4 && dimension != 2);
@@ -605,16 +607,16 @@ Color_Knob::Color_Knob(KnobHolder *holder, const std::string &description, int d
 std::string Color_Knob::getDimensionName(int dimension) const
 {
     switch (dimension) {
-    case 0:
-        return "r";
-    case 1:
-        return "g";
-    case 2:
-        return "b";
-    case 3:
-        return "a";
-    default:
-        return QString::number(dimension).toStdString();
+        case 0:
+            return "r";
+        case 1:
+            return "g";
+        case 2:
+            return "b";
+        case 3:
+            return "a";
+        default:
+            return QString::number(dimension).toStdString();
     }
 }
 
@@ -638,9 +640,9 @@ const std::string& Color_Knob::typeName() const
 /******************************STRING_KNOB**************************************/
 
 String_Knob::String_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
+Knob(holder, description, dimension)
 {
-
+    
 }
 
 bool String_Knob::canAnimate() const
@@ -697,9 +699,9 @@ std::string Custom_Knob::getString() const
 /******************************GROUP_KNOB**************************************/
 
 Group_Knob::Group_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
+Knob(holder, description, dimension)
 {
-
+    
 }
 
 bool Group_Knob::canAnimate() const
@@ -719,12 +721,17 @@ const std::string& Group_Knob::typeName() const
     return typeNameStatic();
 }
 
-void Group_Knob::addKnob(Knob *k)
+void Group_Knob::addKnob(boost::shared_ptr<Knob> k)
 {
-    _children.push_back(k);
+    std::vector<boost::shared_ptr<Knob> >::iterator found = std::find(_children.begin(), _children.end(), k);
+    if(found == _children.end()){
+        _children.push_back(k);
+        k->setParentKnob(getHolder()->getKnobByDescription(getDescription()));
+    }
+    
 }
 
-const std::vector<Knob *> &Group_Knob::getChildren() const
+const std::vector< boost::shared_ptr<Knob> > &Group_Knob::getChildren() const
 {
     return _children;
 }
@@ -732,9 +739,9 @@ const std::vector<Knob *> &Group_Knob::getChildren() const
 /******************************TAB_KNOB**************************************/
 
 Tab_Knob::Tab_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
+Knob(holder, description, dimension)
 {
-
+    
 }
 
 bool Tab_Knob::canAnimate() const
@@ -754,35 +761,25 @@ const std::string& Tab_Knob::typeName() const
     return typeNameStatic();
 }
 
-void Tab_Knob::addTab(const std::string &name)
-{
-    _knobs.insert(make_pair(name, std::vector<Knob *>()));
-}
 
-void Tab_Knob::addKnob(const std::string &tabName, Knob *k)
+
+void Tab_Knob::addKnob(boost::shared_ptr<Knob> k)
 {
-    std::map<std::string, std::vector<Knob *> >::iterator it = _knobs.find(tabName);
-    if (it == _knobs.end()) {
-        pair<std::map<std::string, std::vector<Knob *> >::iterator, bool> ret = _knobs.insert(make_pair(tabName, std::vector<Knob *>()));
-        ret.first->second.push_back(k);
-    } else {
-        it->second.push_back(k);
+    std::vector<boost::shared_ptr<Knob> >::iterator found = std::find(_children.begin(), _children.end(), k);
+    if(found == _children.end()){
+        _children.push_back(k);
+        k->setParentKnob(getHolder()->getKnobByDescription(getDescription()));
     }
 }
 
-
-const std::map<std::string, std::vector<Knob *> > &Tab_Knob::getKnobs() const
-{
-    return _knobs;
-}
 
 
 /******************************RichText_Knob**************************************/
 
 RichText_Knob::RichText_Knob(KnobHolder *holder, const std::string &description, int dimension):
-    Knob(holder, description, dimension)
+Knob(holder, description, dimension)
 {
-
+    
 }
 
 bool RichText_Knob::canAnimate() const
@@ -807,3 +804,186 @@ std::string RichText_Knob::getString() const
     return getValue<QString>().toStdString();
 }
 
+/******************************Parametric_Knob**************************************/
+
+
+Parametric_Knob::Parametric_Knob(KnobHolder *holder, const std::string &description, int dimension)
+: Knob(holder,description,dimension)
+, _curves(dimension)
+, _curvesColor(dimension)
+, _curveLabels(dimension)
+{
+    for (int i = 0; i < dimension; ++i) {
+        RGBAColourF color;
+        color.r = color.g = color.b = color.a = 1.;
+        _curvesColor[i] = color;
+        _curves[i] = boost::shared_ptr<Curve>(new Curve(this));
+    }
+    _range[0] = 0.;
+    _range[1] = 1.;
+}
+
+const std::string Parametric_Knob::_typeNameStr("Parametric");
+
+const std::string& Parametric_Knob::typeNameStatic(){
+    return _typeNameStr;
+}
+
+bool Parametric_Knob::canAnimate() const {
+    return false;
+}
+
+const std::string& Parametric_Knob::typeName() const {
+    return typeNameStatic();
+}
+
+void Parametric_Knob::setCurveColor(int dimension,double r,double g,double b){
+    assert(dimension < (int)_curvesColor.size());
+    _curvesColor[dimension].r = r;
+    _curvesColor[dimension].g = g;
+    _curvesColor[dimension].b = b;
+}
+
+void Parametric_Knob::getCurveColor(int dimension,double* r,double* g,double* b){
+    assert(dimension < (int)_curvesColor.size());
+    *r = _curvesColor[dimension].r ;
+    *g = _curvesColor[dimension].g ;
+    *b = _curvesColor[dimension].b ;
+}
+
+void Parametric_Knob::setCurveLabel(int dimension,const std::string& str){
+    assert(dimension < (int)_curveLabels.size());
+    _curveLabels[dimension] = str;
+}
+
+const std::string& Parametric_Knob::getCurveLabel(int dimension) const{
+    assert(dimension < (int)_curveLabels.size());
+    return _curveLabels[dimension];
+}
+
+void Parametric_Knob::setParametricRange(double min,double max){
+    _range[0] = min;
+    _range[1] = max;
+}
+
+void Parametric_Knob::getParametricRange(double* min,double* max){
+    *min = _range[0];
+    *max = _range[1];
+}
+
+std::string Parametric_Knob::getDimensionName(int dimension) const{
+    return getCurveLabel(dimension);
+}
+
+boost::shared_ptr<Curve> Parametric_Knob::getParametricCurve(int dimension) const{
+    assert(dimension < (int)_curves.size());
+    return _curves[dimension];
+}
+
+Natron::Status Parametric_Knob::addControlPoint(int dimension,double key,double value){
+    if(dimension >= (int)_curves.size()){
+        return StatFailed;
+    }
+#warning "FIXME: check that no element has a key "sufficiently close" to this key - this requires an access to the range of the parametric, see how it is done for descriptors in parametricParamAddControlPoint"
+    _curves[dimension]->addKeyFrame(KeyFrame(key,value));
+    emit curveChanged(dimension);
+    return StatOK;
+}
+
+Natron::Status Parametric_Knob::getValue(int dimension,double parametricPosition,double *returnValue){
+    if(dimension >= (int)_curves.size()){
+        return StatFailed;
+    }
+    try {
+        *returnValue = _curves[dimension]->getValueAt(parametricPosition);
+    }catch(...){
+        return Natron::StatFailed;
+    }
+    return Natron::StatOK;
+}
+
+Natron::Status Parametric_Knob::getNControlPoints(int dimension,int *returnValue){
+    if(dimension >= (int)_curves.size()){
+        return StatFailed;
+    }
+    *returnValue =  _curves[dimension]->keyFramesCount();
+    return StatOK;
+}
+
+Natron::Status Parametric_Knob::getNthControlPoint(int dimension,
+                                  int    nthCtl,
+                                  double *key,
+                                  double *value){
+    if(dimension >= (int)_curves.size()){
+        return StatFailed;
+    }
+    const KeyFrameSet& set = _curves[dimension]->getKeyFrames();
+    int index = 0;
+    for (KeyFrameSet::const_iterator it = set.begin(); it!=set.end(); ++it) {
+        if(index == nthCtl){
+            *key = it->getTime();
+            *value = it->getValue();
+            return StatOK;
+        }
+        ++index;
+    }
+    
+    return StatFailed;
+}
+
+Natron::Status Parametric_Knob::setNthControlPoint(int   dimension,
+                                  int   nthCtl,
+                                  double key,
+                                  double value)
+{
+    if(dimension >= (int)_curves.size()){
+        return StatFailed;
+    }
+    _curves[dimension]->setKeyFrameValueAndTime(key, value, nthCtl);
+    emit curveChanged(dimension);
+    return StatOK;
+
+}
+
+Natron::Status  Parametric_Knob::deleteControlPoint(int   dimension,int   nthCtl){
+    if(dimension >= (int)_curves.size()){
+        return StatFailed;
+    }
+    
+    _curves[dimension]->removeKeyFrameWithIndex(nthCtl);
+    emit curveChanged(dimension);
+    return StatOK;
+}
+
+Natron::Status  Parametric_Knob::deleteAllControlPoints(int   dimension){
+    if(dimension >= (int)_curves.size()){
+        return StatFailed;
+    }
+    _curves[dimension]->clearKeyFrames();
+    emit curveChanged(dimension);
+    return StatOK;
+}
+
+void Parametric_Knob::appendExtraDataToHash(std::vector<U64>* hash) const {
+    for (U32 i = 0; i < _curves.size(); ++i) {
+        const KeyFrameSet& set = _curves[i]->getKeyFrames();
+        for (KeyFrameSet::const_iterator it = set.begin(); it!=set.end(); ++it) {
+            double k = it->getTime();
+            double v = it->getValue();
+            double ld = it->getLeftDerivative();
+            double rd = it->getRightDerivative();
+            hash->push_back(*reinterpret_cast<U64*>(&k));
+            hash->push_back(*reinterpret_cast<U64*>(&v));
+            hash->push_back(*reinterpret_cast<U64*>(&ld));
+            hash->push_back(*reinterpret_cast<U64*>(&rd));
+        }
+    }
+}
+
+void Parametric_Knob::cloneExtraData(const Knob& other){
+    assert(other.typeName() == typeNameStatic() && other.getDimension() == getDimension());
+    const Parametric_Knob& paramKnob = dynamic_cast<const Parametric_Knob&>(other);
+    for (int i = 0; i < getDimension(); ++i) {
+        _curves[i]->clone(*(paramKnob.getParametricCurve(i)));
+    }
+}

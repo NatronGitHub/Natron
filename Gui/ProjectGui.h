@@ -22,6 +22,7 @@ class QLabel;
 class ComboBox;
 class SpinBox;
 class LineEdit;
+class Color_Knob;
 class DockablePanel;
 class ProjectGuiSerialization;
 class NodeGuiSerialization;
@@ -53,6 +54,14 @@ public:
     
     void load(const ProjectGuiSerialization& obj);
     
+    void registerNewColorPicker(boost::shared_ptr<Color_Knob> knob);
+    
+    void removeColorPicker(boost::shared_ptr<Color_Knob> knob);
+    
+    bool hasPickers() const { return !_colorPickersEnabled.empty(); }
+    
+    void setPickersColor(const QColor& color);
+    
 public slots:
     
     void createNewFormat();
@@ -66,6 +75,8 @@ private:
     DockablePanel* _panel;
     
     bool _created;
+    
+    std::vector<boost::shared_ptr<Color_Knob> > _colorPickersEnabled;
 };
 
 

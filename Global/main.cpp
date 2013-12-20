@@ -23,18 +23,21 @@
 #include "Engine/ChannelSet.h"
 #include "Engine/Log.h"
 #include "Engine/Settings.h"
+#include "Engine/Node.h"
 
 #include "Gui/KnobGui.h"
+#include "Gui/CurveWidget.h"
 
 
 void registerMetaTypes(){
     qRegisterMetaType<Variant>();
     qRegisterMetaType<Natron::ChannelSet>();
-    qRegisterMetaType<KnobGui*>();
     qRegisterMetaType<Format>();
     qRegisterMetaType<Natron::StandardButtons>();
     qRegisterMetaType<SequenceTime>("SequenceTime");
-
+    qRegisterMetaType<Knob*>();
+    qRegisterMetaType<Natron::Node*>();
+    qRegisterMetaType<CurveWidget*>();
 }
 
 void printBackGroundWelcomeMessage(){

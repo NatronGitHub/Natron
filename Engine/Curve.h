@@ -17,18 +17,21 @@
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
-
-#include "Engine/Variant.h"
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
 
 #include "Global/Enums.h"
+#include "Global/Macros.h"
+
+#define CONTROL_POINTS_EQUALITY_EPSILON 1e-2
+
 /**
- * @brief A KeyFrame is a pair <time,value>. These are the value that are used
- * to interpolate a Curve. The _leftTangent and _rightTangent can be
+ * @brief A KeyFrame is a lightweight pair <time,value>. These are the values that are used
+ * to interpolate a Curve. The _leftDerivative and _rightDerivative can be
  * used by the interpolation method of the curve.
 **/
 class Curve;
-class Variant;
-struct KeyFramePrivate;
+
 class KeyFrame  {
 
 
@@ -36,29 +39,35 @@ public:
 
     KeyFrame();
 
-    KeyFrame(double time, const Variant& initialValue);
+    KeyFrame(double time, double initialValue);
 
     KeyFrame(const KeyFrame& other);
 
     ~KeyFrame();
     
     void operator=(const KeyFrame& o);
+    
+    bool operator==(const KeyFrame& o) const {
+        return o._time == _time &&
+        o._value == _value &&
+        o._interpolation == _interpolation &&
+        o._leftDerivative == _leftDerivative &&
+        o._rightDerivative == _rightDerivative;
+    }
 
-    bool operator==(const KeyFrame& o) const ;
-
-    const Variant& getValue() const;
+    double getValue() const;
     
     double getTime() const ;
 
-    double getLeftTangent() const;
+    double getLeftDerivative() const;
 
-    double getRightTangent() const ;
+    double getRightDerivative() const ;
 
-    void setLeftTangent(double v);
+    void setLeftDerivative(double v);
 
-    void setRightTangent(double v);
+    void setRightDerivative(double v);
 
-    void setValue(const Variant& v);
+    void setValue(double v);
 
     void setTime(double time);
 
@@ -66,24 +75,36 @@ public:
 
     Natron::KeyframeType getInterpolation() const;
 
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
 
 private:
 
-
-    boost::scoped_ptr<KeyFramePrivate> _imp;
-
+    double _time;
+    double _value;
+    double _leftDerivative;
+    double _rightDerivative;
+    Natron::KeyframeType _interpolation;
+    
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar,const unsigned int version)
+    {
+        (void)version;
+        ar & boost::serialization::make_nvp("Time",_time);
+        ar & boost::serialization::make_nvp("Value",_value);
+        ar & boost::serialization::make_nvp("InterpolationMethod",_interpolation);
+        ar & boost::serialization::make_nvp("LeftDerivative",_leftDerivative);
+        ar & boost::serialization::make_nvp("RightDerivative",_rightDerivative);
+    }
 
 };
 
 struct KeyFrame_compare_time {
-    bool operator() (const boost::shared_ptr<KeyFrame>& lhs, const boost::shared_ptr<KeyFrame>& rhs) const {
-        return lhs->getTime() < rhs->getTime();
+    bool operator() (const KeyFrame& lhs, const KeyFrame& rhs) const {
+        return lhs.getTime() < rhs.getTime();
     }
 };
 
-typedef std::set<boost::shared_ptr<KeyFrame>, KeyFrame_compare_time> KeyFrameSet;
+typedef std::set<KeyFrame, KeyFrame_compare_time> KeyFrameSet;
 
 
 /**
@@ -94,9 +115,9 @@ class Knob;
 struct CurvePrivate;
 class RectD;
 class Curve {
-
+    
     enum CurveChangedReason{
-        TANGENT_CHANGED = 0,
+        DERIVATIVES_CHANGED = 0,
         KEYFRAME_CHANGED = 1
     };
     
@@ -121,13 +142,17 @@ public:
     void clone(const Curve& other);
 
     bool isAnimated() const;
+    
+    /**whether the curve will clamp possible keyframe X values to integers or not.**/
+    bool areKeyFramesTimeClampedToIntegers() const;
 
-    void addKeyFrame(boost::shared_ptr<KeyFrame> cp);
+    ///returns true if a keyframe was successfully added, false if it just replaced an already
+    ///existing key at this time.
+    bool addKeyFrame(const KeyFrame key);
 
-    void removeKeyFrame(boost::shared_ptr<KeyFrame> cp);
-
-    //removes a keyframe at this time, if any
     void removeKeyFrame(double time);
+    
+    void removeKeyFrameWithIndex(int index);
 
     int keyFramesCount() const ;
 
@@ -135,46 +160,86 @@ public:
 
     double getMaximumTimeCovered() const;
 
-    Variant getValueAt(double t) const;
+    double getValueAt(double t) const;
 
     const RectD& getBoundingBox() const ;
 
     const KeyFrameSet& getKeyFrames() const;
 
     void clearKeyFrames();
-    
-    void setKeyFrameValue(const Variant& value,boost::shared_ptr<KeyFrame> k);
-    
-    void setKeyFrameTime(double time,boost::shared_ptr<KeyFrame> k);
-    
-    void setKeyFrameValueAndTime(double time,const Variant& value,boost::shared_ptr<KeyFrame> k);
-    
-    void setKeyFrameLeftTangent(double value,boost::shared_ptr<KeyFrame> k);
-    
-    void setKeyFrameRightTangent(double value,boost::shared_ptr<KeyFrame> k);
-    
-    void setKeyFrameTangents(double left, double right, boost::shared_ptr<KeyFrame> k);
-    
-    void setKeyFrameInterpolation(Natron::KeyframeType interp,boost::shared_ptr<KeyFrame> k);
 
+    
+    /**
+     * @brief  Set the value of the keyframe positioned at index index and returns the new  keyframe.
+     * Also the index of the new keyframe is returned in newIndex.
+     **/
+    const KeyFrame& setKeyFrameValue(double value,int index,int* newIndex = NULL);
+
+    /**
+     * @brief Set the new time of the keyframe positioned at index index and returns the new keyframe.
+     * Also the index of the new keyframe is returned in newIndex.
+     **/
+    const KeyFrame& setKeyFrameTime(double time,int index,int* newIndex = NULL);
+
+    /**
+     * @brief Set the new value and time of the keyframe positioned at index index and returns the new  keyframe.
+     * Also the index of the new keyframe is returned in newIndex.
+     **/
+    const KeyFrame& setKeyFrameValueAndTime(double time,double value,int index,int* newIndex = NULL);
+
+    /**
+     * @brief Set the left derivative  of the keyframe positioned at index index and returns the new  keyframe.
+     * Also the index of the new keyframe is returned in newIndex.
+     **/
+    const KeyFrame& setKeyFrameLeftDerivative(double value,int index,int* newIndex = NULL);
+    
+    /**
+     * @brief Set the right derivative  of the keyframe positioned at index index and returns the new keyframe.
+     * Also the index of the new keyframe is returned in newIndex.
+     **/
+    const KeyFrame& setKeyFrameRightDerivative(double value,int index,int* newIndex = NULL);
+
+    /**
+     * @brief Set the right and left derivatives  of the keyframe positioned at index index and returns the new  keyframe.
+     * Also the index of the new keyframe is returned in newIndex.
+     **/
+    const KeyFrame& setKeyFrameDerivatives(double left, double right,int index,int* newIndex = NULL) ;
+    
+    /**
+     * @brief  Set the interpolation method of the keyframe positioned at index index and returns the new  keyframe.
+     * Also the index of the new keyframe is returned in newIndex.
+     **/
+    const KeyFrame& setKeyFrameInterpolation(Natron::KeyframeType interp,int index,int* newIndex = NULL);
+
+
+    KeyFrameSet::const_iterator find(double time) const;
+    
+    KeyFrameSet::const_iterator keyframeAt(int index) const;
+    
+    int keyFrameIndex(double time) const;
+    
+    KeyFrameSet::const_iterator begin() const;
+
+    KeyFrameSet::const_iterator end() const;
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 private:
 
+    ///returns an iterator to the new keyframe in the keyframe set and
+    ///a boolean indicating whether it removed a keyframe already existing at this time or not
+    std::pair<KeyFrameSet::iterator,bool> addKeyFrameNoUpdate(const KeyFrame& cp);
+
+    
     /**
-     * @brief Called when a keyframe/tangent is modified, indicating that the curve has changed and we must
+     * @brief Called when a keyframe/derivative is modified, indicating that the curve has changed and we must
      * evaluate any change (i.e: force a new render)
      **/
     void evaluateCurveChanged(CurveChangedReason reason,KeyFrameSet::iterator key);
-
-    void evaluateCurveChanged(CurveChangedReason reason,boost::shared_ptr<KeyFrame> k);
     
-    void refreshTangents(CurveChangedReason reason, boost::shared_ptr<KeyFrame> k);
-    
-    void refreshTangents(CurveChangedReason reason, KeyFrameSet::iterator key);
+    KeyFrameSet::iterator refreshDerivatives(CurveChangedReason reason, KeyFrameSet::iterator key);
 
-    void setKeyFrameTimeNoUpdate(double time, KeyFrameSet::iterator k);
+    KeyFrameSet::iterator setKeyFrameValueAndTimeNoUpdate(double value,double time, KeyFrameSet::iterator k);
 
     boost::scoped_ptr<CurvePrivate> _imp;
 };

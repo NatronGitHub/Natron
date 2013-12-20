@@ -47,7 +47,7 @@ Project::~Project(){
 }
 
 void Project::initializeKnobs(){
-    _imp->formatKnob = appPTR->getKnobFactory().createKnob<Choice_Knob>(this, "Output Format");
+    _imp->formatKnob = Natron::createKnob<Choice_Knob>(this, "Output Format");
     const std::vector<Format*>& appFormats = appPTR->getFormats();
     std::vector<std::string> entries;
     for (U32 i = 0; i < appFormats.size(); ++i) {
@@ -62,10 +62,10 @@ void Project::initializeKnobs(){
     
     _imp->formatKnob->populate(entries);
     _imp->formatKnob->turnOffAnimation();
-    _imp->addFormatKnob = appPTR->getKnobFactory().createKnob<Button_Knob>(this,"New format...");
+    _imp->addFormatKnob = Natron::createKnob<Button_Knob>(this,"New format...");
     
 
-    _imp->viewsCount = appPTR->getKnobFactory().createKnob<Int_Knob>(this,"Number of views");
+    _imp->viewsCount = Natron::createKnob<Int_Knob>(this,"Number of views");
     _imp->viewsCount->turnOffAnimation();
     _imp->viewsCount->setMinimum(1);
     _imp->viewsCount->setValue(1);
@@ -315,17 +315,17 @@ void Project::endKnobsValuesChanged(Natron::ValueChangedReason /*reason*/) {
 }
 
 void Project::onKnobValueChanged(Knob* knob,Natron::ValueChangedReason /*reason*/){
-    if(knob == _imp->viewsCount){
+    if(knob == _imp->viewsCount.get()){
         int viewsCount = _imp->viewsCount->getValue<int>();
         getApp()->setupViewersForViews(viewsCount);
-    }else if(knob == _imp->formatKnob){
+    }else if(knob == _imp->formatKnob.get()){
         const Format& f = _imp->availableFormats[_imp->formatKnob->getActiveEntry()];
         for(U32 i = 0 ; i < _imp->currentNodes.size() ; ++i){
             if (_imp->currentNodes[i]->pluginID() == "Viewer") {
                 emit formatChanged(f);
             }
         }
-    }else if(knob == _imp->addFormatKnob){
+    }else if(knob == _imp->addFormatKnob.get()){
         emit mustCreateFormat();
     }
 

@@ -19,7 +19,6 @@
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/set.hpp>
 #include <boost/serialization/scoped_ptr.hpp>
-#include <boost/serialization/split_free.hpp>
 
 #include "Engine/Curve.h"
 #include "Engine/CurvePrivate.h"
@@ -27,17 +26,6 @@
 
 namespace boost {
 namespace serialization {
-
-template<class Archive>
-void serialize(Archive & ar, KeyFramePrivate& k,const unsigned int version)
-{
-    (void)version;
-    ar & boost::serialization::make_nvp("Time",k.time);
-    ar & boost::serialization::make_nvp("Value",k.value);
-    ar & boost::serialization::make_nvp("InterpolationMethod",k.interpolation);
-    ar & boost::serialization::make_nvp("LeftTangent",k.leftTangent);
-    ar & boost::serialization::make_nvp("RightTangent",k.rightTangent);
-}
 
 
 template<class Archive>
@@ -50,14 +38,6 @@ void serialize(Archive & ar,CurvePrivate& c, const unsigned int version)
 
     
 }
-}
-
-
-template<class Archive>
-void KeyFrame::serialize(Archive & ar, const unsigned int version)
-{
-    (void)version;
-    ar & boost::serialization::make_nvp("PIMPL",_imp);
 }
 
 

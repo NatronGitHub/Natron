@@ -35,12 +35,15 @@ typedef boost::uint8_t U8;
 typedef boost::uint16_t U16;
 
 #include <ofxhImageEffect.h>
+#include <ofxPixels.h>
 
 typedef int SequenceTime;
 
 Q_DECLARE_METATYPE(SequenceTime)
 
 typedef OfxPointD RenderScale;
+
+typedef OfxRGBAColourF RGBAColourF;
 
 #define kFrameRenderedString "Frame rendered: "
 #define kProgressChangedString "Progress changed: "
@@ -50,7 +53,6 @@ typedef OfxPointD RenderScale;
 #define kNodeGraphObjectName "NodeGraph"
 #define kCurveEditorObjectName "CurveEditor"
 
-#define kCurveEditorMoveKeyCommandCompressionID 1
 #define kCurveEditorMoveMultipleKeysCommandCompressionID 2
 #define kKnobUndoChangeCommandCompressionID 3
 #define kNodeGraphMoveNodeCommandCompressionID 4

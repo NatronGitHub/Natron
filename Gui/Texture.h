@@ -21,7 +21,7 @@
 class Texture{
 public:
     /*Note that the short datatype is not used currently*/
-    enum DataType {BYTE = 0,FLOAT = 1 , SHORT = 2};
+    enum DataType {BYTE = 0,FLOAT = 1 , HALF_FLOAT = 2};
 
 private:
     U32 _texID;

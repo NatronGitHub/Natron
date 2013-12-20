@@ -165,6 +165,10 @@ public:
 
     virtual bool makePreviewByDefault() const OVERRIDE {return true;}
 
+    virtual int majorVersion() const OVERRIDE { return 1; }
+
+    virtual int minorVersion() const OVERRIDE { return 0;}
+
     virtual std::string pluginID() const OVERRIDE;
 
     virtual std::string pluginLabel() const OVERRIDE;
@@ -208,6 +212,8 @@ public:
 
     virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE;
 
+    virtual Natron::EffectInstance::CachePolicy getCachePolicy(SequenceTime time) const OVERRIDE;
+
 
 
 private:
@@ -215,8 +221,8 @@ private:
     
     boost::shared_ptr<Decoder> decoderForFileType(const QString& fileName);
     Buffer _buffer;
-    File_Knob* _fileKnob;
-    Choice_Knob* _missingFrameChoice;
+    boost::shared_ptr<File_Knob> _fileKnob;
+    boost::shared_ptr<Choice_Knob> _missingFrameChoice;
     QMutex _lock;
     boost::scoped_ptr<QFutureWatcher<void> > _previewWatcher;
 };

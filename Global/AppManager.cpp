@@ -24,6 +24,7 @@
 #include <QtConcurrentRun>
 #include <QtConcurrentMap>
 #include <QtGui/QPixmapCache>
+#include <QBitmap>
 
 #if QT_VERSION < 0x050000
 #include <QtGui/QDesktopServices>
@@ -43,7 +44,6 @@
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/Knob.h"
-#include "Engine/KnobFactory.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
@@ -205,6 +205,11 @@ void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const{
             img.load(NATRON_IMAGES_PATH"colorwheel.png");
             *pix = QPixmap::fromImage(img).scaled(25, 20);
             break;
+        case NATRON_PIXMAP_COLOR_PICKER:
+            img.load(NATRON_IMAGES_PATH"color_picker.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+
         case NATRON_PIXMAP_IO_GROUPING:
             img.load(NATRON_IMAGES_PATH"ioGroupingIcon.png");
             *pix = QPixmap::fromImage(img);
@@ -315,11 +320,11 @@ AppInstance::~AppInstance(){
 }
 
 
-Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
+Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVersion,bool requestedByLoad ) {
     Node* node = 0;
     LibraryBinary* pluginBinary = 0;
     try {
-        pluginBinary = appPTR->getPluginBinary(name);
+        pluginBinary = appPTR->getPluginBinary(name,majorVersion,minorVersion);
     } catch (const std::exception& e) {
         Natron::errorDialog("Plugin error", std::string("Cannot load plugin executable") + ": " + e.what());
         return node;
@@ -415,7 +420,7 @@ void AppInstance::getActiveNodes(std::vector<Natron::Node*>* activeNodes) const{
 }
 bool AppInstance::loadProject(const QString& path,const QString& name){
     try {
-       loadProjectInternal(path,name);
+        loadProjectInternal(path,name);
     } catch (const std::exception& e) {
         Natron::errorDialog("Project loader", std::string("Error while loading project") + ": " + e.what());
         if(!_isBackground)
@@ -735,6 +740,11 @@ AppInstance* AppManager::getAppInstance(int appID) const{
         return NULL;
     }
 }
+
+const std::map<int,AppInstance*>&  AppManager::getAppInstances() const{
+    return _appInstances;
+}
+
 void AppManager::removeInstance(int appID){
     _appInstances.erase(appID);
 }
@@ -900,10 +910,10 @@ AppInstance* AppManager::getTopLevelInstance () const{
 AppManager::AppManager()
     : QObject()
     , Singleton<AppManager>()
-    , _settings(new Settings())
     , _appInstances()
     , _availableID(0)
     , _topLevelInstanceID(0)
+    , _settings(new Settings(NULL))
     , _readPluginsLoaded()
     , _writePluginsLoaded()
     , _formats()
@@ -912,13 +922,28 @@ AppManager::AppManager()
     , _toolButtons()
     , _knobFactory(new KnobFactory())
     , _knobGuiFactory(new KnobGuiFactory())
-    ,_nodeCache(new Cache<Image>("NodeCache",0x1, (_settings->_cacheSettings.maxCacheMemoryPercent -
-                                                   _settings->_cacheSettings.maxPlayBackMemoryPercent)*getSystemTotalRAM(),1))
-    ,_viewerCache(new Cache<FrameEntry>("ViewerCache",0x1,_settings->_cacheSettings.maxDiskCache
-                                        ,_settings->_cacheSettings.maxPlayBackMemoryPercent))
+    , _nodeCache()
+    , _viewerCache()
+    ,_colorPickerCursor(NULL)
+    ,_initialized(false)
 {
+    
+    _settings->initializeKnobs();
+    
+    _settings->restoreSettings();
+    
     connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString,QString)),
             this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString,QString)));
+    size_t maxCacheRAM = _settings->getRamMaximumPercent() * getSystemTotalRAM();
+    U64 maxDiskCache = _settings->getMaximumDiskCacheSize();
+    U64 playbackSize = maxCacheRAM * _settings->getRamPlaybackMaximumPercent();
+    
+    _nodeCache.reset(new Cache<Image>("NodeCache",0x1, maxCacheRAM - playbackSize,1));
+    _viewerCache.reset(new Cache<FrameEntry>("ViewerCache",0x1,maxDiskCache,(double)playbackSize / (double)maxDiskCache));
+    
+    qDebug() << "NodeCache RAM size: " << printAsRAM(_nodeCache->getMaximumMemorySize());
+    qDebug() << "ViewerCache RAM size (playback-cache): " << printAsRAM(_viewerCache->getMaximumMemorySize());
+    qDebug() << "ViewerCache disk size: " << printAsRAM(maxDiskCache);
     
     
     /*loading all plugins*/
@@ -928,10 +953,56 @@ AppManager::AppManager()
     /*Adjusting multi-threading for OpenEXR library.*/
     Imf::setGlobalThreadCount(QThread::idealThreadCount());
     
+    createColorPickerCursor();
+    
+    _initialized = true;
+}
 
+void AppManager::registerAppInstance(AppInstance* app){
+    _appInstances.insert(std::make_pair(app->getAppID(),app));
+}
+
+void AppManager::setApplicationsCachesMaximumMemoryPercent(double p){
+    size_t maxCacheRAM = p * getSystemTotalRAM();
+    U64 playbackSize = maxCacheRAM * _settings->getRamPlaybackMaximumPercent();
+    _nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
+    _nodeCache->setMaximumInMemorySize(1);
+    U64 maxDiskCacheSize = _settings->getMaximumDiskCacheSize();
+    _viewerCache->setMaximumInMemorySize((double)playbackSize / (double)maxDiskCacheSize);
+    
+    qDebug() << "NodeCache RAM size: " << printAsRAM(_nodeCache->getMaximumMemorySize());
+    qDebug() << "ViewerCache RAM size (playback-cache): " << printAsRAM(_viewerCache->getMaximumMemorySize());
+    qDebug() << "ViewerCache disk size: " << printAsRAM(maxDiskCacheSize);
+}
+
+void AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size){
+    size_t maxCacheRAM = _settings->getRamMaximumPercent() * getSystemTotalRAM();
+    U64 playbackSize = maxCacheRAM * _settings->getRamPlaybackMaximumPercent();
+    _viewerCache->setMaximumCacheSize(size);
+    _viewerCache->setMaximumInMemorySize((double)playbackSize / (double)size);
+    
+    qDebug() << "NodeCache RAM size: " << printAsRAM(_nodeCache->getMaximumMemorySize());
+    qDebug() << "ViewerCache RAM size (playback-cache): " << printAsRAM(_viewerCache->getMaximumMemorySize());
+    qDebug() << "ViewerCache disk size: " << printAsRAM(size);
+}
+
+void AppManager::setPlaybackCacheMaximumSize(double p){
+    size_t maxCacheRAM = _settings->getRamMaximumPercent() * getSystemTotalRAM();
+    U64 playbackSize = maxCacheRAM * p;
+    _nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
+    _nodeCache->setMaximumInMemorySize(1);
+    U64 maxDiskCacheSize = _settings->getMaximumDiskCacheSize();
+    _viewerCache->setMaximumInMemorySize((double)playbackSize / (double)maxDiskCacheSize);
+    
+    qDebug() << "NodeCache RAM size: " << printAsRAM(_nodeCache->getMaximumMemorySize());
+    qDebug() << "ViewerCache RAM size (playback-cache): " << printAsRAM(_viewerCache->getMaximumMemorySize());
+    qDebug() << "ViewerCache disk size: " << printAsRAM(maxDiskCacheSize);
 }
 
 AppManager::~AppManager(){
+    
+    _settings->saveSettings();
+    
     for(ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); ++it) {
         delete it->second.second;
     }
@@ -1002,7 +1073,7 @@ void AppManager::loadReadPlugins(){
             }
         }
     }
-    _settings->_readersSettings.fillMap(defaultMapping);
+    _settings->readersSettings.fillMap(defaultMapping);
 }
 
 void AppManager::loadBuiltinReads(){
@@ -1052,7 +1123,7 @@ void AppManager::loadNodePlugins(){
                 pluginMutex = new QMutex;
             }
             Natron::Plugin* plugin = new Natron::Plugin(plugins[i],effect->pluginID().c_str(),effect->pluginLabel().c_str(),
-                                                        pluginMutex);
+                                                        pluginMutex,effect->majorVersion(),effect->minorVersion());
             _plugins.push_back(plugin);
             delete effect;
         }
@@ -1073,7 +1144,7 @@ void AppManager::loadBuiltinNodePlugins(){
         LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
         assert(readerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin(readerPlugin,reader->pluginID().c_str(),reader->pluginLabel().c_str(),
-                                                    (QMutex*)NULL);
+                                                    (QMutex*)NULL,reader->majorVersion(),reader->minorVersion());
         _plugins.push_back(plugin);
         addPluginToolButtons(grouping,reader->pluginID().c_str(),reader->pluginLabel().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete reader;
@@ -1086,7 +1157,7 @@ void AppManager::loadBuiltinNodePlugins(){
         LibraryBinary *viewerPlugin = new LibraryBinary(viewerFunctions);
         assert(viewerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin(viewerPlugin,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(),
-                                                    (QMutex*)NULL);
+                                                    (QMutex*)NULL,viewer->majorVersion(),viewer->minorVersion());
         _plugins.push_back(plugin);
         addPluginToolButtons(grouping,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete viewer;
@@ -1099,7 +1170,7 @@ void AppManager::loadBuiltinNodePlugins(){
         LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
         assert(writerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin(writerPlugin,writer->pluginID().c_str(),writer->pluginLabel().c_str(),
-                                                    (QMutex*)NULL);
+                                                    (QMutex*)NULL,writer->majorVersion(),writer->minorVersion());
         _plugins.push_back(plugin);
         addPluginToolButtons(grouping,writer->pluginID().c_str(),writer->pluginLabel().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete writer;
@@ -1135,7 +1206,7 @@ void AppManager::loadWritePlugins(){
             }
         }
     }
-    _settings->_writersSettings.fillMap(defaultMapping);
+    _settings->writersSettings.fillMap(defaultMapping);
 }
 
 /*loads writes that are built-ins*/
@@ -1248,6 +1319,14 @@ Format* AppManager::findExistingFormat(int w, int h, double pixel_aspect) const 
         }
     }
     return NULL;
+}
+
+void AppManager::createColorPickerCursor(){
+    QPixmap pickerPix;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_COLOR_PICKER, &pickerPix);
+    pickerPix = pickerPix.scaled(16, 16);
+    pickerPix.setMask(pickerPix.createHeuristicMask());
+    _colorPickerCursor = new QCursor(pickerPix,0,pickerPix.height());
 }
 
 
@@ -1418,15 +1497,29 @@ void AppManager::printPluginsLoaded(){
     }
 }
 
-Natron::LibraryBinary* AppManager::getPluginBinary(const QString& pluginId) const{
+Natron::LibraryBinary* AppManager::getPluginBinary(const QString& pluginId,int majorVersion,int minorVersion) const{
+    std::map<int,Natron::Plugin*> matches;
     for (U32 i = 0; i < _plugins.size(); ++i) {
-        if(_plugins[i]->getPluginID() == pluginId){
-            return _plugins[i]->getLibraryBinary();
+        if(_plugins[i]->getPluginID() != pluginId){
+            continue;
         }
+        if(majorVersion != -1 && _plugins[i]->getMajorVersion() != majorVersion){
+            continue;
+        }
+        matches.insert(std::make_pair(_plugins[i]->getMinorVersion(),_plugins[i]));
     }
-    std::string exc("Couldn't find a plugin named ");
-    exc.append(pluginId.toStdString());
-    throw std::invalid_argument(exc);
+    
+    if(matches.empty()){
+        QString exc = QString("Couldn't find a plugin named %1, with a major version of %2 and a minor version greater or equal to %3.")
+        .arg(pluginId)
+        .arg(majorVersion)
+        .arg(minorVersion);
+        throw std::invalid_argument(exc.toStdString());
+    }else{
+        std::map<int,Natron::Plugin*>::iterator greatest = matches.end();
+        --greatest;
+        return greatest->second->getLibraryBinary();
+    }
 }
 int AppInstance::getKnobsAge() const{
     return _currentProject->getKnobsAge();
@@ -1651,7 +1744,7 @@ void AppManager::removeFromNodeCache(boost::shared_ptr<Natron::Image> image){
 
 void AppManager::removeFromViewerCache(boost::shared_ptr<Natron::FrameEntry> texture){
     _viewerCache->removeEntry(texture);
-    emit imageRemovedFromNodeCache(texture->getKey()._frameNb);
+    emit imageRemovedFromNodeCache(texture->getKey()._time);
 }
 
 
@@ -1721,6 +1814,7 @@ Natron::StandardButton questionDialog(const std::string& title,const std::string
     Log::print(message);
     Log::endFunction(title,"QUESTION");
 }
+    
 
 Plugin::~Plugin(){
     if(_lock){

@@ -32,17 +32,23 @@ ComboBox::ComboBox(QWidget* parent):QFrame(parent),_currentIndex(0),_maximumText
     setFrameShape(QFrame::Box);
     
     _currentText = new QLabel(this);
+    _currentText->setObjectName("ComboBoxLabel");
     setCurrentIndex(-1);
     _currentText->setMinimumWidth(10);
     _mainLayout->addWidget(_currentText);
-        
+    _currentText->setFixedHeight(fontMetrics().height() + 8);
+
+    
     _dropDownIcon = new QLabel(this);
+    _dropDownIcon->setObjectName("ComboBoxDropDownLabel");
     QPixmap pixC;
     appPTR->getIcon(NATRON_PIXMAP_COMBOBOX, &pixC);
     _dropDownIcon->setPixmap(pixC);
     _mainLayout->addWidget(_dropDownIcon);
     
     _menu = new MenuWithToolTips(this);
+    
+    setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
 }
 
 

@@ -57,5 +57,6 @@
         <file>Resources/Images/checkbox_animation2_checked_hovered.png</file>
         <file>Resources/Images/checkbox_animation2_unchecked.png</file>
         <file>Resources/Images/checkbox_animation2_unchecked_hovered.png</file>
+        <file>Resources/Images/color_picker.png</file>
     </qresource>
 </RCC>

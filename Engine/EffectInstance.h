@@ -44,6 +44,7 @@ public:
     typedef std::map<EffectInstance*,RectI> RoIMap;
 public:
     
+    enum CachePolicy { ALWAYS_CACHE = 0 , NEVER_CACHE };
     
     /**
      * @brief Constructor used once for each node created. Its purpose is to create the "live instance".
@@ -82,8 +83,6 @@ public:
     
     const Inputs& getInputs() const WARN_UNUSED_RETURN;
     
-    boost::shared_ptr<Knob> getKnobByDescription(const std::string& desc) const WARN_UNUSED_RETURN;
-
     void setMarkedByTopologicalSort(bool marked) const;
 
     bool isMarkedByTopologicalSort() const WARN_UNUSED_RETURN;
@@ -112,6 +111,16 @@ public:
      * @brief Forwarded to the node holding the effect
      **/
     bool hasOutputConnected() const WARN_UNUSED_RETURN;
+    
+    /**
+     * @brief Must return the plugin's major version.
+     **/
+    virtual int majorVersion() const WARN_UNUSED_RETURN = 0;
+    
+    /**
+     * @brief Must return the plugin's minor version.
+     **/
+    virtual int minorVersion() const WARN_UNUSED_RETURN = 0;
     
     /**
      * @brief Is this node an input node ? An input node means
@@ -206,7 +215,7 @@ public:
     virtual bool isIdentity(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& /*roi*/,
                             int /*view*/,SequenceTime* /*inputTime*/,int* /*inputNb*/) WARN_UNUSED_RETURN { return false; }
     
-    enum RenderSafety{UNSAFE = 0,INSTANCE_SAFE = 1,FULLY_SAFE = 2};
+    enum RenderSafety{UNSAFE = 0,INSTANCE_SAFE = 1,FULLY_SAFE = 2,FULLY_SAFE_FRAME = 3};
     /**
      * @brief Indicates how many simultaneous renders the plugin can deal with.
      * RenderSafety::UNSAFE - indicating that only a single 'render' call can be made at any time amoung all instances,
@@ -354,6 +363,12 @@ public:
      * handling on his side.
      **/
     virtual void purgeCaches(){};
+    
+    /**
+     * @brief Can be overloaded to indicate whether a plug-in wants to cache
+     * a frame rendered or not.
+     **/
+    virtual CachePolicy getCachePolicy(SequenceTime /*time*/) const { return ALWAYS_CACHE; }
     
     /**
      * @brief When called, if the node holding this effect  is connected to any

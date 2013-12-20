@@ -24,9 +24,9 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     : projectName("Untitled." NATRON_PROJECT_FILE_EXT)
     , hasProjectBeenSavedByUser(false)
     , ageSinceLastSave(QDateTime::currentDateTime())
-    , formatKnob(NULL)
-    , addFormatKnob(NULL)
-    , viewsCount(NULL)
+    , formatKnob()
+    , addFormatKnob()
+    , viewsCount()
     , timeline(new TimeLine(project))
     , autoSetProjectFormat(true)
     , projectDataLock()
@@ -93,9 +93,10 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             continue;
         }
 
-        Natron::Node* n = project->getApp()->createNode(serializedNodes[i]->getPluginID().c_str(),true);
+        Natron::Node* n = project->getApp()->createNode(serializedNodes[i]->getPluginID().c_str()
+                                                        ,serializedNodes[i]->getPluginMajorVersion()
+                                                        ,serializedNodes[i]->getPluginMinorVersion(),true);
         if(!n){
-            Natron::errorDialog("Loading failed", "Cannot load node " + serializedNodes[i]->getPluginID());
             continue;
         }
         if(n->pluginID() == "Writer" || (n->isOpenFXNode() && n->isOutputNode())){

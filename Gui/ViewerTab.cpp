@@ -47,8 +47,7 @@ using namespace Natron;
 
 ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(parent),
 _gui(gui),
-_viewerNode(node),
-_channelsToDraw(Mask_RGBA)
+_viewerNode(node)
 {
     
     installEventFilter(this);
@@ -525,28 +524,26 @@ void ViewerTab::updateZoomComboBox(int value){
 /*In case they're several viewer around, we need to reset the dag and tell it
  explicitly we want to use this viewer and not another one.*/
 void ViewerTab::startPause(bool b){
+    abortRendering();
     if(b){
         _viewerNode->getVideoEngine()->render(-1, /*frame count*/
                                               true,/*rebuild tree?*/
                                               false, /*fit to viewer ?*/
                                               true, /*forward ?*/
                                               false); /*same frame ?*/
-    }else{
-        abortRendering();
     }
 }
 void ViewerTab::abortRendering(){
     _viewerNode->getVideoEngine()->abortRendering();
 }
 void ViewerTab::startBackward(bool b){
+    abortRendering();
     if(b){
         _viewerNode->getVideoEngine()->render(-1, /*frame count*/
                                               true,/*rebuild tree?*/
                                               false,/*fit to viewer?*/
                                               false,/*forward?*/
                                               false);/*same frame ?*/
-    }else{
-        abortRendering();
     }
 }
 void ViewerTab::seek(SequenceTime time){
@@ -574,7 +571,7 @@ void ViewerTab::lastFrame(){
     seek(_timeLineGui->rightBound());
 }
 
-void ViewerTab::onTimeLineTimeChanged(SequenceTime time,int /*reason*/){
+void ViewerTab::onTimeLineTimeChanged(SequenceTime time,int/* reason*/){
     _currentFrameBox->setValue(time);
 }
 
@@ -675,29 +672,31 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
 }
 
 void ViewerTab::onViewerChannelsChanged(int i){
+    ViewerInstance::DisplayChannels channels;
     switch (i) {
         case 0:
-            _channelsToDraw = Mask_RGBA;
+            channels = ViewerInstance::LUMINANCE;
             break;
         case 1:
-            _channelsToDraw = Mask_RGBA;
+            channels = ViewerInstance::RGBA;
             break;
         case 2:
-            _channelsToDraw = Channel_red;
+            channels = ViewerInstance::R;
             break;
         case 3:
-            _channelsToDraw = Channel_green;
+            channels = ViewerInstance::G;
             break;
         case 4:
-            _channelsToDraw = Channel_blue;
+            channels = ViewerInstance::B;
             break;
         case 5:
-            _channelsToDraw = Channel_alpha;
+            channels = ViewerInstance::A;
             break;
         default:
+            channels = ViewerInstance::RGBA;
             break;
     }
-    viewer->setDisplayChannel(_channelsToDraw, !i ? true : false);
+    _viewerNode->setDisplayChannels(channels);
 }
 bool ViewerTab::eventFilter(QObject *target, QEvent *event){
     if (event->type() == QEvent::MouseButtonPress) {

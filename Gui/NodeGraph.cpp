@@ -186,13 +186,7 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     _refreshCacheTextTimer.start(NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS);
     
     _undoStack = new QUndoStack(this);
-    
-    _undoAction = _undoStack->createUndoAction(this,tr("&Undo"));
-    _undoAction->setShortcuts(QKeySequence::Undo);
-    _redoAction = _undoStack->createRedoAction(this,tr("&Redo"));
-    _redoAction->setShortcuts(QKeySequence::Redo);
-    
-    _gui->setUndoRedoActions(_undoAction, _redoAction);
+    _gui->registerNewUndoStack(_undoStack);
     
     
     _tL = new QGraphicsTextItem(0);
@@ -230,10 +224,15 @@ NodeGraph::~NodeGraph(){
     _nodeCreationShortcutEnabled = false;
     _nodes.clear();
     _nodesTrash.clear();
-}
+    
+    for (U32 i = 0; i < _nodes.size(); ++i) {
+        delete _nodes[i];
+    }
+    
+    for (U32 i = 0; i < _nodesTrash.size(); ++i) {
+        delete _nodesTrash[i];
+    }
 
-std::pair<QAction*,QAction*> NodeGraph::getUndoRedoActions() const{
-    return std::make_pair(_undoAction,_redoAction);
 }
 
 void NodeGraph::resizeEvent(QResizeEvent* event){
@@ -312,6 +311,12 @@ NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Natron::Node *node
     
     NodeGui* node_ui = new NodeGui(this,dockContainer,node,x,y,_root);
     _nodes.push_back(node_ui);
+    
+    QUndoStack* nodeStack = node_ui->getUndoStack();
+    if(nodeStack){
+        _gui->registerNewUndoStack(nodeStack);
+    }
+    _undoStack->setActive();
     _undoStack->push(new AddCommand(this,node_ui));
     _evtState = DEFAULT;
     return node_ui;
@@ -392,6 +397,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                 if(n->getNode()->isOutputNode()){
                     break;
                 }
+                _undoStack->setActive();
                 _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),n));
                 foundSrc=true;
                 
@@ -399,6 +405,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
             }
         }
         if(!foundSrc){
+            _undoStack->setActive();
             _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),NULL));
             scene()->update();
         }
@@ -408,6 +415,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         _gui->getApp()->checkViewersConnection();
     }else if(_evtState == NODE_DRAGGING){
         if(_nodeSelected)
+            _undoStack->setActive();
             _undoStack->push(new MoveCommand(_nodeSelected,_lastNodeDragStartPoint));
     }
     scene()->update();
@@ -552,6 +560,7 @@ void NodeGraph::connectCurrentViewerToSelection(int inputNB){
             v->addEmptyInput();
             it = gui->getInputsArrows().find(inputNB);
         }
+        _undoStack->setActive();
         _undoStack->push(new ConnectCommand(this,it->second,it->second->getSource(),_nodeSelected));
     }
 }
@@ -636,6 +645,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                         }
                         
                     }else{
+                        _undoStack->setActive();
                         _undoStack->push(new ConnectCommand(this,edgeWithSelectedNode,selected,created));
                     }
                     
@@ -681,6 +691,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
         }
         first = created->firstAvailableEdge();
         if(first){
+            _undoStack->setActive();
             _undoStack->push(new ConnectCommand(this,first,first->getSource(),selected));
         }
     }else{
@@ -688,6 +699,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
          as input of the selected node.*/
         first = selected->firstAvailableEdge();
         if(first && !created->getNode()->isOutputNode()){
+            _undoStack->setActive();
             _undoStack->push(new ConnectCommand(this,first,first->getSource(),created));
         }
     }
@@ -695,6 +707,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
 
 void NodeGraph::deleteSelectedNode(){
     if(_nodeSelected){
+        _undoStack->setActive();
         _undoStack->push(new RemoveCommand(this,_nodeSelected));
         _nodeSelected = 0;
     }
@@ -1189,7 +1202,7 @@ void NodeGraph::dropEvent(QDropEvent* event){
     }
     
     QStringList supportedExtensions;
-    std::vector<std::string> supportedFileTypes = appPTR->getCurrentSettings()._readersSettings.supportedFileTypes();
+    std::vector<std::string> supportedFileTypes = appPTR->getCurrentSettings()->readersSettings.supportedFileTypes();
     for(U32 i = 0 ; i < supportedFileTypes.size();++i){
         supportedExtensions.append(QString(supportedFileTypes[i].c_str()));
     }
@@ -1237,6 +1250,24 @@ void NodeGraph::turnOffPreviewForAllNodes(){
             if(!_nodes[i]->getNode()->isPreviewEnabled() && _nodes[i]->getNode()->makePreviewByDefault()){
                 _nodes[i]->togglePreview();
             }
+        }
+    }
+}
+
+void NodeGraph::deleteNode(Natron::Node* n){
+    for (U32 i = 0; i < _nodes.size(); ++i) {
+        if(_nodes[i]->getNode() == n){
+            delete _nodes[i];
+            _nodes.erase(_nodes.begin()+i);
+            return;
+        }
+    }
+    
+    for (U32 i = 0; i < _nodesTrash.size(); ++i) {
+        if(_nodesTrash[i]->getNode() == n){
+            delete _nodesTrash[i];
+            _nodesTrash.erase(_nodesTrash.begin()+i);
+            break;
         }
     }
 }

@@ -16,6 +16,8 @@
 #include <string>
 #include <map>
 
+#include <QMetaType>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 
@@ -77,6 +79,16 @@ public:
     /*Returns in viewers the list of all the viewers connected to this node*/
     void hasViewersConnected(std::list<ViewerInstance*>* viewers) const;
     
+    /**
+     * @brief Forwarded to the live effect instance
+     **/
+    int majorVersion() const;
+    
+    /**
+     * @brief Forwarded to the live effect instance
+     **/
+    int minorVersion() const;
+
     
     /**
      * @brief Forwarded to the live effect instance
@@ -362,7 +374,7 @@ signals:
     
     void nameChanged(QString);
     
-    void deleteWanted();
+    void deleteWanted(Natron::Node*);
 
     void refreshEdgesGUI();
 
@@ -387,6 +399,8 @@ private:
 };
 
 } //namespace Natron
+
+Q_DECLARE_METATYPE(Natron::Node*)
 /**
  * @brief An InspectorNode is a type of node that is able to have a dynamic number of inputs.
  * Only 1 input is considered to be the "active" input of the InspectorNode, but several inputs
