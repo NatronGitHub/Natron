@@ -196,6 +196,7 @@ std::pair<KeyFrameSet::iterator,bool> Curve::addKeyFrameNoUpdate(const KeyFrame&
     }else{
         bool addedKey = true;
         for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it!= _imp->keyFrames.end(); ++it) {
+#warning "FIXME: the epsilon depends on the curve! imagine a ParametricParam that goes from 0 to 0.1: 1e-2 is not a valid epsilon! All uses of CONTROL_POINTS_QUALITY_EPSILON should be changed to reflect that"
             if (std::abs(it->getTime() - cp.getTime()) < CONTROL_POINTS_EQUALITY_EPSILON) {
                 _imp->keyFrames.erase(it);
                 addedKey = false;
@@ -402,8 +403,8 @@ const KeyFrame& Curve::setKeyFrameValue(double value,int index,int* newIndex) {
     
     evaluateCurveChanged(KEYFRAME_CHANGED,it);
     
-    if(newIndex){
-        *newIndex =  _imp->indexFromIterator(it);
+    if (newIndex) {
+        *newIndex = std::distance(_imp->keyFrames.begin(),it);
     }
     return *it;
 
@@ -419,8 +420,8 @@ const KeyFrame& Curve::setKeyFrameTime(double time,int index,int* newIndex) {
         it = setKeyFrameValueAndTimeNoUpdate(it->getValue(),time, it);
         evaluateCurveChanged(KEYFRAME_CHANGED,it);
     }
-    if(newIndex){
-        *newIndex =  _imp->indexFromIterator(it);
+    if (newIndex) {
+        *newIndex = std::distance(_imp->keyFrames.begin(),it);
     }
 
     return *it;
@@ -439,8 +440,8 @@ const KeyFrame& Curve::setKeyFrameValueAndTime(double time,double value,int inde
         it = setKeyFrameValueAndTimeNoUpdate(value,time, it);
         evaluateCurveChanged(KEYFRAME_CHANGED,it);
     }
-    if(newIndex){
-        *newIndex =  _imp->indexFromIterator(it);
+    if (newIndex) {
+        *newIndex = std::distance(_imp->keyFrames.begin(),it);
     }
 
     return *it;
@@ -458,8 +459,8 @@ const KeyFrame& Curve::setKeyFrameLeftDerivative(double value,int index,int* new
         it = addKeyFrameNoUpdate(newKey).first;
         evaluateCurveChanged(DERIVATIVES_CHANGED,it);
     }
-    if(newIndex){
-        *newIndex =  _imp->indexFromIterator(it);
+    if (newIndex) {
+        *newIndex = std::distance(_imp->keyFrames.begin(),it);
     }
 
     return *it;
@@ -476,8 +477,8 @@ const KeyFrame& Curve::setKeyFrameRightDerivative(double value,int index,int* ne
         it = addKeyFrameNoUpdate(newKey).first;
         evaluateCurveChanged(DERIVATIVES_CHANGED,it);
     }
-    if(newIndex){
-        *newIndex =  _imp->indexFromIterator(it);
+    if (newIndex) {
+        *newIndex = std::distance(_imp->keyFrames.begin(),it);
     }
 
     return *it;
@@ -495,8 +496,8 @@ const KeyFrame& Curve::setKeyFrameDerivatives(double left, double right,int inde
         it = addKeyFrameNoUpdate(newKey).first;
         evaluateCurveChanged(DERIVATIVES_CHANGED,it);
     }
-    if(newIndex){
-        *newIndex =  _imp->indexFromIterator(it);
+    if (newIndex) {
+        *newIndex = std::distance(_imp->keyFrames.begin(),it);
     }
 
     return *it;
@@ -511,8 +512,8 @@ const KeyFrame& Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,int 
         it = addKeyFrameNoUpdate(newKey).first;
         evaluateCurveChanged(KEYFRAME_CHANGED,it);
     }
-    if(newIndex){
-        *newIndex =  _imp->indexFromIterator(it);
+    if (newIndex) {
+        *newIndex = std::distance(_imp->keyFrames.begin(),it);
     }
 
     return *it;
