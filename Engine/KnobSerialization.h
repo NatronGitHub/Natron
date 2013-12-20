@@ -29,6 +29,8 @@ class KnobSerialization
     /* the keys for a specific dimension*/
     std::vector< boost::shared_ptr<Curve> > _curves;
     std::vector< std::string > _masters;
+    
+    std::string _extraData;
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -39,6 +41,7 @@ class KnobSerialization
         ar & boost::serialization::make_nvp("Values",_values);
         ar & boost::serialization::make_nvp("Curves",_curves);
         ar & boost::serialization::make_nvp("Masters",_masters);
+        ar & boost::serialization::make_nvp("Extra_datas",_extraData);
     }
 
 
@@ -56,7 +59,7 @@ public:
 
     const std::vector< std::string > & getMasters() const { return _masters; }
 
-
+    const std::string& getExtraData() const { return _extraData; }
 };
 
 

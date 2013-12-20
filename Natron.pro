@@ -67,7 +67,6 @@ warning("Compiling in DEBUG mode.")
 }
 
 
-
 *xcode* {
 #redefine cxx flags as qmake tends to automatically add -O2 to xcode projects
   QMAKE_CFLAGS -= -O2

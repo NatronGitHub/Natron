@@ -886,7 +886,7 @@ Natron::Status Parametric_Knob::addControlPoint(int dimension,double key,double 
     if(dimension >= (int)_curves.size()){
         return StatFailed;
     }
-#pragma message WARN("FIXME: check that no element has a key "sufficiently close" to this key - this requires an access to the range of the parametric, see how it is done for descriptors in parametricParamAddControlPoint")
+#pragma message WARN("FIXME: check that no element has a key sufficiently close to this key - this requires an access to the range of the parametric, see how it is done for descriptors in parametricParamAddControlPoint")
     _curves[dimension]->addKeyFrame(KeyFrame(key,value));
     emit curveChanged(dimension);
     return StatOK;
@@ -989,3 +989,95 @@ void Parametric_Knob::cloneExtraData(const Knob& other){
         _curves[i]->clone(*(paramKnob.getParametricCurve(i)));
     }
 }
+
+static const QString kCurveTag = QString("__C__");
+static const QString kControlPointTag  = QString("__CP__");
+static const QString kEndControlPointTag = QString("__END_CP__");
+static const QString kValueSeparator  = QString("_,_");
+
+void Parametric_Knob::loadExtraData(const QString& str) {
+    
+    
+    if(str.isEmpty()){
+        return;
+    }
+    int curveCursor = str.indexOf(kCurveTag);
+    while(curveCursor != -1){
+        
+        int cpCursor = str.indexOf(kControlPointTag,curveCursor);
+
+        ///i is the index at which the first digit of the dimension of the curve is
+        int i = curveCursor + kCurveTag.size();
+        assert(str.at(i).isDigit());
+        QString curveIndexStr;
+        
+        while( i < cpCursor ){
+            assert(i < str.size());
+            curveIndexStr.push_back(str.at(i));
+            ++i;
+        }
+        int curveIndex = curveIndexStr.toUInt();
+        
+        deleteAllControlPoints(curveIndex);
+
+        
+        while(cpCursor != -1){
+            
+            QString key;
+            
+            ///i is the index at which the first digit of the key is
+            i = cpCursor + kControlPointTag.size();
+            assert(str.at(i).isDigit());
+            
+            ///find the value separator
+            int valueSep = str.indexOf(kValueSeparator,i);
+            assert(valueSep != -1);
+            
+            while( i < valueSep){
+                assert(i < str.size());
+                key.append(str.at(i));
+                ++i;
+            }
+            
+            ///we now have the key
+            
+            ///position i at the first digit of the value
+            i = valueSep + kValueSeparator.size();
+            assert(str.at(i).isDigit());
+            
+            int endCp = str.indexOf(kEndControlPointTag,valueSep);
+            assert(endCp != -1);
+            
+            QString value ;
+            while( i < endCp ){
+                assert(i < str.size());
+                value.push_back(str.at(i));
+                ++i;
+            }
+            
+            _curves[curveIndex]->addKeyFrame(KeyFrame(key.toDouble(), value.toDouble()));
+            
+            cpCursor = str.indexOf(kControlPointTag,cpCursor+1);
+        }
+        emit curveChanged(curveIndex);
+
+        curveCursor = str.indexOf(kCurveTag,curveCursor+1);
+    }
+}
+
+QString Parametric_Knob::saveExtraData() const {
+    QString ret;
+    for (U32 i = 0; i < _curves.size(); ++i) {
+        ret.append(kCurveTag);
+        ret.append(QString::number(i));
+        for (KeyFrameSet::const_iterator it = _curves[i]->begin(); it!= _curves[i]->end(); ++it) {
+            ret.append(kControlPointTag);
+            ret.append(QString::number(it->getTime()));
+            ret.append(kValueSeparator);
+            ret.append(QString::number(it->getValue()));
+            ret.append(kEndControlPointTag);
+        }
+    }
+    return ret;
+}
+

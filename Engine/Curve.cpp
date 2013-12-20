@@ -175,7 +175,9 @@ double Curve::getMaximumTimeCovered() const{
 
 bool Curve::addKeyFrame(const KeyFrame key){
     std::pair<KeyFrameSet::iterator,bool> it = addKeyFrameNoUpdate(key);
-    evaluateCurveChanged(KEYFRAME_CHANGED,it.first);
+    if(it.second){
+        evaluateCurveChanged(KEYFRAME_CHANGED,it.first);
+    }
     return it.second;
 }
 
