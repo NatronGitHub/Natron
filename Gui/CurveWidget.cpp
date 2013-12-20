@@ -1116,7 +1116,12 @@ void CurveWidgetPrivate::refreshKeyTangents(SelectedKey* key) {
     QPointF keyWidgetCoord = _widget->toWidgetCoordinates(x,y);
     const KeyFrameSet& keyframes = key->curve->getInternalCurve()->getKeyFrames();
     KeyFrameSet::const_iterator k = keyframes.find(key->key);
-    assert(k != keyframes.end());
+    
+    //the key might have disappeared from the curve if the plugin deleted it.
+    //In which case we return.
+    if(k == keyframes.end()){
+        return;
+    }
     
     //find the previous and next keyframes on the curve to find out the  position of the derivatives
     KeyFrameSet::const_iterator prev = k;
