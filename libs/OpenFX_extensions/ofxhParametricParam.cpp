@@ -621,13 +621,13 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
     name << kOfxParamPropControlPoints << '_' << curveIndex;
     std::string namestr = name.str();
     Property::PropertyTemplate<Property::DoubleValue> *prop;
+    ControlPoint cp = { key, value };
 
     if (!descProps.fetchTypedProperty(namestr, prop)) {
         // the property does not exist, create it
         const Property::PropSpec parametricControlPoints = {namestr.c_str(), Property::eDouble, 0, false, ""};
         descProps.createProperty(parametricControlPoints);
-        double initialCp[2];
-        descProps.setDoublePropertyN(namestr, initialCp, 2);
+        descProps.setDoublePropertyN(namestr, &cp.key, 2);
     } else {
         //the property already exists
         int cpsCount = descProps.getDimension(name.str()) / 2;
@@ -650,7 +650,6 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
         double paramMin = descProps.getDoubleProperty(kOfxParamPropParametricRange, 0);
         double paramMax = descProps.getDoubleProperty(kOfxParamPropParametricRange, 1);
         double paramEps = 1e-4 * std::abs(paramMax - paramMin);
-        ControlPoint cp = { key, value };
         // std::lower_bound finds the element in a sorted vector in logarithmic time
         ControlPointV::iterator it = std::lower_bound(cps.begin(), cps.end(), cp, ControlPoint_MuchLessThan(paramEps));
         // lower_bound returned the first element for which the key is >= cp.key-paramEps.
