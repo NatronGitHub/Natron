@@ -147,9 +147,7 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1, double* x2){
     
 }
 
-void CurveGui::drawCurve(){
-    if(!_visible)
-        return;
+void CurveGui::drawCurve(int curveIndex,int curvesCount){
     
     assert(QGLContext::currentContext() == _curveWidget->context());
     
@@ -199,13 +197,18 @@ void CurveGui::drawCurve(){
     glEnd();
     
     
-    
-    
-    
     //render the name of the curve
     glColor4f(1.f, 1.f, 1.f, 1.f);
-    double textX = _curveWidget->toScaleCoordinates(15,0).x();
+
+    
+    QPointF btmLeft = _curveWidget->toScaleCoordinates(0,_curveWidget->height()-1);
+    QPointF topRight = _curveWidget->toScaleCoordinates(_curveWidget->width()-1, 0);
+    
+    double interval = (topRight.x() - btmLeft.x()) / (double)curvesCount;
+    
+    double textX = _curveWidget->toScaleCoordinates(15, 0).x() + interval * (double)curveIndex;
     double textY = evaluate(textX);
+    
     _curveWidget->renderText(textX,textY,_name,_color,_curveWidget->getFont());
     glColor4f(curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF());
     
@@ -661,10 +664,16 @@ void CurveWidgetPrivate::drawCurves()
 {
     assert(QGLContext::currentContext() == _widget->context());
     //now draw each curve
-    for (std::list<CurveGui*>::const_iterator it = _curves.begin(); it!=_curves.end(); ++it) {
-        (*it)->drawCurve();
+    std::vector<CurveGui*> visibleCurves;
+    _widget->getVisibleCurves(&visibleCurves);
+    int count = (int)visibleCurves.size();
+
+    for (int i = 0; i < count ;++i){
+        visibleCurves[i]->drawCurve(i, count);
     }
+    
 }
+
 
 void CurveWidgetPrivate::drawBaseAxis()
 {
@@ -1494,6 +1503,7 @@ void CurveWidget::getVisibleCurves(std::vector<CurveGui*>* curves) const {
     }
 }
 
+
 void CurveWidget::centerOn(double xmin,double xmax,double ymin,double ymax){
     double curveWidth = xmax - xmin;
     double curveHeight = (ymax - ymin);
@@ -2241,3 +2251,5 @@ const SelectedKeys& CurveWidget::getSelectedKeyFrames() const { return _imp->_se
 
 bool CurveWidget::isSupportingOpenGLVAO() const { return _imp->_hasOpenGLVAOSupport; }
 
+
+const QFont& CurveWidget::getTextFont() const { return *_imp->_font; }

@@ -24,7 +24,7 @@
 #include "Global/GlobalDefines.h"
 #include "Gui/CurveEditorUndoRedo.h"
 
-
+class QFont;
 class Variant;
 class TimeLine;
 class KnobGui;
@@ -83,7 +83,7 @@ public:
 
     boost::shared_ptr<Curve>  getInternalCurve() const { return _internalCurve; }
 
-    void drawCurve();
+    void drawCurve(int curveIndex,int curvesCount);
 
 signals:
 
@@ -158,6 +158,8 @@ public:
                 QWidget* parent = NULL, const QGLWidget* shareWidget = NULL);
 
     virtual ~CurveWidget();
+    
+    const QFont& getTextFont() const;
 
     void centerOn(double xmin,double xmax,double ymin,double ymax);
 
@@ -183,6 +185,10 @@ public:
     
     void getBackgroundColor(double *r,double *g,double* b) const;
     
+    bool isCurveNameAlreadyAtPosition(const QRectF& position) const;
+    
+    void registerCurveNamePosition(const QRectF& position) const;
+        
 public slots:
     
     void refreshDisplayedTangents();
