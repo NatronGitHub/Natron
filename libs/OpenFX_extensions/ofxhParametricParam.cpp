@@ -648,7 +648,7 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
 
         //get the existing cps
         ControlPointV cps(cpsCount);
-        descProps.getDoublePropertyN(namestr, &cps[0].key, cps.size());
+        descProps.getDoublePropertyN(namestr, &cps[0].key, cps.size()*2);
 
         // Note: an optimal implementation could work on a std::set (which is an ordered container),
         // but we propose this suboptimal implementation based on std::vector, given the fact that
@@ -674,7 +674,7 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
             cps.insert(it, cp);
         }
         //set back the property
-        descProps.setDoublePropertyN(kOfxParamPropControlPoints, &cps[0].key, cps.size());
+        descProps.setDoublePropertyN(namestr, &cps[0].key, cps.size()*2);
     }
 
     stat = kOfxStatOK;
@@ -754,13 +754,13 @@ static OfxStatus parametricParamDeleteControlPoint(OfxParamHandle param,
 
     //get the existing cps
     ControlPointV cps(cpsCount);
-    descProps.getDoublePropertyN(namestr, &cps[0].key, cps.size());
+    descProps.getDoublePropertyN(namestr, &cps[0].key, cps.size()*2);
 
     // delete the control point
     cps.erase(cps.begin()+nthCtl);
 
     //set back the property
-    descProps.setDoublePropertyN(kOfxParamPropControlPoints, &cps[0].key, cps.size());
+    descProps.setDoublePropertyN(kOfxParamPropControlPoints, &cps[0].key, cps.size()*2);
 
     OfxStatus stat = kOfxStatOK;
 
