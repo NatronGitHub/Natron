@@ -489,6 +489,8 @@ void TabWidget::keyPressEvent ( QKeyEvent * event ){
             _fullScreen = true;
             _gui->maximize(this);
         }
+    }else{
+        event->ignore();
     }
 }
 void TabWidget::enterEvent(QEvent *event)

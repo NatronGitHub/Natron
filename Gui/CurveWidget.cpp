@@ -1805,6 +1805,8 @@ void CurveWidget::mouseReleaseEvent(QMouseEvent*) {
 
 void CurveWidget::mouseMoveEvent(QMouseEvent *event){
     
+    setFocus();
+    
     //set cursor depending on the situation
     
     //find out if there is a nearby  derivative handle
