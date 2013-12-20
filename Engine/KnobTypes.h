@@ -525,9 +525,10 @@ public:
     
     Natron::Status  deleteAllControlPoints(int   dimension);
     
+    
     static const std::string& typeNameStatic();
     
-    public slots:
+public slots:
     
     virtual void drawCustomBackground(){
         emit customBackgroundRequested();
@@ -536,6 +537,11 @@ public:
     virtual void initializeOverlayInteract(CurveWidget* widget){
         emit mustInitializeOverlayInteract(widget);
     }
+    
+    virtual void resetToDefault(){
+        emit mustResetToDefault();
+    }
+
     
 signals:
     
@@ -547,6 +553,8 @@ signals:
     
     ///emitted when the state of a curve changed at the indicated dimension
     void curveChanged(int);
+    
+    void mustResetToDefault();
     
 private:
     

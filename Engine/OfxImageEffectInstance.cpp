@@ -46,10 +46,10 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
 
 OfxImageEffectInstance::~OfxImageEffectInstance()
 {
-    for (std::map<std::string,OFX::Host::Param::Instance*>::iterator it = _parentingMap.begin();
+    for (std::map<OFX::Host::Param::Instance*,std::string>::iterator it = _parentingMap.begin();
          it != _parentingMap.end();
          ++it) {
-        delete it->second;
+        delete it->first;
     }
 }
 
@@ -380,14 +380,10 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
     }
 
     std::string parent = instance->getProperties().getStringProperty(kOfxParamPropParent);
-    std::map<std::string, OFX::Host::Param::Instance *>::const_iterator it = _parentingMap.find(parent);
-    if (it != _parentingMap.end()) {
-        if (it->second->getType() == kOfxParamTypeGroup) {
-            OfxGroupInstance *group = dynamic_cast<OfxGroupInstance *>(it->second);
-            group->addKnob(knob);
-        }
+    if(!parent.empty()){
+        _parentingMap.insert(make_pair(instance,parent));
     }
-    _parentingMap.insert(make_pair(paramName, instance));
+    
     knob->setName(paramName);
     if (!descriptor.getEvaluateOnChange()) {
         knob->setInsignificant(true);
@@ -415,6 +411,38 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
     
     return instance;
 
+}
+
+void OfxImageEffectInstance::addParamsToTheirParents(){
+    const std::list<OFX::Host::Param::Instance*>& params = getParamList();
+    //for each params find their parents if any and add to the parent this param's knob
+    for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it!=params.end(); ++it) {
+        
+        std::map<OFX::Host::Param::Instance*,std::string>::const_iterator found = _parentingMap.find(*it);
+        
+        //the param has no parent
+        if(found == _parentingMap.end()){
+            continue;
+        }
+        
+        assert(!found->second.empty());
+        
+        //find the parent by name
+        const std::map<std::string, OFX::Host::Param::Instance*>& paramsMap = getParams();
+        std::map<std::string, OFX::Host::Param::Instance*>::const_iterator foundParent = paramsMap.find(found->second);
+        
+        //the parent must exist!
+        assert(foundParent != paramsMap.end());
+        
+        //add the param's knob to the parent
+        OfxParamToKnob* knobHolder = dynamic_cast<OfxParamToKnob*>(found->first);
+        assert(knobHolder);
+        dynamic_cast<OfxGroupInstance*>(foundParent->second)->addKnob(knobHolder->getKnob());
+        
+    }
+    
+    
+    
 }
 
 /** @brief Used to group any parameter changes for undo/redo purposes

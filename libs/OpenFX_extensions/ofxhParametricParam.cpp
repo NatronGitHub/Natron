@@ -22,6 +22,8 @@
 // parametric params
 #include "ofxParametricParam.h"
 
+#include "ofxhPropertySuite.h"
+#include "ofxProperty.h"
 #include "ofxhUtilities.h"
 
 /** @brief The initial control points for a parametric params.

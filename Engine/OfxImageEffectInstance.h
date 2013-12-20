@@ -172,8 +172,10 @@ public:
     
     OfxEffectInstance* node() const WARN_UNUSED_RETURN { return _node; }
     
-    const std::map<std::string,OFX::Host::Param::Instance*>& getParams() const WARN_UNUSED_RETURN {return _parentingMap;}
-    
+    /// to be called right away after populate() is called. It adds to their group all the params.
+    /// This is done in a deferred manner as some params can sometimes not be defined in a good order.
+    void addParamsToTheirParents();
+
 private:
     OfxEffectInstance* _node; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                      Not easy since every Knob need a valid pointer to a node when 
@@ -185,7 +187,7 @@ private:
     /*Use this to re-create parenting between effect's params.
      The key is the name of a param and the Instance a pointer to the associated effect.
      This has nothing to do with the base class _params member! */
-    std::map<std::string,OFX::Host::Param::Instance*> _parentingMap; 
+    std::map<OFX::Host::Param::Instance*,std::string> _parentingMap;
 };
 
 } // namespace Natron
