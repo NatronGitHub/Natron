@@ -243,7 +243,7 @@ void Curve::removeKeyFrameWithIndex(int index){
             if(mustRefreshNext){
                 refreshDerivatives(DERIVATIVES_CHANGED,find(nextKey.getTime()));
             }
-
+            break;
         }
         ++i;
     }
