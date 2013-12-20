@@ -161,7 +161,7 @@ public:
 
     Double_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
-    virtual ~Double_KnobGui() OVERRIDE FINAL;
+    virtual ~Double_KnobGui();
 
 public slots:
     void onSpinBoxValueChanged();
