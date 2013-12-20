@@ -54,7 +54,17 @@ namespace Natron{
     class OfxOverlayInteract;
 }
 
-class OfxPushButtonInstance : public OFX::Host::Param::PushbuttonInstance {
+
+class OfxParamToKnob {
+public:
+    
+    OfxParamToKnob(){}
+    
+    virtual boost::shared_ptr<Knob> getKnob() const = 0;
+
+};
+
+class OfxPushButtonInstance : public OFX::Host::Param::PushbuttonInstance, public OfxParamToKnob {
     
 public:
     OfxPushButtonInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
@@ -65,7 +75,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    boost::shared_ptr<Knob> getKnob() const;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
 
 private:
     boost::shared_ptr<Button_Knob> _knob;
@@ -73,7 +83,7 @@ private:
 
 
 
-class OfxIntegerInstance :  public QObject, public OFX::Host::Param::IntegerInstance {
+class OfxIntegerInstance :  public QObject, public OFX::Host::Param::IntegerInstance , public OfxParamToKnob{
     
     Q_OBJECT
     
@@ -98,7 +108,7 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) ;
     virtual OfxStatus deleteAllKeys();
     
-    boost::shared_ptr<Knob> getKnob() const;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
 
 public slots:
     
@@ -108,7 +118,7 @@ private:
     boost::shared_ptr<Int_Knob> _knob;
 };
 
-class OfxDoubleInstance :  public QObject,  public OFX::Host::Param::DoubleInstance {
+class OfxDoubleInstance :  public QObject,  public OFX::Host::Param::DoubleInstance, public OfxParamToKnob {
     
     Q_OBJECT
     
@@ -135,7 +145,7 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) ;
     virtual OfxStatus deleteAllKeys();
     
-    boost::shared_ptr<Knob> getKnob() const;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
 
     bool isAnimated() const;
     
@@ -147,7 +157,7 @@ private:
     boost::shared_ptr<Double_Knob> _knob;
 };
 
-class OfxBooleanInstance :  public QObject,  public OFX::Host::Param::BooleanInstance {
+class OfxBooleanInstance :  public QObject,  public OFX::Host::Param::BooleanInstance , public OfxParamToKnob {
     
     Q_OBJECT
     
@@ -174,7 +184,7 @@ public:
     virtual OfxStatus deleteAllKeys();
 
     
-    boost::shared_ptr<Knob> getKnob() const;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
     
 public slots:
     
@@ -184,7 +194,7 @@ private:
     boost::shared_ptr<Bool_Knob> _knob;
 };
 
-class OfxChoiceInstance : public QObject, public OFX::Host::Param::ChoiceInstance {
+class OfxChoiceInstance : public QObject, public OFX::Host::Param::ChoiceInstance , public OfxParamToKnob {
     
     Q_OBJECT
     
@@ -208,7 +218,7 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) ;
     virtual OfxStatus deleteAllKeys();
 
-    boost::shared_ptr<Knob> getKnob() const;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
     
 public slots:
     
@@ -219,7 +229,7 @@ private:
     boost::shared_ptr<Choice_Knob> _knob;
 };
 
-class OfxRGBAInstance :  public QObject, public OFX::Host::Param::RGBAInstance {
+class OfxRGBAInstance :  public QObject, public OFX::Host::Param::RGBAInstance , public OfxParamToKnob {
     
     Q_OBJECT
     
@@ -246,7 +256,7 @@ public:
     virtual OfxStatus deleteAllKeys();
 
     
-    boost::shared_ptr<Knob> getKnob() const;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
@@ -260,7 +270,7 @@ private:
 };
 
 
-class OfxRGBInstance :  public QObject,  public OFX::Host::Param::RGBInstance {
+class OfxRGBInstance :  public QObject,  public OFX::Host::Param::RGBInstance, public OfxParamToKnob {
     
     Q_OBJECT
     
@@ -287,7 +297,7 @@ public:
     virtual OfxStatus deleteAllKeys();
 
     
-    boost::shared_ptr<Knob> getKnob() const;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
@@ -300,7 +310,7 @@ private:
     boost::shared_ptr<Color_Knob> _knob;
 };
 
-class OfxDouble2DInstance :  public QObject, public OFX::Host::Param::Double2DInstance {
+class OfxDouble2DInstance :  public QObject, public OFX::Host::Param::Double2DInstance , public OfxParamToKnob {
     
     Q_OBJECT
     
@@ -327,7 +337,7 @@ public:
     virtual OfxStatus deleteAllKeys();
 
     
-    boost::shared_ptr<Knob> getKnob() const;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
@@ -340,7 +350,7 @@ private:
 };
 
 
-class OfxInteger2DInstance :  public QObject, public OFX::Host::Param::Integer2DInstance {
+class OfxInteger2DInstance :  public QObject, public OFX::Host::Param::Integer2DInstance, public OfxParamToKnob {
     Q_OBJECT
     
 public:
@@ -364,7 +374,7 @@ public:
     virtual OfxStatus deleteAllKeys();
 
 
-    boost::shared_ptr<Knob> getKnob() const;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
     
 public slots:
     
@@ -374,7 +384,7 @@ private:
     boost::shared_ptr<Int_Knob> _knob;
 };
 
-class OfxDouble3DInstance :  public QObject, public OFX::Host::Param::Double3DInstance {
+class OfxDouble3DInstance :  public QObject, public OFX::Host::Param::Double3DInstance, public OfxParamToKnob {
     Q_OBJECT
     
 public:
@@ -400,7 +410,7 @@ public:
     virtual OfxStatus deleteAllKeys();
     
 
-    boost::shared_ptr<Knob> getKnob() const;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
@@ -412,7 +422,7 @@ private:
     boost::shared_ptr<Double_Knob> _knob;
 };
 
-class OfxInteger3DInstance :  public QObject, public OFX::Host::Param::Integer3DInstance {
+class OfxInteger3DInstance :  public QObject, public OFX::Host::Param::Integer3DInstance , public OfxParamToKnob{
     Q_OBJECT
     
 public:
@@ -436,7 +446,7 @@ public:
     virtual OfxStatus deleteAllKeys();
 
 
-    boost::shared_ptr<Knob> getKnob() const;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
 
 public slots:
     
@@ -445,14 +455,14 @@ private:
     boost::shared_ptr<Int_Knob> _knob;
 };
 
-class OfxGroupInstance : public OFX::Host::Param::GroupInstance {
+class OfxGroupInstance : public OFX::Host::Param::GroupInstance, public OfxParamToKnob {
 public:
 
     OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
 
     void addKnob(boost::shared_ptr<Knob> k);
 
-    boost::shared_ptr<Knob> getKnob() const;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
 
     virtual ~OfxGroupInstance(){}
 
@@ -461,7 +471,7 @@ private:
     boost::shared_ptr<Tab_Knob> _tabKnob;
 };
 
-class OfxStringInstance : public QObject, public OFX::Host::Param::StringInstance {
+class OfxStringInstance : public QObject, public OFX::Host::Param::StringInstance, public OfxParamToKnob {
     Q_OBJECT
 
 public:
@@ -514,7 +524,7 @@ public:
     virtual OfxStatus deleteAllKeys();
 
     
-    boost::shared_ptr<Knob> getKnob() const;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
     
     virtual ~OfxStringInstance(){}
     
@@ -535,7 +545,7 @@ private:
 };
 
 
-class OfxCustomInstance : public QObject, public OFX::Host::Param::CustomInstance {
+class OfxCustomInstance : public QObject, public OFX::Host::Param::CustomInstance , public OfxParamToKnob{
 Q_OBJECT
 public:
     OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
@@ -562,7 +572,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
 
-    boost::shared_ptr<Knob> getKnob() const;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
 
     virtual ~OfxCustomInstance(){}
     
@@ -591,7 +601,7 @@ private:
 };
 
 
-class OfxParametricInstance : public QObject, public OFX::Host::ParametricParam::ParametricInstance {
+class OfxParametricInstance : public QObject, public OFX::Host::ParametricParam::ParametricInstance, public OfxParamToKnob {
     
     Q_OBJECT
     
@@ -644,7 +654,7 @@ public:
     
     virtual OfxStatus  deleteAllControlPoints(int   curveIndex) OVERRIDE;
     
-    boost::shared_ptr<Knob> getKnob() const;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
     
 public slots:
     

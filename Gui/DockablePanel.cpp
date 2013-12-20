@@ -225,89 +225,6 @@ void DockablePanel::initializeKnobs(){
                 return;
             }
             
-            ///if widgets for the KnobGui have already been created, don't do this
-            if(!gui->hasWidgetBeenCreated()){
-                
-                
-                ///find to what to belongs the knob. by default it belongs to the default tab.
-                std::map<QString,std::pair<QWidget*,int> >::iterator parentTab = _tabs.end() ;
-                
-                
-                boost::shared_ptr<Knob> parentKnob = knobs[i]->getParentKnob();
-                
-                ///if the parent is a tab find it
-                if(parentKnob && parentKnob->typeName() == "Tab"){
-                    //make sure the tab has been created;
-                    (void)findKnobGuiOrCreate(parentKnob);
-                    std::map<QString,std::pair<QWidget*,int> >::iterator it = _tabs.find(parentKnob->getDescription().c_str());
-                    
-                    ///if it crashes there's serious problem because findKnobGuiOrCreate(parentKnob) should have registered
-                    ///the tab. Maybe you passed incorrect pointers ?
-                    assert(it != _tabs.end());
-                    parentTab = it;
-                    
-                }else{
-                    ///defaults to the default tab
-                    parentTab = _tabs.find(_defaultTabName);
-                    ///The dockpanel must have a default tab if you didn't declare your own tab to
-                    ///put your knobs into!
-                    assert(parentTab != _tabs.end());
-                }
-                if(parentTab != _tabs.end()){
-                    ++parentTab->second.second;
-                }
-                
-                ///this might be wrong we don't want to use Qt's parenting !
-                //gui->setParent(parentTab->second.first);
-                
-                ///if the knob has specified that it didn't want to trigger a new line, decrement the current row
-                /// index of the tab
-                ///FIXME: this is bugged because we don't tell to the createGui() function that it is going to need
-                ///to put its widgets on the right of others, so it is going to corrupt the layout. Commenting for now.
-//                if(!gui->triggerNewLine() && i!=0){
-//                    --parentTab->second.second;
-//                }
-//                
-                gui->createGUI(dynamic_cast<QGridLayout*>(parentTab->second.first->layout()),//< ptr to the grid layout
-                               parentTab->second.second); //< the row index
-                
-                /// if this knob is within a group, check that the group is visible, i.e. the toplevel group is unfolded
-                if (parentKnob && parentKnob->typeName() == "Group") {
-                    
-                    Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
-                    assert(parentGui);
-                    
-                    
-                    ///FIXME: this offsetColumn is never really used. Shall we use this anyway? It seems
-                    ///to work fine without it.
-                    int offsetColumn = knobs[i]->determineHierarchySize();
-                    parentGui->addKnob(gui,parentTab->second.second,offsetColumn);
-                    
-                    
-                    bool showit = true;
-                    // see KnobGui::setSecret() for a very similar code
-                    while (showit && parentKnob && parentKnob->typeName() == "Group") {
-                        assert(parentGui);
-                        // check for secretness and visibility of the group
-                        if (parentKnob->isSecret() || !parentGui->isChecked()) {
-                            showit = false; // one of the including groups is folder, so this item is hidden
-                        }
-                        // prepare for next loop iteration
-                        parentKnob = parentKnob->getParentKnob();
-                        if (parentKnob) {
-                            parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
-                        }
-                    }
-                    if (showit) {
-                        gui->show();
-                    } else {
-                        //gui->hide(); // already hidden? please comment if it's not.
-                    }
-                }
-                
-                
-            }
-            
         }
         
     }
@@ -433,13 +350,98 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
     QObject::connect(knob.get(),SIGNAL(deleted(Knob*)),this,SLOT(onKnobDeletion(Knob*)));
     
     KnobGui* ret =  appPTR->getKnobGuiFactory().createGuiForKnob(knob,this);
-    if(!ret && knob->typeName() != "Tab"){
+    if(!ret){
         // this should happen for Custom Knobs, which have no GUI (only an interact)
         // this should happen for tab Knobs, which have no GUI
-        std::cout << "Failed to create gui for Knob " << knob->getName() << " of type " << knob->typeName() << std::endl;
+        if(knob->typeName() != "Tab"){
+            std::cout << "Failed to create gui for Knob " << knob->getName() << " of type " << knob->typeName() << std::endl;
+        }
         return NULL;
     }
     _knobs.insert(make_pair(knob, ret));
+    
+    
+    
+    ///if widgets for the KnobGui have already been created, don't do this
+    if(!ret->hasWidgetBeenCreated()){
+        
+        
+        ///find to what to belongs the knob. by default it belongs to the default tab.
+        std::map<QString,std::pair<QWidget*,int> >::iterator parentTab = _tabs.end() ;
+        
+        
+        boost::shared_ptr<Knob> parentKnob = knob->getParentKnob();
+        
+        ///if the parent is a tab find it
+        if(parentKnob && parentKnob->typeName() == "Tab"){
+            //make sure the tab has been created;
+            (void)findKnobGuiOrCreate(parentKnob);
+            std::map<QString,std::pair<QWidget*,int> >::iterator it = _tabs.find(parentKnob->getDescription().c_str());
+            
+            ///if it crashes there's serious problem because findKnobGuiOrCreate(parentKnob) should have registered
+            ///the tab. Maybe you passed incorrect pointers ?
+            assert(it != _tabs.end());
+            parentTab = it;
+            
+        }else{
+            ///defaults to the default tab
+            parentTab = _tabs.find(_defaultTabName);
+            ///The dockpanel must have a default tab if you didn't declare your own tab to
+            ///put your knobs into!
+            assert(parentTab != _tabs.end());
+        }
+        if(parentTab != _tabs.end()){
+            ++parentTab->second.second;
+        }
+        
+        
+        ///if the knob has specified that it didn't want to trigger a new line, decrement the current row
+        /// index of the tab
+        ///FIXME: this is bugged because we don't tell to the createGui() function that it is going to need
+        ///to put its widgets on the right of others, so it is going to corrupt the layout. Commenting for now.
+        //                if(!gui->triggerNewLine() && i!=0){
+        //                    --parentTab->second.second;
+        //                }
+        //
+        ret->createGUI(dynamic_cast<QGridLayout*>(parentTab->second.first->layout()),//< ptr to the grid layout
+                       parentTab->second.second); //< the row index
+        
+        /// if this knob is within a group, check that the group is visible, i.e. the toplevel group is unfolded
+        if (parentKnob && parentKnob->typeName() == "Group") {
+            
+            Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
+            assert(parentGui);
+            
+            
+            ///FIXME: this offsetColumn is never really used. Shall we use this anyway? It seems
+            ///to work fine without it.
+            int offsetColumn = knob->determineHierarchySize();
+            parentGui->addKnob(ret,parentTab->second.second,offsetColumn);
+            
+            
+            bool showit = true;
+            // see KnobGui::setSecret() for a very similar code
+            while (showit && parentKnob && parentKnob->typeName() == "Group") {
+                assert(parentGui);
+                // check for secretness and visibility of the group
+                if (parentKnob->isSecret() || !parentGui->isChecked()) {
+                    showit = false; // one of the including groups is folder, so this item is hidden
+                }
+                // prepare for next loop iteration
+                parentKnob = parentKnob->getParentKnob();
+                if (parentKnob) {
+                    parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
+                }
+            }
+            if (showit) {
+                ret->show();
+            } else {
+                //gui->hide(); // already hidden? please comment if it's not.
+            }
+        }
+        
+        
+    }
     return ret;
     
 }

@@ -97,6 +97,7 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         effect_->setOfxEffectInstancePointer(this);
         notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
         OfxStatus stat = effect_->populate();
+        effect_->addParamsToTheirParents();
         notifyProjectEndKnobsValuesChanged(Natron::OTHER_REASON);
 
         if (stat != kOfxStatOK) {
