@@ -15,6 +15,7 @@
 #include <vector> // Int_KnobGui
 
 #include <QLabel>
+#include <QObject>
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
@@ -549,6 +550,8 @@ private:
 /*****************************/
 class Parametric_KnobGui : public KnobGui
 {
+    Q_OBJECT
+    
 public:
     static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
         return new Parametric_KnobGui(knob, container);
@@ -559,6 +562,11 @@ public:
     
     virtual ~Parametric_KnobGui() OVERRIDE FINAL;
     
+public slots:
+    
+    void onCurveChanged(int dimension);
+    
+    void onItemsSelectionChanged();
 private:
     
     virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
@@ -571,11 +579,17 @@ private:
     
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
     
-private:
     
     CurveWidget* _curveWidget;
     QTreeWidget* _tree;
-    std::map<CurveGui*,QTreeWidgetItem*> _curves;
+    
+    struct CurveDescriptor{
+        CurveGui* curve;
+        QTreeWidgetItem* treeItem;
+    };
+    
+    typedef std::map<int,CurveDescriptor> CurveGuis;
+    CurveGuis _curves;
 };
 
 

@@ -1432,6 +1432,9 @@ void CurveWidget::removeCurve(CurveGui *curve){
 }
 
 void CurveWidget::centerOn(const std::vector<CurveGui*>& curves){
+    if(curves.empty()){
+        return;
+    }
     RectD ret;
     for(U32 i = 0; i < curves.size();++i){
         CurveGui* c = curves[i];

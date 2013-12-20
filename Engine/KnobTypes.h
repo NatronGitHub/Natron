@@ -545,6 +545,9 @@ signals:
     
     void mustInitializeOverlayInteract(CurveWidget*);
     
+    ///emitted when the state of a curve changed at the indicated dimension
+    void curveChanged(int);
+    
 private:
     
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -552,6 +555,8 @@ private:
     virtual const std::string& typeName() const OVERRIDE FINAL;
     
     virtual void appendExtraDataToHash(std::vector<U64>* hash) const OVERRIDE FINAL;
+    
+    virtual void cloneExtraData(const Knob& other) OVERRIDE FINAL;
     
     static const std::string _typeNameStr;
 };

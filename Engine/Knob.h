@@ -329,7 +329,7 @@ private:
      * It lets the derived class a chance to add any extra info that would be needed to differentiate 
      * 2 values from each other.
     **/
-    virtual void appendExtraDataToHash(std::vector<U64>* hash) const {}
+    virtual void appendExtraDataToHash(std::vector<U64>* /*hash*/) const {}
 
 
 private:

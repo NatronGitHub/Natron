@@ -1383,8 +1383,10 @@ void Parametric_KnobGui::createWidget(QGridLayout *layout, int row) {
     
     boost::shared_ptr<Parametric_Knob> parametricKnob = boost::dynamic_pointer_cast<Parametric_Knob>(getKnob());
     
+    QObject::connect(parametricKnob.get(), SIGNAL(curveChanged(int)), this, SLOT(onCurveChanged(int)));
+    
     _tree = new QTreeWidget(layout->parentWidget());
-    _tree->setSelectionMode(QAbstractItemView::NoSelection);
+    _tree->setSelectionMode(QAbstractItemView::ContiguousSelection);
     _tree->setColumnCount(1);
     _tree->header()->close();
 
@@ -1411,9 +1413,16 @@ void Parametric_KnobGui::createWidget(QGridLayout *layout, int row) {
         QTreeWidgetItem* item = new QTreeWidgetItem(_tree);
         item->setText(0, curveName);
         item->setSelected(true);
-        _curves.insert(std::make_pair(curve, item));
+        CurveDescriptor desc;
+        desc.curve = curve;
+        desc.treeItem = item;
+        _curves.insert(std::make_pair(i, desc));
     }
+    
+    QObject::connect(_tree, SIGNAL(itemSelectionChanged()),this,SLOT(onItemsSelectionChanged()));
+
 }
+
 
 void Parametric_KnobGui::_hide() {
     _curveWidget->hide();
@@ -1433,4 +1442,37 @@ void Parametric_KnobGui::setEnabled() {
 
 void Parametric_KnobGui::updateGUI(int /*dimension*/, const Variant &/*variant*/) {
     _curveWidget->update();
+}
+
+void Parametric_KnobGui::onCurveChanged(int dimension){
+    CurveGuis::iterator it = _curves.find(dimension);
+    assert(it != _curves.end());
+    
+    if(it->second.curve->getInternalCurve()->keyFramesCount() > 1 && it->second.treeItem->isSelected()){
+        it->second.curve->setVisible(true);
+    }else{
+        it->second.curve->setVisible(false);
+    }
+    _curveWidget->update();
+}
+
+void Parametric_KnobGui::onItemsSelectionChanged(){
+    std::vector<CurveGui*> curves;
+    QList<QTreeWidgetItem*> selectedItems = _tree->selectedItems();
+    for(int i = 0 ; i < selectedItems.size();++i){
+        for (CurveGuis::iterator it = _curves.begin(); it!= _curves.end(); ++it) {
+            if(it->second.treeItem == selectedItems.at(i)){
+                if(it->second.curve->getInternalCurve()->isAnimated()){
+                    curves.push_back(it->second.curve);
+                }
+                break;
+            }
+        }
+    }
+    
+    ///find in the _curves map if an item's map the current
+    
+    _curveWidget->showCurvesAndHideOthers(curves);
+    _curveWidget->centerOn(curves); //remove this if you don't want the editor to switch to a curve on a selection change
+    
 }

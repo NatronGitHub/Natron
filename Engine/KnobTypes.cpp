@@ -886,6 +886,7 @@ Natron::Status Parametric_Knob::addControlPoint(int dimension,double key,double 
     }
 #warning "FIXME: check that no element has a key "sufficiently close" to this key - this requires an access to the range of the parametric, see how it is done for descriptors in parametricParamAddControlPoint"
     _curves[dimension]->addKeyFrame(KeyFrame(key,value));
+    emit curveChanged(dimension);
     return StatOK;
 }
 
@@ -939,6 +940,7 @@ Natron::Status Parametric_Knob::setNthControlPoint(int   dimension,
         return StatFailed;
     }
     _curves[dimension]->setKeyFrameValueAndTime(key, value, nthCtl);
+    emit curveChanged(dimension);
     return StatOK;
 
 }
@@ -949,6 +951,7 @@ Natron::Status  Parametric_Knob::deleteControlPoint(int   dimension,int   nthCtl
     }
     
     _curves[dimension]->removeKeyFrameWithIndex(nthCtl);
+    emit curveChanged(dimension);
     return StatOK;
 }
 
@@ -957,6 +960,7 @@ Natron::Status  Parametric_Knob::deleteAllControlPoints(int   dimension){
         return StatFailed;
     }
     _curves[dimension]->clearKeyFrames();
+    emit curveChanged(dimension);
     return StatOK;
 }
 
@@ -973,5 +977,13 @@ void Parametric_Knob::appendExtraDataToHash(std::vector<U64>* hash) const {
             hash->push_back(*reinterpret_cast<U64*>(&ld));
             hash->push_back(*reinterpret_cast<U64*>(&rd));
         }
+    }
+}
+
+void Parametric_Knob::cloneExtraData(const Knob& other){
+    assert(other.typeName() == typeNameStatic() && other.getDimension() == getDimension());
+    const Parametric_Knob& paramKnob = dynamic_cast<const Parametric_Knob&>(other);
+    for (int i = 0; i < getDimension(); ++i) {
+        _curves[i]->clone(*(paramKnob.getParametricCurve(i)));
     }
 }
