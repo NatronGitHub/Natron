@@ -938,17 +938,8 @@ Natron::Status Parametric_Knob::setNthControlPoint(int   dimension,
     if(dimension >= (int)_curves.size()){
         return StatFailed;
     }
-    const KeyFrameSet& set = _curves[dimension]->getKeyFrames();
-    int index = 0;
-    for (KeyFrameSet::const_iterator it = set.begin(); it!=set.end(); ++it) {
-        if(index == nthCtl){
-            _curves[dimension]->setKeyFrameValueAndTime(key, value, it->getTime());
-            return StatOK;
-        }
-        ++index;
-    }
-    
-    return StatFailed;
+    _curves[dimension]->setKeyFrameValueAndTime(key, value, nthCtl);
+    return StatOK;
 
 }
 

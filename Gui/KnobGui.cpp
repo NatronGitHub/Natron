@@ -278,9 +278,9 @@ void KnobGui::onRemoveAnyAnimationActionTriggered(){
 void KnobGui::setInterpolationForDimensions(const std::vector<int>& dimensions,Natron::KeyframeType interp){
     for(U32 i = 0; i < dimensions.size();++i){
         boost::shared_ptr<Curve> c = _knob->getCurve(dimensions[i]);
-        const KeyFrameSet& keyframes = c->getKeyFrames();
-        for(KeyFrameSet::const_iterator it = keyframes.begin();it!=keyframes.end();++it){
-            c->setKeyFrameInterpolation(interp, it->getTime());
+        int kfCount = c->keyFramesCount();
+        for(int j = 0;j < kfCount;++j){
+            c->setKeyFrameInterpolation(interp, j);
         }
     }
     emit keyInterpolationChanged();

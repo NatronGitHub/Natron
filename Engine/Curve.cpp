@@ -24,11 +24,11 @@ namespace {
     class KeyFrameTimePredicate
     {
     public:
-        KeyFrameTimePredicate(int t) : _t(t) {};
+        KeyFrameTimePredicate(double t) : _t(t) {};
 
         bool operator()(const KeyFrame& f) { return (f.getTime() == _t); }
     private:
-        int _t;
+        double _t;
     };
 }
 
@@ -383,7 +383,7 @@ const KeyFrameSet& Curve::getKeyFrames() const { return _imp->keyFrames; }
 
 KeyFrameSet::iterator Curve::setKeyFrameValueAndTimeNoUpdate(double value,double time, KeyFrameSet::iterator k) {
     KeyFrame newKey(*k);
-
+    
     // nothing special has to be done, since the derivatives are with respect to t
     newKey.setTime(time);
     newKey.setValue(value);
@@ -391,34 +391,47 @@ KeyFrameSet::iterator Curve::setKeyFrameValueAndTimeNoUpdate(double value,double
     return addKeyFrameNoUpdate(newKey).first;
 }
 
-const KeyFrame &Curve::setKeyFrameValue(double value,double oldTime){
-    KeyFrameSet::iterator it = find(oldTime);
+
+const KeyFrame& Curve::setKeyFrameValue(double value,int index,int* newIndex) {
+    KeyFrameSet::iterator it = keyframeAt(index);
     assert(it != _imp->keyFrames.end());
+    
     KeyFrame newKey(*it);
     newKey.setValue(value);
     it = addKeyFrameNoUpdate(newKey).first;
     
     evaluateCurveChanged(KEYFRAME_CHANGED,it);
+    
+    if(newIndex){
+        *newIndex =  _imp->indexFromIterator(it);
+    }
     return *it;
+
 }
 
 
-const KeyFrame &Curve::setKeyFrameTime(double time,double oldTime) {
-    KeyFrameSet::iterator it = find(oldTime);
-    assert(it != _imp->keyFrames.end());
 
+const KeyFrame& Curve::setKeyFrameTime(double time,int index,int* newIndex) {
+    KeyFrameSet::iterator it = keyframeAt(index);
+    assert(it != _imp->keyFrames.end());
+    
     if(time != it->getTime()) {
         it = setKeyFrameValueAndTimeNoUpdate(it->getValue(),time, it);
         evaluateCurveChanged(KEYFRAME_CHANGED,it);
     }
+    if(newIndex){
+        *newIndex =  _imp->indexFromIterator(it);
+    }
+
     return *it;
 }
 
 
-const KeyFrame &Curve::setKeyFrameValueAndTime(double time, double value,double oldTime) {
-    KeyFrameSet::iterator it = find(oldTime);
-    assert(it != _imp->keyFrames.end());
 
+const KeyFrame& Curve::setKeyFrameValueAndTime(double time,double value,int index,int* newIndex){
+    KeyFrameSet::iterator it = keyframeAt(index);
+    assert(it != _imp->keyFrames.end());
+    
     bool setTime = (time != it->getTime());
     bool setValue = (value != it->getValue());
     
@@ -426,25 +439,35 @@ const KeyFrame &Curve::setKeyFrameValueAndTime(double time, double value,double 
         it = setKeyFrameValueAndTimeNoUpdate(value,time, it);
         evaluateCurveChanged(KEYFRAME_CHANGED,it);
     }
+    if(newIndex){
+        *newIndex =  _imp->indexFromIterator(it);
+    }
+
     return *it;
+
 }
 
-const KeyFrame& Curve::setKeyFrameLeftDerivative(double value,double oldTime){
-    
-    KeyFrameSet::iterator it = find(oldTime);
+
+const KeyFrame& Curve::setKeyFrameLeftDerivative(double value,int index,int* newIndex){
+    KeyFrameSet::iterator it = keyframeAt(index);
     assert(it != _imp->keyFrames.end());
-    
+
     if(value != it->getLeftDerivative()) {
         KeyFrame newKey(*it);
         newKey.setLeftDerivative(value);
         it = addKeyFrameNoUpdate(newKey).first;
         evaluateCurveChanged(DERIVATIVES_CHANGED,it);
     }
+    if(newIndex){
+        *newIndex =  _imp->indexFromIterator(it);
+    }
+
     return *it;
 }
 
-const KeyFrame &Curve::setKeyFrameRightDerivative(double value,double oldTime){
-    KeyFrameSet::iterator it = find(oldTime);
+
+const KeyFrame& Curve::setKeyFrameRightDerivative(double value,int index,int* newIndex){
+    KeyFrameSet::iterator it = keyframeAt(index);
     assert(it != _imp->keyFrames.end());
     
     if(value != it->getRightDerivative()) {
@@ -453,11 +476,16 @@ const KeyFrame &Curve::setKeyFrameRightDerivative(double value,double oldTime){
         it = addKeyFrameNoUpdate(newKey).first;
         evaluateCurveChanged(DERIVATIVES_CHANGED,it);
     }
+    if(newIndex){
+        *newIndex =  _imp->indexFromIterator(it);
+    }
+
     return *it;
 }
 
-const KeyFrame &Curve::setKeyFrameDerivatives(double left, double right,double oldTime){
-    KeyFrameSet::iterator it = find(oldTime);
+
+const KeyFrame& Curve::setKeyFrameDerivatives(double left, double right,int index,int* newIndex) {
+    KeyFrameSet::iterator it = keyframeAt(index);
     assert(it != _imp->keyFrames.end());
     
     if(left != it->getLeftDerivative() || right != it->getRightDerivative()) {
@@ -467,24 +495,28 @@ const KeyFrame &Curve::setKeyFrameDerivatives(double left, double right,double o
         it = addKeyFrameNoUpdate(newKey).first;
         evaluateCurveChanged(DERIVATIVES_CHANGED,it);
     }
+    if(newIndex){
+        *newIndex =  _imp->indexFromIterator(it);
+    }
+
     return *it;
 }
 
-
-const KeyFrame &Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,double oldTime){
-    KeyFrameSet::iterator it = find(oldTime);
+const KeyFrame& Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,int index,int* newIndex){
+    KeyFrameSet::iterator it = keyframeAt(index);
     assert(it != _imp->keyFrames.end());
-    
     if(interp != it->getInterpolation()) {
         KeyFrame newKey(*it);
         newKey.setInterpolation(interp);
         it = addKeyFrameNoUpdate(newKey).first;
         evaluateCurveChanged(KEYFRAME_CHANGED,it);
     }
+    if(newIndex){
+        *newIndex =  _imp->indexFromIterator(it);
+    }
+
     return *it;
 }
-
-
 
 KeyFrameSet::iterator Curve::refreshDerivatives(Curve::CurveChangedReason reason, KeyFrameSet::iterator key){
     double tcur = key->getTime();
@@ -603,7 +635,7 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason, KeyFrameSet::iterato
 }
 
 KeyFrameSet::const_iterator Curve::find(double time) const {
-    return _imp->keyFrames.find(KeyFrame(time,0.));
+    return std::find_if(_imp->keyFrames.begin(), _imp->keyFrames.end(), KeyFrameTimePredicate(time));
 }
 
 KeyFrameSet::const_iterator Curve::keyframeAt(int index) const {
@@ -615,6 +647,22 @@ KeyFrameSet::const_iterator Curve::keyframeAt(int index) const {
         ++i;
     }
     return _imp->keyFrames.end();
+}
+
+int Curve::keyFrameIndex(double time) const {
+    int i = 0;
+    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it!=_imp->keyFrames.end(); ++it) {
+        if(std::abs(it->getTime() - time) < CONTROL_POINTS_EQUALITY_EPSILON){
+            return i;
+        }
+        ++i;
+    }
+    throw std::runtime_error("There's no keyframe at such time");
+
+}
+
+KeyFrameSet::const_iterator Curve::begin() const {
+    return _imp->keyFrames.begin();
 }
 
 KeyFrameSet::const_iterator Curve::end() const {

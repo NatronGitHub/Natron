@@ -50,6 +50,16 @@ struct CurvePrivate{
     , curveType(DOUBLE_CURVE)
     {}
 
+    int indexFromIterator(KeyFrameSet::iterator it) const {
+        int i = 0;
+        for(KeyFrameSet::iterator it2 = keyFrames.begin();it2!=keyFrames.end();++it2){
+            if(it2 == it){
+                return i;
+            }
+            ++i;
+        }
+        assert(false);//< a bad iterator was provided
+    }
 };
 
 

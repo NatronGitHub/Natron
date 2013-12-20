@@ -167,24 +167,58 @@ public:
     const KeyFrameSet& getKeyFrames() const;
 
     void clearKeyFrames();
-    
-    const KeyFrame &setKeyFrameValue(double value,double oldTime);
-    
-    const KeyFrame &setKeyFrameTime(double time,double oldTime);
-    
-    const KeyFrame &setKeyFrameValueAndTime(double time,double value,double oldTime);
 
-    const KeyFrame &setKeyFrameLeftDerivative(double value,double oldTime);
     
-    const KeyFrame &setKeyFrameRightDerivative(double value,double oldTime);
+    /**
+     * @brief  Set the value of the keyframe positioned at index index and returns the new  keyframe.
+     * Also the index of the new keyframe is returned in newIndex.
+     **/
+    const KeyFrame& setKeyFrameValue(double value,int index,int* newIndex = NULL);
+
+    /**
+     * @brief Set the new time of the keyframe positioned at index index and returns the new keyframe.
+     * Also the index of the new keyframe is returned in newIndex.
+     **/
+    const KeyFrame& setKeyFrameTime(double time,int index,int* newIndex = NULL);
+
+    /**
+     * @brief Set the new value and time of the keyframe positioned at index index and returns the new  keyframe.
+     * Also the index of the new keyframe is returned in newIndex.
+     **/
+    const KeyFrame& setKeyFrameValueAndTime(double time,double value,int index,int* newIndex = NULL);
+
+    /**
+     * @brief Set the left derivative  of the keyframe positioned at index index and returns the new  keyframe.
+     * Also the index of the new keyframe is returned in newIndex.
+     **/
+    const KeyFrame& setKeyFrameLeftDerivative(double value,int index,int* newIndex = NULL);
     
-    const KeyFrame &setKeyFrameDerivatives(double left, double right,double oldTime) ;
+    /**
+     * @brief Set the right derivative  of the keyframe positioned at index index and returns the new keyframe.
+     * Also the index of the new keyframe is returned in newIndex.
+     **/
+    const KeyFrame& setKeyFrameRightDerivative(double value,int index,int* newIndex = NULL);
+
+    /**
+     * @brief Set the right and left derivatives  of the keyframe positioned at index index and returns the new  keyframe.
+     * Also the index of the new keyframe is returned in newIndex.
+     **/
+    const KeyFrame& setKeyFrameDerivatives(double left, double right,int index,int* newIndex = NULL) ;
     
-    const KeyFrame &setKeyFrameInterpolation(Natron::KeyframeType interp,double oldTime);
+    /**
+     * @brief  Set the interpolation method of the keyframe positioned at index index and returns the new  keyframe.
+     * Also the index of the new keyframe is returned in newIndex.
+     **/
+    const KeyFrame& setKeyFrameInterpolation(Natron::KeyframeType interp,int index,int* newIndex = NULL);
+
 
     KeyFrameSet::const_iterator find(double time) const;
     
     KeyFrameSet::const_iterator keyframeAt(int index) const;
+    
+    int keyFrameIndex(double time) const;
+    
+    KeyFrameSet::const_iterator begin() const;
 
     KeyFrameSet::const_iterator end() const;
 
@@ -196,7 +230,7 @@ private:
     ///a boolean indicating whether it removed a keyframe already existing at this time or not
     std::pair<KeyFrameSet::iterator,bool> addKeyFrameNoUpdate(const KeyFrame& cp);
 
-
+    
     /**
      * @brief Called when a keyframe/derivative is modified, indicating that the curve has changed and we must
      * evaluate any change (i.e: force a new render)

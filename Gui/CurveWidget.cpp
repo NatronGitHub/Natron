@@ -1027,11 +1027,13 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
     bool setBothDerivative = keyframeIsFirstOrLast ? interpIsCatmullRomOrCubicOrFree : interpIsNotBroken;
     
     
+    int keyframeIndexInCurve = key.curve->getInternalCurve()->keyFrameIndex(key.key.getTime());
+    
     // For other keyframes:
     // - if they KEYFRAME_BROKEN, move only one derivative
     // - else change to KEYFRAME_FREE and move both derivatives
     if (setBothDerivative) {
-        key.key = key.curve->getInternalCurve()->setKeyFrameInterpolation(KEYFRAME_FREE, key.key.getTime());
+        key.key = key.curve->getInternalCurve()->setKeyFrameInterpolation(KEYFRAME_FREE, keyframeIndexInCurve);
         
         //if dx is not of the good sign it would make the curve uncontrollable
         if (_selectedDerivative.first == CurveGui::LEFT_TANGENT) {
@@ -1045,7 +1047,7 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
         }
         
         double derivative = dy / dx;
-        key.key = key.curve->getInternalCurve()->setKeyFrameDerivatives(derivative, derivative, key.key.getTime());
+        key.key = key.curve->getInternalCurve()->setKeyFrameDerivatives(derivative, derivative,keyframeIndexInCurve);
         
     } else {
         key.key = key.curve->getInternalCurve()->setKeyFrameInterpolation(KEYFRAME_BROKEN, key.key.getTime());
@@ -1056,7 +1058,7 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
             }
             
             double derivative = dy / dx;
-            key.key = key.curve->getInternalCurve()->setKeyFrameLeftDerivative(derivative, key.key.getTime());
+            key.key = key.curve->getInternalCurve()->setKeyFrameLeftDerivative(derivative, keyframeIndexInCurve);
             
         } else {
             //if dx is not of the good sign it would make the curve uncontrollable
@@ -1065,7 +1067,7 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
             }
             
             double derivative = dy / dx;
-            key.key = key.curve->getInternalCurve()->setKeyFrameRightDerivative(derivative,key.key.getTime());
+            key.key = key.curve->getInternalCurve()->setKeyFrameRightDerivative(derivative,keyframeIndexInCurve);
         }
     }
     refreshKeyTangents(&key);

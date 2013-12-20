@@ -1396,10 +1396,11 @@ void Parametric_KnobGui::createWidget(QGridLayout *layout, int row) {
     
     
     for (int i = 0; i < getKnob()->getDimension(); ++i) {
+        QString curveName = parametricKnob->getDimensionName(i).c_str();
         CurveGui* curve =  _curveWidget->createCurve(parametricKnob->getParametricCurve(i),
                                                      this,
                                                      i,
-                                                     parametricKnob->getDimensionName(i).c_str());
+                                                     curveName);
         QColor color;
         double r,g,b;
         parametricKnob->getCurveColor(i, &r, &g, &b);
@@ -1408,6 +1409,7 @@ void Parametric_KnobGui::createWidget(QGridLayout *layout, int row) {
         color.setBlueF(b);
         curve->setColor(color);
         QTreeWidgetItem* item = new QTreeWidgetItem(_tree);
+        item->setText(0, curveName);
         item->setSelected(true);
         _curves.insert(std::make_pair(curve, item));
     }
