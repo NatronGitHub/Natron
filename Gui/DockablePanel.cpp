@@ -24,6 +24,7 @@
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Knob.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/EffectInstance.h"
 
 #include "Gui/NodeGui.h"
@@ -191,20 +192,44 @@ DockablePanel::~DockablePanel(){
 }
 
 void DockablePanel::initializeKnobs(){
-   
+    
     /// function called to create the gui for each knob. It can be called several times in a row
     /// without any damage
     
     const std::vector<boost::shared_ptr<Knob> >& knobs = _holder->getKnobs();
     
-    for(U32 i = 0 ; i < knobs.size(); ++i){
+    std::list< boost::shared_ptr<Knob> > knobsCpy;
+    for(U32 i = 0; i < knobs.size();++i){
+        knobsCpy.push_back(knobs[i]);
+    }
+    
+    
+    ///for each knob, a vector containing its children. The vector is sorted by order of declaration
+    typedef std::vector< std::pair< boost::shared_ptr<Knob> , std::vector< boost::shared_ptr<Knob> > > > OrderedKnobs;
+    OrderedKnobs knobsMap;
+    
+    std::vector< boost::shared_ptr<Knob> >  emptyVec;
+    while(!knobsCpy.empty()){
+        boost::shared_ptr<Knob>& k = *knobsCpy.begin();
+        if (k->typeName() == Tab_Knob::typeNameStatic()) {
+            knobsMap.push_back(std::make_pair(k, boost::dynamic_pointer_cast<Tab_Knob>(k)->getKnobs()));
+        }else if( k->typeName() == Group_Knob::typeNameStatic()){
+            knobsMap.push_back(std::make_pair(k, boost::dynamic_pointer_cast<Group_Knob>(k)->getChildren()));
+        }else{
+            knobsMap.push_back(std::make_pair(k,emptyVec));
+        }
+        knobsCpy.erase(knobsCpy.begin());
+    }
+    
+    
+    
+    for(U32 i = 0 ; i < knobsMap.size(); ++i){
         
-        if(knobs[i]->typeName() == "Tab"){
+        if(knobsMap[i].first->typeName() == Tab_Knob::typeNameStatic()){
             
             ///if the knob is a tab, look-up the tab widget to check whether the tab already exists or not
-            
             bool found = false;
-            QString tabName(knobs[i]->getDescription().c_str());
+            QString tabName(knobsMap[i].first->getDescription().c_str());
             for(int j = 0 ; j < _tabWidget->count(); ++j){
                 if(_tabWidget->tabText(j) == tabName){
                     found = true;
@@ -216,19 +241,130 @@ void DockablePanel::initializeKnobs(){
                 addTab(tabName);
             }
         }else{
-            
-            ///this is not a tab knob
-            
-            KnobGui* gui = findKnobGuiOrCreate(knobs[i]);
+            KnobGui* gui = findKnobGuiOrCreate(knobsMap[i].first);
             if(!gui){
                 // this should happen for Custom Knobs, which have no GUI (only an interact)
                 return;
             }
-            
+
+        }
+        
+        ///create all children if any
+        for (U32 j = 0; j < knobsMap[i].second.size(); ++j) {
+            findKnobGuiOrCreate(knobsMap[i].second[j]);
         }
         
     }
 }
+
+
+KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
+    assert(knob);
+    for (std::map<boost::shared_ptr<Knob>,KnobGui*>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
+        if(it->first == knob){
+            return it->second;
+        }
+    }
+    
+    QObject::connect(knob.get(),SIGNAL(deleted(Knob*)),this,SLOT(onKnobDeletion(Knob*)));
+    
+    KnobGui* ret =  appPTR->getKnobGuiFactory().createGuiForKnob(knob,this);
+    if(!ret){
+        // this should happen for Custom Knobs, which have no GUI (only an interact)
+        // this should happen for tab Knobs, which have no GUI
+        if(knob->typeName() != Tab_Knob::typeNameStatic()){
+            std::cout << "Failed to create gui for Knob " << knob->getName() << " of type " << knob->typeName() << std::endl;
+        }
+        return NULL;
+    }
+    _knobs.insert(make_pair(knob, ret));
+    
+    
+    
+    ///if widgets for the KnobGui have already been created, don't do this
+    if(!ret->hasWidgetBeenCreated()){
+        
+        
+        ///find to what to belongs the knob. by default it belongs to the default tab.
+        std::map<QString,std::pair<QWidget*,int> >::iterator parentTab = _tabs.end() ;
+        
+        
+        boost::shared_ptr<Knob> parentKnob = knob->getParentKnob();
+        
+        ///if the parent is a tab find it
+        if(parentKnob && parentKnob->typeName() == Tab_Knob::typeNameStatic()){
+            //make sure the tab has been created;
+            (void)findKnobGuiOrCreate(parentKnob);
+            std::map<QString,std::pair<QWidget*,int> >::iterator it = _tabs.find(parentKnob->getDescription().c_str());
+            
+            ///if it crashes there's serious problem because findKnobGuiOrCreate(parentKnob) should have registered
+            ///the tab. Maybe you passed incorrect pointers ?
+            assert(it != _tabs.end());
+            parentTab = it;
+            
+        }else{
+            ///defaults to the default tab
+            parentTab = _tabs.find(_defaultTabName);
+            ///The dockpanel must have a default tab if you didn't declare your own tab to
+            ///put your knobs into!
+            assert(parentTab != _tabs.end());
+        }
+        if(parentTab != _tabs.end()){
+            ++parentTab->second.second;
+        }
+        
+        
+        ///if the knob has specified that it didn't want to trigger a new line, decrement the current row
+        /// index of the tab
+        ///FIXME: this is bugged because we don't tell to the createGui() function that it is going to need
+        ///to put its widgets on the right of others, so it is going to corrupt the layout. Commenting for now.
+        //                if(!gui->triggerNewLine() && i!=0){
+        //                    --parentTab->second.second;
+        //                }
+        //
+        ret->createGUI(dynamic_cast<QGridLayout*>(parentTab->second.first->layout()),//< ptr to the grid layout
+                       parentTab->second.second); //< the row index
+        
+        /// if this knob is within a group, check that the group is visible, i.e. the toplevel group is unfolded
+        if (parentKnob && parentKnob->typeName() == Group_Knob::typeNameStatic()) {
+            
+            Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
+            assert(parentGui);
+            
+            
+            ///FIXME: this offsetColumn is never really used. Shall we use this anyway? It seems
+            ///to work fine without it.
+            int offsetColumn = knob->determineHierarchySize();
+            parentGui->addKnob(ret,parentTab->second.second,offsetColumn);
+            
+            
+            bool showit = true;
+            // see KnobGui::setSecret() for a very similar code
+            while (showit && parentKnob && parentKnob->typeName() == Group_Knob::typeNameStatic()) {
+                assert(parentGui);
+                // check for secretness and visibility of the group
+                if (parentKnob->isSecret() || !parentGui->isChecked()) {
+                    showit = false; // one of the including groups is folder, so this item is hidden
+                }
+                // prepare for next loop iteration
+                parentKnob = parentKnob->getParentKnob();
+                if (parentKnob) {
+                    parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
+                }
+            }
+            if (showit) {
+                ret->show();
+            } else {
+                //gui->hide(); // already hidden? please comment if it's not.
+            }
+        }
+        
+        
+    }
+    return ret;
+    
+}
+
 
 
 void DockablePanel::addTab(const QString& name){
@@ -244,7 +380,7 @@ void DockablePanel::addTab(const QString& name){
 }
 
 const QUndoCommand* DockablePanel::getLastUndoCommand() const{
-        return _undoStack->command(_undoStack->index()-1);
+    return _undoStack->command(_undoStack->index()-1);
 }
 
 void DockablePanel::pushUndoCommand(QUndoCommand* cmd){
@@ -337,113 +473,6 @@ Button* DockablePanel::insertHeaderButton(int headerPosition){
     Button* ret = new Button(_headerWidget);
     _headerLayout->insertWidget(headerPosition, ret);
     return ret;
-}
-
-KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
-    assert(knob);
-    for (std::map<boost::shared_ptr<Knob>,KnobGui*>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
-        if(it->first == knob){
-            return it->second;
-        }
-    }
-    
-    QObject::connect(knob.get(),SIGNAL(deleted(Knob*)),this,SLOT(onKnobDeletion(Knob*)));
-    
-    KnobGui* ret =  appPTR->getKnobGuiFactory().createGuiForKnob(knob,this);
-    if(!ret){
-        // this should happen for Custom Knobs, which have no GUI (only an interact)
-        // this should happen for tab Knobs, which have no GUI
-        if(knob->typeName() != "Tab"){
-            std::cout << "Failed to create gui for Knob " << knob->getName() << " of type " << knob->typeName() << std::endl;
-        }
-        return NULL;
-    }
-    _knobs.insert(make_pair(knob, ret));
-    
-    
-    
-    ///if widgets for the KnobGui have already been created, don't do this
-    if(!ret->hasWidgetBeenCreated()){
-        
-        
-        ///find to what to belongs the knob. by default it belongs to the default tab.
-        std::map<QString,std::pair<QWidget*,int> >::iterator parentTab = _tabs.end() ;
-        
-        
-        boost::shared_ptr<Knob> parentKnob = knob->getParentKnob();
-        
-        ///if the parent is a tab find it
-        if(parentKnob && parentKnob->typeName() == "Tab"){
-            //make sure the tab has been created;
-            (void)findKnobGuiOrCreate(parentKnob);
-            std::map<QString,std::pair<QWidget*,int> >::iterator it = _tabs.find(parentKnob->getDescription().c_str());
-            
-            ///if it crashes there's serious problem because findKnobGuiOrCreate(parentKnob) should have registered
-            ///the tab. Maybe you passed incorrect pointers ?
-            assert(it != _tabs.end());
-            parentTab = it;
-            
-        }else{
-            ///defaults to the default tab
-            parentTab = _tabs.find(_defaultTabName);
-            ///The dockpanel must have a default tab if you didn't declare your own tab to
-            ///put your knobs into!
-            assert(parentTab != _tabs.end());
-        }
-        if(parentTab != _tabs.end()){
-            ++parentTab->second.second;
-        }
-        
-        
-        ///if the knob has specified that it didn't want to trigger a new line, decrement the current row
-        /// index of the tab
-        ///FIXME: this is bugged because we don't tell to the createGui() function that it is going to need
-        ///to put its widgets on the right of others, so it is going to corrupt the layout. Commenting for now.
-        //                if(!gui->triggerNewLine() && i!=0){
-        //                    --parentTab->second.second;
-        //                }
-        //
-        ret->createGUI(dynamic_cast<QGridLayout*>(parentTab->second.first->layout()),//< ptr to the grid layout
-                       parentTab->second.second); //< the row index
-        
-        /// if this knob is within a group, check that the group is visible, i.e. the toplevel group is unfolded
-        if (parentKnob && parentKnob->typeName() == "Group") {
-            
-            Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
-            assert(parentGui);
-            
-            
-            ///FIXME: this offsetColumn is never really used. Shall we use this anyway? It seems
-            ///to work fine without it.
-            int offsetColumn = knob->determineHierarchySize();
-            parentGui->addKnob(ret,parentTab->second.second,offsetColumn);
-            
-            
-            bool showit = true;
-            // see KnobGui::setSecret() for a very similar code
-            while (showit && parentKnob && parentKnob->typeName() == "Group") {
-                assert(parentGui);
-                // check for secretness and visibility of the group
-                if (parentKnob->isSecret() || !parentGui->isChecked()) {
-                    showit = false; // one of the including groups is folder, so this item is hidden
-                }
-                // prepare for next loop iteration
-                parentKnob = parentKnob->getParentKnob();
-                if (parentKnob) {
-                    parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
-                }
-            }
-            if (showit) {
-                ret->show();
-            } else {
-                //gui->hide(); // already hidden? please comment if it's not.
-            }
-        }
-        
-        
-    }
-    return ret;
-    
 }
 
 void DockablePanel::onKnobDeletion(Knob* k){
