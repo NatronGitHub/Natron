@@ -42,34 +42,34 @@
 #define kOfxParamPropControlPoints "OfxParamPropControlPoints"
 
 namespace {
-    struct ControlPoint {
-        double key;
-        double value;
-    };
-    typedef std::vector<ControlPoint> ControlPointV;
-    struct ControlPoint_LessThan {
-        bool operator() (const ControlPoint & left, const ControlPoint & right)
-        {
-            return left.key < right.key;
-        }
-    };
-    struct ControlPoint_IsClose {
-        const ControlPoint& _refcp;
-        double _eps;
-        ControlPoint_IsClose(const ControlPoint& refcp, double eps) : _refcp(refcp), _eps(eps){}
+struct ControlPoint {
+    double key;
+    double value;
+};
+typedef std::vector<ControlPoint> ControlPointV;
+struct ControlPoint_LessThan {
+    bool operator() (const ControlPoint & left, const ControlPoint & right)
+    {
+        return left.key < right.key;
+    }
+};
+struct ControlPoint_IsClose {
+    const ControlPoint& _refcp;
+    double _eps;
+    ControlPoint_IsClose(const ControlPoint& refcp, double eps) : _refcp(refcp), _eps(eps){}
 
-        bool operator() (const ControlPoint& cp) const {
-            return std::abs(cp.key - _refcp.key) < _eps;
-        }
-    };
-    struct ControlPoint_MuchLessThan {
-        double _eps;
-        ControlPoint_MuchLessThan(double eps) : _eps(eps){}
-        bool operator() (const ControlPoint & left, const ControlPoint & right)
-        {
-            return left.key < (right.key - _eps);
-        }
-    };
+    bool operator() (const ControlPoint& cp) const {
+        return std::abs(cp.key - _refcp.key) < _eps;
+    }
+};
+struct ControlPoint_MuchLessThan {
+    double _eps;
+    ControlPoint_MuchLessThan(double eps) : _eps(eps){}
+    bool operator() (const ControlPoint & left, const ControlPoint & right)
+    {
+        return left.key < (right.key - _eps);
+    }
+};
 
 }
 
@@ -85,37 +85,49 @@ ParametricInstance::ParametricInstance(Param::Descriptor& descriptor, Param::Set
 {
 
 }
-    
+
 bool ParametricInstance::isInitialized() const{
     return _curvesDefaultInitialized;
 }
-    
-OfxStatus ParametricInstance::defaultInitializeFromDescriptor(const Param::Descriptor& descriptor)
+
+OfxStatus ParametricInstance::defaultInitializeFromDescriptor(int curveIndex,const Param::Descriptor& descriptor)
 {
     const Property::Set &descProps = descriptor.getProperties();
+    
     int curveCount = descProps.getIntProperty(kOfxParamPropParametricDimension);
+    if(curveIndex >= curveCount){
+        return kOfxStatFailed;
+    }
 
-    for (int curveIndex = 0; curveIndex < curveCount; ++curveIndex) {
-        std::stringstream name;
-        name << kOfxParamPropControlPoints << '_' << curveIndex;
-        if (descProps.fetchProperty(name.str())) {
-            // there is a curve for dimension curveIndex
-            int cpsCount = descProps.getDimension(name.str()) / 2;
-            ControlPointV cps(cpsCount);
-            descProps.getDoublePropertyN(name.str(), &cps[0].key, cpsCount*2);
-            for (int i = 0; i < cpsCount; ++i) {
-                OfxStatus stat = addControlPoint(curveIndex, 0., cps[i].key, cps[i].value, false);
-                if (stat == kOfxStatFailed) {
-                    return stat;
-                }
+    std::stringstream name;
+    name << kOfxParamPropControlPoints << '_' << curveIndex;
+    if (descProps.fetchProperty(name.str())) {
+        // there is a curve for dimension curveIndex
+        int cpsCount = descProps.getDimension(name.str()) / 2;
+        ControlPointV cps(cpsCount);
+        descProps.getDoublePropertyN(name.str(), &cps[0].key, cpsCount*2);
+        for (int i = 0; i < cpsCount; ++i) {
+            OfxStatus stat = addControlPoint(curveIndex, 0., cps[i].key, cps[i].value, false);
+            if (stat == kOfxStatFailed) {
+                return stat;
             }
         }
     }
-
-    _curvesDefaultInitialized = true;
     return kOfxStatOK;
 }
     
+OfxStatus ParametricInstance::defaultInitializeAllCurves(const Param::Descriptor& descriptor){
+    int curveCount = descriptor.getProperties().getIntProperty(kOfxParamPropParametricDimension);
+    for(int i = 0; i < curveCount;++i){
+        OfxStatus stat = defaultInitializeFromDescriptor(i, descriptor);
+        if(stat == kOfxStatFailed){
+            return stat;
+        }
+    }
+    _curvesDefaultInitialized = true;
+    return kOfxStatOK;
+}
+
 // copy one parameter to another
 OfxStatus ParametricInstance::copy(const Param::Instance &/*instance*/, OfxTime /*offset*/)
 {
@@ -253,7 +265,7 @@ static OfxStatus parametricParamGetValue(OfxParamHandle param,
 #       endif
         return kOfxStatErrBadHandle;
     }
-    
+
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
     if(!instance || !instance->isInitialized()) {
 #       ifdef OFX_DEBUG_PARAMETERS
@@ -538,7 +550,7 @@ static OfxStatus parametricParamSetNthControlPoint(OfxParamHandle param,
 #   endif
     return stat;
 }
-    
+
 
 /** @brief Adds a control point to the curve.
 
@@ -579,8 +591,8 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
 
 
     OfxStatus stat = kOfxStatErrUnsupported;
-    
-    
+
+
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
     ///if the handle is an instance call the virtual function, otherwise store a new double3D property
     /// to indicate a new control point was added.
@@ -692,7 +704,7 @@ static OfxStatus parametricParamDeleteControlPoint(OfxParamHandle param,
 #       endif
         return kOfxStatErrBadHandle;
     }
-    
+
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
     if (instance) {
         if (!instance->isInitialized()) {
@@ -776,7 +788,7 @@ static OfxStatus parametricParamDeleteAllControlPoints(OfxParamHandle param,
 #       endif
         return kOfxStatErrBadHandle;
     }
-    
+
     ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
     if (instance) {
         if (!instance->isInitialized()) {

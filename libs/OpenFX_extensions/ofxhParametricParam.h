@@ -41,10 +41,13 @@ public:
     /// true if defaultInitializeFromDescriptor() has been called
     bool isInitialized() const;
     
+    
+    OfxStatus defaultInitializeFromDescriptor(int curveIndex,const Param::Descriptor& descriptor);
+    
     ///To be called right away after the constructor. It will construct the curves
     ///to their default from the descriptor. This function calls the virtual function
     /// addControlPoint() hence we can't do this ourselves in the constructor.
-    OfxStatus defaultInitializeFromDescriptor(const Param::Descriptor& descriptor);
+    OfxStatus defaultInitializeAllCurves(const Param::Descriptor& descriptor);
     
     // copy one parameter to another
     virtual OfxStatus copy(const Instance &instance, OfxTime offset);

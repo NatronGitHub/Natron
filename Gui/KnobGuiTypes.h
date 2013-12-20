@@ -568,6 +568,7 @@ public slots:
     
     void onItemsSelectionChanged();
     
+    void resetSelectedCurves();
     
 private:
     

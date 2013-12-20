@@ -662,7 +662,7 @@ public slots:
     
     void initializeInteract(CurveWidget* widget);
 
-    void onResetToDefault();
+    void onResetToDefault(const QVector<int>& dimensions);
     
 private:
     

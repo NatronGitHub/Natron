@@ -1398,8 +1398,8 @@ void Parametric_KnobGui::createWidget(QGridLayout *layout, int row) {
     treeColumnLayout->addWidget(_tree);
     
     _resetButton = new Button("Reset",treeColumn);
-    _resetButton->setToolTip("Reset the curves to their default shape");
-    QObject::connect(_resetButton, SIGNAL(pressed()), parametricKnob.get(), SLOT(resetToDefault()));
+    _resetButton->setToolTip("Reset the selected curves in the tree to their default shape");
+    QObject::connect(_resetButton, SIGNAL(pressed()), this, SLOT(resetSelectedCurves()));
     treeColumnLayout->addWidget(_resetButton);
     
     layout->addWidget(treeColumn, row, 0);
@@ -1494,4 +1494,19 @@ void Parametric_KnobGui::onItemsSelectionChanged(){
     _curveWidget->showCurvesAndHideOthers(curves);
     _curveWidget->centerOn(curves); //remove this if you don't want the editor to switch to a curve on a selection change
     
+}
+
+void Parametric_KnobGui::resetSelectedCurves(){
+    QVector<int> curveIndexes;
+    QList<QTreeWidgetItem*> selected = _tree->selectedItems();
+    for(int i = 0 ; i < selected.size();++i){
+        //find the items in the curves
+        for (CurveGuis::iterator it = _curves.begin(); it!= _curves.end(); ++it) {
+            if(it->second.treeItem == selected.at(i)){
+                curveIndexes.push_back(it->second.curve->getDimension());
+                break;
+            }
+        }
+    }
+    boost::dynamic_pointer_cast<Parametric_Knob>(getKnob())->resetToDefault(curveIndexes);
 }

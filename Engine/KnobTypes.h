@@ -538,8 +538,9 @@ public slots:
         emit mustInitializeOverlayInteract(widget);
     }
     
-    virtual void resetToDefault(){
-        emit mustResetToDefault();
+    virtual void resetToDefault(const QVector<int>& dimensions){
+        
+        emit mustResetToDefault(dimensions);
     }
 
     
@@ -554,7 +555,7 @@ signals:
     ///emitted when the state of a curve changed at the indicated dimension
     void curveChanged(int);
     
-    void mustResetToDefault();
+    void mustResetToDefault(QVector<int>);
     
 private:
     

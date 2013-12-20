@@ -1627,16 +1627,16 @@ OfxParametricInstance::OfxParametricInstance(OfxEffectInstance* node, OFX::Host:
     }
     
     QObject::connect(_knob.get(),SIGNAL(mustInitializeOverlayInteract(CurveWidget*)),this,SLOT(initializeInteract(CurveWidget*)));
-    QObject::connect(_knob.get(), SIGNAL(mustResetToDefault()), this, SLOT(onResetToDefault()));
+    QObject::connect(_knob.get(), SIGNAL(mustResetToDefault(QVector<int>)), this, SLOT(onResetToDefault(QVector<int>)));
     setDisplayRange();
 }
 
 
-void OfxParametricInstance::onResetToDefault(){
-    for (int i = 0; i < _knob->getDimension(); ++i) {
-        _knob->deleteAllControlPoints(i);
+void OfxParametricInstance::onResetToDefault(const QVector<int>& dimensions){
+    for (int i = 0; i < dimensions.size(); ++i) {
+        _knob->deleteAllControlPoints(dimensions.at(i));
+        defaultInitializeFromDescriptor(dimensions.at(i),_descriptor);
     }
-    defaultInitializeFromDescriptor(_descriptor);
 }
 
 void OfxParametricInstance::initializeInteract(CurveWidget* widget){
