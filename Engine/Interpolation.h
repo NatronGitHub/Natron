@@ -323,7 +323,7 @@ void autoComputeDerivatives(Natron::KeyframeType interpPrev,
 
     *vcurDerivRight = P0pr/(tnext-tcur); // denormalize for t \in [tcur,tnext]
     *vcurDerivLeft = Q3pl/(tcur-tprev); // denormalize for t \in [tprev,tcur]
-    assert(!std::isnan(*vcurDerivRight) && !std::isnan(*vcurDerivLeft));
+    assert(!boost::math::isnan(*vcurDerivRight) && !boost::math::isnan(*vcurDerivLeft));
 }
 
 }

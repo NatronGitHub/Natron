@@ -12,6 +12,7 @@
 #include "Curve.h"
 
 #include <algorithm>
+#include <boost/math/special_functions/fpclassify.hpp>
 #include "Engine/CurvePrivate.h"
 #include "Engine/Interpolation.h"
 
@@ -74,19 +75,19 @@ KeyFrame::~KeyFrame(){}
 
 
 void KeyFrame::setLeftDerivative(double v){
-    assert(!std::isnan(v));
+    assert(!boost::math::isnan(v));
     _leftDerivative = v;
 }
 
 
 void KeyFrame::setRightDerivative(double v){
-    assert(!std::isnan(v));
+    assert(!boost::math::isnan(v));
     _rightDerivative = v;
 }
 
 
 void KeyFrame::setValue(double v){
-    assert(!std::isnan(v));
+    assert(!boost::math::isnan(v));
     _value = v;
 }
 
@@ -371,7 +372,7 @@ double Curve::getValueAt(double t) const {
         case CurvePrivate::BOOL_CURVE:
             return v >= 0.5 ? 1. : 0.;
         default:
-            break;
+            return v;
     }
 }
 

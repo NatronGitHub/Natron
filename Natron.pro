@@ -66,11 +66,7 @@ warning("Compiling in DEBUG mode.")
     DEFINES += NATRON_DEBUG
 }
 
-CONFIG(release, debug|release){
-warning("Compiling in RELEASE mode.")
-  QMAKE_CXXFLAGS_RELEASE += -O3
-  QMAKE_CFLAGS_RELEASE += -O3
-}
+
 
 *xcode* {
 #redefine cxx flags as qmake tends to automatically add -O2 to xcode projects
