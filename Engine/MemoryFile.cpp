@@ -159,17 +159,17 @@ file_mapping_handle_(INVALID_HANDLE_VALUE)
             windows_open_mode = CREATE_ALWAYS;
             break;
         default:
-            string str("MemoryFile EXC : Invalid open mode. ");
+            std::string str("MemoryFile EXC : Invalid open mode. ");
             str.append(pathname);
             throw std::runtime_error(str);
             
             return;
     }
     const size_t min_file_size = 4096;
-    file_handle_ = ::CreateFile(pathname, GENERIC_READ | GENERIC_WRITE,
+    file_handle_ = ::CreateFile(pathname.c_str(), GENERIC_READ | GENERIC_WRITE,
                                 0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
     if (file_handle_ == INVALID_HANDLE_VALUE){
-        string str("MemoryFile EXC : Failed to open file ");
+        std::string str("MemoryFile EXC : Failed to open file ");
         str.append(pathname);
         throw std::runtime_error(str);
         
@@ -180,7 +180,7 @@ file_mapping_handle_(INVALID_HANDLE_VALUE)
     file_mapping_handle_ = ::CreateFileMapping(
                                                file_handle_, 0, PAGE_READWRITE, 0, adjusted_file_size, 0);
     if (file_mapping_handle_ == INVALID_HANDLE_VALUE){
-        string str("MemoryFile EXC : Failed to create mapping :  ");
+        std::string str("MemoryFile EXC : Failed to create mapping :  ");
         str.append(pathname);
         throw std::runtime_error(str);
         

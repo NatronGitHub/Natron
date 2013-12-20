@@ -9,7 +9,9 @@
 
 #include "VideoEngine.h"
 
+#ifndef __NATRON_WIN32__
 #include <unistd.h> //Provides STDIN_FILENO
+#endif
 #include <iterator>
 #include <cassert>
 #include <QtCore/QMutex>

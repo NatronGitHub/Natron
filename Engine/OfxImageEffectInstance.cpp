@@ -140,27 +140,12 @@ OfxStatus OfxImageEffectInstance::vmessage(const char* type,
 // project may be a PAL SD project, but only be a letter-box within that. The project size is
 // the size of this sub window.
 void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const {
-//    assert(_node);
-//    RectI rod;
-//    for(EffectInstance::Inputs::const_iterator it = _node->getInputs().begin() ; it != _node->getInputs().end() ; ++it){
-//        if (*it) {
-//            RectI inputRod;
-//#warning "this is a Hack and shouldn't be the way to get the current time"
-//            Status st = (*it)->getRegionOfDefinition(_node->getApp()->getTimeLine()->currentFrame(), &inputRod);
-//            if(st == StatFailed)
-//                break;
-//            rod.merge(inputRod);
-//        }
-//    }
-//    if(!rod.isNull()){
-//        xSize = rod.width();
-//        ySize = rod.height();
-//    }else{
+
     
         const Format& f = _node->getRenderFormat();
         xSize = f.width();
         ySize = f.height();
-    // }
+
 }
 
 // The offset of the current project in canonical coordinates.
@@ -169,27 +154,11 @@ void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const 
 // project offset is the offset to the bottom left hand corner of the letter box. The project
 // offset is in canonical coordinates.
 void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) const {
-//    assert(_node);
-//    RectI rod;
-//    for(EffectInstance::Inputs::const_iterator it = _node->getInputs().begin() ; it != _node->getInputs().end() ; ++it){
-//        if (*it) {
-//            RectI inputRod;
-//#warning "this is a Hack and shouldn't be the way to get the current time"
-//            Status st = (*it)->getRegionOfDefinition(_node->getApp()->getTimeLine()->currentFrame(), &inputRod);
-//            if(st == StatFailed)
-//                break;
-//            rod.merge(inputRod);
-//        }
-//    }
-//    if(!rod.isNull()){
-//        xOffset = rod.left();
-//        yOffset = rod.bottom();
-//    }else{
-    
+
         const Format& f = _node->getRenderFormat();
         xOffset = f.left();
         yOffset = f.bottom();
-    //  }
+
 }
 
 // The extent of the current project in canonical coordinates.
@@ -198,27 +167,12 @@ void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) 
 // returns the top right position, as the extent is always rooted at 0,0. For example a PAL SD
 // project would have an extent of 768, 576.
 void OfxImageEffectInstance::getProjectExtent(double& xSize, double& ySize) const {
-//    assert(_node);
-//    RectI rod;
-//    for(EffectInstance::Inputs::const_iterator it = _node->getInputs().begin() ; it != _node->getInputs().end() ; ++it){
-//        if (*it) {
-//            RectI inputRod;
-//#warning "this is a Hack and shouldn't be the way to get the current time"
-//            Status st = (*it)->getRegionOfDefinition(_node->getApp()->getTimeLine()->currentFrame(), &inputRod);
-//            if(st == StatFailed)
-//                break;
-//            rod.merge(inputRod);
-//        }
-//    }
-//    if(!rod.isNull()){
-//        xSize = rod.right();
-//        ySize = rod.top();
-//    }else{
+
     
         const Format& f = _node->getRenderFormat();
         xSize = f.right();
         ySize = f.top();
-    // }
+
 }
 
 // The pixel aspect ratio of the current project
@@ -343,7 +297,7 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
 
         Custom parameters are mandatory, as they are simply ASCII C strings. However, animation of custom parameters an support for an in editor interact is optional.
          */
-#warning "activate CustomParam support here"
+#pragma message WARN("activate CustomParam support here")
         //throw std::runtime_error(std::string("Parameter ") + paramName + std::string(" has unsupported OFX type ") + descriptor.getType());
         OfxCustomInstance *ret = new OfxCustomInstance(node(), descriptor);
         knob = ret->getKnob();
