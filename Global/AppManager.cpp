@@ -676,15 +676,15 @@ bool AppInstance::findAutoSave() {
                     filename = filename.remove(path);
                     _currentProject->setProjectName(filename);
                     _currentProject->setProjectPath(path);
-                    _currentProject->setProjectAgeSinceLastAutosaveSave(QDateTime::currentDateTime());
-                    _currentProject->setProjectAgeSinceLastSave(QDateTime());
                     
                 } else {
                     _currentProject->setHasProjectBeenSavedByUser(false);
                     _currentProject->setProjectName(NATRON_PROJECT_UNTITLED);
                     _currentProject->setProjectPath("");
                 }
-                
+                _currentProject->setProjectAgeSinceLastAutosaveSave(QDateTime::currentDateTime());
+                _currentProject->setProjectAgeSinceLastSave(QDateTime());
+
                 QString title(QCoreApplication::applicationName() + " - ");
                 title.append(_currentProject->getProjectName());
                 title.append(" (*)");
