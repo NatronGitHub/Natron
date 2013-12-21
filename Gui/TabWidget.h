@@ -33,39 +33,26 @@ class QDragLeaveEvent;
 class TabWidget;
 class QPaintEvent;
 class Gui;
-//class Tab : public QFrame{
-//    
-//    Q_OBJECT
-//    Q_PROPERTY( bool isCurrent READ current WRITE setCurrent)
-//    
-//    
-//    QHBoxLayout* _layout;
-//    QLabel* _icon;
-//    QLabel* _text;
-//    bool isCurrent;
-//    
-//public:
-//    
-//    Tab(const QIcon& icon,const QString& text,QWidget* parent= 0);
-//    
-//    virtual ~Tab(){}
-//    
-//    void setCurrent(bool cur);
-//    
-//    bool current() const ;
-//    
-//    void setIcon(const QIcon& icon);
-//    
-//    void setText(const QString& text);
-//    
-//    QString text() const;
-//    
-//    
-//protected:
-//    
-//    virtual void paintEvent(QPaintEvent* e);
-//    
-//};
+
+
+/*This class represents a floating pane that embeds a widget*/
+class FloatingWidget : public QWidget{
+    
+public:
+    
+    explicit FloatingWidget(QWidget* parent = 0);
+    
+    virtual ~FloatingWidget(){}
+    
+    /*Set the embedded widget. Only 1 widget can be embedded
+     by FloatingWidget. Once set, this function does nothing
+     for subsequent calls..*/
+    void setWidget(const QSize& widgetSize,QWidget* w);
+    
+private:
+    QWidget* _embeddedWidget;
+    QVBoxLayout* _layout;
+};
 
 
 class TabBar : public QTabBar{
@@ -77,40 +64,13 @@ class TabBar : public QTabBar{
     QPoint _dragPos;
     TabWidget* _tabWidget; // ptr to the tabWidget
     
-  //  QHBoxLayout* _mainLayout;
-    
-  //  int _currentIndex;
     
 public:
     
     explicit TabBar(TabWidget* tabWidget,QWidget* parent = 0);
     
-//    void addTab(const QString& text);
-//    
-//    void addTab(const QIcon& icon,const QString& text);
-//    
-//    void insertTab(int index,const QString& text);
-//    
-//    void insertTab(int index,const QIcon& icon,const QString& text);
-//    
-//    void removeTab(int index);
-//    
-//    QString tabText(int index) const;
-//    
-//    int count() const ;
-//    
-//    int currentIndex() const;
-//
     virtual ~TabBar(){}
-//
-//    public slots:
-//    
-//    void setCurrentIndex(int index);
-//    
-//signals:
-//    
-//    void currentChanged(int);
-    
+
 protected:
     
     virtual void mousePressEvent(QMouseEvent* event);
@@ -153,8 +113,13 @@ private:
     bool _drawDropRect;
     
     bool _fullScreen;
+    
+    std::map<TabWidget*,bool> _userSplits;//< for each split, whether the user pressed split vertically (true) or horizontally (false)
+    
 public:
     
+    static const QString splitHorizontallyTag;
+    static const QString splitVerticallyTag;
         
     explicit TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent = 0);
     
@@ -196,20 +161,12 @@ public:
     
     QWidget* currentWidget() const {return _currentWidget;}
     
-    virtual void dragEnterEvent(QDragEnterEvent* event);
+    const std::map<TabWidget*,bool> &getUserSplits() const {return _userSplits;}
     
-    virtual void dragLeaveEvent(QDragLeaveEvent* event);
+    void removeSplit(TabWidget* tab);
     
-    virtual void dropEvent(QDropEvent* event);
-    
-    virtual void paintEvent(QPaintEvent* event);
-    
-    virtual void keyPressEvent (QKeyEvent *event);
-    
-    virtual void enterEvent(QEvent *event);
-    
-    virtual void leaveEvent(QEvent *event);
-    
+    static void moveTab(QWidget* what,TabWidget* where);
+
 public slots:
     /*Makes current the tab at index "index". Passing an
      index out of range will have no effect.*/
@@ -244,8 +201,26 @@ public slots:
     
 private:
     
+    virtual void dragEnterEvent(QDragEnterEvent* event);
+    
+    virtual void dragLeaveEvent(QDragLeaveEvent* event);
+    
+    virtual void dropEvent(QDropEvent* event);
+    
+    virtual void paintEvent(QPaintEvent* event);
+    
+    virtual void keyPressEvent (QKeyEvent *event);
+    
+    virtual void enterEvent(QEvent *event);
+    
+    virtual void leaveEvent(QEvent *event);
+
+    
     bool destroyTab(QWidget* tab) WARN_UNUSED_RETURN;
 
+    
 };
+
+
 
 #endif /* defined(NATRON_GUI_TABWIDGET_H_) */

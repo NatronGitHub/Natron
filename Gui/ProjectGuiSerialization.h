@@ -14,14 +14,42 @@
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/serialization/map.hpp>
 
 #include "Gui/ProjectGui.h"
 #include "Gui/NodeGuiSerialization.h"
 #include "Gui/NodeGui.h"
 
+struct PaneLayout{
+    
+    bool floating;
+    int posx,posy;
+    bool parentingCreated;
+    std::vector<bool> splits;
+    std::string parentName;
+    std::vector<std::string> splitsNames;
+    std::vector<std::string> tabs;
+
+    
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar,const unsigned int version)
+    {
+        (void)version;
+        ar & boost::serialization::make_nvp("Floating",floating);
+        ar & boost::serialization::make_nvp("Splits",splits);
+        ar & boost::serialization::make_nvp("ParentName",parentName);
+        ar & boost::serialization::make_nvp("SplitsNames",splitsNames);
+        ar & boost::serialization::make_nvp("Tabs",tabs);
+    }
+};
+
 class ProjectGuiSerialization {
     
     std::vector< boost::shared_ptr<NodeGuiSerialization> > _serializedNodes;
+    
+    
+    std::map<std::string,PaneLayout> _layout;
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -29,6 +57,7 @@ class ProjectGuiSerialization {
     {
         (void)version;
         ar & boost::serialization::make_nvp("NodesGui",_serializedNodes);
+        ar & boost::serialization::make_nvp("Gui_Layout",_layout);
     }
     
 public:
@@ -41,6 +70,11 @@ public:
     
     const std::vector< boost::shared_ptr<NodeGuiSerialization> >& getSerializedNodesGui() const { return _serializedNodes; }
     
+    const std::map<std::string,PaneLayout>& getGuiLayout() const { return _layout; }
+    
+private:
+    
+    void createParenting(std::map<std::string,PaneLayout>::iterator it);
 };
 
 

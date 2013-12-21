@@ -459,15 +459,16 @@ void Gui::setupUi()
     /*VIEWERS related*/
     
     _viewersPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
+    _viewersPane->setObjectName("ViewerPane");
     _panes.push_back(_viewersPane);
     _viewersPane->resize(_viewersPane->width(), this->height()/5);
     _viewerWorkshopSplitter->addWidget(_viewersPane);
     //  _viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
     
-    
     /*WORKSHOP PANE*/
     //======================
     _workshopPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
+    _workshopPane->setObjectName("WorkshopPane");
     _panes.push_back(_workshopPane);
     
     _graphScene = new QGraphicsScene(this);
@@ -495,7 +496,7 @@ void Gui::setupUi()
     /*PROPERTIES DOCK*/
     //======================
     _propertiesPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,this);
-    _propertiesPane->setObjectName("Properties_Pane");
+    _propertiesPane->setObjectName("PropertiesPane");
     _panes.push_back(_propertiesPane);
 
     _propertiesScrollArea = new QScrollArea(_propertiesPane);
@@ -804,6 +805,10 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
         _viewerTabs.erase(it);
     }
     
+    std::map<std::string, QWidget*>::iterator registeredTab = _registeredTabs.find(tab->objectName().toStdString());
+    assert(registeredTab != _registeredTabs.end());
+    _registeredTabs.erase(registeredTab);
+    
     if(deleteData){
         if (!initiatedFromNode) {
             assert(_nodeGraphArea);
@@ -823,200 +828,19 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
     
 }
 
-void Gui::moveTab(QWidget* what,TabWidget *where){
-    TabWidget* from = dynamic_cast<TabWidget*>(what->parentWidget());
-    
-    if(!from){
-        return;
-    }
-    if(from == where){
-        /*We check that even if it is the same TabWidget, it really exists.*/
-        bool found = false;
-        for (int i =0; i < from->count(); ++i) {
-            if (what == from->tabAt(i)) {
-                found = true;
-                break;
-            }
-        }
-        if (found) {
-            return;
-        }
-        //it wasn't found somehow
-    }
-
-    from->removeTab(what);
-    assert(where);
-    where->appendTab(what);
+void Gui::removePane(TabWidget* pane){
+    std::list<TabWidget*>::iterator found = std::find(_panes.begin(), _panes.end(), pane);
+    assert(found != _panes.end());
+    _panes.erase(found);
 }
 
-
-
-
-void Gui::splitPaneHorizontally(TabWidget* what){
-    QSplitter* container = dynamic_cast<QSplitter*>(what->parentWidget());
-    if(!container){
-        return;
+void Gui::registerPane(TabWidget* pane){
+    std::list<TabWidget*>::iterator found = std::find(_panes.begin(), _panes.end(), pane);
+    if(found == _panes.end()){
+        _panes.push_back(pane);
     }
-    
-    /*We need to know the position in the container layout of the old tab widget*/
-    int oldIndex = container->indexOf(what);
-    
-    QSplitter* newSplitter = new QSplitter(container);
-    newSplitter->setContentsMargins(0, 0, 0, 0);
-    newSplitter->setOrientation(Qt::Horizontal);
-    what->setVisible(false);
-    what->setParent(newSplitter);
-    newSplitter->addWidget(what);
-    what->setVisible(true);
-    
-    
-    /*Adding now a new tab*/
-    TabWidget* newTab = new TabWidget(this,TabWidget::CLOSABLE,newSplitter);
-    _panes.push_back(newTab);
-    newSplitter->addWidget(newTab);
-    
-    QSize splitterSize = newSplitter->sizeHint();
-    QList<int> sizes; sizes <<   splitterSize.width()/2;
-    sizes  << splitterSize.width()/2;
-    newSplitter->setSizes(sizes);
-    
-    /*Inserting back the new splitter at the original index*/
-    container->insertWidget(oldIndex,newSplitter);
-    
 }
 
-void Gui::splitPaneVertically(TabWidget* what){
-    QSplitter* container = dynamic_cast<QSplitter*>(what->parentWidget());
-    if(!container) return;
-    
-    /*We need to know the position in the container layout of the old tab widget*/
-    int oldIndex = container->indexOf(what);
-    
-    QSplitter* newSplitter = new QSplitter(container);
-    newSplitter->setContentsMargins(0, 0, 0, 0);
-    newSplitter->setOrientation(Qt::Vertical);
-    what->setVisible(false);
-    what->setParent(newSplitter);
-    newSplitter->addWidget(what);
-    what->setVisible(true);
-    
-    /*Adding now a new tab*/
-    TabWidget* newTab = new TabWidget(this,TabWidget::CLOSABLE,newSplitter);
-    _panes.push_back(newTab);
-    newSplitter->addWidget(newTab);
-    
-    QSize splitterSize = newSplitter->sizeHint();
-    QList<int> sizes; sizes <<   splitterSize.height()/2;
-    sizes  << splitterSize.height()/2;
-    newSplitter->setSizes(sizes);
-    /*Inserting back the new splitter at the original index*/
-    container->insertWidget(oldIndex,newSplitter);
-}
-void Gui::floatWidget(QWidget* what){
-    
-    FloatingWidget* floatingW = new FloatingWidget(this);
-    const QSize& size = what->size();
-    what->setVisible(false);
-    what->setParent(0);
-    floatingW->setWidget(size,what);
-    
-}
-
-void Gui::closePane(TabWidget* what) {
-    assert(what);
-    /*If it is floating we do not need to re-arrange the splitters containing the tab*/
-    if (what->isFloating()) {
-        what->parentWidget()->close();
-        what->destroyTabs();
-        return;
-    }
-    
-    QSplitter* container = dynamic_cast<QSplitter*>(what->parentWidget());
-    if(!container) {
-        return;
-    }
-    /*Removing it from the _panes vector*/
-    std::list<TabWidget*>::iterator it = std::find(_panes.begin(), _panes.end(), what);
-    if (it != _panes.end()) {
-        _panes.erase(it);
-    }
-    
-    
-    
-    /*Only sub-panes are closable. That means the splitter owning them must also
-     have a splitter as parent*/
-    QSplitter* mainContainer = dynamic_cast<QSplitter*>(container->parentWidget());
-    if(!mainContainer) {
-        return;
-    }
-    
-    /*identifying the other tab*/
-    TabWidget* other = 0;
-    for (int i = 0; i < container->count(); ++i) {
-        TabWidget* tab = dynamic_cast<TabWidget*>(container->widget(i));
-        if (tab) {
-            other = tab;
-            break;
-        }
-    }
-    
-    assert(other);
-    
-    /*Removing "what" from the container and delete it*/
-    what->setVisible(false);
-    //move all its tabs to the other TabWidget
-    while(what->count() > 0) {
-        moveTab(what->tabAt(0), other);
-    }
-    // delete what;
-    
-    /*Removing the container from the mainContainer*/
-    int subSplitterIndex = 0;
-    for (int i = 0; i < mainContainer->count(); ++i) {
-        QSplitter* subSplitter = dynamic_cast<QSplitter*>(mainContainer->widget(i));
-        if (subSplitter && subSplitter == container) {
-            subSplitterIndex = i;
-            container->setVisible(false);
-            container->setParent(0);
-            break;
-        }
-    }
-    /*moving the other to the mainContainer*/
-    if(other){
-        other->setVisible(true);
-        other->setParent(mainContainer);
-    }
-    mainContainer->insertWidget(subSplitterIndex, other);
-    
-    /*deleting the subSplitter*/
-    delete container;
-    
-}
-
-FloatingWidget::FloatingWidget(QWidget* parent)
-    : QWidget(parent)
-    , _embeddedWidget(0)
-    , _layout(0)
-{
-    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
-    _layout = new QVBoxLayout(this);
-    _layout->setContentsMargins(0, 0, 0, 0);
-    setLayout(_layout);
-    
-}
-void FloatingWidget::setWidget(const QSize& widgetSize,QWidget* w)
-{
-    assert(w);
-    if (_embeddedWidget) {
-        return;
-    }
-    w->setParent(this);
-    assert(_layout);
-    _layout->addWidget(w);
-    w->setVisible(true);
-    resize(widgetSize);
-    show();
-}
 
 void Gui::registerTab(const std::string& name, QWidget* tab){
     _registeredTabs.insert(make_pair(name,tab));

@@ -240,6 +240,7 @@ namespace Natron{
 	}
 
 	void Project::load(const ProjectSerialization& obj){
+        _imp->nodeCounters.clear();
 		try{
 			_imp->restoreFromSerialization(obj);
 			emit formatChanged(getProjectDefaultFormat());

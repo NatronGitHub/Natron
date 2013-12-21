@@ -97,6 +97,8 @@ public:
     void onCopyFromViewer();
     
 private:
+    
+    
     Natron::Project* _project;
     
     QVBoxLayout* _mainLayout;

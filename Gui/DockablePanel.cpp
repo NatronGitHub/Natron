@@ -186,6 +186,7 @@ DockablePanel::~DockablePanel(){
     ///normally the onKnobDeletion() function should have cleared them
     for(std::map<boost::shared_ptr<Knob>,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it){
         if(it->second){
+            QObject::disconnect(it->first.get(),SIGNAL(deleted(Knob*)),this,SLOT(onKnobDeletion(Knob*)));
             delete it->second;
         }
     }

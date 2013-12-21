@@ -33,6 +33,7 @@
 #include "Gui/DockablePanel.h"
 #include "Gui/NodeGui.h"
 #include "Gui/ProjectGuiSerialization.h"
+#include "Gui/TabWidget.h"
 
 ProjectGui::ProjectGui()
 : _project()
@@ -197,6 +198,49 @@ void ProjectGui::save(ProjectGuiSerialization* serializationObject) const{
     serializationObject->initialize(this);
 }
 
+void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneLayout>& guiLayout,
+                                       std::map<std::string,PaneLayout>::const_iterator layout){
+    const std::list<TabWidget*>& initialWidgets = gui->getPanes();
+    const std::map<std::string,QWidget*>& registeredTabs = gui->_registeredTabs;
+    for(std::list<TabWidget*>::const_iterator it = initialWidgets.begin();it!=initialWidgets.end();++it){
+        
+        if((*it)->objectName().toStdString() == layout->first){
+            //we found the tab, restore it!
+            for (U32 i = 0; i < layout->second.splits.size(); ++i) {
+                if(layout->second.splits[i]){
+                    (*it)->splitVertically();
+                }else{
+                    (*it)->splitHorizontally();
+                }
+            }
+            if(layout->second.floating){
+                (*it)->floatPane();
+                (*it)->move(layout->second.posx, layout->second.posy);
+            }
+            
+            ///find all the tabs and move them to this widget
+            for (U32 i = 0; i < layout->second.tabs.size(); ++i) {
+                std::map<std::string,QWidget*>::const_iterator foundTab = registeredTabs.find(layout->second.tabs[i]);
+                assert(foundTab != registeredTabs.end());
+                TabWidget::moveTab(foundTab->second, *it);
+            }
+            
+            ///now call this recursively on the freshly new splits
+            for (U32 i = 0; i < layout->second.splitsNames.size(); ++i) {
+                //find in the guiLayout map the PaneLayout corresponding to the split
+                std::map<std::string,PaneLayout>::const_iterator splitIt = guiLayout.find(layout->second.splitsNames[i]);
+                assert(splitIt != guiLayout.end());
+                
+                restoreTabWidgetLayoutRecursively(gui, guiLayout, splitIt);
+            }
+            
+            break;
+        }
+    }
+    
+    
+}
+
 void ProjectGui::load(const ProjectGuiSerialization& obj){
     const std::vector< boost::shared_ptr<NodeGuiSerialization> >& nodesGuiSerialization = obj.getSerializedNodesGui();
     for (U32 i = 0; i < nodesGuiSerialization.size(); ++i) {
@@ -215,8 +259,20 @@ void ProjectGui::load(const ProjectGuiSerialization& obj){
         nodesGui[i]->refreshEdges();
     }
 
-
+    ///now restore the gui layout
+    
+    const std::map<std::string,PaneLayout>& guiLayout = obj.getGuiLayout();
+    for (std::map<std::string,PaneLayout>::const_iterator it = guiLayout.begin(); it!=guiLayout.end(); ++it) {
+        
+        ///if it is a top level tab (i.e: the original tabs)
+        ///this will recursively restore all their splits
+        if(it->second.parentName.empty()){
+            restoreTabWidgetLayoutRecursively(_project->getApp()->getGui(), guiLayout, it);
+        }
+    }
 }
+
+
 
 
 void ProjectGui::registerNewColorPicker(boost::shared_ptr<Color_Knob> knob){

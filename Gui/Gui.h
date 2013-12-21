@@ -137,24 +137,6 @@ private:
     PluginToolButton* _pluginToolButton;
 };
 
-/*This class represents a floating pane that embeds a widget*/
-class FloatingWidget : public QWidget{
-
-public:
-    
-    explicit FloatingWidget(QWidget* parent = 0);
-    
-    virtual ~FloatingWidget(){}
-    
-    /*Set the embedded widget. Only 1 widget can be embedded
-     by FloatingWidget. Once set, this function does nothing
-     for subsequent calls..*/
-    void setWidget(const QSize& widgetSize,QWidget* w);
-
-private:
-    QWidget* _embeddedWidget;
-    QVBoxLayout* _layout;
-};
 
 class RenderingProgressDialog : public QDialog {
     
@@ -228,17 +210,7 @@ public:
     void removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData = true);
     
     void setNewViewerAnchor(TabWidget* where){_nextViewerTabPlace = where;}
-    
-    void moveTab(QWidget* what,TabWidget* where);
-    
-    void splitPaneHorizontally(TabWidget* what);
-    
-    void splitPaneVertically(TabWidget* what);
-    
-    void floatWidget(QWidget* what);
-    
-    void closePane(TabWidget* what);
-    
+        
     void maximize(TabWidget* what);
     
     void minimize();
@@ -284,7 +256,12 @@ public:
     
     /*set the curve editor as the active widget of its pane*/
     void setCurveEditorOnTop();
-        
+    
+    const std::list<TabWidget*>& getPanes() const { return _panes; }
+    
+    void removePane(TabWidget* pane);
+    
+    void registerPane(TabWidget* pane);
 private:
     
     void setUndoRedoActions(QAction* undoAction,QAction* redoAction);

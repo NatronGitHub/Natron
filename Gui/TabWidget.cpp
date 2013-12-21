@@ -22,6 +22,7 @@
 #include <QtGui/QDragLeaveEvent>
 #include <QtGui/QPaintEvent>
 #include <QScrollArea>
+#include <QSplitter>
 
 #include "Gui/Button.h"
 #include "Global/AppManager.h"
@@ -32,6 +33,36 @@
 #include "Engine/ViewerInstance.h"
 
 using namespace Natron;
+
+const QString TabWidget::splitHorizontallyTag = QString("_horizSplit");
+const QString TabWidget::splitVerticallyTag = QString("_vertiSplit");
+
+FloatingWidget::FloatingWidget(QWidget* parent)
+: QWidget(parent)
+, _embeddedWidget(0)
+, _layout(0)
+{
+    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
+    _layout = new QVBoxLayout(this);
+    _layout->setContentsMargins(0, 0, 0, 0);
+    setLayout(_layout);
+    
+}
+void FloatingWidget::setWidget(const QSize& widgetSize,QWidget* w)
+{
+    assert(w);
+    if (_embeddedWidget) {
+        return;
+    }
+    w->setParent(this);
+    assert(_layout);
+    _layout->addWidget(w);
+    w->setVisible(true);
+    resize(widgetSize);
+    show();
+}
+
+
 
 TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent):
     QFrame(parent),
@@ -46,7 +77,8 @@ TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent
     _decorations(decorations),
     _isFloating(false),
     _drawDropRect(false),
-    _fullScreen(false)
+    _fullScreen(false),
+    _userSplits()
 {
     
     if(decorations!=NONE){
@@ -185,14 +217,87 @@ void TabWidget::closeFloatingPane(){
     p->close();
 }
 
+void TabWidget::removeSplit(TabWidget* tab){
+    std::map<TabWidget*,bool> ::iterator it = _userSplits.find(tab);
+    assert(it!= _userSplits.end());
+    _userSplits.erase(it);
+}
 
 void TabWidget::closePane(){
-    _gui->closePane(this);
+    /*If it is floating we do not need to re-arrange the splitters containing the tab*/
+    if (isFloating()) {
+        parentWidget()->close();
+        destroyTabs();
+        return;
+    }
+    
+    QSplitter* container = dynamic_cast<QSplitter*>(parentWidget());
+    if(!container) {
+        return;
+    }
+    
+    /*Removing it from the _panes vector*/
+    _gui->removePane(this);
+    
+    /*Only sub-panes are closable. That means the splitter owning them must also
+     have a splitter as parent*/
+    QSplitter* mainContainer = dynamic_cast<QSplitter*>(container->parentWidget());
+    if(!mainContainer) {
+        return;
+    }
+    
+    /*identifying the other tab*/
+    TabWidget* other = 0;
+    for (int i = 0; i < container->count(); ++i) {
+        TabWidget* tab = dynamic_cast<TabWidget*>(container->widget(i));
+        if (tab && tab != this) {
+            other = tab;
+            break;
+        }
+    }
+    
+    other->removeSplit(this);
+    
+    assert(other);
+    
+    /*Removing "what" from the container and delete it*/
+    setVisible(false);
+    //move all its tabs to the other TabWidget
+    while(count() > 0) {
+        moveTab(tabAt(0), other);
+    }
+    // delete what;
+    
+    /*Removing the container from the mainContainer*/
+    int subSplitterIndex = 0;
+    for (int i = 0; i < mainContainer->count(); ++i) {
+        QSplitter* subSplitter = dynamic_cast<QSplitter*>(mainContainer->widget(i));
+        if (subSplitter && subSplitter == container) {
+            subSplitterIndex = i;
+            container->setVisible(false);
+            container->setParent(0);
+            break;
+        }
+    }
+    /*moving the other to the mainContainer*/
+    if(other){
+        other->setVisible(true);
+        other->setParent(mainContainer);
+    }
+    mainContainer->insertWidget(subSplitterIndex, other);
+    
+    /*deleting the subSplitter*/
+    delete container;
 }
 
 void TabWidget::floatPane(){
     _isFloating = true;
-    _gui->floatWidget(this);
+    
+    FloatingWidget* floatingW = new FloatingWidget(_gui);
+    setVisible(false);
+    setParent(0);
+    floatingW->setWidget(size(),this);
+
 }
 
 void TabWidget::addNewViewer(){
@@ -203,13 +308,13 @@ void TabWidget::addNewViewer(){
 void TabWidget::moveNodeGraphHere(){
     QWidget* what = dynamic_cast<QWidget*>(_gui->_nodeGraphArea);
     what->setParent(this);
-    _gui->moveTab(what,this);
+    moveTab(what,this);
 }
 
 void TabWidget::moveCurveEditorHere(){
     QWidget* what = dynamic_cast<QWidget*>(_gui->_curveEditor);
     what->setParent(this);
-    _gui->moveTab(what,this);
+    moveTab(what,this);
 }
 /*Get the header name of the tab at index "index".*/
 QString TabWidget::getTabName(int index) const {
@@ -259,15 +364,75 @@ void TabWidget::closeTab(int index){
 void TabWidget::movePropertiesBinHere(){
     QWidget* what = dynamic_cast<QWidget*>(_gui->_propertiesScrollArea);
     what->setParent(this);
-    _gui->moveTab(what, this);
+    moveTab(what, this);
 }
 
 void TabWidget::splitHorizontally(){
-    _gui->splitPaneHorizontally(this);
+
+    QSplitter* container = dynamic_cast<QSplitter*>(parentWidget());
+    if(!container){
+        return;
+    }
+    
+    /*We need to know the position in the container layout of the old tab widget*/
+    int oldIndex = container->indexOf(this);
+    
+    QSplitter* newSplitter = new QSplitter(container);
+    newSplitter->setContentsMargins(0, 0, 0, 0);
+    newSplitter->setOrientation(Qt::Horizontal);
+    setVisible(false);
+    setParent(newSplitter);
+    newSplitter->addWidget(this);
+    setVisible(true);
+    
+    
+    /*Adding now a new tab*/
+    TabWidget* newTab = new TabWidget(_gui,TabWidget::CLOSABLE,newSplitter);
+    newTab->setObjectName(objectName()+TabWidget::splitHorizontallyTag);
+    _gui->registerPane(newTab);
+    newSplitter->addWidget(newTab);
+    
+    QSize splitterSize = newSplitter->sizeHint();
+    QList<int> sizes; sizes <<   splitterSize.width()/2;
+    sizes  << splitterSize.width()/2;
+    newSplitter->setSizes(sizes);
+    
+    /*Inserting back the new splitter at the original index*/
+    container->insertWidget(oldIndex,newSplitter);
+    _userSplits.insert(std::make_pair(newTab,false));
 }
 
 void TabWidget::splitVertically(){
-    _gui->splitPaneVertically(this);
+    // _gui->splitPaneVertically(this);
+    QSplitter* container = dynamic_cast<QSplitter*>(parentWidget());
+    if(!container) return;
+    
+    /*We need to know the position in the container layout of the old tab widget*/
+    int oldIndex = container->indexOf(this);
+    
+    QSplitter* newSplitter = new QSplitter(container);
+    newSplitter->setContentsMargins(0, 0, 0, 0);
+    newSplitter->setOrientation(Qt::Vertical);
+    setVisible(false);
+    setParent(newSplitter);
+    newSplitter->addWidget(this);
+    setVisible(true);
+    
+    /*Adding now a new tab*/
+    TabWidget* newTab = new TabWidget(_gui,TabWidget::CLOSABLE,newSplitter);
+    newTab->setObjectName(objectName()+TabWidget::splitVerticallyTag);
+    _gui->registerPane(newTab);
+    newSplitter->addWidget(newTab);
+    
+    QSize splitterSize = newSplitter->sizeHint();
+    QList<int> sizes; sizes <<   splitterSize.height()/2;
+    sizes  << splitterSize.height()/2;
+    newSplitter->setSizes(sizes);
+    /*Inserting back the new splitter at the original index*/
+    container->insertWidget(oldIndex,newSplitter);
+
+    
+    _userSplits.insert(std::make_pair(newTab,true));
 }
 
 
@@ -428,7 +593,7 @@ void TabWidget::dropEvent(QDropEvent* event){
     QString name(event->mimeData()->data("Tab"));
     QWidget* w = _gui->findExistingTab(name.toStdString());
     if(w){
-        _gui->moveTab(w, this);
+        moveTab(w, this);
     }
     _drawDropRect = false;
     setFrameShape(QFrame::NoFrame);
@@ -501,3 +666,30 @@ void TabWidget::leaveEvent(QEvent *event)
 {
     QWidget::leaveEvent(event);
 }
+
+void TabWidget::moveTab(QWidget* what,TabWidget *where){
+    TabWidget* from = dynamic_cast<TabWidget*>(what->parentWidget());
+    
+    if(!from){
+        return;
+    }
+    if(from == where){
+        /*We check that even if it is the same TabWidget, it really exists.*/
+        bool found = false;
+        for (int i =0; i < from->count(); ++i) {
+            if (what == from->tabAt(i)) {
+                found = true;
+                break;
+            }
+        }
+        if (found) {
+            return;
+        }
+        //it wasn't found somehow
+    }
+    
+    from->removeTab(what);
+    assert(where);
+    where->appendTab(what);
+}
+
