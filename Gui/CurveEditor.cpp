@@ -171,8 +171,8 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
             continue;
         }
 
-        QObject::connect(kgui,SIGNAL(keyFrameSet()),curveWidget,SLOT(update()));
-        QObject::connect(kgui,SIGNAL(keyFrameRemoved()),curveWidget,SLOT(update()));
+        QObject::connect(kgui,SIGNAL(keyFrameSet()),curveWidget,SLOT(onCurveChanged()));
+        QObject::connect(kgui,SIGNAL(keyFrameRemoved()),curveWidget,SLOT(onCurveChanged()));
         QObject::connect(kgui, SIGNAL(keyInterpolationChanged()),curveWidget, SLOT(refreshDisplayedTangents()));
         
         hasAtLeast1KnobWithACurve = true;

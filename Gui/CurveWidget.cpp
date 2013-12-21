@@ -2117,6 +2117,12 @@ void CurveWidget::refreshDisplayedTangents(){
 
 void CurveWidget::setSelectedKeys(const SelectedKeys& keys){
     _imp->_selectedKeyFrames = keys;
+    refreshDisplayedTangents();
+    refreshSelectedKeysBbox();
+}
+
+void CurveWidget::refreshSelectedKeys(){
+    refreshDisplayedTangents();
     refreshSelectedKeysBbox();
 }
 

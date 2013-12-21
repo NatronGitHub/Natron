@@ -13,7 +13,9 @@
 #include "Engine/Knob.h"
 
 #include "Gui/KnobGui.h"
-
+#include "Gui/Gui.h"
+#include "Gui/CurveEditor.h"
+#include "Gui/CurveWidget.h"
 //================================================================
 
 
@@ -32,19 +34,26 @@ KnobUndoCommand::KnobUndoCommand(KnobGui *knob,  const std::vector<Variant> &old
 void KnobUndoCommand::undo()
 {
     _knob->getKnob()->beginValueChange(Natron::USER_EDITED);
+    bool modifiedKeyFrame = false;
     for (U32 i = 0 ; i < _oldValue.size();++i) {
         _knob->setValue(i,_oldValue[i],NULL);
         if(_knob->getKnob()->getHolder()->getApp()){
            if(_valueChangedReturnCode[i] == 1 ){ //the value change also added a keyframe
                _knob->removeKeyFrame(_newKeys[i].getTime(),i);
+               modifiedKeyFrame = true;
            }else if(_valueChangedReturnCode[i] == 2){
                //the value change moved a keyframe
                _knob->removeKeyFrame(_newKeys[i].getTime(),i);
                _knob->setKeyframe(_oldKeys[i].getTime(), i);
+               modifiedKeyFrame = true;
            }
         }
         
     }
+    if(modifiedKeyFrame){
+        _knob->getKnob()->getHolder()->getApp()->getGui()->_curveEditor->getCurveWidget()->refreshSelectedKeys();
+    }
+
     _knob->getKnob()->endValueChange(Natron::USER_EDITED);
     setText(QObject::tr("Set value of %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
@@ -59,6 +68,7 @@ void KnobUndoCommand::redo()
     }
     
     _knob->getKnob()->beginValueChange(Natron::USER_EDITED);
+    bool modifiedKeyFrames = false;
     for (U32 i = 0; i < _newValue.size();++i) {
         boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(i);
         //find out if there's already an existing keyframe before calling setValue
@@ -68,13 +78,20 @@ void KnobUndoCommand::redo()
         }
         
         _valueChangedReturnCode[i] = _knob->setValue(i,_newValue[i],&_newKeys[i]);
+        if(_valueChangedReturnCode[i] != Knob::NO_KEYFRAME_ADDED){
+            modifiedKeyFrames = true;
+        }
         
         ///if we added a keyframe, prevent this command to merge with any other command
         if (_valueChangedReturnCode[i] == Knob::KEYFRAME_ADDED) {
             _merge = false;
         }
-        
     }
+    
+    if(modifiedKeyFrames){
+        _knob->getKnob()->getHolder()->getApp()->getGui()->_curveEditor->getCurveWidget()->refreshSelectedKeys();
+    }
+    
     _knob->getKnob()->endValueChange(Natron::USER_EDITED);
     setText(QObject::tr("Set value of %1")
             .arg(_knob->getKnob()->getDescription().c_str()));

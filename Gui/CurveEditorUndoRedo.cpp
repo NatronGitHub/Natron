@@ -166,7 +166,6 @@ void MoveKeysCommand::move(double dt,double dv, bool isundo){
     }
     if(!_keys.empty()){
         _curveWidget->setSelectedKeys(newSelectedKeys);
-        _curveWidget->refreshDisplayedTangents();
     }
 
 }
@@ -235,7 +234,6 @@ void SetKeysInterpolationCommand::setNewInterpolation(bool undo){
         _oldInterp[i].curve->getKnob()->getKnob()->endValueChange(Natron::USER_EDITED);
     }
     _curveWidget->setSelectedKeys(newSelectedKeys);
-    _curveWidget->refreshDisplayedTangents();
     setText(QObject::tr("Set multiple keys interpolation"));
 }
 

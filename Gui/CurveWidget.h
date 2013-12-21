@@ -181,14 +181,12 @@ public:
         
     void setSelectedKeys(const SelectedKeys& keys);
     
+    void refreshSelectedKeys();
+    
     double getPixelAspectRatio() const;
     
     void getBackgroundColor(double *r,double *g,double* b) const;
-    
-    bool isCurveNameAlreadyAtPosition(const QRectF& position) const;
-    
-    void registerCurveNamePosition(const QRectF& position) const;
-        
+   
 public slots:
     
     void refreshDisplayedTangents();

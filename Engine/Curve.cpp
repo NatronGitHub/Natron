@@ -175,9 +175,7 @@ double Curve::getMaximumTimeCovered() const{
 
 bool Curve::addKeyFrame(const KeyFrame key){
     std::pair<KeyFrameSet::iterator,bool> it = addKeyFrameNoUpdate(key);
-    if(it.second){
-        evaluateCurveChanged(KEYFRAME_CHANGED,it.first);
-    }
+    evaluateCurveChanged(KEYFRAME_CHANGED,it.first);
     return it.second;
 }
 
@@ -659,7 +657,12 @@ KeyFrameSet::const_iterator Curve::keyframeAt(int index) const {
 
 int Curve::keyFrameIndex(double time) const {
     int i = 0;
-    double paramEps = 1e-4 * std::abs(_imp->curveMax - _imp->curveMin);
+    double paramEps;
+    if(_imp->curveMax != INT_MAX && _imp->curveMin!= INT_MIN){
+        paramEps = 1e-4 * std::abs(_imp->curveMax - _imp->curveMin);
+    }else{
+        paramEps = 1e-4;
+    }
     for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it!=_imp->keyFrames.end(); ++it) {
         if(std::abs(it->getTime() - time) < paramEps){
             return i;
