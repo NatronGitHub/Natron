@@ -359,6 +359,7 @@ void TabWidget::closeTab(int index){
         delete tab;
         // tab was already removed from the _tabs array by removeTab()
     }
+    _gui->getApp()->triggerAutoSave();
 }
 
 void TabWidget::movePropertiesBinHere(){
@@ -400,6 +401,8 @@ void TabWidget::splitHorizontally(){
     /*Inserting back the new splitter at the original index*/
     container->insertWidget(oldIndex,newSplitter);
     _userSplits.insert(std::make_pair(newTab,false));
+    
+    _gui->getApp()->triggerAutoSave();
 }
 
 void TabWidget::splitVertically(){
@@ -433,6 +436,8 @@ void TabWidget::splitVertically(){
 
     
     _userSplits.insert(std::make_pair(newTab,true));
+    
+    _gui->getApp()->triggerAutoSave();
 }
 
 
@@ -691,5 +696,7 @@ void TabWidget::moveTab(QWidget* what,TabWidget *where){
     from->removeTab(what);
     assert(where);
     where->appendTab(what);
+    
+    where->getGui()->getApp()->triggerAutoSave();
 }
 

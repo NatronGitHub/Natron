@@ -248,7 +248,7 @@ public:
     
     void selectNode(NodeGui* node);
     
-    AppInstance* getApp() { return _appInstance; }
+    AppInstance* getApp() const { return _appInstance; }
         
     void updateViewsActions(int viewsCount);
     

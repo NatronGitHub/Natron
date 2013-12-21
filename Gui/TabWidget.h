@@ -125,6 +125,8 @@ public:
     
     virtual ~TabWidget();
     
+    const Gui* getGui() const {return _gui;}
+    
     /*Appends a new tab to the tab widget. The name of the tab will be the QWidget's object's name.
      Returns false if the object's name is empty but the TabWidget needs a decoration*/
     bool appendTab(QWidget* widget);
