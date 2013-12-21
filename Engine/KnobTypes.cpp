@@ -1056,8 +1056,11 @@ void Parametric_Knob::loadExtraData(const QString& str) {
             }
             
             _curves[curveIndex]->addKeyFrame(KeyFrame(key.toDouble(), value.toDouble()));
-            
             cpCursor = str.indexOf(kControlPointTag,cpCursor+1);
+            int nextCurveIndex = str.indexOf(kCurveTag,curveCursor+1);
+            if(cpCursor > nextCurveIndex && nextCurveIndex != -1){
+                break;
+            }
         }
         emit curveChanged(curveIndex);
 
