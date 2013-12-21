@@ -551,7 +551,7 @@ void TabWidget::makeCurrentTab(int index){
     if (_currentWidget) {
         _currentWidget->setVisible(false);
         _mainLayout->removeWidget(_currentWidget);
-        _currentWidget->setParent(0);
+        // _currentWidget->setParent(0);
     }
     QWidget* tab = _tabs[index];
     _mainLayout->addWidget(tab);
