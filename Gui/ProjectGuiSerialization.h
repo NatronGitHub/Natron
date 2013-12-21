@@ -29,7 +29,6 @@ struct PaneLayout{
     std::string parentName;
     std::vector<std::string> splitsNames;
     std::vector<std::string> tabs;
-    std::string splitterSerialization;
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -41,7 +40,6 @@ struct PaneLayout{
         ar & boost::serialization::make_nvp("ParentName",parentName);
         ar & boost::serialization::make_nvp("SplitsNames",splitsNames);
         ar & boost::serialization::make_nvp("Tabs",tabs);
-        ar & boost::serialization::make_nvp("Splitter",splitterSerialization);
     }
 };
 
@@ -52,6 +50,9 @@ class ProjectGuiSerialization {
     
     std::map<std::string,PaneLayout> _layout;
     
+    //splitter name, splitter serialization
+    std::map<std::string,std::string> _splittersStates;
+    
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar,const unsigned int version)
@@ -59,6 +60,7 @@ class ProjectGuiSerialization {
         (void)version;
         ar & boost::serialization::make_nvp("NodesGui",_serializedNodes);
         ar & boost::serialization::make_nvp("Gui_Layout",_layout);
+        ar & boost::serialization::make_nvp("Splitters_states",_splittersStates);
     }
     
 public:
@@ -73,6 +75,7 @@ public:
     
     const std::map<std::string,PaneLayout>& getGuiLayout() const { return _layout; }
     
+    const std::map<std::string,std::string>& getSplittersStates() const { return _splittersStates; }
 private:
     
     void createParenting(std::map<std::string,PaneLayout>::iterator it);

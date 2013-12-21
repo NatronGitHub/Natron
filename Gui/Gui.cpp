@@ -79,6 +79,7 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
     _currentRedoAction(0),
     _undoStacksGroup(0),
     _undoStacksActions(),
+    _splitters(),
     actionNew_project(0),
     actionOpen_project(0),
     actionSave_project(0),
@@ -437,6 +438,8 @@ void Gui::setupUi()
     _centralWidget->setLayout(_mainLayout);
     
     _leftRightSplitter = new QSplitter(_centralWidget);
+    _leftRightSplitter->setObjectName("ToolBar_splitter");
+    _splitters.push_back(_leftRightSplitter);
     _leftRightSplitter->setChildrenCollapsible(false);
     _leftRightSplitter->setOrientation(Qt::Horizontal);
     _leftRightSplitter->setContentsMargins(0, 0, 0, 0);
@@ -449,6 +452,8 @@ void Gui::setupUi()
     _leftRightSplitter->addWidget(_toolBox);
     
     _viewerWorkshopSplitter = new QSplitter(_centralWidget);
+    _viewerWorkshopSplitter->setObjectName("Viewers_Workshop_splitter");
+    _splitters.push_back(_viewerWorkshopSplitter);
     _viewerWorkshopSplitter->setContentsMargins(0, 0, 0, 0);
     _viewerWorkshopSplitter->setOrientation(Qt::Vertical);
     _viewerWorkshopSplitter->setChildrenCollapsible(false);
@@ -488,6 +493,8 @@ void Gui::setupUi()
     
 
     _middleRightSplitter = new QSplitter(_centralWidget);
+    _middleRightSplitter->setObjectName("Center_PropertiesBin_splitter");
+    _splitters.push_back(_middleRightSplitter);
     _middleRightSplitter->setChildrenCollapsible(false);
     _middleRightSplitter->setContentsMargins(0, 0, 0, 0);
     _middleRightSplitter->setOrientation(Qt::Horizontal);
@@ -839,6 +846,19 @@ void Gui::registerPane(TabWidget* pane){
     if(found == _panes.end()){
         _panes.push_back(pane);
     }
+}
+
+void Gui::registerSplitter(QSplitter* s){
+    std::list<QSplitter*>::iterator found = std::find(_splitters.begin(), _splitters.end(), s);
+    if(found == _splitters.end()){
+        _splitters.push_back(s);
+    }
+}
+
+void Gui::removeSplitter(QSplitter* s){
+    std::list<QSplitter*>::iterator found = std::find(_splitters.begin(), _splitters.end(), s);
+    assert(found != _splitters.end());
+    _splitters.erase(found);
 }
 
 

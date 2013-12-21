@@ -287,6 +287,7 @@ void TabWidget::closePane(){
     mainContainer->insertWidget(subSplitterIndex, other);
     
     /*deleting the subSplitter*/
+    _gui->removeSplitter(container);
     delete container;
 }
 
@@ -379,6 +380,7 @@ void TabWidget::splitHorizontally(){
     int oldIndex = container->indexOf(this);
     
     QSplitter* newSplitter = new QSplitter(container);
+    newSplitter->setObjectName(container->objectName()+TabWidget::splitHorizontallyTag);
     newSplitter->setContentsMargins(0, 0, 0, 0);
     newSplitter->setOrientation(Qt::Horizontal);
     setVisible(false);
@@ -414,6 +416,7 @@ void TabWidget::splitVertically(){
     int oldIndex = container->indexOf(this);
     
     QSplitter* newSplitter = new QSplitter(container);
+    newSplitter->setObjectName(container->objectName()+TabWidget::splitVerticallyTag);
     newSplitter->setContentsMargins(0, 0, 0, 0);
     newSplitter->setOrientation(Qt::Vertical);
     setVisible(false);

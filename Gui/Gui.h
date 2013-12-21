@@ -262,6 +262,12 @@ public:
     void removePane(TabWidget* pane);
     
     void registerPane(TabWidget* pane);
+    
+    void registerSplitter(QSplitter* s);
+    
+    void removeSplitter(QSplitter* s);
+    
+    const std::list<QSplitter*>& getSplitters() const { return _splitters; }
 private:
     
     void setUndoRedoActions(QAction* undoAction,QAction* redoAction);
@@ -342,6 +348,8 @@ private:
     
     QUndoGroup* _undoStacksGroup;
     std::map<QUndoStack*,std::pair<QAction*,QAction*> > _undoStacksActions;
+    
+    std::list<QSplitter*> _splitters;
     
 public:
     // FIXME: public pointer members are the sign of a serious design flaw!!! should at least be shared_ptr!

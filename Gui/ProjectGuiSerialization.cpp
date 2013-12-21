@@ -52,12 +52,6 @@
              layout.posy = -1;
          }
          
-        if(!layout.floating){
-            QSplitter* container = dynamic_cast<QSplitter*>((*it)->parentWidget());
-            assert(container);
-            layout.splitterSerialization = std::string(container->saveGeometry().data());
-        }
-         
          for (int i = 0; i < (*it)->count(); ++i) {
              QWidget* tab = (*it)->tabAt(i);
              assert(tab);
@@ -78,6 +72,17 @@
              createParenting(it);
          }
      }
+     
+     ///save application's splitters states
+     const std::list<QSplitter*>& splitters = projectGui->getInternalProject()->getApp()->getGui()->getSplitters();
+     for (std::list<QSplitter*>::const_iterator it = splitters.begin(); it!= splitters.end(); ++it) {
+         QByteArray ba = (*it)->saveState();
+         ba = ba.toBase64();
+         QString str(ba);
+         _splittersStates.insert(std::make_pair((*it)->objectName().toStdString(),str.toStdString()));
+
+     }
+     
 }
 
 void ProjectGuiSerialization::createParenting(std::map<std::string,PaneLayout>::iterator it){

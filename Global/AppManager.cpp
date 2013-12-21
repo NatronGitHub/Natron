@@ -241,6 +241,7 @@ AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectNam
   , _nodeMapping()
   , _autoSaveMutex(new QMutex)
   , _isBackground(backgroundMode)
+  , _isLoadingProject(false)
 {
     appPTR->registerAppInstance(this);
     appPTR->setAsTopLevelInstance(appID);
@@ -419,6 +420,9 @@ void AppInstance::getActiveNodes(std::vector<Natron::Node*>* activeNodes) const{
     }
 }
 bool AppInstance::loadProject(const QString& path,const QString& name){
+    QMutexLocker l(&_isLoadingProjectLock);
+    _isLoadingProject = true;
+    
     if(!_isBackground){
         _gui->_nodeGraphArea->deselect();
     }
@@ -428,11 +432,13 @@ bool AppInstance::loadProject(const QString& path,const QString& name){
         Natron::errorDialog("Project loader", std::string("Error while loading project") + ": " + e.what());
         if(!_isBackground)
             createNode("Viewer");
+        _isLoadingProject = false;
         return false;
     } catch (...) {
         Natron::errorDialog("Project loader", std::string("Error while loading project"));
         if(!_isBackground)
             createNode("Viewer");
+        _isLoadingProject = false;
         return false;
     }
     if(!_isBackground){
@@ -440,6 +446,8 @@ bool AppInstance::loadProject(const QString& path,const QString& name){
         text.append(name);
         _gui->setWindowTitle(text);
     }
+    _isLoadingProject = false;
+
     return true;
 }
 
@@ -491,6 +499,14 @@ void AppInstance::loadProjectInternal(const QString& path,const QString& name){
 }
 
 void AppInstance::saveProject(const QString& path,const QString& name,bool autoSave){
+    {
+        QMutexLocker l(&_isLoadingProjectLock);
+        
+        if(_isLoadingProject){
+            qDebug() << "Project is loading!!";
+            return;
+        }
+    }
     
     if(!autoSave) {
         

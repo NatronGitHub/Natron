@@ -255,6 +255,8 @@ private:
 
     bool _isBackground;
 
+    QMutex _isLoadingProjectLock;
+    bool _isLoadingProject;
 
     class ActiveBackgroundRender{
 

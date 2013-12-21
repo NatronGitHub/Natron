@@ -17,6 +17,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QSplitter>
+#include <QDebug>
 
 #include "Global/AppManager.h"
 
@@ -226,14 +227,6 @@ void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneL
                 TabWidget::moveTab(foundTab->second, *it);
             }
             
-            ///restore splitter geometry
-            if(!layout->second.floating){
-                QSplitter* container = dynamic_cast<QSplitter*>((*it)->parentWidget());
-                assert(container);
-                QByteArray splitterGeometry(layout->second.splitterSerialization.c_str());
-                container->restoreState(splitterGeometry);
-            }
-            
             ///now call this recursively on the freshly new splits
             for (U32 i = 0; i < layout->second.splitsNames.size(); ++i) {
                 //find in the guiLayout map the PaneLayout corresponding to the split
@@ -246,7 +239,6 @@ void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneL
             break;
         }
     }
-    
     
 }
 
@@ -278,6 +270,26 @@ void ProjectGui::load(const ProjectGuiSerialization& obj){
         if(it->second.parentName.empty()){
             restoreTabWidgetLayoutRecursively(_project->getApp()->getGui(), guiLayout, it);
         }
+    }
+    
+    ///now restore the splitters
+    const std::map<std::string,std::string>& splitters = obj.getSplittersStates();
+    const std::list<QSplitter*>& appSplitters = _project->getApp()->getGui()->getSplitters();
+    for (std::map<std::string,std::string>::const_iterator it = splitters.begin();it!=splitters.end();++it) {
+        //find the splitter by name
+        for (std::list<QSplitter*>::const_iterator it2 = appSplitters.begin(); it2!=appSplitters.end(); ++it2) {
+            
+            if ((*it2)->objectName().toStdString() == it->first) {
+                //found a matching splitter, restore its state
+                QByteArray splitterGeometry(it->second.c_str());
+                splitterGeometry = QByteArray::fromBase64(splitterGeometry);
+                if(!(*it2)->restoreState(splitterGeometry)){
+                    qDebug() << "Failed to restore " << (*it2)->objectName() << "'s splitter state.";
+                }
+                break;
+            }
+        }
+        
     }
 }
 
