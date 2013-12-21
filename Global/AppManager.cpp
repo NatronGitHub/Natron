@@ -532,6 +532,10 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
     QDateTime time = QDateTime::currentDateTime();
     QString actualFileName = filename;
     if(autoSave){
+        QString pathCpy = path;
+        pathCpy = pathCpy.replace("/", "_SEP_");
+        pathCpy = pathCpy.replace("\\", "_SEP_");
+        actualFileName.prepend(pathCpy);
         actualFileName.append("."+time.toString("dd.MM.yyyy.hh:mm:ss:zzz"));
     }
     QString filePath;
@@ -610,7 +614,7 @@ bool AppInstance::isSaveUpToDate() const{
 void AppInstance::resetCurrentProject(){
     _currentProject->setAutoSetProjectFormat(true);
     _currentProject->setHasProjectBeenSavedByUser(false);
-    _currentProject->setProjectName("Untitled." NATRON_PROJECT_FILE_EXT);
+    _currentProject->setProjectName(NATRON_PROJECT_UNTITLED);
     _currentProject->setProjectPath("");
     QString text(QCoreApplication::applicationName() + " - ");
     text.append(_currentProject->getProjectName());
@@ -627,22 +631,16 @@ bool AppInstance::findAutoSave() {
         searchStr.append('.');
         int suffixPos = entry.indexOf(searchStr);
         if (suffixPos != -1) {
-            QFile autoSaveFile(savesDir.path()+QDir::separator()+entry);
-            autoSaveFile.open(QIODevice::ReadOnly);
-            QTextStream inStream(&autoSaveFile);
-            QString firstLine = inStream.readLine();
-            QString path;
-            if (!firstLine.isEmpty()) {
-                int j = 0;
-                while (j < firstLine.size() &&  (firstLine.at(j) != QChar('\n'))) {
-                    path.append(firstLine.at(j));
-                    ++j;
-                }
+            
+            QString filename = entry.left(suffixPos+searchStr.size()-1);
+            bool exists = false;
+            
+            if(!filename.contains(NATRON_PROJECT_UNTITLED)){
+                
+                filename = filename.replace("_SEP_",QDir::separator());
+                exists = QFile::exists(filename);
             }
-            autoSaveFile.close();
-            QString filename = entry.left(suffixPos+3);
-            QString filenameWithPath = path + QDir::separator() + filename;
-            bool exists = QFile::exists(filenameWithPath);
+           
             QString text;
             
             if (exists) {
@@ -674,11 +672,16 @@ bool AppInstance::findAutoSave() {
                 }
                 if (exists) {
                     _currentProject->setHasProjectBeenSavedByUser(true);
+                    QString path = filename.left(filename.lastIndexOf(QDir::separator())+1);
+                    filename = filename.remove(path);
                     _currentProject->setProjectName(filename);
                     _currentProject->setProjectPath(path);
+                    _currentProject->setProjectAgeSinceLastAutosaveSave(QDateTime::currentDateTime());
+                    _currentProject->setProjectAgeSinceLastSave(QDateTime());
+                    
                 } else {
                     _currentProject->setHasProjectBeenSavedByUser(false);
-                    _currentProject->setProjectName("Untitled." NATRON_PROJECT_FILE_EXT);
+                    _currentProject->setProjectName(NATRON_PROJECT_UNTITLED);
                     _currentProject->setProjectPath("");
                 }
                 
@@ -687,7 +690,7 @@ bool AppInstance::findAutoSave() {
                 title.append(" (*)");
                 _gui->setWindowTitle(title);
                 removeAutoSaves(); // clean previous auto-saves
-                autoSave(); // auto-save the recently recovered project, in case the program crashes again
+                                   //autoSave(); // auto-save the recently recovered project, in case the program crashes again
                 return true;
             }
         }
