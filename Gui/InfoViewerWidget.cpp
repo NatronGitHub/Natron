@@ -36,7 +36,7 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
     reso.append("</font>");
     resolution = new QLabel(reso,this);
     resolution->setContentsMargins(0, 0, 0, 0);
-    resolution->setMaximumWidth(resolution->sizeHint().width());
+    //resolution->setMaximumWidth(resolution->sizeHint().width());
 
     
     QString bbox;
@@ -105,13 +105,15 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
     layout->addWidget(color);
     layout->addWidget(hvl_lastOption);
     
-    setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
+    setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Minimum);
     layout->setSpacing(0);
     layout->setContentsMargins(0, 0, 0, 0);
 
     setLayout(layout);
     
 }
+
+QSize InfoViewerWidget::sizeHint() const { return QSize(0,0); }
 
 void InfoViewerWidget::setFps(double v){
     QString str = QString::number(v,'f',1);

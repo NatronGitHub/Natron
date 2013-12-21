@@ -45,6 +45,9 @@ public slots:
     void hideFps();
     
 private:
+    
+    virtual QSize sizeHint() const; 
+    
     bool _colorAndMouseVisible;
     
     QHBoxLayout* layout;

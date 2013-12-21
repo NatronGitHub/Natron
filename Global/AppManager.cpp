@@ -131,7 +131,7 @@ void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const{
             break;
         case NATRON_PIXMAP_MAXIMIZE_WIDGET:
             img.load(NATRON_IMAGES_PATH"maximize.png");
-            *pix = QPixmap::fromImage(img).scaled(15,15);
+            *pix = QPixmap::fromImage(img).scaled(25,25);
             break;
         case NATRON_PIXMAP_MINIMIZE_WIDGET:
             img.load(NATRON_IMAGES_PATH"minimize.png");
