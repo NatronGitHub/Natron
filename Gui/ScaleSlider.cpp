@@ -262,8 +262,11 @@ void ScaleSlider::mouseMoveEvent(QMouseEvent *event){
 
 
 void ScaleSlider::seekScalePosition(double v){
-    if(v < _minimum || v > _maximum)
-        return;
+    if(v < _minimum)
+        v = _minimum;
+    if(v > _maximum)
+        v = _maximum;
+
 
     if(v == _value && _initialized){
         return;
