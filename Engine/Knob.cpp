@@ -610,7 +610,11 @@ _app(appInstance)
 , _isClone(false)
 {}
 
-KnobHolder::~KnobHolder(){ }
+KnobHolder::~KnobHolder(){
+    for (U32 i = 0; i < _knobs.size(); ++i) {
+        _knobs[i]->_imp->_holder = NULL;
+    }
+}
 
 void KnobHolder::invalidateHash(){
     if(_app){

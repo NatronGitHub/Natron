@@ -34,16 +34,7 @@ namespace Natron{
 	}
 
 	Project::~Project(){
-		QMutexLocker locker(&_imp->projectDataLock);
-		for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
-			if(_imp->currentNodes[i]->isOutputNode()){
-				dynamic_cast<OutputEffectInstance*>(_imp->currentNodes[i]->getLiveInstance())->getVideoEngine()->quitEngineThread();
-			}
-		}
-		for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
-			delete _imp->currentNodes[i];
-		}
-		_imp->currentNodes.clear();
+		clearNodes();
 	}
 
 	void Project::initializeKnobs(){
@@ -99,8 +90,14 @@ namespace Natron{
 	}
 
 	void Project::clearNodes(){
-		foreach(Node* n,_imp->currentNodes){
-			delete n;
+        QMutexLocker locker(&_imp->projectDataLock);
+		for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
+			if(_imp->currentNodes[i]->isOutputNode()){
+				dynamic_cast<OutputEffectInstance*>(_imp->currentNodes[i]->getLiveInstance())->getVideoEngine()->quitEngineThread();
+			}
+		}
+		for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
+			delete _imp->currentNodes[i];
 		}
 		_imp->currentNodes.clear();
 	}

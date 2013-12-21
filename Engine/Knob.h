@@ -32,6 +32,8 @@ class Knob : public QObject
 {
     Q_OBJECT
     
+    friend class KnobHolder;
+    
 public:
     
     enum ValueChangedReturnCode {

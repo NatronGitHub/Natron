@@ -184,6 +184,11 @@ NodeGui::~NodeGui(){
     }
 }
 
+void NodeGui::removeSettingsPanel(){
+    //called by DockablePanel when it is deleted by Qt's parenting scheme
+    _settingsPanel = NULL;
+}
+
 void NodeGui::updateShape(int width,int height){
     QPointF topLeft = mapFromParent(pos());
     _boundingBox->setRect(topLeft.x(),topLeft.y(),width,height);

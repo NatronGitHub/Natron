@@ -88,6 +88,7 @@ VideoEngine::~VideoEngine() {
     if(_processAborter){
         delete _processAborter;
     }
+    _threadStarted = false;
 }
 
 void VideoEngine::quitEngineThread(){
@@ -110,6 +111,7 @@ void VideoEngine::quitEngineThread(){
                 _mustQuitCondition.wait(&_mustQuitMutex);
             }
         }
+        _threadStarted = false;
     }
 }
 

@@ -145,6 +145,8 @@ public:
     
     void setDefaultGradient(const QLinearGradient& gradient);
     
+    void removeSettingsPanel();
+    
     QUndoStack* getUndoStack() const;
     
 public slots:

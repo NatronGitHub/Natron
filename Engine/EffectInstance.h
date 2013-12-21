@@ -478,7 +478,7 @@ public:
 
     OutputEffectInstance(Node* node);
 
-    virtual ~OutputEffectInstance(){}
+    virtual ~OutputEffectInstance();
 
     virtual bool isOutput() const { return true; }
 

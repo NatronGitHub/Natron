@@ -201,7 +201,7 @@ public:
 
     explicit NodeSettingsPanel(NodeGui* NodeUi,QVBoxLayout* container, QWidget *parent = 0);
     
-    virtual ~NodeSettingsPanel(){}
+    virtual ~NodeSettingsPanel();
     
     void setSelected(bool s);
     

@@ -501,6 +501,9 @@ NodeSettingsPanel::NodeSettingsPanel(NodeGui* NodeUi ,QVBoxLayout* container,QWi
 ,_nodeGUI(NodeUi)
 {}
 
+NodeSettingsPanel::~NodeSettingsPanel(){
+    _nodeGUI->removeSettingsPanel();
+}
 
 
 void NodeSettingsPanel::setSelected(bool s){

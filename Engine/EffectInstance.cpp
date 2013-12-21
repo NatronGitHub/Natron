@@ -599,6 +599,12 @@ OutputEffectInstance::OutputEffectInstance(Node* node)
 {
 }
 
+OutputEffectInstance::~OutputEffectInstance(){
+    if(_videoEngine){
+        _videoEngine->quitEngineThread();
+    }
+}
+
 void OutputEffectInstance::updateTreeAndRender(bool initViewer){
     _videoEngine->updateTreeAndContinueRender(initViewer);
 }
