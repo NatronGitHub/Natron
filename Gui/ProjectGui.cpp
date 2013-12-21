@@ -16,6 +16,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QSplitter>
 
 #include "Global/AppManager.h"
 
@@ -223,6 +224,14 @@ void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneL
                 std::map<std::string,QWidget*>::const_iterator foundTab = registeredTabs.find(layout->second.tabs[i]);
                 assert(foundTab != registeredTabs.end());
                 TabWidget::moveTab(foundTab->second, *it);
+            }
+            
+            ///restore splitter geometry
+            if(!layout->second.floating){
+                QSplitter* container = dynamic_cast<QSplitter*>((*it)->parentWidget());
+                assert(container);
+                QByteArray splitterGeometry(layout->second.splitterSerialization.c_str());
+                container->restoreState(splitterGeometry);
             }
             
             ///now call this recursively on the freshly new splits

@@ -364,7 +364,7 @@ class KnobHolder {
     
     AppInstance* _app;
     std::vector< boost::shared_ptr<Knob> > _knobs;
-    
+    bool _isClone;
 public:
     
     /**
@@ -375,7 +375,11 @@ public:
     KnobHolder(AppInstance* appInstance);
     
     virtual ~KnobHolder();
+    
+    bool isClone() const { return _isClone; }
 
+    void setClone() { _isClone = true; }
+    
     /**
      * @brief Clone each knob of "other" into this KnobHolder.
      * WARNING: other must have exactly the same number of knobs.

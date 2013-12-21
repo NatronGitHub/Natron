@@ -392,7 +392,7 @@ void Knob::evaluateAnimationChange(){
             hasEvaluatedOnce = true;
         }
     }
-    if(!hasEvaluatedOnce){
+    if(!hasEvaluatedOnce && !_imp->_holder->isClone()){
         evaluateValueChange(0, Natron::PLUGIN_EDITED);
     }
     
@@ -413,13 +413,14 @@ void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
     if(!_imp->_isInsignificant)
         _imp->updateHash(getValueForEachDimension());
     processNewValue();
-    if(reason != Natron::USER_EDITED){
+    if(reason != Natron::USER_EDITED && !_imp->_holder->isClone()){
         emit valueChanged(dimension);
     }
     
     bool significant = reason == Natron::TIME_CHANGED ? false : !_imp->_isInsignificant;
-    
-    _imp->_holder->notifyProjectEvaluationRequested(reason, this, significant);
+    if(!_imp->_holder->isClone()){
+        _imp->_holder->notifyProjectEvaluationRequested(reason, this, significant);
+    }
 }
 
 void Knob::onTimeChanged(SequenceTime time){
@@ -606,6 +607,7 @@ Natron::AnimationLevel Knob::getAnimationLevel(int dimension) const{
 KnobHolder::KnobHolder(AppInstance* appInstance):
 _app(appInstance)
 , _knobs()
+, _isClone(false)
 {}
 
 KnobHolder::~KnobHolder(){ }

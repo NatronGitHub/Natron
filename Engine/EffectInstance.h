@@ -394,10 +394,6 @@ public:
      **/
     void openFilesForAllFileKnobs();
     
-    /**
-     * @brief This function is called by the node holding this effect. Never call this yourself.
-     **/
-    void setAsRenderClone();
     
     /**
      * @brief This function is called by the node holding this effect. Never call this yourself.

@@ -39,7 +39,6 @@ struct EffectInstance::Implementation {
     : renderAborted(false)
     , hashValue()
     , hashAge(0)
-    , isRenderClone(false)
     , inputs()
     , renderArgs()
     , previewEnabled(false)
@@ -50,7 +49,6 @@ struct EffectInstance::Implementation {
     bool renderAborted; //< was rendering aborted ?
     Hash64 hashValue;//< The hash value of this effect
     int hashAge;//< to check if the hash has the same age than the project's age
-    bool isRenderClone;//< is this instance a live instance (i.e interacting with GUI)
     //or a render instance (i.e a snapshot of the live instance at a given time)
 
     Inputs inputs;//< all the inputs of the effect. Watch out, some might be NULL if they aren't connected
@@ -83,7 +81,7 @@ bool EffectInstance::isMarkedByTopologicalSort() const {return _imp->markedByTop
 
 bool EffectInstance::isLiveInstance() const
 {
-    return !_imp->isRenderClone;
+    return !isClone();
 }
 
 const Hash64& EffectInstance::hash() const
@@ -111,13 +109,8 @@ bool EffectInstance::isPreviewEnabled() const
     return _imp->previewEnabled;
 }
 
-void EffectInstance::setAsRenderClone()
-{
-    _imp->isRenderClone = true;
-}
-
 void EffectInstance::clone(SequenceTime /*time*/){
-    if(!_imp->isRenderClone)
+    if(!isClone())
         return;
     cloneKnobs(*(_node->getLiveInstance()));
     //refreshAfterTimeChange(time);
@@ -536,7 +529,7 @@ void EffectInstance::openFilesForAllFileKnobs(){
 }
 
 void EffectInstance::abortRendering(){
-    if (_imp->isRenderClone) {
+    if (isClone()) {
         _node->abortRenderingForEffect(this);
     }else if(isOutput()){
         dynamic_cast<OutputEffectInstance*>(this)->getVideoEngine()->abortRendering();

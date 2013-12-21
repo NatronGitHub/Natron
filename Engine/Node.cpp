@@ -138,7 +138,7 @@ Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
     assert(_liveInstance);
     assert(_imp->previewInstance);
 
-    _imp->previewInstance->setAsRenderClone();
+    _imp->previewInstance->setClone();
     _imp->previewInstance->notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
     _imp->previewInstance->initializeKnobs();
     _imp->previewInstance->notifyProjectEndKnobsValuesChanged(Natron::OTHER_REASON);
@@ -232,10 +232,8 @@ EffectInstance*  Node::createLiveInstanceClone()
         ret = appPTR->getOfxHost()->createOfxEffect(_liveInstance->pluginID(),this);
     }
     assert(ret);
-    ret->notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
+    ret->setClone();
     ret->initializeKnobs();
-    ret->notifyProjectEndKnobsValuesChanged(Natron::OTHER_REASON);
-    ret->setAsRenderClone();
     return ret;
 }
 

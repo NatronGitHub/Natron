@@ -29,7 +29,7 @@ struct PaneLayout{
     std::string parentName;
     std::vector<std::string> splitsNames;
     std::vector<std::string> tabs;
-
+    std::string splitterSerialization;
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -41,6 +41,7 @@ struct PaneLayout{
         ar & boost::serialization::make_nvp("ParentName",parentName);
         ar & boost::serialization::make_nvp("SplitsNames",splitsNames);
         ar & boost::serialization::make_nvp("Tabs",tabs);
+        ar & boost::serialization::make_nvp("Splitter",splitterSerialization);
     }
 };
 

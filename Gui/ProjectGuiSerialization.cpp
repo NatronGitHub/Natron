@@ -10,6 +10,8 @@
 
 #include "ProjectGuiSerialization.h"
 
+#include <QSplitter>
+
 #include "Global/AppManager.h"
 #include "Engine/Project.h"
 #include "Gui/NodeGui.h"
@@ -49,6 +51,13 @@
              layout.posx = -1;
              layout.posy = -1;
          }
+         
+        if(!layout.floating){
+            QSplitter* container = dynamic_cast<QSplitter*>((*it)->parentWidget());
+            assert(container);
+            layout.splitterSerialization = std::string(container->saveGeometry().data());
+        }
+         
          for (int i = 0; i < (*it)->count(); ++i) {
              QWidget* tab = (*it)->tabAt(i);
              assert(tab);
