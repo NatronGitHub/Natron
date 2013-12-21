@@ -149,6 +149,8 @@ public:
     
     QUndoStack* getUndoStack() const;
     
+    void removeUndoStack();
+    
 public slots:
   
     void togglePreview();

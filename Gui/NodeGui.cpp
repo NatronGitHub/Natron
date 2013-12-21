@@ -184,6 +184,12 @@ NodeGui::~NodeGui(){
     }
 }
 
+void NodeGui::removeUndoStack(){
+    if(getUndoStack()){
+        _graph->getGui()->removeUndoStack(getUndoStack());
+    }
+}
+
 void NodeGui::removeSettingsPanel(){
     //called by DockablePanel when it is deleted by Qt's parenting scheme
     _settingsPanel = NULL;

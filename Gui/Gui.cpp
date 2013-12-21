@@ -1364,12 +1364,19 @@ void Gui::registerNewUndoStack(QUndoStack* stack){
     _undoStacksActions.insert(std::make_pair(stack, std::make_pair(undo, redo)));
 }
 
+void Gui::removeUndoStack(QUndoStack* stack){
+    std::map<QUndoStack*,std::pair<QAction*,QAction*> >::iterator it = _undoStacksActions.find(stack);
+    if(it != _undoStacksActions.end()){
+        _undoStacksActions.erase(it);
+    }
+}
+
 void Gui::onCurrentUndoStackChanged(QUndoStack* stack){
     std::map<QUndoStack*,std::pair<QAction*,QAction*> >::iterator it = _undoStacksActions.find(stack);
     
     //the stack must have been registered first with registerNewUndoStack()
-    assert(it != _undoStacksActions.end());
-    
-    setUndoRedoActions(it->second.first, it->second.second);
+    if(it != _undoStacksActions.end()){
+        setUndoRedoActions(it->second.first, it->second.second);
+    }
 }
 

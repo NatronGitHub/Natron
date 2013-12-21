@@ -231,6 +231,8 @@ public:
 
     void registerNewUndoStack(QUndoStack* stack);
     
+    void removeUndoStack(QUndoStack* stack);
+    
     bool isGraphWorthless() const;
     
     /**
