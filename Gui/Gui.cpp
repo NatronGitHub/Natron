@@ -857,8 +857,9 @@ void Gui::registerSplitter(QSplitter* s){
 
 void Gui::removeSplitter(QSplitter* s){
     std::list<QSplitter*>::iterator found = std::find(_splitters.begin(), _splitters.end(), s);
-    assert(found != _splitters.end());
-    _splitters.erase(found);
+    if(found != _splitters.end()){
+        _splitters.erase(found);
+    }
 }
 
 
