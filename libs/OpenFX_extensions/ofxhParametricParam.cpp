@@ -760,7 +760,7 @@ static OfxStatus parametricParamDeleteControlPoint(OfxParamHandle param,
     cps.erase(cps.begin()+nthCtl);
 
     //set back the property
-    descProps.setDoublePropertyN(kOfxParamPropControlPoints, &cps[0].key, cps.size()*2);
+    descProps.setDoublePropertyN(namestr, &cps[0].key, cps.size()*2);
 
     OfxStatus stat = kOfxStatOK;
 
