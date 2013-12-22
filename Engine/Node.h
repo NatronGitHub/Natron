@@ -385,6 +385,7 @@ signals:
     void frameRangeChanged(int,int);
 
 protected:
+    // FIXME: all data members should be private, use getter/setter instead
     std::map<int,Node*> _inputs;//only 1 input per slot
     Natron::EffectInstance*  _liveInstance; //< the instance of the effect interacting with the GUI of this node.
 

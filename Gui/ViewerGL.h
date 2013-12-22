@@ -55,7 +55,7 @@ public:
     explicit ViewerGL(ViewerTab* parent, const QGLWidget* shareWidget = NULL);
     
     
-    virtual ~ViewerGL();
+    virtual ~ViewerGL() OVERRIDE;
     
     QSize sizeHint() const;
     
@@ -113,7 +113,7 @@ public:
      *@brief Hack to allow the resizeEvent to be publicly used elsewhere.
      *It calls QGLWidget::resizeEvent(QResizeEvent*).
      **/
-    virtual void resizeEvent(QResizeEvent* event);
+    virtual void resizeEvent(QResizeEvent* event) OVERRIDE FINAL;
     
     /**
      *@returns Returns the height of the frame with the scale factor applied to it.
@@ -322,37 +322,37 @@ signals:
     void zoomChanged(int v);
     
 
-    protected :
+private:
     /**
      *@brief The paint function. That's where all the drawing is done.
      **/
-    virtual void paintGL();
+    virtual void paintGL() OVERRIDE FINAL;
     
-    virtual void mousePressEvent(QMouseEvent *event);
+    virtual void mousePressEvent(QMouseEvent *event) OVERRIDE FINAL;
     
-    virtual void mouseReleaseEvent(QMouseEvent *event);
+    virtual void mouseReleaseEvent(QMouseEvent *event) OVERRIDE FINAL;
     
-    virtual void mouseMoveEvent(QMouseEvent *event);
+    virtual void mouseMoveEvent(QMouseEvent *event) OVERRIDE FINAL;
     
-    virtual void wheelEvent(QWheelEvent *event);
+    virtual void wheelEvent(QWheelEvent *event) OVERRIDE FINAL;
     
-    virtual void enterEvent(QEvent *event);
+    virtual void enterEvent(QEvent *event) OVERRIDE FINAL;
     
-    virtual void leaveEvent(QEvent *event);
+    virtual void leaveEvent(QEvent *event) OVERRIDE FINAL;
     
-    virtual void keyPressEvent(QKeyEvent* event);
+    virtual void keyPressEvent(QKeyEvent* event) OVERRIDE FINAL;
     
-    virtual void keyReleaseEvent(QKeyEvent* event);
+    virtual void keyReleaseEvent(QKeyEvent* event) OVERRIDE FINAL;
     
     /**
      *@brief initiliazes OpenGL context related stuff. This is called once after widget creation.
      **/
-    virtual void initializeGL();
+    virtual void initializeGL() OVERRIDE FINAL;
     
     /**
      *@brief Handles the resizing of the viewer
      **/
-    virtual void resizeGL(int width,int height);
+    virtual void resizeGL(int width,int height) OVERRIDE FINAL;
     
 private:
     

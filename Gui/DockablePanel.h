@@ -42,43 +42,8 @@ namespace Natron{
 /**
  * @brief An abstract class that defines a dockable properties panel that can be found in the Property bin pane.
 **/
-class DockablePanel : public QFrame{
+class DockablePanel : public QFrame {
     Q_OBJECT
-    
-    QVBoxLayout* _container; /*!< ptr to the layout containing this DockablePanel*/
-    
-    /*global layout*/
-    QVBoxLayout* _mainLayout;
-    
-    /*Header related*/
-    QFrame* _headerWidget;
-    QHBoxLayout *_headerLayout;
-    
-    LineEdit* _nameLineEdit; /*!< if the name is editable*/
-    QLabel* _nameLabel; /*!< if the name is read-only*/
-    
-    /*Tab related*/
-    QTabWidget* _tabWidget;
-    
-    Button* _helpButton;
-    Button* _minimize;
-    Button* _cross;
-    
-    Button* _undoButton;
-    Button* _redoButton;
-    
-    bool _minimized; /*!< true if the panel is minimized*/
-    QUndoStack* _undoStack; /*!< undo/redo stack*/
-    
-    /*a map storing for each knob a pointer to their GUI.*/
-    std::map<boost::shared_ptr<Knob>,KnobGui*> _knobs;
-    KnobHolder* _holder;
-    
-    /* map<tab name, pair<tab , row count> >*/
-    std::map<QString,std::pair<QWidget*,int> > _tabs;
-    
-    QString _defaultTabName;
-    
 public:
     
     enum HeaderMode{
@@ -96,7 +61,7 @@ public:
                   ,const QString& defaultTab = QString()
                   ,QWidget *parent = 0);
     
-    virtual ~DockablePanel();
+    virtual ~DockablePanel() OVERRIDE;
     
     bool isMinimized() const {return _minimized;}
     
@@ -152,13 +117,6 @@ public slots:
     void onRedoPressed();
     
 
-protected:
-    
-    virtual void mousePressEvent(QMouseEvent* e){
-        emit selected();
-        QFrame::mousePressEvent(e);
-    }
-    
 signals:
     
     /*emitted when the panel is clicked*/
@@ -184,6 +142,46 @@ signals:
     
 private:
 
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL {
+        emit selected();
+        QFrame::mousePressEvent(e);
+    }
+
+private:
+    // FIXME: PIMPL
+    QVBoxLayout* _container; /*!< ptr to the layout containing this DockablePanel*/
+
+    /*global layout*/
+    QVBoxLayout* _mainLayout;
+
+    /*Header related*/
+    QFrame* _headerWidget;
+    QHBoxLayout *_headerLayout;
+
+    LineEdit* _nameLineEdit; /*!< if the name is editable*/
+    QLabel* _nameLabel; /*!< if the name is read-only*/
+
+    /*Tab related*/
+    QTabWidget* _tabWidget;
+
+    Button* _helpButton;
+    Button* _minimize;
+    Button* _cross;
+
+    Button* _undoButton;
+    Button* _redoButton;
+
+    bool _minimized; /*!< true if the panel is minimized*/
+    QUndoStack* _undoStack; /*!< undo/redo stack*/
+
+    /*a map storing for each knob a pointer to their GUI.*/
+    std::map<boost::shared_ptr<Knob>,KnobGui*> _knobs;
+    KnobHolder* _holder;
+
+    /* map<tab name, pair<tab , row count> >*/
+    std::map<QString,std::pair<QWidget*,int> > _tabs;
+
+    QString _defaultTabName;
 };
 
 class NodeSettingsPanel : public DockablePanel

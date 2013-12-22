@@ -33,12 +33,9 @@ class TimeLineGui : public QGLWidget{
     Q_OBJECT
 
 public:
-
-
-    
     explicit TimeLineGui(boost::shared_ptr<TimeLine> timeLine, QWidget* parent,const QGLWidget* shareWidget = NULL);
 
-    virtual ~TimeLineGui();
+    virtual ~TimeLineGui() OVERRIDE;
 
     /*initialises the boundaries on the timeline*/
     void setBoundaries(SequenceTime first, SequenceTime last);
@@ -83,21 +80,20 @@ public slots:
     void onLRUCachedFrameRemoved();
     void onCachedFramesCleared();
 
-protected:
+private:
 
+    virtual void initializeGL() OVERRIDE FINAL;
+    virtual void resizeGL(int width,int height) OVERRIDE FINAL;
+    virtual void paintGL() OVERRIDE FINAL;
 
-    virtual void initializeGL();
-    virtual void resizeGL(int width,int height);
-    virtual void paintGL();
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void wheelEvent(QWheelEvent *event) OVERRIDE FINAL;
 
-    virtual void mousePressEvent(QMouseEvent* e);
-    virtual void mouseMoveEvent(QMouseEvent* e);
-    virtual void mouseReleaseEvent(QMouseEvent* e);
-    virtual void wheelEvent(QWheelEvent *event);
-
-    virtual void enterEvent(QEvent* e);
-    virtual void leaveEvent(QEvent* e);
-    virtual QSize sizeHint() const;
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
+    virtual QSize sizeHint() const OVERRIDE FINAL;
 
 
 signals:

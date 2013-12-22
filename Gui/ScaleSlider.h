@@ -31,38 +31,6 @@ class QFont;
 class ScaleSlider : public QGLWidget
 {
     Q_OBJECT
-
-
-    // see ViewerGL.cpp for a full documentation of ZoomContext
-    struct ZoomContext {
-        ZoomContext()
-            : bottom(0.)
-            , left(0.)
-            , zoomFactor(1.)
-        {}
-
-        QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
-        double bottom; /// the bottom edge of orthographic projection
-        double left; /// the left edge of the orthographic projection
-        double zoomFactor; /// the zoom factor applied to the current image
-
-        double lastOrthoLeft, lastOrthoBottom, lastOrthoRight, lastOrthoTop; //< remembers the last values passed to the glOrtho call
-    };
-
-    ZoomContext _zoomCtx;
-    Natron::TextRenderer _textRenderer;
-    double _minimum,_maximum;
-    Natron::Scale_Type _type;
-    double _value;
-    std::vector<double> _XValues; // lut where each values is the coordinates of the value mapped on the slider
-    bool _dragging;
-    QFont* _font;
-    QColor _clearColor;
-    QColor _textColor;
-    QColor _scaleColor;
-    QColor _sliderColor;
-    bool _initialized;
-    bool _mustInitializeSliderPosition;
 public:
     
     ScaleSlider(double bottom, // the minimum value
@@ -71,19 +39,19 @@ public:
                 Natron::Scale_Type type = Natron::LINEAR_SCALE, // the type of scale
                 QWidget* parent=0);
     
-    virtual ~ScaleSlider();
+    virtual ~ScaleSlider() OVERRIDE;
 
-    virtual void initializeGL();
+    virtual void initializeGL() OVERRIDE FINAL;
 
-    virtual void resizeGL(int width,int height);
+    virtual void resizeGL(int width,int height) OVERRIDE FINAL;
 
-    virtual void paintGL();
+    virtual void paintGL() OVERRIDE FINAL;
 
-    virtual void mousePressEvent(QMouseEvent *event);
+    virtual void mousePressEvent(QMouseEvent *event) OVERRIDE FINAL;
 
-    virtual void mouseMoveEvent(QMouseEvent *event);
+    virtual void mouseMoveEvent(QMouseEvent *event) OVERRIDE FINAL;
 
-    virtual QSize sizeHint() const;
+    virtual QSize sizeHint() const OVERRIDE FINAL;
 
     void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font);
     
@@ -132,6 +100,41 @@ private :
     QPointF toWidgetCoordinates(double x, double y);
 
     void drawScale();
+
+private:
+    // FIXME: PIMPL
+
+
+    // see ViewerGL.cpp for a full documentation of ZoomContext
+    struct ZoomContext {
+        ZoomContext()
+        : bottom(0.)
+        , left(0.)
+        , zoomFactor(1.)
+        {}
+
+        QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
+        double bottom; /// the bottom edge of orthographic projection
+        double left; /// the left edge of the orthographic projection
+        double zoomFactor; /// the zoom factor applied to the current image
+
+        double lastOrthoLeft, lastOrthoBottom, lastOrthoRight, lastOrthoTop; //< remembers the last values passed to the glOrtho call
+    };
+
+    ZoomContext _zoomCtx;
+    Natron::TextRenderer _textRenderer;
+    double _minimum,_maximum;
+    Natron::Scale_Type _type;
+    double _value;
+    std::vector<double> _XValues; // lut where each values is the coordinates of the value mapped on the slider
+    bool _dragging;
+    QFont* _font;
+    QColor _clearColor;
+    QColor _textColor;
+    QColor _scaleColor;
+    QColor _sliderColor;
+    bool _initialized;
+    bool _mustInitializeSliderPosition;
 };
 
 

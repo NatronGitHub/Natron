@@ -125,36 +125,6 @@ public:
     /*Add a new viewer tab to the GUI*/
     void initializeViewerTab(TabWidget* where);
     
-    /*******************************************
-     *******OVERRIDEN FROM EFFECT INSTANCE******
-     *******************************************/
-    
-    virtual bool isOutput() const OVERRIDE {return true;}
-    
-    virtual int maximumInputs() const OVERRIDE {return getNode()->maximumInputs();}
-
-    virtual bool isInputOptional(int /*n*/) const OVERRIDE;
-
-    virtual int majorVersion() const OVERRIDE { return 1; }
-
-    virtual int minorVersion() const OVERRIDE { return 0; }
-
-    virtual std::string pluginID() const OVERRIDE {return "Viewer";}
-
-    virtual std::string pluginLabel() const OVERRIDE {return "Viewer";}
-    
-    virtual std::string description() const OVERRIDE {return "The Viewer node can display the output of a node graph.";}
-    
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod) OVERRIDE;
-    
-    virtual RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) OVERRIDE;
-    
-    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
-    
-    virtual std::string inputLabel(int inputNb) const OVERRIDE {
-        return QString::number(inputNb+1).toStdString();
-    }
-    virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Natron::EffectInstance::FULLY_SAFE;}
 
     /**
      * @brief This function renders the image at time 'time' on the viewer.
@@ -243,9 +213,6 @@ public:
     **/
     void getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear);
 
-protected:
-
-    virtual void cloneExtras() OVERRIDE;
 public slots:
 
     void onViewerCacheFrameAdded();
@@ -283,6 +250,39 @@ signals:
 
 
 private:
+    /*******************************************
+     *******OVERRIDEN FROM EFFECT INSTANCE******
+     *******************************************/
+    
+    virtual bool isOutput() const OVERRIDE FINAL {return true;}
+    
+    virtual int maximumInputs() const OVERRIDE {return getNode()->maximumInputs();}
+
+    virtual bool isInputOptional(int /*n*/) const OVERRIDE FINAL;
+
+    virtual int majorVersion() const OVERRIDE FINAL { return 1; }
+
+    virtual int minorVersion() const OVERRIDE FINAL { return 0; }
+
+    virtual std::string pluginID() const OVERRIDE FINAL {return "Viewer";}
+
+    virtual std::string pluginLabel() const OVERRIDE FINAL {return "Viewer";}
+    
+    virtual std::string description() const OVERRIDE FINAL {return "The Viewer node can display the output of a node graph.";}
+    
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod) OVERRIDE FINAL;
+    
+    virtual RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) OVERRIDE FINAL;
+    
+    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE FINAL;
+    
+    virtual std::string inputLabel(int inputNb) const OVERRIDE FINAL {
+        return QString::number(inputNb+1).toStdString();
+    }
+    virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE FINAL {return Natron::EffectInstance::FULLY_SAFE;}
+    /*******************************************/
+
+    virtual void cloneExtras() OVERRIDE FINAL;
 
     void renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,
                        const std::vector<std::pair<int,int> >& rows,

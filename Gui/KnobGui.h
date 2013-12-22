@@ -48,7 +48,7 @@ public:
     
     KnobGui(boost::shared_ptr<Knob> knob,DockablePanel* container);
     
-    virtual ~KnobGui();
+    virtual ~KnobGui() OVERRIDE;
         
     bool triggerNewLine() const { return _triggerNewLine; }
     
@@ -192,6 +192,7 @@ private:
     void setInterpolationForDimensions(const std::vector<int>& dimensions,Natron::KeyframeType interp);
     
 private:
+    // FIXME: PIMPL
     boost::shared_ptr<Knob> _knob;
     bool _triggerNewLine;
     int _spacingBetweenItems;
@@ -205,27 +206,28 @@ private:
 class LinkToKnobDialog : public QDialog {
     
     Q_OBJECT
+public:
     
+    LinkToKnobDialog(KnobGui* from,QWidget* parent);
+    
+    virtual ~LinkToKnobDialog() OVERRIDE { _allKnobs.clear(); }
+    
+    boost::shared_ptr<Knob> getSelectedKnobs() const;
+
+private:
+    // FIXME: PIMPL
     QVBoxLayout* _mainLayout;
     QHBoxLayout* _firstLineLayout;
     QWidget* _firstLine;
     QLabel* _selectKnobLabel;
     QComboBox* _selectionCombo;
-    
+
     QWidget* _buttonsWidget;
     Button* _cancelButton;
     Button* _okButton;
     QHBoxLayout* _buttonsLayout;
-    
+
     std::map<QString,boost::shared_ptr<Knob> > _allKnobs;
-public:
-    
-    LinkToKnobDialog(KnobGui* from,QWidget* parent);
-    
-    virtual ~LinkToKnobDialog(){ _allKnobs.clear(); }
-    
-    boost::shared_ptr<Knob> getSelectedKnobs() const;
-    
 };
 
 #endif // NATRON_GUI_KNOBGUI_H_

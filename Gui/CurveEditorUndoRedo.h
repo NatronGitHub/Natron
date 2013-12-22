@@ -29,13 +29,15 @@ public:
 
     AddKeysCommand(CurveWidget *editor,CurveGui* curve, const std::vector<KeyFrame> &keys, QUndoCommand *parent = 0);
 
-    virtual ~AddKeysCommand() {}
-    virtual void undo();
-    virtual void redo();
+    virtual ~AddKeysCommand() OVERRIDE {}
+
 private:
-    
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+
     void addOrRemoveKeyframe(bool add);
 
+private:
     CurveGui* _curve;
     std::vector<KeyFrame> _keys;
     CurveWidget *_curveWidget;
@@ -49,14 +51,15 @@ class RemoveKeysCommand : public QUndoCommand{
 public:
     RemoveKeysCommand(CurveWidget* editor,const std::vector< std::pair<CurveGui*,KeyFrame > >& curveEditorElement
                               ,QUndoCommand *parent = 0);
-    virtual ~RemoveKeysCommand() { }
-    virtual void undo();
-    virtual void redo();
+    virtual ~RemoveKeysCommand() OVERRIDE {}
 
 private:
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
 
     void addOrRemoveKeyframe(bool add);
     
+private:
     std::vector<std::pair<CurveGui*,KeyFrame > > _keys;
     CurveWidget* _curveWidget;
 };
@@ -84,16 +87,17 @@ class MoveKeysCommand : public QUndoCommand{
 public:
 
     MoveKeysCommand(CurveWidget* editor,const KeyMoveV& keys,double dt,double dv,QUndoCommand *parent = 0);
-    virtual ~MoveKeysCommand(){ }
-    virtual void undo();
-    virtual void redo();
-    virtual int id() const ;
-    virtual bool mergeWith(const QUndoCommand * command);
+    virtual ~MoveKeysCommand() OVERRIDE {}
 
 private:
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+    virtual int id() const OVERRIDE FINAL;
+    virtual bool mergeWith(const QUndoCommand * command) OVERRIDE FINAL;
 
     void move(double dt, double dv, bool isundo);
 
+private:
     bool _merge;
     double _dt;
     double _dv;
@@ -127,13 +131,15 @@ class SetKeysInterpolationCommand : public QUndoCommand{
 public:
 
     SetKeysInterpolationCommand(CurveWidget* editor,const std::vector< KeyInterpolationChange >& keys,QUndoCommand *parent = 0);
-    virtual void undo();
-    virtual void redo();
-
+    virtual ~SetKeysInterpolationCommand() OVERRIDE {}
 private:
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+
 
     void setNewInterpolation(bool undo);
     
+private:
     std::vector< KeyInterpolationChange > _oldInterp;
     CurveWidget* _curveWidget;
 };

@@ -17,7 +17,7 @@ public:
 
     GroupBoxLabel(QWidget *parent = 0);
 
-    virtual ~GroupBoxLabel() {}
+    virtual ~GroupBoxLabel() OVERRIDE {}
 
     bool isChecked() const {
         return _checked;

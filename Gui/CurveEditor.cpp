@@ -109,7 +109,7 @@ CurveEditor::~CurveEditor(){
     _nodes.clear();
 }
 
-std::pair<QAction*,QAction*> CurveEditor::getUndoRedoActions() const{
+std::pair<QAction*,QAction*> CurveEditor::getUndoRedoActions() const {
     return std::make_pair(_undoAction,_redoAction);
 }
 
@@ -411,7 +411,7 @@ void CurveEditor::onCurrentItemChanged(QTreeWidgetItem* current,QTreeWidgetItem*
 
 }
 
-NodeCurveEditorElement* NodeCurveEditorContext::findElement(CurveGui* curve){
+NodeCurveEditorElement* NodeCurveEditorContext::findElement(CurveGui* curve) const {
     for(U32 i = 0; i < _nodeElements.size();++i){
         if(_nodeElements[i]->getCurve() == curve){
             return _nodeElements[i];
@@ -420,7 +420,7 @@ NodeCurveEditorElement* NodeCurveEditorContext::findElement(CurveGui* curve){
     return NULL;
 }
 
-NodeCurveEditorElement* NodeCurveEditorContext::findElement(KnobGui* knob,int dimension){
+NodeCurveEditorElement* NodeCurveEditorContext::findElement(KnobGui* knob,int dimension) const {
     for(U32 i = 0; i < _nodeElements.size();++i){
         if(_nodeElements[i]->getKnob() == knob && _nodeElements[i]->getDimension() == dimension){
             return _nodeElements[i];
@@ -429,7 +429,7 @@ NodeCurveEditorElement* NodeCurveEditorContext::findElement(KnobGui* knob,int di
     return NULL;
 }
 
-NodeCurveEditorElement* NodeCurveEditorContext::findElement(QTreeWidgetItem* item) {
+NodeCurveEditorElement* NodeCurveEditorContext::findElement(QTreeWidgetItem* item) const {
     for (U32 i = 0; i < _nodeElements.size(); ++i) {
         if (_nodeElements[i]->getTreeItem() == item) {
             return _nodeElements[i];
@@ -439,7 +439,7 @@ NodeCurveEditorElement* NodeCurveEditorContext::findElement(QTreeWidgetItem* ite
 }
 
 
-CurveGui* CurveEditor::findCurve(KnobGui* knob,int dimension){
+CurveGui* CurveEditor::findCurve(KnobGui* knob,int dimension) const {
     for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
         it!=_nodes.end();++it){
         NodeCurveEditorElement* elem = (*it)->findElement(knob,dimension);

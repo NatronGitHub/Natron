@@ -37,6 +37,7 @@ class ProjectGui : public QObject
 public:
     
     ProjectGui();
+    ~ProjectGui() OVERRIDE {}
         
     void create(boost::shared_ptr<Natron::Project> projectInternal,QVBoxLayout* container,QWidget* parent = NULL);
     

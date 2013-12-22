@@ -147,6 +147,7 @@ public:
     virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual void purgeCaches() OVERRIDE;
+    /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
 
     /*********OVERLAY INTERACT FUNCTIONS********/

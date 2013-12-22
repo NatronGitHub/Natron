@@ -52,7 +52,7 @@ public:
     
     explicit ComboBox(QWidget* parent = 0);
     
-    virtual ~ComboBox(){}
+    virtual ~ComboBox() OVERRIDE {}
     
     /*Insert a new item BEFORE the specified index.*/
     void insertItem(int index,const QString& item,QIcon icon = QIcon(),QKeySequence = QKeySequence(),const QString& toolTip = QString());
@@ -109,7 +109,7 @@ signals:
     void currentIndexChanged(int index);
     void currentIndexChanged(const QString &text);
     
-protected:
+private:
     void paintEvent(QPaintEvent *);
     void mousePressEvent(QMouseEvent* e);
     void mouseReleaseEvent(QMouseEvent* e);

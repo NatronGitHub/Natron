@@ -22,13 +22,16 @@ class KnobUndoCommand : public QUndoCommand
 public:
     KnobUndoCommand(KnobGui *knob, const std::vector<Variant> &oldValue, const std::vector<Variant> &newValue, QUndoCommand *parent = 0);
 
-    virtual void undo() OVERRIDE;
+    virtual ~KnobUndoCommand() OVERRIDE {}
 
-    virtual void redo() OVERRIDE;
+private:
+    virtual void undo() OVERRIDE FINAL;
 
-    virtual int id() const OVERRIDE;
+    virtual void redo() OVERRIDE FINAL;
+
+    virtual int id() const OVERRIDE FINAL;
     
-    virtual bool mergeWith(const QUndoCommand *command) OVERRIDE;
+    virtual bool mergeWith(const QUndoCommand *command) OVERRIDE FINAL;
     
 private:
     // TODO: PIMPL

@@ -70,7 +70,7 @@ public:
 
     Int_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
-    virtual ~Int_KnobGui();
+    virtual ~Int_KnobGui() OVERRIDE;
 
 public slots:
 
@@ -122,7 +122,7 @@ public:
 
     Bool_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
-    virtual ~Bool_KnobGui();
+    virtual ~Bool_KnobGui() OVERRIDE;
 
 public slots:
 
@@ -161,7 +161,7 @@ public:
 
     Double_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
-    virtual ~Double_KnobGui();
+    virtual ~Double_KnobGui() OVERRIDE;
 
 public slots:
     void onSpinBoxValueChanged();
@@ -207,7 +207,7 @@ public:
 
     Button_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
-    virtual ~Button_KnobGui();
+    virtual ~Button_KnobGui() OVERRIDE;
 
 public slots:
 
@@ -242,7 +242,7 @@ public:
 
     Choice_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
-    virtual ~Choice_KnobGui();
+    virtual ~Choice_KnobGui() OVERRIDE;
 
 public slots:
 
@@ -280,7 +280,7 @@ public:
 
     Separator_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
-    virtual ~Separator_KnobGui();
+    virtual ~Separator_KnobGui() OVERRIDE;
 
 private:
 
@@ -308,24 +308,24 @@ public:
     
     ColorPickerLabel(QWidget* parent = NULL);
     
-    virtual ~ColorPickerLabel(){}
+    virtual ~ColorPickerLabel() OVERRIDE {}
     
     bool isPickingEnabled() const { return _pickingEnabled; }
 
     void setColor(const QColor& color);
     
-protected:
-    
-    virtual void enterEvent(QEvent*);
-    
-    virtual void leaveEvent(QEvent*);
-        
-    virtual void mousePressEvent(QMouseEvent*) ;    
-
 signals:
     
     void pickingEnabled(bool);
     
+private:
+
+    virtual void enterEvent(QEvent*) OVERRIDE FINAL;
+
+    virtual void leaveEvent(QEvent*) OVERRIDE FINAL;
+
+    virtual void mousePressEvent(QMouseEvent*) OVERRIDE FINAL;
+
 private:
 
     bool _pickingEnabled;
@@ -344,7 +344,7 @@ public:
 
     Color_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
-    virtual ~Color_KnobGui();
+    virtual ~Color_KnobGui() OVERRIDE;
 
 public slots:
 
@@ -410,7 +410,7 @@ public:
 
     String_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
-    virtual ~String_KnobGui();
+    virtual ~String_KnobGui() OVERRIDE;
 
 public slots:
     void onStringChanged(const QString &str);
@@ -444,7 +444,7 @@ public:
 
     Custom_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
-    virtual ~Custom_KnobGui() ;
+    virtual ~Custom_KnobGui() OVERRIDE;
 
 private:
 
@@ -477,7 +477,7 @@ public:
 
     Group_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container), _checked(false) {}
 
-    virtual ~Group_KnobGui();
+    virtual ~Group_KnobGui() OVERRIDE;
 
     void addKnob(KnobGui *child, int row, int column);
 
@@ -523,7 +523,7 @@ public:
 
     RichText_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
-    virtual ~RichText_KnobGui();
+    virtual ~RichText_KnobGui() OVERRIDE;
 
 public slots:
     void onTextChanged();
@@ -560,7 +560,7 @@ public:
     
     Parametric_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
     
-    virtual ~Parametric_KnobGui();
+    virtual ~Parametric_KnobGui() OVERRIDE;
     
 public slots:
     
@@ -582,7 +582,8 @@ private:
     
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
     
-    
+private:
+    // TODO: PIMPL
     CurveWidget* _curveWidget;
     QTreeWidget* _tree;
     Button* _resetButton;

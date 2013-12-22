@@ -57,7 +57,7 @@ public:
             qreal x,qreal y ,
             QGraphicsItem *parent=0);
 
-    ~NodeGui();
+    ~NodeGui() OVERRIDE;
     
     /**
      * @brief Fills the serializationObject with the current state of the NodeGui.
@@ -73,22 +73,22 @@ public:
     
   
     /*Returns tru if the NodeGUI contains the point*/
-    virtual bool contains(const QPointF &point) const;
+    virtual bool contains(const QPointF &point) const OVERRIDE;
     
     /*returns a QPainterPath indicating the global shape of the node.
      This must be provided so the QGraphicsView framework recognises the
      item correctly.*/
-    virtual QPainterPath shape() const;
+    virtual QPainterPath shape() const OVERRIDE;
     
     /*Returns the bouding box of the nodeGUI, must be derived if you
      plan on changing the shape of the node.*/
-    virtual QRectF boundingRect() const;
+    virtual QRectF boundingRect() const OVERRIDE;
     
     QRectF boundingRectWithEdges() const;
     
     /*this function does the painting, using QPainter, you can overload it to change the aspect of
      the node.*/
-    virtual void paint(QPainter* painter,const QStyleOptionGraphicsItem* options,QWidget* parent);
+    virtual void paint(QPainter* painter,const QStyleOptionGraphicsItem* options,QWidget* parent) OVERRIDE;
     
    
     

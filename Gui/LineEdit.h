@@ -23,9 +23,10 @@ class QDragLeaveEvent;
 class LineEdit : public QLineEdit {
 public:
     explicit LineEdit(QWidget* parent = 0);
-    virtual ~LineEdit();
+    virtual ~LineEdit() OVERRIDE;
     
-    virtual void paintEvent(QPaintEvent* e);
+private:
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 
     void dropEvent(QDropEvent* event);
 

@@ -119,7 +119,7 @@ public:
     Natron::Node* createNode(const QString& name,int majorVersion = -1,int minorVersion = -1,bool requestedByLoad = false);
 
     /*Pointer to the GUI*/
-    Gui* getGui() WARN_UNUSED_RETURN {return _gui;}
+    Gui* getGui() const WARN_UNUSED_RETURN {return _gui;}
 
     const std::vector<NodeGui*>& getVisibleNodes() const WARN_UNUSED_RETURN;
 
@@ -182,7 +182,7 @@ public:
 
     NodeGui* getNodeGui(Natron::Node* n) const WARN_UNUSED_RETURN;
 
-    NodeGui* getNodeGui(const std::string& nodeName) const;
+    NodeGui* getNodeGui(const std::string& nodeName) const WARN_UNUSED_RETURN;
 
     Natron::Node* getNode(NodeGui* n) const WARN_UNUSED_RETURN;
 
@@ -271,7 +271,7 @@ private:
 
         virtual ~ActiveBackgroundRender(){}
 
-        Natron::OutputEffectInstance* getWriter() const {return _writer;}
+        Natron::OutputEffectInstance* getWriter() const WARN_UNUSED_RETURN {return _writer;}
 
         void notifyFinished();
 
@@ -320,7 +320,7 @@ public:
 
     void tryAddChild(PluginToolButton* plugin);
 
-    PluginToolButton* getParent() const {return _parent;}
+    PluginToolButton* getParent() const WARN_UNUSED_RETURN {return _parent;}
 
     void setParent(PluginToolButton* parent) {_parent = parent;}
 
@@ -376,9 +376,9 @@ public:
 
     const QString& getPluginLabel() const { return _label; }
 
-    QMutex* getPluginLock() const { return _lock; }
+    QMutex* getPluginLock() const WARN_UNUSED_RETURN { return _lock; }
 
-    Natron::LibraryBinary* getLibraryBinary() const { return _binary; }
+    Natron::LibraryBinary* getLibraryBinary() const WARN_UNUSED_RETURN { return _binary; }
     
     int getMajorVersion() const { return _majorVersion; }
     
@@ -408,27 +408,27 @@ public:
 
     void registerAppInstance(AppInstance* app);
 
-    AppInstance* getAppInstance(int appID) const;
+    AppInstance* getAppInstance(int appID) const WARN_UNUSED_RETURN;
 
     void removeInstance(int appID);
 
     void setAsTopLevelInstance(int appID);
 
-    const std::map<int,AppInstance*>& getAppInstances() const;
+    const std::map<int,AppInstance*>& getAppInstances() const WARN_UNUSED_RETURN;
 
     AppInstance* getTopLevelInstance () const WARN_UNUSED_RETURN;
 
     /*Return a list of the name of all nodes available currently in the software*/
     QStringList getNodeNameList() const WARN_UNUSED_RETURN;
 
-    QMutex* getMutexForPlugin(const QString& pluginId) const;
+    QMutex* getMutexForPlugin(const QString& pluginId) const WARN_UNUSED_RETURN;
 
-    Natron::LibraryBinary* getPluginBinary(const QString& pluginId,int majorVersion,int minorVersion) const;
+    Natron::LibraryBinary* getPluginBinary(const QString& pluginId,int majorVersion,int minorVersion) const WARN_UNUSED_RETURN;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0) const WARN_UNUSED_RETURN;
 
-    const std::vector<Format*>& getFormats() const {return _formats;}
+    const std::vector<Format*>& getFormats() const WARN_UNUSED_RETURN {return _formats;}
 
     const std::vector<PluginToolButton*>& getPluginsToolButtons() const WARN_UNUSED_RETURN {return _toolButtons;}
 
@@ -462,11 +462,11 @@ public:
 
     void getIcon(Natron::PixmapEnum e,QPixmap* pix) const;
 
-    const QCursor& getColorPickerCursor() const { return *_colorPickerCursor; }
+    const QCursor& getColorPickerCursor() const WARN_UNUSED_RETURN { return *_colorPickerCursor; }
 
-    boost::shared_ptr<Settings> getCurrentSettings() const {return _settings;}
+    boost::shared_ptr<Settings> getCurrentSettings() const WARN_UNUSED_RETURN {return _settings;}
 
-    bool isInitialized() const { return _initialized; }
+    bool isInitialized() const WARN_UNUSED_RETURN { return _initialized; }
 
 public slots:
 
@@ -529,6 +529,8 @@ private:
 
     void createColorPickerCursor();
 
+private:
+    // FIXME: PIMPL
     std::map<int,AppInstance*> _appInstances;
 
     int _availableID;

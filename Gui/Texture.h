@@ -23,10 +23,6 @@ public:
     /*Note that the short datatype is not used currently*/
     enum DataType {BYTE = 0,FLOAT = 1 , HALF_FLOAT = 2};
 
-private:
-    U32 _texID;
-    TextureRect _textureRect;
-    DataType _type;
 public:
     
     
@@ -54,7 +50,11 @@ private:
     
     /*private hack : we don't use this function here*/
     virtual bool allocate(U64 ,const char* path = 0){(void)path;return true;}
-    
+
+private:
+    U32 _texID;
+    TextureRect _textureRect;
+    DataType _type;
 };
 
 

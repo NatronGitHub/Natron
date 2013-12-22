@@ -42,7 +42,7 @@ public:
     
     explicit FloatingWidget(QWidget* parent = 0);
     
-    virtual ~FloatingWidget(){}
+    virtual ~FloatingWidget() OVERRIDE {}
     
     /*Set the embedded widget. Only 1 widget can be embedded
      by FloatingWidget. Once set, this function does nothing
@@ -55,28 +55,22 @@ private:
 };
 
 
-class TabBar : public QTabBar{
-    
+class TabBar : public QTabBar {
     Q_OBJECT
-    
-    
-    
-    QPoint _dragPos;
-    TabWidget* _tabWidget; // ptr to the tabWidget
-    
-    
 public:
-    
+
     explicit TabBar(TabWidget* tabWidget,QWidget* parent = 0);
     
     virtual ~TabBar(){}
 
-protected:
-    
+private:
     virtual void mousePressEvent(QMouseEvent* event);
-    
+
     virtual void mouseMoveEvent(QMouseEvent* event);
-    
+
+private:
+    QPoint _dragPos;
+    TabWidget* _tabWidget; // ptr to the tabWidget
 };
 
 class TabWidget : public QFrame {
@@ -89,33 +83,7 @@ public:
         NOT_CLOSABLE=1, // the pane cannot be removed, but each tab can be removed
         CLOSABLE=2 // the pane can be removed as well as tabs.
     };
-private:
-    Gui* _gui;
-    
-    QVBoxLayout* _mainLayout;
-    
-    std::vector<QWidget*> _tabs; // the actual tabs
-    
-    
-    QWidget* _header;
-    
-    QHBoxLayout* _headerLayout;
-    TabBar* _tabBar; // the header containing clickable pages
-    Button* _leftCornerButton;
-    
-    Button* _floatButton;
-    Button* _closeButton;
-    
-    QWidget* _currentWidget;
-    
-    Decorations _decorations;
-    bool _isFloating;
-    bool _drawDropRect;
-    
-    bool _fullScreen;
-    
-    std::map<TabWidget*,bool> _userSplits;//< for each split, whether the user pressed split vertically (true) or horizontally (false)
-    
+
 public:
     
     static const QString splitHorizontallyTag;
@@ -220,7 +188,34 @@ private:
     
     bool destroyTab(QWidget* tab) WARN_UNUSED_RETURN;
 
-    
+private:
+    // FIXME: PIMPL
+    Gui* _gui;
+
+    QVBoxLayout* _mainLayout;
+
+    std::vector<QWidget*> _tabs; // the actual tabs
+
+
+    QWidget* _header;
+
+    QHBoxLayout* _headerLayout;
+    TabBar* _tabBar; // the header containing clickable pages
+    Button* _leftCornerButton;
+
+    Button* _floatButton;
+    Button* _closeButton;
+
+    QWidget* _currentWidget;
+
+    Decorations _decorations;
+    bool _isFloating;
+    bool _drawDropRect;
+
+    bool _fullScreen;
+
+    std::map<TabWidget*,bool> _userSplits;//< for each split, whether the user pressed split vertically (true) or horizontally (false)
+
 };
 
 
