@@ -679,12 +679,23 @@ void Lut::to_byte_rect_premult(uchar *to, const float *from,
         if (invertY) {
             srcY = srcRod.top() - y - 1;
         }
+        
+        /// if not in the srcRoD, continue to next line
+        if(srcY < srcRod.bottom() || srcY >= srcRod.top()){
+            continue;
+        }
+
+        
         int dstY = dstRod.top() - y - 1;
 
         const float *src_pixels = from + (srcY * srcRod.width() * 4);
         uchar *dst_pixels = to + (dstY * dstRod.width() * 4);
         /* go fowards from starting point to end of line: */
         for (int x = start; x < rect.right(); ++x) {
+            /// if not in the srcRoD, continue to next line
+            if(x < srcRod.left() || x >= srcRod.right()){
+                continue;
+            }
             int col = x * 4;
             float a = src_pixels[col + 3];
             error_r = (error_r & 0xff) + to_byte_table[hipart(src_pixels[col] * a)];
@@ -698,6 +709,10 @@ void Lut::to_byte_rect_premult(uchar *to, const float *from,
         /* go backwards from starting point to start of line: */
         error_r = error_g = error_b = 0x80;
         for (int x = start - 1; x >= rect.left(); --x) {
+            /// if not in the srcRoD, continue to next line
+            if(x < srcRod.left() || x >= srcRod.right()){
+                continue;
+            }
             int col = x * 4;
             float a = src_pixels[col + 3];
             error_r = (error_r & 0xff) + to_byte_table[hipart(src_pixels[col] * a)];
@@ -755,11 +770,19 @@ void Lut::to_float_rect(float *to, const float *from,
         if (invertY) {
             srcY = srcRod.top() - y - 1;
         }
+        /// if not in the srcRoD, continue to next line
+        if(srcY < srcRod.bottom() || srcY >= srcRod.top()){
+            continue;
+        }
         int dstY = dstRod.top() - y - 1;
         const float *src_pixels = from + (srcY * srcRod.width() * 4);
         float *dst_pixels = to + (dstY * dstRod.width() * 4);
         /* go fowards from starting point to end of line: */
         for (int x = rect.left(); x < rect.right(); ++x) {
+            /// if not in the srcRoD, continue to next line
+            if(x < srcRod.left() || x >= srcRod.right()){
+                continue;
+            }
             int col = x * 4;
             dst_pixels[col] = toFloatFast(src_pixels[col]);
             dst_pixels[col + rOffset] = toFloatFast(src_pixels[col + 1]);
@@ -783,11 +806,19 @@ void Lut::to_float_rect_premult(float *to, const float *from,
         if (invertY) {
             srcY = srcRod.top() - y - 1;
         }
+        /// if not in the srcRoD, continue to next line
+        if(srcY < srcRod.bottom() || srcY >= srcRod.top()){
+            continue;
+        }
         int dstY = dstRod.top() - y - 1;
         const float *src_pixels = from + (srcY * srcRod.width() * 4);
         float *dst_pixels = to + (dstY * dstRod.width() * 4);
         /* go fowards from starting point to end of line: */
         for (int x = rect.left(); x < rect.right(); ++x) {
+            /// if not in the srcRoD, continue to next line
+            if(x < srcRod.left() || x >= srcRod.right()){
+                continue;
+            }
             int col = x * 4;
             float a = src_pixels[col + 3];
             dst_pixels[col + rOffset] = toFloatFast(src_pixels[col] * a);
