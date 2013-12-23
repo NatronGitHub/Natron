@@ -44,7 +44,7 @@ public:
              const QColor& color,
              int thickness = 1);
 
-    virtual ~CurveGui();
+    virtual ~CurveGui() OVERRIDE;
     
     const QString& getName() const { return _name; }
 
@@ -157,7 +157,7 @@ public:
     CurveWidget(boost::shared_ptr<TimeLine> timeline = boost::shared_ptr<TimeLine>() ,
                 QWidget* parent = NULL, const QGLWidget* shareWidget = NULL);
 
-    virtual ~CurveWidget();
+    virtual ~CurveWidget() OVERRIDE;
     
     const QFont& getTextFont() const;
 

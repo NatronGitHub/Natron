@@ -32,7 +32,7 @@ public:
     
     explicit SpinBox(QWidget* parent=0,SPINBOX_TYPE type = INT_SPINBOX);
     
-    virtual ~SpinBox();
+    virtual ~SpinBox() OVERRIDE;
     
     void decimals(int d);
     
@@ -50,17 +50,17 @@ public:
     
     QMenu* getRightClickMenu();
 
-protected:
+private:
     
-    virtual void wheelEvent(QWheelEvent* e);
+    virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     
-    virtual void keyPressEvent(QKeyEvent* e);
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
-    virtual void mousePressEvent(QMouseEvent* e);
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     
-    virtual void focusInEvent(QFocusEvent* event);
+    virtual void focusInEvent(QFocusEvent* event) OVERRIDE FINAL;
 
-    virtual void focusOutEvent(QFocusEvent * event);
+    virtual void focusOutEvent(QFocusEvent * event) OVERRIDE FINAL;
         
 signals:
     

@@ -17,14 +17,18 @@
 class Settings;
 class DockablePanel;
 class QVBoxLayout;
+
 class PreferencesPanel : public QWidget
 {
+public:
+    PreferencesPanel(boost::shared_ptr<Settings> settings,QWidget* parent= NULL);
+    ~PreferencesPanel() OVERRIDE {}
+
+private:
+    // FIXME: PIMPL
     QVBoxLayout* _mainLayout;
     DockablePanel* _panel;
     boost::shared_ptr<Settings> _settings;
-
-public:
-    PreferencesPanel(boost::shared_ptr<Settings> settings,QWidget* parent= NULL);
 };
 
 #endif // PREFERENCESPANEL_H

@@ -23,7 +23,7 @@ public:
 
     TextRenderer();
 
-    virtual ~TextRenderer();
+    ~TextRenderer();
 
     void renderText(float x, float y, const QString &text, const QColor &color, const QFont &font) const;
 

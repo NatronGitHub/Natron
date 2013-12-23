@@ -18,7 +18,7 @@ public:
 
     ClickableLabel(const QString &text, QWidget *parent): QLabel(text, parent), _toggled(false) {}
 
-    virtual ~ClickableLabel() {}
+    virtual ~ClickableLabel() OVERRIDE {}
 
     void setClicked(bool b) {
         _toggled = b;

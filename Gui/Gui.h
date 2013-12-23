@@ -98,7 +98,7 @@ public:
     }
     
     
-    virtual ~ToolButton(){}
+    virtual ~ToolButton() OVERRIDE {}
     
     const QString& getID() const { return _id; }
 
@@ -127,6 +127,7 @@ public slots:
     void onTriggered();
 
 private:
+    // FIXME: PIMPL
     AppInstance* _app;
     QString _id;
     QString _label;
@@ -146,7 +147,7 @@ public:
     
     RenderingProgressDialog(const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent = 0);
     
-    virtual ~RenderingProgressDialog(){}
+    virtual ~RenderingProgressDialog() OVERRIDE {}
     
     void onFrameRendered(int);
     
@@ -157,6 +158,7 @@ signals:
     void canceled();
     
 private:
+    // FIXME: PIMPL
     QVBoxLayout* _mainLayout;
     QLabel* _totalLabel;
     QProgressBar* _totalProgress;
@@ -176,7 +178,7 @@ class Gui : public QMainWindow,public boost::noncopyable
 public:
     explicit Gui(AppInstance* app,QWidget* parent=0);
     
-    virtual ~Gui();
+    virtual ~Gui() OVERRIDE;
     
     void createGui();
     
@@ -265,19 +267,10 @@ public:
     
     void registerPane(TabWidget* pane);
     
-    void registerSplitter(QSplitter* s);
-    
-    void removeSplitter(QSplitter* s);
-    
+
     const std::list<QSplitter*>& getSplitters() const { return _splitters; }
-private:
-    
-    void setUndoRedoActions(QAction* undoAction,QAction* redoAction);
-    
-    void restoreGuiGeometry();
-    
-    void saveGuiGeometry();
-    
+
+    void removeSplitter(QSplitter* s);
 
 signals:
     
@@ -338,6 +331,17 @@ public slots:
 
 private:
 
+    void registerSplitter(QSplitter* s); // unused
+
+    void setUndoRedoActions(QAction* undoAction,QAction* redoAction);
+
+    void restoreGuiGeometry();
+
+    void saveGuiGeometry();
+
+
+private:
+    // FIXME: PIMPL
     ViewerTab* _lastSelectedViewer;
     AppInstance* _appInstance;
     QWaitCondition _uiUsingMainThreadCond;
@@ -353,8 +357,6 @@ private:
     
     std::list<QSplitter*> _splitters;
     
-public:
-    // FIXME: public pointer members are the sign of a serious design flaw!!! should at least be shared_ptr!
     /*TOOL BAR ACTIONS*/
     //======================
     QAction *actionNew_project;
@@ -384,14 +386,18 @@ public:
     QHBoxLayout* _mainLayout;
     
     
-    TabWidget* _viewersPane;
-    
+    // FIXME: public pointer members are the sign of a serious design flaw!!! at least use a getter!
+public:
+    TabWidget* _viewersPane; // FIXME: used by NodeGui.cpp
+private:
     // this one is a ptr to others TabWidget.
     //It tells where to put the viewer when making a new one
     // If null it places it on default tab widget
     TabWidget* _nextViewerTabPlace;
     
-    TabWidget* _workshopPane;
+public:
+    TabWidget* _workshopPane; // FIXME: used by NodeGraph.cpp
+private:
     QSplitter* _viewerWorkshopSplitter;
     
     TabWidget* _propertiesPane;
@@ -407,17 +413,20 @@ public:
     //======================
     
     QGraphicsScene* _graphScene;
-    NodeGraph *_nodeGraphArea;
+public:
+    NodeGraph *_nodeGraphArea; // FIXME: used by AppManager.cpp
+    CurveEditor *_curveEditor; // FIXME: used by KnobGui.cpp
+private:
 
-    CurveEditor *_curveEditor;
-    
     /*TOOLBOX*/
     QToolBar* _toolBox;
     std::vector<ToolButton*> _toolButtons;
     
     /*PROPERTIES*/
     //======================
-    QScrollArea *_propertiesScrollArea;
+public:
+    QScrollArea *_propertiesScrollArea; // FIXME: used by TabWidget.cpp
+private:
     QWidget *_propertiesContainer;
     QVBoxLayout *_layoutPropertiesBin;
     
@@ -440,12 +449,14 @@ public:
     std::list<TabWidget*> _panes;
     
     /*Registered tabs: for drag&drop purpose*/
-    std::map<std::string,QWidget*> _registeredTabs;
-    
+public:
+    std::map<std::string,QWidget*> _registeredTabs; // FIXME: used by ProjectGui.cpp
+private:
     PreferencesPanel* _settingsGui;
     
-    ProjectGui* _projectGui;
-    
+public:
+    ProjectGui* _projectGui; // FIXME: used by AppManager.cpp
+private:
     void setupUi();
    
 	void retranslateUi(QMainWindow *MainWindow);

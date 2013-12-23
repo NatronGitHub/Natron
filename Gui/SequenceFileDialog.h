@@ -71,9 +71,9 @@ public:
     QStringList mimeTypes() const;
     virtual QMimeData *mimeData(const QModelIndexList &indexes) const;
     bool canDrop(QDragEnterEvent *event);
-    virtual bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent);
+    virtual bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) OVERRIDE FINAL;
 
-    virtual Qt::ItemFlags flags(const QModelIndex &index) const;
+    virtual Qt::ItemFlags flags(const QModelIndex &index) const OVERRIDE FINAL;
     
     bool setData(const QModelIndex &index, const QVariant &value, int role=Qt::EditRole);
 
@@ -102,7 +102,7 @@ class FavoriteItemDelegate : public QStyledItemDelegate {
 public:
     FavoriteItemDelegate(QFileSystemModel *model):QStyledItemDelegate(),_model(model){}
 
-protected:
+private:
     virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;
 };
 
@@ -139,7 +139,8 @@ public slots:
     void removeEntry();
     void rename();
     void editUrl();
-protected:
+
+private:
     virtual void keyPressEvent(QKeyEvent *event);
     virtual void dragEnterEvent(QDragEnterEvent *event);
     
@@ -309,7 +310,7 @@ public:
     static void parseFilename(QString &path, int* frameNumber, QString &extension);
 
     
-protected:
+private:
     virtual bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const;
 private:
        /*
@@ -347,70 +348,7 @@ public:
 
     typedef std::pair<QString,std::pair<qint64,QString> > NameMappingElement;
     typedef std::vector<NameMappingElement> NameMapping;
-    
-private:
-    
-    Natron::FrameSequences _frameSequences;
-    mutable QReadWriteLock _nameMappingMutex; // protects _nameMapping
-    NameMapping _nameMapping; // the item whose names must be changed
-    
-    std::vector<std::string> _filters;
-    
-    SequenceDialogView* _view;
-    SequenceItemDelegate* _itemDelegate;
-    SequenceDialogProxyModel* _proxy;
-    QFileSystemModel* _model;
-    QVBoxLayout* _mainLayout;
-    QString _requestedDir;
-    
-    QLabel* _lookInLabel;
-    FileDialogComboBox* _lookInCombobox;
 
-    Button* _previousButton;
-    Button* _nextButton;
-    Button* _upButton;
-    Button* _createDirButton;
-    Button* _previewButton;
-    Button* _openButton;
-    Button* _cancelButton;
-    Button* _addFavoriteButton;
-    Button* _removeFavoriteButton;
-    
-    LineEdit* _selectionLineEdit;
-    ComboBox* _sequenceButton;
-    QLabel* _filterLabel;
-    LineEdit* _filterLineEdit;
-    Button* _filterDropDown;
-    ComboBox* _fileExtensionCombo;
-
-    
-    QHBoxLayout* _buttonsLayout;
-    QHBoxLayout* _centerLayout;
-    QVBoxLayout* _favoriteLayout;
-    QHBoxLayout* _favoriteButtonsLayout;
-    QHBoxLayout* _selectionLayout;
-    QHBoxLayout* _filterLineLayout;
-    QHBoxLayout* _filterLayout;
-    
-    QWidget* _buttonsWidget;
-    QWidget* _favoriteWidget;
-    QWidget* _favoriteButtonsWidget;
-    QWidget* _selectionWidget;
-    QWidget* _filterLineWidget;
-    QWidget* _filterWidget;
-    
-    FavoriteView* _favoriteView;
-
-    QSplitter* _centerSplitter;
-    
-    QStringList _history;
-    int _currentHistoryLocation;
-
-    QAction* _showHiddenAction;
-    QAction* _newFolderAction;
-    
-    FileDialogMode _dialogMode;
-    
 public:
 
     
@@ -550,12 +488,12 @@ public slots:
     void autoCompleteFileName(const QString&);
     void goToDirectory(const QString&);
     void setFileExtensionOnLineEdit(const QString&);
-protected:
-    virtual void keyPressEvent(QKeyEvent *e);
 
-    virtual void resizeEvent(QResizeEvent* e);
 private:
-    
+    virtual void keyPressEvent(QKeyEvent *e) OVERRIDE FINAL;
+
+    virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
+
     void createMenuActions();
     
     /*parent in proxy indexes*/
@@ -565,7 +503,69 @@ private:
     
     QString generateStringFromFilters();
     
-    
+
+private:
+    // FIXME: PIMPL
+    Natron::FrameSequences _frameSequences;
+    mutable QReadWriteLock _nameMappingMutex; // protects _nameMapping
+    NameMapping _nameMapping; // the item whose names must be changed
+
+    std::vector<std::string> _filters;
+
+    SequenceDialogView* _view;
+    SequenceItemDelegate* _itemDelegate;
+    SequenceDialogProxyModel* _proxy;
+    QFileSystemModel* _model;
+    QVBoxLayout* _mainLayout;
+    QString _requestedDir;
+
+    QLabel* _lookInLabel;
+    FileDialogComboBox* _lookInCombobox;
+
+    Button* _previousButton;
+    Button* _nextButton;
+    Button* _upButton;
+    Button* _createDirButton;
+    Button* _previewButton;
+    Button* _openButton;
+    Button* _cancelButton;
+    Button* _addFavoriteButton;
+    Button* _removeFavoriteButton;
+
+    LineEdit* _selectionLineEdit;
+    ComboBox* _sequenceButton;
+    QLabel* _filterLabel;
+    LineEdit* _filterLineEdit;
+    Button* _filterDropDown;
+    ComboBox* _fileExtensionCombo;
+
+
+    QHBoxLayout* _buttonsLayout;
+    QHBoxLayout* _centerLayout;
+    QVBoxLayout* _favoriteLayout;
+    QHBoxLayout* _favoriteButtonsLayout;
+    QHBoxLayout* _selectionLayout;
+    QHBoxLayout* _filterLineLayout;
+    QHBoxLayout* _filterLayout;
+
+    QWidget* _buttonsWidget;
+    QWidget* _favoriteWidget;
+    QWidget* _favoriteButtonsWidget;
+    QWidget* _selectionWidget;
+    QWidget* _filterLineWidget;
+    QWidget* _filterWidget;
+
+    FavoriteView* _favoriteView;
+
+    QSplitter* _centerSplitter;
+
+    QStringList _history;
+    int _currentHistoryLocation;
+
+    QAction* _showHiddenAction;
+    QAction* _newFolderAction;
+
+    FileDialogMode _dialogMode;
 };
 
 /**
@@ -583,7 +583,7 @@ public:
 
     void setNameMapping(const SequenceFileDialog::NameMapping& nameMapping);
 
-protected:
+private:
     virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;
     virtual QSize sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const ;
 };

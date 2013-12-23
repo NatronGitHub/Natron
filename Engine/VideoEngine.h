@@ -219,90 +219,6 @@ class VideoEngine : public QThread{
     Q_OBJECT
     
     
-private:
-    
-    /**
-     * @brief The RunArgs class is a convenience class storing the arguments
-     * passed to the render function for the last frame computed.
-     */
-    struct RunArgs{
-        RunArgs():
-        _zoomFactor(1.f),
-        _sameFrame(false),
-        _fitToViewer(false),
-        _recursiveCall(false),
-        _forward(true),
-        _refreshTree(false),
-        _frameRequestsCount(0),
-        _frameRequestIndex(0)
-        {}
-        
-        float _zoomFactor;
-        bool _sameFrame;/*!< on if we want the subsequent render call to be on the same frame(zoom)*/
-        bool _fitToViewer;
-        bool _recursiveCall;
-        bool _forward;/*!< forwards/backwards video engine*/
-        bool _refreshTree;
-        int _frameRequestsCount;/*!< The index of the last frame +1 if the engine
-                                 is forward (-1 otherwise). This value is -1 if we're looping.*/
-        int _frameRequestIndex;/*!< counter of the frames computed:used to refresh the fps only every 24 frames*/
-    };
-        
-    RenderTree _tree; /*!< The internal Tree instance.*/
-    
-    bool _threadStarted;
-
-    mutable QMutex _abortBeingProcessedMutex; /*!< protecting _abortBeingProcessed (in startEngine and stopEngine, when we process abort)*/
-    bool _abortBeingProcessed; /*true when someone is processing abort*/
-
-    QWaitCondition _abortedRequestedCondition;
-    mutable QMutex _abortedRequestedMutex; //!< protects _abortRequested
-    int _abortRequested ;/*!< true when the user wants to stop the engine, e.g: the user disconnected the viewer*/
-    
-    QWaitCondition _mustQuitCondition;
-    mutable QMutex _mustQuitMutex; //!< protects _mustQuit
-    bool _mustQuit;/*!< true when we quit the engine (i.e: we delete the OutputNode associated to this engine)*/
-    
-    bool _treeVersionValid;/*!< was _lastRequestedRunArgs._treeVersion ever initialized? */
-    
-    mutable QMutex _loopModeMutex;///protects _loopMode
-    bool _loopMode; /*!< on if the player will loop*/
-    
-    /*Accessed and modified only by the run() thread*/
-    bool _restart; /*!< if true, the run() function should call startEngine() on the next loop*/
-    
-       
-    QWaitCondition _startCondition;
-    mutable QMutex _startMutex; //!< protects _startCount
-    int _startCount; //!< if > 0 that means start requests are pending
-    
-    mutable QMutex _workingMutex;//!< protects _working
-    bool _working; //!< true if a thread is working
-
-    mutable QMutex _timerMutex;///protects timer
-    boost::scoped_ptr<Timer> _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
-    int _timerFrameCount;
-    
-    /*These member doesn't need to be protected by a mutex: 
-     _lastRequestedRunArgs is modified upon a call to render() and 
-     _currentRunArgs just retrieves the last value found in _lastRequestedRunArgs,
-     they're accessed both by 1 (different) thread exclusivly.*/
-    RunArgs _lastRequestedRunArgs; /*called upon render()*/
-    RunArgs _currentRunArgs; /*the args used in the run() func*/
-    
-    
-    /*Accessed only by the run() thread*/
-    timeval _startRenderFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
-    
-    boost::shared_ptr<TimeLine> _timeline;/*!< ptr to the timeline*/
-        
-    BackgroundProcessAborter* _processAborter;/*!< for background processes only,read the class description*/
-    
-protected:
-    
-    /*The function doing all the processing, called by render()*/
-    virtual void run();
-    
 public slots:
     /**
      @brief Aborts all computations. This turns on the flag _abortRequested and will inform the engine that it needs to stop.
@@ -457,6 +373,9 @@ public:
     bool hasBeenAborted() const {return _abortRequested;}
     
 private:
+
+    /*The function doing all the processing, called by render()*/
+    virtual void run() OVERRIDE FINAL;
     
     void getFrameRange(int *firstFrame,int *lastFrame) const;
     
@@ -487,7 +406,87 @@ private:
     bool startEngine();
     
     Natron::Status renderFrame(SequenceTime time);
-    
+
+private:
+    // FIXME: PIMPL
+
+    /**
+     * @brief The RunArgs class is a convenience class storing the arguments
+     * passed to the render function for the last frame computed.
+     */
+    struct RunArgs{
+        RunArgs():
+        _zoomFactor(1.f),
+        _sameFrame(false),
+        _fitToViewer(false),
+        _recursiveCall(false),
+        _forward(true),
+        _refreshTree(false),
+        _frameRequestsCount(0),
+        _frameRequestIndex(0)
+        {}
+
+        float _zoomFactor;
+        bool _sameFrame;/*!< on if we want the subsequent render call to be on the same frame(zoom)*/
+        bool _fitToViewer;
+        bool _recursiveCall;
+        bool _forward;/*!< forwards/backwards video engine*/
+        bool _refreshTree;
+        int _frameRequestsCount;/*!< The index of the last frame +1 if the engine
+                                 is forward (-1 otherwise). This value is -1 if we're looping.*/
+        int _frameRequestIndex;/*!< counter of the frames computed:used to refresh the fps only every 24 frames*/
+    };
+
+    RenderTree _tree; /*!< The internal Tree instance.*/
+
+    bool _threadStarted;
+
+    mutable QMutex _abortBeingProcessedMutex; /*!< protecting _abortBeingProcessed (in startEngine and stopEngine, when we process abort)*/
+    bool _abortBeingProcessed; /*true when someone is processing abort*/
+
+    QWaitCondition _abortedRequestedCondition;
+    mutable QMutex _abortedRequestedMutex; //!< protects _abortRequested
+    int _abortRequested ;/*!< true when the user wants to stop the engine, e.g: the user disconnected the viewer*/
+
+    QWaitCondition _mustQuitCondition;
+    mutable QMutex _mustQuitMutex; //!< protects _mustQuit
+    bool _mustQuit;/*!< true when we quit the engine (i.e: we delete the OutputNode associated to this engine)*/
+
+    bool _treeVersionValid;/*!< was _lastRequestedRunArgs._treeVersion ever initialized? */
+
+    mutable QMutex _loopModeMutex;///protects _loopMode
+    bool _loopMode; /*!< on if the player will loop*/
+
+    /*Accessed and modified only by the run() thread*/
+    bool _restart; /*!< if true, the run() function should call startEngine() on the next loop*/
+
+
+    QWaitCondition _startCondition;
+    mutable QMutex _startMutex; //!< protects _startCount
+    int _startCount; //!< if > 0 that means start requests are pending
+
+    mutable QMutex _workingMutex;//!< protects _working
+    bool _working; //!< true if a thread is working
+
+    mutable QMutex _timerMutex;///protects timer
+    boost::scoped_ptr<Timer> _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
+    int _timerFrameCount;
+
+    /*These member doesn't need to be protected by a mutex:
+     _lastRequestedRunArgs is modified upon a call to render() and
+     _currentRunArgs just retrieves the last value found in _lastRequestedRunArgs,
+     they're accessed both by 1 (different) thread exclusivly.*/
+    RunArgs _lastRequestedRunArgs; /*called upon render()*/
+    RunArgs _currentRunArgs; /*the args used in the run() func*/
+
+
+    /*Accessed only by the run() thread*/
+    timeval _startRenderFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
+
+    boost::shared_ptr<TimeLine> _timeline;/*!< ptr to the timeline*/
+
+    BackgroundProcessAborter* _processAborter;/*!< for background processes only,read the class description*/
+
 };
 
 

@@ -18,6 +18,7 @@
 #include <QWidget>
 
 #include "Global/GlobalDefines.h"
+#include "Global/Macros.h"
 
 #include "Gui/CurveEditorUndoRedo.h"
 
@@ -47,17 +48,17 @@ public:
     
     NodeCurveEditorElement():_treeItem(),_curve(),_curveDisplayed(false),_curveWidget(NULL){}
     
-    virtual ~NodeCurveEditorElement();
+    virtual ~NodeCurveEditorElement() OVERRIDE;
     
-    QTreeWidgetItem* getTreeItem() const {return _treeItem;}
+    QTreeWidgetItem* getTreeItem() const WARN_UNUSED_RETURN {return _treeItem;}
     
-    CurveGui* getCurve() const {return _curve;}
+    CurveGui* getCurve() const WARN_UNUSED_RETURN {return _curve;}
 
-    bool isCurveVisible() const { return _curveDisplayed; }
+    bool isCurveVisible() const WARN_UNUSED_RETURN { return _curveDisplayed; }
     
-    int getDimension() const { return _dimension; }
+    int getDimension() const WARN_UNUSED_RETURN { return _dimension; }
 
-    KnobGui* getKnob() const { return _knob; }
+    KnobGui* getKnob() const WARN_UNUSED_RETURN { return _knob; }
     
 public slots:
     
@@ -85,17 +86,17 @@ public:
 
     NodeCurveEditorContext(QTreeWidget *tree,CurveWidget* curveWidget,NodeGui* node);
 
-    virtual ~NodeCurveEditorContext() ;
+    virtual ~NodeCurveEditorContext() OVERRIDE;
 
-    NodeGui* getNode() const { return _node; }
+    NodeGui* getNode() const WARN_UNUSED_RETURN { return _node; }
 
-    const Elements& getElements() const  {return _nodeElements; }
+    const Elements& getElements() const WARN_UNUSED_RETURN {return _nodeElements; }
 
-    NodeCurveEditorElement* findElement(CurveGui* curve);
+    NodeCurveEditorElement* findElement(CurveGui* curve) const WARN_UNUSED_RETURN;
 
-    NodeCurveEditorElement* findElement(KnobGui* knob,int dimension);
+    NodeCurveEditorElement* findElement(KnobGui* knob,int dimension) const WARN_UNUSED_RETURN;
 
-    NodeCurveEditorElement* findElement(QTreeWidgetItem* item);
+    NodeCurveEditorElement* findElement(QTreeWidgetItem* item) const WARN_UNUSED_RETURN;
 
 public slots:
 
@@ -103,7 +104,7 @@ public slots:
     
     
 private:
-
+    // FIXME: PIMPL
     NodeGui* _node;
     Elements _nodeElements;
     QTreeWidgetItem* _nameItem;
@@ -119,7 +120,7 @@ public:
 
     CurveEditor(boost::shared_ptr<TimeLine> timeline,QWidget* parent = 0);
 
-    virtual ~CurveEditor();
+    virtual ~CurveEditor() OVERRIDE;
 
     void addNode(NodeGui *node);
 
@@ -127,22 +128,22 @@ public:
     
     void centerOn(const std::vector<boost::shared_ptr<Curve> >& curves);
     
-    std::pair<QAction*,QAction*> getUndoRedoActions() const;
+    std::pair<QAction*,QAction*> getUndoRedoActions() const WARN_UNUSED_RETURN;
 
-    CurveGui* findCurve(KnobGui* knob,int dimension);
+    CurveGui* findCurve(KnobGui* knob,int dimension) const WARN_UNUSED_RETURN;
     
     void hideCurves(KnobGui* knob);
     
     void showCurves(KnobGui* knob);
     
-    CurveWidget* getCurveWidget() const;
+    CurveWidget* getCurveWidget() const WARN_UNUSED_RETURN;
     
 public slots:
     
     void onCurrentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*);
 
 private:
-    
+    // FIXME: PIMPL
     void recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *curves);
     
     std::list<NodeCurveEditorContext*> _nodes;

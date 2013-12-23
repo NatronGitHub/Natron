@@ -18,7 +18,7 @@ class AnimatedCheckBox : public QCheckBox
 public:
     AnimatedCheckBox(QWidget *parent = NULL): QCheckBox(parent), animation(0) {}
 
-    virtual ~AnimatedCheckBox() {}
+    virtual ~AnimatedCheckBox() OVERRIDE {}
 
     void setAnimation(int i) ;
 

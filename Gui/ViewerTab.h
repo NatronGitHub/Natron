@@ -36,77 +36,19 @@ class ScaleSlider;
 class TimeLineGui;
 class ViewerInstance;
 class Gui;
+
 class ViewerTab: public QWidget 
 { 
     Q_OBJECT
-    
-    Gui* _gui;
-    
-    ViewerInstance* _viewerNode;// < pointer to the internal node
-    
-    
 public:
     explicit ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent=0);
     
-	virtual ~ViewerTab();
+	virtual ~ViewerTab() OVERRIDE;
     
     
-    ViewerInstance* getInternalNode(){return _viewerNode;}
-    
-    QVBoxLayout* _mainLayout;
-
-	/*Viewer Settings*/
-    QWidget* _firstSettingsRow,*_secondSettingsRow;
-    QHBoxLayout* _firstRowLayout,*_secondRowLayout;
-    
-    /*1st row*/
-	//ComboBox* _viewerLayers;
-	ComboBox* _viewerChannels;
-    ComboBox* _zoomCombobox;
-    Button* _centerViewerButton;
-    Button* _clipToProjectFormatButton;
-
-    /*2nd row*/
-    SpinBox* _gainBox;
-    ScaleSlider* _gainSlider;
-    Button* _refreshButton;
-    ComboBox* _viewerColorSpace;
-    ComboBox* _viewsComboBox;
-	/*OpenGL viewer*/
-	ViewerGL* viewer;
-    /*Infos*/
-    InfoViewerWidget* _infosWidget;
-    
-
-	/*TimeLine buttons*/
-    QWidget* _playerButtonsContainer;
-	QHBoxLayout* _playerLayout;
-	SpinBox* _currentFrameBox;
-	Button* firstFrame_Button;
-    Button* previousKeyFrame_Button;
-    Button* play_Backward_Button;
-	Button* previousFrame_Button;
-    Button* stop_Button;
-    Button* nextFrame_Button;
-	Button* play_Forward_Button;
-    Button* nextKeyFrame_Button;
-	Button* lastFrame_Button;
-    Button* previousIncrement_Button;
-    SpinBox* incrementSpinBox;
-    Button* nextIncrement_Button;
-    Button* loopMode_Button;
-    
-    QLabel* fpsName;
-    SpinBox* fpsBox;
-    
-	/*frame seeker*/
-    TimeLineGui* _timeLineGui;
-   
-    
+    ViewerInstance* getInternalNode() const {return _viewerNode;}
+public:
     Gui* getGui() const {return _gui;}
-    
-    virtual QSize minimumSizeHint() const;
-    virtual QSize sizeHint() const;
     
     void setCurrentView(int view);
     
@@ -149,14 +91,76 @@ public slots:
     void showView(int view);
 
 
-protected:
+private:
     
     bool eventFilter(QObject *target, QEvent *event);
     
-    virtual void keyPressEvent(QKeyEvent* e);
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
-    virtual void enterEvent(QEvent*) { setFocus(); }
-    
+    virtual void enterEvent(QEvent*) OVERRIDE FINAL { setFocus(); }
+
+    virtual QSize minimumSizeHint() const OVERRIDE FINAL;
+    virtual QSize sizeHint() const OVERRIDE FINAL;
+
+
+public:
+    // FIXME: public pointer members are the sign of a serious design flaw!!! at least use a getter!
+	/*OpenGL viewer*/
+	ViewerGL* viewer; // FIXME: used by ViewerInstance
+private:
+    // FIXME: PIMPL
+    QVBoxLayout* _mainLayout;
+
+	/*Viewer Settings*/
+    QWidget* _firstSettingsRow,*_secondSettingsRow;
+    QHBoxLayout* _firstRowLayout,*_secondRowLayout;
+
+    /*1st row*/
+	//ComboBox* _viewerLayers;
+	ComboBox* _viewerChannels;
+    ComboBox* _zoomCombobox;
+    Button* _centerViewerButton;
+    Button* _clipToProjectFormatButton;
+
+    /*2nd row*/
+    SpinBox* _gainBox;
+    ScaleSlider* _gainSlider;
+    Button* _refreshButton;
+    ComboBox* _viewerColorSpace;
+    ComboBox* _viewsComboBox;
+
+    /*Infos*/
+    InfoViewerWidget* _infosWidget;
+
+
+	/*TimeLine buttons*/
+    QWidget* _playerButtonsContainer;
+	QHBoxLayout* _playerLayout;
+	SpinBox* _currentFrameBox;
+	Button* firstFrame_Button;
+    Button* previousKeyFrame_Button;
+    Button* play_Backward_Button;
+	Button* previousFrame_Button;
+    Button* stop_Button;
+    Button* nextFrame_Button;
+	Button* play_Forward_Button;
+    Button* nextKeyFrame_Button;
+	Button* lastFrame_Button;
+    Button* previousIncrement_Button;
+    SpinBox* incrementSpinBox;
+    Button* nextIncrement_Button;
+    Button* loopMode_Button;
+
+    QLabel* fpsName;
+    SpinBox* fpsBox;
+
+	/*frame seeker*/
+    TimeLineGui* _timeLineGui;
+
+
+    Gui* _gui;
+
+    ViewerInstance* _viewerNode;// < pointer to the internal node
 };
 
 #endif // NATRON_GUI_VIEWERTAB_H_

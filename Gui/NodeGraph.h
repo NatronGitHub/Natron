@@ -72,7 +72,7 @@ public:
 
     explicit NodeGraph(Gui* gui,QGraphicsScene* scene=0,QWidget *parent=0);
 
-    virtual ~NodeGraph();
+    virtual ~NodeGraph() OVERRIDE;
  
     void setPropertyBinPtr(QScrollArea* propertyBin){_propertyBin = propertyBin;}
     
@@ -82,14 +82,6 @@ public:
     
     void removeNode(NodeGui* n);
 
-    virtual void enterEvent(QEvent *event);
-    
-    virtual void leaveEvent(QEvent *event);
-
-    virtual void keyPressEvent(QKeyEvent *e);
-    
-    virtual bool event(QEvent* event);
-    
     void autoConnect(NodeGui* selected,NodeGui* created);
     
     void setSmartNodeCreationEnabled(bool enabled){smartNodeCreationEnabled=enabled;}
@@ -144,7 +136,15 @@ public slots:
     
     void deleteNode(Natron::Node*);
 
-protected:
+private:
+
+    virtual void enterEvent(QEvent *event) OVERRIDE FINAL;
+
+    virtual void leaveEvent(QEvent *event) OVERRIDE FINAL;
+
+    virtual void keyPressEvent(QKeyEvent *e) OVERRIDE FINAL;
+
+    virtual bool event(QEvent* event) OVERRIDE FINAL;
 
     void mousePressEvent(QMouseEvent *event);
     
@@ -169,7 +169,7 @@ protected:
     void dragLeaveEvent(QDragLeaveEvent* e);
 
 private:
-    
+    // FIXME: PIMPL
     QRectF calcNodesBoundingRect();
     
     bool smartNodeCreationEnabled;
@@ -228,7 +228,7 @@ Q_OBJECT
 
 public:
     explicit SmartInputDialog(NodeGraph* graph);
-    virtual ~SmartInputDialog(){}
+    virtual ~SmartInputDialog() OVERRIDE {}
     void keyPressEvent(QKeyEvent *e);
     bool eventFilter(QObject * obj, QEvent * e);
 private:

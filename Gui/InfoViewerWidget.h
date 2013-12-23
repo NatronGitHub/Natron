@@ -26,7 +26,7 @@ class InfoViewerWidget: public QWidget{
     
 public:
     explicit InfoViewerWidget(ViewerGL* v,QWidget* parent=0);
-    virtual ~InfoViewerWidget();
+    virtual ~InfoViewerWidget() OVERRIDE;
     void setColor(float r,float g,float b,float a);
     void setMousePos(QPoint p){mousePos =p;}
     void setUserRect(QPoint p){rectUser=p;}
@@ -45,9 +45,9 @@ public slots:
     void hideFps();
     
 private:
+    virtual QSize sizeHint() const OVERRIDE FINAL;
     
-    virtual QSize sizeHint() const; 
-    
+private:
     bool _colorAndMouseVisible;
     
     QHBoxLayout* layout;

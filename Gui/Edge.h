@@ -24,6 +24,7 @@ class QGraphicsTextItem;
 class QGraphicsSceneMouseEvent;
 class NodeGui;
 class Node;
+
 class Edge: public QGraphicsLineItem
 {
     
@@ -31,7 +32,7 @@ public:
     Edge(int inputNb,double angle,NodeGui *dest,QGraphicsItem *parent=0);
     Edge(int inputNb,NodeGui *src, NodeGui *dest,QGraphicsItem *parent=0);
     
-    virtual ~Edge();
+    virtual ~Edge() OVERRIDE;
     
     QPainterPath shape() const;
     
