@@ -135,7 +135,6 @@ private:
     QColor _sliderColor;
     bool _initialized;
     bool _mustInitializeSliderPosition;
->>>>>>> 7ed36962c4efde7c05faaeb88d37d7afa3184b10
 };
 
 

@@ -558,7 +558,7 @@ void ViewerGL::paintGL()
             _imp->shaderBlack->release();
     }
     glBindTexture(GL_TEXTURE_2D, 0);
-
+    checkGLErrors();
     if (_imp->overlay) {
         drawOverlay();
     }
