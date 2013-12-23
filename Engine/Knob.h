@@ -45,6 +45,11 @@ public:
     explicit Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
     
     virtual ~Knob();
+    
+    /**
+     * @brief To be called if you want to remove the knob prematurely from the gui.
+     **/
+    void remove();
 
     /**
      * @brief Must return the type name of the knob. This name will be used by the KnobFactory

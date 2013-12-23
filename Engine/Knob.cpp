@@ -130,11 +130,15 @@ Knob::Knob(KnobHolder* holder,const std::string& description,int dimension)
 
 
 Knob::~Knob(){
+    remove();
+    
+}
+
+void Knob::remove(){
     emit deleted(this);
     if(_imp->_holder){
-        _imp->_holder->removeKnob(this);
+         _imp->_holder->removeKnob(this);
     }
-    
 }
 
 
