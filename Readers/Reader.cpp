@@ -169,14 +169,12 @@ boost::shared_ptr<Decoder> Reader::decodeHeader(const QString& filename){
     if(st == StatFailed){
         return boost::shared_ptr<Decoder>();
     }
-    getNode()->getApp()->getProject()->lock();
     if(getNode()->getApp()->shouldAutoSetProjectFormat()){
         getNode()->getApp()->setAutoSetProjectFormat(false);
         getNode()->getApp()->setProjectFormat(decoderReadHandle->readerInfo().getDisplayWindow());
     }else{
         getNode()->getApp()->tryAddProjectFormat(decoderReadHandle->readerInfo().getDisplayWindow());
     }
-    getNode()->getApp()->getProject()->unlock();
     decoderReadHandle->initializeColorSpace();
     _buffer.insert(filename.toStdString(),decoderReadHandle);
     return decoderReadHandle;
