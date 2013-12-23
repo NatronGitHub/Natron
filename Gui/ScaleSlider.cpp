@@ -273,14 +273,6 @@ void ScaleSlider::seekScalePosition(double v){
         return;
     }
     _value = v;
-    double padding = (_maximum - _minimum) / 10.;
-    double displayedRange = _maximum - _minimum + 2*padding;
-    double zoomFactor = width() /displayedRange;
-    zoomFactor = (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01);
-    // assert(zoomFactor>=0.01 && zoomFactor <= 1024);
-    _zoomCtx.zoomFactor = zoomFactor;
-    _zoomCtx.left = _minimum - padding ;
-    _zoomCtx.bottom = 0;
     if(_initialized)
         update();
 }
@@ -295,14 +287,6 @@ void ScaleSlider::seekInternal(double v){
         return;
     }
     _value = v;
-    double padding = (_maximum - _minimum) / 10.;
-    double displayedRange = _maximum - _minimum + 2*padding;
-    double zoomFactor = width() /displayedRange;
-    zoomFactor = (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01);
-   // assert(zoomFactor>=0.01 && zoomFactor <= 1024);
-    _zoomCtx.zoomFactor = zoomFactor;
-    _zoomCtx.left = _minimum - padding ;
-    _zoomCtx.bottom = 0;
     if(_initialized)
         update();
     emit positionChanged(v);
