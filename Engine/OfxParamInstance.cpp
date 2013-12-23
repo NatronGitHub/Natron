@@ -33,6 +33,7 @@
 #include "Engine/Curve.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/Format.h"
+#include "Engine/Project.h"
 
 using namespace Natron;
 
@@ -293,6 +294,8 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
 : OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance())
 , _node(node)
 {
+    QObject::connect(node->getApp()->getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(onProjectFormatChanged(Format)));
+    
     const OFX::Host::Property::Set &properties = getProperties();
     
     _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this));
@@ -345,6 +348,7 @@ void OfxDoubleInstance::onProjectFormatChanged(const Format& /*f*/){
     double v;
     get(v); //get the current value
     set(v); //refresh using the valueAccordingToType function
+    setDisplayRange();
 }
 
 OfxStatus OfxDoubleInstance::derive(OfxTime /*time*/, double& v) {
@@ -800,6 +804,8 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
 : OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance())
 , _node(node)
 {
+    
+    QObject::connect(node->getApp()->getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(onProjectFormatChanged(Format)));
     const int dims = 2;
     const OFX::Host::Property::Set &properties = getProperties();
     
@@ -948,6 +954,7 @@ void OfxDouble2DInstance::onProjectFormatChanged(const Format& /*f*/){
     double v1,v2;
     get(v1,v2); //get the current value
     set(v1,v2); //refresh using the valueAccordingToType function
+    setDisplayRange();
 }
 ////////////////////////// OfxInteger2DInstance /////////////////////////////////////////////////
 
