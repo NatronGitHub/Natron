@@ -77,7 +77,7 @@ using std::cout; using std::endl;
 using std::make_pair;
 
 
-void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const{
+void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
     if(!QPixmapCache::find(QString::number(e),pix)){
         QImage img;
         switch(e){

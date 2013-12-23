@@ -230,11 +230,11 @@ Natron::Status ExrEncoder::render(boost::shared_ptr<const Natron::Image> inputIm
 
             Natron::Row row(roi.left(),y,roi.right(),Natron::Mask_RGBA);
             const float* src_pixels = inputImage->pixelAt(roi.left(), exrY);
-            if(exrY < inputImage->getRoD().height()){
+            if(exrY >= inputImage->getRoD().bottom() && exrY < inputImage->getRoD().top()){
                 foreachChannels(z, _imp->channels){
                     float* to = row.begin(z);
                     for (int i = 0; i < roi.width(); ++i) {
-                        if( i < inputImage->getRoD().width()){
+                        if( i >= inputImage->getRoD().left() && i < inputImage->getRoD().right()){
                             to[i] = src_pixels[i*4 + z -1];
                         }else{
                             to[i] = 0.f;
