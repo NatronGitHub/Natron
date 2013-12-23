@@ -30,7 +30,7 @@ class NodeSerialization {
     
 public:
     
-    typedef std::map< std::string,boost::shared_ptr<KnobSerialization> > KnobValues;
+    typedef std::vector< boost::shared_ptr<KnobSerialization> > KnobValues;
     
     NodeSerialization(){}
     

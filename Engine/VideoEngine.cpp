@@ -325,14 +325,14 @@ void VideoEngine::getFrameRange(int *firstFrame,int *lastFrame) const {
     if(_tree.getOutput()){
         _tree.getOutput()->getFrameRange(firstFrame, lastFrame);
         if(*firstFrame == INT_MIN){
-            *firstFrame = _timeline->firstFrame();
+            *firstFrame = _timeline->leftBound();
         }
         if(*lastFrame == INT_MAX){
-            *lastFrame = _timeline->lastFrame();
+            *lastFrame = _timeline->rightBound();
         }
     }else{
-        *firstFrame = _timeline->firstFrame();
-        *lastFrame = _timeline->lastFrame();
+        *firstFrame = _timeline->leftBound();
+        *lastFrame = _timeline->rightBound();
     }
 }
 

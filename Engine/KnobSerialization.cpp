@@ -23,6 +23,7 @@ KnobSerialization::KnobSerialization()
 }
 
 void KnobSerialization::initialize(const Knob* knob){
+    _label = knob->getDescription();
     _values = knob->getValueForEachDimension();
     _dimension = knob->getDimension();
     const std::vector<boost::shared_ptr<Curve> >& curves = knob->getCurves();

@@ -62,17 +62,19 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     formatKnob->populate(entries);
     autoSetProjectFormat = false;
     
-    const std::map<std::string,boost::shared_ptr<KnobSerialization> >& projectSerializedValues = obj.getProjectKnobsValues();
+    const std::vector< boost::shared_ptr<KnobSerialization> >& projectSerializedValues = obj.getProjectKnobsValues();
     const std::vector< boost::shared_ptr<Knob> >& projectKnobs = project->getKnobs();
     
     
     //// restoring values
     ///
     for(U32 i = 0 ; i < projectKnobs.size();++i){
-        std::map<std::string,boost::shared_ptr<KnobSerialization> >::const_iterator foundValue =
-                projectSerializedValues.find(projectKnobs[i]->getDescription());
-        if(foundValue != projectSerializedValues.end()){
-            projectKnobs[i]->load(*foundValue->second);
+        ///try to find a serialized value for this knob
+        for(U32 j = 0 ; j < projectSerializedValues.size();++j){
+            if(projectSerializedValues[j]->getLabel() == projectKnobs[i]->getDescription()){
+                projectKnobs[i]->load(*projectSerializedValues[j]);
+                break;
+            }
         }
     }
     
@@ -113,17 +115,19 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         }
         n->setName(serializedNodes[i]->getPluginLabel());
 
+        const std::vector< boost::shared_ptr<Knob> >& nodeKnobs = n->getKnobs();
         const NodeSerialization::KnobValues& knobsValues = serializedNodes[i]->getKnobsValues();
-        //begin changes to params
-        for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin();
-             it != knobsValues.end();++it) {
-            boost::shared_ptr<Knob> knob = n->getKnobByDescription(it->first);
-            if (!knob) {
-                std::string message = std::string("Couldn't find knob ") + it->first;
-                qDebug() << message.c_str();
-                throw std::runtime_error(message);
+
+        ///for all knobs of the node
+        for (U32 j = 0; j < nodeKnobs.size();++j) {
+            
+            ///try to find a serialized value for this knob
+            for (U32 k = 0; k < knobsValues.size(); ++k) {
+                if(knobsValues[k]->getLabel() == nodeKnobs[j]->getDescription()){
+                    nodeKnobs[j]->load(*knobsValues[k]);
+                    break;
+                }
             }
-            knob->load(*it->second);
         }
 
     }

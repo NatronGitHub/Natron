@@ -571,8 +571,9 @@ void ViewerTab::lastFrame(){
     seek(_timeLineGui->rightBound());
 }
 
-void ViewerTab::onTimeLineTimeChanged(SequenceTime time,int/* reason*/){
+void ViewerTab::onTimeLineTimeChanged(SequenceTime time,int /*reason*/){
     _currentFrameBox->setValue(time);
+    _viewerNode->refreshAndContinueRender();
 }
 
 void ViewerTab::onCurrentTimeSpinBoxChanged(double time){
