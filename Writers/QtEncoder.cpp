@@ -111,7 +111,7 @@ void QtEncoder::supportsChannelsForWriting(ChannelSet& channels) const {
 }
 
 Natron::Status QtEncoder::render(boost::shared_ptr<const Natron::Image> inputImage,int /*view*/,const RectI& roi){
-    to_byte_rect(_buf, inputImage->pixelAt(0, 0), inputImage->getRoD(),inputImage->getRoD(),roi,Natron::Color::Lut::BGRA,true);
+    to_byte_rect(_buf, inputImage->pixelAt(0, 0),roi, inputImage->getRoD(),_rod,Natron::Color::Lut::BGRA,true);
     return StatOK;
 }
 

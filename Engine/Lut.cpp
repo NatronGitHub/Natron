@@ -616,6 +616,11 @@ void Lut::to_byte_rect(uchar *to, const float *from,
         if (!invertY) {
             srcY = srcRod.top() - y - 1;
         }
+        
+        /// if not in the srcRoD, continue to next line
+        if(srcY < srcRod.bottom() || srcY >= srcRod.top()){
+            continue;
+        }
 
         int dstY = dstRod.top() - y - 1;
 
@@ -623,6 +628,10 @@ void Lut::to_byte_rect(uchar *to, const float *from,
         uchar *dst_pixels = to + (dstY * dstRod.width() * 4);
         /* go fowards from starting point to end of line: */
         for (int x = start; x < rect.right(); ++x) {
+             /// if not in the srcRoD, continue to next line
+            if(x < srcRod.left() || x >= srcRod.right()){
+                continue;
+            }
             int col = x * 4;
             float a = src_pixels[col + 3];
             error_r = (error_r & 0xff) + to_byte_table[hipart(src_pixels[col])];
@@ -636,6 +645,10 @@ void Lut::to_byte_rect(uchar *to, const float *from,
         /* go backwards from starting point to start of line: */
         error_r = error_g = error_b = 0x80;
         for (int x = start - 1; x >= rect.left(); --x) {
+            /// if not in the srcRoD, continue to next line
+            if(x < srcRod.left() || x >= srcRod.right()){
+                continue;
+            }
             int col = x * 4;
             float a = src_pixels[col + 3];
             error_r = (error_r & 0xff) + to_byte_table[hipart(src_pixels[col])];
