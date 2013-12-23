@@ -49,6 +49,7 @@ class Parametric_Knob;
 class OfxEffectInstance;
 class CurveWidget;
 class Knob;
+class Format;
 
 namespace Natron{
     class OfxOverlayInteract;
@@ -137,6 +138,8 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
+    virtual void setDisplayRange();
+    
     
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
@@ -151,10 +154,13 @@ public:
     
 public slots:
     
+    void onProjectFormatChanged(const Format& f);
+    
     void onKnobAnimationLevelChanged(int lvl);
     
 private:
     boost::shared_ptr<Double_Knob> _knob;
+    OfxEffectInstance* _node;
 };
 
 class OfxBooleanInstance :  public QObject,  public OFX::Host::Param::BooleanInstance , public OfxParamToKnob {
@@ -329,6 +335,8 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
+    virtual void setDisplayRange();
+    
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
     virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
@@ -345,7 +353,11 @@ public:
 public slots:
     
     void onKnobAnimationLevelChanged(int lvl);
+    
+    void onProjectFormatChanged(const Format& f);
+    
 private:
+    OfxEffectInstance* _node;
     boost::shared_ptr<Double_Knob> _knob;
 };
 

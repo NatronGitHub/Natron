@@ -47,6 +47,7 @@ class OfxEffectInstance : public Natron::OutputEffectInstance {
 
     QHBoxLayout* _lastKnobLayoutWithNoNewLine; // for nuke layout hint extension
     bool _initialized; //true when the image effect instance has been created and populated
+   
 public:
     
     

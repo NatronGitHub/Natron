@@ -331,7 +331,6 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI*
     ifInfiniteclipRectToProjectDefault(&ofxRod);
     ofxRectDToRectI(ofxRod,rod);
     if(isGenerator()){
-        getApp()->getProject()->lock();
         if(getApp()->getProject()->shouldAutoSetProjectFormat()){
             getApp()->getProject()->setAutoSetProjectFormat(false);
             Format dispW;
@@ -340,10 +339,9 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI*
         }else{
             Format dispW;
             dispW.set(*rod);
-
             getApp()->tryAddProjectFormat(dispW);
+            
         }
-        getApp()->getProject()->unlock();
     }
     return StatOK;
     

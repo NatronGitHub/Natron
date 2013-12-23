@@ -21,8 +21,21 @@ using std::pair;
 /******************************INT_KNOB**************************************/
 Int_Knob::Int_Knob(KnobHolder *holder, const std::string &description, int dimension):
 Knob(holder, description, dimension)
+, _minimums(dimension)
+, _maximums(dimension)
+, _increments(dimension)
+, _displayMins(dimension)
+, _displayMaxs(dimension)
 , _disableSlider(false)
-{}
+{
+    for (int i = 0; i < dimension; ++i) {
+        _minimums[i] = INT_MIN;
+        _maximums[i] = INT_MAX;
+        _increments[i] = 1;
+        _displayMins[i] = INT_MIN;
+        _displayMaxs[i] = INT_MAX;
+    }
+}
 
 void Int_Knob::disableSlider()
 {
@@ -36,117 +49,66 @@ bool Int_Knob::isSliderDisabled() const
 
 void Int_Knob::setMinimum(int mini, int index)
 {
-    if (_minimums.size() > (U32)index) {
-        _minimums[index] = mini;
-    } else {
-        if (index == 0) {
-            _minimums.push_back(mini);
-        } else {
-            while (_minimums.size() <= (U32)index) {
-                // kOfxParamPropMin default value is INT_MIN
-                _minimums.push_back(INT_MIN);
-            }
-            _minimums.push_back(mini);
-        }
+    if (index >= (int)_minimums.size()) {
+        throw "Int_Knob::setMinimum , dimension out of range";
     }
-    // kOfxParamPropMax default value is INT_MAX
-    int maximum = INT_MAX;
-    if (_maximums.size() > (U32)index) {
-        maximum = _maximums[index];
-    }
-    emit minMaxChanged(mini, maximum, index);
+    _minimums[index] = mini;
+    emit minMaxChanged(mini, _maximums[index], index);
 }
 
 void Int_Knob::setMaximum(int maxi, int index)
 {
     
-    if (_maximums.size() > (U32)index) {
-        _maximums[index] = maxi;
-    } else {
-        if (index == 0) {
-            _maximums.push_back(maxi);
-        } else {
-            while (_maximums.size() <= (U32)index) {
-                // kOfxParamPropMax default value is INT_MAX
-                _maximums.push_back(INT_MAX);
-            }
-            _maximums.push_back(maxi);
-        }
+    if (index >= (int)_maximums.size()) {
+        throw "Int_Knob::setMaximum , dimension out of range";
     }
-    // kOfxParamPropMin default value is INT_MIN
-    int minimum = INT_MIN;
-    if (_minimums.size() > (U32)index) {
-        minimum = _minimums[index];
-    }
-    emit minMaxChanged(minimum, maxi, index);
+    _maximums[index] = maxi;
+    emit minMaxChanged(_minimums[index], maxi, index);
+
 }
 
 void Int_Knob::setDisplayMinimum(int mini, int index)
 {
-    if (_displayMins.size() > (U32)index) {
-        _displayMins[index] = mini;
-    } else {
-        if (index == 0) {
-            _displayMins.push_back(mini);
-        } else {
-            while (_displayMins.size() <= (U32)index) {
-                // kOfxParamPropDisplayMin default value is INT_MIN
-                _displayMins.push_back(INT_MIN);
-            }
-            _displayMins.push_back(mini);
-        }
+    if (index >= (int)_displayMins.size()) {
+        throw "Int_Knob::setDisplayMinimum , dimension out of range";
     }
+    _displayMins[index] = mini;
+    emit displayMinMaxChanged(mini, _displayMaxs[index], index);
 }
 
 void Int_Knob::setDisplayMaximum(int maxi, int index)
 {
     
-    if (_displayMaxs.size() > (U32)index) {
-        _displayMaxs[index] = maxi;
-    } else {
-        if (index == 0) {
-            _displayMaxs.push_back(maxi);
-        } else {
-            while (_displayMaxs.size() <= (U32)index) {
-                // kOfxParamPropDisplayMax default value is INT_MAX
-                _displayMaxs.push_back(INT_MAX);
-            }
-            _displayMaxs.push_back(maxi);
-        }
+    if (index >= (int)_displayMaxs.size()) {
+        throw "Int_Knob::setDisplayMaximum , dimension out of range";
     }
+    _displayMaxs[index] = maxi;
+    emit displayMinMaxChanged(_displayMins[index],maxi, index);
 }
 
 void Int_Knob::setIncrement(int incr, int index)
 {
-    assert(incr > 0);
-    /*If _increments is already filled, just replace the existing value*/
-    if (_increments.size() > (U32)index) {
-        _increments[index] = incr;
-    } else {
-        /*If it is not filled and it is 0, just push_back the value*/
-        if (index == 0) {
-            _increments.push_back(incr);
-        } else {
-            /*Otherwise fill enough values until we  have
-             the corresponding index in _increments. Then we
-             can push_back the value as the last element of the
-             vector.*/
-            while (_increments.size() <= (U32)index) {
-                // kOfxParamPropIncrement default value is 1
-                _increments.push_back(1);
-                assert(_increments[_increments.size() - 1] > 0);
-            }
-            _increments.push_back(incr);
-        }
+    if(incr <= 0){
+        qDebug() << "Attempting to set the increment of an int param to a value lesser or equal to 0";
+        return;
     }
+
+    if (index >= (int)_increments.size()) {
+        throw "Int_Knob::setIncrement , dimension out of range";
+    }
+    _increments[index] = incr;
     emit incrementChanged(_increments[index], index);
 }
 
 void Int_Knob::setIncrement(const std::vector<int> &incr)
 {
+    assert((int)incr.size() == getDimension());
     _increments = incr;
     for (U32 i = 0; i < _increments.size(); ++i) {
-        assert(_increments[i] > 0);
+        if(_increments[i] <= 0){
+            qDebug() << "Attempting to set the increment of an int param to a value lesser or equal to 0";
+            continue;
+        }
         emit incrementChanged(_increments[i], i);
     }
 }
@@ -154,6 +116,7 @@ void Int_Knob::setIncrement(const std::vector<int> &incr)
 /*minis & maxis must have the same size*/
 void Int_Knob::setMinimumsAndMaximums(const std::vector<int> &minis, const std::vector<int> &maxis)
 {
+    assert((int)minis.size() == getDimension() && (int)maxis.size() == getDimension());
     _minimums = minis;
     _maximums = maxis;
     for (U32 i = 0; i < maxis.size(); ++i) {
@@ -163,8 +126,12 @@ void Int_Knob::setMinimumsAndMaximums(const std::vector<int> &minis, const std::
 
 void Int_Knob::setDisplayMinimumsAndMaximums(const std::vector<int> &minis, const std::vector<int> &maxis)
 {
+    assert((int)minis.size() == getDimension() && (int)maxis.size() == getDimension());
     _displayMins = minis;
     _displayMaxs = maxis;
+    for (U32 i = 0; i < maxis.size(); ++i) {
+        emit displayMinMaxChanged(_displayMins[i], _displayMaxs[i], i);
+    }
 }
 
 const std::vector<int> &Int_Knob::getMinimums() const
@@ -256,8 +223,25 @@ const std::string& Bool_Knob::typeName() const
 
 Double_Knob::Double_Knob(KnobHolder *holder, const std::string &description, int dimension):
 Knob(holder, description, dimension)
+, _minimums(dimension)
+, _maximums(dimension)
+, _increments(dimension)
+, _displayMins(dimension)
+, _displayMaxs(dimension)
+, _decimals(dimension)
 , _disableSlider(false)
-{}
+
+{
+    for (int i = 0; i < dimension; ++i) {
+        _minimums[i] = -DBL_MAX;
+        _maximums[i] = DBL_MAX;
+        _increments[i] = 1.;
+        _displayMins[i] = -DBL_MAX;
+        _displayMaxs[i] = DBL_MAX;
+        _decimals[i] = 2;
+    }
+
+}
 
 std::string Double_Knob::getDimensionName(int dimension) const
 {
@@ -334,119 +318,62 @@ const std::vector<double> &Double_Knob::getDisplayMaximums() const
 
 void Double_Knob::setMinimum(double mini, int index)
 {
-    if (_minimums.size() > (U32)index) {
-        _minimums[index] = mini;
-    } else {
-        if (index == 0) {
-            _minimums.push_back(mini);
-        } else {
-            while (_minimums.size() <= (U32)index) {
-                // kOfxParamPropMin default value is -DBL_MAX
-                _minimums.push_back(-DBL_MAX);
-            }
-            _minimums.push_back(mini);
-        }
+    if (index >= (int)_minimums.size()) {
+        throw "Double_Knob::setMinimum , dimension out of range";
     }
-    // kOfxParamPropMax default value is DBL_MAX
-    double maximum = DBL_MAX;
-    if (_maximums.size() > (U32)index) {
-        maximum = _maximums[index];
-    }
-    emit minMaxChanged(mini, maximum, index);
+    _minimums[index] = mini;
+    emit minMaxChanged(mini, _maximums[index], index);
 }
 
 void Double_Knob::setMaximum(double maxi, int index)
 {
-    if (_maximums.size() > (U32)index) {
-        _maximums[index] = maxi;
-    } else {
-        if (index == 0) {
-            _maximums.push_back(maxi);
-        } else {
-            while (_maximums.size() <= (U32)index) {
-                // kOfxParamPropMax default value is DBL_MAX
-                _maximums.push_back(DBL_MAX);
-            }
-            _maximums.push_back(maxi);
-        }
+    if (index >= (int)_maximums.size()) {
+        throw "Double_Knob::setMaximum , dimension out of range";
     }
-    // kOfxParamPropMin default value is -DBL_MAX
-    double minimum = -DBL_MAX;
-    if (_minimums.size() > (U32)index) {
-        minimum = _minimums[index];
-    }
-    emit minMaxChanged(minimum, maxi, index);
+    _maximums[index] = maxi;
+    emit minMaxChanged(_minimums[index], maxi, index);
 }
 
 void Double_Knob::setDisplayMinimum(double mini, int index)
 {
-    if (_displayMins.size() > (U32)index) {
-        _displayMins[index] = mini;
-    } else {
-        if (index == 0) {
-            _displayMins.push_back(DBL_MIN);
-        } else {
-            while (_displayMins.size() <= (U32)index) {
-                // kOfxParamPropDisplayMax default value is -DBL_MAX
-                _displayMins.push_back(-DBL_MAX);
-            }
-            _displayMins.push_back(mini);
-        }
+    if (index >= (int)_displayMins.size()) {
+        throw "Double_Knob::setDisplayMinimum , dimension out of range";
     }
+    _displayMins[index] = mini;
+    emit displayMinMaxChanged(mini, _displayMaxs[index], index);
+    
 }
 
 void Double_Knob::setDisplayMaximum(double maxi, int index)
 {
-    
-    if (_displayMaxs.size() > (U32)index) {
-        _displayMaxs[index] = maxi;
-    } else {
-        if (index == 0) {
-            _displayMaxs.push_back(maxi);
-        } else {
-            while (_displayMaxs.size() <= (U32)index) {
-                // kOfxParamPropDisplayMax default value is DBL_MAX
-                _displayMaxs.push_back(DBL_MAX);
-            }
-            _displayMaxs.push_back(maxi);
-        }
+    if (index >= (int)_displayMaxs.size()) {
+        throw "Double_Knob::setDisplayMaximum , dimension out of range";
     }
+    _displayMaxs[index] = maxi;
+    emit displayMinMaxChanged(_displayMins[index], maxi, index);
 }
 
 void Double_Knob::setIncrement(double incr, int index)
 {
-    assert(incr > 0.);
-    if (_increments.size() > (U32)index) {
-        _increments[index] = incr;
-    } else {
-        if (index == 0) {
-            _increments.push_back(incr);
-        } else {
-            while (_increments.size() <= (U32)index) {
-                // kOfxParamPropIncrement default value is 1.
-                _increments.push_back(1.);
-            }
-            _increments.push_back(incr);
-        }
+    if(incr <= 0.){
+        qDebug() << "Attempting to set the increment of a double param to a value lesser or equal to 0.";
+        return;
     }
+    if (index >= (int)_increments.size()) {
+        throw "Double_Knob::setIncrement , dimension out of range";
+    }
+   
+    _increments[index] = incr;
     emit incrementChanged(_increments[index], index);
 }
 
 void Double_Knob::setDecimals(int decis, int index)
 {
-    if (_decimals.size() > (U32)index) {
-        _decimals[index] = decis;
-    } else {
-        if (index == 0) {
-            _decimals.push_back(decis);
-        } else {
-            while (_decimals.size() <= (U32)index) {
-                // default value for kOfxParamPropDigits is 2
-                _decimals.push_back(2);
-            }
-            _decimals.push_back(decis);
-        }
+    if (index >= (int)_decimals.size()) {
+        throw "Double_Knob::setDecimals , dimension out of range";
     }
+
+    _decimals[index] = decis;
     emit decimalsChanged(_decimals[index], index);
 }
 
@@ -454,6 +381,7 @@ void Double_Knob::setDecimals(int decis, int index)
 /*minis & maxis must have the same size*/
 void Double_Knob::setMinimumsAndMaximums(const std::vector<double> &minis, const std::vector<double> &maxis)
 {
+    assert(minis.size() == (U32)getDimension() && maxis.size() == (U32)getDimension());
     _minimums = minis;
     _maximums = maxis;
     for (U32 i = 0; i < maxis.size(); ++i) {
@@ -463,12 +391,17 @@ void Double_Knob::setMinimumsAndMaximums(const std::vector<double> &minis, const
 
 void Double_Knob::setDisplayMinimumsAndMaximums(const std::vector<double> &minis, const std::vector<double> &maxis)
 {
+    assert(minis.size() == (U32)getDimension() && maxis.size() == (U32)getDimension());
     _displayMins = minis;
     _displayMaxs = maxis;
+    for (U32 i = 0; i < maxis.size(); ++i) {
+        emit displayMinMaxChanged(_minimums[i], _maximums[i], i);
+    }
 }
 
 void Double_Knob::setIncrement(const std::vector<double> &incr)
 {
+    assert(incr.size() == (U32)getDimension());
     _increments = incr;
     for (U32 i = 0; i < incr.size(); ++i) {
         emit incrementChanged(_increments[i], i);
@@ -476,6 +409,7 @@ void Double_Knob::setIncrement(const std::vector<double> &incr)
 }
 void Double_Knob::setDecimals(const std::vector<int> &decis)
 {
+    assert(decis.size() == (U32)getDimension());
     _decimals = decis;
     for (U32 i = 0; i < decis.size(); ++i) {
         emit decimalsChanged(decis[i], i);

@@ -452,6 +452,9 @@ bool AppInstance::loadProject(const QString& path,const QString& name){
 }
 
 void AppInstance::loadProjectInternal(const QString& path,const QString& name){
+    
+    _currentProject->lock();
+    
     QString filePath = path+name;
     if(!QFile::exists(filePath)){
         throw std::invalid_argument(QString(filePath + " : no such file.").toStdString());
@@ -489,6 +492,8 @@ void AppInstance::loadProjectInternal(const QString& path,const QString& name){
     _currentProject->setProjectPath(path);
     _currentProject->setProjectAgeSinceLastSave(time);
     _currentProject->setProjectAgeSinceLastAutosaveSave(time);
+    
+    _currentProject->unlock();
     
     /*Refresh all viewers as it was*/
     if(!isBackground()){
@@ -529,6 +534,9 @@ void AppInstance::saveProject(const QString& path,const QString& name,bool autoS
 }
 
 void AppInstance::saveProjectInternal(const QString& path,const QString& filename,bool autoSave){
+    
+    _currentProject->lock();
+    
     QDateTime time = QDateTime::currentDateTime();
     QString actualFileName = filename;
     if(autoSave){
@@ -547,6 +555,7 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
     }
     std::ofstream ofile(filePath.toStdString().c_str(),std::ofstream::out);
     if (!ofile.good()) {
+        _currentProject->unlock();
         qDebug() << "Failed to open file " << filePath.toStdString().c_str();
         throw std::runtime_error("Failed to open file " + filePath.toStdString());
     }
@@ -564,9 +573,11 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
         }
         
     }catch (const std::exception& e) {
+        _currentProject->unlock();
         qDebug() << "Error while saving project: " << e.what();
         throw;
     } catch (...) {
+        _currentProject->unlock();
         qDebug() << "Error while saving project";
         throw;
     }
@@ -578,6 +589,7 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
     }
     _currentProject->setProjectAgeSinceLastAutosaveSave(time);
 
+    _currentProject->unlock();
 }
 
 void AppInstance::autoSave(){

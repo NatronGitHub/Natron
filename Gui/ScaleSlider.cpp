@@ -65,6 +65,7 @@ void ScaleSlider::resizeGL(int width,int height){
 
 void ScaleSlider::paintGL(){
     if(_mustInitializeSliderPosition){
+        centerOn(_minimum, _maximum);
         _mustInitializeSliderPosition = false;
         seekScalePosition(_value);
         _initialized = true;
@@ -587,4 +588,19 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
     if(*xmaxp < xmax){
         *xmaxp = xmax;
     }
+}
+
+void ScaleSlider::setMinimumAndMaximum(double min,double max){
+    _minimum = min;
+    _maximum = max;
+    centerOn(_minimum, _maximum);
+}
+
+void ScaleSlider::centerOn(double left,double right){
+    double scaleWidth = right - left + 10;
+    double w = width();
+    _zoomCtx.left = left - 5;
+    _zoomCtx.zoomFactor = w / scaleWidth;
+    
+    update();
 }

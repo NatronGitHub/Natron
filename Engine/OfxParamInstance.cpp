@@ -32,6 +32,7 @@
 #include "Engine/ViewerInstance.h"
 #include "Engine/Curve.h"
 #include "Engine/OfxOverlayInteract.h"
+#include "Engine/Format.h"
 
 using namespace Natron;
 
@@ -238,9 +239,59 @@ void OfxIntegerInstance::onKnobAnimationLevelChanged(int lvl){
 
 ////////////////////////// OfxDoubleInstance /////////////////////////////////////////////////
 
+static void valueAccordingToType(bool toType,const std::string& doubleType,OfxEffectInstance* effect,
+                                 double* inOut1stDim,double* inOutS2ndDim = NULL){
+    if(doubleType == kOfxParamDoubleTypePlain ||
+       doubleType == kOfxParamDoubleTypeAngle ||
+       doubleType == kOfxParamDoubleTypeScale ||
+       doubleType == kOfxParamDoubleTypeTime ||
+       doubleType == kOfxParamDoubleTypeAbsoluteTime){
+        //types not handled
+        return;
+    }else if(doubleType == kOfxParamDoubleTypeX ||
+             doubleType == kOfxParamDoubleTypeXAbsolute ||
+             doubleType == kOfxParamDoubleTypeNormalisedX ||
+             doubleType == kOfxParamDoubleTypeNormalisedXAbsolute){ //< treat absolute as non-absolute...
+        
+        const Format& projectFormat = effect->getApp()->getProjectFormat();
+        if(toType){
+            *inOut1stDim *= (double)projectFormat.width();
+        }else{
+            *inOut1stDim /= (double)projectFormat.width();
+        }
+        return;
+    }else if(doubleType == kOfxParamDoubleTypeY ||
+             doubleType == kOfxParamDoubleTypeYAbsolute ||
+             doubleType == kOfxParamDoubleTypeNormalisedY ||
+             doubleType == kOfxParamDoubleTypeNormalisedYAbsolute){ //< treat absolute as non-absolute...
+        const Format& projectFormat = effect->getApp()->getProjectFormat();
+        if(toType){
+            *inOut1stDim *= (double)projectFormat.height();
+        }else{
+            *inOut1stDim /= (double)projectFormat.height();
+        }
+        return;
+    }else if(doubleType == kOfxParamDoubleTypeXY ||
+             doubleType == kOfxParamDoubleTypeXYAbsolute ||
+             doubleType == kOfxParamDoubleTypeNormalisedXY ||
+             doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute){
+        assert(inOutS2ndDim);
+        const Format& projectFormat = effect->getApp()->getProjectFormat();
+        if(toType){
+            *inOut1stDim *= (double)projectFormat.width();
+            *inOutS2ndDim *= (double)projectFormat.height();
+        }else{
+            *inOut1stDim /= (double)projectFormat.width();
+            *inOutS2ndDim /= (double)projectFormat.height();
+        }
+    }
+    
+    
+}
 
 OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance())
+, _node(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
     
@@ -251,13 +302,15 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
     double incr = properties.getDoubleProperty(kOfxParamPropIncrement);
     double def = properties.getDoubleProperty(kOfxParamPropDefault);
     int decimals = properties.getIntProperty(kOfxParamPropDigits);
-    double displayMin = properties.getDoubleProperty(kOfxParamPropDisplayMin);
-    double displayMax = properties.getDoubleProperty(kOfxParamPropDisplayMax);
-    _knob->setDisplayMinimum(displayMin);
-    _knob->setDisplayMaximum(displayMax);
+    const std::string& doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
+
+    valueAccordingToType(true,doubleType, node, &min);
+    valueAccordingToType(true,doubleType, node, &max);
     _knob->setMinimum(min);
     _knob->setMaximum(max);
+    setDisplayRange();
     if(incr > 0) {
+        valueAccordingToType(true,doubleType, node, &incr);
         _knob->setIncrement(incr);
     }
     if(decimals > 0) {
@@ -269,19 +322,29 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
 }
 OfxStatus OfxDoubleInstance::get(double& v){
     v = _knob->getValue<double>();
+    valueAccordingToType(false,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     return kOfxStatOK;
 }
 OfxStatus OfxDoubleInstance::get(OfxTime time, double& v){
     v = _knob->getValueAtTime<double>(time);
+    valueAccordingToType(false,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     return kOfxStatOK;
 }
 OfxStatus OfxDoubleInstance::set(double v) {
+    valueAccordingToType(true,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     _knob->setValue<double>(v);
     return kOfxStatOK;
 }
 OfxStatus OfxDoubleInstance::set(OfxTime time, double v){
+    valueAccordingToType(true,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     _knob->setValueAtTime<double>(time,v);
     return kOfxStatOK;
+}
+
+void OfxDoubleInstance::onProjectFormatChanged(const Format& /*f*/){
+    double v;
+    get(v); //get the current value
+    set(v); //refresh using the valueAccordingToType function
 }
 
 OfxStatus OfxDoubleInstance::derive(OfxTime /*time*/, double& v) {
@@ -309,6 +372,16 @@ void OfxDoubleInstance::setEnabled(){
 // callback which should set secret state as appropriate
 void OfxDoubleInstance::setSecret() {
     _knob->setSecret(getSecret());
+}
+
+void OfxDoubleInstance::setDisplayRange(){
+    const std::string& doubleType = getProperties().getStringProperty(kOfxParamPropDoubleType);
+    double displayMin = getProperties().getDoubleProperty(kOfxParamPropDisplayMin);
+    double displayMax = getProperties().getDoubleProperty(kOfxParamPropDisplayMax);
+    valueAccordingToType(true,doubleType, _node, &displayMin);
+    valueAccordingToType(true,doubleType, _node, &displayMax);
+    _knob->setDisplayMinimum(displayMin);
+    _knob->setDisplayMaximum(displayMax);
 }
 
 boost::shared_ptr<Knob> OfxDoubleInstance::getKnob() const{
@@ -725,13 +798,15 @@ void OfxRGBInstance::onKnobAnimationLevelChanged(int lvl){
 
 OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance())
+, _node(node)
 {
     const int dims = 2;
     const OFX::Host::Property::Set &properties = getProperties();
     
     
     _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this),dims);
-    
+    const std::string& doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
+
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);
     std::vector<double> increment(dims);
@@ -747,17 +822,19 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
     int dig = properties.getIntProperty(kOfxParamPropDigits);
     for (int i=0; i < dims; ++i) {
         minimum[i] = properties.getDoubleProperty(kOfxParamPropMin,i);
-        displayMins[i] = properties.getDoubleProperty(kOfxParamPropDisplayMin,i);
-        displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax,i);
         maximum[i] = properties.getDoubleProperty(kOfxParamPropMax,i);
         increment[i] = incr;
         decimals[i] = dig;
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
     }
     
+    valueAccordingToType(true, doubleType, node, &minimum[0],&minimum[1]);
+    valueAccordingToType(true, doubleType, node, &maximum[0],&maximum[1]);
+    valueAccordingToType(true, doubleType, node, &def[0],&def[1]);
+    
     _knob->setMinimumsAndMaximums(minimum, maximum);
+    setDisplayRange();
     _knob->setIncrement(increment);
-    _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
     _knob->setDecimals(decimals);
     _knob->setValue<double>(def.get(),dims);
 }
@@ -765,22 +842,26 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
 OfxStatus OfxDouble2DInstance::get(double& x1, double& x2) {
     x1 = _knob->getValue<double>(0);
     x2 = _knob->getValue<double>(1);
+    valueAccordingToType(false, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
     return kOfxStatOK;
 }
 
 OfxStatus OfxDouble2DInstance::get(OfxTime time, double& x1, double& x2) {
     x1 = _knob->getValueAtTime<double>(time,0);
     x2 = _knob->getValueAtTime<double>(time,1);
+    valueAccordingToType(false, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
     return kOfxStatOK;
 }
 
 OfxStatus OfxDouble2DInstance::set(double x1,double x2){
+    valueAccordingToType(true, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
     _knob->setValue<double>(x1,0);
     _knob->setValue<double>(x2,1);
 	return kOfxStatOK;
 }
 
 OfxStatus OfxDouble2DInstance::set(OfxTime time,double x1,double x2){
+    valueAccordingToType(true, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
     _knob->setValueAtTime<double>(time,x1,0);
     _knob->setValueAtTime<double>(time,x2,1);
 	return kOfxStatOK;
@@ -811,6 +892,19 @@ void OfxDouble2DInstance::setEnabled(){
 // callback which should set secret state as appropriate
 void OfxDouble2DInstance::setSecret() {
     _knob->setSecret(getSecret());
+}
+
+void OfxDouble2DInstance::setDisplayRange() {
+    const std::string& doubleType = getProperties().getStringProperty(kOfxParamPropDoubleType);
+    std::vector<double> displayMins(2);
+    std::vector<double> displayMaxs(2);
+    displayMins[0] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin,0);
+    displayMins[1] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin,1);
+    displayMaxs[0] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax,0);
+    displayMaxs[1] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax,1);
+    valueAccordingToType(true,doubleType, _node, &displayMins[0],&displayMins[1]);
+    valueAccordingToType(true,doubleType, _node, &displayMaxs[0],&displayMaxs[1]);
+    _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
 boost::shared_ptr<Knob> OfxDouble2DInstance::getKnob() const{
@@ -849,6 +943,12 @@ void OfxDouble2DInstance::onKnobAnimationLevelChanged(int lvl){
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
 }
 
+
+void OfxDouble2DInstance::onProjectFormatChanged(const Format& /*f*/){
+    double v1,v2;
+    get(v1,v2); //get the current value
+    set(v1,v2); //refresh using the valueAccordingToType function
+}
 ////////////////////////// OfxInteger2DInstance /////////////////////////////////////////////////
 
 

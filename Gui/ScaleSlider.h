@@ -87,9 +87,7 @@ public:
 
     void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font);
     
-    void setMinimum(double m){_minimum = m;}
-    
-    void setMaximum(double m){_maximum = m;}
+    void setMinimumAndMaximum(double min,double max);
         
     void changeScale(Natron::Scale_Type type){_type = type;}
     
@@ -132,6 +130,8 @@ private :
     QPointF toWidgetCoordinates(double x, double y);
 
     void drawScale();
+    
+    void centerOn(double left,double right);
 };
 
 

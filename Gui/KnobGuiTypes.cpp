@@ -57,6 +57,7 @@ Int_KnobGui::Int_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
     boost::shared_ptr<Int_Knob> intKnob = boost::dynamic_pointer_cast<Int_Knob>(getKnob());
     assert(intKnob);
     QObject::connect(intKnob.get(), SIGNAL(minMaxChanged(int, int, int)), this, SLOT(onMinMaxChanged(int, int, int)));
+    QObject::connect(intKnob.get(), SIGNAL(displayMinMaxChanged(int, int, int)), this, SLOT(onDisplayMinMaxChanged(int, int, int)));
     QObject::connect(intKnob.get(), SIGNAL(incrementChanged(int, int)), this, SLOT(onIncrementChanged(int, int)));
 }
 
@@ -90,8 +91,8 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row)
     assert(intKnob);
     
     
-    const std::vector<int> &maximums = intKnob->getMaximums();
-    const std::vector<int> &minimums = intKnob->getMinimums();
+    //  const std::vector<int> &maximums = intKnob->getMaximums();
+    //    const std::vector<int> &minimums = intKnob->getMinimums();
     const std::vector<int> &increments = intKnob->getIncrements();
     const std::vector<int> &displayMins = intKnob->getDisplayMinimums();
     const std::vector<int> &displayMaxs = intKnob->getDisplayMaximums();
@@ -108,29 +109,17 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row)
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::INT_SPINBOX);
         QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()));
-        if (maximums.size() > (U32)i) {
-            box->setMaximum(maximums[i]);
-        }
-        if (minimums.size() > (U32)i) {
-            box->setMinimum(minimums[i]);
-        }
-        if (increments.size() > (U32)i) {
-            box->setIncrement(increments[i]);
-        }
+        
+        int min = displayMins[i];
+        int max = displayMaxs[i];
+        
+        box->setMaximum(max);
+        box->setMinimum(min);
+        box->setIncrement(increments[i]);
         box->setToolTip(getKnob()->getHintToolTip().c_str());
         boxContainerLayout->addWidget(box);
         if (getKnob()->getDimension() == 1 && !intKnob->isSliderDisabled()) {
-            int min = 0, max = 99;
-            if (displayMins.size() > (U32)i && displayMins[i] != INT_MIN) {
-                min = displayMins[i];
-            } else if (minimums.size() > (U32)i) {
-                min = minimums[i];
-            }
-            if (displayMaxs.size() > (U32)i && displayMaxs[i] != INT_MAX) {
-                max = displayMaxs[i];
-            } else if (maximums.size() > (U32)i) {
-                max = maximums[i];
-            }
+            
             if ((max - min) < SLIDER_MAX_RANGE && max < INT_MAX && min > INT_MIN) {
                 _slider = new ScaleSlider(min, max,
                                           getKnob()->getValue<int>(), Natron::LINEAR_SCALE, layout->parentWidget());
@@ -153,6 +142,13 @@ void Int_KnobGui::onMinMaxChanged(int mini, int maxi, int index)
     assert(_spinBoxes.size() > (U32)index);
     _spinBoxes[index].first->setMinimum(mini);
     _spinBoxes[index].first->setMaximum(maxi);
+}
+
+void Int_KnobGui::onDisplayMinMaxChanged(int mini, int maxi, int /*index*/)
+{
+    if(_slider){
+        _slider->setMinimumAndMaximum(mini, maxi);
+    }
 }
 
 void Int_KnobGui::onIncrementChanged(int incr, int index)
@@ -326,6 +322,7 @@ Double_KnobGui::Double_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *cont
     boost::shared_ptr<Double_Knob> dbl_knob = boost::dynamic_pointer_cast<Double_Knob>(getKnob());
     assert(dbl_knob);
     QObject::connect(dbl_knob.get(), SIGNAL(minMaxChanged(double, double, int)), this, SLOT(onMinMaxChanged(double, double, int)));
+    QObject::connect(dbl_knob.get(), SIGNAL(displayMinMaxChanged(double, double, int)), this, SLOT(onDisplayMinMaxChanged(double, double, int)));
     QObject::connect(dbl_knob.get(), SIGNAL(incrementChanged(double, int)), this, SLOT(onIncrementChanged(double, int)));
     QObject::connect(dbl_knob.get(), SIGNAL(decimalsChanged(int, int)), this, SLOT(onDecimalsChanged(int, int)));
 }
@@ -358,8 +355,8 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row)
     int dim = getKnob()->getDimension();
     
     
-    const std::vector<double> &maximums = dbl_knob->getMaximums();
-    const std::vector<double> &minimums = dbl_knob->getMinimums();
+    //  const std::vector<double> &maximums = dbl_knob->getMaximums();
+    //    const std::vector<double> &minimums = dbl_knob->getMinimums();
     const std::vector<double> &increments = dbl_knob->getIncrements();
     const std::vector<double> &displayMins = dbl_knob->getDisplayMinimums();
     const std::vector<double> &displayMaxs = dbl_knob->getDisplayMaximums();
@@ -378,35 +375,19 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row)
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::DOUBLE_SPINBOX);
         QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()));
-        if ((int)maximums.size() > i) {
-            box->setMaximum(maximums[i]);
-        }
-        if ((int)minimums.size() > i) {
-            box->setMinimum(minimums[i]);
-        }
-        if ((int)decimals.size() > i) {
-            box->decimals(decimals[i]);
-        }
-        if ((int)increments.size() > i) {
-            double incr = increments[i];
-            if (incr > 0) {
-                box->setIncrement(incr);
-            }
-        }
+        
+        double min = displayMins[i];
+        double max = displayMaxs[i];
+        
+        box->setMaximum(max);
+        box->setMinimum(min);
+        box->decimals(decimals[i]);
+        box->setIncrement(increments[i]);
         box->setToolTip(getKnob()->getHintToolTip().c_str());
         boxContainerLayout->addWidget(box);
+        
         if (getKnob()->getDimension() == 1 && !dbl_knob->isSliderDisabled()) {
-            double min = 0., max = 99.;
-            if (displayMins.size() > (U32)i) {
-                min = displayMins[i];
-            } else if (minimums.size() > (U32)i) {
-                min = minimums[i];
-            }
-            if (displayMaxs.size() > (U32)i) {
-                max = displayMaxs[i];
-            } else if (maximums.size() > (U32)i) {
-                max = maximums[i];
-            }
+
             if ((max - min) < SLIDER_MAX_RANGE && max < DBL_MAX && min > -DBL_MAX) {
                 _slider = new ScaleSlider(min, max,
                                           getKnob()->getValue<double>(), Natron::LINEAR_SCALE, layout->parentWidget());
@@ -417,7 +398,6 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row)
         }
         
         containerLayout->addWidget(boxContainer);
-        //        layout->addWidget(boxContainer,row,i+1+columnOffset);
         _spinBoxes.push_back(make_pair(box, subDesc));
     }
     layout->addWidget(container, row, 1, Qt::AlignLeft);
@@ -427,7 +407,15 @@ void Double_KnobGui::onMinMaxChanged(double mini, double maxi, int index)
     assert(_spinBoxes.size() > (U32)index);
     _spinBoxes[index].first->setMinimum(mini);
     _spinBoxes[index].first->setMaximum(maxi);
+    
 }
+
+void Double_KnobGui::onDisplayMinMaxChanged(double mini,double maxi,int /*index*/ ){
+    if(_slider){
+        _slider->setMinimumAndMaximum(mini, maxi);
+    }
+}
+
 void Double_KnobGui::onIncrementChanged(double incr, int index)
 {
     assert(_spinBoxes.size() > (U32)index);

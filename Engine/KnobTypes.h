@@ -75,6 +75,8 @@ signals:
     
     void minMaxChanged(int mini, int maxi, int index = 0);
     
+    void displayMinMaxChanged(int mini,int maxi,int index = 0);
+    
     void incrementChanged(int incr, int index = 0);
     
 private:
@@ -178,6 +180,8 @@ public:
     
 signals:
     void minMaxChanged(double mini, double maxi, int index = 0);
+    
+    void displayMinMaxChanged(double mini,double maxi,int index = 0);
     
     void incrementChanged(double incr, int index = 0);
     

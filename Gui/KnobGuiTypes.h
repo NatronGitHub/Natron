@@ -79,6 +79,8 @@ public slots:
     void onSliderValueChanged(double);
 
     void onMinMaxChanged(int mini, int maxi, int index = 0);
+    
+    void onDisplayMinMaxChanged(int mini,int maxi,int index = 0);
 
     void onIncrementChanged(int incr, int index = 0);
 
@@ -168,6 +170,7 @@ public slots:
     void onSliderValueChanged(double);
 
     void onMinMaxChanged(double mini, double maxi, int index = 0);
+    void onDisplayMinMaxChanged(double mini,double maxi,int index = 0);
     void onIncrementChanged(double incr, int index = 0);
     void onDecimalsChanged(int deci, int index = 0);
 
