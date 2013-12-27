@@ -1343,7 +1343,6 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
     if (mode == kOfxParamStringIsFilePath) {
         if (_node->isGenerator()) {
             _fileKnob = Natron::createKnob<File_Knob>(node, getParamLabel(this));
-            QObject::connect(_fileKnob.get(), SIGNAL(frameRangeChanged(int,int)), this, SLOT(onFrameRangeChanged(int,int)));
             
         } else {
             _node->setAsOutputNode(); // IMPORTANT !
