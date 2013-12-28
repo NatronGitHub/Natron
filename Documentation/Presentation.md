@@ -231,3 +231,17 @@ compositing field. For more insight on this topic please refer to the
 
 [Go back to the top of the page](#top)
 
+7- Command-line manual<a id="cmdlineArgs"></a>
+----------------------------------------------
+
+#### ./Natron <projectFile> 
+
+#### Options
+* --background
+Starts Natron in background mode, no graphical user interface will be displayed.
+
+* --writer <WriterNodeName>
+WriterNodeName should contain the name of a writer node in the project that will be used
+to render. You can chain this argument multiple times, e.g:
+
+./Natron --background --writer Writer_1 --writer Writer_2 toto.ntp  
