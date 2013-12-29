@@ -418,14 +418,84 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
 /////////////////
 
 struct Thread_Group {
-    std::vector<boost::thread*> threads;
+    typedef std::list<boost::thread*> ThreadsList;
+    ThreadsList threads;
+    boost::mutex lock;
+    boost::condition_variable cond;
+    
+    Thread_Group()
+    : threads()
+    , lock()
+    , cond()
+    {
+        
+    }
+    
+    Thread_Group(const Thread_Group& o)
+    : threads(o.threads)
+    , lock()
+    , cond()
+    {
+        
+    }
+    
+    
+    ~Thread_Group(){
+        
+    }
 };
 
 static Thread_Group tg = Thread_Group();
 
+
+
+void OfxWrappedFunctor(OfxThreadFunctionV1 func,int i,unsigned int nThreads,void* customArgs){
+    func(i,nThreads,customArgs);
+    
+    boost::mutex::scoped_lock lock(tg.lock);
+    
+    ///remove this thread from the thread group
+    Thread_Group::ThreadsList::iterator found = tg.threads.end();
+    for(Thread_Group::ThreadsList::iterator it = tg.threads.begin();it!= tg.threads.end();++it){
+        if((*it)->get_id() == boost::this_thread::get_id()){
+            found = it;
+            break;
+        }
+    }
+    
+    //it shouldn't have been removed...
+    assert(found != tg.threads.end());
+    tg.threads.erase(found);
+    
+    tg.cond.notify_one();
+    
+}
+
+
+
 OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nThreads, void *customArg) {
+    U32 maxConcurrentThread;
+    multiThreadNumCPUS(&maxConcurrentThread);
+    
     for (U32 i = 0; i < nThreads; ++i) {
-        tg.threads.push_back(new boost::thread(func,i,nThreads,customArg));
+        
+        ///if the threads count running is greater than the maxConcurrentThread,
+        ///wait for a thread to finish
+        boost::mutex::scoped_lock lock(tg.lock);
+        
+        while(tg.threads.size() > maxConcurrentThread){
+            tg.cond.wait(lock);
+        }
+        
+        boost::thread* t = new boost::thread(OfxWrappedFunctor,func,i,nThreads,customArg);
+        
+        ///register the thread
+        tg.threads.push_back(t);
+        
+    }
+    
+    for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
+        (*it)->join();
     }
     return kOfxStatOK;
 }
@@ -435,18 +505,20 @@ void Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const {
 }
 
 void Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const {
-    for (U32 i = 0; i < tg.threads.size(); ++i) {
-        if (tg.threads[i]->get_id() == boost::this_thread::get_id()) {
+    U32 i = 0;
+    for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
+        if((*it)->get_id() == boost::this_thread::get_id()){
             *threadIndex = i;
             return;
         }
+        ++i;
     }
     *threadIndex = 0;
 }
 
 bool Natron::OfxHost::multiThreadIsSpawnedThread() const {
-    for (U32 i = 0; i < tg.threads.size(); ++i) {
-        if (tg.threads[i]->get_id() == boost::this_thread::get_id()) {
+    for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
+        if((*it)->get_id() == boost::this_thread::get_id()){
             return true;
         }
     }
