@@ -1038,6 +1038,8 @@ void AppManager::setPlaybackCacheMaximumSize(double p){
 
 AppManager::~AppManager(){
     
+    assert(_appInstances.empty());
+    
     _settings->saveSettings();
     
     for(ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); ++it) {

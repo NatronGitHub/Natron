@@ -135,8 +135,8 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
 
 Gui::~Gui()
 {
+    delete _projectGui;
     delete _undoStacksGroup;
-    delete _appInstance;
     _viewerTabs.clear();
     for(U32 i = 0; i < _toolButtons.size();++i){
         delete _toolButtons[i];
@@ -152,11 +152,11 @@ bool Gui::exit(){
     }
     saveGuiGeometry();
     assert(_appInstance);
+    delete this;
+    delete _appInstance;
     if (_appInstance->getAppID() != 0) {
-        delete this;
         return false;
     } else {
-        delete this;
         AppManager::quit();
         QCoreApplication::instance()->quit();
         return true;

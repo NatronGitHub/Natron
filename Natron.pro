@@ -118,7 +118,7 @@ INCLUDEPATH += $$PWD/libs/OpenFX/HostSupport/include
 INCLUDEPATH += $$PWD/
 
 
-DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SUPPORTS_PARAMETRIC
+DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SUPPORTS_PARAMETRIC OFX_EXTENSIONS_NATRON
 
 SOURCES += \
     Engine/ChannelSet.cpp \
@@ -342,7 +342,8 @@ HEADERS += \
     libs/OpenFX_extensions/tuttle/ofxParam.h \
     libs/OpenFX_extensions/tuttle/ofxParamAPI.h \
     libs/OpenFX_extensions/tuttle/ofxReadWrite.h \
-    libs/OpenFX_extensions/ofxhParametricParam.h
+    libs/OpenFX_extensions/ofxhParametricParam.h \
+    libs/OpenFX/include/natron/IOExtensions.h
 
 INSTALLS += target
 
