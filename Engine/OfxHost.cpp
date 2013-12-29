@@ -20,6 +20,8 @@
 #include <QStandardPaths>
 #endif
 
+#include <boost/thread.hpp>
+
 //ofx
 #include <ofxParametricParam.h>
 
@@ -408,6 +410,79 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
         return OFX::Host::ParametricParam::GetSuite(suiteVersion);
     }else{
         return OFX::Host::ImageEffect::Host::fetchSuite(suiteName, suiteVersion);
+    }
+}
+
+/////////////////
+/////////////////////////////////////////////////// MULTI_THREAD SUITE ///////////////////////////////////////////////////
+/////////////////
+
+struct Thread_Group {
+    std::vector<boost::thread*> threads;
+};
+
+static Thread_Group tg = Thread_Group();
+
+OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nThreads, void *customArg) {
+    for (U32 i = 0; i < nThreads; ++i) {
+        tg.threads.push_back(new boost::thread(func,i,nThreads,customArg));
+    }
+    return kOfxStatOK;
+}
+
+void Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const {
+    *nCPUs = boost::thread::hardware_concurrency();
+}
+
+void Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const {
+    for (U32 i = 0; i < tg.threads.size(); ++i) {
+        if (tg.threads[i]->get_id() == boost::this_thread::get_id()) {
+            *threadIndex = i;
+            return;
+        }
+    }
+    *threadIndex = 0;
+}
+
+bool Natron::OfxHost::multiThreadIsSpawnedThread() const {
+    for (U32 i = 0; i < tg.threads.size(); ++i) {
+        if (tg.threads[i]->get_id() == boost::this_thread::get_id()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void Natron::OfxHost::mutexCreate(OfxMutexHandle *mutex, int lockCount) const{
+    QMutex* m;
+    if(lockCount > 1){
+        m = new QMutex(QMutex::Recursive);
+    }else{
+        m = new QMutex;
+    }
+    for (int i = 0; i < lockCount; ++i) {
+        m->lock();
+    }
+    *mutex = (OfxMutexHandle)(m);
+}
+
+void Natron::OfxHost::mutexDestroy(const OfxMutexHandle mutex) const {
+    delete reinterpret_cast<const QMutex*>(mutex);
+}
+
+void Natron::OfxHost::mutexLock(const OfxMutexHandle mutex) const {
+    const_cast<QMutex*>(reinterpret_cast<const QMutex*>(mutex))->lock();
+}
+
+void Natron::OfxHost::mutexUnLock(const OfxMutexHandle mutex) const {
+    const_cast<QMutex*>(reinterpret_cast<const QMutex*>(mutex))->unlock();
+}
+
+OfxStatus Natron::OfxHost::mutexTryLock(const OfxMutexHandle mutex) const {
+    if(const_cast<QMutex*>(reinterpret_cast<const QMutex*>(mutex))->tryLock()){
+        return kOfxStatOK;
+    }else{
+        return kOfxStatFailed;
     }
 }
 

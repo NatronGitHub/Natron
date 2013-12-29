@@ -80,6 +80,26 @@ public:
     ///fetch the parametric parameters suite or returns the base class version
     virtual void* fetchSuite(const char *suiteName, int suiteVersion) OVERRIDE;
     
+    virtual bool implementsMultiThreadSuite() const OVERRIDE { return true; }
+    
+    virtual OfxStatus multiThread(OfxThreadFunctionV1 func,unsigned int nThreads, void *customArg) OVERRIDE;
+
+    virtual void multiThreadNumCPUS(unsigned int *nCPUs) const OVERRIDE;
+    
+    virtual void multiThreadIndex(unsigned int *threadIndex) const OVERRIDE;
+    
+    virtual bool multiThreadIsSpawnedThread() const OVERRIDE;
+    
+    virtual void mutexCreate(OfxMutexHandle *mutex, int lockCount) const OVERRIDE;
+
+    virtual void mutexDestroy(const OfxMutexHandle mutex) const OVERRIDE;
+
+    virtual void mutexLock(const OfxMutexHandle mutex) const OVERRIDE;
+   
+    virtual void mutexUnLock(const OfxMutexHandle mutex) const OVERRIDE;
+
+    virtual OfxStatus mutexTryLock(const OfxMutexHandle mutex) const OVERRIDE;
+    
     OfxEffectInstance* createOfxEffect(const std::string& name,Node* node);
 
     /*Reads OFX plugin cache and scan plugins directories
