@@ -16,6 +16,7 @@
 
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
+#include <natron/IOExtensions.h>
 
 #include <ofxParametricParam.h>
 
@@ -1370,7 +1371,8 @@ OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
     if(_fileKnob){
         int currentFrame = (int)_node->effectInstance()->timeLineGetTime();
-        QString fileName =  _fileKnob->getRandomFrameName(currentFrame,true);
+        bool loadNearest = (bool)getProperties().getIntProperty(kOfxParamImageFilePathLoadNearest);
+        QString fileName =  _fileKnob->getRandomFrameName(currentFrame,loadNearest);
         str = fileName.toStdString();
     }else if(_outputFileKnob){
         str = filenameFromPattern((int)_node->getCurrentFrame());
@@ -1386,7 +1388,8 @@ OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
     assert(!String_Knob::canAnimateStatic());
     assert(_node->effectInstance());
     if(_fileKnob){
-        str = _fileKnob->getRandomFrameName(time,true).toStdString();
+        bool loadNearest = (bool)getProperties().getIntProperty(kOfxParamImageFilePathLoadNearest);
+        str = _fileKnob->getRandomFrameName(time,loadNearest).toStdString();
     }else if(_outputFileKnob){
         str = filenameFromPattern((int)_node->getCurrentFrame());
     }else if(_stringKnob){
