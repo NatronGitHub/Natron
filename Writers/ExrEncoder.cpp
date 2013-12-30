@@ -210,11 +210,9 @@ bool ExrEncoderKnobs::allValid(){
     return true;
 }
 
-/*Must implement it to initialize the appropriate colorspace  for
- the file type. You can initialize the _lut member by calling the
- function getLut(datatype) */
+
 void ExrEncoder::initializeColorSpace(){
-    _lut = Natron::Color::getLut(Natron::Color::LUT_DEFAULT_FLOAT);
+    _lut = 0;
 }
 
 /*This must be implemented to do the output colorspace conversion*/
@@ -242,7 +240,7 @@ Natron::Status ExrEncoder::render(boost::shared_ptr<const Natron::Image> inputIm
                         }
                     }
                     //colorspace conversion
-                    to_float(z, to, to, row.begin(Natron::Channel_alpha), row.width());
+                    Natron::Color::Linear::to_float_planar(to, to,  row.width(),row.begin(Natron::Channel_alpha));
                 }
             }else{
                 row.eraseAll();

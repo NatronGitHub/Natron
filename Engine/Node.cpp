@@ -578,7 +578,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
 
     RenderScale scale;
     scale.x = scale.y = 1.;
-    boost::shared_ptr<const Image> img;
+    boost::shared_ptr<Image> img;
 
     // Exceptions are caught because the program can run without a preview,
     // but any exception in renderROI is probably fatal.
@@ -597,13 +597,13 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
 
         U32 *dst_pixels = buf + width*(h-1-i);
         const float* src_pixels = img->pixelAt(0, nearestY);
-
+        
         for(int j = 0;j < w;++j) {
             double x = (double)j/xZoomFactor;
             int nearestX = (int)(x+0.5);
-            float r = clamp(Color::linearrgb_to_srgb(src_pixels[nearestX*4]));
-            float g = clamp(Color::linearrgb_to_srgb(src_pixels[nearestX*4+1]));
-            float b = clamp(Color::linearrgb_to_srgb(src_pixels[nearestX*4+2]));
+            float r = clamp(Natron::Color::to_func_srgb(src_pixels[nearestX*4]));
+            float g = clamp(Natron::Color::to_func_srgb(src_pixels[nearestX*4+1]));
+            float b = clamp(Natron::Color::to_func_srgb(src_pixels[nearestX*4+2]));
             float a = clamp(src_pixels[nearestX*4+3]);
             dst_pixels[j] = qRgba(r*255, g*255, b*255, a*255);
 

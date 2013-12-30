@@ -33,7 +33,7 @@ QtDecoder::QtDecoder(Reader* op)
 }
 
 void QtDecoder::initializeColorSpace(){
-    _lut=Color::getLut(Color::LUT_DEFAULT_VIEWER);
+    _lut = Color::LutManager::sRGBLut();
 }
 
 QtDecoder::~QtDecoder(){
@@ -57,7 +57,8 @@ Natron::Status QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,con
         case QImage::Format_ARGB32: // The image is stored using a 32-bit ARGB format (0xAARRGGBB).
         case QImage::Format_ARGB32_Premultiplied: // The image is stored using a premultiplied 32-bit ARGB format (0xAARRGGBB).
             //might have to invert y coordinates here
-            from_byte_rect(output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),Natron::Color::Lut::BGRA,true);
+            _lut->from_byte_packed(output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),output->getRoD(),
+                                   Natron::Color::PACKING_BGRA,Natron::Color::PACKING_RGBA,true,true);
             break;
         case QImage::Format_Mono: // The image is stored using 1-bit per pixel. Bytes are packed with the most significant bit (MSB) first.
         case QImage::Format_MonoLSB: // The image is stored using 1-bit per pixel. Bytes are packed with the less significant bit (LSB) first.
@@ -71,7 +72,8 @@ Natron::Status QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,con
         case QImage::Format_RGB888: // The image is stored using a 24-bit RGB format (8-8-8).
         case QImage::Format_RGB444: // The image is stored using a 16-bit RGB format (4-4-4). The unused bits are always zero.
         case QImage::Format_ARGB4444_Premultiplied: // The image is stored using a premultiplied 16-bit ARGB format (4-4-4-4).
-            from_byte_rect(output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),Natron::Color::Lut::BGRA,true);
+            _lut->from_byte_packed(output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),output->getRoD(),
+                                   Natron::Color::PACKING_BGRA,Natron::Color::PACKING_RGBA,true,true);
             break;
         case QImage::Format_Invalid:
         default:

@@ -98,8 +98,9 @@ namespace Natron{
     void debugImage(Natron::Image* img,const QString& filename){
         const RectI& rod = img->getRoD();
         QImage output(rod.width(),rod.height(),QImage::Format_ARGB32_Premultiplied);
-        const Natron::Color::Lut* lut = Natron::Color::getLut(Natron::Color::LUT_DEFAULT_INT8);
-        lut->to_byte_rect_premult(output.bits(), img->pixelAt(0, 0), rod, rod, rod, true, Natron::Color::Lut::BGRA);
+        const Natron::Color::Lut* lut = Natron::Color::LutManager::sRGBLut();
+        lut->to_byte_packed(output.bits(), img->pixelAt(0, 0), rod, rod, rod,
+                            Natron::Color::PACKING_RGBA,Natron::Color::PACKING_BGRA, true,true);
         U64 hashKey = img->getHashKey();
         QString hashKeyStr = QString::number(hashKey);
         QString realFileName = filename.isEmpty() ? QString(hashKeyStr+".png") : filename;

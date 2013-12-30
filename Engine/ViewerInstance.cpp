@@ -58,7 +58,7 @@ Natron::OutputEffectInstance(node)
 ,_mustFreeBuffer(false)
 ,_renderArgsMutex()
 ,_exposure(1.)
-,_colorSpace(Color::getLut(Color::LUT_DEFAULT_VIEWER))
+,_colorSpace(Natron::Color::LutManager::sRGBLut())
 ,_lut(sRGB)
 ,_channels(RGBA)
 {
@@ -260,7 +260,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
             //inputsRoi only contains 1 element
             EffectInstance::RoIMap::const_iterator it = inputsRoi.begin();
             
-            boost::shared_ptr<const Natron::Image> inputImage;
+            boost::shared_ptr<Natron::Image> inputImage;
 
             // Do not catch exceptions: if an exception occurs here it is probably fatal, since
             // it comes from Natron itself. All exceptions from plugins are already caught
@@ -546,7 +546,8 @@ void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vec
     yOffset *= row_width;
     output += yOffset;
     
-    if(_colorSpace->linear()){
+    ////if the color-space is linear
+    if(!_colorSpace){
         int start = (int)(rand() % row_width);
         /* go fowards from starting point to end of line: */
         for(unsigned int i = start ; i < row_width; ++i) {
@@ -591,8 +592,10 @@ void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vec
         unsigned error_r = 0x80;
         unsigned error_g = 0x80;
         unsigned error_b = 0x80;
+        
         /* go fowards from starting point to end of line: */
         _colorSpace->validate();
+        
         for (unsigned int i = start ; i < columnSpan.size() ; ++i) {
             int col = columnSpan[i]*4;
             U8 r_,g_,b_,a_;
@@ -605,9 +608,9 @@ void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vec
                 b = r;
 
             }
-            error_r = (error_r&0xff) + _colorSpace->toFloatFast(r);
-            error_g = (error_g&0xff) + _colorSpace->toFloatFast(g);
-            error_b = (error_b&0xff) + _colorSpace->toFloatFast(b);
+            error_r = (error_r&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(r);
+            error_g = (error_g&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(g);
+            error_b = (error_b&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(b);
             a_ = 255;
             r_ = (U8)(error_r >> 8);
             g_ = (U8)(error_g >> 8);
@@ -631,9 +634,9 @@ void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vec
                 b = r;
                 
             }
-            error_r = (error_r&0xff) + _colorSpace->toFloatFast(r);
-            error_g = (error_g&0xff) + _colorSpace->toFloatFast(g);
-            error_b = (error_b&0xff) + _colorSpace->toFloatFast(b);
+            error_r = (error_r&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(r);
+            error_g = (error_g&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(g);
+            error_b = (error_b&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(b);
 
             a_ = 255;
             r_ = (U8)(error_r >> 8);
@@ -700,18 +703,18 @@ void ViewerInstance::onColorSpaceChanged(const QString& colorspaceName){
     
     if (colorspaceName == "Linear(None)") {
         if(_lut != Linear){ // if it wasnt already this setting
-            _colorSpace = Color::getLut(Color::LUT_DEFAULT_FLOAT);
+            _colorSpace = 0;
         }
         _lut = Linear;
     }else if(colorspaceName == "sRGB"){
         if(_lut != sRGB){ // if it wasnt already this setting
-            _colorSpace = Color::getLut(Color::LUT_DEFAULT_VIEWER);
+            _colorSpace = Natron::Color::LutManager::sRGBLut();
         }
         
         _lut = sRGB;
     }else if(colorspaceName == "Rec.709"){
         if(_lut != Rec709){ // if it wasnt already this setting
-            _colorSpace = Color::getLut(Color::LUT_DEFAULT_MONITOR);
+            _colorSpace = Natron::Color::LutManager::Rec709Lut();
         }
         _lut = Rec709;
     }
@@ -740,13 +743,13 @@ void ViewerInstance::disconnectViewer(){
 void ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear){
     
     _uiContext->viewer->getColorAt(x, y, r, g, b, a);
-    if(forceLinear){
+    if(forceLinear && _colorSpace){
         float from[3];
         from[0] = *r;
         from[1] = *g;
         from[2] = *b;
         float to[3];
-        _colorSpace->from_float(to, from, 3);
+        _colorSpace->from_float_planar(to, from, 3);
         *r = to[0];
         *g = to[1];
         *b = to[2];

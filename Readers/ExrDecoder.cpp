@@ -369,7 +369,7 @@ ExrDecoder::Implementation::Implementation()
 }
 
 void ExrDecoder::initializeColorSpace(){
-    _lut=Natron::Color::getLut(Natron::Color::LUT_DEFAULT_FLOAT); // linear color-space for exr files
+    _lut = 0; // linear color-space for exr files
 }
 
 ExrDecoder::~ExrDecoder(){
@@ -439,12 +439,11 @@ Natron::Status ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,co
         }
         
         //  colorspace conversion
-        const float* alpha = row.begin(Natron::Channel_alpha);
         foreachChannels(z, channels){
             float* to = row.begin(z) - row.left();
             const float* from = row.begin(z) - row.left();
             if(from){
-                from_float(z,to + X ,from + X,alpha, R-X,1);
+                Natron::Color::Linear::from_float_planar(to + X ,from + X, R-X,1,1);
             }
         }
         Natron::copyRowToImage(row, y, row.left(), output.get());

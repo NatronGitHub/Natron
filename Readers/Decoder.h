@@ -103,22 +103,6 @@ protected:
      */
     virtual Natron::Status readHeader(const QString& filename) = 0;
     
-    void from_byte(Natron::Channel z, float* to, const uchar* from, const uchar* alpha, int W, int delta = 1);
-    void from_byteQt(Natron::Channel z, float* to, const QRgb* from, int W, int delta = 1);
-    void from_short(Natron::Channel z, float* to, const U16* from, const U16* alpha, int W, int bits, int delta = 1);
-    void from_float(Natron::Channel z, float* to, const float* from, const float* alpha, int W, int delta = 1);
-    
-    
-    void from_byte_rect(float* to,const uchar* from,
-                        const RectI& rect,const RectI& rod,
-                        Natron::Color::Lut::PackedPixelsFormat inputPacking = Natron::Color::Lut::RGBA,bool invertY = false);
- 
-    void from_short_rect(float* to,const U16* from,
-                         const RectI& rect,const RectI& rod,
-                         Natron::Color::Lut::PackedPixelsFormat inputPacking = Natron::Color::Lut::RGBA,bool invertY = false);
-    void from_float_rect(float* to,const float* from,
-                         const RectI& rect,const RectI& rod,
-                         Natron::Color::Lut::PackedPixelsFormat inputPacking = Natron::Color::Lut::RGBA,bool invertY = false);
    
     bool _premult; //if the file contains a premultiplied 4 channel image, this must be turned-on
     bool _autoCreateAlpha;

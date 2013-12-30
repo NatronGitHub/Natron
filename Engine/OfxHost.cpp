@@ -420,6 +420,7 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
 struct Thread_Group {
     typedef std::list<boost::thread*> ThreadsList;
     ThreadsList threads;
+    ThreadsList finishedThreads;
     boost::mutex lock;
     boost::condition_variable cond;
     
@@ -466,6 +467,7 @@ void OfxWrappedFunctor(OfxThreadFunctionV1 func,int i,unsigned int nThreads,void
     //it shouldn't have been removed...
     assert(found != tg.threads.end());
     tg.threads.erase(found);
+    tg.finishedThreads.push_back(*found);
     
     tg.cond.notify_one();
     
@@ -497,6 +499,16 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
     for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
         (*it)->join();
     }
+    
+    ///all functors must have returned and erase the thread from the list.
+    assert(tg.threads.empty());
+    
+    for (Thread_Group::ThreadsList::iterator it = tg.finishedThreads.begin(); it!= tg.finishedThreads.end(); ++it) {
+        delete (*it);
+    }
+    
+    tg.finishedThreads.clear();
+    
     return kOfxStatOK;
 }
 

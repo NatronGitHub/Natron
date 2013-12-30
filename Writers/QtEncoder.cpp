@@ -65,7 +65,7 @@ bool QtEncoder::supports_stereo() const {
  the file type. You can initialize the _lut member by calling the
  function getLut(datatype) */
 void QtEncoder::initializeColorSpace(){
-    _lut = Color::getLut(Color::LUT_DEFAULT_INT8);
+    _lut = Natron::Color::LutManager::sRGBLut();
 }
 
 /*This function initialises the output file/output storage structure and put necessary info in it, like
@@ -111,7 +111,7 @@ void QtEncoder::supportsChannelsForWriting(ChannelSet& channels) const {
 }
 
 Natron::Status QtEncoder::render(boost::shared_ptr<const Natron::Image> inputImage,int /*view*/,const RectI& roi){
-    to_byte_rect(_buf, inputImage->pixelAt(0, 0),roi, inputImage->getRoD(),_rod,Natron::Color::Lut::BGRA,true);
+    _lut->to_byte_packed(_buf, inputImage->pixelAt(0, 0),roi, inputImage->getRoD(),_rod,Natron::Color::PACKING_RGBA,Natron::Color::PACKING_BGRA,true,_premult);
     return StatOK;
 }
 

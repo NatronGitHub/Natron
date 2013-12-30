@@ -163,40 +163,6 @@ public:
     virtual EncoderKnobs* initSpecificKnobs() {return NULL;}
     
     
-    /**
-     * @brief to_byte converts a buffer of float to a buffer of bytes to the output color-space.
-     * @param z The channel identifier
-     * @param to The output buffer
-     * @param from The input buffer
-     * @param alpha The optional alpha channel if premultiplyByAlpha() returns true
-     * @param W The length of the buffer
-     * @param delta How far apart the values in output should be spaced.
-     */
-    void to_byte(Natron::Channel z, uchar* to, const float* from, const float* alpha, int W, int delta = 1);
-    
-    /** @brief Same as to_byte but converts to shorts output buffer.**/
-    void to_short(Natron::Channel z, U16* to, const float* from, const float* alpha, int W, int bits = 16, int delta = 1);
-    
-    /** @brief Same as to_byte but converts to float output buffer**/
-    void to_float(Natron::Channel z, float* to, const float* from, const float* alpha, int W, int delta = 1);
-    
-    /**
-     * @brief to_byte converts a RGBA packed-buffer of float to a RGBA packed-buffer of bytes to the output color-space.
-     */
-    void to_byte_rect(uchar* to, const float* from,
-                      const RectI& rect,const RectI& srcRod,const RectI& dstRod,
-                      Natron::Color::Lut::PackedPixelsFormat outputPacking = Natron::Color::Lut::RGBA,int invertY = false);
-
-    /** @brief Same as to_byte but converts to shorts output buffer.**/
-    void to_short_rect(U16* to, const float* from,
-                       const RectI& rect,const RectI& srcRod,const RectI& dstRod,
-                       Natron::Color::Lut::PackedPixelsFormat outputPacking = Natron::Color::Lut::RGBA,int invertY = false);
-
-    /** @brief Same as to_byte but converts to float output buffer**/
-    void to_float_rect(float* to, const float* from,
-                       const RectI& rect,const RectI& srcRod,const RectI& dstRod,
-                       Natron::Color::Lut::PackedPixelsFormat outputPacking = Natron::Color::Lut::RGBA,int invertY = false);
-    
 protected:
     
     virtual Natron::Status setupFile(const QString& filename,const RectI& rod) = 0;
