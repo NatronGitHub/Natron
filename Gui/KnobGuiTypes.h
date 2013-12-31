@@ -32,6 +32,8 @@ class QGridLayout;
 class QTextEdit;
 class QTreeWidget;
 class QTreeWidgetItem;
+class QTableWidget;
+class QTableWidgetItem;
 
 // Engine
 class Knob;
@@ -267,10 +269,49 @@ private:
 
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
 
-private:
     std::vector<std::string> _entries;
     ComboBox *_comboBox;
     QLabel *_descriptionLabel;
+};
+
+//================================
+class Table_KnobGui : public KnobGui
+{
+    Q_OBJECT
+public:
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
+        return new Table_KnobGui(knob, container);
+    }
+    
+    
+    Table_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
+    
+    virtual ~Table_KnobGui() OVERRIDE;
+    
+    public slots:
+    
+    void onCurrentIndexChanged(int);
+    
+    void onPopulated();
+    
+private:
+    
+    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+    
+    virtual void _hide() OVERRIDE FINAL;
+    
+    virtual void _show() OVERRIDE FINAL;
+    
+    virtual void setEnabled() OVERRIDE FINAL;
+    
+    virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
+    
+
+    QTableWidget *_table;
+    QLabel *_descriptionLabel;
+    QWidget* _container;
+    QVBoxLayout* _layout;
+    std::vector<ComboBox*> _choices;
 };
 
 //=========================

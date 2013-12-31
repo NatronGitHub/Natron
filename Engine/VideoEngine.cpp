@@ -92,7 +92,12 @@ VideoEngine::~VideoEngine() {
 }
 
 void VideoEngine::quitEngineThread(){
-    if(_threadStarted){
+    bool isThreadStarted = false;
+    {
+        QMutexLocker quitLocker(&_mustQuitMutex);
+        isThreadStarted = _threadStarted;
+    }
+    if(isThreadStarted){
         abortRendering();
         {
             QMutexLocker locker(&_mustQuitMutex);
@@ -111,6 +116,7 @@ void VideoEngine::quitEngineThread(){
                 _mustQuitCondition.wait(&_mustQuitMutex);
             }
         }
+        QMutexLocker quitLocker(&_mustQuitMutex);
         _threadStarted = false;
     }
 }
@@ -301,11 +307,15 @@ bool VideoEngine::stopEngine() {
         if (_mustQuit) {
             _mustQuit = false;
             _mustQuitCondition.wakeAll();
+            _threadStarted = false;
             return true;
         }
     }
     if(_tree.getOutput()->getApp()->isBackground()){
         _tree.getOutput()->getApp()->notifyRenderFinished(dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput()));
+        _mustQuit = false;
+        _mustQuitCondition.wakeAll();
+        _threadStarted = false;
         return true;
     }
     

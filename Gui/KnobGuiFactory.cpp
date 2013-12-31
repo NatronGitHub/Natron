@@ -96,6 +96,7 @@ void KnobGuiFactory::loadBultinKnobs()
     _loadedKnobs.insert(knobGuiFactoryEntry<RichText_Knob,RichText_KnobGui>());
     _loadedKnobs.insert(knobGuiFactoryEntry<Bool_Knob,Bool_KnobGui>());
     _loadedKnobs.insert(knobGuiFactoryEntry<Parametric_Knob, Parametric_KnobGui>());
+    _loadedKnobs.insert(knobGuiFactoryEntry<Table_Knob, Table_KnobGui>());
 }
 
 

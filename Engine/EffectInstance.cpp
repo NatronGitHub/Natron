@@ -25,6 +25,7 @@
 #include "Engine/KnobFile.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
+#include "Engine/KnobTypes.h"
 
 #include "Writers/Writer.h"
 
@@ -494,7 +495,7 @@ void EffectInstance::evaluate(Knob* knob,bool isSignificant){
     if(!isOutput()){
         std::list<ViewerInstance*> viewers;
         _node->hasViewersConnected(&viewers);
-        bool fitToViewer = knob && knob->typeName() == "InputFile";
+        bool fitToViewer = knob && knob->typeName() == File_Knob::typeNameStatic();
         for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
             if(isSignificant){
                 (*it)->refreshAndContinueRender(fitToViewer);
@@ -505,11 +506,16 @@ void EffectInstance::evaluate(Knob* knob,bool isSignificant){
     }else{
         /*if this is a writer (openfx or built-in writer)*/
         if (pluginID() != "Viewer") {
-            /*if this is a button,we're safe to assume the plug-ins wants to start rendering.*/
-            if(knob && knob->typeName() == "Button"){
-                QStringList list;
-                list << getName().c_str();
-                getApp()->startWritersRendering(list);
+            
+            /*if this is a button and it is a render button,we're safe to assume the plug-ins wants to start rendering.*/
+            if(knob && knob->typeName() == Button_Knob::typeNameStatic()){
+                Button_Knob* button = dynamic_cast<Button_Knob*>(knob);
+                assert(button);
+                if(button->isRenderButton()){
+                    QStringList list;
+                    list << getName().c_str();
+                    getApp()->startWritersRendering(list);
+                }
             }
         }
     }

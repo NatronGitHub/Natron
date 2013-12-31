@@ -46,11 +46,11 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
 
 OfxImageEffectInstance::~OfxImageEffectInstance()
 {
-    for (std::map<OFX::Host::Param::Instance*,std::string>::iterator it = _parentingMap.begin();
-         it != _parentingMap.end();
-         ++it) {
-        delete it->first;
-    }
+//    for (std::map<OFX::Host::Param::Instance*,std::string>::iterator it = _parentingMap.begin();
+//         it != _parentingMap.end();
+//         ++it) {
+//        delete it->first;
+//    }
 }
 
 const std::string& OfxImageEffectInstance::getDefaultOutputFielding() const {

@@ -421,6 +421,7 @@ void Double_Knob::setDecimals(const std::vector<int> &decis)
 
 Button_Knob::Button_Knob(KnobHolder  *holder, const std::string &description, int dimension):
 Knob(holder, description, dimension)
+, _renderButton(false)
 {
     setPersistent(false);
 }
@@ -495,6 +496,58 @@ int Choice_Knob::getActiveEntry() const
 const std::string &Choice_Knob::getActiveEntryText() const
 {
     return _entries[getActiveEntry()];
+}
+
+/******************************TABLE_KNOB**************************************/
+
+Table_Knob::Table_Knob(KnobHolder *holder, const std::string &description, int dimension)
+: Knob(holder,description,dimension)
+{
+    
+}
+
+void Table_Knob::appendRow(const std::string& key,const std::vector<std::string> &choices){
+    if((int)_entries.size() == getDimension()){
+        return;
+    }
+    _entries.push_back(std::make_pair(key, choices));
+    if((int)_entries.size() == getDimension()){
+        emit populated();
+    }
+}
+
+const Table_Knob::TableEntries& Table_Knob::getRows() const{
+    return _entries;
+}
+
+void Table_Knob::setRows(const Table_Knob::TableEntries& rows){
+    _entries = rows;
+    emit populated();
+}
+
+bool Table_Knob::canAnimate() const{
+    return canAnimateStatic();
+}
+
+void Table_Knob::setVerticalHeaders(const std::string& keyHeader,const std::string& choicesHeader){
+    _keyHeader = keyHeader;
+    _choicesHeader = choicesHeader;
+}
+
+void Table_Knob::getVerticalHeaders(std::string* keyHeader,std::string* choicesHeader){
+    *keyHeader = _keyHeader;
+    *choicesHeader = _choicesHeader;
+}
+
+
+const std::string Table_Knob::_typeNameStr("Table");
+
+const std::string& Table_Knob::typeNameStatic() {
+    return _typeNameStr;
+}
+
+const std::string& Table_Knob::typeName() const {
+    return  typeNameStatic();
 }
 
 /******************************SEPARATOR_KNOB**************************************/

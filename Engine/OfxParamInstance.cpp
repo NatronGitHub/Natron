@@ -144,6 +144,11 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
 : OFX::Host::Param::PushbuttonInstance(descriptor, node->effectInstance())
 {
     _knob = Natron::createKnob<Button_Knob>(node, getParamLabel(this));
+    
+    int isRenderButton = getProperties().getIntProperty(kOfxParamPropButtonIsRender);
+    if (isRenderButton > 0) {
+        _knob->setAsRenderButton();
+    }
 }
 
 
@@ -1342,7 +1347,10 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
     std::string mode = properties.getStringProperty(kOfxParamPropStringMode);
     
     if (mode == kOfxParamStringIsFilePath) {
-        if (_node->isGenerator()) {
+        
+        int fileIsOutput = properties.getIntProperty(kOfxParamImageFilePathIsOutput);
+        
+        if (fileIsOutput == 0) {
             _fileKnob = Natron::createKnob<File_Knob>(node, getParamLabel(this));
             
         } else {
@@ -1391,7 +1399,7 @@ OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
         bool loadNearest = (bool)getProperties().getIntProperty(kOfxParamImageFilePathLoadNearest);
         str = _fileKnob->getRandomFrameName(time,loadNearest).toStdString();
     }else if(_outputFileKnob){
-        str = filenameFromPattern((int)_node->getCurrentFrame());
+        str = filenameFromPattern(std::floor(time + 0.5));
     }else if(_stringKnob){
         str = _stringKnob->getString();
     }else if(_multiLineKnob){
@@ -1514,7 +1522,42 @@ std::string OfxStringInstance::filenameFromPattern(int frameIndex) const{
         std::string pattern = _outputFileKnob->getValue<QString>().toStdString();
         if(isValid()){
             QString p(pattern.c_str());
-            return p.replace("#", QString::number(frameIndex)).toStdString();
+            
+            int lastDot = p.lastIndexOf(QChar('.'));
+            if(lastDot == -1){
+                ///the filename has not extension, return an empty str
+                return "";
+            }
+            
+            QString fStr =  QString::number(frameIndex);
+            int lastPos = p.lastIndexOf(QChar('#'));
+            
+            if (lastPos == -1) {
+                ///the filename has no #, just put the digits between etxension and path
+                
+                p.insert(lastDot-1, fStr);
+                return p.toStdString();
+            }
+            
+            int nSharpChar = 0;
+            int i = lastDot;
+            --i; //< char before '.'
+            while (i >= 0 && p.at(i) == QChar('#')) {
+                --i;
+                ++nSharpChar;
+            }
+            
+            int prepending0s = nSharpChar > fStr.size() ? nSharpChar - fStr.size() : 0;
+            
+            //remove all ocurrences of the # char
+            p.remove(QChar('#'));
+            
+            for (int j = 0; j < prepending0s; ++j) {
+                fStr.prepend("0");
+            }
+            
+            p.insert(lastDot-1, fStr);
+            return p.toStdString();
         }
     }
     return "";

@@ -34,6 +34,7 @@ class Double_Knob;
 class Int_Knob;
 class Bool_Knob;
 class Choice_Knob;
+class Table_Knob;
 
 class Settings : public KnobHolder
 {
@@ -107,6 +108,14 @@ public:
     U64 getMaximumDiskCacheSize() const;
     
     bool getColorPickerLinear() const;
+    
+    const std::string& getReaderPluginIDForFileType(const std::string& extension);
+    
+    const std::string& getWriterPluginIDForFileType(const std::string& extension);
+    
+    void populateReaderPluginsAndFormats(const std::vector<std::pair<std::string,std::vector<std::string> > >& rows);
+    
+    void populateWriterPluginsAndFormats(const std::vector<std::pair<std::string,std::vector<std::string> > >& rows);
    
     ///save the settings to the application's settings
     void saveSettings();
@@ -130,6 +139,13 @@ private:
     
     boost::shared_ptr<Tab_Knob> _viewersTab;
     boost::shared_ptr<Choice_Knob> _texturesMode;
+    
+    boost::shared_ptr<Tab_Knob> _readersTab;
+    boost::shared_ptr<Table_Knob> _readersMapping;
+    
+    boost::shared_ptr<Tab_Knob> _writersTab;
+    boost::shared_ptr<Table_Knob> _writersMapping;
+    
 };
 
 #endif // NATRON_ENGINE_SETTINGS_H_

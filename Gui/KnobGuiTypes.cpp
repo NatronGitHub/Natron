@@ -22,6 +22,8 @@
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QHeaderView>
+#include <QTableWidget>
+#include <QTableWidgetItem>
 
 #include "Global/AppManager.h"
 
@@ -638,6 +640,126 @@ void Choice_KnobGui::setEnabled()
     bool b = getKnob()->isEnabled();
     _descriptionLabel->setEnabled(b);
     _comboBox->setEnabled(b);
+}
+
+//=============================TABLE_KNOB_GUI===================================
+
+
+Table_KnobGui::Table_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
+: KnobGui(knob,container)
+{
+    boost::shared_ptr<Table_Knob> tbKnob = boost::dynamic_pointer_cast<Table_Knob>(getKnob());
+    assert(tbKnob);
+
+    QObject::connect(tbKnob.get(), SIGNAL(populated()), this, SLOT(onPopulated()));
+}
+
+Table_KnobGui::~Table_KnobGui() {
+    delete _container;
+}
+
+void Table_KnobGui::createWidget(QGridLayout *layout, int row) {
+    
+    boost::shared_ptr<Table_Knob> tbKnob = boost::dynamic_pointer_cast<Table_Knob>(getKnob());
+    assert(tbKnob);
+    
+    _container = new QWidget(layout->parentWidget());
+    _container->setToolTip(tbKnob->getHintToolTip().c_str());
+    _layout = new QVBoxLayout(_container);
+    
+    _descriptionLabel = new QLabel(getKnob()->getDescription().c_str(),_container);
+    
+    _layout->addWidget(_descriptionLabel);
+    
+    _table = new QTableWidget(_container);
+    QObject::connect(_table, SIGNAL(itemChanged(QTableWidgetItem*)), this, SLOT(onItemChanged(QTableWidgetItem*)));
+    _table->setRowCount(getKnob()->getDimension());
+    _table->setColumnCount(2);
+    
+    std::string keyHeader,choicesHeader;
+    tbKnob->getVerticalHeaders(&keyHeader, &choicesHeader);
+    
+    QStringList verticalHeaders;
+    if(!keyHeader.empty() && !choicesHeader.empty()){
+        verticalHeaders.push_back(keyHeader.c_str());
+        verticalHeaders.push_back(choicesHeader.c_str());
+    }
+    
+    if(!verticalHeaders.isEmpty()){
+        _table->setVerticalHeaderLabels(verticalHeaders);
+    }
+    
+    const Table_Knob::TableEntries& entries = tbKnob->getRows();
+    if((int)entries.size() == tbKnob->getDimension()){
+        onPopulated();
+    }
+    
+    _layout->addWidget(_table);
+    
+    layout->addWidget(_container, row, 1);
+}
+
+void Table_KnobGui::onPopulated(){
+    
+    boost::shared_ptr<Table_Knob> tbKnob = boost::dynamic_pointer_cast<Table_Knob>(getKnob());
+    assert(tbKnob);
+    
+    ///clear the previous table cells
+    while(_table->rowCount() > 0){
+        QTableWidgetItem* left = _table->item(0, 0);
+        delete left;
+        QTableWidgetItem* right = _table->item(0, 1);
+        delete right;
+    }
+    
+    
+
+    const Table_Knob::TableEntries& entries = tbKnob->getRows();
+    assert((int)entries.size() == tbKnob->getDimension());
+    for (int i = 0; i < tbKnob->getDimension(); ++i) {
+        QTableWidgetItem* keyItem = new QTableWidgetItem(entries[i].first.c_str());
+        keyItem->setFlags(Qt::NoItemFlags);
+        _table->setItem(i, 0, keyItem);
+        QTableWidgetItem* choicesItem = new QTableWidgetItem();
+        _table->setItem(i, 1, choicesItem);
+        ComboBox* cb = new ComboBox(_table);
+        for (U32 j = 0; j < entries[i].second.size(); ++j) {
+            cb->addItem(entries[i].second[j].c_str());
+        }
+        _choices.push_back(cb);
+        QObject::connect(cb, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
+        int defaultIndex = tbKnob->getValue<int>(i);
+        cb->setCurrentIndex(defaultIndex);
+        
+        _table->setCellWidget(i, 1, cb);
+    }
+
+}
+
+void Table_KnobGui::onCurrentIndexChanged(int){
+    std::vector<Variant> newValues;
+    for (U32 i = 0; i < _choices.size(); ++i) {
+        newValues.push_back(Variant(_choices[i]->activeIndex()));
+    }
+    pushValueChangedCommand(newValues);
+}
+
+void Table_KnobGui::_hide() {
+    _container->hide();
+}
+
+void Table_KnobGui::_show() {
+    _container->show();
+}
+
+void Table_KnobGui::setEnabled() {
+    _container->setEnabled(getKnob()->isEnabled());
+}
+
+void Table_KnobGui::updateGUI(int dimension, const Variant &variant) {
+    if(dimension < (int)_choices.size()){
+        _choices[dimension]->setCurrentText(_choices[dimension]->itemText(variant.toInt()));
+    }
 }
 
 

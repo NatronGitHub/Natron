@@ -150,10 +150,15 @@ int main(int argc, char *argv[])
     }else{
         printBackGroundWelcomeMessage();
     }
-    if(!manager->newAppInstance(isBackGround,projectFile,writers)){
+    AppInstance* mainInstance = manager->newAppInstance(isBackGround,projectFile,writers);
+    if(!mainInstance){
         printUsage();
         AppManager::quit();
         return 1;
+    }else{
+        if(isBackGround){
+            delete mainInstance;
+        }
     }
 	  
     if(!isBackGround){

@@ -99,6 +99,23 @@ void Settings::initializeKnobs(){
     
     
     
+    _readersTab = Natron::createKnob<Tab_Knob>(this, "Readers");
+    
+    _readersMapping = Natron::createKnob<Table_Knob>(this, "Readers mapping");
+    _readersMapping->setHintToolTip("The left column represents all the formats that are decodable"
+                                " by Natron and its plug-ins. The right column indicates for each format"
+                                " , which plug-in is chosen by Natron to decode it.");
+    _readersTab->addKnob(_readersMapping);
+    
+    _writersTab = Natron::createKnob<Tab_Knob>(this, "Writers");
+    
+    _writersMapping = Natron::createKnob<Table_Knob>(this, "Writers mapping");
+    _writersMapping->setHintToolTip("The left column represents all the formats that are encodable"
+                                    " by Natron and its plug-ins. The right column indicates for each format"
+                                    " , which plug-in is chosen by Natron to encode it.");
+    _writersTab->addKnob(_writersMapping);
+    
+    
 }
 
 Settings::ReadersSettings::ReadersSettings(){
@@ -183,6 +200,22 @@ void Settings::saveSettings(){
     settings.setValue("ByteTextures", _texturesMode->getValue<int>());
     settings.endGroup();
     
+    settings.beginGroup("Readers");
+    QList<QVariant> readersMap;
+    for (int i = 0; i < _readersMapping->getDimension(); ++i) {
+        readersMap.push_back(QVariant(_readersMapping->getValue<int>(i)));
+    }
+    settings.setValue("ReadersMapping",readersMap);
+    settings.endGroup();
+    
+    settings.beginGroup("Writers");
+    QList<QVariant> writersMap;
+    for (int i = 0; i < _writersMapping->getDimension(); ++i) {
+        writersMap.push_back(QVariant(_writersMapping->getValue<int>(i)));
+    }
+    settings.setValue("WritersMapping",writersMap);
+    settings.endGroup();
+    
     //not serialiazing readers/writers settings as they are meaningless for now
 }
 
@@ -210,6 +243,30 @@ void Settings::restoreSettings(){
     settings.beginGroup("Viewers");
     if(settings.contains("ByteTextures")){
         _texturesMode->setValue<int>(settings.value("ByteTextures").toFloat());
+    }
+    settings.endGroup();
+    
+    settings.beginGroup("Readers");
+    if(settings.contains("ReadersMapping")){
+        QList<QVariant> readersMap;
+        readersMap = settings.value("ReadersMapping").toList();
+        for (int i = 0; i < readersMap.size(); ++i) {
+            if(i < _readersMapping->getDimension()){
+                _readersMapping->setValue(Variant(readersMap.at(i).toInt()), i);
+            }
+        }
+    }
+    settings.endGroup();
+    
+    settings.beginGroup("Writers");
+    if(settings.contains("WritersMapping")){
+        QList<QVariant> writersMap;
+        writersMap = settings.value("WritersMapping").toList();
+        for (int i = 0; i < writersMap.size(); ++i) {
+            if(i < _writersMapping->getDimension()){
+                _writersMapping->setValue(Variant(writersMap.at(i).toInt()), i);
+            }
+        }
     }
     settings.endGroup();
     notifyProjectEndKnobsValuesChanged(Natron::OTHER_REASON);
@@ -267,4 +324,46 @@ U64 Settings::getMaximumDiskCacheSize() const{
 }
 bool Settings::getColorPickerLinear() const{
     return _linearPickers->getValue<bool>();
+}
+
+const std::string& Settings::getReaderPluginIDForFileType(const std::string& extension){
+    const Table_Knob::TableEntries& entries = _readersMapping->getRows();
+    int dim = -1;
+    for (U32 i = 0; i < entries.size(); ++i) {
+        if (entries[i].first == extension) {
+            dim = i;
+            break;
+        }
+    }
+    if(dim == -1){
+        throw std::invalid_argument("Unsupported file extension");
+    }
+    
+    int index = _readersMapping->getValue<int>(dim);
+    return entries[dim].second[index];
+}
+
+const std::string& Settings::getWriterPluginIDForFileType(const std::string& extension){
+    const Table_Knob::TableEntries& entries = _writersMapping->getRows();
+    int dim = -1;
+    for (U32 i = 0; i < entries.size(); ++i) {
+        if (entries[i].first == extension) {
+            dim = i;
+            break;
+        }
+    }
+    if(dim == -1){
+        throw std::invalid_argument("Unsupported file extension");
+    }
+    
+    int index = _writersMapping->getValue<int>(dim);
+    return entries[dim].second[index];
+}
+
+void Settings::populateReaderPluginsAndFormats(const std::vector<std::pair<std::string,std::vector<std::string> > >& rows){
+    _readersMapping->setRows(rows);
+}
+
+void Settings::populateWriterPluginsAndFormats(const std::vector<std::pair<std::string,std::vector<std::string> > >& rows){
+    _writersMapping->setRows(rows);
 }

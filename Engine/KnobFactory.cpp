@@ -94,6 +94,7 @@ void KnobFactory::loadBultinKnobs()
     _loadedKnobs.insert(knobFactoryEntry<RichText_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<Bool_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<Parametric_Knob>());
+    _loadedKnobs.insert(knobFactoryEntry<Table_Knob>());
 }
 
 boost::shared_ptr<Knob> KnobFactory::createKnob(const std::string &id,

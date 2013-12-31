@@ -129,7 +129,18 @@ const std::string &OfxClipInstance::getFieldOrder() const
 //  Says whether the clip is actually connected at the moment.
 bool OfxClipInstance::getConnected() const
 {
-    return getAssociatedNode() != NULL;
+    if(_isOutput){
+        const Natron::Node::OutputMap& outputs = _nodeInstance->getNode()->getOutputs();
+        for (Natron::Node::OutputMap::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+            if (it->second) {
+                ///we found a valid node, say yes
+                return true;
+            }
+        }
+        return false;
+    }else{
+        return _nodeInstance->input(getInputNb()) != NULL;
+    }
 }
 
 // Unmapped Frame Rate -
@@ -167,7 +178,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     OfxRectD ret;
     RectI rod;
     EffectInstance* n = getAssociatedNode();
-    if (n) {
+    if (n && n != _nodeInstance) {
         (void)n->getRegionOfDefinition(time,&rod);
         ret.x1 = rod.left();
         ret.x2 = rod.right();
