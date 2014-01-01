@@ -80,7 +80,7 @@ public:
     ///fetch the parametric parameters suite or returns the base class version
     virtual void* fetchSuite(const char *suiteName, int suiteVersion) OVERRIDE;
     
-    virtual bool implementsMultiThreadSuite() const OVERRIDE { return true; }
+    virtual bool implementsMultiThreadSuite() const OVERRIDE ;
     
     virtual OfxStatus multiThread(OfxThreadFunctionV1 func,unsigned int nThreads, void *customArg) OVERRIDE;
 

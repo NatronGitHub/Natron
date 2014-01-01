@@ -63,7 +63,7 @@ LIBS is the path to the libs
 
 boost{
     INCLUDEPATH += /usr/include
-    LIBS += -L/usr/lib/ -lboost_serialization
+    LIBS += -L/usr/lib/ -lboost_serialization-mt -lboost_thread-mt - lboost_system-mt
 }
 
 

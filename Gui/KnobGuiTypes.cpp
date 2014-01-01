@@ -672,7 +672,6 @@ void Table_KnobGui::createWidget(QGridLayout *layout, int row) {
     _layout->addWidget(_descriptionLabel);
     
     _table = new QTableWidget(_container);
-    QObject::connect(_table, SIGNAL(itemChanged(QTableWidgetItem*)), this, SLOT(onItemChanged(QTableWidgetItem*)));
     _table->setRowCount(getKnob()->getDimension());
     _table->setColumnCount(2);
     
