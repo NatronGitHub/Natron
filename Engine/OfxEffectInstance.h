@@ -15,7 +15,6 @@
 #include <map>
 #include <string>
 #include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <QtCore/QMutex>
 #include <QtCore/QString>
 #include <QtCore/QObject>
@@ -43,7 +42,7 @@ class OfxEffectInstance : public Natron::OutputEffectInstance {
     bool _isOutput;//if the OfxNode can output a file somehow
 
     bool _penDown; // true when the overlay trapped a penDow action
-    boost::scoped_ptr<Natron::OfxOverlayInteract> _overlayInteract; // ptr to the overlay interact if any
+    Natron::OfxOverlayInteract* _overlayInteract; // ptr to the overlay interact if any
 
     QHBoxLayout* _lastKnobLayoutWithNoNewLine; // for nuke layout hint extension
     bool _initialized; //true when the image effect instance has been created and populated
@@ -114,6 +113,8 @@ public:
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE FINAL;
 
     virtual Natron::Status preProcessFrame(SequenceTime /*time*/) OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual void initializeOverlayInteract() OVERRIDE FINAL;
 
     virtual void drawOverlay() OVERRIDE FINAL;
 

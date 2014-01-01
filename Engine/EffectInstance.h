@@ -280,6 +280,11 @@ public:
      **/
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last);
     
+    /**
+     * @brief Override to initialize the overlay interact. It is called only on the 
+     * live instance.
+     **/
+    virtual void initializeOverlayInteract(){}
     
     /* @brief Overlay support:
      * Just overload this function in your operator.

@@ -63,7 +63,7 @@ OfxEffectInstance::OfxEffectInstance(Natron::Node* node)
     , effect_()
     , _isOutput(false)
     , _penDown(false)
-    , _overlayInteract()
+    , _overlayInteract(0)
     , _lastKnobLayoutWithNoNewLine(0)
     , _initialized(false)
 {
@@ -112,8 +112,6 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
             throw std::runtime_error("Could not create effect instance for plugin");
         }
 
-        /*must be called AFTER createInstanceAction!*/
-        tryInitializeOverlayInteracts();
 
     } catch (const std::exception& e) {
         qDebug() << "Error: Caught exception while creating OfxImageEffectInstance" << ": " << e.what();
@@ -126,7 +124,14 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
 }
 
 OfxEffectInstance::~OfxEffectInstance(){
+    
+    ///interact has to be deleted AFTER the effect_
+    if(_overlayInteract){
+        delete _overlayInteract;
+    }
+    
     delete effect_;
+
 }
 
 
@@ -144,7 +149,7 @@ void OfxEffectInstance::tryInitializeOverlayInteracts(){
     if(isLiveInstance()){
         OfxPluginEntryPoint *overlayEntryPoint = effect_->getOverlayInteractMainEntry();
         if(overlayEntryPoint){
-            _overlayInteract.reset(new OfxOverlayInteract(*effect_,8,true,NULL));
+            _overlayInteract = new OfxOverlayInteract(*effect_,8,true,NULL);
             _overlayInteract->createInstanceAction();
         }
     }
@@ -567,6 +572,9 @@ void OfxEffectInstance::backgroundColorOfAttachedViewer(double &r,double &g,doub
     
 }
 
+void OfxEffectInstance::initializeOverlayInteract() {
+    tryInitializeOverlayInteracts();
+}
 
 
 void OfxEffectInstance::drawOverlay(){

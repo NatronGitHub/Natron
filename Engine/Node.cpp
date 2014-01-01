@@ -133,6 +133,7 @@ Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
         _imp->previewInstance = func.second(this);
     } else { //ofx plugin
         _liveInstance = appPTR->getOfxHost()->createOfxEffect(name,this);
+        _liveInstance->initializeOverlayInteract(); 
         _imp->previewInstance = appPTR->getOfxHost()->createOfxEffect(name,this);
     }
     assert(_liveInstance);
