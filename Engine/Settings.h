@@ -50,55 +50,6 @@ public:
         
     virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE FINAL;
     
-    ///This class should go away and we should move readers to OpenFX plugins.
-    class ReadersSettings{
-    public:
-        
-        ReadersSettings();
-        
-        /*Returns a pluginID if it could find a decoder for the filetype,
-         otherwise returns NULL.*/
-        Natron::LibraryBinary* decoderForFiletype(const std::string& type) const;
-        
-        /*changes the decoder for files identified by the filetype*/
-        void changeMapping(const std::string& filetype,Natron::LibraryBinary* decoder);
-        
-        /*use to initialise default mapping*/
-        void fillMap(const std::map<std::string,Natron::LibraryBinary*>& defaultMap);
-        
-        std::vector<std::string> supportedFileTypes() const;
-    private:
-        
-        std::map<std::string,Natron::LibraryBinary* > _fileTypesMap;
-    };
-    
-    ///This class should go away and we should move writers to OpenFX plugins.
-    class WritersSettings{
-    public:
-        WritersSettings();
-        
-        /*Returns a pluginID if it could find an encoder for the filetype,
-         otherwise returns NULL.*/
-        Natron::LibraryBinary* encoderForFiletype(const std::string& type) const;
-        
-        /*changes the encoder for files identified by the filetype*/
-        void changeMapping(const std::string& filetype, Natron::LibraryBinary* encoder);
-        
-        /*use to initialise default mapping*/
-        void fillMap(const std::map<std::string,Natron::LibraryBinary*>& defaultMap);
-        
-        const std::map<std::string,Natron::LibraryBinary*>& getFileTypesMap() const {return _fileTypesMap;}
-        
-        
-        int _maximumBufferSize;
-        
-    private:
-        
-        
-        std::map<std::string,Natron::LibraryBinary*> _fileTypesMap;
-        
-    };
-    
     int getViewersBitDepth() const;
     
     double getRamMaximumPercent() const;
@@ -113,19 +64,19 @@ public:
     
     const std::string& getWriterPluginIDForFileType(const std::string& extension);
     
-    void populateReaderPluginsAndFormats(const std::vector<std::pair<std::string,std::vector<std::string> > >& rows);
+    void populateReaderPluginsAndFormats(const std::map<std::string,std::vector<std::string> >& rows);
     
-    void populateWriterPluginsAndFormats(const std::vector<std::pair<std::string,std::vector<std::string> > >& rows);
+    void populateWriterPluginsAndFormats(const std::map<std::string,std::vector<std::string> >& rows);
+    
+    void getFileFormatsForReadingAndReader(std::map<std::string,std::string>* formats);
+    
+    void getFileFormatsForWritingAndWriter(std::map<std::string,std::string>* formats);
    
     ///save the settings to the application's settings
     void saveSettings();
     
     ///restores the settings from disk
     void restoreSettings();
-    
-    ///deprecated members
-    ReadersSettings readersSettings;
-    WritersSettings writersSettings;
     
 private:
     
@@ -141,10 +92,10 @@ private:
     boost::shared_ptr<Choice_Knob> _texturesMode;
     
     boost::shared_ptr<Tab_Knob> _readersTab;
-    boost::shared_ptr<Table_Knob> _readersMapping;
+    std::vector< boost::shared_ptr<Choice_Knob> > _readersMapping;
     
     boost::shared_ptr<Tab_Knob> _writersTab;
-    boost::shared_ptr<Table_Knob> _writersMapping;
+    std::vector< boost::shared_ptr<Choice_Knob> >  _writersMapping;
     
 };
 

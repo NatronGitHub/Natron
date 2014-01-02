@@ -104,7 +104,9 @@ public:
 
     /*Reads OFX plugin cache and scan plugins directories
      to load them all.*/
-    void loadOFXPlugins(std::vector<Natron::Plugin *> *plugins);
+    void loadOFXPlugins(std::vector<Natron::Plugin *> *plugins,
+                        std::map<std::string,std::vector<std::string> >* readersMap,
+                        std::map<std::string,std::vector<std::string> >* writersMap);
 
 signals:
     void toolButtonAdded(QStringList,QString,QString,QString,QString);

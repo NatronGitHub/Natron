@@ -279,51 +279,51 @@ private:
     static const std::string _typeNameStr;
 };
 /*****************************TABLE_KNOB**************************************/
-class Table_Knob: public Knob
-{
-    Q_OBJECT
-public:
-    
-    typedef std::vector< std::pair<std::string,std::vector<std::string> > > TableEntries;
-
-    
-    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
-        return new Table_Knob(holder, description, dimension);
-    }
-    
-    ///The dimension parameter here define the number of cells in the table.
-    Table_Knob(KnobHolder *holder, const std::string &description, int dimension);
-    
-    ///append a new cell to the table up to 'dimension' cells.
-    ///Any row appended after the size reached the dimension of the table will be discarded.
-    void appendRow(const std::string& key,const std::vector<std::string> &choices);
-    
-    const TableEntries& getRows() const;
-    
-    void setRows(const Table_Knob::TableEntries& rows);
-    
-    static bool canAnimateStatic() { return false; }
-    
-    static const std::string& typeNameStatic();
-    
-    void setVerticalHeaders(const std::string& keyHeader,const std::string& choicesHeader);
-    
-    void getVerticalHeaders(std::string* keyHeader,std::string* choicesHeader);
-    
-signals:
-    
-    void populated();
-    
-private:
-    virtual bool canAnimate() const OVERRIDE FINAL;
-    
-    virtual const std::string& typeName() const OVERRIDE FINAL;
-    
-    
-    TableEntries _entries;
-    std::string _keyHeader,_choicesHeader;
-    static const std::string _typeNameStr;
-};
+//class Table_Knob: public Knob
+//{
+//    Q_OBJECT
+//public:
+//    
+//    typedef std::map<std::string,std::vector<std::string> > TableEntries;
+//
+//    
+//    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+//        return new Table_Knob(holder, description, dimension);
+//    }
+//    
+//    ///The dimension parameter here define the number of cells in the table.
+//    Table_Knob(KnobHolder *holder, const std::string &description, int dimension);
+//    
+//    ///append a new cell to the table up to 'dimension' cells.
+//    ///Any row appended after the size reached the dimension of the table will be discarded.
+//    void appendRow(const std::string& key,const std::vector<std::string> &choices);
+//    
+//    const TableEntries& getRows() const;
+//    
+//    void setRows(const Table_Knob::TableEntries& rows);
+//    
+//    static bool canAnimateStatic() { return false; }
+//    
+//    static const std::string& typeNameStatic();
+//    
+//    void setVerticalHeaders(const std::string& keyHeader,const std::string& choicesHeader);
+//    
+//    void getVerticalHeaders(std::string* keyHeader,std::string* choicesHeader);
+//    
+//signals:
+//    
+//    void populated();
+//    
+//private:
+//    virtual bool canAnimate() const OVERRIDE FINAL;
+//    
+//    virtual const std::string& typeName() const OVERRIDE FINAL;
+//    
+//    
+//    TableEntries _entries;
+//    std::string _keyHeader,_choicesHeader;
+//    static const std::string _typeNameStr;
+//};
 
 /******************************SEPARATOR_KNOB**************************************/
 

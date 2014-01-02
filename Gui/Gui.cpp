@@ -103,6 +103,10 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
     actionConnectInput10(0),
     _centralWidget(0),
     _mainLayout(0),
+    _lastLoadSequenceOpenedDir(),
+    _lastLoadProjectOpenedDir(),
+    _lastSaveSequenceOpenedDir(),
+    _lastSaveProjectOpenedDir(),
     _viewersPane(0),
     _nextViewerTabPlace(0),
     _workshopPane(0),
@@ -992,20 +996,18 @@ void Gui::newProject(){
 void Gui::openProject(){
     std::vector<std::string> filters;
     filters.push_back(NATRON_PROJECT_FILE_EXT);
-    SequenceFileDialog dialog(this,filters,false,
-                              SequenceFileDialog::OPEN_DIALOG);
-    if(dialog.exec()){
-        QStringList selectedFiles = dialog.selectedFiles();
-        if (selectedFiles.size() > 0) {
-            //clearing current graph
-            _appInstance->clearNodes();
-            QString file = selectedFiles.at(0);
-            QString name = SequenceFileDialog::removePath(file);
-            QString path = file.left(file.indexOf(name));
-            
-            _appInstance->loadProject(path,name);
-        }
+    QStringList selectedFiles =  popOpenFileDialog(false, filters, _lastLoadProjectOpenedDir.toStdString());
+    
+    if (selectedFiles.size() > 0) {
+        //clearing current graph
+        _appInstance->clearNodes();
+        QString file = selectedFiles.at(0);
+        QString name = SequenceFileDialog::removePath(file);
+        QString path = file.left(file.indexOf(name));
+        
+        _appInstance->loadProject(path,name);
     }
+    
 }
 void Gui::saveProject(){
     if(_appInstance->hasProjectBeenSavedByUser()){
@@ -1017,11 +1019,7 @@ void Gui::saveProject(){
 void Gui::saveProjectAs(){
     std::vector<std::string> filter;
     filter.push_back(NATRON_PROJECT_FILE_EXT);
-    SequenceFileDialog dialog(this,filter,false,SequenceFileDialog::SAVE_DIALOG);
-    QString outFile;
-    if(dialog.exec()){
-        outFile = dialog.filesToSave();
-    }
+    QString outFile = popSaveFileDialog(false, filter,_lastSaveProjectOpenedDir.toStdString());
     if (outFile.size() > 0) {
         if (outFile.indexOf("." NATRON_PROJECT_FILE_EXT) == -1) {
             outFile.append("." NATRON_PROJECT_FILE_EXT);
@@ -1029,6 +1027,67 @@ void Gui::saveProjectAs(){
         QString file = SequenceFileDialog::removePath(outFile);
         QString path = outFile.left(outFile.indexOf(file));
         _appInstance->saveProject(path,file,false);
+    }
+}
+
+void Gui::createReader(){
+    std::map<std::string,std::string> readersForFormat;
+    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
+    std::vector<std::string> filters;
+    for (std::map<std::string,std::string>::const_iterator it = readersForFormat.begin(); it!=readersForFormat.end(); ++it) {
+        filters.push_back(it->first);
+    }
+    QStringList files = popOpenFileDialog(true, filters, _lastLoadSequenceOpenedDir.toStdString());
+    if(!files.isEmpty()){
+        QString first = files.at(0);
+        std::string ext = Natron::removeFileExtension(first).toStdString();
+        
+        std::map<std::string,std::string>::iterator found = readersForFormat.find(ext);
+        if(found != readersForFormat.end()){
+            _appInstance->createNode(found->second.c_str());
+        }else{
+            errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
+        }
+        
+    }
+}
+
+void Gui::createWriter(){
+    std::map<std::string,std::string> writersForFormat;
+    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
+    std::vector<std::string> filters;
+    for (std::map<std::string,std::string>::const_iterator it = writersForFormat.begin(); it!=writersForFormat.end(); ++it) {
+        filters.push_back(it->first);
+    }
+    QString file = popSaveFileDialog(true, filters, _lastSaveSequenceOpenedDir.toStdString());
+    if(!file.isEmpty()){
+        std::string ext = Natron::removeFileExtension(file).toStdString();
+        
+        std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
+        if(found != writersForFormat.end()){
+            _appInstance->createNode(found->second.c_str());
+        }else{
+            errorDialog("Writer", "No plugin capable of encoding " + ext + " was found.");
+        }
+        
+    }
+}
+
+QStringList Gui::popOpenFileDialog(bool sequenceDialog,const std::vector<std::string>& initialfilters,const std::string& initialDir) {
+    SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::OPEN_DIALOG, initialDir);
+    if (dialog.exec()) {
+        return dialog.selectedFiles();
+    }else{
+        return QStringList();
+    }
+}
+
+QString Gui::popSaveFileDialog(bool sequenceDialog,const std::vector<std::string>& initialfilters,const std::string& initialDir) {
+    SequenceFileDialog dialog(this,initialfilters,sequenceDialog,SequenceFileDialog::SAVE_DIALOG,initialDir);
+    if(dialog.exec()){
+        return dialog.filesToSave();
+    }else{
+        return "";
     }
 }
 

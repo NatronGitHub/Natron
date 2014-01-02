@@ -86,51 +86,51 @@ static QString viewToString(int view,int viewsCount){
 }
 
 boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,int view,int totalViews,const RectI& rod){
-    const std::string& fileType = _filetypeCombo->getActiveEntryText();
-    const std::string& fileName = _fileKnob->getFileName();
-    Natron::LibraryBinary* binary = appPTR->getCurrentSettings()->writersSettings.encoderForFiletype(fileType);
-    Encoder* encoder = NULL;
-    if(!binary){
-        std::string exc("Couldn't find an appropriate encoder for filetype: ");
-        exc.append(fileType);
-        exc.append(" (");
-        exc.append(getName());
-        exc.append(")");
-        throw std::invalid_argument(exc);
-    }else{
-        std::pair<bool,WriteBuilder> func = binary->findFunction<WriteBuilder>("BuildWrite");
-        if(func.first)
-            encoder = func.second(this);
-        else{
-            throw std::runtime_error("Library failed to create encoder for unknown reason.");
-        }
-    }
-    
-    encoder->premultiplyByAlpha(_premultKnob->getValue<bool>());
-    /*check if the filename already contains the extension, otherwise appending it*/
-    QString filename(fileName.c_str());
-    int i = filename.lastIndexOf(QChar('.'));
-    if(i != -1){
-        filename.truncate(i); // truncate the extension
-    }
-    i = filename.lastIndexOf(QChar('#'));
-    QString n = viewToString(view,totalViews) + QString("_") +  QString::number(time)  ;
-    if(i != -1){
-        filename = filename.replace(i,1,n);
-    }else{
-        i = filename.lastIndexOf(QChar('.'));
-        filename = filename.insert(i, n);
-    }
-    filename.append('.');
-    filename.append(fileType.c_str());
-    
-    encoder->setOptionalKnobsPtr(_writeOptions);
-    encoder->initializeColorSpace();
-    Status stat = encoder->_setupFile(filename, rod);
-    if(stat == StatFailed){
-        return boost::shared_ptr<Encoder>();
-    }
-    return boost::shared_ptr<Encoder>(encoder);
+//    const std::string& fileType = _filetypeCombo->getActiveEntryText();
+//    const std::string& fileName = _fileKnob->getFileName();
+//    Natron::LibraryBinary* binary = appPTR->getCurrentSettings()->writersSettings.encoderForFiletype(fileType);
+//    Encoder* encoder = NULL;
+//    if(!binary){
+//        std::string exc("Couldn't find an appropriate encoder for filetype: ");
+//        exc.append(fileType);
+//        exc.append(" (");
+//        exc.append(getName());
+//        exc.append(")");
+//        throw std::invalid_argument(exc);
+//    }else{
+//        std::pair<bool,WriteBuilder> func = binary->findFunction<WriteBuilder>("BuildWrite");
+//        if(func.first)
+//            encoder = func.second(this);
+//        else{
+//            throw std::runtime_error("Library failed to create encoder for unknown reason.");
+//        }
+//    }
+//    
+//    encoder->premultiplyByAlpha(_premultKnob->getValue<bool>());
+//    /*check if the filename already contains the extension, otherwise appending it*/
+//    QString filename(fileName.c_str());
+//    int i = filename.lastIndexOf(QChar('.'));
+//    if(i != -1){
+//        filename.truncate(i); // truncate the extension
+//    }
+//    i = filename.lastIndexOf(QChar('#'));
+//    QString n = viewToString(view,totalViews) + QString("_") +  QString::number(time)  ;
+//    if(i != -1){
+//        filename = filename.replace(i,1,n);
+//    }else{
+//        i = filename.lastIndexOf(QChar('.'));
+//        filename = filename.insert(i, n);
+//    }
+//    filename.append('.');
+//    filename.append(fileType.c_str());
+//    
+//    encoder->setOptionalKnobsPtr(_writeOptions);
+//    encoder->initializeColorSpace();
+//    Status stat = encoder->_setupFile(filename, rod);
+//    if(stat == StatFailed){
+//        return boost::shared_ptr<Encoder>();
+//    }
+//    return boost::shared_ptr<Encoder>(encoder);
 }
 
 void Writer::initializeKnobs(){
@@ -148,13 +148,13 @@ void Writer::initializeKnobs(){
     
     std::string filetypeStr("File type");
     _filetypeCombo = Natron::createKnob<Choice_Knob>(this, filetypeStr);
-    const std::map<std::string,Natron::LibraryBinary*>& _encoders = appPTR->getCurrentSettings()->writersSettings.getFileTypesMap();
-    std::map<std::string,Natron::LibraryBinary*>::const_iterator it = _encoders.begin();
-    std::vector<std::string> fileTypes;
-    for(;it!=_encoders.end();++it) {
-        fileTypes.push_back(it->first.c_str());
-    }
-    _filetypeCombo->populate(fileTypes);
+//    const std::map<std::string,Natron::LibraryBinary*>& _encoders = appPTR->getCurrentSettings()->writersSettings.getFileTypesMap();
+//    std::map<std::string,Natron::LibraryBinary*>::const_iterator it = _encoders.begin();
+//    std::vector<std::string> fileTypes;
+//    for(;it!=_encoders.end();++it) {
+//        fileTypes.push_back(it->first.c_str());
+//    }
+//    _filetypeCombo->populate(fileTypes);
     _filetypeCombo->turnOffAnimation();
     
     _frameRangeChoosal = Natron::createKnob<Choice_Knob>(this, "Frame range");
@@ -262,35 +262,35 @@ std::string Writer::getOutputFileName() const{
 
 void Writer::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
     if(k == _filetypeCombo.get()){
-        const std::string& fileType = _filetypeCombo->getActiveEntryText();
-        const std::string& fileName = _fileKnob->getFileName();
-        if(_writeOptions){
-            _writeOptions->cleanUpKnobs();
-            delete _writeOptions;
-            _writeOptions = 0;
-        }
-        Natron::LibraryBinary* isValid = appPTR->getCurrentSettings()->writersSettings.encoderForFiletype(fileType);
-        if(!isValid) return;
-        
-        QString file(fileName.c_str());
-        int pos = file.lastIndexOf(QChar('.'));
-        if(pos != -1){
-            //found an extension
-            file = file.left(file.lastIndexOf(QChar('.'))); // remove existing extension
-        }
-        file.append(".");
-        file.append(fileType.c_str());
-        _fileKnob->setValue(file);
-        
-        /*checking if channels are supported*/
-        std::pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("BuildWrite");
-        if(func.first){
-            Encoder* write = func.second(this);
-            _writeOptions = write->initSpecificKnobs();
-            if(_writeOptions)
-                _writeOptions->initKnobs(fileType);
-            delete write;
-        }
+//        const std::string& fileType = _filetypeCombo->getActiveEntryText();
+//        const std::string& fileName = _fileKnob->getFileName();
+//        if(_writeOptions){
+//            _writeOptions->cleanUpKnobs();
+//            delete _writeOptions;
+//            _writeOptions = 0;
+//        }
+//        Natron::LibraryBinary* isValid = appPTR->getCurrentSettings()->writersSettings.encoderForFiletype(fileType);
+//        if(!isValid) return;
+//        
+//        QString file(fileName.c_str());
+//        int pos = file.lastIndexOf(QChar('.'));
+//        if(pos != -1){
+//            //found an extension
+//            file = file.left(file.lastIndexOf(QChar('.'))); // remove existing extension
+//        }
+//        file.append(".");
+//        file.append(fileType.c_str());
+//        _fileKnob->setValue(file);
+//        
+//        /*checking if channels are supported*/
+//        std::pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("BuildWrite");
+//        if(func.first){
+//            Encoder* write = func.second(this);
+//            _writeOptions = write->initSpecificKnobs();
+//            if(_writeOptions)
+//                _writeOptions->initKnobs(fileType);
+//            delete write;
+//        }
 
     }else if(k == _frameRangeChoosal.get()){
         int index = _frameRangeChoosal->getValue<int>();

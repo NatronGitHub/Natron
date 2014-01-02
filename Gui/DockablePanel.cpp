@@ -253,6 +253,24 @@ void DockablePanel::initializeKnobs(){
         }
         
     }
+    
+    /////The following code addresses this feature that we don't want:
+    ///// http://stackoverflow.com/questions/14033902/qt-qgridlayout-automatically-centers-moves-items-to-the-middle
+    for(std::map<QString,std::pair<QWidget*,int> >::const_iterator it = _tabs.begin();it!=_tabs.end();++it){
+        QGridLayout* layout = dynamic_cast<QGridLayout*>(it->second.first->layout());
+        assert(layout);
+        if(layout->rowCount() > 0){
+            QWidget* item = layout->itemAtPosition(layout->rowCount()-1,0)->widget(); //< last row
+            if (item->objectName() == "spacer") {
+                continue;
+            }else{
+                QWidget* spacer = new QWidget(layout->parentWidget());
+                spacer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Expanding);
+                spacer->setObjectName("spacer");
+                layout->addWidget(spacer,layout->rowCount(), 0);
+            }
+        }
+    }
 }
 
 
@@ -372,7 +390,6 @@ void DockablePanel::addTab(const QString& name){
     tabLayout->setVerticalSpacing(2);
     tabLayout->setContentsMargins(3, 0, 0, 0);
     tabLayout->setHorizontalSpacing(5);
-    
     _tabWidget->addTab(newTab,name);
     _tabs.insert(make_pair(name,make_pair(newTab,0)));
 }

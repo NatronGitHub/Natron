@@ -386,7 +386,6 @@ Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVers
     
 
     if(!_isBackground && !requestedByLoad){
-        node->openFilesForAllFileKnobs();
         if(_gui->getSelectedNode()){
             Node* selected = _gui->getSelectedNode()->getNode();
             autoConnect(selected, node);
@@ -967,7 +966,6 @@ AppManager::AppManager()
     
     _settings->initializeKnobs();
     
-    _settings->restoreSettings();
     
     connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString,QString)),
             this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString,QString)));
@@ -993,6 +991,9 @@ AppManager::AppManager()
     createColorPickerCursor();
     
     _initialized = true;
+    
+    _settings->restoreSettings();
+
 }
 
 void AppManager::registerAppInstance(AppInstance* app){
@@ -1070,52 +1071,25 @@ void AppManager::loadAllPlugins() {
     /*loading node plugins*/
     loadNodePlugins();
     
+    std::map<std::string,std::vector<std::string> > readersMap,writersMap;
+    
     assert(_readPluginsLoaded.empty());
-    /*loading read plugins*/
-    loadReadPlugins();
+    loadBuiltinReads(&readersMap);
     
     assert(_writePluginsLoaded.empty());
     /*loading write plugins*/
-    loadWritePlugins();
+    loadBuiltinWrites(&writersMap);
     
     /*loading ofx plugins*/
-    ofxHost->loadOFXPlugins(&_plugins);
+    ofxHost->loadOFXPlugins(&_plugins,&readersMap,&writersMap);
+    
+    _settings->populateReaderPluginsAndFormats(readersMap);
+    _settings->populateWriterPluginsAndFormats(writersMap);
     
 }
 
-void AppManager::loadReadPlugins(){
-    std::vector<std::string> functions;
-    functions.push_back("BuildRead");
-    std::vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(NATRON_READERS_PLUGINS_PATH, functions);
-    for (U32 i = 0 ; i < plugins.size(); ++i) {
-        std::pair<bool,ReadBuilder> func = plugins[i]->findFunction<ReadBuilder>("BuildRead");
-        if(func.first){
-            Decoder* read = func.second(NULL);
-            assert(read);
-            std::vector<std::string> extensions = read->fileTypesDecoded();
-            std::string decoderName = read->decoderName();
-            _readPluginsLoaded.insert(make_pair(decoderName,make_pair(extensions,plugins[i])));
-            delete read;
-        }
-    }
-    
-    loadBuiltinReads();
-    
-    std::map<std::string, LibraryBinary*> defaultMapping;
-    for (ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); ++it) {
-        if(it->first == "OpenEXR"){
-            defaultMapping.insert(make_pair("exr", it->second.second));
-        }else if(it->first == "QImage (Qt)"){
-            const std::vector<std::string>& decodedFormats = it->second.first;
-            for (U32 i = 0; i < decodedFormats.size(); ++i) {
-                defaultMapping.insert(make_pair(decodedFormats[i], it->second.second));
-            }
-        }
-    }
-    _settings->readersSettings.fillMap(defaultMapping);
-}
 
-void AppManager::loadBuiltinReads(){
+void AppManager::loadBuiltinReads(std::map<std::string,std::vector<std::string> >* readersMap){
     {
         Decoder* readExr = ExrDecoder::BuildRead(NULL);
         assert(readExr);
@@ -1129,6 +1103,22 @@ void AppManager::loadBuiltinReads(){
         for (U32 i = 0 ; i < extensions.size(); ++i) {
             _readPluginsLoaded.insert(make_pair(decoderName,make_pair(extensions,EXRplugin)));
         }
+        
+        std::vector<std::string> formatsDecoded = readExr->fileTypesDecoded();
+        
+        for(U32 k = 0; k < extensions.size();++k){
+            std::map<std::string,std::vector<std::string> >::iterator it;
+            it = readersMap->find(extensions[k]);
+            
+            if(it != readersMap->end()){
+                it->second.push_back(decoderName);
+            }else{
+                std::vector<std::string> newVec(1);
+                newVec[0] = decoderName;
+                readersMap->insert(std::make_pair(extensions[k], newVec));
+            }
+        }
+        
         delete readExr;
     }
     {
@@ -1144,10 +1134,84 @@ void AppManager::loadBuiltinReads(){
         for (U32 i = 0 ; i < extensions.size(); ++i) {
             _readPluginsLoaded.insert(make_pair(decoderName,make_pair(extensions,Qtplugin)));
         }
+        
+        for(U32 k = 0; k < extensions.size();++k){
+            std::map<std::string,std::vector<std::string> >::iterator it;
+            it = readersMap->find(extensions[k]);
+            
+            if(it != readersMap->end()){
+                it->second.push_back(decoderName);
+            }else{
+                std::vector<std::string> newVec(1);
+                newVec[0] = decoderName;
+                readersMap->insert(std::make_pair(extensions[k], newVec));
+            }
+        }
+        
         delete readQt;
     }
 
 }
+
+
+/*loads writes that are built-ins*/
+void AppManager::loadBuiltinWrites(std::map<std::string,std::vector<std::string> >* writersMap){
+    {
+        boost::scoped_ptr<Encoder> writeQt(new QtEncoder(NULL));
+        assert(writeQt);
+        std::vector<std::string> extensions = writeQt->fileTypesEncoded();
+        std::string encoderName = writeQt->encoderName();
+        
+        std::map<std::string,void*> Qtfunctions;
+        Qtfunctions.insert(make_pair("BuildWrite",(void*)&QtEncoder::BuildWrite));
+        LibraryBinary *QtWritePlugin = new LibraryBinary(Qtfunctions);
+        assert(QtWritePlugin);
+        for (U32 i = 0 ; i < extensions.size(); ++i) {
+            _writePluginsLoaded.insert(make_pair(encoderName,make_pair(extensions,QtWritePlugin)));
+        }
+        
+        for(U32 k = 0; k < extensions.size();++k){
+            std::map<std::string,std::vector<std::string> >::iterator it;
+            it = writersMap->find(extensions[k]);
+            
+            if(it != writersMap->end()){
+                it->second.push_back(encoderName);
+            }else{
+                std::vector<std::string> newVec(1);
+                newVec[0] = encoderName;
+                writersMap->insert(std::make_pair(extensions[k], newVec));
+            }
+        }
+    }
+    
+    {
+        boost::scoped_ptr<Encoder> writeEXR(new ExrEncoder(NULL));
+        std::vector<std::string> extensionsExr = writeEXR->fileTypesEncoded();
+        std::string encoderNameExr = writeEXR->encoderName();
+        
+        std::map<std::string,void*> EXRfunctions;
+        EXRfunctions.insert(make_pair("BuildWrite",(void*)&ExrEncoder::BuildWrite));
+        LibraryBinary *ExrWritePlugin = new LibraryBinary(EXRfunctions);
+        assert(ExrWritePlugin);
+        for (U32 i = 0 ; i < extensionsExr.size(); ++i) {
+            _writePluginsLoaded.insert(make_pair(encoderNameExr,make_pair(extensionsExr,ExrWritePlugin)));
+        }
+        
+        for(U32 k = 0; k < extensionsExr.size();++k){
+            std::map<std::string,std::vector<std::string> >::iterator it;
+            it = writersMap->find(extensionsExr[k]);
+            
+            if(it != writersMap->end()){
+                it->second.push_back(encoderNameExr);
+            }else{
+                std::vector<std::string> newVec(1);
+                newVec[0] = encoderNameExr;
+                writersMap->insert(std::make_pair(extensionsExr[k], newVec));
+            }
+        }
+    }
+}
+
 void AppManager::loadNodePlugins(){
     std::vector<std::string> functions;
     functions.push_back("BuildEffect");
@@ -1216,69 +1280,7 @@ void AppManager::loadBuiltinNodePlugins(){
     }
 }
 
-/*loads extra writer plug-ins*/
-void AppManager::loadWritePlugins(){
-    
-    std::vector<std::string> functions;
-    functions.push_back("BuildWrite");
-    std::vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(NATRON_WRITERS_PLUGINS_PATH, functions);
-    for (U32 i = 0 ; i < plugins.size(); ++i) {
-        std::pair<bool,WriteBuilder> func = plugins[i]->findFunction<WriteBuilder>("BuildWrite");
-        if(func.first){
-            Encoder* write = func.second(NULL);
-            assert(write);
-            std::vector<std::string> extensions = write->fileTypesEncoded();
-            std::string encoderName = write->encoderName();
-            _writePluginsLoaded.insert(make_pair(encoderName,make_pair(extensions,plugins[i])));
-            delete write;
-        }
-    }
-    loadBuiltinWrites();
-    std::map<std::string, LibraryBinary*> defaultMapping;
-    for (WritePluginsIterator it = _writePluginsLoaded.begin(); it!=_writePluginsLoaded.end(); ++it) {
-        if(it->first == "OpenEXR"){
-            defaultMapping.insert(make_pair("exr", it->second.second));
-        }else if(it->first == "QImage (Qt)"){
-            const std::vector<std::string>& encodedFormats = it->second.first;
-            for (U32 i = 0; i < encodedFormats.size(); ++i) {
-                defaultMapping.insert(make_pair(encodedFormats[i], it->second.second));
-            }
-        }
-    }
-    _settings->writersSettings.fillMap(defaultMapping);
-}
 
-/*loads writes that are built-ins*/
-void AppManager::loadBuiltinWrites(){
-    {
-        boost::scoped_ptr<Encoder> writeQt(new QtEncoder(NULL));
-        assert(writeQt);
-        std::vector<std::string> extensions = writeQt->fileTypesEncoded();
-        std::string encoderName = writeQt->encoderName();
-        
-        std::map<std::string,void*> Qtfunctions;
-        Qtfunctions.insert(make_pair("BuildWrite",(void*)&QtEncoder::BuildWrite));
-        LibraryBinary *QtWritePlugin = new LibraryBinary(Qtfunctions);
-        assert(QtWritePlugin);
-        for (U32 i = 0 ; i < extensions.size(); ++i) {
-            _writePluginsLoaded.insert(make_pair(encoderName,make_pair(extensions,QtWritePlugin)));
-        }
-    }
-    
-    {
-        boost::scoped_ptr<Encoder> writeEXR(new ExrEncoder(NULL));
-        std::vector<std::string> extensionsExr = writeEXR->fileTypesEncoded();
-        std::string encoderNameExr = writeEXR->encoderName();
-        
-        std::map<std::string,void*> EXRfunctions;
-        EXRfunctions.insert(make_pair("BuildWrite",(void*)&ExrEncoder::BuildWrite));
-        LibraryBinary *ExrWritePlugin = new LibraryBinary(EXRfunctions);
-        assert(ExrWritePlugin);
-        for (U32 i = 0 ; i < extensionsExr.size(); ++i) {
-            _writePluginsLoaded.insert(make_pair(encoderNameExr,make_pair(extensionsExr,ExrWritePlugin)));
-        }
-    }
-}
 
 void AppManager::loadBuiltinFormats(){
     /*initializing list of all Formats available*/

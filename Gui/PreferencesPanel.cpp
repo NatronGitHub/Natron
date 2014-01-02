@@ -11,23 +11,32 @@
 #include "PreferencesPanel.h"
 
 #include <QVBoxLayout>
-
+#include <QScrollArea>
 #include "Engine/Settings.h"
 #include "Gui/DockablePanel.h"
 
 PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,QWidget *parent)
-    : QWidget(parent)
+    : QScrollArea(parent)
     , _settings(settings)
 {
+    
+    _viewPort = new QWidget(this);
+    _viewPort->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
     setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
     setWindowTitle("Preferences");
-    _mainLayout = new QVBoxLayout(this);
+    _mainLayout = new QVBoxLayout(_viewPort);
     _mainLayout->setContentsMargins(0,0,0,0);
+    _mainLayout->setSpacing(0);
 
+    setWidget(_viewPort);
+    setWidgetResizable(true);
+    
     _panel = new DockablePanel(_settings.get(),_mainLayout,DockablePanel::NO_HEADER,
                                "","",false,"",this);
-    _panel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    // _panel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     _mainLayout->addWidget(_panel);
 
     _panel->initializeKnobs();
+    resize(640, 480);
 }

@@ -78,21 +78,6 @@ void File_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
     _lineEdit->setText(pattern.c_str());
 }
 
-void File_KnobGui::open_file()
-{
-    QStringList filesList;
-    std::vector<std::string> filters = appPTR->getCurrentSettings()->readersSettings.supportedFileTypes();
-
-    SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, true, SequenceFileDialog::OPEN_DIALOG, _lastOpened.toStdString());
-    if (dialog.exec()) {
-        filesList = dialog.selectedFiles();
-    }
-    if (!filesList.isEmpty()) {
-        updateLastOpened(filesList.at(0));
-        pushValueChangedCommand(Variant(filesList));
-    }
-}
-
 void File_KnobGui::onReturnPressed()
 {
     QString str = _lineEdit->text();
@@ -178,18 +163,7 @@ void OutputFile_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
     _lineEdit->setText(variant.toString());
 }
 
-void OutputFile_KnobGui::open_file()
-{
-    std::vector<std::string> filters = appPTR->getCurrentSettings()->readersSettings.supportedFileTypes();
-    SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, true, SequenceFileDialog::SAVE_DIALOG, _lastOpened.toStdString());
-    if (dialog.exec()) {
-        QString oldPattern = _lineEdit->text();
-        QString newPattern = dialog.filesToSave();
-        updateLastOpened(SequenceFileDialog::removePath(oldPattern));
 
-        pushValueChangedCommand(Variant(newPattern));
-    }
-}
 
 void OutputFile_KnobGui::onReturnPressed()
 {

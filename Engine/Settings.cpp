@@ -98,91 +98,18 @@ void Settings::initializeKnobs(){
     _cachingTab->addKnob(_maxDiskCacheGB);
     
     
+    ///readers & writers settings are created in a postponed manner because we don't know
+    ///their dimension yet. See populateReaderPluginsAndFormats & populateWriterPluginsAndFormats
     
     _readersTab = Natron::createKnob<Tab_Knob>(this, "Readers");
-    
-    _readersMapping = Natron::createKnob<Table_Knob>(this, "Readers mapping");
-    _readersMapping->setHintToolTip("The left column represents all the formats that are decodable"
-                                " by Natron and its plug-ins. The right column indicates for each format"
-                                " , which plug-in is chosen by Natron to decode it.");
-    _readersTab->addKnob(_readersMapping);
-    
+
     _writersTab = Natron::createKnob<Tab_Knob>(this, "Writers");
     
-    _writersMapping = Natron::createKnob<Table_Knob>(this, "Writers mapping");
-    _writersMapping->setHintToolTip("The left column represents all the formats that are encodable"
-                                    " by Natron and its plug-ins. The right column indicates for each format"
-                                    " , which plug-in is chosen by Natron to encode it.");
-    _writersTab->addKnob(_writersMapping);
     
     
 }
 
-Settings::ReadersSettings::ReadersSettings(){
-    
-}
 
-/*changes the decoder for files identified by the filetype*/
-void Settings::ReadersSettings::changeMapping(const std::string& filetype, LibraryBinary* decoder){
-    _fileTypesMap.insert(make_pair(filetype, decoder));
-}
-
-/*use to initialise default mapping*/
-void Settings::ReadersSettings::fillMap(const std::map<std::string,LibraryBinary*>& defaultMap){
-    for(std::map<std::string,LibraryBinary*>::const_iterator it = defaultMap.begin();it!=defaultMap.end();++it) {
-        _fileTypesMap.insert(*it);
-    }
-}
-
-LibraryBinary* Settings::ReadersSettings::decoderForFiletype(const std::string& type) const {
-    for(std::map<std::string,LibraryBinary*>::const_iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it){
-        QString sType(type.c_str());
-        QString curType(it->first.c_str());
-        sType = sType.toUpper();
-        curType = curType.toUpper();
-        if(sType == curType){
-            return it->second;
-        }
-    }
-    return NULL;
-}
-
-Settings::WritersSettings::WritersSettings():_maximumBufferSize(2){}
-
-/*Returns a library if it could find an encoder for the filetype,
- otherwise returns NULL.*/
-LibraryBinary* Settings::WritersSettings::encoderForFiletype(const std::string& type) const{
-    for(std::map<std::string,LibraryBinary*>::const_iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it){
-        QString sType(type.c_str());
-        QString curType(it->first.c_str());
-        sType = sType.toUpper();
-        curType = curType.toUpper();
-        if(sType == curType){
-            return it->second;
-        }
-    }
-    return NULL;
-}
-
-/*changes the encoder for files identified by the filetype*/
-void Settings::WritersSettings::changeMapping(const std::string& filetype,LibraryBinary* encoder){
-    _fileTypesMap.insert(make_pair(filetype, encoder));
-}
-
-/*use to initialise default mapping*/
-void Settings::WritersSettings::fillMap(const std::map<std::string,LibraryBinary*>& defaultMap) {
-    for(std::map<std::string,LibraryBinary*>::const_iterator it = defaultMap.begin();it!=defaultMap.end();++it) {
-        _fileTypesMap.insert(*it);
-    }
-}
-
-std::vector<std::string> Settings::ReadersSettings::supportedFileTypes() const {
-    std::vector<std::string> out;
-    for(std::map<std::string,LibraryBinary*>::const_iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it) {
-        out.push_back(it->first);
-    }
-    return out;
-}
 
 void Settings::saveSettings(){
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
@@ -201,19 +128,17 @@ void Settings::saveSettings(){
     settings.endGroup();
     
     settings.beginGroup("Readers");
-    QList<QVariant> readersMap;
-    for (int i = 0; i < _readersMapping->getDimension(); ++i) {
-        readersMap.push_back(QVariant(_readersMapping->getValue<int>(i)));
+    
+    
+    for (U32 i = 0; i < _readersMapping.size(); ++i) {
+        settings.setValue(_readersMapping[i]->getDescription().c_str(),_readersMapping[i]->getValue<int>());
     }
-    settings.setValue("ReadersMapping",readersMap);
     settings.endGroup();
     
     settings.beginGroup("Writers");
-    QList<QVariant> writersMap;
-    for (int i = 0; i < _writersMapping->getDimension(); ++i) {
-        writersMap.push_back(QVariant(_writersMapping->getValue<int>(i)));
+    for (U32 i = 0; i < _writersMapping.size(); ++i) {
+        settings.setValue(_writersMapping[i]->getDescription().c_str(),_writersMapping[i]->getValue<int>());
     }
-    settings.setValue("WritersMapping",writersMap);
     settings.endGroup();
     
     //not serialiazing readers/writers settings as they are meaningless for now
@@ -247,25 +172,19 @@ void Settings::restoreSettings(){
     settings.endGroup();
     
     settings.beginGroup("Readers");
-    if(settings.contains("ReadersMapping")){
-        QList<QVariant> readersMap;
-        readersMap = settings.value("ReadersMapping").toList();
-        for (int i = 0; i < readersMap.size(); ++i) {
-            if(i < _readersMapping->getDimension()){
-                _readersMapping->setValue(Variant(readersMap.at(i).toInt()), i);
-            }
+    for (U32 i = 0; i < _readersMapping.size(); ++i) {
+        QString format = _readersMapping[i]->getDescription().c_str();
+        if(settings.contains(format)){
+            _readersMapping[i]->setValue<int>(settings.value(format).toInt());
         }
     }
     settings.endGroup();
     
     settings.beginGroup("Writers");
-    if(settings.contains("WritersMapping")){
-        QList<QVariant> writersMap;
-        writersMap = settings.value("WritersMapping").toList();
-        for (int i = 0; i < writersMap.size(); ++i) {
-            if(i < _writersMapping->getDimension()){
-                _writersMapping->setValue(Variant(writersMap.at(i).toInt()), i);
-            }
+    for (U32 i = 0; i < _writersMapping.size(); ++i) {
+        QString format = _writersMapping[i]->getDescription().c_str();
+        if(settings.contains(format)){
+            _writersMapping[i]->setValue<int>(settings.value(format).toInt());
         }
     }
     settings.endGroup();
@@ -327,43 +246,68 @@ bool Settings::getColorPickerLinear() const{
 }
 
 const std::string& Settings::getReaderPluginIDForFileType(const std::string& extension){
-    const Table_Knob::TableEntries& entries = _readersMapping->getRows();
-    int dim = -1;
-    for (U32 i = 0; i < entries.size(); ++i) {
-        if (entries[i].first == extension) {
-            dim = i;
-            break;
+    for (U32 i = 0; i < _readersMapping.size(); ++i) {
+        if (_readersMapping[i]->getDescription() == extension) {
+            const std::vector<std::string>& entries =  _readersMapping[i]->getEntries();
+            int index = _readersMapping[i]->getActiveEntry();
+            assert(index < (int)entries.size());
+            return entries[index];
         }
     }
-    if(dim == -1){
-        throw std::invalid_argument("Unsupported file extension");
-    }
-    
-    int index = _readersMapping->getValue<int>(dim);
-    return entries[dim].second[index];
-}
+    throw std::invalid_argument("Unsupported file extension");
+ }
 
 const std::string& Settings::getWriterPluginIDForFileType(const std::string& extension){
-    const Table_Knob::TableEntries& entries = _writersMapping->getRows();
-    int dim = -1;
-    for (U32 i = 0; i < entries.size(); ++i) {
-        if (entries[i].first == extension) {
-            dim = i;
-            break;
+    for (U32 i = 0; i < _writersMapping.size(); ++i) {
+        if (_writersMapping[i]->getDescription() == extension) {
+            const std::vector<std::string>& entries =  _writersMapping[i]->getEntries();
+            int index = _writersMapping[i]->getActiveEntry();
+            assert(index < (int)entries.size());
+            return entries[index];
         }
     }
-    if(dim == -1){
-        throw std::invalid_argument("Unsupported file extension");
-    }
+    throw std::invalid_argument("Unsupported file extension");
+}
+
+void Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::vector<std::string> >& rows){
     
-    int index = _writersMapping->getValue<int>(dim);
-    return entries[dim].second[index];
+    for (std::map<std::string,std::vector<std::string> >::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
+        boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
+        k->turnOffAnimation();
+        k->populate(it->second);
+        _readersMapping.push_back(k);
+        _readersTab->addKnob(k);
+    }
 }
 
-void Settings::populateReaderPluginsAndFormats(const std::vector<std::pair<std::string,std::vector<std::string> > >& rows){
-    _readersMapping->setRows(rows);
+void Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector<std::string> >& rows){
+    for (std::map<std::string,std::vector<std::string> >::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
+        boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
+        k->turnOffAnimation();
+        k->populate(it->second);
+        _writersMapping.push_back(k);
+        _writersTab->addKnob(k);
+    }
 }
 
-void Settings::populateWriterPluginsAndFormats(const std::vector<std::pair<std::string,std::vector<std::string> > >& rows){
-    _writersMapping->setRows(rows);
+void Settings::getFileFormatsForReadingAndReader(std::map<std::string,std::string>* formats){
+    for (U32 i = 0; i < _readersMapping.size(); ++i) {
+        const std::vector<std::string>& entries = _readersMapping[i]->getEntries();
+        int index = _readersMapping[i]->getActiveEntry();
+        
+        assert(index < (int)entries.size());
+        
+        formats->insert(std::make_pair(_readersMapping[i]->getDescription(),entries[index]));
+    }
+}
+
+void Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::string>* formats){
+    for (U32 i = 0; i < _writersMapping.size(); ++i) {
+        const std::vector<std::string>& entries = _writersMapping[i]->getEntries();
+        int index = _writersMapping[i]->getActiveEntry();
+        
+        assert(index < (int)entries.size());
+        
+        formats->insert(std::make_pair(_writersMapping[i]->getDescription(),entries[index]));
+    }
 }

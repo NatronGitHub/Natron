@@ -522,18 +522,6 @@ void EffectInstance::evaluate(Knob* knob,bool isSignificant){
 }
 
 
-void EffectInstance::openFilesForAllFileKnobs(){
-    const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        boost::shared_ptr<Knob> k = knobs[i];
-        if(k->typeName() == "InputFile"){
-            boost::dynamic_pointer_cast<File_Knob>(k)->openFile();
-        }else if(k->typeName() == "OutputFile"){
-            boost::dynamic_pointer_cast<OutputFile_Knob>(k)->openFile();
-        }
-    }
-}
-
 void EffectInstance::abortRendering(){
     if (isClone()) {
         _node->abortRenderingForEffect(this);

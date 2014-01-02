@@ -111,11 +111,6 @@ public:
      **/
     bool isOpenFXNode() const;
     
-    /**
-     * @brief Forwarded to the live effect instance
-     **/
-    void openFilesForAllFileKnobs();
-    
     /*Initialises inputs*/
     void initializeInputs();
     

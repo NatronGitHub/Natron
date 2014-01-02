@@ -537,9 +537,9 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
         QCoreApplication::postEvent(parentWidget(),ev);
     }else if(e->key() == Qt::Key_R){
-        _gui->getApp()->createNode("Reader");
+        _gui->createReader();
     }else if(e->key() == Qt::Key_W){
-        _gui->getApp()->createNode("Writer");
+        _gui->createWriter();
     }else if(e->key() == Qt::Key_Backspace){
         /*delete current node.*/
         deleteSelectedNode();
@@ -1205,9 +1205,10 @@ void NodeGraph::dropEvent(QDropEvent* event){
     }
     
     QStringList supportedExtensions;
-    std::vector<std::string> supportedFileTypes = appPTR->getCurrentSettings()->readersSettings.supportedFileTypes();
-    for(U32 i = 0 ; i < supportedFileTypes.size();++i){
-        supportedExtensions.append(QString(supportedFileTypes[i].c_str()));
+    std::map<std::string,std::string> writersForFormat;
+    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
+    for (std::map<std::string,std::string>::const_iterator it = writersForFormat.begin(); it!=writersForFormat.end(); ++it) {
+        supportedExtensions.push_back(it->first.c_str());
     }
     
     std::vector<QStringList> files = SequenceFileDialog::fileSequencesFromFilesList(filesList,supportedExtensions);
@@ -1218,11 +1219,10 @@ void NodeGraph::dropEvent(QDropEvent* event){
         Natron::Node* reader = _gui->getApp()->createNode("Reader",true);
         const std::vector<boost::shared_ptr<Knob> >& knobs = reader->getKnobs();
         for(U32 j = 0 ; j < knobs.size();++j){
-            if(knobs[j]->typeName() == "InputFile"){
+            if(knobs[j]->typeName() == File_Knob::typeNameStatic()){
                 boost::shared_ptr<File_Knob> fileKnob = boost::dynamic_pointer_cast<File_Knob>(knobs[j]);
                 assert(fileKnob);
-                fileKnob->setValue(files[i]);
-                // reader->refreshPreviewImage(fileKnob->firstFrame());
+                fileKnob->setFiles(files[i]);
                 break;
             }
         }

@@ -506,19 +506,13 @@ private:
     //////////////////////////////
 
     //////////////////////////////
-    //// READ PLUGINS
-    /*loads extra reader plug-ins */
-    void loadReadPlugins();
     /*loads reads that are built-in*/
-    void loadBuiltinReads();
+    void loadBuiltinReads(std::map<std::string,std::vector<std::string> >* readersMap);
     //////////////////////////////
 
     //////////////////////////////
-    //// WRITE PLUGINS
-    /*loads extra writer plug-ins*/
-    void loadWritePlugins();
     /*loads writes that are built-ins*/
-    void loadBuiltinWrites();
+    void loadBuiltinWrites(std::map<std::string,std::vector<std::string> >* writersMap);
     //////////////////////////////
 
     void loadBuiltinFormats();

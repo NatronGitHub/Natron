@@ -614,10 +614,6 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     Log::endFunction(getName(),"makePreviewImage");
 }
 
-void Node::openFilesForAllFileKnobs()
-{
-    _liveInstance->openFilesForAllFileKnobs();
-}
 
 void Node::abortRenderingForEffect(EffectInstance* effect)
 {

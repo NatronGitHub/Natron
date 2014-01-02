@@ -22,8 +22,8 @@
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QHeaderView>
-#include <QTableWidget>
-#include <QTableWidgetItem>
+#include <QApplication>
+#include <QScrollArea>
 
 #include "Global/AppManager.h"
 
@@ -644,122 +644,234 @@ void Choice_KnobGui::setEnabled()
 
 //=============================TABLE_KNOB_GUI===================================
 
+//ComboBoxDelegate::ComboBoxDelegate(Table_KnobGui* tableKnob,QObject *parent)
+//: QStyledItemDelegate(parent)
+//, _tableKnob(tableKnob)
+//{
+//    
+//}
+//
+//QWidget *ComboBoxDelegate::createEditor(QWidget *parent, const QStyleOptionViewItem &/*option*/,
+//                              const QModelIndex &index) const{
+//    ComboBox* cb =  new ComboBox(parent);
+//    QStringList entries = index.model()->data(index,Qt::DisplayRole).toStringList();
+//    for (int i = 0; i < entries.size(); ++i) {
+//        cb->addItem(entries.at(i));
+//    }
+//    cb->setCurrentIndex(index.model()->data(index,Qt::EditRole).toInt());
+//    QObject::connect(cb, SIGNAL(currentIndexChanged(int)), _tableKnob, SLOT(onCurrentIndexChanged(int)));
+//
+//    ///////From Qt's doc:
+//    /*The returned editor widget should have Qt::StrongFocus; otherwise,
+//     QMouseEvents received by the widget will propagate to the view. The view's background will shine through unless
+//     the editor paints its own background (e.g., with setAutoFillBackground()).
+//     */
+//    cb->setFocusPolicy(Qt::StrongFocus);
+//    cb->setAutoFillBackground(true);
+//    return cb;
+//}
+//
+//void ComboBoxDelegate::setEditorData(QWidget *editor, const QModelIndex &index) const{
+//    int value = index.model()->data(index, Qt::EditRole).toInt();
+//    QStringList entries = index.model()->data(index,Qt::DisplayRole).toStringList();
+//    ComboBox *cb = dynamic_cast<ComboBox*>(editor);
+//    cb->clear();
+//    for (int i = 0; i < entries.size(); ++i) {
+//        cb->addItem(entries.at(i));
+//    }
+//    if(value < entries.size()){
+//        cb->setCurrentText(entries.at(value));
+//    }
+//}
+//void ComboBoxDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
+//                   const QModelIndex &index) const {
+//    ComboBox *cb = dynamic_cast<ComboBox*>(editor);
+//    int i = cb->activeIndex();
+//    
+//    model->setData(index, QVariant(i),Qt::EditRole);
+//}
+//
+//void ComboBoxDelegate::updateEditorGeometry(QWidget *editor,
+//                                  const QStyleOptionViewItem &option, const QModelIndex &/*index*/) const {
+//    editor->setGeometry(option.rect);
+//}
+//
+//void ComboBoxDelegate::paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const {
+//    
+//    if(index.column() == 0){
+//        QStyledItemDelegate::paint(painter, option, index);
+//    }else{
+//        int value = index.model()->data(index, Qt::EditRole).toInt();
+//        QStringList entries = index.model()->data(index,Qt::DisplayRole).toStringList();
+//        if(entries.size() > 0){
+//            QString str = entries.at(value);
+//            QStyle *style = QApplication::style();
+//            QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
+//            QRect r;
+//            painter->drawText(geom,Qt::TextSingleLine|Qt::AlignRight,str,&r);
+//        }
+//    }
+//}
+//
+//QSize ComboBoxDelegate::sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const {
+//    QStringList entries = index.model()->data(index,Qt::DisplayRole).toStringList();
+//    QFontMetrics metric(option.font);
+//    int largestStr = 0;
+//    for (int i = 0; i < entries.size(); ++i) {
+//        int w = metric.width(entries.at(i));
+//        if (w > largestStr) {
+//            w = largestStr;
+//        }
+//    }
+//    return QSize(largestStr,metric.height());
+//}
 
-Table_KnobGui::Table_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
-: KnobGui(knob,container)
-{
-    boost::shared_ptr<Table_Knob> tbKnob = boost::dynamic_pointer_cast<Table_Knob>(getKnob());
-    assert(tbKnob);
-
-    QObject::connect(tbKnob.get(), SIGNAL(populated()), this, SLOT(onPopulated()));
-}
-
-Table_KnobGui::~Table_KnobGui() {
-    delete _container;
-}
-
-void Table_KnobGui::createWidget(QGridLayout *layout, int row) {
-    
-    boost::shared_ptr<Table_Knob> tbKnob = boost::dynamic_pointer_cast<Table_Knob>(getKnob());
-    assert(tbKnob);
-    
-    _container = new QWidget(layout->parentWidget());
-    _container->setToolTip(tbKnob->getHintToolTip().c_str());
-    _layout = new QVBoxLayout(_container);
-    
-    _descriptionLabel = new QLabel(getKnob()->getDescription().c_str(),_container);
-    
-    _layout->addWidget(_descriptionLabel);
-    
-    _table = new QTableWidget(_container);
-    _table->setRowCount(getKnob()->getDimension());
-    _table->setColumnCount(2);
-    
-    std::string keyHeader,choicesHeader;
-    tbKnob->getVerticalHeaders(&keyHeader, &choicesHeader);
-    
-    QStringList verticalHeaders;
-    if(!keyHeader.empty() && !choicesHeader.empty()){
-        verticalHeaders.push_back(keyHeader.c_str());
-        verticalHeaders.push_back(choicesHeader.c_str());
-    }
-    
-    if(!verticalHeaders.isEmpty()){
-        _table->setVerticalHeaderLabels(verticalHeaders);
-    }
-    
-    const Table_Knob::TableEntries& entries = tbKnob->getRows();
-    if((int)entries.size() == tbKnob->getDimension()){
-        onPopulated();
-    }
-    
-    _layout->addWidget(_table);
-    
-    layout->addWidget(_container, row, 1);
-}
-
-void Table_KnobGui::onPopulated(){
-    
-    boost::shared_ptr<Table_Knob> tbKnob = boost::dynamic_pointer_cast<Table_Knob>(getKnob());
-    assert(tbKnob);
-    
-    ///clear the previous table cells
-    while(_table->rowCount() > 0){
-        QTableWidgetItem* left = _table->item(0, 0);
-        delete left;
-        QTableWidgetItem* right = _table->item(0, 1);
-        delete right;
-    }
-    
-    
-
-    const Table_Knob::TableEntries& entries = tbKnob->getRows();
-    assert((int)entries.size() == tbKnob->getDimension());
-    for (int i = 0; i < tbKnob->getDimension(); ++i) {
-        QTableWidgetItem* keyItem = new QTableWidgetItem(entries[i].first.c_str());
-        keyItem->setFlags(Qt::NoItemFlags);
-        _table->setItem(i, 0, keyItem);
-        QTableWidgetItem* choicesItem = new QTableWidgetItem();
-        _table->setItem(i, 1, choicesItem);
-        ComboBox* cb = new ComboBox(_table);
-        for (U32 j = 0; j < entries[i].second.size(); ++j) {
-            cb->addItem(entries[i].second[j].c_str());
-        }
-        _choices.push_back(cb);
-        QObject::connect(cb, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
-        int defaultIndex = tbKnob->getValue<int>(i);
-        cb->setCurrentIndex(defaultIndex);
-        
-        _table->setCellWidget(i, 1, cb);
-    }
-
-}
-
-void Table_KnobGui::onCurrentIndexChanged(int){
-    std::vector<Variant> newValues;
-    for (U32 i = 0; i < _choices.size(); ++i) {
-        newValues.push_back(Variant(_choices[i]->activeIndex()));
-    }
-    pushValueChangedCommand(newValues);
-}
-
-void Table_KnobGui::_hide() {
-    _container->hide();
-}
-
-void Table_KnobGui::_show() {
-    _container->show();
-}
-
-void Table_KnobGui::setEnabled() {
-    _container->setEnabled(getKnob()->isEnabled());
-}
-
-void Table_KnobGui::updateGUI(int dimension, const Variant &variant) {
-    if(dimension < (int)_choices.size()){
-        _choices[dimension]->setCurrentText(_choices[dimension]->itemText(variant.toInt()));
-    }
-}
+//
+//Table_KnobGui::Table_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
+//: KnobGui(knob,container)
+////, _tableComboBoxDelegate(0)
+////, _table(0)
+//, _descriptionLabel(0)
+//, _container(0)
+//, _layout(0)
+//{
+//    boost::shared_ptr<Table_Knob> tbKnob = boost::dynamic_pointer_cast<Table_Knob>(getKnob());
+//    assert(tbKnob);
+//
+//    QObject::connect(tbKnob.get(), SIGNAL(populated()), this, SLOT(onPopulated()));
+//}
+//
+//Table_KnobGui::~Table_KnobGui() {
+//    delete _sa;
+//    //   delete _tableComboBoxDelegate;
+//}
+//
+//void Table_KnobGui::createWidget(QGridLayout *layout, int row) {
+//    
+//    boost::shared_ptr<Table_Knob> tbKnob = boost::dynamic_pointer_cast<Table_Knob>(getKnob());
+//    assert(tbKnob);
+//    
+//    //_sa = new QScrollArea(layout->parentWidget());
+//    _container = new QWidget();
+//    //_sa->setWidget(_container);
+//    _container->setToolTip(tbKnob->getHintToolTip().c_str());
+//    _layout = new QVBoxLayout(_container);
+//    
+//    _descriptionLabel = new QLabel(getKnob()->getDescription().c_str(),_container);
+//    
+//    _layout->addWidget(_descriptionLabel);
+//    
+////    _table = new TableWidget(_container);
+////    _table->setRowCount(tbKnob->getDimension());
+////    _table->setColumnCount(2);
+////    _table->setSelectionMode(QAbstractItemView::NoSelection);
+////    
+////    _tableComboBoxDelegate = new ComboBoxDelegate(this);
+////    _table->setItemDelegateForColumn(1, _tableComboBoxDelegate);
+////    _table->setEditTriggers(QAbstractItemView::AllEditTriggers);
+//    
+//    ////what we call vertical for us is the horizontal header for qt
+////    _table->verticalHeader()->hide();
+//    
+//    std::string keyHeader,choicesHeader;
+//    tbKnob->getVerticalHeaders(&keyHeader, &choicesHeader);
+//    
+////    QStringList verticalHeaders;
+////    if(!keyHeader.empty() && !choicesHeader.empty()){
+////        verticalHeaders.push_back(keyHeader.c_str());
+////        verticalHeaders.push_back(choicesHeader.c_str());
+////    }
+////    
+////    if(!verticalHeaders.isEmpty()){
+////        _table->setHorizontalHeaderLabels(verticalHeaders);
+////    }
+////
+//    
+//    QWidget* header = new QWidget(_container);
+//    QHBoxLayout* headerLayout = new QHBoxLayout(header);
+//    headerLayout->setContentsMargins(0, 0, 0, 0);
+//    QLabel* keyHeaderLabel = new QLabel(keyHeader.c_str(),header);
+//    headerLayout->addWidget(keyHeaderLabel);
+//    QLabel* valueHeaderLabel = new QLabel(choicesHeader.c_str(),header);
+//    headerLayout->addWidget(valueHeaderLabel);
+//    
+//    _layout->addWidget(header);
+//    
+//    const Table_Knob::TableEntries& entries = tbKnob->getRows();
+//    if((int)entries.size() == tbKnob->getDimension()){
+//        onPopulated();
+//    }
+//    
+//    // _layout->addWidget(_table);
+//    
+//    layout->addWidget(_sa, row, 1);
+//}
+//
+//void Table_KnobGui::onPopulated(){
+//    
+//    boost::shared_ptr<Table_Knob> tbKnob = boost::dynamic_pointer_cast<Table_Knob>(getKnob());
+//    assert(tbKnob);
+//
+//    const Table_Knob::TableEntries& entries = tbKnob->getRows();
+//    assert((int)entries.size() == tbKnob->getDimension());
+//    int i = 0;
+//    for (Table_Knob::TableEntries::const_iterator it = entries.begin();it!=entries.end();++it) {
+//        QWidget* row = new QWidget(_container);
+//        QHBoxLayout *rowLayout = new QHBoxLayout(row);
+//        rowLayout->setContentsMargins(0, 0, 0, 0);
+//        
+//        QLabel* key = new QLabel(it->first.c_str(),row);
+//        rowLayout->addWidget(key);
+//        
+////        QTableWidgetItem* keyItem = new QTableWidgetItem(it->first.c_str());
+////        keyItem->setFlags(Qt::NoItemFlags);
+////        _table->setItem(i, 0, keyItem);
+////    
+////        QTableWidgetItem* choicesItem = new QTableWidgetItem();
+//        ComboBox* cb = new ComboBox(row);
+//        for (U32 j = 0; j < it->second.size(); ++j) {
+//            cb->addItem(it->second[j].c_str());
+//        }
+//        _choices.push_back(cb);
+//        QObject::connect(cb, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
+//        int defaultIndex = tbKnob->getValue<int>(i);
+//        cb->setCurrentIndex(defaultIndex);
+//        
+//        rowLayout->addWidget(cb);
+////        _table->setItem(i, 1, choicesItem);
+////        _table->setCellWidget(i, 1, cb);
+////
+//        _layout->addWidget(row);
+//        ++i;
+//    }
+//    //  _table->resizeColumnsToContents();
+//}
+//
+//void Table_KnobGui::onCurrentIndexChanged(int){
+//    std::vector<Variant> newValues;
+//    for (U32 i = 0; i < _choices.size(); ++i) {
+//        newValues.push_back(Variant(_choices[i]->activeIndex()));
+//    }
+//    pushValueChangedCommand(newValues);
+//}
+//
+//void Table_KnobGui::_hide() {
+//    _container->hide();
+//}
+//
+//void Table_KnobGui::_show() {
+//    _container->show();
+//}
+//
+//void Table_KnobGui::setEnabled() {
+//    _container->setEnabled(getKnob()->isEnabled());
+//}
+//
+//void Table_KnobGui::updateGUI(int dimension, const Variant &variant) {
+//    if(dimension < (int)_choices.size()){
+//        _choices[dimension]->setCurrentText(_choices[dimension]->itemText(variant.toInt()));
+//    }
+//}
 
 
 //=============================SEPARATOR_KNOB_GUI===================================

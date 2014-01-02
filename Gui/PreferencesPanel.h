@@ -11,14 +11,13 @@
 #ifndef PREFERENCESPANEL_H
 #define PREFERENCESPANEL_H
 
-#include <QWidget>
 #include <boost/shared_ptr.hpp>
+#include <QScrollArea>
 
 class Settings;
 class DockablePanel;
 class QVBoxLayout;
-
-class PreferencesPanel : public QWidget
+class PreferencesPanel : public QScrollArea
 {
 public:
     PreferencesPanel(boost::shared_ptr<Settings> settings,QWidget* parent= NULL);
@@ -27,6 +26,8 @@ public:
 private:
     // FIXME: PIMPL
     QVBoxLayout* _mainLayout;
+    QWidget* _viewPort;
+    QScrollArea* _sa;
     DockablePanel* _panel;
     boost::shared_ptr<Settings> _settings;
 };

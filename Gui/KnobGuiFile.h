@@ -48,7 +48,6 @@ public:
     virtual ~File_KnobGui() OVERRIDE;
 
 public slots:
-    void open_file();
 
     void onReturnPressed();
 
@@ -89,7 +88,6 @@ public:
 
 public slots:
 
-    void open_file();
     void onReturnPressed();
 
 private:

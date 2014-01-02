@@ -110,24 +110,24 @@ void Reader::getFrameRange(SequenceTime *first,SequenceTime *last){
 }
 
 boost::shared_ptr<Decoder> Reader::decoderForFileType(const QString& fileName){
-    QString fileNameCopy = fileName;
-    QString extension = Natron::removeFileExtension(fileNameCopy);
-    Natron::LibraryBinary* decoder = appPTR->getCurrentSettings()->readersSettings.decoderForFiletype(extension.toStdString());
-    if (!decoder) {
-        std::string err("Couldn't find an appropriate decoder for this filetype");
-        err.append(extension.toStdString());
-        throw std::invalid_argument(err);
-    }
-    
-    std::pair<bool,ReadBuilder> func = decoder->findFunction<ReadBuilder>("BuildRead");
-    if (func.first) {
-       return  boost::shared_ptr<Decoder>(func.second(this));
-    } else {
-        std::string err("Failed to create the decoder for");
-        err.append(getName());
-        err.append(",something is wrong in the plugin.");
-        throw std::invalid_argument(err);
-    }
+//    QString fileNameCopy = fileName;
+//    QString extension = Natron::removeFileExtension(fileNameCopy);
+//    Natron::LibraryBinary* decoder = appPTR->getCurrentSettings()->readersSettings.decoderForFiletype(extension.toStdString());
+//    if (!decoder) {
+//        std::string err("Couldn't find an appropriate decoder for this filetype");
+//        err.append(extension.toStdString());
+//        throw std::invalid_argument(err);
+//    }
+//    
+//    std::pair<bool,ReadBuilder> func = decoder->findFunction<ReadBuilder>("BuildRead");
+//    if (func.first) {
+//       return  boost::shared_ptr<Decoder>(func.second(this));
+//    } else {
+//        std::string err("Failed to create the decoder for");
+//        err.append(getName());
+//        err.append(",something is wrong in the plugin.");
+//        throw std::invalid_argument(err);
+//    }
     return boost::shared_ptr<Decoder>();
 }
 

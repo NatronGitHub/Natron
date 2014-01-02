@@ -73,6 +73,7 @@ private:
     
         
     boost::shared_ptr<Natron::Project> _project;
+    
     DockablePanel* _panel;
     
     bool _created;

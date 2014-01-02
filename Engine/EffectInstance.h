@@ -395,12 +395,6 @@ public:
     void notifyFrameRangeChanged(int first,int last);
     
     /**
-     * @brief This function is called by the GUI on node creation if it has any file knob.
-     **/
-    void openFilesForAllFileKnobs();
-    
-    
-    /**
      * @brief This function is called by the node holding this effect. Never call this yourself.
      **/
     void updateInputs(RenderTree* tree);

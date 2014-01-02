@@ -41,8 +41,8 @@ const std::string& File_Knob::typeName() const
     return typeNameStatic();
 }
 
-void File_Knob::openFile() {
-    emit shouldOpenFile();
+void File_Knob::setFiles(const QStringList& files) {
+    setValue(Variant(files), 0);
 }
 
 int File_Knob::firstFrame() const
@@ -187,10 +187,9 @@ std::string OutputFile_Knob::getFileName() const
     return  getValue<QString>().toStdString();
 }
 
-void OutputFile_Knob::openFile() {
-        emit shouldOpenFile();
-    }
-
+void OutputFile_Knob::setFile(const QString& file){
+    setValue(Variant(file), 0);
+}
 
 bool OutputFile_Knob::canAnimate() const {
     return false;

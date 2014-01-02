@@ -1562,14 +1562,6 @@ std::string OfxStringInstance::filenameFromPattern(int frameIndex) const{
     }
     return "";
 }
-void OfxStringInstance::ifFileKnobPopDialog(){
-    if(_fileKnob){
-        _fileKnob->openFile();
-    }else if(_outputFileKnob){
-        _outputFileKnob->openFile();
-    }
-}
-
 
 OfxStatus OfxStringInstance::getNumKeys(unsigned int &nKeys) const {
     boost::shared_ptr<Knob> knob;

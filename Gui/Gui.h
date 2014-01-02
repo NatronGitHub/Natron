@@ -272,6 +272,14 @@ public:
 
     void removeSplitter(QSplitter* s);
 
+    QStringList popOpenFileDialog(bool sequenceDialog,const std::vector<std::string>& initialfilters,const std::string& initialDir);
+    
+    QString popSaveFileDialog(bool sequenceDialog,const std::vector<std::string>& initialfilters,const std::string& initialDir);
+    
+    void createReader();
+    
+    void createWriter();
+    
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);
@@ -328,6 +336,8 @@ public slots:
     void onCurrentUndoStackChanged(QUndoStack* stack);
     
     void showSettings();
+    
+    
 
 private:
 
@@ -385,6 +395,10 @@ private:
     QWidget *_centralWidget;
     QHBoxLayout* _mainLayout;
     
+    QString _lastLoadSequenceOpenedDir;
+    QString _lastLoadProjectOpenedDir;
+    QString _lastSaveSequenceOpenedDir;
+    QString _lastSaveProjectOpenedDir;
     
     // FIXME: public pointer members are the sign of a serious design flaw!!! at least use a getter!
 public:

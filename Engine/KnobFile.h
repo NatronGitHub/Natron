@@ -26,7 +26,6 @@
 
 class File_Knob : public Knob
 {
-    Q_OBJECT
 public:
 
     static Knob *BuildKnob(KnobHolder  *holder, const std::string &description, int dimension) {
@@ -43,7 +42,7 @@ private:
     virtual const std::string& typeName() const OVERRIDE FINAL;
 
 public:
-    void openFile();
+    void setFiles(const QStringList& stringList);
 
     /**
      * @brief firstFrame
@@ -79,8 +78,6 @@ private:
 
     virtual void processNewValue() OVERRIDE FINAL;
 
-signals:
-    void shouldOpenFile();
 
 private:
     mutable QMutex _fileSequenceLock;
@@ -92,7 +89,6 @@ private:
 
 class OutputFile_Knob: public Knob
 {
-    Q_OBJECT
 public:
 
     static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
@@ -103,13 +99,10 @@ public:
 
     std::string getFileName() const;
 
-    void openFile();
+    void setFile(const QString& file);
 
     static const std::string& typeNameStatic();
 
-signals:
-
-    void shouldOpenFile();
 
 private:
 

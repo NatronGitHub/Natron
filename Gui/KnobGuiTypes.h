@@ -16,6 +16,7 @@
 
 #include <QLabel>
 #include <QObject>
+#include <QStyledItemDelegate>
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
@@ -32,8 +33,7 @@ class QGridLayout;
 class QTextEdit;
 class QTreeWidget;
 class QTreeWidgetItem;
-class QTableWidget;
-class QTableWidgetItem;
+class QScrollArea;
 
 // Engine
 class Knob;
@@ -275,44 +275,74 @@ private:
 };
 
 //================================
-class Table_KnobGui : public KnobGui
-{
-    Q_OBJECT
-public:
-    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
-        return new Table_KnobGui(knob, container);
-    }
-    
-    
-    Table_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
-    
-    virtual ~Table_KnobGui() OVERRIDE;
-    
-    public slots:
-    
-    void onCurrentIndexChanged(int);
-    
-    void onPopulated();
-    
-private:
-    
-    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
-    
-    virtual void _hide() OVERRIDE FINAL;
-    
-    virtual void _show() OVERRIDE FINAL;
-    
-    virtual void setEnabled() OVERRIDE FINAL;
-    
-    virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
-    
-
-    QTableWidget *_table;
-    QLabel *_descriptionLabel;
-    QWidget* _container;
-    QVBoxLayout* _layout;
-    std::vector<ComboBox*> _choices;
-};
+//class Table_KnobGui;
+//class ComboBoxDelegate : public QStyledItemDelegate{
+//    
+//    Q_OBJECT
+//    
+//    Table_KnobGui* _tableKnob;
+//    
+//public:
+//    
+//    ComboBoxDelegate(Table_KnobGui* tableKnob,QObject *parent = 0);
+//    
+//    virtual ~ComboBoxDelegate(){}
+//    
+//    virtual QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option,
+//                          const QModelIndex &index) const OVERRIDE;
+//    
+//    virtual void setEditorData(QWidget *editor, const QModelIndex &index) const;
+//    virtual void setModelData(QWidget *editor, QAbstractItemModel *model,
+//                      const QModelIndex &index) const OVERRIDE;
+//    
+//    virtual void updateEditorGeometry(QWidget *editor,
+//                              const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE;
+//    
+//    virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const OVERRIDE;
+//    
+//    virtual QSize sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const OVERRIDE;
+//
+//};
+//
+//
+//class Table_KnobGui : public KnobGui
+//{
+//    Q_OBJECT
+//public:
+//    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
+//        return new Table_KnobGui(knob, container);
+//    }
+//    
+//    
+//    Table_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
+//    
+//    virtual ~Table_KnobGui() OVERRIDE;
+//    
+//    public slots:
+//    
+//    void onCurrentIndexChanged(int);
+//    
+//    void onPopulated();
+//    
+//private:
+//    
+//    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+//    
+//    virtual void _hide() OVERRIDE FINAL;
+//    
+//    virtual void _show() OVERRIDE FINAL;
+//    
+//    virtual void setEnabled() OVERRIDE FINAL;
+//    
+//    virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
+//    
+//    // ComboBoxDelegate* _tableComboBoxDelegate;
+//    QLabel *_descriptionLabel;
+//    QScrollArea* _sa;
+//    QWidget* _container;
+//    QVBoxLayout* _layout;
+//    std::vector<ComboBox*> _choices;
+//};
 
 //=========================
 class Separator_KnobGui : public KnobGui

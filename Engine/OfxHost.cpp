@@ -32,6 +32,8 @@
 #include <ofxhHost.h>
 #include <ofxhParam.h>
 
+#include <natron/IOExtensions.h>
+
 #include "Global/AppManager.h"
 #include "Global/LibraryBinary.h"
 
@@ -258,7 +260,9 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
     return hostSideEffect;
 }
 
-void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
+void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
+                                     std::map<std::string,std::vector<std::string> >* readersMap,
+                                     std::map<std::string,std::vector<std::string> >* writersMap) {
     
     assert(OFX::Host::PluginCache::getPluginCache());
     /// set the version label in the global cache
@@ -340,34 +344,6 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
         
         _ofxPlugins[pluginId] = OFXPluginEntry(openfxId.toStdString(), grouping);
 
-        // The following was commented out because:
-        // - loading all plugins on startup may take a LOT of time
-        // - it makes the plugin cache basically useless
-        // - all OfxEffectInstance should be owned by a node in Natron (this is crazy. where are the smart pointers?)
-        // If a plugin is not supported, the user gets an error when instanciating the plugin, which is the Right Thing To Do (TM).
-#if 0
-        //try to instantiate an effect for this plugin, if it crashes, don't add it
-        OfxEffectInstance* tryInstance = 0;
-        try {
-            tryInstance = createOfxEffect(pluginId, NULL);
-        } catch (const std::exception& e) {
-            qDebug() << "Exception while loading " << pluginId.c_str() << ": " << e.what();
-            delete tryInstance;
-            tryInstance = 0;
-        } catch (...) {
-            qDebug() << "Exception while loading " << pluginId.c_str();
-            delete tryInstance;
-            tryInstance = 0;
-        }
-
-        if (!tryInstance) {
-            qDebug() << "Error loading " << pluginId.c_str();
-            _ofxPlugins.erase(pluginId);
-            continue;
-        } else {
-            delete tryInstance;
-        }
-#endif
         emit toolButtonAdded(groups,pluginId.c_str(), pluginLabel.c_str(), iconFilename, groupIconFilename);
         QMutex* pluginMutex = NULL;
         if(p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe){
@@ -377,6 +353,49 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins) {
                                                     pluginId.c_str(),pluginLabel.c_str(),pluginMutex,p->getVersionMajor(),
                                                     p->getVersionMinor());
         plugins->push_back(plugin);
+        
+        
+        ///if this plugin's descriptor has the kOfxImageEffectPropFormatsCount and kOfxImageEffectPropFormats properties,
+        ///use them to fill the readersMap and writersMap
+        int formatsCount = p->getDescriptor().getProps().getIntProperty(kOfxImageEffectPropFormatsCount);
+        std::vector<std::string> formats(formatsCount);
+        for(int k = 0; k < formatsCount;++k){
+            formats[k] = p->getDescriptor().getProps().getStringProperty(kOfxImageEffectPropFormats,k);
+        }
+        
+        OFX::Host::ImageEffect::Descriptor* isGenerator = p->getContext(kOfxImageEffectContextGenerator);
+        
+        if(isGenerator && formatsCount > 0){
+            ///we're safe to assume that this plugin is a reader
+            for(U32 k = 0; k < formats.size();++k){
+                std::map<std::string,std::vector<std::string> >::iterator it;
+                it = readersMap->find(formats[k]);
+                
+                if(it != readersMap->end()){
+                    it->second.push_back(pluginId);
+                }else{
+                    std::vector<std::string> newVec(1);
+                    newVec[0] = pluginId;
+                    readersMap->insert(std::make_pair(formats[k], newVec));
+                }
+            }
+        }else if(!isGenerator && formatsCount > 0){
+            ///we're safe to assume that this plugin is a writer.
+            for(U32 k = 0; k < formats.size();++k){
+                std::map<std::string,std::vector<std::string> >::iterator it;
+                it = writersMap->find(formats[k]);
+                
+                if(it != writersMap->end()){
+                    it->second.push_back(pluginId);
+                }else{
+                    std::vector<std::string> newVec(1);
+                    newVec[0] = pluginId;
+                    writersMap->insert(std::make_pair(formats[k], newVec));
+                }
+            }
+
+        }
+
     }
 }
 

@@ -62,6 +62,8 @@ void ProjectGui::create(boost::shared_ptr<Natron::Project> projectInternal,QVBox
                                "Rendering",
                                parent);
     _panel->initializeKnobs();
+    
+    
     _created = true;
 }
 
