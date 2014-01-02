@@ -94,6 +94,21 @@ void Natron::Bitmap::markForRendered(const RectI& roi){
         memset(buf, 1, roi.width());
     }
 }
+
+void Natron::Image::copy(const Natron::Image& other){
+    
+    RectI intersection;
+    this->_params._rod.intersect(other._params._rod, &intersection);
+    
+    if (intersection.isNull()) {
+        return;
+    }
+    
+    const float* src = other.pixelAt(0, 0);
+    float* dst = pixelAt(0, 0);
+    memcpy(dst, src, intersection.area());
+}
+
 namespace Natron{
     void debugImage(Natron::Image* img,const QString& filename){
         const RectI& rod = img->getRoD();

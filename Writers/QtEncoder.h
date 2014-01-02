@@ -12,52 +12,73 @@
 #ifndef NATRON_WRITERS_WRITEQT_H_
 #define NATRON_WRITERS_WRITEQT_H_
 
-#include "Global/Macros.h"
-#include "Writers/Encoder.h"
-#include "Engine/Rect.h"
 
-class QImage;
-class QtEncoder :public Encoder{
-    
-    RectI _rod;
-    uchar* _buf;
-    QImage* _outputImage;
+#include "Engine/EffectInstance.h"
+
+namespace Natron {
+    namespace Color {
+        class Lut;
+    }
+}
+
+class OutputFile_Knob;
+class Choice_Knob;
+class Button_Knob;
+class Int_Knob;
+class Bool_Knob;
+
+class QtWriter :public Natron::OutputEffectInstance{
     
 public:
+    static Natron::EffectInstance* BuildEffect(Natron::Node* n){
+        return new QtWriter(n);
+    }
     
-    static Encoder* BuildWrite(Writer* writer){return new QtEncoder(writer);}
+    QtWriter(Natron::Node* node);
     
-    QtEncoder(Writer* writer);
+    virtual ~QtWriter();
     
-    virtual ~QtEncoder();
+    static void supportedFileFormats(std::vector<std::string>* formats);
+    
+    virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE {return false;}
+    
+    virtual int majorVersion() const OVERRIDE { return 1; }
+    
+    virtual int minorVersion() const OVERRIDE { return 0;}
+    
+    virtual std::string pluginID() const OVERRIDE;
+    
+    virtual std::string pluginLabel() const OVERRIDE;
+    
+    virtual std::string description() const OVERRIDE;
+    
+    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
 
+    virtual int maximumInputs() const OVERRIDE {return 1;}
     
-    /*Should return the list of file types supported by the encoder: "png","jpg", etc..*/
-    virtual std::vector<std::string> fileTypesEncoded() const OVERRIDE;
-    
-    /*Should return the name of the write handle : "ffmpeg", "OpenEXR" ...*/
-    virtual std::string encoderName() const OVERRIDE;
-    
-    /*Must be implemented to tell whether this file type supports stereovision*/
-	virtual bool supports_stereo() const OVERRIDE;
-       
-    /*Must implement it to initialize the appropriate colorspace  for
-     the file type. You can initialize the _lut member by calling the
-     function Natron::Color::getLut(datatype) */
-    virtual void initializeColorSpace() OVERRIDE;
-    
-    /*This must be implemented to do the output colorspace conversion*/
-	virtual Natron::Status render(boost::shared_ptr<const Natron::Image> inputImage,int view,const RectI& roi) OVERRIDE;
-    
-    virtual void finalizeFile() OVERRIDE;
-    
-    /*This function initialises the output file/output storage structure and put necessary info in it, like
-     meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
-     otherwise it would stall the GUI.*/
-    virtual Natron::Status setupFile(const QString& filename,const RectI& rod) OVERRIDE;
+    void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE;
 
-    virtual void supportsChannelsForWriting(Natron::ChannelSet& channels) const OVERRIDE;
+    virtual Natron::Status render(SequenceTime /*time*/, RenderScale /*scale*/, const RectI& /*roi*/, int /*view*/, boost::shared_ptr<Natron::Image> /*output*/) OVERRIDE;
+
+
+protected:
     
+    
+	virtual void initializeKnobs() OVERRIDE;
+    
+    virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Natron::EffectInstance::INSTANCE_SAFE;}
+
+private:
+
+    const Natron::Color::Lut* _lut;
+
+    boost::shared_ptr<Bool_Knob> _premultKnob;
+    boost::shared_ptr<OutputFile_Knob> _fileKnob;
+    boost::shared_ptr<Choice_Knob> _frameRangeChoosal;
+    boost::shared_ptr<Int_Knob> _firstFrameKnob;
+    boost::shared_ptr<Int_Knob> _lastFrameKnob;
+    boost::shared_ptr<Button_Knob> _renderKnob;
+
 };
 
 #endif /* defined(NATRON_WRITERS_WRITEQT_H_) */

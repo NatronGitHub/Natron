@@ -12,6 +12,9 @@
 #ifndef NATRON_READERS_READ_H_
 #define NATRON_READERS_READ_H_
 
+
+#if 0 // deprecated
+
 #include <QtCore/QString>
 #include <QtGui/QRgb>
 #include <boost/scoped_ptr.hpp>
@@ -118,5 +121,5 @@ typedef Decoder* (*ReadBuilder)(void*);
 /*Classes deriving Read should implement a function named BuildRead with the following signature:
 static Read* BuildRead(Reader*);
  */
-
+#endif
 #endif // NATRON_READERS_READ_H_

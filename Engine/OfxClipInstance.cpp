@@ -130,14 +130,7 @@ const std::string &OfxClipInstance::getFieldOrder() const
 bool OfxClipInstance::getConnected() const
 {
     if(_isOutput){
-        const Natron::Node::OutputMap& outputs = _nodeInstance->getNode()->getOutputs();
-        for (Natron::Node::OutputMap::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
-            if (it->second) {
-                ///we found a valid node, say yes
-                return true;
-            }
-        }
-        return false;
+        return _nodeInstance->hasOutputConnected();
     }else{
         return _nodeInstance->input(getInputNb()) != NULL;
     }

@@ -499,21 +499,14 @@ private:
 
     //////////////////////////////
     //// NODE PLUGINS
-    void loadNodePlugins();
+    void loadNodePlugins(std::map<std::string,std::vector<std::string> >* readersMap,
+                     std::map<std::string,std::vector<std::string> >* writersMap);
 
     /* Viewer,Reader,Writer...etc.*/
-    void loadBuiltinNodePlugins();
+    void loadBuiltinNodePlugins(std::map<std::string,std::vector<std::string> >* readersMap,
+                            std::map<std::string,std::vector<std::string> >* writersMap);
     //////////////////////////////
 
-    //////////////////////////////
-    /*loads reads that are built-in*/
-    void loadBuiltinReads(std::map<std::string,std::vector<std::string> >* readersMap);
-    //////////////////////////////
-
-    //////////////////////////////
-    /*loads writes that are built-ins*/
-    void loadBuiltinWrites(std::map<std::string,std::vector<std::string> >* writersMap);
-    //////////////////////////////
 
     void loadBuiltinFormats();
 
@@ -532,13 +525,6 @@ private:
     int _topLevelInstanceID;
 
     boost::shared_ptr<Settings> _settings;
-
-
-    /*map< decoder name, pair< vector<file type decoded>, decoder library> >*/
-    std::map< std::string,std::pair< std::vector<std::string> ,Natron::LibraryBinary*> > _readPluginsLoaded;
-
-    /*map< encoder name, pair< vector<file type encoded>, encoder library> >*/
-    std::map< std::string,std::pair< std::vector<std::string> ,Natron::LibraryBinary*> > _writePluginsLoaded;
 
     std::vector<Format*> _formats;
 

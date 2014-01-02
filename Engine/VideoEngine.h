@@ -40,9 +40,7 @@ class Node;
 class EffectInstance;
 class OutputEffectInstance;
 }
-class Reader;
 class ViewerInstance;
-class Writer;
 class OfxNode;
 class TimeLine;
 class QSocketNotifier;
@@ -105,7 +103,7 @@ public:
      *The rest of the tree is fetched recursivly starting from this node.
      *@TODO Throw some exception to detect cycles in the graph
      */
-    void refreshTree(SequenceTime time);
+    void refreshTree();
     
     /*Lock the dag. You should call this before any access*/
     void lock() const { _treeMutex.lock(); }
@@ -147,13 +145,7 @@ public:
      *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
      */
     ViewerInstance* outputAsViewer() const;
-    
-    /**
-     *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
-     *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
-     */
-    Writer* outputAsWriter() const;
-    
+
     
     /**
      *@brief Returns true if the output node is a viewer.
@@ -177,7 +169,7 @@ public:
     
     void debug() const;
     
-    void refreshKnobsAndHashAndClearPersistentMessage(SequenceTime time);
+    void refreshKnobsAndHashAndClearPersistentMessage();
     
     const Format& getRenderFormat() const {return _renderOutputFormat;}
     
@@ -194,7 +186,7 @@ private:
     
     
     
-    U64 cloneKnobsAndcomputeTreeHash(SequenceTime time,Natron::EffectInstance* effect,const std::vector<U64>& inputsHashs);
+    U64 cloneKnobsAndcomputeTreeHash(Natron::EffectInstance* effect,const std::vector<U64>& inputsHashs);
     
     
     Natron::EffectInstance* _output; /*!<the output of the Tree*/
@@ -359,8 +351,8 @@ public:
     const RenderTree& getTree() const { return _tree; }
     
     
-    void refreshTree(SequenceTime time){
-        _tree.refreshTree(time);
+    void refreshTree(){
+        _tree.refreshTree();
     }
     
 	/**

@@ -8,6 +8,8 @@
  *contact: immarespond at gmail dot com
  *
  */
+#if 0 // deprecated
+
 
 #include "Writer.h"
 
@@ -343,3 +345,4 @@ void Writer::onTimelineFrameRangeChanged(SequenceTime f,SequenceTime l){
 
 }
 
+#endif

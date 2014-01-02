@@ -37,6 +37,7 @@ namespace Natron{
         RenderScale _renderScale;
         RectI _rod;
         int _view;
+        double _pixelAspect;
 
         ImageKey()
 		: KeyHelper<U64>()
@@ -45,6 +46,7 @@ namespace Natron{
         , _renderScale()
         , _rod()
         , _view(0)
+        , _pixelAspect(1)
         {}
         
         ImageKey(KeyHelper<U64>::hash_type hash)
@@ -54,14 +56,16 @@ namespace Natron{
         , _renderScale()
         , _rod()
         , _view(0)
+        , _pixelAspect(1)
         {}
         
-        ImageKey(U64 nodeHashKey,SequenceTime time,RenderScale scale,int view,const RectI& regionOfDefinition)
+        ImageKey(U64 nodeHashKey,SequenceTime time,RenderScale scale,int view,const RectI& regionOfDefinition,double pixelAspect = 1.)
 		: KeyHelper<U64>()
         , _nodeHashKey(nodeHashKey)
         , _time(time)
         , _rod(regionOfDefinition)
         , _view(view)
+        , _pixelAspect(pixelAspect)
         { _renderScale = scale; }
         
         
@@ -71,6 +75,7 @@ namespace Natron{
             hash->append(*reinterpret_cast<const U64*>(&_renderScale.y));
             hash->append(_time);
             hash->append(_view);
+            hash->append(_pixelAspect);
         }
         
         bool operator==(const ImageKey& other) const {
@@ -79,7 +84,8 @@ namespace Natron{
             _renderScale.y == other._renderScale.y &&
             // _rod == other._rod &&
             _time == other._time &&
-            _view == other._view;
+            _view == other._view &&
+            _pixelAspect == other._pixelAspect;
             
         }
         
@@ -94,6 +100,7 @@ namespace Natron{
             ar & _renderScale.y;
             ar & _time;
             ar & _view;
+            ar & _pixelAspect;
         }
     };
     
@@ -161,6 +168,10 @@ namespace Natron{
         
         SequenceTime getTime() const {return this->_params._time;}
         
+        void setPixelAspect(double pa) { this->_params._pixelAspect = pa; }
+        
+        double getPixelAspect() const { return this->_params._pixelAspect; }
+        
         float* pixelAt(int x,int y){
             const RectI& rod = _bitmap.getRoD();
             return this->_data.writable() + (y-rod.bottom())*4*rod.width() + (x-rod.left())*4;
@@ -209,6 +220,8 @@ namespace Natron{
         void defaultInitialize(float colorValue = 0.f,float alphaValue = 1.f){
             fill(_bitmap.getRoD(),colorValue,alphaValue);
         }
+        
+        void copy(const Natron::Image& other);
     
     
     };

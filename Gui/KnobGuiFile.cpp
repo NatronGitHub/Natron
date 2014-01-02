@@ -22,6 +22,7 @@
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/LineEdit.h"
 #include "Gui/KnobUndoCommand.h"
+#include "Gui/Gui.h"
 
 using namespace Natron;
 
@@ -29,8 +30,6 @@ using namespace Natron;
 File_KnobGui::File_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
 : KnobGui(knob, container)
 {
-    boost::shared_ptr<File_Knob> fileKnob = boost::dynamic_pointer_cast<File_Knob>(knob);
-    QObject::connect(fileKnob.get(), SIGNAL(shouldOpenFile()), this, SLOT(open_file()));
 }
 
 File_KnobGui::~File_KnobGui()
@@ -72,6 +71,35 @@ void File_KnobGui::createWidget(QGridLayout *layout, int row)
     layout->addWidget(container, row, 1);
 }
 
+void File_KnobGui::open_file()
+{
+    std::map<std::string,std::string> readersForFormat;
+    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
+    std::vector<std::string> filters;
+    for (std::map<std::string,std::string>::const_iterator it = readersForFormat.begin(); it!=readersForFormat.end(); ++it) {
+        filters.push_back(it->first);
+    }
+
+    
+    QStringList files;
+    
+    SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, true, SequenceFileDialog::OPEN_DIALOG, _lastOpened.toStdString());
+    if (dialog.exec()) {
+        files = dialog.selectedFiles();
+    }
+    if (!files.isEmpty()) {
+        updateLastOpened(files.at(0));
+        pushValueChangedCommand(Variant(files));
+    }
+}
+
+void File_KnobGui::updateLastOpened(const QString &str)
+{
+    QString withoutPath = SequenceFileDialog::removePath(str);
+    int pos = str.indexOf(withoutPath);
+    _lastOpened = str.left(pos);
+}
+
 void File_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 {
     std::string pattern = SequenceFileDialog::patternFromFilesList(variant.toStringList()).toStdString();
@@ -91,12 +119,6 @@ void File_KnobGui::onReturnPressed()
     pushValueChangedCommand(Variant(newList));
 }
 
-void File_KnobGui::updateLastOpened(const QString &str)
-{
-    QString withoutPath = SequenceFileDialog::removePath(str);
-    int pos = str.indexOf(withoutPath);
-    _lastOpened = str.left(pos);
-}
 
 void File_KnobGui::_hide()
 {
@@ -117,8 +139,7 @@ void File_KnobGui::_show()
 OutputFile_KnobGui::OutputFile_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
 : KnobGui(knob, container)
 {
-    boost::shared_ptr<OutputFile_Knob> fileKnob = boost::dynamic_pointer_cast<OutputFile_Knob>(knob);
-    QObject::connect(fileKnob.get(), SIGNAL(shouldOpenFile()), this, SLOT(open_file()));
+
 }
 
 OutputFile_KnobGui::~OutputFile_KnobGui()
@@ -158,6 +179,31 @@ void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row)
     layout->addWidget(container, row, 1);
 }
 
+void OutputFile_KnobGui::open_file()
+{
+    std::map<std::string,std::string> writersForFormat;
+    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
+    std::vector<std::string> filters;
+    for (std::map<std::string,std::string>::const_iterator it = writersForFormat.begin(); it!=writersForFormat.end(); ++it) {
+        filters.push_back(it->first);
+    }
+    SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, true, SequenceFileDialog::SAVE_DIALOG, _lastOpened.toStdString());
+    if (dialog.exec()) {
+        QString oldPattern = _lineEdit->text();
+        QString newPattern = dialog.filesToSave();
+        updateLastOpened(SequenceFileDialog::removePath(oldPattern));
+        
+        pushValueChangedCommand(Variant(newPattern));
+    }
+}
+
+void OutputFile_KnobGui::updateLastOpened(const QString &str)
+{
+    QString withoutPath = SequenceFileDialog::removePath(str);
+    int pos = str.indexOf(withoutPath);
+    _lastOpened = str.left(pos);
+}
+
 void OutputFile_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 {
     _lineEdit->setText(variant.toString());
@@ -172,12 +218,6 @@ void OutputFile_KnobGui::onReturnPressed()
     pushValueChangedCommand(Variant(newPattern));
 }
 
-void OutputFile_KnobGui::updateLastOpened(const QString &str)
-{
-    QString withoutPath = SequenceFileDialog::removePath(str);
-    int pos = str.indexOf(withoutPath);
-    _lastOpened = str.left(pos);
-}
 
 void OutputFile_KnobGui::_hide()
 {

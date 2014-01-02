@@ -8,6 +8,8 @@
 *contact: immarespond at gmail dot com
 *
 */
+#if 0 // deprecated
+
 
 #include "Reader.h"
 
@@ -227,3 +229,4 @@ Natron::EffectInstance::CachePolicy Reader::getCachePolicy(SequenceTime time) co
     return ALWAYS_CACHE;
     
 }
+#endif

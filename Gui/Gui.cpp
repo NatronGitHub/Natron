@@ -36,6 +36,7 @@
 #include "Engine/ViewerInstance.h"
 #include "Engine/Project.h"
 #include "Engine/OfxEffectInstance.h"
+#include "Engine/KnobFile.h"
 #include "Writers/Writer.h"
 
 #include "Gui/Texture.h"
@@ -53,6 +54,7 @@
 #include "Gui/ProjectGui.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/PreferencesPanel.h"
+
 
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH"openeffects.png"
@@ -1044,7 +1046,18 @@ void Gui::createReader(){
         
         std::map<std::string,std::string>::iterator found = readersForFormat.find(ext);
         if(found != readersForFormat.end()){
-            _appInstance->createNode(found->second.c_str());
+            Node* n = _appInstance->createNode(found->second.c_str());
+            const std::vector<boost::shared_ptr<Knob> >& knobs = n->getKnobs();
+            for (U32 i = 0; i < knobs.size(); ++i) {
+                if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
+                    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
+                    assert(fk);
+                    if(fk->isInputImageFile()){
+                        fk->setValue<QStringList>(files);
+                        break;
+                    }
+                }
+            }
         }else{
             errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
         }
@@ -1065,7 +1078,18 @@ void Gui::createWriter(){
         
         std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
         if(found != writersForFormat.end()){
-            _appInstance->createNode(found->second.c_str());
+            Node* n = _appInstance->createNode(found->second.c_str());
+            const std::vector<boost::shared_ptr<Knob> >& knobs = n->getKnobs();
+            for (U32 i = 0; i < knobs.size(); ++i) {
+                if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
+                    boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
+                    assert(fk);
+                    if(fk->isOutputImageFile()){
+                        fk->setValue<QString>(file);
+                        break;
+                    }
+                }
+            }
         }else{
             errorDialog("Writer", "No plugin capable of encoding " + ext + " was found.");
         }

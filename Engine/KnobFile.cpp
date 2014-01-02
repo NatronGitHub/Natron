@@ -22,6 +22,7 @@ using std::pair;
 
 File_Knob::File_Knob(KnobHolder *holder, const std::string &description, int dimension)
 : Knob(holder, description, dimension)
+, _isInputImage(false)
 {
 }
 
@@ -179,6 +180,7 @@ void File_Knob::processNewValue()
 
 OutputFile_Knob::OutputFile_Knob(KnobHolder *holder, const std::string &description, int dimension)
 : Knob(holder, description, dimension)
+, _isOutputImage(false)
 {
 }
 
@@ -207,4 +209,45 @@ const std::string& OutputFile_Knob::typeName() const
     return typeNameStatic();
 }
 
+std::string OutputFile_Knob::filenameFromPattern(int frameIndex) const{
+
+    std::string pattern = getValue<QString>().toStdString();
+    QString p(pattern.c_str());
+    
+    int lastDot = p.lastIndexOf(QChar('.'));
+    if(lastDot == -1){
+        ///the filename has not extension, return an empty str
+        return "";
+    }
+    
+    QString fStr =  QString::number(frameIndex);
+    int lastPos = p.lastIndexOf(QChar('#'));
+    
+    if (lastPos == -1) {
+        ///the filename has no #, just put the digits between etxension and path
+        
+        p.insert(lastDot-1, fStr);
+        return p.toStdString();
+    }
+    
+    int nSharpChar = 0;
+    int i = lastDot;
+    --i; //< char before '.'
+    while (i >= 0 && p.at(i) == QChar('#')) {
+        --i;
+        ++nSharpChar;
+    }
+    
+    int prepending0s = nSharpChar > fStr.size() ? nSharpChar - fStr.size() : 0;
+    
+    //remove all ocurrences of the # char
+    p.remove(QChar('#'));
+    
+    for (int j = 0; j < prepending0s; ++j) {
+        fStr.prepend("0");
+    }
+    
+    p.insert(lastDot-1, fStr);
+    return p.toStdString();
+}
 

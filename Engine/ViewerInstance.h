@@ -103,7 +103,7 @@ private:
     const Natron::Color::Lut* _colorSpace;/*!< The lut used to do the viewer colorspace conversion when we can't use shaders*/
     // FIXME: why a float to really represent an enum????
     ViewerColorSpace _lut; /*!< a value coding the current color-space used to render.
-                 0 = NONE , 1 = sRGB , 2 = Rec 709*/
+                 0 = sRGB ,  1 = linear , 2 = Rec 709*/
     
     DisplayChannels _channels;
     

@@ -14,36 +14,73 @@
 
 #include <vector>
 #include <string>
-#include "Readers/Decoder.h"
+#include "Engine/EffectInstance.h"
 
-class QImage;
-namespace Natron{
-class Row;
+namespace Natron {
+    namespace Color {
+        class Lut;
+    }
 }
-class QtDecoder : public Decoder {
 
-    QImage* _img;
+class File_Knob;
+class Choice_Knob;
+class Int_Knob;
+class QtReader : public Natron::EffectInstance {
+
 
 public:
-    static Decoder* BuildRead(Reader* reader) {return new QtDecoder(reader);}
+    static Natron::EffectInstance* BuildEffect(Natron::Node* n){
+        return new QtReader(n);
+    }
     
-    QtDecoder(Reader* _reader);
+    static void supportedFileFormats(std::vector<std::string>* formats);
     
-    virtual ~QtDecoder();
+    QtReader(Natron::Node* node);
     
-    /*Should return the list of file types supported by the decoder: "png","jpg", etc..*/
-    virtual std::vector<std::string> fileTypesDecoded() const OVERRIDE;
+    virtual ~QtReader();
+  
+    virtual bool makePreviewByDefault() const OVERRIDE {return true;}
     
-    /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
-    virtual std::string decoderName() const OVERRIDE {return "QImage (Qt)";}
+    virtual int majorVersion() const OVERRIDE { return 1; }
     
-    virtual Natron::Status render(SequenceTime time,RenderScale scale,const RectI& roi,boost::shared_ptr<Natron::Image> output) OVERRIDE;
+    virtual int minorVersion() const OVERRIDE { return 0;}
     
-    virtual bool supports_stereo() const OVERRIDE {return false;}
+    virtual std::string pluginID() const OVERRIDE;
     
-    virtual Natron::Status readHeader(const QString& filename) OVERRIDE;
+    virtual std::string pluginLabel() const OVERRIDE;
+    
+    virtual std::string description() const OVERRIDE;
+    
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod) OVERRIDE;
+	
+    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
+
+    virtual int maximumInputs() const OVERRIDE {return 0;}
+    
+    virtual bool isGenerator() const OVERRIDE {return true;}
+    
+    virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE { return false; }
+
+    virtual Natron::Status render(SequenceTime time,RenderScale scale,
+                                  const RectI& roi,int view,boost::shared_ptr<Natron::Image> output) OVERRIDE;
+    
+    virtual void initializeKnobs() OVERRIDE;
+    
+    virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Natron::EffectInstance::INSTANCE_SAFE;}
         
-    virtual void initializeColorSpace() OVERRIDE;
+    virtual Natron::EffectInstance::CachePolicy getCachePolicy(SequenceTime time) const OVERRIDE;
+    
+    
+    
+private:
+
+    const Natron::Color::Lut* _lut;
+    QString _filename;
+    QImage* _img;
+    QMutex _lock;
+    boost::shared_ptr<File_Knob> _fileKnob;
+    boost::shared_ptr<Choice_Knob> _missingFrameChoice;
+    boost::shared_ptr<Int_Knob> _timeOffset;
 };
 
 #endif /* defined(NATRON_READERS_READQT_H_) */

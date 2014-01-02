@@ -216,7 +216,7 @@ EffectInstance* Node::findOrCreateLiveInstanceClone(RenderTree* tree)
     }
     
     assert(ret);
-    ret->clone(0); //the time parameter is meaningless here since we just create it.
+    ret->clone();
     //ret->updateInputs(tree);
     return ret;
 
@@ -306,6 +306,13 @@ Node* Node::input(int index) const
     }
 }
 
+void Node::outputs(std::vector<Natron::Node*>* outputsV) const{
+    for(OutputMap::const_iterator it = _imp->outputs.begin();it!= _imp->outputs.end();++it){
+        if(it->second){
+            outputsV->push_back(it->second);
+        }
+    }
+}
 
 std::string Node::getInputLabel(int inputNb) const
 {
@@ -331,7 +338,9 @@ bool Node::isInputConnected(int inputNb) const
 
 bool Node::hasOutputConnected() const
 {
-    return _imp->outputs.size() > 0;
+    std::vector<Natron::Node*> outputsV;
+    outputs(&outputsV);
+    return outputsV.size() > 0;
 }
 
 bool Node::connectInput(Node* input,int inputNumber)
@@ -550,7 +559,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     QMutexLocker locker(&_imp->previewMutex); /// prevent 2 previews to occur at the same time since there's only 1 preview instance
 
     RectI rod;
-    _imp->previewRenderTree->refreshTree(time);
+    _imp->previewRenderTree->refreshTree();
     Natron::Status stat = _imp->previewInstance->getRegionOfDefinition(time, &rod);
     if (stat == StatFailed) {
         return;

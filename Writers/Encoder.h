@@ -12,6 +12,9 @@
 #ifndef NATRON_WRITERS_WRITE_H_
 #define NATRON_WRITERS_WRITE_H_
 
+
+#if 0 // deprecated
+
 #include <string>
 #include <vector>
 
@@ -173,6 +176,6 @@ protected:
  **/
 typedef Encoder* (*WriteBuilder)(void*);
 
-
+#endif
 
 #endif /* defined(NATRON_WRITERS_WRITE_H_) */

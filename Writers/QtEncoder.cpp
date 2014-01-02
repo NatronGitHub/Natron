@@ -18,101 +18,163 @@
 #include <QtGui/QImage>
 #include <QtGui/QImageWriter>
 
+#include "Global/AppManager.h"
+
 #include "Engine/Lut.h"
 #include "Engine/Format.h"
-#include "Writers/Writer.h"
-#include "Engine/Row.h"
 #include "Engine/Image.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/KnobFile.h"
+#include "Engine/TimeLine.h"
 
 using namespace Natron;
 
-QtEncoder::QtEncoder(Writer* writer)
-:Encoder(writer)
-,_rod()
-,_buf(NULL)
-,_outputImage(NULL)
+QtWriter::QtWriter(Natron::Node* node)
+:Natron::OutputEffectInstance(node)
+, _lut(Natron::Color::LutManager::sRGBLut())
 {
     
 }
-QtEncoder::~QtEncoder(){
-    
+
+QtWriter::~QtWriter(){
 }
 
+std::string QtWriter::pluginID() const {
+    return "QtWriter";
+}
+std::string QtWriter::pluginLabel() const{
+    return "QtWriter";
+}
+
+std::string QtWriter::description() const {
+    return "The QtWriter node can render on disk the output of a node graph using the QImage (Qt) library.";
+}
+
+
 /*Should return the list of file types supported by the encoder: "png","jpg", etc..*/
-std::vector<std::string> QtEncoder::fileTypesEncoded() const {
+void QtWriter::supportedFileFormats(std::vector<std::string>* formats) {
     std::vector<std::string> out;
     // Qt Image reader should be the last solution (it cannot read 16-bits ppm or png)
     const QList<QByteArray>& supported = QImageWriter::supportedImageFormats();
     // Qt 4 supports: BMP, JPG, JPEG, PNG, PBM, PGM, PPM, TIFF, XBM, XPM
     // Qt 5 doesn't support TIFF
     for (int i = 0; i < supported.count(); ++i) {
-        out.push_back(std::string(supported.at(i).toLower().data()));
+        formats->push_back(std::string(supported.at(i).toLower().data()));
     }
-    return out;
 }
 
-/*Should return the name of the write handle : "ffmpeg", "OpenEXR" ...*/
-std::string QtEncoder::encoderName() const {
-    return "QImage (Qt)";
-}
-
-/*Must be implemented to tell whether this file type supports stereovision*/
-bool QtEncoder::supports_stereo() const {
-    return false;
-}
-
-/*Must implement it to initialize the appropriate colorspace  for
- the file type. You can initialize the _lut member by calling the
- function getLut(datatype) */
-void QtEncoder::initializeColorSpace(){
-    _lut = Natron::Color::LutManager::sRGBLut();
-}
-
-/*This function initialises the output file/output storage structure and put necessary info in it, like
- meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
- otherwise it would stall the GUI.*/
-Natron::Status QtEncoder::setupFile(const QString& /*filename*/,const RectI& rod){
-    _rod = rod;
-    size_t dataSize = 4 * rod.area();
-    _buf = new uchar[dataSize];
-    std::fill(_buf, _buf+dataSize, 0); // is it really necessary?
-    const ChannelSet& channels = _writer->requestedChannels();
-    QImage::Format type;
-    if (channels & Channel_alpha && _premult) {
-        type = QImage::Format_ARGB32_Premultiplied;
-    }else if(channels & Channel_alpha && !_premult){
-        type = QImage::Format_ARGB32;
-    }else{
-        type = QImage::Format_RGB32;
-    }
-    _outputImage = new QImage(_buf,_rod.width(),_rod.height(),type);
-    return Natron::StatOK;
-}
-
-void QtEncoder::finalizeFile(){
-    
-    _outputImage->save(filename());
-    delete _outputImage;
-    _outputImage = 0;
-    delete [] _buf;
-    _buf = 0;
-}
-
-void QtEncoder::supportsChannelsForWriting(ChannelSet& channels) const {
-    foreachChannels(z, channels){
-        if(z!= Channel_red &&
-           z!= Channel_green &&
-           z!= Channel_blue &&
-           z!= Channel_alpha){
-            throw std::runtime_error("Qt only supports writing image files with red/green/blue/alpha channels.");
-            return;
+void QtWriter::getFrameRange(SequenceTime *first,SequenceTime *last){
+    int index = _frameRangeChoosal->getValue<int>();
+    if(index == 0){
+        EffectInstance* inp = input(0);
+        if(inp){
+            inp->getFrameRange(first, last);
+        }else{
+            *first = 0;
+            *last = 0;
         }
+    }else if(index == 1){
+        *first = getApp()->getTimeLine()->leftBound();
+        *last = getApp()->getTimeLine()->rightBound();
+    }else{
+        *first = _firstFrameKnob->getValue<int>();
+        *last = _lastFrameKnob->getValue<int>();
     }
 }
 
-Natron::Status QtEncoder::render(boost::shared_ptr<const Natron::Image> inputImage,int /*view*/,const RectI& roi){
-    _lut->to_byte_packed(_buf, inputImage->pixelAt(0, 0),roi, inputImage->getRoD(),_rod,Natron::Color::PACKING_RGBA,Natron::Color::PACKING_BGRA,true,_premult);
+
+void QtWriter::initializeKnobs(){
+    _premultKnob = Natron::createKnob<Bool_Knob>(this, "Premultiply by alpha");
+    _premultKnob->turnOffAnimation();
+    _premultKnob->setValue<bool>(false);
+    
+    _fileKnob = Natron::createKnob<OutputFile_Knob>(this, "File");
+    _fileKnob->setAsOutputImageFile();
+    
+    _frameRangeChoosal = Natron::createKnob<Choice_Knob>(this, "Frame range");
+    _frameRangeChoosal->turnOffAnimation();
+    std::vector<std::string> frameRangeChoosalEntries;
+    frameRangeChoosalEntries.push_back("Inputs union");
+    frameRangeChoosalEntries.push_back("Timeline bounds");
+    frameRangeChoosalEntries.push_back("Manual");
+    _frameRangeChoosal->populate(frameRangeChoosalEntries);
+    
+    _firstFrameKnob = Natron::createKnob<Int_Knob>(this, "First frame");
+    _firstFrameKnob->turnOffAnimation();
+    
+    _lastFrameKnob = Natron::createKnob<Int_Knob>(this, "Last frame");
+    _lastFrameKnob->turnOffAnimation();
+    
+    _renderKnob = Natron::createKnob<Button_Knob>(this, "Render");
+    _renderKnob->setAsRenderButton();
+}
+
+void QtWriter::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
+    if(k == _frameRangeChoosal.get()){
+        int index = _frameRangeChoosal->getValue<int>();
+        if(index != 2){
+            if(_firstFrameKnob){
+                _firstFrameKnob->remove();
+            }
+            if(_lastFrameKnob){
+                _lastFrameKnob->remove();
+            }
+        }else{
+            int first = getApp()->getTimeLine()->firstFrame();
+            int last = getApp()->getTimeLine()->lastFrame();
+            if(!_firstFrameKnob){
+                _firstFrameKnob = Natron::createKnob<Int_Knob>(this, "First frame");
+                _firstFrameKnob->turnOffAnimation();
+                _firstFrameKnob->setValue(first);
+                _firstFrameKnob->setDisplayMinimum(first);
+                _firstFrameKnob->setDisplayMaximum(last);
+                
+            }
+            if(!_lastFrameKnob){
+                _lastFrameKnob = Natron::createKnob<Int_Knob>(this, "Last frame");
+                _lastFrameKnob->turnOffAnimation();
+                _lastFrameKnob->setValue(last);
+                _lastFrameKnob->setDisplayMinimum(first);
+                _lastFrameKnob->setDisplayMaximum(last);
+                
+            }
+            createKnobDynamically();
+        }
+        
+    }
+}
+
+Natron::Status QtWriter::render(SequenceTime time, RenderScale scale, const RectI& roi, int view, boost::shared_ptr<Natron::Image> output){
+    
+    boost::shared_ptr<Natron::Image> src = getImage(0, time, scale, view);
+    
+    if(hasOutputConnected()){
+        output->copy(*src);
+    }
+    
+    const Format& frmt = getApp()->getProjectFormat();
+    
+    ////initializes to black
+    unsigned char* buf = (unsigned char*)calloc(frmt.area() * 4,1);
+    
+    
+    QImage::Format type;
+    bool premult = _premultKnob->getValue<bool>();
+    if (premult) {
+        type = QImage::Format_ARGB32_Premultiplied;
+    }else{
+        type = QImage::Format_ARGB32;
+    }
+    
+    _lut->to_byte_packed(buf, src->pixelAt(0, 0), roi, roi, roi, Natron::Color::PACKING_RGBA, Natron::Color::PACKING_BGRA, true, premult);
+    
+    QImage img(roi.width(),roi.height(),type);
+    
+    std::string filename = _fileKnob->filenameFromPattern(std::floor(time + 0.5));
+    
+    img.save(filename.c_str());
     return StatOK;
 }
+
 
 

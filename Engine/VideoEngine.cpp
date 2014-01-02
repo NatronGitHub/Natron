@@ -37,8 +37,6 @@
 #include "Engine/Log.h"
 
 #include "Engine/EffectInstance.h"
-#include "Writers/Writer.h"
-#include "Readers/Reader.h"
 
 #include "Global/AppManager.h"
 #include "Global/MemoryInfo.h"
@@ -183,9 +181,8 @@ bool VideoEngine::startEngine() {
     
     int firstFrame,lastFrame;
     getFrameRange(&firstFrame, &lastFrame);
-    if(_tree.isOutputAViewer()){
-        _timeline->setFrameRange(firstFrame, lastFrame);
-    }else{
+
+    if(!_tree.isOutputAViewer()){
         Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
         output->setFirstFrame(firstFrame);
         output->setLastFrame(lastFrame);
@@ -193,7 +190,7 @@ bool VideoEngine::startEngine() {
 
     
     if(_currentRunArgs._refreshTree)
-        _tree.refreshTree(firstFrame);/*refresh the tree*/
+        _tree.refreshTree();/*refresh the tree*/
     
     
     ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_tree.getOutput()); /*viewer might be NULL if the output is smthing else*/
@@ -375,9 +372,21 @@ void VideoEngine::run(){
             appPTR->clearNodeCache();
         }
         
+        
+        
         Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
         assert(output);
         ViewerInstance* viewer = _tree.outputAsViewer();
+        
+        /*update the tree hash */
+        _tree.refreshKnobsAndHashAndClearPersistentMessage();
+        
+        
+        if(viewer){
+            int firstFrame,lastFrame;
+            getFrameRange(&firstFrame, &lastFrame);
+            _timeline->setFrameRange(firstFrame, lastFrame);
+        }
         
         int firstFrame,lastFrame;
         if (viewer) {
@@ -484,12 +493,9 @@ void VideoEngine::run(){
         // Render currentFrame
         //
         // if the output is a writer, _tree.outputAsWriter() returns a valid pointer/
-        Writer* writer = _tree.outputAsWriter();
-        bool continueOnError = (writer && writer->continueOnError());
-        assert(!viewer || !writer); // output cannot be both a viewer and a writer
         Status stat;
         try {
-           stat =  renderFrame(currentFrame);
+            stat =  renderFrame(currentFrame);
         } catch (const std::exception &e) {
             std::stringstream ss;
             ss << "Error while rendering" << " frame " << currentFrame << ": " << e.what();
@@ -497,28 +503,26 @@ void VideoEngine::run(){
             if (viewer) {
                 viewer->disconnectViewer();
             }
-            if (!continueOnError) {
-                if(stopEngine()){
-                    return;
-                }
-                continue;
+            if(stopEngine()){
+                return;
             }
+            continue;
+            
         }
         
         if(stat == StatFailed){
             if (viewer) {
                 viewer->disconnectViewer();
             }
-            if (!continueOnError) {
-                if(stopEngine()){
-                    return;
-                }
-                continue;
+            if(stopEngine()){
+                return;
             }
-
+            continue;
+            
+            
         }
         
-
+        
         /*The frame has been rendered , we call engineLoop() which will reset all the flags,
          update viewers
          and appropriately increment counters for the next frame in the sequence.*/
@@ -543,9 +547,7 @@ void VideoEngine::run(){
 Natron::Status VideoEngine::renderFrame(SequenceTime time){
     Status stat;
     
-    /*update the tree hash */
-    _tree.refreshKnobsAndHashAndClearPersistentMessage(time);
-    
+  
     /*pre process frame*/
     
     stat = _tree.preProcessFrame(time);
@@ -574,8 +576,6 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time){
             
         }
         
-    } else if (!_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()) {
-        stat = _tree.outputAsWriter()->renderWriter(time);
     } else {
         RenderScale scale;
         scale.x = scale.y = 1.;
@@ -592,10 +592,10 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time){
         }
         
     }
-    
-    if (stat == StatFailed) {
-        throw std::runtime_error("Render failed");
-    }
+//    
+//    if (stat == StatFailed) {
+//        throw std::runtime_error("Render failed");
+//    }
     return stat;
 
 }
@@ -683,7 +683,7 @@ void RenderTree::clearGraph(){
     _sorted.clear();
 }
 
-void RenderTree::refreshTree(SequenceTime time){
+void RenderTree::refreshTree(){
     _isViewer = dynamic_cast<ViewerInstance*>(_output) != NULL;
     _isOutputOpenFXNode = _output->isOpenFX();
     
@@ -697,8 +697,8 @@ void RenderTree::refreshTree(SequenceTime time){
         it->second->setMarkedByTopologicalSort(false);
         it->second->updateInputs(this);
         U64 ret = 0;
-        it->second->clone(time);
-        ret = it->second->computeHash(time,inputsHash);
+        it->second->clone();
+        ret = it->second->computeHash(inputsHash);
         inputsHash.push_back(ret);
     }
     
@@ -726,16 +726,16 @@ void RenderTree::fillGraph(EffectInstance *effect){
     }
 }
 
-U64 RenderTree::cloneKnobsAndcomputeTreeHash(SequenceTime time,EffectInstance* effect,const std::vector<U64>& inputsHashs){
+U64 RenderTree::cloneKnobsAndcomputeTreeHash(EffectInstance* effect,const std::vector<U64>& inputsHashs){
     U64 ret = effect->hash().value();
     if(!effect->isHashValid()){
-        effect->clone(time);
-        ret = effect->computeHash(time,inputsHashs);
+        effect->clone();
+        ret = effect->computeHash(inputsHashs);
         //  std::cout << effect->getName() << ": " << ret << std::endl;
     }
     return ret;
 }
-void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(SequenceTime time){
+void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(){
     _renderOutputFormat = _output->getApp()->getProjectFormat();
     _projectViewsCount = _output->getApp()->getCurrentProjectViewsCount();
     
@@ -750,7 +750,7 @@ void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(SequenceTime time)
      been computed.*/
     std::vector<U64> inputsHash;
     for (TreeIterator it = _sorted.begin(); it!=_sorted.end(); ++it) {
-        inputsHash.push_back(cloneKnobsAndcomputeTreeHash(time,it->second,inputsHash));
+        inputsHash.push_back(cloneKnobsAndcomputeTreeHash(it->second,inputsHash));
         (*it).second->clearPersistentMessage();
     }
     _treeVersionValid = true;
@@ -780,13 +780,6 @@ ViewerInstance* RenderTree::outputAsViewer() const {
     }
 }
 
-Writer* RenderTree::outputAsWriter() const {
-    if(_output && !_isViewer){
-        return dynamic_cast<Writer*>(_output);
-    }else{
-        return NULL;
-    }
-}
 
 
 void RenderTree::debug() const{

@@ -27,7 +27,6 @@ private:
     // FIXME: PIMPL
     QVBoxLayout* _mainLayout;
     QWidget* _viewPort;
-    QScrollArea* _sa;
     DockablePanel* _panel;
     boost::shared_ptr<Settings> _settings;
 };

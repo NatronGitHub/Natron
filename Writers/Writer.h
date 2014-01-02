@@ -20,6 +20,7 @@
 #include "Global/Macros.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/ChannelSet.h"
+#if 0 // deprecated
 
 class Encoder;
 namespace Natron{
@@ -102,5 +103,9 @@ private:
     boost::shared_ptr<Int_Knob> _lastFrameKnob;
     boost::shared_ptr<Button_Knob> _renderKnob;
     boost::shared_ptr<Bool_Knob> _continueOnError;
+
 };
+
+#endif
+
 #endif /* defined(NATRON_WRITERS_WRITER_H_) */

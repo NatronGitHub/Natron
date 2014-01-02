@@ -55,6 +55,10 @@ public:
      * @return Returns the index of the last frame in the sequence held by this Reader.
      */
     int lastFrame() const;
+    
+    void setAsInputImage() { _isInputImage = true; }
+    
+    bool isInputImageFile() const { return _isInputImage; }
 
 private:
     int frameCount() const;
@@ -83,6 +87,7 @@ private:
     mutable QMutex _fileSequenceLock;
     std::map<int, QString> _filesSequence; ///mapping <frameNumber,fileName>
     static const std::string _typeNameStr;
+    bool _isInputImage;
 };
 
 /******************************OUTPUT_FILE_KNOB**************************************/
@@ -103,7 +108,12 @@ public:
 
     static const std::string& typeNameStatic();
 
+    std::string filenameFromPattern(int frameIndex) const;
 
+    void setAsOutputImageFile() { _isOutputImage = true; }
+    
+    bool isOutputImageFile() const { return _isOutputImage; }
+    
 private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -112,7 +122,7 @@ private:
     
 private:
     static const std::string _typeNameStr;
-
+    bool _isOutputImage;
 };
 
 

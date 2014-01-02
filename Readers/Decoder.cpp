@@ -8,6 +8,7 @@
 *contact: immarespond at gmail dot com
 *
 */
+#if 0 // deprecated
 
 #include "Decoder.h"
 
@@ -50,4 +51,4 @@ void Decoder::setReaderInfo(Format dispW,
     _readerInfo->setRoD(dataW);
     _readerInfo->setChannels(channels);
 }
-
+#endif

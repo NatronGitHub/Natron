@@ -608,9 +608,9 @@ void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vec
                 b = r;
 
             }
-            error_r = (error_r&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(r);
-            error_g = (error_g&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(g);
-            error_b = (error_b&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(b);
+            error_r = (error_r&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(r,0.,1.));
+            error_g = (error_g&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(g,0.,1.));
+            error_b = (error_b&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(b,0.,1.));
             a_ = 255;
             r_ = (U8)(error_r >> 8);
             g_ = (U8)(error_g >> 8);
@@ -634,9 +634,9 @@ void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vec
                 b = r;
                 
             }
-            error_r = (error_r&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(r);
-            error_g = (error_g&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(g);
-            error_b = (error_b&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(b);
+            error_r = (error_r&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(r,0.,1.));
+            error_g = (error_g&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(g,0.,1.));
+            error_b = (error_b&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(b,0.,1.));
 
             a_ = 255;
             r_ = (U8)(error_r >> 8);

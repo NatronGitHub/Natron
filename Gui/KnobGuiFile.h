@@ -50,6 +50,8 @@ public:
 public slots:
 
     void onReturnPressed();
+    
+    void open_file();
 
 private:
     virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
@@ -62,9 +64,11 @@ private:
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
-    void updateLastOpened(const QString &str);
 
 private:
+    
+    void updateLastOpened(const QString &str);
+    
     LineEdit *_lineEdit;
     QLabel *_descriptionLabel;
     Button *_openFileButton;
@@ -90,6 +94,8 @@ public slots:
 
     void onReturnPressed();
 
+    void open_file();
+    
 private:
     virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
 

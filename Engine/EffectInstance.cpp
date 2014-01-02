@@ -110,7 +110,7 @@ bool EffectInstance::isPreviewEnabled() const
     return _imp->previewEnabled;
 }
 
-void EffectInstance::clone(SequenceTime /*time*/){
+void EffectInstance::clone(){
     if(!isClone())
         return;
     cloneKnobs(*(_node->getLiveInstance()));
@@ -141,12 +141,11 @@ int EffectInstance::hashAge() const{
 }
 
 
-U64 EffectInstance::computeHash(SequenceTime time, const std::vector<U64>& inputsHashs){
+U64 EffectInstance::computeHash(const std::vector<U64>& inputsHashs){
     
     _imp->hashAge = getAppAge();
     
     _imp->hashValue.reset();
-    _imp->hashValue.append(time);
     const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         ::Hash64_appendKnob(&_imp->hashValue, *knobs[i]);
@@ -182,6 +181,7 @@ Natron::EffectInstance* EffectInstance::input(int n) const{
     }
     return NULL;
 }
+
 
 std::string EffectInstance::inputLabel(int inputNb) const {
     std::string out;
@@ -629,7 +629,7 @@ void OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
 
 void OutputEffectInstance::renderFullSequence(){
     assert(pluginID() != "Viewer"); //< this function is not meant to be called for rendering on the viewer
-    getVideoEngine()->refreshTree(_writerFirstFrame);
+    getVideoEngine()->refreshTree();
     getVideoEngine()->render(-1, true,false,true,false);
     
 }

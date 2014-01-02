@@ -8,6 +8,7 @@
 *contact: immarespond at gmail dot com
 *
 */
+#if 0 // deprecated
 
 #include "ExrDecoder.h"
 
@@ -450,3 +451,4 @@ Natron::Status ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,co
     }
     return Natron::StatOK;
 }
+#endif

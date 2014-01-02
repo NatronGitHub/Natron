@@ -8,7 +8,7 @@
 *contact: immarespond at gmail dot com
 *
 */
-
+#if 0 // deprecated
 #include "ExrEncoder.h"
 
 #include <stdexcept>
@@ -339,3 +339,5 @@ Natron::Status ExrEncoder::setupFile(const QString& filename, const RectI& rod) 
     }
     return Natron::StatOK;
 }
+
+#endif

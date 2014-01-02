@@ -17,41 +17,122 @@
 #include <QtGui/QColor>
 #include <QtGui/QImageReader>
 
-#include "Readers/Reader.h"
+#include "Global/AppManager.h"
 
 #include "Engine/Image.h"
 #include "Engine/Lut.h"
-#include "Engine/Row.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/KnobFile.h"
+#include "Engine/Knob.h"
 
 using namespace Natron;
 using std::cout; using std::endl;
 
-QtDecoder::QtDecoder(Reader* op)
-: Decoder(op)
+QtReader::QtReader(Natron::Node* node)
+: Natron::EffectInstance(node)
+, _lut(Color::LutManager::sRGBLut())
 , _img(0)
+, _fileKnob()
+, _missingFrameChoice()
+, _timeOffset()
 {
 }
 
-void QtDecoder::initializeColorSpace(){
-    _lut = Color::LutManager::sRGBLut();
-}
 
-QtDecoder::~QtDecoder(){
+QtReader::~QtReader(){
     if(_img)
         delete _img;
 }
 
-std::vector<std::string> QtDecoder::fileTypesDecoded() const {
-    std::vector<std::string> out;
+std::string QtReader::pluginID() const {
+    return "QtReader";
+}
+
+std::string QtReader::pluginLabel() const {
+    return "QtReader";
+}
+
+std::string QtReader::description() const {
+    return "A QImage (Qt) based image reader.";
+}
+
+void QtReader::initializeKnobs() {
+    _fileKnob = Natron::createKnob<File_Knob>(this, "File");
+    _fileKnob->setAsInputImage();
+    
+    _missingFrameChoice = Natron::createKnob<Choice_Knob>(this, "On missing frame");
+    std::vector<std::string> choices;
+    choices.push_back("Load nearest");
+    choices.push_back("Error");
+    choices.push_back("Black image");
+    _missingFrameChoice->populate(choices);
+    _missingFrameChoice->setValue<int>(0);
+    _missingFrameChoice->turnOffAnimation();
+    
+    _timeOffset = Natron::createKnob<Int_Knob>(this, "Time offset");
+    _timeOffset->turnOffAnimation();
+    _timeOffset->setValue<int>(0);
+    
+}
+
+void QtReader::getFrameRange(SequenceTime *first,SequenceTime *last){
+    int timeOffset = _timeOffset->getValue<int>();
+    *first = _fileKnob->firstFrame() + timeOffset;
+    *last = _fileKnob->lastFrame() + timeOffset;
+}
+
+
+void QtReader::supportedFileFormats(std::vector<std::string>* formats) {
     const QList<QByteArray>& supported = QImageReader::supportedImageFormats();
     for (int i = 0; i < supported.size(); ++i) {
-        out.push_back(supported.at(i).data());
+        formats->push_back(supported.at(i).data());
     }
-    return out;
 };
 
+Natron::Status QtReader::getRegionOfDefinition(SequenceTime time,RectI* rod){
+    /*load does actually loads the data too. And we must call it to read the header.
+     That means in this case the readAllData function is useless*/
+    QMutexLocker l(&_lock);
+    int missingFrameChoice = _missingFrameChoice->getValue<int>();
+    int timeOffset = _timeOffset->getValue<int>();
+    QString filename = _fileKnob->getRandomFrameName(time - timeOffset, missingFrameChoice == 0);
+    
+    if (filename.isEmpty()) {
+        if (missingFrameChoice == 1) {
+            setPersistentMessage(Natron::ERROR_MESSAGE, "Missing frame");
+        }
+        return StatFailed;
+    }
+    
+    if(filename != _filename){
+        _filename = filename;
+        if(_img){
+            delete _img;
+        }
+        _img = new QImage(_filename);
+        if(_img->format() == QImage::Format_Invalid){
+            setPersistentMessage(Natron::ERROR_MESSAGE, "Failed to load the image " + filename.toStdString());
+            return StatFailed;
+        }
+    }
+    
+    rod->x1 = 0;
+    rod->x2 = _img->width();
+    rod->y1 = 0;
+    rod->y2 = _img->height();
+     
+    return StatOK;
+}
 
-Natron::Status QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& roi,boost::shared_ptr<Natron::Image> output) {
+Natron::Status QtReader::render(SequenceTime /*time*/,RenderScale /*scale*/,
+                                const RectI& roi,int /*view*/,boost::shared_ptr<Natron::Image> output) {
+    int missingFrameCHoice = _missingFrameChoice->getValue<int>();
+    if(!_img && missingFrameCHoice == 1){
+        return StatFailed;
+    }else if(!_img && missingFrameCHoice == 2){
+        return StatOK;
+    }
+    
     switch (_img->format()) {
         case QImage::Format_RGB32: // The image is stored using a 32-bit RGB format (0xffRRGGBB).
         case QImage::Format_ARGB32: // The image is stored using a 32-bit ARGB format (0xAARRGGBB).
@@ -78,63 +159,22 @@ Natron::Status QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,con
         case QImage::Format_Invalid:
         default:
             output->fill(roi,0.f,1.f);
-            _reader->setPersistentMessage(Natron::ERROR_MESSAGE, "Invalid image format.");
+            setPersistentMessage(Natron::ERROR_MESSAGE, "Invalid image format.");
             return StatFailed;
     }
+    output->setPixelAspect(_img->dotsPerMeterX() / _img->dotsPerMeterY());
     return StatOK;
 }
 
-Natron::Status QtDecoder::readHeader(const QString& filename)
-{
-    /*load does actually loads the data too. And we must call it to read the header.
-     That means in this case the readAllData function is useless*/
-    _img= new QImage(filename);
-    if(_img->format() == QImage::Format_Invalid){
-        cout << "Couldn't load this image format" << endl;
-        return StatFailed;
-    }
-    int width = _img->width();
-    int height= _img->height();
-    double aspect = _img->dotsPerMeterX()/ _img->dotsPerMeterY();
-    
-	ChannelSet mask;
-    if(_autoCreateAlpha){
-        
-		mask = Mask_RGBA;
-        
-    } else {
-        switch (_img->format()) {
-            case QImage::Format_ARGB32_Premultiplied:
-            case QImage::Format_ARGB4444_Premultiplied:
-            case QImage::Format_ARGB6666_Premultiplied:
-            case QImage::Format_ARGB8555_Premultiplied:
-            case QImage::Format_ARGB8565_Premultiplied:
-                _premult=true;
-                mask = Mask_RGBA;
-                break;
-            case QImage::Format_ARGB32:
-                mask = Mask_RGBA;
-                break;
-            case QImage::Format_Mono:
-            case QImage::Format_MonoLSB:
-            case QImage::Format_Indexed8:
-            case QImage::Format_RGB32:
-            case QImage::Format_RGB16:
-            case QImage::Format_RGB666:
-            case QImage::Format_RGB555:
-            case QImage::Format_RGB888:
-            case QImage::Format_RGB444:
-                mask = Mask_RGB;
-                break;
-            case QImage::Format_Invalid:
-            default:
-                return StatFailed;
+Natron::EffectInstance::CachePolicy QtReader::getCachePolicy(SequenceTime time) const{
+    //if we're in nearest mode and the frame could not be found do not cache it, otherwise
+    //we would cache multiple copies of the same frame
+    if(_missingFrameChoice->getValue<int>() == 0){
+        QString filename = _fileKnob->getRandomFrameName(time,false);
+        if(filename.isEmpty()){
+            return NEVER_CACHE;
         }
     }
-
-    Format imageFormat(0,0,width,height,"",aspect);
-    RectI bbox(0,0,width,height);
-    setReaderInfo(imageFormat, bbox, mask);
-    return StatOK;
+    return ALWAYS_CACHE;
 }
 

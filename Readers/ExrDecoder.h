@@ -11,6 +11,7 @@
 
 #ifndef NATRON_READERS_READEXR_H_
 #define NATRON_READERS_READEXR_H_
+#if 0 // deprecated
 
 #include <string>
 #include <vector>
@@ -61,5 +62,6 @@ private:
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // hide implementation details
 };
+#endif
 
 #endif // NATRON_READERS_READEXR_H_

@@ -145,7 +145,7 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
 {
     _knob = Natron::createKnob<Button_Knob>(node, getParamLabel(this));
     
-    int isRenderButton = getProperties().getIntProperty(kOfxParamPropButtonIsRender);
+    int isRenderButton = getProperties().getIntProperty(kNatronParamPropButtonIsRender);
     if (isRenderButton > 0) {
         _knob->setAsRenderButton();
     }
@@ -1348,14 +1348,20 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
     
     if (mode == kOfxParamStringIsFilePath) {
         
-        int fileIsOutput = properties.getIntProperty(kOfxParamImageFilePathIsOutput);
+        int fileIsImage = properties.getIntProperty(kNatronParamFilePathIsImage);
+        int fileIsOutput = properties.getIntProperty(kNatronParamFilePathIsOutput);
         
         if (fileIsOutput == 0) {
             _fileKnob = Natron::createKnob<File_Knob>(node, getParamLabel(this));
-            
+            if(fileIsImage){
+                _fileKnob->setAsInputImage();
+            }
         } else {
             _node->setAsOutputNode(); // IMPORTANT !
             _outputFileKnob = Natron::createKnob<OutputFile_Knob>(node, getParamLabel(this));
+            if(fileIsOutput && fileIsImage){
+                _outputFileKnob->setAsOutputImageFile();
+            }
             
         }
     } else if (mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel) {
@@ -1379,11 +1385,11 @@ OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
     if(_fileKnob){
         int currentFrame = (int)_node->effectInstance()->timeLineGetTime();
-        bool loadNearest = (bool)getProperties().getIntProperty(kOfxParamImageFilePathLoadNearest);
+        bool loadNearest = (bool)getProperties().getIntProperty(kNatronParamImageFilePathLoadNearest);
         QString fileName =  _fileKnob->getRandomFrameName(currentFrame,loadNearest);
         str = fileName.toStdString();
     }else if(_outputFileKnob){
-        str = filenameFromPattern((int)_node->getCurrentFrame());
+        str = _outputFileKnob->filenameFromPattern((int)_node->getCurrentFrame());
     }else if(_stringKnob){
         str = _stringKnob->getString();
     }else if(_multiLineKnob){
@@ -1396,10 +1402,10 @@ OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
     assert(!String_Knob::canAnimateStatic());
     assert(_node->effectInstance());
     if(_fileKnob){
-        bool loadNearest = (bool)getProperties().getIntProperty(kOfxParamImageFilePathLoadNearest);
+        bool loadNearest = (bool)getProperties().getIntProperty(kNatronParamImageFilePathLoadNearest);
         str = _fileKnob->getRandomFrameName(time,loadNearest).toStdString();
     }else if(_outputFileKnob){
-        str = filenameFromPattern(std::floor(time + 0.5));
+        str = _outputFileKnob->filenameFromPattern(std::floor(time + 0.5));
     }else if(_stringKnob){
         str = _stringKnob->getString();
     }else if(_multiLineKnob){
@@ -1517,51 +1523,7 @@ bool OfxStringInstance::isValid() const{
     }
     return true;
 }
-std::string OfxStringInstance::filenameFromPattern(int frameIndex) const{
-    if(_outputFileKnob){
-        std::string pattern = _outputFileKnob->getValue<QString>().toStdString();
-        if(isValid()){
-            QString p(pattern.c_str());
-            
-            int lastDot = p.lastIndexOf(QChar('.'));
-            if(lastDot == -1){
-                ///the filename has not extension, return an empty str
-                return "";
-            }
-            
-            QString fStr =  QString::number(frameIndex);
-            int lastPos = p.lastIndexOf(QChar('#'));
-            
-            if (lastPos == -1) {
-                ///the filename has no #, just put the digits between etxension and path
-                
-                p.insert(lastDot-1, fStr);
-                return p.toStdString();
-            }
-            
-            int nSharpChar = 0;
-            int i = lastDot;
-            --i; //< char before '.'
-            while (i >= 0 && p.at(i) == QChar('#')) {
-                --i;
-                ++nSharpChar;
-            }
-            
-            int prepending0s = nSharpChar > fStr.size() ? nSharpChar - fStr.size() : 0;
-            
-            //remove all ocurrences of the # char
-            p.remove(QChar('#'));
-            
-            for (int j = 0; j < prepending0s; ++j) {
-                fStr.prepend("0");
-            }
-            
-            p.insert(lastDot-1, fStr);
-            return p.toStdString();
-        }
-    }
-    return "";
-}
+
 
 OfxStatus OfxStringInstance::getNumKeys(unsigned int &nKeys) const {
     boost::shared_ptr<Knob> knob;

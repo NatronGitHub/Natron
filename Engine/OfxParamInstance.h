@@ -513,10 +513,7 @@ public:
 
     // returns true if it is a file param and that it is not empty
     bool isValid() const;
-        
-    /*Returns the frame name according to the current pattern stored by this param
-     for the frame frameIndex.*/
-    std::string filenameFromPattern(int frameIndex) const;
+  
     
     /**
      * @brief getRandomFrameName Valid only for OfxStringInstance's of type kOfxParamStringIsFilePath with

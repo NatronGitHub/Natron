@@ -9,6 +9,8 @@
  *
  */
 
+#if 0 // deprecated
+
 #include "Encoder.h"
 
 #include "Engine/Row.h"
@@ -35,3 +37,4 @@ void EncoderKnobs::initKnobs(const std::string&)
     _writer->createKnobDynamically();
 }
 
+#endif

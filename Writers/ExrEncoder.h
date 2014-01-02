@@ -12,6 +12,8 @@
 #ifndef NATRON_WRITERS_WRITEEXR_H_
 #define NATRON_WRITERS_WRITEEXR_H_
 
+#if 0 // deprecated
+
 #include <string>
 #include <vector>
 
@@ -89,5 +91,7 @@ private:
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // hide implementation details
 };
+
+#endif
 
 #endif /* defined(NATRON_WRITERS_WRITEEXR_H_) */

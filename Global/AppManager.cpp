@@ -950,8 +950,6 @@ AppManager::AppManager()
     , _availableID(0)
     , _topLevelInstanceID(0)
     , _settings(new Settings(NULL))
-    , _readPluginsLoaded()
-    , _writePluginsLoaded()
     , _formats()
     , _plugins()
     , ofxHost(new Natron::OfxHost())
@@ -1043,12 +1041,6 @@ AppManager::~AppManager(){
     
     _settings->saveSettings();
     
-    for(ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); ++it) {
-        delete it->second.second;
-    }
-    for(WritePluginsIterator it = _writePluginsLoaded.begin(); it!=_writePluginsLoaded.end(); ++it) {
-        delete it->second.second;
-    }
     for(U32 i = 0; i < _plugins.size();++i){
         delete _plugins[i];
     }
@@ -1068,17 +1060,12 @@ void AppManager::loadAllPlugins() {
     assert(_formats.empty());
     assert(_toolButtons.empty());
     
-    /*loading node plugins*/
-    loadNodePlugins();
+
     
     std::map<std::string,std::vector<std::string> > readersMap,writersMap;
     
-    assert(_readPluginsLoaded.empty());
-    loadBuiltinReads(&readersMap);
-    
-    assert(_writePluginsLoaded.empty());
-    /*loading write plugins*/
-    loadBuiltinWrites(&writersMap);
+    /*loading node plugins*/
+    loadNodePlugins(&readersMap,&writersMap);
     
     /*loading ofx plugins*/
     ofxHost->loadOFXPlugins(&_plugins,&readersMap,&writersMap);
@@ -1089,130 +1076,8 @@ void AppManager::loadAllPlugins() {
 }
 
 
-void AppManager::loadBuiltinReads(std::map<std::string,std::vector<std::string> >* readersMap){
-    {
-        Decoder* readExr = ExrDecoder::BuildRead(NULL);
-        assert(readExr);
-        std::vector<std::string> extensions = readExr->fileTypesDecoded();
-        std::string decoderName = readExr->decoderName();
-        
-        std::map<std::string,void*> EXRfunctions;
-        EXRfunctions.insert(make_pair("BuildRead", (void*)&ExrDecoder::BuildRead));
-        LibraryBinary *EXRplugin = new LibraryBinary(EXRfunctions);
-        assert(EXRplugin);
-        for (U32 i = 0 ; i < extensions.size(); ++i) {
-            _readPluginsLoaded.insert(make_pair(decoderName,make_pair(extensions,EXRplugin)));
-        }
-        
-        std::vector<std::string> formatsDecoded = readExr->fileTypesDecoded();
-        
-        for(U32 k = 0; k < extensions.size();++k){
-            std::map<std::string,std::vector<std::string> >::iterator it;
-            it = readersMap->find(extensions[k]);
-            
-            if(it != readersMap->end()){
-                it->second.push_back(decoderName);
-            }else{
-                std::vector<std::string> newVec(1);
-                newVec[0] = decoderName;
-                readersMap->insert(std::make_pair(extensions[k], newVec));
-            }
-        }
-        
-        delete readExr;
-    }
-    {
-        Decoder* readQt = QtDecoder::BuildRead(NULL);
-        assert(readQt);
-        std::vector<std::string> extensions = readQt->fileTypesDecoded();
-        std::string decoderName = readQt->decoderName();
-        
-        std::map<std::string,void*> Qtfunctions;
-        Qtfunctions.insert(make_pair("BuildRead", (void*)&QtDecoder::BuildRead));
-        LibraryBinary *Qtplugin = new LibraryBinary(Qtfunctions);
-        assert(Qtplugin);
-        for (U32 i = 0 ; i < extensions.size(); ++i) {
-            _readPluginsLoaded.insert(make_pair(decoderName,make_pair(extensions,Qtplugin)));
-        }
-        
-        for(U32 k = 0; k < extensions.size();++k){
-            std::map<std::string,std::vector<std::string> >::iterator it;
-            it = readersMap->find(extensions[k]);
-            
-            if(it != readersMap->end()){
-                it->second.push_back(decoderName);
-            }else{
-                std::vector<std::string> newVec(1);
-                newVec[0] = decoderName;
-                readersMap->insert(std::make_pair(extensions[k], newVec));
-            }
-        }
-        
-        delete readQt;
-    }
-
-}
-
-
-/*loads writes that are built-ins*/
-void AppManager::loadBuiltinWrites(std::map<std::string,std::vector<std::string> >* writersMap){
-    {
-        boost::scoped_ptr<Encoder> writeQt(new QtEncoder(NULL));
-        assert(writeQt);
-        std::vector<std::string> extensions = writeQt->fileTypesEncoded();
-        std::string encoderName = writeQt->encoderName();
-        
-        std::map<std::string,void*> Qtfunctions;
-        Qtfunctions.insert(make_pair("BuildWrite",(void*)&QtEncoder::BuildWrite));
-        LibraryBinary *QtWritePlugin = new LibraryBinary(Qtfunctions);
-        assert(QtWritePlugin);
-        for (U32 i = 0 ; i < extensions.size(); ++i) {
-            _writePluginsLoaded.insert(make_pair(encoderName,make_pair(extensions,QtWritePlugin)));
-        }
-        
-        for(U32 k = 0; k < extensions.size();++k){
-            std::map<std::string,std::vector<std::string> >::iterator it;
-            it = writersMap->find(extensions[k]);
-            
-            if(it != writersMap->end()){
-                it->second.push_back(encoderName);
-            }else{
-                std::vector<std::string> newVec(1);
-                newVec[0] = encoderName;
-                writersMap->insert(std::make_pair(extensions[k], newVec));
-            }
-        }
-    }
-    
-    {
-        boost::scoped_ptr<Encoder> writeEXR(new ExrEncoder(NULL));
-        std::vector<std::string> extensionsExr = writeEXR->fileTypesEncoded();
-        std::string encoderNameExr = writeEXR->encoderName();
-        
-        std::map<std::string,void*> EXRfunctions;
-        EXRfunctions.insert(make_pair("BuildWrite",(void*)&ExrEncoder::BuildWrite));
-        LibraryBinary *ExrWritePlugin = new LibraryBinary(EXRfunctions);
-        assert(ExrWritePlugin);
-        for (U32 i = 0 ; i < extensionsExr.size(); ++i) {
-            _writePluginsLoaded.insert(make_pair(encoderNameExr,make_pair(extensionsExr,ExrWritePlugin)));
-        }
-        
-        for(U32 k = 0; k < extensionsExr.size();++k){
-            std::map<std::string,std::vector<std::string> >::iterator it;
-            it = writersMap->find(extensionsExr[k]);
-            
-            if(it != writersMap->end()){
-                it->second.push_back(encoderNameExr);
-            }else{
-                std::vector<std::string> newVec(1);
-                newVec[0] = encoderNameExr;
-                writersMap->insert(std::make_pair(extensionsExr[k], newVec));
-            }
-        }
-    }
-}
-
-void AppManager::loadNodePlugins(){
+void AppManager::loadNodePlugins(std::map<std::string,std::vector<std::string> >* readersMap,
+                                 std::map<std::string,std::vector<std::string> >* writersMap){
     std::vector<std::string> functions;
     functions.push_back("BuildEffect");
     std::vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(NATRON_NODES_PLUGINS_PATH, functions);
@@ -1232,24 +1097,42 @@ void AppManager::loadNodePlugins(){
         }
     }
     
-    loadBuiltinNodePlugins();
+    loadBuiltinNodePlugins(readersMap,writersMap);
 }
 
-void AppManager::loadBuiltinNodePlugins(){
+void AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector<std::string> >* readersMap,
+                                        std::map<std::string,std::vector<std::string> >* writersMap){
     // these  are built-in nodes
     QStringList grouping;
     grouping.push_back("IO");
     {
-        EffectInstance* reader = Reader::BuildEffect(NULL);
+        QtReader* reader = dynamic_cast<QtReader*>(QtReader::BuildEffect(NULL));
         assert(reader);
         std::map<std::string,void*> readerFunctions;
-        readerFunctions.insert(make_pair("BuildEffect", (void*)&Reader::BuildEffect));
+        readerFunctions.insert(make_pair("BuildEffect", (void*)&QtReader::BuildEffect));
         LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
         assert(readerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin(readerPlugin,reader->pluginID().c_str(),reader->pluginLabel().c_str(),
                                                     (QMutex*)NULL,reader->majorVersion(),reader->minorVersion());
         _plugins.push_back(plugin);
         addPluginToolButtons(grouping,reader->pluginID().c_str(),reader->pluginLabel().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
+        
+        std::vector<std::string> extensions;
+        reader->supportedFileFormats(&extensions);
+        for(U32 k = 0; k < extensions.size();++k){
+            std::map<std::string,std::vector<std::string> >::iterator it;
+            it = readersMap->find(extensions[k]);
+            
+            if(it != readersMap->end()){
+                it->second.push_back(reader->pluginID());
+            }else{
+                std::vector<std::string> newVec(1);
+                newVec[0] = reader->pluginID();
+                readersMap->insert(std::make_pair(extensions[k], newVec));
+            }
+        }
+
+        
         delete reader;
     }
     {
@@ -1266,16 +1149,32 @@ void AppManager::loadBuiltinNodePlugins(){
         delete viewer;
     }
     {
-        EffectInstance* writer = Writer::BuildEffect(NULL);
+        QtWriter* writer = dynamic_cast<QtWriter*>(QtWriter::BuildEffect(NULL));
         assert(writer);
         std::map<std::string,void*> writerFunctions;
-        writerFunctions.insert(make_pair("BuildEffect", (void*)&Writer::BuildEffect));
+        writerFunctions.insert(make_pair("BuildEffect", (void*)&QtWriter::BuildEffect));
         LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
         assert(writerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin(writerPlugin,writer->pluginID().c_str(),writer->pluginLabel().c_str(),
                                                     (QMutex*)NULL,writer->majorVersion(),writer->minorVersion());
         _plugins.push_back(plugin);
         addPluginToolButtons(grouping,writer->pluginID().c_str(),writer->pluginLabel().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
+        
+        std::vector<std::string> extensions;
+        writer->supportedFileFormats(&extensions);
+        for(U32 k = 0; k < extensions.size();++k){
+            std::map<std::string,std::vector<std::string> >::iterator it;
+            it = writersMap->find(extensions[k]);
+            
+            if(it != writersMap->end()){
+                it->second.push_back(writer->pluginID());
+            }else{
+                std::vector<std::string> newVec(1);
+                newVec[0] = writer->pluginID();
+                writersMap->insert(std::make_pair(extensions[k], newVec));
+            }
+        }
+        
         delete writer;
     }
 }
@@ -1681,7 +1580,7 @@ ProcessHandler::ProcessHandler(AppInstance* app,const QString& programPath,const
     if(writer->isOpenFX()){
         outputFileSequence = dynamic_cast<OfxEffectInstance*>(writer)->getOutputFileName();
     }else{
-        outputFileSequence = dynamic_cast<Writer*>(writer)->getOutputFileName();
+        //   outputFileSequence = dynamic_cast<Writer*>(writer)->getOutputFileName();
     }
     assert(app->getGui());
     

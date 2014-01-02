@@ -357,10 +357,10 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
         
         ///if this plugin's descriptor has the kOfxImageEffectPropFormatsCount and kOfxImageEffectPropFormats properties,
         ///use them to fill the readersMap and writersMap
-        int formatsCount = p->getDescriptor().getProps().getIntProperty(kOfxImageEffectPropFormatsCount);
+        int formatsCount = p->getDescriptor().getProps().getIntProperty(kNatronImageEffectPropFormatsCount);
         std::vector<std::string> formats(formatsCount);
         for(int k = 0; k < formatsCount;++k){
-            formats[k] = p->getDescriptor().getProps().getStringProperty(kOfxImageEffectPropFormats,k);
+            formats[k] = p->getDescriptor().getProps().getStringProperty(kNatronImageEffectPropFormats,k);
         }
         
         OFX::Host::ImageEffect::Descriptor* isGenerator = p->getContext(kOfxImageEffectContextGenerator);

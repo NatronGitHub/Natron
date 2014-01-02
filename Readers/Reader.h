@@ -8,13 +8,13 @@
 *contact: immarespond at gmail dot com
 *
 */
+#if 0 // deprecated
 
 #ifndef NATRON_READERS_READER_H_
 #define NATRON_READERS_READER_H_
 #include <QString>
 #include <QStringList>
 #include <QtCore/QMutex>
-#include <QtCore/QFutureWatcher>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -224,10 +224,9 @@ private:
     boost::shared_ptr<File_Knob> _fileKnob;
     boost::shared_ptr<Choice_Knob> _missingFrameChoice;
     QMutex _lock;
-    boost::scoped_ptr<QFutureWatcher<void> > _previewWatcher;
 };
 
-
+#endif
 
 
 #endif // NATRON_READERS_READER_H_

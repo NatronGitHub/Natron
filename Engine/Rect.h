@@ -130,7 +130,7 @@ public:
     
     
     bool intersect(int l, int b, int r, int t,RectI* intersection) const {
-        if(r < x1 || l > x2 || b > y2 || t < y1)
+        if(!intersects(l,b,r,t))
             return false;
         intersection->set_left(std::max(x1, l));
         intersection->set_right(std::min(x2, r));

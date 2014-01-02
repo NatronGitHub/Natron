@@ -125,6 +125,8 @@ public:
      **/
     Node* input(int index) const;
     
+    void outputs(std::vector<Natron::Node*>* outputsV) const;
+    
     const std::map<int, std::string>& getInputLabels() const;
     
     std::string getInputLabel(int inputNb) const;
