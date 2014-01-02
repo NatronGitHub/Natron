@@ -209,7 +209,7 @@ namespace Natron {
             }
             for (int i = 0; i < 0x10000; ++i) {
                 float inp = index_to_float((unsigned short)i);
-                float f = _toFunc(inp);
+                float f = _toFunc(inp) * 255.f;
                 if (f <= 0) {
                     to_byte_table[i] = 0;
                 } else if (f < 255) {
