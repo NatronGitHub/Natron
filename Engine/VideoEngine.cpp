@@ -859,9 +859,11 @@ void BackgroundProcessAborter::run(){
 
         QTextStream qstdin(stdin);
         QString line = qstdin.readLine();
+#ifdef NATRON_LOG
         Log::beginFunction("ProcessAborter","run");
         Log::print(QString("Process received message "+line).toStdString());
         Log::endFunction("ProcessAborter","run");
+#endif
         if(line.contains(kAbortRenderingString)){
             _engine->abortRendering();
         }

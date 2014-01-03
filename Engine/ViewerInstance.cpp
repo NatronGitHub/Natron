@@ -132,9 +132,10 @@ void ViewerInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
 
 Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
 {
+#ifdef NATRON_LOG
     Natron::Log::beginFunction(getName(),"renderViewer");
     Natron::Log::print(QString("Time "+QString::number(time)).toStdString());
-
+#endif
     ViewerGL *viewer = _uiContext->viewer;
     assert(viewer);
     double zoomFactor = viewer->getZoomFactor();
@@ -146,8 +147,10 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     RectI rod;
     Status stat = getRegionOfDefinition(time, &rod);
     if(stat == StatFailed){
+#ifdef NATRON_LOG
         Natron::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());
         Natron::Log::endFunction(getName(),"renderViewer");
+#endif
         return stat;
     }
     
@@ -178,6 +181,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     std::pair<int,int> columnSpan = viewer->computeColumnSpan(left,right, &columns);
     
     TextureRect textureRect(columnSpan.first,rowSpan.first,columnSpan.second,rowSpan.second,columns.size(),rows.size());
+#ifdef NATRON_LOG
     Natron::Log::print(QString("Image rect is..."
                                " xmin= "+QString::number(left)+
                                " ymin= "+QString::number(bottom)+
@@ -188,6 +192,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
                                " ymin= "+QString::number(textureRect.y)+
                                " xmax= "+QString::number(textureRect.r+1)+
                                " ymax= "+QString::number(textureRect.t+1)).toStdString());
+#endif
     if(textureRect.w == 0 || textureRect.h == 0){
         return StatOK;
     }
@@ -232,9 +237,11 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
         _interThreadInfos._ramBuffer = cachedFrame->data();
         Format dispW;
         getApp()->setOrAddProjectFormat(dispW,true);
+#ifdef NATRON_LOG
         Natron::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
                                    QString::number(key.getHash())).toStdString());
         Natron::Log::endFunction(getName(),"renderViewer");
+#endif
     }else{
     
         /*We didn't find it in the viewer cache, hence we render

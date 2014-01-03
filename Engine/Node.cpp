@@ -586,14 +586,16 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
             _imp->imagesBeingRenderedNotEmpty.wait(&_imp->nodeInstanceLock);
         }
     }
-
+#ifdef NATRON_LOG
     Log::beginFunction(getName(),"makePreviewImage");
     Log::print(QString("Time "+QString::number(time)).toStdString());
-
+#endif
     stat =  _imp->previewRenderTree->preProcessFrame(time);
     if(stat == StatFailed){
+#ifdef NATRON_LOG
         Log::print(QString("preProcessFrame returned StatFailed.").toStdString());
         Log::endFunction(getName(),"makePreviewImage");
+#endif
         _imp->computingPreview = false;
         _imp->computingPreviewCond.wakeOne();
         return;
@@ -638,7 +640,9 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     }
     _imp->computingPreview = false;
     _imp->computingPreviewCond.wakeOne();
+#ifdef NATRON_LOG
     Log::endFunction(getName(),"makePreviewImage");
+#endif
 }
 
 
