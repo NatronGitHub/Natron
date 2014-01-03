@@ -397,6 +397,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
             
             if(n->isActive() && n->isNearby(evpt) &&
                     (n->getNode()->getName()!=_arrowSelected->getDest()->getNode()->getName())){
+                ///can't connect to a viewer
                 if(n->getNode()->isOutputNode()){
                     break;
                 }

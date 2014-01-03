@@ -1074,14 +1074,15 @@ void Gui::createWriter(){
     }
     QString file = popSaveFileDialog(true, filters, _lastSaveSequenceOpenedDir.toStdString());
     if(!file.isEmpty()){
-        std::string ext = Natron::removeFileExtension(file).toStdString();
+        QString fileCpy = file;
+        std::string ext = Natron::removeFileExtension(fileCpy).toStdString();
         
         std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
         if(found != writersForFormat.end()){
             Node* n = _appInstance->createNode(found->second.c_str());
             const std::vector<boost::shared_ptr<Knob> >& knobs = n->getKnobs();
             for (U32 i = 0; i < knobs.size(); ++i) {
-                if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
+                if (knobs[i]->typeName() == OutputFile_Knob::typeNameStatic()) {
                     boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
                     assert(fk);
                     if(fk->isOutputImageFile()){

@@ -99,7 +99,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         if(!n){
             continue;
         }
-        if(n->pluginID() == "Writer" || (n->isOpenFXNode() && n->isOutputNode())){
+        if(n->isOutputNode()){
             hasProjectAWriter = true;
         }
 

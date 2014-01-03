@@ -306,6 +306,7 @@ AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectNam
         QString path = projectName.left(projectName.indexOf(name));
         if(!loadProject(path,name)){
             throw std::invalid_argument("Project file loading failed.");
+            
         }
         startWritersRendering(writers);
     }
@@ -803,10 +804,12 @@ AppInstance* AppManager::newAppInstance(bool background,const QString& projectNa
         instance = new AppInstance(background,_availableID,projectName,writers);
     } catch (const std::exception& e) {
         Natron::errorDialog(NATRON_APPLICATION_NAME, std::string("Cannot create project") + ": " + e.what());
+        removeInstance(_availableID);
         delete instance;
         return NULL;
     } catch (...) {
         Natron::errorDialog(NATRON_APPLICATION_NAME, std::string("Cannot create project"));
+        removeInstance(_availableID);
         delete instance;
         return NULL;
     }
@@ -1620,6 +1623,7 @@ void AppInstance::startWritersRendering(const QStringList& writers){
 void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer){
     if(!_isBackground){
         /*Start the renderer in a background process.*/
+        _projectLock.unlock();
         autoSave(); //< takes a snapshot of the graph at this time, this will be the version loaded by the process
         QStringList appArgs = QCoreApplication::arguments();
         QStringList processArgs;
