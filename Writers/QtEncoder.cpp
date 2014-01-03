@@ -174,6 +174,7 @@ Natron::Status QtWriter::render(SequenceTime time, RenderScale scale, const Rect
     std::string filename = _fileKnob->filenameFromPattern(std::floor(time + 0.5));
     
     img.save(filename.c_str());
+    free(buf);
     return StatOK;
 }
 
