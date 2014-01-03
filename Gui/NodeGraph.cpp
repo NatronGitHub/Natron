@@ -901,9 +901,7 @@ void AddCommand::undo(){
     _inputs = _node->getNode()->getInputs();
     _outputs = _node->getNode()->getOutputs();
     
-    _graph->getGui()->getApp()->lockProject();
     _node->getNode()->deactivate();
-    _graph->getGui()->getApp()->unlockProject();
     
     _graph->scene()->update();
     setText(QObject::tr("Add %1")
@@ -912,9 +910,7 @@ void AddCommand::undo(){
 }
 void AddCommand::redo(){
     if(_undoWasCalled){
-        _graph->getGui()->getApp()->lockProject();
         _node->getNode()->activate();
-        _graph->getGui()->getApp()->unlockProject();
     }
     _graph->scene()->update();
     setText(QObject::tr("Add %1")
@@ -928,9 +924,7 @@ RemoveCommand::RemoveCommand(NodeGraph* graph,NodeGui *node,QUndoCommand *parent
     
 }
 void RemoveCommand::undo(){
-    _graph->getGui()->getApp()->lockProject();
     _node->getNode()->activate();
-    _graph->getGui()->getApp()->unlockProject();
     
     _graph->scene()->update();
     setText(QObject::tr("Remove %1")
@@ -943,9 +937,7 @@ void RemoveCommand::redo(){
     _inputs = _node->getNode()->getInputs();
     _outputs = _node->getNode()->getOutputs();
     
-    _graph->getGui()->getApp()->lockProject();
     _node->getNode()->deactivate();
-    _graph->getGui()->getApp()->unlockProject();
     
     _graph->scene()->update();
     setText(QObject::tr("Remove %1")

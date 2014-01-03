@@ -430,6 +430,8 @@ int Node::disconnectOutput(Node* output)
  but no other node knows this node.*/
 void Node::deactivate()
 {
+    getApp()->lockProject();
+    
     //first tell the gui to clear any persistent message link to this node
     clearPersistentMessage();
 
@@ -450,6 +452,9 @@ void Node::deactivate()
         int inputNb = it->second->disconnectInput(this);
         _imp->deactivatedState.outputsConnections.insert(make_pair(it->second, make_pair(inputNb, it->first)));
     }
+    
+    getApp()->unlockProject();
+    
     emit deactivated();
     _imp->activated = false;
     
@@ -457,6 +462,8 @@ void Node::deactivate()
 
 void Node::activate()
 {
+    getApp()->lockProject();
+    
     for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if (!it->second) {
             continue;
@@ -482,6 +489,8 @@ void Node::activate()
         assert(found->second.second == it->first);
         it->second->connectInput(this,found->second.first);
     }
+    getApp()->unlockProject();
+    
     emit activated();
     _imp->activated = true;
 }
