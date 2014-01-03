@@ -113,31 +113,21 @@ void QtWriter::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/)
     if(k == _frameRangeChoosal.get()){
         int index = _frameRangeChoosal->getValue<int>();
         if(index != 2){
-            if(_firstFrameKnob){
-                _firstFrameKnob->remove();
-            }
-            if(_lastFrameKnob){
-                _lastFrameKnob->remove();
-            }
+            _firstFrameKnob->setSecret(true);
+            _lastFrameKnob->setSecret(true);
         }else{
             int first = getApp()->getTimeLine()->firstFrame();
             int last = getApp()->getTimeLine()->lastFrame();
-            if(!_firstFrameKnob){
-                _firstFrameKnob = Natron::createKnob<Int_Knob>(this, "First frame");
-                _firstFrameKnob->turnOffAnimation();
-                _firstFrameKnob->setValue(first);
-                _firstFrameKnob->setDisplayMinimum(first);
-                _firstFrameKnob->setDisplayMaximum(last);
-                
-            }
-            if(!_lastFrameKnob){
-                _lastFrameKnob = Natron::createKnob<Int_Knob>(this, "Last frame");
-                _lastFrameKnob->turnOffAnimation();
-                _lastFrameKnob->setValue(last);
-                _lastFrameKnob->setDisplayMinimum(first);
-                _lastFrameKnob->setDisplayMaximum(last);
-                
-            }
+            _firstFrameKnob->setValue(first);
+            _firstFrameKnob->setDisplayMinimum(first);
+            _firstFrameKnob->setDisplayMaximum(last);
+            _firstFrameKnob->setSecret(false);
+            
+            _lastFrameKnob->setValue(last);
+            _lastFrameKnob->setDisplayMinimum(first);
+            _lastFrameKnob->setDisplayMaximum(last);
+            _lastFrameKnob->setSecret(false);
+            
             createKnobDynamically();
         }
         

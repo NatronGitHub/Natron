@@ -298,7 +298,15 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
     }
     ++_imp->evaluationsCount;
     _imp->lastKnobChanged = k;
+    
+    ///unlock the project to call the client code
+    getApp()->unlockProject();
+    
     caller->onKnobValueChanged(k,reason);
+    
+    ///relock it
+    getApp()->lockProject();
+    
     if(!wasBeginCalled){
         endProjectWideValueChanges(reason,caller);
     }

@@ -51,6 +51,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Log.h"
 #include "Engine/TextureRectSerialization.h"
+#include "Engine/KnobFile.h"
 
 #include "Gui/ViewerGL.h"
 #include "Gui/Gui.h"
@@ -1678,10 +1679,15 @@ ProcessHandler::ProcessHandler(AppInstance* app,const QString& programPath,const
     _process->start(programPath,programArgs);
 
     std::string outputFileSequence;
-    if(writer->isOpenFX()){
-        outputFileSequence = dynamic_cast<OfxEffectInstance*>(writer)->getOutputFileName();
-    }else{
-        //   outputFileSequence = dynamic_cast<Writer*>(writer)->getOutputFileName();
+    ///get the output file knob
+    const std::vector< boost::shared_ptr<Knob> >& knobs = writer->getKnobs();
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        if (knobs[i]->typeName() == OutputFile_Knob::typeNameStatic()) {
+            boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
+            if(fk->isOutputImageFile()){
+                outputFileSequence = fk->getValue().toString().toStdString();
+            }
+        }
     }
     assert(app->getGui());
     
