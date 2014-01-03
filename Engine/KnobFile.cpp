@@ -247,7 +247,9 @@ std::string OutputFile_Knob::filenameFromPattern(int frameIndex) const{
         fStr.prepend("0");
     }
     
-    p.insert(lastDot-1, fStr);
+    lastDot = p.lastIndexOf(QChar('.'));
+    
+    p.insert(lastDot, fStr);
     return p.toStdString();
 }
 

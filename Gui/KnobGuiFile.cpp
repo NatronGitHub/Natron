@@ -156,6 +156,7 @@ void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row)
     layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
 
     _lineEdit = new LineEdit(layout->parentWidget());
+    QObject::connect(_lineEdit, SIGNAL(returnPressed()), this, SLOT(onReturnPressed()));
     _lineEdit->setPlaceholderText(QString("File path..."));
     _lineEdit->setToolTip(getKnob()->getHintToolTip().c_str());
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
