@@ -88,12 +88,6 @@ public:
     
     operator bool() const { return !isNull(); }
     
-    RectI operator&(const RectI& other) const{
-        RectI inter;
-        intersect(other,&inter);
-        return inter;
-    }
-    
     void clear() {
         x1 = 0;
         y1 = 0;
@@ -124,28 +118,35 @@ public:
     }
     
 	/*intersection of two boxes*/
-    bool intersect(const RectI& box,RectI* intersection) const {
-        return intersect(box.left(), box.bottom(), box.right(), box.top(),intersection);
-    }
-    
-    
-    bool intersect(int l, int b, int r, int t,RectI* intersection) const {
-        if(!intersects(l,b,r,t))
+    bool intersect(const RectI& r,RectI* intersection) const {
+        if (isNull() || r.isNull())
             return false;
-        intersection->set_left(std::max(x1, l));
-        intersection->set_right(std::min(x2, r));
-        intersection->set_bottom(std::max(y1, b));
-        intersection->set_top(std::min(y2, t));
+   
+        if (x1 > r.x2 || r.x1 > x2 || y1 > r.y2 || r.y1 > y2)
+            return false;
+    
+        intersection->x1 = std::max(x1,r.x1);
+        intersection->x2 = std::min(x2,r.x2);
+        intersection->y1 = std::max(y1,r.y1);
+        intersection->y2 = std::min(y2,r.y2);
         return true;
     }
     
     
+    bool intersect(int l, int b, int r, int t,RectI* intersection) const {
+        return intersect(RectI(l,b,r,t),intersection);
+        
+    }
+    
+    
     /// returns true if the rect passed as parameter is intersects this one
-    bool intersects(const RectI& b) const {
-        return (b.right() >= left() && b.right() <= right()) ||
-                (b.left() < right() && b.left() >= left()) ||
-                (b.top() >= bottom() && b.top() <= top()) ||
-                (b.bottom() < top() && b.bottom() >= bottom());
+    bool intersects(const RectI& r) const {
+        if(isNull() || r.isNull()){
+            return false;
+        }
+        if (x1 > r.x2 || r.x1 > x2 || y1 > r.y2 || r.y1 > y2)
+            return false;
+        return true;
     }
     
     bool intersects(int l,int b,int r,int t) const {
@@ -229,77 +230,71 @@ BOOST_SERIALIZATION_ASSUME_ABSTRACT(RectI);
 
 
 class RectD {
-    double _l; // left
-    double _b; // bottom
-    double _r; // right
-    double _t; // top
+    double x1; // left
+    double y1; // bottom
+    double x2; // right
+    double y2; // top
     
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
         (void)version;
-        ar & boost::serialization::make_nvp("Left",_l);
-        ar & boost::serialization::make_nvp("Bottom",_b);
-        ar & boost::serialization::make_nvp("Right",_r);
-        ar & boost::serialization::make_nvp("Top",_t);
+        ar & boost::serialization::make_nvp("Left",x1);
+        ar & boost::serialization::make_nvp("Bottom",y1);
+        ar & boost::serialization::make_nvp("Right",x2);
+        ar & boost::serialization::make_nvp("Top",y2);
         
     }
 public:
     
-    RectD() : _l(0), _b(0), _r(0), _t(0) {}
+    RectD() : x1(0), y1(0), x2(0), y2(0) {}
     
-    RectD(double l, double b, double r, double t) : _l(l), _b(b), _r(r), _t(t) { assert((_r>= _l) && (_t>=_b)); }
+    RectD(double l, double b, double r, double t) : x1(l), y1(b), x2(r), y2(t) { assert((x2>= x1) && (y2>=y1)); }
     
-    RectD(const RectD &b):_l(b._l),_b(b._b),_r(b._r),_t(b._t) { assert((_r>= _l) && (_t>=_b)); }
+    RectD(const RectD &b):x1(b.x1),y1(b.y1),x2(b.x2),y2(b.y2) { assert((x2>= x1) && (y2>=y1)); }
     
     virtual ~RectD(){}
     
-    double left() const { return _l; }
-    void set_left(double v) { _l = v; }
+    double left() const { return x1; }
+    void set_left(double v) { x1 = v; }
     
-    double bottom() const { return _b; }
-    void set_bottom(double v) { _b = v; }
+    double bottom() const { return y1; }
+    void set_bottom(double v) { y1 = v; }
     
-    double right() const { return _r; }
-    void set_right(double v) { _r = v; }
+    double right() const { return x2; }
+    void set_right(double v) { x2 = v; }
     
-    double top() const { return _t; }
-    void set_top(double v) { _t = v; }
+    double top() const { return y2; }
+    void set_top(double v) { y2 = v; }
     
-    double width() const { return _r - _l; }
+    double width() const { return x2 - x1; }
     
-    double height() const { return _t - _b; }
+    double height() const { return y2 - y1; }
     
     
     
     void set(double l, double b, double r, double t) {
-        _l = l;
-        _b = b;
-        _r = r;
-        _t = t;
-        assert((_r>= _l) && (_t>=_b));
+        x1 = l;
+        y1 = b;
+        x2 = r;
+        y2 = t;
+        assert((x2>= x1) && (y2>=y1));
     }
     
     
     void set(const RectD& b) { *this = b; }
     
     
-    bool isNull() const { return (_r <= _l) || (_t <= _b); }
+    bool isNull() const { return (x2 <= x1) || (y2 <= y1); }
     
     operator bool() const { return !isNull(); }
     
-    RectD operator&(const RectD& other) const{
-        RectD inter;
-        intersect(other,&inter);
-        return inter;
-    }
-    
     void clear() {
-        _l = 0;
-        _b = 0;
-        _r = 0;
-        _t = 0;
+        x1 = 0;
+        y1 = 0;
+        x2 = 0;
+        y2 = 0;
     }
     
     /*merge the current box with another integerBox.
@@ -311,71 +306,81 @@ public:
     
     void merge(double l, double b, double r, double t) {
         if (l < left()) {
-            _l = l;
+            x1 = l;
         }
         if (b < bottom()) {
-            _b = b;
+            y1 = b;
         }
         if (r > right()) {
-            _r = r;
+            x2 = r;
         }
         if (t > top()) {
-            _t = t;
+            y2 = t;
         }
     }
     
     /*intersection of two boxes*/
-    bool intersect(const RectD& box,RectD* intersection) const {
-        return intersect(box.left(), box.bottom(), box.right(), box.top(),intersection);
-    }
-    
-    
-    bool intersect(double l, double b, double r, double t,RectD* intersection) const {
-        if(r < _l || l > _r || b > _t || t < _b)
+    bool intersect(const RectD& r,RectD* intersection) const {
+        if (isNull() || r.isNull())
             return false;
-        intersection->set_left(std::max(_l, l));
-        intersection->set_right(std::min(_r, r));
-        intersection->set_bottom(std::max(_b, b));
-        intersection->set_top(std::min(_t, t));
+        
+        if (x1 > r.x2 || r.x1 > x2 || y1 > r.y2 || r.y1 > y2)
+            return false;
+        
+        intersection->x1 = std::max(x1,r.x1);
+        intersection->x2 = std::min(x2,r.x2);
+        intersection->y1 = std::max(y1,r.y1);
+        intersection->y2 = std::min(y2,r.y2);
         return true;
     }
     
     
-    /// returns true if the rect passed as parameter is fully contained in this one
-    bool intersects(const RectD& b) const {
-        return b.isNull() || ((b.left() >= left()) && (b.bottom() > bottom()) &&
-                              (b.right() <= right()) && (b.top() <= top()));
+    bool intersect(int l, int b, int r, int t,RectD* intersection) const {
+        return intersect(RectD(l,b,r,t),intersection);
+        
     }
     
-    bool intersects(double l,double b,double r,double t) const {
+    
+    /// returns true if the rect passed as parameter is intersects this one
+    bool intersects(const RectD& r) const {
+        if(isNull() || r.isNull()){
+            return false;
+        }
+        if (x1 > r.x2 || r.x1 > x2 || y1 > r.y2 || r.y1 > y2)
+            return false;
+        return true;
+    }
+    
+    bool intersects(int l,int b,int r,int t) const {
         return intersects(RectD(l,b,r,t));
     }
+    
     
     /*the area : w*h*/
     double area() const {
         return width() * height();
     }
     RectD& operator=(const RectD& other){
-        _l = other.left();
-        _b = other.bottom();
-        _r = other.right();
-        _t = other.top();
+        x1 = other.left();
+        y1 = other.bottom();
+        x2 = other.right();
+        y2 = other.top();
         return *this;
     }
     
     bool contains(const RectD& other) const {
-        return other._l >= _l &&
-        other._b >= _b &&
-        other._r <= _r &&
-        other._t <= _t;
+        return other.x1 >= x1 &&
+        other.y1 >= y1 &&
+        other.x2 <= x2 &&
+        other.y2 <= y2;
     }
     
     void debug() const{
         std::cout << "RectI is..." << std::endl;
-        std::cout << "left = " << _l << std::endl;
-        std::cout << "bottom = " << _b << std::endl;
-        std::cout << "right = " << _r << std::endl;
-        std::cout << "top = " << _t << std::endl;
+        std::cout << "left = " << x1 << std::endl;
+        std::cout << "bottom = " << y1 << std::endl;
+        std::cout << "right = " << x2 << std::endl;
+        std::cout << "top = " << y2 << std::endl;
     }
     
     

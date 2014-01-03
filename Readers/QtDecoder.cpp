@@ -24,6 +24,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Knob.h"
+#include "Engine/Project.h"
 
 using namespace Natron;
 using std::cout; using std::endl;
@@ -120,7 +121,19 @@ Natron::Status QtReader::getRegionOfDefinition(SequenceTime time,RectI* rod){
     rod->x2 = _img->width();
     rod->y1 = 0;
     rod->y2 = _img->height();
-     
+    
+    if(getApp()->getProject()->shouldAutoSetProjectFormat()){
+        Format dispW;
+        getApp()->getProject()->setAutoSetProjectFormat(false);
+        dispW.set(*rod);
+        getApp()->getProject()->setProjectDefaultFormat(dispW);
+    }else{
+        Format dispW;
+        dispW.set(*rod);
+        getApp()->tryAddProjectFormat(dispW);
+        
+    }
+    
     return StatOK;
 }
 

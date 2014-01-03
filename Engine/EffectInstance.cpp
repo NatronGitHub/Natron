@@ -325,7 +325,6 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
     /*look-up the cache for any existing image already rendered*/
     boost::shared_ptr<Image> image;
     Natron::ImageKey key = Natron::Image::makeKey(_imp->hashValue.value(), time, scale,view,RectI());
-    
     if(getCachePolicy(time) == NEVER_CACHE){
         byPassCache = true;
     }

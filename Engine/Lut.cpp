@@ -117,26 +117,12 @@ namespace Natron {
         }
         
         
-        void clip(RectI* what,const RectI& to){
-            if(what->x1 < to.x1){
-                what->x1 = to.x1;
-            }
-            if(what->x2 > to.x2){
-                what->x2 = to.x2;
-            }
-            if(what->y1 < to.y1){
-                what->y1 = to.y1;
-            }
-            if(what->y2 > to.y2){
-                what->y2 = to.y2;
-            }
+        bool clip(RectI* what,const RectI& to){
+            return what->intersect(to, what);
         }
         
         bool intersects(const RectI& what,const RectI& other){
-            return (what.x2 >= other.x1 && what.x2 <= other.x2 ) ||
-            ( what.x1 < other.x2 && what.x1 >= other.x1) ||
-            ( what.y2 >= other.y1 && what.y2 <= other.y2) ||
-            ( what.y1 < other.y2 && what.y1 >= other.y1);
+            return what.intersects(other);
         }
         
         void getOffsetsForPacking(PixelPacking format, int *r, int *g, int *b, int *a)
@@ -216,7 +202,7 @@ namespace Natron {
                     to_byte_table[i] = (unsigned short)(f * 0x100 + .5);
                 } else {
                     to_byte_table[i] = 0xff00;
-                }
+                }   
             }
             
             for (int b = 0; b <= 255; ++b) {
@@ -297,15 +283,13 @@ namespace Natron {
                                  const RectI& srcRoD,const RectI& dstRoD,
                                  PixelPacking inputPacking,PixelPacking outputPacking,bool invertY,bool premult) const {
             
-            ///if the conversion rectangle is out of the src rod and the dst rod, just return
-            if(!intersects(conversionRect, srcRoD) || !intersects(conversionRect, dstRoD)){
+           
+            ///clip the conversion rect to srcRoD and dstRoD
+            RectI rect = conversionRect;
+            if(!clip(&rect,srcRoD) || !clip(&rect,dstRoD)){
                 return;
             }
             
-            ///clip the conversion rect to srcRoD and dstRoD
-            RectI rect = conversionRect;
-            clip(&rect,srcRoD);
-            clip(&rect,dstRoD);
             
             bool inputHasAlpha = inputPacking == PACKING_BGRA || inputPacking == PACKING_RGBA;
             bool outputHasAlpha = outputPacking == PACKING_BGRA || outputPacking == PACKING_RGBA;
@@ -387,15 +371,12 @@ namespace Natron {
                                   const RectI& srcRoD,const RectI& dstRoD,
                                   PixelPacking inputPacking,PixelPacking outputPacking,bool invertY,bool premult) const {
             
-            ///if the conversion rectangle is out of the src rod and the dst rod, just return
-            if(!intersects(conversionRect, srcRoD) || !intersects(conversionRect, dstRoD)){
+            ///clip the conversion rect to srcRoD and dstRoD
+            RectI rect = conversionRect;
+            if(!clip(&rect,srcRoD) || !clip(&rect,dstRoD)){
                 return;
             }
             
-            ///clip the conversion rect to srcRoD and dstRoD
-            RectI rect = conversionRect;
-            clip(&rect,srcRoD);
-            clip(&rect,dstRoD);
             
             bool inputHasAlpha = inputPacking == PACKING_BGRA || inputPacking == PACKING_RGBA;
             bool outputHasAlpha = outputPacking == PACKING_BGRA || outputPacking == PACKING_RGBA;
@@ -482,15 +463,13 @@ namespace Natron {
                 throw std::runtime_error("Invalid pixel format.");
             }
             
-            ///if the conversion rectangle is out of the src rod and the dst rod, just return
-            if(!intersects(conversionRect, srcRoD) || !intersects(conversionRect, dstRoD)){
+            ///clip the conversion rect to srcRoD and dstRoD
+            RectI rect = conversionRect;
+            if(!clip(&rect,srcRoD) || !clip(&rect,dstRoD)){
                 return;
             }
             
-            ///clip the conversion rect to srcRoD and dstRoD
-            RectI rect = conversionRect;
-            clip(&rect,srcRoD);
-            clip(&rect,dstRoD);
+
             
             bool inputHasAlpha = inputPacking == PACKING_BGRA || inputPacking == PACKING_RGBA;
             bool outputHasAlpha = outputPacking == PACKING_BGRA || outputPacking == PACKING_RGBA;
@@ -543,15 +522,13 @@ namespace Natron {
                 throw std::runtime_error("Invalid pixel format.");
             }
             
-            ///if the conversion rectangle is out of the src rod and the dst rod, just return
-            if(!intersects(conversionRect, srcRoD) || !intersects(conversionRect, dstRoD)){
+            ///clip the conversion rect to srcRoD and dstRoD
+            RectI rect = conversionRect;
+            if(!clip(&rect,srcRoD) || !clip(&rect,dstRoD)){
                 return;
             }
             
-            ///clip the conversion rect to srcRoD and dstRoD
-            RectI rect = conversionRect;
-            clip(&rect,srcRoD);
-            clip(&rect,dstRoD);
+
             
             bool inputHasAlpha = inputPacking == PACKING_BGRA || inputPacking == PACKING_RGBA;
             bool outputHasAlpha = outputPacking == PACKING_BGRA || outputPacking == PACKING_RGBA;
@@ -636,15 +613,13 @@ namespace Natron {
                     throw std::runtime_error("Invalid pixel format.");
                 }
                 
-                ///if the conversion rectangle is out of the src rod and the dst rod, just return
-                if(!intersects(conversionRect, srcRoD) || !intersects(conversionRect, dstRoD)){
+                ///clip the conversion rect to srcRoD and dstRoD
+                RectI rect = conversionRect;
+                if(!clip(&rect,srcRoD) || !clip(&rect,dstRoD)){
                     return;
                 }
                 
-                ///clip the conversion rect to srcRoD and dstRoD
-                RectI rect = conversionRect;
-                clip(&rect,srcRoD);
-                clip(&rect,dstRoD);
+
                 
                 bool inputHasAlpha = inputPacking == PACKING_BGRA || inputPacking == PACKING_RGBA;
                 bool outputHasAlpha = outputPacking == PACKING_BGRA || outputPacking == PACKING_RGBA;
@@ -702,15 +677,13 @@ namespace Natron {
                 }
                 
                 
-                ///if the conversion rectangle is out of the src rod and the dst rod, just return
-                if(!intersects(conversionRect, srcRoD) || !intersects(conversionRect, dstRoD)){
+                ///clip the conversion rect to srcRoD and dstRoD
+                RectI rect = conversionRect;
+                if(!clip(&rect,srcRoD) || !clip(&rect,dstRoD)){
                     return;
                 }
                 
-                ///clip the conversion rect to srcRoD and dstRoD
-                RectI rect = conversionRect;
-                clip(&rect,srcRoD);
-                clip(&rect,dstRoD);
+
                 
                 if(inputPacking == PACKING_PLANAR || outputPacking == PACKING_PLANAR){
                     throw std::runtime_error("Invalid pixel format.");
@@ -873,14 +846,13 @@ namespace Natron {
                     throw std::runtime_error("This function is not meant for planar buffers.");
                 }
                 
-                ///if the conversion rectangle is out of the src rod and the dst rod, just return
-                if(!intersects(conversionRect, srcRoD) || !intersects(conversionRect, dstRoD)){
+                ///clip the conversion rect to srcRoD and dstRoD
+                RectI rect = conversionRect;
+                if(!clip(&rect,srcRoD) || !clip(&rect,dstRoD)){
                     return;
                 }
                 
-                ///clip the conversion rect to srcRoD and dstRoD
-                RectI rect = conversionRect;
-                clip(&rect,srcRoD);
+
                 
                 bool inputHasAlpha = inputPacking == PACKING_BGRA || inputPacking == PACKING_RGBA;
                 bool outputHasAlpha = outputPacking == PACKING_BGRA || outputPacking == PACKING_RGBA;
@@ -973,14 +945,13 @@ namespace Natron {
                     throw std::runtime_error("Invalid pixel format.");
                 }
                 
-                ///if the conversion rectangle is out of the src rod and the dst rod, just return
-                if(!intersects(conversionRect, srcRoD) || !intersects(conversionRect, dstRoD)){
+                ///clip the conversion rect to srcRoD and dstRoD
+                RectI rect = conversionRect;
+                if(!clip(&rect,srcRoD) || !clip(&rect,dstRoD)){
                     return;
                 }
                 
-                ///clip the conversion rect to srcRoD and dstRoD
-                RectI rect = conversionRect;
-                clip(&rect,srcRoD);
+
                 
                 bool inputHasAlpha = inputPacking == PACKING_BGRA || inputPacking == PACKING_RGBA;
                 bool outputHasAlpha = outputPacking == PACKING_BGRA || outputPacking == PACKING_RGBA;

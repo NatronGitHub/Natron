@@ -118,7 +118,8 @@ namespace Natron{
         }
         
         bool operator==(const FrameKey& other) const {
-            return  _treeVersion == other._treeVersion &&
+            return  _time == other._time &&
+                    _treeVersion == other._treeVersion &&
                     _zoomFactor == other._zoomFactor &&
                     _exposure == other._exposure &&
                     _lut == other._lut &&
