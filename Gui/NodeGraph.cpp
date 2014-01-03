@@ -900,8 +900,9 @@ void AddCommand::undo(){
     _inputs = _node->getNode()->getInputs();
     _outputs = _node->getNode()->getOutputs();
     
-    QMutexLocker l(_graph->getGui()->getApp()->getAutoSaveMutex());
+    _graph->getGui()->getApp()->lockProject();
     _node->getNode()->deactivate();
+    _graph->getGui()->getApp()->unlockProject();
     
     _graph->scene()->update();
     setText(QObject::tr("Add %1")
@@ -910,8 +911,9 @@ void AddCommand::undo(){
 }
 void AddCommand::redo(){
     if(_undoWasCalled){
-        QMutexLocker l(_graph->getGui()->getApp()->getAutoSaveMutex());
+        _graph->getGui()->getApp()->lockProject();
         _node->getNode()->activate();
+        _graph->getGui()->getApp()->unlockProject();
     }
     _graph->scene()->update();
     setText(QObject::tr("Add %1")
@@ -925,8 +927,9 @@ RemoveCommand::RemoveCommand(NodeGraph* graph,NodeGui *node,QUndoCommand *parent
     
 }
 void RemoveCommand::undo(){
-    QMutexLocker l(_graph->getGui()->getApp()->getAutoSaveMutex());
+    _graph->getGui()->getApp()->lockProject();
     _node->getNode()->activate();
+    _graph->getGui()->getApp()->unlockProject();
     
     _graph->scene()->update();
     setText(QObject::tr("Remove %1")
@@ -939,8 +942,9 @@ void RemoveCommand::redo(){
     _inputs = _node->getNode()->getInputs();
     _outputs = _node->getNode()->getOutputs();
     
-    QMutexLocker l(_graph->getGui()->getApp()->getAutoSaveMutex());
+    _graph->getGui()->getApp()->lockProject();
     _node->getNode()->deactivate();
+    _graph->getGui()->getApp()->unlockProject();
     
     _graph->scene()->update();
     setText(QObject::tr("Remove %1")
@@ -958,7 +962,7 @@ ConnectCommand::ConnectCommand(NodeGraph* graph,Edge* edge,NodeGui *oldSrc,NodeG
 }
 
 void ConnectCommand::undo(){
-    QMutexLocker l(_graph->getGui()->getApp()->getAutoSaveMutex());
+    _graph->getGui()->getApp()->lockProject();
     _edge->setSource(_oldSrc);
     
     if(_oldSrc){
@@ -967,6 +971,8 @@ void ConnectCommand::undo(){
     if(_newSrc){
         _graph->getGui()->getApp()->disconnect(_newSrc->getNode(), _edge->getDest()->getNode());
     }
+    
+    _graph->getGui()->getApp()->unlockProject();
     
     if(_oldSrc){
         setText(QObject::tr("Connect %1 to %2")
@@ -982,9 +988,10 @@ void ConnectCommand::undo(){
     for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
         (*it)->updateTreeAndRender();
     }
+    
 }
 void ConnectCommand::redo(){
-    QMutexLocker l(_graph->getGui()->getApp()->getAutoSaveMutex());
+    _graph->getGui()->getApp()->lockProject();
     NodeGui* dst = _edge->getDest();
     
     InspectorNode* inspector = dynamic_cast<InspectorNode*>(dst->getNode());
@@ -1013,6 +1020,9 @@ void ConnectCommand::redo(){
             }
         }
     }
+    
+    _graph->getGui()->getApp()->unlockProject();
+    
     dst->refreshEdges();
     
     if(_newSrc){

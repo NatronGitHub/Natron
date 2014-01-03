@@ -122,18 +122,10 @@ Natron::Status QtReader::getRegionOfDefinition(SequenceTime time,RectI* rod){
     rod->y1 = 0;
     rod->y2 = _img->height();
     
-    if(getApp()->getProject()->shouldAutoSetProjectFormat()){
-        Format dispW;
-        getApp()->getProject()->setAutoSetProjectFormat(false);
-        dispW.set(*rod);
-        getApp()->getProject()->setProjectDefaultFormat(dispW);
-    }else{
-        Format dispW;
-        dispW.set(*rod);
-        getApp()->tryAddProjectFormat(dispW);
-        
-    }
-    
+    Format dispW;
+    dispW.set(*rod);
+    getApp()->setOrAddProjectFormat(dispW); 
+
     return StatOK;
 }
 

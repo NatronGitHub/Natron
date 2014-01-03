@@ -333,17 +333,9 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI*
     ifInfiniteclipRectToProjectDefault(&ofxRod);
     ofxRectDToRectI(ofxRod,rod);
     if(isGenerator()){
-        if(getApp()->getProject()->shouldAutoSetProjectFormat()){
-            getApp()->getProject()->setAutoSetProjectFormat(false);
-            Format dispW;
-            dispW.set(*rod);
-            getApp()->getProject()->setProjectDefaultFormat(dispW);
-        }else{
-            Format dispW;
-            dispW.set(*rod);
-            getApp()->tryAddProjectFormat(dispW);
-            
-        }
+        Format dispW;
+        dispW.set(*rod);
+        getApp()->setOrAddProjectFormat(dispW);
     }
     return StatOK;
     
@@ -493,7 +485,7 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     ofxRoI.x2 = roi.right();
     ofxRoI.y1 = roi.bottom();
     ofxRoI.y2 = roi.top();
-    int viewsCount = getApp()->getCurrentProjectViewsCount();
+    int viewsCount = getApp()->getProjectViewsCount();
     OfxStatus stat;
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     stat = effect_->renderAction((OfxTime)time, field, ofxRoI, scale, view, viewsCount);

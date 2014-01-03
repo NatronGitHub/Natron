@@ -14,7 +14,6 @@
 #include <map>
 
 #include <QDateTime>
-#include <QMutex>
 #include <QString>
 
 
@@ -56,7 +55,6 @@ struct ProjectPrivate{
     
     std::map<std::string,int> nodeCounters;
     bool autoSetProjectFormat;
-    mutable QMutex projectDataLock;
     std::vector<Natron::Node*> currentNodes;
     
     std::vector<Format> availableFormats;

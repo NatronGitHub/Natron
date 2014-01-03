@@ -606,6 +606,9 @@ void OutputEffectInstance::refreshAndContinueRender(bool initViewer){
 }
 
 void OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
+    if(!getApp()->getProject()){
+        return;
+    }
     /*If the rod is infinite clip it to the project's default*/
     const Format& projectDefault = getRenderFormat();
     // BE CAREFUL:

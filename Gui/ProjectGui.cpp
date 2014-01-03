@@ -24,6 +24,8 @@
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/EffectInstance.h"
+#include "Engine/VideoEngine.h"
 
 #include "Gui/Gui.h"
 #include "Gui/ComboBox.h"
@@ -44,6 +46,15 @@ ProjectGui::ProjectGui()
 , _colorPickersEnabled()
 {
     
+}
+
+ProjectGui::~ProjectGui(){
+    const std::vector<Natron::Node*>& nodes = _project->getCurrentNodes();
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        if(nodes[i]->isOutputNode()){
+            dynamic_cast<Natron::OutputEffectInstance*>(nodes[i]->getLiveInstance())->getVideoEngine()->quitEngineThread();
+        }
+    }
 }
 
 void ProjectGui::create(boost::shared_ptr<Natron::Project> projectInternal,QVBoxLayout* container,QWidget* parent)

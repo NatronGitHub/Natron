@@ -200,7 +200,7 @@ void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/)
         std::map<int,AppInstance*> apps = appPTR->getAppInstances();
         bool isFirstViewer = true;
         for(std::map<int,AppInstance*>::iterator it = apps.begin();it!=apps.end();++it){
-            const std::vector<Node*>& nodes = it->second->getProject()->getCurrentNodes();
+            const std::vector<Node*>& nodes = it->second->getCurrentNodes();
             for (U32 i = 0; i < nodes.size(); ++i) {
                 assert(nodes[i]);
                 if (nodes[i]->pluginID() == "Viewer") {

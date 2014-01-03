@@ -29,7 +29,6 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , viewsCount()
     , timeline(new TimeLine(project))
     , autoSetProjectFormat(true)
-    , projectDataLock(QMutex::Recursive)
     , currentNodes()
     , availableFormats()
     , project(project)
@@ -48,7 +47,6 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
 void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
     project->beginProjectWideValueChanges(Natron::PLUGIN_EDITED,project);
-
     /*1st OFF RESTORE THE PROJECT KNOBS*/
     
     /*we must restore the entries in the combobox before restoring the value*/

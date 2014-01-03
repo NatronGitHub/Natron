@@ -182,7 +182,7 @@ Variant Knob::getValueAtTime(double time,int dimension) const{
 }
 
 Knob::ValueChangedReturnCode Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason,KeyFrame* newKey){
-    
+   
     if(dimension > (int)_imp->_values.size()){
         throw std::invalid_argument("Knob::setValue(): Dimension out of range");
     }
@@ -196,7 +196,17 @@ Knob::ValueChangedReturnCode Knob::setValue(const Variant& v, int dimension, Nat
         return ret;
     }
     
+    ///locking project if it is saving
+    if(_imp->_holder->getApp()){
+        _imp->_holder->getApp()->lockProject();
+    }
+    
     _imp->_values[dimension] = v;
+    
+    ///unlocking project if it is saving
+     if(_imp->_holder->getApp()){
+         _imp->_holder->getApp()->unlockProject();
+     }
     
     ///Add automatically a new keyframe
     if(getAnimationLevel(dimension) != Natron::NO_ANIMATION && _imp->_holder->getApp() &&
@@ -232,8 +242,11 @@ bool Knob::setValueAtTime(int time, const Variant& v, int dimension, Natron::Val
     
     boost::shared_ptr<Curve> curve = _imp->_curves[dimension];
 #pragma message WARN("We should query the variant's type passed in parameter to construct a keyframe with an appropriate value")
+    
+
     *newKey = KeyFrame((double)time,v.toDouble());
     bool ret = curve->addKeyFrame(*newKey);
+   
     
     if(reason != Natron::USER_EDITED){
         emit keyFrameSet(time,dimension);
@@ -660,19 +673,19 @@ void KnobHolder::refreshAfterTimeChange(SequenceTime time){
 
 void KnobHolder::notifyProjectBeginKnobsValuesChanged(Natron::ValueChangedReason reason){
     if(_app){
-        getApp()->getProject()->beginProjectWideValueChanges(reason, this);
+        getApp()->beginProjectWideValueChanges(reason, this);
     }
 }
 
 void KnobHolder::notifyProjectEndKnobsValuesChanged(Natron::ValueChangedReason reason){
     if(_app){
-        getApp()->getProject()->endProjectWideValueChanges(reason,this);
+        getApp()->endProjectWideValueChanges(reason,this);
     }
 }
 
 void KnobHolder::notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,Knob* k,bool significant){
     if(_app){
-        getApp()->getProject()->stackEvaluateRequest(reason,this,k,significant);
+        getApp()->stackEvaluateRequest(reason,this,k,significant);
     }else{
         onKnobValueChanged(k, reason);
     }

@@ -16,7 +16,14 @@
 
 void ProjectSerialization::initialize(const Natron::Project* project){
     std::vector<Natron::Node*> activeNodes;
-    project->getApp()->getActiveNodes(&activeNodes);
+    
+    const std::vector<Natron::Node*> nodes = project->_imp->currentNodes;
+    for(U32 i = 0; i < nodes.size(); ++i){
+        if(nodes[i]->isActivated()){
+            activeNodes.push_back(nodes[i]);
+        }
+    }
+    
     _serializedNodes.clear();
     for (U32 i = 0; i < activeNodes.size(); ++i) {
         boost::shared_ptr<NodeSerialization> state(new NodeSerialization);

@@ -158,8 +158,8 @@ bool Gui::exit(){
     }
     saveGuiGeometry();
     assert(_appInstance);
-    delete this;
     delete _appInstance;
+    delete this;
     if (_appInstance->getAppID() != 0) {
         return false;
     } else {

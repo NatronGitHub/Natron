@@ -13,10 +13,13 @@
 
 #include <algorithm>
 #include <boost/math/special_functions/fpclassify.hpp>
+
+#include "Global/AppManager.h"
+
 #include "Engine/CurvePrivate.h"
 #include "Engine/Interpolation.h"
-
 #include "Engine/KnobTypes.h"
+
 namespace {
     struct KeyFrameCloner {
         KeyFrame operator()(const KeyFrame& kf) const { return KeyFrame(kf); }
@@ -174,7 +177,15 @@ double Curve::getMaximumTimeCovered() const{
 }
 
 bool Curve::addKeyFrame(const KeyFrame key){
+    
+    ///lock the project if it is saving
+    _imp->owner->getHolder()->getApp()->lockProject();
+    
     std::pair<KeyFrameSet::iterator,bool> it = addKeyFrameNoUpdate(key);
+    
+    ///unlock it
+    _imp->owner->getHolder()->getApp()->unlockProject();
+    
     evaluateCurveChanged(KEYFRAME_CHANGED,it.first);
     return it.second;
 }

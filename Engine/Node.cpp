@@ -97,6 +97,7 @@ struct Node::Implementation {
         , imagesBeingRendered()
         , plugin(plugin_)
         , renderInstances()
+        , computingPreview(false)
     {
     }
 
@@ -119,6 +120,9 @@ struct Node::Implementation {
     ImagesMap imagesBeingRendered; //< a map storing the ongoing render for this node
     LibraryBinary* plugin;
     std::map<RenderTree*,EffectInstance*> renderInstances;
+    
+    bool computingPreview;
+    QWaitCondition computingPreviewCond;
 };
 
 Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
@@ -150,6 +154,12 @@ Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
 
 Node::~Node()
 {
+    
+    QMutexLocker l(&_imp->previewMutex);
+    while (_imp->computingPreview) {
+        _imp->computingPreviewCond.wait(&_imp->previewMutex);
+    }
+    
     for (std::map<RenderTree*,EffectInstance*>::iterator it = _imp->renderInstances.begin(); it!=_imp->renderInstances.end(); ++it) {
         delete it->second;
     }
@@ -496,7 +506,7 @@ const Format& Node::getRenderFormatForEffect(const EffectInstance* effect) const
 int Node::getRenderViewsCountForEffect( const EffectInstance* effect) const
 {
     if(effect == _liveInstance) {
-        return getApp()->getCurrentProjectViewsCount();
+        return getApp()->getProjectViewsCount();
     } else {
         for (std::map<RenderTree*,EffectInstance*>::const_iterator it = _imp->renderInstances.begin();
              it!=_imp->renderInstances.end();++it) {
@@ -505,7 +515,7 @@ int Node::getRenderViewsCountForEffect( const EffectInstance* effect) const
             }
         }
     }
-    return getApp()->getCurrentProjectViewsCount();
+    return getApp()->getProjectViewsCount();
 }
 
 
@@ -523,8 +533,6 @@ boost::shared_ptr<Image> Node::getImageBeingRendered(SequenceTime time,int view)
     }
     return boost::shared_ptr<Image>();
 }
-
-
 
 static float clamp(float v, float min = 0.f, float max= 1.f){
     if(v > max) v = max;
@@ -557,11 +565,14 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
 {
 
     QMutexLocker locker(&_imp->previewMutex); /// prevent 2 previews to occur at the same time since there's only 1 preview instance
-
+    _imp->computingPreview = true;
+    
     RectI rod;
     _imp->previewRenderTree->refreshTree();
     Natron::Status stat = _imp->previewInstance->getRegionOfDefinition(time, &rod);
     if (stat == StatFailed) {
+        _imp->computingPreview = false;
+        _imp->computingPreviewCond.wakeOne();
         return;
     }
     int h,w;
@@ -583,6 +594,8 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     if(stat == StatFailed){
         Log::print(QString("preProcessFrame returned StatFailed.").toStdString());
         Log::endFunction(getName(),"makePreviewImage");
+        _imp->computingPreview = false;
+        _imp->computingPreviewCond.wakeOne();
         return;
     }
 
@@ -596,9 +609,13 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
         img = _imp->previewInstance->renderRoI(time, scale, 0,rod);
     } catch (const std::exception& e) {
         qDebug() << "Error: Cannot create preview" << ": " << e.what();
+        _imp->computingPreview = false;
+        _imp->computingPreviewCond.wakeOne();
         return;
     } catch (...) {
         qDebug() << "Error: Cannot create preview";
+        _imp->computingPreview = false;
+        _imp->computingPreviewCond.wakeOne();
         return;
     }
     for (int i=0; i < h; ++i) {
@@ -619,7 +636,8 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
 
         }
     }
-
+    _imp->computingPreview = false;
+    _imp->computingPreviewCond.wakeOne();
     Log::endFunction(getName(),"makePreviewImage");
 }
 

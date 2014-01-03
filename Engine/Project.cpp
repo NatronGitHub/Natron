@@ -14,7 +14,6 @@
 #include "Global/AppManager.h"
 
 #include "Engine/ProjectPrivate.h"
-#include "Engine/TimeLine.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
@@ -90,7 +89,6 @@ void Project::initNodeCountersAndSetName(Node* n){
 }
 
 void Project::clearNodes(){
-    QMutexLocker locker(&_imp->projectDataLock);
     for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
         if(_imp->currentNodes[i]->isOutputNode()){
             dynamic_cast<OutputEffectInstance*>(_imp->currentNodes[i]->getLiveInstance())->getVideoEngine()->quitEngineThread();
@@ -122,12 +120,15 @@ int Project::lastFrame() const {
 
 
 int Project::tryAddProjectFormat(const Format& f){
-    QMutexLocker l(&_imp->projectDataLock);
+    getApp()->lockProject();
+    
     if(f.left() >= f.right() || f.bottom() >= f.top()){
+        getApp()->unlockProject();
         return -1;
     }
     for (U32 i = 0; i < _imp->availableFormats.size(); ++i) {
         if(f == _imp->availableFormats[i]){
+            getApp()->unlockProject();
             return i;
         }
     }
@@ -144,13 +145,13 @@ int Project::tryAddProjectFormat(const Format& f){
     entries.push_back(formatStr.toStdString());
     _imp->availableFormats.push_back(f);
     _imp->formatKnob->populate(entries);
+    getApp()->unlockProject();
     return _imp->availableFormats.size() - 1;
 }
 
 void Project::setProjectDefaultFormat(const Format& f) {
-    int index = tryAddProjectFormat(f);
     
-    QMutexLocker l(&_imp->projectDataLock);
+    int index = tryAddProjectFormat(f);
     _imp->formatKnob->setValue(index);
     getApp()->notifyViewersProjectFormatChanged(f);
     getApp()->triggerAutoSave();
@@ -159,7 +160,6 @@ void Project::setProjectDefaultFormat(const Format& f) {
 
 
 int Project::getProjectViewsCount() const{
-    QMutexLocker l(&_imp->projectDataLock);
     return _imp->viewsCount->getValue<int>();
 }
 
@@ -211,16 +211,12 @@ void Project::setAutoSetProjectFormat(bool b){
 
 boost::shared_ptr<TimeLine> Project::getTimeLine() const  {return _imp->timeline;}
 
-void  Project::lock() const {_imp->projectDataLock.lock();}
-
-void  Project::unlock() const { _imp->projectDataLock.unlock();}
 
 void Project::setProjectLastAutoSavePath(const QString& str){
     _imp->lastAutoSaveFilePath = str;
 }
 
 const std::vector<Format>& Project::getProjectFormats() const {
-    QMutexLocker l(&_imp->projectDataLock);
     return _imp->availableFormats;
 }
 
@@ -325,7 +321,14 @@ void Project::endProjectWideValueChanges(Natron::ValueChangedReason reason,KnobH
     if(_imp->evaluationsCount != 0){
         _imp->evaluationsCount = 0;
         if(reason == Natron::USER_EDITED){
+            
+            ///unlock the project, because it is already locked at this point!
+            getApp()->unlockProject();
+            
             getApp()->triggerAutoSave();
+            
+            ///relock it
+            getApp()->lockProject();
         }
         if(reason != Natron::OTHER_REASON && reason != Natron::TIME_CHANGED){
             caller->evaluate(_imp->lastKnobChanged,_imp->isSignificantChange);

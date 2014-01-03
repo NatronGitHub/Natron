@@ -20,6 +20,7 @@ _firstFrame(0)
 {}
 
 void TimeLine::setFrameRange(SequenceTime first,SequenceTime last){
+    QMutexLocker l(&_lock);
     SequenceTime oldFirst = _firstFrame;
     SequenceTime oldLast = _lastFrame;
     _firstFrame = first;

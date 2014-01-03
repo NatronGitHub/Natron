@@ -125,22 +125,20 @@ public:
 
     void getActiveNodes(std::vector<Natron::Node *> *activeNodes) const;
 
+    boost::shared_ptr<Natron::Project> getProject() const { return _currentProject;}
+
+    boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN ;
+
+
+//////////
+//////////////// PROJECT RELATED
+/////////
 
     const QString& getCurrentProjectName() const WARN_UNUSED_RETURN ;
 
     const QString& getCurrentProjectPath() const WARN_UNUSED_RETURN ;
 
-    int getCurrentProjectViewsCount() const;
-
-    boost::shared_ptr<Natron::Project> getProject() const { return _currentProject;}
-
-    boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN ;
-
-    void setCurrentProjectName(const QString& name) ;
-
-    bool shouldAutoSetProjectFormat() const ;
-
-    void setAutoSetProjectFormat(bool b);
+    int getProjectViewsCount() const;
 
     bool hasProjectBeenSavedByUser() const WARN_UNUSED_RETURN ;
 
@@ -152,11 +150,7 @@ public:
 
     void autoSave();
 
-    void tryAddProjectFormat(const Format& frmt);
-
-    void setProjectFormat(const Format& frmt);
-
-    void resetCurrentProject();
+    void setOrAddProjectFormat(const Format& frmt,bool skipAdd = false);
 
     int getKnobsAge() const;
 
@@ -166,9 +160,43 @@ public:
 
     bool isSaveUpToDate() const WARN_UNUSED_RETURN;
 
+    static QString autoSavesDir() WARN_UNUSED_RETURN;
+
+    const std::vector<Natron::Node*>& getCurrentNodes() const;
+
+    void beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller);
+
+    void stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHolder* caller, Knob *k, bool isSignificant);
+
+    void endProjectWideValueChanges(Natron::ValueChangedReason reason, KnobHolder* caller);
+
+    void lockProject();
+
+    void unlockProject();
+
+private:
+
+    void resetCurrentProject();
+
+    void removeAutoSaves() const;
+
+    void loadProjectInternal(const QString& path,const QString& name);
+
+    void saveProjectInternal(const QString& path,const QString& filename,bool autosave = false);
+
+    /** @brief Attemps to find an autosave. If found one,prompts the user
+     * whether he/she wants to load it. If something was loaded this function
+     * returns true,otherwise false.
+     **/
+    bool findAutoSave() WARN_UNUSED_RETURN;
+
+public:
+/////////
+///////////// END PROJECT RELATED
+/////////
+
     void deselectAllNodes() const;
 
-    static QString autoSavesDir() WARN_UNUSED_RETURN;
 
     ViewerTab* addNewViewerTab(ViewerInstance* node,TabWidget* where) WARN_UNUSED_RETURN;
 
@@ -190,7 +218,6 @@ public:
 
     void disconnectViewersFromViewerCache();
 
-    QMutex* getAutoSaveMutex() const WARN_UNUSED_RETURN {return _autoSaveMutex;}
 
     void errorDialog(const std::string& title,const std::string& message) const;
 
@@ -231,32 +258,21 @@ private:
 
     void startRenderingFullSequence(Natron::OutputEffectInstance* writer);
 
-
-    void removeAutoSaves() const;
-
-    void loadProjectInternal(const QString& path,const QString& name);
-
-    void saveProjectInternal(const QString& path,const QString& filename,bool autosave = false);
-
-    /*Attemps to find an autosave. If found one,prompts the user
- whether he/she wants to load it. If something was loaded this function
- returns true,otherwise false.*/
-    bool findAutoSave() WARN_UNUSED_RETURN;
-
     Gui* _gui; // the view of the MVC pattern
 
+    mutable QMutex _projectLock;
     boost::shared_ptr<Natron::Project> _currentProject;
+    bool _isLoadingProject;
 
     int _appID;
 
     std::map<Natron::Node*,NodeGui*> _nodeMapping;
 
-    QMutex* _autoSaveMutex;
-
     bool _isBackground;
 
-    QMutex _isLoadingProjectLock;
-    bool _isLoadingProject;
+    QMutex _isQuittingMutex;
+    bool _isQuitting;
+
 
     class ActiveBackgroundRender{
 

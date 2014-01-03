@@ -163,7 +163,7 @@ _viewerNode(node)
                                "Tells the viewer what view should be displayed.");
     _secondRowLayout->addWidget(_viewsComboBox);
     _viewsComboBox->hide();
-    int viewsCount = _gui->getApp()->getProject()->getProjectViewsCount(); //getProjectViewsCount
+    int viewsCount = _gui->getApp()->getProjectViewsCount(); //getProjectViewsCount
     updateViewsMenu(viewsCount);
     
     _secondRowLayout->addStretch();

@@ -234,14 +234,15 @@ void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
 }
 
 
-AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectName,const QStringList& writers):
-    _gui(NULL)
+AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectName,const QStringList& writers)
+  : _gui(NULL)
+  , _projectLock()
   , _currentProject(new Natron::Project(this))
+  , _isLoadingProject(false)
   , _appID(appID)
   , _nodeMapping()
-  , _autoSaveMutex(new QMutex)
   , _isBackground(backgroundMode)
-  , _isLoadingProject(false)
+  , _isQuitting(false)
 {
     appPTR->registerAppInstance(this);
     appPTR->setAsTopLevelInstance(appID);
@@ -314,10 +315,26 @@ AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectNam
 
 
 AppInstance::~AppInstance(){
+    {
+        QMutexLocker l(&_isQuittingMutex);
+        _isQuitting = true;
+
+    }
+    QMutexLocker l(&_projectLock);
     removeAutoSaves();
     appPTR->removeInstance(_appID);
-    delete _autoSaveMutex;
     
+    const std::vector<Natron::Node*>& nodes = _currentProject->getCurrentNodes();
+    
+    l.unlock();
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        if(nodes[i]->isOutputNode()){
+            dynamic_cast<Natron::OutputEffectInstance*>(nodes[i]->getLiveInstance())->getVideoEngine()->quitEngineThread();
+        }
+    }
+    l.relock();
+    ///force the project to be deleted before the project lock
+    _currentProject.reset();
 }
 
 
@@ -371,9 +388,10 @@ Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVers
     node->initializeKnobs();
     node->initializeInputs();
 
-
-    _currentProject->initNodeCountersAndSetName(node);
-
+    {
+        QMutexLocker l(&_projectLock);
+        _currentProject->initNodeCountersAndSetName(node);
+    }
 
     if(!_isBackground){
         assert(nodegui);
@@ -410,7 +428,18 @@ const std::vector<NodeGui*>& AppInstance::getVisibleNodes() const{
     
 }
 
+void AppInstance::lockProject(){
+    _projectLock.lock();
+}
+
+void AppInstance::unlockProject(){
+    assert(!_projectLock.tryLock());
+    _projectLock.unlock();
+}
+
 void AppInstance::getActiveNodes(std::vector<Natron::Node*>* activeNodes) const{
+    
+    QMutexLocker l(&_projectLock);
     const std::vector<Natron::Node*> nodes = _currentProject->getCurrentNodes();
     for(U32 i = 0; i < nodes.size(); ++i){
         if(nodes[i]->isActivated()){
@@ -419,27 +448,40 @@ void AppInstance::getActiveNodes(std::vector<Natron::Node*>* activeNodes) const{
     }
 }
 bool AppInstance::loadProject(const QString& path,const QString& name){
-    QMutexLocker l(&_isLoadingProjectLock);
+    QMutexLocker l(&_projectLock);
     _isLoadingProject = true;
     
     if(!_isBackground){
         _gui->_nodeGraphArea->deselect();
     }
     try {
+        l.unlock();
         loadProjectInternal(path,name);
     } catch (const std::exception& e) {
         Natron::errorDialog("Project loader", std::string("Error while loading project") + ": " + e.what());
         if(!_isBackground)
             createNode("Viewer");
         _isLoadingProject = false;
+        l.relock();
         return false;
     } catch (...) {
         Natron::errorDialog("Project loader", std::string("Error while loading project"));
         if(!_isBackground)
             createNode("Viewer");
         _isLoadingProject = false;
+        l.relock();
         return false;
     }
+    l.relock();
+    
+    QDateTime time = QDateTime::currentDateTime();
+    _currentProject->setAutoSetProjectFormat(false);
+    _currentProject->setHasProjectBeenSavedByUser(true);
+    _currentProject->setProjectName(name);
+    _currentProject->setProjectPath(path);
+    _currentProject->setProjectAgeSinceLastSave(time);
+    _currentProject->setProjectAgeSinceLastAutosaveSave(time);
+    
     if(!_isBackground){
         QString text(QCoreApplication::applicationName() + " - ");
         text.append(name);
@@ -451,8 +493,6 @@ bool AppInstance::loadProject(const QString& path,const QString& name){
 }
 
 void AppInstance::loadProjectInternal(const QString& path,const QString& name){
-    
-    _currentProject->lock();
     
     QString filePath = path+name;
     if(!QFile::exists(filePath)){
@@ -484,15 +524,6 @@ void AppInstance::loadProjectInternal(const QString& path,const QString& name){
     }
     ifile.close();
     
-    QDateTime time = QDateTime::currentDateTime();
-    _currentProject->setAutoSetProjectFormat(false);
-    _currentProject->setHasProjectBeenSavedByUser(true);
-    _currentProject->setProjectName(name);
-    _currentProject->setProjectPath(path);
-    _currentProject->setProjectAgeSinceLastSave(time);
-    _currentProject->setProjectAgeSinceLastAutosaveSave(time);
-    
-    _currentProject->unlock();
     
     /*Refresh all viewers as it was*/
     if(!isBackground()){
@@ -503,13 +534,11 @@ void AppInstance::loadProjectInternal(const QString& path,const QString& name){
 }
 
 void AppInstance::saveProject(const QString& path,const QString& name,bool autoSave){
-    {
-        QMutexLocker l(&_isLoadingProjectLock);
-        
-        if(_isLoadingProject){
-            qDebug() << "Project is loading!!";
-            return;
-        }
+    QMutexLocker l(&_projectLock);
+    
+    if(_isLoadingProject){
+        qDebug() << "Project is loading!!";
+        return;
     }
     
     if(!autoSave) {
@@ -534,8 +563,6 @@ void AppInstance::saveProject(const QString& path,const QString& name,bool autoS
 
 void AppInstance::saveProjectInternal(const QString& path,const QString& filename,bool autoSave){
     
-    _currentProject->lock();
-    
     QDateTime time = QDateTime::currentDateTime();
     QString actualFileName = filename;
     if(autoSave){
@@ -554,7 +581,6 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
     }
     std::ofstream ofile(filePath.toStdString().c_str(),std::ofstream::out);
     if (!ofile.good()) {
-        _currentProject->unlock();
         qDebug() << "Failed to open file " << filePath.toStdString().c_str();
         throw std::runtime_error("Failed to open file " + filePath.toStdString());
     }
@@ -572,11 +598,9 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
         }
         
     }catch (const std::exception& e) {
-        _currentProject->unlock();
         qDebug() << "Error while saving project: " << e.what();
         throw;
     } catch (...) {
-        _currentProject->unlock();
         qDebug() << "Error while saving project";
         throw;
     }
@@ -588,13 +612,13 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
     }
     _currentProject->setProjectAgeSinceLastAutosaveSave(time);
 
-    _currentProject->unlock();
 }
 
 void AppInstance::autoSave(){
     saveProject(_currentProject->getProjectPath(), _currentProject->getProjectName(), true);
 }
 void AppInstance::triggerAutoSave(){
+    QMutexLocker l(&_projectLock);
     QtConcurrent::run(this,&AppInstance::autoSave);
     QString text(QCoreApplication::applicationName() + " - ");
     text.append(_currentProject->getProjectName());
@@ -620,6 +644,7 @@ void AppInstance::removeAutoSaves() const{
 
 
 bool AppInstance::isSaveUpToDate() const{
+    QMutexLocker l(&_projectLock);
     return _currentProject->projectAgeSinceLastSave() == _currentProject->projectAgeSinceLastAutosave();
 }
 void AppInstance::resetCurrentProject(){
@@ -681,6 +706,9 @@ bool AppInstance::findAutoSave() {
                     Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project"));
                     createNode("Viewer");
                 }
+                
+                _currentProject->setAutoSetProjectFormat(false);
+                
                 if (exists) {
                     _currentProject->setHasProjectBeenSavedByUser(true);
                     QString path = filename.left(filename.lastIndexOf(QDir::separator())+1);
@@ -717,6 +745,28 @@ QString AppInstance::autoSavesDir() {
     return QStandardPaths::writableLocation(QStandardPaths::DataLocation) + QDir::separator() + "Autosaves";
 #endif
     //return QString(QDir::tempPath() + QDir::separator() + QCoreApplication::applicationName() + QDir::separator());
+}
+
+
+void AppInstance::beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller){
+    QMutexLocker l(&_projectLock);
+    _currentProject->beginProjectWideValueChanges(reason, caller);
+}
+
+void AppInstance::stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHolder* caller, Knob *k, bool isSignificant){
+    QMutexLocker l(&_projectLock);
+    _currentProject->stackEvaluateRequest(reason, caller, k, isSignificant);
+}
+
+
+void AppInstance::endProjectWideValueChanges(Natron::ValueChangedReason reason, KnobHolder* caller){
+    QMutexLocker l(&_projectLock);
+    _currentProject->endProjectWideValueChanges(reason, caller);
+}
+
+const std::vector<Natron::Node*>& AppInstance::getCurrentNodes() const{
+    QMutexLocker l(&_projectLock);
+    return _currentProject->getCurrentNodes();
 }
 
 void AppInstance::deselectAllNodes() const{
@@ -865,6 +915,7 @@ void AppInstance::disconnectViewersFromViewerCache(){
 
 
 void AppInstance::clearNodes(){
+    QMutexLocker l(&_projectLock);
     _nodeMapping.clear();
     _currentProject->clearNodes();
     if(!_isBackground){
@@ -1327,23 +1378,50 @@ void AppManager::setAsTopLevelInstance(int appID){
     }
 }
 
-
-void AppInstance::tryAddProjectFormat(const Format& frmt){
-    _currentProject->tryAddProjectFormat(frmt);
-}
-void AppInstance::setProjectFormat(const Format& frmt){
-    Format* df = appPTR->findExistingFormat(frmt.width(), frmt.height(),frmt.getPixelAspect());
-    if(df){
-        Format currentDW = frmt;
-        currentDW.setName(df->getName());
-        _currentProject->setProjectDefaultFormat(currentDW);
+void AppInstance::setOrAddProjectFormat(const Format& frmt,bool skipAdd){
+    
+    {
+        QMutexLocker l(&_isQuittingMutex);
+        if(_isQuitting){
+            return;
+        }
+    }
+    
+    if(!_currentProject){
+        return;
+    }
+    
+    _projectLock.lock();
+    
+    if(_currentProject->shouldAutoSetProjectFormat()){
+        Format dispW;
+        _currentProject->setAutoSetProjectFormat(false);
+        dispW = frmt;
         
+        Format* df = appPTR->findExistingFormat(dispW.width(), dispW.height(),dispW.getPixelAspect());
+        if(df){
+            dispW.setName(df->getName());
+            _projectLock.unlock(); //< unlock because the following functions assume the lock isn't locked.
+            _currentProject->setProjectDefaultFormat(dispW);
+            
+            
+        }else{
+            _projectLock.unlock();
+            _currentProject->setProjectDefaultFormat(dispW);
+            
+        }
+
+    }else if(!skipAdd){
+        Format dispW;
+        dispW = frmt;
+        _projectLock.unlock();
+        _currentProject->tryAddProjectFormat(dispW);
         
     }else{
-        _currentProject->setProjectDefaultFormat(frmt);
-        
+        _projectLock.unlock();
     }
 }
+
 
 void AppInstance::checkViewersConnection(){
     const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
@@ -1363,7 +1441,9 @@ void AppInstance::setupViewersForViews(int viewsCount){
         if (nodes[i]->pluginID() == "Viewer") {
             ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             assert(n);
-            n->getUiContext()->updateViewsMenu(viewsCount);
+            if(n->getUiContext()){
+                n->getUiContext()->updateViewsMenu(viewsCount);
+            }
         }
     }
 }
@@ -1375,7 +1455,9 @@ void AppInstance::notifyViewersProjectFormatChanged(const Format& format){
         if (nodes[i]->pluginID() == "Viewer") {
             ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             assert(n);
-            n->getUiContext()->viewer->onProjectFormatChanged(format);
+            if(n->getUiContext()){
+                n->getUiContext()->viewer->onProjectFormatChanged(format);
+            }
         }
     }
 }
@@ -1386,27 +1468,40 @@ void AppInstance::setViewersCurrentView(int view){
         if (nodes[i]->pluginID() == "Viewer") {
             ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             assert(n);
-            n->getUiContext()->setCurrentView(view);
+            if(n->getUiContext()){
+                n->getUiContext()->setCurrentView(view);
+            }
         }
     }
 }
-const QString& AppInstance::getCurrentProjectName() const  {return _currentProject->getProjectName();}
+const QString& AppInstance::getCurrentProjectName() const  {
+    QMutexLocker l(&_projectLock);
+    return _currentProject->getProjectName();
+}
 
-const QString& AppInstance::getCurrentProjectPath() const  {return _currentProject->getProjectPath();}
+const QString& AppInstance::getCurrentProjectPath() const  {
+    QMutexLocker l(&_projectLock);
+    return _currentProject->getProjectPath();
+}
 
-boost::shared_ptr<TimeLine> AppInstance::getTimeLine() const  {return _currentProject->getTimeLine();}
+boost::shared_ptr<TimeLine> AppInstance::getTimeLine() const  {
+    return _currentProject->getTimeLine();
+}
 
-void AppInstance::setCurrentProjectName(const QString& name) {_currentProject->setProjectName(name);}
+int AppInstance::getProjectViewsCount() const{
+    QMutexLocker l(&_projectLock);
+    return _currentProject->getProjectViewsCount();
+}
 
-int AppInstance::getCurrentProjectViewsCount() const{ return _currentProject->getProjectViewsCount();}
+bool AppInstance::hasProjectBeenSavedByUser() const  {
+    QMutexLocker l(&_projectLock);
+    return _currentProject->hasProjectBeenSavedByUser();
+}
 
-bool AppInstance::shouldAutoSetProjectFormat() const {return _currentProject->shouldAutoSetProjectFormat();}
-
-void AppInstance::setAutoSetProjectFormat(bool b){_currentProject->setAutoSetProjectFormat(b);}
-
-bool AppInstance::hasProjectBeenSavedByUser() const  {return _currentProject->hasProjectBeenSavedByUser();}
-
-const Format& AppInstance::getProjectFormat() const  {return _currentProject->getProjectDefaultFormat();}
+const Format& AppInstance::getProjectFormat() const  {
+    QMutexLocker l(&_projectLock);
+    return _currentProject->getProjectDefaultFormat();
+}
 
 
 void AppManager::clearExceedingEntriesFromNodeCache(){
@@ -1462,9 +1557,11 @@ Natron::LibraryBinary* AppManager::getPluginBinary(const QString& pluginId,int m
     }
 }
 int AppInstance::getKnobsAge() const{
+    QMutexLocker l(&_projectLock);
     return _currentProject->getKnobsAge();
 }
 void AppInstance::incrementKnobsAge(){
+    QMutexLocker l(&_projectLock);
     _currentProject->incrementKnobsAge();
 }
 

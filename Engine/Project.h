@@ -14,31 +14,44 @@
 #include <map>
 #include <vector>
 
+#include <boost/noncopyable.hpp>
+
 #include <QtCore/QObject>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Knob.h"
 #include "Engine/Format.h"
+#include "Engine/TimeLine.h"
 
 class QString;
 class QDateTime;
-class TimeLine;
 class AppInstance;
 class ProjectSerialization;
+class ProjectGui;
+class AddFormatDialog;
 namespace Natron{
 class Node;
 class OutputEffectInstance;
 struct ProjectPrivate;
-class Project : public QObject,  public KnobHolder {
+class Project : public QObject,  public KnobHolder , public boost::noncopyable {
     
     Q_OBJECT
     
-    
+    ////////All the public functions in Project must be only referred to
+    //////// by the AppInstance which is responsible for thread-safety of this class.
+    friend class ::AppInstance;
+    friend struct ProjectPrivate;
+    friend class ::ProjectSerialization;
+    friend class ::ProjectGui;
+    friend class ::AddFormatDialog;
 public:
+    
+    virtual ~Project();
+
+private:
     
     Project(AppInstance* appInstance);
     
-    virtual ~Project();
     
     /**
      * @brief Must be implemented to initialize any knob using the
@@ -109,14 +122,11 @@ public:
     
     void clearNodes();
     
-    void lock() const ;
-    
-    void unlock() const ;
-    
     void incrementKnobsAge() ;
     
     int getKnobsAge() const;
     
+    friend void TimeLine::seekFrame(SequenceTime,Natron::OutputEffectInstance*);
     void setLastTimelineSeekCaller(Natron::OutputEffectInstance* output);
 
     void save(ProjectSerialization* serializationObject) const;

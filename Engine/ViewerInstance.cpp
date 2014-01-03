@@ -139,6 +139,10 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     assert(viewer);
     double zoomFactor = viewer->getZoomFactor();
     
+    if(aborted()){
+        return StatFailed;
+    }
+    
     RectI rod;
     Status stat = getRegionOfDefinition(time, &rod);
     if(stat == StatFailed){
@@ -146,6 +150,9 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
         Natron::Log::endFunction(getName(),"renderViewer");
         return stat;
     }
+    
+    
+    
     ifInfiniteclipRectToProjectDefault(&rod);
     if(fitToViewer){
         viewer->fitToFormat(Format(rod));
@@ -193,7 +200,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     }
 
     
-    int viewsCount = getApp()->getCurrentProjectViewsCount();
+    int viewsCount = getApp()->getProjectViewsCount();
     int view = viewsCount > 0 ? _uiContext->getCurrentView() : 0;
     
     FrameKey key(time,
@@ -223,10 +230,8 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     if (cachedFrame) {
         /*Found in viewer cache, we execute the cached engine and leave*/
         _interThreadInfos._ramBuffer = cachedFrame->data();
-        if(getNode()->getApp()->shouldAutoSetProjectFormat()){
-            getNode()->getApp()->setProjectFormat(dispW);
-            getNode()->getApp()->setAutoSetProjectFormat(false);
-        }
+        Format dispW;
+        getApp()->setOrAddProjectFormat(dispW,true);
         Natron::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
                                    QString::number(key.getHash())).toStdString());
         Natron::Log::endFunction(getName(),"renderViewer");
