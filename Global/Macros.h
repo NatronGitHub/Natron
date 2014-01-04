@@ -280,7 +280,7 @@
 
 /* OVERRIDE and FINAL */
 
-#if COMPILER_SUPPORTS(CXX_OVERRIDE_CONTROL)
+#if COMPILER_SUPPORTS(CXX_OVERRIDE_CONTROL) &&  !COMPILER(MSVC) //< patch so msvc 2010 ignores the override and final keywords.
 #define OVERRIDE override
 
 #if COMPILER_QUIRK(FINAL_IS_CALLED_SEALED)
