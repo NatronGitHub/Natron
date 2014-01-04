@@ -80,25 +80,23 @@ public:
     ///fetch the parametric parameters suite or returns the base class version
     virtual void* fetchSuite(const char *suiteName, int suiteVersion) OVERRIDE;
     
-    virtual bool implementsMultiThreadSuite() const OVERRIDE ;
-    
     virtual OfxStatus multiThread(OfxThreadFunctionV1 func,unsigned int nThreads, void *customArg) OVERRIDE;
 
-    virtual void multiThreadNumCPUS(unsigned int *nCPUs) const OVERRIDE;
+    virtual OfxStatus multiThreadNumCPUS(unsigned int *nCPUs) const OVERRIDE;
     
-    virtual void multiThreadIndex(unsigned int *threadIndex) const OVERRIDE;
+    virtual OfxStatus multiThreadIndex(unsigned int *threadIndex) const OVERRIDE;
     
-    virtual bool multiThreadIsSpawnedThread() const OVERRIDE;
+    virtual int multiThreadIsSpawnedThread() const OVERRIDE;
     
-    virtual void mutexCreate(OfxMutexHandle *mutex, int lockCount) const OVERRIDE;
+    virtual OfxStatus mutexCreate(OfxMutexHandle *mutex, int lockCount) OVERRIDE;
 
-    virtual void mutexDestroy(const OfxMutexHandle mutex) const OVERRIDE;
+    virtual OfxStatus mutexDestroy(const OfxMutexHandle mutex) OVERRIDE;
 
-    virtual void mutexLock(const OfxMutexHandle mutex) const OVERRIDE;
+    virtual OfxStatus mutexLock(const OfxMutexHandle mutex) OVERRIDE;
    
-    virtual void mutexUnLock(const OfxMutexHandle mutex) const OVERRIDE;
+    virtual OfxStatus mutexUnLock(const OfxMutexHandle mutex) OVERRIDE;
 
-    virtual OfxStatus mutexTryLock(const OfxMutexHandle mutex) const OVERRIDE;
+    virtual OfxStatus mutexTryLock(const OfxMutexHandle mutex) OVERRIDE;
     
     OfxEffectInstance* createOfxEffect(const std::string& name,Node* node);
 

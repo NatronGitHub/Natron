@@ -12,6 +12,8 @@
 
 #include <cassert>
 #include <fstream>
+#include <new> // std::bad_alloc
+#include <stdexcept> // std::exception
 #include <QtCore/QDir>
 #include <QtCore/QMutex>
 #if QT_VERSION < 0x050000
@@ -436,7 +438,9 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
 /////////////////////////////////////////////////// MULTI_THREAD SUITE ///////////////////////////////////////////////////
 /////////////////
 
-bool Natron::OfxHost::implementsMultiThreadSuite() const { return true; }
+#ifndef OFX_SUPPORTS_MULTITHREAD
+#error "Natron should be compiled with OFX_SUPPORTS_MULTITHREAD defined"
+#endif
 
 struct Thread_Group {
     typedef std::list<boost::thread*> ThreadsList;
@@ -497,8 +501,15 @@ void OfxWrappedFunctor(OfxThreadFunctionV1 func,int i,unsigned int nThreads,void
 
 
 OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nThreads, void *customArg) {
+    if (!func) {
+        return kOfxStatFailed;
+    }
+
     U32 maxConcurrentThread;
-    multiThreadNumCPUS(&maxConcurrentThread);
+    OfxStatus st = multiThreadNumCPUS(&maxConcurrentThread);
+    if (st != kOfxStatOK) {
+        return st;
+    }
     
     for (U32 i = 0; i < nThreads; ++i) {
         
@@ -537,23 +548,30 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
     return kOfxStatOK;
 }
 
-void Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const {
+OfxStatus Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const {
+    if (!nCPUs) {
+        return kOfxStatFailed;
+    }
     *nCPUs = boost::thread::hardware_concurrency();
+    return kOfxStatOK;
 }
 
-void Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const {
+OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const {
+    if (!threadIndex)
+        return kOfxStatFailed;
     U32 i = 0;
     for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
         if((*it)->get_id() == boost::this_thread::get_id()){
             *threadIndex = i;
-            return;
+            return kOfxStatOK;
         }
         ++i;
     }
     *threadIndex = 0;
+    return kOfxStatOK;
 }
 
-bool Natron::OfxHost::multiThreadIsSpawnedThread() const {
+int Natron::OfxHost::multiThreadIsSpawnedThread() const {
     for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
         if((*it)->get_id() == boost::this_thread::get_id()){
             return true;
@@ -562,36 +580,115 @@ bool Natron::OfxHost::multiThreadIsSpawnedThread() const {
     return false;
 }
 
-void Natron::OfxHost::mutexCreate(OfxMutexHandle *mutex, int lockCount) const{
-    QMutex* m;
-    if(lockCount > 1){
-        m = new QMutex(QMutex::Recursive);
-    }else{
-        m = new QMutex;
-    }
-    for (int i = 0; i < lockCount; ++i) {
-        m->lock();
-    }
-    *mutex = (OfxMutexHandle)(m);
-}
-
-void Natron::OfxHost::mutexDestroy(const OfxMutexHandle mutex) const {
-    delete reinterpret_cast<const QMutex*>(mutex);
-}
-
-void Natron::OfxHost::mutexLock(const OfxMutexHandle mutex) const {
-    const_cast<QMutex*>(reinterpret_cast<const QMutex*>(mutex))->lock();
-}
-
-void Natron::OfxHost::mutexUnLock(const OfxMutexHandle mutex) const {
-    const_cast<QMutex*>(reinterpret_cast<const QMutex*>(mutex))->unlock();
-}
-
-OfxStatus Natron::OfxHost::mutexTryLock(const OfxMutexHandle mutex) const {
-    if(const_cast<QMutex*>(reinterpret_cast<const QMutex*>(mutex))->tryLock()){
-        return kOfxStatOK;
-    }else{
+OfxStatus Natron::OfxHost::mutexCreate(OfxMutexHandle *mutex, int lockCount) {
+    if (!mutex) {
         return kOfxStatFailed;
+    }
+    // suite functions should not throw
+    try {
+        QMutex* m;
+        if(lockCount > 1) {
+            m = new QMutex(QMutex::Recursive);
+        } else {
+            m = new QMutex;
+        }
+        for (int i = 0; i < lockCount; ++i) {
+            m->lock();
+        }
+        *mutex = (OfxMutexHandle)(m);
+        return kOfxStatOK;
+    } catch (std::bad_alloc) {
+        qDebug() << "mutexCreate(): memory error.";
+        return kOfxStatErrMemory;
+    } catch ( const std::exception& e ) {
+        qDebug() << "mutexCreate(): " << e.what();
+        return kOfxStatErrUnknown;
+    } catch ( ... ) {
+        qDebug() << "mutexCreate(): unknown error.";
+        return kOfxStatErrUnknown;
+    }
+}
+
+OfxStatus Natron::OfxHost::mutexDestroy(const OfxMutexHandle mutex) {
+    if (mutex == 0) {
+        return kOfxStatErrBadHandle;
+    }
+    // suite functions should not throw
+    try {
+        delete reinterpret_cast<const QMutex*>(mutex);
+        return kOfxStatOK;
+    } catch (std::bad_alloc) {
+        qDebug() << "mutexDestroy(): memory error.";
+        return kOfxStatErrMemory;
+    } catch ( const std::exception& e ) {
+        qDebug() << "mutexDestroy(): " << e.what();
+        return kOfxStatErrUnknown;
+    } catch ( ... ) {
+        qDebug() << "mutexDestroy(): unknown error.";
+        return kOfxStatErrUnknown;
+    }
+}
+
+OfxStatus Natron::OfxHost::mutexLock(const OfxMutexHandle mutex) {
+    if (mutex == 0) {
+        return kOfxStatErrBadHandle;
+    }
+    // suite functions should not throw
+    try {
+        const_cast<QMutex*>(reinterpret_cast<const QMutex*>(mutex))->lock();
+        return kOfxStatOK;
+    } catch (std::bad_alloc) {
+        qDebug() << "mutexLock(): memory error.";
+        return kOfxStatErrMemory;
+    } catch ( const std::exception& e ) {
+        qDebug() << "mutexLock(): " << e.what();
+        return kOfxStatErrUnknown;
+    } catch ( ... ) {
+        qDebug() << "mutexLock(): unknown error.";
+        return kOfxStatErrUnknown;
+    }
+}
+
+OfxStatus Natron::OfxHost::mutexUnLock(const OfxMutexHandle mutex) {
+    if (mutex == 0) {
+        return kOfxStatErrBadHandle;
+    }
+    // suite functions should not throw
+    try {
+        const_cast<QMutex*>(reinterpret_cast<const QMutex*>(mutex))->unlock();
+        return kOfxStatOK;
+    } catch (std::bad_alloc) {
+        qDebug() << "mutexUnLock(): memory error.";
+        return kOfxStatErrMemory;
+    } catch ( const std::exception& e ) {
+        qDebug() << "mutexUnLock(): " << e.what();
+        return kOfxStatErrUnknown;
+    } catch ( ... ) {
+        qDebug() << "mutexUnLock(): unknown error.";
+        return kOfxStatErrUnknown;
+    }
+}
+
+OfxStatus Natron::OfxHost::mutexTryLock(const OfxMutexHandle mutex) {
+    if (mutex == 0) {
+        return kOfxStatErrBadHandle;
+    }
+    // suite functions should not throw
+    try {
+        if (const_cast<QMutex*>(reinterpret_cast<const QMutex*>(mutex))->tryLock()) {
+            return kOfxStatOK;
+        } else {
+            return kOfxStatFailed;
+        }
+    } catch (std::bad_alloc) {
+        qDebug() << "mutexTryLock(): memory error.";
+        return kOfxStatErrMemory;
+    } catch ( const std::exception& e ) {
+        qDebug() << "mutexTryLock(): " << e.what();
+        return kOfxStatErrUnknown;
+    } catch ( ... ) {
+        qDebug() << "mutexTryLock(): unknown error.";
+        return kOfxStatErrUnknown;
     }
 }
 
