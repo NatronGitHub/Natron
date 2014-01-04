@@ -101,9 +101,11 @@ void QtWriter::initializeKnobs(){
     
     _firstFrameKnob = Natron::createKnob<Int_Knob>(this, "First frame");
     _firstFrameKnob->turnOffAnimation();
+    _firstFrameKnob->setSecret(true);
     
     _lastFrameKnob = Natron::createKnob<Int_Knob>(this, "Last frame");
     _lastFrameKnob->turnOffAnimation();
+    _lastFrameKnob->setSecret(true);
     
     _renderKnob = Natron::createKnob<Button_Knob>(this, "Render");
     _renderKnob->setAsRenderButton();

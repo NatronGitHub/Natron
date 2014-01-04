@@ -184,6 +184,8 @@ QStringList ofxExtractAllPartsOfGrouping(const QString& pluginLabel,const QStrin
     QStringList out;
     if (str.startsWith("Sapphire ") || str.startsWith(" Sapphire ")) {
         out.push_back("Sapphire");
+    }else if (str.startsWith("Monsters ") || str.startsWith(" Monsters ")) {
+        out.push_back("Monsters");
     }
     int pos = 0;
     while(pos < str.size()){

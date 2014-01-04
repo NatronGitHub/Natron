@@ -819,8 +819,9 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
     }
     
     std::map<std::string, QWidget*>::iterator registeredTab = _registeredTabs.find(tab->objectName().toStdString());
-    assert(registeredTab != _registeredTabs.end());
-    _registeredTabs.erase(registeredTab);
+    if(registeredTab != _registeredTabs.end()){
+        _registeredTabs.erase(registeredTab);
+    }
     
     if(deleteData){
         if (!initiatedFromNode) {
