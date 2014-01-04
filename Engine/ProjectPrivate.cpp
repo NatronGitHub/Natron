@@ -46,6 +46,7 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
 
 void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
+    
     project->beginProjectWideValueChanges(Natron::PLUGIN_EDITED,project);
     /*1st OFF RESTORE THE PROJECT KNOBS*/
     
@@ -160,8 +161,8 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         }
 
     }
-
+    
     project->endProjectWideValueChanges(Natron::PLUGIN_EDITED,project);
-}
+    }
 
 } // namespace Natron

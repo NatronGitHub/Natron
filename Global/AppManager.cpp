@@ -751,18 +751,15 @@ QString AppInstance::autoSavesDir() {
 
 
 void AppInstance::beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller){
-    QMutexLocker l(&_projectLock);
     _currentProject->beginProjectWideValueChanges(reason, caller);
 }
 
 void AppInstance::stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHolder* caller, Knob *k, bool isSignificant){
-    QMutexLocker l(&_projectLock);
     _currentProject->stackEvaluateRequest(reason, caller, k, isSignificant);
 }
 
 
 void AppInstance::endProjectWideValueChanges(Natron::ValueChangedReason reason, KnobHolder* caller){
-    QMutexLocker l(&_projectLock);
     _currentProject->endProjectWideValueChanges(reason, caller);
 }
 

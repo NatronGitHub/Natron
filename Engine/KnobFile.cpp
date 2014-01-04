@@ -226,7 +226,7 @@ std::string OutputFile_Knob::filenameFromPattern(int frameIndex) const{
     if (lastPos == -1) {
         ///the filename has no #, just put the digits between etxension and path
         
-        p.insert(lastDot-1, fStr);
+        p.insert(lastDot, fStr);
         return p.toStdString();
     }
     
