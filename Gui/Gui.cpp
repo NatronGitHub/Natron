@@ -158,9 +158,10 @@ bool Gui::exit(){
     }
     saveGuiGeometry();
     assert(_appInstance);
+	int appId = _appInstance->getAppID();
     delete _appInstance;
     delete this;
-    if (_appInstance->getAppID() != 0) {
+    if (appId != 0) {
         return false;
     } else {
         AppManager::quit();
