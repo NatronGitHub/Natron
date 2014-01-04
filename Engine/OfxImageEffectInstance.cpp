@@ -473,8 +473,8 @@ void OfxImageEffectInstance::timeLineGotoTime(double t) {
 /// get the first and last times available on the effect's timeline
 void OfxImageEffectInstance::timeLineGetBounds(double &t1, double &t2) {
     
-    t1 = _node->getApp()->getTimeLine()->firstFrame();
-    t2 = _node->getApp()->getTimeLine()->lastFrame();
+    t1 = _node->getApp()->getTimeLine()->leftBound();
+    t2 = _node->getApp()->getTimeLine()->rightBound();
 }
 
 
