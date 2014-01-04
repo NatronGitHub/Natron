@@ -757,6 +757,7 @@ void ViewerGL::drawPersistentMessage()
 
 void ViewerGL::initializeGL()
 {
+	makeCurrent();
     initAndCheckGlExtensions();
     _imp->blackTex = new Texture;
     _imp->defaultDisplayTexture = new Texture;
@@ -782,14 +783,6 @@ void ViewerGL::initializeGL()
     
     
     if(_imp->supportsGLSL){
-        _imp->shaderBlack=new QGLShaderProgram(context());
-        if(!_imp->shaderBlack->addShaderFromSourceCode(QGLShader::Vertex,vertRGB))
-            cout << qPrintable(_imp->shaderBlack->log()) << endl;
-        if(!_imp->shaderBlack->addShaderFromSourceCode(QGLShader::Fragment,blackFrag))
-            cout << qPrintable(_imp->shaderBlack->log()) << endl;
-        if(!_imp->shaderBlack->link()){
-            cout << qPrintable(_imp->shaderBlack->log()) << endl;
-        }
         initShaderGLSL();
         checkGLErrors();
     }
@@ -991,6 +984,16 @@ void ViewerGL::initShaderGLSL()
     assert(QGLContext::currentContext() == context());
 
     if(!_imp->shaderLoaded && _imp->supportsGLSL){
+
+		_imp->shaderBlack=new QGLShaderProgram(context());
+        if(!_imp->shaderBlack->addShaderFromSourceCode(QGLShader::Vertex,vertRGB))
+            cout << qPrintable(_imp->shaderBlack->log()) << endl;
+        if(!_imp->shaderBlack->addShaderFromSourceCode(QGLShader::Fragment,blackFrag))
+            cout << qPrintable(_imp->shaderBlack->log()) << endl;
+        if(!_imp->shaderBlack->link()){
+            cout << qPrintable(_imp->shaderBlack->log()) << endl;
+        }
+
         _imp->shaderRGB=new QGLShaderProgram(context());
         if(!_imp->shaderRGB->addShaderFromSourceCode(QGLShader::Vertex,vertRGB))
             cout << qPrintable(_imp->shaderRGB->log()) << endl;
