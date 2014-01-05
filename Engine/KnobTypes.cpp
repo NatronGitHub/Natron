@@ -159,6 +159,23 @@ const std::vector<int> &Int_Knob::getDisplayMaximums() const
     return _displayMaxs;
 }
 
+void Int_Knob::getMinMaxForCurve(const Curve* curve,int* min,int* max){
+    const std::vector< boost::shared_ptr<Curve> >& curves = getCurves();
+    for (U32 i = 0; i < curves.size(); ++i) {
+        if (curves[i].get() == curve) {
+            const std::vector<int>& mins = getMinimums();
+            const std::vector<int>& maxs = getMaximums();
+            
+            assert(mins.size() > i);
+            assert(maxs.size() > i);
+            
+            *min = mins[i];
+            *max = maxs[i];
+        }
+    }
+}
+
+
 
 std::string Int_Knob::getDimensionName(int dimension) const
 {
@@ -377,6 +394,21 @@ void Double_Knob::setDecimals(int decis, int index)
     emit decimalsChanged(_decimals[index], index);
 }
 
+void Double_Knob::getMinMaxForCurve(const Curve* curve,double* min,double* max){
+    const std::vector< boost::shared_ptr<Curve> >& curves = getCurves();
+    for (U32 i = 0; i < curves.size(); ++i) {
+        if (curves[i].get() == curve) {
+            const std::vector<double>& mins = getMinimums();
+            const std::vector<double>& maxs = getMaximums();
+            
+            assert(mins.size() > i);
+            assert(maxs.size() > i);
+            
+            *min = mins[i];
+            *max = maxs[i];
+        }
+    }
+}
 
 /*minis & maxis must have the same size*/
 void Double_Knob::setMinimumsAndMaximums(const std::vector<double> &minis, const std::vector<double> &maxis)

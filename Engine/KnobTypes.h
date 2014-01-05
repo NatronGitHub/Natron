@@ -22,6 +22,7 @@
 
 #include "Global/GlobalDefines.h"
 
+class Curve;
 class CurveWidget;
 /******************************INT_KNOB**************************************/
 
@@ -71,6 +72,8 @@ public:
     const std::vector<int> &getDisplayMinimums() const;
     
     const std::vector<int> &getDisplayMaximums() const;
+    
+    void getMinMaxForCurve(const Curve* curve,int* min,int* max);
     
 signals:
     
@@ -166,6 +169,8 @@ public:
     void setIncrement(double incr, int index = 0);
     
     void setDecimals(int decis, int index = 0);
+    
+    void getMinMaxForCurve(const Curve* curve,double* min,double* max);
     
     
     /*minis & maxis must have the same size*/

@@ -374,6 +374,36 @@ double Curve::getValueAt(double t) const {
                                            interp,
                                            interpNext);
 
+    if(_imp->owner){
+        
+        ////clamp to min/max if the owner of the curve is a Double or Int knob.
+        
+        if(_imp->owner->typeName() == Double_Knob::typeNameStatic()) {
+            Double_Knob* dbKnob = dynamic_cast<Double_Knob*>(_imp->owner);
+            assert(dbKnob);
+            double min = INT_MIN,max = INT_MAX;
+            dbKnob->getMinMaxForCurve(this, &min, &max);
+            if (v > max) {
+                v = max;
+            }
+            if (v < min) {
+                v = min;
+            }
+        }else if(_imp->owner->typeName() == Int_Knob::typeNameStatic()) {
+            Int_Knob* intK = dynamic_cast<Int_Knob*>(_imp->owner);
+            assert(intK);
+            int min = INT_MIN,max = INT_MAX;
+            intK->getMinMaxForCurve(this, &min, &max);
+            if (v > max) {
+                v = max;
+            }
+            if (v < min) {
+                v = min;
+            }
+
+        }
+    }
+    
     switch (_imp->curveType) {
         case CurvePrivate::STRING_CURVE:
         case CurvePrivate::INT_CURVE:
