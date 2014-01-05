@@ -37,8 +37,6 @@
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
 
-#include "Readers/Reader.h"
-
 #include "Gui/TabWidget.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"

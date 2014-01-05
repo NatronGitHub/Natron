@@ -27,8 +27,6 @@
 #include "Global/GlobalDefines.h"
 
 
-#include "Readers/Reader.h"
-
 using namespace Natron;
 using std::make_pair; using std::pair;
 

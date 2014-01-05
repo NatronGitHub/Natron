@@ -27,8 +27,6 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/KnobTypes.h"
 
-#include "Writers/Writer.h"
-
 using namespace Natron;
 
 

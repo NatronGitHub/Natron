@@ -12,12 +12,11 @@
 #ifndef NATRON_WRITERS_WRITEEXR_H_
 #define NATRON_WRITERS_WRITEEXR_H_
 
-#if 0 // deprecated
+#if 0 // deprecated, code left for legacy
 
 #include <string>
 #include <vector>
 
-#include "Writers/Encoder.h"
 #include "Global/Macros.h"
 
 class Choice_Knob;

@@ -64,8 +64,6 @@
 #include "Gui/KnobGuiTypes.h"
 #include "Gui/CurveWidget.h"
 
-#include "Readers/Reader.h"
-
 using namespace Natron;
 
 /////////////// KnobGui

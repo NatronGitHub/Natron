@@ -37,7 +37,6 @@
 #include "Engine/Project.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/KnobFile.h"
-#include "Writers/Writer.h"
 
 #include "Gui/Texture.h"
 #include "Gui/ViewerGL.h"

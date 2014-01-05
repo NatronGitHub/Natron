@@ -189,14 +189,10 @@ SOURCES += \
     Gui/TimeLineGui.cpp \
     Gui/ViewerGL.cpp \
     Gui/ViewerTab.cpp \
-    Readers/Decoder.cpp \
     Readers/ExrDecoder.cpp \
     Readers/QtDecoder.cpp \
-    Readers/Reader.cpp \
-    Writers/Encoder.cpp \
     Writers/ExrEncoder.cpp \
     Writers/QtEncoder.cpp \
-    Writers/Writer.cpp \
     libs/OpenFX/HostSupport/src/ofxhBinary.cpp \
     libs/OpenFX/HostSupport/src/ofxhClip.cpp \
     libs/OpenFX/HostSupport/src/ofxhHost.cpp \
@@ -299,14 +295,10 @@ HEADERS += \
     Gui/TimeLineGui.h \
     Gui/ViewerGL.h \
     Gui/ViewerTab.h \
-    Readers/Decoder.h \
     Readers/ExrDecoder.h \
     Readers/QtDecoder.h \
-    Readers/Reader.h \
-    Writers/Encoder.h \
     Writers/ExrEncoder.h \
     Writers/QtEncoder.h \
-    Writers/Writer.h \
     libs/OpenFX/HostSupport/include/ofxhBinary.h \
     libs/OpenFX/HostSupport/include/ofxhClip.h \
     libs/OpenFX/HostSupport/include/ofxhHost.h \

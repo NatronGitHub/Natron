@@ -11,7 +11,7 @@
 
 #ifndef NATRON_READERS_READEXR_H_
 #define NATRON_READERS_READEXR_H_
-#if 0 // deprecated
+#if 0 // deprecated  code left for legacy
 
 #include <string>
 #include <vector>
@@ -19,7 +19,6 @@
 
 #include <boost/scoped_ptr.hpp>
 
-#include "Readers/Decoder.h"
 #include "Global/Macros.h"
 
 

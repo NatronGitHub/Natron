@@ -29,8 +29,6 @@
 #include "Gui/CurveEditor.h"
 #include "Gui/NodeGuiSerialization.h"
 
-#include "Readers/Reader.h"
-
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxImageEffectInstance.h"

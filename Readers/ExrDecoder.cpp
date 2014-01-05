@@ -8,7 +8,7 @@
 *contact: immarespond at gmail dot com
 *
 */
-#if 0 // deprecated
+#if 0 // deprecated  code left for legacy
 
 #include "ExrDecoder.h"
 
@@ -25,7 +25,6 @@
 #include <ImfStdIO.h>
 #endif
 
-#include "Readers/Reader.h"
 #include "Engine/Node.h"
 #include "Engine/Lut.h"
 #include "Engine/Row.h"

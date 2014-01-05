@@ -34,10 +34,6 @@
 #include "Engine/Log.h"
 #include "Engine/Lut.h"
 
-#include "Readers/Reader.h"
-
-
-
 using namespace Natron;
 using std::make_pair;
 using boost::shared_ptr;

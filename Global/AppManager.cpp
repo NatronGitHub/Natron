@@ -59,15 +59,9 @@
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/ProjectGuiSerialization.h"
 
-#include "Readers/Reader.h"
-#include "Readers/Decoder.h"
-#include "Readers/ExrDecoder.h"
 #include "Readers/QtDecoder.h"
 
-#include "Writers/Writer.h"
-#include "Writers/Encoder.h"
 #include "Writers/QtEncoder.h"
-#include "Writers/ExrEncoder.h"
 
 using namespace Natron;
 using std::cout; using std::endl;

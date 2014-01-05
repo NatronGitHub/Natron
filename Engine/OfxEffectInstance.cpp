@@ -30,8 +30,6 @@
 #include "Engine/Project.h"
 #include "Engine/KnobFile.h"
 
-#include "Writers/Writer.h"
-
 #include <ofxhPluginCache.h>
 #include <ofxhPluginAPICache.h>
 #include <ofxhImageEffect.h>

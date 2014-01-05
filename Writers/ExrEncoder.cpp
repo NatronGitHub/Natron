@@ -8,7 +8,7 @@
 *contact: immarespond at gmail dot com
 *
 */
-#if 0 // deprecated
+#if 0 // deprecated code left for legacy
 #include "ExrEncoder.h"
 
 #include <stdexcept>
@@ -26,7 +26,6 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFactory.h"
 
-#include "Writers/Writer.h"
 
 using std::make_pair;
 using std::cout; using std::endl;
