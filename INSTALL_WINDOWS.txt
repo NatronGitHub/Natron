@@ -17,20 +17,6 @@ In order to have Natron compiling, first you need to install the required librar
 
 You'll need to install Qt libraries from [Qt download](http://qt-project.org/downloads). 
 
-
-###OpenEXR
-
-Download OpenEXR from http://www.openexr.com/downloads.html and install it.
-2.0 features are not supported for now and a pre 2.0 version is enough to make it work.
-
-If you're having troubles to compile OpenEXR , here's some documentation: 
-
-http://hebbut.net/Public.Offerings/OpenEXR.html
-
-http://michael-stengel.com/blog/?p=51
-
-http://www.fixstars.com/en/lucille/docs/dev/index.php/How_to_build_OpenEXR_libs_for_Win_64bit
-
 ###boost
 
 You can download boost from 
@@ -71,10 +57,6 @@ INCLUDEPATH is the path to the include files
 
 LIBS is the path to the libs
 
-openexr{
-    INCLUDEPATH += $$quote(C:\\OpenExr_win32\\OpenEXR)
-    LIBS += -L$$quote(C:\\OpenExr_win32\\lib\\Debug) -lIlmimf -lIex -lImath -lHalf -lIlmThread
-}
 
 
 boost{
