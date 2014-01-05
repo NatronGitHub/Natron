@@ -32,10 +32,6 @@
 #include <QStandardPaths>
 #endif
 
-
-#include <ImfThreading.h>
-
-
 #include "Global/LibraryBinary.h"
 #include "Global/MemoryInfo.h"
 #include "Engine/Project.h"
@@ -1034,9 +1030,6 @@ AppManager::AppManager()
     /*loading all plugins*/
     loadAllPlugins();
     loadBuiltinFormats();
-    
-    /*Adjusting multi-threading for OpenEXR library.*/
-    Imf::setGlobalThreadCount(QThread::idealThreadCount());
     
     createColorPickerCursor();
     

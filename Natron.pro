@@ -7,7 +7,7 @@ TARGET = Natron
 TEMPLATE = app
 CONFIG += app warn_on c++11 precompile_header
 CONFIG += moc rcc
-CONFIG += openexr boost glew opengl qt expat
+CONFIG += boost glew opengl qt expat
 QT += gui core opengl
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
@@ -29,7 +29,7 @@ QMAKE_TARGET_BUNDLE_PREFIX = fr.inria
 win32{
 #ofx needs WINDOWS def
 #microsoft compiler needs _MBCS to compile with the multi-byte character set.
-    DEFINES += WINDOWS _MBCS COMPILED_FROM_DSP XML_STATIC OPENEXR_DLL  NOMINMAX
+    DEFINES += WINDOWS _MBCS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
     DEFINES -= _UNICODE UNICODE
 }
 
@@ -53,7 +53,6 @@ unix {
      #  on Unix systems, only the "boost" option needs to be defined in config.pri
      QT_CONFIG -= no-pkg-config
      CONFIG += link_pkgconfig
-     openexr:   PKGCONFIG += OpenEXR
      glew:      PKGCONFIG += glew
      expat:     PKGCONFIG += expat
      !macx {
