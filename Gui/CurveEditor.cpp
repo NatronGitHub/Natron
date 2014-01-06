@@ -324,7 +324,7 @@ void NodeCurveEditorElement::checkVisibleState(){
         
 
         
-    }else if(isSlave){
+    }else{
         //hide the item
         //hiding is a bit more complex because we do not always hide the parent too,it also
         // depends on the item's siblings visibility

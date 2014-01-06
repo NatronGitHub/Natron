@@ -138,54 +138,68 @@ void KnobGui::createAnimationMenu(){
             break;
         }
     }
-    if(!isOnKeyFrame){
-        QAction* setKeyAction = new QAction(tr("Set Key"),_animationMenu);
-        QObject::connect(setKeyAction,SIGNAL(triggered()),this,SLOT(onSetKeyActionTriggered()));
-        _animationMenu->addAction(setKeyAction);
-    }else{
-        QAction* removeKeyAction = new QAction(tr("Remove Key"),_animationMenu);
-        QObject::connect(removeKeyAction,SIGNAL(triggered()),this,SLOT(onRemoveKeyActionTriggered()));
-        _animationMenu->addAction(removeKeyAction);
+    
+    bool isSlave = false;
+    for (int i = 0; i < getKnob()->getDimension(); ++i) {
+        if (getKnob()->isCurveSlave(i)) {
+            isSlave = true;
+            break;
+        }
+    }
+    
+    if(!isSlave) {
+        if(!isOnKeyFrame){
+            QAction* setKeyAction = new QAction(tr("Set Key"),_animationMenu);
+            QObject::connect(setKeyAction,SIGNAL(triggered()),this,SLOT(onSetKeyActionTriggered()));
+            _animationMenu->addAction(setKeyAction);
+        }else{
+            QAction* removeKeyAction = new QAction(tr("Remove Key"),_animationMenu);
+            QObject::connect(removeKeyAction,SIGNAL(triggered()),this,SLOT(onRemoveKeyActionTriggered()));
+            _animationMenu->addAction(removeKeyAction);
+        }
+        
     }
     QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"),_animationMenu);
     QObject::connect(showInCurveEditorAction,SIGNAL(triggered()),this,SLOT(onShowInCurveEditorActionTriggered()));
     _animationMenu->addAction(showInCurveEditorAction);
     
-    QAction* removeAnyAnimationAction = new QAction(tr("Remove animation"),_animationMenu);
-    QObject::connect(removeAnyAnimationAction,SIGNAL(triggered()),this,SLOT(onRemoveAnyAnimationActionTriggered()));
-    _animationMenu->addAction(removeAnyAnimationAction);
-    
-    
-    
-    QMenu* interpolationMenu = new QMenu(_animationMenu);
-    interpolationMenu->setTitle("Interpolation");
-    _animationMenu->addAction(interpolationMenu->menuAction());
-    
-    QAction* constantInterpAction = new QAction(tr("Constant"),interpolationMenu);
-    QObject::connect(constantInterpAction,SIGNAL(triggered()),this,SLOT(onConstantInterpActionTriggered()));
-    interpolationMenu->addAction(constantInterpAction);
-    
-    QAction* linearInterpAction = new QAction(tr("Linear"),interpolationMenu);
-    QObject::connect(linearInterpAction,SIGNAL(triggered()),this,SLOT(onLinearInterpActionTriggered()));
-    interpolationMenu->addAction(linearInterpAction);
-    
-    QAction* smoothInterpAction = new QAction(tr("Smooth"),interpolationMenu);
-    QObject::connect(smoothInterpAction,SIGNAL(triggered()),this,SLOT(onSmoothInterpActionTriggered()));
-    interpolationMenu->addAction(smoothInterpAction);
-    
-    QAction* catmullRomInterpAction = new QAction(tr("Catmull-Rom"),interpolationMenu);
-    QObject::connect(catmullRomInterpAction,SIGNAL(triggered()),this,SLOT(onCatmullromInterpActionTriggered()));
-    interpolationMenu->addAction(catmullRomInterpAction);
-    
-    QAction* cubicInterpAction = new QAction(tr("Cubic"),interpolationMenu);
-    QObject::connect(cubicInterpAction,SIGNAL(triggered()),this,SLOT(onCubicInterpActionTriggered()));
-    interpolationMenu->addAction(cubicInterpAction);
-    
-    QAction* horizInterpAction = new QAction(tr("Horizontal"),interpolationMenu);
-    QObject::connect(horizInterpAction,SIGNAL(triggered()),this,SLOT(onHorizontalInterpActionTriggered()));
-    interpolationMenu->addAction(horizInterpAction);
-    
-    
+    if(!isSlave) {
+        
+        QAction* removeAnyAnimationAction = new QAction(tr("Remove animation"),_animationMenu);
+        QObject::connect(removeAnyAnimationAction,SIGNAL(triggered()),this,SLOT(onRemoveAnyAnimationActionTriggered()));
+        _animationMenu->addAction(removeAnyAnimationAction);
+        
+        
+        
+        QMenu* interpolationMenu = new QMenu(_animationMenu);
+        interpolationMenu->setTitle("Interpolation");
+        _animationMenu->addAction(interpolationMenu->menuAction());
+        
+        QAction* constantInterpAction = new QAction(tr("Constant"),interpolationMenu);
+        QObject::connect(constantInterpAction,SIGNAL(triggered()),this,SLOT(onConstantInterpActionTriggered()));
+        interpolationMenu->addAction(constantInterpAction);
+        
+        QAction* linearInterpAction = new QAction(tr("Linear"),interpolationMenu);
+        QObject::connect(linearInterpAction,SIGNAL(triggered()),this,SLOT(onLinearInterpActionTriggered()));
+        interpolationMenu->addAction(linearInterpAction);
+        
+        QAction* smoothInterpAction = new QAction(tr("Smooth"),interpolationMenu);
+        QObject::connect(smoothInterpAction,SIGNAL(triggered()),this,SLOT(onSmoothInterpActionTriggered()));
+        interpolationMenu->addAction(smoothInterpAction);
+        
+        QAction* catmullRomInterpAction = new QAction(tr("Catmull-Rom"),interpolationMenu);
+        QObject::connect(catmullRomInterpAction,SIGNAL(triggered()),this,SLOT(onCatmullromInterpActionTriggered()));
+        interpolationMenu->addAction(catmullRomInterpAction);
+        
+        QAction* cubicInterpAction = new QAction(tr("Cubic"),interpolationMenu);
+        QObject::connect(cubicInterpAction,SIGNAL(triggered()),this,SLOT(onCubicInterpActionTriggered()));
+        interpolationMenu->addAction(cubicInterpAction);
+        
+        QAction* horizInterpAction = new QAction(tr("Horizontal"),interpolationMenu);
+        QObject::connect(horizInterpAction,SIGNAL(triggered()),this,SLOT(onHorizontalInterpActionTriggered()));
+        interpolationMenu->addAction(horizInterpAction);
+        
+    }
     QMenu* copyMenu = new QMenu(_animationMenu);
     copyMenu->setTitle("Copy");
     _animationMenu->addAction(copyMenu->menuAction());
@@ -198,16 +212,12 @@ void KnobGui::createAnimationMenu(){
     QObject::connect(copyAnimationAction,SIGNAL(triggered()),this,SLOT(onCopyAnimationActionTriggered()));
     copyMenu->addAction(copyAnimationAction);
     
-    QAction* pasteAction = new QAction(tr("Paste"),copyMenu);
-    QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(onPasteActionTriggered()));
-    copyMenu->addAction(pasteAction);
-    
-    bool isSlave = false;
-    for (int i = 0; i < getKnob()->getDimension(); ++i) {
-        if (getKnob()->isCurveSlave(i)) {
-            isSlave = true;
-            break;
-        }
+    if(!isSlave) {
+        
+        QAction* pasteAction = new QAction(tr("Paste"),copyMenu);
+        QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(onPasteActionTriggered()));
+        copyMenu->addAction(pasteAction);
+        
     }
     
     if(!isSlave) {
@@ -476,7 +486,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
     std::vector<Natron::Node*> allActiveNodes;
     
     assert(from->getKnob()->getHolder()->getApp());
-
+    
     from->getKnob()->getHolder()->getApp()->getActiveNodes(&allActiveNodes);
     for (U32 i = 0; i < allActiveNodes.size(); ++i) {
         const std::vector< boost::shared_ptr<Knob> >& knobs = allActiveNodes[i]->getKnobs();
@@ -575,7 +585,7 @@ void KnobGui::onUnlinkActionTriggered(){
         checkAnimationLevel(i);
         emit keyFrameSet();
         QObject::disconnect(other.get(), SIGNAL(updateSlaves(int)), this, SLOT(onMasterChange(int)));
-
+        
     }
     _knob->setEnabled(true);
     
