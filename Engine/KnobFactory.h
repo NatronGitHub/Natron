@@ -15,6 +15,8 @@
 #include <string>
 #include <map>
 
+#include <boost/shared_ptr.hpp>
+
 #include "Global/GlobalDefines.h"
 
 class Knob;
