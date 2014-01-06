@@ -5,16 +5,33 @@
 
 TARGET = Natron
 TEMPLATE = app
-CONFIG += app warn_on c++11 precompile_header
+CONFIG += app warn_on
 CONFIG += moc rcc
 CONFIG += boost glew opengl qt expat
 QT += gui core opengl
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
+!macx|!universal {
+  # precompiled headers don't work with multiple archs
+  CONFIG += precompile_header
+}
+
+!macx {
+  # c++11 build fails on Snow Leopard 10.6 (see the macx section below)
+  CONFIG += c++11
+}
+
+precompile_header {
 # Use Precompiled headers (PCH)
 # we specify PRECOMPILED_DIR, or qmake places precompiled headers in Natron/c++.pch, thus blocking the creation of the Unix executable
 PRECOMPILED_DIR = pch
 PRECOMPILED_HEADER = pch.h
+}
+
+!macx {
+  # c++11 build fails on Snow Leopard 10.6 (see the macx section below)
+  CONFIG += c++11
+}
 
 macx {
 ### custom variables for the Info.plist file
@@ -24,6 +41,9 @@ macx {
 #ICON = ...
 # replace com.yourcompany with something more meaningful
 QMAKE_TARGET_BUNDLE_PREFIX = fr.inria
+universal {
+  CONFIG += x86 x86_64
+}
 }
 
 win32{
@@ -73,21 +93,23 @@ warning("Compiling in DEBUG mode.")
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
 }
 
-# When compiler is GCC check for at least version 4.7
 *g++* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
-  QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
-  GCCVer = $$system($$QMAKE_CXX --version)
-  contains(GCCVer,[0-3]\\.[0-9]+.*) {
-    error("At least GCC 4.6 is required.")
-  } else {
-    contains(GCCVer,4\\.[0-5].*) {
+  QMAKE_CXXFLAGS_WARN_ON += -Wextra
+  c++11 {
+    # check for at least version 4.7
+    GCCVer = $$system($$QMAKE_CXX --version)
+    contains(GCCVer,[0-3]\\.[0-9]+.*) {
       error("At least GCC 4.6 is required.")
     } else {
-      contains(GCCVer,4\\.6.*) {
-        QMAKE_CXXFLAGS += -std=c++0x
+      contains(GCCVer,4\\.[0-5].*) {
+        error("At least GCC 4.6 is required.")
       } else {
-        QMAKE_CXXFLAGS += -std=c++11
+        contains(GCCVer,4\\.6.*) {
+          QMAKE_CXXFLAGS += -std=c++0x
+        } else {
+          QMAKE_CXXFLAGS += -std=c++11
+        }
       }
     }
   }
@@ -103,7 +125,9 @@ warning("Compiling in DEBUG mode.")
     QMAKE_CXXFLAGS_RELEASE += -O3
   }
   QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
-  QMAKE_CXXFLAGS += -std=c++11
+  c++11 {
+    QMAKE_CXXFLAGS += -std=c++11
+  }
 }
 
 
