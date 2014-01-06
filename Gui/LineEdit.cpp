@@ -18,6 +18,7 @@
 #include <QDropEvent>
 #include <QUrl>
 #include <QMimeData>
+#include <QStyle>
 
 class QPaintEvent;
 
@@ -66,4 +67,11 @@ void LineEdit::dragMoveEvent(QDragMoveEvent* e) {
 
 void LineEdit::dragLeaveEvent(QDragLeaveEvent* e) {
     e->accept();
+}
+
+void LineEdit::setAnimation(int v) {
+    animation = v;
+    style()->unpolish(this);
+    style()->polish(this);
+    repaint();
 }

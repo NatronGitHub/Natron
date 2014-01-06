@@ -396,15 +396,19 @@ public:
     }
     
     String_Knob(KnobHolder *holder, const std::string &description, int dimension);
-    std::string getString() const;
+    
     
     /// Can this type be animated?
     /// String animation consists in setting constant strings at
     /// each keyframe, which are valid until the next keyframe.
     /// It can be useful for titling/subtitling.
-    static bool canAnimateStatic() { return false; }
+    static bool canAnimateStatic() { return true; }
     
     static const std::string& typeNameStatic();
+    
+    void setAsMultiLine() { _multiLine = true; }
+    
+    bool isMultiLine() const { return _multiLine; }
     
 private:
     
@@ -412,8 +416,33 @@ private:
     
     virtual const std::string& typeName() const OVERRIDE FINAL;
     
+    virtual Natron::Status variantToKeyFrameValue(int time,const Variant& v,double* returnValue) OVERRIDE FINAL;
+    
+    virtual void variantFromInterpolatedValue(double interpolated,Variant* returnValue) const OVERRIDE FINAL;
+    
+    virtual void cloneExtraData(const Knob& other) OVERRIDE FINAL;
+    
+    virtual void loadExtraData(const QString& str) OVERRIDE FINAL;
+    
+    virtual QString saveExtraData() const OVERRIDE FINAL;
+    
 private:
     static const std::string _typeNameStr;
+    
+    struct StringKeyFrame {
+        QString value;
+        int time;
+    };
+    
+    struct KeyFrame_compare_time {
+        bool operator() (const StringKeyFrame& lhs, const StringKeyFrame& rhs) const {
+            return lhs.time < rhs.time;
+        }
+    };
+    
+    typedef std::set<StringKeyFrame,KeyFrame_compare_time> Keyframes;
+    Keyframes _keyframes;
+    bool _multiLine;
 };
 
 /******************************STRING_KNOB**************************************/
@@ -506,30 +535,6 @@ private:
     static const std::string _typeNameStr;
 };
 
-/******************************RichText_Knob**************************************/
-class RichText_Knob : public Knob
-{
-public:
-    
-    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
-        return new RichText_Knob(holder, description, dimension);
-    }
-    
-    RichText_Knob(KnobHolder *holder, const std::string &description, int dimension);
-    
-    
-    std::string getString() const;
-    
-    static const std::string& typeNameStatic();
-    
-private:
-    virtual bool canAnimate() const OVERRIDE FINAL;
-    
-    virtual const std::string& typeName() const OVERRIDE FINAL;
-    
-private:
-    static const std::string _typeNameStr;
-};
 
 /******************************Parametric_Knob**************************************/
 

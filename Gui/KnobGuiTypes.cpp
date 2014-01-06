@@ -16,7 +16,6 @@
 #include <QHBoxLayout>
 #include <QStyle>
 #include <QColorDialog>
-#include <QTextEdit>
 #include <QLabel>
 #include <QToolTip>
 #include <QTreeWidget>
@@ -1330,50 +1329,149 @@ void Color_KnobGui::onPickingEnabled(bool enabled){
 }
 
 //=============================STRING_KNOB_GUI===================================
+
+void AnimatingTextEdit::setAnimation(int v) {
+    animation = v;
+    style()->unpolish(this);
+    style()->polish(this);
+    repaint();
+}
+
+String_KnobGui::String_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
+: KnobGui(knob, container)
+, _lineEdit(0)
+, _textEdit(0)
+, _descriptionLabel(0)
+{
+    
+}
+
 void String_KnobGui::createWidget(QGridLayout *layout, int row)
 {
-    _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-    _descriptionLabel->setToolTip(getKnob()->getHintToolTip().c_str());
+    boost::shared_ptr<String_Knob> strKnob = boost::dynamic_pointer_cast<String_Knob>(getKnob());
+    assert(strKnob);
+    
+    _descriptionLabel = new QLabel(QString(QString(strKnob->getDescription().c_str()) + ":"), layout->parentWidget());
+    _descriptionLabel->setToolTip(strKnob->getHintToolTip().c_str());
     layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
     
-    _lineEdit = new LineEdit(layout->parentWidget());
-    _lineEdit->setToolTip(getKnob()->getHintToolTip().c_str());
-    layout->addWidget(_lineEdit, row, 1, Qt::AlignLeft);
-    QObject::connect(_lineEdit, SIGNAL(textEdited(QString)), this, SLOT(onStringChanged(QString)));
-    
+
+    if(!strKnob->isMultiLine()) {
+        _lineEdit = new LineEdit(layout->parentWidget());
+        _lineEdit->setToolTip(getKnob()->getHintToolTip().c_str());
+        layout->addWidget(_lineEdit, row, 1, Qt::AlignLeft);
+        QObject::connect(_lineEdit, SIGNAL(textEdited(QString)), this, SLOT(onStringChanged(QString)));
+    } else {
+        _textEdit = new AnimatingTextEdit(layout->parentWidget());
+        _textEdit->setToolTip(getKnob()->getHintToolTip().c_str());
+        layout->addWidget(_textEdit, row, 1, Qt::AlignLeft);
+        QObject::connect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
+    }
 }
 
 String_KnobGui::~String_KnobGui()
 {
     delete _descriptionLabel;
-    delete _lineEdit;
+    if(_lineEdit){
+        delete _lineEdit;
+    }
+    if(_textEdit){
+        delete _textEdit;
+    }
 }
 
 void String_KnobGui::onStringChanged(const QString &str)
 {
     pushValueChangedCommand(Variant(str));
 }
+
+void String_KnobGui::onTextChanged()
+{
+    pushValueChangedCommand(Variant(_textEdit->toPlainText()));
+}
+
+
 void String_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 {
-    _lineEdit->setText(variant.toString());
+    if (_lineEdit) {
+        _lineEdit->setText(variant.toString());
+    }else {
+        assert(_textEdit);
+        QObject::disconnect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
+        QTextCursor cursor = _textEdit->textCursor();
+        int pos = cursor.position();
+        _textEdit->clear();
+        QString txt = variant.toString();
+        _textEdit->setPlainText(txt);
+        cursor.setPosition(pos);
+        _textEdit->setTextCursor(cursor);
+        QObject::connect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
+    }
 }
 void String_KnobGui::_hide()
 {
     _descriptionLabel->hide();
-    _lineEdit->hide();
+    if(_lineEdit){
+        _lineEdit->hide();
+    }else{
+        assert(_textEdit);
+        _textEdit->hide();
+    }
 }
 
 void String_KnobGui::_show()
 {
     _descriptionLabel->show();
-    _lineEdit->show();
+    if(_lineEdit){
+        _lineEdit->show();
+    }else{
+        assert(_textEdit);
+        _textEdit->show();
+    }
 }
 void String_KnobGui::setEnabled()
 {
     bool b = getKnob()->isEnabled();
     _descriptionLabel->setEnabled(b);
-    _lineEdit->setEnabled(b);
+    if(_lineEdit){
+        _lineEdit->setEnabled(b);
+    }else{
+        assert(_textEdit);
+        _textEdit->setEnabled(b);
+    }
 }
+
+void String_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevel level) {
+    switch (level) {
+        case Natron::NO_ANIMATION:
+            if(_lineEdit){
+                _lineEdit->setAnimation(0);
+            }else{
+                assert(_textEdit);
+                _textEdit->setAnimation(0);
+            }
+            break;
+        case Natron::INTERPOLATED_VALUE:
+            if(_lineEdit){
+                _lineEdit->setAnimation(1);
+            }else{
+                assert(_textEdit);
+                _textEdit->setAnimation(1);
+            }
+            break;
+        case Natron::ON_KEYFRAME:
+            if(_lineEdit){
+                _lineEdit->setAnimation(2);
+            }else{
+                assert(_textEdit);
+                _textEdit->setAnimation(2);
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 
 //=============================CUSTOM_KNOB_GUI===================================
 void Custom_KnobGui::createWidget(QGridLayout *layout, int row)
@@ -1524,65 +1622,7 @@ void Group_KnobGui::_show()
     
 }
 
-//=============================RICH_TEXT_KNOBGUI===================================
 
-void RichText_KnobGui::createWidget(QGridLayout *layout, int row)
-{
-    _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-    _descriptionLabel->setToolTip(getKnob()->getHintToolTip().c_str());
-    layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
-    
-    _textEdit = new QTextEdit(layout->parentWidget());
-    _textEdit->setToolTip(getKnob()->getHintToolTip().c_str());
-    layout->addWidget(_textEdit, row, 1, Qt::AlignLeft);
-    QObject::connect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
-    
-}
-
-RichText_KnobGui::~RichText_KnobGui()
-{
-    delete _descriptionLabel;
-    delete _textEdit;
-    
-}
-
-void RichText_KnobGui::_hide()
-{
-    _descriptionLabel->hide();
-    _textEdit->hide();
-}
-
-void RichText_KnobGui::_show()
-{
-    _descriptionLabel->show();
-    _textEdit->show();
-}
-void RichText_KnobGui::setEnabled()
-{
-    bool b = getKnob()->isEnabled();
-    _descriptionLabel->setEnabled(b);
-    _textEdit->setEnabled(b);
-}
-
-void RichText_KnobGui::onTextChanged()
-{
-    pushValueChangedCommand(Variant(_textEdit->toPlainText()));
-}
-
-
-void RichText_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
-{
-    QObject::disconnect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
-    QTextCursor cursor = _textEdit->textCursor();
-    int pos = cursor.position();
-    _textEdit->clear();
-    QString txt = variant.toString();
-    _textEdit->setPlainText(txt);
-    cursor.setPosition(pos);
-    _textEdit->setTextCursor(cursor);
-    QObject::connect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
-    
-}
 
 //=============================Parametric_KnobGui===================================
 

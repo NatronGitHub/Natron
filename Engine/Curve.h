@@ -141,8 +141,18 @@ public:
 
     bool isAnimated() const;
     
+    /**
+     * @brief Returns true if the Curve represents a string animation, in which case the user cannot
+     * modify the Y component of the curve.
+     **/
+    bool isYComponentMovable() const;
+    
     /**whether the curve will clamp possible keyframe X values to integers or not.**/
     bool areKeyFramesTimeClampedToIntegers() const;
+    
+    bool areKeyFramesValuesClampedToIntegers() const;
+    
+    bool areKeyFramesValuesClampedToBooleans() const;
 
     void setParametricRange(double a,double b);
     

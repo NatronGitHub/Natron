@@ -350,7 +350,26 @@ private:
      * 2 values from each other.
     **/
     virtual void appendExtraDataToHash(std::vector<U64>* /*hash*/) const {}
-
+    
+    
+    /**
+     * @brief Override to return the real value to store in a keyframe for the variant passed in parameter.
+     * This function is almost only addressing the problem of animating strings. The string knob just returns
+     * in the return value the index of the string from the variant's current value.
+     * In case you implement this function, make sure to return Natron::StatOk, otherwise this function call 
+     * will get ignored.
+     **/
+    virtual Natron::Status variantToKeyFrameValue(int /*time*/,const Variant& /*v*/,double* /*returnValue*/) {
+        return Natron::StatReplyDefault;
+    }
+    
+    /**
+     * @brief Override to return the real value of the variant (which should have the same type as
+     * all other elements in this knob (i.e: String for a string knob).
+     * This function is almost only addressing the problem of animating strings. The string knob just returns
+     * in the return value the string at the given index contained in interpolated.
+     **/
+    virtual void variantFromInterpolatedValue(double interpolated,Variant* returnValue) const ;
 
 private:
     struct KnobPrivate;

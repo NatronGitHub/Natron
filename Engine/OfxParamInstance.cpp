@@ -1341,7 +1341,6 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
 , _fileKnob()
 , _outputFileKnob()
 , _stringKnob()
-, _multiLineKnob()
 {
     const OFX::Host::Property::Set &properties = getProperties();
     std::string mode = properties.getStringProperty(kOfxParamPropStringMode);
@@ -1364,14 +1363,15 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
             }
             
         }
-    } else if (mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel) {
+    } else if (mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel || mode == kOfxParamStringIsMultiLine) {
         
         _stringKnob = Natron::createKnob<String_Knob>(node, getParamLabel(this));
         if (mode == kOfxParamStringIsLabel) {
             _stringKnob->setEnabled(false);
         }
-    } else if(mode == kOfxParamStringIsMultiLine) {
-        _multiLineKnob = Natron::createKnob<RichText_Knob>(node, getParamLabel(this));
+        if(mode == kOfxParamStringIsMultiLine) {
+            _stringKnob->setAsMultiLine();
+        }
     }
     
     set(properties.getStringProperty(kOfxParamPropDefault).c_str());
@@ -1391,9 +1391,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
     }else if(_outputFileKnob){
         str = _outputFileKnob->filenameFromPattern((int)_node->getCurrentFrame());
     }else if(_stringKnob){
-        str = _stringKnob->getString();
-    }else if(_multiLineKnob){
-        str = _multiLineKnob->getString();
+        str = _stringKnob->getValue().toString().toStdString();
     }
     return kOfxStatOK;
 }
@@ -1407,9 +1405,7 @@ OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
     }else if(_outputFileKnob){
         str = _outputFileKnob->filenameFromPattern(std::floor(time + 0.5));
     }else if(_stringKnob){
-        str = _stringKnob->getString();
-    }else if(_multiLineKnob){
-        str = _multiLineKnob->getString();
+        str = _stringKnob->getValueAtTime(std::floor(time + 0.5), 0).toString().toStdString();
     }
     return kOfxStatOK;
 }
@@ -1424,13 +1420,10 @@ OfxStatus OfxStringInstance::set(const char* str) {
     if(_stringKnob){
         _stringKnob->setValue(str);
     }
-    if(_multiLineKnob){
-        _multiLineKnob->setValue(str);
-    }
     return kOfxStatOK;
 }
 
-OfxStatus OfxStringInstance::set(OfxTime /*time*/, const char* str) {
+OfxStatus OfxStringInstance::set(OfxTime time, const char* str) {
     assert(!String_Knob::canAnimateStatic());
     if(_fileKnob){
         _fileKnob->setValue(str);
@@ -1439,11 +1432,9 @@ OfxStatus OfxStringInstance::set(OfxTime /*time*/, const char* str) {
         _outputFileKnob->setValue(str);
     }
     if(_stringKnob){
-        _stringKnob->setValue(str);
+        _stringKnob->setValueAtTime((int)time,Variant(QString(str)),0);
     }
-    if(_multiLineKnob){
-        _multiLineKnob->setValue(str);
-    }
+
     return kOfxStatOK;
 }
 OfxStatus OfxStringInstance::getV(va_list arg){
@@ -1473,9 +1464,7 @@ boost::shared_ptr<Knob> OfxStringInstance::getKnob() const{
     if(_stringKnob){
         return _stringKnob;
     }
-    if(_multiLineKnob){
-        return _multiLineKnob;
-    }
+
     return boost::shared_ptr<Knob>();
 }
 // callback which should set enabled state as appropriate
@@ -1489,9 +1478,7 @@ void OfxStringInstance::setEnabled(){
     if (_stringKnob) {
         _stringKnob->setEnabled(getEnabled());
     }
-    if(_multiLineKnob){
-        _multiLineKnob->setEnabled(getEnabled());
-    }
+ 
 }
 
 // callback which should set secret state as appropriate
@@ -1505,9 +1492,7 @@ void OfxStringInstance::setSecret(){
     if (_stringKnob) {
         _stringKnob->setSecret(getSecret());
     }
-    if (_multiLineKnob) {
-        _multiLineKnob->setSecret(getSecret());
-    }
+
 }
 
 
@@ -1529,8 +1514,6 @@ OfxStatus OfxStringInstance::getNumKeys(unsigned int &nKeys) const {
     boost::shared_ptr<Knob> knob;
     if(_stringKnob){
         knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
-    }else if(_multiLineKnob){
-        knob = boost::dynamic_pointer_cast<Knob>(_multiLineKnob);
     }else{
         return kOfxStatErrUnsupported;
     }
@@ -1540,8 +1523,6 @@ OfxStatus OfxStringInstance::getKeyTime(int nth, OfxTime& time) const {
     boost::shared_ptr<Knob> knob;
     if(_stringKnob){
         knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
-    }else if(_multiLineKnob){
-        knob = boost::dynamic_pointer_cast<Knob>(_multiLineKnob);
     }else{
         return kOfxStatErrUnsupported;
     }
@@ -1551,8 +1532,6 @@ OfxStatus OfxStringInstance::getKeyIndex(OfxTime time, int direction, int & inde
     boost::shared_ptr<Knob> knob;
     if(_stringKnob){
         knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
-    }else if(_multiLineKnob){
-        knob = boost::dynamic_pointer_cast<Knob>(_multiLineKnob);
     }else{
         return kOfxStatErrUnsupported;
     }
@@ -1562,8 +1541,6 @@ OfxStatus OfxStringInstance::deleteKey(OfxTime time) {
     boost::shared_ptr<Knob> knob;
     if(_stringKnob){
         knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
-    }else if(_multiLineKnob){
-        knob = boost::dynamic_pointer_cast<Knob>(_multiLineKnob);
     }else{
         return kOfxStatErrUnsupported;
     }
@@ -1573,8 +1550,6 @@ OfxStatus OfxStringInstance::deleteAllKeys(){
     boost::shared_ptr<Knob> knob;
     if(_stringKnob){
         knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
-    }else if(_multiLineKnob){
-        knob = boost::dynamic_pointer_cast<Knob>(_multiLineKnob);
     }else{
         return kOfxStatErrUnsupported;
     }

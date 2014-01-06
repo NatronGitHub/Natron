@@ -660,6 +660,7 @@ const std::string& Color_Knob::typeName() const
 
 String_Knob::String_Knob(KnobHolder *holder, const std::string &description, int dimension):
 Knob(holder, description, dimension)
+, _multiLine(false)
 {
     
 }
@@ -681,11 +682,93 @@ const std::string& String_Knob::typeName() const
     return typeNameStatic();
 }
 
-std::string String_Knob::getString() const
-{
-    return getValue<QString>().toStdString();
+Natron::Status String_Knob::variantToKeyFrameValue(int time,const Variant& v,double* returnValue) {
+    StringKeyFrame k;
+    k.time = time;
+    k.value = v.toString();
+    std::pair<Keyframes::iterator,bool> ret = _keyframes.insert(k);
+    if(!ret.second){
+        _keyframes.erase(ret.first);
+        ret = _keyframes.insert(k);
+        assert(ret.second);
+    }
+    *returnValue = std::distance(_keyframes.begin(), ret.first);
+    return StatOK;
 }
 
+void String_Knob::variantFromInterpolatedValue(double interpolated,Variant* returnValue) const {
+    int index = std::floor(interpolated + 0.5);
+    int i = 0;
+    for (Keyframes::const_iterator it = _keyframes.begin(); it != _keyframes.end(); ++it) {
+        if (i == index) {
+            returnValue->setValue<QString>(it->value);
+            return;
+        }
+        ++i;
+    }
+    ///the index is wrong, something is wrong upstream in the knob class
+    assert(false);
+}
+
+void String_Knob::cloneExtraData(const Knob& other) {
+    const String_Knob& o = dynamic_cast<const String_Knob&>(other);
+    _keyframes = o._keyframes;
+}
+
+
+static const QString stringSeparatorTag = QString("__SEP__");
+static const QString keyframeSepTag = QString("__,__");
+
+void String_Knob::loadExtraData(const QString& str) {
+    if (str.isEmpty()) {
+        return;
+    }
+    int sepIndex = str.indexOf(stringSeparatorTag);
+    
+    int i = 0;
+    while (sepIndex != -1) {
+        
+        int keyFrameSepIndex = str.indexOf(keyframeSepTag,i);
+        assert(keyFrameSepIndex != -1);
+        
+        QString keyframeTime;
+        while (i < keyFrameSepIndex) {
+            keyframeTime.push_back(str.at(i));
+            ++i;
+        }
+        
+        i+= keyframeSepTag.size();
+        
+        QString keyframevalue;
+        while (i < sepIndex) {
+            keyframevalue.push_back(str.at(i));
+            ++i;
+        }
+        
+        StringKeyFrame k;
+        k.time = keyframeTime.toInt();
+        k.value = keyframevalue;
+        _keyframes.insert(k);
+        
+        i+= stringSeparatorTag.size();
+        sepIndex = str.indexOf(stringSeparatorTag,sepIndex + 1);
+    }
+}
+
+QString String_Knob::saveExtraData() const {
+    if (_keyframes.empty()) {
+        return "";
+    }
+    QString ret;
+
+    for (Keyframes::const_iterator it = _keyframes.begin();it!=_keyframes.end();++it) {
+        ret.push_back(QString::number(it->time));
+        ret.push_back(keyframeSepTag);
+        ret.push_back(it->value);
+        ret.push_back(stringSeparatorTag);
+    }
+    return ret;
+}
 /******************************CUSTOM_KNOB**************************************/
 
 Custom_Knob::Custom_Knob(KnobHolder *holder, const std::string &description, int dimension)
@@ -793,37 +876,6 @@ void Tab_Knob::addKnob(boost::shared_ptr<Knob> k)
     }
 }
 
-
-
-/******************************RichText_Knob**************************************/
-
-RichText_Knob::RichText_Knob(KnobHolder *holder, const std::string &description, int dimension):
-Knob(holder, description, dimension)
-{
-    
-}
-
-bool RichText_Knob::canAnimate() const
-{
-    return false;
-}
-
-const std::string RichText_Knob::_typeNameStr("RichText");
-
-const std::string& RichText_Knob::typeNameStatic()
-{
-    return _typeNameStr;
-}
-
-const std::string& RichText_Knob::typeName() const
-{
-    return typeNameStatic();
-}
-
-std::string RichText_Knob::getString() const
-{
-    return getValue<QString>().toStdString();
-}
 
 /******************************Parametric_Knob**************************************/
 

@@ -169,9 +169,9 @@ Variant Knob::getValueAtTime(double time,int dimension) const{
     
     boost::shared_ptr<Curve> curve  = _imp->_curves[dimension];
     if (curve->isAnimated()) {
-#pragma message WARN("We should query the variant's type of the curve to construct  an appropriate return value")
-        //FIXME: clamp to min/max
-        return Variant(curve->getValueAt(time));
+        Variant ret;
+        variantFromInterpolatedValue(curve->getValueAt(time), &ret);
+        return ret;
     } else {
         /*if the knob as no keys at this dimension, return the value
          at the requested dimension.*/
@@ -239,10 +239,19 @@ bool Knob::setValueAtTime(int time, const Variant& v, int dimension, Natron::Val
     
     
     boost::shared_ptr<Curve> curve = _imp->_curves[dimension];
-#pragma message WARN("We should query the variant's type passed in parameter to construct a keyframe with an appropriate value")
-    
+    double keyFrameValue;
+    Natron::Status stat = variantToKeyFrameValue(time,v, &keyFrameValue);
+    if (stat == Natron::StatReplyDefault) {
+        if(curve->areKeyFramesValuesClampedToIntegers()){
+            keyFrameValue = v.toInt();
+        }else if(curve->areKeyFramesValuesClampedToBooleans()){
+            keyFrameValue = (int)v.toBool();
+        }else{
+            keyFrameValue = v.toDouble();
+        }
+    }
 
-    *newKey = KeyFrame((double)time,v.toDouble());
+    *newKey = KeyFrame((double)time,keyFrameValue);
     bool ret = curve->addKeyFrame(*newKey);
    
     
@@ -617,6 +626,11 @@ Natron::AnimationLevel Knob::getAnimationLevel(int dimension) const{
     
     return _imp->_animationLevel[dimension];
 }
+
+void Knob::variantFromInterpolatedValue(double interpolated,Variant* returnValue) const {
+    returnValue->setValue<double>(interpolated);
+}
+
 /***************************KNOB HOLDER******************************************/
 
 KnobHolder::KnobHolder(AppInstance* appInstance):

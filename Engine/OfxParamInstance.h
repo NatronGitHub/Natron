@@ -547,7 +547,6 @@ private:
     boost::shared_ptr<File_Knob> _fileKnob;
     boost::shared_ptr<OutputFile_Knob> _outputFileKnob;
     boost::shared_ptr<String_Knob> _stringKnob;
-    boost::shared_ptr<RichText_Knob> _multiLineKnob;
     QThreadStorage<std::string> _localString;
 };
 

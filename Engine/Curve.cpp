@@ -125,27 +125,7 @@ Curve::Curve(Knob *owner)
 {
     
     _imp->owner = owner;
-    const Variant& value = owner->getValue();
-    switch (value.type()) {
-        case QVariant::Int:
-            _imp->curveType = CurvePrivate::INT_CURVE;
-            break;
-        case QVariant::Double :
-            _imp->curveType = CurvePrivate::DOUBLE_CURVE;
-            break;
-        case QVariant::Bool:
-            _imp->curveType = CurvePrivate::BOOL_CURVE;
-            break;
-        case QVariant::String:
-            _imp->curveType = CurvePrivate::INT_CURVE;
-            break;
-        case QVariant::StringList:
-            _imp->curveType = CurvePrivate::STRING_CURVE;
-            break;
-        default:
-            _imp->curveType = CurvePrivate::DOUBLE_CURVE;
-            break;
-    }
+    
 }
 
 Curve::~Curve(){ clearKeyFrames(); }
@@ -163,6 +143,8 @@ void Curve::clone(const Curve& other){
     clearKeyFrames();
     const KeyFrameSet& otherKeys = other.getKeyFrames();
     std::transform(otherKeys.begin(), otherKeys.end(), std::inserter(_imp->keyFrames, _imp->keyFrames.begin()), KeyFrameCloner());
+    _imp->curveType = other._imp->curveType;
+    _imp->mustSetCurveType = false;
 }
 
 
@@ -181,7 +163,22 @@ bool Curve::addKeyFrame(const KeyFrame key){
     ///lock the project if it is saving
     _imp->owner->getHolder()->getApp()->lockProject();
     
-    std::pair<KeyFrameSet::iterator,bool> it = addKeyFrameNoUpdate(key);
+
+    if(_imp->mustSetCurveType) {
+        if(_imp->owner->typeName() == Int_Knob::typeNameStatic() ||
+           _imp->owner->typeName() == Choice_Knob::typeNameStatic()){
+            _imp->curveType = CurvePrivate::INT_CURVE;
+        }else if(_imp->owner->typeName() == String_Knob::typeNameStatic()){
+            _imp->curveType = CurvePrivate::STRING_CURVE;
+        }else if(_imp->owner->typeName() == Bool_Knob::typeNameStatic()){
+            _imp->curveType = CurvePrivate::BOOL_CURVE;
+        }else{
+            _imp->curveType = CurvePrivate::DOUBLE_CURVE;
+        }
+        _imp->mustSetCurveType = false;
+    }
+    
+      std::pair<KeyFrameSet::iterator,bool> it = addKeyFrameNoUpdate(key);
     
     ///unlock it
     _imp->owner->getHolder()->getApp()->unlockProject();
@@ -341,6 +338,14 @@ double Curve::getValueAt(double t) const {
         vnext = upper->getValue();
         vnextDerivLeft = upper->getLeftDerivative();
         interpNext = upper->getInterpolation();
+        
+        if (_imp->curveType == CurvePrivate::STRING_CURVE ||
+            _imp->curveType == CurvePrivate::BOOL_CURVE) {
+            
+            ////constant interp  for string, int, bool
+            interpNext = Natron::KEYFRAME_CONSTANT;
+        }
+        
         tcur = tnext - 1.;
         vcur = vnext;
         vcurDerivRight = 0.;
@@ -351,6 +356,14 @@ double Curve::getValueAt(double t) const {
         vcur = prev->getValue();
         vcurDerivRight = prev->getRightDerivative();
         interp = prev->getInterpolation();
+        
+        if (_imp->curveType == CurvePrivate::STRING_CURVE ||
+            _imp->curveType == CurvePrivate::BOOL_CURVE) {
+            
+            ////constant interp  for string, int, bool
+            interp = Natron::KEYFRAME_CONSTANT;
+        }
+
         tnext = tcur + 1.;
         vnext = vcur;
         vnextDerivLeft = 0.;
@@ -364,6 +377,14 @@ double Curve::getValueAt(double t) const {
         vnext = upper->getValue();
         vnextDerivLeft = upper->getLeftDerivative();
         interpNext = upper->getInterpolation();
+        
+        if (_imp->curveType == CurvePrivate::STRING_CURVE ||
+            _imp->curveType == CurvePrivate::BOOL_CURVE) {
+            
+            ////constant interp  for string, int, bool
+            interp = Natron::KEYFRAME_CONSTANT;
+            interpNext = Natron::KEYFRAME_CONSTANT;
+        }
     }
 
     double v = Natron::interpolate<double>(tcur,vcur,
@@ -657,7 +678,7 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason, KeyFrameSet::iterato
 
     if(key->getInterpolation()!= Natron::KEYFRAME_BROKEN && key->getInterpolation() != Natron::KEYFRAME_FREE
        && reason != DERIVATIVES_CHANGED ){
-        refreshDerivatives(DERIVATIVES_CHANGED,key);
+        key = refreshDerivatives(DERIVATIVES_CHANGED,key);
     }
     KeyFrameSet::iterator prev = key;
     if(key != _imp->keyFrames.begin()){
@@ -665,7 +686,7 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason, KeyFrameSet::iterato
         if(prev->getInterpolation()!= Natron::KEYFRAME_BROKEN &&
            prev->getInterpolation()!= Natron::KEYFRAME_FREE &&
            prev->getInterpolation()!= Natron::KEYFRAME_NONE){
-            refreshDerivatives(DERIVATIVES_CHANGED,prev);
+            prev = refreshDerivatives(DERIVATIVES_CHANGED,prev);
         }
     }
     KeyFrameSet::iterator next = key;
@@ -674,7 +695,7 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason, KeyFrameSet::iterato
         if(next->getInterpolation()!= Natron::KEYFRAME_BROKEN &&
            next->getInterpolation()!= Natron::KEYFRAME_FREE &&
            next->getInterpolation()!= Natron::KEYFRAME_NONE){
-            refreshDerivatives(DERIVATIVES_CHANGED,next);
+            next = refreshDerivatives(DERIVATIVES_CHANGED,next);
         }
     }
     
@@ -720,4 +741,16 @@ KeyFrameSet::const_iterator Curve::begin() const {
 
 KeyFrameSet::const_iterator Curve::end() const {
     return _imp->keyFrames.end();
+}
+
+bool Curve::isYComponentMovable() const{
+    return _imp->curveType != CurvePrivate::STRING_CURVE;
+}
+
+bool Curve::areKeyFramesValuesClampedToIntegers() const{
+    return _imp->curveType == CurvePrivate::INT_CURVE;
+}
+
+bool Curve::areKeyFramesValuesClampedToBooleans() const{
+    return _imp->curveType == CurvePrivate::BOOL_CURVE;
 }

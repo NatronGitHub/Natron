@@ -149,6 +149,10 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1, double* x2){
 
 void CurveGui::drawCurve(int curveIndex,int curvesCount){
     
+    if(!_visible){
+        return;
+    }
+    
     assert(QGLContext::currentContext() == _curveWidget->context());
     
     std::vector<float> vertices;
@@ -976,6 +980,20 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
         std::map<KnobGui*,std::vector<KeyMove> > knobsMap;
         
         for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
+        
+
+            if (!it->curve->getInternalCurve()->isYComponentMovable()) {
+                dv = 0;
+            }
+            
+            if (it->curve->getInternalCurve()->areKeyFramesValuesClampedToBooleans()) {
+                dv = dv > 1. ? 1 : 0;
+                dv = dv < 0 ? -1 : 0;
+            }
+            if (it->curve->getInternalCurve()->areKeyFramesValuesClampedToIntegers()) {
+                dv = std::floor(dv + 0.5);
+            }
+            
             std::map<KnobGui*,std::vector<KeyMove> >::iterator foundKnob = knobsMap.find(it->curve->getKnob());
             if(foundKnob==knobsMap.end()){
                 std::vector<KeyMove> newVec;

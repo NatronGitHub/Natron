@@ -17,6 +17,7 @@
 #include <QLabel>
 #include <QObject>
 #include <QStyledItemDelegate>
+#include <QTextEdit>
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
@@ -30,7 +31,6 @@
 class QString;
 class QFrame;
 class QGridLayout;
-class QTextEdit;
 class QTreeWidget;
 class QTreeWidgetItem;
 class QScrollArea;
@@ -472,6 +472,26 @@ private:
     int _dimension;
 };
 
+class AnimatingTextEdit : public QTextEdit {
+    Q_OBJECT
+    Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
+
+public:
+    
+    AnimatingTextEdit(QWidget* parent = 0) : QTextEdit(parent){}
+    
+    virtual ~AnimatingTextEdit(){}
+    
+    int getAnimation() const { return animation; }
+    
+    void setAnimation(int v) ;
+    
+private:
+    
+    int animation;
+
+};
+
 /*****************************/
 class String_KnobGui : public KnobGui
 {
@@ -482,13 +502,17 @@ public:
     }
 
 
-    String_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
+    String_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
 
     virtual ~String_KnobGui() OVERRIDE;
 
 public slots:
+    
+    ///if the knob is not multiline
     void onStringChanged(const QString &str);
 
+    ///if the knob is multiline
+    void onTextChanged();
 private:
 
     virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
@@ -500,9 +524,13 @@ private:
     virtual void setEnabled() OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
+    
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
+
 
 private:
-    LineEdit *_lineEdit;
+    LineEdit *_lineEdit; //< if single line
+    AnimatingTextEdit *_textEdit; //< if multiline
     QLabel *_descriptionLabel;
 
 };
@@ -579,47 +607,6 @@ private:
     QLabel *_descriptionLabel;
     std::vector< std::pair< KnobGui *, std::pair<int, int> > > _children;
 };
-
-
-
-
-/*****************************/
-
-/*****************************/
-class RichText_KnobGui : public KnobGui
-{
-    Q_OBJECT
-public:
-    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
-        return new RichText_KnobGui(knob, container);
-    }
-
-
-    RichText_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
-
-    virtual ~RichText_KnobGui() OVERRIDE;
-
-public slots:
-    void onTextChanged();
-
-private:
-
-    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
-
-    virtual void _hide() OVERRIDE FINAL;
-
-    virtual void _show() OVERRIDE FINAL;
-
-    virtual void setEnabled() OVERRIDE FINAL;
-
-    virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
-
-private:
-    QTextEdit *_textEdit;
-    QLabel *_descriptionLabel;
-
-};
-
 
 /*****************************/
 class Parametric_KnobGui : public KnobGui

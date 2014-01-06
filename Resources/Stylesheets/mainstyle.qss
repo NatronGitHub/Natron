@@ -388,6 +388,29 @@ background-color: %6;
 SpinBox[animation="2"]{
 background-color: %7;
 }
+
+LineEdit[animation="0"]{
+background-color: %3;
+}
+LineEdit[animation="1"]{
+background-color: %6;
+}
+LineEdit[animation="2"]{
+background-color: %7;
+}
+
+AnimatingTextEdit[animation="0"]{
+background-color: %3;
+}
+AnimatingTextEdit[animation="1"]{
+background-color: %6;
+}
+AnimatingTextEdit[animation="2"]{
+background-color: %7;
+}
+
+
+
 AnimatedCheckBox[animation="1"]::indicator:unchecked {
 image: url(:/Resources/Images/checkbox_animation1_unchecked.png);
 }

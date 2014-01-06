@@ -21,9 +21,16 @@ class QDragMoveEvent;
 class QDragLeaveEvent;
 
 class LineEdit : public QLineEdit {
+    
+    Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
+    
 public:
     explicit LineEdit(QWidget* parent = 0);
     virtual ~LineEdit() OVERRIDE;
+    
+    int getAnimation() const { return animation; }
+    
+    void setAnimation(int v) ;
     
 private:
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
@@ -35,6 +42,8 @@ private:
     void dragMoveEvent(QDragMoveEvent* e);
 
     void dragLeaveEvent(QDragLeaveEvent* e);
+    
+    int animation;
 };
 
 
