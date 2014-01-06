@@ -450,8 +450,8 @@ void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
     processNewValue();
     if(reason != Natron::USER_EDITED && !_imp->_holder->isClone()){
         emit valueChanged(dimension);
-        emit updateSlaves(dimension);
     }
+    emit updateSlaves(dimension);
     
     bool significant = reason == Natron::TIME_CHANGED ? false : !_imp->_isInsignificant;
     if(!_imp->_holder->isClone()){
