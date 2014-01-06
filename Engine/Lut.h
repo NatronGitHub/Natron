@@ -44,6 +44,9 @@
 #define NATRON_ENGINE_LUT_H_
 
 #include <cmath>
+#include <map>
+#include <string>
+
 #include <QMutex>
 
 
