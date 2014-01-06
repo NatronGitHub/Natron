@@ -144,6 +144,8 @@ public:
 
     const Format& getProjectFormat() const WARN_UNUSED_RETURN ;
 
+    bool isLoadingProject() const;
+
     bool loadProject(const QString& path,const QString& name);
 
     void saveProject(const QString& path,const QString& name,bool autoSave);

@@ -439,6 +439,11 @@ void AppInstance::getActiveNodes(std::vector<Natron::Node*>* activeNodes) const{
         }
     }
 }
+
+bool AppInstance::isLoadingProject() const {
+    return _isLoadingProject;
+}
+
 bool AppInstance::loadProject(const QString& path,const QString& name){
     QMutexLocker l(&_projectLock);
     _isLoadingProject = true;

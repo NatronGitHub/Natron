@@ -94,6 +94,10 @@ public slots:
     
     void show();
     
+    void onRestorationComplete();
+    
+    void onMasterChange(int dimension);
+    
     /******Animations slots for all dimensions at once*****/
     
     void onSetKeyActionTriggered();
@@ -123,6 +127,8 @@ public slots:
     void onPasteActionTriggered();
     
     void onLinkToActionTriggered();
+    
+    void onUnlinkActionTriggered();
     /******************************************************/
 
 signals:

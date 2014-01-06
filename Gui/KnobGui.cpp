@@ -84,6 +84,7 @@ KnobGui::KnobGui(boost::shared_ptr<Knob> knob,DockablePanel* container)
     QObject::connect(this,SIGNAL(keyFrameRemovedByUser(SequenceTime,int)),knob.get(),SLOT(onKeyFrameRemoved(SequenceTime,int)));
     QObject::connect(knob.get(),SIGNAL(secretChanged()),this,SLOT(setSecret()));
     QObject::connect(knob.get(),SIGNAL(enabledChanged()),this,SLOT(setEnabledSlot()));
+    QObject::connect(knob.get(), SIGNAL(restorationComplete()), this, SLOT(onRestorationComplete()));
 }
 
 KnobGui::~KnobGui(){
@@ -201,10 +202,23 @@ void KnobGui::createAnimationMenu(){
     QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(onPasteActionTriggered()));
     copyMenu->addAction(pasteAction);
     
+    bool isSlave = false;
+    for (int i = 0; i < getKnob()->getDimension(); ++i) {
+        if (getKnob()->isCurveSlave(i)) {
+            isSlave = true;
+            break;
+        }
+    }
     
-    QAction* linkToAction = new QAction(tr("Link to"),_animationMenu);
-    QObject::connect(linkToAction,SIGNAL(triggered()),this,SLOT(onLinkToActionTriggered()));
-    _animationMenu->addAction(linkToAction);
+    if(!isSlave) {
+        QAction* linkToAction = new QAction(tr("Link to"),_animationMenu);
+        QObject::connect(linkToAction,SIGNAL(triggered()),this,SLOT(onLinkToActionTriggered()));
+        _animationMenu->addAction(linkToAction);
+    } else {
+        QAction* unlinkAction = new QAction(tr("Unlink"),_animationMenu);
+        QObject::connect(unlinkAction,SIGNAL(triggered()),this,SLOT(onUnlinkActionTriggered()));
+        _animationMenu->addAction(unlinkAction);
+    }
     
 }
 
@@ -541,10 +555,29 @@ void KnobGui::onLinkToActionTriggered(){
                 }
                 
                 _knob->slaveTo(i, otherKnob);
+                updateGUI(i,_knob->getValue(i));
+                checkAnimationLevel(i);
+                emit keyFrameRemoved();
+                QObject::connect(otherKnob.get(), SIGNAL(updateSlaves(int)), this, SLOT(onMasterChange(int)));
             }
+            _knob->setEnabled(false);
         }
         
     }
+    
+}
+
+void KnobGui::onUnlinkActionTriggered(){
+    for(int i = 0; i < _knob->getDimension();++i){
+        boost::shared_ptr<Knob> other = _knob->isCurveSlave(i);
+        _knob->unSlave(i);
+        updateGUI(i,_knob->getValue(i));
+        checkAnimationLevel(i);
+        emit keyFrameSet();
+        QObject::disconnect(other.get(), SIGNAL(updateSlaves(int)), this, SLOT(onMasterChange(int)));
+
+    }
+    _knob->setEnabled(true);
     
 }
 
@@ -602,4 +635,20 @@ void KnobGui::pushValueChangedCommand(const Variant& v, int dimension){
         }
     }
     pushUndoCommand(new KnobUndoCommand(this, getKnob()->getValueForEachDimension(),vec));
+}
+
+void KnobGui::onRestorationComplete() {
+    for (int i = 0; i < _knob->getDimension(); ++i) {
+        boost::shared_ptr<Knob> other = _knob->isCurveSlave(i);
+        if(other) {
+            QObject::connect(other.get(), SIGNAL(updateSlaves(int)), this, SLOT(onMasterChange(int)));
+        }
+    }
+}
+
+void KnobGui::onMasterChange(int dimension) {
+    if(_widgetCreated) {
+        updateGUI(dimension, _knob->getValue(dimension));
+        checkAnimationLevel(dimension);
+    }
 }

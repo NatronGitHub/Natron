@@ -300,9 +300,29 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
 : OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance())
 , _node(node)
 {
-    QObject::connect(node->getApp()->getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(onProjectFormatChanged(Format)));
     
     const OFX::Host::Property::Set &properties = getProperties();
+
+    const std::string& doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
+
+ 
+    if(doubleType == kOfxParamDoubleTypeX ||
+       doubleType == kOfxParamDoubleTypeXAbsolute ||
+       doubleType == kOfxParamDoubleTypeNormalisedX ||
+       doubleType == kOfxParamDoubleTypeNormalisedXAbsolute ||
+       doubleType == kOfxParamDoubleTypeY ||
+       doubleType == kOfxParamDoubleTypeYAbsolute ||
+       doubleType == kOfxParamDoubleTypeNormalisedY ||
+       doubleType == kOfxParamDoubleTypeNormalisedYAbsolute ||
+       doubleType == kOfxParamDoubleTypeXY ||
+       doubleType == kOfxParamDoubleTypeXYAbsolute ||
+       doubleType == kOfxParamDoubleTypeNormalisedXY ||
+       doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute){
+        ///connect to this slot ONLY if the double is spatial double
+        QObject::connect(node->getApp()->getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(onProjectFormatChanged(Format)));
+        
+    }
+    
     
     _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this));
     
@@ -311,7 +331,6 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
     double incr = properties.getDoubleProperty(kOfxParamPropIncrement);
     double def = properties.getDoubleProperty(kOfxParamPropDefault);
     int decimals = properties.getIntProperty(kOfxParamPropDigits);
-    const std::string& doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
 
     valueAccordingToType(true,doubleType, node, &min);
     valueAccordingToType(true,doubleType, node, &max);
@@ -810,14 +829,29 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
 : OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance())
 , _node(node)
 {
-    
-    QObject::connect(node->getApp()->getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(onProjectFormatChanged(Format)));
-    const int dims = 2;
     const OFX::Host::Property::Set &properties = getProperties();
+    const std::string& doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
+
+    if(doubleType == kOfxParamDoubleTypeX ||
+       doubleType == kOfxParamDoubleTypeXAbsolute ||
+       doubleType == kOfxParamDoubleTypeNormalisedX ||
+       doubleType == kOfxParamDoubleTypeNormalisedXAbsolute ||
+       doubleType == kOfxParamDoubleTypeY ||
+       doubleType == kOfxParamDoubleTypeYAbsolute ||
+       doubleType == kOfxParamDoubleTypeNormalisedY ||
+       doubleType == kOfxParamDoubleTypeNormalisedYAbsolute ||
+       doubleType == kOfxParamDoubleTypeXY ||
+       doubleType == kOfxParamDoubleTypeXYAbsolute ||
+       doubleType == kOfxParamDoubleTypeNormalisedXY ||
+       doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute){
+        ///connect to this slot ONLY if the double is spatial double
+        QObject::connect(node->getApp()->getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(onProjectFormatChanged(Format)));
+        
+    }
+    const int dims = 2;
     
     
     _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this),dims);
-    const std::string& doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
 
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);

@@ -292,6 +292,8 @@ public slots:
     
     void onAnimationRemoved(int dimension);
 
+    void triggerUpdateSlaves(int dimension) { emit updateSlaves(dimension); }
+    
 signals:
     
     ///emitted whenever setAnimationLevel is called. It is meant to notify
@@ -315,6 +317,7 @@ signals:
     
     void animationRemoved(int);
     
+    void updateSlaves(int dimension);
     
 private:
     //private because it emits a signal

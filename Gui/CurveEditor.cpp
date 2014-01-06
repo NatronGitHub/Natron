@@ -273,7 +273,8 @@ void NodeCurveEditorElement::checkVisibleState(){
     if(!_curve)
         return;
     int i = _curve->getInternalCurve()->keyFramesCount();
-    if(i > 1){
+    bool isSlave = _knob->getKnob()->isCurveSlave(_dimension);
+    if(i > 1 && !isSlave){
         //show the item
         if(!_curveDisplayed){
             _curveDisplayed = true;
@@ -323,7 +324,7 @@ void NodeCurveEditorElement::checkVisibleState(){
         
 
         
-    }else{
+    }else if(isSlave){
         //hide the item
         //hiding is a bit more complex because we do not always hide the parent too,it also
         // depends on the item's siblings visibility

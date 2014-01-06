@@ -190,34 +190,36 @@ Knob::ValueChangedReturnCode Knob::setValue(const Variant& v, int dimension, Nat
     ///if the knob is slaved to another knob,return, because we don't want the
     ///gui to be unsynchronized with what lies internally.
     boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
-    if(isSlave){
-        return ret;
-    }
-    
-    ///locking project if it is saving
-    if(_imp->_holder->getApp()){
-        _imp->_holder->getApp()->lockProject();
-    }
-    
-    _imp->_values[dimension] = v;
-    
-    ///unlocking project if it is saving
-     if(_imp->_holder->getApp()){
-         _imp->_holder->getApp()->unlockProject();
-     }
-    
-    ///Add automatically a new keyframe
-    if(getAnimationLevel(dimension) != Natron::NO_ANIMATION && _imp->_holder->getApp() &&
-       (reason == Natron::USER_EDITED || reason == Natron::PLUGIN_EDITED) && newKey != NULL){
-        SequenceTime time = _imp->_holder->getApp()->getTimeLine()->currentFrame();
-        bool addedKeyFrame = setValueAtTime(time, v, dimension,reason,newKey);
-        if(addedKeyFrame){
-            ret = KEYFRAME_ADDED;
-        }else{
-            ret = KEYFRAME_MODIFIED;
+    if(!isSlave){
+        ///locking project if it is saving
+        if(_imp->_holder->getApp()){
+            _imp->_holder->getApp()->lockProject();
+        }
+        
+        _imp->_values[dimension] = v;
+        
+        ///unlocking project if it is saving
+        if(_imp->_holder->getApp()){
+            _imp->_holder->getApp()->unlockProject();
+        }
+        
+        ///Add automatically a new keyframe
+        if(getAnimationLevel(dimension) != Natron::NO_ANIMATION && //< if the knob is animated
+           _imp->_holder->getApp() && //< the app pointer is not NULL
+           !_imp->_holder->getApp()->isLoadingProject() && //< we're not loading the project
+           (reason == Natron::USER_EDITED || reason == Natron::PLUGIN_EDITED) && //< the change was made by the user or plugin
+           newKey != NULL){ //< the keyframe to set is not null
+            
+            SequenceTime time = _imp->_holder->getApp()->getTimeLine()->currentFrame();
+            bool addedKeyFrame = setValueAtTime(time, v, dimension,reason,newKey);
+            if(addedKeyFrame){
+                ret = KEYFRAME_ADDED;
+            }else{
+                ret = KEYFRAME_MODIFIED;
+            }
+            
         }
     }
-    
     if(ret == NO_KEYFRAME_ADDED){ //the other cases already called this in setValueAtTime()
         evaluateValueChange(dimension,reason);
     }
@@ -258,6 +260,8 @@ bool Knob::setValueAtTime(int time, const Variant& v, int dimension, Natron::Val
     if(reason != Natron::USER_EDITED){
         emit keyFrameSet(time,dimension);
     }
+    
+    emit updateSlaves(dimension);
     return ret;
 }
 
@@ -279,6 +283,7 @@ void Knob::deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason r
     if(reason != Natron::USER_EDITED){
         emit keyFrameRemoved(time,dimension);
     }
+    emit updateSlaves(dimension);
 }
 
 void Knob::removeAnimation(int dimension,Natron::ValueChangedReason reason){
@@ -323,6 +328,11 @@ void Knob::removeAnimation(int dimension){
 
 boost::shared_ptr<Curve> Knob::getCurve(int dimension) const {
     assert(dimension < (int)_imp->_curves.size());
+    
+    boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
+    if(isSlave){
+        return isSlave->getCurve(dimension);
+    }
     return _imp->_curves[dimension];
 }
 
@@ -350,6 +360,7 @@ void Knob::load(const KnobSerialization& serializationObj){
         {
             if(otherKnobs[j]->getDescription() == serializedMasters[i]){
                 _imp->_masters[i] = otherKnobs[j];
+                setEnabled(false);
                 break;
             }
         }
@@ -439,6 +450,7 @@ void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
     processNewValue();
     if(reason != Natron::USER_EDITED && !_imp->_holder->isClone()){
         emit valueChanged(dimension);
+        emit updateSlaves(dimension);
     }
     
     bool significant = reason == Natron::TIME_CHANGED ? false : !_imp->_isInsignificant;
@@ -449,13 +461,13 @@ void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
 
 void Knob::onTimeChanged(SequenceTime time){
     //setValue's calls compression is taken care of above.
-    for(U32 i = 0 ; i < _imp->_curves.size();++i){
-        if(_imp->_curves[i]->keyFramesCount() > 0){
+    for (int i = 0; i < getDimension(); ++i) {
+        boost::shared_ptr<Curve> c = getCurve(i);
+        if(c->keyFramesCount() > 0) {
             Variant v = getValueAtTime(time,i);
             setValue(v,i,Natron::TIME_CHANGED,NULL);
         }
     }
-    
 }
 
 
