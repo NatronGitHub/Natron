@@ -12,6 +12,8 @@
 
 #include <cfloat>
 
+#include <QDebug>
+
 #include "Engine/Curve.h"
 
 using namespace Natron;

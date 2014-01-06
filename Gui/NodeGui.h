@@ -13,6 +13,7 @@
 #define NATRON_GUI_NODEGUI_H_
 
 #include <map>
+#include <boost/shared_ptr.hpp>
 
 #include <QtCore/QRectF>
 #include <QGraphicsItem>

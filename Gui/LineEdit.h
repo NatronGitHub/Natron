@@ -14,6 +14,8 @@
 
 #include <QLineEdit>
 
+#include "Global/Macros.h"
+
 class QPaintEvent;
 class QDropEvent;
 class QDragEnterEvent;

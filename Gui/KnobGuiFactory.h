@@ -14,6 +14,7 @@
 
 #include <string>
 #include <map>
+#include <boost/shared_ptr.hpp>
 
 class Knob;
 class DockablePanel;

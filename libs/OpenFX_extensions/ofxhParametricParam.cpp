@@ -11,6 +11,7 @@
 
 #include <cassert>
 #include <sstream>
+#include <cmath>
 
 #include "ofxhParametricParam.h"
 

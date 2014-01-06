@@ -12,6 +12,7 @@
 #include "Settings.h"
 
 #include <QDir>
+#include <QSettings>
 
 #include "Global/AppManager.h"
 #include "Global/MemoryInfo.h"
