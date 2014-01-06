@@ -39,8 +39,11 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , holdersWhoseBeginWasCalled()
     , isSignificantChange(false)
     , lastKnobChanged(NULL)
+    , knobClipBoard()
 
 {
+    knobClipBoard.isEmpty = true;
+    knobClipBoard.copyAnimation = false;
 }
 
 

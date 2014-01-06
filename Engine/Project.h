@@ -27,6 +27,7 @@ class QString;
 class QDateTime;
 class AppInstance;
 class ProjectSerialization;
+class KnobSerialization;
 class ProjectGui;
 class AddFormatDialog;
 namespace Natron{
@@ -132,6 +133,12 @@ private:
     void save(ProjectSerialization* serializationObject) const;
     
     void load(const ProjectSerialization& obj);
+    
+    void setKnobClipBoard(const KnobSerialization& s,bool copyAnimation);
+    
+    bool isClipBoardEmpty() const;
+    
+    void getKnobClipBoard(KnobSerialization* k,bool* copyAnimation) const;
 
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done

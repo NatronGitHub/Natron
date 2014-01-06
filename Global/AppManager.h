@@ -54,6 +54,7 @@ class TimeLine;
 class QProcess;
 class Settings;
 class RenderingProgressDialog;
+class KnobSerialization;
 namespace Natron {
 class OutputEffectInstance;
 class LibraryBinary;
@@ -175,6 +176,12 @@ public:
     void lockProject();
 
     void unlockProject();
+
+    void setKnobClipBoard(const KnobSerialization& s,bool copyAnimation);
+
+    bool isClipBoardEmpty() const;
+
+    void getKnobClipBoard(KnobSerialization* k,bool* copyAnimation) const;
 
 private:
 

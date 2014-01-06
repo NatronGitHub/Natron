@@ -306,9 +306,13 @@ void Knob::removeAnimation(int dimension,Natron::ValueChangedReason reason){
     }
 }
 
-void Knob::setValue(const Variant& value,int dimension){
-    KeyFrame k;
-    setValue(value,dimension,Natron::PLUGIN_EDITED,&k);
+void Knob::setValue(const Variant& value,int dimension,bool turnOffAutoKeying){
+    if(turnOffAutoKeying){
+        setValue(value,dimension,Natron::PLUGIN_EDITED,NULL);
+    }else{
+        KeyFrame k;
+        setValue(value,dimension,Natron::PLUGIN_EDITED,&k);
+    }
 }
 
 void Knob::setValueAtTime(int time, const Variant& v, int dimension){

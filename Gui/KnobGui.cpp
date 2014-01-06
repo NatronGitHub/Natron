@@ -47,6 +47,7 @@
 #include "Engine/Curve.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
+#include "Engine/KnobSerialization.h"
 
 #include "Gui/Button.h"
 #include "Gui/DockablePanel.h"
@@ -214,10 +215,14 @@ void KnobGui::createAnimationMenu(){
     
     if(!isSlave) {
         
+        bool isClipBoardEmpty = _knob->getHolder()->getApp()->isClipBoardEmpty();
+        
         QAction* pasteAction = new QAction(tr("Paste"),copyMenu);
         QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(onPasteActionTriggered()));
         copyMenu->addAction(pasteAction);
-        
+        if (isClipBoardEmpty) {
+            pasteAction->setEnabled(false);
+        }
     }
     
     if(!isSlave) {
@@ -443,15 +448,53 @@ void KnobGui::onInternalKeyRemoved(SequenceTime,int){
 }
 
 void KnobGui::onCopyValuesActionTriggered(){
-    
+    KnobSerialization k;
+    k.initialize(_knob.get());
+    _knob->getHolder()->getApp()->setKnobClipBoard(k,false);
 }
 
 void KnobGui::onCopyAnimationActionTriggered(){
-    
+    KnobSerialization k;
+    k.initialize(_knob.get());
+    _knob->getHolder()->getApp()->setKnobClipBoard(k,true);
 }
 
 void KnobGui::onPasteActionTriggered(){
+    if (_knob->getHolder()->getApp()->isClipBoardEmpty()) {
+        return;
+    }
+    KnobSerialization k;
+    bool copyAnimation;
+    _knob->getHolder()->getApp()->getKnobClipBoard(&k, &copyAnimation);
     
+    _knob->beginValueChange(Natron::PLUGIN_EDITED);
+    
+    const std::vector<Variant>& values =  k.getValues();
+    if ((int)values.size() == _knob->getDimension()) {
+        if(!copyAnimation) {
+            pushValueChangedCommand(values);
+        }else {
+            for (U32 i = 0; i < values.size(); ++i) {
+                _knob->setValue(values[i], i,true);
+            }
+        }
+    }else{
+        Natron::errorDialog("Paste values", "You cannot copy/paste values from/to parameters with different dimensions.");
+    }
+    
+
+    if (copyAnimation) {
+        const  std::vector< boost::shared_ptr<Curve> >& curves = k.getCurves();
+        if((int)curves.size() == _knob->getDimension()){
+            for (U32 i = 0; i < curves.size(); ++i) {
+                _knob->getCurve(i)->clone(*curves[i]);
+            }
+            emit keyFrameSet();
+        }else{
+            Natron::errorDialog("Paste animation", "You cannot copy/paste animation from/to parameters with different dimensions.");
+        }
+    }
+        _knob->endValueChange(Natron::PLUGIN_EDITED);
 }
 
 

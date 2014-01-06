@@ -125,7 +125,7 @@ public:
     }
 
 
-    void setValue(const Variant& value,int dimension);
+    void setValue(const Variant& value,int dimension,bool turnOffAutoKeying = false);
 
     template<typename T>
     void setValue(const T &value,int dimension = 0) {

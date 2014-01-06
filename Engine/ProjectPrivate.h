@@ -20,6 +20,7 @@
 #include "Engine/Format.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFactory.h"
+#include "Engine/KnobSerialization.h"
 
 class TimeLine;
 class NodeSerialization;
@@ -40,6 +41,12 @@ inline QString generateStringFromFormat(const Format& f){
     formatStr.append(QString::number(f.getPixelAspect()));
     return formatStr;
 }
+    
+    struct KnobClipBoard {
+        KnobSerialization k; //< the serialized knob to copy
+        bool isEmpty; //< is the clipboard empty
+        bool copyAnimation; //< should we copy all the animation or not
+    };
 
 struct ProjectPrivate{
     QString projectName;
@@ -69,6 +76,7 @@ struct ProjectPrivate{
     std::map<KnobHolder*,int> holdersWhoseBeginWasCalled;
     bool isSignificantChange;
     Knob* lastKnobChanged;
+    KnobClipBoard knobClipBoard;
     
     ProjectPrivate(Natron::Project* project);
     

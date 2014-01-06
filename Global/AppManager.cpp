@@ -758,6 +758,18 @@ void AppInstance::endProjectWideValueChanges(Natron::ValueChangedReason reason, 
     _currentProject->endProjectWideValueChanges(reason, caller);
 }
 
+void AppInstance::setKnobClipBoard(const KnobSerialization& s,bool copyAnimation) {
+    _currentProject->setKnobClipBoard(s,copyAnimation);
+}
+
+bool AppInstance::isClipBoardEmpty() const{
+    return _currentProject->isClipBoardEmpty();
+}
+
+void AppInstance::getKnobClipBoard(KnobSerialization* k,bool* copyAnimation) const{
+    _currentProject->getKnobClipBoard(k,copyAnimation);
+}
+
 const std::vector<Natron::Node*>& AppInstance::getCurrentNodes() const{
     QMutexLocker l(&_projectLock);
     return _currentProject->getCurrentNodes();
