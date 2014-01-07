@@ -180,6 +180,7 @@ NodeGui::~NodeGui(){
         _settingsPanel->setParent(NULL);
         delete _settingsPanel;
     }
+    removeUndoStack();
 }
 
 void NodeGui::removeUndoStack(){

@@ -233,7 +233,7 @@ void Project::setLastTimelineSeekCaller(Natron::OutputEffectInstance* output){
     _imp->lastTimelineSeekCaller = output;
 }
 
-void Project::onTimeChanged(SequenceTime time,int /*reason*/){
+void Project::onTimeChanged(SequenceTime time,int reason){
     std::vector<ViewerInstance*> viewers;
     
     getApp()->lockProject();
@@ -262,7 +262,7 @@ void Project::onTimeChanged(SequenceTime time,int /*reason*/){
     getApp()->unlockProject();
 
     for(U32 i = 0; i < viewers.size();++i){
-        if(viewers[i] != _imp->lastTimelineSeekCaller){
+        if(viewers[i] != _imp->lastTimelineSeekCaller || reason == USER_SEEK){
             viewers[i]->refreshAndContinueRender();
         }
     }
