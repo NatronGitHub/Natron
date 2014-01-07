@@ -1158,7 +1158,7 @@ void AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector<std::st
                                         std::map<std::string,std::vector<std::string> >* writersMap){
     // these  are built-in nodes
     QStringList grouping;
-    grouping.push_back("IO");
+    grouping.push_back("Image"); // Readers, Writers, and Generators are in the "Image" group in Nuke
     {
         QtReader* reader = dynamic_cast<QtReader*>(QtReader::BuildEffect(NULL));
         assert(reader);
