@@ -573,7 +573,7 @@ void ViewerTab::lastFrame(){
 
 void ViewerTab::onTimeLineTimeChanged(SequenceTime time,int /*reason*/){
     _currentFrameBox->setValue(time);
-    _viewerNode->refreshAndContinueRender();
+    //_viewerNode->refreshAndContinueRender();
 }
 
 void ViewerTab::onCurrentTimeSpinBoxChanged(double time){
