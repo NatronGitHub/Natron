@@ -55,6 +55,7 @@ class QProcess;
 class Settings;
 class RenderingProgressDialog;
 class KnobSerialization;
+struct KnobsClipBoard;
 namespace Natron {
 class OutputEffectInstance;
 class LibraryBinary;
@@ -176,12 +177,6 @@ public:
     void lockProject();
 
     void unlockProject();
-
-    void setKnobClipBoard(const KnobSerialization& s,bool copyAnimation);
-
-    bool isClipBoardEmpty() const;
-
-    void getKnobClipBoard(KnobSerialization* k,bool* copyAnimation) const;
 
 private:
 
@@ -493,6 +488,12 @@ public:
 
     bool isInitialized() const WARN_UNUSED_RETURN { return _initialized; }
 
+    void setKnobClipBoard(const KnobSerialization& s,bool copyAnimation);
+
+    bool isClipBoardEmpty() const;
+
+    void getKnobClipBoard(KnobSerialization* k,bool* copyAnimation) const;
+
 public slots:
 
     void clearPlaybackCache();
@@ -570,6 +571,8 @@ private:
     QCursor* _colorPickerCursor;
 
     bool _initialized;
+
+    boost::scoped_ptr<KnobsClipBoard> _knobsClipBoard;
 
 };
 

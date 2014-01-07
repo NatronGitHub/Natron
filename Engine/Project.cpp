@@ -379,18 +379,5 @@ void Project::onKnobValueChanged(Knob* knob,Natron::ValueChangedReason /*reason*
 
 }
     
-void Project::setKnobClipBoard(const KnobSerialization& s,bool copyAnimation){
-    _imp->knobClipBoard.k = s;
-    _imp->knobClipBoard.copyAnimation = copyAnimation;
-    _imp->knobClipBoard.isEmpty = false;
-}
-    
-bool Project::isClipBoardEmpty() const{
-    return _imp->knobClipBoard.isEmpty;
-}
-    
-void Project::getKnobClipBoard(KnobSerialization* k,bool* copyAnimation) const{
-    *k = _imp->knobClipBoard.k;
-    *copyAnimation = _imp->knobClipBoard.copyAnimation;
-}
+
 } //namespace Natron

@@ -156,6 +156,7 @@ SOURCES += \
     Global/LibraryBinary.cpp \
     Global/main.cpp \
     Gui/AnimatedCheckBox.cpp \
+    Gui/AnimationButton.cpp \
     Gui/Button.cpp \
     Gui/ClickableLabel.cpp \
     Gui/ComboBox.cpp \
@@ -260,6 +261,7 @@ HEADERS += \
     Global/MemoryInfo.h \
     Global/QtCompat.h \
     Gui/AnimatedCheckBox.h \
+    Gui/AnimationButton.h \
     Gui/Button.h \
     Gui/ClickableLabel.h \
     Gui/ComboBox.h \
@@ -335,7 +337,6 @@ HEADERS += \
     libs/OpenFX_extensions/tuttle/ofxReadWrite.h \
     libs/OpenFX_extensions/ofxhParametricParam.h \
     libs/OpenFX/include/natron/IOExtensions.h
-
 INSTALLS += target
 
 RESOURCES += \

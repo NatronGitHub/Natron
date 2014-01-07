@@ -67,6 +67,11 @@ using namespace Natron;
 using std::cout; using std::endl;
 using std::make_pair;
 
+struct KnobsClipBoard {
+    KnobSerialization k; //< the serialized knob to copy
+    bool isEmpty; //< is the clipboard empty
+    bool copyAnimation; //< should we copy all the animation or not
+};
 
 void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
     if(!QPixmapCache::find(QString::number(e),pix)){
@@ -758,17 +763,6 @@ void AppInstance::endProjectWideValueChanges(Natron::ValueChangedReason reason, 
     _currentProject->endProjectWideValueChanges(reason, caller);
 }
 
-void AppInstance::setKnobClipBoard(const KnobSerialization& s,bool copyAnimation) {
-    _currentProject->setKnobClipBoard(s,copyAnimation);
-}
-
-bool AppInstance::isClipBoardEmpty() const{
-    return _currentProject->isClipBoardEmpty();
-}
-
-void AppInstance::getKnobClipBoard(KnobSerialization* k,bool* copyAnimation) const{
-    _currentProject->getKnobClipBoard(k,copyAnimation);
-}
 
 const std::vector<Natron::Node*>& AppInstance::getCurrentNodes() const{
     QMutexLocker l(&_projectLock);
@@ -1019,6 +1013,7 @@ AppManager::AppManager()
     , _viewerCache()
     ,_colorPickerCursor(NULL)
     ,_initialized(false)
+    ,_knobsClipBoard(new KnobsClipBoard)
 {
     
     _settings->initializeKnobs();
@@ -1047,6 +1042,9 @@ AppManager::AppManager()
     _initialized = true;
     
     _settings->restoreSettings();
+    
+    _knobsClipBoard->isEmpty = true;
+    
 
 }
 
@@ -1561,6 +1559,24 @@ Natron::LibraryBinary* AppManager::getPluginBinary(const QString& pluginId,int m
         return greatest->second->getLibraryBinary();
     }
 }
+
+
+
+void AppManager::setKnobClipBoard(const KnobSerialization& s,bool copyAnimation) {
+    _knobsClipBoard->k = s;
+    _knobsClipBoard->copyAnimation = copyAnimation;
+    _knobsClipBoard->isEmpty = false;
+}
+
+bool AppManager::isClipBoardEmpty() const{
+    return  _knobsClipBoard->isEmpty;
+}
+
+void AppManager::getKnobClipBoard(KnobSerialization* k,bool* copyAnimation) const{
+    *k = _knobsClipBoard->k;
+    *copyAnimation = copyAnimation;
+}
+
 int AppInstance::getKnobsAge() const{
     QMutexLocker l(&_projectLock);
     return _currentProject->getKnobsAge();
