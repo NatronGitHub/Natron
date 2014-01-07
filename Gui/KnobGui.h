@@ -33,7 +33,8 @@ class Variant; //used by KnobGui
 class KeyFrame;
 
 // Gui
-class Button; //used by KnobGui
+class Button;
+class AnimationButton; //used by KnobGui
 class DockablePanel; //used by KnobGui
 
 class KnobGui : public QObject
@@ -205,7 +206,7 @@ private:
     bool _widgetCreated;
     DockablePanel* const _container;
     QMenu* _animationMenu;
-    Button* _animationButton;
+    AnimationButton* _animationButton;
 };
 
 

@@ -1431,7 +1431,6 @@ OfxStatus OfxStringInstance::get(std::string &str) {
 }
 
 OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
-    assert(!String_Knob::canAnimateStatic());
     assert(_node->effectInstance());
     if(_fileKnob){
         bool loadNearest = (bool)getProperties().getIntProperty(kNatronParamImageFilePathLoadNearest);

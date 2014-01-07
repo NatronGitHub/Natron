@@ -215,7 +215,7 @@ border: 0.5px solid black;
 border-radius : 3px;
 padding : 3px;
 }
-QPushButton:Pressed{
+QPushButton:pressed{
 background-color : %4;
 }
 QPushButton:hover

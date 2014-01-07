@@ -49,7 +49,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/KnobSerialization.h"
 
-#include "Gui/Button.h"
+#include "Gui/AnimationButton.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/TimeLineGui.h"
@@ -124,7 +124,7 @@ void KnobGui::createGUI(QGridLayout* layout,int row){
 
 void KnobGui::createAnimationButton(QGridLayout* layout,int row){
     _animationMenu = new QMenu(layout->parentWidget());
-    _animationButton = new Button("A",layout->parentWidget());
+    _animationButton = new AnimationButton(this,"A",layout->parentWidget());
     _animationButton->setToolTip("Animation menu");
     QObject::connect(_animationButton,SIGNAL(clicked()),this,SLOT(showAnimationMenu()));
     layout->addWidget(_animationButton, row, 3,Qt::AlignLeft);
@@ -215,7 +215,7 @@ void KnobGui::createAnimationMenu(){
     
     if(!isSlave) {
         
-        bool isClipBoardEmpty = _knob->getHolder()->getApp()->isClipBoardEmpty();
+        bool isClipBoardEmpty = appPTR->isClipBoardEmpty();
         
         QAction* pasteAction = new QAction(tr("Paste"),copyMenu);
         QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(onPasteActionTriggered()));
@@ -450,26 +450,38 @@ void KnobGui::onInternalKeyRemoved(SequenceTime,int){
 void KnobGui::onCopyValuesActionTriggered(){
     KnobSerialization k;
     k.initialize(_knob.get());
-    _knob->getHolder()->getApp()->setKnobClipBoard(k,false);
+    appPTR->setKnobClipBoard(k,false);
 }
 
 void KnobGui::onCopyAnimationActionTriggered(){
     KnobSerialization k;
     k.initialize(_knob.get());
-    _knob->getHolder()->getApp()->setKnobClipBoard(k,true);
+    appPTR->setKnobClipBoard(k,true);
 }
 
 void KnobGui::onPasteActionTriggered(){
-    if (_knob->getHolder()->getApp()->isClipBoardEmpty()) {
+    if (appPTR->isClipBoardEmpty()) {
         return;
     }
+    
+    
     KnobSerialization k;
     bool copyAnimation;
-    _knob->getHolder()->getApp()->getKnobClipBoard(&k, &copyAnimation);
+    appPTR->getKnobClipBoard(&k, &copyAnimation);
     
     _knob->beginValueChange(Natron::PLUGIN_EDITED);
     
     const std::vector<Variant>& values =  k.getValues();
+    
+    const Variant& thisValue = _knob->getValue();
+    if (thisValue.type() != values[0].type()) {
+        QString err = QString("Cannot paste values of a %1 parameter to a %2 parameter")
+        .arg(values[0].typeName()).arg(thisValue.typeName());
+        
+        Natron::errorDialog("Paste",err.toStdString());
+        return;
+    }
+    
     if ((int)values.size() == _knob->getDimension()) {
         if(!copyAnimation) {
             pushValueChangedCommand(values);
@@ -535,11 +547,13 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
         const std::vector< boost::shared_ptr<Knob> >& knobs = allActiveNodes[i]->getKnobs();
         
         for (U32 j = 0; j < knobs.size(); ++j) {
-            QString name(allActiveNodes[i]->getName().c_str());
-            name.append("/");
-            name.append(knobs[j]->getDescription().c_str());
-            _allKnobs.insert(std::make_pair(name,knobs[j]));
-            comboItems.push_back(name);
+            if(knobs[j]->isEnabled() && !knobs[j]->isSecret()){
+                QString name(allActiveNodes[i]->getName().c_str());
+                name.append("/");
+                name.append(knobs[j]->getDescription().c_str());
+                _allKnobs.insert(std::make_pair(name,knobs[j]));
+                comboItems.push_back(name);
+            }
         }
     }
     _selectionCombo->addItems(comboItems);
