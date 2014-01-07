@@ -1419,8 +1419,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
     if(_fileKnob){
         int currentFrame = (int)_node->effectInstance()->timeLineGetTime();
-        bool loadNearest = (bool)getProperties().getIntProperty(kNatronParamImageFilePathLoadNearest);
-        QString fileName =  _fileKnob->getRandomFrameName(currentFrame,loadNearest);
+        QString fileName =  _fileKnob->getRandomFrameName(currentFrame,false);
         str = fileName.toStdString();
     }else if(_outputFileKnob){
         str = _outputFileKnob->filenameFromPattern((int)_node->getCurrentFrame());
@@ -1433,8 +1432,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
 OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
     assert(_node->effectInstance());
     if(_fileKnob){
-        bool loadNearest = (bool)getProperties().getIntProperty(kNatronParamImageFilePathLoadNearest);
-        str = _fileKnob->getRandomFrameName(time,loadNearest).toStdString();
+        str = _fileKnob->getRandomFrameName(time,false).toStdString();
     }else if(_outputFileKnob){
         str = _outputFileKnob->filenameFromPattern(std::floor(time + 0.5));
     }else if(_stringKnob){
