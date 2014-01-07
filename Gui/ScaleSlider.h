@@ -22,7 +22,7 @@
 #include <QtOpenGL/QGLWidget>
 
 #include "Global/Enums.h"
-
+#include "Global/Macros.h"
 #include "Gui/TextRenderer.h"
 
 using Natron::Scale_Type;

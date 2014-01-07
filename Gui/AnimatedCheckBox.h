@@ -8,6 +8,8 @@
 
 #include <QCheckBox>
 
+#include "Global/Macros.h"
+
 class AnimatedCheckBox : public QCheckBox
 {
 

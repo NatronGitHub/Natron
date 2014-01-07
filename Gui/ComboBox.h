@@ -17,6 +17,8 @@
 #include <QtGui/QKeySequence>
 #include <QtGui/QIcon>
 
+#include "Global/Macros.h"
+
 class QHBoxLayout;
 class QLabel;
 class QMouseEvent;

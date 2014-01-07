@@ -14,6 +14,9 @@
 
 #include <vector>
 #include <string>
+
+#include <QtCore/QMutex>
+
 #include "Engine/EffectInstance.h"
 
 namespace Natron {

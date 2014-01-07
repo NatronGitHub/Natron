@@ -14,6 +14,8 @@
 
 #include <QGraphicsLineItem>
 
+#include "Global/Macros.h"
+
 class QGraphicsPolygonItem;
 class QGraphicsLineItem;
 class QRectF;

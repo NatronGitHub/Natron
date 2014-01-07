@@ -14,6 +14,8 @@
 #include <boost/shared_ptr.hpp>
 #include <QScrollArea>
 
+#include "Global/Macros.h"
+
 class Settings;
 class DockablePanel;
 class QVBoxLayout;
