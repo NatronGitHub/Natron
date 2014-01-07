@@ -46,11 +46,11 @@ QtReader::~QtReader(){
 }
 
 std::string QtReader::pluginID() const {
-    return "QtReader";
+    return "ReadQt";
 }
 
 std::string QtReader::pluginLabel() const {
-    return "QtReader";
+    return "ReadQt";
 }
 
 std::string QtReader::description() const {

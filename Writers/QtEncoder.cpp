@@ -40,10 +40,10 @@ QtWriter::~QtWriter(){
 }
 
 std::string QtWriter::pluginID() const {
-    return "QtWriter";
+    return "WriteQt";
 }
 std::string QtWriter::pluginLabel() const{
-    return "QtWriter";
+    return "WriteQt";
 }
 
 std::string QtWriter::description() const {
