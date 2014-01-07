@@ -41,6 +41,9 @@ macx {
 #ICON = ...
 # replace com.yourcompany with something more meaningful
 QMAKE_TARGET_BUNDLE_PREFIX = fr.inria
+# Set the pbuilder version to 46, which corresponds to Xcode >= 3.x
+# (else qmake generates an old pbproj on Snow Leopard)
+QMAKE_PBUILDER_VERSION = 46
 universal {
   CONFIG += x86 x86_64
 }
