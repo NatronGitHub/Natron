@@ -114,7 +114,7 @@ void QtReader::initializeKnobs() {
 
 void QtReader::getFrameRange(SequenceTime *first,SequenceTime *last){
     int startingTime = _startingFrame->getValue<int>();
-    *first = _fileKnob->firstFrame() + startingTime;
+    *first =  startingTime;
     *last = _fileKnob->lastFrame() + startingTime;
 }
 
