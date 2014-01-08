@@ -34,8 +34,12 @@ QtReader::QtReader(Natron::Node* node)
 , _lut(Color::LutManager::sRGBLut())
 , _img(0)
 , _fileKnob()
+, _firstFrame()
+, _before()
+, _lastFrame()
+, _after()
 , _missingFrameChoice()
-, _timeOffset()
+, _startingFrame()
 {
 }
 
@@ -61,25 +65,57 @@ void QtReader::initializeKnobs() {
     _fileKnob = Natron::createKnob<File_Knob>(this, "File");
     _fileKnob->setAsInputImage();
     
+    _firstFrame =  Natron::createKnob<Int_Knob>(this, "First frame");
+    _firstFrame->turnOffAnimation();
+    _firstFrame->setValue<int>(0);
+    
+    
+    _before = Natron::createKnob<Choice_Knob>(this, "Before");
+    std::vector<std::string> beforeOptions;
+    beforeOptions.push_back("hold");
+    beforeOptions.push_back("loop");
+    beforeOptions.push_back("bounce");
+    beforeOptions.push_back("black");
+    beforeOptions.push_back("error");
+    _before->populate(beforeOptions);
+    _before->turnOffAnimation();
+    _before->setValue<int>(0);
+    
+    _lastFrame =  Natron::createKnob<Int_Knob>(this, "Last frame");
+    _lastFrame->turnOffAnimation();
+    _lastFrame->setValue<int>(0);
+    
+    
+    _after = Natron::createKnob<Choice_Knob>(this, "After");
+    std::vector<std::string> afterOptions;
+    afterOptions.push_back("hold");
+    afterOptions.push_back("loop");
+    afterOptions.push_back("bounce");
+    afterOptions.push_back("black");
+    afterOptions.push_back("error");
+    _after->populate(beforeOptions);
+    _after->turnOffAnimation();
+    _after->setValue<int>(0);
+    
     _missingFrameChoice = Natron::createKnob<Choice_Knob>(this, "On missing frame");
-    std::vector<std::string> choices;
-    choices.push_back("Load nearest");
-    choices.push_back("Error");
-    choices.push_back("Black image");
-    _missingFrameChoice->populate(choices);
+    std::vector<std::string> missingFrameOptions;
+    missingFrameOptions.push_back("Load nearest");
+    missingFrameOptions.push_back("Error");
+    missingFrameOptions.push_back("Black image");
+    _missingFrameChoice->populate(missingFrameOptions);
     _missingFrameChoice->setValue<int>(0);
     _missingFrameChoice->turnOffAnimation();
     
-    _timeOffset = Natron::createKnob<Int_Knob>(this, "Time offset");
-    _timeOffset->turnOffAnimation();
-    _timeOffset->setValue<int>(0);
+    _startingFrame = Natron::createKnob<Int_Knob>(this, "Starting frame");
+    _startingFrame->turnOffAnimation();
+    _startingFrame->setValue<int>(0);
     
 }
 
 void QtReader::getFrameRange(SequenceTime *first,SequenceTime *last){
-    int timeOffset = _timeOffset->getValue<int>();
-    *first = _fileKnob->firstFrame() + timeOffset;
-    *last = _fileKnob->lastFrame() + timeOffset;
+    int startingTime = _startingFrame->getValue<int>();
+    *first = _fileKnob->firstFrame() + startingTime;
+    *last = _fileKnob->lastFrame() + startingTime;
 }
 
 
@@ -90,18 +126,161 @@ void QtReader::supportedFileFormats(std::vector<std::string>* formats) {
     }
 };
 
-Natron::Status QtReader::getRegionOfDefinition(SequenceTime time,RectI* rod){
-    /*load does actually loads the data too. And we must call it to read the header.
-     That means in this case the readAllData function is useless*/
-    QMutexLocker l(&_lock);
-    int missingFrameChoice = _missingFrameChoice->getValue<int>();
-    int timeOffset = _timeOffset->getValue<int>();
-    QString filename = _fileKnob->getRandomFrameName(time - timeOffset, missingFrameChoice == 0);
+
+SequenceTime QtReader::getSequenceTime(SequenceTime t)
+{
+    int startingTime =  _startingFrame->getValue<int>();
     
-    if (filename.isEmpty()) {
-        if (missingFrameChoice == 1) {
-            setPersistentMessage(Natron::ERROR_MESSAGE, "Missing frame");
+    ///offset the time wrt the starting time
+    SequenceTime sequenceTime =  t;
+    
+    
+    SequenceTime first,last;
+    getFrameRange(&first, &last);
+    
+    ///get the offset from the starting time of the sequence in case we bounce or loop
+    int timeOffsetFromStart = t -  first;
+    
+    if( t < first) {
+        /////if we're before the first frame
+        int beforeChoice = _before->getValue<int>();
+        switch (beforeChoice) {
+            case 0: //hold
+                sequenceTime = first;
+                break;
+            case 1: //loop
+                    //call this function recursively with the appropriate offset in the time range
+                timeOffsetFromStart %= (int)(last - first + 1);
+                sequenceTime = last - std::abs(timeOffsetFromStart);
+                break;
+            case 2: //bounce
+                    //call this function recursively with the appropriate offset in the time range
+            {
+                int sequenceIntervalsCount = timeOffsetFromStart / (last - first);
+                ///if the sequenceIntervalsCount is odd then do exactly like loop, otherwise do the load the opposite frame
+                if (sequenceIntervalsCount % 2 == 0) {
+                    timeOffsetFromStart %= (int)(last - first + 1);
+                    sequenceTime = first + std::abs(timeOffsetFromStart);
+                } else {
+                    timeOffsetFromStart %= (int)(last - first + 1);
+                    sequenceTime = last - std::abs(timeOffsetFromStart);
+                }
+            }
+                break;
+            case 3: //black
+                throw std::invalid_argument("Out of frame range.");
+                break;
+            case 4: //error
+                setPersistentMessage(Natron::ERROR_MESSAGE,  "Missing frame");
+                throw std::invalid_argument("Out of frame range.");
+                break;
+            default:
+                break;
         }
+        
+    } else if( t > last) {
+        /////if we're after the last frame
+        int afterChoice = _after->getValue<int>();
+        
+        switch (afterChoice) {
+            case 0: //hold
+                sequenceTime = last;
+                break;
+            case 1: //loop
+                    //call this function recursively with the appropriate offset in the time range
+                timeOffsetFromStart %= (int)(last - first + 1);
+                sequenceTime = first + std::abs(timeOffsetFromStart);
+                break;
+            case 2: //bounce
+                    //call this function recursively with the appropriate offset in the time range
+            {
+                int sequenceIntervalsCount = timeOffsetFromStart / (last - first);
+                ///if the sequenceIntervalsCount is odd then do exactly like loop, otherwise do the load the opposite frame
+                if (sequenceIntervalsCount % 2 == 0) {
+                    timeOffsetFromStart %= (int)(last - first + 1);
+                    sequenceTime = first + std::abs(timeOffsetFromStart);
+                } else {
+                    timeOffsetFromStart %= (int)(last - first+ 1);
+                    sequenceTime = last - std::abs(timeOffsetFromStart);
+                }
+            }
+                
+                break;
+            case 3: //black
+                throw std::invalid_argument("Out of frame range.");
+                break;
+            case 4: //error
+                setPersistentMessage(Natron::ERROR_MESSAGE, "Missing frame");
+                throw std::invalid_argument("Out of frame range.");
+                break;
+            default:
+                break;
+        }
+        
+    }
+    sequenceTime -= startingTime;
+    return sequenceTime;
+}
+
+void QtReader::getFilenameAtSequenceTime(SequenceTime time, std::string &filename)
+{
+   
+    
+    int missingChoice = _missingFrameChoice->getValue<int>();
+    QString file = _fileKnob->getRandomFrameName(time, false);
+    
+    switch (missingChoice) {
+        case 0: // Load nearest
+                ///the nearest frame search went out of range and couldn't find a frame.
+            if(file.isEmpty()){
+                file = _fileKnob->getRandomFrameName(time, true);
+                if (file.isEmpty()) {
+                    setPersistentMessage(Natron::ERROR_MESSAGE, "Nearest frame search went out of range");
+                } else {
+                    filename = file.toStdString();
+                }
+            } else {
+                filename = file.toStdString();
+            }
+            break;
+        case 1: // Error
+                /// For images sequences, if the offset is not 0, that means no frame were found at the  originally given
+                /// time, we can safely say this is  a missing frame.
+            if (file.isEmpty()) {
+                filename.clear();
+                setPersistentMessage(Natron::ERROR_MESSAGE, "Missing frame");
+            } else {
+                filename = file.toStdString();
+            }
+        case 2: // Black image
+                /// For images sequences, if the offset is not 0, that means no frame were found at the  originally given
+                /// time, we can safely say this is  a missing frame.
+            if (file.isEmpty()) {
+                filename.clear();
+            } else {
+                filename = file.toStdString();
+            }
+            break;
+    }
+    
+    
+    
+}
+
+Natron::Status QtReader::getRegionOfDefinition(SequenceTime time,RectI* rod){
+
+    QMutexLocker l(&_lock);
+    double sequenceTime;
+    try {
+        sequenceTime =  getSequenceTime(time);
+    } catch (const std::exception& e) {
+        return StatFailed;
+    }
+    std::string filename;
+    
+    getFilenameAtSequenceTime(sequenceTime, filename);
+    
+    if (filename.empty()) {
         return StatFailed;
     }
     
@@ -110,9 +289,9 @@ Natron::Status QtReader::getRegionOfDefinition(SequenceTime time,RectI* rod){
         if(_img){
             delete _img;
         }
-        _img = new QImage(_filename);
+        _img = new QImage(_filename.c_str());
         if(_img->format() == QImage::Format_Invalid){
-            setPersistentMessage(Natron::ERROR_MESSAGE, "Failed to load the image " + filename.toStdString());
+            setPersistentMessage(Natron::ERROR_MESSAGE, "Failed to load the image " + filename);
             return StatFailed;
         }
     }

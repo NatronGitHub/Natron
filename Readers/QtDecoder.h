@@ -77,13 +77,22 @@ public:
     
 private:
 
+    SequenceTime getSequenceTime(SequenceTime t);
+
+    void getFilenameAtSequenceTime(SequenceTime time, std::string &filename);
+
+
     const Natron::Color::Lut* _lut;
-    QString _filename;
+    std::string _filename;
     QImage* _img;
     QMutex _lock;
     boost::shared_ptr<File_Knob> _fileKnob;
+    boost::shared_ptr<Int_Knob> _firstFrame;
+    boost::shared_ptr<Choice_Knob> _before;
+    boost::shared_ptr<Int_Knob> _lastFrame;
+    boost::shared_ptr<Choice_Knob> _after;
     boost::shared_ptr<Choice_Knob> _missingFrameChoice;
-    boost::shared_ptr<Int_Knob> _timeOffset;
+    boost::shared_ptr<Int_Knob> _startingFrame;
 };
 
 #endif /* defined(NATRON_READERS_READQT_H_) */
