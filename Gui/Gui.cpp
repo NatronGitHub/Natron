@@ -92,6 +92,8 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
     actionClearDiskCache(0),
     actionClearPlayBackCache(0),
     actionClearNodeCache(0),
+    actionClearPluginsLoadingCache(0),
+    actionClearAllCaches(0),
     actionConnectInput1(0),
     actionConnectInput2(0),
     actionConnectInput3(0),
@@ -272,6 +274,10 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
     actionClearPlayBackCache->setText(tr("Clear Playback Cache"));
     assert(actionClearNodeCache);
     actionClearNodeCache ->setText(tr("Clear Per-Node Cache"));
+    assert(actionClearPluginsLoadingCache);
+    actionClearPluginsLoadingCache->setText(tr("Clear plugins loading cache"));
+    assert(actionClearAllCaches);
+    actionClearAllCaches->setText(tr("Clear all caches"));
     
     assert(actionConnectInput1);
     actionConnectInput1 ->setText(tr("Connect to input 1"));
@@ -384,15 +390,19 @@ void Gui::setupUi()
     actionClearDiskCache = new QAction(this);
     actionClearDiskCache->setObjectName(QString::fromUtf8("actionClearDiskCache"));
     actionClearDiskCache->setCheckable(false);
-    actionClearDiskCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_K));
     actionClearPlayBackCache = new QAction(this);
     actionClearPlayBackCache->setObjectName(QString::fromUtf8("actionClearPlayBackCache"));
     actionClearPlayBackCache->setCheckable(false);
-    actionClearPlayBackCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_P));
     actionClearNodeCache = new QAction(this);
     actionClearNodeCache->setObjectName(QString::fromUtf8("actionClearNodeCache"));
     actionClearNodeCache->setCheckable(false);
-    actionClearNodeCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_B));
+    actionClearPluginsLoadingCache = new QAction(this);
+    actionClearPluginsLoadingCache->setObjectName(QString::fromUtf8("actionClearPluginsLoadedCache"));
+    actionClearPluginsLoadingCache->setCheckable(false);
+    actionClearAllCaches = new QAction(this);
+    actionClearAllCaches->setObjectName(QString::fromUtf8("actionClearAllCaches"));
+    actionClearAllCaches->setCheckable(false);
+    actionClearAllCaches->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_K));
     
     actionConnectInput1 = new QAction(this);
     actionConnectInput1->setCheckable(false);
@@ -587,12 +597,17 @@ void Gui::setupUi()
     cacheMenu->addAction(actionClearDiskCache);
     cacheMenu->addAction(actionClearPlayBackCache);
     cacheMenu->addAction(actionClearNodeCache);
+    cacheMenu->addAction(actionClearPluginsLoadingCache);
+    cacheMenu->addAction(actionClearAllCaches);
     retranslateUi(this);
     
     QObject::connect(actionFullScreen, SIGNAL(triggered()),this,SLOT(toggleFullScreen()));
     QObject::connect(actionClearDiskCache, SIGNAL(triggered()),appPTR,SLOT(clearDiskCache()));
     QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),appPTR,SLOT(clearPlaybackCache()));
     QObject::connect(actionClearNodeCache, SIGNAL(triggered()),appPTR,SLOT(clearNodeCache()));
+    QObject::connect(actionClearPluginsLoadingCache, SIGNAL(triggered()),appPTR,SLOT(clearPluginsLoadedCache()));
+    QObject::connect(actionClearAllCaches, SIGNAL(triggered()),appPTR,SLOT(clearAllCaches()));
+
     
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
     QObject::connect(actionClearNodeCache, SIGNAL(triggered()),_appInstance,SLOT(clearOpenFXPluginsCaches()));

@@ -421,6 +421,21 @@ void Natron::OfxHost::writeOFXCache(){
     of.close();
 }
 
+void Natron::OfxHost::clearPluginsLoadedCache() {
+#if QT_VERSION < 0x050000
+    QString ofxcachename = QDesktopServices::storageLocation(QDesktopServices::CacheLocation);
+    
+#else
+    QString ofxcachename = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+#endif
+    QDir().mkpath(ofxcachename);
+    ofxcachename +=  QDir::separator();
+    ofxcachename += "OFXCache.xml";
+    
+    if (QFile::exists(ofxcachename)) {
+        QFile::remove(ofxcachename);
+    }
+}
 
 void Natron::OfxHost::loadingStatus(const std::string & pluginId) {
     qDebug() << "Loading OFX plugin " << pluginId.c_str();

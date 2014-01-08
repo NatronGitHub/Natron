@@ -944,6 +944,14 @@ void AppManager::clearNodeCache(){
     
 }
 
+void AppManager::clearPluginsLoadedCache() {
+    ofxHost->clearPluginsLoadedCache();
+}
+
+void AppManager::clearAllCaches() {
+    clearDiskCache();
+    clearNodeCache();
+}
 
 std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){
     std::vector<LibraryBinary*> ret;

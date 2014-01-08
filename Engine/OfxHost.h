@@ -106,6 +106,8 @@ public:
                         std::map<std::string,std::vector<std::string> >* readersMap,
                         std::map<std::string,std::vector<std::string> >* writersMap);
 
+    void clearPluginsLoadedCache();
+    
 signals:
     void toolButtonAdded(QStringList,QString,QString,QString,QString);
     

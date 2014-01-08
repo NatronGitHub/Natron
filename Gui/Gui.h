@@ -380,6 +380,8 @@ private:
     QAction *actionClearDiskCache;
     QAction *actionClearPlayBackCache;
     QAction *actionClearNodeCache;
+    QAction *actionClearPluginsLoadingCache;
+    QAction *actionClearAllCaches;
     
     QAction* actionConnectInput1;
     QAction* actionConnectInput2;

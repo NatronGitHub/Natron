@@ -504,6 +504,10 @@ public slots:
 
     void clearExceedingEntriesFromNodeCache();
 
+    void clearPluginsLoadedCache();
+
+    void clearAllCaches();
+
     void addPluginToolButtons(const QStringList& groups,
                               const QString& pluginID,
                               const QString& pluginLabel,
