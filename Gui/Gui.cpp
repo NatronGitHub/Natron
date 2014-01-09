@@ -331,6 +331,11 @@ void Gui::setupUi()
     resize((int)(0.93*screen.width()),(int)(0.93*screen.height())); // leave some space
     assert(!isDockNestingEnabled()); // should be false by default
     
+    QPixmap appIcPixmap;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_APP_ICON, &appIcPixmap);
+    QIcon appIc(appIcPixmap);
+    setWindowIcon(appIc);
+    
     loadStyleSheet();
     
     

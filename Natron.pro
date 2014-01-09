@@ -38,7 +38,7 @@ macx {
 # use a custom Info.plist template
 #QMAKE_INFO_PLIST = ...
 # Set the application icon
-#ICON = ...
+ICON = Resources/Images/natronIcon256_osx.icns
 # replace com.yourcompany with something more meaningful
 QMAKE_TARGET_BUNDLE_PREFIX = fr.inria
 # Set the pbuilder version to 46, which corresponds to Xcode >= 3.x
@@ -54,6 +54,7 @@ win32{
 #microsoft compiler needs _MBCS to compile with the multi-byte character set.
     DEFINES += WINDOWS _MBCS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
     DEFINES -= _UNICODE UNICODE
+RC_FILE += Natron.rc
 }
 
 log{

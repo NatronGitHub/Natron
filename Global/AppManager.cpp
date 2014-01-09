@@ -222,6 +222,10 @@ void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
             img.load(NATRON_IMAGES_PATH"pressed_combobox.png");
             *pix = QPixmap::fromImage(img).scaled(10, 10);
             break;
+        case NATRON_PIXMAP_APP_ICON:
+            img.load(NATRON_APPLICATION_ICON_PATH);
+            *pix = QPixmap::fromImage(img);
+            break;
         default:
             assert("Missing image.");
         }
