@@ -54,12 +54,14 @@ INCLUDEPATH is the path to the include files
 
 LIBS is the path to the libs
 
-
+----- copy and paste the following in a terminal -----
+cat > config.pri << EOF
 boost{
     INCLUDEPATH += /usr/include
-    LIBS += -L/usr/lib/ -lboost_serialization-mt -lboost_thread-mt - lboost_system-mt
+    LIBS += -L/usr/lib/ -lboost_serialization -lboost_thread -lboost_system
 }
-
+EOF
+----- end -----
 
 ### Build:
 

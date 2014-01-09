@@ -273,8 +273,7 @@ void NodeCurveEditorElement::checkVisibleState(){
     if(!_curve)
         return;
     int i = _curve->getInternalCurve()->keyFramesCount();
-    bool isSlave = _knob->getKnob()->isCurveSlave(_dimension);
-    if(i > 1 && !isSlave){
+    if(i > 1 && !_knob->getKnob()->isSlave(_dimension)){
         //show the item
         if(!_curveDisplayed){
             _curveDisplayed = true;

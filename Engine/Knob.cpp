@@ -145,9 +145,9 @@ const Variant& Knob::getValue(int dimension) const {
         throw std::invalid_argument("Knob::getValue(): Dimension out of range");
     }
     ///if the knob is slaved to another knob, returns the other knob value
-    boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
-    if(isSlave){
-        return isSlave->getValue(dimension);
+    boost::shared_ptr<Knob> master = getMaster(dimension);
+    if (master) {
+        return master->getValue(dimension);
     }
     
     return _imp->_values[dimension];
@@ -161,9 +161,9 @@ Variant Knob::getValueAtTime(double time,int dimension) const{
     }
     
     ///if the knob is slaved to another knob, returns the other knob value
-    boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
-    if(isSlave){
-        return isSlave->getValueAtTime(time,dimension);
+    boost::shared_ptr<Knob> master = getMaster(dimension);
+    if (master) {
+        return master->getValueAtTime(time,dimension);
     }
     
     
@@ -189,8 +189,7 @@ Knob::ValueChangedReturnCode Knob::setValue(const Variant& v, int dimension, Nat
     
     ///if the knob is slaved to another knob,return, because we don't want the
     ///gui to be unsynchronized with what lies internally.
-    boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
-    if(!isSlave){
+    if (!isSlave(dimension)) {
         ///locking project if it is saving
         if(_imp->_holder->getApp()){
             _imp->_holder->getApp()->lockProject();
@@ -234,8 +233,7 @@ bool Knob::setValueAtTime(int time, const Variant& v, int dimension, Natron::Val
     
     ///if the knob is slaved to another knob,return, because we don't want the
     ///gui to be unsynchronized with what lies internally.
-    boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
-    if(isSlave){
+    if (isSlave(dimension)) {
         return false;
     }
     
@@ -274,8 +272,7 @@ void Knob::deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason r
     
     ///if the knob is slaved to another knob,return, because we don't want the
     ///gui to be unsynchronized with what lies internally.
-    boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
-    if(isSlave){
+    if (isSlave(dimension)) {
         return;
     }
     _imp->_curves[dimension]->removeKeyFrame((double)time);
@@ -294,8 +291,7 @@ void Knob::removeAnimation(int dimension,Natron::ValueChangedReason reason){
     
     ///if the knob is slaved to another knob,return, because we don't want the
     ///gui to be unsynchronized with what lies internally.
-    boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
-    if(isSlave){
+    if (isSlave(dimension)) {
         return;
     }
     
@@ -333,9 +329,9 @@ void Knob::removeAnimation(int dimension){
 boost::shared_ptr<Curve> Knob::getCurve(int dimension) const {
     assert(dimension < (int)_imp->_curves.size());
     
-    boost::shared_ptr<Knob> isSlave = isCurveSlave(dimension);
-    if(isSlave){
-        return isSlave->getCurve(dimension);
+    boost::shared_ptr<Knob> master = getMaster(dimension);
+    if (master) {
+        return master->getCurve(dimension);
     }
     return _imp->_curves[dimension];
 }
@@ -597,7 +593,7 @@ const std::string& Knob::getHintToolTip() const {return _imp->_tooltipHint;}
 
 bool Knob::slaveTo(int dimension,boost::shared_ptr<Knob> other){
     assert(dimension < (int)_imp->_masters.size());
-    assert(!other->isCurveSlave(dimension));
+    assert(!other->isSlave(dimension));
     if(_imp->_masters[dimension]){
         return false;
     }
@@ -611,7 +607,7 @@ bool Knob::slaveTo(int dimension,boost::shared_ptr<Knob> other){
 
 
 void Knob::unSlave(int dimension){
-    assert(isCurveSlave(dimension));
+    assert(isSlave(dimension));
     //copy the state before cloning
     _imp->_values[dimension] =  _imp->_masters[dimension]->getValue(dimension);
     _imp->_curves[dimension]->clone(*( _imp->_masters[dimension]->getCurve(dimension)));
@@ -620,8 +616,12 @@ void Knob::unSlave(int dimension){
 }
 
 
-boost::shared_ptr<Knob>  Knob::isCurveSlave(int dimension) const {
+boost::shared_ptr<Knob> Knob::getMaster(int dimension) const {
     return _imp->_masters[dimension];
+}
+
+bool Knob::isSlave(int dimension) const {
+    return bool(_imp->_masters[dimension]);
 }
 
 const std::vector<boost::shared_ptr<Knob> >& Knob::getMasters() const{
