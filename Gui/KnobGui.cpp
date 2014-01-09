@@ -142,7 +142,7 @@ void KnobGui::createAnimationMenu(){
     
     bool isSlave = false;
     for (int i = 0; i < getKnob()->getDimension(); ++i) {
-        if (getKnob()->isCurveSlave(i)) {
+        if (getKnob()->isSlave(i)) {
             isSlave = true;
             break;
         }
@@ -611,7 +611,7 @@ void KnobGui::onLinkToActionTriggered(){
             }
             
             for(int i = 0; i < _knob->getDimension();++i){
-                boost::shared_ptr<Knob> existingLink = _knob->isCurveSlave(i);
+                boost::shared_ptr<Knob> existingLink = _knob->getMaster(i);
                 if(existingLink){
                     std::string err("Cannot link ");
                     err.append(_knob->getDescription());
@@ -636,7 +636,7 @@ void KnobGui::onLinkToActionTriggered(){
 
 void KnobGui::onUnlinkActionTriggered(){
     for(int i = 0; i < _knob->getDimension();++i){
-        boost::shared_ptr<Knob> other = _knob->isCurveSlave(i);
+        boost::shared_ptr<Knob> other = _knob->getMaster(i);
         _knob->unSlave(i);
         updateGUI(i,_knob->getValue(i));
         checkAnimationLevel(i);
@@ -706,7 +706,7 @@ void KnobGui::pushValueChangedCommand(const Variant& v, int dimension){
 
 void KnobGui::onRestorationComplete() {
     for (int i = 0; i < _knob->getDimension(); ++i) {
-        boost::shared_ptr<Knob> other = _knob->isCurveSlave(i);
+        boost::shared_ptr<Knob> other = _knob->getMaster(i);
         if(other) {
             QObject::connect(other.get(), SIGNAL(updateSlaves(int)), this, SLOT(onMasterChange(int)));
         }

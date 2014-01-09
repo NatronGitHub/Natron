@@ -244,7 +244,7 @@ public:
     const std::string& getHintToolTip() const;
 
     /**
-     * @brief Slaves the curve for the given dimension to the curve
+     * @brief Slaves the value for the given dimension to the curve
      * at the same dimension for the knob 'other'.
      * In case of success, this function returns true, otherwise false.
     **/
@@ -252,17 +252,22 @@ public:
 
 
     /**
-     * @brief Unslave the curve at the given dimension if it was previously
+     * @brief Unslave the value at the given dimension if it was previously
      * slaved to another knob using the slaveTo function.
     **/
     void unSlave(int dimension);
 
     /**
-     * @brief Returns a valid pointer to a knob if the curve at
+     * @brief Returns a valid pointer to a knob if the value at
      * the given dimension is slaved.
     **/
-    boost::shared_ptr<Knob> isCurveSlave(int dimension) const;
+    boost::shared_ptr<Knob> getMaster(int dimension) const;
 
+    /**
+     * @brief Returns true if the value at the given dimension is slave to another parameter
+     **/
+    bool isSlave(int dimension) const;
+    
 
     const std::vector<boost::shared_ptr<Knob> > &getMasters() const;
 
