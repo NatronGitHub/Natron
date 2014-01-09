@@ -327,6 +327,15 @@ QString TabWidget::getTabName(QWidget* tab) const{
     return tab->objectName();
 }
 
+void TabWidget::setTabName(QWidget* tab,const QString& name) {
+    tab->setObjectName(name);
+    for (U32 i = 0; i < _tabs.size(); ++i) {
+        if (_tabs[i] == tab) {
+            _tabBar->setTabText(i, name);
+        }
+    }
+}
+
 void TabWidget::floatCurrentWidget(){
     if(!_currentWidget)
         return;
@@ -449,7 +458,7 @@ bool TabWidget::appendTab(QWidget* widget){
     if(_decorations!=NONE && title.isEmpty()) return false;
     
     /*registering this tab for drag&drop*/
-    _gui->registerTab(title.toStdString(), widget);
+    _gui->registerTab(widget);
     
     _tabs.push_back(widget);
     _tabBar->addTab(title);
@@ -470,7 +479,7 @@ bool TabWidget::appendTab(const QIcon& icon,QWidget* widget){
     if(_decorations!=NONE && title.isEmpty()) return false;
     
     /*registering this tab for drag&drop*/
-    _gui->registerTab(title.toStdString(), widget);
+    _gui->registerTab(widget);
     
     _tabs.push_back(widget);
     _tabBar->addTab(icon,title);
@@ -491,7 +500,7 @@ void TabWidget::insertTab(int index,const QIcon& icon,QWidget* widget){
     QString title = widget->objectName();
     if ((U32)index < _tabs.size()) {
         /*registering this tab for drag&drop*/
-        _gui->registerTab(title.toStdString(), widget);
+        _gui->registerTab(widget);
         
         _tabs.insert(_tabs.begin()+index, widget);
         _tabBar->insertTab(index,icon ,title);
@@ -506,7 +515,7 @@ void TabWidget::insertTab(int index,QWidget* widget){
     QString title = widget->objectName();
     if (index < (int)_tabs.size()) {
         /*registering this tab for drag&drop*/
-        _gui->registerTab(title.toStdString(), widget);
+        _gui->registerTab(widget);
         
         _tabs.insert(_tabs.begin()+index, widget);
         _tabBar->insertTab(index,title);

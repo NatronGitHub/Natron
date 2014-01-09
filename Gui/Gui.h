@@ -217,12 +217,6 @@ public:
     
     void minimize();
     
-    /*Returns a valid tab if a tab with a matching name has been
-     found. Otherwise returns NULL.*/
-    QWidget* findExistingTab(const std::string& name) const;
-    
-    void registerTab(const std::string& name, QWidget* tab);
-    
     void loadStyleSheet();
     
     ToolButton* findExistingToolButton(const QString& name) const;
@@ -266,6 +260,14 @@ public:
     void removePane(TabWidget* pane);
     
     void registerPane(TabWidget* pane);
+    
+    void registerTab(QWidget* tab);
+    
+    void unregisterTab(QWidget* tab);
+    
+    /*Returns a valid tab if a tab with a matching name has been
+     found. Otherwise returns NULL.*/
+    QWidget* findExistingTab(const std::string& name) const;
     
 
     const std::list<QSplitter*>& getSplitters() const { return _splitters; }

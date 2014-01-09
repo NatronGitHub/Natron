@@ -220,7 +220,6 @@ public slots:
     void onExposureChanged(double exp);
 
     void onColorSpaceChanged(const QString& colorspaceName);
-
     /*
  *@brief Slot called internally by the render() function when it wants to refresh the viewer if
  *the output is a viewer.
@@ -228,7 +227,8 @@ public slots:
  */
     void updateViewer();
 
-
+    void onNodeNameChanged(const QString&);
+    
 signals:
 
     void viewerDisconnected();

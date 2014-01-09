@@ -113,7 +113,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             throw std::invalid_argument(text.toStdString());
         }
         n->setName(serializedNodes[i]->getPluginLabel());
-
+        
         const std::vector< boost::shared_ptr<Knob> >& nodeKnobs = n->getKnobs();
         const NodeSerialization::KnobValues& knobsValues = serializedNodes[i]->getKnobsValues();
 

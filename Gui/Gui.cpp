@@ -331,10 +331,6 @@ void Gui::setupUi()
     resize((int)(0.93*screen.width()),(int)(0.93*screen.height())); // leave some space
     assert(!isDockNestingEnabled()); // should be false by default
     
-    QPixmap appIcPixmap;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_APP_ICON, &appIcPixmap);
-    QIcon appIc(appIcPixmap);
-    setWindowIcon(appIc);
     
     loadStyleSheet();
     
@@ -831,6 +827,20 @@ void Gui::addViewerTab(ViewerTab* tab, TabWidget* where) {
     
 }
 
+void Gui::registerTab(QWidget* tab) {
+    std::map<std::string, QWidget*>::iterator registeredTab = _registeredTabs.find(tab->objectName().toStdString());
+    if (registeredTab == _registeredTabs.end()) {
+        _registeredTabs.insert(std::make_pair(tab->objectName().toStdString(), tab));
+    }
+}
+
+void Gui::unregisterTab(QWidget* tab) {
+    std::map<std::string, QWidget*>::iterator registeredTab = _registeredTabs.find(tab->objectName().toStdString());
+    if(registeredTab != _registeredTabs.end()){
+        _registeredTabs.erase(registeredTab);
+    }
+}
+
 void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData){
     assert(tab);
     std::list<ViewerTab*>::iterator it = std::find(_viewerTabs.begin(), _viewerTabs.end(), tab);
@@ -838,10 +848,7 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
         _viewerTabs.erase(it);
     }
     
-    std::map<std::string, QWidget*>::iterator registeredTab = _registeredTabs.find(tab->objectName().toStdString());
-    if(registeredTab != _registeredTabs.end()){
-        _registeredTabs.erase(registeredTab);
-    }
+    unregisterTab(tab);
     
     if(deleteData){
         if (!initiatedFromNode) {
@@ -889,10 +896,6 @@ void Gui::removeSplitter(QSplitter* s){
     }
 }
 
-
-void Gui::registerTab(const std::string& name, QWidget* tab){
-    _registeredTabs.insert(make_pair(name,tab));
-}
 
 QWidget* Gui::findExistingTab(const std::string& name) const{
     std::map<std::string,QWidget*>::const_iterator it = _registeredTabs.find(name);

@@ -119,6 +119,8 @@ public:
     /*Convenience function*/
     QString getTabName(QWidget* tab) const;
     
+    void setTabName(QWidget* tab,const QString& name);
+    
     /*Removes from the TabWidget, but does not delete the widget.*/
     void removeTab(QWidget* widget);
     

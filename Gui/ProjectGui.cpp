@@ -220,7 +220,7 @@ void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneL
     for(std::list<TabWidget*>::const_iterator it = initialWidgets.begin();it!=initialWidgets.end();++it){
         
         if((*it)->objectName().toStdString() == layout->first){
-            //we found the tab, restore it!
+            //we found the pane, restore it!
             for (U32 i = 0; i < layout->second.splits.size(); ++i) {
                 if(layout->second.splits[i]){
                     (*it)->splitVertically();

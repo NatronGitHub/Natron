@@ -22,6 +22,7 @@
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/TimeLineGui.h"
+#include "Gui/TabWidget.h"
 
 #include "Engine/Row.h"
 #include "Engine/FrameEntry.h"
@@ -60,7 +61,9 @@ Natron::OutputEffectInstance(node)
 {
     connectSlotsToViewerCache();
     connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
-    
+    if(node) {
+        connect(node,SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
+    }
 }
 
 ViewerInstance::~ViewerInstance(){
@@ -86,6 +89,18 @@ void ViewerInstance::disconnectSlotsToViewerCache(){
 void ViewerInstance::initializeViewerTab(TabWidget* where){
     if(isLiveInstance()){
         _uiContext = getNode()->getApp()->addNewViewerTab(this,where);
+    }
+}
+
+void ViewerInstance::onNodeNameChanged(const QString& name) {
+    ///update the gui tab name
+    if (_uiContext) {
+        _uiContext->getGui()->unregisterTab(_uiContext);
+        TabWidget* parent = dynamic_cast<TabWidget*>(_uiContext->parentWidget());
+        if ( parent ) {
+            parent->setTabName(_uiContext, name);
+        }
+        _uiContext->getGui()->registerTab(_uiContext);
     }
 }
 

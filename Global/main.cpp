@@ -13,6 +13,7 @@
 #include <QtCore/QObject>
 #include <QtCore/QString>
 #include <QLabel>
+#include <QIcon>
 #include <QtGui/QPixmap>
 #include <QDebug>
 #include <QFontDatabase>
@@ -107,6 +108,7 @@ int main(int argc, char *argv[])
         app = guiApp;
     }else{
         app = new QCoreApplication(argc,argv);
+        
     }
 
     app->setOrganizationName(NATRON_ORGANIZATION_NAME);
@@ -119,6 +121,12 @@ int main(int argc, char *argv[])
     
     AppManager* manager = AppManager::instance(); //< load the AppManager singleton
 
+    if(!isBackGround) {
+        QPixmap appIcPixmap;
+        appPTR->getIcon(Natron::NATRON_PIXMAP_APP_ICON, &appIcPixmap);
+        QIcon appIc(appIcPixmap);
+        qApp->setWindowIcon(appIc);
+    }
     
     QLabel* splashScreen = 0;
     if(!isBackGround){
