@@ -11,6 +11,7 @@
 #include <QDragEnterEvent>
 #include <QDragLeaveEvent>
 #include <QDropEvent>
+#include <QDrag>
 
 #include "Gui/KnobGui.h"
 #include "Engine/Project.h"
