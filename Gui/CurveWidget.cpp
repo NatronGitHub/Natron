@@ -16,6 +16,10 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QRectF>
 #include <QtGui/QPolygonF>
+#include <QtGui/QLabel>
+#include <QtGui/QHBoxLayout>
+#include <QtGui/QVBoxLayout>
+
 
 #include "Global/AppManager.h"
 #include "Engine/Knob.h"
@@ -24,12 +28,16 @@
 #include "Engine/Variant.h"
 #include "Engine/Curve.h"
 
+#include "Gui/LineEdit.h"
+#include "Gui/SpinBox.h"
+#include "Gui/Button.h"
 #include "Gui/ScaleSlider.h"
 #include "Gui/ticks.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/CurveEditorUndoRedo.h"
 #include "Gui/KnobGui.h"
+#include "Gui/SequenceFileDialog.h"
 
 using namespace Natron;
 
@@ -474,6 +482,11 @@ CurveWidgetPrivate::~CurveWidgetPrivate() {
 
 void CurveWidgetPrivate::createMenu() {
     _rightClickMenu->clear();
+    
+    QMenu* fileMenu = new QMenu(_rightClickMenu);
+    fileMenu->setTitle("File");
+    _rightClickMenu->addAction(fileMenu->menuAction());
+    
     QMenu* editMenu = new QMenu(_rightClickMenu);
     editMenu->setTitle("Edit");
     _rightClickMenu->addAction(editMenu->menuAction());
@@ -485,6 +498,15 @@ void CurveWidgetPrivate::createMenu() {
     QMenu* viewMenu = new QMenu(_rightClickMenu);
     viewMenu->setTitle("View");
     _rightClickMenu->addAction(viewMenu->menuAction());
+    
+    
+    QAction* exportCurveToAsciiAction = new QAction("Export curve to Ascii",_widget);
+    QObject::connect(exportCurveToAsciiAction,SIGNAL(triggered()),_widget,SLOT(exportCurveToAscii()));
+    fileMenu->addAction(exportCurveToAsciiAction);
+    
+    QAction* importCurveFromAsciiAction = new QAction("Import curve from Ascii",_widget);
+    QObject::connect(importCurveFromAsciiAction,SIGNAL(triggered()),_widget,SLOT(importCurveFromAscii()));
+    fileMenu->addAction(importCurveFromAsciiAction);
     
     QAction* deleteKeyFramesAction = new QAction("Delete selected keyframes",_widget);
     deleteKeyFramesAction->setShortcut(QKeySequence(Qt::Key_Backspace));
@@ -2292,3 +2314,355 @@ bool CurveWidget::isSupportingOpenGLVAO() const { return _imp->_hasOpenGLVAOSupp
 
 
 const QFont& CurveWidget::getTextFont() const { return *_imp->_font; }
+
+void CurveWidget::exportCurveToAscii() {
+    std::vector<CurveGui*> curves;
+    for (Curves::iterator it = _imp->_curves.begin() ; it != _imp->_curves.end() ; ++it) {
+        if((*it)->isVisible()){
+            curves.push_back(*it);
+        }
+    }
+    if (curves.empty()) {
+        warningDialog("Curve Editor","You must have a curve on the editor first.");
+        return;
+    }
+    
+    ImportExportCurveDialog dialog(true,curves,this);
+    if (dialog.exec()) {
+        double x = dialog.getXStart();
+        double end = dialog.getXEnd();
+        double incr = dialog.getXIncrement();
+        std::map<int,CurveGui*> columns;
+        dialog.getCurveColumns(&columns);
+        
+        for (U32 i = 0; i < curves.size(); ++i) {
+            ///if the curve only supports integers values for X steps, and values are not rounded warn the user that the settings are not good
+            double incrInt = std::floor(incr);
+            double xInt = std::floor(x);
+            double endInt = std::floor(end);
+            if (curves[i]->getInternalCurve()->areKeyFramesTimeClampedToIntegers() &&
+                (incrInt != incr || xInt != x || endInt != end)) {
+                warningDialog("Curve Export",curves[i]->getName().toStdString() + " doesn't support X values that are not integers.");
+                return;
+            }
+        }
+        
+        assert(!columns.empty());
+        int columnsCount = columns.rbegin()->first + 1;
+        
+        ///setup the file
+        QString name = dialog.getFilePath();
+        QFile file(name);
+        file.open(QIODevice::WriteOnly | QIODevice::Text);
+        QTextStream ts(&file);
+        
+        for (double i = x; i <= end; i+=incr) {
+            
+            for (int c = 0; c < columnsCount; ++c) {
+                std::map<int,CurveGui*>::const_iterator foundCurve = columns.find(c);
+                if (foundCurve != columns.end()) {
+                    QString str = QString::number(foundCurve->second->evaluate(i),'f',10);
+                    ts << str;
+                } else {
+                    ts <<  0;
+                }
+                if(c < columnsCount - 1) {
+                    ts << '_';
+                }
+            }
+            ts << '\n';
+            
+        }
+        
+        
+        ///close the file
+        file.close();
+    }
+}
+
+void CurveWidget::importCurveFromAscii() {
+    std::vector<CurveGui*> curves;
+    for (Curves::iterator it = _imp->_curves.begin() ; it != _imp->_curves.end() ; ++it) {
+        if((*it)->isVisible()){
+            curves.push_back(*it);
+        }
+    }
+    if (curves.empty()) {
+        warningDialog("Curve Editor","You must have a curve on the editor first.");
+        return;
+    }
+    
+    ImportExportCurveDialog dialog(false,curves,this);
+    if (dialog.exec()) {
+        QString filePath = dialog.getFilePath();
+        if (!QFile::exists(filePath)) {
+            warningDialog("Curve Import","File not found.");
+            return;
+        }
+        
+        double x = dialog.getXStart();
+        double incr = dialog.getXIncrement();
+        std::map<int,CurveGui*> columns;
+        dialog.getCurveColumns(&columns);
+        assert(!columns.empty());
+
+        for (U32 i = 0; i < curves.size(); ++i) {
+            ///if the curve only supports integers values for X steps, and values are not rounded warn the user that the settings are not good
+            double incrInt = std::floor(incr);
+            double xInt = std::floor(x);
+            if (curves[i]->getInternalCurve()->areKeyFramesTimeClampedToIntegers() &&
+                (incrInt != incr || xInt != x)) {
+                warningDialog("Curve Import",curves[i]->getName().toStdString() + " doesn't support X values that are not integers.");
+                return;
+            }
+        }
+        
+        QFile file(dialog.getFilePath());
+        file.open(QIODevice::ReadOnly);
+        QTextStream ts(&file);
+        
+        std::map<CurveGui*, std::vector<double> > curvesValues;
+        ///scan the file to get the curve values
+        while (!ts.atEnd()) {
+            QString line = ts.readLine();
+            if (line.isEmpty()) {
+                continue;
+            }
+            int i = 0;
+            std::vector<double> values;
+            
+            ///read the line to extract all values
+            while (i < line.size()) {
+                QString value;
+                while (i < line.size() && line.at(i) != QChar('_')) {
+                    value.push_back(line.at(i));
+                    ++i;
+                }
+                if (i < line.size()) {
+                    if (line.at(i) != QChar('_')) {
+                        errorDialog("Curve Import","The file could not be read.");
+                        return;
+                    }
+                    ++i;
+                }
+                bool ok;
+                double v = value.toDouble(&ok);
+                if (!ok) {
+                    errorDialog("Curve Import","The file could not be read.");
+                    return;
+                }
+                values.push_back(v);
+            }
+            ///assert that the values count is greater than the number of curves provided by the user
+            if (values.size() < columns.size()) {
+                errorDialog("Curve Import","The file contains less curves than what you selected.");
+                return;
+            }
+            
+            for(std::map<int,CurveGui*>::const_iterator col = columns.begin();col!=columns.end();++col){
+                if (col->first >= (int)values.size()) {
+                    errorDialog("Curve Import","One of the curve column index is not a valid index for the given file.");
+                    return;
+                }
+                std::map<CurveGui*, std::vector<double> >::iterator foundCurve = curvesValues.find(col->second);
+                if (foundCurve != curvesValues.end()) {
+                    foundCurve->second.push_back(values[col->first]);
+                } else {
+                    std::vector<double> curveValues(1);
+                    curveValues[0] = values[col->first];
+                    curvesValues.insert(std::make_pair(col->second, curveValues));
+                }
+            }
+            
+        }
+        ///now restore the curves since we know what we read is valid
+        for (std::map<CurveGui*, std::vector<double> >::const_iterator it = curvesValues.begin(); it!=curvesValues.end(); ++it) {
+            const std::vector<double>& values = it->second;
+            CurveGui* curve = it->first;
+            curve->getInternalCurve()->clearKeyFrames();
+            
+            double xIndex = x;
+            for (U32 i = 0; i < values.size(); ++i) {
+                KeyFrame k(xIndex,values[i]);
+                curve->getInternalCurve()->addKeyFrame(k);
+                xIndex += incr;
+            }
+        }
+        _imp->_selectedKeyFrames.clear();
+        update();
+        
+    }
+}
+
+ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,const std::vector<CurveGui*>& curves,QWidget* parent)
+: QDialog(parent)
+, _isExportDialog(isExportDialog)
+, _mainLayout(0)
+, _fileContainer(0)
+, _fileLayout(0)
+, _fileLabel(0)
+, _fileLineEdit(0)
+, _fileBrowseButton(0)
+, _startContainer(0)
+, _startLayout(0)
+, _startLabel(0)
+, _startSpinBox(0)
+, _incrContainer(0)
+, _incrLayout(0)
+, _incrLabel(0)
+, _incrSpinBox(0)
+, _endContainer(0)
+, _endLayout(0)
+, _endLabel(0)
+, _endSpinBox(0)
+, _curveColumns()
+, _buttonsContainer(0)
+, _buttonsLayout(0)
+, _okButton(0)
+, _cancelButton(0)
+{
+    _mainLayout = new QVBoxLayout(this);
+    _mainLayout->setContentsMargins(0, 3, 0, 0);
+    _mainLayout->setSpacing(2);
+    setLayout(_mainLayout);
+    
+    //////File
+    _fileContainer = new QWidget(this);
+    _fileLayout = new QHBoxLayout(_fileContainer);
+    _fileLabel = new QLabel("File:",_fileContainer);
+    _fileLayout->addWidget(_fileLabel);
+    _fileLineEdit = new LineEdit(_fileContainer);
+    _fileLineEdit->setPlaceholderText("File path...");
+    _fileLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    _fileLayout->addWidget(_fileLineEdit);
+    _fileBrowseButton = new Button(_fileContainer);
+    QPixmap pix;
+    appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
+    _fileBrowseButton->setIcon(QIcon(pix));
+    _fileBrowseButton->setFixedSize(20, 20);
+    QObject::connect(_fileBrowseButton, SIGNAL(clicked()), this, SLOT(open_file()));
+    _fileLayout->addWidget(_fileBrowseButton);
+    _mainLayout->addWidget(_fileContainer);
+    
+    //////x start value
+    _startContainer = new QWidget(this);
+    _startLayout = new QHBoxLayout(_startContainer);
+    _startLabel = new QLabel("X start value:",_startContainer);
+    _startLayout->addWidget(_startLabel);
+    _startSpinBox = new SpinBox(_startContainer,SpinBox::DOUBLE_SPINBOX);
+    _startSpinBox->setValue(0);
+    _startLayout->addWidget(_startSpinBox);
+    _mainLayout->addWidget(_startContainer);
+    
+    //////x increment
+    _incrContainer = new QWidget(this);
+    _incrLayout = new QHBoxLayout(_incrContainer);
+    _incrLabel = new QLabel("X increment:",_incrContainer);
+    _incrLayout->addWidget(_incrLabel);
+    _incrSpinBox = new SpinBox(_incrContainer,SpinBox::DOUBLE_SPINBOX);
+    _incrSpinBox->setValue(0.01);
+    _incrLayout->addWidget(_incrSpinBox);
+    _mainLayout->addWidget(_incrContainer);
+    
+    //////x end value
+    if(isExportDialog) {
+        _endContainer = new QWidget(this);
+        _endLayout = new QHBoxLayout(_endContainer);
+        _endLabel = new QLabel("X end value:",_endContainer);
+        _endLayout->addWidget(_endLabel);
+        _endSpinBox = new SpinBox(_endContainer,SpinBox::DOUBLE_SPINBOX);
+        _endSpinBox->setValue(1);
+        _endLayout->addWidget(_endSpinBox);
+        _mainLayout->addWidget(_endContainer);
+    }
+
+    ////curves columns
+    double min = 0,max = 0;
+    bool curveIsClampedToIntegers = false;
+    for (U32 i = 0; i < curves.size(); ++i) {
+        CurveColumn column;
+        double curvemin = curves[i]->getInternalCurve()->getMinimumTimeCovered();
+        double curvemax = curves[i]->getInternalCurve()->getMaximumTimeCovered();
+        if (curvemin < min) {
+            min = curvemin;
+        }
+        if (curvemax > max) {
+            max = curvemax;
+        }
+        if(curves[i]->getInternalCurve()->areKeyFramesTimeClampedToIntegers()){
+            curveIsClampedToIntegers = true;
+        }
+        column._curve = curves[i];
+        column._curveContainer = new QWidget(this);
+        column._curveLayout = new QHBoxLayout(column._curveContainer);
+        column._curveLabel = new QLabel(curves[i]->getName() + " column:");
+        column._curveLayout->addWidget(column._curveLabel);
+        column._curveSpinBox = new SpinBox(column._curveContainer,SpinBox::INT_SPINBOX);
+        column._curveSpinBox->setValue((double)i+1.);
+        column._curveLayout->addWidget(column._curveSpinBox);
+        _curveColumns.push_back(column);
+        _mainLayout->addWidget(column._curveContainer);
+    }
+    if(isExportDialog) {
+        _startSpinBox->setValue(min);
+        _endSpinBox->setValue(max);
+    }
+    if(curveIsClampedToIntegers){
+        _incrSpinBox->setValue(1);
+    }
+    /////buttons
+    _buttonsContainer = new QWidget(this);
+    _buttonsLayout = new QHBoxLayout(_buttonsContainer);
+    _okButton = new Button("Ok",_buttonsContainer);
+    QObject::connect(_okButton, SIGNAL(clicked()), this, SLOT(accept()));
+    _buttonsLayout->addWidget(_okButton);
+    _cancelButton = new Button("Cancel",_buttonsContainer);
+    QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(reject()));
+    _buttonsLayout->addWidget(_cancelButton);
+    _mainLayout->addWidget(_buttonsContainer);
+}
+
+void ImportExportCurveDialog::open_file() {
+    std::vector<std::string> filters;
+    filters.push_back("*");
+    if(_isExportDialog) {
+        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::SAVE_DIALOG);
+        if (dialog.exec()) {
+            QString file = dialog.filesToSave();
+            _fileLineEdit->setText(file);
+        }
+    } else {
+        SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::OPEN_DIALOG);
+        if (dialog.exec()) {
+            QStringList files = dialog.selectedFiles();
+            if(!files.isEmpty()) {
+                _fileLineEdit->setText(files.at(0));
+            }
+        }
+    }
+    
+}
+
+QString ImportExportCurveDialog::getFilePath() {
+    return _fileLineEdit->text();
+}
+
+double ImportExportCurveDialog::getXStart() const {
+    return _startSpinBox->value();
+}
+
+double ImportExportCurveDialog::getXIncrement() const {
+    return _incrSpinBox->value();
+}
+
+double ImportExportCurveDialog::getXEnd() const {
+    ///only valid for export dialogs
+    assert(_isExportDialog);
+    return _endSpinBox->value();
+}
+
+void ImportExportCurveDialog::getCurveColumns(std::map<int,CurveGui*>* columns) const {
+    for (U32 i = 0; i < _curveColumns.size(); ++i) {
+        columns->insert(std::make_pair((int)(_curveColumns[i]._curveSpinBox->value() - 1),_curveColumns[i]._curve));
+    }
+}

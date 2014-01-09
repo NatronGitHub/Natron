@@ -17,6 +17,7 @@
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
 #include <QMetaType>
+#include <QDialog>
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -29,6 +30,12 @@ class Variant;
 class TimeLine;
 class KnobGui;
 class CurveWidget;
+class Button;
+class LineEdit;
+class SpinBox;
+class QVBoxLayout;
+class QHBoxLayout;
+class QLabel;
 class CurveGui : public QObject {
     
     Q_OBJECT
@@ -190,6 +197,10 @@ public:
 public slots:
     
     void refreshDisplayedTangents();
+    
+    void exportCurveToAscii();
+    
+    void importCurveFromAscii();
 
     void deleteSelectedKeyFrames();
 
@@ -274,4 +285,76 @@ private:
 Q_DECLARE_METATYPE(CurveWidget*)
 
 
+class ImportExportCurveDialog : public QDialog {
+    
+    Q_OBJECT
+
+public:
+    
+    ImportExportCurveDialog(bool isExportDialog,const std::vector<CurveGui*>& curves,QWidget* parent = 0);
+    
+    virtual ~ImportExportCurveDialog() {}
+    
+    QString getFilePath();
+    
+    double getXStart() const;
+    
+    double getXIncrement() const;
+    
+    double getXEnd() const;
+    
+    void getCurveColumns(std::map<int,CurveGui*>* columns) const;
+
+public slots:
+    
+    void open_file();
+    
+private:
+    
+    bool _isExportDialog;
+    QVBoxLayout* _mainLayout;
+    
+    //////File
+    QWidget* _fileContainer;
+    QHBoxLayout* _fileLayout;
+    QLabel* _fileLabel;
+    LineEdit* _fileLineEdit;
+    Button* _fileBrowseButton;
+    
+    //////x start value
+    QWidget* _startContainer;
+    QHBoxLayout* _startLayout;
+    QLabel* _startLabel;
+    SpinBox* _startSpinBox;
+
+    //////x increment
+    QWidget* _incrContainer;
+    QHBoxLayout* _incrLayout;
+    QLabel* _incrLabel;
+    SpinBox* _incrSpinBox;
+    
+    //////x end value
+    QWidget* _endContainer;
+    QHBoxLayout* _endLayout;
+    QLabel* _endLabel;
+    SpinBox* _endSpinBox;
+    
+    
+    /////Columns
+    struct CurveColumn {
+        CurveGui* _curve;
+        QWidget* _curveContainer;
+        QHBoxLayout* _curveLayout;
+        QLabel* _curveLabel;
+        SpinBox* _curveSpinBox;
+    };
+    
+    std::vector< CurveColumn > _curveColumns;
+
+    ////buttons
+    QWidget* _buttonsContainer;
+    QHBoxLayout* _buttonsLayout;
+    Button* _okButton;
+    Button* _cancelButton;
+};
 #endif // CURVE_WIDGET_H
