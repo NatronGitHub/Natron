@@ -26,6 +26,9 @@
 
 class File_Knob : public Knob
 {
+    
+    Q_OBJECT
+    
 public:
 
     static Knob *BuildKnob(KnobHolder  *holder, const std::string &description, int dimension) {
@@ -41,6 +44,11 @@ private:
 
     virtual const std::string& typeName() const OVERRIDE FINAL;
 
+    
+signals:
+    
+    void openFile();
+    
 public:
     void setFiles(const QStringList& stringList);
 
@@ -60,6 +68,7 @@ public:
     
     bool isInputImageFile() const { return _isInputImage; }
 
+    void open_file() { emit openFile(); }
 private:
     int frameCount() const;
 
@@ -94,6 +103,8 @@ private:
 
 class OutputFile_Knob: public Knob
 {
+    
+    Q_OBJECT
 public:
 
     static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
@@ -114,6 +125,10 @@ public:
     
     bool isOutputImageFile() const { return _isOutputImage; }
     
+    void open_file() { emit openFile(); }
+signals:
+    
+    void openFile();
 private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;

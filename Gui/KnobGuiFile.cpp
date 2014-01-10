@@ -30,6 +30,9 @@ using namespace Natron;
 File_KnobGui::File_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
 : KnobGui(knob, container)
 {
+    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knob);
+    assert(fk);
+    QObject::connect(fk.get(), SIGNAL(openFile()), this, SLOT(open_file()));
 }
 
 File_KnobGui::~File_KnobGui()
@@ -139,7 +142,9 @@ void File_KnobGui::_show()
 OutputFile_KnobGui::OutputFile_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
 : KnobGui(knob, container)
 {
-
+    boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knob);
+    assert(fk);
+    QObject::connect(fk.get(), SIGNAL(openFile()), this, SLOT(open_file()));
 }
 
 OutputFile_KnobGui::~OutputFile_KnobGui()
