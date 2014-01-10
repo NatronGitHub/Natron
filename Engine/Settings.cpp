@@ -189,7 +189,7 @@ void Settings::restoreSettings(){
         }
     }
     settings.endGroup();
-    notifyProjectEndKnobsValuesChanged(Natron::OTHER_REASON);
+    notifyProjectEndKnobsValuesChanged();
 
 }
 

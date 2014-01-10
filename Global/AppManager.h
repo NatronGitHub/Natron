@@ -172,7 +172,7 @@ public:
 
     void stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHolder* caller, Knob *k, bool isSignificant);
 
-    void endProjectWideValueChanges(Natron::ValueChangedReason reason, KnobHolder* caller);
+    void endProjectWideValueChanges(KnobHolder* caller);
 
     void lockProject();
 

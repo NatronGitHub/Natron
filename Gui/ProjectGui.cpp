@@ -337,7 +337,7 @@ void ProjectGui::setPickersColor(const QColor& color){
         if(_colorPickersEnabled[i]->getDimension() >= 4){
             _colorPickersEnabled[i]->setValue(color.alphaF(), 3);
         }
-        _colorPickersEnabled[i]->endValueChange(Natron::USER_EDITED);
+        _colorPickersEnabled[i]->endValueChange();
     }
-    first->endValueChange(Natron::USER_EDITED);
+    first->endValueChange();
 }

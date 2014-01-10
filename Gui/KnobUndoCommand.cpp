@@ -54,7 +54,7 @@ void KnobUndoCommand::undo()
         _knob->getKnob()->getHolder()->getApp()->getGui()->_curveEditor->getCurveWidget()->refreshSelectedKeys();
     }
 
-    _knob->getKnob()->endValueChange(Natron::USER_EDITED);
+    _knob->getKnob()->endValueChange();
     setText(QObject::tr("Set value of %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
 }
@@ -92,7 +92,7 @@ void KnobUndoCommand::redo()
         _knob->getKnob()->getHolder()->getApp()->getGui()->_curveEditor->getCurveWidget()->refreshSelectedKeys();
     }
     
-    _knob->getKnob()->endValueChange(Natron::USER_EDITED);
+    _knob->getKnob()->endValueChange();
     setText(QObject::tr("Set value of %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
 }

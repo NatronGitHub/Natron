@@ -68,7 +68,11 @@ struct ProjectPrivate{
 
     int beginEndBracketsCount;
     int evaluationsCount;
-    std::map<KnobHolder*,int> holdersWhoseBeginWasCalled;
+    
+    ///for each knob holder, how many times begin was called, and what was the reason of the outtermost begin bracket.
+    typedef std::map<KnobHolder*, std::pair<int,Natron::ValueChangedReason> > KnobsValueChangedMap;
+    KnobsValueChangedMap holdersWhoseBeginWasCalled;
+    
     bool isSignificantChange;
     Knob* lastKnobChanged;
     

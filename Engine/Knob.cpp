@@ -386,7 +386,7 @@ void Knob::load(const KnobSerialization& serializationObj){
     }
     
     ///end bracket
-    endValueChange(Natron::PLUGIN_EDITED);
+    endValueChange();
     emit restorationComplete();
 }
 
@@ -431,7 +431,7 @@ void Knob::evaluateAnimationChange(){
         evaluateValueChange(0, Natron::PLUGIN_EDITED);
     }
     
-    endValueChange(Natron::PLUGIN_EDITED);
+    endValueChange();
     
 }
 
@@ -439,8 +439,8 @@ void Knob::beginValueChange(Natron::ValueChangedReason reason) {
     _imp->_holder->notifyProjectBeginKnobsValuesChanged(reason);
 }
 
-void Knob::endValueChange(Natron::ValueChangedReason reason) {
-    _imp->_holder->notifyProjectEndKnobsValuesChanged(reason);
+void Knob::endValueChange() {
+    _imp->_holder->notifyProjectEndKnobsValuesChanged();
 }
 
 
@@ -705,9 +705,9 @@ void KnobHolder::notifyProjectBeginKnobsValuesChanged(Natron::ValueChangedReason
     }
 }
 
-void KnobHolder::notifyProjectEndKnobsValuesChanged(Natron::ValueChangedReason reason){
+void KnobHolder::notifyProjectEndKnobsValuesChanged(){
     if(_app){
-        getApp()->endProjectWideValueChanges(reason,this);
+        getApp()->endProjectWideValueChanges(this);
     }
 }
 

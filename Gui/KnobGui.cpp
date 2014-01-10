@@ -506,7 +506,7 @@ void KnobGui::onPasteActionTriggered(){
             Natron::errorDialog("Paste animation", "You cannot copy/paste animation from/to parameters with different dimensions.");
         }
     }
-        _knob->endValueChange(Natron::PLUGIN_EDITED);
+        _knob->endValueChange();
 }
 
 

@@ -257,7 +257,7 @@ void Project::onTimeChanged(SequenceTime time,int reason){
     
     getApp()->lockProject();
     
-    endProjectWideValueChanges(Natron::TIME_CHANGED,this);
+    endProjectWideValueChanges(this);
     
     getApp()->unlockProject();
 
@@ -286,26 +286,28 @@ void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,Kno
     //std::cout <<"Begin: " << _imp->_beginEndBracketsCount << std::endl;
     ++_imp->beginEndBracketsCount;
 
-    std::map<KnobHolder*,int>::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
+    ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
     if(found == _imp->holdersWhoseBeginWasCalled.end()){
         
         
         caller->beginKnobsValuesChanged(reason);
         
         
-        _imp->holdersWhoseBeginWasCalled.insert(std::make_pair(caller, 1));
+        _imp->holdersWhoseBeginWasCalled.insert(std::make_pair(caller,std::make_pair(1,reason)));
     }else{
-        ++found->second;
+        ++found->second.first;
     }
 }
 
 void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder* caller,Knob* k,bool isSignificant){
     bool wasBeginCalled = true;
 
-    std::map<KnobHolder*,int>::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
+    ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
     if(found == _imp->holdersWhoseBeginWasCalled.end() || _imp->beginEndBracketsCount == 0){
         beginProjectWideValueChanges(reason,caller);
         wasBeginCalled = false;
+    } else {
+        reason = found->second.second;
     }
 
     if(!_imp->isSignificantChange && isSignificant){
@@ -314,37 +316,39 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
     ++_imp->evaluationsCount;
     _imp->lastKnobChanged = k;
    
-    caller->onKnobValueChanged(k,reason);
+    if(reason != Natron::OTHER_REASON) {
+        caller->onKnobValueChanged(k,reason);
+    }
     
     if(!wasBeginCalled){
-        endProjectWideValueChanges(reason,caller);
+        endProjectWideValueChanges(caller);
     }
 }
 
-void Project::endProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller){
+void Project::endProjectWideValueChanges(KnobHolder* caller){
     --_imp->beginEndBracketsCount;
     //   std::cout <<"End: " << _imp->_beginEndBracketsCount << std::endl;
-    std::map<KnobHolder*,int>::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
+    ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
     assert(found != _imp->holdersWhoseBeginWasCalled.end());
-    if(found->second == 1){
+    if(found->second.first == 1){
 
-        caller->endKnobsValuesChanged(reason);
+        caller->endKnobsValuesChanged(found->second.second);
         
         _imp->holdersWhoseBeginWasCalled.erase(found);
     }else{
-        --found->second;
+        --found->second.first;
     }
     if(_imp->beginEndBracketsCount != 0){
         return;
     }
     if(_imp->evaluationsCount != 0){
         _imp->evaluationsCount = 0;
-        if(reason == Natron::USER_EDITED){
+        if(found->second.second == Natron::USER_EDITED){
             
             getApp()->triggerAutoSave();
             
         }
-        if(reason != Natron::OTHER_REASON && reason != Natron::TIME_CHANGED){
+        if(found->second.second != Natron::OTHER_REASON && found->second.second != Natron::TIME_CHANGED){
             caller->evaluate(_imp->lastKnobChanged,_imp->isSignificantChange);
         }
     }

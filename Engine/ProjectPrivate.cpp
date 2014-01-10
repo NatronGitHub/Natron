@@ -162,7 +162,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
     }
     
-    project->endProjectWideValueChanges(Natron::PLUGIN_EDITED,project);
-    }
+    project->endProjectWideValueChanges(project);
+}
 
 } // namespace Natron

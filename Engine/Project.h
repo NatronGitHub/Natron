@@ -162,7 +162,7 @@ private:
 
     void stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHolder* caller, Knob *k, bool isSignificant);
 
-    void endProjectWideValueChanges(ValueChangedReason reason, KnobHolder* caller);
+    void endProjectWideValueChanges(KnobHolder* caller);
 
 public slots:
 

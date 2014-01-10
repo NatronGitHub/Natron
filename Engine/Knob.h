@@ -86,7 +86,7 @@ public:
      * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
      * to render.
     **/
-    void endValueChange(Natron::ValueChangedReason reason) ;
+    void endValueChange() ;
 
     /**
      * @brief Called when a keyframe/derivative is modified, indicating that the curve has changed and we must
@@ -449,7 +449,7 @@ public:
      * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
      * but this can lead to worse performance. You can overload this to make all changes to params at once.
      **/
-    void notifyProjectEndKnobsValuesChanged(Natron::ValueChangedReason reason);
+    void notifyProjectEndKnobsValuesChanged();
     
     
     /**

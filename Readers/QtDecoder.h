@@ -68,7 +68,9 @@ public:
                                   const RectI& roi,int view,boost::shared_ptr<Natron::Image> output) OVERRIDE;
     
     virtual void initializeKnobs() OVERRIDE;
-    
+
+    virtual void onKnobValueChanged(Knob* k, Natron::ValueChangedReason reason) OVERRIDE;
+
     virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Natron::EffectInstance::INSTANCE_SAFE;}
         
     virtual Natron::EffectInstance::CachePolicy getCachePolicy(SequenceTime time) const OVERRIDE;

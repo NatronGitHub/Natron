@@ -42,7 +42,7 @@ void AddKeysCommand::addOrRemoveKeyframe(bool add){
             _curve->getKnob()->setKeyframe(_keys[i].getTime(),_curve->getDimension());
         }
     }
-    _curve->getKnob()->getKnob()->endValueChange(Natron::USER_EDITED);
+    _curve->getKnob()->getKnob()->endValueChange();
     _curveWidget->update();
     
     setText(QObject::tr("Add multiple keyframes"));
@@ -88,7 +88,7 @@ void RemoveKeysCommand::addOrRemoveKeyframe(bool add){
         }
     }
     for(U32 i = 0 ; i < _keys.size();++i){
-        _keys[i].first->getKnob()->getKnob()->endValueChange(Natron::USER_EDITED);
+        _keys[i].first->getKnob()->getKnob()->endValueChange();
     }
     
     _curveWidget->update();
@@ -161,7 +161,7 @@ void MoveKeysCommand::move(double dt,double dv, bool isundo){
         KeyFrameSet::const_iterator foundKey = c.keyframeAt(newKeyIndexes[i]);
         assert(foundKey != c.end());
         newSelectedKeys.insert(SelectedKey(it->curve,*foundKey));
-        it->curve->getKnob()->getKnob()->endValueChange(Natron::USER_EDITED);
+        it->curve->getKnob()->getKnob()->endValueChange();
         ++i;
     }
     if(!_keys.empty()){
@@ -231,7 +231,7 @@ void SetKeysInterpolationCommand::setNewInterpolation(bool undo){
         newSelectedKeys.insert(SelectedKey(_oldInterp[i].curve,_oldInterp[i].key));
     }
     for (U32 i = 0; i < _oldInterp.size();++i) {
-        _oldInterp[i].curve->getKnob()->getKnob()->endValueChange(Natron::USER_EDITED);
+        _oldInterp[i].curve->getKnob()->getKnob()->endValueChange();
     }
     _curveWidget->setSelectedKeys(newSelectedKeys);
     setText(QObject::tr("Set multiple keys interpolation"));

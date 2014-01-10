@@ -112,10 +112,62 @@ void QtReader::initializeKnobs() {
     
 }
 
+void QtReader::onKnobValueChanged(Knob* k, Natron::ValueChangedReason /*reason*/) {
+    if (k == _fileKnob.get()) {
+        SequenceTime first,last;
+        getFrameRange(&first, &last);
+        _firstFrame->setValue<int>(first);
+        _firstFrame->setMinimum(first);
+        _firstFrame->setMaximum(last);
+
+        _lastFrame->setValue<int>(last);
+        _lastFrame->setMinimum(first);
+        _lastFrame->setMaximum(last);
+        
+        _startingFrame->setValue<int>(first);
+    } else if(k == _firstFrame.get()) {
+        int first = _firstFrame->getValue<int>();
+        _startingFrame->setValue<int>(first);
+        _lastFrame->setMinimum(first);
+    } else if(k == _lastFrame.get()) {
+        int last = _lastFrame->getValue<int>();
+        _firstFrame->setMaximum(last);
+    }
+}
+
 void QtReader::getFrameRange(SequenceTime *first,SequenceTime *last){
+    
+    ///get the "real" first and last frames.
+    int realFirst = _fileKnob->firstFrame();
+    int realLast = _fileKnob->lastFrame();
+    
+    ///these are the value held by the "First frame" and "Last frame" param
+    int frameRangeFirst = _firstFrame->getValue<int>();
+    int frameRangeLast = _lastFrame->getValue<int>();
+    //if the values in the param are valid (i.e: inside the range [realFirst,realLast], use them
+    
+    bool areFrameRangeValuesValid = frameRangeFirst >= realFirst && frameRangeFirst <= realLast
+    && frameRangeLast >= realFirst && frameRangeLast <= realLast;
+    
+    ////if the values held by the knob are not valid, set them!
+    if( !areFrameRangeValuesValid ) {
+        beginKnobsValuesChanged(Natron::OTHER_REASON);
+        _firstFrame->setValue<int>(realFirst);
+        _firstFrame->setMinimum(realFirst);
+        _firstFrame->setMaximum(realLast);
+        _lastFrame->setValue<int>(realLast);
+        _lastFrame->setMinimum(realFirst);
+        _lastFrame->setMaximum(realLast);
+        endKnobsValuesChanged(Natron::OTHER_REASON);
+        
+    }
+    
+    ///now get the starting time
     int startingTime = _startingFrame->getValue<int>();
-    *first =  startingTime;
-    *last = _fileKnob->lastFrame() + startingTime;
+    *first =  startingTime; //< the first frame is always the starting time
+    
+    int frameRange = areFrameRangeValuesValid ? frameRangeLast - frameRangeFirst : realLast - realFirst;
+    *last = startingTime + frameRange;
 }
 
 
@@ -218,7 +270,21 @@ SequenceTime QtReader::getSequenceTime(SequenceTime t)
         }
         
     }
+    
+    ///get the sequence time by removing the startingTime from it
     sequenceTime -= startingTime;
+    
+    ///also offset properly the frame to the frame range
+    ///get the "real" first frame.
+    int realFirst = _fileKnob->firstFrame();
+
+    /// value held by the "First frame" param
+    int frameRangeFirst = _firstFrame->getValue<int>();
+
+    ///the offset is the difference of the frameRangeFirst with the realFirst
+    assert(frameRangeFirst >= realFirst);
+    
+    sequenceTime += (frameRangeFirst - realFirst);
     return sequenceTime;
 }
 

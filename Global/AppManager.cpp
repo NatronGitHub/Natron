@@ -257,7 +257,7 @@ AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectNam
     
     _currentProject->notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
     _currentProject->initializeKnobs();
-    _currentProject->notifyProjectEndKnobsValuesChanged(Natron::OTHER_REASON);
+    _currentProject->notifyProjectEndKnobsValuesChanged();
 
     
     if(!_isBackground){
@@ -763,8 +763,8 @@ void AppInstance::stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHo
 }
 
 
-void AppInstance::endProjectWideValueChanges(Natron::ValueChangedReason reason, KnobHolder* caller){
-    _currentProject->endProjectWideValueChanges(reason, caller);
+void AppInstance::endProjectWideValueChanges(KnobHolder* caller){
+    _currentProject->endProjectWideValueChanges(caller);
 }
 
 

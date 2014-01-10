@@ -96,7 +96,7 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
         OfxStatus stat = effect_->populate();
         effect_->addParamsToTheirParents();
-        notifyProjectEndKnobsValuesChanged(Natron::OTHER_REASON);
+        notifyProjectEndKnobsValuesChanged();
 
         if (stat != kOfxStatOK) {
             throw std::runtime_error("Error while populating the Ofx image effect");
