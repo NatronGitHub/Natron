@@ -1066,10 +1066,12 @@ void Gui::createReader(){
     QStringList files = popOpenFileDialog(true, filters, _lastLoadSequenceOpenedDir.toStdString());
     if(!files.isEmpty()){
         QString first = files.at(0);
-        std::string ext = Natron::removeFileExtension(first).toStdString();
-        
+        std::string ext = Natron::removeFileExtension(first).toLower().toStdString();
+
         std::map<std::string,std::string>::iterator found = readersForFormat.find(ext);
-        if(found != readersForFormat.end()){
+        if (found == readersForFormat.end()) {
+            errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
+        } else {
             Node* n = _appInstance->createNode(found->second.c_str());
             const std::vector<boost::shared_ptr<Knob> >& knobs = n->getKnobs();
             for (U32 i = 0; i < knobs.size(); ++i) {
@@ -1082,10 +1084,7 @@ void Gui::createReader(){
                     }
                 }
             }
-        }else{
-            errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
         }
-        
     }
 }
 

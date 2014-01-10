@@ -14,6 +14,9 @@
 #include <fstream>
 #include <new> // std::bad_alloc
 #include <stdexcept> // std::exception
+#include <cctype> // tolower
+#include <algorithm> // transform
+#include <string>
 #include <QtCore/QDir>
 #include <QtCore/QMutex>
 #if QT_VERSION < 0x050000
@@ -363,6 +366,7 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
         std::vector<std::string> formats(formatsCount);
         for(int k = 0; k < formatsCount;++k){
             formats[k] = p->getDescriptor().getProps().getStringProperty(kNatronImageEffectPropFormats,k);
+            std::transform(formats[k].begin(), formats[k].end(), formats[k].begin(), ::tolower);
         }
         
         OFX::Host::ImageEffect::Descriptor* isGenerator = p->getContext(kOfxImageEffectContextGenerator);
