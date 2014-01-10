@@ -360,11 +360,11 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
         plugins->push_back(plugin);
         
         
-        ///if this plugin's descriptor has the kOfxImageEffectPropFormatsCount and kOfxImageEffectPropFormats properties,
-        ///use them to fill the readersMap and writersMap
-        int formatsCount = p->getDescriptor().getProps().getIntProperty(kNatronImageEffectPropFormatsCount);
+        ///if this plugin's descriptor has the kNatronImageEffectPropFormats property,
+        ///use it to fill the readersMap and writersMap
+        int formatsCount = p->getDescriptor().getProps().getDimension(kNatronImageEffectPropFormats);
         std::vector<std::string> formats(formatsCount);
-        for(int k = 0; k < formatsCount;++k){
+        for (int k = 0; k < formatsCount; ++k) {
             formats[k] = p->getDescriptor().getProps().getStringProperty(kNatronImageEffectPropFormats,k);
             std::transform(formats[k].begin(), formats[k].end(), formats[k].begin(), ::tolower);
         }
