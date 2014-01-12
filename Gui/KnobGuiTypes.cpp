@@ -145,8 +145,10 @@ void Int_KnobGui::onMinMaxChanged(int mini, int maxi, int index)
     _spinBoxes[index].first->setMaximum(maxi);
 }
 
-void Int_KnobGui::onDisplayMinMaxChanged(int mini, int maxi, int /*index*/)
+void Int_KnobGui::onDisplayMinMaxChanged(int mini, int maxi, int index)
 {
+    _spinBoxes[index].first->setMinimum(mini);
+    _spinBoxes[index].first->setMaximum(maxi);
     if(_slider){
         _slider->setMinimumAndMaximum(mini, maxi);
     }
@@ -411,7 +413,9 @@ void Double_KnobGui::onMinMaxChanged(double mini, double maxi, int index)
     
 }
 
-void Double_KnobGui::onDisplayMinMaxChanged(double mini,double maxi,int /*index*/ ){
+void Double_KnobGui::onDisplayMinMaxChanged(double mini,double maxi,int index ){
+    _spinBoxes[index].first->setMinimum(mini);
+    _spinBoxes[index].first->setMaximum(maxi);
     if(_slider){
         _slider->setMinimumAndMaximum(mini, maxi);
     }

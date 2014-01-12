@@ -244,6 +244,14 @@ void OfxIntegerInstance::onKnobAnimationLevelChanged(int lvl){
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
 }
 
+void OfxIntegerInstance::setDisplayRange(){
+    int displayMin = getProperties().getIntProperty(kOfxParamPropDisplayMin);
+    int displayMax = getProperties().getIntProperty(kOfxParamPropDisplayMax);
+    _knob->setDisplayMinimum(displayMin);
+    _knob->setDisplayMaximum(displayMax);
+
+}
+
 ////////////////////////// OfxDoubleInstance /////////////////////////////////////////////////
 
 static void valueAccordingToType(bool toType,const std::string& doubleType,OfxEffectInstance* effect,

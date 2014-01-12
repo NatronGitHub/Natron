@@ -498,14 +498,20 @@ void EffectInstance::openImageFileKnob() {
             boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
             assert(fk);
             if (fk->isInputImageFile()) {
-                fk->open_file();
+                QStringList files = fk->getValue<QStringList>();
+                if (files.isEmpty()) {
+                    fk->open_file();
+                }
                 break;
             }
         } else if(knobs[i]->typeName() == OutputFile_Knob::typeNameStatic()) {
             boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
             assert(fk);
             if (fk->isOutputImageFile()) {
-                fk->open_file();
+                QString file = fk->getValue<QString>();
+                if(file.isEmpty()){
+                    fk->open_file();
+                }
                 break;
             }
 

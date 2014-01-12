@@ -102,6 +102,8 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
+    virtual void setDisplayRange();
+    
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
     virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
