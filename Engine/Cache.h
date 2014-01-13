@@ -160,6 +160,8 @@ public:
     ~Buffer(){deallocate();}
 
     void allocate(size_t count, int cost, std::string path = std::string()) {
+        
+        /*allocate should be called only once.*/
         assert(_path.empty());
         assert((!_buffer && !_backingFile) || (_buffer && !_backingFile) || (!_buffer && _backingFile));
         if (_buffer || _backingFile) {
@@ -187,7 +189,7 @@ public:
     }
 
     void reOpenFileMapping() const {
-        assert(!_backingFile && _storageMode == DISK && _size > 0);
+        assert(!_backingFile && _storageMode == DISK);
         try{
             _backingFile  = new MemoryFile(_path,Natron::if_exists_keep_if_dont_exists_create);
         }catch(const std::runtime_error& r){
