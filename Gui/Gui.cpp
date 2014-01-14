@@ -1078,10 +1078,15 @@ void Gui::createReader(){
                 if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
                     boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
                     assert(fk);
-                    if(fk->isInputImageFile()){
+                    
+                    if(!fk->isInputImageFile() && files.size() > 1){
+                        errorDialog("Reader", "This plug-in doesn't support image sequences, please select only 1 file.");
+                        break;
+                    } else {
                         fk->setValue<QStringList>(files);
                         break;
                     }
+                
                 }
             }
         }
