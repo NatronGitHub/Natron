@@ -38,6 +38,11 @@ public:
     File_Knob(KnobHolder *holder, const std::string &description, int dimension);
 
     static const std::string& typeNameStatic();
+    
+    /*The file dialog will not attempt to show files as image sequences*/
+    void turnOffSequences() { _sequenceDialog = false; }
+    
+    bool isSequencesDialogEnabled() const { return _sequenceDialog; }
 
 private:
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -47,7 +52,7 @@ private:
     
 signals:
     
-    void openFile();
+    void openFile(bool);
     
     void frameRangeChanged(int,int);
     
@@ -70,7 +75,7 @@ public:
     
     bool isInputImageFile() const { return _isInputImage; }
 
-    void open_file() { emit openFile(); }
+    void open_file() { emit openFile(_sequenceDialog); }
 private:
     int frameCount() const;
 
@@ -95,10 +100,10 @@ private:
 
 
 private:
-    mutable QMutex _fileSequenceLock;
     std::map<int, QString> _filesSequence; ///mapping <frameNumber,fileName>
     static const std::string _typeNameStr;
     bool _isInputImage;
+    bool _sequenceDialog;
 };
 
 /******************************OUTPUT_FILE_KNOB**************************************/
@@ -120,15 +125,19 @@ public:
     void setFile(const QString& file);
 
     static const std::string& typeNameStatic();
-
+    
     void setAsOutputImageFile() { _isOutputImage = true; }
     
     bool isOutputImageFile() const { return _isOutputImage; }
     
-    void open_file() { emit openFile(); }
+    void open_file() { emit openFile(_sequenceDialog); }
+    
+    void turnOffSequences() { _sequenceDialog = false; }
+    
+    bool isSequencesDialogEnabled() const { return _sequenceDialog; }
 signals:
     
-    void openFile();
+    void openFile(bool);
     
 private:
 
@@ -139,6 +148,7 @@ private:
 private:
     static const std::string _typeNameStr;
     bool _isOutputImage;
+    bool _sequenceDialog;
 };
 
 

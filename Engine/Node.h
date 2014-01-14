@@ -54,6 +54,9 @@ public:
     
     virtual ~Node();
     
+    /*Quit all processing done by all render instances of this node */
+    void quitAnyProcessing();
+    
     /*Never call this yourself.*/
     void setLiveInstance(Natron::EffectInstance* liveInstance) {_liveInstance = liveInstance;}
     
@@ -343,11 +346,7 @@ public slots:
     void notifyGuiChannelChanged(const Natron::ChannelSet& c){
         emit channelsChanged(c);
     }
-
-//    void notifyFrameRangeChanged(int f,int l){
-//        emit frameRangeChanged(f,l);
-//    }
-//    
+   
     
 signals:
     

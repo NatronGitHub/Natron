@@ -51,7 +51,9 @@ public slots:
 
     void onReturnPressed();
     
-    void open_file();
+    void onButtonClicked();
+    
+    void open_file(bool);
 
 private:
     virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
@@ -93,8 +95,10 @@ public:
 public slots:
 
     void onReturnPressed();
+    
+    void onButtonClicked();
 
-    void open_file();
+    void open_file(bool);
     
 private:
     virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;

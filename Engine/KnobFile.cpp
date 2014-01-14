@@ -23,6 +23,7 @@ using std::pair;
 File_Knob::File_Knob(KnobHolder *holder, const std::string &description, int dimension)
 : Knob(holder, description, dimension)
 , _isInputImage(false)
+, _sequenceDialog(true)
 {
 }
 
@@ -48,7 +49,6 @@ void File_Knob::setFiles(const QStringList& files) {
 
 int File_Knob::firstFrame() const
 {
-    QMutexLocker locker(&_fileSequenceLock);
     std::map<int, QString>::const_iterator it = _filesSequence.begin();
     if (it == _filesSequence.end()) {
         return INT_MIN;
@@ -58,7 +58,6 @@ int File_Knob::firstFrame() const
 
 int File_Knob::lastFrame() const
 {
-    QMutexLocker locker(&_fileSequenceLock);
     std::map<int, QString>::const_iterator it = _filesSequence.end();
     if (it == _filesSequence.begin()) {
         return INT_MAX;
@@ -83,7 +82,6 @@ int File_Knob::nearestFrame(int f) const
     }
 
     std::map<int, int> distanceMap;
-    QMutexLocker locker(&_fileSequenceLock);
     for (std::map<int, QString>::const_iterator it = _filesSequence.begin(); it != _filesSequence.end(); ++it) {
         distanceMap.insert(make_pair(std::abs(f - it->first), it->first));
     }
@@ -104,7 +102,6 @@ QString File_Knob::getRandomFrameName(int f, bool loadNearestIfNotFound) const
     if (loadNearestIfNotFound) {
         f = nearestFrame(f);
     }
-    QMutexLocker locker(&_fileSequenceLock);
     std::map<int, QString>::const_iterator it = _filesSequence.find(f);
     if (it != _filesSequence.end()) {
         return it->second;
@@ -120,7 +117,6 @@ void File_Knob::cloneExtraData(const Knob &other)
 
 void File_Knob::processNewValue()
 {
-    QMutexLocker locker(&_fileSequenceLock);
     _filesSequence.clear();
     QStringList fileNameList = getValue<QStringList>();
     bool first_time = true;
@@ -187,6 +183,7 @@ void File_Knob::processNewValue()
 OutputFile_Knob::OutputFile_Knob(KnobHolder *holder, const std::string &description, int dimension)
 : Knob(holder, description, dimension)
 , _isOutputImage(false)
+, _sequenceDialog(true)
 {
 }
 

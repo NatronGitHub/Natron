@@ -329,9 +329,7 @@ AppInstance::~AppInstance(){
     
     l.unlock();
     for (U32 i = 0; i < nodes.size(); ++i) {
-        if(nodes[i]->isOutputNode()){
-            dynamic_cast<Natron::OutputEffectInstance*>(nodes[i]->getLiveInstance())->getVideoEngine()->quitEngineThread();
-        }
+        nodes[i]->quitAnyProcessing();
     }
     l.relock();
     ///force the project to be deleted before the project lock

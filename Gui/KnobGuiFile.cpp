@@ -32,7 +32,7 @@ File_KnobGui::File_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *containe
 {
     boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knob);
     assert(fk);
-    QObject::connect(fk.get(), SIGNAL(openFile()), this, SLOT(open_file()));
+    QObject::connect(fk.get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)));
 }
 
 File_KnobGui::~File_KnobGui()
@@ -61,7 +61,7 @@ void File_KnobGui::createWidget(QGridLayout *layout, int row)
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _openFileButton->setIcon(QIcon(pix));
     _openFileButton->setFixedSize(20, 20);
-    QObject::connect(_openFileButton, SIGNAL(clicked()), this, SLOT(open_file()));
+    QObject::connect(_openFileButton, SIGNAL(clicked()), this, SLOT(onButtonClicked()));
 
 
     QWidget *container = new QWidget(layout->parentWidget());
@@ -74,7 +74,13 @@ void File_KnobGui::createWidget(QGridLayout *layout, int row)
     layout->addWidget(container, row, 1);
 }
 
-void File_KnobGui::open_file()
+void File_KnobGui::onButtonClicked() {
+    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
+    assert(fk);
+    open_file(fk->isSequencesDialogEnabled());
+}
+
+void File_KnobGui::open_file(bool openSequence)
 {
     std::map<std::string,std::string> readersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
@@ -86,7 +92,7 @@ void File_KnobGui::open_file()
     
     QStringList files;
     
-    SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, true, SequenceFileDialog::OPEN_DIALOG, _lastOpened.toStdString());
+    SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, openSequence, SequenceFileDialog::OPEN_DIALOG, _lastOpened.toStdString());
     if (dialog.exec()) {
         files = dialog.selectedFiles();
     }
@@ -144,7 +150,7 @@ OutputFile_KnobGui::OutputFile_KnobGui(boost::shared_ptr<Knob> knob, DockablePan
 {
     boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knob);
     assert(fk);
-    QObject::connect(fk.get(), SIGNAL(openFile()), this, SLOT(open_file()));
+    QObject::connect(fk.get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)));
 }
 
 OutputFile_KnobGui::~OutputFile_KnobGui()
@@ -171,7 +177,7 @@ void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row)
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _openFileButton->setIcon(QIcon(pix));
     _openFileButton->setFixedSize(20, 20);
-    QObject::connect(_openFileButton, SIGNAL(clicked()), this, SLOT(open_file()));
+    QObject::connect(_openFileButton, SIGNAL(clicked()), this, SLOT(onButtonClicked()));
 
 
     QWidget *container = new QWidget(layout->parentWidget());
@@ -185,7 +191,13 @@ void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row)
     layout->addWidget(container, row, 1);
 }
 
-void OutputFile_KnobGui::open_file()
+void OutputFile_KnobGui::onButtonClicked() {
+    boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(getKnob());
+    assert(fk);
+    open_file(fk->isSequencesDialogEnabled());
+}
+
+void OutputFile_KnobGui::open_file(bool openSequence)
 {
     std::map<std::string,std::string> writersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
@@ -193,7 +205,7 @@ void OutputFile_KnobGui::open_file()
     for (std::map<std::string,std::string>::const_iterator it = writersForFormat.begin(); it!=writersForFormat.end(); ++it) {
         filters.push_back(it->first);
     }
-    SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, true, SequenceFileDialog::SAVE_DIALOG, _lastOpened.toStdString());
+    SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, openSequence, SequenceFileDialog::SAVE_DIALOG, _lastOpened.toStdString());
     if (dialog.exec()) {
         QString oldPattern = _lineEdit->text();
         QString newPattern = dialog.filesToSave();

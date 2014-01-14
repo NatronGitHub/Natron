@@ -148,14 +148,19 @@ Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
     _imp->renderInstances.insert(std::make_pair(_imp->previewRenderTree,_imp->previewInstance));
 }
 
-
-Node::~Node()
-{
-    
+void Node::quitAnyProcessing() {
+    if (isOutputNode()) {
+        dynamic_cast<Natron::OutputEffectInstance*>(this->getLiveInstance())->getVideoEngine()->quitEngineThread();
+    }
     QMutexLocker l(&_imp->previewMutex);
     while (_imp->computingPreview) {
         _imp->computingPreviewCond.wait(&_imp->previewMutex);
     }
+
+}
+
+Node::~Node()
+{
     
     for (std::map<RenderTree*,EffectInstance*>::iterator it = _imp->renderInstances.begin(); it!=_imp->renderInstances.end(); ++it) {
         delete it->second;

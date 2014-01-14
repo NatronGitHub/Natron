@@ -51,9 +51,7 @@ ProjectGui::ProjectGui()
 ProjectGui::~ProjectGui(){
     const std::vector<Natron::Node*>& nodes = _project->getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {
-        if(nodes[i]->isOutputNode()){
-            dynamic_cast<Natron::OutputEffectInstance*>(nodes[i]->getLiveInstance())->getVideoEngine()->quitEngineThread();
-        }
+        nodes[i]->quitAnyProcessing();
     }
 }
 

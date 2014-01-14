@@ -1397,12 +1397,17 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
             if(fileIsImage){
                 _fileKnob->setAsInputImage();
                 QObject::connect(_fileKnob.get(),SIGNAL(frameRangeChanged(int,int)),this,SLOT(onFrameRangeChanged(int, int)));
+            } else {
+                _fileKnob->turnOffSequences();
             }
         } else {
             _node->setAsOutputNode(); // IMPORTANT !
             _outputFileKnob = Natron::createKnob<OutputFile_Knob>(node, getParamLabel(this));
-            if(fileIsOutput && fileIsImage){
+            if(fileIsOutput){
                 _outputFileKnob->setAsOutputImageFile();
+                if (!fileIsImage) {
+                    _outputFileKnob->turnOffSequences();
+                }
             }
             
         }
