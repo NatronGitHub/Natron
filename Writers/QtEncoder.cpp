@@ -136,6 +136,52 @@ void QtWriter::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/)
     }
 }
 
+static std::string filenameFromPattern(const std::string& pattern,int frameIndex) {
+    std::string ret = pattern;
+    int lastDot = pattern.find_last_of('.');
+    if(lastDot == (int)std::string::npos){
+        ///the filename has not extension, return an empty str
+        return "";
+    }
+    
+    std::stringstream fStr;
+    fStr << frameIndex;
+    std::string frameIndexStr = fStr.str();
+    int lastPos = pattern.find_last_of('#');
+    
+    if (lastPos == (int)std::string::npos) {
+        ///the filename has no #, just put the digits between etxension and path
+        ret.insert(lastDot, frameIndexStr);
+        return pattern;
+    }
+    
+    int nSharpChar = 0;
+    int i = lastDot;
+    --i; //< char before '.'
+    while (i >= 0 && pattern[i] == '#') {
+        --i;
+        ++nSharpChar;
+    }
+    
+    int prepending0s = nSharpChar > (int)frameIndexStr.size() ? nSharpChar - frameIndexStr.size() : 0;
+    
+    //remove all ocurrences of the # char
+    ret.erase(std::remove(ret.begin(), ret.end(), '#'),ret.end());
+    
+    //insert prepending zeroes
+    std::string zeroesStr;
+    for (int j = 0; j < prepending0s; ++j) {
+        zeroesStr.push_back('0');
+    }
+    frameIndexStr.insert(0,zeroesStr);
+    
+    //refresh the last '.' position
+    lastDot = ret.find_last_of('.');
+    
+    ret.insert(lastDot, frameIndexStr);
+    return ret;
+}
+
 Natron::Status QtWriter::render(SequenceTime time, RenderScale scale, const RectI& roi, int view, boost::shared_ptr<Natron::Image> output){
     
     boost::shared_ptr<Natron::Image> src = getImage(0, time, scale, view);
@@ -163,7 +209,8 @@ Natron::Status QtWriter::render(SequenceTime time, RenderScale scale, const Rect
     
     QImage img(buf,roi.width(),roi.height(),type);
     
-    std::string filename = _fileKnob->filenameFromPattern(std::floor(time + 0.5));
+    std::string filename = _fileKnob->getValue<QString>().toStdString();
+    filename = filenameFromPattern(filename,std::floor(time + 0.5));
     
     img.save(filename.c_str());
     free(buf);

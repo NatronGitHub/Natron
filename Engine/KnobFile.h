@@ -49,6 +49,8 @@ signals:
     
     void openFile();
     
+    void frameRangeChanged(int,int);
+    
 public:
     void setFiles(const QStringList& stringList);
 
@@ -119,8 +121,6 @@ public:
 
     static const std::string& typeNameStatic();
 
-    std::string filenameFromPattern(int frameIndex) const;
-
     void setAsOutputImageFile() { _isOutputImage = true; }
     
     bool isOutputImageFile() const { return _isOutputImage; }
@@ -129,6 +129,7 @@ public:
 signals:
     
     void openFile();
+    
 private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;

@@ -1396,6 +1396,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
             _fileKnob = Natron::createKnob<File_Knob>(node, getParamLabel(this));
             if(fileIsImage){
                 _fileKnob->setAsInputImage();
+                QObject::connect(_fileKnob.get(),SIGNAL(frameRangeChanged(int,int)),this,SLOT(onFrameRangeChanged(int, int)));
             }
         } else {
             _node->setAsOutputNode(); // IMPORTANT !
@@ -1419,18 +1420,19 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
     set(properties.getStringProperty(kOfxParamPropDefault).c_str());
 }
 
-void OfxStringInstance::onFrameRangeChanged(int f,int l){
-    _node->notifyFrameRangeChanged(f,l);
+void OfxStringInstance::onFrameRangeChanged(int first,int last){
+    getProperties().setIntProperty(kNatronImageSequenceRange, first,0);
+    getProperties().setIntProperty(kNatronImageSequenceRange, last,0);
 }
 
 OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
     if(_fileKnob){
         int currentFrame = (int)_node->effectInstance()->timeLineGetTime();
-        QString fileName =  _fileKnob->getRandomFrameName(currentFrame,false);
+        QString fileName =  _fileKnob->getRandomFrameName(currentFrame,true);
         str = fileName.toStdString();
     }else if(_outputFileKnob){
-        str = _outputFileKnob->filenameFromPattern((int)_node->getCurrentFrame());
+        str = _outputFileKnob->getValue<QString>().toStdString();
     }else if(_stringKnob){
         str = _stringKnob->getValue().toString().toStdString();
     }
@@ -1442,7 +1444,7 @@ OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
     if(_fileKnob){
         str = _fileKnob->getRandomFrameName(time,false).toStdString();
     }else if(_outputFileKnob){
-        str = _outputFileKnob->filenameFromPattern(std::floor(time + 0.5));
+        str = _outputFileKnob->getValue<QString>().toStdString();
     }else if(_stringKnob){
         str = _stringKnob->getValueAtTime(std::floor(time + 0.5), 0).toString().toStdString();
     }

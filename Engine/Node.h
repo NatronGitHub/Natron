@@ -344,10 +344,10 @@ public slots:
         emit channelsChanged(c);
     }
 
-    void notifyFrameRangeChanged(int f,int l){
-        emit frameRangeChanged(f,l);
-    }
-    
+//    void notifyFrameRangeChanged(int f,int l){
+//        emit frameRangeChanged(f,l);
+//    }
+//    
     
 signals:
     
@@ -379,7 +379,7 @@ signals:
     
     void channelsChanged(const Natron::ChannelSet&);
 
-    void frameRangeChanged(int,int);
+    //void frameRangeChanged(int,int);
 
 protected:
     // FIXME: all data members should be private, use getter/setter instead

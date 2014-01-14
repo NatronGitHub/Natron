@@ -564,9 +564,9 @@ void EffectInstance::abortRendering(){
     }
 }
 
-void EffectInstance::notifyFrameRangeChanged(int first,int last){
-    _node->notifyFrameRangeChanged(first, last);
-}
+//void EffectInstance::notifyFrameRangeChanged(int first,int last){
+//    _node->notifyFrameRangeChanged(first, last);
+//}
 
 void EffectInstance::togglePreview() {
     _imp->previewEnabled = !_imp->previewEnabled;
