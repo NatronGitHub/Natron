@@ -475,8 +475,11 @@ void Knob::onTimeChanged(SequenceTime time){
 
 
 void Knob::cloneValue(const Knob& other){
+
     assert(_imp->_name == other._imp->_name);
-    _imp->_hashVector = other._imp->_hashVector;
+    
+    //thread-safe
+    _imp->_hashVector = other.getHashVector();
     
     _imp->_values = other._imp->_values;
     
@@ -575,6 +578,11 @@ void Knob::turnOffUndoRedo() {_imp->_canUndo = false;}
 bool Knob::canBeUndone() const {return _imp->_canUndo;}
 
 bool Knob::isInsignificant() const {return _imp->_isInsignificant;}
+
+const std::vector<U64>& Knob::getHashVector() const {
+    QMutexLocker l(&_imp->_hashMutex);
+    return _imp->_hashVector;
+}
 
 void Knob::setHintToolTip(const std::string& hint) {
     QString tooltip(hint.c_str());
