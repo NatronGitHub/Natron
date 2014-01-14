@@ -1,32 +1,29 @@
-**UPDATED on 11/30/2013**
+Natron
+======
 
-NATRON:
+Natron is an Open-Source (MPLv2 license) video compositing software, similar in functionality to Adobe After Effects or Nuke by The Foundry.
 
-#OPEN-SOURCE,CROSSPLATFORM(OSX/LINUX/WINDOWS) , NODAL, COMPOSITING SOFTWARE UNDER MOZILLA PUBLIC LICENSE V2.0 (MPL)
+It is portable and cross-platform (Linux, OS X, Microsoft Windows).
 
-Check out http://mrkepzie.github.io/Natron/ for a full presentation on what is Natron and the concepts.[This presentation is a bit outdated, a new one will be published soon (probably in november,before the 1st release)].
+The project home page is http://natron.inria.fr
 
-The development is going very well and most of the features are not pushed on the master branch yet.
+Features
+--------
 
-Here's the state of the software as of today 11/30/2013:
+- Support for many open-source and commercial OpenFX plugins: 
 
-- Support for dozens of OpenFX plugins: 
+ * https://github.com/devernay/openfx-misc
+ * https://sites.google.com/site/tuttleofx/
+ * http://www.thefoundry.co.uk/products/furnace/
+ * http://www.genarts.com/software/sapphire/overview
+ * and many more...
 
-*https://github.com/devernay/openfx-misc
-*https://sites.google.com/site/tuttleofx/
-*http://www.thefoundry.co.uk/products/furnace/
-*http://www.genarts.com/software/sapphire/overview
-* and many more open-source openfx plugins !
-- Lots of efforts are made to support a wide range of OpenFX plugins! 
-Currently almost all features of OpenFX v1.3 are supported except OpenGL rendering enhancement, which shouldn't take long to implement;)
-We don't come across many plugins not working on Natron now…;)
+- OpenFX: Currently almost all features of OpenFX v1.3 are supported
 - Linux/OSX/Windows support.
 - Platforms not supporting GLSL are also supported
 - Fast Viewer interaction with no delay 
 - Overlays interaction on the viewer
 - Fast playback engine: possibility to run 32bit floating point 4K sequences at 60+ fps
-- Reader node (file sequence reader) working natively for EXR's
-- Writer node (rendering node) working natively for EXR's and faster than ever.
 - Multi-rendering (simultaneously) is possible as well as  several viewers running playback simultaneously
 - It is possible to separate on any number of screens the graphical user interface so that each viewer/graph editor belongs to one screen
 - Several projects can be opened simultaneously in separate windows
@@ -36,14 +33,16 @@ We don't come across many plugins not working on Natron now…;)
 - Command line tool for execution of project files. The command line version is executable from ssh on a computer without any display.
 - Animation support and possibility to change it with a curve editor
 
+Planned features
+----------------
 
-##Features to come very soon## (most likely part of the V1):
+### High priority
 
 - Real-time histograms,vectorscope,waveforms [All source code already exists,it's just a matter of hours to implement them]
 - Graphical user interface colours customisation
 - Proxy mode(i.e: downscaling of the input images to render faster)
 
-##Features to come in V2##
+### Features planned for next major version
 
 - Dopesheet
 - Progress report on the viewer (it is already implemented)
@@ -51,11 +50,36 @@ We don't come across many plugins not working on Natron now…;)
 - Meta-data support as well as per-plugin meta-data support by the node-graph
 - Rotopainting node
 
-##Features in long term##
+### Features planned for future versions
 
 - OpenGL rendering support to make processing nodes even faster
 - 3D models viewer + renderer (using libQGLViewer)
 - And many more features that are in the list but that I can't think off the top of my head!
 
-We will first present a beta of Natron a work on a stable and mature version to produce the release of the version 1. Beta will open soon as well as a website for feedbacks, bug reporting etc…;)
+Contributing
+------------
 
+We coordinate development through the [GitHub issue
+tracker](https://github.com/MrKepzie/Natron/issues).
+
+The main development branch is called
+["workshop"](https://github.com/MrKepzie/Natron/tree/workshop).
+The master branch contains the last known stable version.
+
+Feel free to
+report bugs, discuss tasks, or pick up work there. If you want to make
+changes, please fork, edit, and [send us a pull
+request](https://github.com/MrKepzie/Natron/pull/new/workshop),
+preferably on the ["workshop"](https://github.com/MrKepzie/Natron/tree/workshop)
+branch.
+
+There's a `.git-hooks` directory in the root. This contains a `pre-commit`
+hook that verifies code styling before accepting changes. You can add this to
+your local repository's `.git/hooks/` directory like:
+
+    $ cd Natron
+    $ ln -s ../../.git-hooks/pre-commit .git/hooks/pre-commit
+
+Pull requests that don't match the project code style are still likely to be
+accepted after manually formatting and amending your changeset. The formatting
+tool (`astyle`) is completely automated; please try to use it.
