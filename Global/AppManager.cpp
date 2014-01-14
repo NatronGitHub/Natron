@@ -337,7 +337,7 @@ AppInstance::~AppInstance(){
 }
 
 
-Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVersion,bool requestedByLoad ) {
+Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVersion,bool requestedByLoad,bool openImageFileDialog) {
     Node* node = 0;
     LibraryBinary* pluginBinary = 0;
     try {
@@ -408,6 +408,8 @@ Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVers
             autoConnect(selected, node);
         }
         _gui->selectNode(nodegui);
+    }
+    if (openImageFileDialog) {
         node->getLiveInstance()->openImageFileKnob();
     }
     

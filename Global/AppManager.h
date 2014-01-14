@@ -117,8 +117,11 @@ public:
       * By default this function also create the node's graphical user interface and attempts to automatically
       * connect this node to other nodes selected. 
       * If requestedByLoad is true then it will never attempt to do this auto-connection.
+      * If openImageFileDialog is true then if the node has a file knob indicating an image file it will automatically
+      * prompt the user with a file dialog.
      **/
-    Natron::Node* createNode(const QString& name,int majorVersion = -1,int minorVersion = -1,bool requestedByLoad = false);
+    Natron::Node* createNode(const QString& name,int majorVersion = -1,int minorVersion = -1,
+                             bool requestedByLoad = false,bool openImageFileDialog = true);
 
     /*Pointer to the GUI*/
     Gui* getGui() const WARN_UNUSED_RETURN {return _gui;}

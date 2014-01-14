@@ -26,6 +26,7 @@ class KeyFrame;
 class KnobHolder;
 class AppInstance;
 class KnobSerialization;
+class Hash64;
 /******************************KNOB_BASE**************************************/
 
 class Knob : public QObject
@@ -186,8 +187,8 @@ public:
     bool isAnimationEnabled() const;
 
     const std::string& getDescription() const;
-
-    const std::vector<U64>& getHashVector() const;
+    
+    void appendHashVectorToHash(Hash64* hash) const;
 
     KnobHolder* getHolder() const;
 

@@ -1072,7 +1072,7 @@ void Gui::createReader(){
         if (found == readersForFormat.end()) {
             errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
         } else {
-            Node* n = _appInstance->createNode(found->second.c_str());
+            Node* n = _appInstance->createNode(found->second.c_str(),-1,-1,false,false);
             const std::vector<boost::shared_ptr<Knob> >& knobs = n->getKnobs();
             for (U32 i = 0; i < knobs.size(); ++i) {
                 if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
@@ -1107,7 +1107,7 @@ void Gui::createWriter(){
         
         std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
         if(found != writersForFormat.end()){
-            Node* n = _appInstance->createNode(found->second.c_str());
+            Node* n = _appInstance->createNode(found->second.c_str(),-1,-1,false,false);
             const std::vector<boost::shared_ptr<Knob> >& knobs = n->getKnobs();
             for (U32 i = 0; i < knobs.size(); ++i) {
                 if (knobs[i]->typeName() == OutputFile_Knob::typeNameStatic()) {

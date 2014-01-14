@@ -39,7 +39,10 @@ QtReader::QtReader(Natron::Node* node)
 , _lastFrame()
 , _after()
 , _missingFrameChoice()
+, _frameMode()
 , _startingFrame()
+, _timeOffset()
+, _settingFrameRange(false)
 {
 }
 
@@ -106,68 +109,123 @@ void QtReader::initializeKnobs() {
     _missingFrameChoice->setValue<int>(0);
     _missingFrameChoice->turnOffAnimation();
     
+    _frameMode = Natron::createKnob<Choice_Knob>(this, "Frame mode");
+    _frameMode->turnOffAnimation();
+    std::vector<std::string> frameModeOptions;
+    frameModeOptions.push_back("Starting frame");
+    frameModeOptions.push_back("Time offset");
+    _frameMode->populate(frameModeOptions);
+    _frameMode->setValue<int>(0);
+    
     _startingFrame = Natron::createKnob<Int_Knob>(this, "Starting frame");
     _startingFrame->turnOffAnimation();
     _startingFrame->setValue<int>(0);
+    
+    _timeOffset = Natron::createKnob<Int_Knob>(this, "Time offset");
+    _timeOffset->turnOffAnimation();
+    _timeOffset->setValue<int>(0);
+    _timeOffset->setSecret(true);
     
 }
 
 void QtReader::onKnobValueChanged(Knob* k, Natron::ValueChangedReason /*reason*/) {
     if (k == _fileKnob.get()) {
         SequenceTime first,last;
-        getFrameRange(&first, &last);
-        _firstFrame->setValue<int>(first);
-        _firstFrame->setMinimum(first);
-        _firstFrame->setMaximum(last);
-
-        _lastFrame->setValue<int>(last);
-        _lastFrame->setMinimum(first);
-        _lastFrame->setMaximum(last);
+        getSequenceTimeDomain(first,last);
+        timeDomainFromSequenceTimeDomain(first,last, true);
+        _startingFrame->setValue<int>(first);
+    } else if(k == _firstFrame.get() && !_settingFrameRange) {
         
-        _startingFrame->setValue<int>(first);
-    } else if(k == _firstFrame.get()) {
         int first = _firstFrame->getValue<int>();
-        _startingFrame->setValue<int>(first);
         _lastFrame->setMinimum(first);
+        
+        int offset = _timeOffset->getValue<int>();
+        _settingFrameRange = true;
+        _startingFrame->setValue<int>(first +offset);
+        _settingFrameRange = false;
     } else if(k == _lastFrame.get()) {
         int last = _lastFrame->getValue<int>();
         _firstFrame->setMaximum(last);
-    }
-}
+    } else if(k == _frameMode.get()) {
+        int mode = _frameMode->getValue<int>();
+        switch (mode) {
+            case 0: //starting frame
+                _startingFrame->setSecret(false);
+                _timeOffset->setSecret(true);
+                break;
+            case 1: //time offset
+                _startingFrame->setSecret(true);
+                _timeOffset->setSecret(false);
+                break;
+            default:
+                //no such case
+                assert(false);
+                break;
+        }
 
-void QtReader::getFrameRange(SequenceTime *first,SequenceTime *last){
-    
-    ///get the "real" first and last frames.
-    int realFirst = _fileKnob->firstFrame();
-    int realLast = _fileKnob->lastFrame();
-    
-    ///these are the value held by the "First frame" and "Last frame" param
-    int frameRangeFirst = _firstFrame->getValue<int>();
-    int frameRangeLast = _lastFrame->getValue<int>();
-    //if the values in the param are valid (i.e: inside the range [realFirst,realLast], use them
-    
-    bool areFrameRangeValuesValid = frameRangeFirst >= realFirst && frameRangeFirst <= realLast
-    && frameRangeLast >= realFirst && frameRangeLast <= realLast;
-    
-    ////if the values held by the knob are not valid, set them!
-    if( !areFrameRangeValuesValid ) {
-        beginKnobsValuesChanged(Natron::OTHER_REASON);
-        _firstFrame->setValue<int>(realFirst);
-        _firstFrame->setMinimum(realFirst);
-        _firstFrame->setMaximum(realLast);
-        _lastFrame->setValue<int>(realLast);
-        _lastFrame->setMinimum(realFirst);
-        _lastFrame->setMaximum(realLast);
-        endKnobsValuesChanged(Natron::OTHER_REASON);
+    } else if( k == _startingFrame.get() && !_settingFrameRange) {
+        //also update the time offset
+        int startingFrame = _startingFrame->getValue<int>();
+        SequenceTime first,last;
+        getSequenceTimeDomain(first,last);
+        
+        ///prevent recursive calls of setValue(...)
+        _settingFrameRange = true;
+        _timeOffset->setValue(startingFrame - first);
+        _settingFrameRange = false;
+        
+    } else if( k == _timeOffset.get() && !_settingFrameRange) {
+        //also update the starting frame
+        int offset = _timeOffset->getValue<int>();
+        SequenceTime first,last;
+        getSequenceTimeDomain(first,last);
+        
+        ///prevent recursive calls of setValue(...)
+        _settingFrameRange = true;
+        _startingFrame->setValue(offset + first);
+        _settingFrameRange = false;
         
     }
+
+}
+
+void QtReader::getSequenceTimeDomain(SequenceTime& first,SequenceTime& last) {
+    first = _fileKnob->firstFrame();
+    last = _fileKnob->lastFrame();
+}
+
+void QtReader::timeDomainFromSequenceTimeDomain(SequenceTime& first,SequenceTime& last,bool mustSetFrameRange) {
+    ///the values held by GUI parameters
+    int frameRangeFirst,frameRangeLast;
+    int startingFrame;
+    if (mustSetFrameRange) {
+        frameRangeFirst = first;
+        frameRangeLast = last;
+        startingFrame = first;
+        _settingFrameRange = true;
+        _firstFrame->setMinimum(first);
+        _firstFrame->setMaximum(last);
+        _lastFrame->setMinimum(first);
+        _lastFrame->setMaximum(last);
+        
+        _firstFrame->setValue(first);
+        _lastFrame->setValue(last);
+        _settingFrameRange = false;
+    } else {
+        ///these are the value held by the "First frame" and "Last frame" param
+        frameRangeFirst = _firstFrame->getValue<int>();
+        frameRangeLast = _lastFrame->getValue<int>();
+        startingFrame = _startingFrame->getValue<int>();
+    }
     
-    ///now get the starting time
-    int startingTime = _startingFrame->getValue<int>();
-    *first =  startingTime; //< the first frame is always the starting time
-    
-    int frameRange = areFrameRangeValuesValid ? frameRangeLast - frameRangeFirst : realLast - realFirst;
-    *last = startingTime + frameRange;
+    first = startingFrame;
+    last =  startingFrame + frameRangeLast - frameRangeFirst;
+}
+
+
+void QtReader::getFrameRange(SequenceTime *first,SequenceTime *last){
+    getSequenceTimeDomain(*first, *last);
+    timeDomainFromSequenceTimeDomain(*first, *last, false);
 }
 
 
@@ -181,19 +239,20 @@ void QtReader::supportedFileFormats(std::vector<std::string>* formats) {
 
 SequenceTime QtReader::getSequenceTime(SequenceTime t)
 {
-    int startingTime =  _startingFrame->getValue<int>();
+    
+    int timeOffset = _timeOffset->getValue<int>();
     
     ///offset the time wrt the starting time
-    SequenceTime sequenceTime =  t;
+    SequenceTime sequenceTime =  t + timeOffset;
     
     
     SequenceTime first,last;
-    getFrameRange(&first, &last);
+    getSequenceTimeDomain(first, last);
     
     ///get the offset from the starting time of the sequence in case we bounce or loop
-    int timeOffsetFromStart = t -  first;
+    int timeOffsetFromStart = sequenceTime -  first;
     
-    if( t < first) {
+    if( sequenceTime < first) {
         /////if we're before the first frame
         int beforeChoice = _before->getValue<int>();
         switch (beforeChoice) {
@@ -203,7 +262,7 @@ SequenceTime QtReader::getSequenceTime(SequenceTime t)
             case 1: //loop
                     //call this function recursively with the appropriate offset in the time range
                 timeOffsetFromStart %= (int)(last - first + 1);
-                sequenceTime = last - std::abs(timeOffsetFromStart);
+                sequenceTime = last + timeOffsetFromStart;
                 break;
             case 2: //bounce
                     //call this function recursively with the appropriate offset in the time range
@@ -212,10 +271,10 @@ SequenceTime QtReader::getSequenceTime(SequenceTime t)
                 ///if the sequenceIntervalsCount is odd then do exactly like loop, otherwise do the load the opposite frame
                 if (sequenceIntervalsCount % 2 == 0) {
                     timeOffsetFromStart %= (int)(last - first + 1);
-                    sequenceTime = first + std::abs(timeOffsetFromStart);
+                    sequenceTime = first - timeOffsetFromStart;
                 } else {
                     timeOffsetFromStart %= (int)(last - first + 1);
-                    sequenceTime = last - std::abs(timeOffsetFromStart);
+                    sequenceTime = last + timeOffsetFromStart;
                 }
             }
                 break;
@@ -230,7 +289,7 @@ SequenceTime QtReader::getSequenceTime(SequenceTime t)
                 break;
         }
         
-    } else if( t > last) {
+    } else if( sequenceTime > last) {
         /////if we're after the last frame
         int afterChoice = _after->getValue<int>();
         
@@ -241,7 +300,7 @@ SequenceTime QtReader::getSequenceTime(SequenceTime t)
             case 1: //loop
                     //call this function recursively with the appropriate offset in the time range
                 timeOffsetFromStart %= (int)(last - first + 1);
-                sequenceTime = first + std::abs(timeOffsetFromStart);
+                sequenceTime = first + timeOffsetFromStart;
                 break;
             case 2: //bounce
                     //call this function recursively with the appropriate offset in the time range
@@ -250,10 +309,10 @@ SequenceTime QtReader::getSequenceTime(SequenceTime t)
                 ///if the sequenceIntervalsCount is odd then do exactly like loop, otherwise do the load the opposite frame
                 if (sequenceIntervalsCount % 2 == 0) {
                     timeOffsetFromStart %= (int)(last - first + 1);
-                    sequenceTime = first + std::abs(timeOffsetFromStart);
+                    sequenceTime = first + timeOffsetFromStart;
                 } else {
                     timeOffsetFromStart %= (int)(last - first+ 1);
-                    sequenceTime = last - std::abs(timeOffsetFromStart);
+                    sequenceTime = last - timeOffsetFromStart;
                 }
             }
                 
@@ -270,21 +329,8 @@ SequenceTime QtReader::getSequenceTime(SequenceTime t)
         }
         
     }
-    
-    ///get the sequence time by removing the startingTime from it
-    sequenceTime -= startingTime;
-    
-    ///also offset properly the frame to the frame range
-    ///get the "real" first frame.
-    int realFirst = _fileKnob->firstFrame();
+    assert(sequenceTime >= first && sequenceTime <= last);
 
-    /// value held by the "First frame" param
-    int frameRangeFirst = _firstFrame->getValue<int>();
-
-    ///the offset is the difference of the frameRangeFirst with the realFirst
-    assert(frameRangeFirst >= realFirst);
-    
-    sequenceTime += (frameRangeFirst - realFirst);
     return sequenceTime;
 }
 

@@ -121,15 +121,6 @@ void EffectInstance::clone(){
 }
 
 
-namespace {
-    void Hash64_appendKnob(Hash64* hash, const Knob& knob){
-        const std::vector<U64>& values = knob.getHashVector();
-        for(U32 i=0;i<values.size();++i) {
-            hash->append(values[i]);
-        }
-    }
-}
-
 bool EffectInstance::isHashValid() const {
     //The hash is valid only if the age is the same than the project's age and the hash has been computed at least once.
     return _imp->hashAge == getAppAge() && _imp->hashValue.valid();
@@ -146,7 +137,7 @@ U64 EffectInstance::computeHash(const std::vector<U64>& inputsHashs){
     _imp->hashValue.reset();
     const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
-        ::Hash64_appendKnob(&_imp->hashValue, *knobs[i]);
+        knobs[i]->appendHashVectorToHash(&_imp->hashValue);
     }
     for (U32 i =0; i < inputsHashs.size(); ++i) {
         _imp->hashValue.append(inputsHashs[i]);

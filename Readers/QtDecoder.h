@@ -79,6 +79,10 @@ public:
     
 private:
 
+    void getSequenceTimeDomain(SequenceTime& first,SequenceTime& last);
+
+    void timeDomainFromSequenceTimeDomain(SequenceTime& first,SequenceTime& last,bool mustSetFrameRange);
+
     SequenceTime getSequenceTime(SequenceTime t);
 
     void getFilenameAtSequenceTime(SequenceTime time, std::string &filename);
@@ -94,7 +98,11 @@ private:
     boost::shared_ptr<Int_Knob> _lastFrame;
     boost::shared_ptr<Choice_Knob> _after;
     boost::shared_ptr<Choice_Knob> _missingFrameChoice;
+
+    boost::shared_ptr<Choice_Knob> _frameMode;
     boost::shared_ptr<Int_Knob> _startingFrame;
+    boost::shared_ptr<Int_Knob> _timeOffset;
+    bool _settingFrameRange;
 };
 
 #endif /* defined(NATRON_READERS_READQT_H_) */

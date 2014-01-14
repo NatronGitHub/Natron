@@ -38,6 +38,7 @@ typedef std::vector< boost::shared_ptr<Curve> > CurvesMap;
 struct Knob::KnobPrivate {
     Knob* _publicInterface;
     KnobHolder*  _holder;
+    mutable QMutex _hashMutex; //< protects hashVector
     std::vector<U64> _hashVector;
     std::string _description;//< the text label that will be displayed  on the GUI
     QString _name;//< the knob can have a name different than the label displayed on GUI.
@@ -69,6 +70,7 @@ struct Knob::KnobPrivate {
     KnobPrivate(Knob* publicInterface,KnobHolder*  holder,int dimension,const std::string& description)
     : _publicInterface(publicInterface)
     , _holder(holder)
+    , _hashMutex()
     , _hashVector()
     , _description(description)
     , _name(description.c_str())
@@ -92,7 +94,7 @@ struct Knob::KnobPrivate {
     }
     
     void updateHash(const std::vector<Variant>& value){
-        
+        QMutexLocker l(&_hashMutex);
         _hashVector.clear();
         
         _publicInterface->appendExtraDataToHash(&_hashVector);
@@ -537,7 +539,12 @@ int Knob::determineHierarchySize() const{
 
 const std::string& Knob::getDescription() const { return _imp->_description; }
 
-const std::vector<U64>& Knob::getHashVector() const { return _imp->_hashVector; }
+void Knob::appendHashVectorToHash(Hash64* hash) const {
+    QMutexLocker l(&_imp->_hashMutex);
+    for(U32 i=0;i< _imp->_hashVector.size();++i) {
+        hash->append(_imp->_hashVector[i]);
+    }
+}
 
 KnobHolder*  Knob::getHolder() const { return _imp->_holder; }
 
