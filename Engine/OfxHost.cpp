@@ -492,8 +492,6 @@ struct Thread_Group {
 
 static Thread_Group tg = Thread_Group();
 
-
-
 void OfxWrappedFunctor(OfxThreadFunctionV1 func,int i,unsigned int nThreads,void* customArgs){
     func(i,nThreads,customArgs);
     
@@ -513,7 +511,7 @@ void OfxWrappedFunctor(OfxThreadFunctionV1 func,int i,unsigned int nThreads,void
     tg.finishedThreads.push_back(*found);
     tg.threads.erase(found);
     
-    tg.cond.notify_one();
+    tg.cond.notify_all();
     
 }
 
@@ -557,6 +555,7 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
     ///all functors must have returned and erase the thread from the list.
     assert(tg.threads.empty());
     
+    boost::mutex::scoped_lock lock(tg.lock);
     for (Thread_Group::ThreadsList::iterator it = tg.finishedThreads.begin(); it!= tg.finishedThreads.end(); ++it) {
         (*it)->join();
         delete (*it);
