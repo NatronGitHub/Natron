@@ -6,7 +6,7 @@ compiler:
 before_install:
   - sudo apt-get update
 install:
-  - sudo apt-get install libqt4-dev libglew-dev libboost-all-dev
+  - sudo apt-get install libqt4-dev libglew-dev libboost-all-dev libexpat1-dev
   - echo "boost { LIBS += -lboost_serialization -lboost_thread -lboost_system }" > config.pri
 script:
   - qmake && make
