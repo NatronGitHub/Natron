@@ -1000,10 +1000,20 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
         
         
         std::map<KnobGui*,std::vector<KeyMove> > knobsMap;
+
         
         for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
         
-
+            double curveYmin,curveYmax;
+            it->curve->getInternalCurve()->getCurveYRange(curveYmin, curveYmax);
+            double translatedValue = it->key.getValue() + dv;
+            
+            if (translatedValue < curveYmin) {
+                dv += (curveYmin - translatedValue);
+            } else if( translatedValue > curveYmax) {
+                dv -= (curveYmax - translatedValue);
+            }
+            
             if (!it->curve->getInternalCurve()->isYComponentMovable()) {
                 dv = 0;
             }

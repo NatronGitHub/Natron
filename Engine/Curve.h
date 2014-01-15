@@ -73,7 +73,6 @@ public:
 
     Natron::KeyframeType getInterpolation() const;
 
-
 private:
 
     double _time;
@@ -223,7 +222,10 @@ public:
      **/
     const KeyFrame& setKeyFrameInterpolation(Natron::KeyframeType interp,int index,int* newIndex = NULL);
 
-
+    void getCurveYRange(double &min,double &max) const;
+    
+    void clampValueToCurveYRange(double &v) const;
+    
     KeyFrameSet::const_iterator find(double time) const;
     
     KeyFrameSet::const_iterator keyframeAt(int index) const;

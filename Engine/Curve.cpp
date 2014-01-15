@@ -395,35 +395,7 @@ double Curve::getValueAt(double t) const {
                                            interp,
                                            interpNext);
 
-    if(_imp->owner){
-        
-        ////clamp to min/max if the owner of the curve is a Double or Int knob.
-        
-        if(_imp->owner->typeName() == Double_Knob::typeNameStatic()) {
-            Double_Knob* dbKnob = dynamic_cast<Double_Knob*>(_imp->owner);
-            assert(dbKnob);
-            double min = INT_MIN,max = INT_MAX;
-            dbKnob->getMinMaxForCurve(this, &min, &max);
-            if (v > max) {
-                v = max;
-            }
-            if (v < min) {
-                v = min;
-            }
-        }else if(_imp->owner->typeName() == Int_Knob::typeNameStatic()) {
-            Int_Knob* intK = dynamic_cast<Int_Knob*>(_imp->owner);
-            assert(intK);
-            int min = INT_MIN,max = INT_MAX;
-            intK->getMinMaxForCurve(this, &min, &max);
-            if (v > max) {
-                v = max;
-            }
-            if (v < min) {
-                v = min;
-            }
-
-        }
-    }
+    clampValueToCurveYRange(v);
     
     switch (_imp->curveType) {
         case CurvePrivate::STRING_CURVE:
@@ -438,6 +410,39 @@ double Curve::getValueAt(double t) const {
     }
 }
 
+void Curve::getCurveYRange(double &min,double &max) const {
+    if(_imp->owner){
+        if(_imp->owner->typeName() == Double_Knob::typeNameStatic()) {
+            Double_Knob* dbKnob = dynamic_cast<Double_Knob*>(_imp->owner);
+            assert(dbKnob);
+            dbKnob->getMinMaxForCurve(this, &min, &max);
+            
+        }else if(_imp->owner->typeName() == Int_Knob::typeNameStatic()) {
+            Int_Knob* intK = dynamic_cast<Int_Knob*>(_imp->owner);
+            assert(intK);
+            int minInt = INT_MIN,maxInt = INT_MAX;
+            intK->getMinMaxForCurve(this, &minInt, &maxInt);
+            min = minInt;
+            max = maxInt;
+        }
+    }
+}
+
+void Curve::clampValueToCurveYRange(double &v) const {
+    
+    if(_imp->owner){
+        ////clamp to min/max if the owner of the curve is a Double or Int knob.
+        double min,max;
+        getCurveYRange(min, max);
+        
+        if (v > max) {
+            v = max;
+        }
+        if (v < min) {
+            v = min;
+        }
+    }
+}
 
 bool Curve::isAnimated() const { return _imp->keyFrames.size() > 1; }
 
