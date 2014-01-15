@@ -1427,7 +1427,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
 
 void OfxStringInstance::onFrameRangeChanged(int first,int last){
     getProperties().setIntProperty(kNatronImageSequenceRange, first,0);
-    getProperties().setIntProperty(kNatronImageSequenceRange, last,0);
+    getProperties().setIntProperty(kNatronImageSequenceRange, last,1);
 }
 
 OfxStatus OfxStringInstance::get(std::string &str) {

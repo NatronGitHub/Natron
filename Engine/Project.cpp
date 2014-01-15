@@ -276,46 +276,82 @@ void Project::load(const ProjectSerialization& obj){
 }
 
 void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller){
-    //std::cout <<"Begin: " << _imp->_beginEndBracketsCount << std::endl;
+    
+    
+    ///lock the project
     getApp()->lockProject();
+    
+    ///increase the begin calls count
     ++_imp->beginEndBracketsCount;
+    
+    ///If begin was already called on this caller, increase the calls count for this caller, otherwise
+    ///insert a new entry in the holdersWhoseBeginWasCalled map with a call count of 1 and the reason.
     ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
 
     if(found == _imp->holdersWhoseBeginWasCalled.end()){
         
+        ///unlock before calling beginKnobsValuesChanged which is not project related
         getApp()->unlockProject();
         caller->beginKnobsValuesChanged(reason);
+        ///relock before modifyin the project
         getApp()->lockProject();
+        
+        ///insert the caller in the map
         _imp->holdersWhoseBeginWasCalled.insert(std::make_pair(caller,std::make_pair(1,reason)));
     }else{
+        
+        ///increase the begin calls count of 1
         ++found->second.first;
     }
+    
+    ///don't forget to unlock the project
     getApp()->unlockProject();
 
 }
 
 void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder* caller,Knob* k,bool isSignificant){
+    
+    ///This function may be called outside of a begin/end bracket call, in which case we call them ourselves.
+    
     bool wasBeginCalled = true;
-
+    
+    ///don't forget to lock the project
     getApp()->lockProject();
 
+    ///if begin was not called for this caller, call it ourselves
     ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
     if(found == _imp->holdersWhoseBeginWasCalled.end() || _imp->beginEndBracketsCount == 0){
+        
+        ///unlock before calling begin which will handle the locking of the project itself
         getApp()->unlockProject();
         beginProjectWideValueChanges(reason,caller);
+        ///relock
         getApp()->lockProject();
 
+        ///flag that we called begin
         wasBeginCalled = false;
     } else {
+        ///if we found a call made to begin already for this caller, adjust the reason to the reason of the
+        /// outermost begin call
         reason = found->second.second;
     }
 
+    ///if the evaluation is significant , set the flag isSignificantChange to true
     if(!_imp->isSignificantChange && isSignificant){
         _imp->isSignificantChange = true;
     }
+    
+    ///increase the count of evaluation requests
     ++_imp->evaluationsCount;
+    
+    ///remember the last caller, this is the one on which we will call evaluate
     _imp->lastKnobChanged = k;
    
+    ///if the reason of the outermost begin call is OTHER_REASON then we don't call
+    ///the onKnobValueChanged. This way the plugin can avoid infinite recursions by doing so:
+    /// beginValueChange(OTHER_REASON)
+    /// ...
+    /// endValueChange()
     if(reason != Natron::OTHER_REASON) {
         getApp()->unlockProject();
         caller->onKnobValueChanged(k,reason);
@@ -323,48 +359,82 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
 
     }
     
+    ////if begin was not call prior to calling this function, call the end bracket oruselves
     if(!wasBeginCalled){
         getApp()->unlockProject();
         endProjectWideValueChanges(caller);
         getApp()->lockProject();
 
     }
+    
+    ///don't forget to unlock the project
     getApp()->unlockProject();
 
 }
 
 void Project::endProjectWideValueChanges(KnobHolder* caller){
+    
+    ///lock the project
     getApp()->lockProject();
+    
+    ///decrease the beginEndBracket count
     --_imp->beginEndBracketsCount;
-    //   std::cout <<"End: " << _imp->_beginEndBracketsCount << std::endl;
+    
+    ///Get the count of begin calls made to this caller.
+    ///It must absolutely be present in holdersWhoseBeginWasCalled because we either added it by
+    ///calling stackEvaluateRequest or beginProjectWideValueChanges
+    ///This means that calling endProjectWideValueChanges twice in a row will crash in the assertion below.
     ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
     assert(found != _imp->holdersWhoseBeginWasCalled.end());
+    
+    ///If we're closing the last bracket, call the caller portion of endKnobsValuesChanged
     if(found->second.first == 1){
         getApp()->unlockProject();
         caller->endKnobsValuesChanged(found->second.second);
         getApp()->lockProject();
+        
+        ///remove the caller from the holdersWhoseBeginWasCalled map
         _imp->holdersWhoseBeginWasCalled.erase(found);
+        
     }else{
+        ///we're not on the last begin/end bracket for this caller, just decrease the begin calls count
         --found->second.first;
     }
+    
+    ///if we're not in the last begin/end bracket (globally to all callers) then return
     if(_imp->beginEndBracketsCount != 0){
         getApp()->unlockProject();
         return;
     }
+    
+    ///If we reach here that means that we're closing the last global bracket.
+    ///If the bracket was empty of evaluation we don't have to do anything.
     if(_imp->evaluationsCount != 0){
+        
+        ///reset the evaluation count to 0
         _imp->evaluationsCount = 0;
+        
+        ///if the outermost bracket reason was USER_EDITED, trigger an auto-save.
         if(found->second.second == Natron::USER_EDITED){
             getApp()->unlockProject();
             getApp()->triggerAutoSave();
             getApp()->lockProject();
-            
         }
+        
+        ///if the outermost bracket reason was not OTHER_REASON or TIME_CHANGED, then call evaluate
+        ///on the last caller with
+        ///the significant param recorded in the stackEvaluateRequest function.
         if(found->second.second != Natron::OTHER_REASON && found->second.second != Natron::TIME_CHANGED){
             getApp()->unlockProject();
             caller->evaluate(_imp->lastKnobChanged,_imp->isSignificantChange);
             getApp()->lockProject();
         }
     }
+    
+    ////reset back the isSignificantChange flag to false, otherwise next insignificant evaluations
+    ////would be evaluated.
+    _imp->isSignificantChange = false;
+    
     getApp()->unlockProject();
 
 }
