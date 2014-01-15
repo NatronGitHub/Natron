@@ -236,11 +236,8 @@ void Project::setLastTimelineSeekCaller(Natron::OutputEffectInstance* output){
 void Project::onTimeChanged(SequenceTime time,int reason){
     std::vector<ViewerInstance*> viewers;
     
-    getApp()->lockProject();
     
     beginProjectWideValueChanges(Natron::TIME_CHANGED,this);
-    
-    getApp()->unlockProject();
     
     refreshAfterTimeChange(time); //refresh project knobs
     for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
@@ -255,12 +252,8 @@ void Project::onTimeChanged(SequenceTime time,int reason){
 
     }
     
-    getApp()->lockProject();
-    
     endProjectWideValueChanges(this);
     
-    getApp()->unlockProject();
-
     for(U32 i = 0; i < viewers.size();++i){
         if(viewers[i] != _imp->lastTimelineSeekCaller || reason == USER_SEEK){
             viewers[i]->refreshAndContinueRender();
@@ -284,27 +277,34 @@ void Project::load(const ProjectSerialization& obj){
 
 void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller){
     //std::cout <<"Begin: " << _imp->_beginEndBracketsCount << std::endl;
+    getApp()->lockProject();
     ++_imp->beginEndBracketsCount;
-
     ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
+
     if(found == _imp->holdersWhoseBeginWasCalled.end()){
         
-        
+        getApp()->unlockProject();
         caller->beginKnobsValuesChanged(reason);
-        
-        
+        getApp()->lockProject();
         _imp->holdersWhoseBeginWasCalled.insert(std::make_pair(caller,std::make_pair(1,reason)));
     }else{
         ++found->second.first;
     }
+    getApp()->unlockProject();
+
 }
 
 void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder* caller,Knob* k,bool isSignificant){
     bool wasBeginCalled = true;
 
+    getApp()->lockProject();
+
     ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
     if(found == _imp->holdersWhoseBeginWasCalled.end() || _imp->beginEndBracketsCount == 0){
+        getApp()->unlockProject();
         beginProjectWideValueChanges(reason,caller);
+        getApp()->lockProject();
+
         wasBeginCalled = false;
     } else {
         reason = found->second.second;
@@ -317,41 +317,56 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
     _imp->lastKnobChanged = k;
    
     if(reason != Natron::OTHER_REASON) {
+        getApp()->unlockProject();
         caller->onKnobValueChanged(k,reason);
+        getApp()->lockProject();
+
     }
     
     if(!wasBeginCalled){
+        getApp()->unlockProject();
         endProjectWideValueChanges(caller);
+        getApp()->lockProject();
+
     }
+    getApp()->unlockProject();
+
 }
 
 void Project::endProjectWideValueChanges(KnobHolder* caller){
+    getApp()->lockProject();
     --_imp->beginEndBracketsCount;
     //   std::cout <<"End: " << _imp->_beginEndBracketsCount << std::endl;
     ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
     assert(found != _imp->holdersWhoseBeginWasCalled.end());
     if(found->second.first == 1){
-
+        getApp()->unlockProject();
         caller->endKnobsValuesChanged(found->second.second);
-        
+        getApp()->lockProject();
         _imp->holdersWhoseBeginWasCalled.erase(found);
     }else{
         --found->second.first;
     }
     if(_imp->beginEndBracketsCount != 0){
+        getApp()->unlockProject();
         return;
     }
     if(_imp->evaluationsCount != 0){
         _imp->evaluationsCount = 0;
         if(found->second.second == Natron::USER_EDITED){
-            
+            getApp()->unlockProject();
             getApp()->triggerAutoSave();
+            getApp()->lockProject();
             
         }
         if(found->second.second != Natron::OTHER_REASON && found->second.second != Natron::TIME_CHANGED){
+            getApp()->unlockProject();
             caller->evaluate(_imp->lastKnobChanged,_imp->isSignificantChange);
+            getApp()->lockProject();
         }
     }
+    getApp()->unlockProject();
+
 }
 
 void Project::beginKnobsValuesChanged(Natron::ValueChangedReason /*reason*/){

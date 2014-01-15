@@ -146,6 +146,7 @@ void QtReader::onKnobValueChanged(Knob* k, Natron::ValueChangedReason /*reason*/
     } else if(k == _lastFrame.get()) {
         int last = _lastFrame->getValue<int>();
         _firstFrame->setMaximum(last);
+
     } else if(k == _frameMode.get()) {
         int mode = _frameMode->getValue<int>();
         switch (mode) {
