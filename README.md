@@ -78,6 +78,7 @@ hook that verifies code styling before accepting changes. You can add this to
 your local repository's `.git/hooks/` directory like:
 
     $ cd Natron
+    $ mkdir .git/hooks
     $ ln -s ../../.git-hooks/pre-commit .git/hooks/pre-commit
 
 Pull requests that don't match the project code style are still likely to be
