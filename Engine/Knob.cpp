@@ -94,22 +94,23 @@ struct Knob::KnobPrivate {
     }
     
     void updateHash(const std::vector<Variant>& value){
-        QMutexLocker l(&_hashMutex);
-        _hashVector.clear();
-        
-        _publicInterface->appendExtraDataToHash(&_hashVector);
-        
-        for(U32 i = 0 ; i < value.size();++i){
-            QByteArray data;
-            QDataStream ds(&data,QIODevice::WriteOnly);
-            ds <<  value[i];
-            data = data.toBase64();
-            QString str(data);
-            for (int i = 0; i < str.size(); ++i) {
-                _hashVector.push_back(str.at(i).unicode());
+        {
+            QMutexLocker l(&_hashMutex);
+            _hashVector.clear();
+            
+            _publicInterface->appendExtraDataToHash(&_hashVector);
+            
+            for(U32 i = 0 ; i < value.size();++i){
+                QByteArray data;
+                QDataStream ds(&data,QIODevice::WriteOnly);
+                ds <<  value[i];
+                data = data.toBase64();
+                QString str(data);
+                for (int i = 0; i < str.size(); ++i) {
+                    _hashVector.push_back(str.at(i).unicode());
+                }
             }
         }
-        
         
         _holder->invalidateHash();
     }

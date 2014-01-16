@@ -236,7 +236,7 @@ void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
 
 AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectName,const QStringList& writers)
   : _gui(NULL)
-  , _projectLock()
+  , _projectLock(QMutex::Recursive)
   , _currentProject(new Natron::Project(this))
   , _isLoadingProject(false)
   , _appID(appID)
@@ -435,9 +435,9 @@ void AppInstance::lockProject(){
 }
 
 void AppInstance::unlockProject(){
-    assert(!_projectLock.tryLock());
     _projectLock.unlock();
 }
+
 
 void AppInstance::getActiveNodes(std::vector<Natron::Node*>* activeNodes) const{
     

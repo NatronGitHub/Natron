@@ -290,11 +290,7 @@ void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,Kno
 
     if(found == _imp->holdersWhoseBeginWasCalled.end()){
         
-        ///unlock before calling beginKnobsValuesChanged which is not project related
-        getApp()->unlockProject();
         caller->beginKnobsValuesChanged(reason);
-        ///relock before modifyin the project
-        getApp()->lockProject();
         
         ///insert the caller in the map
         _imp->holdersWhoseBeginWasCalled.insert(std::make_pair(caller,std::make_pair(1,reason)));
@@ -322,12 +318,8 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
     ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
     if(found == _imp->holdersWhoseBeginWasCalled.end() || _imp->beginEndBracketsCount == 0){
         
-        ///unlock before calling begin which will handle the locking of the project itself
-        getApp()->unlockProject();
         beginProjectWideValueChanges(reason,caller);
-        ///relock
-        getApp()->lockProject();
-
+        
         ///flag that we called begin
         wasBeginCalled = false;
     } else {
@@ -353,18 +345,12 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
     /// ...
     /// endValueChange()
     if(reason != Natron::OTHER_REASON) {
-        getApp()->unlockProject();
         caller->onKnobValueChanged(k,reason);
-        getApp()->lockProject();
-
     }
     
     ////if begin was not call prior to calling this function, call the end bracket oruselves
     if(!wasBeginCalled){
-        getApp()->unlockProject();
         endProjectWideValueChanges(caller);
-        getApp()->lockProject();
-
     }
     
     ///don't forget to unlock the project
@@ -389,11 +375,10 @@ void Project::endProjectWideValueChanges(KnobHolder* caller){
     
     ///If we're closing the last bracket, call the caller portion of endKnobsValuesChanged
     if(found->second.first == 1){
-        getApp()->unlockProject();
         caller->endKnobsValuesChanged(found->second.second);
-        getApp()->lockProject();
         
         ///remove the caller from the holdersWhoseBeginWasCalled map
+
         _imp->holdersWhoseBeginWasCalled.erase(found);
         
     }else{
@@ -416,24 +401,23 @@ void Project::endProjectWideValueChanges(KnobHolder* caller){
         
         ///if the outermost bracket reason was USER_EDITED, trigger an auto-save.
         if(found->second.second == Natron::USER_EDITED){
-            getApp()->unlockProject();
             getApp()->triggerAutoSave();
-            getApp()->lockProject();
         }
         
         ///if the outermost bracket reason was not OTHER_REASON or TIME_CHANGED, then call evaluate
         ///on the last caller with
         ///the significant param recorded in the stackEvaluateRequest function.
         if(found->second.second != Natron::OTHER_REASON && found->second.second != Natron::TIME_CHANGED){
-            getApp()->unlockProject();
             caller->evaluate(_imp->lastKnobChanged,_imp->isSignificantChange);
-            getApp()->lockProject();
         }
     }
     
     ////reset back the isSignificantChange flag to false, otherwise next insignificant evaluations
     ////would be evaluated.
     _imp->isSignificantChange = false;
+    
+    ///the stack must be empty, i.e: crash if the user didn't correctly end the brackets
+    assert(_imp->holdersWhoseBeginWasCalled.empty());
     
     getApp()->unlockProject();
 

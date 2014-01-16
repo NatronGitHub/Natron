@@ -606,8 +606,9 @@ void Choice_KnobGui::onEntriesPopulated()
 void Choice_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 {
     int i = variant.toInt();
-    assert(i < (int)_entries.size());
-    _comboBox->setCurrentText(_entries[i].c_str());
+    if(i < (int)_entries.size()){
+        _comboBox->setCurrentText(_entries[i].c_str());
+    }
 }
 
 void Choice_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevel level) {
