@@ -176,9 +176,10 @@ NodeGui::~NodeGui(){
     }
     delete _selectedGradient;
     delete _defaultGradient;
-    if(_settingsPanel){
+    if (_settingsPanel) {
         _settingsPanel->setParent(NULL);
         delete _settingsPanel;
+        _settingsPanel = NULL;
     }
     removeUndoStack();
 }
@@ -605,9 +606,9 @@ void NodeGui::serialize(NodeGuiSerialization* serializationObject) const{
 }
 
 QUndoStack* NodeGui::getUndoStack() const{
-    if(_settingsPanel){
+    if (_settingsPanel) {
         return _settingsPanel->getUndoStack();
-    }else{
+    } else {
         return NULL;
     }
 }

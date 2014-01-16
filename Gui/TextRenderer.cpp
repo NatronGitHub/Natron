@@ -6,6 +6,8 @@
 
 #include "Gui/TextRenderer.h"
 
+#include <boost/shared_ptr.hpp>
+
 #include <QtCore/QString>
 #include <QtGui/QFont>
 #include <QtGui/QImage>
@@ -53,7 +55,7 @@ struct TextRendererPrivate {
     GLint _yOffset;
 };
 
-typedef std::vector<std::pair<QFont, TextRendererPrivate *> > FontRenderers;
+    typedef std::map<QFont, boost::shared_ptr<TextRendererPrivate> > FontRenderers;
 
 }
 
@@ -187,7 +189,7 @@ struct TextRenderer::Implementation {
     Implementation()
         : renderers() {}
 
-    mutable FontRenderers renderers;
+    FontRenderers renderers;
 };
 
 TextRenderer::TextRenderer()
@@ -197,27 +199,18 @@ TextRenderer::TextRenderer()
 
 TextRenderer::~TextRenderer()
 {
-    for (FontRenderers::iterator it = _imp->renderers.begin(); it != _imp->renderers.end(); ++it) {
-        delete(*it).second;
-    }
 }
 
 
 void TextRenderer::renderText(float x, float y, const QString &text, const QColor &color, const QFont &font) const
 {
-
-    TextRendererPrivate *p = NULL;
-    FontRenderers::iterator it;
-    for (it = _imp->renderers.begin() ; it != _imp->renderers.end(); ++it) {
-        if ((*it).first == font) {
-            break;
-        }
-    }
+    boost::shared_ptr<TextRendererPrivate> p;
+    FontRenderers::iterator it = _imp->renderers.find(font);
     if (it != _imp->renderers.end()) {
         p  = (*it).second;
     } else {
-        p = new TextRendererPrivate(font);
-        _imp->renderers.push_back(std::make_pair(font, p));
+        p = boost::shared_ptr<TextRendererPrivate>(new TextRendererPrivate(font));
+        _imp->renderers[font] = p;
     }
     glColor4f(1., 1., 1., 1.);
     glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
@@ -255,7 +248,5 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
     glPopAttrib();
     checkGLErrors();
     glColor4f(1., 1., 1., 1.);
-
-
 }
 
