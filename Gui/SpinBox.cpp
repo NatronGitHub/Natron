@@ -93,6 +93,8 @@ QString SpinBox::setNum(double cur)
             return QString().setNum(cur,'f',_decimals);
         case INT_SPINBOX:
             return QString().setNum((int)cur);
+        default:
+            return "";
     }
 }
 

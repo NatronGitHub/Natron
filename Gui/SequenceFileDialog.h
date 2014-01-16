@@ -417,6 +417,7 @@ public:
     }
 
     inline QModelIndex mapFromSource(const QModelIndex& index){
+        _proxy->invalidate();
         QModelIndex ret =  _proxy->mapFromSource(index);
         setFrameSequence(_proxy->getFrameSequence());
         return ret;
@@ -475,7 +476,7 @@ public slots:
     void seekUrl(const QUrl& url);
     void selectionChanged();
     void enableSequenceMode(bool);
-    void sequenceComboBoxSlot(const QString&);
+    void sequenceComboBoxSlot(int index);
     void showFilterMenu();
     void defaultFiltersSlot();
     void dotStarFilterSlot();
