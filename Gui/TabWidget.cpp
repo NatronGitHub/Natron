@@ -255,10 +255,9 @@ void TabWidget::closePane(){
             break;
         }
     }
-    
+    assert(other);
     other->removeSplit(this);
     
-    assert(other);
     
     /*Removing "what" from the container and delete it*/
     setVisible(false);

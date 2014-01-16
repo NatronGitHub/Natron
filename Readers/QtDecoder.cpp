@@ -244,7 +244,7 @@ SequenceTime QtReader::getSequenceTime(SequenceTime t)
     int timeOffset = _timeOffset->getValue<int>();
     
     ///offset the time wrt the starting time
-    SequenceTime sequenceTime =  t + timeOffset;
+    SequenceTime sequenceTime =  t - timeOffset;
     
     
     SequenceTime first,last;
@@ -431,6 +431,7 @@ Natron::Status QtReader::render(SequenceTime /*time*/,RenderScale /*scale*/,
         return StatOK;
     }
     
+    assert(_img);
     switch (_img->format()) {
         case QImage::Format_RGB32: // The image is stored using a 32-bit RGB format (0xffRRGGBB).
         case QImage::Format_ARGB32: // The image is stored using a 32-bit ARGB format (0xAARRGGBB).

@@ -404,6 +404,9 @@ void Curve::getCurveYRange(double &min,double &max) const {
             intK->getMinMaxForCurve(this, &minInt, &maxInt);
             min = minInt;
             max = maxInt;
+        } else {
+            min = INT_MIN;
+            max = INT_MAX;
         }
     } else {
         min = INT_MIN;

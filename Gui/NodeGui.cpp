@@ -176,11 +176,11 @@ NodeGui::~NodeGui(){
     }
     delete _selectedGradient;
     delete _defaultGradient;
+    removeUndoStack();
     if(_settingsPanel){
         _settingsPanel->setParent(NULL);
         delete _settingsPanel;
     }
-    removeUndoStack();
 }
 
 void NodeGui::removeUndoStack(){

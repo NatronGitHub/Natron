@@ -598,7 +598,7 @@ void Choice_KnobGui::onEntriesPopulated()
     const std::vector<std::string> entries = boost::dynamic_pointer_cast<Choice_Knob>(getKnob())->getEntries();
     _entries = entries;
     for (U32 j = 0; j < _entries.size(); ++j) {
-        _comboBox->addItem(_entries[j].c_str());
+        _comboBox->addItem(QString(_entries[j].c_str()));
     }
     if(_entries.size() > 0 && i >= 0) {
         _comboBox->setCurrentText(QString(_entries[i].c_str()));
