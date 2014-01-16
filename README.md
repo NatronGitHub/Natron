@@ -1,4 +1,4 @@
-Natron
+Natron [![Build Status](https://api.travis-ci.org/MrKepzie/Natron.png?branch=workshop](https://travis-ci.org/MrKepzie/Natron)
 ======
 
 Natron is an Open-Source (MPLv2 license) video compositing software, similar in functionality to Adobe After Effects or Nuke by The Foundry.
@@ -7,20 +7,29 @@ It is portable and cross-platform (Linux, OS X, Microsoft Windows).
 
 The project home page is http://natron.inria.fr
 
+The project source code repository is https://github.com/MrKepzie/Natron
+
 Features
 --------
 
 - Support for many open-source and commercial OpenFX plugins: 
 
- * https://github.com/devernay/openfx-misc
- * https://sites.google.com/site/tuttleofx/
- * http://www.thefoundry.co.uk/products/furnace/
- * http://www.genarts.com/software/sapphire/overview
+ * [TuttleOFX](https://sites.google.com/site/tuttleofx/)
+ * [Furnace by The FOundry](http://www.thefoundry.co.uk/products/furnace/)
+ * [GenArts Sapphire](http://www.genarts.com/software/sapphire/overview)
+ * Various open-source plugins:
+   [IO](https://github.com/MrKepzie/openfx-io) to read anything else
+   than standard 8-bits images,
+   [Misc](https://github.com/devernay/openfx-misc),
+   [Yadif deinterlacer](https://github.com/devernay/openfx-yadis),
+   [Vegas SDK samples](https://github.com/devernay/openfx-vegas)...
  * and many more...
 
 - OpenFX: Currently almost all features of OpenFX v1.3 are supported
-- Linux/OSX/Windows support.
-- Platforms not supporting GLSL are also supported
+  (see Documentation/ofxActionsSupported.rtf and
+  Documentation/ofxPropSupported.rtf is the source distribution)
+- Most graphics cards should be supported
+Platforms not supporting GLSL are also supported
 - Fast Viewer interaction with no delay 
 - Overlays interaction on the viewer
 - Fast playback engine: possibility to run 32bit floating point 4K sequences at 60+ fps
@@ -32,6 +41,22 @@ Features
 - The project saves also the layout of the application.
 - Command line tool for execution of project files. The command line version is executable from ssh on a computer without any display.
 - Animation support and possibility to change it with a curve editor
+
+Requirements
+------------
+
+A machine running one of the supported operating systems (Linux, OS X,
+Microsoft Windows), and a 32-bits x86 or 64-bits x86-64 processor.
+
+If your OpenGL version is not supported or does not implement the
+required extensions, you will get an error when launching Natron for
+the first time.
+
+The system must support one of these OpenGL configurations:
+- OpenGL 2.0
+- OpenGL 1.5 with the extensions `GL_ARB_texture_non_power_of_two`
+  `GL_ARB_shader_objects` `GL_ARB_vertex_buffer_object`
+  `GL_ARB_pixel_buffer_object`
 
 Planned features
 ----------------
