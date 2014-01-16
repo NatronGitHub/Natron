@@ -159,7 +159,7 @@ public:
     
     ///returns true if a keyframe was successfully added, false if it just replaced an already
     ///existing key at this time.
-    bool addKeyFrame(const KeyFrame key);
+    bool addKeyFrame(KeyFrame key);
 
     void removeKeyFrame(double time);
     

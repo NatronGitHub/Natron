@@ -110,6 +110,15 @@ int main(int argc, char *argv[])
         app = new QCoreApplication(argc,argv);
         
     }
+    ///set the env var OCIO so all OpenColorIO plug-ins will use by default the same config
+    QByteArray ocioEnvVar = qgetenv("OCIO");
+    QString ocioEnvVarStr(ocioEnvVar);
+    
+    //if the variable is empty then set it
+    if (ocioEnvVarStr.isEmpty()) {
+        QByteArray defaultOcioConfig(NATRON_DEFAULT_OCIO_CONFIG_PATH);
+        qputenv("OCIO",defaultOcioConfig);
+    }
 
     app->setOrganizationName(NATRON_ORGANIZATION_NAME);
     app->setOrganizationDomain(NATRON_ORGANIZATION_DOMAIN);

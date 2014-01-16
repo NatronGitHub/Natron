@@ -600,13 +600,17 @@ void Choice_KnobGui::onEntriesPopulated()
     for (U32 j = 0; j < _entries.size(); ++j) {
         _comboBox->addItem(_entries[j].c_str());
     }
-    _comboBox->setCurrentText(QString(_entries[i].c_str()));
+    if(_entries.size() > 0 && i >= 0) {
+        _comboBox->setCurrentText(QString(_entries[i].c_str()));
+    } else {
+        _comboBox->setCurrentText("");
+    }
 }
 
 void Choice_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 {
     int i = variant.toInt();
-    if(i < (int)_entries.size()){
+    if(i < (int)_entries.size() && i >= (int)0){
         _comboBox->setCurrentText(_entries[i].c_str());
     }
 }
@@ -1366,11 +1370,19 @@ void String_KnobGui::createWidget(QGridLayout *layout, int row)
         _lineEdit->setToolTip(getKnob()->getHintToolTip().c_str());
         layout->addWidget(_lineEdit, row, 1, Qt::AlignLeft);
         QObject::connect(_lineEdit, SIGNAL(textEdited(QString)), this, SLOT(onStringChanged(QString)));
+        
+        if(strKnob->isCustomKnob()) {
+            _lineEdit->setReadOnly(true);
+        }
+        
     } else {
         _textEdit = new AnimatingTextEdit(layout->parentWidget());
         _textEdit->setToolTip(getKnob()->getHintToolTip().c_str());
         layout->addWidget(_textEdit, row, 1, Qt::AlignLeft);
         QObject::connect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
+        if(strKnob->isCustomKnob()) {
+            _textEdit->setReadOnly(true);
+        }
     }
 }
 
@@ -1475,50 +1487,6 @@ void String_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLe
         default:
             break;
     }
-}
-
-
-//=============================CUSTOM_KNOB_GUI===================================
-void Custom_KnobGui::createWidget(QGridLayout *layout, int row)
-{
-    _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-    _descriptionLabel->setToolTip(getKnob()->getHintToolTip().c_str());
-    layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
-    
-    _lineEdit = new LineEdit(layout->parentWidget());
-    _lineEdit->setToolTip(getKnob()->getHintToolTip().c_str());
-    _lineEdit->setReadOnly(true);
-    layout->addWidget(_lineEdit, row, 1, Qt::AlignLeft);
-}
-
-Custom_KnobGui::~Custom_KnobGui()
-{
-    delete _descriptionLabel;
-    delete _lineEdit;
-}
-
-void Custom_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
-{
-    _lineEdit->setText(variant.toString());
-}
-
-void Custom_KnobGui::_hide()
-{
-    _descriptionLabel->hide();
-    _lineEdit->hide();
-}
-
-void Custom_KnobGui::_show()
-{
-    _descriptionLabel->show();
-    _lineEdit->show();
-}
-
-void Custom_KnobGui::setEnabled()
-{
-    bool b = getKnob()->isEnabled();
-    _descriptionLabel->setEnabled(b);
-    _lineEdit->setEnabled(b);
 }
 
 //=============================GROUP_KNOB_GUI===================================

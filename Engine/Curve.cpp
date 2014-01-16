@@ -158,7 +158,7 @@ double Curve::getMaximumTimeCovered() const{
     return (*_imp->keyFrames.rbegin()).getTime();
 }
 
-bool Curve::addKeyFrame(const KeyFrame key){
+bool Curve::addKeyFrame(KeyFrame key){
     
     ///lock the project if it is saving
     _imp->owner->getHolder()->getApp()->lockProject();
@@ -176,6 +176,10 @@ bool Curve::addKeyFrame(const KeyFrame key){
             _imp->curveType = CurvePrivate::DOUBLE_CURVE;
         }
         _imp->mustSetCurveType = false;
+    }
+    
+    if (_imp->curveType == CurvePrivate::BOOL_CURVE || _imp->curveType == CurvePrivate::STRING_CURVE) {
+        key.setInterpolation(Natron::KEYFRAME_CONSTANT);
     }
     
       std::pair<KeyFrameSet::iterator,bool> it = addKeyFrameNoUpdate(key);
@@ -328,42 +332,26 @@ double Curve::getValueAt(double t) const {
         }
     }
 
-    //if all keys have a greater time (i.e: we search after the last keyframe)
     KeyFrameSet::const_iterator prev = upper;
     --prev;
 
-    //if we found no key that has a greater time (i.e: we search before the 1st keyframe)
     if (upper == _imp->keyFrames.begin()) {
+        //if all keys have a greater time (i.e: we search after the last keyframe)
         tnext = upper->getTime();
         vnext = upper->getValue();
         vnextDerivLeft = upper->getLeftDerivative();
         interpNext = upper->getInterpolation();
-        
-        if (_imp->curveType == CurvePrivate::STRING_CURVE ||
-            _imp->curveType == CurvePrivate::BOOL_CURVE) {
-            
-            ////constant interp  for string, int, bool
-            interpNext = Natron::KEYFRAME_CONSTANT;
-        }
-        
         tcur = tnext - 1.;
         vcur = vnext;
         vcurDerivRight = 0.;
         interp = Natron::KEYFRAME_NONE;
 
     } else if (upper == _imp->keyFrames.end()) {
+        //if we found no key that has a greater time (i.e: we search before the 1st keyframe)
         tcur = prev->getTime();
         vcur = prev->getValue();
         vcurDerivRight = prev->getRightDerivative();
         interp = prev->getInterpolation();
-        
-        if (_imp->curveType == CurvePrivate::STRING_CURVE ||
-            _imp->curveType == CurvePrivate::BOOL_CURVE) {
-            
-            ////constant interp  for string, int, bool
-            interp = Natron::KEYFRAME_CONSTANT;
-        }
-
         tnext = tcur + 1.;
         vnext = vcur;
         vnextDerivLeft = 0.;
@@ -377,14 +365,6 @@ double Curve::getValueAt(double t) const {
         vnext = upper->getValue();
         vnextDerivLeft = upper->getLeftDerivative();
         interpNext = upper->getInterpolation();
-        
-        if (_imp->curveType == CurvePrivate::STRING_CURVE ||
-            _imp->curveType == CurvePrivate::BOOL_CURVE) {
-            
-            ////constant interp  for string, int, bool
-            interp = Natron::KEYFRAME_CONSTANT;
-            interpNext = Natron::KEYFRAME_CONSTANT;
-        }
     }
 
     double v = Natron::interpolate<double>(tcur,vcur,
@@ -576,8 +556,18 @@ const KeyFrame& Curve::setKeyFrameDerivatives(double left, double right,int inde
 }
 
 const KeyFrame& Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,int index,int* newIndex){
+    
+    
     KeyFrameSet::iterator it = keyframeAt(index);
     assert(it != _imp->keyFrames.end());
+    
+    ///if the curve is a string_curve or bool_curve the interpolation is bound to be constant.
+    if ((_imp->curveType == CurvePrivate::STRING_CURVE || _imp->curveType == CurvePrivate::BOOL_CURVE)
+        && interp != Natron::KEYFRAME_CONSTANT) {
+        return *it;
+    }
+
+    
     if(interp != it->getInterpolation()) {
         KeyFrame newKey(*it);
         newKey.setInterpolation(interp);

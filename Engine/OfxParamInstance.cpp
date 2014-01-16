@@ -590,6 +590,15 @@ void OfxChoiceInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
+void OfxChoiceInstance::setOption(int /*num*/) {
+    int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
+    _entries.clear();
+    for (int i = 0; i < dim; ++i) {
+        _entries.push_back(getProperties().getStringProperty(kOfxParamPropChoiceOption,i));
+    }
+    _knob->populate(_entries);
+}
+
 boost::shared_ptr<Knob> OfxChoiceInstance::getKnob() const{
     return _knob;
 }
@@ -1430,6 +1439,7 @@ void OfxStringInstance::onFrameRangeChanged(int first,int last){
     getProperties().setIntProperty(kNatronImageSequenceRange, last,1);
 }
 
+
 OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
     if(_fileKnob){
@@ -1640,7 +1650,8 @@ OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::D
     const OFX::Host::Property::Set &properties = getProperties();
     
     
-    _knob = Natron::createKnob<Custom_Knob>(node, getParamLabel(this));
+    _knob = Natron::createKnob<String_Knob>(node, getParamLabel(this));
+    _knob->setAsCustom();
     
     set(properties.getStringProperty(kOfxParamPropDefault).c_str());
     
@@ -1649,26 +1660,97 @@ OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::D
 
 OfxStatus OfxCustomInstance::get(std::string &str) {
     assert(_node->effectInstance());
-    str = _knob->getString();
+    str = _knob->getValue<QString>().toStdString();
     return kOfxStatOK;
 }
 
-OfxStatus OfxCustomInstance::get(OfxTime /*time*/, std::string& str) {
-    // FIXME: assert(!Custom_Knob::canAnimateStatic());
+OfxStatus OfxCustomInstance::get(OfxTime time, std::string& str) {
+    assert(String_Knob::canAnimateStatic());
     // it should call _customParamInterpolationV1Entry
     assert(_node->effectInstance());
-    str = _knob->getString();
+    if (!_customParamInterpolationV1Entry) {
+        str = _knob->getValueAtTime(std::floor(time + 0.5), 0).toString().toStdString();
+    } else {
+        ///if there's a single keyframe, return it
+        const String_Knob::Keyframes& ks = _knob->getKeyFrames();
+        if (ks.size() == 1) {
+            str = ks.begin()->value.toStdString();
+            return kOfxStatOK;
+        }
+        
+        /// get the keyframes surrounding the time
+        String_Knob::Keyframes::const_iterator upper = ks.end();
+        String_Knob::Keyframes::const_iterator lower = ks.end();
+        for (String_Knob::Keyframes::const_iterator it = ks.begin(); it!=ks.end(); ++it) {
+            if (it->time > time) {
+                upper = it;
+                break;
+            } else if(it->time == time) {
+                ///if there's a keyframe exactly at this time, return its value
+                str =  it->value.toStdString();
+                return kOfxStatOK;
+            }
+        }
+        
+        if (upper == ks.end()) {
+            ///if the time is greater than the time of all keyframes return the last
+            
+            --upper;
+            str = upper->value.toStdString();
+            return kOfxStatOK;
+        } else if(upper == ks.begin()) {
+            ///if the time is lesser than the time of all keyframes, return the first
+            str = upper->value.toStdString();
+            return kOfxStatOK;
+        } else {
+            ///general case, we're in-between 2 keyframes
+            lower = upper;
+            --lower;
+        }
+        
+        OFX::Host::Property::PropSpec inArgsSpec[] = {
+            { kOfxPropName,    OFX::Host::Property::eString, 1, true, "" },
+            { kOfxPropTime,    OFX::Host::Property::eDouble, 1, true, "" },
+            { kOfxParamPropCustomValue,    OFX::Host::Property::eString, 2, true, ""},
+            { kOfxParamPropInterpolationTime,    OFX::Host::Property::eDouble, 2, true, "" },
+            { kOfxParamPropInterpolationAmount,    OFX::Host::Property::eString, 1, true, "" },
+            OFX::Host::Property::propSpecEnd
+        };
+        OFX::Host::Property::Set inArgs(inArgsSpec);
+        inArgs.setStringProperty(kOfxPropName, getName());
+        inArgs.setDoubleProperty(kOfxPropTime, time);
+        
+        inArgs.setStringProperty(kOfxParamPropCustomValue, lower->value.toStdString(),0);
+        inArgs.setStringProperty(kOfxParamPropCustomValue, upper->value.toStdString(),1);
+        inArgs.setDoubleProperty(kOfxParamPropInterpolationTime, lower->time,0);
+        inArgs.setDoubleProperty(kOfxParamPropInterpolationTime, upper->time,1);
+        inArgs.setDoubleProperty(kOfxParamPropInterpolationAmount, (time - lower->time) / (double)(upper->time - lower->time));
+        
+        
+        
+        OFX::Host::Property::PropSpec outArgsSpec[] = {
+            { kOfxParamPropCustomValue,    OFX::Host::Property::eString, 1, false, ""},
+            OFX::Host::Property::propSpecEnd
+        };
+        OFX::Host::Property::Set outArgs(outArgsSpec);
+        
+        _customParamInterpolationV1Entry((void*)getHandle(),inArgs.getHandle(),outArgs.getHandle());
+        
+        str = outArgs.getStringProperty(kOfxParamPropCustomValue,0);
+        return kOfxStatOK;
+
+    }
     return kOfxStatOK;
 }
 
 OfxStatus OfxCustomInstance::set(const char* str) {
-    _knob->setValue(str);
+    _knob->setValue<QString>(QString(str));
     return kOfxStatOK;
 }
 
-OfxStatus OfxCustomInstance::set(OfxTime /*time*/, const char* str) {
-    //FIXME: assert(!Custom_Knob::canAnimateStatic());
-    _knob->setValue(str);
+OfxStatus OfxCustomInstance::set(OfxTime time, const char* str) {
+    assert(String_Knob::canAnimateStatic());
+    _knob->setValueAtTime(time,Variant(QString(str)),0);
     return kOfxStatOK;
 }
 

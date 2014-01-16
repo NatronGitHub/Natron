@@ -390,6 +390,18 @@ private:
 class String_Knob: public Knob
 {
 public:
+    struct StringKeyFrame {
+        QString value;
+        int time;
+    };
+    
+    struct KeyFrame_compare_time {
+        bool operator() (const StringKeyFrame& lhs, const StringKeyFrame& rhs) const {
+            return lhs.time < rhs.time;
+        }
+    };
+    
+    typedef std::set<StringKeyFrame,KeyFrame_compare_time> Keyframes;
     
     static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
         return new String_Knob(holder, description, dimension);
@@ -410,6 +422,11 @@ public:
     
     bool isMultiLine() const { return _multiLine; }
     
+    void setAsCustom() { _isCustom = true; }
+    
+    bool isCustomKnob() const { return _isCustom; }
+    
+    const String_Knob::Keyframes& getKeyFrames() const { return _keyframes; }
 private:
     
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -429,49 +446,10 @@ private:
 private:
     static const std::string _typeNameStr;
     
-    struct StringKeyFrame {
-        QString value;
-        int time;
-    };
-    
-    struct KeyFrame_compare_time {
-        bool operator() (const StringKeyFrame& lhs, const StringKeyFrame& rhs) const {
-            return lhs.time < rhs.time;
-        }
-    };
-    
-    typedef std::set<StringKeyFrame,KeyFrame_compare_time> Keyframes;
+  
     Keyframes _keyframes;
     bool _multiLine;
-};
-
-/******************************STRING_KNOB**************************************/
-class Custom_Knob: public Knob
-{
-public:
-    
-    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
-        return new Custom_Knob(holder, description, dimension);
-    }
-    
-    Custom_Knob(KnobHolder *holder, const std::string &description, int dimension);
-    std::string getString() const;
-    
-    /// Can this type be animated?
-    /// Custom anymation requires calling the interpolation
-    /// function given by the plugin.
-    static bool canAnimateStatic() { return false; }
-    
-    static const std::string& typeNameStatic();
-    
-private:
-    
-    virtual bool canAnimate() const OVERRIDE FINAL;
-    
-    virtual const std::string& typeName() const OVERRIDE FINAL;
-    
-private:
-    static const std::string _typeNameStr;
+    bool _isCustom;
 };
 
 /******************************GROUP_KNOB**************************************/

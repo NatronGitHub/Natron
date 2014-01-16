@@ -43,7 +43,6 @@ class Double_Knob;
 class Bool_Knob;
 class Choice_Knob;
 class Group_Knob;
-class Custom_Knob;
 class RichText_Knob;
 class Parametric_Knob;
 class OfxEffectInstance;
@@ -218,6 +217,9 @@ public:
     
     // callback which should set secret state as appropriate
     virtual void setSecret();
+    
+    // callback which should set option as appropriate
+    virtual void setOption(int num);
     
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
@@ -603,7 +605,7 @@ private:
                                                            OfxPropertySetHandle   outArgsRaw);
 
     OfxEffectInstance* _node;
-    boost::shared_ptr<Custom_Knob> _knob;
+    boost::shared_ptr<String_Knob> _knob;
     customParamInterpolationV1Entry_t _customParamInterpolationV1Entry;
     QThreadStorage<std::string> _localString;
 };

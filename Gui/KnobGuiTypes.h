@@ -536,34 +536,6 @@ private:
 };
 
 /*****************************/
-class Custom_KnobGui : public KnobGui
-{
-public:
-    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
-        return new Custom_KnobGui(knob, container);
-    }
-
-
-    Custom_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
-
-    virtual ~Custom_KnobGui() OVERRIDE;
-
-private:
-
-    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
-
-    virtual void _hide() OVERRIDE FINAL;
-
-    virtual void _show() OVERRIDE FINAL;
-
-    virtual void setEnabled() OVERRIDE FINAL;
-
-    virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
-
-private:
-    LineEdit *_lineEdit;
-    QLabel *_descriptionLabel;
-};
 
 
 

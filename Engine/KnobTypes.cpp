@@ -663,6 +663,7 @@ const std::string& Color_Knob::typeName() const
 String_Knob::String_Knob(KnobHolder *holder, const std::string &description, int dimension):
 Knob(holder, description, dimension)
 , _multiLine(false)
+, _isCustom(false)
 {
     
 }
@@ -770,34 +771,6 @@ QString String_Knob::saveExtraData() const {
         ret.push_back(stringSeparatorTag);
     }
     return ret;
-}
-/******************************CUSTOM_KNOB**************************************/
-
-Custom_Knob::Custom_Knob(KnobHolder *holder, const std::string &description, int dimension)
-: Knob(holder, description, dimension)
-{
-}
-
-bool Custom_Knob::canAnimate() const
-{
-    return canAnimateStatic();
-}
-
-const std::string Custom_Knob::_typeNameStr("Custom");
-
-const std::string& Custom_Knob::typeNameStatic()
-{
-    return _typeNameStr;
-}
-
-const std::string& Custom_Knob::typeName() const
-{
-    return typeNameStatic();
-}
-
-std::string Custom_Knob::getString() const
-{
-    return getValue<QString>().toStdString();
 }
 
 /******************************GROUP_KNOB**************************************/

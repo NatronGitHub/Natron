@@ -1,3 +1,6 @@
 [submodule "libs/OpenFX"]
 	path = libs/OpenFX
 	url = https://github.com/devernay/openfx.git
+[submodule "Resources/OpenColorIO-Configs"]
+	path = Resources/OpenColorIO-Configs
+	url = https://github.com/MrKepzie/OpenColorIO-Configs
