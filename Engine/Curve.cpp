@@ -407,6 +407,7 @@ std::pair<double,double>  Curve::getCurveYRange() const
         assert(intK);
         return intK->getMinMaxForCurve(this);
     }
+    throw std::logic_error("Curve::getCurveYRange() called for a curve which is not int or double");
 }
 
 double Curve::clampValueToCurveYRange(double v) const
@@ -433,10 +434,14 @@ bool Curve::isAnimated() const
 void Curve::setParametricRange(double a,double b) {
     _imp->curveMin = a;
     _imp->curveMax = b;
+    _imp->curveRangeSet = true;
 }
 
 std::pair<double,double> Curve::getParametricRange() const
 {
+    if (!_imp->curveRangeSet) {
+        throw std::logic_error("Curve::getParametricRange(): curve range not set");
+    }
     return std::make_pair(_imp->curveMin, _imp->curveMax);
 }
 
@@ -731,9 +736,9 @@ KeyFrameSet::const_iterator Curve::keyframeAt(int index) const {
 int Curve::keyFrameIndex(double time) const {
     int i = 0;
     double paramEps;
-    if(_imp->curveMax != INT_MAX && _imp->curveMin!= INT_MIN){
+    if (_imp->curveRangeSet) {
         paramEps = 1e-4 * std::abs(_imp->curveMax - _imp->curveMin);
-    }else{
+    } else {
         paramEps = 1e-4;
     }
     for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it!=_imp->keyFrames.end(); ++it) {
