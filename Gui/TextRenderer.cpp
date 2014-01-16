@@ -212,6 +212,7 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
         p = boost::shared_ptr<TextRendererPrivate>(new TextRendererPrivate(font));
         _imp->renderers[font] = p;
     }
+    assert(p);
     glColor4f(1., 1., 1., 1.);
     glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
     glPushMatrix();

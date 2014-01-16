@@ -175,8 +175,7 @@ std::pair<int,int> Int_Knob::getMinMaxForCurve(const Curve* curve) const {
             return std::make_pair(mins[i], maxs[i]);
         }
     }
-    assert(!"curve not found");
-    return std::make_pair(INT_MIN, INT_MAX);
+    throw std::logic_error("Int_Knob::getMinMaxForCurve(): curve not found");
 }
 
 
@@ -411,7 +410,7 @@ std::pair<double,double> Double_Knob::getMinMaxForCurve(const Curve* curve) cons
             return std::make_pair(mins[i],maxs[i]);
         }
     }
-    assert(!"curve not found");
+    throw std::logic_error("Double_Knob::getMinMaxForCurve(): curve not found");
 }
 
 /*minis & maxis must have the same size*/

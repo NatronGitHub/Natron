@@ -1324,7 +1324,8 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
             //if we already computed the max movement for this curve, move on
             continue;
         }else{
-            
+            assert(it->curve);
+            assert(it->curve->getInternalCurve());
             const KeyFrameSet& ks = it->curve->getInternalCurve()->getKeyFrames();
             
             //find out in this set what is the first key selected
