@@ -73,7 +73,7 @@ public:
     
     const std::vector<int> &getDisplayMaximums() const;
     
-    void getMinMaxForCurve(const Curve* curve,int* min,int* max);
+    std::pair<int,int> getMinMaxForCurve(const Curve* curve) const;
     
 signals:
     
@@ -170,7 +170,7 @@ public:
     
     void setDecimals(int decis, int index = 0);
     
-    void getMinMaxForCurve(const Curve* curve,double* min,double* max);
+    std::pair<double,double> getMinMaxForCurve(const Curve* curve) const;
     
     
     /*minis & maxis must have the same size*/
@@ -538,38 +538,38 @@ public:
     
     void setCurveLabel(int dimension,const std::string& str);
     
-    const std::string& getCurveLabel(int dimension) const;
+    const std::string& getCurveLabel(int dimension) const WARN_UNUSED_RETURN;
     
     void setParametricRange(double min,double max);
     
-    void getParametricRange(double* min,double* max);
+    std::pair<double,double> getParametricRange() const WARN_UNUSED_RETURN;
     
-    virtual std::string getDimensionName(int dimension) const;
+    virtual std::string getDimensionName(int dimension) const WARN_UNUSED_RETURN;
     
     boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
     
-    Natron::Status addControlPoint(int dimension,double key,double value);
+    Natron::Status addControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
     
-    Natron::Status getValue(int dimension,double parametricPosition,double *returnValue);
+    Natron::Status getValue(int dimension,double parametricPosition,double *returnValue) WARN_UNUSED_RETURN;
     
-    Natron::Status getNControlPoints(int dimension,int *returnValue);
+    Natron::Status getNControlPoints(int dimension,int *returnValue) WARN_UNUSED_RETURN;
     
     Natron::Status getNthControlPoint(int dimension,
                                       int    nthCtl,
                                       double *key,
-                                      double *value);
+                                      double *value) WARN_UNUSED_RETURN;
     
     Natron::Status setNthControlPoint(int   dimension,
                                       int   nthCtl,
                                       double key,
-                                      double value);
+                                      double value) WARN_UNUSED_RETURN;
     
-    Natron::Status  deleteControlPoint(int   dimension,int   nthCtl);
+    Natron::Status deleteControlPoint(int dimension, int nthCtl) WARN_UNUSED_RETURN;
     
-    Natron::Status  deleteAllControlPoints(int   dimension);
+    Natron::Status deleteAllControlPoints(int dimension) WARN_UNUSED_RETURN;
     
     
-    static const std::string& typeNameStatic();
+    static const std::string& typeNameStatic() WARN_UNUSED_RETURN;
     
 public slots:
     

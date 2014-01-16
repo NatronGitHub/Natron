@@ -375,8 +375,10 @@ double Curve::getValueAt(double t) const {
                                            interp,
                                            interpNext);
 
-    clampValueToCurveYRange(v);
-    
+    if (_imp->owner) {
+        v = clampValueToCurveYRange(v);
+    }
+
     switch (_imp->curveType) {
         case CurvePrivate::STRING_CURVE:
         case CurvePrivate::INT_CURVE:
@@ -390,49 +392,64 @@ double Curve::getValueAt(double t) const {
     }
 }
 
-void Curve::getCurveYRange(double &min,double &max) const {
-    if(_imp->owner){
-        if(_imp->owner->typeName() == Double_Knob::typeNameStatic()) {
-            Double_Knob* dbKnob = dynamic_cast<Double_Knob*>(_imp->owner);
-            assert(dbKnob);
-            dbKnob->getMinMaxForCurve(this, &min, &max);
-            
-        }else if(_imp->owner->typeName() == Int_Knob::typeNameStatic()) {
-            Int_Knob* intK = dynamic_cast<Int_Knob*>(_imp->owner);
-            assert(intK);
-            int minInt = INT_MIN,maxInt = INT_MAX;
-            intK->getMinMaxForCurve(this, &minInt, &maxInt);
-            min = minInt;
-            max = maxInt;
-        }
+std::pair<double,double> Curve::getCurveYRange() const
+{
+    assert(_imp->owner);
+    if (!_imp->owner)
+        throw std::logic_error("Curve::getCurveYRange() called for a curve without owner");
+    if (_imp->owner->typeName() == Double_Knob::typeNameStatic()) {
+        Double_Knob* dbKnob = dynamic_cast<Double_Knob*>(_imp->owner);
+        assert(dbKnob);
+        return dbKnob->getMinMaxForCurve(this);
+
+    } else if(_imp->owner->typeName() == Int_Knob::typeNameStatic()) {
+        Int_Knob* intK = dynamic_cast<Int_Knob*>(_imp->owner);
+        assert(intK);
+        return intK->getMinMaxForCurve(this);
     }
+    throw std::logic_error("Curve::getCurveYRange() called for a curve which is neither Double nor Int");
 }
 
-void Curve::clampValueToCurveYRange(double &v) const {
-    
-    if(_imp->owner){
-        ////clamp to min/max if the owner of the curve is a Double or Int knob.
-        double min,max;
-        getCurveYRange(min, max);
-        
-        if (v > max) {
-            v = max;
-        }
-        if (v < min) {
-            v = min;
-        }
+double Curve::clampValueToCurveYRange(double v) const
+{
+    assert(_imp->owner);
+    if (!_imp->owner)
+        throw std::logic_error("Curve::clampValueToCurveYRange() called for a curve without owner");
+    ////clamp to min/max if the owner of the curve is a Double or Int knob.
+    std::pair<double,double> minmax = getCurveYRange();
+
+    if (v > minmax.second) {
+        return minmax.second;
+    } else if (v < minmax.first) {
+        return minmax.first;
     }
+    return v;
 }
 
-bool Curve::isAnimated() const { return _imp->keyFrames.size() > 1; }
+bool Curve::isAnimated() const
+{
+    return _imp->keyFrames.size() > 1;
+}
 
-void Curve::setParametricRange(double a,double b) { _imp->curveMin = a; _imp->curveMax = b; }
+void Curve::setParametricRange(double a,double b) {
+    _imp->curveMin = a;
+    _imp->curveMax = b;
+}
 
-void Curve::getParametricRange(double* a,double* b) { *a = _imp->curveMin; *b = _imp->curveMax; }
+std::pair<double,double> Curve::getParametricRange() const
+{
+    return std::make_pair(_imp->curveMin, _imp->curveMax);
+}
 
-int Curve::keyFramesCount() const { return (int)_imp->keyFrames.size(); }
+int Curve::keyFramesCount() const
+{
+    return (int)_imp->keyFrames.size();
+}
 
-const KeyFrameSet& Curve::getKeyFrames() const { return _imp->keyFrames; }
+const KeyFrameSet& Curve::getKeyFrames() const
+{
+    return _imp->keyFrames;
+}
 
 KeyFrameSet::iterator Curve::setKeyFrameValueAndTimeNoUpdate(double value,double time, KeyFrameSet::iterator k) {
     KeyFrame newKey(*k);

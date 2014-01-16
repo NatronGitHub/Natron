@@ -162,7 +162,7 @@ const std::vector<int> &Int_Knob::getDisplayMaximums() const
     return _displayMaxs;
 }
 
-void Int_Knob::getMinMaxForCurve(const Curve* curve,int* min,int* max){
+std::pair<int,int> Int_Knob::getMinMaxForCurve(const Curve* curve) const {
     const std::vector< boost::shared_ptr<Curve> >& curves = getCurves();
     for (U32 i = 0; i < curves.size(); ++i) {
         if (curves[i].get() == curve) {
@@ -172,10 +172,11 @@ void Int_Knob::getMinMaxForCurve(const Curve* curve,int* min,int* max){
             assert(mins.size() > i);
             assert(maxs.size() > i);
             
-            *min = mins[i];
-            *max = maxs[i];
+            return std::make_pair(mins[i], maxs[i]);
         }
     }
+    assert(!"curve not found");
+    return std::make_pair(INT_MIN, INT_MAX);
 }
 
 
@@ -397,7 +398,7 @@ void Double_Knob::setDecimals(int decis, int index)
     emit decimalsChanged(_decimals[index], index);
 }
 
-void Double_Knob::getMinMaxForCurve(const Curve* curve,double* min,double* max){
+std::pair<double,double> Double_Knob::getMinMaxForCurve(const Curve* curve) const {
     const std::vector< boost::shared_ptr<Curve> >& curves = getCurves();
     for (U32 i = 0; i < curves.size(); ++i) {
         if (curves[i].get() == curve) {
@@ -407,10 +408,10 @@ void Double_Knob::getMinMaxForCurve(const Curve* curve,double* min,double* max){
             assert(mins.size() > i);
             assert(maxs.size() > i);
             
-            *min = mins[i];
-            *max = maxs[i];
+            return std::make_pair(mins[i],maxs[i]);
         }
     }
+    assert(!"curve not found");
 }
 
 /*minis & maxis must have the same size*/
@@ -915,9 +916,10 @@ void Parametric_Knob::setParametricRange(double min,double max){
     }
 }
 
-void Parametric_Knob::getParametricRange(double* min,double* max){
+std::pair<double,double> Parametric_Knob::getParametricRange() const
+{
     assert(!_curves.empty());
-    _curves.front()->getParametricRange(min, max);
+    return _curves.front()->getParametricRange();
 }
 
 std::string Parametric_Knob::getDimensionName(int dimension) const{
@@ -1065,8 +1067,8 @@ void Parametric_Knob::loadExtraData(const QString& str) {
         }
         int curveIndex = curveIndexStr.toUInt();
         
-        deleteAllControlPoints(curveIndex);
-
+        Natron::Status st = deleteAllControlPoints(curveIndex);
+        assert(st == StatOK);
         
         while(cpCursor != -1){
             
