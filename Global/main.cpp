@@ -54,7 +54,7 @@ void printBackGroundWelcomeMessage(){
 void printUsage(){
     std::cout << NATRON_APPLICATION_NAME << " usage: " << std::endl;
     std::cout << "./" NATRON_APPLICATION_NAME "    <project file path>" << std::endl;
-    std::cout << "[--background] enables background mode rendering. No graphical interface will be shown." << std::endl;
+    std::cout << "[--background] or [-b] enables background mode rendering. No graphical interface will be shown." << std::endl;
     std::cout << "[--writer <Writer node name>] When in background mode, the renderer will only try to render with the node"
     " name following the --writer argument. If no such node exists in the project file, the process will abort."
     "Note that if you don't pass the --writer argument, it will try to start rendering with all the writers in the project's file."<< std::endl;
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
                 return 1;
             }
             projectFile = args.at(i);
-        }else if(args.at(i) == "--background"){
+        }else if(args.at(i) == "--background" || args.at(i) == "-b"){
             if(expectWriterNameOnNextArg){
                 printUsage();
                 return 1;

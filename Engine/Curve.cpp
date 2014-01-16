@@ -392,22 +392,21 @@ double Curve::getValueAt(double t) const {
     }
 }
 
-std::pair<double,double> Curve::getCurveYRange() const
+std::pair<double,double>  Curve::getCurveYRange() const
 {
     assert(_imp->owner);
     if (!_imp->owner)
         throw std::logic_error("Curve::getCurveYRange() called for a curve without owner");
-    if (_imp->owner->typeName() == Double_Knob::typeNameStatic()) {
+    if(_imp->owner->typeName() == Double_Knob::typeNameStatic()) {
         Double_Knob* dbKnob = dynamic_cast<Double_Knob*>(_imp->owner);
         assert(dbKnob);
         return dbKnob->getMinMaxForCurve(this);
 
-    } else if(_imp->owner->typeName() == Int_Knob::typeNameStatic()) {
+    }else if(_imp->owner->typeName() == Int_Knob::typeNameStatic()) {
         Int_Knob* intK = dynamic_cast<Int_Knob*>(_imp->owner);
         assert(intK);
         return intK->getMinMaxForCurve(this);
     }
-    throw std::logic_error("Curve::getCurveYRange() called for a curve which is neither Double nor Int");
 }
 
 double Curve::clampValueToCurveYRange(double v) const

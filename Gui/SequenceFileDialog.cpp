@@ -264,7 +264,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     }else{
         _sequenceButton->setCurrentIndex(1);
     }
-    QObject::connect(_sequenceButton,SIGNAL(currentIndexChanged(QString)),this,SLOT(sequenceComboBoxSlot(QString)));
+    QObject::connect(_sequenceButton,SIGNAL(currentIndexChanged(int)),this,SLOT(sequenceComboBoxSlot(int)));
     _selectionLayout->addWidget(_sequenceButton);
     
     if(!isSequenceDialog){
@@ -499,8 +499,8 @@ void SequenceFileDialog::setFileExtensionOnLineEdit(const QString& ext){
     _selectionLineEdit->setText(str);
 }
 
-void SequenceFileDialog::sequenceComboBoxSlot(const QString& str){
-    if(str == "File"){
+void SequenceFileDialog::sequenceComboBoxSlot(int index){
+    if(index == 1){
         enableSequenceMode(false);
     }else{
         enableSequenceMode(true);
