@@ -391,7 +391,7 @@ double Curve::getValueAt(double t) const {
 }
 
 void Curve::getCurveYRange(double &min,double &max) const {
-    if(_imp->owner){
+    if(_imp->owner) {
         if(_imp->owner->typeName() == Double_Knob::typeNameStatic()) {
             Double_Knob* dbKnob = dynamic_cast<Double_Knob*>(_imp->owner);
             assert(dbKnob);
@@ -405,7 +405,11 @@ void Curve::getCurveYRange(double &min,double &max) const {
             min = minInt;
             max = maxInt;
         }
+    } else {
+        min = INT_MIN;
+        max = INT_MAX;
     }
+    
 }
 
 void Curve::clampValueToCurveYRange(double &v) const {

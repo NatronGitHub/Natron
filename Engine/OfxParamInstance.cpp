@@ -1442,14 +1442,14 @@ void OfxStringInstance::onFrameRangeChanged(int first,int last){
 
 OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
+    int currentFrame = (int)_node->effectInstance()->timeLineGetTime();
     if(_fileKnob){
-        int currentFrame = (int)_node->effectInstance()->timeLineGetTime();
         QString fileName =  _fileKnob->getRandomFrameName(currentFrame,true);
         str = fileName.toStdString();
     }else if(_outputFileKnob){
         str = _outputFileKnob->getValue<QString>().toStdString();
     }else if(_stringKnob){
-        str = _stringKnob->getValue().toString().toStdString();
+        str = _stringKnob->getValueAtTime(currentFrame,0).toString().toStdString();
     }
     return kOfxStatOK;
 }
@@ -1660,7 +1660,8 @@ OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::D
 
 OfxStatus OfxCustomInstance::get(std::string &str) {
     assert(_node->effectInstance());
-    str = _knob->getValue<QString>().toStdString();
+    int currentFrame = (int)_node->effectInstance()->timeLineGetTime();
+    getCustomParamAtTime(currentFrame, str);
     return kOfxStatOK;
 }
 
@@ -1668,14 +1669,26 @@ OfxStatus OfxCustomInstance::get(OfxTime time, std::string& str) {
     assert(String_Knob::canAnimateStatic());
     // it should call _customParamInterpolationV1Entry
     assert(_node->effectInstance());
+    getCustomParamAtTime(time, str);
+    return kOfxStatOK;
+}
+
+void OfxCustomInstance::getCustomParamAtTime(double time,std::string &str) const {
+
     if (!_customParamInterpolationV1Entry) {
         str = _knob->getValueAtTime(std::floor(time + 0.5), 0).toString().toStdString();
     } else {
         ///if there's a single keyframe, return it
         const String_Knob::Keyframes& ks = _knob->getKeyFrames();
+        
+        if (ks.empty()) {
+            str = _knob->getValue<QString>().toStdString();
+            return;
+        }
+        
         if (ks.size() == 1) {
             str = ks.begin()->value.toStdString();
-            return kOfxStatOK;
+            return;
         }
         
         /// get the keyframes surrounding the time
@@ -1688,7 +1701,7 @@ OfxStatus OfxCustomInstance::get(OfxTime time, std::string& str) {
             } else if(it->time == time) {
                 ///if there's a keyframe exactly at this time, return its value
                 str =  it->value.toStdString();
-                return kOfxStatOK;
+                return;
             }
         }
         
@@ -1697,11 +1710,11 @@ OfxStatus OfxCustomInstance::get(OfxTime time, std::string& str) {
             
             --upper;
             str = upper->value.toStdString();
-            return kOfxStatOK;
+            return;
         } else if(upper == ks.begin()) {
             ///if the time is lesser than the time of all keyframes, return the first
             str = upper->value.toStdString();
-            return kOfxStatOK;
+            return;
         } else {
             ///general case, we're in-between 2 keyframes
             lower = upper;
@@ -1713,7 +1726,7 @@ OfxStatus OfxCustomInstance::get(OfxTime time, std::string& str) {
             { kOfxPropTime,    OFX::Host::Property::eDouble, 1, true, "" },
             { kOfxParamPropCustomValue,    OFX::Host::Property::eString, 2, true, ""},
             { kOfxParamPropInterpolationTime,    OFX::Host::Property::eDouble, 2, true, "" },
-            { kOfxParamPropInterpolationAmount,    OFX::Host::Property::eString, 1, true, "" },
+            { kOfxParamPropInterpolationAmount,    OFX::Host::Property::eDouble, 1, true, "" },
             OFX::Host::Property::propSpecEnd
         };
         OFX::Host::Property::Set inArgs(inArgsSpec);
@@ -1737,10 +1750,9 @@ OfxStatus OfxCustomInstance::get(OfxTime time, std::string& str) {
         _customParamInterpolationV1Entry((void*)getHandle(),inArgs.getHandle(),outArgs.getHandle());
         
         str = outArgs.getStringProperty(kOfxParamPropCustomValue,0);
-        return kOfxStatOK;
-
+        _knob->setValue(Variant(QString(str.c_str())),0,true);
+        
     }
-    return kOfxStatOK;
 }
 
 OfxStatus OfxCustomInstance::set(const char* str) {

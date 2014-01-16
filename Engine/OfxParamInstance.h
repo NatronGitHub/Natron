@@ -599,6 +599,9 @@ public slots:
     void onKnobAnimationLevelChanged(int lvl);
     
 private:
+    
+    void getCustomParamAtTime(double time,std::string &str) const;
+    
     typedef OfxStatus (*customParamInterpolationV1Entry_t)(
                                                            const void*            handleRaw,
                                                            OfxPropertySetHandle   inArgsRaw,
