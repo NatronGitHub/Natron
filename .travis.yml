@@ -1,0 +1,17 @@
+# This is the http://travis-ci.org configuration file for Natron
+language: cpp
+compiler:
+  - gcc
+  - clang
+before_install:
+  - git submodule update --init --recursive
+  - sudo apt-get update
+# Ubuntu 12.04 precise doesn't have a pkg-config file (expat.pc)
+install:
+  - sudo apt-get install libqt4-dev libglew-dev libboost-all-dev libexpat1-dev
+  - 'echo ''boost: LIBS += -lboost_serialization -lboost_thread -lboost_system'' > config.pri'
+  - 'echo ''expat: LIBS += -lexpat'' >> config.pri'
+  - 'echo ''expat: PKGCONFIG -= expat'' >> config.pri'
+script:
+  - if [ "$CC" = "gcc" ]; then qmake; else qmake -spec unsupported/linux-clang; fi
+  - make
