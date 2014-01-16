@@ -1,4 +1,4 @@
-Natron [![Build Status](https://api.travis-ci.org/MrKepzie/Natron.png?branch=workshop](https://travis-ci.org/MrKepzie/Natron)
+Natron [![Build Status](https://api.travis-ci.org/MrKepzie/Natron.png?branch=workshop)](https://travis-ci.org/MrKepzie/Natron)
 ======
 
 Natron is an Open-Source (MPLv2 license) video compositing software, similar in functionality to Adobe After Effects or Nuke by The Foundry.
