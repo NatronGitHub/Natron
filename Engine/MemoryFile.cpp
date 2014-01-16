@@ -21,6 +21,7 @@
 #include <sys/types.h>     // struct stat.
 #include <unistd.h>        // sysconf.
 #include <cstring>
+#include <cerrno>
 #include <cstdio>
 #endif
 #include <iostream>
@@ -124,7 +125,13 @@ file_mapping_handle_(INVALID_HANDLE_VALUE)
     }
     size_t initial_file_size = sbuf.st_size;
     size_t adjusted_file_size = initial_file_size == 0 ? min_file_size : initial_file_size;
-    ::ftruncate(file_handle_, adjusted_file_size);
+    if (::ftruncate(file_handle_, adjusted_file_size) < 0) {
+        std::string str("MemoryFile EXC : Failed to truncate mapped file: ");
+        str.append(pathname);
+        str.append(", ");
+        str.append(std::strerror(errno));
+        throw std::runtime_error(str);
+    }
     data_ = static_cast<char*>(::mmap(
                                       0, adjusted_file_size, PROT_READ | PROT_WRITE, MAP_SHARED, file_handle_, 0));
     if (data_ == MAP_FAILED){
@@ -204,7 +211,11 @@ void MemoryFile::reserve(size_t new_capacity) {
     if (new_capacity <= capacity_) return;
 #if defined(__NATRON_UNIX__)
     ::munmap(data_, size_);
-    ::ftruncate(file_handle_, new_capacity);
+    if (::ftruncate(file_handle_, new_capacity) < 0) {
+        std::string str("MemoryFile EXC : Failed to truncate mapped file: ");
+        str.append(std::strerror(errno));
+        throw std::runtime_error(str);
+    }
     data_ = static_cast<char*>(::mmap(
                                       0, new_capacity, PROT_READ | PROT_WRITE, MAP_SHARED, file_handle_, 0));
     if (data_ == MAP_FAILED) data_ = 0;
@@ -224,9 +235,12 @@ void MemoryFile::reserve(size_t new_capacity) {
 MemoryFile::~MemoryFile() {
 #if defined(__NATRON_UNIX__)
     ::munmap(data_, size_);
-    if (size_ != capacity_)
-    {
-        ::ftruncate(file_handle_, size_);
+    if (size_ != capacity_) {
+        if (::ftruncate(file_handle_, size_) < 0) {
+            std::string str("MemoryFile EXC : Failed to truncate mapped file: ");
+            str.append(std::strerror(errno));
+            throw std::runtime_error(str);
+        }
     }
     ::close(file_handle_);
 #elif defined(__NATRON_WIN32__)
