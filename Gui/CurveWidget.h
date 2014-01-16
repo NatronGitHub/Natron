@@ -76,7 +76,7 @@ public:
 
     bool isSelected() const { return _selected; }
 
-    void setSelected(bool s) const { _selected = s; }
+    void setSelected(bool s) { _selected = s; }
     
     KnobGui* getKnob() const { return _knob; }
     
@@ -105,7 +105,7 @@ private:
     QColor _color; /// the color that must be used to draw the curve
     int _thickness; /// its thickness
     bool _visible; /// should we draw this curve ?
-    mutable bool _selected; /// is this curve selected
+    bool _selected; /// is this curve selected
     const CurveWidget* _curveWidget;
     KnobGui* _knob; //< ptr to the knob holding this curve
     int _dimension; //< which dimension is this curve representing
