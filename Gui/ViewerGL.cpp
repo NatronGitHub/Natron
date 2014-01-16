@@ -1039,12 +1039,11 @@ void ViewerGL::initBlackTex()
     checkGLErrors();
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, texSize.w*texSize.h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
     checkGLErrors();
-    char* frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    U32* frameData = (U32*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     checkGLErrors();
     assert(frameData);
-    U32* output = reinterpret_cast<U32*>(frameData);
     for(int i = 0 ; i < texSize.w*texSize.h ; ++i) {
-        output[i] = ViewerInstance::toBGRA(0, 0, 0, 255);
+        frameData[i] = ViewerInstance::toBGRA(0, 0, 0, 255);
     }
     glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();

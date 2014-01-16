@@ -15,6 +15,7 @@
 #include <QDebug>
 
 #include "Engine/Curve.h"
+#include "Engine/Hash64.h"
 
 using namespace Natron;
 using std::make_pair;
@@ -1020,10 +1021,10 @@ void Parametric_Knob::appendExtraDataToHash(std::vector<U64>* hash) const {
             double v = it->getValue();
             double ld = it->getLeftDerivative();
             double rd = it->getRightDerivative();
-            hash->push_back(*reinterpret_cast<U64*>(&k));
-            hash->push_back(*reinterpret_cast<U64*>(&v));
-            hash->push_back(*reinterpret_cast<U64*>(&ld));
-            hash->push_back(*reinterpret_cast<U64*>(&rd));
+            hash->push_back(Hash64::toU64(k));
+            hash->push_back(Hash64::toU64(v));
+            hash->push_back(Hash64::toU64(ld));
+            hash->push_back(Hash64::toU64(rd));
         }
     }
 }

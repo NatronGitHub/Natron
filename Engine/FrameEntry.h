@@ -93,8 +93,8 @@ namespace Natron{
         void fillHash(Hash64* hash) const {
             hash->append(_time);
             hash->append(_treeVersion);
-            hash->append(*reinterpret_cast<const U64*>(&_zoomFactor));
-            hash->append(*reinterpret_cast<const U64*>(&_exposure));
+            hash->append(_zoomFactor);
+            hash->append(_exposure);
             hash->append(_lut);
             hash->append(_bitDepth);
             hash->append(_channels);
@@ -108,7 +108,7 @@ namespace Natron{
             hash->append(_displayWindow.top());
             hash->append(_displayWindow.bottom());
             double ap = _displayWindow.getPixelAspect();
-            hash->append(*reinterpret_cast<const U64*>(&ap));
+            hash->append(ap);
             hash->append(_textureRect.x);
             hash->append(_textureRect.y);
             hash->append(_textureRect.r);

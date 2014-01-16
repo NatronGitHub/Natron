@@ -653,7 +653,7 @@ OfxStatus Natron::OfxHost::mutexLock(const OfxMutexHandle mutex) {
     }
     // suite functions should not throw
     try {
-        const_cast<QMutex*>(reinterpret_cast<const QMutex*>(mutex))->lock();
+        reinterpret_cast<QMutex*>(mutex)->lock();
         return kOfxStatOK;
     } catch (std::bad_alloc) {
         qDebug() << "mutexLock(): memory error.";
@@ -673,7 +673,7 @@ OfxStatus Natron::OfxHost::mutexUnLock(const OfxMutexHandle mutex) {
     }
     // suite functions should not throw
     try {
-        const_cast<QMutex*>(reinterpret_cast<const QMutex*>(mutex))->unlock();
+        reinterpret_cast<QMutex*>(mutex)->unlock();
         return kOfxStatOK;
     } catch (std::bad_alloc) {
         qDebug() << "mutexUnLock(): memory error.";
@@ -693,7 +693,7 @@ OfxStatus Natron::OfxHost::mutexTryLock(const OfxMutexHandle mutex) {
     }
     // suite functions should not throw
     try {
-        if (const_cast<QMutex*>(reinterpret_cast<const QMutex*>(mutex))->tryLock()) {
+        if (reinterpret_cast<QMutex*>(mutex)->tryLock()) {
             return kOfxStatOK;
         } else {
             return kOfxStatFailed;
