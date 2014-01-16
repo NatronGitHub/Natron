@@ -89,10 +89,11 @@ void SpinBox::mousePressEvent(QMouseEvent* e){
 QString SpinBox::setNum(double cur)
 {
     switch (_type) {
-        case DOUBLE_SPINBOX:
-            return QString().setNum(cur,'f',_decimals);
         case INT_SPINBOX:
             return QString().setNum((int)cur);
+        case DOUBLE_SPINBOX:
+        default:
+            return QString().setNum(cur,'f',_decimals);
     }
 }
 
@@ -145,13 +146,14 @@ void SpinBox::keyPressEvent(QKeyEvent *e){
         double cur= text().toDouble(&ok);
         double maxiD,miniD;
         switch (_type) {
-            case DOUBLE_SPINBOX:
-                maxiD = _maxi.toDouble();
-                miniD = _mini.toDouble();
-                break;
             case INT_SPINBOX:
                 maxiD = _maxi.toInt();
                 miniD = _mini.toInt();
+                break;
+            case DOUBLE_SPINBOX:
+            default:
+                maxiD = _maxi.toDouble();
+                miniD = _mini.toDouble();
                 break;
         }
         if(e->key() == Qt::Key_Up){
