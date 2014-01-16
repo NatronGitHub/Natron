@@ -82,7 +82,7 @@ LIBS is the path to the libs
 
 boost {
     INCLUDEPATH += /opt/local/include
-    LIBS += -L/opt/local/lib -lboost_serialization-mt -lboost_thread-mt - lboost_system-mt
+    LIBS += -L/opt/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
 }
 
 ###Build with Makefile

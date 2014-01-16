@@ -165,18 +165,26 @@ bool OfxClipInstance::getContinuousSamples() const
 }
 
 
-/// override this to return the rod on the clip cannoical coords!
+/// override this to return the rod on the clip canonical coords!
 OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 {
     OfxRectD ret;
     RectI rod;
     EffectInstance* n = getAssociatedNode();
     if (n && n != _nodeInstance) {
-        (void)n->getRegionOfDefinition(time,&rod);
-        ret.x1 = rod.left();
-        ret.x2 = rod.right();
-        ret.y1 = rod.bottom();
-        ret.y2 = rod.top();
+        Natron::Status st = n->getRegionOfDefinition(time,&rod);
+        if (st == StatFailed) {
+            assert(!"cannot compute ROD");
+            ret.x1 = kOfxFlagInfiniteMin;
+            ret.x2 = kOfxFlagInfiniteMax;
+            ret.y1 = kOfxFlagInfiniteMin;
+            ret.y2 = kOfxFlagInfiniteMax;
+        } else {
+            ret.x1 = rod.left();
+            ret.x2 = rod.right();
+            ret.y1 = rod.bottom();
+            ret.y2 = rod.top();
+        }
     } else if(_nodeInstance && _nodeInstance->effectInstance()) {
         _nodeInstance->effectInstance()->getProjectOffset(ret.x1, ret.y1);
         _nodeInstance->effectInstance()->getProjectExtent(ret.x2, ret.y2);

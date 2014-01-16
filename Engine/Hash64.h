@@ -48,11 +48,16 @@ public:
     bool valid() const {return hash != 0;}
     
     template<typename T>
-    void append(T value) {
+    static U64 toU64(T value) {
         BOOST_STATIC_ASSERT(sizeof(T) <= 8);
         alias_cast_t<T> ac;
         ac.data = value;
-        node_values.push_back(ac.raw);
+        return ac.raw;
+    }
+
+    template<typename T>
+    void append(T value) {
+        node_values.push_back(toU64(value));
     }
 
     bool operator== (const Hash64& h) const {
@@ -62,7 +67,7 @@ public:
         return this->hash==h.value();
 
     }
-    
+
 private:
     template<typename T>
     struct alias_cast_t

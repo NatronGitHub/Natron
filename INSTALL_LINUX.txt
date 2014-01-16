@@ -56,10 +56,7 @@ LIBS is the path to the libs
 
 ----- copy and paste the following in a terminal -----
 cat > config.pri << EOF
-boost{
-    INCLUDEPATH += /usr/include
-    LIBS += -L/usr/lib/ -lboost_serialization -lboost_thread -lboost_system
-}
+boost: LIBS += -lboost_serialization -lboost_thread -lboost_system
 EOF
 ----- end -----
 
