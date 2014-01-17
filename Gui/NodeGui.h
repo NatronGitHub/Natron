@@ -196,6 +196,14 @@ public slots:
     /*pos is in global coordinates*/
     void showMenu(const QPoint& pos);
     
+    void onRenderingStarted();
+    
+    void onRenderingFinished();
+    
+    void onInputNRenderingStarted(int input);
+    
+    void onInputNRenderingFinished(int input);
+    
 signals:
     void nameChanged(QString);
     

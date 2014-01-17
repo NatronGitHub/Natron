@@ -73,6 +73,7 @@ void ScaleSlider::paintGL(){
     }
     double w = (double)width();
     double h = (double)height();
+    checkGLErrors();
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
     //assert(_zoomCtx._zoomFactor > 0);

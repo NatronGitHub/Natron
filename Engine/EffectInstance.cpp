@@ -295,7 +295,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
     if(identity){
 
         boost::shared_ptr<Natron::Image> inputImage = getImage(inputNbIdentity,inputTimeIdentity,scale,view);
-        if(!inputImage){
+        if(!inputImage) {
             QString err("Error in EffectInstance::renderRoI(): getImage(");
             err.append(QString::number(inputNbIdentity));
             err.append(",");
@@ -308,7 +308,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
             err.append(QString::number(view));
             err.append(") returned NULL");
             throw std::runtime_error(err.toStdString());
-        }else{
+        } else {
 #ifdef NATRON_LOG
             Natron::Log::print("The effect is an identity");
             Natron::Log::endFunction(getName(),"renderRoI");
@@ -379,10 +379,20 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
              in order to maintain a shared_ptr use_count > 1 so the cache doesn't attempt
              to remove them.*/
             for (RoIMap::const_iterator it2 = inputsRoi.begin(); it2!= inputsRoi.end(); ++it2) {
+                
+                ///notify the node that we're going to render something with the input
+                int inputNb = getInputNumber(it2->first);
+                assert(inputNb != -1); //< see getInputNumber
+                
+                _node->notifyInputNIsRendering(inputNb);
+                
                 boost::shared_ptr<const Natron::Image> inputImg = it2->first->renderRoI(time, scale,view, it2->second,byPassCache);
                 if (inputImg) {
                     inputImages.push_back(inputImg);
                 }
+                
+                _node->notifyInputNIsFinishedRendering(inputNb);
+                
                 if (aborted()) {
                     //if render was aborted, remove the frame from the cache as it contains only garbage
                     appPTR->removeFromNodeCache(image);
@@ -390,6 +400,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                     return image;
                 }
             }
+            
+            ///notify the node we're starting a render
+            _node->notifyRenderingStarted();
+            
             /*depending on the thread-safety of the plug-in we render with a different
              amount of threads*/
             EffectInstance::RenderSafety safety = renderThreadSafety();
@@ -437,6 +451,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                     }
                 } break;
             }
+            
+            ///notify the node we've finished rendering
+            _node->notifyRenderingEnded();
         }
     } else {
 #ifdef NATRON_LOG
@@ -607,6 +624,15 @@ void EffectInstance::setPersistentMessage(Natron::MessageType type,const std::st
 
 void EffectInstance::clearPersistentMessage() {
     _node->clearPersistentMessage();
+}
+
+int EffectInstance::getInputNumber(Natron::EffectInstance* inputEffect) const {
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i] == inputEffect) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 OutputEffectInstance::OutputEffectInstance(Node* node)

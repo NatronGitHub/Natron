@@ -31,6 +31,9 @@ Edge::Edge(int inputNb_, double angle_, NodeGui *dest_, QGraphicsItem *parent)
 , arrowHead()
 , dest(dest_)
 , source(NULL)
+, _defaultColor(Qt::black)
+, _renderingColor(243,149,0)
+, _useRenderingColor(false)
 {
     assert(dest);
     setPen(QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
@@ -231,7 +234,11 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * options,
      (void)options;
      QPen myPen = pen();
      
-     myPen.setColor(Qt::black);
+     if (_useRenderingColor) {
+         myPen.setColor(_renderingColor);
+     } else {
+         myPen.setColor(_defaultColor);
+     }
      if(dest->getNode()->getLiveInstance()->isInputOptional(inputNb)){
          QVector<qreal> dashStyle;
          qreal space = 4;
@@ -242,7 +249,11 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * options,
      }
      
      painter->setPen(myPen);
-     painter->setBrush(Qt::black);
+     if (_useRenderingColor) {
+         painter->setBrush(_renderingColor);
+     } else {
+         painter->setBrush(_defaultColor);
+     }
      painter->drawLine(line());
      painter->drawPolygon(arrowHead);
 

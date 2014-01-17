@@ -331,6 +331,14 @@ public:
     
     void purgeAllInstancesCaches();
     
+    void notifyInputNIsRendering(int inputNb) { emit inputNIsRendering(inputNb); }
+    
+    void notifyInputNIsFinishedRendering(int inputNb) { emit inputNIsFinishedRendering(inputNb); }
+    
+    void notifyRenderingStarted() { emit renderingStarted(); }
+    
+    void notifyRenderingEnded() { emit renderingEnded(); }
+    
 public slots:
     
     void onGUINameChanged(const QString& str);
@@ -378,8 +386,14 @@ signals:
     
     void channelsChanged(const Natron::ChannelSet&);
 
-    //void frameRangeChanged(int,int);
-
+    void inputNIsRendering(int inputNb);
+    
+    void inputNIsFinishedRendering(int inputNb);
+    
+    void renderingStarted();
+    
+    void renderingEnded();
+    
 protected:
     // FIXME: all data members should be private, use getter/setter instead
     std::map<int,Node*> _inputs;//only 1 input per slot

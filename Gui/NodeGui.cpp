@@ -82,6 +82,13 @@ NodeGui::NodeGui(NodeGraph* dag,
     QObject::connect(_internalNode, SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)));
     QObject::connect(_internalNode, SIGNAL(persistentMessageChanged(int,QString)), this, SLOT(onPersistentMessageChanged(int,QString)));
     QObject::connect(_internalNode, SIGNAL(persistentMessageCleared()), this, SLOT(onPersistentMessageCleared()));
+    
+    QObject::connect(_internalNode, SIGNAL(renderingStarted()), this, SLOT(onRenderingStarted()));
+    QObject::connect(_internalNode, SIGNAL(renderingEnded()), this, SLOT(onRenderingFinished()));
+    QObject::connect(_internalNode, SIGNAL(inputNIsRendering(int)), this, SLOT(onInputNRenderingStarted(int)));
+    QObject::connect(_internalNode, SIGNAL(inputNIsFinishedRendering(int)), this, SLOT(onInputNRenderingFinished(int)));
+
+
     /*Disabled for now*/
     
     setCacheMode(DeviceCoordinateCache);
@@ -611,4 +618,25 @@ QUndoStack* NodeGui::getUndoStack() const{
     } else {
         return NULL;
     }
+}
+
+void NodeGui::onRenderingStarted() {
+    _stateIndicator->setBrush(Qt::yellow);
+    _stateIndicator->show();
+}
+
+void NodeGui::onRenderingFinished() {
+    _stateIndicator->hide();
+}
+
+void NodeGui::onInputNRenderingStarted(int input) {
+    std::map<int,Edge*>::iterator it = _inputEdges.find(input);
+    assert(it != _inputEdges.end());
+    it->second->turnOnRenderingColor();
+}
+
+void NodeGui::onInputNRenderingFinished(int input) {
+    std::map<int,Edge*>::iterator it = _inputEdges.find(input);
+    assert(it != _inputEdges.end());
+    it->second->turnOffRenderingColor();
 }

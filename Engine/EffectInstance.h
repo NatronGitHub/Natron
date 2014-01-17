@@ -440,8 +440,9 @@ protected:
      **/
     virtual void cloneExtras(){}
     
-private:
     Node* _node; //< the node holding this effect
+
+private:
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
     
@@ -461,6 +462,11 @@ private:
     Natron::Status tiledRenderingFunctor(const RenderArgs& args,
                                const RectI& roi,
                                boost::shared_ptr<Natron::Image> output);
+    
+    /**
+     * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.
+     **/
+    int getInputNumber(Natron::EffectInstance* inputEffect) const;
 };
 
 /**

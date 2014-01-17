@@ -65,7 +65,10 @@ public:
     
     void setAngle(double a){angle = a;}
     
-
+    void turnOnRenderingColor() { _useRenderingColor = true; update(); }
+    
+    void turnOffRenderingColor() { _useRenderingColor = false; update(); }
+    
 private:
 
     int inputNb;
@@ -75,6 +78,9 @@ private:
     QPolygonF arrowHead;
     NodeGui* dest;
     NodeGui* source;
+    QColor _defaultColor;
+    QColor _renderingColor;
+    bool _useRenderingColor;
 };
 
 #endif // NATRON_GUI_EDGE_H_

@@ -289,7 +289,11 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
             // it comes from Natron itself. All exceptions from plugins are already caught
             // by the HostSupport library.
             //try{
+            int inputIndex = activeInput();
+            _node->notifyInputNIsRendering(inputIndex);
             inputImage = it->first->renderRoI(time, scale,view,it->second,byPassCache);
+            _node->notifyInputNIsFinishedRendering(inputIndex);;
+            
             //} catch (...) {
             //    //plugin should have posted a message
             //    return StatFailed;

@@ -258,6 +258,7 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
             texture = c->texID;
             glBindTexture(GL_TEXTURE_2D, texture);
         }
+        checkGLErrors();
         glBegin(GL_QUADS);
         glTexCoord2f(c->xTexCoords[0], c->yTexCoords[0]);
         glVertex2f(0, 0);
@@ -266,10 +267,9 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
         glTexCoord2f(c->xTexCoords[1], c->yTexCoords[1]);
         glVertex2f(c->w, c->h);
         glTexCoord2f(c->xTexCoords[0], c->yTexCoords[1]);
-        checkGLErrors();
         glVertex2f(0, c->h);
-        checkGLErrors();
         glEnd();
+        checkGLErrors();
         glTranslatef(c->w, 0, 0);
         checkGLErrors();
 
