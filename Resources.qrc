@@ -58,5 +58,6 @@
         <file>Resources/Images/checkbox_animation2_unchecked.png</file>
         <file>Resources/Images/checkbox_animation2_unchecked_hovered.png</file>
         <file>Resources/Images/color_picker.png</file>
+        <file>Resources/OpenColorIO-Configs/nuke-default/config.ocio</file>
     </qresource>
 </RCC>

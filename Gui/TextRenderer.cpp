@@ -6,6 +6,8 @@
 
 #include "Gui/TextRenderer.h"
 
+#include <boost/shared_ptr.hpp>
+
 #include <QtCore/QString>
 #include <QtGui/QFont>
 #include <QtGui/QImage>
@@ -43,8 +45,41 @@ struct TextRendererPrivate {
     QFont _font;
 
     QFontMetrics _fontMetrics;
+    
+    struct QColor_less {
+        bool operator() (const QColor& lhs, const QColor& rhs) const {
+            if (lhs.redF() < rhs.redF()) {
+                return true;
+            } else if(lhs.redF() > rhs.redF()) {
+                return false;
+            } else {
+                if(lhs.greenF() < rhs.greenF()) {
+                    return true;
+                } else if(lhs.greenF() > rhs.greenF()) {
+                    return false;
+                } else {
+                    if(lhs.blueF() < rhs.blueF()) {
+                        return true;
+                    } else if(lhs.blueF() > rhs.blueF()) {
+                        return false;
+                    } else {
+                        if(lhs.alphaF() < rhs.alphaF()) {
+                            return true;
+                        } else if(lhs.alphaF() > rhs.alphaF()) {
+                            return false;
+                        } else {
+                            return false; //< r,g,b,a components are equals
+                        }
+                    }
+                }
+            }
+        }
+    };
 
-    QHash<ushort, std::vector<std::pair<QColor, CharBitmap> > > _bitmapsCache;
+    ///foreach unicode character, a map registering for each color the rendered character.
+    typedef std::map<QColor,CharBitmap,QColor_less> TexturedCharMap;
+    typedef QHash<ushort, TexturedCharMap > BitmapCache;
+    BitmapCache _bitmapsCache;
 
     std::list<GLuint> _usedTextures;
 
@@ -53,7 +88,7 @@ struct TextRendererPrivate {
     GLint _yOffset;
 };
 
-typedef std::vector<std::pair<QFont, TextRendererPrivate *> > FontRenderers;
+    typedef std::map<QFont, boost::shared_ptr<TextRendererPrivate> > FontRenderers;
 
 }
 
@@ -99,25 +134,16 @@ CharBitmap *TextRendererPrivate::createCharacter(QChar c, const QColor &color)
     ushort unic = c.unicode();
 
     //c is already in the cache
-    QHash<ushort, std::vector<std::pair<QColor, CharBitmap> > >::iterator it = _bitmapsCache.find(unic);
-    std::vector<std::pair<QColor, CharBitmap> >::iterator it2;
+    BitmapCache::iterator it = _bitmapsCache.find(unic);
     if (it != _bitmapsCache.end()) {
-        for (it2 = it.value().begin(); it2 != it.value().end(); ++it2) {
-            const QColor &found = (*it2).first;
-            if (found.redF() == color.redF() &&
-                found.greenF() == color.greenF() &&
-                found.blueF() == color.blueF() &&
-                found.alphaF() == color.alphaF()) {
-                break;
-            }
-        }
+        TexturedCharMap::iterator it2 = it.value().find(color);
         if (it2 != it.value().end()) {
             return &(*it2).second;
         }
     }
 
     GLint currentBoundPBO;
-    //if a pbo is already mapped, return, this would make the glTex** calls fail
+    //if a pbo is already mapped, this would make the glTex** calls fail
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
     assert(currentBoundPBO == 0);
 
@@ -152,7 +178,7 @@ CharBitmap *TextRendererPrivate::createCharacter(QChar c, const QColor &color)
 
 
     if (it == _bitmapsCache.end()) {
-        std::vector<std::pair<QColor, CharBitmap> > newHash;
+        TexturedCharMap newHash;
         it = _bitmapsCache.insert(unic, newHash);
     }
     CharBitmap character;
@@ -167,8 +193,9 @@ CharBitmap *TextRendererPrivate::createCharacter(QChar c, const QColor &color)
     character.yTexCoords[0] = (GLfloat)_yOffset / TEXTURE_SIZE;
     character.yTexCoords[1] = (GLfloat)(_yOffset + height) / TEXTURE_SIZE;
 
-    it.value().push_back(std::make_pair(color, character)); // insert a new charactr
-
+    std::pair<TexturedCharMap::iterator,bool> retIt = it.value().insert(std::make_pair(color, character)); // insert a new charactr
+    assert(retIt.second);
+    
     _xOffset += width;
     if (_xOffset + _fontMetrics.maxWidth() >= TEXTURE_SIZE) {
         _xOffset = 1;
@@ -178,7 +205,8 @@ CharBitmap *TextRendererPrivate::createCharacter(QChar c, const QColor &color)
         newTransparantTexture();
         _yOffset = 1;
     }
-    return &(it.value().back().second);
+
+    return &(retIt.first->second);
 }
 
 
@@ -187,7 +215,7 @@ struct TextRenderer::Implementation {
     Implementation()
         : renderers() {}
 
-    mutable FontRenderers renderers;
+    FontRenderers renderers;
 };
 
 TextRenderer::TextRenderer()
@@ -197,28 +225,20 @@ TextRenderer::TextRenderer()
 
 TextRenderer::~TextRenderer()
 {
-    for (FontRenderers::iterator it = _imp->renderers.begin(); it != _imp->renderers.end(); ++it) {
-        delete(*it).second;
-    }
 }
 
 
 void TextRenderer::renderText(float x, float y, const QString &text, const QColor &color, const QFont &font) const
 {
-
-    TextRendererPrivate *p = NULL;
-    FontRenderers::iterator it;
-    for (it = _imp->renderers.begin() ; it != _imp->renderers.end(); ++it) {
-        if ((*it).first == font) {
-            break;
-        }
-    }
+    boost::shared_ptr<TextRendererPrivate> p;
+    FontRenderers::iterator it = _imp->renderers.find(font);
     if (it != _imp->renderers.end()) {
         p  = (*it).second;
     } else {
-        p = new TextRendererPrivate(font);
-        _imp->renderers.push_back(std::make_pair(font, p));
+        p = boost::shared_ptr<TextRendererPrivate>(new TextRendererPrivate(font));
+        _imp->renderers[font] = p;
     }
+    assert(p);
     glColor4f(1., 1., 1., 1.);
     glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
     glPushMatrix();
@@ -255,7 +275,5 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
     glPopAttrib();
     checkGLErrors();
     glColor4f(1., 1., 1., 1.);
-
-
 }
 

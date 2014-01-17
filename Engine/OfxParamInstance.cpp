@@ -1855,7 +1855,8 @@ OfxParametricInstance::OfxParametricInstance(OfxEffectInstance* node, OFX::Host:
 
 void OfxParametricInstance::onResetToDefault(const QVector<int>& dimensions){
     for (int i = 0; i < dimensions.size(); ++i) {
-        _knob->deleteAllControlPoints(dimensions.at(i));
+        Natron::Status st = _knob->deleteAllControlPoints(dimensions.at(i));
+        assert(st == Natron::StatOK);
         defaultInitializeFromDescriptor(dimensions.at(i),_descriptor);
     }
 }

@@ -257,8 +257,7 @@ void TabWidget::closePane(){
     }
     assert(other);
     other->removeSplit(this);
-    
-    
+
     /*Removing "what" from the container and delete it*/
     setVisible(false);
     //move all its tabs to the other TabWidget

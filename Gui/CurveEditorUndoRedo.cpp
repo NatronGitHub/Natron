@@ -73,15 +73,17 @@ void RemoveKeysCommand::addOrRemoveKeyframe(bool add){
         if(add){
             if (_keys[i].first->getKnob()->getKnob()->typeName() == Parametric_Knob::typeNameStatic()) {
                 boost::shared_ptr<Parametric_Knob> knob = boost::dynamic_pointer_cast<Parametric_Knob>(_keys[i].first->getKnob()->getKnob());
-                knob->addControlPoint(_keys[i].first->getDimension(), _keys[i].second.getTime(),_keys[i].second.getValue());
+                Natron::Status st = knob->addControlPoint(_keys[i].first->getDimension(), _keys[i].second.getTime(),_keys[i].second.getValue());
+                assert(st == Natron::StatOK);
             }else{
                 _keys[i].first->getKnob()->setKeyframe(_keys[i].second.getTime(), _keys[i].first->getDimension());
             }
         }else{
             if (_keys[i].first->getKnob()->getKnob()->typeName() == Parametric_Knob::typeNameStatic()) {
                 boost::shared_ptr<Parametric_Knob> knob = boost::dynamic_pointer_cast<Parametric_Knob>(_keys[i].first->getKnob()->getKnob());
-                knob->deleteControlPoint(_keys[i].first->getDimension(),
+                Natron::Status st = knob->deleteControlPoint(_keys[i].first->getDimension(),
                                          _keys[i].first->getInternalCurve()->keyFrameIndex(_keys[i].second.getTime()));
+                assert(st == Natron::StatOK);
             }else{
                 _keys[i].first->getKnob()->removeKeyFrame(_keys[i].second.getTime(), _keys[i].first->getDimension());
             }

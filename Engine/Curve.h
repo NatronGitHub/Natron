@@ -138,59 +138,44 @@ public:
     **/
     void clone(const Curve& other);
 
-    bool isAnimated() const;
+    bool isAnimated() const WARN_UNUSED_RETURN;
     
     /**
      * @brief Returns true if the Curve represents a string animation, in which case the user cannot
      * modify the Y component of the curve.
      **/
-    bool isYComponentMovable() const;
+    bool isYComponentMovable() const WARN_UNUSED_RETURN;
     
     /**whether the curve will clamp possible keyframe X values to integers or not.**/
-    bool areKeyFramesTimeClampedToIntegers() const;
+    bool areKeyFramesTimeClampedToIntegers() const WARN_UNUSED_RETURN;
+
+    bool areKeyFramesValuesClampedToIntegers() const WARN_UNUSED_RETURN;
     
-    bool areKeyFramesValuesClampedToIntegers() const;
-    
-    bool areKeyFramesValuesClampedToBooleans() const;
+    bool areKeyFramesValuesClampedToBooleans() const WARN_UNUSED_RETURN;
 
     void setParametricRange(double a,double b);
-    
-    void getParametricRange(double* a,double* b);
-    
+
+    std::pair<double,double> getParametricRange() const WARN_UNUSED_RETURN;
+
     ///returns true if a keyframe was successfully added, false if it just replaced an already
     ///existing key at this time.
     bool addKeyFrame(KeyFrame key);
 
     void removeKeyFrame(double time);
-    
+
     void removeKeyFrameWithIndex(int index);
 
-    int keyFramesCount() const ;
+    int keyFramesCount() const WARN_UNUSED_RETURN;
 
-    double getMinimumTimeCovered() const;
+    double getMinimumTimeCovered() const WARN_UNUSED_RETURN;
 
-    double getMaximumTimeCovered() const;
+    double getMaximumTimeCovered() const WARN_UNUSED_RETURN;
 
-    double getValueAt(double t) const;
+    double getValueAt(double t) const WARN_UNUSED_RETURN;
 
-    const RectD& getBoundingBox() const ;
-
-    const KeyFrameSet& getKeyFrames() const;
+    const KeyFrameSet& getKeyFrames() const WARN_UNUSED_RETURN;
 
     void clearKeyFrames();
-
-    
-    /**
-     * @brief  Set the value of the keyframe positioned at index index and returns the new  keyframe.
-     * Also the index of the new keyframe is returned in newIndex.
-     **/
-    const KeyFrame& setKeyFrameValue(double value,int index,int* newIndex = NULL);
-
-    /**
-     * @brief Set the new time of the keyframe positioned at index index and returns the new keyframe.
-     * Also the index of the new keyframe is returned in newIndex.
-     **/
-    const KeyFrame& setKeyFrameTime(double time,int index,int* newIndex = NULL);
 
     /**
      * @brief Set the new value and time of the keyframe positioned at index index and returns the new  keyframe.
@@ -222,27 +207,42 @@ public:
      **/
     const KeyFrame& setKeyFrameInterpolation(Natron::KeyframeType interp,int index,int* newIndex = NULL);
 
-    void getCurveYRange(double &min,double &max) const;
+    std::pair<double,double> getCurveYRange() const WARN_UNUSED_RETURN;
     
-    void clampValueToCurveYRange(double &v) const;
+    KeyFrameSet::const_iterator find(double time) const WARN_UNUSED_RETURN;
     
-    KeyFrameSet::const_iterator find(double time) const;
+    KeyFrameSet::const_iterator keyframeAt(int index) const WARN_UNUSED_RETURN;
     
-    KeyFrameSet::const_iterator keyframeAt(int index) const;
+    int keyFrameIndex(double time) const WARN_UNUSED_RETURN;
     
-    int keyFrameIndex(double time) const;
-    
-    KeyFrameSet::const_iterator begin() const;
+    KeyFrameSet::const_iterator begin() const WARN_UNUSED_RETURN;
 
-    KeyFrameSet::const_iterator end() const;
+    KeyFrameSet::const_iterator end() const WARN_UNUSED_RETURN;
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
+
 private:
+
+    const RectD& getBoundingBox() const WARN_UNUSED_RETURN;
+
+    /**
+     * @brief  Set the value of the keyframe positioned at index index and returns the new  keyframe.
+     * Also the index of the new keyframe is returned in newIndex.
+     **/
+    const KeyFrame& setKeyFrameValue(double value,int index,int* newIndex = NULL) WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Set the new time of the keyframe positioned at index index and returns the new keyframe.
+     * Also the index of the new keyframe is returned in newIndex.
+     **/
+    const KeyFrame& setKeyFrameTime(double time,int index,int* newIndex = NULL) WARN_UNUSED_RETURN;
+
+    double clampValueToCurveYRange(double v) const WARN_UNUSED_RETURN;
 
     ///returns an iterator to the new keyframe in the keyframe set and
     ///a boolean indicating whether it removed a keyframe already existing at this time or not
-    std::pair<KeyFrameSet::iterator,bool> addKeyFrameNoUpdate(const KeyFrame& cp);
+    std::pair<KeyFrameSet::iterator,bool> addKeyFrameNoUpdate(const KeyFrame& cp) WARN_UNUSED_RETURN;
 
     
     /**
@@ -253,8 +253,9 @@ private:
     
     KeyFrameSet::iterator refreshDerivatives(CurveChangedReason reason, KeyFrameSet::iterator key);
 
-    KeyFrameSet::iterator setKeyFrameValueAndTimeNoUpdate(double value,double time, KeyFrameSet::iterator k);
+    KeyFrameSet::iterator setKeyFrameValueAndTimeNoUpdate(double value,double time, KeyFrameSet::iterator k) WARN_UNUSED_RETURN;
 
+private:
     boost::scoped_ptr<CurvePrivate> _imp;
 };
 

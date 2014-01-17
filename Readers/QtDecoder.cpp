@@ -269,7 +269,7 @@ SequenceTime QtReader::getSequenceTime(SequenceTime t)
             case 2: //bounce
                     //call this function recursively with the appropriate offset in the time range
             {
-                int sequenceIntervalsCount = timeOffsetFromStart / (last - first);
+                int sequenceIntervalsCount = (last == first) ? 0 : (timeOffsetFromStart / (last - first));
                 ///if the sequenceIntervalsCount is odd then do exactly like loop, otherwise do the load the opposite frame
                 if (sequenceIntervalsCount % 2 == 0) {
                     timeOffsetFromStart %= (int)(last - first + 1);
@@ -307,7 +307,7 @@ SequenceTime QtReader::getSequenceTime(SequenceTime t)
             case 2: //bounce
                     //call this function recursively with the appropriate offset in the time range
             {
-                int sequenceIntervalsCount = timeOffsetFromStart / (last - first);
+                int sequenceIntervalsCount = (last == first) ? 0 : (timeOffsetFromStart / (last - first));
                 ///if the sequenceIntervalsCount is odd then do exactly like loop, otherwise do the load the opposite frame
                 if (sequenceIntervalsCount % 2 == 0) {
                     timeOffsetFromStart %= (int)(last - first + 1);
@@ -424,11 +424,13 @@ Natron::Status QtReader::getRegionOfDefinition(SequenceTime time,RectI* rod){
 
 Natron::Status QtReader::render(SequenceTime /*time*/,RenderScale /*scale*/,
                                 const RectI& roi,int /*view*/,boost::shared_ptr<Natron::Image> output) {
-    int missingFrameCHoice = _missingFrameChoice->getValue<int>();
-    if(!_img && missingFrameCHoice == 1){
-        return StatFailed;
-    }else if(!_img && missingFrameCHoice == 2){
-        return StatOK;
+    int missingFrameChoice = _missingFrameChoice->getValue<int>();
+    if (!_img) {
+        if (!_img && missingFrameChoice == 2) { // black image
+            return StatOK;
+        }
+        assert(missingFrameChoice != 0); // nearest value - should never happen
+        return StatFailed; // error
     }
     
     assert(_img);

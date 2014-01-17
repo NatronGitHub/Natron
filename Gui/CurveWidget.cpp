@@ -1003,15 +1003,20 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
 
         
         for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-        
-            double curveYmin,curveYmax;
-            it->curve->getInternalCurve()->getCurveYRange(curveYmin, curveYmax);
-            double translatedValue = it->key.getValue() + dv;
             
-            if (translatedValue < curveYmin) {
-                dv += (curveYmin - translatedValue);
-            } else if( translatedValue > curveYmax) {
-                dv -= (curveYmax - translatedValue);
+            try {
+                std::pair<double,double> curveYRange =  it->curve->getInternalCurve()->getCurveYRange();
+                double translatedValue = it->key.getValue() + dv;
+                
+                if (translatedValue < curveYRange.first) {
+                    dv += (curveYRange.first - translatedValue);
+                } else if( translatedValue > curveYRange.second) {
+                    dv -= (curveYRange.second - translatedValue);
+                }
+                
+            } catch (const std::exception& e) {
+                std::cout << e.what() << std::endl;
+                return;
             }
             
             if (!it->curve->getInternalCurve()->isYComponentMovable()) {
@@ -1324,7 +1329,8 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
             //if we already computed the max movement for this curve, move on
             continue;
         }else{
-            
+            assert(it->curve);
+            assert(it->curve->getInternalCurve());
             const KeyFrameSet& ks = it->curve->getInternalCurve()->getKeyFrames();
             
             //find out in this set what is the first key selected
@@ -1347,18 +1353,16 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
             
             double minimumTimeSpanBetween2Keys = 1.;
             if(!it->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers()){
-                double curveMin,curveMax;
-                it->curve->getInternalCurve()->getParametricRange(&curveMin, &curveMax);
-                minimumTimeSpanBetween2Keys = 1e-4 * std::abs(curveMax - curveMin) * 10;//< be safe
+                std::pair<double,double> curveXRange = it->curve->getInternalCurve()->getParametricRange();
+                minimumTimeSpanBetween2Keys = 1e-4 * std::abs(curveXRange.second - curveXRange.first) * 10;//< be safe
             }
             
-            double curveMin,curveMax;
-            leftMostSelected->curve->getInternalCurve()->getParametricRange(&curveMin, &curveMax);
+            std::pair<double,double> curveXRange = leftMostSelected->curve->getInternalCurve()->getParametricRange();
             
             //now get leftMostSelected's previous key to determine the max left movement for this curve
             {
                 if(leftMost == ks.begin()){
-                    curveMaxMovement.setX(curveMin - leftMost->getTime());
+                    curveMaxMovement.setX(curveXRange.first - leftMost->getTime());
                 }else{
                     KeyFrameSet::const_iterator prev = leftMost;
                     --prev;
@@ -1372,7 +1376,7 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
                 KeyFrameSet::const_iterator next = rightMost;
                 ++next;
                 if(next == ks.end()){
-                    curveMaxMovement.setY(curveMax - rightMost->getTime());
+                    curveMaxMovement.setY(curveXRange.second - rightMost->getTime());
                 }else{
                     
                     curveMaxMovement.setY(next->getTime() - minimumTimeSpanBetween2Keys - rightMost->getTime());
