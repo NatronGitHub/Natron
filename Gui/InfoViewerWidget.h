@@ -41,7 +41,7 @@ public slots:
     void changeUserRect();
     void hideColorAndMouseInfo();
     void showColorAndMouseInfo();
-    void setFps(double v);
+    void setFps(double actualFps,double desiredFps);
     void hideFps();
     
 private:

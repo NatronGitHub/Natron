@@ -441,7 +441,7 @@ _viewerNode(node)
     QObject::connect(_centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()));
     QObject::connect(_viewerNode,SIGNAL(viewerDisconnected()),this,SLOT(disconnectViewer()));
     QObject::connect(fpsBox, SIGNAL(valueChanged(double)), vengine, SLOT(setDesiredFPS(double)));
-    QObject::connect(vengine, SIGNAL(fpsChanged(double)), _infosWidget, SLOT(setFps(double)));
+    QObject::connect(vengine, SIGNAL(fpsChanged(double,double)), _infosWidget, SLOT(setFps(double,double)));
     QObject::connect(vengine,SIGNAL(engineStopped()),_infosWidget,SLOT(hideFps()));
     QObject::connect(vengine, SIGNAL(engineStarted(bool)), this, SLOT(onEngineStarted(bool)));
     QObject::connect(vengine, SIGNAL(engineStopped()), this, SLOT(onEngineStopped()));

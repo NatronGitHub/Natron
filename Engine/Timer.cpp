@@ -167,6 +167,11 @@ Timer::setDesiredFrameRate (float fps)
     _spf = 1 / fps;
 }
 
+float
+Timer::getDesiredFrameRate() const
+{
+    return 1.f / _spf;
+}
 
 float
 Timer::actualFrameRate ()

@@ -30,13 +30,11 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
 
     layout = new QHBoxLayout(this);
     QString reso("<font color=\"#DBE0E0\">");
-    //char tmp[10];
     reso.append(viewer->getDisplayWindow().getName().c_str());
     reso.append("\t");
     reso.append("</font>");
     resolution = new QLabel(reso,this);
     resolution->setContentsMargins(0, 0, 0, 0);
-    //resolution->setMaximumWidth(resolution->sizeHint().width());
 
     
     QString bbox;
@@ -77,9 +75,6 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
     color->setMaximumSize(20, 20);
     color->setContentsMargins(0, 0, 0, 0);
     color->setStyleSheet(QString("background-color:black;"));
-   // QPixmap pix(15, 15);
-   // pix.fill(c);
-   // color->setPixmap(pix);
     
     QColor hsv= c.toHsv();
     QColor hsl= c.toHsl();
@@ -92,7 +87,6 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
         .arg(hsl.lightnessF(),0,'f',2);
     
     hvl_lastOption = new QLabel(this);
-  //  hvl_lastOption->setText(hsvlValues);
     hvl_lastOption->setContentsMargins(10, 0, 0, 0);
     
     
@@ -115,9 +109,14 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
 
 QSize InfoViewerWidget::sizeHint() const { return QSize(0,0); }
 
-void InfoViewerWidget::setFps(double v){
-    QString str = QString::number(v,'f',1);
-    str.append(" fps");
+void InfoViewerWidget::setFps(double actualFps,double desiredFps){
+    QString colorStr("green");
+    if (actualFps < (desiredFps -  desiredFps / 10.f) && actualFps > (desiredFps / 2.f)) {
+        colorStr = QString("orange");
+    } else if(actualFps < (desiredFps / 2.f)) {
+        colorStr = QString("red");
+    }
+    QString str = QString("<font color='"+colorStr+"'>%1 fps</font>").arg(QString::number(actualFps,'f',1));
     _fpsLabel->setText(str);
     if(!_fpsLabel->isVisible()){
         _fpsLabel->show();

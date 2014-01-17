@@ -262,7 +262,7 @@ signals:
     /**
      *@brief Signal emitted when the function waits the time due to display the frame.
      **/
-    void fpsChanged(double d);
+    void fpsChanged(double actualFrameRate,double desiredFrameRate);
     
 
     

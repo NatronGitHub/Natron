@@ -92,6 +92,8 @@ class Timer
     //-------------------------------------------------
 
     void	setDesiredFrameRate (float fps);
+    float   getDesiredFrameRate() const;
+    
     float	actualFrameRate ();
 
 
