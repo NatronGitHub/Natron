@@ -846,6 +846,102 @@ bool VideoEngine::mustQuit() const{
     return _mustQuit;
 }
 
+void VideoEngine::refreshTree(){
+    QMutexLocker l(&_treeMutex);
+    _tree.refreshTree();
+}
+
+void VideoEngine::drawTreeOverlays() {
+    QMutexLocker l(&_treeMutex);
+    if(_tree.getOutput()){
+        for (RenderTree::TreeIterator it = _tree.begin(); it!=_tree.end(); ++it) {
+            assert(it->first);
+            it->first->getLiveInstance()->drawOverlay();
+        }
+    }
+}
+
+void VideoEngine::notifyTreeOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos) {
+    QMutexLocker l(&_treeMutex);
+    if(_tree.getOutput()){
+        for (RenderTree::TreeIterator it = _tree.begin(); it!=_tree.end(); ++it) {
+            assert(it->first);
+            it->first->getLiveInstance()->onOverlayPenDown(viewportPos, pos);
+        }
+    }
+
+}
+
+void VideoEngine::notifyTreeOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos) {
+    QMutexLocker l(&_treeMutex);
+    if(_tree.getOutput()){
+        for (RenderTree::TreeIterator it = _tree.begin(); it!=_tree.end(); ++it) {
+            assert(it->first);
+            it->first->getLiveInstance()->onOverlayPenUp(viewportPos, pos);
+        }
+    }
+}
+
+void VideoEngine::notifyTreeOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos) {
+    QMutexLocker l(&_treeMutex);
+    if(_tree.getOutput()){
+        for (RenderTree::TreeIterator it = _tree.begin(); it!=_tree.end(); ++it) {
+            assert(it->first);
+            it->first->getLiveInstance()->onOverlayPenMotion(viewportPos, pos);
+        }
+    }
+}
+
+void VideoEngine::notifyTreeOverlaysKeyDown(QKeyEvent* e) {
+    QMutexLocker l(&_treeMutex);
+    if(_tree.getOutput()){
+        for (RenderTree::TreeIterator it = _tree.begin(); it!=_tree.end(); ++it) {
+            assert(it->first);
+            it->first->getLiveInstance()->onOverlayKeyDown(e);
+        }
+    }
+}
+
+void VideoEngine::notifyTreeOverlaysKeyUp(QKeyEvent* e) {
+    QMutexLocker l(&_treeMutex);
+    if(_tree.getOutput()){
+        for (RenderTree::TreeIterator it = _tree.begin(); it!=_tree.end(); ++it) {
+            assert(it->first);
+            it->first->getLiveInstance()->onOverlayKeyUp(e);
+        }
+    }
+}
+
+void VideoEngine::notifyTreeOverlaysKeyRepeat(QKeyEvent* e) {
+    QMutexLocker l(&_treeMutex);
+    if(_tree.getOutput()){
+        for (RenderTree::TreeIterator it = _tree.begin(); it!=_tree.end(); ++it) {
+            assert(it->first);
+            it->first->getLiveInstance()->onOverlayKeyRepeat(e);
+        }
+    }
+}
+
+void VideoEngine::notifyTreeOverlaysFocusGained() {
+    QMutexLocker l(&_treeMutex);
+    if(_tree.getOutput()){
+        for (RenderTree::TreeIterator it = _tree.begin(); it!=_tree.end(); ++it) {
+            assert(it->first);
+            it->first->getLiveInstance()->onOverlayFocusGained();
+        }
+    }
+}
+
+void VideoEngine::notifyTreeOverlaysFocusLost() {
+    QMutexLocker l(&_treeMutex);
+    if(_tree.getOutput()){
+        for (RenderTree::TreeIterator it = _tree.begin(); it!=_tree.end(); ++it) {
+            assert(it->first);
+            it->first->getLiveInstance()->onOverlayFocusLost();
+        }
+    }
+}
+
 BackgroundProcessAborter::BackgroundProcessAborter(VideoEngine* engine)
     :
       _engine(engine)

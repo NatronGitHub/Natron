@@ -336,22 +336,30 @@ public:
      *@brief Convenience function calling Tree::isOutputAViewer()
      **/
     bool isOutputAViewer() const {return _tree.isOutputAViewer();}
+  
+    //////////////
+    ///////////////////TREE RELATED FUNCTIONS - THREAD-SAFE /////////////////////
+    void refreshTree();
     
-    /**
-     *@returns Returns a const reference to the Tree used by the video engine.
-     *You should bracket dag.lock() and dag.unlock() before any operation on 
-     *the dag.
-     **/
-    const RenderTree& getTree() const {
-        QMutexLocker l(&_treeMutex);
-        return _tree;
-    }
+    void drawTreeOverlays();
     
+    void notifyTreeOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos);
     
-    void refreshTree(){
-        QMutexLocker l(&_treeMutex);
-        _tree.refreshTree();
-    }
+    void notifyTreeOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos);
+    
+    void notifyTreeOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos);
+    
+    void notifyTreeOverlaysKeyDown(QKeyEvent* e);
+    
+    void notifyTreeOverlaysKeyUp(QKeyEvent* e);
+    
+    void notifyTreeOverlaysKeyRepeat(QKeyEvent* e);
+    
+    void notifyTreeOverlaysFocusGained();
+    
+    void notifyTreeOverlaysFocusLost();
+    //////////////////////////////////////////////////////////////////////////////
+    ///////////////
     
 	/**
      *@returns Returns true if the engine is currently working.

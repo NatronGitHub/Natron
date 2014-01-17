@@ -463,93 +463,39 @@ void ViewerInstance::viewportSize(double &w,double &h) {
 }
 
 void ViewerInstance::drawOverlays() const{
-    const RenderTree& _dag = getVideoEngine()->getTree();
-    if(_dag.getOutput()){
-        for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
-            assert(it->first);
-            it->first->getLiveInstance()->drawOverlay();
-        }
-    }
+    getVideoEngine()->drawTreeOverlays();
 }
 
 void ViewerInstance::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos){
-    const RenderTree& _dag = getVideoEngine()->getTree();
-    if(_dag.getOutput()){
-        for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
-            assert(it->first);
-            it->first->getLiveInstance()->onOverlayPenDown(viewportPos, pos);
-        }
-    }
+    getVideoEngine()->notifyTreeOverlaysPenDown(viewportPos, pos);
 }
 
 void ViewerInstance::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos){
-    const RenderTree& _dag = getVideoEngine()->getTree();
-    if(_dag.getOutput()){
-        for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
-            assert(it->first);
-            it->first->getLiveInstance()->onOverlayPenMotion(viewportPos, pos);
-        }
-    }
+    getVideoEngine()->notifyTreeOverlaysPenMotion(viewportPos, pos);
 }
 
 void ViewerInstance::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos){
-    const RenderTree& _dag = getVideoEngine()->getTree();
-    if(_dag.getOutput()){
-        for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
-            assert(it->first);
-            it->first->getLiveInstance()->onOverlayPenUp(viewportPos, pos);
-        }
-    }
+    getVideoEngine()->notifyTreeOverlaysPenUp(viewportPos, pos);
 }
 
 void ViewerInstance::notifyOverlaysKeyDown(QKeyEvent* e){
-    const RenderTree& _dag = getVideoEngine()->getTree();
-    if(_dag.getOutput()){
-        for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
-            assert(it->first);
-            it->first->getLiveInstance()->onOverlayKeyDown(e);
-        }
-    }
+    getVideoEngine()->notifyTreeOverlaysKeyDown(e);
 }
 
 void ViewerInstance::notifyOverlaysKeyUp(QKeyEvent* e){
-    const RenderTree& _dag = getVideoEngine()->getTree();
-    if(_dag.getOutput()){
-        for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
-            assert(it->first);
-            it->first->getLiveInstance()->onOverlayKeyUp(e);
-        }
-    }
+    getVideoEngine()->notifyTreeOverlaysKeyUp(e);
 }
 
 void ViewerInstance::notifyOverlaysKeyRepeat(QKeyEvent* e){
-    const RenderTree& _dag = getVideoEngine()->getTree();
-    if(_dag.getOutput()){
-        for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
-            assert(it->first);
-            it->first->getLiveInstance()->onOverlayKeyRepeat(e);
-        }
-    }
+    getVideoEngine()->notifyTreeOverlaysKeyRepeat(e);
 }
 
 void ViewerInstance::notifyOverlaysFocusGained(){
-    const RenderTree& _dag = getVideoEngine()->getTree();
-    if(_dag.getOutput()){
-        for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
-            assert(it->first);
-            it->first->getLiveInstance()->onOverlayFocusGained();
-        }
-    }
+    getVideoEngine()->notifyTreeOverlaysFocusGained();
 }
 
 void ViewerInstance::notifyOverlaysFocusLost(){
-    const RenderTree& _dag = getVideoEngine()->getTree();
-    if(_dag.getOutput()){
-        for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
-            assert(it->first);
-            it->first->getLiveInstance()->onOverlayFocusLost();
-        }
-    }
+    getVideoEngine()->notifyTreeOverlaysFocusLost();
 }
 
 bool ViewerInstance::isInputOptional(int n) const{
