@@ -331,13 +331,13 @@ public:
     
     void purgeAllInstancesCaches();
     
-    void notifyInputNIsRendering(int inputNb) { emit inputNIsRendering(inputNb); }
+    void notifyInputNIsRendering(int inputNb) ;
     
-    void notifyInputNIsFinishedRendering(int inputNb) { emit inputNIsFinishedRendering(inputNb); }
+    void notifyInputNIsFinishedRendering(int inputNb);
     
-    void notifyRenderingStarted() { emit renderingStarted(); }
+    void notifyRenderingStarted();
     
-    void notifyRenderingEnded() { emit renderingEnded(); }
+    void notifyRenderingEnded();
     
 public slots:
     

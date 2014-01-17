@@ -248,6 +248,10 @@ private:
     QGradient* _defaultGradient;
     
     QMenu* _menu;
+    
+    timeval _lastRenderStartedSlotCallTime;
+    timeval _lastInputNRenderStartedSlotCallTime;
+    bool _wasRenderStartedSlotRun; //< true if we changed the color of the widget after a call to onRenderingStarted
   
 };
 

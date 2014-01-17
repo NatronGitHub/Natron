@@ -847,6 +847,22 @@ void Node::purgeAllInstancesCaches(){
     _liveInstance->purgeCaches();
 }
 
+void Node::notifyInputNIsRendering(int inputNb) {
+    emit inputNIsRendering(inputNb);
+}
+
+void Node::notifyInputNIsFinishedRendering(int inputNb) {
+    emit inputNIsFinishedRendering(inputNb);
+}
+
+void Node::notifyRenderingStarted() {
+    emit renderingStarted();
+}
+
+void Node::notifyRenderingEnded() {
+    emit renderingEnded();
+}
+
 InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin,const std::string& name)
     : Node(app,plugin,name)
     , _inputsCount(1)
