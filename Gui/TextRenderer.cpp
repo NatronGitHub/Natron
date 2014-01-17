@@ -175,6 +175,7 @@ CharBitmap *TextRendererPrivate::createCharacter(QChar c, const QColor &color)
     glBindTexture(GL_TEXTURE_2D, texture);
     glTexSubImage2D(GL_TEXTURE_2D, 0, _xOffset, _yOffset, width, height, GL_RGBA,
                     GL_UNSIGNED_BYTE, image.bits());
+    checkGLErrors();
 
 
     if (it == _bitmapsCache.end()) {
@@ -247,6 +248,7 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     GLuint texture = 0;
     glTranslatef(x, y, 0);
+    checkGLErrors();
     for (int i = 0; i < text.length(); ++i) {
         CharBitmap *c = p->createCharacter(text[i], color);
         if (!c) {
@@ -256,7 +258,6 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
             texture = c->texID;
             glBindTexture(GL_TEXTURE_2D, texture);
         }
-
         glBegin(GL_QUADS);
         glTexCoord2f(c->xTexCoords[0], c->yTexCoords[0]);
         glVertex2f(0, 0);
@@ -265,10 +266,13 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
         glTexCoord2f(c->xTexCoords[1], c->yTexCoords[1]);
         glVertex2f(c->w, c->h);
         glTexCoord2f(c->xTexCoords[0], c->yTexCoords[1]);
+        checkGLErrors();
         glVertex2f(0, c->h);
+        checkGLErrors();
         glEnd();
-
         glTranslatef(c->w, 0, 0);
+        checkGLErrors();
+
     }
     glBindTexture(GL_TEXTURE_2D, 0);
     glPopMatrix();

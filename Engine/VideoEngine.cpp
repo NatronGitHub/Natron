@@ -53,6 +53,7 @@ using std::cout; using std::endl;
 VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
     : QThread(parent)
     , _tree(owner)
+    , _treeMutex()
     , _threadStarted(false)
     , _abortBeingProcessedMutex()
     , _abortBeingProcessed(false)
@@ -190,7 +191,7 @@ bool VideoEngine::startEngine() {
 
     
     if(_currentRunArgs._refreshTree)
-        _tree.refreshTree();/*refresh the tree*/
+        refreshTree();/*refresh the tree*/
     
     
     ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_tree.getOutput()); /*viewer might be NULL if the output is smthing else*/
@@ -665,7 +666,6 @@ RenderTree::RenderTree(EffectInstance *output):
   ,_sorted()
   ,_isViewer(false)
   ,_isOutputOpenFXNode(false)
-  ,_treeMutex(QMutex::Recursive) /*recursive lock*/
   ,_firstFrame(0)
   ,_lastFrame(0)
   ,_treeVersionValid(false)
@@ -701,7 +701,6 @@ void RenderTree::refreshTree(){
         ret = it->second->computeHash(inputsHash);
         inputsHash.push_back(ret);
     }
-    
 }
 
 

@@ -105,11 +105,6 @@ public:
      */
     void refreshTree();
     
-    /*Lock the dag. You should call this before any access*/
-    void lock() const { _treeMutex.lock(); }
-    
-    void unlock() const { _treeMutex.unlock(); }
-    
     /**
      *@brief Returns an iterator pointing to the first node in the graph in topological order.
      *Generally the first node is an input node.
@@ -193,7 +188,6 @@ private:
     TreeContainer _sorted; /*!<the sorted Tree*/
     bool _isViewer; /*!< true if the outputNode is a viewer, it avoids many dynamic_casts*/
     bool _isOutputOpenFXNode; /*!< true if the outputNode is an OpenFX node*/
-    mutable QMutex _treeMutex; /*!< protects the dag*/
     SequenceTime _firstFrame,_lastFrame;/*!< first frame and last frame of the union range of all inputs*/
     bool _treeVersionValid;
     Format _renderOutputFormat;
@@ -348,10 +342,14 @@ public:
      *You should bracket dag.lock() and dag.unlock() before any operation on 
      *the dag.
      **/
-    const RenderTree& getTree() const { return _tree; }
+    const RenderTree& getTree() const {
+        QMutexLocker l(&_treeMutex);
+        return _tree;
+    }
     
     
     void refreshTree(){
+        QMutexLocker l(&_treeMutex);
         _tree.refreshTree();
     }
     
@@ -430,6 +428,7 @@ private:
     };
 
     RenderTree _tree; /*!< The internal Tree instance.*/
+    mutable QMutex _treeMutex; /*!< protects the dag*/
 
     bool _threadStarted;
 
