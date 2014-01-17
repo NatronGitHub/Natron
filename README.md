@@ -12,18 +12,19 @@ The project source code repository is https://github.com/MrKepzie/Natron
 Features
 --------
 
-- Support for many open-source and commercial OpenFX plugins: 
-
+- Support for many free and open-source OpenFX plugins: 
  * [TuttleOFX](https://sites.google.com/site/tuttleofx/)
- * [Furnace by The FOundry](http://www.thefoundry.co.uk/products/furnace/)
+ * [OpenFX-IO](https://github.com/MrKepzie/openfx-io) to read anything else
+   than standard 8-bits images
+ * [OpenFX-Misc](https://github.com/devernay/openfx-misc)
+ * [OpenFX-Yadif deinterlacer](https://github.com/devernay/openfx-yadif)
+ * [OpenFX-Vegas SDK samples](https://github.com/devernay/openfx-vegas)
+ * [OpenFX samples](https://github.com/devernay/openfx) (in the Support and Examples directories)
+
+- Support for commercial OpenFX plugins:
+ * [Furnace by The Foundry](http://www.thefoundry.co.uk/products/furnace/)
  * [GenArts Sapphire](http://www.genarts.com/software/sapphire/overview)
- * Various open-source plugins:
-   [IO](https://github.com/MrKepzie/openfx-io) to read anything else
-   than standard 8-bits images,
-   [Misc](https://github.com/devernay/openfx-misc),
-   [Yadif deinterlacer](https://github.com/devernay/openfx-yadis),
-   [Vegas SDK samples](https://github.com/devernay/openfx-vegas)...
- * and many more...
+ * And probably many more. Please tell us if you successfully tested other commercial plugins.
 
 - OpenFX: Currently almost all features of OpenFX v1.3 are supported
   (see Documentation/ofxActionsSupported.rtf and
