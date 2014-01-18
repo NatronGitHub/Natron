@@ -1474,7 +1474,10 @@ void ViewerGL::onProjectFormatChanged(const Format& format){
     _imp->resolutionOverlay.append("x");
     _imp->resolutionOverlay.append(QString::number(format.height()));
     fitToFormat(format);
-    _imp->viewerTab->getInternalNode()->refreshAndContinueRender();
+    
+    if(_imp->displayingImage) {
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender();
+    }
 
 }
 

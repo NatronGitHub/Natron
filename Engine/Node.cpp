@@ -644,8 +644,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
             float r = clamp(Natron::Color::to_func_srgb(src_pixels[nearestX*4]));
             float g = clamp(Natron::Color::to_func_srgb(src_pixels[nearestX*4+1]));
             float b = clamp(Natron::Color::to_func_srgb(src_pixels[nearestX*4+2]));
-            float a = clamp(src_pixels[nearestX*4+3]);
-            dst_pixels[j] = qRgba(r*255, g*255, b*255, a*255);
+            dst_pixels[j] = qRgba(r*255, g*255, b*255, 255);
 
         }
     }
