@@ -278,9 +278,6 @@ void Project::load(const ProjectSerialization& obj){
 void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller){
     
     
-    ///lock the project
-    getApp()->lockProject();
-    
     ///increase the begin calls count
     ++_imp->beginEndBracketsCount;
     
@@ -299,9 +296,7 @@ void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,Kno
         ///increase the begin calls count of 1
         ++found->second.first;
     }
-    
-    ///don't forget to unlock the project
-    getApp()->unlockProject();
+
 
 }
 
@@ -310,9 +305,6 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
     ///This function may be called outside of a begin/end bracket call, in which case we call them ourselves.
     
     bool wasBeginCalled = true;
-    
-    ///don't forget to lock the project
-    getApp()->lockProject();
 
     ///if begin was not called for this caller, call it ourselves
     ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
@@ -352,16 +344,11 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
     if(!wasBeginCalled){
         endProjectWideValueChanges(caller);
     }
-    
-    ///don't forget to unlock the project
-    getApp()->unlockProject();
 
 }
 
 void Project::endProjectWideValueChanges(KnobHolder* caller){
     
-    ///lock the project
-    getApp()->lockProject();
     
     ///decrease the beginEndBracket count
     --_imp->beginEndBracketsCount;
@@ -388,7 +375,6 @@ void Project::endProjectWideValueChanges(KnobHolder* caller){
     
     ///if we're not in the last begin/end bracket (globally to all callers) then return
     if(_imp->beginEndBracketsCount != 0){
-        getApp()->unlockProject();
         return;
     }
     
@@ -419,8 +405,6 @@ void Project::endProjectWideValueChanges(KnobHolder* caller){
     ///the stack must be empty, i.e: crash if the user didn't correctly end the brackets
     assert(_imp->holdersWhoseBeginWasCalled.empty());
     
-    getApp()->unlockProject();
-
 }
 
 void Project::beginKnobsValuesChanged(Natron::ValueChangedReason /*reason*/){

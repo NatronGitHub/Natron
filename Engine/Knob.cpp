@@ -370,7 +370,7 @@ void Knob::load(const KnobSerialization& serializationObj){
     }
     
     ///bracket value changes
-    beginValueChange(Natron::PLUGIN_EDITED);
+    beginValueChange(Natron::OTHER_REASON);
     
     const std::vector< boost::shared_ptr<Curve> >& serializedCurves = serializationObj.getCurves();
     for(U32 i = 0 ; i< serializedCurves.size();++i){

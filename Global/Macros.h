@@ -32,7 +32,7 @@
 #define NATRON_ROOT "/"
 #define NATRON_IMAGES_PATH ":/Resources/Images/"
 #define NATRON_APPLICATION_ICON_PATH NATRON_IMAGES_PATH "natronIcon256_linux.png"
-#define NATRON_DEFAULT_OCIO_CONFIG_PATH ":/Resources/OpenColorIO-Configs/nuke-default/config.ocio"
+#define NATRON_DEFAULT_OCIO_CONFIG_DIR_PATH ":/Resources/OpenColorIO-Configs/nuke-default"
 #define NATRON_PLUGINS_PATH  NATRON_ROOT "Plugins/"
 #define NATRON_KNOBS_PLUGINS_PATH NATRON_PLUGINS_PATH "Knobs/"
 #define NATRON_NODES_PLUGINS_PATH NATRON_PLUGINS_PATH "Nodes/"

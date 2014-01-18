@@ -59,5 +59,15 @@
         <file>Resources/Images/checkbox_animation2_unchecked_hovered.png</file>
         <file>Resources/Images/color_picker.png</file>
         <file>Resources/OpenColorIO-Configs/nuke-default/config.ocio</file>
+        <file>Resources/OpenColorIO-Configs/nuke-default/luts/alexalogc.spi1d</file>
+        <file>Resources/OpenColorIO-Configs/nuke-default/luts/cineon.spi1d</file>
+        <file>Resources/OpenColorIO-Configs/nuke-default/luts/panalog.spi1d</file>
+        <file>Resources/OpenColorIO-Configs/nuke-default/luts/ploglin.spi1d</file>
+        <file>Resources/OpenColorIO-Configs/nuke-default/luts/rec709.spi1d</file>
+        <file>Resources/OpenColorIO-Configs/nuke-default/luts/redlog.spi1d</file>
+        <file>Resources/OpenColorIO-Configs/nuke-default/luts/slog.spi1d</file>
+        <file>Resources/OpenColorIO-Configs/nuke-default/luts/srgb.spi1d</file>
+        <file>Resources/OpenColorIO-Configs/nuke-default/luts/srgbf.spi1d</file>
+        <file>Resources/OpenColorIO-Configs/nuke-default/luts/viperlog.spi1d</file>
     </qresource>
 </RCC>

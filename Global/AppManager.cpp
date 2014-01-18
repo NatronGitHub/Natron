@@ -409,7 +409,7 @@ Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVers
         }
         _gui->selectNode(nodegui);
     }
-    if (openImageFileDialog) {
+    if (openImageFileDialog && !requestedByLoad) {
         node->getLiveInstance()->openImageFileKnob();
     }
     
@@ -756,15 +756,18 @@ QString AppInstance::autoSavesDir() {
 
 
 void AppInstance::beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller){
+    QMutexLocker l(&_projectLock);
     _currentProject->beginProjectWideValueChanges(reason, caller);
 }
 
 void AppInstance::stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHolder* caller, Knob *k, bool isSignificant){
+    QMutexLocker l(&_projectLock);
     _currentProject->stackEvaluateRequest(reason, caller, k, isSignificant);
 }
 
 
 void AppInstance::endProjectWideValueChanges(KnobHolder* caller){
+    QMutexLocker l(&_projectLock);
     _currentProject->endProjectWideValueChanges(caller);
 }
 
