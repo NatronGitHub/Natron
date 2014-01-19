@@ -134,11 +134,9 @@ namespace Natron{
         /*This constructor can be used to allocate a local Image. The deallocation should
          then be handled by the user. Note that no view number is passed in parameter
          as it is not needed.*/
-        Image(const RectI& regionOfDefinition,RenderScale scale,SequenceTime time):
-        CacheEntryHelper<float,ImageKey>(makeKey(0,0,time,scale,0,regionOfDefinition)
-                                            ,regionOfDefinition.width()*regionOfDefinition.height()*4
-                                            , 0)
-        ,_bitmap(regionOfDefinition)
+        Image(const RectI& regionOfDefinition,RenderScale scale,SequenceTime time)
+        : CacheEntryHelper<float,ImageKey>(makeKey(0,0,time,scale,0,regionOfDefinition),false,"")
+        , _bitmap(regionOfDefinition)
         {
         }
         

@@ -273,6 +273,10 @@ public:
      **/
     void makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf);
     
+    /**
+     * @brief Returns true if the node is currently rendering a preview image.
+     **/
+    bool isRenderingPreview() const;
     
     /**
      * @brief

@@ -241,6 +241,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
             isCached = Natron::getTextureFromCache(key, &cachedFrame);
         }else{
             byPassCache = true;
+            _forceRender = false;
         }
     }
     
@@ -266,7 +267,6 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
         
         if(byPassCache){
             assert(!cachedFrame);
-            std::cout << "ViewerCache failed to allocate a new entry...allocating it in RAM instead!" << std::endl;
             _buffer = (unsigned char*)malloc( _interThreadInfos._bytesCount);
             _mustFreeBuffer = true;
         }else{

@@ -148,6 +148,11 @@ Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
     _imp->renderInstances.insert(std::make_pair(_imp->previewRenderTree,_imp->previewInstance));
 }
 
+bool Node::isRenderingPreview() const {
+    QMutexLocker l(&_imp->previewMutex);
+    return _imp->computingPreview;
+}
+
 void Node::quitAnyProcessing() {
     if (isOutputNode()) {
         dynamic_cast<Natron::OutputEffectInstance*>(this->getLiveInstance())->getVideoEngine()->quitEngineThread();
@@ -473,6 +478,7 @@ void Node::activate()
         InputConnectionsIterator found = _imp->deactivatedState.inputConnections.find(it->second);
         if (found == _imp->deactivatedState.inputConnections.end()) {
             cout << "Big issue while activating this node, canceling process." << endl;
+            getApp()->unlockProject();
             return;
         }
         /*InputNumber must be the same than the one we stored at disconnection time.*/
@@ -486,6 +492,7 @@ void Node::activate()
         OutputConnectionsIterator found = _imp->deactivatedState.outputsConnections.find(it->second);
         if (found == _imp->deactivatedState.outputsConnections.end()) {
             cout << "Big issue while activating this node, canceling process." << endl;
+            getApp()->unlockProject();
             return;
         }
         assert(found->second.second == it->first);
