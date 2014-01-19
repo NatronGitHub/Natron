@@ -959,6 +959,11 @@ void AppManager::clearPluginsLoadedCache() {
 void AppManager::clearAllCaches() {
     clearDiskCache();
     clearNodeCache();
+    
+    ///for each app instance clear all its nodes cache
+    for (std::map<int,AppInstance*>::iterator it = _appInstances.begin(); it!=_appInstances.end(); ++it) {
+        it->second->clearOpenFXPluginsCaches();
+    }
 }
 
 std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){

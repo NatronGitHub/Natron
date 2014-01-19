@@ -360,7 +360,7 @@ bool Node::hasOutputConnected() const
     return outputsV.size() > 0;
 }
 
-bool Node::connectInput(Node* input,int inputNumber)
+bool Node::connectInput(Node* input,int inputNumber,bool /*autoConnection*/ )
 {
     assert(input);
     InputMap::iterator it = _inputs.find(inputNumber);

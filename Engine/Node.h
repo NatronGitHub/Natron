@@ -148,7 +148,7 @@ public:
      * connected for this inputNumber. It should be removed
      * beforehand.
      */
-    bool connectInput(Node* input,int inputNumber);
+    virtual bool connectInput(Node* input,int inputNumber,bool autoConnection = false);
     
     /** @brief Removes the node connected to the input inputNumber of the
      * node. Returns the inputNumber if it could remove it, otherwise returns
@@ -436,11 +436,11 @@ public:
     
     virtual int maximumInputs() const OVERRIDE { return _inputsCount; }
     
-    bool connectInput(Node* input,int inputNumber,bool autoConnection = false);
+    virtual bool connectInput(Node* input,int inputNumber,bool autoConnection = false) OVERRIDE;
     
     virtual int disconnectInput(int inputNumber) OVERRIDE;
     
-    virtual int disconnectInput(Node* input);
+    virtual int disconnectInput(Node* input) OVERRIDE;
     
     bool tryAddEmptyInput();
     
