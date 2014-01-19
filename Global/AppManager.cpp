@@ -1836,6 +1836,37 @@ void AppInstance::clearOpenFXPluginsCaches(){
     }
 }
 
+bool AppManager::getImage(const Natron::ImageKey& key,boost::shared_ptr<Natron::Image>* returnValue) const {
+#ifdef NATRON_LOG
+    Log::beginFunction("AppManager","getImage");
+    bool ret = _nodeCache->get(key, returnValue);
+    if(ret) {
+        Log::print("Image found in cache!");
+    } else {
+        Log::print("Image not found in cache!");
+    }
+    Log::endFunction("AppManager","getImage");
+#else
+    return _nodeCache->get(key, returnValue);
+#endif
+
+}
+
+bool AppManager::getTexture(const Natron::FrameKey& key,boost::shared_ptr<Natron::FrameEntry>* returnValue) const {
+#ifdef NATRON_LOG
+    Log::beginFunction("AppManager","getTexture");
+    bool ret = _viewerCache->get(key, returnValue);
+    if(ret) {
+        Log::print("Texture found in cache!");
+    } else {
+        Log::print("Texture not found in cache!");
+    }
+    Log::endFunction("AppManager","getTexture");
+#else
+    return _viewerCache->get(key, returnValue);
+#endif
+}
+
 namespace Natron{
 
 void errorDialog(const std::string& title,const std::string& message){

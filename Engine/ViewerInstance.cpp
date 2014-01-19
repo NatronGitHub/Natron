@@ -232,18 +232,19 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
                  textureRect);
     
     boost::shared_ptr<FrameEntry> cachedFrame;
+    bool isCached = false;
     /*if we want to force a refresh, we by-pass the cache*/
     bool byPassCache = false;
     {
         QMutexLocker forceRenderLocker(&_forceRenderMutex);
         if(!_forceRender){
-            cachedFrame = appPTR->getViewerCache().get(key);
+            isCached = Natron::getTextureFromCache(key, &cachedFrame);
         }else{
             byPassCache = true;
-            _forceRender = false;
         }
     }
-    if (cachedFrame) {
+    
+    if (isCached) {
         /*Found in viewer cache, we execute the cached engine and leave*/
         _interThreadInfos._ramBuffer = cachedFrame->data();
         Format dispW;
@@ -263,12 +264,13 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
             _mustFreeBuffer = false;
         }
         
-        cachedFrame = appPTR->getViewerCache().newEntry(key, _interThreadInfos._bytesCount, 1);
-        if(!cachedFrame){
+        if(byPassCache){
+            assert(!cachedFrame);
             std::cout << "ViewerCache failed to allocate a new entry...allocating it in RAM instead!" << std::endl;
             _buffer = (unsigned char*)malloc( _interThreadInfos._bytesCount);
             _mustFreeBuffer = true;
         }else{
+            assert(cachedFrame);
             _buffer = cachedFrame->data();
         }
         

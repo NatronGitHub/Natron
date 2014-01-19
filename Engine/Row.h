@@ -41,18 +41,9 @@ namespace Natron{
         , _channels()
         {}
         
-        RowKey(KeyHelper<U64>::hash_type hash)
-		: KeyHelper<U64>(hash)
-        , _nodeHashKey(0)
-        , _frameNb(0)
-        , _left(0)
-        , _y(0)
-        , _right(0)
-        , _channels()
-        {}
-        
+
         RowKey(U64 nodeHashKey,int frameNb,int x,int y,int r,ChannelSet channels)
-        : KeyHelper<U64>()
+        : KeyHelper<U64>(0,(r-x)*channels.size())
         , _nodeHashKey(nodeHashKey)
         , _frameNb(frameNb)
         , _left(x)
@@ -117,9 +108,7 @@ namespace Natron{
         
     public:
         /*Constructor used by the cache*/
-        Row(const RowKey& key, size_t count, int cost, std::string path = std::string()) ;
-        
-        Row(const RowKey& key,const std::string& path);
+        Row(const RowKey& key,bool restore,const std::string& path);
         
         Row(int left,int y,int right,ChannelSet channels);
         

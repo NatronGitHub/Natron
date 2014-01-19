@@ -225,7 +225,6 @@ public:
 
     void disconnectViewersFromViewerCache();
 
-
     void errorDialog(const std::string& title,const std::string& message) const;
 
     void warningDialog(const std::string& title,const std::string& message) const;
@@ -467,6 +466,10 @@ public:
 
     const Natron::Cache<Natron::Image>& getNodeCache() const WARN_UNUSED_RETURN {return *_nodeCache;}
 
+    bool getImage(const Natron::ImageKey& key,boost::shared_ptr<Natron::Image>* returnValue) const;
+
+    bool getTexture(const Natron::FrameKey& key,boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
+
     void setApplicationsCachesMaximumMemoryPercent(double p);
 
     void setApplicationsCachesMaximumDiskSpace(unsigned long long size);
@@ -599,7 +602,17 @@ template <class K>
 boost::shared_ptr<K> createKnob(KnobHolder  *holder, const std::string &description, int dimension = 1){
     return appPTR->getKnobFactory().createKnob<K>(holder,description,dimension);
 }
+    
+inline bool getImageFromCache(const Natron::ImageKey& key,boost::shared_ptr<Natron::Image> *returnValue) {
+    return appPTR->getImage(key, returnValue);
+}
+    
+inline bool getTextureFromCache(const Natron::FrameKey& key,boost::shared_ptr<Natron::FrameEntry>* returnValue) {
+    return appPTR->getTexture(key,returnValue);
+}
 
+
+    
 } // namespace Natron
 
 

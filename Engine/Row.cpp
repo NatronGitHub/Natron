@@ -16,15 +16,8 @@
 
 using namespace Natron;
 
-/*Constructor used by the cache*/
-Row::Row(const RowKey& key, size_t count, int cost, std::string path )
-: CacheEntryHelper<float,RowKey>(key, count, cost, path)
-{
-    initializePlanesOffset();
-}
-
-Row::Row(const RowKey& key,const std::string& path)
-: CacheEntryHelper<float,RowKey>(key,path)
+Row::Row(const RowKey& key,bool restore,const std::string& path)
+: CacheEntryHelper<float,RowKey>(key,restore,path)
 {
     initializePlanesOffset();
 }

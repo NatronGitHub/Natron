@@ -74,11 +74,30 @@ class KeyHelper {
 public:
     typedef HashType hash_type;
 
-    KeyHelper(): _hashComputed(false), _hash() {}
+    /**
+     * @brief Constructs an empty key. This constructor is used by boost::serialization.
+     **/
+    KeyHelper(): _hashComputed(false), _hash() , _cost(0) , _elementsCount(0){}
 
-    KeyHelper(hash_type hashValue):  _hashComputed(true), _hash(hashValue){}
+    /**
+     * @brief Constructs a key with the given cost and bytes to allocate
+     **/
+    KeyHelper(int cost,size_t elementsCount)
+    : _hashComputed(false)
+    , _hash()
+    , _cost(cost)
+    , _elementsCount(elementsCount) {}
+    
+    /**
+     * @brief Constructs a key from an already existing hash key.
+     **/
+    // KeyHelper(hash_type hashValue):  _hashComputed(true), _hash(hashValue){}
 
-    KeyHelper(const KeyHelper& other) : _hashComputed(true), _hash(other.getHash()) {}
+    /**
+     * @brief Constructs a key from an already existing hash key. This is similar than the
+     * constructor above but takes in parameter another key.
+     **/
+    KeyHelper(const KeyHelper& other) : _hashComputed(true), _hash(other.getHash()),_cost(other._cost),_elementsCount(other._elementsCount) {}
 
     virtual ~KeyHelper(){}
 
@@ -91,6 +110,10 @@ public:
     }
 
     void resetHash() const { _hashComputed = false;}
+    
+    size_t getElementsCount() const { return _elementsCount; }
+    
+    int getCost() const { return _cost; }
 
 protected:
 
@@ -108,6 +131,8 @@ private:
     }
     mutable bool _hashComputed;
     mutable hash_type _hash;
+    int _cost; //< the cost of the element associated to this key
+    size_t _elementsCount; //< the number of elements the associated cache entry should allocate
 };
 
 
@@ -175,7 +200,13 @@ public:
                 _backingFile  = new MemoryFile(_path,Natron::if_exists_keep_if_dont_exists_create);
             } catch(const std::runtime_error& r) {
                 std::cout << r.what() << std::endl;
-                throw std::bad_alloc();
+                
+                ///if opening the file mapping failed, just call allocate again, but this time on disk!
+                delete _backingFile;
+                _backingFile = 0;
+                _path.clear();
+                allocate(count,0,path);
+                return;
             }
             if (!path.empty() && count != 0) {
                 //if the backing file has already the good size and we just wanted to re-open the mapping
@@ -282,28 +313,31 @@ public:
     typedef DataType data_t;
     typedef KeyType key_t;
 
-    CacheEntryHelper(const KeyType& params,const std::string& path)
+    /**
+     * @brief Allocates a new cache entry. It allocates enough memory to contain at least the
+     * memory specified by the key.
+     * @param params The key associated to this cache entry, this is the object containing all the parameters.
+     * @param restore If true then the entry will try to restore its buffer from a file pointed to
+     * by path.
+     * @param path The path of the file where to save/restore the buffer. If empty then it assumes
+     * the buffer will be in RAM, hence volatile.
+     **/
+    CacheEntryHelper(const KeyType& params,bool restore,const std::string& path)
         : _params(params)
         , _data()
     {
         try{
-            restoreBufferFromFile(path);
+            if(restore) {
+                restoreBufferFromFile(path);
+            } else {
+                allocate(params.getElementsCount(),params.getCost(),path);
+            }
         }catch(const std::bad_alloc& e)
         {
             throw e;
         }
     }
 
-    CacheEntryHelper(const KeyType& params, size_t count, int cost, std::string path = std::string())
-        : _params(params)
-        , _data()
-    {
-        try {
-            allocate(count, cost, path);
-        } catch(const std::bad_alloc& e) {
-            throw e;
-        }
-    }
     virtual ~CacheEntryHelper() {}
 
     const KeyType& getKey() const {return _params;}
@@ -365,11 +399,7 @@ private:
                 std::cout << "Path is empty but required for disk caching: " << e.what() << std::endl;
             }
         }
-        try {
-            _data.allocate(count, cost, fileName);
-        } catch(const std::bad_alloc& e) {
-            throw e;
-        }
+        _data.allocate(count, cost, fileName);
     }
 
     /** @brief This function is called upon the constructor and before the object is exposed
@@ -538,25 +568,21 @@ public:
             delete _signalEmitter;
     }
 
-    /* Allocates a new entry by the cache. The storage is then handled by
-             * the cache solely.
-             */
-    boost::shared_ptr<ValueType> newEntry(const typename ValueType::key_type& params, size_t count, int cost) const {
-        QMutexLocker locker(&_lock);
-        ValueType* value = 0;
-        try{
-            value = new ValueType(params, count, cost, QString(getCachePath()+QDir::separator()).toStdString());
-        } catch(const std::bad_alloc& /*e*/) {
-            delete value;
-            return boost::shared_ptr<ValueType>();
-        }
-        boost::shared_ptr<ValueType> cachedValue(value);
-        sealEntry(value_type(cachedValue));
-        return cachedValue;
-
-    }
-
-    value_type get(const typename ValueType::key_type& params) const {
+    /**
+     * @brief Look-up the cache for an entry whose key matches the params.
+     * @param params The key identifying the entry we're looking for.
+     * @param [out] returnValue The returnValue, contains the cache entry.
+     * It is either a freshly allocated entry by the cache or an entry which was
+     * already present. 
+     * Internally the allocation of the new entry might fail on the requested device,
+     * e.g: if you ask for an entry with a large cost, the cache will try to put the
+     * entry on disk to preserve it, but if the allocation failed it will fallback
+     * on RAM instead.
+     * Either way the returnValue can never be NULL.
+     * @returns True if the cache successfully found an entry matching the params.
+     * False if it allocated a new entry.
+     **/
+    bool get(const typename ValueType::key_type& params,value_type* returnValue) const {
         QMutexLocker locker(&_lock);
         CacheIterator memoryCached = _memoryCache(params.getHash());
         if(memoryCached != _memoryCache.end()){
@@ -568,16 +594,21 @@ public:
                     if(_signalEmitter)
                         _signalEmitter->emitAddedEntry();
 
-                    return *it;
+                    *returnValue = *it;
+                    return true;
                 }
             }
             /*if we reach here it means no entries linked to the hash key matches the params,then
-                     we return NULL.*/
-            return value_type();
+                     we allocate a new entry.*/
+            *returnValue =  newEntry(params);
+            return false;
         }else{
             CacheIterator diskCached = _diskCache(params.getHash());
             if(diskCached == _diskCache.end()){
-                return value_type();
+                
+                /*the entry was neither in memory or disk, just allocate a new one*/
+                *returnValue =  newEntry(params);
+                return false;
             }else{
                 /*we found something with a matching hash key. There may be several entries linked to
                          this key, we need to find one with matching params*/
@@ -615,13 +646,15 @@ public:
                        
                         if(_signalEmitter)
                             _signalEmitter->emitAddedEntry();
-                        return entry;
+                        *returnValue =  entry;
+                        return true;
 
                     }
                 }
                 /*if we reache here it means no entries linked to the hash key matches the params,then
-                         we return NULL.*/
-                return value_type();
+                         we allocate a new one*/
+                *returnValue =  newEntry(params);
+                return false;
             }
         }
 
@@ -748,6 +781,17 @@ private:
     typedef std::list<std::pair<hash_type,typename ValueType::key_type> > CacheTOC;
 
 
+    /** @brief Allocates a new entry by the cache. The storage is then handled by
+     * the cache solely.
+     **/
+    value_type newEntry(const typename ValueType::key_type& params) const {
+        assert(!_lock.tryLock()); // must be locked
+        value_type cachedValue(new ValueType(params, false , QString(getCachePath()+QDir::separator()).toStdString()));
+        sealEntry(cachedValue);
+        return cachedValue;
+        
+    }
+    
     /** @brief Inserts into the cache an entry that was previously allocated by the newEntry()
              * function. This is called directly by newEntry() if the allocation was successful
              **/
@@ -893,7 +937,7 @@ private:
                 }
                 ValueType* value = NULL;
                 try {
-                    value = new ValueType(it->second,QString(getCachePath()+QDir::separator()).toStdString());
+                    value = new ValueType(it->second,true,QString(getCachePath()+QDir::separator()).toStdString());
                 } catch (const std::bad_alloc& e) {
                     std::cout << e.what() << std::endl;
                     continue;

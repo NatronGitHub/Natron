@@ -56,25 +56,11 @@ namespace Natron{
         , _textureRect()
         {}
         
-        FrameKey(KeyHelper<U64>::hash_type hash)
-		: KeyHelper<U64>(hash)
-        , _time(0)
-        , _treeVersion(0)
-        , _zoomFactor(0)
-        , _exposure(0)
-        , _lut(0)
-        , _bitDepth(0)
-        , _channels(0)
-        , _view(0)
-        , _dataWindow()
-        , _displayWindow()
-        , _textureRect()
-        {}
         
         FrameKey(SequenceTime time,U64 treeVersion,double zoomFactor,double exposure,
                  int lut,int bitDepth,int channels,int view,
                  const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect):
-        KeyHelper<U64>()
+        KeyHelper<U64>(1,textureRect.w * textureRect.h  * 4)
         ,_time(time)
         ,_treeVersion(treeVersion)
         ,_zoomFactor(zoomFactor)
@@ -161,17 +147,12 @@ namespace Natron{
         
     public:
         
-        FrameEntry(const FrameKey& params,size_t size,int cost,std::string path = std::string())
-        :CacheEntryHelper<U8,FrameKey>(params,size,cost,path)
-        {
-        }
-        
-        FrameEntry(const FrameKey& params,const std::string& path)
-        :CacheEntryHelper<U8,FrameKey>(params,path)
+        FrameEntry(const FrameKey& params,bool restore,const std::string& path)
+        :CacheEntryHelper<U8,FrameKey>(params,restore,path)
         {
         }
       
-        ~FrameEntry(){ }
+        ~FrameEntry(){}
         
         static FrameKey makeKey(SequenceTime time,U64 treeVersion,double zoomFactor,double exposure,
                                 int lut,int bitDepth,int channels,int view,

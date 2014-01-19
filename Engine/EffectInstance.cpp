@@ -310,29 +310,35 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
 
     /*look-up the cache for any existing image already rendered*/
     boost::shared_ptr<Image> image;
-    Natron::ImageKey key = Natron::Image::makeKey(_imp->hashValue.value(), time, scale,view,RectI());
+    bool isCached = false;
+    
+    int cost = 0;
+    /*should data be stored on a physical device ?*/
+    if(shouldRenderedDataBePersistent()){
+        cost = 1;
+    }
+    
+    /*before allocating it we must fill the RoD of the image we want to render*/
+    RectI rod;
+    if(getRegionOfDefinition(time, &rod) == StatFailed){
+        ///if getRoD fails, just return a NULL ptr
+        return boost::shared_ptr<Natron::Image>();
+    }
+    Natron::ImageKey key = Natron::Image::makeKey(cost,_imp->hashValue.value(), time, scale,view,rod);
+    
     if(getCachePolicy(time) == NEVER_CACHE){
         byPassCache = true;
     }
     if(!byPassCache){
-        image = appPTR->getNodeCache().get(key);
+        isCached = Natron::getImageFromCache(key, &image);
     }
 
     /*if not cached, we store the freshly allocated image in this member*/
-    if(!image){
-        /*before allocating it we must fill the RoD of the image we want to render*/
-        if(getRegionOfDefinition(time, &key._rod) == StatFailed){
-            return boost::shared_ptr<Natron::Image>();
-        }
-        int cost = 0;
-        /*should data be stored on a physical device ?*/
-        if(shouldRenderedDataBePersistent()){
-            cost = 1;
-        }
+    if(!isCached){
+        
         /*allocate a new image*/
-        if(!byPassCache){
-            image = appPTR->getNodeCache().newEntry(key,key._rod.area()*4,cost);
-        }else{
+        if(byPassCache){
+            assert(!image);
             image.reset(new Natron::Image(key._rod,scale,time));
         }
     } else {
@@ -342,6 +348,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
 #endif
     }
     _node->addImageBeingRendered(image, time, view);
+    
     /*now that we have our image, we check what is left to render. If the list contains only
      null rects then we already rendered it all*/
     RectI intersection;

@@ -48,19 +48,10 @@ namespace Natron{
         , _view(0)
         , _pixelAspect(1)
         {}
+
         
-        ImageKey(KeyHelper<U64>::hash_type hash)
-		: KeyHelper<U64>(hash)
-        , _nodeHashKey(0)
-        , _time(0)
-        , _renderScale()
-        , _rod()
-        , _view(0)
-        , _pixelAspect(1)
-        {}
-        
-        ImageKey(U64 nodeHashKey,SequenceTime time,RenderScale scale,int view,const RectI& regionOfDefinition,double pixelAspect = 1.)
-		: KeyHelper<U64>()
+        ImageKey(int cost,U64 nodeHashKey,SequenceTime time,RenderScale scale,int view,const RectI& regionOfDefinition,double pixelAspect = 1.)
+		: KeyHelper<U64>(cost,regionOfDefinition.area() * 4) //< images are only RGBA for now hence the 4
         , _nodeHashKey(nodeHashKey)
         , _time(time)
         , _rod(regionOfDefinition)
@@ -134,13 +125,9 @@ namespace Natron{
         mutable QMutex _lock;
         
     public:
-        Image(const ImageKey& key, size_t count, int cost, std::string path = std::string()):
-        CacheEntryHelper<float,ImageKey>(key,count,cost,path)
-        ,_bitmap(key._rod){
-        }
-        
-        Image(const ImageKey& key,const std::string& path):
-        CacheEntryHelper<float,ImageKey>(key,path)
+   
+        Image(const ImageKey& key,bool restore,const std::string& path):
+        CacheEntryHelper<float,ImageKey>(key,restore,path)
         ,_bitmap(key._rod){
         }
         
@@ -148,7 +135,7 @@ namespace Natron{
          then be handled by the user. Note that no view number is passed in parameter
          as it is not needed.*/
         Image(const RectI& regionOfDefinition,RenderScale scale,SequenceTime time):
-        CacheEntryHelper<float,ImageKey>(makeKey(0,time,scale,0,regionOfDefinition)
+        CacheEntryHelper<float,ImageKey>(makeKey(0,0,time,scale,0,regionOfDefinition)
                                             ,regionOfDefinition.width()*regionOfDefinition.height()*4
                                             , 0)
         ,_bitmap(regionOfDefinition)
@@ -157,8 +144,8 @@ namespace Natron{
         
         virtual ~Image(){}
         
-        static ImageKey makeKey(U64 nodeHashKey,SequenceTime time,RenderScale scale,int view,const RectI& regionOfDefinition){
-            return ImageKey(nodeHashKey,time,scale,view,regionOfDefinition);
+        static ImageKey makeKey(int cost,U64 nodeHashKey,SequenceTime time,RenderScale scale,int view,const RectI& regionOfDefinition){
+            return ImageKey(cost,nodeHashKey,time,scale,view,regionOfDefinition);
         }
         
         const RectI& getRoD() const {return _bitmap.getRoD();}
