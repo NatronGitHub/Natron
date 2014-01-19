@@ -189,33 +189,24 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     
 #endif
     
-    
-    const Natron::Cache<Image>& cache = appPTR->getNodeCache();
-    //making key with a null RoD since the hash key doesn't take the RoD into account
-    //we'll get our image back without the RoD in the key
     EffectInstance* n  = input(inputNb);
     
     //if the node is not connected, return a NULL pointer!
     if(!n){
         return boost::shared_ptr<Natron::Image>();
     }
-    Natron::ImageKey params = Natron::Image::makeKey(n->hash().value(), time,scale,view,RectI());
-    boost::shared_ptr<Image > entry = cache.get(params);
-    
-#ifdef NATRON_LOG
-    Natron::Log::print(QString("The image was found in the NodeCache with the following hash key: "+
-                                                         QString::number(params.getHash())).toStdString());
-#endif
-    if(!entry){
-        //if not found in cache render it using the last args passed to render by this thread
-        RectI roi;
-        if (_imp->renderArgs.hasLocalData()) {
-            roi = _imp->renderArgs.localData()._roi;//if the thread was spawned by us we take the last render args
-        }else{
-            assert(n->getRegionOfDefinition(time, &roi) != Natron::StatFailed);//we have no choice but compute the full region of definition
-        }
-        entry = n->renderRoI(time, scale, view,roi);
+
+    ///just call renderRoI which will  do the cache look-up for us and render
+    ///the image if it's missing from the cache.
+    RectI roi;
+    if (_imp->renderArgs.hasLocalData()) {
+        roi = _imp->renderArgs.localData()._roi;//if the thread was spawned by us we take the last render args
+    }else{
+        Natron::Status stat = n->getRegionOfDefinition(time, &roi);
+        assert(stat != Natron::StatFailed);//we have no choice but compute the full region of definition
     }
+    boost::shared_ptr<Image > entry = n->renderRoI(time, scale, view,roi);
+
 #ifdef NATRON_LOG
     Natron::Log::endFunction(getName(),"getImage");
 #endif

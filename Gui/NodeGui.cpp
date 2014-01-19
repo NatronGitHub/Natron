@@ -278,7 +278,10 @@ void NodeGui::updateChannelsTooltip(const Natron::ChannelSet& chan){
 }
 
 void NodeGui::updatePreviewImage(int time){
-    QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
+    
+    if(_internalNode->isPreviewEnabled()) {
+        QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
+    }
 }
 
 void NodeGui::computePreviewImage(int time){

@@ -110,10 +110,10 @@ void Natron::Image::copy(const Natron::Image& other){
 namespace Natron{
     void debugImage(Natron::Image* img,const QString& filename){
         const RectI& rod = img->getRoD();
-        QImage output(rod.width(),rod.height(),QImage::Format_ARGB32_Premultiplied);
+        QImage output(rod.width(),rod.height(),QImage::Format_ARGB32);
         const Natron::Color::Lut* lut = Natron::Color::LutManager::sRGBLut();
         lut->to_byte_packed(output.bits(), img->pixelAt(0, 0), rod, rod, rod,
-                            Natron::Color::PACKING_RGBA,Natron::Color::PACKING_BGRA, true,true);
+                            Natron::Color::PACKING_RGBA,Natron::Color::PACKING_BGRA, true,false);
         U64 hashKey = img->getHashKey();
         QString hashKeyStr = QString::number(hashKey);
         QString realFileName = filename.isEmpty() ? QString(hashKeyStr+".png") : filename;
