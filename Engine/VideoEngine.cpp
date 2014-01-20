@@ -79,14 +79,10 @@ VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
     , _currentRunArgs()
     , _startRenderFrameTime()
     , _timeline(owner->getNode()->getApp()->getTimeLine())
-    , _processAborter(NULL)
 {
 }
 
 VideoEngine::~VideoEngine() {
-    if(_processAborter){
-        delete _processAborter;
-    }
     _threadStarted = false;
 }
 
@@ -126,11 +122,6 @@ void VideoEngine::render(int frameCount,
                          bool forward,
                          bool sameFrame) {
     
-    
-    if(_tree.getOutput()->getApp()->isBackground() && !_processAborter){
-        _processAborter = new BackgroundProcessAborter(this);
-        _processAborter->start();
-    }
     
     /*If the Tree was never built and we don't want to update the Tree, force an update
      so there's no null pointers hanging around*/
@@ -261,10 +252,6 @@ bool VideoEngine::stopEngine() {
             
             _abortedRequestedCondition.wakeOne();
         }
-        
-        if(_tree.getOutput()->getApp()->isBackground()){
-            std::cout << kRenderingFinishedString << std::endl;
-        }
 
         emit engineStopped();
         
@@ -294,10 +281,6 @@ bool VideoEngine::stopEngine() {
             stat = n->effectInstance()->endRenderAction(_timeline->leftBound(),_timeline->rightBound(), 1, true, renderScale);
             assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         }
-    }
-
-    if(_processAborter){
-        _processAborter->stopChecking();
     }
 
     {
@@ -529,7 +512,8 @@ void VideoEngine::run(){
          and appropriately increment counters for the next frame in the sequence.*/
         emit frameRendered(currentFrame);
         if(_tree.getOutput()->getApp()->isBackground()){
-            std::cout << kFrameRenderedString << currentFrame << std::endl;
+            QString frameStr = QString::number(currentFrame);
+            appPTR->writeToOutputPipe(kFrameRenderedStringLong + frameStr,kFrameRenderedStringShort + frameStr);
         }
 
         if(_currentRunArgs._frameRequestIndex == 0 && _currentRunArgs._frameRequestsCount == 1 && !_currentRunArgs._sameFrame){
@@ -944,36 +928,5 @@ void VideoEngine::notifyTreeOverlaysFocusLost() {
         }
     }
 }
-
-BackgroundProcessAborter::BackgroundProcessAborter(VideoEngine* engine)
-    :
-      _engine(engine)
-{
-    setTerminationEnabled();
-}
-
-void BackgroundProcessAborter::run(){
-    for(;;){
-
-        QTextStream qstdin(stdin);
-        QString line = qstdin.readLine();
-#ifdef NATRON_LOG
-        Log::beginFunction("ProcessAborter","run");
-        Log::print(QString("Process received message "+line).toStdString());
-        Log::endFunction("ProcessAborter","run");
-#endif
-        if(line.contains(kAbortRenderingString)){
-            _engine->abortRendering();
-        }
-
-        msleep(1000);
-    }
-}
-
-void BackgroundProcessAborter::stopChecking(){
-    terminate();
-}
-
-BackgroundProcessAborter::~BackgroundProcessAborter(){}
 
 

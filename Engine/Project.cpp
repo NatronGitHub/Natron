@@ -91,7 +91,7 @@ void Project::initNodeCountersAndSetName(Node* n){
 void Project::clearNodes(){
     for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
         if(_imp->currentNodes[i]->isOutputNode()){
-            dynamic_cast<OutputEffectInstance*>(_imp->currentNodes[i]->getLiveInstance())->getVideoEngine()->quitEngineThread();
+            _imp->currentNodes[i]->quitAnyProcessing();
         }
     }
     for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {

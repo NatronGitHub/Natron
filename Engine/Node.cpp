@@ -437,7 +437,6 @@ int Node::disconnectOutput(Node* output)
  but no other node knows this node.*/
 void Node::deactivate()
 {
-    getApp()->lockProject();
     
     //first tell the gui to clear any persistent message link to this node
     clearPersistentMessage();
@@ -460,8 +459,6 @@ void Node::deactivate()
         _imp->deactivatedState.outputsConnections.insert(make_pair(it->second, make_pair(inputNb, it->first)));
     }
     
-    getApp()->unlockProject();
-    
     emit deactivated();
     _imp->activated = false;
     
@@ -469,7 +466,6 @@ void Node::deactivate()
 
 void Node::activate()
 {
-    getApp()->lockProject();
     
     for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if (!it->second) {
@@ -478,7 +474,6 @@ void Node::activate()
         InputConnectionsIterator found = _imp->deactivatedState.inputConnections.find(it->second);
         if (found == _imp->deactivatedState.inputConnections.end()) {
             cout << "Big issue while activating this node, canceling process." << endl;
-            getApp()->unlockProject();
             return;
         }
         /*InputNumber must be the same than the one we stored at disconnection time.*/
@@ -492,13 +487,11 @@ void Node::activate()
         OutputConnectionsIterator found = _imp->deactivatedState.outputsConnections.find(it->second);
         if (found == _imp->deactivatedState.outputsConnections.end()) {
             cout << "Big issue while activating this node, canceling process." << endl;
-            getApp()->unlockProject();
             return;
         }
         assert(found->second.second == it->first);
         it->second->connectInput(this,found->second.first);
     }
-    getApp()->unlockProject();
     
     emit activated();
     _imp->activated = true;
@@ -581,8 +574,8 @@ void Node::removeImageBeingRendered(SequenceTime time,int view )
 
 void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf)
 {
-
     int knobsAge = _imp->previewInstance->getAppAge();
+
     
     QMutexLocker locker(&_imp->previewMutex); /// prevent 2 previews to occur at the same time since there's only 1 preview instance
     _imp->computingPreview = true;

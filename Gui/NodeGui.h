@@ -18,7 +18,7 @@
 #include <QtCore/QRectF>
 #include <QGraphicsItem>
 
-#include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
 
 class Edge;
 class QPainterPath;

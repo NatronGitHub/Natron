@@ -109,32 +109,52 @@ int main(int argc, char *argv[])
     bool isBackGround = false;
     QStringList writers;
     bool expectWriterNameOnNextArg = false;
+    bool expectPipeFileNameOnNextArg = false;
+    QString pipeName;
     QStringList args;
     for(int i = 0; i < argc ;++i){
         args.push_back(QString(argv[i]));
     }
     for (int i = 0 ; i < args.size(); ++i) {
         if(args.at(i).contains("." NATRON_PROJECT_FILE_EXT)){
-            if(expectWriterNameOnNextArg){
+            if(expectWriterNameOnNextArg || expectPipeFileNameOnNextArg) {
                 printUsage();
                 return 1;
             }
             projectFile = args.at(i);
+            continue;
         }else if(args.at(i) == "--background" || args.at(i) == "-b"){
-            if(expectWriterNameOnNextArg){
+            if(expectWriterNameOnNextArg || expectPipeFileNameOnNextArg){
                 printUsage();
                 return 1;
             }
             isBackGround = true;
+            continue;
         }else if(args.at(i) == "--writer"){
-            if(expectWriterNameOnNextArg){
+            if(expectWriterNameOnNextArg  || expectPipeFileNameOnNextArg){
                 printUsage();
                 return 1;
             }
             expectWriterNameOnNextArg = true;
-        }else if(expectWriterNameOnNextArg){
+            continue;
+        }else if(args.at(i) == "--IPCpipe"){
+            if (expectWriterNameOnNextArg || expectPipeFileNameOnNextArg) {
+                printUsage();
+                return 1;
+            }
+            expectPipeFileNameOnNextArg = true;
+            continue;
+        }
+        
+        if(expectWriterNameOnNextArg){
+            assert(!expectPipeFileNameOnNextArg);
             writers << args.at(i);
             expectWriterNameOnNextArg = false;
+        }
+        if (expectPipeFileNameOnNextArg) {
+            assert(!expectWriterNameOnNextArg);
+            pipeName = args.at(i);
+            expectPipeFileNameOnNextArg = false;
         }
     }
 
@@ -165,6 +185,10 @@ int main(int argc, char *argv[])
         appPTR->getIcon(Natron::NATRON_PIXMAP_APP_ICON, &appIcPixmap);
         QIcon appIc(appIcPixmap);
         qApp->setWindowIcon(appIc);
+    } else {
+        if (!pipeName.isEmpty()) {
+            manager->initBackroundPipes(pipeName);
+        }
     }
     
     QLabel* splashScreen = 0;

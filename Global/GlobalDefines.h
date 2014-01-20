@@ -45,10 +45,19 @@ typedef OfxPointD RenderScale;
 
 typedef OfxRGBAColourF RGBAColourF;
 
-#define kFrameRenderedString "Frame rendered: "
-#define kProgressChangedString "Progress changed: "
-#define kRenderingFinishedString "Rendering finished"
-#define kAbortRenderingString "Abort rendering"
+///these are used between process to communicate via the pipes
+#define kFrameRenderedStringLong "Frame rendered: "
+#define kFrameRenderedStringShort "-r"
+
+#define kProgressChangedStringLong "Progress changed: "
+#define kProgressChangedStringShort "-p"
+
+#define kRenderingFinishedStringLong "Rendering finished"
+#define kRenderingFinishedStringShort "-e"
+
+#define kAbortRenderingStringLong "Abort rendering"
+#define kAbortRenderingStringShort "-a"
+
 
 #define kNodeGraphObjectName "NodeGraph"
 #define kCurveEditorObjectName "CurveEditor"

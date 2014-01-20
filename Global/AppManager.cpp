@@ -25,6 +25,9 @@
 #include <QtConcurrentMap>
 #include <QtGui/QPixmapCache>
 #include <QBitmap>
+#include <QtNetwork/QLocalSocket>
+#include <QtNetwork/QLocalServer>
+#include <QtCore/QSocketNotifier>
 
 #if QT_VERSION < 0x050000
 #include <QtGui/QDesktopServices>
@@ -239,6 +242,7 @@ AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectNam
   , _projectLock(QMutex::Recursive)
   , _currentProject(new Natron::Project(this))
   , _isLoadingProject(false)
+  , _isSavingProject(false)
   , _appID(appID)
   , _nodeMapping()
   , _isBackground(backgroundMode)
@@ -548,6 +552,13 @@ void AppInstance::saveProject(const QString& path,const QString& name,bool autoS
         return;
     }
     
+    if (_isSavingProject) {
+        ///don't save multiple times simultaneously
+        return;
+    } else {
+        _isSavingProject = true;
+    }
+    
     if(!autoSave) {
         
         if((_currentProject->projectAgeSinceLastSave() != _currentProject->projectAgeSinceLastAutosave()) ||
@@ -566,6 +577,7 @@ void AppInstance::saveProject(const QString& path,const QString& name,bool autoS
             saveProjectInternal(path,name,true);
         }
     }
+    _isSavingProject = false;
 }
 
 void AppInstance::saveProjectInternal(const QString& path,const QString& filename,bool autoSave){
@@ -1035,6 +1047,7 @@ AppManager::AppManager()
     ,_colorPickerCursor(NULL)
     ,_initialized(false)
     ,_knobsClipBoard(new KnobsClipBoard)
+    ,_backgroundPipe(0)
 {
     
     _settings->initializeKnobs();
@@ -1067,6 +1080,38 @@ AppManager::AppManager()
     _knobsClipBoard->isEmpty = true;
     
 
+}
+
+void AppManager::initBackroundPipes(const QString& pipeName) {
+    _backgroundPipe = new QLocalSocket();
+    _backgroundPipe->connectToServer(pipeName,QLocalSocket::ReadWrite);
+    QObject::connect(_backgroundPipe, SIGNAL(readyRead()), this,SLOT(onInputPipeChanged()));
+}
+
+void AppManager::onInputPipeChanged() {
+    QString str(_backgroundPipe->readLine());
+    std::cout <<"bytes written!" << std::endl;
+    if (str.contains(kRenderingFinishedStringShort)) {
+        
+        for (std::map<int,AppInstance*>::iterator it =_appInstances.begin(); it!= _appInstances.end(); ++it) {
+            std::vector<Natron::Node*> nodes;
+            it->second->getActiveNodes(&nodes);
+            for (U32 i = 0; i < nodes.size(); ++i) {
+                nodes[i]->quitAnyProcessing();
+            }
+        }
+        
+    }
+}
+
+bool AppManager::writeToOutputPipe(const QString& longMessage,const QString& shortMessage) {
+    if(!_backgroundPipe) {
+        std::cout << longMessage.toStdString() << std::endl;
+        return false;
+    }
+    _backgroundPipe->write(shortMessage.toLatin1());
+    _backgroundPipe->flush();
+    return true;
 }
 
 void AppManager::registerAppInstance(AppInstance* app){
@@ -1124,6 +1169,10 @@ AppManager::~AppManager(){
     }
     foreach(PluginToolButton* p,_toolButtons){
         delete p;
+    }
+    
+    if (_backgroundPipe) {
+        delete _backgroundPipe;
     }
 }
 void AppManager::quit(){
@@ -1661,16 +1710,23 @@ void AppInstance::startWritersRendering(const QStringList& writers){
 
 void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer){
     if(!_isBackground){
+        ProcessHandler* newProcess = 0;
+
         /*Start the renderer in a background process.*/
-        _projectLock.unlock();
         autoSave(); //< takes a snapshot of the graph at this time, this will be the version loaded by the process
         QStringList appArgs = QCoreApplication::arguments();
         QStringList processArgs;
         processArgs << _currentProject->getLastAutoSaveFilePath() << "--background" << "--writer" << writer->getName().c_str();
-        ProcessHandler* newProcess = 0;
+        
+        QDateTime now = QDateTime::currentDateTime();
+        QLocalServer *ipcServer = new QLocalServer();
+        QString serverName(NATRON_APPLICATION_NAME "_PIPE_" + now.toString());
+        ipcServer->listen(serverName);
+        
+        processArgs << "--IPCpipe" << (ipcServer->fullServerName());
         
         try {
-            newProcess = new ProcessHandler(this,appArgs.at(0),processArgs,writer); //< the process will delete itself
+            newProcess = new ProcessHandler(this,appArgs.at(0),processArgs,ipcServer,writer); //< the process will delete itself
         } catch (const std::exception& e) {
             Natron::errorDialog(writer->getName(), std::string("Error while starting rendering") + ": " + e.what());
             delete newProcess;
@@ -1697,16 +1753,23 @@ void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* write
     }
 }
 
-ProcessHandler::ProcessHandler(AppInstance* app,const QString& programPath,const QStringList& programArgs,Natron::OutputEffectInstance* writer)
+ProcessHandler::ProcessHandler(AppInstance* app,
+                               const QString& programPath,
+                               const QStringList& programArgs,
+                               QLocalServer* ipcServer,
+                               Natron::OutputEffectInstance* writer)
     : _app(app)
     ,_process(new QProcess)
     ,_hasProcessBeenDeleted(false)
     ,_writer(writer)
     ,_dialog(NULL)
+    ,_ipcServer(ipcServer)
+    ,_socket(0)
 {
-    
+    QObject::connect(_ipcServer,SIGNAL(newConnection()),this,SLOT(onNewConnectionPending()));
     
     QObject::connect(_process,SIGNAL(readyReadStandardOutput()),this,SLOT(onStandardOutputBytesWritten()));
+    QObject::connect(_process,SIGNAL(readyReadStandardError()),this,SLOT(onStandardErrorBytesWritten()));
     QObject::connect(_process,SIGNAL(error(QProcess::ProcessError)),this,SLOT(onProcessError(QProcess::ProcessError)));
     QObject::connect(_process,SIGNAL(finished(int,QProcess::ExitStatus)),this,SLOT(onProcessEnd(int,QProcess::ExitStatus)));
     int firstFrame,lastFrame;
@@ -1736,36 +1799,61 @@ ProcessHandler::ProcessHandler(AppInstance* app,const QString& programPath,const
 }
 
 ProcessHandler::~ProcessHandler(){
-    if(!_hasProcessBeenDeleted)
+    if(!_hasProcessBeenDeleted){
+        _process->close();
         delete _process;
+    }
+    delete _ipcServer;
+}
+
+void ProcessHandler::onNewConnectionPending() {
+    ///accept only 1 connection!
+    if (_socket) {
+        return;
+    }
+    
+    _socket = _ipcServer->nextPendingConnection();
+    
+    QObject::connect(_socket, SIGNAL(readyRead()), this, SLOT(onDataWrittenToSocket()));
+}
+
+
+void ProcessHandler::onDataWrittenToSocket() {
+    QString str = _socket->readLine();
+    if(str.contains(kFrameRenderedStringShort)){
+        str = str.remove(kFrameRenderedStringShort);
+        _dialog->onFrameRendered(str.toInt());
+    }else if(str.contains(kRenderingFinishedStringShort)){
+        if(_process->state() == QProcess::Running) {
+            _process->waitForFinished();
+        }
+    }else if(str.contains(kProgressChangedStringShort)){
+        str = str.remove(kProgressChangedStringShort);
+        _dialog->onCurrentFrameProgress(str.toInt());
+    }
+    qDebug() << str;
+
 }
 
 
 void ProcessHandler::onStandardOutputBytesWritten(){
-//    std::cout <<  << std::endl;
-//    char buf[10000];
-//    _process->readLine(buf, 10000);
+
     QString str(_process->readAllStandardOutput().data());
     qDebug() << str ;
+}
 
-    if(str.contains(kFrameRenderedString)){
-        str = str.remove(kFrameRenderedString);
-        _dialog->onFrameRendered(str.toInt());
-    }else if(str.contains(kRenderingFinishedString)){
-        onProcessCanceled();
-    }else if(str.contains(kProgressChangedString)){
-        str = str.remove(kProgressChangedString);
-        _dialog->onCurrentFrameProgress(str.toInt());
-    }
+void ProcessHandler::onStandardErrorBytesWritten() {
+    QString str(_process->readAllStandardError().data());
+    qDebug() << str ;
 }
 
 void ProcessHandler::onProcessCanceled(){
     _dialog->hide();
-    QByteArray ba(kAbortRenderingString"\n");
-    if(_process->write(ba) == -1){
-        std::cout << "Error writing to the process standard input" << std::endl;
+    _socket->write(QString(QString(kAbortRenderingStringShort) + QChar('\n')).toLatin1());
+    _socket->flush();
+       if(_process->state() == QProcess::Running) {
+        _process->waitForFinished();
     }
-    _process->waitForFinished();
 
 }
 
@@ -1773,7 +1861,6 @@ void ProcessHandler::onProcessError(QProcess::ProcessError err){
     if(err == QProcess::FailedToStart){
         Natron::errorDialog(_writer->getName(),"The render process failed to start");
     }else if(err == QProcess::Crashed){
-        Natron::errorDialog(_writer->getName(),"The render process crashed");
         //@TODO: find out a way to get the backtrace
     }
 }
@@ -1781,7 +1868,7 @@ void ProcessHandler::onProcessError(QProcess::ProcessError err){
 void ProcessHandler::onProcessEnd(int exitCode,QProcess::ExitStatus stat){
     if(stat == QProcess::CrashExit){
         Natron::errorDialog(_writer->getName(),"The render process exited after a crash");
-        _hasProcessBeenDeleted = true;
+        // _hasProcessBeenDeleted = true;
 
     }else if(exitCode == 1){
         Natron::errorDialog(_writer->getName(), "The process ended with a return code of 1, this indicates an undetermined problem occured.");
@@ -1812,6 +1899,7 @@ void AppInstance::ActiveBackgroundRender::blockingRender(){
 }
 
 void AppInstance::ActiveBackgroundRender::notifyFinished(){
+    appPTR->writeToOutputPipe(kRenderingFinishedStringLong,kRenderingFinishedStringShort);
     QMutexLocker locker(&_runningMutex);
     _running = false;
     _runningCond.wakeOne();

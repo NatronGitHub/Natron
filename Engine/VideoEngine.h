@@ -35,7 +35,6 @@
 #include "Engine/FrameEntry.h"
 
 namespace Natron{
-class Row;
 class Node;
 class EffectInstance;
 class OutputEffectInstance;
@@ -43,30 +42,7 @@ class OutputEffectInstance;
 class ViewerInstance;
 class OfxNode;
 class TimeLine;
-class QSocketNotifier;
 class Timer;
-/**
- * @brief For background process only: this is a separate thread that constantly check
- * if stdin has some data available. If it has the kAbortRenderingString, it will abort
- * the render.
- **/
-class VideoEngine;
-class BackgroundProcessAborter : public QThread{
-    
-    
-    VideoEngine* _engine;//< ptr to the engine to abort
-    
-public:
-    
-    BackgroundProcessAborter(VideoEngine* engine);
-    
-    virtual ~BackgroundProcessAborter();
-
-    virtual void run();
-    
-    void stopChecking();
-    
-};
 
 
 /**
@@ -482,8 +458,6 @@ private:
     timeval _startRenderFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
 
     boost::shared_ptr<TimeLine> _timeline;/*!< ptr to the timeline*/
-
-    BackgroundProcessAborter* _processAborter;/*!< for background processes only,read the class description*/
 
 };
 
