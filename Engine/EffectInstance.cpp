@@ -130,9 +130,9 @@ int EffectInstance::hashAge() const{
 }
 
 
-U64 EffectInstance::computeHash(const std::vector<U64>& inputsHashs){
+U64 EffectInstance::computeHash(const std::vector<U64>& inputsHashs,int knobsAge){
     
-    _imp->hashAge = getAppAge();
+    _imp->hashAge = knobsAge;
     
     _imp->hashValue.reset();
     const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();

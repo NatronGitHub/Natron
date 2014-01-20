@@ -582,11 +582,13 @@ void Node::removeImageBeingRendered(SequenceTime time,int view )
 void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf)
 {
 
+    int knobsAge = _imp->previewInstance->getAppAge();
+    
     QMutexLocker locker(&_imp->previewMutex); /// prevent 2 previews to occur at the same time since there's only 1 preview instance
     _imp->computingPreview = true;
     
     RectI rod;
-    _imp->previewRenderTree->refreshTree();
+    _imp->previewRenderTree->refreshTree(knobsAge);
     Natron::Status stat = _imp->previewInstance->getRegionOfDefinition(time, &rod);
     if (stat == StatFailed) {
         _imp->computingPreview = false;

@@ -386,7 +386,7 @@ void Project::endProjectWideValueChanges(KnobHolder* caller){
         _imp->evaluationsCount = 0;
         
         ///if the outermost bracket reason was USER_EDITED, trigger an auto-save.
-        if(found->second.second == Natron::USER_EDITED){
+        if(found->second.second == Natron::USER_EDITED && _imp->lastKnobChanged->typeName() != Button_Knob::typeNameStatic()){
             getApp()->triggerAutoSave();
         }
         

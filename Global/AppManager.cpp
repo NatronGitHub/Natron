@@ -1742,9 +1742,12 @@ ProcessHandler::~ProcessHandler(){
 
 
 void ProcessHandler::onStandardOutputBytesWritten(){
-    char buf[10000];
-    _process->readLine(buf, 10000);
-    QString str(buf);
+//    std::cout <<  << std::endl;
+//    char buf[10000];
+//    _process->readLine(buf, 10000);
+    QString str(_process->readAllStandardOutput().data());
+    qDebug() << str ;
+
     if(str.contains(kFrameRenderedString)){
         str = str.remove(kFrameRenderedString);
         _dialog->onFrameRendered(str.toInt());

@@ -683,7 +683,7 @@ void RenderTree::clearGraph(){
     _sorted.clear();
 }
 
-void RenderTree::refreshTree(){
+void RenderTree::refreshTree(int knobsAge){
     _isViewer = dynamic_cast<ViewerInstance*>(_output) != NULL;
     _isOutputOpenFXNode = _output->isOpenFX();
     
@@ -698,7 +698,7 @@ void RenderTree::refreshTree(){
         it->second->updateInputs(this);
         U64 ret = 0;
         it->second->clone();
-        ret = it->second->computeHash(inputsHash);
+        ret = it->second->computeHash(inputsHash,knobsAge);
         inputsHash.push_back(ret);
     }
 }
@@ -725,11 +725,11 @@ void RenderTree::fillGraph(EffectInstance *effect){
     }
 }
 
-U64 RenderTree::cloneKnobsAndcomputeTreeHash(EffectInstance* effect,const std::vector<U64>& inputsHashs){
+U64 RenderTree::cloneKnobsAndcomputeTreeHash(EffectInstance* effect,const std::vector<U64>& inputsHashs,int knobsAge){
     U64 ret = effect->hash().value();
     if(!effect->isHashValid()){
         effect->clone();
-        ret = effect->computeHash(inputsHashs);
+        ret = effect->computeHash(inputsHashs,knobsAge);
         //  std::cout << effect->getName() << ": " << ret << std::endl;
     }
     return ret;
@@ -743,13 +743,13 @@ void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(){
     //    if (oldVersionValid) {
     //        oldVersion = _output->hash().value();
     //    }
-    
+    int knobsAge = _output->getAppAge();
     /*Computing the hash of the tree in topological ordering.
      For each effect in the tree, the hash of its inputs is guaranteed to have
      been computed.*/
     std::vector<U64> inputsHash;
     for (TreeIterator it = _sorted.begin(); it!=_sorted.end(); ++it) {
-        inputsHash.push_back(cloneKnobsAndcomputeTreeHash(it->second,inputsHash));
+        inputsHash.push_back(cloneKnobsAndcomputeTreeHash(it->second,inputsHash,knobsAge));
         (*it).second->clearPersistentMessage();
     }
     _treeVersionValid = true;
@@ -847,8 +847,11 @@ bool VideoEngine::mustQuit() const{
 }
 
 void VideoEngine::refreshTree(){
+    ///get the knobs age before locking to prevent deadlock
+    int knobsAge = _tree.getOutput()->getAppAge();
+    
     QMutexLocker l(&_treeMutex);
-    _tree.refreshTree();
+    _tree.refreshTree(knobsAge);
 }
 
 void VideoEngine::drawTreeOverlays() {

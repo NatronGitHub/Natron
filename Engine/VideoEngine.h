@@ -103,7 +103,7 @@ public:
      *The rest of the tree is fetched recursivly starting from this node.
      *@TODO Throw some exception to detect cycles in the graph
      */
-    void refreshTree();
+    void refreshTree(int knobsAge);
     
     /**
      *@brief Returns an iterator pointing to the first node in the graph in topological order.
@@ -181,7 +181,7 @@ private:
     
     
     
-    U64 cloneKnobsAndcomputeTreeHash(Natron::EffectInstance* effect,const std::vector<U64>& inputsHashs);
+    U64 cloneKnobsAndcomputeTreeHash(Natron::EffectInstance* effect,const std::vector<U64>& inputsHashs,int knobsAge);
     
     
     Natron::EffectInstance* _output; /*!<the output of the Tree*/
@@ -192,7 +192,6 @@ private:
     bool _treeVersionValid;
     Format _renderOutputFormat;
     int _projectViewsCount;
-    
 };
 
 /**
