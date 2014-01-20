@@ -437,6 +437,10 @@ Natron::Status QtReader::render(SequenceTime /*time*/,RenderScale /*scale*/,
     switch (_img->format()) {
         case QImage::Format_RGB32: // The image is stored using a 32-bit RGB format (0xffRRGGBB).
         case QImage::Format_ARGB32: // The image is stored using a 32-bit ARGB format (0xAARRGGBB).
+            //might have to invert y coordinates here
+            _lut->from_byte_packed(output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),output->getRoD(),
+                                   Natron::Color::PACKING_BGRA,Natron::Color::PACKING_RGBA,true,false);
+            break;
         case QImage::Format_ARGB32_Premultiplied: // The image is stored using a premultiplied 32-bit ARGB format (0xAARRGGBB).
             //might have to invert y coordinates here
             _lut->from_byte_packed(output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),output->getRoD(),
