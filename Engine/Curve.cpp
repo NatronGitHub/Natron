@@ -407,8 +407,9 @@ std::pair<double,double>  Curve::getCurveYRange() const
         Int_Knob* intK = dynamic_cast<Int_Knob*>(_imp->owner);
         assert(intK);
         return intK->getMinMaxForCurve(this);
+    } else {
+        return std::make_pair(INT_MIN, INT_MAX);
     }
-    throw std::logic_error("Curve::getCurveYRange() called for a curve which is not int or double");
 }
 
 double Curve::clampValueToCurveYRange(double v) const
