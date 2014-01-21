@@ -60,7 +60,7 @@ namespace Natron{
         FrameKey(SequenceTime time,U64 treeVersion,double zoomFactor,double exposure,
                  int lut,int bitDepth,int channels,int view,
                  const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect):
-        KeyHelper<U64>(1,textureRect.w * textureRect.h  * 4)
+        KeyHelper<U64>(1,bitDepth != 0 ?  textureRect.w * textureRect.h  * 4 * 4 : textureRect.w * textureRect.h  * 4 )
         ,_time(time)
         ,_treeVersion(treeVersion)
         ,_zoomFactor(zoomFactor)

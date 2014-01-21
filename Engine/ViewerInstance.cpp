@@ -631,7 +631,7 @@ void ViewerInstance::convertRowToFitTextureBGRA_fp(const float* data,const std::
     assert(_buffer);
     float* output = reinterpret_cast<float*>(_buffer);
     // offset in the buffer : (y)*(w) where y is the zoomedY of the row and w=nbbytes/sizeof(float)*4 = nbbytes
-    yOffset *= columnSpan.size()*sizeof(float);
+    yOffset *= columnSpan.size()*4;
     output += yOffset;
     int index = 0;
     for (unsigned int i = 0 ; i < columnSpan.size(); ++i) {
