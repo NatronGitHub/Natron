@@ -428,7 +428,7 @@ namespace Natron {
                 }
             }else{
                 for (int f = 0,t = 0 ; f < W ; f += inDelta, t += outDelta) {
-                    to[t] = from_byte_table[(from[f]*255 + 128) / alpha[f]] * alpha[f] / 255.;
+                    to[t] = alpha[f] <= 0 ? 0 : from_byte_table[(from[f]*255 + 128) / alpha[f]] * alpha[f] / 255.;
                 }
             }
             
@@ -450,7 +450,7 @@ namespace Natron {
             }else{
                 for (int f = 0,t = 0 ; f < W ; f += inDelta, t += outDelta) {
                     float a = alpha[f];
-                    to[t] = fromColorSpaceFloatToLinearFloatFast(from[f] / a) * a;
+                    to[t] = a <= 0. ? 0. : fromColorSpaceFloatToLinearFloatFast(from[f] / a) * a;
                 }
             }
         }
@@ -496,9 +496,16 @@ namespace Natron {
                     int inCol = x * inPackingSize;
                     int outCol = x * outPackingSize;
                     float a = (inputHasAlpha && premult) ? src_pixels[inCol + inAOffset] / 255.f : 1.f;
-                    dst_pixels[outCol + outROffset] = from_byte_table[(int)(((src_pixels[inCol + inROffset] / 255.f) / a) * 255)] * a;
-                    dst_pixels[outCol + outGOffset] = from_byte_table[(int)(((src_pixels[inCol + inGOffset] / 255.f) / a) * 255)] * a;
-                    dst_pixels[outCol + outBOffset] = from_byte_table[(int)(((src_pixels[inCol + inBOffset] / 255.f) / a) * 255)] * a;
+                    int r8 = 0, g8 = 0, b8 = 0;
+                    if (a > 0) {
+                        r8 = ((src_pixels[inCol + inROffset] / 255.f) / a) * 255;
+                        g8 = ((src_pixels[inCol + inGOffset] / 255.f) / a) * 255;
+                        b8 = ((src_pixels[inCol + inBOffset] / 255.f) / a) * 255;
+                        assert(r8 >= 0 && r8 < 256 && g8 >= 0 && g8 < 256 && b8 >= 0 && b8 < 256);
+                    }
+                    dst_pixels[outCol + outROffset] = from_byte_table[r8] * a;
+                    dst_pixels[outCol + outGOffset] = from_byte_table[g8] * a;
+                    dst_pixels[outCol + outBOffset] = from_byte_table[b8] * a;
                     if (outputHasAlpha) {
                         dst_pixels[outCol + outAOffset] = a;
                     }
@@ -555,9 +562,15 @@ namespace Natron {
                     int inCol = x * inPackingSize;
                     int outCol = x * outPackingSize;
                     float a = (inputHasAlpha && premult) ? src_pixels[inCol + inAOffset] : 1.f;;
-                    dst_pixels[outCol + outROffset] = fromColorSpaceFloatToLinearFloatFast((src_pixels[inCol + inROffset] / a) * 255.f) * a;
-                    dst_pixels[outCol + outGOffset] = fromColorSpaceFloatToLinearFloatFast((src_pixels[inCol + inGOffset] / a) * 255.f) * a;
-                    dst_pixels[outCol + outBOffset] = fromColorSpaceFloatToLinearFloatFast((src_pixels[inCol + inBOffset] /a) * 255.f) * a;
+                    float rf = 0., gf = 0., bf = 0.;
+                    if (a > 0.) {
+                        rf = (src_pixels[inCol + inROffset] / a) * 255.f;
+                        gf = (src_pixels[inCol + inGOffset] / a) * 255.f;
+                        bf = (src_pixels[inCol + inBOffset] / a) * 255.f;
+                    }
+                    dst_pixels[outCol + outROffset] = fromColorSpaceFloatToLinearFloatFast(rf) * a;
+                    dst_pixels[outCol + outGOffset] = fromColorSpaceFloatToLinearFloatFast(gf) * a;
+                    dst_pixels[outCol + outBOffset] = fromColorSpaceFloatToLinearFloatFast(bf) * a;
                     if(outputHasAlpha) {
                         dst_pixels[outCol + outAOffset] = a;
                     }
