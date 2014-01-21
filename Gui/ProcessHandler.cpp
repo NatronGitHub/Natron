@@ -15,8 +15,7 @@
 #include <QLocalServer>
 #include <QLocalSocket>
 #include <QCoreApplication>
-#include <QMutex>
-#include <QWaitCondition>
+
 
 #include "Global/AppManager.h"
 #include "Engine/KnobFile.h"
@@ -33,6 +32,7 @@ ProcessHandler::ProcessHandler(AppInstance* app,
     ,_ipcServer(0)
     ,_bgProcessOutputSocket(0)
     ,_bgProcessInputSocket(0)
+    ,_earlyCancel(false)
 {
 
     ///setup the server used to listen the output of the background process
@@ -126,7 +126,14 @@ void ProcessHandler::onDataWrittenToSocket() {
             _bgProcessInputSocket = new QLocalSocket();
             QObject::connect(_bgProcessInputSocket, SIGNAL(connected()), this, SLOT(onInputPipeConnectionMade()));
             _bgProcessInputSocket->connectToServer(str,QLocalSocket::ReadWrite);
-
+        }
+    } else if(str.contains(kRenderingStartedShort)) {
+        ///if the user pressed cancel prior to the pipe being created, wait for it to be created and send the abort
+        ///message right away
+        if (_earlyCancel) {
+            _bgProcessInputSocket->waitForConnected(5000);
+            _earlyCancel = false;
+            onProcessCanceled();
         }
     }
 
@@ -149,12 +156,15 @@ void ProcessHandler::onStandardErrorBytesWritten() {
 
 void ProcessHandler::onProcessCanceled(){
     _dialog->hide();
-    _bgProcessInputSocket->write(QString(QString(kAbortRenderingStringShort) + QChar('\n')).toLatin1());
-    _bgProcessInputSocket->flush();
-       if(_process->state() == QProcess::Running) {
-        _process->waitForFinished();
+    if(!_bgProcessInputSocket) {
+        _earlyCancel = true;
+    } else {
+        _bgProcessInputSocket->write(QString(QString(kAbortRenderingStringShort) + QChar('\n')).toLatin1());
+        _bgProcessInputSocket->flush();
+        if(_process->state() == QProcess::Running) {
+            _process->waitForFinished();
+        }
     }
-
 }
 
 void ProcessHandler::onProcessError(QProcess::ProcessError err){
@@ -186,10 +196,6 @@ ProcessInputChannel::ProcessInputChannel(const QString& mainProcessServerName)
 , _backgroundOutputPipe(0)
 , _backgroundIPCServer(0)
 , _backgroundInputPipe(0)
-, _mustInitialize(true)
-, _mustQuit(false)
-, _mustQuitMutex(new QMutex)
-, _mustQuitCond(new QWaitCondition)
 {
     initialize();
     _backgroundIPCServer->moveToThread(this);
@@ -198,19 +204,8 @@ ProcessInputChannel::ProcessInputChannel(const QString& mainProcessServerName)
 }
 
 ProcessInputChannel::~ProcessInputChannel() {
-    
-    {
-        QMutexLocker l(_mustQuitMutex);
-        _mustQuit = true;
-        while (_mustQuit) {
-            _mustQuitCond->wait(_mustQuitMutex);
-        }
-    }
-    
     delete _backgroundIPCServer;
     delete _backgroundOutputPipe;
-    delete _mustQuitMutex;
-    delete _mustQuitCond;
 }
 
 void ProcessInputChannel::writeToOutputChannel(const QString& message){
@@ -227,26 +222,23 @@ void ProcessInputChannel::onNewConnectionPending() {
     QObject::connect(_backgroundInputPipe, SIGNAL(readyRead()), this, SLOT(onInputChannelMessageReceived()));
 }
 
-void ProcessInputChannel::onInputChannelMessageReceived() {
+bool ProcessInputChannel::onInputChannelMessageReceived() {
     QString str(_backgroundInputPipe->readLine());
-    if (str.contains(kRenderingFinishedStringShort)) {
+    if (str.contains(kAbortRenderingStringShort)) {
+        qDebug() << "Aborting render!";
         appPTR->abortAnyProcessing();
+        return true;
     }
+    return false;
 }
 
 void ProcessInputChannel::run() {
     
     for(;;) {
 
-        if (_backgroundInputPipe->waitForReadyRead()) {
-            onInputChannelMessageReceived();
-        }
-        
-        {
-            QMutexLocker l(_mustQuitMutex);
-            if (_mustQuit) {
-                _mustQuit = false;
-                _mustQuitCond->wakeOne();
+        if (_backgroundInputPipe->waitForReadyRead(100)) {
+            if(onInputChannelMessageReceived()) {
+                qDebug() << "Background process now closing the input channel...";
                 return;
             }
         }

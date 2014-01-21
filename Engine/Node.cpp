@@ -161,7 +161,6 @@ void Node::quitAnyProcessing() {
     while (_imp->computingPreview) {
         _imp->computingPreviewCond.wait(&_imp->previewMutex);
     }
-
 }
 
 Node::~Node()

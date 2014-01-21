@@ -228,6 +228,9 @@ bool VideoEngine::startEngine() {
         _timer->playState = RUNNING; /*activating the timer*/
 
     }
+    if(_tree.getOutput()->getApp()->isBackground()){
+        appPTR->writeToOutputPipe(kRenderingStartedLong, kRenderingStartedShort);
+    }
     return true;
 
 }
@@ -285,6 +288,15 @@ bool VideoEngine::stopEngine() {
             assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         }
     }
+    
+    if(_tree.getOutput()->getApp()->isBackground()){
+        _tree.getOutput()->getApp()->notifyRenderFinished(dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput()));
+        _mustQuit = false;
+        _mustQuitCondition.wakeAll();
+        _threadStarted = false;
+        return true;
+    }
+
 
     {
         QMutexLocker locker(&_mustQuitMutex);
@@ -295,14 +307,7 @@ bool VideoEngine::stopEngine() {
             return true;
         }
     }
-    if(_tree.getOutput()->getApp()->isBackground()){
-        _tree.getOutput()->getApp()->notifyRenderFinished(dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput()));
-        _mustQuit = false;
-        _mustQuitCondition.wakeAll();
-        _threadStarted = false;
-        return true;
-    }
-    
+
     /*pause the thread if needed*/
     {
         QMutexLocker locker(&_startMutex);
@@ -388,7 +393,6 @@ void VideoEngine::run(){
         // Set the current frame
         //
         int currentFrame = 0;
-
         if (!_currentRunArgs._recursiveCall) {
             
             /*if writing on disk and not a recursive call, move back the timeline cursor to the start*/
@@ -453,13 +457,13 @@ void VideoEngine::run(){
                 }
             }
         }
-        
+
         ///////////////////////////////
         // Check whether we need to stop the engine or not for various reasons.
         //
         {
             QMutexLocker locker(&_abortedRequestedMutex);
-            if(_abortRequested || // #1 aborted by the user
+            if(_abortRequested > 0 || // #1 aborted by the user
 
                     (_tree.isOutputAViewer() // #2 the Tree contains only 1 frame and we rendered it
                      &&  _currentRunArgs._recursiveCall
@@ -613,7 +617,9 @@ void VideoEngine::abortRendering(){
             it->second->setAborted(true);
         }
         
-        // _abortedCondition.wakeOne();
+        while (_abortRequested > 0) {
+            _abortedRequestedCondition.wait(&_abortedRequestedMutex);
+        }
     }
 }
 

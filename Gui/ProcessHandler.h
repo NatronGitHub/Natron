@@ -28,8 +28,7 @@ class QLocalServer;
 class QLocalSocket;
 class QString;
 class QStringList;
-class QMutex;
-class QWaitCondition;
+
 /**
  * @brief This class represents a background render process. It starts a render and reports progress via a
  * progress dialog. This class encaspulates an IPC server (a named pipe) where the render process can write to
@@ -82,6 +81,8 @@ class ProcessHandler : public QObject {
     //note that this socket is initialized only when the background process sends the message
     //kBgProcessServerCreatedShort, meaning it created its server for the input pipe and we can actually open it.
     QLocalSocket* _bgProcessInputSocket;
+    
+    bool _earlyCancel; //< true if the user pressed cancel but the _bgProcessInput socket was not created yet
     
 public:
 
@@ -179,8 +180,9 @@ public slots:
     
     /**
      * @brief Called whenever the main process writes something to the background process' input channel.
+     * @returns True if the input channel should close, false otherwise.
      **/
-    void onInputChannelMessageReceived();
+    bool onInputChannelMessageReceived();
 
     /**
      * @brief Called when the output pipe connection is successfully sealed.
@@ -208,10 +210,6 @@ private:
     QLocalServer* _backgroundIPCServer;//< for a background app used to manage input IPC  with the gui app
     QLocalSocket* _backgroundInputPipe; //<if the process is bg but managed by a gui process then the pipe is used
                                         //to read input messages
-    bool _mustInitialize;
-    bool _mustQuit;
-    QMutex* _mustQuitMutex;
-    QWaitCondition* _mustQuitCond;
 };
 
 #endif // PROCESSHANDLER_H
