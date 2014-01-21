@@ -405,9 +405,11 @@ void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputI
         
         //half float not supported yet.
         if(_uiContext->viewer->bitDepth() == FLOAT || _uiContext->viewer->bitDepth() == HALF_FLOAT){
+            // image is stored as linear, the OpenGL shader with do gamma/sRGB/Rec709 decompression
             convertRowToFitTextureBGRA_fp(data,columns,rows[i].second,rOffset,gOffset,bOffset,luminance);
         }
         else{
+            // texture is stored as sRGB/Rec709 compressed 8-bit RGBA
             convertRowToFitTextureBGRA(data,columns,rows[i].second,rOffset,gOffset,bOffset,luminance);
         }
     }

@@ -528,7 +528,9 @@ void ViewerGL::paintGL()
             // debug (so the OpenGL debugger can make a breakpoint here)
              //GLfloat d;
               //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
-            activateShaderRGB();
+            if (_imp->supportsGLSL) {
+                activateShaderRGB();
+            }
             checkGLErrors();
         }else{
             glBindTexture(GL_TEXTURE_2D, _imp->blackTex->getTexID());
@@ -964,7 +966,13 @@ void ViewerGL::activateShaderRGB()
 {
     assert(QGLContext::currentContext() == context());
 
-    if (!_imp->supportsGLSL) {
+    // we assume that:
+    // - 8-bits textures are stored non-linear and must be displayer as is
+    // - floating-point textures are linear and must be decompressed according to the given lut
+
+    assert(_imp->supportsGLSL );
+    // don't even bind the shader on 8-bits gamma-compressed textures
+    if (!(bitDepth() != ViewerInstance::BYTE)) {
         return;
     }
     if (!_imp->shaderRGB->bind()) {
@@ -972,7 +980,6 @@ void ViewerGL::activateShaderRGB()
     }
     
     _imp->shaderRGB->setUniformValue("Tex", 0);
-    _imp->shaderRGB->setUniformValue("bitDepth", (GLint)bitDepth());
     _imp->shaderRGB->setUniformValue("expMult",  (GLfloat)_imp->viewerTab->getInternalNode()->getExposure());
     _imp->shaderRGB->setUniformValue("lut", (GLint)_imp->viewerTab->getInternalNode()->getLutType());
     
