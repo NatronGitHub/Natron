@@ -6,8 +6,15 @@
   http://qt-project.org/doc/qt-4.8/qwidget.html#setTabOrder
   http://qt-project.org/doc/qt-4.8/focus.html
   
+- resizing the Viewer fits the frame to the viewer height. It should
+  do it only if the frame was already fitted. Use cas: zoom into the
+  image, resize the viewer => you lose your zoom settings.
 
 ** Here is a list of non-blocking bugs / wanted features:
+
+- derive and integrate are not implemented for animated Double,
+  Double2D, Double3D, RGBA, RGB parameters (derive returns 0,
+  integrate returns (t2-t1)*getValue())
 
 - The OFX keyframe interface is missing some functions unimplemented yet:
 OfxParameterSuiteV1::paramEditBegin — Used to group any parameter changes for undo/redo purposes

@@ -21,58 +21,36 @@
 
 /*Contains the definitions of the display shaders*/
 
-
 static const char* fragRGB =
 "uniform sampler2D Tex;\n"
-"uniform int bitDepth;\n"
 "uniform float expMult;\n"
 "uniform int lut;\n"
 "\n"
+"float linear_to_srgb(float c) {\n"
+"    return (c<=0.0031308) ? (12.92*c) : (((1.0+0.055)*pow(c,1.0/2.4))-0.055);\n"
+"}\n"
+"float linear_to_rec709(float c) {"
+"    return (c<0.018) ? (4.500*c) : (1.099*pow(c,0.45) - 0.099);\n"
+"}\n"
 "void main(){\n"
 "    \n"
 "    vec4 color_tmp = texture2D(Tex,gl_TexCoord[0].st);\n"
-"if(bitDepth != 0){\n"
 "    \n"
 "    color_tmp.rgb = color_tmp.rgb ;\n"
 "   if(lut == 0){ // srgb\n"
-"           \n" // << TO SRGB
-"       if (color_tmp.r<=0.0031308){\n"
-"           color_tmp.r=(12.92*color_tmp.r);\n"
-"       }else{\n"
-"           color_tmp.r =(((1.0+0.055)*pow(color_tmp.r,1.0/2.4))-0.055);\n"
-"       }\n"
-"       if (color_tmp.g<=0.0031308){\n"
-"           color_tmp.g=(12.92*color_tmp.g);\n"
-"       }else{\n"
-"           color_tmp.g =(((1.0+0.055)*pow(color_tmp.g,1.0/2.4))-0.055);\n"
-"       }\n"
-"       if (color_tmp.b<=0.0031308){\n"
-"           color_tmp.b=(12.92*color_tmp.b);\n"
-"       }else{\n"
-"           color_tmp.b =(((1.0+0.055)*pow(color_tmp.b,1.0/2.4))-0.055);\n"
-"       }\n" // << END TO SRGB
+// << TO SRGB
+"       color_tmp.r = linear_to_srgb(color_tmp.r);"
+"       color_tmp.g = linear_to_srgb(color_tmp.g);"
+"       color_tmp.b = linear_to_srgb(color_tmp.b);"
+// << END TO SRGB
 "   }\n"
 "   else if( lut == 2){ // Rec 709\n" // << TO REC 709
-"       if(color_tmp.r < 0.018){\n"
-"           color_tmp.r=color_tmp.r*4.500;\n"
-"       }else{\n"
-"           color_tmp.r=(1.099*pow(color_tmp.r,0.45) - 0.099);\n"
-"       }\n"
-"       if(color_tmp.g < 0.018){\n"
-"           color_tmp.g=color_tmp.g*4.500;\n"
-"       }else{\n"
-"           color_tmp.g=(1.099*pow(color_tmp.g,0.45) - 0.099);\n"
-"       }\n"
-""
-"       if(color_tmp.b < 0.018){\n"
-"           color_tmp.b=color_tmp.b*4.500;\n"
-"       }else{\n"
-"           color_tmp.b=(1.099*pow(color_tmp.b,0.45) - 0.099);\n"
-"       }\n"
+"       color_tmp.r = linear_to_rec709(color_tmp.r);"
+"       color_tmp.g = linear_to_rec709(color_tmp.g);"
+"       color_tmp.b = linear_to_rec709(color_tmp.b);"
 "\n"
 "   }\n"   // << END TO REC 709
 "   color_tmp.rgb = color_tmp.rgb * expMult;\n"
-"}\n" // end if !bytemode
 "	gl_FragColor = color_tmp;\n"
 "}\n"
 ;
