@@ -18,7 +18,6 @@
 #include <QtCore/QObject>
 #include <QtCore/QDateTime>
 #include <QtCore/QStringList>
-#include <QtCore/QProcess>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 
@@ -52,15 +51,12 @@ class VideoEngine;
 class QMutex;
 class TimeLine;
 class QFile;
-class QProcess;
 class QTextStream;
-class QSocketNotifier;
-class QLocalSocket;
-class QLocalServer;
 class Settings;
-class RenderingProgressDialog;
 class KnobSerialization;
 struct KnobsClipBoard;
+class ProcessHandler;
+class ProcessInputChannel;
 namespace Natron {
 class OutputEffectInstance;
 class LibraryBinary;
@@ -69,46 +65,6 @@ class OfxHost;
 class Node;
 class Project;
 }
-
-class ProcessHandler : public QObject {
-
-    Q_OBJECT
-
-    AppInstance* _app;//< pointer to the app executing this process
-    QProcess* _process; //< the process executing the render
-    bool _hasProcessBeenDeleted;
-    Natron::OutputEffectInstance* _writer;//< pointer to the writer actually rendering
-    RenderingProgressDialog* _dialog;//< a dialog to report progress and allow the user to cancel the process
-    QLocalServer* _ipcServer; //< the server for IPC with the background process
-    QLocalSocket* _socket; //< the socket where data is exchanged
-    
-public:
-
-    ProcessHandler(AppInstance* app,
-                   const QString& programPath,
-                   const QStringList& programArgs,
-                   QLocalServer* ipcServer,
-                   Natron::OutputEffectInstance* writer);
-
-    virtual ~ProcessHandler();
-
-public slots:
-    
-    void onNewConnectionPending();
-    
-    void onDataWrittenToSocket();
-
-    void onStandardOutputBytesWritten();
-    
-    void onStandardErrorBytesWritten();
-
-    void onProcessCanceled();
-
-    void onProcessError(QProcess::ProcessError err);
-
-    void onProcessEnd(int exitCode,QProcess::ExitStatus stat);
-};
-
 
 
 class AppInstance : public QObject,public boost::noncopyable
@@ -518,7 +474,7 @@ public:
 
     void getKnobClipBoard(KnobSerialization* k,bool* copyAnimation) const;
 
-    void initBackroundPipes(const QString& pipeName);
+    void initProcessInputChannel(const QString& mainProcessServerName);
 
     /**
      * @brief If the current process is a background process, then it will right the output pipe the
@@ -526,9 +482,9 @@ public:
      **/
     bool writeToOutputPipe(const QString& longMessage,const QString& shortMessage);
 
-public slots:
+    void abortAnyProcessing();
 
-    void onInputPipeChanged();
+public slots:
 
     void clearPlaybackCache();
 
@@ -612,8 +568,9 @@ private:
 
     boost::scoped_ptr<KnobsClipBoard> _knobsClipBoard;
 
-    QLocalSocket* _backgroundPipe; //< if the process is background but managed by a gui process then this
-                               //pipe is used for IPC
+    ProcessInputChannel* _backgroundIPC; //< object used to communicate with the main app
+                                         //if this app is background, see the ProcessInputChannel def
+
 };
 
 namespace Natron{

@@ -17,6 +17,9 @@
 #include <QtGui/QPixmap>
 #include <QDebug>
 #include <QFontDatabase>
+#include <QMetaType>
+#include <QAbstractSocket>
+
 #include "Global/GlobalDefines.h"
 #include "Global/AppManager.h"
 
@@ -29,6 +32,7 @@
 #include "Gui/KnobGui.h"
 #include "Gui/CurveWidget.h"
 
+Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
 
 void registerMetaTypes(){
     qRegisterMetaType<Variant>();
@@ -39,6 +43,7 @@ void registerMetaTypes(){
     qRegisterMetaType<Knob*>();
     qRegisterMetaType<Natron::Node*>();
     qRegisterMetaType<CurveWidget*>();
+    qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
 }
 
 void printBackGroundWelcomeMessage(){
@@ -110,7 +115,7 @@ int main(int argc, char *argv[])
     QStringList writers;
     bool expectWriterNameOnNextArg = false;
     bool expectPipeFileNameOnNextArg = false;
-    QString pipeName;
+    QString mainProcessServerName;
     QStringList args;
     for(int i = 0; i < argc ;++i){
         args.push_back(QString(argv[i]));
@@ -153,7 +158,7 @@ int main(int argc, char *argv[])
         }
         if (expectPipeFileNameOnNextArg) {
             assert(!expectWriterNameOnNextArg);
-            pipeName = args.at(i);
+            mainProcessServerName = args.at(i);
             expectPipeFileNameOnNextArg = false;
         }
     }
@@ -186,8 +191,8 @@ int main(int argc, char *argv[])
         QIcon appIc(appIcPixmap);
         qApp->setWindowIcon(appIc);
     } else {
-        if (!pipeName.isEmpty()) {
-            manager->initBackroundPipes(pipeName);
+        if (!mainProcessServerName.isEmpty()) {
+            manager->initProcessInputChannel(mainProcessServerName);
         }
     }
     

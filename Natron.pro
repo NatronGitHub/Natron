@@ -206,6 +206,7 @@ SOURCES += \
     Gui/NodeGui.cpp \
     Gui/NodeGuiSerialization.cpp \
     Gui/PreferencesPanel.cpp \
+    Gui/ProcessHandler.cpp \
     Gui/ProjectGui.cpp \
     Gui/ProjectGuiSerialization.cpp \
     Gui/ScaleSlider.cpp \
@@ -312,6 +313,7 @@ HEADERS += \
     Gui/NodeGui.h \
     Gui/NodeGuiSerialization.h \
     Gui/PreferencesPanel.h \
+    Gui/ProcessHandler.h \
     Gui/ProjectGui.h \
     Gui/ProjectGuiSerialization.h \
     Gui/ScaleSlider.h \
@@ -365,6 +367,7 @@ HEADERS += \
     libs/OpenFX_extensions/tuttle/ofxReadWrite.h \
     libs/OpenFX_extensions/ofxhParametricParam.h \
     libs/OpenFX/include/natron/IOExtensions.h
+
 INSTALLS += target
 
 RESOURCES += \

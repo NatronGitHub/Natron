@@ -58,6 +58,8 @@ typedef OfxRGBAColourF RGBAColourF;
 #define kAbortRenderingStringLong "Abort rendering"
 #define kAbortRenderingStringShort "-a"
 
+#define kBgProcessServerCreatedShort "--bg_server_created"
+
 
 #define kNodeGraphObjectName "NodeGraph"
 #define kCurveEditorObjectName "CurveEditor"
