@@ -241,13 +241,16 @@ bool VideoEngine::stopEngine() {
             QMutexLocker l(&_abortedRequestedMutex);
             _abortRequested = 0;
             
-            /*refresh preview for all nodes that have preview enabled & set the aborted flag to false.
+            /*Eefresh preview for all nodes that have preview enabled & set the aborted flag to false.
+             ONLY If we're not rendering the same frame (i.e: not panning & zooming)
            .*/
-            for (RenderTree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
-                if(it->second->isPreviewEnabled()){
-                    it->second->getNode()->refreshPreviewImage(_timeline->currentFrame());
+            if (!_currentRunArgs._sameFrame) {
+                for (RenderTree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
+                    if(it->second->isPreviewEnabled()){
+                        it->second->getNode()->refreshPreviewImage(_timeline->currentFrame());
+                    }
+                    it->second->setAborted(false);
                 }
-                it->second->setAborted(false);
             }
             
             _abortedRequestedCondition.wakeOne();

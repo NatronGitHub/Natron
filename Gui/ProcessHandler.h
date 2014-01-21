@@ -135,6 +135,11 @@ public slots:
      * @brief Called when the process finishes.
      **/
     void onProcessEnd(int exitCode,QProcess::ExitStatus stat);
+    
+    /**
+     * @brief Called when the input pipe connection is successfully sealed.
+     **/
+    void onInputPipeConnectionMade();
 };
 
 /**
@@ -177,6 +182,10 @@ public slots:
      **/
     void onInputChannelMessageReceived();
 
+    /**
+     * @brief Called when the output pipe connection is successfully sealed.
+     **/
+    void onOutputPipeConnectionMade();
     
 private:
     

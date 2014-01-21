@@ -1216,17 +1216,41 @@ void NodeGraph::dropEvent(QDropEvent* event){
     
     for(U32 i = 0 ; i < files.size();++i){
         
+        ///get all the decoders
+        std::map<std::string,std::string> readersForFormat;
+        appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
+        
         QStringList list = files[i];
-        Natron::Node* reader = _gui->getApp()->createNode("Reader",true);
-        const std::vector<boost::shared_ptr<Knob> >& knobs = reader->getKnobs();
-        for(U32 j = 0 ; j < knobs.size();++j){
-            if(knobs[j]->typeName() == File_Knob::typeNameStatic()){
-                boost::shared_ptr<File_Knob> fileKnob = boost::dynamic_pointer_cast<File_Knob>(knobs[j]);
-                assert(fileKnob);
-                fileKnob->setFiles(files[i]);
-                break;
+        
+        ///find a decoder for this file type
+        QString first = list.at(0);
+        std::string ext = Natron::removeFileExtension(first).toLower().toStdString();
+        
+        std::map<std::string,std::string>::iterator found = readersForFormat.find(ext);
+        if (found == readersForFormat.end()) {
+            errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
+        } else {
+            Natron::Node* n = getGui()->getApp()->createNode(found->second.c_str(),-1,-1,false,false);
+            const std::vector<boost::shared_ptr<Knob> >& knobs = n->getKnobs();
+            for (U32 i = 0; i < knobs.size(); ++i) {
+                if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
+                    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
+                    assert(fk);
+                    
+                    if(!fk->isInputImageFile() && list.size() > 1){
+                        errorDialog("Reader", "This plug-in doesn't support image sequences, please select only 1 file.");
+                        break;
+                    } else {
+                        fk->setValue<QStringList>(list);
+                        break;
+                    }
+                    
+                }
             }
+
         }
+        
+        
     }
     
 }

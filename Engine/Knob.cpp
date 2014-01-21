@@ -143,7 +143,12 @@ void Knob::remove(){
 }
 
 
-const Variant& Knob::getValue(int dimension) const {
+Variant Knob::getValue(int dimension) const {
+    
+    if (isAnimated(dimension)) {
+        return getValueAtTime(getHolder()->getApp()->getTimeLine()->currentFrame(), dimension);
+    }
+    
     if(dimension > (int)_imp->_values.size()){
         throw std::invalid_argument("Knob::getValue(): Dimension out of range");
     }

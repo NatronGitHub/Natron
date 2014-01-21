@@ -118,7 +118,7 @@ public:
     virtual QString saveExtraData() const { return ""; }
     
 
-    const Variant& getValue(int dimension = 0) const;
+    Variant getValue(int dimension = 0) const;
 
     template <typename T>
     T getValue(int dimension = 0) const {

@@ -109,26 +109,32 @@ void ProcessHandler::onDataWrittenToSocket() {
     if(str.contains(kFrameRenderedStringShort)){
         str = str.remove(kFrameRenderedStringShort);
         _dialog->onFrameRendered(str.toInt());
+        qDebug() << str;
     }else if(str.contains(kRenderingFinishedStringShort)){
+        qDebug() << str;
         if(_process->state() == QProcess::Running) {
             _process->waitForFinished();
         }
     }else if(str.contains(kProgressChangedStringShort)){
         str = str.remove(kProgressChangedStringShort);
         _dialog->onCurrentFrameProgress(str.toInt());
+        
     }else if(str.contains(kBgProcessServerCreatedShort)){
         str = str.remove(kBgProcessServerCreatedShort);
         ///the bg process wants us to create the pipe for its input
         if (!_bgProcessInputSocket) {
             _bgProcessInputSocket = new QLocalSocket();
+            QObject::connect(_bgProcessInputSocket, SIGNAL(connected()), this, SLOT(onInputPipeConnectionMade()));
             _bgProcessInputSocket->connectToServer(str,QLocalSocket::ReadWrite);
 
         }
     }
-    qDebug() << str;
 
 }
 
+void ProcessHandler::onInputPipeConnectionMade() {
+    qDebug() << "The input channel was successfully created and connected.";
+}
 
 void ProcessHandler::onStandardOutputBytesWritten(){
 
@@ -185,6 +191,8 @@ ProcessInputChannel::ProcessInputChannel(const QString& mainProcessServerName)
 , _mustQuitMutex(new QMutex)
 , _mustQuitCond(new QWaitCondition)
 {
+    initialize();
+    _backgroundIPCServer->moveToThread(this);
     start();
     
 }
@@ -220,6 +228,7 @@ void ProcessInputChannel::onNewConnectionPending() {
 }
 
 void ProcessInputChannel::onInputChannelMessageReceived() {
+    std::cout << "RECEIVED" << std::endl;
     QString str(_backgroundInputPipe->readLine());
     if (str.contains(kRenderingFinishedStringShort)) {
         appPTR->abortAnyProcessing();
@@ -229,11 +238,7 @@ void ProcessInputChannel::onInputChannelMessageReceived() {
 void ProcessInputChannel::run() {
     
     for(;;) {
-        if (_mustInitialize) {
-            initialize();
-            _mustInitialize = false;
-        }
-        
+
         {
             QMutexLocker l(_mustQuitMutex);
             if (_mustQuit) {
@@ -247,6 +252,7 @@ void ProcessInputChannel::run() {
 
 void ProcessInputChannel::initialize() {
     _backgroundOutputPipe = new QLocalSocket();
+    QObject::connect(_backgroundOutputPipe, SIGNAL(connected()), this, SLOT(onOutputPipeConnectionMade()));
     _backgroundOutputPipe->connectToServer(_mainProcessServerName,QLocalSocket::ReadWrite);
     
     QDateTime now = QDateTime::currentDateTime();
@@ -269,4 +275,8 @@ void ProcessInputChannel::initialize() {
     ///Qt didn't caught the new connection pending.
     QCoreApplication::processEvents();
 
+}
+
+void ProcessInputChannel::onOutputPipeConnectionMade() {
+    qDebug() << "The output channel was successfully created and connected.";
 }
