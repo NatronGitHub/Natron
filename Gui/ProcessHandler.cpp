@@ -228,7 +228,6 @@ void ProcessInputChannel::onNewConnectionPending() {
 }
 
 void ProcessInputChannel::onInputChannelMessageReceived() {
-    std::cout << "RECEIVED" << std::endl;
     QString str(_backgroundInputPipe->readLine());
     if (str.contains(kRenderingFinishedStringShort)) {
         appPTR->abortAnyProcessing();
@@ -239,6 +238,10 @@ void ProcessInputChannel::run() {
     
     for(;;) {
 
+        if (_backgroundInputPipe->waitForReadyRead()) {
+            onInputChannelMessageReceived();
+        }
+        
         {
             QMutexLocker l(_mustQuitMutex);
             if (_mustQuit) {

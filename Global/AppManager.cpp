@@ -538,7 +538,15 @@ void AppInstance::loadProjectInternal(const QString& path,const QString& name){
     /*Refresh all viewers as it was*/
     if(!isBackground()){
         notifyViewersProjectFormatChanged(_currentProject->getProjectDefaultFormat());
-        checkViewersConnection();
+        const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
+        for (U32 i = 0; i < nodes.size(); ++i) {
+            assert(nodes[i]);
+            if (nodes[i]->pluginID() == "Viewer") {
+                ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
+                assert(n);
+                n->getVideoEngine()->render(1, true,false,true,false);
+            }
+        }
     }
 
 }
