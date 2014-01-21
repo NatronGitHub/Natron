@@ -360,6 +360,8 @@ void Project::endProjectWideValueChanges(KnobHolder* caller){
     ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
     assert(found != _imp->holdersWhoseBeginWasCalled.end());
     
+    Natron::ValueChangedReason outerMostReason = found->second.second;
+    
     ///If we're closing the last bracket, call the caller portion of endKnobsValuesChanged
     if(found->second.first == 1){
         caller->endKnobsValuesChanged(found->second.second);
@@ -386,14 +388,14 @@ void Project::endProjectWideValueChanges(KnobHolder* caller){
         _imp->evaluationsCount = 0;
         
         ///if the outermost bracket reason was USER_EDITED, trigger an auto-save.
-        if(found->second.second == Natron::USER_EDITED && _imp->lastKnobChanged->typeName() != Button_Knob::typeNameStatic()){
+        if(outerMostReason == Natron::USER_EDITED && _imp->lastKnobChanged->typeName() != Button_Knob::typeNameStatic()){
             getApp()->triggerAutoSave();
         }
         
         ///if the outermost bracket reason was not OTHER_REASON or TIME_CHANGED, then call evaluate
         ///on the last caller with
         ///the significant param recorded in the stackEvaluateRequest function.
-        if(found->second.second != Natron::OTHER_REASON && found->second.second != Natron::TIME_CHANGED){
+        if(outerMostReason != Natron::OTHER_REASON && outerMostReason != Natron::TIME_CHANGED){
             caller->evaluate(_imp->lastKnobChanged,_imp->isSignificantChange);
         }
     }
