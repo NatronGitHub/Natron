@@ -256,9 +256,10 @@ void Project::onTimeChanged(SequenceTime time,int reason){
     
     for(U32 i = 0; i < viewers.size();++i){
         if(viewers[i] != _imp->lastTimelineSeekCaller || reason == USER_SEEK){
-            viewers[i]->getVideoEngine()->render(1, false,false,true,false);
+            viewers[i]->getVideoEngine()->render(1, false,false,true,true);
         }
     }
+    _imp->lastTimelineSeekCaller = 0;
 
 }
 void Project::save(ProjectSerialization* serializationObject) const {
