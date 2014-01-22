@@ -242,14 +242,17 @@ SequenceTime QtReader::getSequenceTime(SequenceTime t)
 {
     
     int timeOffset = _timeOffset->getValue<int>();
+
+    
+    
+    SequenceTime first = _firstFrame->getValue<int>();
+    SequenceTime last = _lastFrame->getValue<int>();
+    
+    SequenceTime originalFirst = _fileKnob->firstFrame();
+    
     
     ///offset the time wrt the starting time
-    SequenceTime sequenceTime =  t - timeOffset;
-    
-    
-    SequenceTime first,last;
-    getSequenceTimeDomain(first, last);
-    timeDomainFromSequenceTimeDomain(first, last, false);
+    SequenceTime sequenceTime =  t - timeOffset + first - originalFirst;
     
     ///get the offset from the starting time of the sequence in case we bounce or loop
     int timeOffsetFromStart = sequenceTime -  first;
