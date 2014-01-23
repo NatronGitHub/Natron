@@ -751,8 +751,11 @@ void OfxEffectInstance::onKnobValueChanged(Knob* k,Natron::ValueChangedReason re
         default:
             break;
     }
-    // note: DON'T remove the following assert()s, unless you replace them with proper error feedback.
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+
+    if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
+        Natron::errorDialog(getName(), "An error occured while changing a parameter.");
+        return;
+    }
     
     if(_overlayInteract){
         std::vector<std::string> params;

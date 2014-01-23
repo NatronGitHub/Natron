@@ -543,9 +543,6 @@ public slots:
     
     void onKnobAnimationLevelChanged(int lvl);
     
-public slots:
-    void onFrameRangeChanged(int,int);
-
 private:
     OfxEffectInstance* _node;
     boost::shared_ptr<File_Knob> _fileKnob;

@@ -217,8 +217,8 @@ public:
         
     private:
         
-        std::set<int> _frames; /// each bit  represents a frame index. The storage is a vector if there're more than 64
-                                    /// files in the sequence. The first frame and the last frame are not counted in these bits.
+        std::set<int> _frames;
+
     };
     
     

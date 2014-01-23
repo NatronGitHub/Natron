@@ -448,7 +448,6 @@ void TimeLineGui::mousePressEvent(QMouseEvent* e){
 
 }
 void TimeLineGui::mouseMoveEvent(QMouseEvent* e){
-    _imp->_alphaCursor = true;
     _imp->_lastMouseEventWidgetCoord = e->pos();
     double c = toTimeLineCoordinates(e->x(),0).x();
     bool distortViewPort = false;
@@ -456,6 +455,7 @@ void TimeLineGui::mouseMoveEvent(QMouseEvent* e){
 
         emit frameChanged(c);
         distortViewPort = true;
+        _imp->_alphaCursor = false;
     }else if(_imp->_state == DRAGGING_BOUNDARY){
 
         int firstPos = toWidgetCoordinates(_imp->_timeline->leftBound()-1,0).x();
@@ -472,6 +472,9 @@ void TimeLineGui::mouseMoveEvent(QMouseEvent* e){
             }
         }
         distortViewPort = true;
+        _imp->_alphaCursor = false;
+    } else {
+        _imp->_alphaCursor = true;
     }
 
     if(distortViewPort){
