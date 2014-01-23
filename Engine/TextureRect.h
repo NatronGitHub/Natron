@@ -31,15 +31,19 @@ public:
     h(h_){}
     
     int x,y,r,t; // the edges of the texture. These are coordinates in the full size image
+                 // unlike the RectI class, r and t are INCLUDED in the rectangle such as:
+                 // x <= column <= r
+                 // and
+                 // y <= row <= t
     int w,h; // the width and height of the texture. This has nothing to do with x,y,r,t
 };
 inline bool operator==(const TextureRect& first ,const TextureRect& second){
    return first.x == second.x &&
     first.y == second.y &&
     first.r == second.r &&
-    first.t == second.t &&
-    first.w == second.w &&
-    first.h == second.h;
+    first.t == second.t;// &&
+    //first.w == second.w &&
+    //first.h == second.h;
 }
 
 inline bool operator!=(const TextureRect& first ,const TextureRect& second){ return !(first == second); }

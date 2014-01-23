@@ -24,7 +24,7 @@
 #include "Gui/ViewerTab.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/ticks.h"
-
+#include "Gui/Gui.h"
 
 using namespace Natron;
 
@@ -57,6 +57,7 @@ struct ZoomContext {
 struct TimelineGuiPrivate{
 
     boost::shared_ptr<TimeLine> _timeline; //ptr to the internal timeline
+    Gui* _gui; //< ptr to the gui
     bool _alphaCursor; // should cursor be drawn semi-transparant
     QPoint _lastMouseEventWidgetCoord;
     Natron::TIMELINE_STATE _state; //state machine for mouse events
@@ -75,8 +76,9 @@ struct TimelineGuiPrivate{
     QFont _font;
     bool _firstPaint;
 
-    TimelineGuiPrivate(boost::shared_ptr<TimeLine> timeline):
+    TimelineGuiPrivate(boost::shared_ptr<TimeLine> timeline,Gui* gui):
         _timeline(timeline)
+      , _gui(gui)
       , _alphaCursor(false)
       , _lastMouseEventWidgetCoord()
       , _state(IDLE)
@@ -98,9 +100,9 @@ struct TimelineGuiPrivate{
 
 };
 
-TimeLineGui::TimeLineGui(boost::shared_ptr<TimeLine> timeline, QWidget* parent, const QGLWidget *shareWidget):
+TimeLineGui::TimeLineGui(boost::shared_ptr<TimeLine> timeline,Gui* gui, QWidget* parent, const QGLWidget *shareWidget):
     QGLWidget(parent,shareWidget),
-    _imp(new TimelineGuiPrivate(timeline))
+    _imp(new TimelineGuiPrivate(timeline,gui))
 {
     
     //connect the internal timeline to the gui
@@ -438,6 +440,7 @@ void TimeLineGui::mousePressEvent(QMouseEvent* e){
         }
     }else{
         _imp->_state = DRAGGING_CURSOR;
+        _imp->_gui->setUserScrubbingTimeline(true);
         seek(c);
     }
     
@@ -499,6 +502,10 @@ void TimeLineGui::leaveEvent(QEvent* e){
 
 
 void TimeLineGui::mouseReleaseEvent(QMouseEvent* e){
+    if (_imp->_state == DRAGGING_CURSOR) {
+        _imp->_gui->setUserScrubbingTimeline(false);
+        _imp->_gui->refreshAllPreviews();
+    }
     _imp->_state = IDLE;
     QGLWidget::mouseReleaseEvent(e);
 }

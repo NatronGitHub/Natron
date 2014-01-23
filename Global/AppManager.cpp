@@ -229,7 +229,7 @@ void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
             *pix = QPixmap::fromImage(img);
             break;
         default:
-            assert("Missing image.");
+            assert(!"Missing image.");
         }
         QPixmapCache::insert(QString::number(e),*pix);
     }
@@ -431,6 +431,10 @@ const std::vector<NodeGui*>& AppInstance::getVisibleNodes() const{
     assert(_gui->_nodeGraphArea);
     return  _gui->_nodeGraphArea->getAllActiveNodes();
     
+}
+
+bool AppInstance::shouldRefreshPreview() const {
+    return !_isBackground && !_gui->isUserScrubbingTimeline();
 }
 
 void AppInstance::lockProject(){

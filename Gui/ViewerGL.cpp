@@ -265,24 +265,24 @@ struct ViewerGL::Implementation {
     Natron::TextRenderer textRenderer;
 };
 
-static const GLfloat renderingTextureCoordinates[32] = {
-    0 , 1 , //0
-    0 , 1 , //1
-    1 , 1 ,//2
-    1 , 1 , //3
-    0 , 1 , //4
-    0 , 1 , //5
-    1 , 1 , //6
-    1 , 1 , //7
-    0 , 0 , //8
-    0 , 0 , //9
-    1 , 0 ,  //10
-    1 , 0 , //11
-    0 , 0 , // 12
-    0 , 0 , //13
-    1 , 0 , //14
-    1 , 0   //15
-};
+//static const GLfloat renderingTextureCoordinates[32] = {
+//    0 , 1 , //0
+//    0 , 1 , //1
+//    1 , 1 ,//2
+//    1 , 1 , //3
+//    0 , 1 , //4
+//    0 , 1 , //5
+//    1 , 1 , //6
+//    1 , 1 , //7
+//    0 , 0 , //8
+//    0 , 0 , //9
+//    1 , 0 ,  //10
+//    1 , 0 , //11
+//    0 , 0 , // 12
+//    0 , 0 , //13
+//    1 , 0 , //14
+//    1 , 0   //15
+//};
 
 /*see http://www.learnopengles.com/android-lesson-eight-an-introduction-to-index-buffer-objects-ibos/ */
 static const GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
@@ -315,24 +315,55 @@ void ViewerGL::drawRenderingVAO() {
     assert(QGLContext::currentContext() == context());
 
     const TextureRect& r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
-    const RectI& img = _imp->clipToDisplayWindow ? getDisplayWindow() : getRoD();
+    const RectI& rod = _imp->clipToDisplayWindow ? getDisplayWindow() : getRoD();
+    const RectI& roi = _imp->currentViewerInfos.getRoI();
+    
     GLfloat vertices[32] = {
-        (GLfloat)img.left() ,(GLfloat)img.top()  , //0
-        (GLfloat)r.x       , (GLfloat)img.top()  , //1
-        (GLfloat)r.r + 1.f , (GLfloat)img.top()  , //2
-        (GLfloat)img.right(),(GLfloat)img.top()  , //3
-        (GLfloat)img.left(), (GLfloat)r.t + 1.f, //4
+        (GLfloat)rod.left() ,(GLfloat)rod.top()  , //0
+        (GLfloat)r.x       , (GLfloat)rod.top()  , //1
+        (GLfloat)r.r + 1.f , (GLfloat)rod.top()  , //2
+        (GLfloat)rod.right(),(GLfloat)rod.top()  , //3
+        (GLfloat)rod.left(), (GLfloat)r.t + 1.f, //4
         (GLfloat)r.x      ,  (GLfloat)r.t + 1.f, //5
         (GLfloat)r.r + 1.f,  (GLfloat)r.t + 1.f, //6
-        (GLfloat)img.right(),(GLfloat)r.t + 1.f, //7
-        (GLfloat)img.left() ,(GLfloat)r.y      , //8
+        (GLfloat)rod.right(),(GLfloat)r.t + 1.f, //7
+        (GLfloat)rod.left() ,(GLfloat)r.y      , //8
         (GLfloat)r.x      ,  (GLfloat)r.y      , //9
         (GLfloat)r.r + 1.f,  (GLfloat)r.y      , //10
-        (GLfloat)img.right(),(GLfloat)r.y      , //11
-        (GLfloat)img.left(), (GLfloat)img.bottom(), //12
-        (GLfloat)r.x      ,  (GLfloat)img.bottom(), //13
-        (GLfloat)r.r + 1.f,  (GLfloat)img.bottom(), //14
-        (GLfloat)img.right(),(GLfloat)img.bottom() //15
+        (GLfloat)rod.right(),(GLfloat)r.y      , //11
+        (GLfloat)rod.left(), (GLfloat)rod.bottom(), //12
+        (GLfloat)r.x      ,  (GLfloat)rod.bottom(), //13
+        (GLfloat)r.r + 1.f,  (GLfloat)rod.bottom(), //14
+        (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
+    };
+    
+    double closestPowerOf2 = _imp->zoomCtx.zoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(_imp->zoomCtx.zoomFactor) / std::log(2)));
+    GLfloat texBottom,texLeft,texRight,texTop;
+    texBottom = r.y == 0 ? 0 : (GLfloat)roi.bottom() / (GLfloat)(closestPowerOf2 * r.y);
+    texLeft = r.x == 0 ? 0 : (GLfloat)roi.left() / (GLfloat)(closestPowerOf2 * r.x);
+    texRight = (GLfloat)roi.right() / (GLfloat)(closestPowerOf2 * (r.t + 1));
+    texTop = (GLfloat)roi.top() /  (GLfloat)(closestPowerOf2 * (r.r + 1));
+    
+    texRight = texRight > 1 ? 1 : texRight;
+    texTop = texTop > 1 ? 1 : texTop;
+    
+    GLfloat renderingTextureCoordinates[32] = {
+        texLeft , texTop , //0
+        texLeft , texTop , //1
+        texRight , texTop ,//2
+        texRight , texTop , //3
+        texLeft , texTop , //4
+        texLeft , texTop , //5
+        texRight , texTop , //6
+        texRight , texTop , //7
+        texLeft , texBottom , //8
+        texLeft , texBottom , //9
+        texRight , texBottom ,  //10
+        texRight , texBottom , //11
+        texLeft , texBottom , // 12
+        texLeft , texBottom , //13
+        texRight , texBottom , //14
+        texRight , texBottom   //15
     };
     
     glBindBuffer(GL_ARRAY_BUFFER, _imp->vboVerticesId);
@@ -341,6 +372,7 @@ void ViewerGL::drawRenderingVAO() {
     glVertexPointer(2, GL_FLOAT, 0, 0);
     
     glBindBuffer(GL_ARRAY_BUFFER, _imp->vboTexturesId);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, 32*sizeof(GLfloat), renderingTextureCoordinates);
     glClientActiveTexture(GL_TEXTURE0);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glTexCoordPointer(2, GL_FLOAT, 0 , 0);
@@ -526,8 +558,8 @@ void ViewerGL::paintGL()
         if(_imp->displayingImage){
             glBindTexture(GL_TEXTURE_2D, _imp->defaultDisplayTexture->getTexID());
             // debug (so the OpenGL debugger can make a breakpoint here)
-             //GLfloat d;
-              //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+             GLfloat d;
+             glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
             if (_imp->supportsGLSL) {
                 activateShaderRGB();
             }
@@ -771,7 +803,7 @@ void ViewerGL::initializeGL()
     glGenBuffers(1 , &_imp->iboTriangleStripId);
     
     glBindBuffer(GL_ARRAY_BUFFER, _imp->vboTexturesId);
-    glBufferData(GL_ARRAY_BUFFER, 32*sizeof(GLfloat), renderingTextureCoordinates, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 32*sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
     
     glBindBuffer(GL_ARRAY_BUFFER, _imp->vboVerticesId);
     glBufferData(GL_ARRAY_BUFFER, 32*sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
@@ -813,6 +845,20 @@ GLuint ViewerGL::getPboID(int index)
 double ViewerGL::getZoomFactor()
 {
     return _imp->zoomCtx.zoomFactor;
+}
+
+RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD) {
+    RectI ret;
+    QPointF topLeft = toImgCoordinates_fast(0, 0);
+    ret.x1 = topLeft.x();
+    ret.y2 = topLeft.y();
+    QPointF bottomRight = toImgCoordinates_fast(width()-1, height()-1);
+    ret.x2 = bottomRight.x();
+    ret.y1 = bottomRight.y();
+    if(!ret.intersect(imageRoD, &ret)){
+        ret.clear();
+    }
+    return ret;
 }
 
 std::pair<int,int> ViewerGL::computeRowSpan(int bottom,int top, std::vector<int>* rows) {
@@ -1471,6 +1517,11 @@ void ViewerGL::setRod(const RectI& rod){
     
     
 }
+
+void ViewerGL::setRoI(const RectI& roi) {
+    _imp->currentViewerInfos.setRoI(roi);
+}
+
 void ViewerGL::onProjectFormatChanged(const Format& format){
     _imp->currentViewerInfos.setDisplayWindow(format);
     _imp->blankViewerInfos.setDisplayWindow(format);

@@ -282,6 +282,12 @@ public:
     
     void createWriter();
     
+    void setUserScrubbingTimeline(bool b) { _isUserScrubbingTimeline = b; }
+    
+    bool isUserScrubbingTimeline() const { return _isUserScrubbingTimeline; }
+    
+    void refreshAllPreviews();
+    
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);
@@ -354,6 +360,8 @@ private:
 
 private:
     // FIXME: PIMPL
+    bool _isUserScrubbingTimeline;
+    
     ViewerTab* _lastSelectedViewer;
     AppInstance* _appInstance;
     QWaitCondition _uiUsingMainThreadCond;

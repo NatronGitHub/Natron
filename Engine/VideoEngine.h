@@ -238,7 +238,7 @@ signals:
     /**
      *@brief emitted when the engine started to render a sequence (which can be only a sequence of 1 frame).
      **/
-    void engineStarted(bool forward);
+    void engineStarted(bool forward,int frameCount);
     
     /**
      *@brief emitted when the engine finished rendering for a sequence (which can be only a sequence of 1 frame).
@@ -271,7 +271,8 @@ public:
      *@param frameCount[in] This is the number of frames you want to execute the engine for. -1 will make the
      *engine run until the end of the sequence is reached. If loop mode is enabled, the engine will never stops
      *until the user explicitly stops it.
-     *@param updateDAG if true, the engine will rebuild the internal Tree in the startEngine() function.
+     *@param seekTimeline If frameCount == 1 then if it seekTimeline is false the timeline will not be moved by the playback.
+     *@param refreshTree if true, the engine will rebuild the internal Tree in the startEngine() function.
      *@param fitFrameToViewer[in] If true, it will fit the first frame to the viewport.
      *@param forward[in] If true, the engine runs forwards, otherwise backwards.
      *@param sameFrame[in] If true, that means the engine will not increment/decrement the frame indexes and will run
@@ -279,10 +280,12 @@ public:
      *is on, frameCount MUST be 1.
      **/
     void render(int frameCount,
+                bool seekTimeline,
                 bool refreshTree,
                 bool fitFrameToViewer = false,
                 bool forward = true,
-                bool sameFrame = false);
+                bool sameFrame = false,
+                bool forcePreview = false);
     
     
     
@@ -395,6 +398,8 @@ private:
         _recursiveCall(false),
         _forward(true),
         _refreshTree(false),
+        _seekTimeline(true),
+        _forcePreview(false),
         _frameRequestsCount(0),
         _frameRequestIndex(0)
         {}
@@ -405,6 +410,8 @@ private:
         bool _recursiveCall;
         bool _forward;/*!< forwards/backwards video engine*/
         bool _refreshTree;
+        bool _seekTimeline;
+        bool _forcePreview;
         int _frameRequestsCount;/*!< The index of the last frame +1 if the engine
                                  is forward (-1 otherwise). This value is -1 if we're looping.*/
         int _frameRequestIndex;/*!< counter of the frames computed:used to refresh the fps only every 24 frames*/

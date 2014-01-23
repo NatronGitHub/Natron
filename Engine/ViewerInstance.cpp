@@ -34,6 +34,7 @@
 #include "Engine/Cache.h"
 #include "Engine/Log.h"
 #include "Engine/Lut.h"
+#include "Engine/Settings.h"
 
 using namespace Natron;
 using std::make_pair;
@@ -182,28 +183,21 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     }
     
     /*computing the RoI*/
-    std::vector<int> rows;
-    std::vector<int> columns;
-    int bottom = std::max(rod.bottom(),dispW.bottom());
-    int top = std::min(rod.top(),dispW.top());
-    int left = std::max(rod.left(),dispW.left());
-    int right = std::min(rod.right(), dispW.right());
-    std::pair<int,int> rowSpan = viewer->computeRowSpan(bottom,top, &rows);
-    std::pair<int,int> columnSpan = viewer->computeColumnSpan(left,right, &columns);
+    double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(zoomFactor) / std::log(2)));
+    RectI roi = viewer->getImageRectangleDisplayed(rod);
+    viewer->setRoI(roi);
+    //int textureW = roi.width() / closestPowerOf2;
+    //int textureH = roi.height() / closestPowerOf2;
+    RectI texRect;
+    double tileSize = std::pow(2., (double)appPTR->getCurrentSettings()->getViewerTilesPowerOf2());
+    texRect.x1 = std::floor(((double)roi.x1 / closestPowerOf2) / tileSize) * tileSize;
+    texRect.y1 = std::floor(((double)roi.y1 / closestPowerOf2) / tileSize) * tileSize;
+    texRect.x2 = std::ceil(((double)roi.x2 / closestPowerOf2) / tileSize) * tileSize;
+    texRect.y2 = std::ceil(((double)roi.y2 / closestPowerOf2) / tileSize) * tileSize;
+    texRect.intersect(rod, &texRect);
     
-    TextureRect textureRect(columnSpan.first,rowSpan.first,columnSpan.second,rowSpan.second,columns.size(),rows.size());
-#ifdef NATRON_LOG
-    Natron::Log::print(QString("Image rect is..."
-                               " xmin= "+QString::number(left)+
-                               " ymin= "+QString::number(bottom)+
-                               " xmax= "+QString::number(right)+
-                               " ymax= "+QString::number(top)+
-                               " Viewer RoI is...."+
-                               " xmin= "+QString::number(textureRect.x)+
-                               " ymin= "+QString::number(textureRect.y)+
-                               " xmax= "+QString::number(textureRect.r+1)+
-                               " ymax= "+QString::number(textureRect.t+1)).toStdString());
-#endif
+    TextureRect textureRect(texRect.x1,texRect.y1,texRect.x2-1,texRect.y2-1,texRect.x2 - texRect.x1,texRect.y2 - texRect.y1);
+
     if(textureRect.w == 0 || textureRect.h == 0){
         return StatOK;
     }
@@ -277,7 +271,6 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
         _interThreadInfos._ramBuffer = _buffer;
         
         {
-            RectI roi(textureRect.x,textureRect.y,textureRect.r+1,textureRect.t+1);
             /*for now we skip the render scale*/
             RenderScale scale;
             scale.x = scale.y = 1.;
@@ -307,31 +300,20 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
                 return StatOK;
             }
             
-            int rowsPerThread = std::ceil((double)rows.size()/(double)QThread::idealThreadCount());
+            int rowsPerThread = std::ceil((double)roi.height()/(double)QThread::idealThreadCount());
             // group of group of rows where first is image coordinate, second is texture coordinate
-            std::vector< std::vector<std::pair<int,int> > > splitRows;
-            U32 k = 0;
-            while (k < rows.size()) {
-                std::vector<std::pair<int,int> > rowsForThread;
-                bool shouldBreak = false;
-                for (int i = 0; i < rowsPerThread; ++i) {
-                    if(k >= rows.size()){
-                        shouldBreak = true;
-                        break;
-                    }
-                    rowsForThread.push_back(make_pair(rows[k],k));
-                    ++k;
-                }
-                
-                splitRows.push_back(rowsForThread);
-                if(shouldBreak){
-                    break;
-                }
+            std::vector< std::pair<int,int > > splitRows;
+            int k = roi.bottom();
+            while (k < roi.top()) {
+                int top = k + rowsPerThread;
+                int realTop = top > roi.top() ? roi.top() : top;
+                splitRows.push_back(std::make_pair(k,realTop));
+                k += rowsPerThread;
             }
             {
                 QMutexLocker locker(&_renderArgsMutex);
                 QFuture<void> future = QtConcurrent::map(splitRows,
-                                                         boost::bind(&ViewerInstance::renderFunctor,this,inputImage,_1,columns));
+                                                         boost::bind(&ViewerInstance::renderFunctor,this,inputImage,_1,roi,closestPowerOf2));
                 future.waitForFinished();
             }
         }
@@ -359,10 +341,11 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     }
     return StatOK;
 }
-
-void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,
-                                   const std::vector<std::pair<int,int> >& rows,
-                                   const std::vector<int>& columns){
+void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,const std::pair<int,int> yRange,
+                   const RectI& roi,int closestPowerOf2) {
+//void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,
+//                                   const std::vector<std::pair<int,int> >& rows,
+//                                   const std::vector<int>& columns){
     if(aborted()){
         return;
     }
@@ -399,116 +382,31 @@ void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputI
             bOffset = 3;
             break;
     }
-
-    for(U32 i = 0; i < rows.size();++i){
-        const float* data = inputImage->pixelAt(0, rows[i].first);
-        
-        //half float not supported yet.
-        if(_uiContext->viewer->bitDepth() == FLOAT || _uiContext->viewer->bitDepth() == HALF_FLOAT){
-            // image is stored as linear, the OpenGL shader with do gamma/sRGB/Rec709 decompression
-            convertRowToFitTextureBGRA_fp(data,columns,rows[i].second,rOffset,gOffset,bOffset,luminance);
-        }
-        else{
-            // texture is stored as sRGB/Rec709 compressed 8-bit RGBA
-            convertRowToFitTextureBGRA(data,columns,rows[i].second,rOffset,gOffset,bOffset,luminance);
-        }
+    if(_uiContext->viewer->bitDepth() == FLOAT || _uiContext->viewer->bitDepth() == HALF_FLOAT){
+        // image is stored as linear, the OpenGL shader with do gamma/sRGB/Rec709 decompression
+        scaleToTexture32bits(inputImage,yRange,roi,closestPowerOf2,rOffset,gOffset,bOffset,luminance);
     }
-}
-
-void ViewerInstance::wakeUpAnySleepingThread(){
-    _usingOpenGL = false;
-    _usingOpenGLCond.wakeAll();
-}
-
-void ViewerInstance::updateViewer(){
-    QMutexLocker locker(&_usingOpenGLMutex);
-    ViewerGL* viewer = _uiContext->viewer;
-    viewer->makeCurrent();
-    if(!aborted()){
-        viewer->transferBufferFromRAMtoGPU(_interThreadInfos._ramBuffer,
-                                           _interThreadInfos._bytesCount,
-                                           _interThreadInfos._textureRect,
-                                           _pboIndex);
-        _pboIndex = (_pboIndex+1)%2;
+    else{
+        // texture is stored as sRGB/Rec709 compressed 8-bit RGBA
+        scaleToTexture8bits(inputImage,yRange,roi,closestPowerOf2,rOffset,gOffset,bOffset,luminance);
     }
-        
-    viewer->updateColorPicker();
-    viewer->update();
+
     
-    _usingOpenGL = false;
-    _usingOpenGLCond.wakeOne();
+//    for(U32 i = 0; i < rows.size();++i){
+//        const float* data = inputImage->pixelAt(0, rows[i].first);
+//        
+//        //half float not supported yet.
+//        if(_uiContext->viewer->bitDepth() == FLOAT || _uiContext->viewer->bitDepth() == HALF_FLOAT){
+//            // image is stored as linear, the OpenGL shader with do gamma/sRGB/Rec709 decompression
+//            convertRowToFitTextureBGRA_fp(data,columns,rows[i].second,rOffset,gOffset,bOffset,luminance);
+//        }
+//        else{
+//            // texture is stored as sRGB/Rec709 compressed 8-bit RGBA
+//            convertRowToFitTextureBGRA(data,columns,rows[i].second,rOffset,gOffset,bOffset,luminance);
+//        }
+//    }
 }
 
-
-
-void ViewerInstance::redrawViewer(){
-    emit mustRedraw();
-}
-
-void ViewerInstance::swapBuffers(){
-    emit mustSwapBuffers();
-}
-
-void ViewerInstance::pixelScale(double &x,double &y) {
-    assert(_uiContext);
-    assert(_uiContext->viewer);
-    x = _uiContext->viewer->getDisplayWindow().getPixelAspect();
-    y = 2. - x;
-}
-
-void ViewerInstance::backgroundColor(double &r,double &g,double &b) {
-    assert(_uiContext);
-    assert(_uiContext->viewer);
-    _uiContext->viewer->backgroundColor(r, g, b);
-}
-
-void ViewerInstance::viewportSize(double &w,double &h) {
-    assert(_uiContext);
-    assert(_uiContext->viewer);
-    const Format& f = _uiContext->viewer->getDisplayWindow();
-    w = f.width();
-    h = f.height();
-}
-
-void ViewerInstance::drawOverlays() const{
-    getVideoEngine()->drawTreeOverlays();
-}
-
-void ViewerInstance::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos){
-    getVideoEngine()->notifyTreeOverlaysPenDown(viewportPos, pos);
-}
-
-void ViewerInstance::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos){
-    getVideoEngine()->notifyTreeOverlaysPenMotion(viewportPos, pos);
-}
-
-void ViewerInstance::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos){
-    getVideoEngine()->notifyTreeOverlaysPenUp(viewportPos, pos);
-}
-
-void ViewerInstance::notifyOverlaysKeyDown(QKeyEvent* e){
-    getVideoEngine()->notifyTreeOverlaysKeyDown(e);
-}
-
-void ViewerInstance::notifyOverlaysKeyUp(QKeyEvent* e){
-    getVideoEngine()->notifyTreeOverlaysKeyUp(e);
-}
-
-void ViewerInstance::notifyOverlaysKeyRepeat(QKeyEvent* e){
-    getVideoEngine()->notifyTreeOverlaysKeyRepeat(e);
-}
-
-void ViewerInstance::notifyOverlaysFocusGained(){
-    getVideoEngine()->notifyTreeOverlaysFocusGained();
-}
-
-void ViewerInstance::notifyOverlaysFocusLost(){
-    getVideoEngine()->notifyTreeOverlaysFocusLost();
-}
-
-bool ViewerInstance::isInputOptional(int n) const{
-    return n != activeInput();
-}
 
 void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vector<int>& columnSpan,int yOffset,
                                                 int rOffset,int gOffset,int bOffset,bool luminance){
@@ -652,6 +550,57 @@ void ViewerInstance::convertRowToFitTextureBGRA_fp(const float* data,const std::
     }
     
 }
+
+void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> inputImage,const std::pair<int,int> yRange,
+                                         const RectI& roi,int closestPowerOf2,int rOffset,int gOffset,int bOffset,bool luminance) {
+    
+}
+
+void ViewerInstance::scaleToTexture32bits(boost::shared_ptr<const Natron::Image> inputImage,const std::pair<int,int> yRange,const RectI& roi,
+                                          int closestPowerOf2,int rOffset,int gOffset,int bOffset,bool luminance) {
+    // QString str = QString("Thread roi y1= %1 y2= %2").arg(roi.y1).arg(roi.y2);
+    // std::cout << str.toStdString() << std::endl;
+    assert(_buffer);
+    
+    ///the base output buffer
+    float* output = reinterpret_cast<float*>(_buffer);
+    
+    ///the width of the output buffer multiplied by the channels count
+    int dst_width = _interThreadInfos._textureRect.w * 4;
+    
+    ///offset the output buffer at the starting point
+    output += ((yRange.first - roi.y1) / closestPowerOf2) * dst_width;
+    
+    ///iterating over the scan-lines of the input image
+    int dstY = 0;
+    for (int y = yRange.first; y < yRange.second; y += closestPowerOf2) {
+        
+        ///get the ptr of the source pixels of the scan-line
+        const float* src_pixels = (const float*)inputImage->pixelAt(roi.x1, y);
+        float* dst_pixels = output + dstY * dst_width;
+        
+        ///we fill the scan-line with all the pixels of the input image
+        for (int x = roi.x1; x < roi.x2; x+=closestPowerOf2) {
+            double r = src_pixels[rOffset];
+            double g = src_pixels[gOffset];
+            double b = src_pixels[bOffset];
+            if(luminance){
+                r = 0.299 * r + 0.587 * g + 0.114 * b;
+                g = r;
+                b = r;
+            }
+            *dst_pixels++ = r;
+            *dst_pixels++ = g;
+            *dst_pixels++ = b;
+            *dst_pixels++ = 1.;
+            
+            src_pixels += closestPowerOf2 * 4;
+        }
+        ++dstY;
+    }
+    
+}
+
 U32 ViewerInstance::toBGRA(U32 r,U32 g,U32 b,U32 a){
     U32 res = 0x0;
     res |= b;
@@ -659,9 +608,103 @@ U32 ViewerInstance::toBGRA(U32 r,U32 g,U32 b,U32 a){
     res |= (r << 16);
     res |= (a << 24);
     return res;
-    
 }
 
+
+void ViewerInstance::wakeUpAnySleepingThread(){
+    _usingOpenGL = false;
+    _usingOpenGLCond.wakeAll();
+}
+
+void ViewerInstance::updateViewer(){
+    QMutexLocker locker(&_usingOpenGLMutex);
+    ViewerGL* viewer = _uiContext->viewer;
+    viewer->makeCurrent();
+    if(!aborted()){
+        viewer->transferBufferFromRAMtoGPU(_interThreadInfos._ramBuffer,
+                                           _interThreadInfos._bytesCount,
+                                           _interThreadInfos._textureRect,
+                                           _pboIndex);
+        _pboIndex = (_pboIndex+1)%2;
+    }
+    
+    viewer->updateColorPicker();
+    viewer->update();
+    
+    _usingOpenGL = false;
+    _usingOpenGLCond.wakeOne();
+}
+
+
+
+void ViewerInstance::redrawViewer(){
+    emit mustRedraw();
+}
+
+void ViewerInstance::swapBuffers(){
+    emit mustSwapBuffers();
+}
+
+void ViewerInstance::pixelScale(double &x,double &y) {
+    assert(_uiContext);
+    assert(_uiContext->viewer);
+    x = _uiContext->viewer->getDisplayWindow().getPixelAspect();
+    y = 2. - x;
+}
+
+void ViewerInstance::backgroundColor(double &r,double &g,double &b) {
+    assert(_uiContext);
+    assert(_uiContext->viewer);
+    _uiContext->viewer->backgroundColor(r, g, b);
+}
+
+void ViewerInstance::viewportSize(double &w,double &h) {
+    assert(_uiContext);
+    assert(_uiContext->viewer);
+    const Format& f = _uiContext->viewer->getDisplayWindow();
+    w = f.width();
+    h = f.height();
+}
+
+void ViewerInstance::drawOverlays() const{
+    getVideoEngine()->drawTreeOverlays();
+}
+
+void ViewerInstance::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos){
+    getVideoEngine()->notifyTreeOverlaysPenDown(viewportPos, pos);
+}
+
+void ViewerInstance::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos){
+    getVideoEngine()->notifyTreeOverlaysPenMotion(viewportPos, pos);
+}
+
+void ViewerInstance::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos){
+    getVideoEngine()->notifyTreeOverlaysPenUp(viewportPos, pos);
+}
+
+void ViewerInstance::notifyOverlaysKeyDown(QKeyEvent* e){
+    getVideoEngine()->notifyTreeOverlaysKeyDown(e);
+}
+
+void ViewerInstance::notifyOverlaysKeyUp(QKeyEvent* e){
+    getVideoEngine()->notifyTreeOverlaysKeyUp(e);
+}
+
+void ViewerInstance::notifyOverlaysKeyRepeat(QKeyEvent* e){
+    getVideoEngine()->notifyTreeOverlaysKeyRepeat(e);
+}
+
+void ViewerInstance::notifyOverlaysFocusGained(){
+    getVideoEngine()->notifyTreeOverlaysFocusGained();
+}
+
+void ViewerInstance::notifyOverlaysFocusLost(){
+    getVideoEngine()->notifyTreeOverlaysFocusLost();
+}
+
+bool ViewerInstance::isInputOptional(int n) const{
+    return n != activeInput();
+}
 void ViewerInstance::onExposureChanged(double exp){
     QMutexLocker l(&_renderArgsMutex);
     _exposure = exp;

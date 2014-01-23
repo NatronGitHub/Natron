@@ -22,7 +22,7 @@
 
 #include "Global/GlobalDefines.h"
 
-
+class Gui;
 class ViewerTab;
 class QMouseEvent;
 class TimeLine;
@@ -33,7 +33,7 @@ class TimeLineGui : public QGLWidget{
     Q_OBJECT
 
 public:
-    explicit TimeLineGui(boost::shared_ptr<TimeLine> timeLine, QWidget* parent,const QGLWidget* shareWidget = NULL);
+    explicit TimeLineGui(boost::shared_ptr<TimeLine> timeLine,Gui* gui, QWidget* parent,const QGLWidget* shareWidget = NULL);
 
     virtual ~TimeLineGui() OVERRIDE;
 

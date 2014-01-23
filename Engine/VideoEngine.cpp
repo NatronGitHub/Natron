@@ -53,7 +53,7 @@ using std::cout; using std::endl;
 VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
     : QThread(parent)
     , _tree(owner)
-    , _treeMutex()
+    , _treeMutex(QMutex::Recursive)
     , _threadStarted(false)
     , _abortBeingProcessedMutex()
     , _abortBeingProcessed(false)
@@ -103,8 +103,7 @@ void VideoEngine::quitEngineThread(){
             ++_startCount;
             _startCondition.wakeAll();
         }
-        if(_tree.isOutputAViewer())
-            _tree.outputAsViewer()->wakeUpAnySleepingThread();
+        
         {
             QMutexLocker locker(&_mustQuitMutex);
             while(_mustQuit){
@@ -117,10 +116,12 @@ void VideoEngine::quitEngineThread(){
 }
 
 void VideoEngine::render(int frameCount,
+                         bool seekTimeline,
                          bool refreshTree,
                          bool fitFrameToViewer,
                          bool forward,
-                         bool sameFrame) {
+                         bool sameFrame,
+                         bool forcePreview) {
     
     
     /*If the Tree was never built and we don't want to update the Tree, force an update
@@ -134,9 +135,10 @@ void VideoEngine::render(int frameCount,
     _lastRequestedRunArgs._recursiveCall = false;
     _lastRequestedRunArgs._forward = forward;
     _lastRequestedRunArgs._refreshTree = refreshTree;
+    _lastRequestedRunArgs._seekTimeline = seekTimeline;
     _lastRequestedRunArgs._frameRequestsCount = frameCount;
     _lastRequestedRunArgs._frameRequestIndex = 0;
-
+    _lastRequestedRunArgs._forcePreview = forcePreview;
     
     
     /*Starting or waking-up the thread*/
@@ -224,7 +226,7 @@ bool VideoEngine::startEngine() {
     }
     
     if(!_currentRunArgs._sameFrame){
-        emit engineStarted(_currentRunArgs._forward);
+        emit engineStarted(_currentRunArgs._forward,_currentRunArgs._frameRequestsCount);
         _timer->playState = RUNNING; /*activating the timer*/
 
     }
@@ -244,17 +246,19 @@ bool VideoEngine::stopEngine() {
             QMutexLocker l(&_abortedRequestedMutex);
             _abortRequested = 0;
             
-            /*Eefresh preview for all nodes that have preview enabled & set the aborted flag to false.
-             ONLY If we're not rendering the same frame (i.e: not panning & zooming)
-           .*/
-            if (!_currentRunArgs._sameFrame) {
-                for (RenderTree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
-                    if(it->second->isPreviewEnabled()){
-                        it->second->getNode()->refreshPreviewImage(_timeline->currentFrame());
-                    }
-                    it->second->setAborted(false);
+            /*Refresh preview for all nodes that have preview enabled & set the aborted flag to false.
+             ONLY If we're not rendering the same frame (i.e: not panning & zooming) and the user is not scrubbing
+             .*/
+            
+            bool shouldRefreshPreview = (_tree.getOutput()->getApp()->shouldRefreshPreview() && !_currentRunArgs._sameFrame)
+            || _currentRunArgs._forcePreview;
+            for (RenderTree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
+                if(it->second->isPreviewEnabled() && shouldRefreshPreview){
+                    it->second->getNode()->refreshPreviewImage(_timeline->currentFrame());
                 }
+                it->second->setAborted(false);
             }
+            
             
             _abortedRequestedCondition.wakeOne();
         }
@@ -403,7 +407,7 @@ void VideoEngine::run(){
                 currentFrame = firstFrame;
             }
 
-        } else if(!_currentRunArgs._sameFrame) {
+        } else if(!_currentRunArgs._sameFrame && _currentRunArgs._seekTimeline) {
             assert(_currentRunArgs._recursiveCall); // we're in the else part
             if (!viewer) {
                 output->setCurrentFrame(output->getCurrentFrame()+1);
@@ -616,7 +620,8 @@ void VideoEngine::abortRendering(){
         for (RenderTree::TreeReverseIterator it = _tree.rbegin(); it != _tree.rend(); ++it) {
             it->second->setAborted(true);
         }
-        
+        if(_tree.isOutputAViewer())
+            _tree.outputAsViewer()->wakeUpAnySleepingThread();
         while (_abortRequested > 0) {
             _abortedRequestedCondition.wait(&_abortedRequestedMutex);
         }
@@ -634,7 +639,7 @@ void VideoEngine::refreshAndContinueRender(bool initViewer){
     bool isPlaybackRunning = isWorking() && (_currentRunArgs._frameRequestsCount == -1 ||
                                              (_currentRunArgs._frameRequestsCount > 1 && _currentRunArgs._frameRequestIndex < _currentRunArgs._frameRequestsCount - 1));
     if(!isPlaybackRunning){
-        render(1,false,initViewer,_currentRunArgs._forward,true);
+        render(1,false,false,initViewer,_currentRunArgs._forward,true);
     }
 }
 void VideoEngine::updateTreeAndContinueRender(bool initViewer){
@@ -647,9 +652,9 @@ void VideoEngine::updateTreeAndContinueRender(bool initViewer){
         int count = _currentRunArgs._frameRequestsCount == - 1 ? -1 :
                                                                  _currentRunArgs._frameRequestsCount - _currentRunArgs._frameRequestIndex ;
         abortRendering();
-        render(count,true,initViewer,_currentRunArgs._forward,false);
+        render(count,true,initViewer,_currentRunArgs._forward,false,true);
     }else{
-        render(1,true,initViewer,_currentRunArgs._forward,true);
+        render(1,false,true,initViewer,_currentRunArgs._forward,true,true);
     }
 }
 

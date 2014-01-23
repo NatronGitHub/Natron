@@ -978,8 +978,7 @@ void ConnectCommand::undo(){
     _edge->getDest()->getNode()->hasViewersConnected(&viewers);
     for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
         (*it)->updateTreeAndRender();
-    }
-    
+    }    
 }
 void ConnectCommand::redo(){
     _graph->getGui()->getApp()->lockProject();
@@ -1024,6 +1023,7 @@ void ConnectCommand::redo(){
         for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
             (*it)->updateTreeAndRender();
         }
+
     }else{
         setText(QObject::tr("Disconnect %1")
                 .arg(_edge->getDest()->getNode()->getName().c_str()));

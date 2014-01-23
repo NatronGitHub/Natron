@@ -64,6 +64,21 @@ void Settings::initializeKnobs(){
                                   " Hover each option with the mouse for a more detailed comprehension.");
     _viewersTab->addKnob(_texturesMode);
     
+    _powerOf2Tiling = Natron::createKnob<Int_Knob>(this, "Tiles power of two");
+    _powerOf2Tiling->setHintToolTip("The power of 2 of the tiles size used by the Viewer to render."
+                                    " A high value means that the viewer will usually render big tiles, which means"
+                                    " you have good chances when panning/zooming to find an already rendered texture in the cache."
+                                    " On the other hand a small value means that the tiles will be closer to the real size of"
+                                    " images to be rendered and as a result of this there might be more cache misses." );
+    _powerOf2Tiling->setMinimum(4);
+    _powerOf2Tiling->setDisplayMinimum(4);
+    _powerOf2Tiling->setMaximum(9);
+    _powerOf2Tiling->setDisplayMaximum(9);
+    
+    _powerOf2Tiling->setValue<int>(8);
+    _powerOf2Tiling->turnOffAnimation();
+    _viewersTab->addKnob(_powerOf2Tiling);
+    
     _cachingTab = Natron::createKnob<Tab_Knob>(this, "Caching");
     
     _maxRAMPercent = Natron::createKnob<Int_Knob>(this, "Maximum system's RAM for caching");
@@ -126,6 +141,7 @@ void Settings::saveSettings(){
     
     settings.beginGroup("Viewers");
     settings.setValue("ByteTextures", _texturesMode->getValue<int>());
+    settings.setValue("TilesPowerOf2", _powerOf2Tiling->getValue<int>());
     settings.endGroup();
     
     settings.beginGroup("Readers");
@@ -170,13 +186,19 @@ void Settings::restoreSettings(){
     if(settings.contains("ByteTextures")){
         _texturesMode->setValue<int>(settings.value("ByteTextures").toFloat());
     }
+    if (settings.contains("TilesPowerOf2")) {
+        _powerOf2Tiling->setValue<int>(settings.value("TilesPowerOf2").toInt());
+    }
     settings.endGroup();
     
     settings.beginGroup("Readers");
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
         QString format = _readersMapping[i]->getDescription().c_str();
         if(settings.contains(format)){
-            _readersMapping[i]->setValue<int>(settings.value(format).toInt());
+            int index = settings.value(format).toInt();
+            if (index < (int)_readersMapping[i]->getEntries().size()) {
+                _readersMapping[i]->setValue<int>(index);
+            }
         }
     }
     settings.endGroup();
@@ -185,7 +207,10 @@ void Settings::restoreSettings(){
     for (U32 i = 0; i < _writersMapping.size(); ++i) {
         QString format = _writersMapping[i]->getDescription().c_str();
         if(settings.contains(format)){
-            _writersMapping[i]->setValue<int>(settings.value(format).toInt());
+            int index = settings.value(format).toInt();
+            if (index < (int)_writersMapping[i]->getEntries().size()) {
+                _writersMapping[i]->setValue<int>(index);   
+            }
         }
     }
     settings.endGroup();
@@ -230,6 +255,10 @@ void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/)
 
 int Settings::getViewersBitDepth() const{
     return _texturesMode->getValue<int>();
+}
+
+int Settings::getViewerTilesPowerOf2() const {
+    return _powerOf2Tiling->getValue<int>();
 }
 
 double Settings::getRamMaximumPercent() const{

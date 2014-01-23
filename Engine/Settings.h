@@ -52,6 +52,8 @@ public:
     
     int getViewersBitDepth() const;
     
+    int getViewerTilesPowerOf2() const;
+    
     double getRamMaximumPercent() const;
     
     double getRamPlaybackMaximumPercent() const;
@@ -78,6 +80,7 @@ public:
     ///restores the settings from disk
     void restoreSettings();
     
+    
 private:
     
     boost::shared_ptr<Tab_Knob> _generalTab;
@@ -90,6 +93,7 @@ private:
     
     boost::shared_ptr<Tab_Knob> _viewersTab;
     boost::shared_ptr<Choice_Knob> _texturesMode;
+    boost::shared_ptr<Int_Knob> _powerOf2Tiling;
     
     boost::shared_ptr<Tab_Knob> _readersTab;
     std::vector< boost::shared_ptr<Choice_Knob> > _readersMapping;

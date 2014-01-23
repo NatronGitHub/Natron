@@ -402,7 +402,7 @@ _viewerNode(node)
     /*=================================================*/
     
     /*frame seeker*/
-    _timeLineGui = new TimeLineGui(_gui->getApp()->getTimeLine(),this);
+    _timeLineGui = new TimeLineGui(_gui->getApp()->getTimeLine(),_gui,this);
     _timeLineGui->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _mainLayout->addWidget(_timeLineGui);
     /*================================================*/
@@ -443,7 +443,7 @@ _viewerNode(node)
     QObject::connect(fpsBox, SIGNAL(valueChanged(double)), vengine, SLOT(setDesiredFPS(double)));
     QObject::connect(vengine, SIGNAL(fpsChanged(double,double)), _infosWidget, SLOT(setFps(double,double)));
     QObject::connect(vengine,SIGNAL(engineStopped()),_infosWidget,SLOT(hideFps()));
-    QObject::connect(vengine, SIGNAL(engineStarted(bool)), this, SLOT(onEngineStarted(bool)));
+    QObject::connect(vengine, SIGNAL(engineStarted(bool,int)), this, SLOT(onEngineStarted(bool,int)));
     QObject::connect(vengine, SIGNAL(engineStopped()), this, SLOT(onEngineStopped()));
     
     
@@ -498,11 +498,14 @@ void ViewerTab::onClipToProjectButtonToggle(bool b){
     viewer->setClipToDisplayWindow(b);
 }
 
-void ViewerTab::onEngineStarted(bool forward){
-    play_Forward_Button->setChecked(forward);
-    play_Forward_Button->setDown(forward);
-    play_Backward_Button->setChecked(!forward);
-    play_Backward_Button->setDown(!forward);
+void ViewerTab::onEngineStarted(bool forward,int frameCount){
+    
+    if (frameCount > 1) {
+        play_Forward_Button->setChecked(forward);
+        play_Forward_Button->setDown(forward);
+        play_Backward_Button->setChecked(!forward);
+        play_Backward_Button->setDown(!forward);
+    }
 }
 
 void ViewerTab::onEngineStopped(){
@@ -527,6 +530,7 @@ void ViewerTab::startPause(bool b){
     abortRendering();
     if(b){
         _viewerNode->getVideoEngine()->render(-1, /*frame count*/
+                                              true,/*seek timeline ?*/
                                               true,/*rebuild tree?*/
                                               false, /*fit to viewer ?*/
                                               true, /*forward ?*/
@@ -540,6 +544,7 @@ void ViewerTab::startBackward(bool b){
     abortRendering();
     if(b){
         _viewerNode->getVideoEngine()->render(-1, /*frame count*/
+                                              true,/*seek timeline ?*/
                                               true,/*rebuild tree?*/
                                               false,/*fit to viewer?*/
                                               false,/*forward?*/

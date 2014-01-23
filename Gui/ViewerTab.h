@@ -80,7 +80,7 @@ public slots:
     void disconnectViewer();
     
     
-    void onEngineStarted(bool forward);
+    void onEngineStarted(bool forward,int frameCount);
     
     void onEngineStopped();
     

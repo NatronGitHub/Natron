@@ -677,6 +677,6 @@ void OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
 void OutputEffectInstance::renderFullSequence(){
     assert(pluginID() != "Viewer"); //< this function is not meant to be called for rendering on the viewer
     getVideoEngine()->refreshTree();
-    getVideoEngine()->render(-1, true,false,true,false);
+    getVideoEngine()->render(-1,true,true,false,true,false);
     
 }

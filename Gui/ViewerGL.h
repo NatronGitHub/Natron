@@ -90,6 +90,7 @@ public:
     
     void setRod(const RectI& rod);
     
+    void setRoI(const RectI& roi);
     
     void setClipToDisplayWindow(bool b);
     
@@ -147,6 +148,11 @@ public:
      *@brief same as computeRowSpan but for columns.
      **/
     std::pair<int,int> computeColumnSpan(int left,int right, std::vector<int>* columns);
+    
+    /**
+     * @brief Returns the rectangle of the image displayed by the viewer
+     **/
+    RectI getImageRectangleDisplayed(const RectI& imageRoD);
     
     /**
      *@brief Computes the viewport coordinates of the point passed in parameter.

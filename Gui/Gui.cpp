@@ -70,6 +70,7 @@ static QIcon get_icon(const QString &name)
 }
 
 Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
+    _isUserScrubbingTimeline(false),
     _lastSelectedViewer(NULL),
     _appInstance(app),
     _uiUsingMainThreadCond(),
@@ -1492,3 +1493,13 @@ void Gui::onCurrentUndoStackChanged(QUndoStack* stack){
     }
 }
 
+void Gui::refreshAllPreviews() {
+    int time = _appInstance->getTimeLine()->currentFrame();
+    std::vector<Natron::Node*> nodes;
+    _appInstance->getActiveNodes(&nodes);
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        if (nodes[i]->isPreviewEnabled()) {
+            nodes[i]->refreshPreviewImage(time);
+        }
+    }
+}

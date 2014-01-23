@@ -107,6 +107,7 @@ public:
 
     boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN ;
 
+    bool shouldRefreshPreview() const;
 
 //////////
 //////////////// PROJECT RELATED

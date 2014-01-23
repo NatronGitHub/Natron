@@ -99,8 +99,8 @@ namespace Natron{
             hash->append(_textureRect.y);
             hash->append(_textureRect.r);
             hash->append(_textureRect.t);
-            hash->append(_textureRect.w);
-            hash->append(_textureRect.h);
+            //hash->append(_textureRect.w);
+            //hash->append(_textureRect.h);
         }
         
         bool operator==(const FrameKey& other) const {
