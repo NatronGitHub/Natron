@@ -10,6 +10,12 @@
   do it only if the frame was already fitted. Use cas: zoom into the
   image, resize the viewer => you lose your zoom settings.
 
+- the OFX readers should be instanciated preferably in the Reader context,
+  and writers in the Writer context.
+
+- getTimeDomain should never be called for OFX instances that are not
+   General or Reader or Generator
+
 ** Here is a list of non-blocking bugs / wanted features:
 
 - derive and integrate are not implemented for animated Double,
