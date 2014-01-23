@@ -273,7 +273,9 @@ OfxEffectInstance::MappedInputV OfxEffectInstance::inputClipsCopyWithoutOutput()
 }
 
 int OfxEffectInstance::maximumInputs() const {
-    if(isGenerator() && !isGeneratorAndFilter()){
+    const std::string& context = effectInstance()->getContext();
+    if(context == kOfxImageEffectContextReader ||
+       context == kOfxImageEffectContextGenerator){
         return 0;
     } else {
         assert(effectInstance());

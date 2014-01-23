@@ -280,8 +280,6 @@ HEADERS += \
     Engine/Row.h \
     Engine/Settings.h \
     Engine/Singleton.h \
-    Engine/TextureRect.h \
-    Engine/TextureRectSerialization.h \
     Engine/TimeLine.h \
     Engine/Timer.h \
     Engine/Variant.h \

@@ -47,7 +47,6 @@
 #include "Engine/TimeLine.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Log.h"
-#include "Engine/TextureRectSerialization.h"
 #include "Engine/KnobFile.h"
 
 #include "Gui/ViewerGL.h"

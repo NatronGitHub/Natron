@@ -196,13 +196,11 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     texRect.y2 = std::ceil(((double)roi.y2 / closestPowerOf2) / tileSize) * tileSize;
     texRect.intersect(rod, &texRect);
     
-    TextureRect textureRect(texRect.x1,texRect.y1,texRect.x2-1,texRect.y2-1,texRect.x2 - texRect.x1,texRect.y2 - texRect.y1);
-
-    if(textureRect.w == 0 || textureRect.h == 0){
+    if(texRect.width() == 0 || texRect.height() == 0){
         return StatOK;
     }
-    _interThreadInfos._textureRect = textureRect;
-    _interThreadInfos._bytesCount = _interThreadInfos._textureRect.w * _interThreadInfos._textureRect.h * 4;
+    _interThreadInfos._textureRect = texRect;
+    _interThreadInfos._bytesCount = texRect.width() * texRect.height() * 4;
     
     //half float is not supported yet so it is the same as float
     if(viewer->bitDepth() == FLOAT || viewer->bitDepth() == HALF_FLOAT){
@@ -223,7 +221,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
                  view,
                  rod,
                  dispW,
-                 textureRect);
+                 texRect);
     
     boost::shared_ptr<FrameEntry> cachedFrame;
     bool isCached = false;
@@ -566,7 +564,7 @@ void ViewerInstance::scaleToTexture32bits(boost::shared_ptr<const Natron::Image>
     float* output = reinterpret_cast<float*>(_buffer);
     
     ///the width of the output buffer multiplied by the channels count
-    int dst_width = _interThreadInfos._textureRect.w * 4;
+    int dst_width = (_interThreadInfos._textureRect.x2 - _interThreadInfos._textureRect.x1) * 4;
     
     ///offset the output buffer at the starting point
     output += ((yRange.first - roi.y1) / closestPowerOf2) * dst_width;

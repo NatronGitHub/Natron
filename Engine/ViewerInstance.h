@@ -73,7 +73,7 @@ private:
           ,_bytesCount(0){}
         
         unsigned char* _ramBuffer;
-        TextureRect _textureRect;
+        RectI _textureRect;
         size_t _bytesCount;
     };
     

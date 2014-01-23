@@ -30,7 +30,6 @@
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
-#include "Engine/TextureRect.h"
 #include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
 
