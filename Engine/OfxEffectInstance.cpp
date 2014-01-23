@@ -161,7 +161,8 @@ bool OfxEffectInstance::isGenerator() const {
     assert(effectInstance());
     const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
     std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);
-    if(foundGenerator != contexts.end())
+    std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
+    if(foundGenerator != contexts.end() || foundReader!= contexts.end())
         return true;
     return false;
 }
@@ -366,7 +367,7 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
         return ret;
     for(std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin();it!= inputRois.end();++it){
         EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
-        if(inputNode){
+        if(inputNode && inputNode != this){
             RectI inputRoi;
             ofxRectDToRectI(it->second, &inputRoi);
             ret.insert(std::make_pair(inputNode,inputRoi));

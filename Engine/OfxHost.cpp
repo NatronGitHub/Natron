@@ -227,28 +227,38 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
     } else if (contexts.size() == 1) {
         context = (*contexts.begin());
     } else {
-        std::set<std::string>::iterator found = contexts.find(kOfxImageEffectContextGeneral);
-        if(found != contexts.end()){
+        
+        std::set<std::string>::iterator found = contexts.find(kOfxImageEffectContextReader);
+        if (found != contexts.end()) {
             context = *found;
-        }else{
-            found = contexts.find(kOfxImageEffectContextFilter);
-            if(found != contexts.end()){
+        } else {
+            found = contexts.find(kOfxImageEffectContextWriter);
+            if (found != contexts.end()) {
                 context = *found;
-            }else{
-                found = contexts.find(kOfxImageEffectContextGenerator);
+            } else {
+                found = contexts.find(kOfxImageEffectContextGeneral);
                 if(found != contexts.end()){
                     context = *found;
                 }else{
-                    found = contexts.find(kOfxImageEffectContextTransition);
+                    found = contexts.find(kOfxImageEffectContextFilter);
                     if(found != contexts.end()){
                         context = *found;
                     }else{
-                        context = kOfxImageEffectContextPaint;
+                        found = contexts.find(kOfxImageEffectContextGenerator);
+                        if(found != contexts.end()){
+                            context = *found;
+                        }else{
+                            found = contexts.find(kOfxImageEffectContextTransition);
+                            if(found != contexts.end()){
+                                context = *found;
+                            }else{
+                                context = kOfxImageEffectContextPaint;
+                            }
+                        }
                     }
                 }
             }
         }
-        
     }
 
     OfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
