@@ -382,16 +382,15 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
         return;
     }
     OfxRangeD range;
-    // FIXME: getTimeDomain should only be called on the 'general', 'reader' or 'generator' contexts.
+    // getTimeDomain should only be called on the 'general', 'reader' or 'generator' contexts.
     //  see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectActionGetTimeDomain"
-    if (effect_->getContext() != kOfxImageEffectContextGeneral &&
-        effect_->getContext() != kOfxImageEffectContextReader &&
-        effect_->getContext() != kOfxImageEffectContextGenerator) {
-        qDebug() << "OFX Error: Calling kOfxImageEffectActionGetTimeDomain on an effect that is not a 'general', 'reader' or 'generator' context effect.";
+    OfxStatus st = kOfxStatReplyDefault;
+    if (effect_->getContext() == kOfxImageEffectContextGeneral ||
+        effect_->getContext() == kOfxImageEffectContextReader ||
+        effect_->getContext() == kOfxImageEffectContextGenerator) {
+        st = effect_->getTimeDomainAction(range);
     }
-#pragma message WARN("OFX error: Calling kOfxImageEffectActionGetTimeDomain on an effect that is not a 'general', 'reader' or 'generator' context effect.")
-    OfxStatus st = effect_->getTimeDomainAction(range);
-    if(st == kOfxStatOK){
+    if (st == kOfxStatOK) {
         *first = (SequenceTime)range.min;
         *last = (SequenceTime)range.max;
     }else if(st == kOfxStatReplyDefault){
