@@ -16,9 +16,9 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QRectF>
 #include <QtGui/QPolygonF>
-#include <QtGui/QLabel>
-#include <QtGui/QHBoxLayout>
-#include <QtGui/QVBoxLayout>
+#include <QLabel> // in QtGui on Qt4, in QtWidgets on Qt5
+#include <QHBoxLayout> // in QtGui on Qt4, in QtWidgets on Qt5
+#include <QVBoxLayout> // in QtGui on Qt4, in QtWidgets on Qt5
 
 
 #include "Global/AppManager.h"
