@@ -323,6 +323,11 @@ void ViewerGL::drawRenderingVAO() {
     r.y2 *= closestPowerOf2;
     
     const RectI& rod = _imp->clipToDisplayWindow ? getDisplayWindow() : getRoD();
+    
+    int x2  = r.x2;
+    int y2 = r.y2;
+    r.intersect(rod, &r);
+
     const RectI& roi = _imp->currentViewerInfos.getRoI();
     
     GLfloat vertices[32] = {
@@ -346,10 +351,10 @@ void ViewerGL::drawRenderingVAO() {
     
 
     GLfloat texBottom,texLeft,texRight,texTop;
-    texBottom = 0;// (GLfloat)(r.y * closestPowerOf2) / rod.height();
-    texTop = 1;//(GLfloat)((r.t + 1) * closestPowerOf2) / rod.height();
-    texLeft = 0;//(GLfloat)(r.x * closestPowerOf2) / rod.width();
-    texRight = 1;// (GLfloat)((r.r + 1) * closestPowerOf2) / rod.width();
+    texBottom =  0;//(GLfloat)roi.height() / (GLfloat)(r.y1) ;
+    texTop =  (GLfloat)roi.height() / (GLfloat)(y2);
+    texLeft = 0;//(GLfloat)roi.width()/(GLfloat)(r.x1);
+    texRight = (GLfloat)roi.width()/(GLfloat)(x2);
     
     
     GLfloat renderingTextureCoordinates[32] = {

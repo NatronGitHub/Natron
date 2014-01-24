@@ -167,12 +167,12 @@ void QtReader::onKnobValueChanged(Knob* k, Natron::ValueChangedReason /*reason*/
     } else if( k == _startingFrame.get() && !_settingFrameRange) {
         //also update the time offset
         int startingFrame = _startingFrame->getValue<int>();
-        SequenceTime first,last;
-        getSequenceTimeDomain(first,last);
+        int firstFrame = _firstFrame->getValue<int>();
+        
         
         ///prevent recursive calls of setValue(...)
         _settingFrameRange = true;
-        _timeOffset->setValue(startingFrame - first);
+        _timeOffset->setValue(startingFrame - firstFrame);
         _settingFrameRange = false;
         
     } else if( k == _timeOffset.get() && !_settingFrameRange) {
@@ -252,7 +252,7 @@ SequenceTime QtReader::getSequenceTime(SequenceTime t)
     
     
     ///offset the time wrt the starting time
-    SequenceTime sequenceTime =  t - timeOffset + first - originalFirst;
+    SequenceTime sequenceTime =  t - timeOffset;
     
     ///get the offset from the starting time of the sequence in case we bounce or loop
     int timeOffsetFromStart = sequenceTime -  first;
