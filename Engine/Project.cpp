@@ -236,8 +236,9 @@ void Project::setLastTimelineSeekCaller(Natron::OutputEffectInstance* output){
 void Project::onTimeChanged(SequenceTime time,int reason){
     std::vector<ViewerInstance*> viewers;
     
-    
+    getApp()->lockProject();
     beginProjectWideValueChanges(Natron::TIME_CHANGED,this);
+    getApp()->unlockProject();
     
     refreshAfterTimeChange(time); //refresh project knobs
     for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
@@ -252,7 +253,10 @@ void Project::onTimeChanged(SequenceTime time,int reason){
 
     }
     
+    getApp()->lockProject();
     endProjectWideValueChanges(this);
+    getApp()->unlockProject();
+
     
     for(U32 i = 0; i < viewers.size();++i){
         if(viewers[i] != _imp->lastTimelineSeekCaller || reason == USER_SEEK){

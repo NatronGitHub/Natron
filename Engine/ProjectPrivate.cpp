@@ -46,8 +46,10 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
 
 void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
-    
+    project->getApp()->lockProject();
     project->beginProjectWideValueChanges(Natron::OTHER_REASON,project);
+    project->getApp()->unlockProject();
+
     /*1st OFF RESTORE THE PROJECT KNOBS*/
     
     /*we must restore the entries in the combobox before restoring the value*/
@@ -162,7 +164,9 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
     }
     
+    project->getApp()->lockProject();
     project->endProjectWideValueChanges(project);
+    project->getApp()->unlockProject();
 }
 
 } // namespace Natron

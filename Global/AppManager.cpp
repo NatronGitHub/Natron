@@ -48,6 +48,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Log.h"
 #include "Engine/KnobFile.h"
+#include "Engine/TextureRectSerialization.h"
 
 #include "Gui/ViewerGL.h"
 #include "Gui/Gui.h"
@@ -547,7 +548,7 @@ void AppInstance::loadProjectInternal(const QString& path,const QString& name){
             if (nodes[i]->pluginID() == "Viewer") {
                 ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
                 assert(n);
-                n->getVideoEngine()->render(1, true,false,true,false);
+                n->getVideoEngine()->render(1, true,true,true,true,false,true);
             }
         }
     }
