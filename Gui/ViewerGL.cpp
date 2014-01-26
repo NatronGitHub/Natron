@@ -1605,7 +1605,7 @@ void ViewerGL::stopDisplayingProgressBar()
     _imp->drawProgressBar = false;
 }
 
-void ViewerGL::updateProgressOnViewer(const TextureRect& /*region*/,int /*y*/ , int /*texY*/) {
+//void ViewerGL::updateProgressOnViewer(const RectI& /*region*/,int /*y*/ , int /*texY*/) {
 //    _imp->updatingTexture = true;
 //    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
 //    checkGLErrors();
@@ -1622,7 +1622,7 @@ void ViewerGL::updateProgressOnViewer(const TextureRect& /*region*/,int /*y*/ , 
 //    checkGLErrors();
 //
 //    _imp->updatingTexture = false;
-}
+//}
 
 void ViewerGL::doSwapBuffers(){
     swapBuffers();

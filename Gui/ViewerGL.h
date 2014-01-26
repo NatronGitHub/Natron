@@ -36,7 +36,6 @@ class ViewerTab;
 class ImageInfo;
 class RectI;
 class Format;
-class TextureRect;
 
 /**
  *@class ViewerGL
@@ -290,7 +289,7 @@ public:
     /**
      *@brief Updates the Viewer with what has been computed so far in the texture.
      **/
-    void updateProgressOnViewer(const TextureRect& region,int y , int texY);
+    //void updateProgressOnViewer(const RectI& region,int y , int texY);
     
     void doSwapBuffers();
     

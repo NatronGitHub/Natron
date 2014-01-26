@@ -32,7 +32,9 @@
 #include "Gui/KnobGui.h"
 #include "Gui/CurveWidget.h"
 
+#if QT_VERSION < 0x050000
 Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
+#endif
 
 void registerMetaTypes(){
     qRegisterMetaType<Variant>();
@@ -43,7 +45,9 @@ void registerMetaTypes(){
     qRegisterMetaType<Knob*>();
     qRegisterMetaType<Natron::Node*>();
     qRegisterMetaType<CurveWidget*>();
+#if QT_VERSION < 0x050000
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
+#endif
 }
 
 void printBackGroundWelcomeMessage(){
