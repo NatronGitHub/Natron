@@ -287,7 +287,7 @@ public:
     bool isUserScrubbingTimeline() const { return _isUserScrubbingTimeline; }
     
     void refreshAllPreviews();
-    
+        
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);

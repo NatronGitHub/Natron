@@ -147,6 +147,7 @@ private:
         QFrame::mousePressEvent(e);
     }
 
+    
 private:
     // FIXME: PIMPL
     QVBoxLayout* _container; /*!< ptr to the layout containing this DockablePanel*/

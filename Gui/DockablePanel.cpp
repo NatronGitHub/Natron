@@ -18,6 +18,7 @@
 #include <QUndoStack>
 #include <QUndoCommand>
 #include <QToolTip>
+#include <QPaintEvent>
 
 #include "Global/AppManager.h"
 
@@ -172,6 +173,7 @@ DockablePanel::DockablePanel(KnobHolder* holder
     }
     
     _tabWidget = new QTabWidget(this);
+    _tabWidget->setObjectName("QTabWidget");
     _mainLayout->addWidget(_tabWidget);
     
     if(createDefaultTab){
@@ -385,6 +387,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
 
 void DockablePanel::addTab(const QString& name){
     QWidget* newTab = new QWidget(_tabWidget);
+    newTab->setObjectName(name);
     QGridLayout *tabLayout = new QGridLayout(newTab);
     newTab->setLayout(tabLayout);
     tabLayout->setVerticalSpacing(2);
@@ -501,7 +504,6 @@ void DockablePanel::onKnobDeletion(Knob* k){
         }
     }
 }
-
 
 
 

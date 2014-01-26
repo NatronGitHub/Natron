@@ -571,6 +571,7 @@ private:
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
+    virtual bool eventFilter(QObject *target, QEvent *event) OVERRIDE FINAL;
 
 private:
     bool _checked;

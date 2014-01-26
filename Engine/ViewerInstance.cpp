@@ -184,23 +184,33 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     
     /*computing the RoI*/
     double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(zoomFactor) / std::log(2)));
+
     RectI roi = viewer->getImageRectangleDisplayed(rod);
     viewer->setRoI(roi);
-    //int textureW = roi.width() / closestPowerOf2;
-    //int textureH = roi.height() / closestPowerOf2;
+
     RectI texRect;
     double tileSize = std::pow(2., (double)appPTR->getCurrentSettings()->getViewerTilesPowerOf2());
     texRect.x1 = std::floor(((double)roi.x1 / closestPowerOf2) / tileSize) * tileSize;
     texRect.y1 = std::floor(((double)roi.y1 / closestPowerOf2) / tileSize) * tileSize;
     texRect.x2 = std::ceil(((double)roi.x2 / closestPowerOf2) / tileSize) * tileSize;
     texRect.y2 = std::ceil(((double)roi.y2 / closestPowerOf2) / tileSize) * tileSize;
-    texRect.intersect(rod, &texRect);
     
     if(texRect.width() == 0 || texRect.height() == 0){
         return StatOK;
     }
-    _interThreadInfos._textureRect = texRect;
-    _interThreadInfos._bytesCount = texRect.width() * texRect.height() * 4;
+    
+    RectI texRectClipped = texRect;
+    texRectClipped.x1 *= closestPowerOf2;
+    texRectClipped.x2 *= closestPowerOf2;
+    texRectClipped.y1 *= closestPowerOf2;
+    texRectClipped.y2 *= closestPowerOf2;
+    texRectClipped.intersect(rod, &texRectClipped);
+    
+    TextureRect textureRect(texRectClipped.x1,texRectClipped.y1,texRectClipped.x2,
+                            texRectClipped.y2,texRect.width(),texRect.height(),closestPowerOf2);
+    
+    _interThreadInfos._textureRect = textureRect;
+    _interThreadInfos._bytesCount = textureRect.w * textureRect.h * 4;
     
     //half float is not supported yet so it is the same as float
     if(viewer->bitDepth() == FLOAT || viewer->bitDepth() == HALF_FLOAT){
@@ -221,7 +231,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
                  view,
                  rod,
                  dispW,
-                 texRect);
+                 textureRect);
     
     boost::shared_ptr<FrameEntry> cachedFrame;
     bool isCached = false;
@@ -298,20 +308,20 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
                 return StatOK;
             }
             
-            int rowsPerThread = std::ceil((double)roi.height()/(double)QThread::idealThreadCount());
+            int rowsPerThread = std::ceil((double)texRect.height()/(double)QThread::idealThreadCount());
             // group of group of rows where first is image coordinate, second is texture coordinate
-            std::vector< std::pair<int,int > > splitRows;
-            int k = roi.bottom();
-            while (k < roi.top()) {
+            std::vector< std::pair<int, int> > splitRows;
+            int k = textureRect.y1;
+            while (k < textureRect.y2) {
                 int top = k + rowsPerThread;
-                int realTop = top > roi.top() ? roi.top() : top;
+                int realTop = top > textureRect.y2 ? textureRect.y2 : top;
                 splitRows.push_back(std::make_pair(k,realTop));
                 k += rowsPerThread;
             }
             {
                 QMutexLocker locker(&_renderArgsMutex);
                 QFuture<void> future = QtConcurrent::map(splitRows,
-                                                         boost::bind(&ViewerInstance::renderFunctor,this,inputImage,_1,roi,closestPowerOf2));
+                                                         boost::bind(&ViewerInstance::renderFunctor,this,inputImage,_1,textureRect,closestPowerOf2));
                 future.waitForFinished();
             }
         }
@@ -339,11 +349,9 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     }
     return StatOK;
 }
-void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,const std::pair<int,int> yRange,
-                   const RectI& roi,int closestPowerOf2) {
-//void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,
-//                                   const std::vector<std::pair<int,int> >& rows,
-//                                   const std::vector<int>& columns){
+void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,std::pair<int,int> yRange,
+                                   const TextureRect& texRect,int closestPowerOf2) {
+
     if(aborted()){
         return;
     }
@@ -382,11 +390,11 @@ void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputI
     }
     if(_uiContext->viewer->bitDepth() == FLOAT || _uiContext->viewer->bitDepth() == HALF_FLOAT){
         // image is stored as linear, the OpenGL shader with do gamma/sRGB/Rec709 decompression
-        scaleToTexture32bits(inputImage,yRange,roi,closestPowerOf2,rOffset,gOffset,bOffset,luminance);
+        scaleToTexture32bits(inputImage,yRange,texRect,closestPowerOf2,rOffset,gOffset,bOffset,luminance);
     }
     else{
         // texture is stored as sRGB/Rec709 compressed 8-bit RGBA
-        scaleToTexture8bits(inputImage,yRange,roi,closestPowerOf2,rOffset,gOffset,bOffset,luminance);
+        scaleToTexture8bits(inputImage,yRange,texRect,closestPowerOf2,rOffset,gOffset,bOffset,luminance);
     }
 
     
@@ -549,36 +557,33 @@ void ViewerInstance::convertRowToFitTextureBGRA_fp(const float* data,const std::
     
 }
 
-void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> inputImage,const std::pair<int,int> yRange,
-                                         const RectI& roi,int closestPowerOf2,int rOffset,int gOffset,int bOffset,bool luminance) {
+void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> inputImage,std::pair<int,int> yRange,
+                                         const TextureRect& texRect,int closestPowerOf2,int rOffset,int gOffset,int bOffset,bool luminance) {
     
 }
 
-void ViewerInstance::scaleToTexture32bits(boost::shared_ptr<const Natron::Image> inputImage,const std::pair<int,int> yRange,const RectI& roi,
+void ViewerInstance::scaleToTexture32bits(boost::shared_ptr<const Natron::Image> inputImage,std::pair<int,int> yRange,const TextureRect& texRect,
                                           int closestPowerOf2,int rOffset,int gOffset,int bOffset,bool luminance) {
-    // QString str = QString("Thread roi y1= %1 y2= %2").arg(roi.y1).arg(roi.y2);
-    // std::cout << str.toStdString() << std::endl;
     assert(_buffer);
     
     ///the base output buffer
     float* output = reinterpret_cast<float*>(_buffer);
     
     ///the width of the output buffer multiplied by the channels count
-    int dst_width = (_interThreadInfos._textureRect.x2 - _interThreadInfos._textureRect.x1) * 4;
+    int dst_width = texRect.w * 4;
     
     ///offset the output buffer at the starting point
-    output += ((yRange.first - roi.y1) / closestPowerOf2) * dst_width;
+    output += ((yRange.first - texRect.y1) / closestPowerOf2) * dst_width;
     
     ///iterating over the scan-lines of the input image
     int dstY = 0;
-    for (int y = yRange.first; y < yRange.second; y += closestPowerOf2) {
+    for (int y = yRange.first; y < yRange.second; y+=closestPowerOf2) {
         
-        ///get the ptr of the source pixels of the scan-line
-        const float* src_pixels = (const float*)inputImage->pixelAt(roi.x1, y);
+        const float* src_pixels = (const float*)inputImage->pixelAt(texRect.x1, y);
         float* dst_pixels = output + dstY * dst_width;
         
         ///we fill the scan-line with all the pixels of the input image
-        for (int x = roi.x1; x < roi.x2; x+=closestPowerOf2) {
+        for (int x = texRect.x1; x < texRect.x2; x+=closestPowerOf2) {
             double r = src_pixels[rOffset];
             double g = src_pixels[gOffset];
             double b = src_pixels[bOffset];

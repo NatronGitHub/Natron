@@ -314,21 +314,10 @@ static const GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
 void ViewerGL::drawRenderingVAO() {
     assert(QGLContext::currentContext() == context());
     
-    double closestPowerOf2 = _imp->zoomCtx.zoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(_imp->zoomCtx.zoomFactor) / std::log(2)));
 
-    RectI r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
-    r.x1 *= closestPowerOf2;
-    r.x2 *= closestPowerOf2;
-    r.y1 *= closestPowerOf2;
-    r.y2 *= closestPowerOf2;
-    
+    const TextureRect &r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
     const RectI& rod = _imp->clipToDisplayWindow ? getDisplayWindow() : getRoD();
-    
-    int x2  = r.x2;
-    int y2 = r.y2;
-    r.intersect(rod, &r);
-
-    const RectI& roi = _imp->currentViewerInfos.getRoI();
+    //const RectI& roi = _imp->currentViewerInfos.getRoI();
     
     GLfloat vertices[32] = {
         (GLfloat)rod.left() ,(GLfloat)rod.top()  , //0
@@ -349,12 +338,14 @@ void ViewerGL::drawRenderingVAO() {
         (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
     };
     
+    
+    double closestPowerOf2 = r.closestPo2;
 
     GLfloat texBottom,texLeft,texRight,texTop;
     texBottom =  0;//(GLfloat)roi.height() / (GLfloat)(r.y1) ;
-    texTop =  (GLfloat)roi.height() / (GLfloat)(y2);
+    texTop =  (GLfloat)r.y2/ (GLfloat)(r.h * closestPowerOf2);
     texLeft = 0;//(GLfloat)roi.width()/(GLfloat)(r.x1);
-    texRight = (GLfloat)roi.width()/(GLfloat)(x2);
+    texRight = (GLfloat)r.x2 / (GLfloat)(r.w * closestPowerOf2);
     
     
     GLfloat renderingTextureCoordinates[32] = {
@@ -1096,7 +1087,7 @@ void ViewerGL::initBlackTex()
     assert(QGLContext::currentContext() == context());
     fitToFormat(getDisplayWindow());
     
-    RectI texSize(0, 0, 2048, 1556);
+    TextureRect texSize(0, 0, 2048, 1556,2048,1556,1);
     
     assert_checkGLErrors();
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, getPboID(0));
@@ -1120,7 +1111,7 @@ void ViewerGL::initBlackTex()
 
 
 
-void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const RectI& region,int pboIndex)
+void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region,int pboIndex)
 {
     assert(QGLContext::currentContext() == context());
     QMutexLocker locker(&_imp->textureMutex);

@@ -18,7 +18,7 @@ Texture::Texture(){
     glGenTextures(1, &_texID);
     
 }
-void Texture::fillOrAllocateTexture(const RectI& texRect ,DataType type){
+void Texture::fillOrAllocateTexture(const TextureRect& texRect ,DataType type){
     
     
     glEnable(GL_TEXTURE_2D);
@@ -79,7 +79,7 @@ void Texture::fillOrAllocateTexture(const RectI& texRect ,DataType type){
         checkGLErrors();
     }
 }
-void Texture::updatePartOfTexture(const RectI& fullRegion,int zoomedY,DataType type){
+void Texture::updatePartOfTexture(const TextureRect& fullRegion,int zoomedY,DataType type){
     glEnable(GL_TEXTURE_2D);
     glActiveTexture (GL_TEXTURE0);
     glBindTexture (GL_TEXTURE_2D, _texID);

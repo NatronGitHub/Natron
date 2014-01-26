@@ -41,6 +41,7 @@
 #include "Gui/Gui.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/CurveWidget.h"
+#include "Gui/DockablePanel.h"
 
 #define SLIDER_MAX_RANGE 100000
 
@@ -1555,6 +1556,9 @@ void Group_KnobGui::setChecked(bool b)
         return;
     }
     _checked = b;
+    
+    //qApp->installEventFilter(this);
+    
     for (U32 i = 0 ; i < _children.size() ; ++i) {
         if (!b) {
             _children[i].first->hide();
@@ -1562,7 +1566,17 @@ void Group_KnobGui::setChecked(bool b)
             _children[i].first->show();
         }
     }
+    // qApp->removeEventFilter(this);
 }
+
+bool Group_KnobGui::eventFilter(QObject */*target*/, QEvent */*event*/) {
+    //if(event->type() == QEvent::Paint){
+        ///discard the paint event
+        return true;
+    // }
+    //return QObject::eventFilter(target, event);
+}
+
 
 void Group_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 {

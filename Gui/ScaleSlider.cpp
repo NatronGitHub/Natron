@@ -64,6 +64,8 @@ void ScaleSlider::resizeGL(int width,int height){
 }
 
 void ScaleSlider::paintGL(){
+    
+    
     if(_mustInitializeSliderPosition){
         centerOn(_minimum, _maximum);
         _mustInitializeSliderPosition = false;

@@ -15,7 +15,7 @@
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 #include "Engine/Rect.h"
-
+#include "Engine/TextureRect.h"
 
 class Texture{
 public:
@@ -29,18 +29,18 @@ public:
     
     U32 getTexID() const {return _texID;}
     
-    int w() const {return _textureRect.x2 - _textureRect.x1;}
+    int w() const {return _textureRect.w;}
     
-    int h() const {return _textureRect.y2 - _textureRect.y1;}
+    int h() const {return _textureRect.h;}
     
     DataType type() const {return _type;}
     
     /*allocates the texture*/
-    void fillOrAllocateTexture(const RectI& texRect,DataType type);
+    void fillOrAllocateTexture(const TextureRect& texRect,DataType type);
     
-    void updatePartOfTexture(const RectI& fullRegion,int zoomedY,DataType type);
+    void updatePartOfTexture(const TextureRect& fullRegion,int zoomedY,DataType type);
             
-    const RectI& getTextureRect() const {return _textureRect;}
+    const TextureRect& getTextureRect() const {return _textureRect;}
    
     
     virtual ~Texture();
@@ -52,7 +52,7 @@ private:
 
 private:
     U32 _texID;
-    RectI _textureRect;
+    TextureRect _textureRect;
     DataType _type;
 };
 

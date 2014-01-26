@@ -73,7 +73,7 @@ private:
           ,_bytesCount(0){}
         
         unsigned char* _ramBuffer;
-        RectI _textureRect;
+        TextureRect _textureRect;
         size_t _bytesCount;
     };
     
@@ -287,8 +287,8 @@ private:
 //    void renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,
 //                       const std::vector<std::pair<int,int> >& rows,
 //                       const std::vector<int>& columns);
-    void renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,const std::pair<int,int> yRange,
-                       const RectI& roi,int closestPowerOf2);
+    void renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,std::pair<int,int> yRange,
+                       const TextureRect& texRect,int closestPowerOf2);
 
 
 
@@ -312,10 +312,10 @@ private:
     void convertRowToFitTextureBGRA_fp(const float* data,const std::vector<int>& columnSpan,int yOffset,
                                        int rOffset,int gOffset,int bOffset,bool luminance);
 
-    void scaleToTexture8bits(boost::shared_ptr<const Natron::Image> inputImage,const std::pair<int,int> yRange,const RectI& roi,
+    void scaleToTexture8bits(boost::shared_ptr<const Natron::Image> inputImage,std::pair<int,int> yRange,const TextureRect& texRect,
                              int closestPowerOf2,int rOffset,int gOffset,int bOffset,bool luminance);
 
-    void scaleToTexture32bits(boost::shared_ptr<const Natron::Image> inputImage,const std::pair<int,int> yRange,const RectI& roi,
+    void scaleToTexture32bits(boost::shared_ptr<const Natron::Image> inputImage,std::pair<int,int> yRange,const TextureRect& texRect,
                               int closestPowerOf2,int rOffset,int gOffset,int bOffset,bool luminance);
 
 

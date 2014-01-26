@@ -240,7 +240,7 @@ public:
      * 3) glUnmapBuffer
      * 4) glTexSubImage2D or glTexImage2D depending whether we resize the texture or not.
      **/
-    void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const RectI& region,int pboIndex);
+    void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region,int pboIndex);
     
     
     /**
