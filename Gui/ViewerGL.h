@@ -35,6 +35,7 @@ class ViewerInstance;
 class ViewerTab;
 class ImageInfo;
 class RectI;
+class TextureRect;
 class Format;
 
 /**
