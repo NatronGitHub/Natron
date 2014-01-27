@@ -316,29 +316,8 @@ public:
      **/
     bool isOutputAViewer() const {return _tree.isOutputAViewer();}
   
-    //////////////
-    ///////////////////TREE RELATED FUNCTIONS - THREAD-SAFE /////////////////////
+    
     void refreshTree();
-    
-    void drawTreeOverlays();
-    
-    void notifyTreeOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos);
-    
-    void notifyTreeOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos);
-    
-    void notifyTreeOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos);
-    
-    void notifyTreeOverlaysKeyDown(QKeyEvent* e);
-    
-    void notifyTreeOverlaysKeyUp(QKeyEvent* e);
-    
-    void notifyTreeOverlaysKeyRepeat(QKeyEvent* e);
-    
-    void notifyTreeOverlaysFocusGained();
-    
-    void notifyTreeOverlaysFocusLost();
-    //////////////////////////////////////////////////////////////////////////////
-    ///////////////
     
 	/**
      *@returns Returns true if the engine is currently working.

@@ -319,9 +319,10 @@ void ViewerGL::drawRenderingVAO() {
     
 
     const TextureRect &r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
-    const RectI& rod = _imp->clipToDisplayWindow ? getDisplayWindow() : getRoD();
+    RectI rod = _imp->clipToDisplayWindow ? getDisplayWindow() : getRoD();
     RectI clippedRect;
     r.intersect(rod, &clippedRect);
+    rod.intersect(clippedRect,&rod);
     
     GLfloat vertices[32] = {
         (GLfloat)rod.left() ,(GLfloat)rod.top()  , //0
@@ -701,9 +702,8 @@ void ViewerGL::drawOverlay()
         glPopAttrib();
         checkGLErrors();
     }
-    if(_imp->displayingImage){
-        _imp->viewerTab->getInternalNode()->drawOverlays();
-    }
+    _imp->viewerTab->drawOverlays();
+
     //reseting color for next pass
     glColor4f(1., 1., 1., 1.);
     checkGLErrors();
@@ -1172,7 +1172,7 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
     if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
         _imp->ms = DRAGGING;
     } else if (event->button() == Qt::LeftButton && !event->modifiers().testFlag(Qt::ControlModifier)) {
-        _imp->viewerTab->getInternalNode()->notifyOverlaysPenDown(QMouseEventLocalPos(event),
+        _imp->viewerTab->notifyOverlaysPenDown(QMouseEventLocalPos(event),
                                                              toImgCoordinates_fast(event->x(), event->y()));
     }else if(event->button() == Qt::LeftButton && event->modifiers().testFlag(Qt::ControlModifier)){
         float r,g,b,a;
@@ -1191,7 +1191,7 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
 
 void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
     _imp->ms = UNDEFINED;
-    _imp->viewerTab->getInternalNode()->notifyOverlaysPenUp(QMouseEventLocalPos(event),
+    _imp->viewerTab->notifyOverlaysPenUp(QMouseEventLocalPos(event),
                                                        toImgCoordinates_fast(event->x(), event->y()));
 }
 void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
@@ -1238,7 +1238,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
         // }
         // no need to update the color picker or mouse posn: they should be unchanged
     } else {
-        _imp->viewerTab->getInternalNode()->notifyOverlaysPenMotion(QMouseEventLocalPos(event),pos);
+        _imp->viewerTab->notifyOverlaysPenMotion(QMouseEventLocalPos(event),pos);
     }
 
 
@@ -1587,15 +1587,15 @@ void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected
 
 void ViewerGL::keyPressEvent(QKeyEvent* event){
     if(event->isAutoRepeat())
-        _imp->viewerTab->getInternalNode()->notifyOverlaysKeyRepeat(event);
+        _imp->viewerTab->notifyOverlaysKeyRepeat(event);
     else{
-        _imp->viewerTab->getInternalNode()->notifyOverlaysKeyDown(event);
+        _imp->viewerTab->notifyOverlaysKeyDown(event);
     }
 }
 
 
 void ViewerGL::keyReleaseEvent(QKeyEvent* event){
-    _imp->viewerTab->getInternalNode()->notifyOverlaysKeyUp(event);
+    _imp->viewerTab->notifyOverlaysKeyUp(event);
 }
 
 

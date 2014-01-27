@@ -147,28 +147,6 @@ public:
         _forceRender = true;
     }
 
-    /**
- *@brief Tells all the nodes in the grpah to draw their overlays
- **/
-    /*All the overlay methods are forwarding calls to the default node instance*/
-    void drawOverlays() const;
-
-    void notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos);
-
-    void notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos);
-
-    void notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos);
-
-    void notifyOverlaysKeyDown(QKeyEvent* e);
-
-    void notifyOverlaysKeyUp(QKeyEvent* e);
-
-    void notifyOverlaysKeyRepeat(QKeyEvent* e);
-
-    void notifyOverlaysFocusGained();
-
-    void notifyOverlaysFocusLost();
-
 
     void connectSlotsToViewerCache();
 
@@ -284,33 +262,9 @@ private:
 
     virtual void cloneExtras() OVERRIDE FINAL;
 
-//    void renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,
-//                       const std::vector<std::pair<int,int> >& rows,
-//                       const std::vector<int>& columns);
     void renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,std::pair<int,int> yRange,
                        const TextureRect& texRect,int closestPowerOf2);
 
-
-
-/**
- *@brief This function fills the member frameData with the buffer in parameters.
- *Since the frameData buffer holds the data "as seen" on the viewer (i.e with a scale-factor)
- *it will apply a "Nearest neighboor" algorithm to fill the buffer. Note that during the
- *conversion to 8bit in the viewer color-space, a dithering algorithm is used.
- **/
-    void convertRowToFitTextureBGRA(const float* data,const std::vector<int>& columnSpan,int yOffset,
-                                    int rOffset,int gOffset,int bOffset,bool luminance);
-
-/**
- *@brief This function fills the member frameData with the buffer in parameters.
- *Since the frameData buffer holds the data "as seen" on the viewer (i.e with a scale-factor)
- *it will apply a "Nearest neighboor" algorithm to fill the buffer. This is the same function
- *as ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
- *int w,int yOffset,const float* alpha) except that it does not apply any dithering nor color-space
- *since the data are stored as 32bit floating points. The color-space will be applied by the shaders.
- **/
-    void convertRowToFitTextureBGRA_fp(const float* data,const std::vector<int>& columnSpan,int yOffset,
-                                       int rOffset,int gOffset,int bOffset,bool luminance);
 
     void scaleToTexture8bits(boost::shared_ptr<const Natron::Image> inputImage,std::pair<int,int> yRange,const TextureRect& texRect,
                              int closestPowerOf2,int rOffset,int gOffset,int bOffset,bool luminance);

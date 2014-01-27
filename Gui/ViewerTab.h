@@ -55,6 +55,29 @@ public:
     int getCurrentView() const;
     
     void seek(SequenceTime time);
+    
+    /**
+     *@brief Tells all the nodes in the grpah to draw their overlays
+     **/
+    /*All the overlay methods are forwarding calls to the default node instance*/
+    void drawOverlays() const;
+    
+    void notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos);
+    
+    void notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos);
+    
+    void notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos);
+    
+    void notifyOverlaysKeyDown(QKeyEvent* e);
+    
+    void notifyOverlaysKeyUp(QKeyEvent* e);
+    
+    void notifyOverlaysKeyRepeat(QKeyEvent* e);
+    
+    void notifyOverlaysFocusGained();
+    
+    void notifyOverlaysFocusLost();
+
 
 public slots:
     

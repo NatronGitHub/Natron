@@ -395,150 +395,6 @@ void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputI
 
 }
 
-
-void ViewerInstance::convertRowToFitTextureBGRA(const float* data,const std::vector<int>& columnSpan,int yOffset,
-                                                int rOffset,int gOffset,int bOffset,bool luminance){
-    /*Converting one row (float32) to 8bit BGRA portion of texture. We apply a dithering algorithm based on error diffusion.
-     This error diffusion will produce stripes in any image that has identical scanlines.
-     To prevent this, a random horizontal position is chosen to start the error diffusion at,
-     and it proceeds in both directions away from this point.*/
-    assert(_buffer);
-    assert(!_renderArgsMutex.tryLock());
-    U32* output = reinterpret_cast<U32*>(_buffer);
-    unsigned int row_width = columnSpan.size();
-    yOffset *= row_width;
-    output += yOffset;
-    
-    ////if the color-space is linear
-    if(!_colorSpace){
-        int start = (int)(rand() % row_width);
-        /* go fowards from starting point to end of line: */
-        for(unsigned int i = start ; i < row_width; ++i) {
-            int col = columnSpan[i]*4;
-            U8 a_,r_,g_,b_;
-            a_ = 255;
-            double r = data[col+rOffset] * _exposure;
-            double g = data[col+gOffset] * _exposure;
-            double b = data[col+bOffset] * _exposure;
-            if(luminance){
-                r = 0.299 * r + 0.587 * g + 0.114 * b;
-                g = r;
-                b = r;
-            }
-            r_ = (U8)std::min((int)( r * 256 ),255);
-            g_ = (U8)std::min((int)( g * 256 ),255);
-            b_ = (U8)std::min((int)( b * 256 ),255);
-            output[i] = toBGRA(r_,g_,b_,a_);
-        }
-        /* go backwards from starting point to start of line: */
-        for(int i = start-1 ; i >= 0 ; --i){
-            int col = columnSpan[i]*4;
-            U8 a_,r_,g_,b_;
-            a_ = 255;
-            double r = data[col+rOffset] * _exposure;
-            double g = data[col+gOffset] * _exposure;
-            double b = data[col+bOffset] * _exposure;
-            if(luminance){
-                r = 0.299 * r + 0.587 * g + 0.114 * b;
-                g = r;
-                b = r;
-            }
-            r_ = (U8)std::min((int)( r * 256 ),255);
-            g_ = (U8)std::min((int)( g * 256 ),255);
-            b_ = (U8)std::min((int)( b * 256 ),255);
-            output[i] = toBGRA(r_,g_,b_,a_);
-        }
-    }else{ // !linear
-        /*flaging that we're using the colorspace so it doesn't try to change it in the same time
-         if the user requested it*/
-        int start = (int)(rand() % row_width);
-        unsigned error_r = 0x80;
-        unsigned error_g = 0x80;
-        unsigned error_b = 0x80;
-        
-        /* go fowards from starting point to end of line: */
-        _colorSpace->validate();
-        
-        for (unsigned int i = start ; i < columnSpan.size() ; ++i) {
-            int col = columnSpan[i]*4;
-            U8 r_,g_,b_,a_;
-            double r = data[col+rOffset]*_exposure;
-            double g = data[col+gOffset]*_exposure;
-            double b = data[col+bOffset]*_exposure;
-            if(luminance){
-                r = 0.299 * r + 0.587 * g + 0.114 * b;
-                g = r;
-                b = r;
-
-            }
-            error_r = (error_r&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(r,0.,1.));
-            error_g = (error_g&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(g,0.,1.));
-            error_b = (error_b&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(b,0.,1.));
-            a_ = 255;
-            r_ = (U8)(error_r >> 8);
-            g_ = (U8)(error_g >> 8);
-            b_ = (U8)(error_b >> 8);
-            output[i] = toBGRA(r_,g_,b_,a_);
-        }
-        /* go backwards from starting point to start of line: */
-        error_r = 0x80;
-        error_g = 0x80;
-        error_b = 0x80;
-        
-        for (int i = start-1 ; i >= 0 ; --i) {
-            int col = columnSpan[i]*4;
-            U8 r_,g_,b_,a_;
-            double r = data[col+rOffset]*_exposure;
-            double g = data[col+gOffset]*_exposure;
-            double b = data[col+bOffset]*_exposure;
-            if(luminance){
-                r = 0.299 * r + 0.587 * g + 0.114 * b;
-                g = r;
-                b = r;
-                
-            }
-            error_r = (error_r&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(r,0.,1.));
-            error_g = (error_g&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(g,0.,1.));
-            error_b = (error_b&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(b,0.,1.));
-
-            a_ = 255;
-            r_ = (U8)(error_r >> 8);
-            g_ = (U8)(error_g >> 8);
-            b_ = (U8)(error_b >> 8);
-            output[i] = toBGRA(r_,g_,b_,a_);
-        }
-    }
-    
-}
-
-// nbbytesoutput is the size in bytes of 1 channel for the row
-void ViewerInstance::convertRowToFitTextureBGRA_fp(const float* data,const std::vector<int>& columnSpan,int yOffset,
-                                                   int rOffset,int gOffset,int bOffset,bool luminance){
-    assert(_buffer);
-    float* output = reinterpret_cast<float*>(_buffer);
-    // offset in the buffer : (y)*(w) where y is the zoomedY of the row and w=nbbytes/sizeof(float)*4 = nbbytes
-    yOffset *= columnSpan.size()*4;
-    output += yOffset;
-    int index = 0;
-    for (unsigned int i = 0 ; i < columnSpan.size(); ++i) {
-        int col = columnSpan[i]*4;
-        double r = data[col+rOffset];
-        double g = data[col+gOffset];
-        double b = data[col+bOffset];
-        if(luminance){
-            r = 0.299 * r + 0.587 * g + 0.114 * b;
-            g = r;
-            b = r;
-            
-        }
-        output[index++] = r;
-        output[index++] = g;
-        output[index++] = b;
-        output[index++] = 1.;
-    }
-    
-}
-
 void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> inputImage,std::pair<int,int> yRange,
                                          const TextureRect& texRect,int closestPowerOf2,int rOffset,int gOffset,int bOffset,bool luminance) {
     assert(_buffer);
@@ -769,41 +625,6 @@ void ViewerInstance::viewportSize(double &w,double &h) {
     h = f.height();
 }
 
-void ViewerInstance::drawOverlays() const{
-    getVideoEngine()->drawTreeOverlays();
-}
-
-void ViewerInstance::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos){
-    getVideoEngine()->notifyTreeOverlaysPenDown(viewportPos, pos);
-}
-
-void ViewerInstance::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos){
-    getVideoEngine()->notifyTreeOverlaysPenMotion(viewportPos, pos);
-}
-
-void ViewerInstance::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos){
-    getVideoEngine()->notifyTreeOverlaysPenUp(viewportPos, pos);
-}
-
-void ViewerInstance::notifyOverlaysKeyDown(QKeyEvent* e){
-    getVideoEngine()->notifyTreeOverlaysKeyDown(e);
-}
-
-void ViewerInstance::notifyOverlaysKeyUp(QKeyEvent* e){
-    getVideoEngine()->notifyTreeOverlaysKeyUp(e);
-}
-
-void ViewerInstance::notifyOverlaysKeyRepeat(QKeyEvent* e){
-    getVideoEngine()->notifyTreeOverlaysKeyRepeat(e);
-}
-
-void ViewerInstance::notifyOverlaysFocusGained(){
-    getVideoEngine()->notifyTreeOverlaysFocusGained();
-}
-
-void ViewerInstance::notifyOverlaysFocusLost(){
-    getVideoEngine()->notifyTreeOverlaysFocusLost();
-}
 
 bool ViewerInstance::isInputOptional(int n) const{
     return n != activeInput();
@@ -813,9 +634,9 @@ void ViewerInstance::onExposureChanged(double exp){
     _exposure = exp;
     
     if((_uiContext->viewer->bitDepth() == BYTE  || !_uiContext->viewer->supportsGLSL())
-       && input(activeInput()) != NULL){
+       && input(activeInput()) != NULL) {
         refreshAndContinueRender();
-    }else{
+    } else {
         emit mustRedraw();
     }
     
