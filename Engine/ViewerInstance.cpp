@@ -223,7 +223,6 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     
     FrameKey key(time,
                  hash().value(),
-                 zoomFactor,
                  _exposure,
                  _lut,
                  viewer->bitDepth(),
@@ -248,6 +247,9 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     }
     
     if (isCached) {
+        
+        std::cout << "CACHED" << std::endl;
+        
         /*Found in viewer cache, we execute the cached engine and leave*/
         _interThreadInfos._ramBuffer = cachedFrame->data();
         Format dispW;
@@ -291,17 +293,11 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
             // Do not catch exceptions: if an exception occurs here it is probably fatal, since
             // it comes from Natron itself. All exceptions from plugins are already caught
             // by the HostSupport library.
-            //try{
             int inputIndex = activeInput();
             _node->notifyInputNIsRendering(inputIndex);
             inputImage = it->first->renderRoI(time, scale,view,it->second,byPassCache);
             _node->notifyInputNIsFinishedRendering(inputIndex);;
             
-            //} catch (...) {
-            //    //plugin should have posted a message
-            //    return StatFailed;
-            //}
-
             if(aborted()){
                 //if render was aborted, remove the frame from the cache as it contains only garbage
                 appPTR->removeFromViewerCache(cachedFrame);
@@ -397,20 +393,6 @@ void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputI
         scaleToTexture8bits(inputImage,yRange,texRect,closestPowerOf2,rOffset,gOffset,bOffset,luminance);
     }
 
-    
-//    for(U32 i = 0; i < rows.size();++i){
-//        const float* data = inputImage->pixelAt(0, rows[i].first);
-//        
-//        //half float not supported yet.
-//        if(_uiContext->viewer->bitDepth() == FLOAT || _uiContext->viewer->bitDepth() == HALF_FLOAT){
-//            // image is stored as linear, the OpenGL shader with do gamma/sRGB/Rec709 decompression
-//            convertRowToFitTextureBGRA_fp(data,columns,rows[i].second,rOffset,gOffset,bOffset,luminance);
-//        }
-//        else{
-//            // texture is stored as sRGB/Rec709 compressed 8-bit RGBA
-//            convertRowToFitTextureBGRA(data,columns,rows[i].second,rOffset,gOffset,bOffset,luminance);
-//        }
-//    }
 }
 
 

@@ -30,7 +30,7 @@ namespace Natron{
     public:
         SequenceTime _time;
         U64 _treeVersion;
-        double _zoomFactor;
+        //double _zoomFactor;
         double _exposure;
         int _lut;
         int _bitDepth;
@@ -45,7 +45,7 @@ namespace Natron{
 		: KeyHelper<U64>()
         , _time(0)
         , _treeVersion(0)
-        , _zoomFactor(0)
+        // , _zoomFactor(0)
         , _exposure(0)
         , _lut(0)
         , _bitDepth(0)
@@ -57,7 +57,7 @@ namespace Natron{
         {}
         
         
-        FrameKey(SequenceTime time,U64 treeVersion,double zoomFactor,double exposure,
+        FrameKey(SequenceTime time,U64 treeVersion/*,double zoomFactor*/,double exposure,
                  int lut,int bitDepth,int channels,int view,
                  const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect):
         KeyHelper<U64>(1,bitDepth != 0 ?
@@ -65,7 +65,7 @@ namespace Natron{
                        : textureRect.w * textureRect.h   * 4 )
         ,_time(time)
         ,_treeVersion(treeVersion)
-        ,_zoomFactor(zoomFactor)
+        // ,_zoomFactor(zoomFactor)
         ,_exposure(exposure)
         ,_lut(lut)
         ,_bitDepth(bitDepth)
@@ -81,7 +81,7 @@ namespace Natron{
         void fillHash(Hash64* hash) const {
             hash->append(_time);
             hash->append(_treeVersion);
-            hash->append(_zoomFactor);
+            // hash->append(_zoomFactor);
             hash->append(_exposure);
             hash->append(_lut);
             hash->append(_bitDepth);
@@ -109,7 +109,7 @@ namespace Natron{
         bool operator==(const FrameKey& other) const {
             return  _time == other._time &&
                     _treeVersion == other._treeVersion &&
-                    _zoomFactor == other._zoomFactor &&
+            //_zoomFactor == other._zoomFactor &&
                     _exposure == other._exposure &&
                     _lut == other._lut &&
                     _bitDepth == other._bitDepth &&
@@ -131,7 +131,7 @@ namespace boost {
             (void)version;
             ar & f._time;
             ar & f._treeVersion;
-            ar & f._zoomFactor;
+            // ar & f._zoomFactor;
             ar & f._exposure;
             ar & f._lut;
             ar & f._bitDepth;
@@ -157,10 +157,10 @@ namespace Natron{
       
         ~FrameEntry(){}
         
-        static FrameKey makeKey(SequenceTime time,U64 treeVersion,double zoomFactor,double exposure,
+        static FrameKey makeKey(SequenceTime time,U64 treeVersion/*,double zoomFactor*/,double exposure,
                                 int lut,int bitDepth,int channels,int view,
                                 const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect){
-            return FrameKey(time,treeVersion,zoomFactor,exposure,lut,bitDepth,channels,view,dataWindow,displayWindow,textureRect);
+            return FrameKey(time,treeVersion/*,zoomFactor*/,exposure,lut,bitDepth,channels,view,dataWindow,displayWindow,textureRect);
         }
         
         U8* data() const {return _data.writable();}
