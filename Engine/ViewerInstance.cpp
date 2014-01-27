@@ -581,7 +581,7 @@ void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> 
                 src_pixels += (4 * closestPowerOf2);
             }
             
-            src_pixels = src_start;
+            src_pixels = src_start - (4 * closestPowerOf2);
             
             /* go backwards from starting point to start of line: */
             for(int i = start-1 ; i >= 0 ; --i){
@@ -630,7 +630,7 @@ void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> 
                 src_pixels += (4 * closestPowerOf2);
             }
             
-            src_pixels = src_start;
+            src_pixels = src_start - (4 * closestPowerOf2);
             
             error_r = 0x80;
             error_g = 0x80;
