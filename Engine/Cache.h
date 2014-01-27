@@ -933,6 +933,13 @@ private:
             for (typename CacheTOC::const_iterator it =
                  tableOfContents.begin(); it!=tableOfContents.end(); ++it) {
                 if (it->first != it->second.getHash()) {
+                    /*
+                     * If this warning is printed this means that the value computed by it->second.getHash()
+                     * is different of the value stored prior to serialiazing this entry. In other words there're
+                     * 2 possibilities:
+                     * 1) The key has changed since it has been added to the cache
+                     * 2) The hash key computation is unreliable and is depending upong changing parameters which is wrong
+                     */
                     std::cout << "WARNING: serialized hash key different than the restored one" << std::endl;
                 }
                 ValueType* value = NULL;

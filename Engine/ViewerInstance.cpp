@@ -247,9 +247,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     }
     
     if (isCached) {
-        
-        std::cout << "CACHED" << std::endl;
-        
+                
         /*Found in viewer cache, we execute the cached engine and leave*/
         _interThreadInfos._ramBuffer = cachedFrame->data();
         Format dispW;

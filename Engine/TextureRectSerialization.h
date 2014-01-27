@@ -23,7 +23,7 @@ namespace boost {
         void serialize(Archive & ar, TextureRect &t, const unsigned int version)
         {
             (void)version;
-            ar & t.x1 & t.x2 & t.x2 & t.y2 & t.w & t.h & t.closestPo2;
+            ar & t.x1 & t.x2 & t.y1 & t.y2 & t.w & t.h & t.closestPo2;
         }
     }
 }
