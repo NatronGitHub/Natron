@@ -10,11 +10,9 @@
   do it only if the frame was already fitted. Use cas: zoom into the
   image, resize the viewer => you lose your zoom settings.
 
-- the OFX readers should be instanciated preferably in the Reader context,
-  and writers in the Writer context.
+- In the Dot Generator plugin, the interact cannot be moved in Natron
 
-- getTimeDomain should never be called for OFX instances that are not
-   General or Reader or Generator
+- The Interact from the "OFX Custom Parameter Example" does not appear in Natron in some cases (reported by Fred)
 
 ** Here is a list of non-blocking bugs / wanted features:
 
