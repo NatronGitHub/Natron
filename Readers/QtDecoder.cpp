@@ -247,9 +247,7 @@ SequenceTime QtReader::getSequenceTime(SequenceTime t)
     
     SequenceTime first = _firstFrame->getValue<int>();
     SequenceTime last = _lastFrame->getValue<int>();
-    
-    SequenceTime originalFirst = _fileKnob->firstFrame();
-    
+        
     
     ///offset the time wrt the starting time
     SequenceTime sequenceTime =  t - timeOffset;
