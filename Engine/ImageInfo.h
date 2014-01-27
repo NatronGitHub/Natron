@@ -19,14 +19,12 @@
 class ImageInfo{
 public:
     ImageInfo(Format displayWindow,Natron::ChannelSet channels)
-    : _roi()
-    , _rod()
+    : _rod()
     , _displayWindow(displayWindow)
     , _channels(channels)
     {}
     ImageInfo()
-    : _roi()
-    , _rod()
+    : _rod()
     , _displayWindow()
     , _channels()
     {}
@@ -38,9 +36,6 @@ public:
     
     void setRoD(const RectI& win) { _rod = win; }
     const RectI& getRoD() const { return _rod; }
-    
-    void setRoI(const RectI& r) { _roi = r; }
-    const RectI& getRoI() const { return _roi; }
     
     void setChannels(const Natron::ChannelSet& mask) { _channels = mask; }
     const Natron::ChannelSet& getChannels() const { return _channels; }
@@ -58,7 +53,6 @@ public:
     
 private:
     
-    RectI _roi;
     RectI _rod;
     Format _displayWindow; // display window of the data
     Natron::ChannelSet _channels; // all channels defined by the current Node ( that are allocated)

@@ -89,9 +89,7 @@ public:
     const Format& getDisplayWindow() const;
     
     void setRod(const RectI& rod);
-    
-    void setRoI(const RectI& roi);
-    
+        
     void setClipToDisplayWindow(bool b);
     
     bool isClippingToDisplayWindow() const;

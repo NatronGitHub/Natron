@@ -194,6 +194,7 @@ struct ViewerGL::Implementation {
     , persistentMessage()
     , persistentMessageType(0)
     , displayPersistentMessage(false)
+    , zoomOrPannedSinceLastFit(false)
     , textRenderer()
     {
     }
@@ -262,6 +263,8 @@ struct ViewerGL::Implementation {
     int persistentMessageType;
     bool displayPersistentMessage;
 
+    bool zoomOrPannedSinceLastFit; //< true if the user zoomed or panned the image since the last call to fitToRoD
+    
     Natron::TextRenderer textRenderer;
 };
 
@@ -317,7 +320,6 @@ void ViewerGL::drawRenderingVAO() {
 
     const TextureRect &r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
     const RectI& rod = _imp->clipToDisplayWindow ? getDisplayWindow() : getRoD();
-    //const RectI& roi = _imp->currentViewerInfos.getRoI();
     RectI clippedRect;
     r.intersect(rod, &clippedRect);
     
@@ -520,7 +522,7 @@ void ViewerGL::resizeGL(int width, int height){
     assert(_imp->viewerTab);
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
-    if (viewer->getUiContext()) {
+    if (viewer->getUiContext() && !_imp->zoomOrPannedSinceLastFit) {
         viewer->refreshAndContinueRender(true);
         updateGL();
     }
@@ -1231,11 +1233,14 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
         }
         //else {
         updateGL();
+        _imp->zoomOrPannedSinceLastFit = true;
+
         // }
         // no need to update the color picker or mouse posn: they should be unchanged
     } else {
         _imp->viewerTab->getInternalNode()->notifyOverlaysPenMotion(QMouseEventLocalPos(event),pos);
     }
+
 
     //FIXME: This is bugged, somehow we can't set our custom picker cursor...
 //    if(_imp->viewerTab->getGui()->_projectGui->hasPickers()){
@@ -1304,6 +1309,8 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     }
     assert(zoomValue > 0);
     emit zoomChanged(zoomValue);
+    
+    _imp->zoomOrPannedSinceLastFit = true;
 }
 
 void ViewerGL::zoomSlot(int v) {
@@ -1443,6 +1450,8 @@ void ViewerGL::fitToFormat(const Format& rod){
     resetMousePos();
     _imp->zoomCtx.left = w/2.f - (width()/(2.f*_imp->zoomCtx.zoomFactor));
     _imp->zoomCtx.bottom = h/2.f - (height()/(2.f*_imp->zoomCtx.zoomFactor)) * rod.getPixelAspect();
+    
+    _imp->zoomOrPannedSinceLastFit = false;
 }
 
 
@@ -1522,9 +1531,6 @@ void ViewerGL::setRod(const RectI& rod){
     
 }
 
-void ViewerGL::setRoI(const RectI& roi) {
-    _imp->currentViewerInfos.setRoI(roi);
-}
 
 void ViewerGL::onProjectFormatChanged(const Format& format){
     _imp->currentViewerInfos.setDisplayWindow(format);

@@ -186,7 +186,6 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(zoomFactor) / std::log(2)));
 
     RectI roi = viewer->getImageRectangleDisplayed(rod);
-    viewer->setRoI(roi);
 
     RectI texRect;
     double tileSize = std::pow(2., (double)appPTR->getCurrentSettings()->getViewerTilesPowerOf2());
