@@ -279,12 +279,17 @@ void NodeGui::updateChannelsTooltip(const Natron::ChannelSet& chan){
 
 void NodeGui::updatePreviewImage(int time){
     
-    if(_internalNode->isPreviewEnabled() && !_internalNode->isRenderingPreview()) {
+    if(_internalNode->isPreviewEnabled()) {
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
     }
 }
 
 void NodeGui::computePreviewImage(int time){
+    
+    if (_internalNode->isRenderingPreview()) {
+        return;
+    }
+    
     int w = NATRON_PREVIEW_WIDTH;
     int h = NATRON_PREVIEW_HEIGHT;
     size_t dataSize = 4*w*h;

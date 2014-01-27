@@ -149,7 +149,7 @@ void ScaleSliderQWidget::paintEvent(QPaintEvent* /*event*/) {
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 
     QFontMetrics fontM(*_font);
-    p.setBrush(_scaleColor);
+    p.setPen(_scaleColor);
 
     QPointF btmLeft = toScaleCoordinates(0,height()-1);
     QPointF topRight = toScaleCoordinates(width()-1, 0);
@@ -191,7 +191,7 @@ void ScaleSliderQWidget::paintEvent(QPaintEvent* /*event*/) {
         
         QColor color(_scaleColor);
         color.setAlphaF(alpha);
-        p.setBrush(color);
+        p.setPen(color);
         
         QPointF tickBottomPos = toWidgetCoordinates(value, tickBottom);
         QPointF tickTopPos = toWidgetCoordinates(value, tickTop);
@@ -214,7 +214,7 @@ void ScaleSliderQWidget::paintEvent(QPaintEvent* /*event*/) {
                 QColor c = _textColor;
                 c.setAlpha(255*alphaText);
                 p.setFont(*_font);
-                p.setBrush(c);
+                p.setPen(c);
                 
                 QPointF textPos = toWidgetCoordinates(value, btmLeft.y());
 
@@ -227,11 +227,11 @@ void ScaleSliderQWidget::paintEvent(QPaintEvent* /*event*/) {
     QPointF sliderTopRight(positionValue + SLIDER_WIDTH / 2,height() -1 - fontM.height()/2 - SLIDER_HEIGHT);
     
     /*draw the slider*/
-    p.setBrush(_sliderColor);
+    p.setPen(_sliderColor);
     p.drawRect(sliderBottomLeft.x(), sliderBottomLeft.y(), sliderTopRight.x() - sliderBottomLeft.x(), sliderTopRight.y() - sliderBottomLeft.y());
     
     /*draw a black rect around the slider for contrast*/
-    p.setBrush(Qt::black);
+    p.setPen(Qt::black);
     
     p.drawLine(sliderBottomLeft.x(),sliderBottomLeft.y(),sliderBottomLeft.x(),sliderTopRight.y());
     p.drawLine(sliderBottomLeft.x(),sliderTopRight.y(),sliderTopRight.x(),sliderTopRight.y());
