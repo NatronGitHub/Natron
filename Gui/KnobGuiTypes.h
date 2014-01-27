@@ -44,7 +44,7 @@ class LineEdit;
 class Button;
 class SpinBox;
 class ComboBox;
-class ScaleSlider;
+class ScaleSliderQWidget;
 class GroupBoxLabel;
 class CurveWidget;
 class CurveGui;
@@ -107,7 +107,7 @@ private:
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
     QLabel *_descriptionLabel;
-    ScaleSlider *_slider;
+    ScaleSliderQWidget *_slider;
 
 };
 
@@ -196,7 +196,7 @@ private:
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
     QLabel *_descriptionLabel;
-    ScaleSlider *_slider;
+    ScaleSliderQWidget *_slider;
 };
 
 //================================

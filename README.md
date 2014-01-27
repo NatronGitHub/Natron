@@ -23,14 +23,16 @@ Features
 
 - Support for commercial OpenFX plugins:
  * [Furnace by The Foundry](http://www.thefoundry.co.uk/products/furnace/)
+ * [KeyLight by The Foundry](http://www.thefoundry.co.uk/products/plugins/keylight/)
  * [GenArts Sapphire](http://www.genarts.com/software/sapphire/overview)
+ * [Other GenArts products](http://www.genarts.com/software/other-vfx-products)
  * And probably many more. Please tell us if you successfully tested other commercial plugins.
 
 - OpenFX: Currently almost all features of OpenFX v1.3 are supported
   (see Documentation/ofxActionsSupported.rtf and
-  Documentation/ofxPropSupported.rtf is the source distribution)
-- Most graphics cards should be supported
-Platforms not supporting GLSL are also supported
+  Documentation/ofxPropSupported.rtf in the source distribution)
+- A minimum of OpenGL 1.5 is required, hence most graphics cards should be supported, 
+platforms not supporting GLSL are also supported
 - Fast Viewer interaction with no delay 
 - Overlays interaction on the viewer
 - Fast playback engine: possibility to run 32bit floating point 4K sequences at 60+ fps

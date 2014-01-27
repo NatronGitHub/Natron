@@ -32,7 +32,7 @@ class ViewerGL;
 class InfoViewerWidget;
 class AppInstance;
 class SpinBox;
-class ScaleSlider;
+class ScaleSliderQWidget;
 class TimeLineGui;
 class ViewerInstance;
 class Gui;
@@ -124,7 +124,7 @@ private:
 
     /*2nd row*/
     SpinBox* _gainBox;
-    ScaleSlider* _gainSlider;
+    ScaleSliderQWidget* _gainSlider;
     Button* _refreshButton;
     ComboBox* _viewerColorSpace;
     ComboBox* _viewsComboBox;

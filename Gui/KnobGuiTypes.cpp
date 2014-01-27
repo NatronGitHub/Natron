@@ -35,7 +35,7 @@
 #include "Gui/ClickableLabel.h"
 #include "Gui/SpinBox.h"
 #include "Gui/ComboBox.h"
-#include "Gui/ScaleSlider.h"
+#include "Gui/ScaleSliderQWidget.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/GroupBoxLabel.h"
 #include "Gui/Gui.h"
@@ -123,7 +123,7 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row)
         if (getKnob()->getDimension() == 1 && !intKnob->isSliderDisabled()) {
             
             if ((max - min) < SLIDER_MAX_RANGE && max < INT_MAX && min > INT_MIN) {
-                _slider = new ScaleSlider(min, max,
+                _slider = new ScaleSliderQWidget(min, max,
                                           getKnob()->getValue<int>(), Natron::LINEAR_SCALE, layout->parentWidget());
                 _slider->setToolTip(getKnob()->getHintToolTip().c_str());
                 QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
@@ -393,7 +393,7 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row)
         if (getKnob()->getDimension() == 1 && !dbl_knob->isSliderDisabled()) {
 
             if ((max - min) < SLIDER_MAX_RANGE && max < DBL_MAX && min > -DBL_MAX) {
-                _slider = new ScaleSlider(min, max,
+                _slider = new ScaleSliderQWidget(min, max,
                                           getKnob()->getValue<double>(), Natron::LINEAR_SCALE, layout->parentWidget());
                 _slider->setToolTip(getKnob()->getHintToolTip().c_str());
                 QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));

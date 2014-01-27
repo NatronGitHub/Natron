@@ -32,7 +32,6 @@ ScaleSlider::ScaleSlider(double bottom, double top, double initialPos, Natron::S
 , _maximum(top)
 , _type(type)
 , _value(initialPos)
-, _XValues()
 , _dragging(false)
 , _font(new QFont(NATRON_FONT_ALT, NATRON_FONT_SIZE_8))
 , _clearColor(50,50,50,255)
@@ -315,6 +314,21 @@ QPointF ScaleSlider::toWidgetCoordinates(double x, double y){
     return QPoint(((x - left)/(right - left))*w,((y - top)/(bottom - top))*h);
 }
 
+void ScaleSlider::setMinimumAndMaximum(double min,double max){
+    _minimum = min;
+    _maximum = max;
+    centerOn(_minimum, _maximum);
+}
+
+void ScaleSlider::centerOn(double left,double right){
+    double scaleWidth = right - left + 10;
+    double w = width();
+    _zoomCtx.left = left - 5;
+    _zoomCtx.zoomFactor = w / scaleWidth;
+    
+    update();
+}
+
 // Algorithms SCALE1, SCALE2 and SCALE3 for Determination of Scales on Computer Generated Plots
 // by	C. R. Lewart
 // Algorithm 463, Collected Algorithms from ACM.
@@ -577,17 +591,3 @@ void ScaleSlider::LogScale1(double xmin, double xmax, int n,
     }
 }
 
-void ScaleSlider::setMinimumAndMaximum(double min,double max){
-    _minimum = min;
-    _maximum = max;
-    centerOn(_minimum, _maximum);
-}
-
-void ScaleSlider::centerOn(double left,double right){
-    double scaleWidth = right - left + 10;
-    double w = width();
-    _zoomCtx.left = left - 5;
-    _zoomCtx.zoomFactor = w / scaleWidth;
-    
-    update();
-}
