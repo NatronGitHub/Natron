@@ -9,7 +9,7 @@
  *
  */
 
-#include "ScaleSliderQwidget.h"
+#include "ScaleSliderQWidget.h"
 
 #include <cassert>
 #include <QtGui/QPaintEvent>

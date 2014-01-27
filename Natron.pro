@@ -215,7 +215,7 @@ SOURCES += \
     Gui/ProcessHandler.cpp \
     Gui/ProjectGui.cpp \
     Gui/ProjectGuiSerialization.cpp \
-    Gui/ScaleSliderQwidget.cpp \
+    Gui/ScaleSliderQWidget.cpp \
     Gui/SequenceFileDialog.cpp \
     Gui/SpinBox.cpp \
     Gui/TabWidget.cpp \
@@ -322,7 +322,7 @@ HEADERS += \
     Gui/ProcessHandler.h \
     Gui/ProjectGui.h \
     Gui/ProjectGuiSerialization.h \
-    Gui/ScaleSliderQwidget.h \
+    Gui/ScaleSliderQWidget.h \
     Gui/SequenceFileDialog.h \
     Gui/Shaders.h \
     Gui/SpinBox.h \
