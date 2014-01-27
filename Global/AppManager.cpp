@@ -758,8 +758,6 @@ bool AppInstance::findAutoSave() {
                 title.append(_currentProject->getProjectName());
                 title.append(" (*)");
                 _gui->setWindowTitle(title);
-                removeAutoSaves(); // clean previous auto-saves
-                                   //autoSave(); // auto-save the recently recovered project, in case the program crashes again
                 return true;
             }
         }
