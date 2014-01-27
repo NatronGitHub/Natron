@@ -15,7 +15,7 @@
 #include <QtGui/QPaintEvent>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QPainter>
-#include <QtGui/QStyleOption>
+#include <QStyleOption>
 
 #include "Gui/ticks.h"
 
