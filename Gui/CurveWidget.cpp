@@ -31,7 +31,6 @@
 #include "Gui/LineEdit.h"
 #include "Gui/SpinBox.h"
 #include "Gui/Button.h"
-#include "Gui/ScaleSlider.h"
 #include "Gui/ticks.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/TextRenderer.h"

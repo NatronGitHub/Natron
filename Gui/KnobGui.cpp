@@ -61,7 +61,6 @@
 #include "Gui/ComboBox.h"
 #include "Gui/LineEdit.h"
 #include "Gui/CurveEditor.h"
-#include "Gui/ScaleSlider.h"
 #include "Gui/KnobGuiTypes.h"
 #include "Gui/CurveWidget.h"
 

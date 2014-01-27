@@ -206,8 +206,11 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     texRectClipped.y2 *= closestPowerOf2;
     texRectClipped.intersect(rod, &texRectClipped);
     
+    int texW = texRect.width() > rod.width() ? rod.width() : texRect.width();
+    int texH = texRect.height() > rod.height() ? rod.height() : texRect.height();
+    
     TextureRect textureRect(texRectClipped.x1,texRectClipped.y1,texRectClipped.x2,
-                            texRectClipped.y2,texRect.width(),texRect.height(),closestPowerOf2);
+                            texRectClipped.y2,texW,texH,closestPowerOf2);
     
     _interThreadInfos._textureRect = textureRect;
     _interThreadInfos._bytesCount = textureRect.w * textureRect.h * 4;
