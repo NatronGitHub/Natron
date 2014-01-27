@@ -363,7 +363,7 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
         emit toolButtonAdded(groups,pluginId.c_str(), pluginLabel.c_str(), iconFilename, groupIconFilename);
         QMutex* pluginMutex = NULL;
         if(p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe){
-            pluginMutex = new QMutex;
+            pluginMutex = new QMutex(QMutex::Recursive);
         }
         Natron::Plugin* plugin = new Natron::Plugin(new Natron::LibraryBinary(Natron::LibraryBinary::BUILTIN),
                                                     pluginId.c_str(),pluginLabel.c_str(),pluginMutex,p->getVersionMajor(),

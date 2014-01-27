@@ -1215,7 +1215,7 @@ void AppManager::loadNodePlugins(std::map<std::string,std::vector<std::string> >
             assert(effect);
             QMutex* pluginMutex = NULL;
             if(effect->renderThreadSafety() == Natron::EffectInstance::UNSAFE){
-                pluginMutex = new QMutex;
+                pluginMutex = new QMutex(QMutex::Recursive);
             }
             Natron::Plugin* plugin = new Natron::Plugin(plugins[i],effect->pluginID().c_str(),effect->pluginLabel().c_str(),
                                                         pluginMutex,effect->majorVersion(),effect->minorVersion());

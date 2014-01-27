@@ -110,6 +110,8 @@ public:
     Natron::EffectInstance* getOutput() const {return _output;}
     
     
+    void getTree(std::vector<std::pair<Natron::Node*,Natron::EffectInstance*> >* tree) const { *tree = _sorted; }
+    
     /**
      *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
      *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
