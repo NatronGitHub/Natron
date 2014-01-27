@@ -318,31 +318,33 @@ void ViewerGL::drawRenderingVAO() {
     const TextureRect &r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
     const RectI& rod = _imp->clipToDisplayWindow ? getDisplayWindow() : getRoD();
     //const RectI& roi = _imp->currentViewerInfos.getRoI();
+    RectI clippedRect;
+    r.intersect(rod, &clippedRect);
     
     GLfloat vertices[32] = {
         (GLfloat)rod.left() ,(GLfloat)rod.top()  , //0
-        (GLfloat)r.x1       , (GLfloat)rod.top()  , //1
-        (GLfloat)r.x2 , (GLfloat)rod.top()  , //2
+        (GLfloat)clippedRect.x1       , (GLfloat)rod.top()  , //1
+        (GLfloat)clippedRect.x2 , (GLfloat)rod.top()  , //2
         (GLfloat)rod.right(),(GLfloat)rod.top()  , //3
-        (GLfloat)rod.left(), (GLfloat)r.y2, //4
-        (GLfloat)r.x1      ,  (GLfloat)r.y2, //5
-        (GLfloat)r.x2,  (GLfloat)r.y2, //6
-        (GLfloat)rod.right(),(GLfloat)r.y2, //7
-        (GLfloat)rod.left() ,(GLfloat)r.y1      , //8
-        (GLfloat)r.x1      ,  (GLfloat)r.y1      , //9
-        (GLfloat)r.x2,  (GLfloat)r.y1      , //10
-        (GLfloat)rod.right(),(GLfloat)r.y1      , //11
+        (GLfloat)rod.left(), (GLfloat)clippedRect.y2, //4
+        (GLfloat)clippedRect.x1      ,  (GLfloat)clippedRect.y2, //5
+        (GLfloat)clippedRect.x2,  (GLfloat)clippedRect.y2, //6
+        (GLfloat)rod.right(),(GLfloat)clippedRect.y2, //7
+        (GLfloat)rod.left() ,(GLfloat)clippedRect.y1      , //8
+        (GLfloat)clippedRect.x1      ,  (GLfloat)r.y1      , //9
+        (GLfloat)clippedRect.x2,  (GLfloat)clippedRect.y1      , //10
+        (GLfloat)rod.right(),(GLfloat)clippedRect.y1      , //11
         (GLfloat)rod.left(), (GLfloat)rod.bottom(), //12
-        (GLfloat)r.x1      ,  (GLfloat)rod.bottom(), //13
-        (GLfloat)r.x2,  (GLfloat)rod.bottom(), //14
+        (GLfloat)clippedRect.x1      ,  (GLfloat)rod.bottom(), //13
+        (GLfloat)clippedRect.x2,  (GLfloat)rod.bottom(), //14
         (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
     };
 
     GLfloat texBottom,texLeft,texRight,texTop;
     texBottom =  0;
-    texTop =  (GLfloat)(r.y2 - r.y1)/ (GLfloat)(r.h * r.closestPo2);
+    texTop =  (GLfloat)(clippedRect.y2 - clippedRect.y1)/ (GLfloat)(r.h * r.closestPo2);
     texLeft = 0;
-    texRight = (GLfloat)(r.x2 - r.x1) / (GLfloat)(r.w * r.closestPo2);
+    texRight = (GLfloat)(clippedRect.x2 - clippedRect.x1) / (GLfloat)(r.w * r.closestPo2);
     
     texTop = texTop > 1 ? 1 : texTop;
     texRight = texRight > 1 ? 1 : texRight;
