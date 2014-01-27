@@ -189,13 +189,15 @@ void ScaleSliderQWidget::paintEvent(QPaintEvent* /*event*/) {
         const double tickSize = ticks[i-m1]*smallTickSize;
         const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
         
-        QColor color(_scaleColor);
+        QColor color(_textColor);
         color.setAlphaF(alpha);
-        p.setPen(color);
+        QPen pen(color);
+        pen.setWidthF(1.9);
+        p.setPen(pen);
         
         QPointF tickBottomPos = toWidgetCoordinates(value, tickBottom);
         QPointF tickTopPos = toWidgetCoordinates(value, tickTop);
-    
+        
         p.drawLine(tickBottomPos,tickTopPos);
      
         
@@ -212,7 +214,7 @@ void ScaleSliderQWidget::paintEvent(QPaintEvent* /*event*/) {
                     alphaText *= (tickSizePixel - sSizePixel)/(double)minTickSizeTextPixel;
                 }
                 QColor c = _textColor;
-                c.setAlpha(255*alphaText);
+                c.setAlphaF(alphaText);
                 p.setFont(*_font);
                 p.setPen(c);
                 
@@ -228,7 +230,7 @@ void ScaleSliderQWidget::paintEvent(QPaintEvent* /*event*/) {
     
     /*draw the slider*/
     p.setPen(_sliderColor);
-    p.drawRect(sliderBottomLeft.x(), sliderBottomLeft.y(), sliderTopRight.x() - sliderBottomLeft.x(), sliderTopRight.y() - sliderBottomLeft.y());
+    p.fillRect(sliderBottomLeft.x(), sliderBottomLeft.y(), sliderTopRight.x() - sliderBottomLeft.x(), sliderTopRight.y() - sliderBottomLeft.y(),_sliderColor);
     
     /*draw a black rect around the slider for contrast*/
     p.setPen(Qt::black);
