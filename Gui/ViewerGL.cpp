@@ -337,15 +337,15 @@ void ViewerGL::drawRenderingVAO() {
         (GLfloat)r.x2,  (GLfloat)rod.bottom(), //14
         (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
     };
-    
-    
-    double closestPowerOf2 = r.closestPo2;
 
     GLfloat texBottom,texLeft,texRight,texTop;
-    texBottom =  0;//(GLfloat)roi.height() / (GLfloat)(r.y1) ;
-    texTop =  (GLfloat)r.y2/ (GLfloat)(r.h * closestPowerOf2);
-    texLeft = 0;//(GLfloat)roi.width()/(GLfloat)(r.x1);
-    texRight = (GLfloat)r.x2 / (GLfloat)(r.w * closestPowerOf2);
+    texBottom =  0;
+    texTop =  (GLfloat)(r.y2 - r.y1)/ (GLfloat)(r.h * r.closestPo2);
+    texLeft = 0;
+    texRight = (GLfloat)(r.x2 - r.x1) / (GLfloat)(r.w * r.closestPo2);
+    
+    texTop = texTop > 1 ? 1 : texTop;
+    texRight = texRight > 1 ? 1 : texRight;
     
     
     GLfloat renderingTextureCoordinates[32] = {
