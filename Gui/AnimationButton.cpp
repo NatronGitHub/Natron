@@ -12,6 +12,7 @@
 #include <QDragLeaveEvent>
 #include <QDropEvent>
 #include <QDrag>
+#include <QPainter>
 
 #include "Gui/KnobGui.h"
 #include "Engine/Project.h"
@@ -43,12 +44,22 @@ void AnimationButton::mouseMoveEvent(QMouseEvent* event){
         QMimeData* mimeData = new QMimeData;
         mimeData->setData("Animation", "");
         drag->setMimeData(mimeData);
-        #if QT_VERSION < 0x050000
-        QPixmap pix = QPixmap::grabWidget(this);
-        #else
-        QPixmap pix = grab();
-        #endif
-        drag->setPixmap(pix);
+        
+        QFontMetrics fmetrics = fontMetrics();
+        QString textFirstLine("Copying animation from:");
+        QString textSecondLine(_knob->getKnob()->getDescription().c_str());
+        QString textThirdLine("Drag it to another animation button.");
+        
+        int textWidth = std::max(std::max(fmetrics.width(textFirstLine), fmetrics.width(textSecondLine)),fmetrics.width(textThirdLine));
+        
+        QImage dragImg(textWidth,(fmetrics.height() + 5) * 3,QImage::Format_ARGB32);
+        dragImg.fill(QColor(243,137,0));
+        QPainter p(&dragImg);
+        p.drawText(QPointF(0,dragImg.height() - 2.5), textThirdLine);
+        p.drawText(QPointF(0,dragImg.height() - fmetrics.height() - 5), textSecondLine);
+        p.drawText(QPointF(0,dragImg.height() - fmetrics.height()*2 - 10), textFirstLine);
+
+        drag->setPixmap(QPixmap::fromImage(dragImg));
         
         drag->exec();
     }else{
