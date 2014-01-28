@@ -475,7 +475,7 @@ void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> 
             /* go fowards from starting point to end of line: */
             for(int i = start ; i < texRect.w; ++i) {
                 int srcIndex =  (i  * 4 * closestPowerOf2);
-                if (srcIndex > texRect.x2 * 4) {
+                if (srcIndex > ( texRect.x2 - texRect.x1 ) * 4) {
                     dst_pixels[i] = toBGRA(0,0,0,255);
                     continue;
                 }
@@ -506,7 +506,7 @@ void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> 
             /* go backwards from starting point to start of line: */
             for(int i = start-1 ; i >= 0 ; --i){
                 int srcIndex =  (i  * 4 * closestPowerOf2);
-                if (srcIndex > texRect.x2 * 4) {
+                if (srcIndex > ( texRect.x2 - texRect.x1 ) * 4) {
                     dst_pixels[i] = toBGRA(0,0,0,255);
                     continue;
                 }
