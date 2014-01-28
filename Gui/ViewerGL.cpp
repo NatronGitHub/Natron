@@ -654,37 +654,37 @@ void ViewerGL::drawOverlay()
 
     const RectI& dispW = getDisplayWindow();
     
-    if(_imp->clipToDisplayWindow){
-        renderText(dispW.right(),dispW.bottom(), _imp->resolutionOverlay,_imp->textRenderingColor,*_imp->textFont);
-        
-        QPoint topRight(dispW.right(),dispW.top());
-        QPoint topLeft(dispW.left(),dispW.top());
-        QPoint btmLeft(dispW.left(),dispW.bottom());
-        QPoint btmRight(dispW.right(),dispW.bottom() );
-        
-        glBegin(GL_LINES);
-
-        glColor4f( _imp->displayWindowOverlayColor.redF(),
-                   _imp->displayWindowOverlayColor.greenF(),
-                   _imp->displayWindowOverlayColor.blueF(),
-                   _imp->displayWindowOverlayColor.alphaF() );
-        glVertex3f(btmRight.x(),btmRight.y(),1);
-        glVertex3f(btmLeft.x(),btmLeft.y(),1);
-        
-        glVertex3f(btmLeft.x(),btmLeft.y(),1);
-        glVertex3f(topLeft.x(),topLeft.y(),1);
-        
-        glVertex3f(topLeft.x(),topLeft.y(),1);
-        glVertex3f(topRight.x(),topRight.y(),1);
-
-        glVertex3f(topRight.x(),topRight.y(),1);
-        glVertex3f(btmRight.x(),btmRight.y(),1);
-        
-        glEnd();
-        checkGLErrors();
-    }
+    
+    renderText(dispW.right(),dispW.bottom(), _imp->resolutionOverlay,_imp->textRenderingColor,*_imp->textFont);
+    
+    QPoint topRight(dispW.right(),dispW.top());
+    QPoint topLeft(dispW.left(),dispW.top());
+    QPoint btmLeft(dispW.left(),dispW.bottom());
+    QPoint btmRight(dispW.right(),dispW.bottom() );
+    
+    glBegin(GL_LINES);
+    
+    glColor4f( _imp->displayWindowOverlayColor.redF(),
+              _imp->displayWindowOverlayColor.greenF(),
+              _imp->displayWindowOverlayColor.blueF(),
+              _imp->displayWindowOverlayColor.alphaF() );
+    glVertex3f(btmRight.x(),btmRight.y(),1);
+    glVertex3f(btmLeft.x(),btmLeft.y(),1);
+    
+    glVertex3f(btmLeft.x(),btmLeft.y(),1);
+    glVertex3f(topLeft.x(),topLeft.y(),1);
+    
+    glVertex3f(topLeft.x(),topLeft.y(),1);
+    glVertex3f(topRight.x(),topRight.y(),1);
+    
+    glVertex3f(topRight.x(),topRight.y(),1);
+    glVertex3f(btmRight.x(),btmRight.y(),1);
+    
+    glEnd();
+    checkGLErrors();
+    
     const RectI& dataW = getRoD();
-    if((dispW != dataW && _imp->clipToDisplayWindow) || !_imp->clipToDisplayWindow){
+    if(dispW != dataW){
         
         renderText(dataW.right(), dataW.top(), _imp->topRightBBOXoverlay, _imp->rodOverlayColor,*_imp->textFont);
         renderText(dataW.left(), dataW.bottom(), _imp->btmLeftBBOXoverlay, _imp->rodOverlayColor,*_imp->textFont);
