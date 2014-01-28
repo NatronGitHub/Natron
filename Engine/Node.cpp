@@ -759,27 +759,27 @@ bool Node::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos)
     return _liveInstance->onOverlayPenUp(viewportPos, pos);
 }
 
-void Node::onOverlayKeyDown(QKeyEvent* e)
+bool Node::onOverlayKeyDown(QKeyEvent* e)
 {
     return _liveInstance->onOverlayKeyDown(e);
 }
 
-void Node::onOverlayKeyUp(QKeyEvent* e)
+bool Node::onOverlayKeyUp(QKeyEvent* e)
 {
     return _liveInstance->onOverlayKeyUp(e);
 }
 
-void Node::onOverlayKeyRepeat(QKeyEvent* e)
+bool Node::onOverlayKeyRepeat(QKeyEvent* e)
 {
     return _liveInstance->onOverlayKeyRepeat(e);
 }
 
-void Node::onOverlayFocusGained()
+bool Node::onOverlayFocusGained()
 {
     return _liveInstance->onOverlayFocusGained();
 }
 
-void Node::onOverlayFocusLost()
+bool Node::onOverlayFocusLost()
 {
     return _liveInstance->onOverlayFocusLost();
 }

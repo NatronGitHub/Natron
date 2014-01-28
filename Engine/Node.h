@@ -244,15 +244,15 @@ public:
     
     bool onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos);
     
-    void onOverlayKeyDown(QKeyEvent* e);
+    bool onOverlayKeyDown(QKeyEvent* e);
     
-    void onOverlayKeyUp(QKeyEvent* e);
+    bool onOverlayKeyUp(QKeyEvent* e);
     
-    void onOverlayKeyRepeat(QKeyEvent* e);
+    bool onOverlayKeyRepeat(QKeyEvent* e);
     
-    void onOverlayFocusGained();
+    bool onOverlayFocusGained();
     
-    void onOverlayFocusLost();
+    bool onOverlayFocusLost();
 
     bool makePreviewByDefault() const;
     
