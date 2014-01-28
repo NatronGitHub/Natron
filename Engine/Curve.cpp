@@ -436,14 +436,10 @@ bool Curve::isAnimated() const
 void Curve::setParametricRange(double a,double b) {
     _imp->curveMin = a;
     _imp->curveMax = b;
-    _imp->curveRangeSet = true;
 }
 
 std::pair<double,double> Curve::getParametricRange() const
 {
-    if (!_imp->curveRangeSet) {
-        throw std::logic_error("Curve::getParametricRange(): curve range not set");
-    }
     return std::make_pair(_imp->curveMin, _imp->curveMax);
 }
 
@@ -738,7 +734,7 @@ KeyFrameSet::const_iterator Curve::keyframeAt(int index) const {
 int Curve::keyFrameIndex(double time) const {
     int i = 0;
     double paramEps;
-    if (_imp->curveRangeSet) {
+    if (_imp->curveMax != INT_MAX && _imp->curveMin != INT_MIN) {
         paramEps = 1e-4 * std::abs(_imp->curveMax - _imp->curveMin);
     } else {
         paramEps = 1e-4;

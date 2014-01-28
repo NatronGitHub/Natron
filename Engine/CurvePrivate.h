@@ -46,16 +46,14 @@ struct CurvePrivate{
     bool mustSetCurveType; //< if true the first call to addKeyFrame will set the curveType member
     
     double curveMin,curveMax;
-    bool curveRangeSet;
-        
+    
     CurvePrivate()
     : keyFrames()
     , owner(NULL)
     , curveType(DOUBLE_CURVE)
     , mustSetCurveType(true)
-    , curveMin(0)
-    , curveMax(0)
-    , curveRangeSet(false)
+    , curveMin(INT_MIN)
+    , curveMax(INT_MAX)
     {}
 };
 

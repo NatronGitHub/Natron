@@ -1113,7 +1113,7 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos) {
         key.key = key.curve->getInternalCurve()->setKeyFrameDerivatives(derivative, derivative,keyframeIndexInCurve);
         
     } else {
-        key.key = key.curve->getInternalCurve()->setKeyFrameInterpolation(KEYFRAME_BROKEN, key.key.getTime());
+        key.key = key.curve->getInternalCurve()->setKeyFrameInterpolation(KEYFRAME_BROKEN, keyframeIndexInCurve);
         if (_selectedDerivative.first == CurveGui::LEFT_TANGENT) {
             //if dx is not of the good sign it would make the curve uncontrollable
             if (dx < 0) {
@@ -1858,7 +1858,7 @@ void CurveWidget::mouseReleaseEvent(QMouseEvent*) {
 
 void CurveWidget::mouseMoveEvent(QMouseEvent *event){
     
-    setFocus();
+    //setFocus();
     
     //set cursor depending on the situation
     
