@@ -613,37 +613,6 @@ void ViewerInstance::updateViewer(){
 }
 
 
-
-void ViewerInstance::redrawViewer(){
-    emit mustRedraw();
-}
-
-void ViewerInstance::swapBuffers(){
-    emit mustSwapBuffers();
-}
-
-void ViewerInstance::pixelScale(double &x,double &y) {
-    assert(_uiContext);
-    assert(_uiContext->viewer);
-    x = _uiContext->viewer->getDisplayWindow().getPixelAspect();
-    y = 2. - x;
-}
-
-void ViewerInstance::backgroundColor(double &r,double &g,double &b) {
-    assert(_uiContext);
-    assert(_uiContext->viewer);
-    _uiContext->viewer->backgroundColor(r, g, b);
-}
-
-void ViewerInstance::viewportSize(double &w,double &h) {
-    assert(_uiContext);
-    assert(_uiContext->viewer);
-    const Format& f = _uiContext->viewer->getDisplayWindow();
-    w = f.width();
-    h = f.height();
-}
-
-
 bool ViewerInstance::isInputOptional(int n) const{
     return n != activeInput();
 }
@@ -720,4 +689,8 @@ void ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,
 
 bool ViewerInstance::supportsGLSL() const{
     return _uiContext->viewer->supportsGLSL();
+}
+
+void ViewerInstance::redrawViewer(){
+    emit mustRedraw();
 }

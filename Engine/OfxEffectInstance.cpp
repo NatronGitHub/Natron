@@ -149,6 +149,7 @@ void OfxEffectInstance::tryInitializeOverlayInteracts(){
         if(overlayEntryPoint){
             _overlayInteract = new OfxOverlayInteract(*effect_,8,true,NULL);
             _overlayInteract->createInstanceAction();
+            getApp()->redrawAllViewers();
         }
     }
 }
@@ -537,48 +538,6 @@ const std::string& OfxEffectInstance::getShortLabel() const {
     return effectInstance()->getShortLabel();
 }
 
-
-void OfxEffectInstance::swapBuffersOfAttachedViewer(){
-    std::list<ViewerInstance*> viewers;
-    getNode()->hasViewersConnected(&viewers);
-    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
-        (*it)->swapBuffers();
-    }
-}
-
-void OfxEffectInstance::redrawInteractOnAttachedViewer(){
-    std::list<ViewerInstance*> viewers;
-    getNode()->hasViewersConnected(&viewers);
-    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
-        (*it)->redrawViewer();
-    }
-
-}
-
-void OfxEffectInstance::pixelScaleOfAttachedViewer(double &x,double &y){
-    std::list<ViewerInstance*> viewers;
-    getNode()->hasViewersConnected(&viewers);
-    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
-        (*it)->pixelScale(x, y);
-    }
-}
-
-void OfxEffectInstance::viewportSizeOfAttachedViewer(double &w,double &h){
-    std::list<ViewerInstance*> viewers;
-    getNode()->hasViewersConnected(&viewers);
-    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
-        (*it)->viewportSize(w, h);
-    }
-}
-void OfxEffectInstance::backgroundColorOfAttachedViewer(double &r,double &g,double &b){
-    std::list<ViewerInstance*> viewers;
-    getNode()->hasViewersConnected(&viewers);
-    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
-        (*it)->backgroundColor(r, g, b);
-    }
-    
-}
-
 void OfxEffectInstance::initializeOverlayInteract() {
     tryInitializeOverlayInteracts();
 }
@@ -596,6 +555,11 @@ void OfxEffectInstance::drawOverlay(){
     }
 }
 
+void OfxEffectInstance::setCurrentViewerForOverlays(ViewerGL* viewer) {
+    if (_overlayInteract) {
+        _overlayInteract->setCallingViewer(viewer);
+    }
+}
 
 bool OfxEffectInstance::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
     if(!_initialized){

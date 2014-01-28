@@ -13,23 +13,30 @@
 
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
+#include "Engine/Format.h"
 
 #include "Gui/CurveWidget.h"
+#include "Gui/ViewerGL.h"
 
 using namespace Natron;
 
 OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v, int bitDepthPerComponent, bool hasAlpha,CurveWidget* curveWidget):
 OFX::Host::ImageEffect::OverlayInteract(v,bitDepthPerComponent,hasAlpha)
 , _curveWidget(curveWidget)
-, _node(v.node())
+, _currentViewer(NULL)
 {
+}
+
+void OfxOverlayInteract::setCallingViewer(ViewerGL* viewer) {
+    _currentViewer = viewer;
 }
 
 OfxStatus OfxOverlayInteract::swapBuffers(){
     if(_curveWidget){
         _curveWidget->swapBuffers();
     }else{
-        _node->swapBuffersOfAttachedViewer();
+        assert(_currentViewer);
+        _currentViewer->swapBuffers();
     }
     return kOfxStatOK;
 }
@@ -38,7 +45,8 @@ OfxStatus OfxOverlayInteract::redraw(){
     if(_curveWidget){
         _curveWidget->update();
     }else{
-        _node->redrawInteractOnAttachedViewer();
+        assert(_currentViewer);
+        _currentViewer->update();
     }
     return kOfxStatOK;
 }
@@ -48,7 +56,10 @@ void OfxOverlayInteract::getViewportSize(double &width, double &height) const{
         width = _curveWidget->width();
         height = _curveWidget->height();
     }else{
-        _node->viewportSizeOfAttachedViewer(width, height);
+        assert(_currentViewer);
+        const Format& f = _currentViewer->getDisplayWindow();
+        width = f.width();
+        height = f.height();
     }
 }
 
@@ -58,7 +69,9 @@ void OfxOverlayInteract::getPixelScale(double& xScale, double& yScale) const{
         xScale = 1. / ap;
         yScale = ap;
     }else{
-        _node->pixelScaleOfAttachedViewer(xScale, yScale);
+        assert(_currentViewer);
+        xScale = _currentViewer->getDisplayWindow().getPixelAspect();
+        yScale = 2. - xScale;
     }
 }
 
@@ -66,7 +79,8 @@ void OfxOverlayInteract::getBackgroundColour(double &r, double &g, double &b) co
     if(_curveWidget){
         _curveWidget->getBackgroundColor(&r, &g, &b);
     }else{
-        _node->backgroundColorOfAttachedViewer(r, g, b);
+        assert(_currentViewer);
+        _currentViewer->backgroundColor(r,g,b);
     }
 }
 

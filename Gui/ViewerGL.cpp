@@ -580,8 +580,8 @@ void ViewerGL::paintGL()
         if(_imp->displayingImage){
             glBindTexture(GL_TEXTURE_2D, _imp->defaultDisplayTexture->getTexID());
             // debug (so the OpenGL debugger can make a breakpoint here)
-             GLfloat d;
-             glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+            // GLfloat d;
+            //  glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
             if (_imp->supportsGLSL) {
                 activateShaderRGB();
             }

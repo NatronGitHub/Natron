@@ -156,16 +156,6 @@ public:
 
     void wakeUpAnySleepingThread();
 
-    void redrawViewer();
-
-    void swapBuffers();
-
-    void pixelScale(double &x,double &y);
-
-    void backgroundColor(double &r,double &g,double &b);
-
-    void viewportSize(double &w,double &h);
-
     int activeInput() const;
 
     int getLutType() const {return _lut;}
@@ -207,8 +197,12 @@ public slots:
 
     void onNodeNameChanged(const QString&);
     
+    void redrawViewer();
+    
 signals:
 
+    void mustRedraw();
+    
     void viewerDisconnected();
 
     void addedCachedFrame(SequenceTime);
@@ -216,11 +210,6 @@ signals:
     void removedLRUCachedFrame();
 
     void clearedViewerCache();
-
-    void mustSwapBuffers();
-
-    void mustRedraw();
-
     /**
  *@brief Signal emitted when the engine needs to inform the main thread that it should refresh the viewer
  **/

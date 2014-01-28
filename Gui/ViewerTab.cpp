@@ -447,8 +447,7 @@ _viewerNode(node)
     QObject::connect(vengine, SIGNAL(engineStopped()), this, SLOT(onEngineStopped()));
     
     
-    QObject::connect(_viewerNode, SIGNAL(mustRedraw()), viewer, SLOT(updateGL()));
-    QObject::connect(_viewerNode, SIGNAL(mustSwapBuffers()), viewer, SLOT(doSwapBuffers()));
+    QObject::connect(_viewerNode, SIGNAL(mustRedraw()), viewer, SLOT(update()));
     
     QObject::connect(_clipToProjectFormatButton,SIGNAL(clicked(bool)),this,SLOT(onClipToProjectButtonToggle(bool)));
     
@@ -738,6 +737,9 @@ void ViewerTab::drawOverlays() const{
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
+        
+        effect->setCurrentViewerForOverlays(viewer);
+        
         EffectInstance::RenderSafety safety = effect->renderThreadSafety();
         if(safety == EffectInstance::UNSAFE) {
             QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
@@ -757,6 +759,10 @@ void ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& 
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
+        
+        effect->setCurrentViewerForOverlays(viewer);
+
+    
         EffectInstance::RenderSafety safety = effect->renderThreadSafety();
         if(safety == EffectInstance::UNSAFE) {
             QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
@@ -776,6 +782,9 @@ void ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
+        
+        effect->setCurrentViewerForOverlays(viewer);
+
         EffectInstance::RenderSafety safety = effect->renderThreadSafety();
         if(safety == EffectInstance::UNSAFE) {
             QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
@@ -795,6 +804,9 @@ void ViewerTab::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& po
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
+        
+        effect->setCurrentViewerForOverlays(viewer);
+
         EffectInstance::RenderSafety safety = effect->renderThreadSafety();
         if(safety == EffectInstance::UNSAFE) {
             QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
@@ -814,6 +826,9 @@ void ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
+        
+        effect->setCurrentViewerForOverlays(viewer);
+
         EffectInstance::RenderSafety safety = effect->renderThreadSafety();
         if(safety == EffectInstance::UNSAFE) {
             QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
@@ -833,6 +848,9 @@ void ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
+        
+        effect->setCurrentViewerForOverlays(viewer);
+
         EffectInstance::RenderSafety safety = effect->renderThreadSafety();
         if(safety == EffectInstance::UNSAFE) {
             QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
@@ -852,6 +870,9 @@ void ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
+        
+        effect->setCurrentViewerForOverlays(viewer);
+
         EffectInstance::RenderSafety safety = effect->renderThreadSafety();
         if(safety == EffectInstance::UNSAFE) {
             QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
@@ -871,6 +892,9 @@ void ViewerTab::notifyOverlaysFocusGained(){
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
+        
+        effect->setCurrentViewerForOverlays(viewer);
+
         EffectInstance::RenderSafety safety = effect->renderThreadSafety();
         if(safety == EffectInstance::UNSAFE) {
             QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
@@ -890,6 +914,9 @@ void ViewerTab::notifyOverlaysFocusLost(){
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
+        
+        effect->setCurrentViewerForOverlays(viewer);
+
         EffectInstance::RenderSafety safety = effect->renderThreadSafety();
         if(safety == EffectInstance::UNSAFE) {
             QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());

@@ -234,6 +234,10 @@ void Gui::createGui(){
     
     setupUi();
     
+    ///post a fake event so the qt handlers are called and the proper widget receives the focus
+    QMouseEvent e(QEvent::MouseMove,QCursor::pos(),Qt::NoButton,Qt::NoButton,Qt::NoModifier);
+    qApp->sendEvent(this, &e);
+    
     QObject::connect(QCoreApplication::instance(), SIGNAL(aboutToQuit()), this, SLOT(exit()));
     
 }

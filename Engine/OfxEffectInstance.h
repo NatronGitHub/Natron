@@ -136,6 +136,8 @@ public:
 
     virtual void onOverlayFocusLost() OVERRIDE FINAL;
 
+    virtual void setCurrentViewerForOverlays(ViewerGL* viewer) OVERRIDE FINAL;
+
     virtual void beginKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE FINAL;
 
     virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE FINAL;
@@ -152,19 +154,6 @@ public:
 
     virtual void purgeCaches() OVERRIDE;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
-
-
-    /*********OVERLAY INTERACT FUNCTIONS********/
-
-    void swapBuffersOfAttachedViewer();
-
-    void redrawInteractOnAttachedViewer();
-
-    void pixelScaleOfAttachedViewer(double &x,double &y);
-
-    void viewportSizeOfAttachedViewer(double &w,double &h);
-
-    void backgroundColorOfAttachedViewer(double &r,double &g,double &b);
 
     static QStringList getPluginGrouping(const std::string& pluginLabel,const std::string& grouping) WARN_UNUSED_RETURN;
 

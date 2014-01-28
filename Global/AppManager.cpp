@@ -1508,6 +1508,19 @@ void AppInstance::checkViewersConnection(){
         }
     }
 }
+
+void AppInstance::redrawAllViewers() {
+    const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        assert(nodes[i]);
+        if (nodes[i]->pluginID() == "Viewer") {
+            ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
+            assert(n);
+            n->redrawViewer();
+        }
+    }
+}
+
 void AppInstance::setupViewersForViews(int viewsCount){
     const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {

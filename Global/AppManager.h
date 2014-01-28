@@ -216,6 +216,8 @@ public slots:
     /* The following methods are forwarded to the model */
     void checkViewersConnection();
 
+    void redrawAllViewers();
+
     void setupViewersForViews(int viewsCount);
 
     void notifyViewersProjectFormatChanged(const Format& format);

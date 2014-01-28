@@ -25,6 +25,8 @@ class RenderTree;
 class VideoEngine;
 class RenderTree;
 class Format;
+class ViewerGL;
+
 namespace Natron{
 
 class Node;
@@ -317,6 +319,8 @@ public:
     
     virtual void onOverlayFocusLost(){}
     
+    virtual void setCurrentViewerForOverlays(ViewerGL* /*viewer*/) {}
+
     /**
      * @brief Overload this and return true if your operator should dislay a preview image by default.
      **/
