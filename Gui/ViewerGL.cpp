@@ -539,7 +539,7 @@ void ViewerGL::resizeGL(int width, int height){
     assert(_imp->viewerTab);
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
-    if (viewer->getUiContext() && !_imp->zoomOrPannedSinceLastFit) {
+    if (viewer->getUiContext() && !_imp->zoomOrPannedSinceLastFit && _imp->displayingImage) {
         viewer->refreshAndContinueRender(true);
         updateGL();
     }

@@ -10,6 +10,10 @@
 
 - The Interact from the "OFX Custom Parameter Example" does not appear in Natron in some cases (reported by Fred)
 
+- On Ubuntu 13.10 with Qt5, Natron is non-functional (transparent widgets, extra windows...)
+
+- Sometimes when floating a pane (node graph, curve editor) the panes are displayed properly in the floating window and the user has to be click a 2nd time on the "float pane" button.
+
 ** Here is a list of non-blocking bugs / wanted features:
 
 - derive and integrate are not implemented for animated Double,
@@ -35,5 +39,3 @@ http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#Par
   kOfxImageComponentAlpha
    "uk.co.thefoundry.OfxImageComponentMotionVectors" (forward motion?  backward motion? both?)
    "uk.co.thefoundry.OfxImageComponentStereoDisparity"(left-to-right? right-to-left? both?)
-
-- On Ubuntu 13.10 with Qt5, Natron is non-functional (transparent widgets, extra windows...)
