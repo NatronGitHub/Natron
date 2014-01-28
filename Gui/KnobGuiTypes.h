@@ -506,6 +506,7 @@ public:
 
     virtual ~String_KnobGui() OVERRIDE;
 
+    
 public slots:
     
     ///if the knob is not multiline
@@ -532,7 +533,6 @@ private:
     LineEdit *_lineEdit; //< if single line
     AnimatingTextEdit *_textEdit; //< if multiline
     QLabel *_descriptionLabel;
-
 };
 
 /*****************************/

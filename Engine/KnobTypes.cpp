@@ -663,8 +663,11 @@ const std::string& Color_Knob::typeName() const
 
 String_Knob::String_Knob(KnobHolder *holder, const std::string &description, int dimension):
 Knob(holder, description, dimension)
+, _keyframes()
 , _multiLine(false)
 , _isCustom(false)
+, _customInterpolation(0)
+, _ofxParamHandle(0)
 {
     
 }
@@ -712,6 +715,81 @@ void String_Knob::variantFromInterpolatedValue(double interpolated,Variant* retu
     }
     ///the index is wrong, something is wrong upstream in the knob class
     assert(false);
+}
+
+Variant String_Knob::getValueAtTime(double time, int dimension) const {
+    if (_customInterpolation) {
+        ///if there's a single keyframe, return it
+        const String_Knob::Keyframes& ks = getKeyFrames();
+        
+        if (ks.empty()) {
+            return getValue();
+        }
+        
+        if (ks.size() == 1) {
+            return Variant(ks.begin()->value);
+        }
+        
+        /// get the keyframes surrounding the time
+        String_Knob::Keyframes::const_iterator upper = ks.end();
+        String_Knob::Keyframes::const_iterator lower = ks.end();
+        for (String_Knob::Keyframes::const_iterator it = ks.begin(); it!=ks.end(); ++it) {
+            if (it->time > time) {
+                upper = it;
+                break;
+            } else if(it->time == time) {
+                ///if there's a keyframe exactly at this time, return its value
+                return Variant(it->value);
+            }
+        }
+        
+        if (upper == ks.end()) {
+            ///if the time is greater than the time of all keyframes return the last
+            
+            --upper;
+            return Variant(upper->value);
+        } else if(upper == ks.begin()) {
+            ///if the time is lesser than the time of all keyframes, return the first
+            return Variant(upper->value);
+        } else {
+            ///general case, we're in-between 2 keyframes
+            lower = upper;
+            --lower;
+        }
+        
+        OFX::Host::Property::PropSpec inArgsSpec[] = {
+            { kOfxPropName,    OFX::Host::Property::eString, 1, true, "" },
+            { kOfxPropTime,    OFX::Host::Property::eDouble, 1, true, "" },
+            { kOfxParamPropCustomValue,    OFX::Host::Property::eString, 2, true, ""},
+            { kOfxParamPropInterpolationTime,    OFX::Host::Property::eDouble, 2, true, "" },
+            { kOfxParamPropInterpolationAmount,    OFX::Host::Property::eDouble, 1, true, "" },
+            OFX::Host::Property::propSpecEnd
+        };
+        OFX::Host::Property::Set inArgs(inArgsSpec);
+        inArgs.setStringProperty(kOfxPropName, getName());
+        inArgs.setDoubleProperty(kOfxPropTime, time);
+        
+        inArgs.setStringProperty(kOfxParamPropCustomValue, lower->value.toStdString(),0);
+        inArgs.setStringProperty(kOfxParamPropCustomValue, upper->value.toStdString(),1);
+        inArgs.setDoubleProperty(kOfxParamPropInterpolationTime, lower->time,0);
+        inArgs.setDoubleProperty(kOfxParamPropInterpolationTime, upper->time,1);
+        inArgs.setDoubleProperty(kOfxParamPropInterpolationAmount, (time - lower->time) / (double)(upper->time - lower->time));
+        
+        
+        
+        OFX::Host::Property::PropSpec outArgsSpec[] = {
+            { kOfxParamPropCustomValue,    OFX::Host::Property::eString, 1, false, ""},
+            OFX::Host::Property::propSpecEnd
+        };
+        OFX::Host::Property::Set outArgs(outArgsSpec);
+        
+        _customInterpolation(_ofxParamHandle,inArgs.getHandle(),outArgs.getHandle());
+        
+        std::string ret = outArgs.getStringProperty(kOfxParamPropCustomValue,0);
+        return Variant(QString(ret.c_str()));
+    } else {
+        return Knob::getValueAtTime(time, dimension);
+    }
 }
 
 void String_Knob::cloneExtraData(const Knob& other) {

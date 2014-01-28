@@ -590,7 +590,7 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) ;
     virtual OfxStatus deleteAllKeys();
 
-
+    
 public slots:
     
     void onKnobAnimationLevelChanged(int lvl);

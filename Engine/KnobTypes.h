@@ -427,6 +427,20 @@ public:
     bool isCustomKnob() const { return _isCustom; }
     
     const String_Knob::Keyframes& getKeyFrames() const { return _keyframes; }
+    
+    ///for integration of openfx custom params
+    typedef OfxStatus (*customParamInterpolationV1Entry_t)(
+                                                          const void*            handleRaw,
+                                                          OfxPropertySetHandle   inArgsRaw,
+                                                          OfxPropertySetHandle   outArgsRaw);
+    
+    void setCustomInterpolation(customParamInterpolationV1Entry_t func,void* ofxParamHandle) {
+        _customInterpolation = func;
+        _ofxParamHandle = ofxParamHandle;
+    }
+    
+    virtual Variant getValueAtTime(double time, int dimension) const OVERRIDE FINAL;
+    
 private:
     
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -450,6 +464,9 @@ private:
     Keyframes _keyframes;
     bool _multiLine;
     bool _isCustom;
+    customParamInterpolationV1Entry_t _customInterpolation;
+    void* _ofxParamHandle;
+
 };
 
 /******************************GROUP_KNOB**************************************/

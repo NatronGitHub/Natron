@@ -168,7 +168,7 @@ public:
      * @brief Returns the value  in a specific dimension at a specific time. If
      * there is no key in this dimension it will return the value at the requested dimension
      **/
-    Variant getValueAtTime(double time, int dimension) const;
+    virtual Variant getValueAtTime(double time, int dimension) const;
 
     template<typename T>
     T getValueAtTime(double time,int dimension = 0) const {
@@ -286,6 +286,7 @@ public:
     /*Set the value of the knob but does NOT emit the valueChanged signal.
      This is called by the GUI.*/
     ValueChangedReturnCode onValueChanged(int dimension,const Variant& variant,KeyFrame* newKey);
+    
 
 public slots:
     
