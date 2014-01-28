@@ -91,7 +91,7 @@ public:
     boost::shared_ptr<Curve>  getInternalCurve() const { return _internalCurve; }
 
     void drawCurve(int curveIndex,int curvesCount);
-
+    
 signals:
 
     void curveChanged();
@@ -191,6 +191,8 @@ public:
     void refreshSelectedKeys();
     
     double getPixelAspectRatio() const;
+    
+    double getZoomFactor() const;
     
     void getBackgroundColor(double *r,double *g,double* b) const;
    

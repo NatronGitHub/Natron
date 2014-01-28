@@ -65,13 +65,12 @@ void OfxOverlayInteract::getViewportSize(double &width, double &height) const{
 
 void OfxOverlayInteract::getPixelScale(double& xScale, double& yScale) const{
     if(_curveWidget){
-        double ap = _curveWidget->getPixelAspectRatio();
-        xScale = 1. / ap;
-        yScale = ap;
+        xScale = 1. / _curveWidget->getZoomFactor();
+        yScale = xScale;
     }else{
         assert(_currentViewer);
-        xScale = _currentViewer->getDisplayWindow().getPixelAspect();
-        yScale = 2. - xScale;
+        xScale = 1. / _currentViewer->getZoomFactor();
+        yScale = xScale;
     }
 }
 

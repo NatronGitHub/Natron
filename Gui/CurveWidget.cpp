@@ -2316,6 +2316,10 @@ void CurveWidget::onTimeLineBoundariesChanged(SequenceTime,SequenceTime,int){
     update();
 }
 
+double CurveWidget::getZoomFactor() const {
+    return _imp->_zoomCtx.zoomFactor;
+}
+
 
 const QColor& CurveWidget::getSelectedCurveColor() const { return _imp->_selectedCurveColor; }
 
