@@ -126,15 +126,15 @@ public:
 
     virtual bool onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual void onOverlayKeyDown(QKeyEvent* e) OVERRIDE FINAL;
+    virtual bool onOverlayKeyDown(QKeyEvent* e) OVERRIDE FINAL;
 
-    virtual void onOverlayKeyUp(QKeyEvent* e) OVERRIDE FINAL;
+    virtual bool onOverlayKeyUp(QKeyEvent* e) OVERRIDE FINAL;
 
-    virtual void onOverlayKeyRepeat(QKeyEvent* e) OVERRIDE FINAL;
+    virtual bool onOverlayKeyRepeat(QKeyEvent* e) OVERRIDE FINAL;
 
-    virtual void onOverlayFocusGained() OVERRIDE FINAL;
+    virtual bool onOverlayFocusGained() OVERRIDE FINAL;
 
-    virtual void onOverlayFocusLost() OVERRIDE FINAL;
+    virtual bool onOverlayFocusLost() OVERRIDE FINAL;
 
     virtual void setCurrentViewerForOverlays(ViewerGL* viewer) OVERRIDE FINAL;
 

@@ -342,9 +342,9 @@ private:
     
     virtual void wheelEvent(QWheelEvent *event) OVERRIDE FINAL;
     
-    virtual void enterEvent(QEvent *event) OVERRIDE FINAL;
+    virtual void focusInEvent(QFocusEvent *event) OVERRIDE FINAL;
     
-    virtual void leaveEvent(QEvent *event) OVERRIDE FINAL;
+    virtual void focusOutEvent(QFocusEvent *event) OVERRIDE FINAL;
     
     virtual void keyPressEvent(QKeyEvent* event) OVERRIDE FINAL;
     

@@ -1188,9 +1188,10 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
     if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
         _imp->ms = DRAGGING;
     } else if (event->button() == Qt::LeftButton && !event->modifiers().testFlag(Qt::ControlModifier)) {
-        _imp->viewerTab->notifyOverlaysPenDown(QMouseEventLocalPos(event),
-                                                             toImgCoordinates_fast(event->x(), event->y()));
-        updateGL();
+        if(_imp->viewerTab->notifyOverlaysPenDown(QMouseEventLocalPos(event),
+                                                  toImgCoordinates_fast(event->x(), event->y()))){
+            updateGL();
+        }
     }else if(event->button() == Qt::LeftButton && event->modifiers().testFlag(Qt::ControlModifier)){
         float r,g,b,a;
         QPointF imgPos = toImgCoordinates_fast(event->x(), event->y());
@@ -1208,9 +1209,10 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
 
 void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
     _imp->ms = UNDEFINED;
-    _imp->viewerTab->notifyOverlaysPenUp(QMouseEventLocalPos(event),
-                                                       toImgCoordinates_fast(event->x(), event->y()));
-    updateGL();
+    if(_imp->viewerTab->notifyOverlaysPenUp(QMouseEventLocalPos(event),
+                                            toImgCoordinates_fast(event->x(), event->y()))){
+        updateGL();
+    }
 }
 void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
     QPointF pos = toImgCoordinates_fast(event->x(), event->y());
@@ -1256,8 +1258,9 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
         // }
         // no need to update the color picker or mouse posn: they should be unchanged
     } else {
-        _imp->viewerTab->notifyOverlaysPenMotion(QMouseEventLocalPos(event),pos);
-        updateGL();
+        if(_imp->viewerTab->notifyOverlaysPenMotion(QMouseEventLocalPos(event),pos)){
+            updateGL();
+        }
     }
 
 
@@ -1589,34 +1592,42 @@ void ViewerGL::clearViewer(){
 }
 
 /*overload of QT enter/leave/resize events*/
-void ViewerGL::enterEvent(QEvent *event)
-{   QGLWidget::enterEvent(event);
-    //    _imp->viewerTab->getInternalNode()->notifyOverlaysFocusGained();
-    
+void ViewerGL::focusInEvent(QFocusEvent *event){
+    if(_imp->viewerTab->notifyOverlaysFocusGained()){
+        updateGL();
+    }
+    QGLWidget::enterEvent(event);
 }
-void ViewerGL::leaveEvent(QEvent *event)
+void ViewerGL::focusOutEvent(QFocusEvent *event)
 {
+    if(_imp->viewerTab->notifyOverlaysFocusLost()){
+        updateGL();
+    }
     QGLWidget::leaveEvent(event);
-    // _imp->viewerTab->getInternalNode()->notifyOverlaysFocusLost();
-    
+
 }
 void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected field
     QGLWidget::resizeEvent(event);
 }
 
 void ViewerGL::keyPressEvent(QKeyEvent* event){
-    if(event->isAutoRepeat())
-        _imp->viewerTab->notifyOverlaysKeyRepeat(event);
-    else{
-        _imp->viewerTab->notifyOverlaysKeyDown(event);
+    if(event->isAutoRepeat()){
+        if(_imp->viewerTab->notifyOverlaysKeyRepeat(event)){
+            updateGL();
+        }
+    }else{
+        if(_imp->viewerTab->notifyOverlaysKeyDown(event)){
+            updateGL();
+        }
     }
-    updateGL();
+    
 }
 
 
 void ViewerGL::keyReleaseEvent(QKeyEvent* event){
-    _imp->viewerTab->notifyOverlaysKeyUp(event);
-    updateGL();
+    if(_imp->viewerTab->notifyOverlaysKeyUp(event)){
+        updateGL();
+    }
 }
 
 

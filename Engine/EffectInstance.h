@@ -309,15 +309,15 @@ public:
     
     virtual bool onOverlayPenUp(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) { return false; }
     
-    virtual void onOverlayKeyDown(QKeyEvent* /*e*/) {}
+    virtual bool onOverlayKeyDown(QKeyEvent* /*e*/) { return false; }
     
-    virtual void onOverlayKeyUp(QKeyEvent* /*e*/) {}
+    virtual bool onOverlayKeyUp(QKeyEvent* /*e*/) { return false; }
     
-    virtual void onOverlayKeyRepeat(QKeyEvent* /*e*/) {}
+    virtual bool onOverlayKeyRepeat(QKeyEvent* /*e*/) { return false; }
     
-    virtual void onOverlayFocusGained(){}
+    virtual bool onOverlayFocusGained(){ return false; }
     
-    virtual void onOverlayFocusLost(){}
+    virtual bool onOverlayFocusLost(){ return false; }
     
     virtual void setCurrentViewerForOverlays(ViewerGL* /*viewer*/) {}
 

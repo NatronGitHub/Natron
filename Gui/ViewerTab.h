@@ -62,21 +62,21 @@ public:
     /*All the overlay methods are forwarding calls to the default node instance*/
     void drawOverlays() const;
     
-    void notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos);
+    bool notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos);
     
-    void notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos);
+    bool notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos);
     
-    void notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos);
+    bool notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos);
     
-    void notifyOverlaysKeyDown(QKeyEvent* e);
+    bool notifyOverlaysKeyDown(QKeyEvent* e);
     
-    void notifyOverlaysKeyUp(QKeyEvent* e);
+    bool notifyOverlaysKeyUp(QKeyEvent* e);
     
-    void notifyOverlaysKeyRepeat(QKeyEvent* e);
+    bool notifyOverlaysKeyRepeat(QKeyEvent* e);
     
-    void notifyOverlaysFocusGained();
+    bool notifyOverlaysFocusGained();
     
-    void notifyOverlaysFocusLost();
+    bool notifyOverlaysFocusLost();
 
 
 public slots:

@@ -753,7 +753,8 @@ void ViewerTab::drawOverlays() const{
     }
 }
 
-void ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos){
+bool ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos){
+    bool ret = false;
     std::vector<Natron::Node*> nodes;
     _gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -768,15 +769,17 @@ void ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& 
             QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
             assert(pluginLock);
             pluginLock->lock();
-            effect->onOverlayPenDown(viewportPos, pos);
+            ret = effect->onOverlayPenDown(viewportPos, pos);
             pluginLock->unlock();
         } else {
-            effect->onOverlayPenDown(viewportPos, pos);
+            ret = effect->onOverlayPenDown(viewportPos, pos);
         }
     }
+    return ret;
 }
 
-void ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos){
+bool ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos){
+    bool ret = false;
     std::vector<Natron::Node*> nodes;
     _gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -790,15 +793,17 @@ void ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF
             QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
             assert(pluginLock);
             pluginLock->lock();
-            effect->onOverlayPenMotion(viewportPos, pos);
+            ret = effect->onOverlayPenMotion(viewportPos, pos);
             pluginLock->unlock();
         } else {
-            effect->onOverlayPenMotion(viewportPos, pos);
+            ret = effect->onOverlayPenMotion(viewportPos, pos);
         }
     }
+    return ret;
 }
 
-void ViewerTab::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos){
+bool ViewerTab::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos){
+    bool ret = false;
     std::vector<Natron::Node*> nodes;
     _gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -812,15 +817,17 @@ void ViewerTab::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& po
             QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
             assert(pluginLock);
             pluginLock->lock();
-            effect->onOverlayPenUp(viewportPos, pos);
+            ret = effect->onOverlayPenUp(viewportPos, pos);
             pluginLock->unlock();
         } else {
-            effect->onOverlayPenUp(viewportPos, pos);
+            ret = effect->onOverlayPenUp(viewportPos, pos);
         }
     }
+    return ret;
 }
 
-void ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
+bool ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
+    bool ret = false;
     std::vector<Natron::Node*> nodes;
     _gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -834,15 +841,17 @@ void ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
             QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
             assert(pluginLock);
             pluginLock->lock();
-            effect->onOverlayKeyDown(e);
+            ret = effect->onOverlayKeyDown(e);
             pluginLock->unlock();
         } else {
-            effect->onOverlayKeyDown(e);
+            ret = effect->onOverlayKeyDown(e);
         }
     }
+    return ret;
 }
 
-void ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
+bool ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
+    bool ret = false;
     std::vector<Natron::Node*> nodes;
     _gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -856,15 +865,17 @@ void ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
             QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
             assert(pluginLock);
             pluginLock->lock();
-            effect->onOverlayKeyUp(e);
+            ret = effect->onOverlayKeyUp(e);
             pluginLock->unlock();
         } else {
-            effect->onOverlayKeyUp(e);
+            ret = effect->onOverlayKeyUp(e);
         }
     }
+    return ret;
 }
 
-void ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
+bool ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
+    bool ret = false;
     std::vector<Natron::Node*> nodes;
     _gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -878,15 +889,17 @@ void ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
             QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
             assert(pluginLock);
             pluginLock->lock();
-            effect->onOverlayKeyRepeat(e);
+            ret = effect->onOverlayKeyRepeat(e);
             pluginLock->unlock();
         } else {
-            effect->onOverlayKeyRepeat(e);
+            ret = effect->onOverlayKeyRepeat(e);
         }
     }
+    return ret;
 }
 
-void ViewerTab::notifyOverlaysFocusGained(){
+bool ViewerTab::notifyOverlaysFocusGained(){
+    bool ret = false;
     std::vector<Natron::Node*> nodes;
     _gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -900,15 +913,17 @@ void ViewerTab::notifyOverlaysFocusGained(){
             QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
             assert(pluginLock);
             pluginLock->lock();
-            effect->onOverlayFocusGained();
+            ret = effect->onOverlayFocusGained();
             pluginLock->unlock();
         } else {
-            effect->onOverlayFocusGained();
+            ret = effect->onOverlayFocusGained();
         }
     }
+    return ret;
 }
 
-void ViewerTab::notifyOverlaysFocusLost(){
+bool ViewerTab::notifyOverlaysFocusLost(){
+    bool ret = false;
     std::vector<Natron::Node*> nodes;
     _gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -922,11 +937,12 @@ void ViewerTab::notifyOverlaysFocusLost(){
             QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
             assert(pluginLock);
             pluginLock->lock();
-            effect->onOverlayFocusLost();
+            ret = effect->onOverlayFocusLost();
             pluginLock->unlock();
         } else {
-            effect->onOverlayFocusLost();
+            ret = effect->onOverlayFocusLost();
         }
     }
+    return ret;
 }
 

@@ -631,9 +631,9 @@ bool OfxEffectInstance::onOverlayPenUp(const QPointF& viewportPos,const QPointF&
     return false;
 }
 
-void OfxEffectInstance::onOverlayKeyDown(QKeyEvent* e){
+bool OfxEffectInstance::onOverlayKeyDown(QKeyEvent* e){
     if(!_initialized){
-        return;
+        return false;;
     }
     if(_overlayInteract){
         OfxPointD rs;
@@ -641,15 +641,15 @@ void OfxEffectInstance::onOverlayKeyDown(QKeyEvent* e){
         OfxTime time = effect_->getFrameRecursive();
         OfxStatus stat = _overlayInteract->keyDownAction(time, rs, e->nativeVirtualKey(), e->text().toLatin1().data());
         if (stat == kOfxStatOK) {
-            //requestRender();
+            return true;
         }
     }
-    
+    return false;
 }
 
-void OfxEffectInstance::onOverlayKeyUp(QKeyEvent* e){
+bool OfxEffectInstance::onOverlayKeyUp(QKeyEvent* e){
     if(!_initialized){
-        return;
+        return false;
     }
     if(_overlayInteract){
         OfxPointD rs;
@@ -658,14 +658,15 @@ void OfxEffectInstance::onOverlayKeyUp(QKeyEvent* e){
         OfxStatus stat = _overlayInteract->keyUpAction(time, rs, e->nativeVirtualKey(), e->text().toLatin1().data());
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
-            //requestRender();
+            return true;
         };
     }
+    return false;
 }
 
-void OfxEffectInstance::onOverlayKeyRepeat(QKeyEvent* e){
+bool OfxEffectInstance::onOverlayKeyRepeat(QKeyEvent* e){
     if(!_initialized){
-        return;
+        return false;
     }
     if(_overlayInteract){
         OfxPointD rs;
@@ -673,14 +674,15 @@ void OfxEffectInstance::onOverlayKeyRepeat(QKeyEvent* e){
         OfxTime time = effect_->getFrameRecursive();
         OfxStatus stat = _overlayInteract->keyRepeatAction(time, rs, e->nativeVirtualKey(), e->text().toLatin1().data());
         if (stat == kOfxStatOK) {
-            //requestRender();
+            return true;
         }
     }
+    return false;
 }
 
-void OfxEffectInstance::onOverlayFocusGained(){
+bool OfxEffectInstance::onOverlayFocusGained(){
     if(!_initialized){
-        return;
+        return false;
     }
     if(_overlayInteract){
         OfxPointD rs;
@@ -689,12 +691,16 @@ void OfxEffectInstance::onOverlayFocusGained(){
         OfxStatus stat = _overlayInteract->gainFocusAction(time, rs);
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
-            //requestRender();
+            return true;
         }
     }
+    return false;
 }
 
-void OfxEffectInstance::onOverlayFocusLost(){
+bool OfxEffectInstance::onOverlayFocusLost(){
+    if(!_initialized){
+        return false;
+    }
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
@@ -702,9 +708,10 @@ void OfxEffectInstance::onOverlayFocusLost(){
         OfxStatus stat = _overlayInteract->loseFocusAction(time, rs);
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
-            //requestRender();
+            return true;
         }
     }
+    return false;
 }
 
 
