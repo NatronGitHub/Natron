@@ -415,10 +415,6 @@ Natron::Status QtReader::getRegionOfDefinition(SequenceTime time,RectI* rod){
     rod->x2 = _img->width();
     rod->y1 = 0;
     rod->y2 = _img->height();
-    
-    Format dispW;
-    dispW.set(*rod);
-    getApp()->setOrAddProjectFormat(dispW); 
 
     return StatOK;
 }

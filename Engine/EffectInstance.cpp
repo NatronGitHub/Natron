@@ -324,6 +324,15 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         ///if getRoD fails, just return a NULL ptr
         return boost::shared_ptr<Natron::Image>();
     }
+    
+    /*add the window to the project's available formats if the effect is a reader*/
+    if (isReader()) {
+        Format frmt;
+        frmt.set(rod);
+        ///FIXME: what about the pixel aspect ratio ?
+        getApp()->setOrAddProjectFormat(frmt);
+    }
+    
     Natron::ImageKey key = Natron::Image::makeKey(cost,_imp->hashValue.value(), time, scale,view,rod);
     
     if(getCachePolicy(time) == NEVER_CACHE){

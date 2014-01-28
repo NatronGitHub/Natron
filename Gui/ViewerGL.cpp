@@ -320,34 +320,45 @@ void ViewerGL::drawRenderingVAO() {
 
     const TextureRect &r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
     RectI rod = _imp->clipToDisplayWindow ? getDisplayWindow() : getRoD();
-    RectI clippedRect;
-    r.intersect(rod, &clippedRect);
-    rod.intersect(clippedRect,&rod);
+
+    rod.intersect(r.x1,r.y1,r.x2,r.y2,&rod);
+    
+    /*setup the scissor box to paint only what's contained in the project's window*/
+    QPointF scissorBoxBtmLeft = toWidgetCoordinates(rod.x1, rod.y1);
+    QPointF scissorBoxTopRight = toWidgetCoordinates(rod.x2, rod.y2);
+    
+    /*invert y coordinate as OpenGL expects btm left corner to be 0,0*/
+    scissorBoxBtmLeft.ry() = height() - scissorBoxBtmLeft.ry();
+    scissorBoxTopRight.ry() = height() - scissorBoxTopRight.ry();
+    
+    glScissor(scissorBoxBtmLeft.x(),scissorBoxBtmLeft.y(),scissorBoxTopRight.x() - scissorBoxBtmLeft.x(),
+              scissorBoxTopRight.y() - scissorBoxBtmLeft.y());
+
     
     GLfloat vertices[32] = {
         (GLfloat)rod.left() ,(GLfloat)rod.top()  , //0
-        (GLfloat)clippedRect.x1       , (GLfloat)rod.top()  , //1
-        (GLfloat)clippedRect.x2 , (GLfloat)rod.top()  , //2
+        (GLfloat)r.x1       , (GLfloat)rod.top()  , //1
+        (GLfloat)r.x2 , (GLfloat)rod.top()  , //2
         (GLfloat)rod.right(),(GLfloat)rod.top()  , //3
-        (GLfloat)rod.left(), (GLfloat)clippedRect.y2, //4
-        (GLfloat)clippedRect.x1      ,  (GLfloat)clippedRect.y2, //5
-        (GLfloat)clippedRect.x2,  (GLfloat)clippedRect.y2, //6
-        (GLfloat)rod.right(),(GLfloat)clippedRect.y2, //7
-        (GLfloat)rod.left() ,(GLfloat)clippedRect.y1      , //8
-        (GLfloat)clippedRect.x1      ,  (GLfloat)r.y1      , //9
-        (GLfloat)clippedRect.x2,  (GLfloat)clippedRect.y1      , //10
-        (GLfloat)rod.right(),(GLfloat)clippedRect.y1      , //11
+        (GLfloat)rod.left(), (GLfloat)r.y2, //4
+        (GLfloat)r.x1      ,  (GLfloat)r.y2, //5
+        (GLfloat)r.x2,  (GLfloat)r.y2, //6
+        (GLfloat)rod.right(),(GLfloat)r.y2, //7
+        (GLfloat)rod.left() ,(GLfloat)r.y1      , //8
+        (GLfloat)r.x1      ,  (GLfloat)r.y1      , //9
+        (GLfloat)r.x2,  (GLfloat)r.y1      , //10
+        (GLfloat)rod.right(),(GLfloat)r.y1      , //11
         (GLfloat)rod.left(), (GLfloat)rod.bottom(), //12
-        (GLfloat)clippedRect.x1      ,  (GLfloat)rod.bottom(), //13
-        (GLfloat)clippedRect.x2,  (GLfloat)rod.bottom(), //14
+        (GLfloat)r.x1      ,  (GLfloat)rod.bottom(), //13
+        (GLfloat)r.x2,  (GLfloat)rod.bottom(), //14
         (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
     };
 
     GLfloat texBottom,texLeft,texRight,texTop;
     texBottom =  0;
-    texTop =  (GLfloat)(clippedRect.y2 - clippedRect.y1)/ (GLfloat)(r.h * r.closestPo2);
+    texTop =  (GLfloat)(r.y2 - r.y1)/ (GLfloat)(r.h * r.closestPo2);
     texLeft = 0;
-    texRight = (GLfloat)(clippedRect.x2 - clippedRect.x1) / (GLfloat)(r.w * r.closestPo2);
+    texRight = (GLfloat)(r.x2 - r.x1) / (GLfloat)(r.w * r.closestPo2);
     
     texTop = texTop > 1 ? 1 : texTop;
     texRight = texRight > 1 ? 1 : texRight;
@@ -372,6 +383,9 @@ void ViewerGL::drawRenderingVAO() {
         texRight , texBottom   //15
     };
     
+    glEnable(GL_SCISSOR_TEST);
+
+    
     glBindBuffer(GL_ARRAY_BUFFER, _imp->vboVerticesId);
     glBufferSubData(GL_ARRAY_BUFFER, 0, 32*sizeof(GLfloat), vertices);
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -393,6 +407,8 @@ void ViewerGL::drawRenderingVAO() {
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     checkGLErrors();
+    
+    glDisable(GL_SCISSOR_TEST);
 }
 
 #if 0

@@ -130,6 +130,11 @@ public:
     virtual bool isGenerator() const WARN_UNUSED_RETURN { return false; }
     
     /**
+     * @brief Is the node a reader ?
+     **/
+    virtual bool isReader() const WARN_UNUSED_RETURN { return false; }
+    
+    /**
      * @brief Is this node an output node ? An output node means
      * it has no output.
      **/

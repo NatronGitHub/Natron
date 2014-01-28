@@ -167,6 +167,16 @@ bool OfxEffectInstance::isGenerator() const {
     return false;
 }
 
+bool OfxEffectInstance::isReader() const {
+    assert(effectInstance());
+    const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
+    std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
+    if (foundReader != contexts.end()) {
+        return true;
+    }
+    return false;
+}
+
 bool OfxEffectInstance::isGeneratorAndFilter() const {
     const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
     std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);
@@ -335,11 +345,6 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI*
         return StatFailed;
     ifInfiniteclipRectToProjectDefault(&ofxRod);
     ofxRectDToRectI(ofxRod,rod);
-    if(isGenerator()){
-        Format dispW;
-        dispW.set(*rod);
-        getApp()->setOrAddProjectFormat(dispW);
-    }
     return StatOK;
     
     // OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);

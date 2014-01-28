@@ -261,7 +261,10 @@ bool Knob::setValueAtTime(int time, const Variant& v, int dimension, Natron::Val
 
     *newKey = KeyFrame((double)time,keyFrameValue);
     bool ret = curve->addKeyFrame(*newKey);
-   
+    
+    if (reason == Natron::PLUGIN_EDITED) {
+        setValue(v, dimension,Natron::OTHER_REASON,NULL);
+    }
     
     if(reason != Natron::USER_EDITED){
         emit keyFrameSet(time,dimension);

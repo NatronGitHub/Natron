@@ -211,6 +211,9 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     TextureRect textureRect(texRectClipped.x1,texRectClipped.y1,texRectClipped.x2,
                             texRectClipped.y2,texW,texH,closestPowerOf2);
     
+    std::cout << "x1: " << textureRect.x1 << " x2: " << textureRect.x2 << " y1: " << textureRect.y1 <<
+    " y2: " << textureRect.y2 << " w: " << textureRect.w << " h: " << textureRect.h << " po2: " << textureRect.closestPo2 << std::endl;
+    
     _interThreadInfos._textureRect = textureRect;
     _interThreadInfos._bytesCount = textureRect.w * textureRect.h * 4;
     
@@ -413,17 +416,21 @@ void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> 
         int start = (int)(rand() % texRect.w);
         
         const float* src_pixels = (const float*)inputImage->pixelAt(texRect.x1, y);
-        src_pixels += (start * 4 * closestPowerOf2);
-        const float* src_start = src_pixels;
 
         U32* dst_pixels = output + dstY * texRect.w;
 
         if (!_colorSpace) { //< linear
             /* go fowards from starting point to end of line: */
-            for(int i = start ; i < texRect.w; ++i) {
-                double r = src_pixels[rOffset] * _exposure;
-                double g = src_pixels[gOffset] * _exposure;
-                double b = src_pixels[bOffset] * _exposure;
+            for(int i = start; i < texRect.w; ++i) {
+                int srcIndex = texRect.x1 +  (i  * 4 * closestPowerOf2);
+                if (srcIndex > texRect.x2) {
+                    dst_pixels[i] = toBGRA(0,0,0,255);
+                    continue;
+                }
+                
+                double r = src_pixels[srcIndex + rOffset] * _exposure;
+                double g = src_pixels[srcIndex + gOffset] * _exposure;
+                double b = src_pixels[srcIndex + bOffset] * _exposure;
                 if(luminance){
                     r = 0.299 * r + 0.587 * g + 0.114 * b;
                     g = r;
@@ -433,16 +440,19 @@ void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> 
                                    (U8)std::min((int)( g * 256 ),255),
                                    (U8)std::min((int)( b * 256 ),255),
                                    255);
-                src_pixels += (4 * closestPowerOf2);
             }
-            
-            src_pixels = src_start - (4 * closestPowerOf2);
             
             /* go backwards from starting point to start of line: */
             for(int i = start-1 ; i >= 0 ; --i){
-                double r = src_pixels[rOffset] * _exposure;
-                double g = src_pixels[gOffset] * _exposure;
-                double b = src_pixels[bOffset] * _exposure;
+                int srcIndex = texRect.x1 +  (i  * 4 * closestPowerOf2);
+                if (srcIndex > texRect.x2) {
+                    dst_pixels[i] = toBGRA(0,0,0,255);
+                    continue;
+                }
+                
+                double r = src_pixels[srcIndex + rOffset] * _exposure;
+                double g = src_pixels[srcIndex + gOffset] * _exposure;
+                double b = src_pixels[srcIndex + bOffset] * _exposure;
                 if(luminance){
                     r = 0.299 * r + 0.587 * g + 0.114 * b;
                     g = r;
@@ -452,7 +462,6 @@ void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> 
                                        (U8)std::min((int)( g * 256 ),255),
                                        (U8)std::min((int)( b * 256 ),255),
                                        255);
-                src_pixels -= (4 * closestPowerOf2);
             }
 
         } else {
@@ -465,9 +474,15 @@ void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> 
             
             /* go fowards from starting point to end of line: */
             for(int i = start ; i < texRect.w; ++i) {
-                double r = src_pixels[rOffset] * _exposure;
-                double g = src_pixels[gOffset] * _exposure;
-                double b = src_pixels[bOffset] * _exposure;
+                int srcIndex =  (i  * 4 * closestPowerOf2);
+                if (srcIndex > texRect.x2 * 4) {
+                    dst_pixels[i] = toBGRA(0,0,0,255);
+                    continue;
+                }
+                
+                double r = src_pixels[srcIndex + rOffset] * _exposure;
+                double g = src_pixels[srcIndex + gOffset] * _exposure;
+                double b = src_pixels[srcIndex + bOffset] * _exposure;
                 if(luminance){
                     r = 0.299 * r + 0.587 * g + 0.114 * b;
                     g = r;
@@ -482,10 +497,7 @@ void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> 
                                        (U8)(error_g >> 8),
                                        (U8)(error_b >> 8),
                                        255);
-                src_pixels += (4 * closestPowerOf2);
             }
-            
-            src_pixels = src_start - (4 * closestPowerOf2);
             
             error_r = 0x80;
             error_g = 0x80;
@@ -493,14 +505,21 @@ void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> 
             
             /* go backwards from starting point to start of line: */
             for(int i = start-1 ; i >= 0 ; --i){
-                double r = src_pixels[rOffset] * _exposure;
-                double g = src_pixels[gOffset] * _exposure;
-                double b = src_pixels[bOffset] * _exposure;
+                int srcIndex =  (i  * 4 * closestPowerOf2);
+                if (srcIndex > texRect.x2 * 4) {
+                    dst_pixels[i] = toBGRA(0,0,0,255);
+                    continue;
+                }
+                
+                double r = src_pixels[srcIndex + rOffset] * _exposure;
+                double g = src_pixels[srcIndex + gOffset] * _exposure;
+                double b = src_pixels[srcIndex + bOffset] * _exposure;
                 if(luminance){
                     r = 0.299 * r + 0.587 * g + 0.114 * b;
                     g = r;
                     b = r;
                 }
+                
                 error_r = (error_r&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(r,0.,1.));
                 error_g = (error_g&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(g,0.,1.));
                 error_b = (error_b&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(b,0.,1.));
@@ -509,7 +528,6 @@ void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> 
                                        (U8)(error_g >> 8),
                                        (U8)(error_b >> 8),
                                        255);
-                src_pixels -= (4 * closestPowerOf2);
             }
 
         }

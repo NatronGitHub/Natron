@@ -61,6 +61,8 @@ public:
     virtual int maximumInputs() const OVERRIDE {return 0;}
     
     virtual bool isGenerator() const OVERRIDE {return true;}
+
+    virtual bool isReader() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
     
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE { return false; }
 
