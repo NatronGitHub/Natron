@@ -1190,6 +1190,7 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
     } else if (event->button() == Qt::LeftButton && !event->modifiers().testFlag(Qt::ControlModifier)) {
         _imp->viewerTab->notifyOverlaysPenDown(QMouseEventLocalPos(event),
                                                              toImgCoordinates_fast(event->x(), event->y()));
+        updateGL();
     }else if(event->button() == Qt::LeftButton && event->modifiers().testFlag(Qt::ControlModifier)){
         float r,g,b,a;
         QPointF imgPos = toImgCoordinates_fast(event->x(), event->y());
@@ -1209,6 +1210,7 @@ void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
     _imp->ms = UNDEFINED;
     _imp->viewerTab->notifyOverlaysPenUp(QMouseEventLocalPos(event),
                                                        toImgCoordinates_fast(event->x(), event->y()));
+    updateGL();
 }
 void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
     QPointF pos = toImgCoordinates_fast(event->x(), event->y());
@@ -1255,6 +1257,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
         // no need to update the color picker or mouse posn: they should be unchanged
     } else {
         _imp->viewerTab->notifyOverlaysPenMotion(QMouseEventLocalPos(event),pos);
+        updateGL();
     }
 
 
@@ -1607,11 +1610,13 @@ void ViewerGL::keyPressEvent(QKeyEvent* event){
     else{
         _imp->viewerTab->notifyOverlaysKeyDown(event);
     }
+    updateGL();
 }
 
 
 void ViewerGL::keyReleaseEvent(QKeyEvent* event){
     _imp->viewerTab->notifyOverlaysKeyUp(event);
+    updateGL();
 }
 
 
