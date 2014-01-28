@@ -303,21 +303,21 @@ public:
      */
     virtual void drawOverlay(){}
     
-    virtual bool onOverlayPenDown(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) { return false; }
+    virtual bool onOverlayPenDown(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) WARN_UNUSED_RETURN { return false; }
     
-    virtual bool onOverlayPenMotion(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) { return false; }
+    virtual bool onOverlayPenMotion(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) WARN_UNUSED_RETURN { return false; }
     
-    virtual bool onOverlayPenUp(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) { return false; }
+    virtual bool onOverlayPenUp(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) WARN_UNUSED_RETURN { return false; }
     
-    virtual bool onOverlayKeyDown(QKeyEvent* /*e*/) { return false; }
+    virtual bool onOverlayKeyDown(QKeyEvent* /*e*/) WARN_UNUSED_RETURN { return false; }
     
-    virtual bool onOverlayKeyUp(QKeyEvent* /*e*/) { return false; }
+    virtual bool onOverlayKeyUp(QKeyEvent* /*e*/) WARN_UNUSED_RETURN { return false; }
     
-    virtual bool onOverlayKeyRepeat(QKeyEvent* /*e*/) { return false; }
+    virtual bool onOverlayKeyRepeat(QKeyEvent* /*e*/) WARN_UNUSED_RETURN { return false; }
     
-    virtual bool onOverlayFocusGained(){ return false; }
+    virtual bool onOverlayFocusGained() WARN_UNUSED_RETURN { return false; }
     
-    virtual bool onOverlayFocusLost(){ return false; }
+    virtual bool onOverlayFocusLost() WARN_UNUSED_RETURN { return false; }
     
     virtual void setCurrentViewerForOverlays(ViewerGL* /*viewer*/) {}
 
