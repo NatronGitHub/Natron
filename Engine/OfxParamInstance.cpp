@@ -1419,7 +1419,8 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
             }
             
         }
-    } else if (mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel || mode == kOfxParamStringIsMultiLine) {
+    } else if (mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel || mode == kOfxParamStringIsMultiLine
+               || mode == kOfxParamStringIsDirectoryPath) {
         
         _stringKnob = Natron::createKnob<String_Knob>(node, getParamLabel(this));
         if (mode == kOfxParamStringIsLabel) {
