@@ -2079,8 +2079,14 @@ QPointF CurveWidget::toWidgetCoordinates(double x, double y) const {
     return QPointF(((x - left)/(right - left))*w,((y - top)/(bottom - top))*h);
 }
 
-QSize CurveWidget::sizeHint() const{
-    return QSize(400,1000);
+QSize CurveWidget::sizeHint() const {
+    if (parentWidget()->objectName() == "CurveEditorSplitter") {
+        ///if this is the curve widget associated to the CurveEditor
+        return QSize(400,1000);
+    } else {
+        ///a random parametric param curve editor
+        return QSize(400,400);
+    }
 }
 
 void CurveWidget::addKeyFrame(CurveGui* curve,const KeyFrame& key){

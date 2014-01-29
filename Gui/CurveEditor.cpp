@@ -80,6 +80,7 @@ CurveEditor::CurveEditor(boost::shared_ptr<TimeLine> timeline, QWidget *parent)
     _mainLayout->setSpacing(0);
 
     _splitter = new QSplitter(Qt::Horizontal,this);
+    _splitter->setObjectName("CurveEditorSplitter");
 
     _curveWidget = new CurveWidget(timeline,_splitter);
     _curveWidget->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
