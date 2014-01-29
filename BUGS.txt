@@ -5,10 +5,6 @@
   Refs:
   http://qt-project.org/doc/qt-4.8/qwidget.html#setTabOrder
   http://qt-project.org/doc/qt-4.8/focus.html
-  
-- In the Dot Generator plugin, the interact cannot be moved in Natron
-
-- The Interact from the "OFX Custom Parameter Example" does not appear in Natron in some cases (reported by Fred)
 
 - On Ubuntu 13.10 with Qt5, Natron is non-functional (transparent widgets, extra windows...)
 
