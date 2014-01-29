@@ -343,7 +343,11 @@ void TabWidget::setTabName(QWidget* tab,const QString& name) {
 void TabWidget::floatCurrentWidget(){
     if(!_currentWidget)
         return;
-    floatTab(_currentWidget);
+    QWidget* w = _currentWidget;
+    removeTab(w);
+    TabWidget* newTab = new TabWidget(_gui,TabWidget::CLOSABLE);
+    newTab->appendTab(w);
+    newTab->floatTab(w);
 }
 
 void TabWidget::floatTab(QWidget* tab) {
