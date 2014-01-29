@@ -262,8 +262,12 @@ void DockablePanel::initializeKnobs(){
         QGridLayout* layout = dynamic_cast<QGridLayout*>(it->second.first->layout());
         assert(layout);
         if(layout->rowCount() > 0){
-            QWidget* item = layout->itemAtPosition(layout->rowCount()-1,0)->widget(); //< last row
-            if (item->objectName() == "spacer") {
+            QLayoutItem* item = layout->itemAtPosition(layout->rowCount()-1,0);
+            QWidget* widget = 0;
+            if (item) {
+                widget = item->widget();
+            }
+            if (widget && widget->objectName() == "spacer") {
                 continue;
             }else{
                 QWidget* spacer = new QWidget(layout->parentWidget());
