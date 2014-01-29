@@ -745,6 +745,12 @@ public:
      * that has had its render aborted but already belong to the cache.
      **/
     void removeEntry(value_type entry) {
+        
+        ///early return if entry is NULL
+        if (!entry) {
+            return;
+        }
+        
         QMutexLocker l(&_lock);
         CacheIterator existingEntry = _memoryCache(entry->getHashKey());
         if(existingEntry != _memoryCache.end()){
