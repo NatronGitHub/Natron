@@ -453,7 +453,7 @@ void Natron::OfxHost::clearPluginsLoadedCache() {
 }
 
 void Natron::OfxHost::loadingStatus(const std::string & pluginId) {
-    qDebug() << "Loading OFX plugin " << pluginId.c_str();
+    appPTR->setLoadingStatus("OpenFX: " + QString(pluginId.c_str()));
 }
 
 void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {

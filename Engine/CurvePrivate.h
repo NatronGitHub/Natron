@@ -12,6 +12,7 @@
 #define NATRON_ENGINE_CURVEPRIVATE_H_
 
 #include <boost/shared_ptr.hpp>
+#include <QMutex>
 
 #include "Engine/Rect.h"
 #include "Engine/Variant.h"
@@ -46,6 +47,8 @@ struct CurvePrivate{
     bool mustSetCurveType; //< if true the first call to addKeyFrame will set the curveType member
     
     double curveMin,curveMax;
+    QMutex _lock; //< the plug-ins can call getValueAt at any moment and we must make sure the user is not playing around
+    
     
     CurvePrivate()
     : keyFrames()
@@ -54,6 +57,7 @@ struct CurvePrivate{
     , mustSetCurveType(true)
     , curveMin(INT_MIN)
     , curveMax(INT_MAX)
+    , _lock(QMutex::Recursive)
     {}
 };
 

@@ -12,7 +12,6 @@
 #include <QApplication>
 #include <QtCore/QObject>
 #include <QtCore/QString>
-#include <QLabel>
 #include <QIcon>
 #include <QtGui/QPixmap>
 #include <QDebug>
@@ -31,6 +30,7 @@
 
 #include "Gui/KnobGui.h"
 #include "Gui/CurveWidget.h"
+#include "Gui/SplashScreen.h"
 
 #if QT_VERSION < 0x050000
 Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
@@ -187,49 +187,48 @@ int main(int argc, char *argv[])
     
     Natron::Log::instance();//< enable logging
     
-    AppManager* manager = AppManager::instance(); //< load the AppManager singleton
-
-    if(!isBackGround) {
+    SplashScreen* splashScreen = 0;
+    if(!isBackGround){
+        /*Display a splashscreen while we wait for the engine to load*/
+        QString filename(NATRON_IMAGES_PATH"splashscreen_dark.png");
+        splashScreen = new SplashScreen(filename);
+        QCoreApplication::processEvents();
+        
         QPixmap appIcPixmap;
         appPTR->getIcon(Natron::NATRON_PIXMAP_APP_ICON, &appIcPixmap);
         QIcon appIc(appIcPixmap);
         qApp->setWindowIcon(appIc);
-    } else {
-        if (!mainProcessServerName.isEmpty()) {
-            manager->initProcessInputChannel(mainProcessServerName);
-        }
-    }
-    
-    QLabel* splashScreen = 0;
-    if(!isBackGround){
-        /*Display a splashscreen while we wait for the engine to load*/
-        QString filename("");
-        filename.append(NATRON_IMAGES_PATH"splashscreen.png");
-        QPixmap pixmap(filename);
-        pixmap=pixmap.scaled(640, 400);
-        splashScreen = new QLabel;
-        splashScreen->setWindowFlags(Qt::SplashScreen);
-        splashScreen->setPixmap(pixmap);
-#ifndef NATRON_DEBUG
-        splashScreen->show();
-#endif
         //load custom fonts
         QString fontResource = QString(":/Resources/Fonts/%1.ttf");
-
+        
+        
         QStringList fontFilenames;
         fontFilenames << fontResource.arg("DroidSans");
         fontFilenames << fontResource.arg("DroidSans-Bold");
-
+        
         foreach(QString fontFilename, fontFilenames)
         {
-            qDebug() << "attempting to load" << fontFilename;
+            splashScreen->updateText("Loading font " + fontFilename);
+            //qDebug() << "attempting to load" << fontFilename;
             int fontID = QFontDatabase::addApplicationFont(fontFilename);
             qDebug() << "fontID=" << fontID << "families=" << QFontDatabase::applicationFontFamilies(fontID);
         }
-        QCoreApplication::processEvents();
-    }else{
+    }
+    
+    AppManager* manager = AppManager::instance(); //< load the AppManager singleton
+    
+    if (splashScreen) {
+        QObject::connect(manager,SIGNAL(loadingStatusChanged(QString)),splashScreen,SLOT(updateText(QString)));
+    }
+    
+    manager->load(splashScreen);
+    
+    if (isBackGround && !mainProcessServerName.isEmpty()) {
+        manager->initProcessInputChannel(mainProcessServerName);
         printBackGroundWelcomeMessage();
     }
+    
+
     AppInstance* mainInstance = manager->newAppInstance(isBackGround,projectFile,writers);
     if(!mainInstance){
         printUsage();
@@ -242,8 +241,7 @@ int main(int argc, char *argv[])
     }
 	  
     if(!isBackGround){
-        splashScreen->hide();
-        delete splashScreen;
+        manager->hideSplashScreen();
     }else{
         //in background mode, exit...
         AppManager::quit();

@@ -218,6 +218,7 @@ SOURCES += \
     Gui/ScaleSliderQWidget.cpp \
     Gui/SequenceFileDialog.cpp \
     Gui/SpinBox.cpp \
+    Gui/SplashScreen.cpp \
     Gui/TabWidget.cpp \
     Gui/TextRenderer.cpp \
     Gui/Texture.cpp \
@@ -326,6 +327,7 @@ HEADERS += \
     Gui/SequenceFileDialog.h \
     Gui/Shaders.h \
     Gui/SpinBox.h \
+    Gui/SplashScreen.h \
     Gui/TabWidget.h \
     Gui/TextRenderer.h \
     Gui/Texture.h \

@@ -209,11 +209,12 @@ public:
 
     std::pair<double,double> getCurveYRange() const WARN_UNUSED_RETURN;
     
+    int keyFrameIndex(double time) const WARN_UNUSED_RETURN;
+    
+    ///////The following functions are not thread-safe
     KeyFrameSet::const_iterator find(double time) const WARN_UNUSED_RETURN;
     
     KeyFrameSet::const_iterator keyframeAt(int index) const WARN_UNUSED_RETURN;
-    
-    int keyFrameIndex(double time) const WARN_UNUSED_RETURN;
     
     KeyFrameSet::const_iterator begin() const WARN_UNUSED_RETURN;
 

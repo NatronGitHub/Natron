@@ -56,6 +56,7 @@ class Settings;
 class KnobSerialization;
 struct KnobsClipBoard;
 class ProcessHandler;
+class SplashScreen;
 class ProcessInputChannel;
 namespace Natron {
 class OutputEffectInstance;
@@ -400,6 +401,13 @@ public:
     AppManager();
 
     virtual ~AppManager();
+    
+    ///called right away after the constructor by main.cpp
+    void load(SplashScreen* splashScreen);
+    
+    bool isLoaded() const;
+    
+    void hideSplashScreen();
 
     const boost::scoped_ptr<Natron::OfxHost>& getOfxHost() const WARN_UNUSED_RETURN {return ofxHost;}
 
@@ -487,6 +495,8 @@ public:
 
     void abortAnyProcessing();
 
+    void setLoadingStatus(const QString& str);
+
 public slots:
 
     void clearPlaybackCache();
@@ -573,6 +583,8 @@ private:
 
     ProcessInputChannel* _backgroundIPC; //< object used to communicate with the main app
                                          //if this app is background, see the ProcessInputChannel def
+    SplashScreen* _splashScreen;
+    bool _loaded;
 
 };
 

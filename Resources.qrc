@@ -83,5 +83,6 @@
         <file>Resources/Images/multiview.png</file>
         <file>Resources/Images/transform_low.png</file>
         <file>Resources/Images/transform.png</file>
+        <file>Resources/Images/splashscreen_dark.png</file>
     </qresource>
 </RCC>

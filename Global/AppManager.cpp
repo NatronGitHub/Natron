@@ -60,6 +60,7 @@
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/ProjectGuiSerialization.h"
 #include "Gui/ProcessHandler.h"
+#include "Gui/SplashScreen.h"
 
 #include "Readers/QtDecoder.h"
 
@@ -274,6 +275,7 @@ AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectNam
     appPTR->setAsTopLevelInstance(appID);
 
     if(!_isBackground){
+        appPTR->setLoadingStatus("Creating user interface...");
         _gui = new Gui(this);
     }
     if(_isBackground && projectName.isEmpty()){
@@ -311,6 +313,7 @@ AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectNam
                 }else{
                     QString name = SequenceFileDialog::removePath(projectName);
                     QString path = projectName.left(projectName.indexOf(name));
+                    appPTR->setLoadingStatus("Loading project: " + path + name);
                     loadProject(path,name);
                 }
             }
@@ -865,6 +868,9 @@ AppInstance* AppManager::newAppInstance(bool background,const QString& projectNa
         return NULL;
     }
     ++_availableID;
+    
+    ///flag that we finished loading the Appmanager even if it was already true
+    _loaded = true;
     return instance;
 }
 
@@ -1080,7 +1086,29 @@ AppManager::AppManager()
     ,_initialized(false)
     ,_knobsClipBoard(new KnobsClipBoard)
     ,_backgroundIPC(0)
+    ,_splashScreen(0)
+    ,_loaded(false)
 {
+
+}
+
+bool AppManager::isLoaded() const {
+    return _loaded;
+}
+
+void AppManager::hideSplashScreen() {
+    _splashScreen->hide();
+    delete _splashScreen;
+    _splashScreen = 0;
+}
+
+void AppManager::load(SplashScreen* splashScreen) {
+    
+    _splashScreen = splashScreen;
+    
+    if (_initialized) {
+        return;
+    }
     
     _settings->initializeKnobs();
     
@@ -1091,6 +1119,7 @@ AppManager::AppManager()
     U64 maxDiskCache = _settings->getMaximumDiskCacheSize();
     U64 playbackSize = maxCacheRAM * _settings->getRamPlaybackMaximumPercent();
     
+    setLoadingStatus("Restoring the image cache...");
     _nodeCache.reset(new Cache<Image>("NodeCache",0x1, maxCacheRAM - playbackSize,1));
     _viewerCache.reset(new Cache<FrameEntry>("ViewerCache",0x1,maxDiskCache,(double)playbackSize / (double)maxDiskCache));
     
@@ -1105,13 +1134,12 @@ AppManager::AppManager()
     
     createColorPickerCursor();
     
-    _initialized = true;
-    
+    setLoadingStatus("Restoring user settings...");
     _settings->restoreSettings();
     
     _knobsClipBoard->isEmpty = true;
     
-
+    _initialized = true;
 }
 
 void AppManager::initProcessInputChannel(const QString& mainProcessServerName) {
@@ -1213,6 +1241,7 @@ void AppManager::loadAllPlugins() {
     std::map<std::string,std::vector<std::string> > readersMap,writersMap;
     
     /*loading node plugins*/
+    
     loadNodePlugins(&readersMap,&writersMap);
     
     /*loading ofx plugins*/
@@ -1868,6 +1897,18 @@ bool AppManager::getTexture(const Natron::FrameKey& key,boost::shared_ptr<Natron
     return _viewerCache->get(key, returnValue);
 #endif
 }
+
+void AppManager::setLoadingStatus(const QString& str) {
+    if (isLoaded()) {
+        return;
+    }
+    if (!_splashScreen) {
+        std::cout << str.toStdString() << std::endl;
+    } else {
+        _splashScreen->updateText(str);
+    }
+}
+
 
 namespace Natron{
 
