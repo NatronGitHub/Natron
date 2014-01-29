@@ -625,8 +625,6 @@ void VideoEngine::abortRendering(){
         
         if (QThread::currentThread() != this) {
             while (_abortRequested > 0) {
-                if(_tree.isOutputAViewer())
-                    _tree.outputAsViewer()->wakeUpAnySleepingThread();
                 _abortedRequestedCondition.wait(&_abortedRequestedMutex);
             }
         }
@@ -645,7 +643,7 @@ void VideoEngine::refreshAndContinueRender(bool initViewer){
     bool isPlaybackRunning = isWorking() && (_currentRunArgs._frameRequestsCount == -1 ||
                                              (_currentRunArgs._frameRequestsCount > 1 && _currentRunArgs._frameRequestIndex < _currentRunArgs._frameRequestsCount - 1));
     if(!isPlaybackRunning){
-        render(1,false,false,initViewer,_currentRunArgs._forward,true);
+        render(1,false,false,initViewer,_currentRunArgs._forward,true,true);
     }
 }
 void VideoEngine::updateTreeAndContinueRender(bool initViewer){
@@ -658,7 +656,7 @@ void VideoEngine::updateTreeAndContinueRender(bool initViewer){
         int count = _currentRunArgs._frameRequestsCount == - 1 ? -1 :
                                                                  _currentRunArgs._frameRequestsCount - _currentRunArgs._frameRequestIndex ;
         abortRendering();
-        render(count,true,initViewer,_currentRunArgs._forward,false,true);
+        render(count,true,true,initViewer,_currentRunArgs._forward,false,true);
     }else{
         render(1,false,true,initViewer,_currentRunArgs._forward,true,true);
     }
