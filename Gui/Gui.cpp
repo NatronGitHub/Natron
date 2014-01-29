@@ -56,6 +56,7 @@
 
 
 #define PLUGIN_GROUP_DEFAULT "Other"
+#define PLUGIN_GROUP_IMAGE "Image"
 #define PLUGIN_GROUP_COLOR "Color"
 #define PLUGIN_GROUP_FILTER "Filter"
 #define PLUGIN_GROUP_TRANSFORM "Transform"
@@ -939,6 +940,8 @@ static void getPixmapForGrouping(QPixmap* pixmap,const QString& grouping) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_COLOR_GROUPING, pixmap);
     } else if (grouping == PLUGIN_GROUP_FILTER) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_FILTER_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_IMAGE) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_IO_GROUPING, pixmap);
     } else if (grouping == PLUGIN_GROUP_TRANSFORM) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_TRANSFORM_GROUPING, pixmap);
     } else if (grouping == PLUGIN_GROUP_DEEP) {

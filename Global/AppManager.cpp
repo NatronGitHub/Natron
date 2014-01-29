@@ -1263,7 +1263,7 @@ void AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector<std::st
         Natron::Plugin* plugin = new Natron::Plugin(readerPlugin,reader->pluginID().c_str(),reader->pluginLabel().c_str(),
                                                     (QMutex*)NULL,reader->majorVersion(),reader->minorVersion());
         _plugins.push_back(plugin);
-        addPluginToolButtons(grouping,reader->pluginID().c_str(),reader->pluginLabel().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
+        addPluginToolButtons(grouping,reader->pluginID().c_str(),reader->pluginLabel().c_str(), "","");
         
         std::vector<std::string> extensions;
         reader->supportedFileFormats(&extensions);
@@ -1293,7 +1293,7 @@ void AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector<std::st
         Natron::Plugin* plugin = new Natron::Plugin(viewerPlugin,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(),
                                                     (QMutex*)NULL,viewer->majorVersion(),viewer->minorVersion());
         _plugins.push_back(plugin);
-        addPluginToolButtons(grouping,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
+        addPluginToolButtons(grouping,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(), "","");
         delete viewer;
     }
     {
@@ -1306,7 +1306,7 @@ void AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector<std::st
         Natron::Plugin* plugin = new Natron::Plugin(writerPlugin,writer->pluginID().c_str(),writer->pluginLabel().c_str(),
                                                     (QMutex*)NULL,writer->majorVersion(),writer->minorVersion());
         _plugins.push_back(plugin);
-        addPluginToolButtons(grouping,writer->pluginID().c_str(),writer->pluginLabel().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
+        addPluginToolButtons(grouping,writer->pluginID().c_str(),writer->pluginLabel().c_str(), "","");
         
         std::vector<std::string> extensions;
         writer->supportedFileFormats(&extensions);
