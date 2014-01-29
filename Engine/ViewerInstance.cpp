@@ -668,6 +668,7 @@ void ViewerInstance::setDisplayChannels(DisplayChannels channels) {
 }
 
 void ViewerInstance::disconnectViewer(){
+    getVideoEngine()->abortRendering(); // aborting current work
     emit viewerDisconnected();
 }
 

@@ -1523,7 +1523,6 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
 
 
 void ViewerGL::disconnectViewer(){
-    _imp->viewerTab->getInternalNode()->getVideoEngine()->abortRendering(); // aborting current work
     setRod(_imp->blankViewerInfos.getRoD());
     fitToFormat(getDisplayWindow());
     clearViewer();
