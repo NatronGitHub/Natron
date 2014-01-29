@@ -625,6 +625,8 @@ void VideoEngine::abortRendering(){
         
         if (QThread::currentThread() != this) {
             while (_abortRequested > 0) {
+                if(_tree.isOutputAViewer())
+                    _tree.outputAsViewer()->wakeUpAnySleepingThread();
                 _abortedRequestedCondition.wait(&_abortedRequestedMutex);
             }
         }

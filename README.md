@@ -1,6 +1,7 @@
 Natron [![Build Status](https://api.travis-ci.org/MrKepzie/Natron.png?branch=workshop)](https://travis-ci.org/MrKepzie/Natron)
 ======
 
+
 Natron is an Open-Source (MPLv2 license) video compositing software, similar in functionality to Adobe After Effects or Nuke by The Foundry.
 
 It is portable and cross-platform (Linux, OS X, Microsoft Windows).
@@ -33,6 +34,10 @@ Features
   Documentation/ofxPropSupported.rtf in the source distribution)
 - A minimum of OpenGL 1.5 is required, hence most graphics cards should be supported, 
 platforms not supporting GLSL are also supported
+<<<<<<< HEAD
+=======
+
+>>>>>>> 3eac0dead09f70670238effbfff77d51e8618833
 - Fast Viewer interaction with no delay 
 - Overlays interaction on the viewer
 - Fast playback engine: possibility to run 32bit floating point 4K sequences at 60+ fps
