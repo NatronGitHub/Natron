@@ -61,6 +61,7 @@ The system must support one of these OpenGL configurations:
   `GL_ARB_shader_objects` `GL_ARB_vertex_buffer_object`
   `GL_ARB_pixel_buffer_object`
 
+
 Planned features
 ----------------
 
@@ -108,6 +109,7 @@ your local repository's `.git/hooks/` directory like:
     $ cd Natron
     $ mkdir .git/hooks
     $ ln -s ../../.git-hooks/pre-commit .git/hooks/pre-commit
+
 
 Pull requests that don't match the project code style are still likely to be
 accepted after manually formatting and amending your changeset. The formatting
