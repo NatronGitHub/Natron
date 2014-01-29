@@ -339,12 +339,14 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     if(getVideoEngine()->mustQuit()){
         return StatFailed;
     }
-
-    QMutexLocker locker(&_usingOpenGLMutex);
-    _usingOpenGL = true;
-    emit doUpdateViewer();
-    while(_usingOpenGL) {
-        _usingOpenGLCond.wait(&_usingOpenGLMutex);
+    
+    if(!aborted()) {
+        QMutexLocker locker(&_usingOpenGLMutex);
+        _usingOpenGL = true;
+        emit doUpdateViewer();
+        while(_usingOpenGL) {
+            _usingOpenGLCond.wait(&_usingOpenGLMutex);
+        }
     }
     return StatOK;
 }

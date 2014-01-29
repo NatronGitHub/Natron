@@ -35,7 +35,10 @@ OfxStatus OfxOverlayInteract::swapBuffers(){
     if(_curveWidget){
         _curveWidget->swapBuffers();
     }else{
-        assert(_currentViewer);
+        if(!_currentViewer) {
+            return kOfxStatFailed;
+        }
+
         _currentViewer->swapBuffers();
     }
     return kOfxStatOK;
@@ -45,7 +48,9 @@ OfxStatus OfxOverlayInteract::redraw(){
     if(_curveWidget){
         _curveWidget->update();
     }else{
-        assert(_currentViewer);
+        if(!_currentViewer) {
+            return kOfxStatFailed;
+        }
         _currentViewer->update();
     }
     return kOfxStatOK;
@@ -56,7 +61,9 @@ void OfxOverlayInteract::getViewportSize(double &width, double &height) const{
         width = _curveWidget->width();
         height = _curveWidget->height();
     }else{
-        assert(_currentViewer);
+        if(!_currentViewer) {
+            return;
+        }
         const Format& f = _currentViewer->getDisplayWindow();
         width = f.width();
         height = f.height();
@@ -68,7 +75,9 @@ void OfxOverlayInteract::getPixelScale(double& xScale, double& yScale) const{
         xScale = 1. / _curveWidget->getZoomFactor();
         yScale = xScale;
     }else{
-        assert(_currentViewer);
+        if(!_currentViewer) {
+            return;
+        }
         xScale = 1. / _currentViewer->getZoomFactor();
         yScale = xScale;
     }
@@ -78,7 +87,9 @@ void OfxOverlayInteract::getBackgroundColour(double &r, double &g, double &b) co
     if(_curveWidget){
         _curveWidget->getBackgroundColor(&r, &g, &b);
     }else{
-        assert(_currentViewer);
+        if(!_currentViewer) {
+            return;
+        }
         _currentViewer->backgroundColor(r,g,b);
     }
 }
