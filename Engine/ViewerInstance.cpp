@@ -183,7 +183,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     }
     
     /*computing the RoI*/
-    double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(zoomFactor) / std::log(2)));
+    double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(zoomFactor) / std::log(2.)));
 
     RectI roi = viewer->getImageRectangleDisplayed(rod);
 
