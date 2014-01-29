@@ -1,11 +1,13 @@
+
 Natron [![Build Status](https://api.travis-ci.org/MrKepzie/Natron.png?branch=workshop)](https://travis-ci.org/MrKepzie/Natron)
-======
+
 
 Natron is an Open-Source (MPLv2 license) video compositing software, similar in functionality to Adobe After Effects or Nuke by The Foundry.
 
 It is portable and cross-platform (Linux, OS X, Microsoft Windows).
 
 The project home page is http://natron.inria.fr
+
 
 The project source code repository is https://github.com/MrKepzie/Natron
 
@@ -33,6 +35,7 @@ Features
   Documentation/ofxPropSupported.rtf in the source distribution)
 - A minimum of OpenGL 1.5 is required, hence most graphics cards should be supported, 
 platforms not supporting GLSL are also supported
+
 - Fast Viewer interaction with no delay 
 - Overlays interaction on the viewer
 - Fast playback engine: possibility to run 32bit floating point 4K sequences at 60+ fps
@@ -44,6 +47,7 @@ platforms not supporting GLSL are also supported
 - The project saves also the layout of the application.
 - Command line tool for execution of project files. The command line version is executable from ssh on a computer without any display.
 - Animation support and possibility to change it with a curve editor
+
 
 Requirements
 ------------
@@ -60,6 +64,7 @@ The system must support one of these OpenGL configurations:
 - OpenGL 1.5 with the extensions `GL_ARB_texture_non_power_of_two`
   `GL_ARB_shader_objects` `GL_ARB_vertex_buffer_object`
   `GL_ARB_pixel_buffer_object`
+
 
 Planned features
 ----------------
@@ -87,6 +92,7 @@ Planned features
 Contributing
 ------------
 
+
 We coordinate development through the [GitHub issue
 tracker](https://github.com/MrKepzie/Natron/issues).
 
@@ -108,6 +114,7 @@ your local repository's `.git/hooks/` directory like:
     $ cd Natron
     $ mkdir .git/hooks
     $ ln -s ../../.git-hooks/pre-commit .git/hooks/pre-commit
+
 
 Pull requests that don't match the project code style are still likely to be
 accepted after manually formatting and amending your changeset. The formatting

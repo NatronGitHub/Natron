@@ -19,3 +19,4 @@ install:
 script:
   - if [ "$CC" = "gcc" ]; then qmake; else qmake -spec unsupported/linux-clang; fi
   - make
+
