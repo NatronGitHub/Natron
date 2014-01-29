@@ -635,7 +635,8 @@ void SequenceFileDialog::updateView(const QString &directory){
      datas that have been fetched and filtered by the file system.
      Not that it runs in another thread and updates the name mapping on the
      view when the computations are done.*/
-    QtConcurrent::run(this,&SequenceFileDialog::itemsToSequence,proxyIndex);
+    //QtConcurrent::run(this,&SequenceFileDialog::itemsToSequence,proxyIndex);
+    itemsToSequence(proxyIndex);
     /*update the view to show the newly loaded directory*/
     setRootIndex(proxyIndex);
     _view->expandColumnsToFullWidth();

@@ -622,9 +622,13 @@ void VideoEngine::abortRendering(){
         }
         if(_tree.isOutputAViewer())
             _tree.outputAsViewer()->wakeUpAnySleepingThread();
-        while (_abortRequested > 0) {
-            _abortedRequestedCondition.wait(&_abortedRequestedMutex);
+        
+        if (QThread::currentThread() != this) {
+            while (_abortRequested > 0) {
+                _abortedRequestedCondition.wait(&_abortedRequestedMutex);
+            }
         }
+        
     }
 }
 
