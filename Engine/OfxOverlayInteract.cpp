@@ -32,25 +32,18 @@ void OfxOverlayInteract::setCallingViewer(ViewerGL* viewer) {
 }
 
 OfxStatus OfxOverlayInteract::swapBuffers(){
-    if(_curveWidget){
+    if(_curveWidget) {
         _curveWidget->swapBuffers();
-    }else{
-        if(!_currentViewer) {
-            return kOfxStatFailed;
-        }
-
+    } else if(_currentViewer) {
         _currentViewer->swapBuffers();
     }
     return kOfxStatOK;
 }
 
 OfxStatus OfxOverlayInteract::redraw(){
-    if(_curveWidget){
+    if(_curveWidget) {
         _curveWidget->update();
-    }else{
-        if(!_currentViewer) {
-            return kOfxStatFailed;
-        }
+    } else if(_currentViewer) {
         _currentViewer->update();
     }
     return kOfxStatOK;
