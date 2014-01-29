@@ -56,7 +56,14 @@
 
 
 #define PLUGIN_GROUP_DEFAULT "Other"
-#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH"openeffects.png"
+#define PLUGIN_GROUP_COLOR "Color"
+#define PLUGIN_GROUP_FILTER "Filter"
+#define PLUGIN_GROUP_TRANSFORM "Transform"
+#define PLUGIN_GROUP_DEEP "Deep"
+#define PLUGIN_GROUP_MULTIVIEW "Views"
+#define PLUGIN_GROUP_OFX "OFX"
+
+#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH"misc_low.png"
 
 using namespace Natron;
 using std::make_pair;
@@ -927,6 +934,26 @@ ToolButton* Gui::findExistingToolButton(const QString& label) const{
     return NULL;
 }
 
+static void getPixmapForGrouping(QPixmap* pixmap,const QString& grouping) {
+    if (grouping == PLUGIN_GROUP_COLOR) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_COLOR_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_FILTER) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_FILTER_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_TRANSFORM) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_TRANSFORM_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_DEEP) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_DEEP_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_MULTIVIEW) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MULTIVIEW_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_DEFAULT) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
+    } else if (grouping.contains(PLUGIN_GROUP_OFX)) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_OPEN_EFFECTS_GROUPING, pixmap);
+    } else {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
+    }
+}
+
 ToolButton* Gui::findOrCreateToolButton(PluginToolButton* plugin){
     for(U32 i = 0; i < _toolButtons.size();++i){
         if(_toolButtons[i]->getID() == plugin->getID()){
@@ -945,7 +972,9 @@ ToolButton* Gui::findOrCreateToolButton(PluginToolButton* plugin){
     }else{
         //add the default group icon only if it has no parent
         if(!plugin->hasParent()){
-            icon.addFile(PLUGIN_GROUP_DEFAULT_ICON_PATH);
+            QPixmap pix;
+            getPixmapForGrouping(&pix, plugin->getLabel());
+            icon.addPixmap(pix);
         }
     }
     //if the tool-button has no children, this is a leaf, we must create an action

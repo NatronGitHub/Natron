@@ -69,5 +69,19 @@
         <file>Resources/OpenColorIO-Configs/nuke-default/luts/srgb.spi1d</file>
         <file>Resources/OpenColorIO-Configs/nuke-default/luts/srgbf.spi1d</file>
         <file>Resources/OpenColorIO-Configs/nuke-default/luts/viperlog.spi1d</file>
+        <file>Resources/Images/color_low.png</file>
+        <file>Resources/Images/color.png</file>
+        <file>Resources/Images/deep_low.png</file>
+        <file>Resources/Images/deep.png</file>
+        <file>Resources/Images/filter_low.png</file>
+        <file>Resources/Images/filter.png</file>
+        <file>Resources/Images/io_low.png</file>
+        <file>Resources/Images/io.png</file>
+        <file>Resources/Images/misc_low.png</file>
+        <file>Resources/Images/misc.png</file>
+        <file>Resources/Images/multiview_low.png</file>
+        <file>Resources/Images/multiview.png</file>
+        <file>Resources/Images/transform_low.png</file>
+        <file>Resources/Images/transform.png</file>
     </qresource>
 </RCC>

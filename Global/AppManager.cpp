@@ -207,9 +207,32 @@ void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
             img.load(NATRON_IMAGES_PATH"color_picker.png");
             *pix = QPixmap::fromImage(img);
             break;
-
         case NATRON_PIXMAP_IO_GROUPING:
-            img.load(NATRON_IMAGES_PATH"ioGroupingIcon.png");
+            img.load(NATRON_IMAGES_PATH"io_low.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_COLOR_GROUPING:
+            img.load(NATRON_IMAGES_PATH"color_low.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_TRANSFORM_GROUPING:
+            img.load(NATRON_IMAGES_PATH"transform_low.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_DEEP_GROUPING:
+            img.load(NATRON_IMAGES_PATH"deep_low.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_FILTER_GROUPING:
+            img.load(NATRON_IMAGES_PATH"filter_low.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_MULTIVIEW_GROUPING:
+            img.load(NATRON_IMAGES_PATH"multiview_low.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_MISC_GROUPING:
+            img.load(NATRON_IMAGES_PATH"misc_low.png");
             *pix = QPixmap::fromImage(img);
             break;
         case NATRON_PIXMAP_OPEN_EFFECTS_GROUPING:
