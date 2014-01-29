@@ -558,6 +558,11 @@ void NodeGraph::connectCurrentViewerToSelection(int inputNB){
         v->setActiveInputAndRefresh(inputNB);
         return;
     }
+    
+    if (_nodeSelected->getNode()->isOutputNode()) {
+        return;
+    }
+    
     NodeGui* gui = _gui->getApp()->getNodeGui(v);
     if(gui){
         NodeGui::InputEdgesMap::const_iterator it = gui->getInputsArrows().find(inputNB);
