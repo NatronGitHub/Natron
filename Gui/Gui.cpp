@@ -134,7 +134,8 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
     viewerInputsMenu(0),
     cacheMenu(0),
     _settingsGui(0),
-    _projectGui(0)
+    _projectGui(0),
+    _currentlyDraggedPanel(0)
 {
     QObject::connect(this,SIGNAL(doDialog(int,QString,QString,Natron::StandardButtons,int)),this,
                      SLOT(onDoDialog(int,QString,QString,Natron::StandardButtons,int)));
@@ -245,13 +246,20 @@ void Gui::createGui(){
 
 
 bool Gui::eventFilter(QObject *target, QEvent *event) {
-    assert(_appInstance);
-    if(dynamic_cast<QInputEvent*>(event)){
-        /*Make top level instance this instance since it receives all
-         user inputs.*/
-        appPTR->setAsTopLevelInstance(_appInstance->getAppID());
-    }
+    
+    //  std::cout << event->type() << std::endl;
+
+        
+        assert(_appInstance);
+        if(dynamic_cast<QInputEvent*>(event)){
+            /*Make top level instance this instance since it receives all
+             user inputs.*/
+            appPTR->setAsTopLevelInstance(_appInstance->getAppID());
+        }
+        
+    
     return QMainWindow::eventFilter(target, event);
+
 }
 void Gui::retranslateUi(QMainWindow *MainWindow)
 {
@@ -1506,4 +1514,16 @@ void Gui::refreshAllPreviews() {
             nodes[i]->refreshPreviewImage(time);
         }
     }
+}
+
+void Gui::startDragPanel(QWidget* panel) {
+    assert(!_currentlyDraggedPanel);
+    _currentlyDraggedPanel = panel;
+}
+
+QWidget* Gui::stopDragPanel() {
+    assert(_currentlyDraggedPanel);
+    QWidget* ret = _currentlyDraggedPanel;
+    _currentlyDraggedPanel = 0;
+    return ret;
 }

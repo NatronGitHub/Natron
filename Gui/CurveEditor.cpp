@@ -20,6 +20,7 @@
 #include <QHeaderView>
 #include <QUndoStack> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QAction>
+#include <QMouseEvent>
 
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"
@@ -496,3 +497,5 @@ void CurveEditor::showCurves(KnobGui* knob){
 CurveWidget* CurveEditor::getCurveWidget() const{
     return _curveWidget;
 }
+
+

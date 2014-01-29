@@ -287,7 +287,13 @@ public:
     bool isUserScrubbingTimeline() const { return _isUserScrubbingTimeline; }
     
     void refreshAllPreviews();
-        
+    
+    void startDragPanel(QWidget* panel)  ;
+    
+    QWidget* stopDragPanel()  ;
+    
+    bool isDraggingPanel() const { return _currentlyDraggedPanel!=NULL; }
+    
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);
@@ -482,7 +488,11 @@ private:
     
 public:
     ProjectGui* _projectGui; // FIXME: used by AppManager.cpp
+    
 private:
+    
+    QWidget* _currentlyDraggedPanel;
+    
     void setupUi();
    
 	void retranslateUi(QMainWindow *MainWindow);

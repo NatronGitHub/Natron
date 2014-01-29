@@ -82,8 +82,9 @@ TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent
 {
     
     if(decorations!=NONE){
-        setAcceptDrops(true);
+        //setAcceptDrops(true);
     }
+    setMouseTracking(true);
     setFrameShape(QFrame::NoFrame);
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -142,6 +143,7 @@ TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent
     
     _mainLayout->addWidget(_header);
     _mainLayout->addStretch();
+    
 }
 
 TabWidget::~TabWidget(){
@@ -289,13 +291,17 @@ void TabWidget::closePane(){
     delete container;
 }
 
-void TabWidget::floatPane(){
+void TabWidget::floatPane(QPoint* position){
     _isFloating = true;
     
     FloatingWidget* floatingW = new FloatingWidget(_gui);
     setVisible(false);
     setParent(0);
     floatingW->setWidget(size(),this);
+    
+    if (position) {
+        floatingW->move(*position);
+    }
 
 }
 
@@ -337,12 +343,19 @@ void TabWidget::setTabName(QWidget* tab,const QString& name) {
 void TabWidget::floatCurrentWidget(){
     if(!_currentWidget)
         return;
-    TabWidget* newTab = new TabWidget(_gui,TabWidget::CLOSABLE);
-    newTab->appendTab(_currentWidget);
-    newTab->floatPane();
-    removeTab(_currentWidget);
-    if(_tabBar->count() == 0){
-        _floatButton->setEnabled(false);
+    floatTab(_currentWidget);
+}
+
+void TabWidget::floatTab(QWidget* tab) {
+    std::vector<QWidget*>::iterator it = std::find(_tabs.begin(),_tabs.end(),tab);
+    if (it != _tabs.end()) {
+        TabWidget* newTab = new TabWidget(_gui,TabWidget::CLOSABLE);
+        newTab->appendTab(*it);
+        newTab->floatPane();
+        removeTab(*it);
+        if(_tabBar->count() == 0){
+            _floatButton->setEnabled(false);
+        }
     }
 }
 
@@ -535,7 +548,7 @@ QWidget*  TabWidget::removeTab(int index) {
     } else {
         _currentWidget = 0;
         _mainLayout->addStretch();
-        if (_isFloating) {
+        if (_isFloating && !_gui->isDraggingPanel()) {
             closeFloatingPane();
         }
     }
@@ -572,25 +585,7 @@ void TabWidget::makeCurrentTab(int index){
 
 }
 
-void TabWidget::dragEnterEvent(QDragEnterEvent* event){
-    // Only accept if it's an tab-reordering request
-    const QMimeData* m = event->mimeData();
-    QStringList formats = m->formats();
-    if (formats.contains("Tab")) {
-        event->acceptProposedAction();
-        _drawDropRect = true;
-        setFrameShape(QFrame::Box);
-    }else{
 
-    }
-    repaint();
-}
-
-void TabWidget::dragLeaveEvent(QDragLeaveEvent*){
-    _drawDropRect = false;
-    setFrameShape(QFrame::NoFrame);
-    repaint();
-}
 
 void TabWidget::paintEvent(QPaintEvent* event){
     if (_drawDropRect) {
@@ -616,7 +611,12 @@ void TabWidget::dropEvent(QDropEvent* event){
 }
 
 
-TabBar::TabBar(TabWidget* tabWidget,QWidget* parent): QTabBar(parent) , _tabWidget(tabWidget) /* ,_currentIndex(-1)*/{
+TabBar::TabBar(TabWidget* tabWidget,QWidget* parent)
+: QTabBar(parent)
+, _dragPos()
+, _dragPix(0)
+, _tabWidget(tabWidget)
+{
     setTabsClosable(true);
     setMouseTracking(true);
     QObject::connect(this, SIGNAL(tabCloseRequested(int)), tabWidget, SLOT(closeTab(int)));
@@ -636,28 +636,191 @@ void TabBar::mouseMoveEvent(QMouseEvent* event){
     if ((event->pos() - _dragPos).manhattanLength() < QApplication::startDragDistance())
         return;
     
-    // initiate Drag
-    QDrag* drag = new QDrag(this);
-    QMimeData* mimeData = new QMimeData;
-    // a crude way to distinguish tab-reodering drags from other drags
-    QWidget* selectedTab = 0;
-    int selectedTabIndex = tabAt(event->pos());
-    if(selectedTabIndex != -1){
-        selectedTab = _tabWidget->tabAt(selectedTabIndex);
-        assert(selectedTab);
-        selectedTab->setParent(_tabWidget);
-        QString text = _tabWidget->getTabName(selectedTab);
-        mimeData->setData("Tab", text.toLatin1());
-        drag->setMimeData(mimeData);
-#if QT_VERSION < 0x050000
-        QPixmap pix = QPixmap::grabWidget(_tabWidget);
-#else
-        QPixmap pix = _tabWidget->grab();
-#endif
-        drag->setPixmap(pix);
-        drag->exec();
+    if (_tabWidget->getGui()->isDraggingPanel()) {
+        
+        const QPoint& globalPos = event->globalPos();
+        const std::list<TabWidget*> panes = _tabWidget->getGui()->getPanes();
+        for (std::list<TabWidget*>::const_iterator it = panes.begin(); it!=panes.end(); ++it) {
+            if ((*it)->isWithinWidget(globalPos)) {
+                (*it)->setDrawDropRect(true);
+            } else {
+                (*it)->setDrawDropRect(false);
+            }
+        }
+        _dragPix->update(globalPos);
+        QTabBar::mouseMoveEvent(event);
+        return;
     }
+       int selectedTabIndex = tabAt(event->pos());
+    if(selectedTabIndex != -1){
+        
+        QPixmap pixmap = makePixmapForDrag(selectedTabIndex);
+        
+        _tabWidget->startDragTab(selectedTabIndex);
+    
+        _dragPix = new DragPixmap(pixmap,event->pos());
+        _dragPix->update(event->globalPos());
+        _dragPix->show();
+        grabMouse();
+
+        
+//#if QT_VERSION < 0x050000
+//        QPixmap pix = QPixmap::grabWidget(_tabWidget);
+//#else
+//        QPixmap pix = _tabWidget->grab();
+//#endif
+//        drag->setPixmap(pix);
+//        drag->exec();
+    }
+    QTabBar::mouseMoveEvent(event);
+    
 }
+
+QPixmap TabBar::makePixmapForDrag(int index) {
+    std::vector< std::pair<QString,QIcon > > tabs;
+    for (int i = 0; i < count(); ++i) {
+        tabs.push_back(std::make_pair(tabText(i),tabIcon(i)));
+    }
+    
+    //remove all tabs
+    while (count() > 0) {
+        removeTab(0);
+    }
+    
+    ///insert just the tab we want to screen shot
+    addTab(tabs[index].second, tabs[index].first);
+    
+#if QT_VERSION < 0x050000
+    QPixmap tabBarPixmap = QPixmap::grabWidget(this);
+    QPixmap currentTabPixmap =  QPixmap::grabWidget(_tabWidget->tabAt(index));
+#else
+    QPixmap tabBarPixmap = grab();
+    QPixmap currentTabPixmap =  _tabWidget->tabAt(index)->grab();
+#endif
+    
+    ///re-insert all the tabs into the tab bar
+    removeTab(0);
+    
+    for (U32 i = 0; i < tabs.size(); ++i) {
+        addTab(tabs[i].second, tabs[i].first);
+    }
+    
+    
+    QImage tabBarImg = tabBarPixmap.toImage();
+    QImage currentTabImg = currentTabPixmap.toImage();
+    
+    //now we just put together the 2 pixmaps and set it with mid transparancy
+    QImage ret(currentTabImg.width(),currentTabImg.height() + tabBarImg.height(),QImage::Format_ARGB32_Premultiplied);
+    
+    for (int y = 0; y < tabBarImg.height(); ++y) {
+        QRgb* src_pixels = reinterpret_cast<QRgb*>(tabBarImg.scanLine(y));
+        for (int x = 0; x < ret.width(); ++x) {
+            if (x < tabBarImg.width()) {
+                QRgb pix = src_pixels[x];
+                ret.setPixel(x, y, qRgba(qRed(pix), qGreen(pix), qBlue(pix), 255));
+            } else {
+                ret.setPixel(x, y, qRgba(0, 0, 0, 128));
+            }
+        }
+    }
+    
+    for (int y = 0; y < currentTabImg.height(); ++y) {
+        QRgb* src_pixels = reinterpret_cast<QRgb*>(currentTabImg.scanLine(y));
+        for (int x = 0; x < ret.width(); ++x) {
+            QRgb pix = src_pixels[x];
+            ret.setPixel(x, y + tabBarImg.height(), qRgba(qRed(pix), qGreen(pix), qBlue(pix), 255));
+        }
+    }
+    
+    return QPixmap::fromImage(ret);
+}
+
+void TabBar::mouseReleaseEvent(QMouseEvent* event) {
+    if (_tabWidget->getGui()->isDraggingPanel()) {
+        releaseMouse();
+        const QPoint& p = event->globalPos();
+        _tabWidget->stopDragTab(p);
+        _dragPix->hide();
+        delete _dragPix;
+        _dragPix = 0;
+        
+        const std::list<TabWidget*> panes = _tabWidget->getGui()->getPanes();
+        for (std::list<TabWidget*>::const_iterator it = panes.begin(); it!=panes.end(); ++it) {
+            (*it)->setDrawDropRect(false);
+        }
+
+    }
+    QTabBar::mouseReleaseEvent(event);
+
+}
+
+void TabWidget::stopDragTab(const QPoint& globalPos) {
+    
+    if (_isFloating && count() == 0) {
+        closeFloatingPane();
+    }
+    
+    QWidget* draggedPanel = _gui->stopDragPanel();
+    const std::list<TabWidget*> panes = _gui->getPanes();
+    
+    bool foundTabWidgetUnderneath = false;
+    for (std::list<TabWidget*>::const_iterator it = panes.begin(); it!=panes.end(); ++it) {
+        if ((*it)->isWithinWidget(globalPos)) {
+            (*it)->appendTab(draggedPanel);
+            foundTabWidgetUnderneath = true;
+            break;
+        }
+    }
+    
+    if (!foundTabWidgetUnderneath) {
+        ///if we reach here that means the mouse is not over any tab widget, then float the panel
+        TabWidget* newTab = new TabWidget(_gui,TabWidget::CLOSABLE);
+        newTab->appendTab(draggedPanel);
+        QPoint windowPos = globalPos;
+        newTab->floatPane(&windowPos);
+        
+    }
+    
+}
+
+void TabWidget::startDragTab(int index){
+    if (index >= count()) {
+        return;
+    }
+    
+    QWidget* selectedTab = tabAt(index);
+    assert(selectedTab);
+    selectedTab->setParent(this);
+    
+    _gui->startDragPanel(selectedTab);
+
+    removeTab(selectedTab);
+    selectedTab->hide();
+    
+    
+}
+
+void TabWidget::setDrawDropRect(bool draw) {
+    
+    if (draw == _drawDropRect) {
+        return;
+    }
+    
+    _drawDropRect = draw;
+    if (draw) {
+        setFrameShape(QFrame::Box);
+    } else {
+        setFrameShape(QFrame::NoFrame);
+    }
+    repaint();
+}
+
+bool TabWidget::isWithinWidget(const QPoint& globalPos) const {
+    QPoint p = mapToGlobal(QPoint(0,0));
+    QRect bbox(p.x(),p.y(),width(),height());
+    return bbox.contains(globalPos);
+}
+
 
 
 void TabWidget::keyPressEvent ( QKeyEvent * event ){
@@ -673,14 +836,7 @@ void TabWidget::keyPressEvent ( QKeyEvent * event ){
         event->ignore();
     }
 }
-void TabWidget::enterEvent(QEvent *event)
-{   QWidget::enterEvent(event);
-    setFocus();
-}
-void TabWidget::leaveEvent(QEvent *event)
-{
-    QWidget::leaveEvent(event);
-}
+
 
 void TabWidget::moveTab(QWidget* what,TabWidget *where){
     TabWidget* from = dynamic_cast<TabWidget*>(what->parentWidget());
@@ -708,5 +864,26 @@ void TabWidget::moveTab(QWidget* what,TabWidget *where){
     where->appendTab(what);
     
     where->getGui()->getApp()->triggerAutoSave();
+}
+
+DragPixmap::DragPixmap(const QPixmap& pixmap,const QPoint& offsetFromMouse)
+: QWidget(0, Qt::ToolTip | Qt::FramelessWindowHint | Qt::X11BypassWindowManagerHint)
+, _pixmap(pixmap)
+, _offset(offsetFromMouse)
+{
+    setAttribute( Qt::WA_TransparentForMouseEvents );
+    resize(_pixmap.width(), _pixmap.height());
+    setWindowOpacity(0.7);
+}
+
+
+void DragPixmap::update(const QPoint& globalPos) {
+    move(globalPos - _offset);
+}
+
+void DragPixmap::paintEvent(QPaintEvent*)
+{
+    QPainter p(this);
+    p.drawPixmap(0,0,_pixmap);
 }
 

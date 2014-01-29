@@ -115,7 +115,7 @@ public slots:
 
 
 private:
-    
+        
     bool eventFilter(QObject *target, QEvent *event);
     
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;

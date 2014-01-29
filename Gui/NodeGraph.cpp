@@ -422,6 +422,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
     }
     scene()->update();
     
+    
     _evtState=DEFAULT;
     setCursor(QCursor(Qt::ArrowCursor));
 }
@@ -480,6 +481,8 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
     }
     _lastScenePosClick = newPos;
     update();
+    
+    qApp->sendEvent(parentWidget(), event);
     /*Now update navigator*/
     //updateNavigator();
 }

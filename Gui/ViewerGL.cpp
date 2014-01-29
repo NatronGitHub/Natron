@@ -1213,6 +1213,7 @@ void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
                                             toImgCoordinates_fast(event->x(), event->y()))){
         updateGL();
     }
+
 }
 void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
     QPointF pos = toImgCoordinates_fast(event->x(), event->y());
@@ -1262,6 +1263,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
             updateGL();
         }
     }
+    qApp->sendEvent(_imp->viewerTab->parentWidget(), event);
 
 
     //FIXME: This is bugged, somehow we can't set our custom picker cursor...

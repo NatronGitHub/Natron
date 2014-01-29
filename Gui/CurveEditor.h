@@ -143,6 +143,8 @@ public slots:
     void onCurrentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*);
 
 private:
+    
+    
     // FIXME: PIMPL
     void recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *curves);
     

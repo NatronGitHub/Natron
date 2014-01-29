@@ -55,6 +55,23 @@ private:
     QVBoxLayout* _layout;
 };
 
+class DragPixmap : public QWidget {
+    
+    QPixmap _pixmap;
+    QPoint _offset;
+    
+public:
+    
+    DragPixmap(const QPixmap& pixmap,const QPoint& offsetFromMouse);
+    
+    virtual ~DragPixmap(){}
+    
+    void update(const QPoint& globalPos);
+    
+private:
+    
+    virtual void paintEvent(QPaintEvent*) OVERRIDE;
+};
 
 class TabBar : public QTabBar {
     Q_OBJECT
@@ -64,13 +81,21 @@ public:
     
     virtual ~TabBar(){}
 
+    //public slots:
+    
+    // void dragTargetChanged(QWidget* target);
+    
 private:
     virtual void mousePressEvent(QMouseEvent* event);
 
     virtual void mouseMoveEvent(QMouseEvent* event);
-
-private:
+    
+    virtual void mouseReleaseEvent(QMouseEvent* event);
+    
+    QPixmap makePixmapForDrag(int index);
+    
     QPoint _dragPos;
+    DragPixmap* _dragPix;
     TabWidget* _tabWidget; // ptr to the tabWidget
 };
 
@@ -139,7 +164,23 @@ public:
     void removeSplit(TabWidget* tab);
     
     static void moveTab(QWidget* what,TabWidget* where);
+    
+    /**
+     * @brief Starts dragging the selected panel. The following actions are performed:
+     * - The panel is removed from it's current TabWidget
+     * - The cursor is displaying a screenshot of the panel that is going to be dragged. The Gui remembers
+     * the last cursor.
+     * - The Gui receives a pointer to this object making it able to other panels to know
+     * the currently dragged panel.
+     **/
+    void startDragTab(int index);
+    
+    void stopDragTab(const QPoint& globalPos);
 
+    void setDrawDropRect(bool draw);
+    
+    bool isWithinWidget(const QPoint& globalPos) const;
+    
 public slots:
     /*Makes current the tab at index "index". Passing an
      index out of range will have no effect.*/
@@ -161,33 +202,26 @@ public slots:
     
     void closePane();
     
-    void floatPane();
+    void floatPane(QPoint* position = NULL);
     
     void closeFloatingPane();
     
     void floatCurrentWidget();
     
+    void floatTab(QWidget* tab);
+    
     void closeCurrentWidget();
     
     void closeTab(int index);
-
+    
     
 private:
-    
-    virtual void dragEnterEvent(QDragEnterEvent* event);
-    
-    virtual void dragLeaveEvent(QDragLeaveEvent* event);
     
     virtual void dropEvent(QDropEvent* event);
     
     virtual void paintEvent(QPaintEvent* event);
     
     virtual void keyPressEvent (QKeyEvent *event);
-    
-    virtual void enterEvent(QEvent *event);
-    
-    virtual void leaveEvent(QEvent *event);
-
     
     bool destroyTab(QWidget* tab) WARN_UNUSED_RETURN;
 
@@ -216,8 +250,8 @@ private:
     bool _drawDropRect;
 
     bool _fullScreen;
-
     std::map<TabWidget*,bool> _userSplits;//< for each split, whether the user pressed split vertically (true) or horizontally (false)
+
 
 };
 

@@ -1557,7 +1557,6 @@ void Group_KnobGui::setChecked(bool b)
     }
     _checked = b;
     
-    //qApp->installEventFilter(this);
     
     for (U32 i = 0 ; i < _children.size() ; ++i) {
         if (!b) {
@@ -1566,7 +1565,6 @@ void Group_KnobGui::setChecked(bool b)
             _children[i].first->show();
         }
     }
-    // qApp->removeEventFilter(this);
 }
 
 bool Group_KnobGui::eventFilter(QObject */*target*/, QEvent */*event*/) {
