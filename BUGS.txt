@@ -8,15 +8,13 @@
 
 - On Ubuntu 13.10 with Qt5, Natron is non-functional (transparent widgets, extra windows...)
 
-- Sometimes when floating a pane (node graph, curve editor) the panes are displayed properly in the floating window and the user has to be click a 2nd time on the "float pane" button.
-
 ** Here is a list of non-blocking bugs / wanted features:
 
 - derive and integrate are not implemented for animated Double,
   Double2D, Double3D, RGBA, RGB parameters (derive returns 0,
   integrate returns (t2-t1)*getValue())
 
-- The OFX keyframe interface is missing some functions unimplemented yet:
+- The OFX keyframe interface is missing some unimplemented functions yet:
 OfxParameterSuiteV1::paramEditBegin — Used to group any parameter changes for undo/redo purposes
 OfxParameterSuiteV1::paramEditEnd — Used to group any parameter changes for undo/redo purposes
 
