@@ -1127,6 +1127,11 @@ void Gui::createReader(){
                         break;
                     } else {
                         fk->setValue<QStringList>(files);
+                        
+                        if (n->isPreviewEnabled()) {
+                            n->refreshPreviewImage(_appInstance->getTimeLine()->currentFrame());
+                        }
+                        
                         break;
                     }
                 

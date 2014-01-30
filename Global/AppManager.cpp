@@ -441,7 +441,7 @@ Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVers
     if (openImageFileDialog && !requestedByLoad) {
         node->getLiveInstance()->openImageFileKnob();
     }
-    
+ 
     return node;
 }
 
