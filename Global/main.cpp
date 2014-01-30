@@ -217,10 +217,6 @@ int main(int argc, char *argv[])
     
     AppManager* manager = AppManager::instance(); //< load the AppManager singleton
     
-    if (splashScreen) {
-        QObject::connect(manager,SIGNAL(loadingStatusChanged(QString)),splashScreen,SLOT(updateText(QString)));
-    }
-    
     manager->load(splashScreen);
     
     if (isBackGround && !mainProcessServerName.isEmpty()) {

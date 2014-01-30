@@ -950,8 +950,6 @@ static void getPixmapForGrouping(QPixmap* pixmap,const QString& grouping) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_MULTIVIEW_GROUPING, pixmap);
     } else if (grouping == PLUGIN_GROUP_DEFAULT) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
-    } else if (grouping.contains(PLUGIN_GROUP_OFX)) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_OPEN_EFFECTS_GROUPING, pixmap);
     } else {
         appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
     }
