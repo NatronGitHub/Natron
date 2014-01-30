@@ -80,6 +80,11 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
      All these subclasses need a valid pointer to an this. Hence we need to set the pointer to this in
      OfxImageEffect BEFORE calling populate().
      */
+    
+    if (context == kOfxImageEffectContextWriter) {
+        setAsOutputNode();
+    }
+    
     OFX::Host::PluginHandle* ph = plugin->getPluginHandle();
     assert(ph->getOfxPlugin());
     assert(ph->getOfxPlugin()->mainEntry);

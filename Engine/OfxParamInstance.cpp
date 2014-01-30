@@ -1409,7 +1409,6 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
                 _fileKnob->turnOffSequences();
             }
         } else {
-            _node->setAsOutputNode(); // IMPORTANT !
             _outputFileKnob = Natron::createKnob<OutputFile_Knob>(node, getParamLabel(this));
             if(fileIsOutput){
                 _outputFileKnob->setAsOutputImageFile();

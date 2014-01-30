@@ -235,12 +235,13 @@ int main(int argc, char *argv[])
             delete mainInstance;
         }
     }
-	  
+ 
     if(!isBackGround){
         manager->hideSplashScreen();
     }else{
         //in background mode, exit...
         AppManager::quit();
+        std::cout << "DELETE OK" << std::endl;
         return 0;
     }
     
