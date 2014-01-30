@@ -12,6 +12,7 @@
 #define PROCESSHANDLER_H
 
 #include <QProcess>
+#include <QThread>
 
 #include "Global/GlobalDefines.h"
 
@@ -23,7 +24,6 @@ class OutputEffectInstance;
 class RenderingProgressDialog;
 
 //qt
-class QProcess;
 class QLocalServer;
 class QLocalSocket;
 class QString;

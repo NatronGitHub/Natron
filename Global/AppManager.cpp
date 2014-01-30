@@ -1165,7 +1165,7 @@ void AppManager::abortAnyProcessing() {
 
 bool AppManager::writeToOutputPipe(const QString& longMessage,const QString& shortMessage) {
     if(!_backgroundIPC) {
-        std::cout << longMessage.toStdString() << std::endl;
+        qDebug() << longMessage;
         return false;
     }
     _backgroundIPC->writeToOutputChannel(shortMessage.toLatin1());

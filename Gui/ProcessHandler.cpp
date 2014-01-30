@@ -15,7 +15,7 @@
 #include <QLocalServer>
 #include <QLocalSocket>
 #include <QCoreApplication>
-
+#include <QTemporaryFile>
 
 #include "Global/AppManager.h"
 #include "Engine/KnobFile.h"
@@ -106,20 +106,22 @@ void ProcessHandler::onNewConnectionPending() {
 
 void ProcessHandler::onDataWrittenToSocket() {
     QString str = _bgProcessOutputSocket->readLine();
-    if(str.contains(kFrameRenderedStringShort)){
+    while(str.endsWith('\n')) {
+        str.chop(1);
+    }
+    qDebug() << "ProcessHandler::onDataWrittenToSocket() received " << str;
+    if (str.startsWith(kFrameRenderedStringShort)) {
         str = str.remove(kFrameRenderedStringShort);
         _dialog->onFrameRendered(str.toInt());
-        qDebug() << str;
-    }else if(str.contains(kRenderingFinishedStringShort)){
-        qDebug() << str;
+    } else if (str.startsWith(kRenderingFinishedStringShort)) {
         if(_process->state() == QProcess::Running) {
             _process->waitForFinished();
         }
-    }else if(str.contains(kProgressChangedStringShort)){
+    } else if (str.startsWith(kProgressChangedStringShort)) {
         str = str.remove(kProgressChangedStringShort);
         _dialog->onCurrentFrameProgress(str.toInt());
         
-    }else if(str.contains(kBgProcessServerCreatedShort)){
+    } else if (str.startsWith(kBgProcessServerCreatedShort)) {
         str = str.remove(kBgProcessServerCreatedShort);
         ///the bg process wants us to create the pipe for its input
         if (!_bgProcessInputSocket) {
@@ -127,7 +129,7 @@ void ProcessHandler::onDataWrittenToSocket() {
             QObject::connect(_bgProcessInputSocket, SIGNAL(connected()), this, SLOT(onInputPipeConnectionMade()));
             _bgProcessInputSocket->connectToServer(str,QLocalSocket::ReadWrite);
         }
-    } else if(str.contains(kRenderingStartedShort)) {
+    } else if(str.startsWith(kRenderingStartedShort)) {
         ///if the user pressed cancel prior to the pipe being created, wait for it to be created and send the abort
         ///message right away
         if (_earlyCancel) {
@@ -135,6 +137,9 @@ void ProcessHandler::onDataWrittenToSocket() {
             _earlyCancel = false;
             onProcessCanceled();
         }
+    } else {
+        qDebug() << "Error: Unable to interpret message: " << str;
+        throw std::runtime_error("ProcessHandler::onDataWrittenToSocket() received erroneous message");
     }
 
 }
@@ -159,7 +164,7 @@ void ProcessHandler::onProcessCanceled(){
     if(!_bgProcessInputSocket) {
         _earlyCancel = true;
     } else {
-        _bgProcessInputSocket->write(QString(QString(kAbortRenderingStringShort) + QChar('\n')).toLatin1());
+        _bgProcessInputSocket->write((QString(kAbortRenderingStringShort) + '\n').toLatin1());
         _bgProcessInputSocket->flush();
         if(_process->state() == QProcess::Running) {
             _process->waitForFinished();
@@ -209,7 +214,7 @@ ProcessInputChannel::~ProcessInputChannel() {
 }
 
 void ProcessInputChannel::writeToOutputChannel(const QString& message){
-    _backgroundOutputPipe->write(message.toLatin1());
+    _backgroundOutputPipe->write((message+'\n').toLatin1());
     _backgroundOutputPipe->flush();
 }
 
@@ -253,8 +258,13 @@ void ProcessInputChannel::initialize() {
     QDateTime now = QDateTime::currentDateTime();
     _backgroundIPCServer = new QLocalServer();
     QObject::connect(_backgroundIPCServer,SIGNAL(newConnection()),this,SLOT(onNewConnectionPending()));
-    
-    QString serverName(NATRON_APPLICATION_NAME "_INPUT_PIPE_" + now.toString());
+
+    QString serverName;
+    {
+        QTemporaryFile tmpf(QDir::tempPath() + QDir::separator() + NATRON_APPLICATION_NAME "_INPUT_SOCKET");
+        tmpf.open();
+        serverName = tmpf.fileName();
+    }
     _backgroundIPCServer->listen(serverName);
     
     if(!_backgroundOutputPipe->waitForConnected(5000)){ //< blocking, we wait for the server to respond
