@@ -1588,6 +1588,17 @@ QString SequenceFileDialog::getSequencePatternFromLineEdit(){
 QStringList SequenceFileDialog::filesListFromPattern(const QString& pattern){
     QStringList ret;
     QString unpathed = removePath(pattern);
+    
+    QString patternExtension;
+    int lastDotPos = unpathed.lastIndexOf('.');
+    if (lastDotPos != -1) {
+        ++lastDotPos; //bypass the '.'
+        while (lastDotPos < unpathed.size()) {
+            patternExtension.push_back(unpathed.at(lastDotPos));
+            ++lastDotPos;
+        }
+    }
+    
     int indexOfCommonPart = pattern.indexOf(unpathed);
     QString path = pattern.left(indexOfCommonPart);
     assert(pattern == (path + unpathed));
@@ -1605,7 +1616,13 @@ QStringList SequenceFileDialog::filesListFromPattern(const QString& pattern){
     if(d.isReadable()) {
         QStringList files = d.entryList();
         for (int j = 0; j < files.size() ; ++j) {
-            if (files.at(j).contains(commonPart)) {
+            QString file = files.at(j);
+            int fnumber;
+            QString extension;
+            SequenceDialogProxyModel::parseFilename(file, &fnumber, extension);
+            
+            
+            if (file == commonPart && extension == patternExtension) {
                 ret << QString(path + files.at(j));
             }
         }
