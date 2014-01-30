@@ -28,6 +28,7 @@
 #include <QScrollBar>
 #include <QUndoGroup>
 #include <QDropEvent>
+#include <QTextDocument> // for Qt::convertFromPlainText
 
 #include "Global/AppManager.h"
 
@@ -1041,7 +1042,7 @@ void Gui::addToolButttonsToToolBar(){
             button->setIcon(_toolButtons[i]->getIcon());
             button->setMenu(_toolButtons[i]->getMenu());
             button->setPopupMode(QToolButton::InstantPopup);
-            button->setToolTip(_toolButtons[i]->getLabel());
+            button->setToolTip(Qt::convertFromPlainText(_toolButtons[i]->getLabel(), Qt::WhiteSpaceNormal));
             _toolBox->addWidget(button);
         }
     }

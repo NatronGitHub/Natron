@@ -18,6 +18,7 @@
 #include <QtConcurrentRun>
 #include <QFontMetrics>
 #include <QMenu>
+#include <QTextDocument> // for Qt::convertFromPlainText
 
 #include "Gui/Edge.h"
 #include "Gui/DockablePanel.h"
@@ -268,13 +269,12 @@ void NodeGui::markInputNull(Edge* e){
 
 void NodeGui::updateChannelsTooltip(const Natron::ChannelSet& chan){
     QString tooltip;
-    tooltip.append("Channels in input: ");
+    tooltip += "Channels in input: ";
     foreachChannels( z,chan){
-        tooltip.append("\n");
-        tooltip.append(Natron::getChannelName(z).c_str());
-        
+        tooltip += "\n";
+        tooltip += Natron::getChannelName(z).c_str();
     }
-    _channelsPixmap->setToolTip(tooltip);
+    _channelsPixmap->setToolTip(Qt::convertFromPlainText(tooltip, Qt::WhiteSpaceNormal));
 }
 
 void NodeGui::updatePreviewImage(int time){

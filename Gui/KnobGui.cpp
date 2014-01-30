@@ -124,7 +124,7 @@ void KnobGui::createGUI(QGridLayout* layout,int row){
 void KnobGui::createAnimationButton(QGridLayout* layout,int row){
     _animationMenu = new QMenu(layout->parentWidget());
     _animationButton = new AnimationButton(this,"A",layout->parentWidget());
-    _animationButton->setToolTip("Animation menu");
+    _animationButton->setToolTip(Qt::convertFromPlainText("Animation menu", Qt::WhiteSpaceNormal));
     QObject::connect(_animationButton,SIGNAL(clicked()),this,SLOT(showAnimationMenu()));
     layout->addWidget(_animationButton, row, 3,Qt::AlignLeft);
 }
@@ -384,6 +384,11 @@ void KnobGui::removeKeyFrame(SequenceTime time,int dimension){
     emit keyFrameRemoved();
     updateGUI(dimension,_knob->getValue(dimension));
     checkAnimationLevel(dimension);
+}
+
+QString KnobGui::toolTip() const
+{
+    return Qt::convertFromPlainText(getKnob()->getHintToolTip().c_str(), Qt::WhiteSpaceNormal);
 }
 
 void KnobGui::onRemoveKeyActionTriggered(){

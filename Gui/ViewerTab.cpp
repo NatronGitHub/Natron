@@ -71,7 +71,7 @@ _viewerNode(node)
     //_firstRowLayout->addWidget(_viewerLayers);
     
     _viewerChannels = new ComboBox(_firstSettingsRow);
-    _viewerChannels->setToolTip("<p></br><b>Channels: \n</b></p>"
+    _viewerChannels->setToolTip("<p><b>Channels: \n</b></p>"
                                 "The channels to display on the viewer.");
     _firstRowLayout->addWidget(_viewerChannels);
     
@@ -85,7 +85,7 @@ _viewerNode(node)
     QObject::connect(_viewerChannels, SIGNAL(currentIndexChanged(int)), this, SLOT(onViewerChannelsChanged(int)));
     
     _zoomCombobox = new ComboBox(_firstSettingsRow);
-    _zoomCombobox->setToolTip("<p></br><b>Zoom: \n</b></p>"
+    _zoomCombobox->setToolTip("<p><b>Zoom: \n</b></p>"
                               "The zoom applied to the image on the viewer.");
     _zoomCombobox->addItem("10%");
     _zoomCombobox->addItem("25%");
@@ -126,7 +126,7 @@ _viewerNode(node)
     _mainLayout->addWidget(_secondSettingsRow);
     
     _gainBox = new SpinBox(_secondSettingsRow,SpinBox::DOUBLE_SPINBOX);
-    _gainBox->setToolTip("<p></br><b>Gain: \n</b></p>"
+    _gainBox->setToolTip("<p><b>Gain: \n</b></p>"
                          "Multiplies the image by \nthis amount before display.");
     _gainBox->setIncrement(0.1);
     _gainBox->setValue(1.0);
@@ -135,18 +135,18 @@ _viewerNode(node)
     
     
     _gainSlider=new ScaleSliderQWidget(0, 64,1.0,Natron::LINEAR_SCALE,_secondSettingsRow);
-    _gainSlider->setToolTip("<p></br><b>Gain: \n</b></p>"
+    _gainSlider->setToolTip("<p><b>Gain: \n</b></p>"
                             "Multiplies the image by \nthis amount before display.");
     _secondRowLayout->addWidget(_gainSlider);
     
     
     _refreshButton = new Button(_secondSettingsRow);
     _refreshButton->setToolTip("Force a new render of the current frame."
-                               "<p></br><b>Keyboard shortcut: U</b></p>");
+                               "<p><b>Keyboard shortcut: U</b></p>");
     _secondRowLayout->addWidget(_refreshButton);
     
     _viewerColorSpace=new ComboBox(_secondSettingsRow);
-    _viewerColorSpace->setToolTip("<p></br><b>Viewer color process: \n</b></p>"
+    _viewerColorSpace->setToolTip("<p><b>Viewer color process: \n</b></p>"
                                   "The operation applied to the image before it is displayed\n"
                                   "on screen. All the color pipeline \n"
                                   "is linear,thus the process converts from linear\n"
@@ -159,7 +159,7 @@ _viewerNode(node)
     _viewerColorSpace->setCurrentIndex(1);
     
     _viewsComboBox = new ComboBox(_secondSettingsRow);
-    _viewsComboBox->setToolTip("<p></br><b>Active view: \n</b></p>"
+    _viewsComboBox->setToolTip("<p><b>Active view: \n</b></p>"
                                "Tells the viewer what view should be displayed.");
     _secondRowLayout->addWidget(_viewsComboBox);
     _viewsComboBox->hide();
@@ -192,7 +192,7 @@ _viewerNode(node)
     
     _currentFrameBox=new SpinBox(_playerButtonsContainer,SpinBox::INT_SPINBOX);
     _currentFrameBox->setValue(0);
-    _currentFrameBox->setToolTip("<p></br><b>Current frame number</b></p>");
+    _currentFrameBox->setToolTip("<p><b>Current frame number</b></p>");
     _playerLayout->addWidget(_currentFrameBox);
     
     _playerLayout->addStretch();
@@ -200,7 +200,7 @@ _viewerNode(node)
     firstFrame_Button = new Button(_playerButtonsContainer);
     QKeySequence firstFrameKey(Qt::CTRL + Qt::Key_Left);
     QString tooltip = "First frame";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(firstFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     firstFrame_Button->setToolTip(tooltip);
@@ -211,7 +211,7 @@ _viewerNode(node)
     previousKeyFrame_Button->hide();
     QKeySequence previousKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Left);
     tooltip = "Previous keyframe";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(previousKeyFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     previousKeyFrame_Button->setToolTip(tooltip);
@@ -221,7 +221,7 @@ _viewerNode(node)
     play_Backward_Button=new Button(_playerButtonsContainer);
     QKeySequence playbackFrameKey(Qt::Key_J);
     tooltip = "Play backward";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(playbackFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     play_Backward_Button->setToolTip(tooltip);
@@ -232,7 +232,7 @@ _viewerNode(node)
     previousFrame_Button = new Button(_playerButtonsContainer);
     QKeySequence previousFrameKey(Qt::Key_Left);
     tooltip = "Previous frame";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(previousFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     previousFrame_Button->setToolTip(tooltip);
@@ -242,7 +242,7 @@ _viewerNode(node)
     stop_Button = new Button(_playerButtonsContainer);
     QKeySequence stopKey(Qt::Key_K);
     tooltip = "Stop";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(stopKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     stop_Button->setToolTip(tooltip);
@@ -252,7 +252,7 @@ _viewerNode(node)
     nextFrame_Button = new Button(_playerButtonsContainer);
     QKeySequence nextFrameKey(Qt::Key_Right);
     tooltip = "Next frame";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(nextFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     nextFrame_Button->setToolTip(tooltip);
@@ -262,7 +262,7 @@ _viewerNode(node)
     play_Forward_Button = new Button(_playerButtonsContainer);
     QKeySequence playKey(Qt::Key_L);
     tooltip = "Play forward";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(playKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     play_Forward_Button->setToolTip(tooltip);
@@ -274,7 +274,7 @@ _viewerNode(node)
     nextKeyFrame_Button->hide();
     QKeySequence nextKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Right);
     tooltip = "Next keyframe";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(nextKeyFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     nextKeyFrame_Button->setToolTip(tooltip);
@@ -284,7 +284,7 @@ _viewerNode(node)
     lastFrame_Button = new Button(_playerButtonsContainer);
     QKeySequence lastFrameKey(Qt::CTRL + Qt::Key_Right);
     tooltip = "Last frame";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(lastFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     lastFrame_Button->setToolTip(tooltip);
@@ -297,7 +297,7 @@ _viewerNode(node)
     previousIncrement_Button = new Button(_playerButtonsContainer);
     QKeySequence previousIncrFrameKey(Qt::SHIFT + Qt::Key_Left);
     tooltip = "Previous increment";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(previousIncrFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     previousIncrement_Button->setToolTip(tooltip);
@@ -306,7 +306,7 @@ _viewerNode(node)
     
     incrementSpinBox=new SpinBox(_playerButtonsContainer);
     incrementSpinBox->setValue(10);
-    incrementSpinBox->setToolTip("<p></br><b>Frame increment: \n</b></p>"
+    incrementSpinBox->setToolTip("<p><b>Frame increment: \n</b></p>"
                                  "The previous/next increment buttons step"
                                  " with this increment.");
     _playerLayout->addWidget(incrementSpinBox);
@@ -315,7 +315,7 @@ _viewerNode(node)
     nextIncrement_Button = new Button(_playerButtonsContainer);
     QKeySequence nextIncrFrameKey(Qt::SHIFT + Qt::Key_Right);
     tooltip = "Next increment";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(nextIncrFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     nextIncrement_Button->setToolTip(tooltip);
@@ -337,7 +337,7 @@ _viewerNode(node)
     fpsBox->decimals(1);
     fpsBox->setValue(24.0);
     fpsBox->setIncrement(0.1);
-    fpsBox->setToolTip("<p></br><b>fps: \n</b></p>"
+    fpsBox->setToolTip("<p><b>fps: \n</b></p>"
                        "Enter here the desired playback rate.");
     _playerLayout->addWidget(fpsBox);
     
@@ -392,13 +392,13 @@ _viewerNode(node)
     
     
     _centerViewerButton->setToolTip("Scales the image so it doesn't exceed the size of the viewer and centers it."
-                                    "<p></br><b>Keyboard shortcut: F</b></p>");
+                                    "<p><b>Keyboard shortcut: F</b></p>");
     
-    _clipToProjectFormatButton->setToolTip("<p> Clips the portion of the image displayed <br/>"
-                                           "on the viewer to the project format. <br/>"
-                                           "When off, everything in the union of all nodes <br/>"
-                                           "region of definition will be displayed. <br/> <br/>"
-                                           "<b>Keyboard shortcut: C</b></p>");
+    _clipToProjectFormatButton->setToolTip("<p>Clips the portion of the image displayed "
+                                           "on the viewer to the project format. "
+                                           "When off, everything in the union of all nodes "
+                                           "region of definition will be displayed.</p>"
+                                           "<p><b>Keyboard shortcut: C</b></p>");
     /*=================================================*/
     
     /*frame seeker*/

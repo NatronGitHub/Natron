@@ -18,6 +18,7 @@
 #include <QLabel>
 #include <QSplitter>
 #include <QDebug>
+#include <QTextDocument> // for Qt::convertFromPlainText
 
 #include "Global/AppManager.h"
 
@@ -117,9 +118,10 @@ _project(project)
     _fromViewerLineLayout->addWidget(_copyFromViewerCombo);
     
     _copyFromViewerButton = new Button("Copy from",_fromViewerLine);
-    _copyFromViewerButton->setToolTip("Fill the new format with the currently"
+    _copyFromViewerButton->setToolTip(Qt::convertFromPlainText(
+                                      "Fill the new format with the currently"
                                       " displayed region of definition of the viewer"
-                                      " indicated on the left.");
+                                      " indicated on the left.", Qt::WhiteSpaceNormal));
     QObject::connect(_copyFromViewerButton,SIGNAL(clicked()),this,SLOT(onCopyFromViewer()));
     _mainLayout->addWidget(_fromViewerLine);
     

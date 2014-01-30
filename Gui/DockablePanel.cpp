@@ -19,6 +19,7 @@
 #include <QUndoCommand>
 #include <QToolTip>
 #include <QPaintEvent>
+#include <QTextDocument> // for Qt::convertFromPlainText
 
 #include "Global/AppManager.h"
 
@@ -86,24 +87,7 @@ DockablePanel::DockablePanel(KnobHolder* holder
         QPixmap pixHelp ;
         appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
         _helpButton = new Button(QIcon(pixHelp),"",_headerWidget);
-        
-        QString tooltip = helpToolTip;
-        int countSinceLastNewLine = 0;
-        for (int i = 0; i < tooltip.size();++i) {
-            if(tooltip.at(i) != QChar('\n')){
-                ++countSinceLastNewLine;
-            }else{
-                countSinceLastNewLine = 0;
-            }
-            if (countSinceLastNewLine%80 == 0 && i!=0) {
-                /*Find closest word end and insert a new line*/
-                while(i < tooltip.size() && tooltip.at(i)!=QChar(' ')){
-                    ++i;
-                }
-                tooltip.insert(i, QChar('\n'));
-            }
-        }
-        _helpButton->setToolTip(tooltip);
+        _helpButton->setToolTip(Qt::convertFromPlainText(helpToolTip, Qt::WhiteSpaceNormal));
         _helpButton->setFixedSize(15, 15);
         QObject::connect(_helpButton, SIGNAL(clicked()), this, SLOT(showHelp()));
         
@@ -130,7 +114,7 @@ DockablePanel::DockablePanel(KnobHolder* holder
         icUndo.addPixmap(pixUndo,QIcon::Normal);
         icUndo.addPixmap(pixUndo_gray,QIcon::Disabled);
         _undoButton = new Button(icUndo,"",_headerWidget);
-        _undoButton->setToolTip("Undo the last change made to this operator");
+        _undoButton->setToolTip(Qt::convertFromPlainText("Undo the last change made to this operator", Qt::WhiteSpaceNormal));
         _undoButton->setEnabled(false);
         
         QPixmap pixRedo ;
@@ -141,7 +125,7 @@ DockablePanel::DockablePanel(KnobHolder* holder
         icRedo.addPixmap(pixRedo,QIcon::Normal);
         icRedo.addPixmap(pixRedo_gray,QIcon::Disabled);
         _redoButton = new Button(icRedo,"",_headerWidget);
-        _redoButton->setToolTip("Redo the last change undone to this operator");
+        _redoButton->setToolTip(Qt::convertFromPlainText("Redo the last change undone to this operator", Qt::WhiteSpaceNormal));
         _redoButton->setEnabled(false);
         
         
