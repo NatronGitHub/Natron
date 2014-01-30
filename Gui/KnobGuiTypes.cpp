@@ -79,7 +79,7 @@ Int_KnobGui::~Int_KnobGui()
 void Int_KnobGui::createWidget(QGridLayout *layout, int row)
 {
     _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-    _descriptionLabel->setToolTip(getKnob()->getHintToolTip().c_str());
+    _descriptionLabel->setToolTip(toolTip());
     layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
     
     int dim = getKnob()->getDimension();
@@ -118,14 +118,14 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row)
         box->setMaximum(max);
         box->setMinimum(min);
         box->setIncrement(increments[i]);
-        box->setToolTip(getKnob()->getHintToolTip().c_str());
+        box->setToolTip(toolTip());
         boxContainerLayout->addWidget(box);
         if (getKnob()->getDimension() == 1 && !intKnob->isSliderDisabled()) {
             
             if ((max - min) < SLIDER_MAX_RANGE && max < INT_MAX && min > INT_MIN) {
                 _slider = new ScaleSliderQWidget(min, max,
                                           getKnob()->getValue<int>(), Natron::LINEAR_SCALE, layout->parentWidget());
-                _slider->setToolTip(getKnob()->getHintToolTip().c_str());
+                _slider->setToolTip(toolTip());
                 QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
                 boxContainerLayout->addWidget(_slider);
             }
@@ -252,11 +252,11 @@ void Int_KnobGui::setEnabled()
 void Bool_KnobGui::createWidget(QGridLayout *layout, int row)
 {
     _descriptionLabel = new ClickableLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-    _descriptionLabel->setToolTip(getKnob()->getHintToolTip().c_str());
+    _descriptionLabel->setToolTip(toolTip());
     layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
     
     _checkBox = new AnimatedCheckBox(layout->parentWidget());
-    _checkBox->setToolTip(getKnob()->getHintToolTip().c_str());
+    _checkBox->setToolTip(toolTip());
     QObject::connect(_checkBox, SIGNAL(clicked(bool)), this, SLOT(onCheckBoxStateChanged(bool)));
     QObject::connect(_descriptionLabel, SIGNAL(clicked(bool)), this, SLOT(onCheckBoxStateChanged(bool)));
     layout->addWidget(_checkBox, row, 1, Qt::AlignLeft);
@@ -346,7 +346,7 @@ Double_KnobGui::~Double_KnobGui()
 void Double_KnobGui::createWidget(QGridLayout *layout, int row)
 {
     _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-    _descriptionLabel->setToolTip(getKnob()->getHintToolTip().c_str());
+    _descriptionLabel->setToolTip(toolTip());
     layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
     
     QWidget *container = new QWidget(layout->parentWidget());
@@ -387,7 +387,7 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row)
         box->setMinimum(min);
         box->decimals(decimals[i]);
         box->setIncrement(increments[i]);
-        box->setToolTip(getKnob()->getHintToolTip().c_str());
+        box->setToolTip(toolTip());
         boxContainerLayout->addWidget(box);
         
         if (getKnob()->getDimension() == 1 && !dbl_knob->isSliderDisabled()) {
@@ -395,7 +395,7 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row)
             if ((max - min) < SLIDER_MAX_RANGE && max < DBL_MAX && min > -DBL_MAX) {
                 _slider = new ScaleSliderQWidget(min, max,
                                           getKnob()->getValue<double>(), Natron::LINEAR_SCALE, layout->parentWidget());
-                _slider->setToolTip(getKnob()->getHintToolTip().c_str());
+                _slider->setToolTip(toolTip());
                 QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
                 boxContainerLayout->addWidget(_slider);
             }
@@ -526,7 +526,7 @@ void Button_KnobGui::createWidget(QGridLayout *layout, int row)
 {
     _button = new Button(QString(QString(getKnob()->getDescription().c_str())), layout->parentWidget());
     QObject::connect(_button, SIGNAL(pressed()), this, SLOT(emitValueChanged()));
-    _button->setToolTip(getKnob()->getHintToolTip().c_str());
+    _button->setToolTip(toolTip());
     layout->addWidget(_button, row, 0, Qt::AlignRight);
 }
 
@@ -570,7 +570,7 @@ Choice_KnobGui::~Choice_KnobGui()
 void Choice_KnobGui::createWidget(QGridLayout *layout, int row)
 {
     _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-    _descriptionLabel->setToolTip(getKnob()->getHintToolTip().c_str());
+    _descriptionLabel->setToolTip(toolTip());
     layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
     
     _comboBox = new ComboBox(layout->parentWidget());
@@ -583,7 +583,7 @@ void Choice_KnobGui::createWidget(QGridLayout *layout, int row)
     if (_entries.size() > 0) {
         _comboBox->setCurrentText(_entries[0].c_str());
     }
-    _comboBox->setToolTip(getKnob()->getHintToolTip().c_str());
+    _comboBox->setToolTip(toolTip());
     QObject::connect(_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
     layout->addWidget(_comboBox, row, 1, Qt::AlignLeft);
 }
@@ -887,7 +887,7 @@ void Choice_KnobGui::setEnabled()
 void Separator_KnobGui::createWidget(QGridLayout *layout, int row)
 {
     _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-    _descriptionLabel->setToolTip(getKnob()->getHintToolTip().c_str());
+    _descriptionLabel->setToolTip(toolTip());
     layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
     
     _line = new QFrame(layout->parentWidget());
@@ -947,7 +947,7 @@ Color_KnobGui::~Color_KnobGui()
 void Color_KnobGui::createWidget(QGridLayout *layout, int row)
 {
     _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-    _descriptionLabel->setToolTip(getKnob()->getHintToolTip().c_str());
+    _descriptionLabel->setToolTip(toolTip());
     layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
     
     mainContainer = new QWidget(layout->parentWidget());
@@ -980,10 +980,10 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
     _rBox->setMaximum(1.);
     _rBox->setMinimum(0.);
     _rBox->setIncrement(0.1);
-    _rBox->setToolTip(getKnob()->getHintToolTip().c_str());
+    _rBox->setToolTip(toolTip());
     
     _rLabel = new QLabel("r:", boxContainers);
-    _rLabel->setToolTip(getKnob()->getHintToolTip().c_str());
+    _rLabel->setToolTip(toolTip());
     
     boxLayout->addWidget(_rLabel);
     boxLayout->addWidget(_rBox);
@@ -992,10 +992,10 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
         _gBox->setMaximum(1.);
         _gBox->setMinimum(0.);
         _gBox->setIncrement(0.1);
-        _gBox->setToolTip(getKnob()->getHintToolTip().c_str());
+        _gBox->setToolTip(toolTip());
         
         _gLabel = new QLabel("g:", boxContainers);
-        _gLabel->setToolTip(getKnob()->getHintToolTip().c_str());
+        _gLabel->setToolTip(toolTip());
         
         boxLayout->addWidget(_gLabel);
         boxLayout->addWidget(_gBox);
@@ -1003,10 +1003,10 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
         _bBox->setMaximum(1.);
         _bBox->setMinimum(0.);
         _bBox->setIncrement(0.1);
-        _bBox->setToolTip(getKnob()->getHintToolTip().c_str());
+        _bBox->setToolTip(toolTip());
         
         _bLabel = new QLabel("b:", boxContainers);
-        _bLabel->setToolTip(getKnob()->getHintToolTip().c_str());
+        _bLabel->setToolTip(toolTip());
         
         boxLayout->addWidget(_bLabel);
         boxLayout->addWidget(_bBox);
@@ -1015,10 +1015,10 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
         _aBox->setMaximum(1.);
         _aBox->setMinimum(0.);
         _aBox->setIncrement(0.1);
-        _aBox->setToolTip(getKnob()->getHintToolTip().c_str());
+        _aBox->setToolTip(toolTip());
         
         _aLabel = new QLabel("a:", boxContainers);
-        _aLabel->setToolTip(getKnob()->getHintToolTip().c_str());
+        _aLabel->setToolTip(toolTip());
         
         boxLayout->addWidget(_aLabel);
         boxLayout->addWidget(_aBox);
@@ -1267,10 +1267,10 @@ ColorPickerLabel::ColorPickerLabel(QWidget* parent)
 : QLabel(parent)
 {
     
-    setToolTip("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
+    setToolTip(Qt::convertFromPlainText("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
                "Note that by default " NATRON_APPLICATION_NAME " converts to linear the color picked\n"
                "because all the processing pipeline is linear, but you can turn this off in the\n"
-               "preference panel.");
+               "preference panel.", Qt::WhiteSpaceNormal));
     setMouseTracking(true);
 }
 
@@ -1362,13 +1362,13 @@ void String_KnobGui::createWidget(QGridLayout *layout, int row)
     assert(strKnob);
     
     _descriptionLabel = new QLabel(QString(QString(strKnob->getDescription().c_str()) + ":"), layout->parentWidget());
-    _descriptionLabel->setToolTip(strKnob->getHintToolTip().c_str());
+    _descriptionLabel->setToolTip(toolTip());
     layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
     
 
     if(!strKnob->isMultiLine()) {
         _lineEdit = new LineEdit(layout->parentWidget());
-        _lineEdit->setToolTip(getKnob()->getHintToolTip().c_str());
+        _lineEdit->setToolTip(toolTip());
         layout->addWidget(_lineEdit, row, 1, Qt::AlignLeft);
         QObject::connect(_lineEdit, SIGNAL(textEdited(QString)), this, SLOT(onStringChanged(QString)));
         
@@ -1378,7 +1378,7 @@ void String_KnobGui::createWidget(QGridLayout *layout, int row)
         
     } else {
         _textEdit = new AnimatingTextEdit(layout->parentWidget());
-        _textEdit->setToolTip(getKnob()->getHintToolTip().c_str());
+        _textEdit->setToolTip(toolTip());
         layout->addWidget(_textEdit, row, 1, Qt::AlignLeft);
         QObject::connect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
         if(strKnob->isCustomKnob()) {
@@ -1533,7 +1533,7 @@ void Group_KnobGui::createWidget(QGridLayout *layout, int row)
 {
     _layout = layout;
     _button = new GroupBoxLabel(layout->parentWidget());
-    _button->setToolTip(getKnob()->getHintToolTip().c_str());
+    _button->setToolTip(toolTip());
     _button->setChecked(_checked);
     QWidget *header = new QWidget(layout->parentWidget());
     QHBoxLayout *headerLay = new QHBoxLayout(header);
@@ -1542,7 +1542,7 @@ void Group_KnobGui::createWidget(QGridLayout *layout, int row)
     headerLay->addWidget(_button);
     headerLay->setSpacing(1);
     _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-    _descriptionLabel->setToolTip(getKnob()->getHintToolTip().c_str());
+    _descriptionLabel->setToolTip(toolTip());
     headerLay->addWidget(_descriptionLabel);
     
     layout->addWidget(header, row, 0, 1, 2, Qt::AlignLeft);
@@ -1640,18 +1640,18 @@ void Parametric_KnobGui::createWidget(QGridLayout *layout, int row) {
     _tree->setSelectionMode(QAbstractItemView::ContiguousSelection);
     _tree->setColumnCount(1);
     _tree->header()->close();
-    _tree->setToolTip(parametricKnob->getHintToolTip().c_str());
+    _tree->setToolTip(toolTip());
     treeColumnLayout->addWidget(_tree);
     
     _resetButton = new Button("Reset",treeColumn);
-    _resetButton->setToolTip("Reset the selected curves in the tree to their default shape");
+    _resetButton->setToolTip(Qt::convertFromPlainText("Reset the selected curves in the tree to their default shape", Qt::WhiteSpaceNormal));
     QObject::connect(_resetButton, SIGNAL(pressed()), this, SLOT(resetSelectedCurves()));
     treeColumnLayout->addWidget(_resetButton);
     
     layout->addWidget(treeColumn, row, 0);
     
     _curveWidget = new CurveWidget(boost::shared_ptr<TimeLine>(),layout->parentWidget());
-    _curveWidget->setToolTip(parametricKnob->getHintToolTip().c_str());
+    _curveWidget->setToolTip(toolTip());
     layout->addWidget(_curveWidget,row,1);
     
     

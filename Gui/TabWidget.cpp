@@ -23,6 +23,7 @@
 #include <QtGui/QPaintEvent>
 #include <QScrollArea>
 #include <QSplitter>
+#include <QTextDocument> // for Qt::convertFromPlainText
 
 #include "Gui/Button.h"
 #include "Global/AppManager.h"
@@ -107,7 +108,7 @@ TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent
     if(decorations != NONE){
         
         _leftCornerButton = new Button(QIcon(pixL),"",_header);
-        _leftCornerButton->setToolTip(tr("Manage the layouts for this pane."));
+        _leftCornerButton->setToolTip(Qt::convertFromPlainText(tr("Manage the layouts for this pane."), Qt::WhiteSpaceNormal));
         _leftCornerButton->setFixedSize(15,15);
         _headerLayout->addWidget(_leftCornerButton);
         _headerLayout->addSpacing(10);
@@ -120,14 +121,14 @@ TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent
     _headerLayout->addStretch();
     if(decorations != NONE){
         _floatButton = new Button(QIcon(pixM),"",_header);
-        _floatButton->setToolTip(tr("Float pane."));
+        _floatButton->setToolTip(Qt::convertFromPlainText(tr("Float pane."), Qt::WhiteSpaceNormal));
         _floatButton->setFixedSize(15,15);
         _floatButton->setEnabled(true);
         QObject::connect(_floatButton, SIGNAL(clicked()), this, SLOT(floatCurrentWidget()));
         _headerLayout->addWidget(_floatButton);
         
         _closeButton = new Button(QIcon(pixC),"",_header);
-        _closeButton->setToolTip(tr("Close pane."));
+        _closeButton->setToolTip(Qt::convertFromPlainText(tr("Close pane."), Qt::WhiteSpaceNormal));
         _closeButton->setFixedSize(15,15);
         if(decorations == NOT_CLOSABLE){
             _closeButton->setVisible(false);

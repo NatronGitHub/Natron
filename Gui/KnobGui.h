@@ -74,7 +74,8 @@ public:
 
     void removeKeyFrame(SequenceTime time,int dimension);
     
-    
+    QString toolTip() const;
+
 public slots:
     /*Called when the value held by the knob is changed internally.
      This should in turn update the GUI but not emit the valueChanged()

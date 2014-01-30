@@ -17,6 +17,7 @@
 #include <QStyle>
 #include <QFont>
 #include <QFontMetrics>
+#include <QTextDocument> // for Qt::convertFromPlainText
 
 #include "Global/AppManager.h"
 #include "Gui/MenuWithToolTips.h"
@@ -118,7 +119,7 @@ void ComboBox::insertItem(int index,const QString& item,QIcon icon,QKeySequence 
     QAction* action =  new QAction(this);
     action->setText(item);
     if(!toolTip.isEmpty()){
-        action->setToolTip(toolTip);
+        action->setToolTip(Qt::convertFromPlainText(toolTip, Qt::WhiteSpaceNormal));
     }
     if (!icon.isNull()) {
         action->setIcon(icon);
@@ -148,7 +149,7 @@ void ComboBox::addItem(const QString& item,QIcon icon ,QKeySequence key,const QS
         action->setShortcut(key);
     }
     if(!toolTip.isEmpty()){
-        action->setToolTip(toolTip);
+        action->setToolTip(Qt::convertFromPlainText(toolTip, Qt::WhiteSpaceNormal));
     }
     if (item.size() > _maximumTextSize) {
         _maximumTextSize = item.size();

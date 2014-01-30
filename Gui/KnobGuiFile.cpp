@@ -46,13 +46,13 @@ void File_KnobGui::createWidget(QGridLayout *layout, int row)
 {
 
     _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-    _descriptionLabel->setToolTip(getKnob()->getHintToolTip().c_str());
+    _descriptionLabel->setToolTip(toolTip());
     layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
 
     _lineEdit = new LineEdit(layout->parentWidget());
     _lineEdit->setPlaceholderText("File path...");
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    _lineEdit->setToolTip(getKnob()->getHintToolTip().c_str());
+    _lineEdit->setToolTip(toolTip());
     QObject::connect(_lineEdit, SIGNAL(returnPressed()), this, SLOT(onReturnPressed()));
 
     _openFileButton = new Button(layout->parentWidget());
@@ -163,13 +163,13 @@ OutputFile_KnobGui::~OutputFile_KnobGui()
 void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row)
 {
     _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-    _descriptionLabel->setToolTip(getKnob()->getHintToolTip().c_str());
+    _descriptionLabel->setToolTip(toolTip());
     layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
 
     _lineEdit = new LineEdit(layout->parentWidget());
     QObject::connect(_lineEdit, SIGNAL(returnPressed()), this, SLOT(onReturnPressed()));
     _lineEdit->setPlaceholderText(QString("File path..."));
-    _lineEdit->setToolTip(getKnob()->getHintToolTip().c_str());
+    _lineEdit->setToolTip(toolTip());
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     _openFileButton = new Button(layout->parentWidget());
 
