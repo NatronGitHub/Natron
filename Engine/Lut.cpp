@@ -318,7 +318,7 @@ namespace Natron {
                 int dstY = dstRoD.y2 - y - 1;
                 
                 const float *src_pixels = from + (srcY * (srcRoD.x2 - srcRoD.x1) * inPackingSize);
-                unsigned char *dst_pixels = to + (dstY * (dstRoD.x2 - srcRoD.x1) * outPackingSize);
+                unsigned char *dst_pixels = to + (dstY * (dstRoD.x2 - dstRoD.x1) * outPackingSize);
                 /* go fowards from starting point to end of line: */
                 for (int x = start; x < rect.x2; ++x) {
                     

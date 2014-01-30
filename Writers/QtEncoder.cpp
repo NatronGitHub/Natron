@@ -204,8 +204,7 @@ Natron::Status QtWriter::render(SequenceTime time, RenderScale scale, const Rect
         type = QImage::Format_ARGB32;
     }
     
-    
-    _lut->to_byte_packed(buf, src->pixelAt(0, 0), roi, roi, roi, Natron::Color::PACKING_RGBA, Natron::Color::PACKING_BGRA, true, premult);
+    _lut->to_byte_packed(buf, src->pixelAt(0, 0), roi, src->getRoD(), roi, Natron::Color::PACKING_RGBA, Natron::Color::PACKING_BGRA, true, premult);
     
     QImage img(buf,roi.width(),roi.height(),type);
     
