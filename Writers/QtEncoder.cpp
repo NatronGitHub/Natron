@@ -98,6 +98,7 @@ void QtWriter::initializeKnobs(){
     frameRangeChoosalEntries.push_back("Timeline bounds");
     frameRangeChoosalEntries.push_back("Manual");
     _frameRangeChoosal->populate(frameRangeChoosalEntries);
+    _frameRangeChoosal->setValue<int>(1);
     
     _firstFrameKnob = Natron::createKnob<Int_Knob>(this, "First frame");
     _firstFrameKnob->turnOffAnimation();
