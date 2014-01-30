@@ -174,7 +174,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     if (n && n != _nodeInstance) {
         Natron::Status st = n->getRegionOfDefinition(time,&rod);
         if (st == StatFailed) {
-            assert(!"cannot compute ROD");
+            //assert(!"cannot compute ROD");
             ret.x1 = kOfxFlagInfiniteMin;
             ret.x2 = kOfxFlagInfiniteMax;
             ret.y1 = kOfxFlagInfiniteMin;
