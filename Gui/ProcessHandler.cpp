@@ -164,7 +164,7 @@ void ProcessHandler::onProcessCanceled(){
     if(!_bgProcessInputSocket) {
         _earlyCancel = true;
     } else {
-        _bgProcessInputSocket->write((QString(kAbortRenderingStringShort) + '\n').toLatin1());
+        _bgProcessInputSocket->write((QString(kAbortRenderingStringShort) + '\n').toUtf8());
         _bgProcessInputSocket->flush();
         if(_process->state() == QProcess::Running) {
             _process->waitForFinished();
@@ -214,7 +214,7 @@ ProcessInputChannel::~ProcessInputChannel() {
 }
 
 void ProcessInputChannel::writeToOutputChannel(const QString& message){
-    _backgroundOutputPipe->write((message+'\n').toLatin1());
+    _backgroundOutputPipe->write((message+'\n').toUtf8());
     _backgroundOutputPipe->flush();
 }
 
@@ -229,11 +229,18 @@ void ProcessInputChannel::onNewConnectionPending() {
 
 bool ProcessInputChannel::onInputChannelMessageReceived() {
     QString str(_backgroundInputPipe->readLine());
-    if (str.contains(kAbortRenderingStringShort)) {
+    while(str.endsWith('\n')) {
+        str.chop(1);
+    }
+    if (str.startsWith(kAbortRenderingStringShort)) {
         qDebug() << "Aborting render!";
         appPTR->abortAnyProcessing();
         return true;
+    } else {
+        qDebug() << "Error: Unable to interpret message: " << str;
+        throw std::runtime_error("ProcessInputChannel::onInputChannelMessageReceived() received erroneous message");
     }
+
     return false;
 }
 

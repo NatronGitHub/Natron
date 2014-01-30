@@ -101,7 +101,7 @@ void initOpenColorIOConfig() {
         QFile configFile(configPath);
         configFile.copy(configCopyPath);
         
-        qputenv("OCIO",configCopyPath.toLatin1());
+        qputenv("OCIO",configCopyPath.toUtf8());
 
     }
 
