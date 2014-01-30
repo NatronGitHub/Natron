@@ -16,6 +16,8 @@
 #include <QLocalSocket>
 #include <QCoreApplication>
 #include <QTemporaryFile>
+#include <QWaitCondition>
+#include <QMutex>
 
 #include "Global/AppManager.h"
 #include "Engine/KnobFile.h"
@@ -201,6 +203,9 @@ ProcessInputChannel::ProcessInputChannel(const QString& mainProcessServerName)
 , _backgroundOutputPipe(0)
 , _backgroundIPCServer(0)
 , _backgroundInputPipe(0)
+, _mustQuit(false)
+, _mustQuitCond(new QWaitCondition)
+, _mustQuitMutex(new QMutex)
 {
     initialize();
     _backgroundIPCServer->moveToThread(this);
@@ -209,8 +214,19 @@ ProcessInputChannel::ProcessInputChannel(const QString& mainProcessServerName)
 }
 
 ProcessInputChannel::~ProcessInputChannel() {
+    
+    if (isRunning()) {
+        _mustQuit = true;
+        while (_mustQuit) {
+            _mustQuitCond->wait(_mustQuitMutex);
+        }
+    }
+    
     delete _backgroundIPCServer;
     delete _backgroundOutputPipe;
+    delete _mustQuitCond;
+    delete _mustQuitMutex;
+    
 }
 
 void ProcessInputChannel::writeToOutputChannel(const QString& message){
@@ -253,6 +269,13 @@ void ProcessInputChannel::run() {
                 qDebug() << "Background process now closing the input channel...";
                 return;
             }
+        }
+        
+        QMutexLocker l(_mustQuitMutex);
+        if (_mustQuit) {
+            _mustQuit = false;
+            _mustQuitCond->wakeOne();
+            return;
         }
     }
 }

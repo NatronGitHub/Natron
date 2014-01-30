@@ -241,7 +241,6 @@ int main(int argc, char *argv[])
     }else{
         //in background mode, exit...
         AppManager::quit();
-        std::cout << "DELETE OK" << std::endl;
         return 0;
     }
     

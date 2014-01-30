@@ -1232,6 +1232,7 @@ AppManager::~AppManager(){
     if (_backgroundIPC) {
         delete _backgroundIPC;
     }
+
 }
 void AppManager::quit(){
     delete appPTR;
