@@ -1256,7 +1256,7 @@ void Gui::informationDialog(const std::string& title,const std::string& text){
 }
 void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB){
     
-    _uiUsingMainThreadMutex.lock();
+    QMutexLocker locker(&_uiUsingMainThreadMutex);
 
     if(type == 0){
         QMessageBox::critical(this, title, content);
@@ -1271,7 +1271,6 @@ void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron
     }
     _uiUsingMainThread = false;
     _uiUsingMainThreadCond.wakeOne();
-    _uiUsingMainThreadMutex.unlock();
     
 }
 
