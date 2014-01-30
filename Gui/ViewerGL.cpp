@@ -1295,7 +1295,10 @@ void ViewerGL::updateColorPicker(int x,int y){
         pos.setY(currentPos.y());
     }
     float r,g,b,a;
-    getColorUnderMouse(pos.x(),pos.y(),&r,&g,&b,&a);
+    QPointF imgPos = toImgCoordinates_fast(pos.x(), pos.y());
+    
+    bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
+    _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
     //   cout << "r: " << color.x() << " g: " << color.y() << " b: " << color.z() << endl;
     _imp->infoViewer->setColor(r,g,b,a);
     emit infoColorUnderMouseChanged();
@@ -1414,53 +1417,6 @@ QVector3D ViewerGL::toImgCoordinates_slow(int x,int y){
     return QVector3D(posX,posY,posZ);
 }
 #endif
-
-void ViewerGL::getColorUnderMouse(int x,int y,float* r,float *g,float* b,float* a){
-    QPointF imgCoord = toImgCoordinates_fast(x, y);
-    getColorAt(imgCoord.x(),imgCoord.y(),r,g,b,a,x,y);
-}
-
-void ViewerGL::getColorAt(int x,int y,float* r,float *g,float* b,float* a,int viewPortX,int viewPortY)
-{
-    makeCurrent();
-    assert(QGLContext::currentContext() == context());
-    *r = 0;
-    *g = 0;
-    *b = 0;
-    *a = 0;
-    if(viewPortX == INT_MAX || viewPortY == INT_MAX){
-        QPointF viewPortCoord = toWidgetCoordinates(x, y);
-        viewPortX = viewPortCoord.x();
-        viewPortY = viewPortCoord.y();
-    }
-    if(x < getDisplayWindow().left() || x >= getDisplayWindow().width() || y < getDisplayWindow().bottom() || y >=getDisplayWindow().height()){
-        return ;
-    }
-    
-    if(bitDepth() == ViewerInstance::BYTE){
-        U32 pixel;
-        glReadBuffer(GL_FRONT);
-        glReadPixels( viewPortX, height()- viewPortY, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
-        U8 r_=0,g_=0,b_=0,a_=0;
-        b_ |= pixel;
-        g_ |= (pixel >> 8);
-        r_ |= (pixel >> 16);
-        a_ |= (pixel >> 24);
-        checkGLErrors();
-        *r = std::min(r_/255.f,1.f);
-        *g = std::min(g_/255.f,1.f);
-        *b = std::min(b_/255.f,1.f);
-        *a = std::min(a_/255.f,1.f);
-    }else{
-        GLfloat pixel[4];
-        glReadPixels( viewPortX, height()- viewPortY, 1, 1, GL_RGBA, GL_FLOAT, pixel);
-        checkGLErrors();
-        *r = pixel[0];
-        *g = pixel[1];
-        *b = pixel[2];
-        *a = pixel[3];
-    }
-}
 
 void ViewerGL::fitToFormat(const Format& rod){
     double h = rod.height();

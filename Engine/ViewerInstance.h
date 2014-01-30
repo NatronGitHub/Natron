@@ -27,6 +27,7 @@ class ViewerTab;
 class AppInstance;
 class Timer;
 namespace Natron{
+class Image;
 namespace Color{
 class Lut;
 }
@@ -106,6 +107,8 @@ private:
                  0 = sRGB ,  1 = linear , 2 = Rec 709*/
     
     DisplayChannels _channels;
+    
+    boost::shared_ptr<Natron::Image> _lastRenderedImage;
     
 public:
     

@@ -59,6 +59,7 @@ Natron::OutputEffectInstance(node)
 ,_colorSpace(Natron::Color::LutManager::sRGBLut())
 ,_lut(sRGB)
 ,_channels(RGBA)
+,_lastRenderedImage()
 {
     connectSlotsToViewerCache();
     connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
@@ -291,14 +292,12 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
             //inputsRoi only contains 1 element
             EffectInstance::RoIMap::const_iterator it = inputsRoi.begin();
             
-            boost::shared_ptr<Natron::Image> inputImage;
-
             // Do not catch exceptions: if an exception occurs here it is probably fatal, since
             // it comes from Natron itself. All exceptions from plugins are already caught
             // by the HostSupport library.
             int inputIndex = activeInput();
             _node->notifyInputNIsRendering(inputIndex);
-            inputImage = it->first->renderRoI(time, scale,view,it->second,byPassCache);
+            _lastRenderedImage = it->first->renderRoI(time, scale,view,it->second,byPassCache);
             _node->notifyInputNIsFinishedRendering(inputIndex);;
             
             if(aborted()){
@@ -320,7 +319,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
             {
                 QMutexLocker locker(&_renderArgsMutex);
                 QFuture<void> future = QtConcurrent::map(splitRows,
-                                                         boost::bind(&ViewerInstance::renderFunctor,this,inputImage,_1,textureRect,closestPowerOf2));
+                                                         boost::bind(&ViewerInstance::renderFunctor,this,_lastRenderedImage,_1,textureRect,closestPowerOf2));
                 future.waitForFinished();
             }
         }
@@ -671,12 +670,35 @@ void ViewerInstance::setDisplayChannels(DisplayChannels channels) {
 
 void ViewerInstance::disconnectViewer(){
     getVideoEngine()->abortRendering(); // aborting current work
+    _lastRenderedImage.reset();
     emit viewerDisconnected();
 }
 
 void ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear){
     
-    _uiContext->viewer->getColorAt(x, y, r, g, b, a);
+    if (!_lastRenderedImage) {
+        *r = 0;
+        *g = 0;
+        *b = 0;
+        *a = 0;
+        return;
+    }
+    
+    const RectI& bbox = _lastRenderedImage->getRoD();
+    
+    if (x < bbox.x1 || x >= bbox.x2 || y < bbox.y1 || y >= bbox.y2) {
+        *r = 0;
+        *g = 0;
+        *b = 0;
+        *a = 0;
+        return;
+    }
+    
+    const float* pix = _lastRenderedImage->pixelAt(x, y);
+    *r = *pix;
+    *g = *(pix + 1);
+    *b = *(pix + 2);
+    *a = *(pix + 3);
     if(forceLinear && _colorSpace){
         float from[3];
         from[0] = *r;

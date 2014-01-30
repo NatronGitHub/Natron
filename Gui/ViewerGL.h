@@ -182,23 +182,6 @@ public:
     
     
     /**
-     *@brief Returns the rgba components of the pixel located at position (x,y) in viewport coordinates.
-    **/
-    void getColorUnderMouse(int x,int y,float* r,float *g,float* b,float* a);
-    
-    /**
-     *@brief Returns the rgba components of the pixel located at position (x,y) in image coordinates.
-     *This function unprojects the x and y coordinates to retrieve the OpenGL coordinates
-     *of the point. Then it makes a call to glReadPixels to retrieve the intensities stored at this location.
-     *This function may slow down a little bit the rendering pipeline since it forces the OpenGL context to
-     *synchronize.
-     *@param x[in] The x coordinate of the pixel in viewport coordinates.
-     *@param y[in] The y coordinate of the pixel in viewport coordinates.
-     *@returns Returns the RGBA components of the pixel at (x,y).
-     **/
-    void getColorAt(int x,int y,float* r,float *g,float* b,float* a,int viewPortX = INT_MAX,int viewPortY = INT_MAX);
-    
-    /**
      *@brief Set the pointer to the InfoViewerWidget. This is called once after creation
      *of the ViewerGL.
      **/
