@@ -1399,7 +1399,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
     if (mode == kOfxParamStringIsFilePath) {
         
         int fileIsImage = properties.getIntProperty(kNatronParamFilePathIsImage);
-        int fileIsOutput = properties.getIntProperty(kNatronParamFilePathIsOutput);
+        int fileIsOutput = !properties.getIntProperty(kOfxParamPropStringFilePathExists);
         
         if (fileIsOutput == 0) {
             _fileKnob = Natron::createKnob<File_Knob>(node, getParamLabel(this));
