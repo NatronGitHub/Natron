@@ -408,7 +408,11 @@ void Project::endProjectWideValueChanges(KnobHolder* caller){
         ///on the last caller with
         ///the significant param recorded in the stackEvaluateRequest function.
         if(outerMostReason != Natron::OTHER_REASON && outerMostReason != Natron::TIME_CHANGED){
+            
+            getApp()->unlockProject();
             caller->evaluate(_imp->lastKnobChanged,_imp->isSignificantChange);
+            getApp()->lockProject();
+            
         }
     }
     
