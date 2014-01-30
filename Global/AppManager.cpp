@@ -1168,7 +1168,7 @@ bool AppManager::writeToOutputPipe(const QString& longMessage,const QString& sho
         qDebug() << longMessage;
         return false;
     }
-    _backgroundIPC->writeToOutputChannel(shortMessage.toLatin1());
+    _backgroundIPC->writeToOutputChannel(shortMessage);
     return true;
 }
 
