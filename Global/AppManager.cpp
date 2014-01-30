@@ -1135,7 +1135,10 @@ void AppManager::load(SplashScreen* splashScreen) {
     loadAllPlugins();
     loadBuiltinFormats();
     
-    createColorPickerCursor();
+    //we're in bg mode
+    if(_splashScreen) {
+        createColorPickerCursor();
+    }
     
     setLoadingStatus("Restoring user settings...");
     _settings->restoreSettings();
