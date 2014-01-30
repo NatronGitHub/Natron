@@ -363,10 +363,10 @@ void VideoEngine::run(){
             }
         }
         
-        
-        if (!_currentRunArgs._sameFrame && _currentRunArgs._frameRequestsCount == -1) {
-            appPTR->clearNodeCache();
-        }
+//        
+//        if (!_currentRunArgs._sameFrame && _currentRunArgs._frameRequestsCount == -1) {
+//            appPTR->clearNodeCache();
+//        }
         
         
         
@@ -755,12 +755,6 @@ void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(){
         (*it).second->clearPersistentMessage();
     }
     _treeVersionValid = true;
-    
-    //    /*If the hash changed we clear the playback cache.*/
-    //    if((!oldVersionValid || (inputsHash.back() != oldVersion)) && !_output->getApp()->isBackground()){
-    //        appPTR->clearPlaybackCache();
-    //    }
-    
 
 }
 

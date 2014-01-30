@@ -839,6 +839,8 @@ private:
         /*if it is stored using mmap, remove it from memory*/
 
         if(evicted.second->isStoredOnDisk()){
+            
+           assert(evicted.second.unique());
            evicted.second->deallocate();
             /*insert it back into the disk portion */
 
