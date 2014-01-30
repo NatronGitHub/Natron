@@ -21,6 +21,7 @@ class SplashScreen : public QWidget
     
     QPixmap _pixmap;
     QString _text;
+    QString _versionString;
     
 public:
     

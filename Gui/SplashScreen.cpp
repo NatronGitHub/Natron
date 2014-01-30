@@ -11,12 +11,19 @@
 
 #include "SplashScreen.h"
 
+
+#include <ctime>
 #include <QPainter>
 #include <QStyleOption>
+
+#include "Global/Macros.h"
+
 
 SplashScreen::SplashScreen(const QString& filePath)
 : QWidget(0,Qt::ToolTip | Qt::FramelessWindowHint | Qt::X11BypassWindowManagerHint)
 , _pixmap()
+, _text()
+, _versionString("v" NATRON_VERSION_STRING " built on " __DATE__ )
 {
     setAttribute( Qt::WA_TransparentForMouseEvents );
     
@@ -45,4 +52,5 @@ void SplashScreen::paintEvent(QPaintEvent*)
     p.drawPixmap(0,0,_pixmap);
     p.setPen(Qt::white);
     p.drawText(QPointF(120,100), _text);
+    p.drawText(QPointF(200, 250),_versionString);
 }
