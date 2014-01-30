@@ -744,6 +744,7 @@ bool AppInstance::findAutoSave() {
                           "Would you like to restore it ? Clicking No will remove this auto-save forever.");
             }
             
+            appPTR->hideSplashScreen();
             
             QMessageBox::StandardButton ret = QMessageBox::question(_gui, tr("Auto-save"), text,
                                                                     QMessageBox::Yes | QMessageBox::No,QMessageBox::Yes);
@@ -1097,9 +1098,11 @@ bool AppManager::isLoaded() const {
 }
 
 void AppManager::hideSplashScreen() {
-    _splashScreen->hide();
-    delete _splashScreen;
-    _splashScreen = 0;
+    if(_splashScreen) {
+        _splashScreen->hide();
+        delete _splashScreen;
+        _splashScreen = 0;
+    }
 }
 
 void AppManager::load(SplashScreen* splashScreen) {

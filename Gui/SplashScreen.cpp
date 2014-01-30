@@ -15,6 +15,8 @@
 #include <ctime>
 #include <QPainter>
 #include <QStyleOption>
+#include <QApplication>
+#include <QDesktopWidget>
 
 #include "Global/Macros.h"
 
@@ -26,12 +28,18 @@ SplashScreen::SplashScreen(const QString& filePath)
 , _versionString("v" NATRON_VERSION_STRING " built on " __DATE__ )
 {
     setAttribute( Qt::WA_TransparentForMouseEvents );
-    
+    setAttribute(Qt::WA_TranslucentBackground, true);
+
     _pixmap.load(filePath);
     _pixmap = _pixmap.scaled(768, 432);
     
     resize(_pixmap.width(), _pixmap.height());
     show();
+
+    QDesktopWidget* desktop = QApplication::desktop();
+    QRect screen = desktop->screenGeometry();
+    move(screen.width() / 2 - width() / 2, screen.height() / 2 - height() /2);
+
 }
 
 void SplashScreen::updateText(const QString& text) {
@@ -52,5 +60,5 @@ void SplashScreen::paintEvent(QPaintEvent*)
     p.drawPixmap(0,0,_pixmap);
     p.setPen(Qt::white);
     p.drawText(QPointF(120,100), _text);
-    p.drawText(QPointF(200, 250),_versionString);
+    p.drawText(QPointF(180, 250),_versionString);
 }

@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
     SplashScreen* splashScreen = 0;
     if(!isBackGround){
         /*Display a splashscreen while we wait for the engine to load*/
-        QString filename(NATRON_IMAGES_PATH"splashscreen_dark.png");
+        QString filename(NATRON_IMAGES_PATH"splashscreen.png");
         splashScreen = new SplashScreen(filename);
         QCoreApplication::processEvents();
         
