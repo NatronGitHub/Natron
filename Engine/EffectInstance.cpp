@@ -214,6 +214,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
 }
 
 Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod) {
+    
+    if (isWriter()) {
+        rod->set(getRenderFormat());
+        return StatReplyDefault;
+    }
+    
     for(Inputs::const_iterator it = _imp->inputs.begin() ; it != _imp->inputs.end() ; ++it){
         if (*it) {
             RectI inputRod;
