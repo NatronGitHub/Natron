@@ -169,14 +169,6 @@ bool OfxClipInstance::getContinuousSamples() const
 OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 {
     OfxRectD ret;
-    
-    ///first-off if the effect is a writer, always return the project's RoD
-    if (_nodeInstance && _nodeInstance->isWriter()) {
-        _nodeInstance->effectInstance()->getProjectOffset(ret.x1, ret.y1);
-        _nodeInstance->effectInstance()->getProjectExtent(ret.x2, ret.y2);
-        return ret;
-    }
-    
     RectI rod;
     EffectInstance* n = getAssociatedNode();
     if (n && n != _nodeInstance) {
