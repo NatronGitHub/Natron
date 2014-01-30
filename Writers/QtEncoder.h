@@ -38,6 +38,8 @@ public:
     
     virtual ~QtWriter();
     
+    virtual bool isWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
+    
     static void supportedFileFormats(std::vector<std::string>* formats);
     
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE {return false;}

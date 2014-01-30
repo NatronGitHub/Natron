@@ -178,6 +178,16 @@ bool OfxEffectInstance::isReader() const {
     return false;
 }
 
+bool OfxEffectInstance::isWriter() const {
+    assert(effectInstance());
+    const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
+    std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
+    if (foundWriter != contexts.end()) {
+        return true;
+    }
+    return false;
+}
+
 bool OfxEffectInstance::isGeneratorAndFilter() const {
     const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
     std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);

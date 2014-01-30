@@ -88,6 +88,8 @@ public:
 
     virtual bool isReader() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual bool isWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual bool isGeneratorAndFilter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
