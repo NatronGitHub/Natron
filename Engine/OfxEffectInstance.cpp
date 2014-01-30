@@ -29,6 +29,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/Project.h"
 #include "Engine/KnobFile.h"
+#include "Engine/KnobTypes.h"
 
 #include <ofxhPluginCache.h>
 #include <ofxhPluginAPICache.h>
@@ -64,6 +65,7 @@ OfxEffectInstance::OfxEffectInstance(Natron::Node* node)
     , _overlayInteract(0)
     , _lastKnobLayoutWithNoNewLine(0)
     , _initialized(false)
+    , _renderButton()
 {
     if(node && !node->getLiveInstance()){
         node->setLiveInstance(this);
@@ -100,6 +102,9 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         effect_->setOfxEffectInstancePointer(this);
         notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
         OfxStatus stat = effect_->populate();
+        
+        initializeContextDependentParams();
+        
         effect_->addParamsToTheirParents();
         notifyProjectEndKnobsValuesChanged();
 
@@ -128,7 +133,6 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
 
 OfxEffectInstance::~OfxEffectInstance(){
     
-    ///interact has to be deleted AFTER the effect_
     if(_overlayInteract){
         delete _overlayInteract;
     }
@@ -138,6 +142,16 @@ OfxEffectInstance::~OfxEffectInstance(){
 }
 
 
+
+void OfxEffectInstance::initializeContextDependentParams() {
+    
+    if (isWriter()) {
+        _renderButton = Natron::createKnob<Button_Knob>(this, "Render");
+        _renderButton->setHintToolTip("Starts rendering the frame range specified.");
+        _renderButton->setAsRenderButton();
+    }
+    
+}
 
 std::string OfxEffectInstance::description() const {
     if(effectInstance()){
@@ -734,6 +748,13 @@ void OfxEffectInstance::onKnobValueChanged(Knob* k,Natron::ValueChangedReason re
     if(!_initialized){
         return;
     }
+    
+    if (_renderButton && k == _renderButton.get()) {
+        
+        ///don't do anything since it is handled upstream
+        return;
+    }
+    
     OfxPointD renderScale;
     effect_->getRenderScaleRecursive(renderScale.x, renderScale.y);
     OfxTime time = effect_->getFrameRecursive();

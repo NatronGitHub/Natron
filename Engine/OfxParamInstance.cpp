@@ -145,10 +145,6 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
 {
     _knob = Natron::createKnob<Button_Knob>(node, getParamLabel(this));
     
-    int isRenderButton = getProperties().getIntProperty(kNatronParamPropButtonIsRender);
-    if (isRenderButton > 0) {
-        _knob->setAsRenderButton();
-    }
 }
 
 

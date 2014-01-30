@@ -29,6 +29,7 @@ class QHBoxLayout;
 class QImage;
 class OfxClipInstance;
 class QKeyEvent;
+class Button_Knob;
 namespace Natron {
 class Node;
 class OfxImageEffectInstance;
@@ -46,7 +47,7 @@ class OfxEffectInstance : public Natron::OutputEffectInstance {
 
     QHBoxLayout* _lastKnobLayoutWithNoNewLine; // for nuke layout hint extension
     bool _initialized; //true when the image effect instance has been created and populated
-   
+    boost::shared_ptr<Button_Knob> _renderButton; //< render button for writers
 public:
     
     
@@ -172,6 +173,7 @@ private:
 
     void tryInitializeOverlayInteracts();
 
+    void initializeContextDependentParams();
 
 };
 
