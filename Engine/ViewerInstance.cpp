@@ -255,7 +255,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
                 
         /*Found in viewer cache, we execute the cached engine and leave*/
         _interThreadInfos._ramBuffer = cachedFrame->data();
-        Format dispW;
+        Format dispW = cachedFrame->getKey()._displayWindow;
         getApp()->setOrAddProjectFormat(dispW,true);
 #ifdef NATRON_LOG
         Natron::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
