@@ -34,10 +34,6 @@ Features
   Documentation/ofxPropSupported.rtf in the source distribution)
 - A minimum of OpenGL 1.5 is required, hence most graphics cards should be supported, 
 platforms not supporting GLSL are also supported
-<<<<<<< HEAD
-=======
-
->>>>>>> 3eac0dead09f70670238effbfff77d51e8618833
 - Fast Viewer interaction with no delay 
 - Overlays interaction on the viewer
 - Fast playback engine: possibility to run 32bit floating point 4K sequences at 60+ fps
