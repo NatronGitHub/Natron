@@ -649,7 +649,7 @@ bool OfxEffectInstance::onOverlayKeyDown(QKeyEvent* e){
         OfxPointD rs;
         rs.x = rs.y = 1.;
         OfxTime time = effect_->getFrameRecursive();
-        OfxStatus stat = _overlayInteract->keyDownAction(time, rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+        OfxStatus stat = _overlayInteract->keyDownAction(time, rs, e->nativeVirtualKey(), e->text().toUtf8().data());
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -665,7 +665,7 @@ bool OfxEffectInstance::onOverlayKeyUp(QKeyEvent* e){
         OfxPointD rs;
         rs.x = rs.y = 1.;
         OfxTime time = effect_->getFrameRecursive();
-        OfxStatus stat = _overlayInteract->keyUpAction(time, rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+        OfxStatus stat = _overlayInteract->keyUpAction(time, rs, e->nativeVirtualKey(), e->text().toUtf8().data());
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
@@ -682,7 +682,7 @@ bool OfxEffectInstance::onOverlayKeyRepeat(QKeyEvent* e){
         OfxPointD rs;
         rs.x = rs.y = 1.;
         OfxTime time = effect_->getFrameRecursive();
-        OfxStatus stat = _overlayInteract->keyRepeatAction(time, rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+        OfxStatus stat = _overlayInteract->keyRepeatAction(time, rs, e->nativeVirtualKey(), e->text().toUtf8().data());
         if (stat == kOfxStatOK) {
             return true;
         }
