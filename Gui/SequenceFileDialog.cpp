@@ -1438,12 +1438,19 @@ void SequenceFileDialog::autoCompleteFileName(const QString& text){
             else
                 newFiles.append(idx);
         }
-        for (int i = 0; i < newFiles.count(); ++i)
-            select(newFiles.at(i));
+        
+        _view->selectionModel()->blockSignals(true);
+
         if (_selectionLineEdit->hasFocus())
-            for (int i = 0; i < oldFiles.count(); ++i)
-                _view->selectionModel()->select(oldFiles.at(i),
-                                                QItemSelectionModel::Toggle | QItemSelectionModel::Rows);
+            for (int i = 0; i < oldFiles.count(); ++i) {
+                _view->selectionModel()->select(oldFiles.at(i),QItemSelectionModel::Toggle | QItemSelectionModel::Rows);
+            }
+        
+        for (int i = 0; i < newFiles.count(); ++i){
+            select(newFiles.at(i));
+        }
+        _view->selectionModel()->blockSignals(false);
+       
     }
 }
 void SequenceFileDialog::goToDirectory(const QString& path){
