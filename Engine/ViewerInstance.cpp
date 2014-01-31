@@ -673,30 +673,25 @@ void ViewerInstance::setDisplayChannels(DisplayChannels channels) {
     refreshAndContinueRender();
 }
 
-void ViewerInstance::disconnectViewer(){
-    getVideoEngine()->abortRendering(); // aborting current work
-    _lastRenderedImage.reset();
+void ViewerInstance::disconnectViewer()
+{
+    if (getVideoEngine()->isWorking()) {
+        getVideoEngine()->abortRendering(); // aborting current work
+    }
+    //_lastRenderedImage.reset(); // if you uncomment this, _lastRenderedImage is not set back when you reconnect the viewer immediately after disconnecting
     emit viewerDisconnected();
 }
 
-void ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear){
-    
+bool ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear)
+{
     if (!_lastRenderedImage) {
-        *r = 0;
-        *g = 0;
-        *b = 0;
-        *a = 0;
-        return;
+        return false;
     }
     
     const RectI& bbox = _lastRenderedImage->getRoD();
     
     if (x < bbox.x1 || x >= bbox.x2 || y < bbox.y1 || y >= bbox.y2) {
-        *r = 0;
-        *g = 0;
-        *b = 0;
-        *a = 0;
-        return;
+        return false;
     }
     
     const float* pix = _lastRenderedImage->pixelAt(x, y);
@@ -715,6 +710,7 @@ void ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,
         *g = to[1];
         *b = to[2];
     }
+    return true;
 }
 
 bool ViewerInstance::supportsGLSL() const{

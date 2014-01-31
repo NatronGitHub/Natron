@@ -91,6 +91,8 @@ public:
     
     void setCurrentText(const QString& text);
     
+    void setMaximumWidthFromText(const QString& str);
+
     /*this function returns the displayed text with some padding
      ,i.e two spaces before and after the text, as such:
      "  test  " .*/
@@ -117,7 +119,7 @@ private:
     void mouseReleaseEvent(QMouseEvent* e);
     
 private:
-    void adjustSize(const QString& str);
+    void growMaximumWidthFromText(const QString& str);
     void createMenu();
     
 };

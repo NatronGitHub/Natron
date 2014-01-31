@@ -115,13 +115,13 @@ public:
     
     
     
-    static Natron::EffectInstance* BuildEffect(Natron::Node* n) { return new ViewerInstance(n); }
+    static Natron::EffectInstance* BuildEffect(Natron::Node* n) WARN_UNUSED_RETURN { return new ViewerInstance(n); }
     
     ViewerInstance(Natron::Node* node);
     
     virtual ~ViewerInstance();
     
-    ViewerTab* getUiContext() const {return _uiContext;}
+    ViewerTab* getUiContext() const WARN_UNUSED_RETURN {return _uiContext;}
     
     void setUiContext(ViewerTab* ptr){_uiContext = ptr;}
     
@@ -139,7 +139,7 @@ public:
      * Otherwise it just calls renderRoi(...) on the active input and
      * and then render to the PBO.
      **/
-    Natron::Status renderViewer(SequenceTime time,bool fitToViewer);
+    Natron::Status renderViewer(SequenceTime time,bool fitToViewer) WARN_UNUSED_RETURN;
 
 
     /**
@@ -159,20 +159,20 @@ public:
 
     void wakeUpAnySleepingThread();
 
-    int activeInput() const;
+    int activeInput() const WARN_UNUSED_RETURN;
 
-    int getLutType() const {return _lut;}
+    int getLutType() const WARN_UNUSED_RETURN {return _lut;}
 
-    double getExposure() const {return _exposure;}
+    double getExposure() const WARN_UNUSED_RETURN {return _exposure;}
 
-    const Natron::Color::Lut* getLut() const {return _colorSpace;}
+    const Natron::Color::Lut* getLut() const WARN_UNUSED_RETURN {return _colorSpace;}
 
-    bool supportsGLSL() const;
+    bool supportsGLSL() const WARN_UNUSED_RETURN;
 /**
  *@brief Actually converting to ARGB... but it is called BGRA by
  the texture format GL_UNSIGNED_INT_8_8_8_8_REV
  **/
-    static U32 toBGRA(U32 r,U32 g,U32 b,U32 a);
+    static U32 toBGRA(U32 r,U32 g,U32 b,U32 a) WARN_UNUSED_RETURN;
 
     void setDisplayChannels(DisplayChannels channels) ;
 
@@ -181,8 +181,9 @@ public:
      * If forceLinear is true, then it will not use the viewer current colorspace
      * to get r,g and b values, otherwise the color returned will be in the same color-space
      * than the one chosen by the user on the gui.
+     * @return true if the point is inside the image and colors were set
     **/
-    void getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear);
+    bool getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear) WARN_UNUSED_RETURN;
 
 public slots:
 

@@ -449,7 +449,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 , _imp(new Implementation(parent, this))
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-    
+    setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
     
     QObject::connect(parent->getGui()->getApp()->getProject().get(),SIGNAL(formatChanged(Format)),this,SLOT(onProjectFormatChanged(Format)));
@@ -539,7 +539,10 @@ void ViewerGL::resizeGL(int width, int height){
     assert(_imp->viewerTab);
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
-    if (viewer->getUiContext() && !_imp->zoomOrPannedSinceLastFit && _imp->displayingImage) {
+    if (!_imp->zoomOrPannedSinceLastFit) {
+        fitToFormat(getDisplayWindow());
+    }
+    if (viewer->getUiContext()) {
         viewer->refreshAndContinueRender(true);
         updateGL();
     }
@@ -1105,7 +1108,7 @@ void ViewerGL::restoreGLState()
 void ViewerGL::initBlackTex()
 {
     assert(QGLContext::currentContext() == context());
-    fitToFormat(getDisplayWindow());
+    //fitToFormat(getDisplayWindow());
     
     TextureRect texSize(0, 0, 2048, 1556,2048,1556,1);
     
@@ -1192,17 +1195,21 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
                                                   toImgCoordinates_fast(event->x(), event->y()))){
             updateGL();
         }
-    }else if(event->button() == Qt::LeftButton && event->modifiers().testFlag(Qt::ControlModifier)){
+    } else if(event->button() == Qt::LeftButton &&
+              event->modifiers().testFlag(Qt::ControlModifier) &&
+              _imp->displayingImage) {
         float r,g,b,a;
         QPointF imgPos = toImgCoordinates_fast(event->x(), event->y());
         bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
-        _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
-        QColor pickerColor;
-        pickerColor.setRedF(r);
-        pickerColor.setGreenF(g);
-        pickerColor.setBlueF(b);
-        pickerColor.setAlphaF(a);
-        _imp->viewerTab->getGui()->_projectGui->setPickersColor(pickerColor);
+        bool picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
+        if (picked) {
+            QColor pickerColor;
+            pickerColor.setRedF(r);
+            pickerColor.setGreenF(g);
+            pickerColor.setBlueF(b);
+            pickerColor.setAlphaF(a);
+            _imp->viewerTab->getGui()->_projectGui->setPickersColor(pickerColor);
+        }
     }
     
 }
@@ -1275,6 +1282,10 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
 
 
 void ViewerGL::updateColorPicker(int x,int y){
+    if (!_imp->displayingImage) {
+        _imp->infoViewer->hideColorAndMouseInfo();
+        return;
+    }
     QPoint pos;
     bool xInitialized = false;
     bool yInitialized = false;
@@ -1297,10 +1308,14 @@ void ViewerGL::updateColorPicker(int x,int y){
     QPointF imgPos = toImgCoordinates_fast(pos.x(), pos.y());
     
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
-    _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
-    //   cout << "r: " << color.x() << " g: " << color.y() << " b: " << color.z() << endl;
-    _imp->infoViewer->setColor(r,g,b,a);
-    emit infoColorUnderMouseChanged();
+    bool picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
+    if (!picked) {
+        _imp->infoViewer->hideColorAndMouseInfo();
+    } else {
+        //   cout << "r: " << color.x() << " g: " << color.y() << " b: " << color.z() << endl;
+        _imp->infoViewer->setColor(r,g,b,a);
+        emit infoColorUnderMouseChanged();
+    }
 }
 
 void ViewerGL::wheelEvent(QWheelEvent *event) {
@@ -1424,12 +1439,13 @@ void ViewerGL::fitToFormat(const Format& rod){
     double zoomFactor = height()/h;
     zoomFactor = (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01);
     assert(zoomFactor>=0.01 && zoomFactor <= 1024);
-    _imp->zoomCtx.zoomFactor = zoomFactor;
-    emit zoomChanged(zoomFactor * 100);
+    if (_imp->zoomCtx.zoomFactor != zoomFactor) {
+        _imp->zoomCtx.zoomFactor = zoomFactor;
+        emit zoomChanged(zoomFactor * 100);
+    }
     resetMousePos();
     _imp->zoomCtx.left = w/2.f - (width()/(2.f*_imp->zoomCtx.zoomFactor));
     _imp->zoomCtx.bottom = h/2.f - (height()/(2.f*_imp->zoomCtx.zoomFactor)) * rod.getPixelAspect();
-    
     _imp->zoomOrPannedSinceLastFit = false;
 }
 
@@ -1478,9 +1494,11 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
 
 
 void ViewerGL::disconnectViewer(){
-    setRod(_imp->blankViewerInfos.getRoD());
-    fitToFormat(getDisplayWindow());
-    clearViewer();
+    if (displayingImage()) {
+        setRod(_imp->blankViewerInfos.getRoD());
+        //fitToFormat(getDisplayWindow());
+        clearViewer();
+    }
 }
 
 
@@ -1552,16 +1570,29 @@ void ViewerGL::focusInEvent(QFocusEvent *event){
     if(_imp->viewerTab->notifyOverlaysFocusGained()){
         updateGL();
     }
-    QGLWidget::enterEvent(event);
+    QGLWidget::focusInEvent(event);
 }
+
 void ViewerGL::focusOutEvent(QFocusEvent *event)
 {
     if(_imp->viewerTab->notifyOverlaysFocusLost()){
         updateGL();
     }
-    QGLWidget::leaveEvent(event);
-
+    QGLWidget::focusOutEvent(event);
 }
+
+void ViewerGL::enterEvent(QEvent *event)
+{
+    updateColorPicker();
+    QGLWidget::enterEvent(event);
+}
+
+void ViewerGL::leaveEvent(QEvent *event)
+{
+    _imp->infoViewer->hideColorAndMouseInfo();
+    QGLWidget::leaveEvent(event);
+}
+
 void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected field
     QGLWidget::resizeEvent(event);
 }
