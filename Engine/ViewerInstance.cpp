@@ -66,6 +66,7 @@ Natron::OutputEffectInstance(node)
     if(node) {
         connect(node,SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
     }
+    _colorSpace->validate();
 }
 
 ViewerInstance::~ViewerInstance(){
@@ -649,6 +650,10 @@ void ViewerInstance::onColorSpaceChanged(const QString& colorspaceName){
             _colorSpace = Natron::Color::LutManager::Rec709Lut();
         }
         _lut = Rec709;
+    }
+    
+    if (_colorSpace) {
+        _colorSpace->validate();
     }
     
     if((_uiContext->viewer->bitDepth() == BYTE  || !_uiContext->viewer->supportsGLSL())

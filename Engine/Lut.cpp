@@ -164,25 +164,25 @@ namespace Natron {
         
         float Lut::fromColorSpaceFloatToLinearFloatFast(float v) const
         {
-            validate();
+            assert(init_);
             return from_byte_table[(int)(v * 255)];
         }
         
         float Lut::toColorSpaceFloatFromLinearFloatFast(float v) const
         {
-            validate();
+            assert(init_);
             return (float)to_byte_table[hipart(v)] / 65535.f;
         }
         
         unsigned char Lut::toColorSpaceByteFromLinearFloatFast(float v) const
         {
-            validate();
+            assert(init_);
             return to_byte_table[hipart(v)] / 255;
         }
         
         unsigned short Lut::toColorSpaceShortFromLinearFloatFast(float v) const
         {
-            validate();
+            assert(init_);
             return to_byte_table[hipart(v)];
         }
         
