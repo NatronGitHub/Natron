@@ -101,7 +101,8 @@ _viewerNode(node)
     _zoomCombobox->addItem("2400%");
     _zoomCombobox->addItem("3200%");
     _zoomCombobox->addItem("6400%");
-    
+    _zoomCombobox->setMaximumWidthFromText("100000%");
+
     _firstRowLayout->addWidget(_zoomCombobox);
     
     _centerViewerButton = new Button(_firstSettingsRow);
