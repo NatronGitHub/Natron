@@ -273,7 +273,8 @@ void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last)
 
 boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,RenderScale scale,
                                                                  int view,const RectI& renderWindow,
-                                                                 bool byPassCache){
+                                                                 bool byPassCache)
+{
 #ifdef NATRON_LOG
     Natron::Log::beginFunction(getName(),"renderRoI");
     Natron::Log::print(QString("Time "+QString::number(time)+
@@ -369,112 +370,112 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
     RectI intersection;
     renderWindow.intersect(image->getRoD(), &intersection);
     std::list<RectI> rectsToRender = image->getRestToRender(intersection);
-    if(rectsToRender.size() != 1 || !rectsToRender.begin()->isNull()){
-        for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
+#ifdef NATRON_LOG
+    if (rectsToRender.empty()) {
+        Natron::Log::print(QString("Everything is already rendered in this image.").toStdString());
+    }
+#endif
+
+    for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
 #ifdef NATRON_LOG
         Natron::Log::print(QString("Rect left to render in the image... xmin= "+
-                                                          QString::number((*it).left())+" ymin= "+
-                                                          QString::number((*it).bottom())+ " xmax= "+
-                                                          QString::number((*it).right())+ " ymax= "+
-                                                          QString::number((*it).top())).toStdString());
+                                   QString::number((*it).left())+" ymin= "+
+                                   QString::number((*it).bottom())+ " xmax= "+
+                                   QString::number((*it).right())+ " ymax= "+
+                                   QString::number((*it).top())).toStdString());
 #endif
-            /*we can set the render args*/
-            RenderArgs args;
-            args._roi = *it;
-            args._time = time;
-            args._view = view;
-            args._scale = scale;
-            _imp->renderArgs.setLocalData(args);
+        /*we can set the render args*/
+        RenderArgs args;
+        args._roi = *it;
+        args._time = time;
+        args._view = view;
+        args._scale = scale;
+        _imp->renderArgs.setLocalData(args);
 
-            RoIMap inputsRoi = getRegionOfInterest(time, scale, *it);
-            std::list<boost::shared_ptr<const Natron::Image> > inputImages;
-            /*we render each input first and store away their image in the inputImages list
-             in order to maintain a shared_ptr use_count > 1 so the cache doesn't attempt
-             to remove them.*/
-            for (RoIMap::const_iterator it2 = inputsRoi.begin(); it2!= inputsRoi.end(); ++it2) {
-                
-                ///notify the node that we're going to render something with the input
-                int inputNb = getInputNumber(it2->first);
-                assert(inputNb != -1); //< see getInputNumber
-                
-                _node->notifyInputNIsRendering(inputNb);
-                
-                boost::shared_ptr<const Natron::Image> inputImg = it2->first->renderRoI(time, scale,view, it2->second,byPassCache);
-                if (inputImg) {
-                    inputImages.push_back(inputImg);
-                }
-                
-                _node->notifyInputNIsFinishedRendering(inputNb);
-                
-                if (aborted()) {
-                    //if render was aborted, remove the frame from the cache as it contains only garbage
-                    appPTR->removeFromNodeCache(image);
-                    _node->removeImageBeingRendered(time, view);
-                    return image;
-                }
+        RoIMap inputsRoi = getRegionOfInterest(time, scale, *it);
+        std::list<boost::shared_ptr<const Natron::Image> > inputImages;
+        /*we render each input first and store away their image in the inputImages list
+         in order to maintain a shared_ptr use_count > 1 so the cache doesn't attempt
+         to remove them.*/
+        for (RoIMap::const_iterator it2 = inputsRoi.begin(); it2!= inputsRoi.end(); ++it2) {
+
+            ///notify the node that we're going to render something with the input
+            int inputNb = getInputNumber(it2->first);
+            assert(inputNb != -1); //< see getInputNumber
+
+            _node->notifyInputNIsRendering(inputNb);
+
+            boost::shared_ptr<const Natron::Image> inputImg = it2->first->renderRoI(time, scale,view, it2->second,byPassCache);
+            if (inputImg) {
+                inputImages.push_back(inputImg);
             }
-            
-            ///notify the node we're starting a render
-            _node->notifyRenderingStarted();
-            
-            /*depending on the thread-safety of the plug-in we render with a different
-             amount of threads*/
-            EffectInstance::RenderSafety safety = renderThreadSafety();
-            switch (safety) {
-                case FULLY_SAFE_FRAME: // the plugin will perform any per frame SMP threading
-                {
-                    // we can split the frame in tiles and do per frame SMP threading (see kOfxImageEffectPluginPropHostFrameThreading)
-                    std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(*it, QThread::idealThreadCount());
-                    QFuture<Natron::Status> ret = QtConcurrent::mapped(splitRects,
-                                                                       boost::bind(&EffectInstance::tiledRenderingFunctor,this,args,_1,image));
-                    ret.waitForFinished();
-                    for (QFuture<Natron::Status>::const_iterator it = ret.begin(); it!=ret.end(); ++it) {
-                        if ((*it) == Natron::StatFailed) {
-                            throw std::runtime_error("rendering failed");
-                        }
-                    }
-                } break;
 
-                case INSTANCE_SAFE: // indicating that any instance can have a single 'render' call at any one time,
-                case FULLY_SAFE:    // indicating that any instance of a plugin can have multiple renders running simultaneously
-                {
-                    Natron::Status st = render(time, scale, *it,view, image);
-                    if(st != Natron::StatOK){
-                        throw std::runtime_error("rendering failed");
-                    }
-                    if(!aborted()){
-                        image->markForRendered(*it);
-                    }
-                } break;
+            _node->notifyInputNIsFinishedRendering(inputNb);
 
-
-                case UNSAFE: // indicating that only a single 'render' call can be made at any time amoung all instances
-                default:
-                {
-                    QMutex* pluginLock = appPTR->getMutexForPlugin(pluginID().c_str());
-                    assert(pluginLock);
-                    pluginLock->lock();
-                    Natron::Status st = render(time, scale, *it,view, image);
-                    pluginLock->unlock();
-                    if(st != Natron::StatOK){
-                        throw std::runtime_error("rendering failed");
-                    }
-                    if(!aborted()){
-                        image->markForRendered(*it);
-                    }
-                } break;
+            if (aborted()) {
+                //if render was aborted, remove the frame from the cache as it contains only garbage
+                appPTR->removeFromNodeCache(image);
+                _node->removeImageBeingRendered(time, view);
+                return image;
             }
-            
-            ///notify the node we've finished rendering
-            _node->notifyRenderingEnded();
         }
-    } else {
-#ifdef NATRON_LOG
-        Natron::Log::print(QString("Everything is already rendered in this image.").toStdString());
-#endif
+
+        ///notify the node we're starting a render
+        _node->notifyRenderingStarted();
+
+        /*depending on the thread-safety of the plug-in we render with a different
+         amount of threads*/
+        EffectInstance::RenderSafety safety = renderThreadSafety();
+        switch (safety) {
+            case FULLY_SAFE_FRAME: // the plugin will perform any per frame SMP threading
+            {
+                // we can split the frame in tiles and do per frame SMP threading (see kOfxImageEffectPluginPropHostFrameThreading)
+                std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(*it, QThread::idealThreadCount());
+                QFuture<Natron::Status> ret = QtConcurrent::mapped(splitRects,
+                                                                   boost::bind(&EffectInstance::tiledRenderingFunctor,this,args,_1,image));
+                ret.waitForFinished();
+                for (QFuture<Natron::Status>::const_iterator it = ret.begin(); it!=ret.end(); ++it) {
+                    if ((*it) == Natron::StatFailed) {
+                        throw std::runtime_error("rendering failed");
+                    }
+                }
+            } break;
+
+            case INSTANCE_SAFE: // indicating that any instance can have a single 'render' call at any one time,
+            case FULLY_SAFE:    // indicating that any instance of a plugin can have multiple renders running simultaneously
+            {
+                Natron::Status st = render(time, scale, *it,view, image);
+                if(st != Natron::StatOK){
+                    throw std::runtime_error("rendering failed");
+                }
+                if(!aborted()){
+                    image->markForRendered(*it);
+                }
+            } break;
+
+
+            case UNSAFE: // indicating that only a single 'render' call can be made at any time amoung all instances
+            default:
+            {
+                QMutex* pluginLock = appPTR->getMutexForPlugin(pluginID().c_str());
+                assert(pluginLock);
+                pluginLock->lock();
+                Natron::Status st = render(time, scale, *it,view, image);
+                pluginLock->unlock();
+                if(st != Natron::StatOK){
+                    throw std::runtime_error("rendering failed");
+                }
+                if(!aborted()){
+                    image->markForRendered(*it);
+                }
+            } break;
+        }
+
+        ///notify the node we've finished rendering
+        _node->notifyRenderingEnded();
     }
     _node->removeImageBeingRendered(time, view);
-    
+
     //we released the input images and force the cache to clear exceeding entries
     appPTR->clearExceedingEntriesFromNodeCache();
 
