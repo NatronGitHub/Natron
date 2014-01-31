@@ -19,10 +19,10 @@ std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const{
     
     /*if we rendered everything we just append
      a NULL box to indicate we rendered it all.*/
-    if(!memchr(_map.get(),0,_rod.area())){
-        ret.push_back(RectI());
-        return ret;
-    }
+//    if(!memchr(_map.get(),0,_rod.area())){
+//        ret.push_back(RectI());
+//        return ret;
+//    }
     
     RectI bbox = roi;
     //find bottom
