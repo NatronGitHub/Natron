@@ -682,8 +682,8 @@ void ViewerInstance::disconnectViewer()
     emit viewerDisconnected();
 }
 
-bool ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear){
-    assert(_lastRenderedImage);
+bool ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear)
+{
     if (!_lastRenderedImage) {
         return false;
     }
