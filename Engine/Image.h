@@ -111,6 +111,9 @@ namespace Natron{
         
         void markForRendered(const RectI& roi);
     private:
+        RectI minimalNonMarkedBbox(const RectI& roi) const;
+
+    private:
         RectI _rod;
         boost::scoped_array<char> _map;
     };

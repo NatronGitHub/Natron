@@ -13,10 +13,8 @@
 
 #include "Engine/Lut.h"
 
-std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const{
-    /*for now a simple version that computes the bbox*/
-    std::list<RectI> ret;
-    
+RectI Natron::Bitmap::minimalNonMarkedBbox(const RectI& roi) const
+{
     /*if we rendered everything we just append
      a NULL box to indicate we rendered it all.*/
 //    if(!memchr(_map.get(),0,_rod.area())){
@@ -28,61 +26,170 @@ std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const{
     //find bottom
     for (int i = bbox.bottom(); i < bbox.top();++i) {
         char* buf = &_map[(i-_rod.bottom())*_rod.width()];
-        if(!memchr(buf,0,_rod.width())){
+        if(!memchr(buf, 0, _rod.width())){
             bbox.set_bottom(bbox.bottom()+1);
-            if(bbox.top() <= bbox.bottom()){
-                bbox.clear();
-                ret.push_back(bbox);
-                return ret;
-            }
-        }else{
+        } else {
             break;
         }
     }
 
-    //find top
+    //find top (will do zero iteration if the bbox is already empty)
     for (int i = bbox.top()-1; i >= bbox.bottom();--i) {
         char* buf = &_map[(i-_rod.bottom())*_rod.width()];
-        if(!memchr(buf,0,_rod.width())){
+        if (!memchr(buf, 0, _rod.width())) {
             bbox.set_top(bbox.top()-1);
-        }else{
+        } else {
             break;
         }
+    }
+
+    // avoid making bbox.width() iterations for nothing
+    if (bbox.isNull()) {
+        return bbox;
     }
 
     //find left
     for (int j = bbox.left(); j < bbox.right(); ++j) {
         bool shouldStop = false;
         for (int i = bbox.bottom(); i < bbox.top(); ++i) {
-            if (!_map[(i-_rod.bottom())*_rod.width()+(j-_rod.left())]) {
+            if (!_map[(i-_rod.bottom())*_rod.width() + (j-_rod.left())]) {
                 shouldStop = true;
                 break;
             }
         }
-        if(!shouldStop){
+        if (!shouldStop) {
             bbox.set_left(bbox.left()+1);
-        }else{
-            break;
-        }
-    }
-    
-    //find right
-    for (int j = bbox.right()-1; j >= bbox.left(); --j) {
-        bool shouldStop = false;
-        for (int i = bbox.bottom(); i < bbox.top(); ++i) {
-            if (!_map[(i-_rod.bottom())*_rod.width()+(j-_rod.left())]) {
-                shouldStop = true;
-                break;
-            }
-        }
-        if(!shouldStop){
-            bbox.set_right(bbox.right()-1);
-        }else{
+        } else {
             break;
         }
     }
 
-    ret.push_back(bbox);
+    //find right
+    for (int j = bbox.right()-1; j >= bbox.left(); --j) {
+        bool shouldStop = false;
+        for (int i = bbox.bottom(); i < bbox.top(); ++i) {
+            if (!_map[(i-_rod.bottom())*_rod.width() + (j-_rod.left())]) {
+                shouldStop = true;
+                break;
+            }
+        }
+        if (!shouldStop) {
+            bbox.set_right(bbox.right()-1);
+        } else {
+            break;
+        }
+    }
+    return bbox;
+}
+
+std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const
+{
+    /*for now a simple version that computes the bbox*/
+    std::list<RectI> ret;
+
+    RectI bbox = minimalNonMarkedBbox(roi);
+    if (bbox.isNull()) {
+        return ret; // return an empty rectangle list
+    }
+
+    // optimization by Fred, Jan 31, 2014
+    //
+    // Now that we have the smallest enclosing bounding box,
+    // let's try to find rectangles for the bottom, the top,
+    // the left and the right part.
+    // This happens quite often, for example when zooming out,
+    // the rectangles may be just A, B, C and D from the following
+    // drawing, where A, B, C, D are just zeroes, and X contains
+    // zeroes and ones.
+    //
+    // BBBBBBBBBBBBBB
+    // BBBBBBBBBBBBBB
+    // CXXXXXXXXXXDDD
+    // CXXXXXXXXXXDDD
+    // CXXXXXXXXXXDDD
+    // CXXXXXXXXXXDDD
+    // AAAAAAAAAAAAAA
+
+    // First, find if there's an "A" rectangle, and push it to the result
+    //find bottom
+    RectI bbox_sub = bbox;
+    bbox_sub.set_top(bbox.bottom());
+    for (int i = bbox.bottom(); i < bbox.top();++i) {
+        char* buf = &_map[(i-_rod.bottom())*_rod.width()];
+        if (!memchr(buf, 1, _rod.width())) {
+            bbox.set_bottom(bbox.bottom()+1);
+            bbox_sub.set_top(bbox.bottom());
+        } else {
+            break;
+        }
+    }
+    if (!bbox_sub.isNull()) { // empty boxes should not be pushed
+        ret.push_back(bbox_sub);
+    }
+
+    // Now, find the "B" rectangle
+    //find top
+    bbox_sub = bbox;
+    bbox_sub.set_bottom(bbox.bottom());
+    for (int i = bbox.top()-1; i >= bbox.bottom();--i) {
+        char* buf = &_map[(i-_rod.bottom())*_rod.width()];
+        if (!memchr(buf, 1, _rod.width())) {
+            bbox.set_top(bbox.top()-1);
+            bbox_sub.set_bottom(bbox.top());
+        } else {
+            break;
+        }
+    }
+    if (!bbox_sub.isNull()) { // empty boxes should not be pushed
+        ret.push_back(bbox_sub);
+    }
+
+    //find left
+    bbox_sub = bbox;
+    bbox_sub.set_right(bbox.left());
+    for (int j = bbox.left(); j < bbox.right(); ++j) {
+        bool shouldStop = false;
+        for (int i = bbox.bottom(); i < bbox.top(); ++i) {
+            if (_map[(i-_rod.bottom())*_rod.width()+(j-_rod.left())]) {
+                shouldStop = true;
+                break;
+            }
+        }
+        if (!shouldStop) {
+            bbox.set_left(bbox.left()+1);
+            bbox_sub.set_right(bbox.left());
+        } else {
+            break;
+        }
+    }
+    if (!bbox_sub.isNull()) { // empty boxes should not be pushed
+        ret.push_back(bbox_sub);
+    }
+
+    //find right
+    bbox_sub = bbox;
+    bbox_sub.set_left(bbox.right());
+    for (int j = bbox.right()-1; j >= bbox.left(); --j) {
+        bool shouldStop = false;
+        for (int i = bbox.bottom(); i < bbox.top(); ++i) {
+            if (_map[(i-_rod.bottom())*_rod.width()+(j-_rod.left())]) {
+                shouldStop = true;
+                break;
+            }
+        }
+        if (!shouldStop) {
+            bbox.set_right(bbox.right()-1);
+            bbox_sub.set_left(bbox.right());
+        } else {
+            break;
+        }
+    }
+
+    // get the bounding box of what's left (the X rectangle in the drawing above)
+    bbox = minimalNonMarkedBbox(bbox);
+    if (!bbox.isNull()) { // empty boxes should not be pushed
+        ret.push_back(bbox);
+    }
     return ret;
 }
 
