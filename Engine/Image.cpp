@@ -97,10 +97,13 @@ std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const
     // Now that we have the smallest enclosing bounding box,
     // let's try to find rectangles for the bottom, the top,
     // the left and the right part.
-    // This happens quite often, for example when zooming out,
-    // the rectangles may be just A, B, C and D from the following
-    // drawing, where A, B, C, D are just zeroes, and X contains
-    // zeroes and ones.
+    // This happens quite often, for example when zooming out
+    // (in this case the area to compute is formed of A, B, C and D,
+    // and X is already rendered), or when panning (in this case the area
+    // is just two rectangles, e.g. A and C, and the rectangles B, D and
+    // X are already rendered).
+    // The rectangles A, B, C and D from the following drawing are just
+    // zeroes, and X contains zeroes and ones.
     //
     // BBBBBBBBBBBBBB
     // BBBBBBBBBBBBBB
