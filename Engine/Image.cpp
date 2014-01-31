@@ -133,7 +133,7 @@ std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const
     // Now, find the "B" rectangle
     //find top
     bbox_sub = bbox;
-    bbox_sub.set_bottom(bbox.bottom());
+    bbox_sub.set_bottom(bbox.top());
     for (int i = bbox.top()-1; i >= bbox.bottom();--i) {
         char* buf = &_map[(i-_rod.bottom())*_rod.width()];
         if (!memchr(buf, 1, _rod.width())) {
