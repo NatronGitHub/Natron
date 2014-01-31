@@ -1425,12 +1425,13 @@ void ViewerGL::fitToFormat(const Format& rod){
     double zoomFactor = height()/h;
     zoomFactor = (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01);
     assert(zoomFactor>=0.01 && zoomFactor <= 1024);
-    _imp->zoomCtx.zoomFactor = zoomFactor;
-    emit zoomChanged(zoomFactor * 100);
-    resetMousePos();
-    _imp->zoomCtx.left = w/2.f - (width()/(2.f*_imp->zoomCtx.zoomFactor));
-    _imp->zoomCtx.bottom = h/2.f - (height()/(2.f*_imp->zoomCtx.zoomFactor)) * rod.getPixelAspect();
-    
+    if (_imp->zoomCtx.zoomFactor != zoomFactor) {
+        _imp->zoomCtx.zoomFactor = zoomFactor;
+        emit zoomChanged(zoomFactor * 100);
+        resetMousePos();
+        _imp->zoomCtx.left = w/2.f - (width()/(2.f*_imp->zoomCtx.zoomFactor));
+        _imp->zoomCtx.bottom = h/2.f - (height()/(2.f*_imp->zoomCtx.zoomFactor)) * rod.getPixelAspect();
+    }
     _imp->zoomOrPannedSinceLastFit = false;
 }
 
