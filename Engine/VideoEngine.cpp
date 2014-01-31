@@ -643,7 +643,7 @@ void VideoEngine::refreshAndContinueRender(bool initViewer){
     bool isPlaybackRunning = isWorking() && (_currentRunArgs._frameRequestsCount == -1 ||
                                              (_currentRunArgs._frameRequestsCount > 1 && _currentRunArgs._frameRequestIndex < _currentRunArgs._frameRequestsCount - 1));
     if(!isPlaybackRunning){
-        render(1,false,false,initViewer,_currentRunArgs._forward,true,true);
+        render(1,false,false,initViewer,_currentRunArgs._forward,true,false);
     }
 }
 void VideoEngine::updateTreeAndContinueRender(bool initViewer){
@@ -656,9 +656,9 @@ void VideoEngine::updateTreeAndContinueRender(bool initViewer){
         int count = _currentRunArgs._frameRequestsCount == - 1 ? -1 :
                                                                  _currentRunArgs._frameRequestsCount - _currentRunArgs._frameRequestIndex ;
         abortRendering();
-        render(count,true,true,initViewer,_currentRunArgs._forward,false,true);
+        render(count,true,true,initViewer,_currentRunArgs._forward,false,false);
     }else{
-        render(1,false,true,initViewer,_currentRunArgs._forward,true,true);
+        render(1,false,true,initViewer,_currentRunArgs._forward,true,false);
     }
 }
 
