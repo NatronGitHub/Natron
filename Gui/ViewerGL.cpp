@@ -1195,17 +1195,21 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
                                                   toImgCoordinates_fast(event->x(), event->y()))){
             updateGL();
         }
-    }else if(event->button() == Qt::LeftButton && event->modifiers().testFlag(Qt::ControlModifier)){
+    } else if(event->button() == Qt::LeftButton &&
+              event->modifiers().testFlag(Qt::ControlModifier) &&
+              _imp->displayingImage) {
         float r,g,b,a;
         QPointF imgPos = toImgCoordinates_fast(event->x(), event->y());
         bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
-        _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
-        QColor pickerColor;
-        pickerColor.setRedF(r);
-        pickerColor.setGreenF(g);
-        pickerColor.setBlueF(b);
-        pickerColor.setAlphaF(a);
-        _imp->viewerTab->getGui()->_projectGui->setPickersColor(pickerColor);
+        bool picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
+        if (picked) {
+            QColor pickerColor;
+            pickerColor.setRedF(r);
+            pickerColor.setGreenF(g);
+            pickerColor.setBlueF(b);
+            pickerColor.setAlphaF(a);
+            _imp->viewerTab->getGui()->_projectGui->setPickersColor(pickerColor);
+        }
     }
     
 }
@@ -1279,6 +1283,10 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
 
 
 void ViewerGL::updateColorPicker(int x,int y){
+    if (!_imp->displayingImage) {
+        _imp->infoViewer->hideColorAndMouseInfo();
+        return;
+    }
     QPoint pos;
     bool xInitialized = false;
     bool yInitialized = false;
@@ -1301,10 +1309,14 @@ void ViewerGL::updateColorPicker(int x,int y){
     QPointF imgPos = toImgCoordinates_fast(pos.x(), pos.y());
     
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
-    _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
-    //   cout << "r: " << color.x() << " g: " << color.y() << " b: " << color.z() << endl;
-    _imp->infoViewer->setColor(r,g,b,a);
-    emit infoColorUnderMouseChanged();
+    bool picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
+    if (!picked) {
+        _imp->infoViewer->hideColorAndMouseInfo();
+    } else {
+        //   cout << "r: " << color.x() << " g: " << color.y() << " b: " << color.z() << endl;
+        _imp->infoViewer->setColor(r,g,b,a);
+        emit infoColorUnderMouseChanged();
+    }
 }
 
 void ViewerGL::wheelEvent(QWheelEvent *event) {
