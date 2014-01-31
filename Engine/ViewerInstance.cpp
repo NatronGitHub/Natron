@@ -673,10 +673,13 @@ void ViewerInstance::setDisplayChannels(DisplayChannels channels) {
     refreshAndContinueRender();
 }
 
-void ViewerInstance::disconnectViewer(){
-    getVideoEngine()->abortRendering(); // aborting current work
+void ViewerInstance::disconnectViewer()
+{
+    if (getVideoEngine()->isWorking()) {
+        getVideoEngine()->abortRendering(); // aborting current work
+        emit viewerDisconnected();
+    }
     _lastRenderedImage.reset();
-    emit viewerDisconnected();
 }
 
 void ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear){
