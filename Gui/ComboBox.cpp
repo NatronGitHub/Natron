@@ -24,7 +24,15 @@
 
 using namespace Natron;
 
-ComboBox::ComboBox(QWidget* parent):QFrame(parent),_currentIndex(0),_maximumTextSize(0),pressed(false),animation(0){
+ComboBox::ComboBox(QWidget* parent)
+: QFrame(parent)
+, _currentIndex(0)
+#if IS_MAXIMUMTEXTSIZE_USEFUL
+, _maximumTextSize(0)
+#endif
+, pressed(false)
+, animation(0)
+{
     
     _mainLayout = new QHBoxLayout(this);
     _mainLayout->setSpacing(0);
@@ -127,9 +135,12 @@ void ComboBox::insertItem(int index,const QString& item,QIcon icon,QKeySequence 
     if (!key.isEmpty()) {
         action->setShortcut(key);
     }
+#if IS_MAXIMUMTEXTSIZE_USEFUL
     if (item.size() > _maximumTextSize) {
         _maximumTextSize = item.size();
     }
+#endif
+    growMaximumWidthFromText(item);
     _actions.insert(_actions.begin()+index, action);
     /*if this is the first action we add, make it current*/
     if(_actions.size() == 1){
@@ -151,10 +162,12 @@ void ComboBox::addItem(const QString& item,QIcon icon ,QKeySequence key,const QS
     if(!toolTip.isEmpty()){
         action->setToolTip(Qt::convertFromPlainText(toolTip, Qt::WhiteSpaceNormal));
     }
+#if IS_MAXIMUMTEXTSIZE_USEFUL
     if (item.size() > _maximumTextSize) {
         _maximumTextSize = item.size();
     }
-    
+#endif
+    growMaximumWidthFromText(item);
     _actions.push_back(action);
     
     /*if this is the first action we add, make it current*/
@@ -165,6 +178,7 @@ void ComboBox::addItem(const QString& item,QIcon icon ,QKeySequence key,const QS
 
 void ComboBox::setCurrentText(const QString& text){
     QString str(text);
+    growMaximumWidthFromText(str);
     str.prepend("  ");
     str.append("  ");
     assert(_currentText);
@@ -175,12 +189,22 @@ void ComboBox::setCurrentText(const QString& text){
             break;
         }
     }
-    adjustSize(str);
 }
-void ComboBox::adjustSize(const QString& str){
-    int w = _currentText->fontMetrics().width(str);
-    setMaximumWidth(w+20);
+
+void ComboBox::setMaximumWidthFromText(const QString& str)
+{
+    int w = _currentText->fontMetrics().width(str+"    ");
+    setMaximumWidth(w);
 }
+
+void ComboBox::growMaximumWidthFromText(const QString& str)
+{
+    int w = _currentText->fontMetrics().width(str+"    ");
+    if (w > maximumWidth()) {
+        setMaximumWidth(w);
+    }
+}
+
 QString ComboBox::text() const{
     return _currentText->text();
 }
@@ -189,30 +213,35 @@ int ComboBox::activeIndex() const{
     return _currentIndex;
 }
 
-void ComboBox::setCurrentIndex(int index){
+void ComboBox::setCurrentIndex(int index)
+{
     QString str;
     QString rawStr;
-    if(index >= 0 && index < (int)_actions.size()){
+    if (index >= 0 && index < (int)_actions.size()) {
         str = _actions[index]->text();
         rawStr = str;
-        /*before displaying,prepend and append the text by some spacing.
-         This is a dirty way to do this but QLayout::addSpacing() doesn't preserve
-         the same style for the label.*/
-        int dsize = _maximumTextSize - str.size();
-        dsize/=2;
-        str.prepend("  ");
-        for (int i = 0; i < dsize ; ++i) {str.prepend(" ");}
-        str.append("  ");
-        for (int i = 0; i < dsize ; ++i) {str.append(" ");}
-    }else{
-        str = "    ";
     }
+    /*before displaying,prepend and append the text by some spacing.
+     This is a dirty way to do this but QLayout::addSpacing() doesn't preserve
+     the same style for the label.*/
+#if IS_MAXIMUMTEXTSIZE_USEFUL
+    int dsize = _maximumTextSize - str.size();
+    dsize/=2;
+    str.prepend("  ");
+    for (int i = 0; i < dsize ; ++i) {str.prepend(" ");}
+    str.append("  ");
+    for (int i = 0; i < dsize ; ++i) {str.append(" ");}
+#endif
+    str.prepend("  ");
+    str.append("  ");
     _currentIndex = index;
     _currentText->setText(str);
-    adjustSize(str);
+    // already called growMaximumWidthFromText() from addItem() and insertItem()
+    //setMaximumWidthFromText(str);
     emit currentIndexChanged(index);
     emit currentIndexChanged(rawStr);
 }
+
 void ComboBox::addSeparator(){
     _separators.push_back(_actions.size()-1);
 }
@@ -255,6 +284,7 @@ void ComboBox::removeItem(const QString& item){
             }
         }
     }
+#if IS_MAXIMUMTEXTSIZE_USEFUL
     /*we also need to re-calculate the maximum text size*/
     _maximumTextSize = 0;
     for (U32 i = 0; i < _actions.size(); ++i) {
@@ -263,6 +293,7 @@ void ComboBox::removeItem(const QString& item){
             _maximumTextSize = _actions[i]->text().size();
         }
     }
+#endif
 }
 
 void ComboBox::clear(){
@@ -270,7 +301,9 @@ void ComboBox::clear(){
     _menu->clear();
     _separators.clear();
     _currentIndex = 0;
+#if IS_MAXIMUMTEXTSIZE_USEFUL
     _maximumTextSize = 0;
+#endif
 }
 
 
@@ -278,6 +311,8 @@ void ComboBox::setItemText(int index,const QString& item){
     assert(0 <= index && index < (int)_actions.size());
     assert(_actions[index]);
     _actions[index]->setText(item);
+    growMaximumWidthFromText(item);
+#if IS_MAXIMUMTEXTSIZE_USEFUL
     /*we also need to re-calculate the maximum text size*/
     _maximumTextSize = 0;
     for (U32 i = 0; i < _actions.size(); ++i) {
@@ -286,6 +321,7 @@ void ComboBox::setItemText(int index,const QString& item){
             _maximumTextSize = _actions[i]->text().size();
         }
     }
+#endif
 }
 
 void ComboBox::setItemShortcut(int index,const QKeySequence& sequence){
