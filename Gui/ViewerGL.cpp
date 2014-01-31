@@ -539,7 +539,10 @@ void ViewerGL::resizeGL(int width, int height){
     assert(_imp->viewerTab);
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
-    if (viewer->getUiContext() && !_imp->zoomOrPannedSinceLastFit && _imp->displayingImage) {
+    if (!_imp->zoomOrPannedSinceLastFit) {
+        fitToFormat(getDisplayWindow());
+    }
+    if (viewer->getUiContext()) {
         viewer->refreshAndContinueRender(true);
         updateGL();
     }
@@ -1105,7 +1108,7 @@ void ViewerGL::restoreGLState()
 void ViewerGL::initBlackTex()
 {
     assert(QGLContext::currentContext() == context());
-    fitToFormat(getDisplayWindow());
+    //fitToFormat(getDisplayWindow());
     
     TextureRect texSize(0, 0, 2048, 1556,2048,1556,1);
     
@@ -1428,10 +1431,10 @@ void ViewerGL::fitToFormat(const Format& rod){
     if (_imp->zoomCtx.zoomFactor != zoomFactor) {
         _imp->zoomCtx.zoomFactor = zoomFactor;
         emit zoomChanged(zoomFactor * 100);
-        resetMousePos();
-        _imp->zoomCtx.left = w/2.f - (width()/(2.f*_imp->zoomCtx.zoomFactor));
-        _imp->zoomCtx.bottom = h/2.f - (height()/(2.f*_imp->zoomCtx.zoomFactor)) * rod.getPixelAspect();
     }
+    resetMousePos();
+    _imp->zoomCtx.left = w/2.f - (width()/(2.f*_imp->zoomCtx.zoomFactor));
+    _imp->zoomCtx.bottom = h/2.f - (height()/(2.f*_imp->zoomCtx.zoomFactor)) * rod.getPixelAspect();
     _imp->zoomOrPannedSinceLastFit = false;
 }
 
@@ -1480,9 +1483,11 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
 
 
 void ViewerGL::disconnectViewer(){
-    setRod(_imp->blankViewerInfos.getRoD());
-    fitToFormat(getDisplayWindow());
-    clearViewer();
+    if (displayingImage()) {
+        setRod(_imp->blankViewerInfos.getRoD());
+        //fitToFormat(getDisplayWindow());
+        clearViewer();
+    }
 }
 
 
