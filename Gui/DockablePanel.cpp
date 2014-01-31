@@ -198,7 +198,6 @@ void DockablePanel::initializeKnobs(){
     std::vector< boost::shared_ptr<Knob> >  emptyVec;
     while(!knobsCpy.empty()){
         boost::shared_ptr<Knob>& k = *knobsCpy.begin();
-        if(!k->getParentKnob()){
             if (k->typeName() == Tab_Knob::typeNameStatic()) {
                 knobsMap.push_back(std::make_pair(k, boost::dynamic_pointer_cast<Tab_Knob>(k)->getKnobs()));
             }else if( k->typeName() == Group_Knob::typeNameStatic()){
@@ -206,7 +205,6 @@ void DockablePanel::initializeKnobs(){
             }else{
                 knobsMap.push_back(std::make_pair(k,emptyVec));
             }
-        }
         knobsCpy.erase(knobsCpy.begin());
     }
     

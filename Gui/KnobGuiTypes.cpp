@@ -1587,6 +1587,7 @@ void Group_KnobGui::_hide()
 {
     _button->hide();
     _descriptionLabel->hide();
+    
     for (U32 i = 0 ; i < _children.size() ; ++i) {
         _children[i].first->hide();
         
@@ -1601,8 +1602,11 @@ void Group_KnobGui::_show()
     }
     _button->show();
     _descriptionLabel->show();
-    for (U32 i = 0 ; i < _children.size() ; ++i) {
-        _children[i].first->show();
+    
+    if (_checked) {
+        for (U32 i = 0 ; i < _children.size() ; ++i) {
+            _children[i].first->show();
+        }
     }
     
 }
