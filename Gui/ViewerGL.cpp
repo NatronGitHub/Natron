@@ -449,7 +449,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 , _imp(new Implementation(parent, this))
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-    
+    setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
     
     QObject::connect(parent->getGui()->getApp()->getProject().get(),SIGNAL(formatChanged(Format)),this,SLOT(onProjectFormatChanged(Format)));
@@ -1554,16 +1554,29 @@ void ViewerGL::focusInEvent(QFocusEvent *event){
     if(_imp->viewerTab->notifyOverlaysFocusGained()){
         updateGL();
     }
-    QGLWidget::enterEvent(event);
+    QGLWidget::focusInEvent(event);
 }
+
 void ViewerGL::focusOutEvent(QFocusEvent *event)
 {
     if(_imp->viewerTab->notifyOverlaysFocusLost()){
         updateGL();
     }
-    QGLWidget::leaveEvent(event);
-
+    QGLWidget::focusOutEvent(event);
 }
+
+void ViewerGL::enterEvent(QEvent *event)
+{
+    updateColorPicker();
+    QGLWidget::enterEvent(event);
+}
+
+void ViewerGL::leaveEvent(QEvent *event)
+{
+    _imp->infoViewer->hideColorAndMouseInfo();
+    QGLWidget::leaveEvent(event);
+}
+
 void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected field
     QGLWidget::resizeEvent(event);
 }
