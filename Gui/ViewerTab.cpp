@@ -712,7 +712,9 @@ bool ViewerTab::eventFilter(QObject *target, QEvent *event){
 }
 
 void ViewerTab::disconnectViewer(){
-    viewer->disconnectViewer();
+    if (viewer->displayingImage()) {
+        viewer->disconnectViewer();
+    }
 }
 
 
