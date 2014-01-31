@@ -1322,7 +1322,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     
     _imp->zoomCtx.zoomFactor = newZoomFactor;
     if(_imp->displayingImage){
-        appPTR->clearPlaybackCache();
+        //appPTR->clearPlaybackCache();
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender();
     }
     //else {
@@ -1361,7 +1361,7 @@ void ViewerGL::zoomSlot(int v) {
     
     _imp->zoomCtx.zoomFactor = newZoomFactor;
     if(_imp->displayingImage){
-        appPTR->clearPlaybackCache();
+        // appPTR->clearPlaybackCache();
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender();
     } else {
         updateGL();
