@@ -54,7 +54,7 @@
 #include "Gui/ProjectGui.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/PreferencesPanel.h"
-
+#include "Gui/AboutWindow.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_IMAGE "Image"
@@ -104,6 +104,7 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
     actionClearNodeCache(0),
     actionClearPluginsLoadingCache(0),
     actionClearAllCaches(0),
+    actionShowAboutWindow(0),
     actionConnectInput1(0),
     actionConnectInput2(0),
     actionConnectInput3(0),
@@ -144,7 +145,8 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
     cacheMenu(0),
     _settingsGui(0),
     _projectGui(0),
-    _currentlyDraggedPanel(0)
+    _currentlyDraggedPanel(0),
+    _aboutWindow(0)
 {
     QObject::connect(this,SIGNAL(doDialog(int,QString,QString,Natron::StandardButtons,int)),this,
                      SLOT(onDoDialog(int,QString,QString,Natron::StandardButtons,int)));
@@ -300,6 +302,8 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
     actionClearPluginsLoadingCache->setText(tr("Clear plugins loading cache"));
     assert(actionClearAllCaches);
     actionClearAllCaches->setText(tr("Clear all caches"));
+    assert(actionShowAboutWindow);
+    actionShowAboutWindow->setText(tr("About"));
     
     assert(actionConnectInput1);
     actionConnectInput1 ->setText(tr("Connect to input 1"));
@@ -426,6 +430,9 @@ void Gui::setupUi()
     actionClearAllCaches->setObjectName(QString::fromUtf8("actionClearAllCaches"));
     actionClearAllCaches->setCheckable(false);
     actionClearAllCaches->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_K));
+    actionShowAboutWindow = new QAction(this);
+    actionShowAboutWindow->setObjectName(QString::fromUtf8("actionShowAboutWindow"));
+    actionShowAboutWindow->setCheckable(false);
     
     actionConnectInput1 = new QAction(this);
     actionConnectInput1->setCheckable(false);
@@ -585,11 +592,15 @@ void Gui::setupUi()
 
     setVisibleProjectSettingsPanel();
     
+    _aboutWindow = new AboutWindow(this);
+    _aboutWindow->hide();
+    
     menubar->addAction(menuFile->menuAction());
     menubar->addAction(menuEdit->menuAction());
     menubar->addAction(menuDisplay->menuAction());
     menubar->addAction(menuOptions->menuAction());
     menubar->addAction(cacheMenu->menuAction());
+    menuFile->addAction(actionShowAboutWindow);
     menuFile->addAction(actionNew_project);
     menuFile->addAction(actionOpen_project);
     menuFile->addAction(actionSave_project);
@@ -624,6 +635,8 @@ void Gui::setupUi()
     cacheMenu->addAction(actionClearAllCaches);
     retranslateUi(this);
     
+    
+    QObject::connect(actionShowAboutWindow,SIGNAL(triggered()),this,SLOT(showAbout()));
     QObject::connect(actionFullScreen, SIGNAL(triggered()),this,SLOT(toggleFullScreen()));
     QObject::connect(actionClearDiskCache, SIGNAL(triggered()),appPTR,SLOT(clearDiskCache()));
     QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),appPTR,SLOT(clearPlaybackCache()));
@@ -1561,4 +1574,10 @@ QWidget* Gui::stopDragPanel() {
     QWidget* ret = _currentlyDraggedPanel;
     _currentlyDraggedPanel = 0;
     return ret;
+}
+
+
+void Gui::showAbout() {
+    _aboutWindow->show();
+    _aboutWindow->exec();
 }

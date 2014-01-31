@@ -189,6 +189,7 @@ SOURCES += \
     Global/AppManager.cpp \
     Global/LibraryBinary.cpp \
     Global/main.cpp \
+    Gui/AboutWindow.cpp \
     Gui/AnimatedCheckBox.cpp \
     Gui/AnimationButton.cpp \
     Gui/Button.cpp \
@@ -294,6 +295,7 @@ HEADERS += \
     Global/Macros.h \
     Global/MemoryInfo.h \
     Global/QtCompat.h \
+    Gui/AboutWindow.h \
     Gui/AnimatedCheckBox.h \
     Gui/AnimationButton.h \
     Gui/Button.h \
@@ -370,7 +372,7 @@ HEADERS += \
     libs/OpenFX_extensions/tuttle/ofxParamAPI.h \
     libs/OpenFX_extensions/tuttle/ofxReadWrite.h \
     libs/OpenFX_extensions/ofxhParametricParam.h \
-    libs/OpenFX/include/natron/IOExtensions.h
+    libs/OpenFX/include/natron/IOExtensions.h \
 
 INSTALLS += target
 

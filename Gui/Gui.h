@@ -68,6 +68,7 @@ class QUndoGroup;
 class QUndoStack;
 class DockablePanel;
 class PreferencesPanel;
+class AboutWindow;
 
 namespace Natron{
     class Node;
@@ -351,7 +352,7 @@ public slots:
     
     void showSettings();
     
-    
+    void showAbout();
 
 private:
 
@@ -398,6 +399,7 @@ private:
     QAction *actionClearNodeCache;
     QAction *actionClearPluginsLoadingCache;
     QAction *actionClearAllCaches;
+    QAction *actionShowAboutWindow;
     
     QAction* actionConnectInput1;
     QAction* actionConnectInput2;
@@ -492,6 +494,7 @@ public:
 private:
     
     QWidget* _currentlyDraggedPanel;
+    AboutWindow* _aboutWindow;
     
     void setupUi();
    

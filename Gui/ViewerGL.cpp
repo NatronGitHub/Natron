@@ -1263,7 +1263,6 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
             updateGL();
         }
     }
-    qApp->sendEvent(_imp->viewerTab->parentWidget(), event);
 
 
     //FIXME: This is bugged, somehow we can't set our custom picker cursor...

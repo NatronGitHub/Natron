@@ -1,0 +1,11 @@
+Version 1.0:
+-----------
+
+#Developers:
+
+Frédéric Devernay
+Alexandre Gauthier-Foichat
+
+#Artists:
+
+Laurence Boissieux
