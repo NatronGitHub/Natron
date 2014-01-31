@@ -320,7 +320,7 @@ int OfxEffectInstance::maximumInputs() const {
     } else {
         assert(effectInstance());
         int totalClips = effectInstance()->getDescriptor().getClips().size();
-        return totalClips-1;
+        return totalClips > 0  ?  totalClips-1 : 0;
     }
     
 }
