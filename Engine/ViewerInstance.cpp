@@ -289,7 +289,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
             /*for now we skip the render scale*/
             RenderScale scale;
             scale.x = scale.y = 1.;
-            EffectInstance::RoIMap inputsRoi = getRegionOfInterest(time, scale, roi);
+            EffectInstance::RoIMap inputsRoi = getRegionOfInterest(time, scale, texRectClipped);
             //inputsRoi only contains 1 element
             EffectInstance::RoIMap::const_iterator it = inputsRoi.begin();
             
@@ -300,6 +300,8 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
             _node->notifyInputNIsRendering(inputIndex);
             _lastRenderedImage = it->first->renderRoI(time, scale,view,it->second,byPassCache);
             _node->notifyInputNIsFinishedRendering(inputIndex);;
+            
+            //  Natron::debugImage(_lastRenderedImage.get(),"img.png");
             
             if(aborted()){
                 //if render was aborted, remove the frame from the cache as it contains only garbage
