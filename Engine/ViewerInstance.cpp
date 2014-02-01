@@ -701,13 +701,13 @@ bool ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,
     *g = *(pix + 1);
     *b = *(pix + 2);
     *a = *(pix + 3);
-    if(forceLinear && _colorSpace){
+    if(!forceLinear && _colorSpace){
         float from[3];
         from[0] = *r;
         from[1] = *g;
         from[2] = *b;
         float to[3];
-        _colorSpace->from_float_planar(to, from, 3);
+        _colorSpace->to_float_planar(to, from, 3);
         *r = to[0];
         *g = to[1];
         *b = to[2];

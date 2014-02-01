@@ -1265,6 +1265,7 @@ void Color_KnobGui::_show()
 
 ColorPickerLabel::ColorPickerLabel(QWidget* parent)
 : QLabel(parent)
+, _pickingEnabled(false)
 {
     
     setToolTip(Qt::convertFromPlainText("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
