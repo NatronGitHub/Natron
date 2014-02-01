@@ -292,9 +292,9 @@ void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,Kno
 
     if(found == _imp->holdersWhoseBeginWasCalled.end()){
         
-        getApp()->unlockProject();
+        //getApp()->unlockProject();
         caller->beginKnobsValuesChanged(reason);
-        getApp()->lockProject();
+        //getApp()->lockProject();
         
         ///insert the caller in the map
         _imp->holdersWhoseBeginWasCalled.insert(std::make_pair(caller,std::make_pair(1,reason)));
@@ -344,9 +344,9 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
     /// ...
     /// endValueChange()
     if(reason != Natron::OTHER_REASON) {
-        getApp()->unlockProject();
+        //getApp()->unlockProject();
         caller->onKnobValueChanged(k,reason);
-        getApp()->lockProject();
+        //getApp()->lockProject();
     }
     
     ////if begin was not call prior to calling this function, call the end bracket oruselves
@@ -374,9 +374,9 @@ void Project::endProjectWideValueChanges(KnobHolder* caller){
     ///If we're closing the last bracket, call the caller portion of endKnobsValuesChanged
     if(found->second.first == 1){
         
-        getApp()->unlockProject();
+        //getApp()->unlockProject();
         caller->endKnobsValuesChanged(found->second.second);
-        getApp()->lockProject();
+        //getApp()->lockProject();
         
         ///remove the caller from the holdersWhoseBeginWasCalled map
 
@@ -409,9 +409,9 @@ void Project::endProjectWideValueChanges(KnobHolder* caller){
         ///the significant param recorded in the stackEvaluateRequest function.
         if(outerMostReason != Natron::OTHER_REASON && outerMostReason != Natron::TIME_CHANGED){
             
-            getApp()->unlockProject();
+            //getApp()->unlockProject();
             caller->evaluate(_imp->lastKnobChanged,_imp->isSignificantChange);
-            getApp()->lockProject();
+            //getApp()->lockProject();
             
         }
     }

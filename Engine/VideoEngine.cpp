@@ -363,12 +363,15 @@ void VideoEngine::run(){
             }
         }
         
-//        
-//        if (!_currentRunArgs._sameFrame && _currentRunArgs._frameRequestsCount == -1) {
-//            appPTR->clearNodeCache();
-//        }
-        
-        
+        {
+            QMutexLocker locker(&_abortedRequestedMutex);
+            if(_abortRequested > 0) {
+                locker.unlock();
+                if(stopEngine())
+                    return;
+                continue;
+            }
+        }
         
         Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
         assert(output);
