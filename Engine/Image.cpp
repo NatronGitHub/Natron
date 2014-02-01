@@ -88,6 +88,8 @@ std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const
     std::list<RectI> ret;
 
     RectI bbox = minimalNonMarkedBbox(roi);
+//#define NATRON_BITMAP_DISABLE_OPTIMIZATION
+#ifndef NATRON_BITMAP_DISABLE_OPTIMIZATION
     if (bbox.isNull()) {
         return ret; // return an empty rectangle list
     }
@@ -190,9 +192,11 @@ std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const
 
     // get the bounding box of what's left (the X rectangle in the drawing above)
     bbox = minimalNonMarkedBbox(bbox);
+#endif // NATRON_BITMAP_DISABLE_OPTIMIZATION
     if (!bbox.isNull()) { // empty boxes should not be pushed
         ret.push_back(bbox);
     }
+    //qDebug() << "render " << ret.size() << " rectangles";
     return ret;
 }
 
