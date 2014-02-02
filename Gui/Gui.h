@@ -295,6 +295,8 @@ public:
     
     bool isDraggingPanel() const { return _currentlyDraggedPanel!=NULL; }
     
+    void updateRecentFileActions();
+
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);
@@ -354,6 +356,7 @@ public slots:
     
     void showAbout();
 
+    void openRecentFile();
 private:
 
     void registerSplitter(QSplitter* s); // unused
@@ -363,7 +366,7 @@ private:
     void restoreGuiGeometry();
 
     void saveGuiGeometry();
-
+    
 
 private:
     // FIXME: PIMPL
@@ -400,6 +403,8 @@ private:
     QAction *actionClearPluginsLoadingCache;
     QAction *actionClearAllCaches;
     QAction *actionShowAboutWindow;
+    QAction *actionsOpenRecentFile[NATRON_MAX_RECENT_FILES];
+    QAction *actionSeparatorRecentFiles;
     
     QAction* actionConnectInput1;
     QAction* actionConnectInput2;
@@ -411,6 +416,7 @@ private:
     QAction* actionConnectInput8;
     QAction* actionConnectInput9;
     QAction* actionConnectInput10;
+
         
     QWidget *_centralWidget;
     QHBoxLayout* _mainLayout;
@@ -470,6 +476,7 @@ private:
     //======================
     QMenuBar *menubar;
     QMenu *menuFile;
+    QMenu *menuRecentFiles;
     QMenu *menuEdit;
     QMenu *menuDisplay;
     QMenu *menuOptions;

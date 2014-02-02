@@ -105,6 +105,8 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
     actionClearPluginsLoadingCache(0),
     actionClearAllCaches(0),
     actionShowAboutWindow(0),
+    actionsOpenRecentFile(),
+    actionSeparatorRecentFiles(0),
     actionConnectInput1(0),
     actionConnectInput2(0),
     actionConnectInput3(0),
@@ -137,6 +139,7 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
     _layoutPropertiesBin(0),
     menubar(0),
     menuFile(0),
+    menuRecentFiles(0),
     menuEdit(0),
     menuDisplay(0),
     menuOptions(0),
@@ -331,6 +334,8 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
     //WorkShop->setTabText(WorkShop->indexOf(GraphEditor), tr("Graph Editor"));
     assert(menuFile);
     menuFile->setTitle(tr("File"));
+    assert(menuRecentFiles);
+    menuRecentFiles->setTitle(tr("Open recent"));
     assert(menuEdit);
     menuEdit->setTitle(tr("Edit"));
     assert(menuDisplay);
@@ -367,8 +372,8 @@ void Gui::setupUi()
     /*TOOL BAR menus*/
     //======================
     menubar = new QMenuBar(this);
-    //menubar->setGeometry(QRect(0, 0, 1159, 21)); // why set the geometry of a menubar?
     menuFile = new QMenu(menubar);
+    menuRecentFiles = new QMenu(menuFile);
     menuEdit = new QMenu(menubar);
     menuDisplay = new QMenu(menubar);
     menuOptions = new QMenu(menubar);
@@ -433,6 +438,13 @@ void Gui::setupUi()
     actionShowAboutWindow = new QAction(this);
     actionShowAboutWindow->setObjectName(QString::fromUtf8("actionShowAboutWindow"));
     actionShowAboutWindow->setCheckable(false);
+    for (int c = 0; c < NATRON_MAX_RECENT_FILES; ++c) {
+        actionsOpenRecentFile[c] = new QAction(this);
+        actionsOpenRecentFile[c]->setVisible(false);
+        connect(actionsOpenRecentFile[c], SIGNAL(triggered()),this, SLOT(openRecentFile()));
+    }
+    actionSeparatorRecentFiles = new QAction(this);
+    actionSeparatorRecentFiles->setVisible(false);
     
     actionConnectInput1 = new QAction(this);
     actionConnectInput1->setCheckable(false);
@@ -605,9 +617,15 @@ void Gui::setupUi()
     menuFile->addAction(actionOpen_project);
     menuFile->addAction(actionSave_project);
     menuFile->addAction(actionSaveAs_project);
-    menuFile->addSeparator();
+    actionSeparatorRecentFiles = menuFile->addSeparator();
+    menuFile->addAction(menuRecentFiles->menuAction());
+    updateRecentFileActions();
     menuFile->addSeparator();
     menuFile->addAction(actionExit);
+    
+    for (int c = 0; c < NATRON_MAX_RECENT_FILES; ++c) {
+        menuRecentFiles->addAction(actionsOpenRecentFile[c]);
+    }
 
     menuEdit->addAction(actionPreferences);
 
@@ -1083,12 +1101,21 @@ void Gui::openProject(){
     
     if (selectedFiles.size() > 0) {
         //clearing current graph
-        _appInstance->clearNodes();
         QString file = selectedFiles.at(0);
         QString name = SequenceFileDialog::removePath(file);
         QString path = file.left(file.indexOf(name));
         
         _appInstance->loadProject(path,name);
+        
+        QSettings settings;
+        QStringList recentFiles = settings.value("recentFileList").toStringList();
+        recentFiles.removeAll(file);
+        recentFiles.prepend(file);
+        while (recentFiles.size() > NATRON_MAX_RECENT_FILES)
+            recentFiles.removeLast();
+        
+        settings.setValue("recentFileList", recentFiles);
+        appPTR->updateAllRecentFileMenus();
     }
     
 }
@@ -1580,4 +1607,31 @@ QWidget* Gui::stopDragPanel() {
 void Gui::showAbout() {
     _aboutWindow->show();
     _aboutWindow->exec();
+}
+
+void Gui::openRecentFile() {
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (action) {
+        QFileInfo f(action->data().toString());
+        _appInstance->loadProject(f.path() + QDir::separator(),f.fileName());
+    }
+}
+
+void Gui::updateRecentFileActions() {
+    QSettings settings;
+    QStringList files = settings.value("recentFileList").toStringList();
+    
+    int numRecentFiles = std::min(files.size(), (int)NATRON_MAX_RECENT_FILES);
+    
+    for (int i = 0; i < numRecentFiles; ++i) {
+        
+        QString text = tr("&%1 %2").arg(i + 1).arg(QFileInfo(files[i]).fileName());
+        actionsOpenRecentFile[i]->setText(text);
+        actionsOpenRecentFile[i]->setData(files[i]);
+        actionsOpenRecentFile[i]->setVisible(true);
+    }
+    for (int j = numRecentFiles; j < NATRON_MAX_RECENT_FILES; ++j)
+        actionsOpenRecentFile[j]->setVisible(false);
+    
+    actionSeparatorRecentFiles->setVisible(numRecentFiles > 0);
 }

@@ -48,7 +48,7 @@
 #define NATRON_FONT_SIZE_10 10
 #define NATRON_FONT_SIZE_12 12
 #define NATRON_FONT_SIZE_13 13
-
+#define NATRON_MAX_RECENT_FILES 5
 
 // compiler_warning.h
 #define STRINGISE_IMPL(x) #x

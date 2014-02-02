@@ -497,6 +497,8 @@ public:
 
     void setLoadingStatus(const QString& str);
 
+    void updateAllRecentFileMenus();
+
 public slots:
 
     void clearPlaybackCache();

@@ -534,6 +534,8 @@ bool AppInstance::loadProject(const QString& path,const QString& name){
 
 void AppInstance::loadProjectInternal(const QString& path,const QString& name){
     
+    clearNodes();
+
     QString filePath = path+name;
     if(!QFile::exists(filePath)){
         throw std::invalid_argument(QString(filePath + " : no such file.").toStdString());
@@ -1916,6 +1918,12 @@ void AppManager::setLoadingStatus(const QString& str) {
     }
 }
 
+void AppManager::updateAllRecentFileMenus() {
+    for (std::map<int,AppInstance*>::iterator it = _appInstances.begin(); it!= _appInstances.end(); ++it) {
+        assert(!it->second->isBackground());
+        it->second->getGui()->updateRecentFileActions();
+    }
+}
 
 namespace Natron{
 
