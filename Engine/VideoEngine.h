@@ -219,6 +219,9 @@ public slots:
      *Do not call this yourself.
      */
     void quitEngineThread();
+    
+    
+    void getFrameRange();
     /************************************************************************************************************
      ************************************************************************************************************
      **************************************END PRIVATE SLOTS*****************************************************
@@ -256,6 +259,8 @@ signals:
      *@brief emitted when a frame has been rendered successfully.
      **/
     void frameRendered(int frameNumber);
+    
+    void mustGetFrameRange();
     
 public:
    
@@ -332,8 +337,6 @@ private:
 
     /*The function doing all the processing, called by render()*/
     virtual void run() OVERRIDE FINAL;
-    
-    void getFrameRange(int *firstFrame,int *lastFrame) const;
     
     /**
      *@brief Resets and computes the hash key for all the nodes in the graph. The tree version is the hash key of the output node
@@ -445,6 +448,12 @@ private:
     timeval _startRenderFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
 
     boost::shared_ptr<TimeLine> _timeline;/*!< ptr to the timeline*/
+    
+    QWaitCondition _getFrameRangeCond;
+    mutable QMutex _getFrameRangeMutex;
+    bool _gettingFrameRange;
+    int _firstFrame;
+    int _lastFrame;
 
 };
 

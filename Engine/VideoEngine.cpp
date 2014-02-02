@@ -79,7 +79,13 @@ VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
     , _currentRunArgs()
     , _startRenderFrameTime()
     , _timeline(owner->getNode()->getApp()->getTimeLine())
+    , _getFrameRangeCond()
+    , _getFrameRangeMutex()
+    , _gettingFrameRange(false)
+    , _firstFrame(0)
+    , _lastFrame(0)
 {
+    QObject::connect(this, SIGNAL(mustGetFrameRange()), this, SLOT(getFrameRange()));
 }
 
 VideoEngine::~VideoEngine() {
@@ -173,13 +179,23 @@ bool VideoEngine::startEngine() {
     
     _currentRunArgs = _lastRequestedRunArgs;
     
-    int firstFrame,lastFrame;
-    getFrameRange(&firstFrame, &lastFrame);
+
+    
 
     if(!_tree.isOutputAViewer()){
+        
+        {
+            QMutexLocker l(&_getFrameRangeMutex);
+            _gettingFrameRange = true;
+            emit mustGetFrameRange();
+            while (_gettingFrameRange) {
+                _getFrameRangeCond.wait(&_getFrameRangeMutex);
+            }
+        }
+        
         Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
-        output->setFirstFrame(firstFrame);
-        output->setLastFrame(lastFrame);
+        output->setFirstFrame(_firstFrame);
+        output->setLastFrame(_lastFrame);
     }
 
     
@@ -324,20 +340,6 @@ bool VideoEngine::stopEngine() {
     
     
 }
-void VideoEngine::getFrameRange(int *firstFrame,int *lastFrame) const {
-    if(_tree.getOutput()){
-        _tree.getOutput()->getFrameRange(firstFrame, lastFrame);
-        if(*firstFrame == INT_MIN){
-            *firstFrame = _timeline->leftBound();
-        }
-        if(*lastFrame == INT_MAX){
-            *lastFrame = _timeline->rightBound();
-        }
-    }else{
-        *firstFrame = _timeline->leftBound();
-        *lastFrame = _timeline->rightBound();
-    }
-}
 
 void VideoEngine::run(){
     
@@ -382,9 +384,15 @@ void VideoEngine::run(){
         
         
         if(viewer){
-            int firstFrame,lastFrame;
-            getFrameRange(&firstFrame, &lastFrame);
-            _timeline->setFrameRange(firstFrame, lastFrame);
+            {
+                QMutexLocker l(&_getFrameRangeMutex);
+                _gettingFrameRange = true;
+                emit mustGetFrameRange();
+                while (_gettingFrameRange) {
+                    _getFrameRangeCond.wait(&_getFrameRangeMutex);
+                }
+            }
+            _timeline->setFrameRange(_firstFrame, _lastFrame);
         }
         
         int firstFrame,lastFrame;
@@ -851,4 +859,25 @@ void VideoEngine::refreshTree(){
     
     QMutexLocker l(&_treeMutex);
     _tree.refreshTree(knobsAge);
+}
+
+void VideoEngine::getFrameRange() {
+    QMutexLocker l(&_getFrameRangeMutex);
+    
+    if(_tree.getOutput()){
+        _tree.getOutput()->getFrameRange(&_firstFrame, &_lastFrame);
+        if(_firstFrame == INT_MIN){
+            _firstFrame = _timeline->leftBound();
+        }
+        if(_lastFrame == INT_MAX){
+            _lastFrame = _timeline->rightBound();
+        }
+    }else{
+        _firstFrame = _timeline->leftBound();
+        _lastFrame = _timeline->rightBound();
+    }
+    
+    _gettingFrameRange = false;
+    _getFrameRangeCond.wakeOne();
+
 }
