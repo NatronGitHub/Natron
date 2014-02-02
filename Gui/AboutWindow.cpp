@@ -24,7 +24,7 @@ AboutWindow::AboutWindow(QWidget* parent)
     setLayout(_mainLayout);
     
     _iconLabel = new QLabel(this);
-    _iconLabel->setPixmap(QPixmap(NATRON_APPLICATION_ICON_PATH));
+    _iconLabel->setPixmap(QPixmap(NATRON_APPLICATION_ICON_PATH).scaled(128, 128));
     _mainLayout->addWidget(_iconLabel);
     
     _tabWidget = new QTabWidget(this);

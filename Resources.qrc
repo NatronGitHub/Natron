@@ -86,5 +86,6 @@
         <file>Resources/Images/splashscreen_dark.png</file>
         <file>CONTRIBUTORS.txt</file>
         <file>LICENSE.txt</file>
+        <file>Resources/Images/natronIcon256_linux.png</file>
     </qresource>
 </RCC>
