@@ -84,13 +84,16 @@ RectI Natron::Bitmap::minimalNonMarkedBbox(const RectI& roi) const
 
 std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const
 {
-    /*for now a simple version that computes the bbox*/
     std::list<RectI> ret;
 
-    RectI bbox = minimalNonMarkedBbox(roi);
+    RectI bboxM = minimalNonMarkedBbox(roi);
 //#define NATRON_BITMAP_DISABLE_OPTIMIZATION
-#ifndef NATRON_BITMAP_DISABLE_OPTIMIZATION
-    if (bbox.isNull()) {
+#ifdef NATRON_BITMAP_DISABLE_OPTIMIZATION
+    if (!bboxM.isNull()) { // empty boxes should not be pushed
+        ret.push_back(bbox);
+    }
+#else
+    if (bboxM.isNull()) {
         return ret; // return an empty rectangle list
     }
 
@@ -117,86 +120,111 @@ std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const
 
     // First, find if there's an "A" rectangle, and push it to the result
     //find bottom
-    RectI bbox_sub = bbox;
-    bbox_sub.set_top(bbox.bottom());
-    for (int i = bbox.bottom(); i < bbox.top();++i) {
+    RectI bboxX = bboxM;
+    RectI bboxA = bboxX;
+    bboxA.set_top(bboxX.bottom());
+    for (int i = bboxX.bottom(); i < bboxX.top();++i) {
         char* buf = &_map[(i-_rod.bottom())*_rod.width()];
         if (!memchr(buf, 1, _rod.width())) {
-            bbox.set_bottom(bbox.bottom()+1);
-            bbox_sub.set_top(bbox.bottom());
+            bboxX.set_bottom(bboxX.bottom()+1);
+            bboxA.set_top(bboxX.bottom());
         } else {
             break;
         }
     }
-    if (!bbox_sub.isNull()) { // empty boxes should not be pushed
-        ret.push_back(bbox_sub);
+    if (!bboxA.isNull()) { // empty boxes should not be pushed
+        ret.push_back(bboxA);
     }
 
     // Now, find the "B" rectangle
     //find top
-    bbox_sub = bbox;
-    bbox_sub.set_bottom(bbox.top());
-    for (int i = bbox.top()-1; i >= bbox.bottom();--i) {
+    RectI bboxB = bboxX;
+    bboxB.set_bottom(bboxX.top());
+    for (int i = bboxX.top()-1; i >= bboxX.bottom();--i) {
         char* buf = &_map[(i-_rod.bottom())*_rod.width()];
         if (!memchr(buf, 1, _rod.width())) {
-            bbox.set_top(bbox.top()-1);
-            bbox_sub.set_bottom(bbox.top());
+            bboxX.set_top(bboxX.top()-1);
+            bboxB.set_bottom(bboxX.top());
         } else {
             break;
         }
     }
-    if (!bbox_sub.isNull()) { // empty boxes should not be pushed
-        ret.push_back(bbox_sub);
+    if (!bboxB.isNull()) { // empty boxes should not be pushed
+        ret.push_back(bboxB);
     }
 
     //find left
-    bbox_sub = bbox;
-    bbox_sub.set_right(bbox.left());
-    for (int j = bbox.left(); j < bbox.right(); ++j) {
+    RectI bboxC = bboxX;
+    bboxC.set_right(bboxX.left());
+    for (int j = bboxX.left(); j < bboxX.right(); ++j) {
         bool shouldStop = false;
-        for (int i = bbox.bottom(); i < bbox.top(); ++i) {
+        for (int i = bboxX.bottom(); i < bboxX.top(); ++i) {
             if (_map[(i-_rod.bottom())*_rod.width()+(j-_rod.left())]) {
                 shouldStop = true;
                 break;
             }
         }
         if (!shouldStop) {
-            bbox.set_left(bbox.left()+1);
-            bbox_sub.set_right(bbox.left());
+            bboxX.set_left(bboxX.left()+1);
+            bboxC.set_right(bboxX.left());
         } else {
             break;
         }
     }
-    if (!bbox_sub.isNull()) { // empty boxes should not be pushed
-        ret.push_back(bbox_sub);
+    if (!bboxC.isNull()) { // empty boxes should not be pushed
+        ret.push_back(bboxC);
     }
 
     //find right
-    bbox_sub = bbox;
-    bbox_sub.set_left(bbox.right());
-    for (int j = bbox.right()-1; j >= bbox.left(); --j) {
+    RectI bboxD = bboxX;
+    bboxD.set_left(bboxX.right());
+    for (int j = bboxX.right()-1; j >= bboxX.left(); --j) {
         bool shouldStop = false;
-        for (int i = bbox.bottom(); i < bbox.top(); ++i) {
+        for (int i = bboxX.bottom(); i < bboxX.top(); ++i) {
             if (_map[(i-_rod.bottom())*_rod.width()+(j-_rod.left())]) {
                 shouldStop = true;
                 break;
             }
         }
         if (!shouldStop) {
-            bbox.set_right(bbox.right()-1);
-            bbox_sub.set_left(bbox.right());
+            bboxX.set_right(bboxX.right()-1);
+            bboxD.set_left(bboxX.right());
         } else {
             break;
         }
     }
 
+    assert(bboxA.bottom() == bboxM.bottom());
+    assert(bboxA.left() == bboxM.left());
+    assert(bboxA.right() == bboxM.right());
+    assert(bboxA.top() == bboxX.bottom());
+
+    assert(bboxB.top() == bboxM.top());
+    assert(bboxB.left() == bboxM.left());
+    assert(bboxB.right() == bboxM.right());
+    assert(bboxB.bottom() == bboxX.top());
+
+    assert(bboxC.top() == bboxX.top());
+    assert(bboxC.left() == bboxM.left());
+    assert(bboxC.right() == bboxX.left());
+    assert(bboxC.bottom() == bboxX.bottom());
+
+    assert(bboxD.top() == bboxX.top());
+    assert(bboxD.left() == bboxX.right());
+    assert(bboxD.right() == bboxM.right());
+    assert(bboxD.bottom() == bboxX.bottom());
+
     // get the bounding box of what's left (the X rectangle in the drawing above)
-    bbox = minimalNonMarkedBbox(bbox);
-#endif // NATRON_BITMAP_DISABLE_OPTIMIZATION
-    if (!bbox.isNull()) { // empty boxes should not be pushed
-        ret.push_back(bbox);
+    bboxX = minimalNonMarkedBbox(bboxX);
+    if (!bboxX.isNull()) { // empty boxes should not be pushed
+        ret.push_back(bboxX);
     }
-    //qDebug() << "render " << ret.size() << " rectangles";
+
+#endif // NATRON_BITMAP_DISABLE_OPTIMIZATION
+    qDebug() << "render " << ret.size() << " rectangles";
+    for (std::list<RectI>::const_iterator it = ret.begin(); it != ret.end(); ++it) {
+        qDebug() << "rect: " << it->x1 << ',' << it->x2 << ',' << it->y1 << ',' << it->y2;
+    }
     return ret;
 }
 
