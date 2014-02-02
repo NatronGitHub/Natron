@@ -374,13 +374,13 @@ void Project::endProjectWideValueChanges(KnobHolder* caller){
     ///If we're closing the last bracket, call the caller portion of endKnobsValuesChanged
     if(found->second.first == 1){
         
+        ///remove the caller from the holdersWhoseBeginWasCalled map
+        _imp->holdersWhoseBeginWasCalled.erase(found);
+        
         //getApp()->unlockProject();
         caller->endKnobsValuesChanged(found->second.second);
         //getApp()->lockProject();
-        
-        ///remove the caller from the holdersWhoseBeginWasCalled map
 
-        _imp->holdersWhoseBeginWasCalled.erase(found);
         
     }else{
         ///we're not on the last begin/end bracket for this caller, just decrease the begin calls count
