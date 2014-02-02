@@ -90,7 +90,7 @@ std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const
 //#define NATRON_BITMAP_DISABLE_OPTIMIZATION
 #ifdef NATRON_BITMAP_DISABLE_OPTIMIZATION
     if (!bboxM.isNull()) { // empty boxes should not be pushed
-        ret.push_back(bbox);
+        ret.push_back(bboxM);
     }
 #else
     if (bboxM.isNull()) {
@@ -230,7 +230,7 @@ std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const
 
 void Natron::Bitmap::markForRendered(const RectI& roi){
     for (int i = roi.bottom(); i < roi.top();++i) {
-        char* buf = &_map[(i-_rod.bottom())*_rod.width()];
+        char* buf = &_map[(i-_rod.bottom())*_rod.width() + (roi.left() - _rod.left())];
         memset(buf, 1, roi.width());
     }
 }
