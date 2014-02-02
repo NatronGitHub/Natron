@@ -447,6 +447,11 @@ public:
      **/
     void clearPersistentMessage();
     
+    /**
+     * @brief Does this effect supports tiling ?
+     **/
+    virtual bool supportsTiles() const { return false; }
+    
 protected:
     /**
      * @brief This function is provided for means to copy more data than just the knobs from the live instance

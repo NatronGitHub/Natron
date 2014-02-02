@@ -867,3 +867,7 @@ int OfxEffectInstance::majorVersion() const {
 int OfxEffectInstance::minorVersion() const {
     return effectInstance()->getPlugin()->getVersionMinor();
 }
+
+bool OfxEffectInstance::supportsTiles() const {
+    return effectInstance()->supportsTiles();
+}

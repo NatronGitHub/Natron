@@ -377,22 +377,25 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
 #endif
 
     for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
+        
+        RectI rectToRender = supportsTiles() ? *it : rod;
+        
 #ifdef NATRON_LOG
         Natron::Log::print(QString("Rect left to render in the image... xmin= "+
-                                   QString::number((*it).left())+" ymin= "+
-                                   QString::number((*it).bottom())+ " xmax= "+
-                                   QString::number((*it).right())+ " ymax= "+
-                                   QString::number((*it).top())).toStdString());
+                                   QString::number(rectToRender.left())+" ymin= "+
+                                   QString::number(rectToRender.bottom())+ " xmax= "+
+                                   QString::number(rectToRender.right())+ " ymax= "+
+                                   QString::number(rectToRender.top())).toStdString());
 #endif
         /*we can set the render args*/
         RenderArgs args;
-        args._roi = *it;
+        args._roi = rectToRender;
         args._time = time;
         args._view = view;
         args._scale = scale;
         _imp->renderArgs.setLocalData(args);
 
-        RoIMap inputsRoi = getRegionOfInterest(time, scale, *it);
+        RoIMap inputsRoi = getRegionOfInterest(time, scale, rectToRender);
         std::list<boost::shared_ptr<const Natron::Image> > inputImages;
         /*we render each input first and store away their image in the inputImages list
          in order to maintain a shared_ptr use_count > 1 so the cache doesn't attempt
@@ -430,12 +433,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
             case FULLY_SAFE_FRAME: // the plugin will perform any per frame SMP threading
             {
                 // we can split the frame in tiles and do per frame SMP threading (see kOfxImageEffectPluginPropHostFrameThreading)
-                std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(*it, QThread::idealThreadCount());
+                std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(rectToRender, QThread::idealThreadCount());
                 QFuture<Natron::Status> ret = QtConcurrent::mapped(splitRects,
                                                                    boost::bind(&EffectInstance::tiledRenderingFunctor,this,args,_1,image));
                 ret.waitForFinished();
-                for (QFuture<Natron::Status>::const_iterator it = ret.begin(); it!=ret.end(); ++it) {
-                    if ((*it) == Natron::StatFailed) {
+                for (QFuture<Natron::Status>::const_iterator it2 = ret.begin(); it2!=ret.end(); ++it2) {
+                    if ((*it2) == Natron::StatFailed) {
                         throw std::runtime_error("rendering failed");
                     }
                 }
@@ -444,12 +447,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
             case INSTANCE_SAFE: // indicating that any instance can have a single 'render' call at any one time,
             case FULLY_SAFE:    // indicating that any instance of a plugin can have multiple renders running simultaneously
             {
-                Natron::Status st = render(time, scale, *it,view, image);
+                Natron::Status st = render(time, scale, rectToRender,view, image);
                 if(st != Natron::StatOK){
                     throw std::runtime_error("rendering failed");
                 }
                 if(!aborted()){
-                    image->markForRendered(*it);
+                    image->markForRendered(rectToRender);
                 }
             } break;
 
@@ -460,13 +463,13 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                 QMutex* pluginLock = appPTR->getMutexForPlugin(pluginID().c_str());
                 assert(pluginLock);
                 pluginLock->lock();
-                Natron::Status st = render(time, scale, *it,view, image);
+                Natron::Status st = render(time, scale, rectToRender,view, image);
                 pluginLock->unlock();
                 if(st != Natron::StatOK){
                     throw std::runtime_error("rendering failed");
                 }
                 if(!aborted()){
-                    image->markForRendered(*it);
+                    image->markForRendered(rectToRender);
                 }
             } break;
         }

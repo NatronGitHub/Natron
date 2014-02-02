@@ -156,6 +156,8 @@ public:
     virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual void purgeCaches() OVERRIDE;
+
+    virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
     static QStringList getPluginGrouping(const std::string& pluginLabel,const std::string& grouping) WARN_UNUSED_RETURN;
