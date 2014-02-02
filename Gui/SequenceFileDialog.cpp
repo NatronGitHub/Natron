@@ -103,7 +103,6 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
                                        FileDialogMode mode, // if it is an open or save dialog
                                        const std::string& currentDirectory) // the directory to show first
 : QDialog(parent)
-, _frameSequences()
 , _nameMappingMutex()
 , _nameMapping()
 , _filters(filters)
@@ -540,7 +539,6 @@ void SequenceFileDialog::createMenuActions(){
 }
 
 void SequenceFileDialog::enableSequenceMode(bool b){
-    _frameSequences.clear();
     _proxy->clear();
     if(!b){
         QWriteLocker locker(&_nameMappingMutex);
@@ -865,13 +863,8 @@ void SequenceFileDialog::setRootIndex(const QModelIndex& index){
     _view->setRootIndex(index);
 }
 
-
-void SequenceFileDialog::setFrameSequence(const Natron::FrameSequences &frameSequences){
-    /*Removing from the sequence any element with a sequence of 1 element*/
-    _frameSequences = frameSequences;
-}
 boost::shared_ptr<FileSequence>  SequenceFileDialog::frameRangesForSequence(const std::string& sequenceName, const std::string& extension) const{
-    std::pair<Natron::ConstSequenceIterator,Natron::ConstSequenceIterator> found =  _frameSequences.equal_range(sequenceName);
+    std::pair<Natron::ConstSequenceIterator,Natron::ConstSequenceIterator> found =  _proxy->getFrameSequence().equal_range(sequenceName);
     for(Natron::ConstSequenceIterator it = found.first ;it!=found.second;++it) {
         if(it->second->getFileType() == extension){
             return it->second;
@@ -1536,7 +1529,7 @@ QStringList SequenceFileDialog::selectedFiles(){
         ++i;
         path = path.left(i);
         // FileSequence *sequence = 0;
-        std::pair<Natron::SequenceIterator,Natron::SequenceIterator> range = _frameSequences.equal_range(path.toStdString());
+        std::pair<Natron::ConstSequenceIterator,Natron::ConstSequenceIterator> range = _proxy->getFrameSequence().equal_range(path.toStdString());
 
         /*if this is not a registered sequence. i.e: this is a single image file*/
         if(range.first == range.second){

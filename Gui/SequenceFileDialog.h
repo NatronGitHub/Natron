@@ -362,8 +362,6 @@ public:
     
     void setRootIndex(const QModelIndex& index);
 
-    void setFrameSequence(const Natron::FrameSequences& frameSequences);
-
     boost::shared_ptr<FileSequence> frameRangesForSequence(const std::string& sequenceName, const std::string& extension) const;
     
     bool isASupportedFileExtension(const std::string& ext) const;
@@ -418,9 +416,7 @@ public:
 
     inline QModelIndex mapFromSource(const QModelIndex& index){
         _proxy->invalidate();
-        QModelIndex ret =  _proxy->mapFromSource(index);
-        setFrameSequence(_proxy->getFrameSequence());
-        return ret;
+        return _proxy->mapFromSource(index);
     }
 
     static inline QString toInternal(const QString &path){
@@ -507,7 +503,7 @@ private:
 
 private:
     // FIXME: PIMPL
-    Natron::FrameSequences _frameSequences;
+    
     mutable QReadWriteLock _nameMappingMutex; // protects _nameMapping
     NameMapping _nameMapping; // the item whose names must be changed
 
