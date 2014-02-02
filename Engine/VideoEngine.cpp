@@ -634,6 +634,10 @@ void VideoEngine::abortRendering(){
         if(_tree.isOutputAViewer())
             _tree.outputAsViewer()->wakeUpAnySleepingThread();
         
+        ///also wake up the run() thread if it is waiting for getFrameRange
+        _gettingFrameRange = false;
+        _getFrameRangeCond.wakeOne();
+        
         if (QThread::currentThread() != this) {
             while (_abortRequested > 0) {
                 _abortedRequestedCondition.wait(&_abortedRequestedMutex);
