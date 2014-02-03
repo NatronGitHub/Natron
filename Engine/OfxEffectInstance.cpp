@@ -869,5 +869,5 @@ int OfxEffectInstance::minorVersion() const {
 }
 
 bool OfxEffectInstance::supportsTiles() const {
-    return effectInstance()->supportsTiles();
+    return effectInstance()->supportsTiles() && effectInstance()->getClip(kOfxImageEffectOutputClipName)->supportsTiles();
 }
