@@ -874,11 +874,11 @@ double ViewerGL::getZoomFactor()
 RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD) {
     RectI ret;
     QPointF topLeft = toImgCoordinates_fast(0, 0);
-    ret.x1 = topLeft.x();
-    ret.y2 = topLeft.y();
+    ret.x1 = std::floor(topLeft.x());
+    ret.y2 = std::ceil(topLeft.y());
     QPointF bottomRight = toImgCoordinates_fast(width()-1, height()-1);
-    ret.x2 = bottomRight.x();
-    ret.y1 = bottomRight.y();
+    ret.x2 = std::ceil(bottomRight.x());
+    ret.y1 = std::floor(bottomRight.y());
     if(!ret.intersect(imageRoD, &ret)){
         ret.clear();
     }

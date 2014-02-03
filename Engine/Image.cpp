@@ -193,6 +193,9 @@ std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const
             break;
         }
     }
+    if (!bboxD.isNull()) { // empty boxes should not be pushed
+        ret.push_back(bboxD);
+    }
 
     assert(bboxA.bottom() == bboxM.bottom());
     assert(bboxA.left() == bboxM.left());

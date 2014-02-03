@@ -369,7 +369,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
      null rects then we already rendered it all*/
     RectI intersection;
     renderWindow.intersect(image->getRoD(), &intersection);
-    std::list<RectI> rectsToRender = image->getRestToRender(intersection);
+    std::list<RectI> rectsToRender;
+    if (supportsTiles()) {
+        rectsToRender = image->getRestToRender(intersection);
+    } else {
+        rectsToRender.push_back(rod);
+    }
 #ifdef NATRON_LOG
     if (rectsToRender.empty()) {
         Natron::Log::print(QString("Everything is already rendered in this image.").toStdString());
@@ -378,7 +383,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
 
     for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
         
-        RectI rectToRender = supportsTiles() ? *it : rod;
+        const RectI& rectToRender = *it;
         
 #ifdef NATRON_LOG
         Natron::Log::print(QString("Rect left to render in the image... xmin= "+
