@@ -338,6 +338,7 @@ private:
     /*The function doing all the processing, called by render()*/
     virtual void run() OVERRIDE FINAL;
     
+    
     /**
      *@brief Resets and computes the hash key for all the nodes in the graph. The tree version is the hash key of the output node
      *of the graph.

@@ -29,6 +29,7 @@ using namespace Natron;
 
 Settings::Settings(AppInstance* appInstance)
 : KnobHolder(appInstance)
+, _wereChangesMadeSinceLastSave(false)
 {
     
 }
@@ -43,6 +44,12 @@ void Settings::initializeKnobs(){
                                    " to linear before being fetched. Otherwise they will be in the same color-space "
                                    " as the viewer they were picked from.");
     _generalTab->addKnob(_linearPickers);
+    
+    _multiThreadedDisabled = Natron::createKnob<Bool_Knob>(this, "Disable multi-threading");
+    _multiThreadedDisabled->turnOffAnimation();
+    _multiThreadedDisabled->setValue<bool>(false);
+    _multiThreadedDisabled->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will not spawn any thread to render.");
+    _generalTab->addKnob(_multiThreadedDisabled);
     
     _viewersTab = Natron::createKnob<Tab_Knob>(this, "Viewers");
     
@@ -128,9 +135,13 @@ void Settings::initializeKnobs(){
 
 
 void Settings::saveSettings(){
+    
+    _wereChangesMadeSinceLastSave = false;
+    
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
     settings.setValue("LinearColorPickers",_linearPickers->getValue<bool>());
+    settings.setValue("MultiThreadingDisabled", _multiThreadedDisabled->getValue<bool>());
     settings.endGroup();
     
     settings.beginGroup("Caching");
@@ -158,15 +169,20 @@ void Settings::saveSettings(){
     }
     settings.endGroup();
     
-    //not serialiazing readers/writers settings as they are meaningless for now
 }
 
 void Settings::restoreSettings(){
+    
+    _wereChangesMadeSinceLastSave = false;
+    
     notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
     if(settings.contains("LinearColorPickers")){
         _linearPickers->setValue<bool>(settings.value("LinearColorPickers").toBool());
+    }
+    if (settings.contains("MultiThreadingDisabled")) {
+        _multiThreadedDisabled->setValue<bool>(settings.value("MultiThreadingDisabled").toBool());
     }
     settings.endGroup();
     
@@ -219,9 +235,14 @@ void Settings::restoreSettings(){
 }
 
 void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
+    
     if(!appPTR->isInitialized()){
         return;
     }
+    
+    _wereChangesMadeSinceLastSave = true;
+
+    
     if(k == _texturesMode.get()){
         std::map<int,AppInstance*> apps = appPTR->getAppInstances();
         bool isFirstViewer = true;

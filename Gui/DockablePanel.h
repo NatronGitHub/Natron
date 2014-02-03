@@ -55,6 +55,7 @@ public:
     explicit DockablePanel(KnobHolder* holder
                   ,QVBoxLayout* container
                   ,HeaderMode headerMode
+                  ,bool useScrollAreasForTabs
                   ,const QString& initialName = QString()
                   ,const QString& helpToolTip = QString()
                   ,bool createDefaultTab = false
@@ -183,6 +184,8 @@ private:
     std::map<QString,std::pair<QWidget*,int> > _tabs;
 
     QString _defaultTabName;
+    
+    bool _useScrollAreasForTabs;
 };
 
 class NodeSettingsPanel : public DockablePanel

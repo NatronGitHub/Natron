@@ -1147,6 +1147,9 @@ void AppManager::load(SplashScreen* splashScreen) {
     setLoadingStatus("Restoring user settings...");
     _settings->restoreSettings();
     
+    ///and save these restored settings in case some couldn't be found
+    _settings->saveSettings();
+    
     _knobsClipBoard->isEmpty = true;
     
     _initialized = true;

@@ -66,6 +66,7 @@ void ProjectGui::create(boost::shared_ptr<Natron::Project> projectInternal,QVBox
     _panel = new DockablePanel(projectInternal.get(),
                                container,
                                DockablePanel::READ_ONLY_NAME,
+                               false,
                                "Project Settings",
                                "The settings of the current project.",
                                true,

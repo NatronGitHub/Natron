@@ -80,11 +80,13 @@ public:
     ///restores the settings from disk
     void restoreSettings();
     
+    bool wereChangesMadeSinceLastSave() const { return _wereChangesMadeSinceLastSave; }
     
 private:
     
     boost::shared_ptr<Tab_Knob> _generalTab;
     boost::shared_ptr<Bool_Knob> _linearPickers;
+    boost::shared_ptr<Bool_Knob> _multiThreadedDisabled;
     
     boost::shared_ptr<Tab_Knob> _cachingTab;
     boost::shared_ptr<Int_Knob> _maxPlayBackPercent;
@@ -100,6 +102,8 @@ private:
     
     boost::shared_ptr<Tab_Knob> _writersTab;
     std::vector< boost::shared_ptr<Choice_Knob> >  _writersMapping;
+    
+    bool _wereChangesMadeSinceLastSave;
     
 };
 

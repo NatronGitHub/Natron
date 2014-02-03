@@ -43,6 +43,7 @@ using namespace Natron;
 DockablePanel::DockablePanel(KnobHolder* holder
                              , QVBoxLayout* container
                              , HeaderMode headerMode
+                             ,bool useScrollAreasForTabs
                              , const QString& initialName
                              , const QString& helpToolTip
                              , bool createDefaultTab, const QString& defaultTab
@@ -66,6 +67,7 @@ DockablePanel::DockablePanel(KnobHolder* holder
 ,_holder(holder)
 ,_tabs()
 ,_defaultTabName(defaultTab)
+,_useScrollAreasForTabs(useScrollAreasForTabs)
 {
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setSpacing(0);
@@ -241,7 +243,14 @@ void DockablePanel::initializeKnobs(){
     /////The following code addresses this feature that we don't want:
     ///// http://stackoverflow.com/questions/14033902/qt-qgridlayout-automatically-centers-moves-items-to-the-middle
     for(std::map<QString,std::pair<QWidget*,int> >::const_iterator it = _tabs.begin();it!=_tabs.end();++it){
-        QGridLayout* layout = dynamic_cast<QGridLayout*>(it->second.first->layout());
+        
+        QGridLayout* layout;
+        if (_useScrollAreasForTabs) {
+            layout = dynamic_cast<QGridLayout*>(
+                                                dynamic_cast<QScrollArea*>(it->second.first)->widget()->layout());
+        } else {
+            layout = dynamic_cast<QGridLayout*>(it->second.first->layout());
+        }
         assert(layout);
         if(layout->rowCount() > 0){
             QLayoutItem* item = layout->itemAtPosition(layout->rowCount()-1,0);
@@ -326,8 +335,14 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
         //                    --parentTab->second.second;
         //                }
         //
-        ret->createGUI(dynamic_cast<QGridLayout*>(parentTab->second.first->layout()),//< ptr to the grid layout
-                       parentTab->second.second); //< the row index
+        QGridLayout* layout;
+        if (_useScrollAreasForTabs) {
+            layout = dynamic_cast<QGridLayout*>(
+                                                dynamic_cast<QScrollArea*>(parentTab->second.first)->widget()->layout());
+        } else {
+            layout = dynamic_cast<QGridLayout*>(parentTab->second.first->layout());
+        }
+        ret->createGUI(layout,parentTab->second.second); //< the row index
         
         /// if this knob is within a group, check that the group is visible, i.e. the toplevel group is unfolded
         if (parentKnob && parentKnob->typeName() == Group_Knob::typeNameStatic()) {
@@ -372,10 +387,21 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
 
 
 void DockablePanel::addTab(const QString& name){
-    QWidget* newTab = new QWidget(_tabWidget);
+    QWidget* newTab;
+    QWidget* layoutContainer;
+    if (_useScrollAreasForTabs) {
+        QScrollArea* sa = new QScrollArea(_tabWidget);
+        layoutContainer = new QWidget(sa);
+        sa->setWidgetResizable(true);
+        sa->setWidget(layoutContainer);
+        newTab = sa;
+    } else {
+        newTab = new QWidget(_tabWidget);
+        layoutContainer = newTab;
+    }
     newTab->setObjectName(name);
-    QGridLayout *tabLayout = new QGridLayout(newTab);
-    newTab->setLayout(tabLayout);
+    QGridLayout *tabLayout = new QGridLayout(layoutContainer);
+    layoutContainer->setLayout(tabLayout);
     tabLayout->setVerticalSpacing(2);
     tabLayout->setContentsMargins(3, 0, 0, 0);
     tabLayout->setHorizontalSpacing(5);
@@ -498,6 +524,7 @@ NodeSettingsPanel::NodeSettingsPanel(NodeGui* NodeUi ,QVBoxLayout* container,QWi
 :DockablePanel(NodeUi->getNode()->getLiveInstance(),
                container,
                DockablePanel::FULLY_FEATURED,
+               false,
                NodeUi->getNode()->getName().c_str(),
                NodeUi->getNode()->description().c_str(),
                true,
