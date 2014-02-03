@@ -1641,6 +1641,9 @@ void Gui::updateRecentFileActions() {
 
 QPixmap Gui::screenShot(QWidget* w) {
 #if QT_VERSION < 0x050000
+    if (w->objectName() == "CurveEditor") {
+        return QPixmap::grabWidget(w);
+    }
     return QPixmap::grabWindow(w->winId());
 #else
     return QApplication::primaryScreen()->grabWindow(w->winId());
