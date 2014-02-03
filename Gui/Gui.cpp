@@ -29,6 +29,9 @@
 #include <QUndoGroup>
 #include <QDropEvent>
 #include <QTextDocument> // for Qt::convertFromPlainText
+#if QT_VERSION >= 0x050000
+#include <QScreen>
+#endif
 
 #include "Global/AppManager.h"
 
@@ -1634,4 +1637,12 @@ void Gui::updateRecentFileActions() {
         actionsOpenRecentFile[j]->setVisible(false);
     
     actionSeparatorRecentFiles->setVisible(numRecentFiles > 0);
+}
+
+QPixmap Gui::screenShot(QWidget* w) {
+#if QT_VERSION < 0x050000
+    return QPixmap::grabWindow(w->winId());
+#else
+    return QApplication::primaryScreen()->grabWindow(w->winId());
+#endif
 }

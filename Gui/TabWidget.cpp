@@ -695,12 +695,11 @@ QPixmap TabBar::makePixmapForDrag(int index) {
     ///insert just the tab we want to screen shot
     addTab(tabs[index].second, tabs[index].first);
     
+    QPixmap currentTabPixmap =  Gui::screenShot(_tabWidget->tabAt(index));
 #if QT_VERSION < 0x050000
     QPixmap tabBarPixmap = QPixmap::grabWidget(this);
-    QPixmap currentTabPixmap =  QPixmap::grabWidget(_tabWidget->tabAt(index));
 #else
     QPixmap tabBarPixmap = grab();
-    QPixmap currentTabPixmap =  _tabWidget->tabAt(index)->grab();
 #endif
     
     ///re-insert all the tabs into the tab bar
