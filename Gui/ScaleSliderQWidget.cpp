@@ -126,9 +126,9 @@ void ScaleSliderQWidget::setMinimumAndMaximum(double min,double max){
 }
 
 void ScaleSliderQWidget::centerOn(double left,double right){
-    double scaleWidth = right - left + 10;
+    double scaleWidth = (right - left) * 1.1;
     double w = width();
-    _zoomCtx.left = left - 5;
+    _zoomCtx.left = left - (right - left) * 0.05;;
     _zoomCtx.zoomFactor = w / scaleWidth;
     
     update();

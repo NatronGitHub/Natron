@@ -1425,8 +1425,10 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
             _stringKnob->setAsMultiLine();
         }
     }
-    
-    set(properties.getStringProperty(kOfxParamPropDefault).c_str());
+    std::string defaultVal = properties.getStringProperty(kOfxParamPropDefault).c_str();
+    if (!defaultVal.empty()) {
+        set(defaultVal.c_str());
+    }
 }
 
 OfxStatus OfxStringInstance::get(std::string &str) {

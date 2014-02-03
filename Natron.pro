@@ -157,7 +157,6 @@ SOURCES += \
     Engine/ChannelSet.cpp \
     Engine/Curve.cpp \
     Engine/CurveSerialization.cpp \
-    Gui/DockablePanel.cpp \
     Engine/EffectInstance.cpp \
     Engine/Hash64.cpp \
     Engine/Image.cpp \
@@ -198,6 +197,7 @@ SOURCES += \
     Gui/CurveEditor.cpp \
     Gui/CurveEditorUndoRedo.cpp \
     Gui/CurveWidget.cpp \
+    Gui/DockablePanel.cpp \
     Gui/Edge.cpp \
     Gui/GroupBoxLabel.cpp \
     Gui/Gui.cpp \

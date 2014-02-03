@@ -437,10 +437,12 @@ Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVers
             autoConnect(selected, node);
         }
         _gui->selectNode(nodegui);
+                
+        if (openImageFileDialog && !requestedByLoad) {
+            node->getLiveInstance()->openImageFileKnob();
+        }
     }
-    if (openImageFileDialog && !requestedByLoad) {
-        node->getLiveInstance()->openImageFileKnob();
-    }
+    
  
     return node;
 }
