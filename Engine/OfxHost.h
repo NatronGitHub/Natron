@@ -99,6 +99,8 @@ public:
     virtual OfxStatus mutexTryLock(const OfxMutexHandle mutex) OVERRIDE;
     
     OfxEffectInstance* createOfxEffect(const std::string& name,Node* node);
+    
+    void addPathToLoadOFXPlugins(const std::string path);
 
     /*Reads OFX plugin cache and scan plugins directories
      to load them all.*/

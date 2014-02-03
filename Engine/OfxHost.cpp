@@ -276,6 +276,10 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
     return hostSideEffect;
 }
 
+void Natron::OfxHost::addPathToLoadOFXPlugins(const std::string path) {
+    OFX::Host::PluginCache::getPluginCache()->addFileToPath(path);
+}
+
 void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
                                      std::map<std::string,std::vector<std::string> >* readersMap,
                                      std::map<std::string,std::vector<std::string> >* writersMap) {

@@ -3,7 +3,7 @@ CONFIG += console
 CONFIG -= app_bundle
 QT += gui core opengl network
 
-SOURCES += main.cpp \
+SOURCES += \
     ../../Engine/ChannelSet.cpp \
     ../../Engine/Curve.cpp \
     ../../Engine/CurveSerialization.cpp \
@@ -47,7 +47,8 @@ SOURCES += main.cpp \
     ../../libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
     ../../libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
     ../../libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
-    ../../libs/OpenFX_extensions/ofxhParametricParam.cpp
+    ../../libs/OpenFX_extensions/ofxhParametricParam.cpp \
+    BaseTest.cpp
 
 HEADERS += \
     ../../Engine/Cache.h \
@@ -128,9 +129,10 @@ HEADERS += \
     ../../libs/OpenFX_extensions/tuttle/ofxParamAPI.h \
     ../../libs/OpenFX_extensions/tuttle/ofxReadWrite.h \
     ../../libs/OpenFX_extensions/ofxhParametricParam.h \
-    ../../libs/OpenFX/include/natron/IOExtensions.h
+    ../../libs/OpenFX/include/natron/IOExtensions.h \
+    BaseTest.h
 
 INCLUDEPATH += google_test/include
-LIBS += google-test/build/libgtest.a
+LIBS += google-test/build/libgtest.a google-test/build/ligtest_main.a
 
 
