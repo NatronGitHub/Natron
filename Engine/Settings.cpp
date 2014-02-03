@@ -46,7 +46,7 @@ void Settings::initializeKnobs(){
     
     _viewersTab = Natron::createKnob<Tab_Knob>(this, "Viewers");
     
-    _texturesMode = Natron::createKnob<Choice_Knob>(this, "Textures bit depth");
+    _texturesMode = Natron::createKnob<Choice_Knob>(this, "Viewer textures bit depth");
     _texturesMode->turnOffAnimation();
     std::vector<std::string> textureModes;
     std::vector<std::string> helpStringsTextureModes;
@@ -55,7 +55,7 @@ void Settings::initializeKnobs(){
                                       "by the software. Cached textures will be smaller in  the viewer cache.");
     textureModes.push_back("16bits half-float");
     helpStringsTextureModes.push_back("Not available yet. Similar to 32bits fp.");
-    textureModes.push_back("32bits fp");
+    textureModes.push_back("32bits floating-point");
     helpStringsTextureModes.push_back("Viewer's post-process like color-space conversion will be done\n"
                                       "by the hardware using GLSL. Cached textures will be larger in the viewer cache.");
     _texturesMode->populate(textureModes,helpStringsTextureModes);
@@ -64,7 +64,7 @@ void Settings::initializeKnobs(){
                                   " Hover each option with the mouse for a more detailed comprehension.");
     _viewersTab->addKnob(_texturesMode);
     
-    _powerOf2Tiling = Natron::createKnob<Int_Knob>(this, "Tiles power of two");
+    _powerOf2Tiling = Natron::createKnob<Int_Knob>(this, "Viewer tile size is 2 to the power of...");
     _powerOf2Tiling->setHintToolTip("The power of 2 of the tiles size used by the Viewer to render."
                                     " A high value means that the viewer will usually render big tiles, which means"
                                     " you have good chances when panning/zooming to find an already rendered texture in the cache."
