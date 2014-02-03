@@ -740,19 +740,8 @@ void ViewerTab::drawOverlays() const{
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
-        
         effect->setCurrentViewerForOverlays(viewer);
-        
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            effect->drawOverlay();
-            pluginLock->unlock();
-        } else {
-            effect->drawOverlay();
-        }
+        effect->drawOverlay();
     }
 }
 
