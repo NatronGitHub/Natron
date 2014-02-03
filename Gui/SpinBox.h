@@ -61,6 +61,8 @@ private:
     virtual void focusInEvent(QFocusEvent* event) OVERRIDE FINAL;
 
     virtual void focusOutEvent(QFocusEvent * event) OVERRIDE FINAL;
+    
+    bool validateText();
         
 signals:
     
@@ -88,6 +90,8 @@ private:
     int animation; // 0 = no animation, 1 = interpolated, 2 = equals keyframe value
     double _valueWhenEnteringFocus;
     int _currentDelta; // accumulates the deltas from wheelevents
+    bool _hasChangedSinceLastValidation;
+    double _valueAfterLastValidation;
 };
 
 #endif /* defined(NATRON_GUI_FEEDBACKSPINBOX_H_) */
