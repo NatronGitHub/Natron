@@ -296,6 +296,8 @@ public:
     bool isDraggingPanel() const { return _currentlyDraggedPanel!=NULL; }
     
     void updateRecentFileActions();
+    
+    static QPixmap screenShot(QWidget* w);
 
 signals:
     

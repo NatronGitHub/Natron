@@ -1670,7 +1670,7 @@ void ViewerGL::renderText( int x, int y, const QString &string,const QColor& col
     if (string.isEmpty()) {
         return;
     }
-    
+
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
     double h = (double)height();

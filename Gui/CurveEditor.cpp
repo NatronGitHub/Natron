@@ -69,6 +69,7 @@ CurveEditor::CurveEditor(boost::shared_ptr<TimeLine> timeline, QWidget *parent)
     , _undoStack(new QUndoStack())
 {
 
+    setObjectName("CurveEditor");
     _undoAction = _undoStack->createUndoAction(this,tr("&Undo"));
     _undoAction->setShortcuts(QKeySequence::Undo);
     _redoAction = _undoStack->createRedoAction(this,tr("&Redo"));
