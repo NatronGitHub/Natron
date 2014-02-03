@@ -20,6 +20,23 @@
 #include "Gui/NodeGuiSerialization.h"
 #include "Gui/NodeGui.h"
 
+struct ViewportProjection {
+    double left,bottom,zoomFactor,aspectRatio;
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar,const unsigned int version)
+    {
+        (void)version;
+        ar & boost::serialization::make_nvp("Left",left);
+        ar & boost::serialization::make_nvp("Bottom",bottom);
+        ar & boost::serialization::make_nvp("ZoomFactor",zoomFactor);
+        ar & boost::serialization::make_nvp("AspectRatio",aspectRatio);
+
+    }
+};
+
+
+
 struct PaneLayout{
     
     bool floating;
@@ -29,6 +46,7 @@ struct PaneLayout{
     std::string parentName;
     std::vector<std::string> splitsNames;
     std::vector<std::string> tabs;
+    
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -53,6 +71,9 @@ class ProjectGuiSerialization {
     //splitter name, splitter serialization
     std::map<std::string,std::string> _splittersStates;
     
+    std::map<std::string, ViewportProjection > _viewersProjection;
+    
+    
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar,const unsigned int version)
@@ -61,6 +82,8 @@ class ProjectGuiSerialization {
         ar & boost::serialization::make_nvp("NodesGui",_serializedNodes);
         ar & boost::serialization::make_nvp("Gui_Layout",_layout);
         ar & boost::serialization::make_nvp("Splitters_states",_splittersStates);
+        ar & boost::serialization::make_nvp("ViewersProjections",_viewersProjection);
+
     }
     
 public:
@@ -76,6 +99,9 @@ public:
     const std::map<std::string,PaneLayout>& getGuiLayout() const { return _layout; }
     
     const std::map<std::string,std::string>& getSplittersStates() const { return _splittersStates; }
+    
+    const std::map<std::string, ViewportProjection >& getViewersProjections() const { return _viewersProjection; }
+    
 private:
     
     void createParenting(std::map<std::string,PaneLayout>::iterator it);

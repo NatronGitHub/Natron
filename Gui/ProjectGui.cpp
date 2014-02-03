@@ -257,6 +257,9 @@ void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneL
 }
 
 void ProjectGui::load(const ProjectGuiSerialization& obj){
+    
+    const std::map<std::string, ViewportProjection >& viewersProjections = obj.getViewersProjections();
+    
     const std::vector< boost::shared_ptr<NodeGuiSerialization> >& nodesGuiSerialization = obj.getSerializedNodesGui();
     for (U32 i = 0; i < nodesGuiSerialization.size(); ++i) {
         const std::string& name = nodesGuiSerialization[i]->getName();
@@ -268,7 +271,17 @@ void ProjectGui::load(const ProjectGuiSerialization& obj){
             nGui->togglePreview();
         }
         
+        if (nGui->getNode()->pluginID() == "Viewer") {
+            std::map<std::string, ViewportProjection >::const_iterator found = viewersProjections.find(name);
+            if (found != viewersProjections.end()) {
+                ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(nGui->getNode()->getLiveInstance());
+                viewer->getUiContext()->viewer->setProjection(found->second.left, found->second.bottom, found->second.zoomFactor);
+            }
+        }
+        
     }
+    
+    
     const std::vector<NodeGui*> nodesGui = _project->getApp()->getVisibleNodes();
     for(U32 i = 0 ; i < nodesGui.size();++i){
         nodesGui[i]->refreshEdges();

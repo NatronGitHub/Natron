@@ -578,7 +578,7 @@ void AppInstance::loadProjectInternal(const QString& path,const QString& name){
             if (nodes[i]->pluginID() == "Viewer") {
                 ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
                 assert(n);
-                n->getVideoEngine()->render(1, true,true,true,true,false,true);
+                n->getVideoEngine()->render(1, true,true,false,true,false,true);
             }
         }
     }

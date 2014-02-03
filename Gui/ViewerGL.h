@@ -283,6 +283,9 @@ public:
     
     void onProjectFormatChanged(const Format& format);
     
+    void getProjection(double &left,double &bottom,double &zoomFactor) const;
+    
+    void setProjection(double left,double bottom,double zoomFactor);
     
 signals:
     /**

@@ -1537,7 +1537,7 @@ void ViewerGL::onProjectFormatChanged(const Format& format){
     _imp->resolutionOverlay.append(QString::number(format.width()));
     _imp->resolutionOverlay.append("x");
     _imp->resolutionOverlay.append(QString::number(format.height()));
-    fitToFormat(format);
+    // fitToFormat(format);
     
     if(_imp->displayingImage) {
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender();
@@ -1702,5 +1702,18 @@ void ViewerGL::clearPersistentMessage()
     }
     _imp->displayPersistentMessage = false;
     updateGL();
+}
+
+void ViewerGL::getProjection(double &left,double &bottom,double &zoomFactor) const {
+    left = _imp->zoomCtx.left;
+    bottom = _imp->zoomCtx.bottom;
+    zoomFactor = _imp->zoomCtx.zoomFactor;
+}
+
+void ViewerGL::setProjection(double left,double bottom,double zoomFactor) {
+    _imp->zoomCtx.left = left;
+    _imp->zoomCtx.bottom = bottom;
+    _imp->zoomCtx.zoomFactor = zoomFactor;
+    _imp->zoomOrPannedSinceLastFit = true;
 }
 

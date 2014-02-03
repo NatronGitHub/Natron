@@ -14,9 +14,14 @@
 
 #include "Global/AppManager.h"
 #include "Engine/Project.h"
+#include "Engine/Node.h"
+#include "Engine/ViewerInstance.h"
 #include "Gui/NodeGui.h"
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
+#include "Gui/ViewerTab.h"
+#include "Gui/ViewerGL.h"
+
 
  void ProjectGuiSerialization::initialize(const ProjectGui* projectGui){
      std::vector<NodeGui*> activeNodes = projectGui->getInternalProject()->getApp()->getVisibleNodes();
@@ -25,9 +30,18 @@
          boost::shared_ptr<NodeGuiSerialization> state(new NodeGuiSerialization);
          activeNodes[i]->serialize(state.get());
          _serializedNodes.push_back(state);
+         
+         if (activeNodes[i]->getNode()->pluginID() == "Viewer") {
+             ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(activeNodes[i]->getNode()->getLiveInstance());
+             assert(viewer);
+             ViewportProjection proj;
+             proj.aspectRatio = 1.;
+             viewer->getUiContext()->viewer->getProjection(proj.left, proj.bottom, proj.zoomFactor);
+             _viewersProjection.insert(std::make_pair(viewer->getName(),proj));
+         }
      }
      
-     const std::list<TabWidget*>& tabWidgets = projectGui->getInternalProject()->getApp()->getGui()->getPanes();
+    const std::list<TabWidget*>& tabWidgets = projectGui->getInternalProject()->getApp()->getGui()->getPanes();
      for (std::list<TabWidget*>::const_iterator it = tabWidgets.begin(); it!= tabWidgets.end(); ++it) {
          const QString& widgetName = (*it)->objectName();
          if(widgetName.isEmpty()){
@@ -82,6 +96,8 @@
          _splittersStates.insert(std::make_pair((*it)->objectName().toStdString(),str.toStdString()));
 
      }
+     
+     
      
 }
 

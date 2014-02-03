@@ -2342,6 +2342,21 @@ bool CurveWidget::isSupportingOpenGLVAO() const { return _imp->_hasOpenGLVAOSupp
 
 const QFont& CurveWidget::getTextFont() const { return *_imp->_font; }
 
+void CurveWidget::getProjection(double &left,double &bottom,double &zoomFactor,double &aspectRatio) const {
+    left = _imp->_zoomCtx.left;
+    bottom = _imp->_zoomCtx.bottom;
+    zoomFactor = _imp->_zoomCtx.zoomFactor;
+    aspectRatio = _imp->_zoomCtx.aspectRatio;
+}
+
+void CurveWidget::setProjection(double left,double bottom,double zoomFactor,double aspectRatio) {
+    _imp->_zoomCtx.left = left;
+    _imp->_zoomCtx.bottom = bottom;
+    _imp->_zoomCtx.zoomFactor = zoomFactor;
+    _imp->_zoomCtx.aspectRatio = aspectRatio;
+}
+
+
 void CurveWidget::exportCurveToAscii() {
     std::vector<CurveGui*> curves;
     for (Curves::iterator it = _imp->_curves.begin() ; it != _imp->_curves.end() ; ++it) {

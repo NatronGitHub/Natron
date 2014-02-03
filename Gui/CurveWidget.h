@@ -196,6 +196,10 @@ public:
     
     void getBackgroundColor(double *r,double *g,double* b) const;
    
+    void getProjection(double& bottom,double &left,double &zoomFactor,double &aspectRatio) const;
+    
+    void setProjection(double bottom,double left,double zoomFactor,double aspectRatio);
+    
 public slots:
     
     void refreshDisplayedTangents();
