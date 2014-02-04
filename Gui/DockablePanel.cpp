@@ -89,7 +89,9 @@ DockablePanel::DockablePanel(KnobHolder* holder
         QPixmap pixHelp ;
         appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
         _helpButton = new Button(QIcon(pixHelp),"",_headerWidget);
-        _helpButton->setToolTip(Qt::convertFromPlainText(helpToolTip, Qt::WhiteSpaceNormal));
+        if (!helpToolTip.isEmpty()) {
+            _helpButton->setToolTip(Qt::convertFromPlainText(helpToolTip, Qt::WhiteSpaceNormal));
+        }
         _helpButton->setFixedSize(15, 15);
         QObject::connect(_helpButton, SIGNAL(clicked()), this, SLOT(showHelp()));
         
