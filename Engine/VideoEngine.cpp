@@ -271,12 +271,11 @@ bool VideoEngine::stopEngine() {
             /*Refresh preview for all nodes that have preview enabled & set the aborted flag to false.
              ONLY If we're not rendering the same frame (i.e: not panning & zooming) and the user is not scrubbing
              .*/
-            
             bool shouldRefreshPreview = (_tree.getOutput()->getApp()->shouldRefreshPreview() && !_currentRunArgs._sameFrame)
             || _currentRunArgs._forcePreview;
             for (RenderTree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
                 if(it->second->isPreviewEnabled() && shouldRefreshPreview){
-                    it->second->getNode()->refreshPreviewImage(_timeline->currentFrame());
+                    it->second->getNode()->computePreviewImage(_timeline->currentFrame());
                 }
                 it->second->setAborted(false);
             }
@@ -673,7 +672,7 @@ void VideoEngine::abortRendering(){
 }
 
 
-void VideoEngine::refreshAndContinueRender(bool initViewer){
+void VideoEngine::refreshAndContinueRender(bool initViewer,bool forcePreview){
     //the changes will occur upon the next frame rendered. If the playback is running indefinately
     //we're sure that there will be a refresh. If the playback is for a determined amount of frame
     //we've to make sure the playback is not rendering the last frame, in which case we wouldn't see
@@ -683,7 +682,7 @@ void VideoEngine::refreshAndContinueRender(bool initViewer){
     bool isPlaybackRunning = isWorking() && (_currentRunArgs._frameRequestsCount == -1 ||
                                              (_currentRunArgs._frameRequestsCount > 1 && _currentRunArgs._frameRequestIndex < _currentRunArgs._frameRequestsCount - 1));
     if(!isPlaybackRunning){
-        render(1,false,false,initViewer,_currentRunArgs._forward,true,false);
+        render(1,false,false,initViewer,_currentRunArgs._forward,true,forcePreview);
     }
 }
 void VideoEngine::updateTreeAndContinueRender(bool initViewer){

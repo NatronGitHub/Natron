@@ -36,6 +36,7 @@
 #include "Engine/FrameEntry.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
+#include "Engine/Project.h"
 
 #include "Gui/TabWidget.h"
 #include "Gui/Edge.h"
@@ -545,6 +546,8 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         /*delete current node.*/
         deleteSelectedNode();
 
+    }else if(e->key() == Qt::Key_P){
+        forceRefreshAllPreviews();
     }
 }
 void NodeGraph::connectCurrentViewerToSelection(int inputNB){
@@ -1173,6 +1176,20 @@ void NodeGraph::populateMenu(){
     QObject::connect(turnOffPreviewAction,SIGNAL(triggered()),this,SLOT(turnOffPreviewForAllNodes()));
     _menu->addAction(turnOffPreviewAction);
     
+    QAction* autoPreview = new QAction("Auto preview",this);
+    autoPreview->setCheckable(true);
+    autoPreview->setChecked(_gui->getApp()->isAutoPreviewEnabled());
+    QObject::connect(autoPreview,SIGNAL(triggered()),this,SLOT(toggleAutoPreview()));
+    QObject::connect(_gui->getApp()->getProject().get(),SIGNAL(autoPreviewChanged(bool)),autoPreview,SLOT(setChecked(bool)));
+    _menu->addAction(autoPreview);
+    
+    QAction* forceRefreshPreviews = new QAction("Refresh previews",this);
+    forceRefreshPreviews->setShortcut(QKeySequence(Qt::Key_P));
+    QObject::connect(forceRefreshPreviews,SIGNAL(triggered()),this,SLOT(forceRefreshAllPreviews()));
+    _menu->addAction(forceRefreshPreviews);
+
+    _menu->addSeparator();
+    
     const std::vector<ToolButton*>& toolButtons = _gui->getToolButtons();
     for(U32 i = 0; i < toolButtons.size();++i){
         //if the toolbutton is a root (no parent), add it in the toolbox
@@ -1183,6 +1200,14 @@ void NodeGraph::populateMenu(){
 
     }
     
+}
+
+void NodeGraph::toggleAutoPreview() {
+    _gui->getApp()->toggleAutoPreview();
+}
+
+void NodeGraph::forceRefreshAllPreviews() {
+    _gui->forceRefreshAllPreviews();
 }
 
 void NodeGraph::showMenu(const QPoint& pos){

@@ -75,6 +75,8 @@ public:
     void removeKeyFrame(SequenceTime time,int dimension);
     
     QString toolTip() const;
+    
+    bool hasToolTip() const;
 
 public slots:
     /*Called when the value held by the knob is changed internally.

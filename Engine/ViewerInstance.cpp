@@ -636,7 +636,7 @@ void ViewerInstance::onExposureChanged(double exp){
     
     if((_uiContext->viewer->bitDepth() == BYTE  || !_uiContext->viewer->supportsGLSL())
        && input(activeInput()) != NULL) {
-        refreshAndContinueRender();
+        refreshAndContinueRender(false,false);
     } else {
         emit mustRedraw();
     }
@@ -670,7 +670,7 @@ void ViewerInstance::onColorSpaceChanged(const QString& colorspaceName){
     
     if((_uiContext->viewer->bitDepth() == BYTE  || !_uiContext->viewer->supportsGLSL())
        && input(activeInput()) != NULL){
-        refreshAndContinueRender();
+        refreshAndContinueRender(false,false);
     }else{
         emit mustRedraw();
     }
@@ -682,7 +682,7 @@ void ViewerInstance::onViewerCacheFrameAdded(){
 
 void ViewerInstance::setDisplayChannels(DisplayChannels channels) {
     _channels = channels;
-    refreshAndContinueRender();
+    refreshAndContinueRender(false,false);
 }
 
 void ViewerInstance::disconnectViewer()

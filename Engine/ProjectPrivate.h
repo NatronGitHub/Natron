@@ -53,6 +53,7 @@ struct ProjectPrivate{
     boost::shared_ptr<Choice_Knob> formatKnob;
     boost::shared_ptr<Button_Knob> addFormatKnob;
     boost::shared_ptr<Int_Knob> viewsCount;
+    boost::shared_ptr<Bool_Knob> previewMode; //< auto or manual
     boost::shared_ptr<TimeLine> timeline; // global timeline
     
     std::map<std::string,int> nodeCounters;

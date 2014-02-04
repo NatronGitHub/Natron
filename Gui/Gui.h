@@ -287,7 +287,11 @@ public:
     
     bool isUserScrubbingTimeline() const { return _isUserScrubbingTimeline; }
     
+    /*Refresh all previews if the project's preview mode is auto*/
     void refreshAllPreviews();
+    
+    /*force a refresh on all previews no matter what*/
+    void forceRefreshAllPreviews();
     
     void startDragPanel(QWidget* panel)  ;
     

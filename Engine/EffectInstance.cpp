@@ -555,9 +555,10 @@ void EffectInstance::evaluate(Knob* knob,bool isSignificant){
         std::list<ViewerInstance*> viewers;
         _node->hasViewersConnected(&viewers);
         bool fitToViewer = knob && knob->typeName() == File_Knob::typeNameStatic();
+        bool forcePreview = getApp()->isAutoPreviewEnabled();
         for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
             if(isSignificant){
-                (*it)->refreshAndContinueRender(fitToViewer);
+                (*it)->refreshAndContinueRender(fitToViewer,forcePreview);
             }else{
                 (*it)->redrawViewer();
             }
@@ -670,8 +671,8 @@ OutputEffectInstance::~OutputEffectInstance(){
 void OutputEffectInstance::updateTreeAndRender(bool initViewer){
     _videoEngine->updateTreeAndContinueRender(initViewer);
 }
-void OutputEffectInstance::refreshAndContinueRender(bool initViewer){
-    _videoEngine->refreshAndContinueRender(initViewer);
+void OutputEffectInstance::refreshAndContinueRender(bool initViewer,bool forcePreview){
+    _videoEngine->refreshAndContinueRender(initViewer,forcePreview);
 }
 
 void OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{

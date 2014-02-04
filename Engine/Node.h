@@ -351,11 +351,17 @@ public slots:
         emit refreshEdgesGUI();
     }
     
-    void refreshPreviewImage(int time){
+    /*will force a preview re-computation not matter of the project's preview mode*/
+    void computePreviewImage(int time) {
+        emit previewRefreshRequested(time);
+    }
+    
+    /*will refresh the preview only if the project is in auto-preview mode*/
+    void refreshPreviewImage(int time) {
         emit previewImageChanged(time);
     }
     
-    void notifyGuiChannelChanged(const Natron::ChannelSet& c){
+    void notifyGuiChannelChanged(const Natron::ChannelSet& c) {
         emit channelsChanged(c);
     }
    
@@ -387,6 +393,8 @@ signals:
     void refreshEdgesGUI();
 
     void previewImageChanged(int);
+    
+    void previewRefreshRequested(int);
     
     void channelsChanged(const Natron::ChannelSet&);
 

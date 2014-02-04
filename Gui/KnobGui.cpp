@@ -391,6 +391,10 @@ QString KnobGui::toolTip() const
     return Qt::convertFromPlainText(getKnob()->getHintToolTip().c_str(), Qt::WhiteSpaceNormal);
 }
 
+bool KnobGui::hasToolTip() const {
+    return !getKnob()->getHintToolTip().empty();
+}
+
 void KnobGui::onRemoveKeyActionTriggered(){
     assert(_knob->getHolder()->getApp());
     //get the current time on the global timeline

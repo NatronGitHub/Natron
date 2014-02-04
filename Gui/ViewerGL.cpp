@@ -543,7 +543,7 @@ void ViewerGL::resizeGL(int width, int height){
         fitToFormat(getDisplayWindow());
     }
     if (viewer->getUiContext()) {
-        viewer->refreshAndContinueRender(!_imp->zoomOrPannedSinceLastFit);
+        viewer->refreshAndContinueRender(!_imp->zoomOrPannedSinceLastFit,false);
         updateGL();
     }
 }
@@ -1169,7 +1169,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
         _imp->zoomCtx.left += (oldClick_opengl.x() - newClick_opengl.x());
         _imp->zoomCtx.oldClick = newClick;
         if(_imp->displayingImage){
-            _imp->viewerTab->getInternalNode()->refreshAndContinueRender();
+            _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
         }
         //else {
         updateGL();
@@ -1249,7 +1249,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     _imp->zoomCtx.zoomFactor = newZoomFactor;
     if(_imp->displayingImage){
         //appPTR->clearPlaybackCache();
-        _imp->viewerTab->getInternalNode()->refreshAndContinueRender();
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
     }
     //else {
     updateGL();
@@ -1288,7 +1288,7 @@ void ViewerGL::zoomSlot(int v) {
     _imp->zoomCtx.zoomFactor = newZoomFactor;
     if(_imp->displayingImage){
         // appPTR->clearPlaybackCache();
-        _imp->viewerTab->getInternalNode()->refreshAndContinueRender();
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
     } else {
         updateGL();
     }
@@ -1455,7 +1455,7 @@ void ViewerGL::onProjectFormatChanged(const Format& format){
     }
     
     if(_imp->displayingImage) {
-        _imp->viewerTab->getInternalNode()->refreshAndContinueRender();
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
     }
 
 }
@@ -1465,7 +1465,7 @@ void ViewerGL::setClipToDisplayWindow(bool b) {
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
     if (viewer->getUiContext()) {
-        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
     }
 }
 

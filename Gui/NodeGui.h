@@ -162,8 +162,11 @@ public slots:
      **/
     void updateShape(int width,int height);
     
-    /*Updates the preview image.*/
+    /*Updates the preview image, only if the project is in auto-preview mode*/
 	void updatePreviewImage(int time);
+    
+    /*Updates the preview image no matter what*/
+    void forceComputePreview(int time);
     
     /*Updates the channels tooltip. This is called by Node::validate(),
      i.e, when the channel requested for the node change.*/

@@ -135,6 +135,10 @@ public slots:
     void turnOffPreviewForAllNodes();
     
     void deleteNode(Natron::Node*);
+    
+    void toggleAutoPreview();
+    
+    void forceRefreshAllPreviews();
 
 private:
 

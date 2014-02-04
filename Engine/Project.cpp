@@ -60,6 +60,13 @@ void Project::initializeKnobs(){
     _imp->viewsCount->setMinimum(1);
     _imp->viewsCount->setValue(1);
     _imp->viewsCount->disableSlider();
+    
+    _imp->previewMode = Natron::createKnob<Bool_Knob>(this, "Auto previews");
+    _imp->previewMode->setHintToolTip("When true, preview images on the node graph will be"
+                                      "refreshed automatically. You can uncheck this option to improve performances."
+                                      " Press <p><b>P</b></p> in the node graph to refresh the previews yourself.");
+    _imp->previewMode->turnOffAnimation();
+    _imp->previewMode->setValue<bool>(true);
 }
 
 
@@ -207,6 +214,14 @@ bool Project::shouldAutoSetProjectFormat() const {
 
 void Project::setAutoSetProjectFormat(bool b){
     _imp->autoSetProjectFormat = b;
+}
+    
+bool Project::isAutoPreviewEnabled() const {
+    return _imp->previewMode->getValue<bool>();
+}
+    
+void Project::toggleAutoPreview() {
+    _imp->previewMode->setValue<bool>(!_imp->previewMode->getValue<bool>());
 }
 
 boost::shared_ptr<TimeLine> Project::getTimeLine() const  {return _imp->timeline;}
@@ -434,10 +449,10 @@ void Project::endKnobsValuesChanged(Natron::ValueChangedReason /*reason*/) {
 }
 
 void Project::onKnobValueChanged(Knob* knob,Natron::ValueChangedReason /*reason*/){
-    if(knob == _imp->viewsCount.get()){
+    if (knob == _imp->viewsCount.get()) {
         int viewsCount = _imp->viewsCount->getValue<int>();
         getApp()->setupViewersForViews(viewsCount);
-    }else if(knob == _imp->formatKnob.get()){
+    } else if(knob == _imp->formatKnob.get()) {
         int index = _imp->formatKnob->getActiveEntry();
         if(index < (int)_imp->availableFormats.size()){
             const Format& f = _imp->availableFormats[index];
@@ -448,8 +463,10 @@ void Project::onKnobValueChanged(Knob* knob,Natron::ValueChangedReason /*reason*
 
             }
         }
-    }else if(knob == _imp->addFormatKnob.get()){
+    } else if(knob == _imp->addFormatKnob.get()) {
         emit mustCreateFormat();
+    } else if(knob == _imp->previewMode.get()) {
+        emit autoPreviewChanged(_imp->previewMode->getValue<bool>());
     }
 
 }

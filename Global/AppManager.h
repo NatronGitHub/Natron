@@ -108,6 +108,7 @@ public:
 
     boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN ;
 
+    /*true if the user is NOT scrubbing the timeline*/
     bool shouldRefreshPreview() const;
 
 //////////
@@ -119,6 +120,10 @@ public:
     const QString& getCurrentProjectPath() const WARN_UNUSED_RETURN ;
 
     int getProjectViewsCount() const;
+
+    bool isAutoPreviewEnabled() const;
+
+    void toggleAutoPreview();
 
     bool hasProjectBeenSavedByUser() const WARN_UNUSED_RETURN ;
 

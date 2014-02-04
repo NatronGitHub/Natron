@@ -522,7 +522,7 @@ public:
 
     void updateTreeAndRender(bool initViewer = false);
 
-    void refreshAndContinueRender(bool initViewer = false);
+    void refreshAndContinueRender(bool initViewer,bool forcePreview);
 
     void ifInfiniteclipRectToProjectDefault(RectI* rod) const;
 

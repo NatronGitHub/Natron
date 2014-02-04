@@ -1173,7 +1173,7 @@ void Gui::createReader(){
                         fk->setValue<QStringList>(files);
                         
                         if (n->isPreviewEnabled()) {
-                            n->refreshPreviewImage(_appInstance->getTimeLine()->currentFrame());
+                            n->computePreviewImage(_appInstance->getTimeLine()->currentFrame());
                         }
                         
                         break;
@@ -1590,6 +1590,17 @@ void Gui::refreshAllPreviews() {
     for (U32 i = 0; i < nodes.size(); ++i) {
         if (nodes[i]->isPreviewEnabled()) {
             nodes[i]->refreshPreviewImage(time);
+        }
+    }
+}
+
+void Gui::forceRefreshAllPreviews() {
+    int time = _appInstance->getTimeLine()->currentFrame();
+    std::vector<Natron::Node*> nodes;
+    _appInstance->getActiveNodes(&nodes);
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        if (nodes[i]->isPreviewEnabled()) {
+            nodes[i]->computePreviewImage(time);
         }
     }
 }

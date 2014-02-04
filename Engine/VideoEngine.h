@@ -303,7 +303,7 @@ public:
      *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
      *serve to render the frames.
      **/
-    void refreshAndContinueRender(bool initViewer);
+    void refreshAndContinueRender(bool initViewer,bool forcePreview);
     
     /**
      *@brief This function internally calls render(). If the playback is running, then it will resume the playback

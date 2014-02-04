@@ -108,6 +108,10 @@ private:
     
     void setAutoSetProjectFormat(bool b);
     
+    bool isAutoPreviewEnabled() const;
+    
+    void toggleAutoPreview();
+    
     boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN;
     
     // TimeLine operations (to avoid duplicating the shared_ptr when possible)
@@ -173,6 +177,8 @@ signals:
     void mustCreateFormat();
     
     void formatChanged(Format);
+    
+    void autoPreviewChanged(bool);
     
 private:
 

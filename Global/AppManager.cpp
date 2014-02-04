@@ -600,22 +600,30 @@ void AppInstance::saveProject(const QString& path,const QString& name,bool autoS
         _isSavingProject = true;
     }
     
-    if(!autoSave) {
-        
-        if((_currentProject->projectAgeSinceLastSave() != _currentProject->projectAgeSinceLastAutosave()) ||
-                !QFile::exists(path+name)){
+    try {
+        if(!autoSave) {
             
-            saveProjectInternal(path,name);
-            
-            QString text(QCoreApplication::applicationName() + " - ");
-            text.append(name);
-            _gui->setWindowTitle(text);
+            if((_currentProject->projectAgeSinceLastSave() != _currentProject->projectAgeSinceLastAutosave()) ||
+               !QFile::exists(path+name)){
+                
+                saveProjectInternal(path,name);
+                
+                QString text(QCoreApplication::applicationName() + " - ");
+                text.append(name);
+                _gui->setWindowTitle(text);
+            }
+        }else{
+            if(!_gui->isGraphWorthless()){
+                
+                removeAutoSaves();
+                saveProjectInternal(path,name,true);
+            }
         }
-    }else{
-        if(!_gui->isGraphWorthless()){
-            
-            removeAutoSaves();
-            saveProjectInternal(path,name,true);
+    } catch (const std::exception& e) {
+        if(!autoSave) {
+            Natron::errorDialog("Save", e.what());
+        } else {
+            qDebug() << "Save failure: " << e.what();
         }
     }
     _isSavingProject = false;
@@ -644,26 +652,18 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
         qDebug() << "Failed to open file " << filePath.toStdString().c_str();
         throw std::runtime_error("Failed to open file " + filePath.toStdString());
     }
-    try {
-        boost::archive::xml_oarchive oArchive(ofile);
-        bool bgProject = _isBackground;
-        oArchive << boost::serialization::make_nvp("Background_project",bgProject);
-        ProjectSerialization projectSerializationObj;
-        _currentProject->save(&projectSerializationObj);
-        oArchive << boost::serialization::make_nvp("Project",projectSerializationObj);
-        if(!_isBackground){
-            ProjectGuiSerialization projectGuiSerializationObj;
-            _gui->_projectGui->save(&projectGuiSerializationObj);
-            oArchive << boost::serialization::make_nvp("ProjectGui",projectGuiSerializationObj);
-        }
-        
-    }catch (const std::exception& e) {
-        qDebug() << "Error while saving project: " << e.what();
-        throw;
-    } catch (...) {
-        qDebug() << "Error while saving project";
-        throw;
+    boost::archive::xml_oarchive oArchive(ofile);
+    bool bgProject = _isBackground;
+    oArchive << boost::serialization::make_nvp("Background_project",bgProject);
+    ProjectSerialization projectSerializationObj;
+    _currentProject->save(&projectSerializationObj);
+    oArchive << boost::serialization::make_nvp("Project",projectSerializationObj);
+    if(!_isBackground){
+        ProjectGuiSerialization projectGuiSerializationObj;
+        _gui->_projectGui->save(&projectGuiSerializationObj);
+        oArchive << boost::serialization::make_nvp("ProjectGui",projectGuiSerializationObj);
     }
+    
     _currentProject->setProjectName(filename);
     _currentProject->setProjectPath(path);
     if(!autoSave){
@@ -1643,9 +1643,19 @@ boost::shared_ptr<TimeLine> AppInstance::getTimeLine() const  {
     return _currentProject->getTimeLine();
 }
 
-int AppInstance::getProjectViewsCount() const{
+int AppInstance::getProjectViewsCount() const {
     QMutexLocker l(&_projectLock);
     return _currentProject->getProjectViewsCount();
+}
+
+bool AppInstance::isAutoPreviewEnabled() const {
+    QMutexLocker l(&_projectLock);
+    return _currentProject->isAutoPreviewEnabled();
+}
+
+void AppInstance::toggleAutoPreview() {
+    QMutexLocker l(&_projectLock);
+    _currentProject->toggleAutoPreview();
 }
 
 bool AppInstance::hasProjectBeenSavedByUser() const  {

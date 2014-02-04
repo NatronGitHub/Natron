@@ -554,7 +554,6 @@ void ViewerTab::startBackward(bool b){
 void ViewerTab::seek(SequenceTime time){
     _currentFrameBox->setValue(time);
     _timeLineGui->seek(time);
-    //_viewerNode->refreshAndContinueRender();
 }
 
 void ViewerTab::previousFrame(){
@@ -578,7 +577,6 @@ void ViewerTab::lastFrame(){
 
 void ViewerTab::onTimeLineTimeChanged(SequenceTime time,int /*reason*/){
     _currentFrameBox->setValue(time);
-    //_viewerNode->refreshAndContinueRender();
 }
 
 void ViewerTab::onCurrentTimeSpinBoxChanged(double time){
@@ -588,7 +586,7 @@ void ViewerTab::onCurrentTimeSpinBoxChanged(double time){
 
 void ViewerTab::centerViewer(){
     if(viewer->displayingImage()){
-        _viewerNode->refreshAndContinueRender(true);
+        _viewerNode->refreshAndContinueRender(true,false);
         
     }else{
         viewer->fitToFormat(viewer->getDisplayWindow());
@@ -730,7 +728,8 @@ QSize ViewerTab::sizeHint() const{
 
 void ViewerTab::showView(int /*view*/){
     abortRendering();
-    _viewerNode->refreshAndContinueRender();
+    bool isAutoPreview = _gui->getApp()->isAutoPreviewEnabled();
+    _viewerNode->refreshAndContinueRender(false,isAutoPreview);
 }
 
 

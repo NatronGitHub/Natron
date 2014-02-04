@@ -82,6 +82,7 @@ NodeGui::NodeGui(NodeGraph* dag,
     QObject::connect(_internalNode, SIGNAL(knobsInitialized()),this,SLOT(initializeKnobs()));
     QObject::connect(_internalNode, SIGNAL(inputsInitialized()),this,SLOT(initializeInputs()));
     QObject::connect(_internalNode, SIGNAL(previewImageChanged(int)), this, SLOT(updatePreviewImage(int)));
+    QObject::connect(_internalNode, SIGNAL(previewRefreshRequested(int)), this, SLOT(forceComputePreview(int)));
     QObject::connect(_internalNode, SIGNAL(deactivated()),this,SLOT(deactivate()));
     QObject::connect(_internalNode, SIGNAL(activated()), this, SLOT(activate()));
     QObject::connect(_internalNode, SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)));
@@ -277,8 +278,14 @@ void NodeGui::updateChannelsTooltip(const Natron::ChannelSet& chan){
     _channelsPixmap->setToolTip(Qt::convertFromPlainText(tooltip, Qt::WhiteSpaceNormal));
 }
 
-void NodeGui::updatePreviewImage(int time){
+void NodeGui::updatePreviewImage(int time) {
     
+    if(_internalNode->isPreviewEnabled()  && _internalNode->getApp()->isAutoPreviewEnabled()) {
+        QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
+    }
+}
+
+void NodeGui::forceComputePreview(int time) {
     if(_internalNode->isPreviewEnabled()) {
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
     }
