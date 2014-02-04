@@ -489,11 +489,11 @@ namespace Natron {
                 return 1.055f * std::pow(v, 1.0f / 2.4f) - 0.055f;
         }
         
-        
-        inline float clamp(float v,float min,float max){
-            return v > max ? max : v;
-            return v < min ? min : v;
+        template<typename T>
+        inline T clamp(T v,T min,T max){
+            return std::min(std::max(min, v), max);
         }
+        
         
     } //namespace Color
 } //namespace Natron

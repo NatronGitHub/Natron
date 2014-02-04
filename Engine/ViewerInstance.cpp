@@ -427,125 +427,66 @@ void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> 
     int dstY = 0;
     for (int y = yRange.first; y < yRange.second; y+=closestPowerOf2) {
         
-        int start = (int)(rand() % texRect.w);
-        
+        int start = (int)(rand() % ((texRect.x2 - texRect.x1)/closestPowerOf2));
         const float* src_pixels = (const float*)inputImage->pixelAt(texRect.x1, y);
-
+        
         U32* dst_pixels = output + dstY * texRect.w;
 
-        if (!_colorSpace) { //< linear
-            /* go fowards from starting point to end of line: */
-            for(int i = start; i < texRect.w; ++i) {
-                int srcIndex = (i  * 4 * closestPowerOf2);
-                if (srcIndex > texRect.x2 * 4) {
-                    dst_pixels[i] = toBGRA(0,0,0,255);
-                    continue;
-                }
-                
-                double r = src_pixels[srcIndex + rOffset] * _exposure;
-                double g = src_pixels[srcIndex + gOffset] * _exposure;
-                double b = src_pixels[srcIndex + bOffset] * _exposure;
-                if(luminance){
-                    r = 0.299 * r + 0.587 * g + 0.114 * b;
-                    g = r;
-                    b = r;
-                }
-                dst_pixels[i] = toBGRA((U8)std::min((int)( r * 256 ),255),
-                                   (U8)std::min((int)( g * 256 ),255),
-                                   (U8)std::min((int)( b * 256 ),255),
-                                   255);
-            }
+        /* go fowards from starting point to end of line: */
+        for (int backward = 0;backward < 2; ++backward) {
             
-            /* go backwards from starting point to start of line: */
-            for(int i = start-1 ; i >= 0 ; --i){
-                int srcIndex = (i  * 4 * closestPowerOf2);
-                if (srcIndex > texRect.x2 * 4) {
-                    dst_pixels[i] = toBGRA(0,0,0,255);
-                    continue;
-                }
-                
-                double r = src_pixels[srcIndex + rOffset] * _exposure;
-                double g = src_pixels[srcIndex + gOffset] * _exposure;
-                double b = src_pixels[srcIndex + bOffset] * _exposure;
-                if(luminance){
-                    r = 0.299 * r + 0.587 * g + 0.114 * b;
-                    g = r;
-                    b = r;
-                }
-                dst_pixels[i] = toBGRA((U8)std::min((int)( r * 256 ),255),
-                                       (U8)std::min((int)( g * 256 ),255),
-                                       (U8)std::min((int)( b * 256 ),255),
-                                       255);
-            }
-
-        } else {
+            int dstIndex = backward ? start - 1 : start;
+            int srcIndex = dstIndex * closestPowerOf2; //< offset from src_pixels
+            assert(backward == 1 || (srcIndex >= 0 && srcIndex < (texRect.x2 - texRect.x1)));
             
-            _colorSpace->validate();
-
             unsigned error_r = 0x80;
             unsigned error_g = 0x80;
             unsigned error_b = 0x80;
             
-            /* go fowards from starting point to end of line: */
-            for(int i = start ; i < texRect.w; ++i) {
-                int srcIndex =  (i  * 4 * closestPowerOf2);
-                if (srcIndex > ( texRect.x2 - texRect.x1 ) * 4) {
-                    dst_pixels[i] = toBGRA(0,0,0,255);
-                    continue;
+            while(dstIndex < texRect.w && dstIndex >= 0) {
+                
+                if (srcIndex > ( texRect.x2 - texRect.x1)) {
+                    dst_pixels[dstIndex] = toBGRA(0,0,0,255);
+                } else {
+                    
+                    double r = src_pixels[srcIndex * 4 + rOffset] * _exposure;
+                    double g = src_pixels[srcIndex * 4 + gOffset] * _exposure;
+                    double b = src_pixels[srcIndex * 4 + bOffset] * _exposure;
+                    if(luminance){
+                        r = 0.299 * r + 0.587 * g + 0.114 * b;
+                        g = r;
+                        b = r;
+                    }
+                    
+                    if (!_colorSpace) {
+                        
+                        dst_pixels[dstIndex] = toBGRA(Color::clamp((int)(r * 256), 0, 255),
+                                               Color::clamp((int)(g * 256), 0, 255),
+                                               Color::clamp((int)(b * 256), 0, 255),
+                                               255);
+                        
+                    } else {
+                        error_r = (error_r&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(r,0.,1.));
+                        error_g = (error_g&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(g,0.,1.));
+                        error_b = (error_b&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(b,0.,1.));
+                        
+                        dst_pixels[dstIndex] = toBGRA((U8)(error_r >> 8),
+                                               (U8)(error_g >> 8),
+                                               (U8)(error_b >> 8),
+                                               255);
+                        
+                    }
+                }
+                if (backward) {
+                    --dstIndex;
+                    srcIndex -= closestPowerOf2;
+                } else {
+                    ++dstIndex;
+                    srcIndex += closestPowerOf2;
                 }
                 
-                double r = src_pixels[srcIndex + rOffset] * _exposure;
-                double g = src_pixels[srcIndex + gOffset] * _exposure;
-                double b = src_pixels[srcIndex + bOffset] * _exposure;
-                if(luminance){
-                    r = 0.299 * r + 0.587 * g + 0.114 * b;
-                    g = r;
-                    b = r;
-                }
-                
-                error_r = (error_r&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(r,0.,1.));
-                error_g = (error_g&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(g,0.,1.));
-                error_b = (error_b&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(b,0.,1.));
-                
-                dst_pixels[i] = toBGRA((U8)(error_r >> 8),
-                                       (U8)(error_g >> 8),
-                                       (U8)(error_b >> 8),
-                                       255);
             }
-            
-            error_r = 0x80;
-            error_g = 0x80;
-            error_b = 0x80;
-            
-            /* go backwards from starting point to start of line: */
-            for(int i = start-1 ; i >= 0 ; --i){
-                int srcIndex =  (i  * 4 * closestPowerOf2);
-                if (srcIndex > ( texRect.x2 - texRect.x1 ) * 4) {
-                    dst_pixels[i] = toBGRA(0,0,0,255);
-                    continue;
-                }
-                
-                double r = src_pixels[srcIndex + rOffset] * _exposure;
-                double g = src_pixels[srcIndex + gOffset] * _exposure;
-                double b = src_pixels[srcIndex + bOffset] * _exposure;
-                if(luminance){
-                    r = 0.299 * r + 0.587 * g + 0.114 * b;
-                    g = r;
-                    b = r;
-                }
-                
-                error_r = (error_r&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(r,0.,1.));
-                error_g = (error_g&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(g,0.,1.));
-                error_b = (error_b&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(b,0.,1.));
-                
-                dst_pixels[i] = toBGRA((U8)(error_r >> 8),
-                                       (U8)(error_g >> 8),
-                                       (U8)(error_b >> 8),
-                                       255);
-            }
-
         }
-        
         ++dstY;
     }
 }
