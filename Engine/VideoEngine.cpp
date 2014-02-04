@@ -362,6 +362,16 @@ void VideoEngine::run(){
             if(!startEngine(false)){
                 if(stopEngine())
                     return;
+                
+                /*pause the thread*/
+                {
+                    QMutexLocker locker(&_startMutex);
+                    while(_startCount <= 0) {
+                        _startCondition.wait(&_startMutex);
+                    }
+                    _startCount = 0;
+                }
+                
                 continue;
             }
         }
@@ -371,7 +381,7 @@ void VideoEngine::run(){
         if (stopEngine()) {
             return;
         } else {
-            /*pause the thread if needed*/
+            /*pause the thread*/
             {
                 QMutexLocker locker(&_startMutex);
                 while(_startCount <= 0) {
