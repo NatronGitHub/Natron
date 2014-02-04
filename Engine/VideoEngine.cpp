@@ -279,8 +279,15 @@ bool VideoEngine::stopEngine() {
             bool shouldRefreshPreview = (_tree.getOutput()->getApp()->shouldRefreshPreview() && !_currentRunArgs._sameFrame)
             || _currentRunArgs._forcePreview;
             for (RenderTree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
-                if(it->second->isPreviewEnabled() && shouldRefreshPreview){
-                    it->second->getNode()->computePreviewImage(_timeline->currentFrame());
+                bool previewEnabled = it->second->isPreviewEnabled();
+                if (previewEnabled) {
+                    if (_currentRunArgs._forcePreview) {
+                        it->second->getNode()->computePreviewImage(_timeline->currentFrame());
+                    } else {
+                        if (shouldRefreshPreview) {
+                            it->second->getNode()->refreshPreviewImage(_timeline->currentFrame());
+                        }
+                    }
                 }
                 it->second->setAborted(false);
             }
