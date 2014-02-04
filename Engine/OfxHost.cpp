@@ -473,9 +473,10 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
 /////////////////
 
 #ifndef OFX_SUPPORTS_MULTITHREAD
-#error "Natron should be compiled with OFX_SUPPORTS_MULTITHREAD defined"
+#pragma message WARN("Natron should be compiled with OFX_SUPPORTS_MULTITHREAD defined")
 #endif
 
+#ifdef OFX_SUPPORTS_MULTITHREAD
 struct Thread_Group {
     typedef std::list<boost::thread*> ThreadsList;
     ThreadsList threads;
@@ -726,5 +727,5 @@ OfxStatus Natron::OfxHost::mutexTryLock(const OfxMutexHandle mutex) {
         return kOfxStatErrUnknown;
     }
 }
-
+#endif
 

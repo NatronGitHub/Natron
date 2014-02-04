@@ -80,6 +80,7 @@ public:
     ///fetch the parametric parameters suite or returns the base class version
     virtual void* fetchSuite(const char *suiteName, int suiteVersion) OVERRIDE;
     
+#ifdef OFX_SUPPORTS_MULTITHREAD
     virtual OfxStatus multiThread(OfxThreadFunctionV1 func,unsigned int nThreads, void *customArg) OVERRIDE;
 
     virtual OfxStatus multiThreadNumCPUS(unsigned int *nCPUs) const OVERRIDE;
@@ -97,6 +98,7 @@ public:
     virtual OfxStatus mutexUnLock(const OfxMutexHandle mutex) OVERRIDE;
 
     virtual OfxStatus mutexTryLock(const OfxMutexHandle mutex) OVERRIDE;
+#endif
     
     OfxEffectInstance* createOfxEffect(const std::string& name,Node* node);
     

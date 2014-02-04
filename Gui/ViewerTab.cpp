@@ -753,18 +753,7 @@ bool ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& 
         assert(effect);
         
         effect->setCurrentViewerForOverlays(viewer);
-
-    
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            ret = effect->onOverlayPenDown(viewportPos, pos);
-            pluginLock->unlock();
-        } else {
-            ret = effect->onOverlayPenDown(viewportPos, pos);
-        }
+        ret = effect->onOverlayPenDown(viewportPos, pos);
     }
     return ret;
 }
@@ -776,19 +765,8 @@ bool ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
-        
         effect->setCurrentViewerForOverlays(viewer);
-
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            ret = effect->onOverlayPenMotion(viewportPos, pos);
-            pluginLock->unlock();
-        } else {
-            ret = effect->onOverlayPenMotion(viewportPos, pos);
-        }
+        ret = effect->onOverlayPenMotion(viewportPos, pos);
     }
     return ret;
 }
@@ -800,19 +778,8 @@ bool ViewerTab::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& po
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
-        
         effect->setCurrentViewerForOverlays(viewer);
-
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            ret = effect->onOverlayPenUp(viewportPos, pos);
-            pluginLock->unlock();
-        } else {
-            ret = effect->onOverlayPenUp(viewportPos, pos);
-        }
+        ret = effect->onOverlayPenUp(viewportPos, pos);
     }
     return ret;
 }
@@ -826,17 +793,7 @@ bool ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
         assert(effect);
         
         effect->setCurrentViewerForOverlays(viewer);
-
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            ret = effect->onOverlayKeyDown(e);
-            pluginLock->unlock();
-        } else {
-            ret = effect->onOverlayKeyDown(e);
-        }
+        ret = effect->onOverlayKeyDown(e);
     }
     return ret;
 }
@@ -850,17 +807,7 @@ bool ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
         assert(effect);
         
         effect->setCurrentViewerForOverlays(viewer);
-
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            ret = effect->onOverlayKeyUp(e);
-            pluginLock->unlock();
-        } else {
-            ret = effect->onOverlayKeyUp(e);
-        }
+        ret = effect->onOverlayKeyUp(e);
     }
     return ret;
 }
@@ -874,17 +821,7 @@ bool ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
         assert(effect);
         
         effect->setCurrentViewerForOverlays(viewer);
-
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            ret = effect->onOverlayKeyRepeat(e);
-            pluginLock->unlock();
-        } else {
-            ret = effect->onOverlayKeyRepeat(e);
-        }
+        ret = effect->onOverlayKeyRepeat(e);
     }
     return ret;
 }
@@ -898,17 +835,8 @@ bool ViewerTab::notifyOverlaysFocusGained(){
         assert(effect);
         
         effect->setCurrentViewerForOverlays(viewer);
-
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            ret = effect->onOverlayFocusGained();
-            pluginLock->unlock();
-        } else {
-            ret = effect->onOverlayFocusGained();
-        }
+        ret = effect->onOverlayFocusGained();
+        
     }
     return ret;
 }
@@ -922,17 +850,7 @@ bool ViewerTab::notifyOverlaysFocusLost(){
         assert(effect);
         
         effect->setCurrentViewerForOverlays(viewer);
-
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            ret = effect->onOverlayFocusLost();
-            pluginLock->unlock();
-        } else {
-            ret = effect->onOverlayFocusLost();
-        }
+        ret = effect->onOverlayFocusLost();
     }
     return ret;
 }
