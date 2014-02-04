@@ -393,7 +393,7 @@ void Project::endProjectWideValueChanges(KnobHolder* caller){
         _imp->holdersWhoseBeginWasCalled.erase(found);
         
         //getApp()->unlockProject();
-        caller->endKnobsValuesChanged(found->second.second);
+        caller->endKnobsValuesChanged(outerMostReason);
         //getApp()->lockProject();
 
         
