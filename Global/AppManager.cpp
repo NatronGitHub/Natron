@@ -759,7 +759,9 @@ bool AppInstance::findAutoSave() {
                 return false;
             } else {
                 try {
+                    _isLoadingProject = true;
                     loadProjectInternal(savesDir.path()+QDir::separator(), entry);
+                    _isLoadingProject = false;
                 } catch (const std::exception& e) {
                     Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project") + ": " + e.what());
                     createNode("Viewer");

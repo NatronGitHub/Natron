@@ -885,95 +885,7 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD) {
     return ret;
 }
 
-std::pair<int,int> ViewerGL::computeRowSpan(int bottom,int top, std::vector<int>* rows) {
-    /*First off,we test the 1st and last row to check wether the
-     image is contained in the viewer*/
-    // testing top of the image
-    assert(rows);
-    assert(rows->size() == 0);
-    std::pair<int,int> ret;
-    int y = 0;
-    int prev = -1;
-    double res = toImgCoordinates_fast(0,y).y();
-    ret.first = bottom;
-    ret.second = top-1;
-    if (res < 0.) { // all the image is above the viewer
-        return ret; // do not add any row
-    }
-    // testing bottom now
-    y = height()-1;
-    res = toImgCoordinates_fast(0,y).y();
-    /*for all the others row (apart the first and last) we can check.
-     */
-    while(y >= 0 && res < bottom){
-        /*while y is an invalid line, iterate*/
-        --y;
-        res = toImgCoordinates_fast(0,y).y();
-    }
-    while(y >= 0 && res >= bottom && res < top){
-        /*y is a valid line in widget coord && res contains the image y coord.*/
-        int row = (int)std::floor(res);
-        assert(row >= bottom && row < top);
-        if(row != prev){
-            rows->push_back(row);
-            prev = row;
-        }
-        --y;
-        res = toImgCoordinates_fast(0,y).y();
-    }
-    if(rows->size() > 0){
-        ret.first = rows->front();
-        ret.second = rows->back();
-    }
-    assert(ret.first >= bottom && ret.first <= std::max(bottom, top-1));
-    assert(ret.second >= std::min(bottom,top-1) && ret.second < top);
-    return ret;
-}
 
-std::pair<int,int> ViewerGL::computeColumnSpan(int left,int right, std::vector<int>* columns) {
-    /*First off,we test the 1st and last columns to check wether the
-     image is contained in the viewer*/
-    // testing right of the image
-    assert(columns);
-    assert(columns->size() == 0);
-    std::pair<int,int> ret;
-    int x = width()-1;
-    int prev = -1;
-    double res = toImgCoordinates_fast(x,0).x();
-    ret.first = left;
-    ret.second = right-1;
-    if (res < 0.) { // all the image is on the left of the viewer
-        return ret;
-    }
-    // testing right now
-    x = 0;
-    res = toImgCoordinates_fast(x,0).x();
-    /*for all the others columns (apart the first and last) we can check.
-     */
-    while(x < width() && res < left) {
-        /*while x is an invalid column, iterate from left to right*/
-        ++x;
-        res = toImgCoordinates_fast(x,0).x();
-    }
-    while(x < width() && res >= left && res < right) {
-        /*y is a valid column in widget coord && res contains the image x coord.*/
-        int column = (int)std::floor(res);
-        assert(column >= left && column < right);
-        if(column != prev){
-            columns->push_back(column);
-            prev = column;
-        }
-        ++x;
-        res = toImgCoordinates_fast(x,0).x();
-    }
-    if(columns->size() > 0){
-        ret.first = columns->front();
-        ret.second = columns->back();
-    }
-    assert(ret.first >= left && ret.first <= std::max(left, right-1));
-    assert(ret.second >= std::min(left,right-1) && ret.second < right);
-    return ret;
-}
 
 int ViewerGL::isExtensionSupported(const char *extension){
     const GLubyte *extensions = NULL;
@@ -1537,7 +1449,10 @@ void ViewerGL::onProjectFormatChanged(const Format& format){
     _imp->resolutionOverlay.append(QString::number(format.width()));
     _imp->resolutionOverlay.append("x");
     _imp->resolutionOverlay.append(QString::number(format.height()));
-    // fitToFormat(format);
+    
+    if (!_imp->viewerTab->getGui()->getApp()->isLoadingProject()) {
+        fitToFormat(format);
+    }
     
     if(_imp->displayingImage) {
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender();

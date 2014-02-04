@@ -130,23 +130,7 @@ public:
      *@returns Returns the current zoom factor that is applied to the display.
      **/
     double getZoomFactor();
-    
-    /**
-     *@brief Computes what are the rows that should be displayed on viewer
-     *for the given displayWindow with the  current zoom factor and  current zoom center.
-     *The rows will be stored from bottom to top. The values are returned
-     *as a vector of image coordinates.
-     *This function does not use any OpenGL function, so it can be safely called in
-     *a thread that does not own the context.
-     *@return Returns a pair with the first row index and the last row indexes.
-     **/
-    std::pair<int,int> computeRowSpan(int bottom,int top, std::vector<int>* rows);
-    
-    /**
-     *@brief same as computeRowSpan but for columns.
-     **/
-    std::pair<int,int> computeColumnSpan(int left,int right, std::vector<int>* columns);
-    
+
     /**
      * @brief Returns the rectangle of the image displayed by the viewer
      **/
