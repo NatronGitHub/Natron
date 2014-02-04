@@ -187,8 +187,13 @@ bool VideoEngine::startEngine(bool singleThreaded) {
     
     if(!_tree.isOutputAViewer()){
         
-        
         if (!singleThreaded) {
+            {
+                QMutexLocker l(&_abortedRequestedMutex);
+                if (_abortRequested > 0) {
+                    return false;
+                }
+            }
             QMutexLocker l(&_getFrameRangeMutex);
             _gettingFrameRange = true;
             emit mustGetFrameRange();
