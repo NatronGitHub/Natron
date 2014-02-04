@@ -274,6 +274,7 @@ void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/)
     } else if(k == _multiThreadedDisabled.get()) {
         if (isMultiThreadingDisabled()) {
             QThreadPool::globalInstance()->setMaxThreadCount(1);
+            appPTR->abortAnyProcessing();
         } else {
             QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
         }
