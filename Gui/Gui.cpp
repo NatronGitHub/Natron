@@ -67,6 +67,8 @@
 #define PLUGIN_GROUP_DEEP "Deep"
 #define PLUGIN_GROUP_MULTIVIEW "Views"
 #define PLUGIN_GROUP_OFX "OFX"
+#define PLUGIN_GROUP_TIME "Time"
+#define PLUGIN_GROUP_PAINT "Paint"
 
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH"misc_low.png"
 
@@ -983,6 +985,10 @@ static void getPixmapForGrouping(QPixmap* pixmap,const QString& grouping) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_DEEP_GROUPING, pixmap);
     } else if (grouping == PLUGIN_GROUP_MULTIVIEW) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_MULTIVIEW_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_TIME) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_TIME_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_PAINT) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_PAINT_GROUPING, pixmap);
     } else if (grouping == PLUGIN_GROUP_DEFAULT) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
     } else {

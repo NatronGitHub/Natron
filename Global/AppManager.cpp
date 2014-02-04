@@ -240,6 +240,14 @@ void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
             img.load(NATRON_IMAGES_PATH"openeffects.png");
             *pix = QPixmap::fromImage(img);
             break;
+        case NATRON_PIXMAP_TIME_GROUPING:
+            img.load(NATRON_IMAGES_PATH"time_low.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_PAINT_GROUPING:
+            img.load(NATRON_IMAGES_PATH"paint_low.png");
+            *pix = QPixmap::fromImage(img);
+            break;
         case NATRON_PIXMAP_COMBOBOX:
             img.load(NATRON_IMAGES_PATH"combobox.png");
             *pix = QPixmap::fromImage(img).scaled(10, 10);
