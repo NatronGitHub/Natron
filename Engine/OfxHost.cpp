@@ -593,6 +593,7 @@ OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const {
     if (!threadIndex)
         return kOfxStatFailed;
     U32 i = 0;
+    boost::mutex::scoped_lock lock(tg.lock);
     for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
         if((*it)->get_id() == boost::this_thread::get_id()){
             *threadIndex = i;
@@ -605,6 +606,7 @@ OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const {
 }
 
 int Natron::OfxHost::multiThreadIsSpawnedThread() const {
+    boost::mutex::scoped_lock lock(tg.lock);
     for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
         if((*it)->get_id() == boost::this_thread::get_id()){
             return true;

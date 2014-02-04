@@ -1274,6 +1274,9 @@ void NodeGraph::dropEvent(QDropEvent* event){
                         break;
                     } else {
                         fk->setValue<QStringList>(list);
+                        if (n->isPreviewEnabled()) {
+                            n->computePreviewImage(_gui->getApp()->getTimeLine()->currentFrame());
+                        }
                         break;
                     }
                     
