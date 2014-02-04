@@ -51,10 +51,14 @@ AboutWindow::AboutWindow(QWidget* parent)
                                 "<font color=\"orange\">MPL Mozilla Public License</font></a>. "
                                 "There is NO WARRANTY, to the extent permitted by law.</p>"
                                 "<p>See <a href=\"%3\"><font color=\"orange\">%1 's website </font></a>"
-                                "for more information on this software.</p>")
+                                "for more information on this software.</p>"
+                                "<p>Note: This software is currently under beta testing, meaning there are "
+                                " bugs and untested stuffs. If you feel like reporting a bug, please do so "
+                                "on the <a href=\"%4\"><font color=\"orange\"> issue tracker.</font></a></p>")
                                 .arg(NATRON_APPLICATION_NAME)
                                 .arg(NATRON_VERSION_STRING)
-                                .arg("https://natron.inria.fr");
+                                .arg("https://natron.inria.fr")
+                                .arg("https://groups.google.com/forum/?hl=en#!categories/natron-vfx/installation-troobleshooting-bugs");
     _aboutText->setText(aboutText);
     _tabWidget->addTab(_aboutText, "About");
     
