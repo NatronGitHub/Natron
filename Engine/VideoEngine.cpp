@@ -439,6 +439,12 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
             if (singleThreaded) {
                 getFrameRange();
             } else {
+                {
+                    QMutexLocker l(&_abortedRequestedMutex);
+                    if (_abortRequested > 0) {
+                        return;
+                    }
+                }
                 QMutexLocker l(&_getFrameRangeMutex);
                 _gettingFrameRange = true;
                 emit mustGetFrameRange();
