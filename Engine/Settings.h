@@ -62,6 +62,8 @@ public:
     
     bool getColorPickerLinear() const;
     
+    bool isMultiThreadingDisabled() const;
+    
     const std::string& getReaderPluginIDForFileType(const std::string& extension);
     
     const std::string& getWriterPluginIDForFileType(const std::string& extension);

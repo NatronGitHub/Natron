@@ -335,9 +335,14 @@ public:
     
 private:
 
-    /*The function doing all the processing, called by render()*/
+    /*The function doing all the processing in a separate thread, called by render()*/
     virtual void run() OVERRIDE FINAL;
     
+    /*Same as run() but in the same thread*/
+    void runSameThread();
+    
+    /*Used by run() and runSameThread()*/
+    void iterateKernel(bool singleThreaded);
     
     /**
      *@brief Resets and computes the hash key for all the nodes in the graph. The tree version is the hash key of the output node
@@ -363,9 +368,9 @@ private:
      *It is used internally by the run function
      *@returns Returns true if started,false otherwise
      **/
-    bool startEngine();
+    bool startEngine(bool singleThreaded);
     
-    Natron::Status renderFrame(SequenceTime time);
+    Natron::Status renderFrame(SequenceTime time,bool singleThreaded);
 
 private:
     // FIXME: PIMPL
@@ -455,6 +460,8 @@ private:
     bool _gettingFrameRange;
     int _firstFrame;
     int _lastFrame;
+    
+    bool _doingARenderSingleThreaded;
 
 };
 

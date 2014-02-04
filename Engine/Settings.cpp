@@ -236,14 +236,14 @@ void Settings::restoreSettings(){
 
 void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
     
-    if(!appPTR->isInitialized()){
+    if (!appPTR->isInitialized()) {
         return;
     }
     
     _wereChangesMadeSinceLastSave = true;
 
     
-    if(k == _texturesMode.get()){
+    if (k == _texturesMode.get()) {
         std::map<int,AppInstance*> apps = appPTR->getAppInstances();
         bool isFirstViewer = true;
         for(std::map<int,AppInstance*>::iterator it = apps.begin();it!=apps.end();++it){
@@ -265,16 +265,22 @@ void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/)
                 }
             }
         }
-    }else if(k == _maxDiskCacheGB.get()){
+    } else if(k == _maxDiskCacheGB.get()) {
         appPTR->setApplicationsCachesMaximumDiskSpace(getMaximumDiskCacheSize());
-    }else if(k == _maxRAMPercent.get()){
+    } else if(k == _maxRAMPercent.get()) {
         appPTR->setApplicationsCachesMaximumMemoryPercent(getRamMaximumPercent());
-    }else if(k == _maxPlayBackPercent.get()){
+    } else if(k == _maxPlayBackPercent.get()) {
         appPTR->setPlaybackCacheMaximumSize(getRamPlaybackMaximumPercent());
+    } else if(k == _multiThreadedDisabled.get()) {
+        if (isMultiThreadingDisabled()) {
+            QThreadPool::globalInstance()->setMaxThreadCount(1);
+        } else {
+            QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
+        }
     }
 }
 
-int Settings::getViewersBitDepth() const{
+int Settings::getViewersBitDepth() const {
     return _texturesMode->getValue<int>();
 }
 
@@ -282,18 +288,23 @@ int Settings::getViewerTilesPowerOf2() const {
     return _powerOf2Tiling->getValue<int>();
 }
 
-double Settings::getRamMaximumPercent() const{
+double Settings::getRamMaximumPercent() const {
     return (double)_maxRAMPercent->getValue<int>() / 100.;
 }
+
 double Settings::getRamPlaybackMaximumPercent() const{
     return (double)_maxPlayBackPercent->getValue<int>() / 100.;
 }
 
-U64 Settings::getMaximumDiskCacheSize() const{
+U64 Settings::getMaximumDiskCacheSize() const {
     return ((U64)(_maxDiskCacheGB->getValue<int>()) * std::pow(1024.,3.));
 }
-bool Settings::getColorPickerLinear() const{
+bool Settings::getColorPickerLinear() const {
     return _linearPickers->getValue<bool>();
+}
+
+bool Settings::isMultiThreadingDisabled() const {
+    return _multiThreadedDisabled->getValue<bool>();
 }
 
 const std::string& Settings::getReaderPluginIDForFileType(const std::string& extension){
@@ -362,3 +373,4 @@ void Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::strin
         formats->insert(std::make_pair(_writersMapping[i]->getDescription(),entries[index]));
     }
 }
+

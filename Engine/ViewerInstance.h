@@ -139,7 +139,7 @@ public:
      * Otherwise it just calls renderRoi(...) on the active input and
      * and then render to the PBO.
      **/
-    Natron::Status renderViewer(SequenceTime time,bool fitToViewer) WARN_UNUSED_RETURN;
+    Natron::Status renderViewer(SequenceTime time,bool fitToViewer,bool singleThreaded) WARN_UNUSED_RETURN;
 
 
     /**

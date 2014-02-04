@@ -144,7 +144,7 @@ void ViewerInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
 }
 
 
-Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
+Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,bool singleThreaded)
 {
 #ifdef NATRON_LOG
     Natron::Log::beginFunction(getName(),"renderViewer");
@@ -309,21 +309,26 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
                 return StatOK;
             }
             
-            int rowsPerThread = std::ceil((double)texRect.height()/(double)QThread::idealThreadCount());
-            // group of group of rows where first is image coordinate, second is texture coordinate
-            std::vector< std::pair<int, int> > splitRows;
-            int k = textureRect.y1;
-            while (k < textureRect.y2) {
-                int top = k + rowsPerThread;
-                int realTop = top > textureRect.y2 ? textureRect.y2 : top;
-                splitRows.push_back(std::make_pair(k,realTop));
-                k += rowsPerThread;
-            }
-            {
-                QMutexLocker locker(&_renderArgsMutex);
-                QFuture<void> future = QtConcurrent::map(splitRows,
-                                                         boost::bind(&ViewerInstance::renderFunctor,this,_lastRenderedImage,_1,textureRect,closestPowerOf2));
-                future.waitForFinished();
+            if (singleThreaded) {
+                renderFunctor(_lastRenderedImage, std::make_pair(textureRect.y1,textureRect.y2), textureRect, closestPowerOf2);
+            } else {
+                
+                int rowsPerThread = std::ceil((double)texRect.height()/(double)QThread::idealThreadCount());
+                // group of group of rows where first is image coordinate, second is texture coordinate
+                std::vector< std::pair<int, int> > splitRows;
+                int k = textureRect.y1;
+                while (k < textureRect.y2) {
+                    int top = k + rowsPerThread;
+                    int realTop = top > textureRect.y2 ? textureRect.y2 : top;
+                    splitRows.push_back(std::make_pair(k,realTop));
+                    k += rowsPerThread;
+                }
+                {
+                    QMutexLocker locker(&_renderArgsMutex);
+                    QFuture<void> future = QtConcurrent::map(splitRows,
+                                                             boost::bind(&ViewerInstance::renderFunctor,this,_lastRenderedImage,_1,textureRect,closestPowerOf2));
+                    future.waitForFinished();
+                }
             }
         }
         if(aborted()){
@@ -343,11 +348,16 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     }
     
     if(!aborted()) {
-        QMutexLocker locker(&_usingOpenGLMutex);
-        _usingOpenGL = true;
-        emit doUpdateViewer();
-        while(_usingOpenGL) {
-            _usingOpenGLCond.wait(&_usingOpenGLMutex);
+        
+        if (singleThreaded) {
+            updateViewer();
+        } else {
+            QMutexLocker locker(&_usingOpenGLMutex);
+            _usingOpenGL = true;
+            emit doUpdateViewer();
+            while(_usingOpenGL) {
+                _usingOpenGLCond.wait(&_usingOpenGLMutex);
+            }
         }
     }
     return StatOK;

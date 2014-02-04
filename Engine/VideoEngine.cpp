@@ -1,5 +1,3 @@
-
-
 //  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
@@ -84,6 +82,7 @@ VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
     , _gettingFrameRange(false)
     , _firstFrame(0)
     , _lastFrame(0)
+    , _doingARenderSingleThreaded(false)
 {
     QObject::connect(this, SIGNAL(mustGetFrameRange()), this, SLOT(getFrameRange()));
 }
@@ -146,20 +145,24 @@ void VideoEngine::render(int frameCount,
     _lastRequestedRunArgs._frameRequestIndex = 0;
     _lastRequestedRunArgs._forcePreview = forcePreview;
     
-    
-    /*Starting or waking-up the thread*/
-    QMutexLocker quitLocker(&_mustQuitMutex);
-    if (!_threadStarted && !_mustQuit) {
-        start(HighestPriority);
-        _threadStarted = true;
+    if (appPTR->getCurrentSettings()->isMultiThreadingDisabled()) {
+        runSameThread();
     } else {
-        QMutexLocker locker(&_startMutex);
-        ++_startCount;
-        _startCondition.wakeOne();
+        
+        /*Starting or waking-up the thread*/
+        QMutexLocker quitLocker(&_mustQuitMutex);
+        if (!_threadStarted && !_mustQuit) {
+            start(HighestPriority);
+            _threadStarted = true;
+        } else {
+            QMutexLocker locker(&_startMutex);
+            ++_startCount;
+            _startCondition.wakeOne();
+        }
     }
 }
 
-bool VideoEngine::startEngine() {
+bool VideoEngine::startEngine(bool singleThreaded) {
     // don't allow "abort"s to be processed while starting engine by locking _abortBeingProcessedMutex
     QMutexLocker abortBeingProcessedLocker(&_abortBeingProcessedMutex);
     assert(!_abortBeingProcessed);
@@ -181,16 +184,19 @@ bool VideoEngine::startEngine() {
     
 
     
-
+    
     if(!_tree.isOutputAViewer()){
         
-        {
+        
+        if (!singleThreaded) {
             QMutexLocker l(&_getFrameRangeMutex);
             _gettingFrameRange = true;
             emit mustGetFrameRange();
             while (_gettingFrameRange) {
                 _getFrameRangeCond.wait(&_getFrameRangeMutex);
             }
+        } else {
+            getFrameRange();
         }
         
         Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
@@ -328,16 +334,7 @@ bool VideoEngine::stopEngine() {
         }
     }
 
-    /*pause the thread if needed*/
-    {
-        QMutexLocker locker(&_startMutex);
-        while(_startCount <= 0) {
-            _startCondition.wait(&_startMutex);
-        }
-        _startCount = 0;
-    }
     return false;
-    
     
 }
 
@@ -358,20 +355,61 @@ void VideoEngine::run(){
         /*If restart is on, start the engine. Restart is on for the 1st frame
          rendered of a sequence.*/
         if(_restart){
-            if(!startEngine()){
+            if(!startEngine(false)){
                 if(stopEngine())
                     return;
                 continue;
             }
         }
         
+        iterateKernel(false);
+        
+        if (stopEngine()) {
+            return;
+        } else {
+            /*pause the thread if needed*/
+            {
+                QMutexLocker locker(&_startMutex);
+                while(_startCount <= 0) {
+                    _startCondition.wait(&_startMutex);
+                }
+                _startCount = 0;
+            }
+
+        }
+       
+    } // end for(;;)
+    
+}
+
+void VideoEngine::runSameThread() {
+    
+    if (_doingARenderSingleThreaded) {
+        return;
+    } else {
+        _doingARenderSingleThreaded = true;
+    }
+    
+    if (!startEngine(true)) {
+        stopEngine();
+    } else {
+        QCoreApplication::processEvents();
+        iterateKernel(true);
+        QCoreApplication::processEvents();
+        stopEngine();
+    }
+    
+    _doingARenderSingleThreaded = false;
+}
+
+void VideoEngine::iterateKernel(bool singleThreaded) {
+    for(;;){ // infinite loop
+        
         {
             QMutexLocker locker(&_abortedRequestedMutex);
             if(_abortRequested > 0) {
                 locker.unlock();
-                if(stopEngine())
-                    return;
-                continue;
+                return;
             }
         }
         
@@ -384,13 +422,16 @@ void VideoEngine::run(){
         
         
         if(viewer){
-            {
+            if (singleThreaded) {
+                getFrameRange();
+            } else {
                 QMutexLocker l(&_getFrameRangeMutex);
                 _gettingFrameRange = true;
                 emit mustGetFrameRange();
                 while (_gettingFrameRange) {
                     _getFrameRangeCond.wait(&_getFrameRangeMutex);
                 }
+                
             }
             _timeline->setFrameRange(_firstFrame, _lastFrame);
         }
@@ -403,7 +444,7 @@ void VideoEngine::run(){
             firstFrame = output->getFirstFrame();
             lastFrame = output->getLastFrame();
         }
-
+        
         //////////////////////////////
         // Set the current frame
         //
@@ -417,17 +458,14 @@ void VideoEngine::run(){
                 output->setCurrentFrame(firstFrame);
                 currentFrame = firstFrame;
             }
-
+            
         } else if(!_currentRunArgs._sameFrame && _currentRunArgs._seekTimeline) {
             assert(_currentRunArgs._recursiveCall); // we're in the else part
             if (!viewer) {
                 output->setCurrentFrame(output->getCurrentFrame()+1);
                 currentFrame = output->getCurrentFrame();
                 if(currentFrame > lastFrame){
-                    if(stopEngine()) {
-                        return;
-                    }
-                    continue;
+                    return;
                 }
             } else {
                 // viewer
@@ -444,10 +482,7 @@ void VideoEngine::run(){
                             _timeline->seekFrame(currentFrame,output);
                         } else {
                             loopModeLocker.unlock();
-                            if (stopEngine()) {
-                                return;
-                            }
-                            continue;
+                            return;
                         }
                     }
                     
@@ -463,45 +498,40 @@ void VideoEngine::run(){
                             _timeline->seekFrame(currentFrame,output);
                         } else {
                             loopModeLocker.unlock();
-                            if (stopEngine()) {
-                                return;
-                            }
-                            continue;
+                            return;
                         }
                     }
                 }
             }
         }
-
+        
         ///////////////////////////////
         // Check whether we need to stop the engine or not for various reasons.
         //
         {
             QMutexLocker locker(&_abortedRequestedMutex);
             if(_abortRequested > 0 || // #1 aborted by the user
-
-                    (_tree.isOutputAViewer() // #2 the Tree contains only 1 frame and we rendered it
-                     &&  _currentRunArgs._recursiveCall
-                     &&  firstFrame == lastFrame
-                     && _currentRunArgs._frameRequestsCount == -1
-                     && _currentRunArgs._frameRequestIndex == 1)
-
-                    || _currentRunArgs._frameRequestsCount == 0) // #3 the sequence ended and it was not an infinite run
+               
+               (_tree.isOutputAViewer() // #2 the Tree contains only 1 frame and we rendered it
+                &&  _currentRunArgs._recursiveCall
+                &&  firstFrame == lastFrame
+                && _currentRunArgs._frameRequestsCount == -1
+                && _currentRunArgs._frameRequestIndex == 1)
+               
+               || _currentRunArgs._frameRequestsCount == 0) // #3 the sequence ended and it was not an infinite run
             {
                 locker.unlock();
-                if(stopEngine())
-                    return;
-                continue;
+                return;
             }
         }
-
+        
         ////////////////////////
         // Render currentFrame
         //
         // if the output is a writer, _tree.outputAsWriter() returns a valid pointer/
         Status stat;
         try {
-            stat =  renderFrame(currentFrame);
+            stat =  renderFrame(currentFrame,singleThreaded);
         } catch (const std::exception &e) {
             std::stringstream ss;
             ss << "Error while rendering" << " frame " << currentFrame << ": " << e.what();
@@ -509,10 +539,7 @@ void VideoEngine::run(){
             if (viewer) {
                 viewer->disconnectViewer();
             }
-            if(stopEngine()){
-                return;
-            }
-            continue;
+            return;
             
         }
         
@@ -520,12 +547,7 @@ void VideoEngine::run(){
             if (viewer) {
                 viewer->disconnectViewer();
             }
-            if(stopEngine()){
-                return;
-            }
-            continue;
-            
-            
+            return;
         }
         
         
@@ -537,7 +559,11 @@ void VideoEngine::run(){
             QString frameStr = QString::number(currentFrame);
             appPTR->writeToOutputPipe(kFrameRenderedStringLong + frameStr,kFrameRenderedStringShort + frameStr);
         }
-
+        
+        if (singleThreaded) {
+            QCoreApplication::processEvents();
+        }
+        
         if(_currentRunArgs._frameRequestIndex == 0 && _currentRunArgs._frameRequestsCount == 1 && !_currentRunArgs._sameFrame){
             _currentRunArgs._frameRequestsCount = 0;
         }else if(_currentRunArgs._frameRequestsCount!=-1){ // if the frameRequestCount is defined (i.e: not indefinitely running)
@@ -548,10 +574,9 @@ void VideoEngine::run(){
         _currentRunArgs._fitToViewer = false;
         _currentRunArgs._recursiveCall = true;
     } // end for(;;)
-    
 }
 
-Natron::Status VideoEngine::renderFrame(SequenceTime time){
+Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded){
     Status stat;
     
   
@@ -569,7 +594,7 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time){
     gettimeofday(&_startRenderFrameTime, 0);
     if (_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()) {
         
-        stat = _tree.outputAsViewer()->renderViewer(time, _currentRunArgs._fitToViewer);
+        stat = _tree.outputAsViewer()->renderViewer(time, _currentRunArgs._fitToViewer,singleThreaded);
         
         if (!_currentRunArgs._sameFrame) {
             QMutexLocker timerLocker(&_timerMutex);
@@ -638,7 +663,7 @@ void VideoEngine::abortRendering(){
         _gettingFrameRange = false;
         _getFrameRangeCond.wakeOne();
         
-        if (QThread::currentThread() != this) {
+        if (QThread::currentThread() != this && isRunning()) {
             while (_abortRequested > 0) {
                 _abortedRequestedCondition.wait(&_abortedRequestedMutex);
             }
