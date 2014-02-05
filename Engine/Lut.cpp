@@ -11,6 +11,8 @@
 
 #include "Lut.h"
 
+#include <cstring> // for memcpy
+
 #include "Engine/Rect.h"
 
 namespace Natron {
