@@ -16,18 +16,16 @@ before_install:
 # Ubuntu 12.04 precise doesn't have a pkg-config file (expat.pc)
 install:
   - sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libboost-thread-dev libboost-system-dev libexpat1-dev
+  - if [ "$CC" = "gcc" ]; then make -C libs/OpenFX/Examples BITS=64; make -C libs/OpenFX/Support/Plugins BITS=64; make -C libs/OpenFX/Support/PropTester BITS=64; fi
+  - if [ "$CC" = "gcc" ]; then mkdir -p Plugins/Examples Plugins/Support; mv ../libs/OpenFX/Examples/*/*-64-debug/*.ofx.bundle Plugins/Examples; mv ../libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle ../libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Plugins/Support; fi
   - 'echo ''boost: LIBS += -lboost_serialization -lboost_thread -lboost_system'' > config.pri'
   - 'echo ''expat: LIBS += -lexpat'' >> config.pri'
   - 'echo ''expat: PKGCONFIG -= expat'' >> config.pri'
+
 script:
   - if [ "$CC" = "gcc" ]; then qmake; else qmake -spec unsupported/linux-clang; fi
   - make
-  - make -C libs/OpenFX/Examples BITS=64
-  - make -C libs/OpenFX/Support/Plugins BITS=64
-  - make -C libs/OpenFX/Support/PropTester BITS=64
-  - cd Tests
-  - mkdir Plugins && mv ../libs/OpenFX/*/*/Linux-64-debug/*.ofx.bundle ../libs/OpenFX/*/*/*/Linux-64-debug/*.ofx.bundle Plugins
-  - if [ "$CC" = "gcc" ]; then qmake; make; env OFX_PLUGIN_PATH=Plugins ./Tests; fi
+  - if [ "$CC" = "gcc" ]; then cd Tests; qmake; make; env OFX_PLUGIN_PATH=Plugins ./Tests; fi
 
 after_success:
   - coveralls
