@@ -477,6 +477,7 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
 #pragma message WARN("Natron begin compiled with OFX_SUPPORTS_MULTITHREAD defined, some plug-ins might crash.")
+namespace {
 struct Thread_Group {
     typedef std::list<boost::thread*> ThreadsList;
     ThreadsList threads;
@@ -505,6 +506,7 @@ struct Thread_Group {
         
     }
 };
+}
 
 static Thread_Group tg = Thread_Group();
 
@@ -622,12 +624,7 @@ OfxStatus Natron::OfxHost::mutexCreate(OfxMutexHandle *mutex, int lockCount) {
     }
     // suite functions should not throw
     try {
-        QMutex* m;
-        if(lockCount > 1) {
-            m = new QMutex(QMutex::Recursive);
-        } else {
-            m = new QMutex;
-        }
+        QMutex* m = new QMutex(QMutex::Recursive);
         for (int i = 0; i < lockCount; ++i) {
             m->lock();
         }
