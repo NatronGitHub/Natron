@@ -17,7 +17,7 @@ before_install:
 install:
   - sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libboost-thread-dev libboost-system-dev libexpat1-dev
   - if [ "$CC" = "gcc" ]; then make -C libs/OpenFX/Examples BITS=64; make -C libs/OpenFX/Support/Plugins BITS=64; make -C libs/OpenFX/Support/PropTester BITS=64; fi
-  - if [ "$CC" = "gcc" ]; then mkdir -p Tests/Plugins/Examples Plugins/Support; mv libs/OpenFX/Examples/*/*-64-debug/*.ofx.bundle Tests/Plugins/Examples; mv libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Tests/Plugins/Support; fi
+  - if [ "$CC" = "gcc" ]; then mkdir -p Tests/Plugins/Examples Tests/Plugins/Support; mv libs/OpenFX/Examples/*/*-64-debug/*.ofx.bundle Tests/Plugins/Examples; mv libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Tests/Plugins/Support; fi
   - 'echo ''boost: LIBS += -lboost_serialization -lboost_thread -lboost_system'' > config.pri'
   - 'echo ''expat: LIBS += -lexpat'' >> config.pri'
   - 'echo ''expat: PKGCONFIG -= expat'' >> config.pri'
