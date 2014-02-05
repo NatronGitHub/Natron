@@ -16,7 +16,10 @@
 #include <vector>
 #include <gtest/gtest.h>
 
-class AppManager;
+namespace Natron{
+class OfxHost;
+class Plugin;
+}
 class BaseTest : public testing::Test
 {
 public:
@@ -31,8 +34,8 @@ protected:
     virtual void TearDown();
 
 private:
-
-    AppManager* _app;
+    Natron::OfxHost* _ofxHost;
+    std::vector<Natron::Plugin*> _plugins;
 };
 
 #endif // BASETEST_H

@@ -386,7 +386,7 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
         
         OFX::Host::ImageEffect::Descriptor* isGenerator = p->getContext(kOfxImageEffectContextGenerator);
         
-        if(isGenerator && formatsCount > 0){
+        if(isGenerator && formatsCount > 0 && readersMap){
             ///we're safe to assume that this plugin is a reader
             for(U32 k = 0; k < formats.size();++k){
                 std::map<std::string,std::vector<std::string> >::iterator it;
@@ -400,7 +400,7 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
                     readersMap->insert(std::make_pair(formats[k], newVec));
                 }
             }
-        }else if(!isGenerator && formatsCount > 0){
+        }else if(!isGenerator && formatsCount > 0 && writersMap){
             ///we're safe to assume that this plugin is a writer.
             for(U32 k = 0; k < formats.size();++k){
                 std::map<std::string,std::vector<std::string> >::iterator it;
@@ -457,7 +457,9 @@ void Natron::OfxHost::clearPluginsLoadedCache() {
 }
 
 void Natron::OfxHost::loadingStatus(const std::string & pluginId) {
-    appPTR->setLoadingStatus("OpenFX: " + QString(pluginId.c_str()));
+    if (appPTR) {
+        appPTR->setLoadingStatus("OpenFX: " + QString(pluginId.c_str()));
+    }
 }
 
 void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {

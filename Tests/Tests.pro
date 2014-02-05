@@ -2,7 +2,7 @@ TEMPLATE = app
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG += moc rcc
-CONFIG += boost glew opengl qt expat
+CONFIG += boost glew opengl qt expat google-test
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
@@ -85,7 +85,8 @@ unix {
 include(../config.pri)
 
 
-DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SUPPORTS_PARAMETRIC OFX_SUPPORTS_MULTITHREAD OFX_EXTENSIONS_NATRON OFX_EXTENSIONS_TUTTLE
+DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SUPPORTS_PARAMETRIC OFX_EXTENSIONS_NATRON OFX_EXTENSIONS_TUTTLE
+#DEFINES += OFX_SUPPORTS_MULTITHREAD
 
 SOURCES += \
     ../Engine/ChannelSet.cpp \
@@ -309,8 +310,6 @@ HEADERS += \
     ../libs/OpenFX/include/natron/IOExtensions.h \
     BaseTest.h
 
-INCLUDEPATH += google_test/include
-LIBS += $$PWD/google-test/build/libgtest.a $$PWD/google-test/build/libgtest_main.a
 
 INCLUDEPATH += ../
 INCLUDEPATH += ../libs/OpenFX/include

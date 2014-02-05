@@ -14,13 +14,13 @@
 
 #include <map>
 #include <iostream>
-#include "../../Global/AppManager.h"
-
+#include "Engine/OfxHost.h"
+#include "Global/AppManager.h"
 BaseTest::BaseTest()
     : testing::Test()
-    , _app(AppManager::instance())
+    , _ofxHost(new Natron::OfxHost)
 {
-    _app->load(NULL);
+    _ofxHost->loadOFXPlugins(&_plugins,NULL,NULL);
 }
 
 BaseTest::~BaseTest() {
@@ -32,7 +32,10 @@ void BaseTest::SetUp() {
 }
 
 void BaseTest::TearDown() {
-    delete _app;
+    delete _ofxHost;
+    for(unsigned int i = 0; i < _plugins.size(); ++i) {
+        delete _plugins[i];
+    }
 }
 
 TEST_F(BaseTest,Load) {
