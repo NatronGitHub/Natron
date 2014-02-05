@@ -477,6 +477,7 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
 #endif
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
+namespace {
 struct Thread_Group {
     typedef std::list<boost::thread*> ThreadsList;
     ThreadsList threads;
@@ -505,6 +506,7 @@ struct Thread_Group {
         
     }
 };
+}
 
 static Thread_Group tg = Thread_Group();
 
