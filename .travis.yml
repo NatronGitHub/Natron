@@ -27,7 +27,7 @@ script:
   - make -C libs/OpenFX/Support/PropTester BITS=64
   - cd Tests
   - mkdir Plugins && mv ../libs/OpenFX/*/*/Linux-64-debug/*.ofx.bundle ../libs/OpenFX/*/*/*/Linux-64-debug/*.ofx.bundle Plugins
-  - [ "$CC" = "gcc" ] && qmake && make && env OFX_PLUGIN_PATH=Plugins ./Tests
+  - if [ "$CC" = "gcc" ]; then qmake; make; env OFX_PLUGIN_PATH=Plugins ./Tests; fi
 
 after_success:
   - coveralls
