@@ -139,25 +139,4 @@ ln -s <absolulePath>/Info.plist .
 
 To run the tests on Natron, go at the root of the project, i.e: Natron/ and type the following commands:
 
-git submodule update -i
-cd Tests/google-test
-mkdir build && cd build
-cmake .. install
-cd ../../..
-cd Natron
-cat > config.pri << EOF
-boost{
-    INCLUDEPATH += /opt/local/include
-    LIBS += -L/opt/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
-}
-google-test{
-    INCLUDEPATH += /usr/include
-    LIBS+= /usr/lib/libgtest.a
-    LIBS+=  /usr/lib/libgtest_main.a
-}
-EOF
-cd Tests
-mkdir test_build && cd test_build
-qmake ../Tests.pro CONFIG+=release
-make -j4
-./Tests
+(cd Tests && qmake CONFIG+=debug CONFIG+=coverage && make -j4 && ./Tests)
