@@ -140,6 +140,11 @@ CONFIG(debug, debug|release){
   }
 }
 
+coverage {
+  QMAKE_CXXFLAGS += -fprofile-arcs -ftest-coverage -O0
+  QMAKE_LFLAGS += -lgcov -fprofile-arcs -ftest-coverage
+  QMAKE_CLEAN += $(OBJECTS_DIR)/*.gcda $(OBJECTS_DIR)/*.gcno
+}
 
 include(config.pri)
 
