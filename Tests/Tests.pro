@@ -2,10 +2,12 @@ TEMPLATE = app
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG += moc rcc
-CONFIG += boost glew opengl qt expat google-test
+CONFIG += boost glew opengl qt expat debug coverage
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
+INCLUDEPATH += google-test/include
+INCLUDEPATH += google-test
 
 *g++* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
@@ -81,6 +83,11 @@ unix {
   }
 }
 
+coverage {
+  QMAKE_CXXFLAGS += -fprofile-arcs -ftest-coverage -O0
+  QMAKE_LFLAGS += -fprofile-arcs -ftest-coverage
+  QMAKE_CLEAN += $(OBJECTS_DIR)/*.gcda $(OBJECTS_DIR)/*.gcno
+}
 
 include(../config.pri)
 
@@ -89,6 +96,8 @@ DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SU
 #DEFINES += OFX_SUPPORTS_MULTITHREAD
 
 SOURCES += \
+    google-test/src/gtest-all.cc \
+    google-test/src/gtest_main.cc \
     ../Engine/ChannelSet.cpp \
     ../Engine/Curve.cpp \
     ../Engine/CurveSerialization.cpp \
