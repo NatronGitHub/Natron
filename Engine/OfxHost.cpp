@@ -472,11 +472,9 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
 /////////////////////////////////////////////////// MULTI_THREAD SUITE ///////////////////////////////////////////////////
 /////////////////
 
-#ifndef OFX_SUPPORTS_MULTITHREAD
-#pragma message WARN("Natron should be compiled with OFX_SUPPORTS_MULTITHREAD defined")
-#endif
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
+#pragma message WARN("Natron begin compiled with OFX_SUPPORTS_MULTITHREAD defined, some plug-ins might crash.")
 struct Thread_Group {
     typedef std::list<boost::thread*> ThreadsList;
     ThreadsList threads;
