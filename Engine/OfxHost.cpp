@@ -624,12 +624,7 @@ OfxStatus Natron::OfxHost::mutexCreate(OfxMutexHandle *mutex, int lockCount) {
     }
     // suite functions should not throw
     try {
-        QMutex* m;
-        if(lockCount > 1) {
-            m = new QMutex(QMutex::Recursive);
-        } else {
-            m = new QMutex;
-        }
+        QMutex* m = new QMutex(QMutex::Recursive);
         for (int i = 0; i < lockCount; ++i) {
             m->lock();
         }
