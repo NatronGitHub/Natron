@@ -72,7 +72,16 @@ class AppInstance : public QObject,public boost::noncopyable
 {
     Q_OBJECT
 public:
-    AppInstance(bool backgroundMode,int appID,const QString& projectName = QString(),const QStringList& writers = QStringList());
+    
+    enum AppType {
+        APP_BACKGROUND = 0, //< a background AppInstance which will not do anything but instantiate the class making it ready for use.
+                            //This is used by the unit tests.
+        APP_BACKGROUND_AUTO_RUN = 1, //< a background AppInstance that will launch a project and render it. If projectName is empty or
+                                     //writers is empty, it doesn't make sense to call AppInstance with this parameter.
+        APP_GUI = 2, //< a GUI AppInstance, the end-user can interact with it.
+    };
+    
+    AppInstance(AppInstance::AppType appType,int appID,const QString& projectName = QString(),const QStringList& writers = QStringList());
 
     ~AppInstance();
 
@@ -416,7 +425,7 @@ public:
 
     const boost::scoped_ptr<Natron::OfxHost>& getOfxHost() const WARN_UNUSED_RETURN {return ofxHost;}
 
-    AppInstance* newAppInstance(bool background,const QString& projectName = QString(),const QStringList& writers = QStringList());
+    AppInstance* newAppInstance(AppInstance::AppType appType,const QString& projectName = QString(),const QStringList& writers = QStringList());
 
     void registerAppInstance(AppInstance* app);
 

@@ -1101,7 +1101,7 @@ void Gui::setUndoRedoActions(QAction* undoAction,QAction* redoAction){
     menuEdit->addAction(redoAction);
 }
 void Gui::newProject(){
-    appPTR->newAppInstance(false);
+    appPTR->newAppInstance(AppInstance::APP_GUI);
 }
 void Gui::openProject(){
     std::vector<std::string> filters;

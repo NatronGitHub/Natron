@@ -12,30 +12,70 @@
 
 #include "BaseTest.h"
 
-#include <map>
-#include <iostream>
-#include "Engine/OfxHost.h"
 #include "Global/AppManager.h"
+
+using namespace Natron;
+
 BaseTest::BaseTest()
     : testing::Test()
-    , _ofxHost(new Natron::OfxHost)
+    , _genericTestPluginID()
+    , _gainPluginID()
+    , _dotGeneratorPluginID()
+    , _readQtPluginID()
+    , _writeQtPluginID()
+    , _app(0)
 {
-    _ofxHost->loadOFXPlugins(&_plugins,NULL,NULL);
+    AppManager* manager = AppManager::instance();
+    manager->load(NULL);
+    _app = manager->newAppInstance(AppInstance::APP_BACKGROUND);
+    
+    registerTestPlugins();
+
 }
 
 BaseTest::~BaseTest() {
 
 }
 
-void BaseTest::SetUp() {
+void BaseTest::registerTestPlugins() {
+    _genericTestPluginID = QString("GenericTest  [OFX]");
+    _allTestPluginIDs.push_back(_genericTestPluginID);
+    
+    _gainPluginID =  QString("Gain  [OFX]");
+    _allTestPluginIDs.push_back(_gainPluginID);
+    
+    _dotGeneratorPluginID = QString("Dot Generator  [OFX]");
+    _allTestPluginIDs.push_back(_dotGeneratorPluginID);
 
+    _readQtPluginID = QString("ReadQt");
+    _allTestPluginIDs.push_back(_readQtPluginID);
+
+    _writeQtPluginID = QString("WriteQt");
+    _allTestPluginIDs.push_back(_writeQtPluginID);
+    
+    for (unsigned int i = 0; i < _allTestPluginIDs.size(); ++i) {
+        ///make sure the generic test plugin is present
+        Natron::LibraryBinary* bin = NULL;
+        try {
+            bin = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1);
+        } catch (const std::exception& e) {
+            std::cout << e.what() << std::endl;
+        }
+        ASSERT_TRUE(bin != NULL);
+    }
+}
+
+void BaseTest::SetUp() {
 }
 
 void BaseTest::TearDown() {
-    delete _ofxHost;
-    for(unsigned int i = 0; i < _plugins.size(); ++i) {
-        delete _plugins[i];
-    }
+    delete _app;
+    _app = 0;
+    AppManager::quit();
+}
+
+Natron::Node* BaseTest::createNode(const QString& pluginID,int majorVersion,int minorVersion) {
+    return _app->createNode(pluginID,majorVersion,minorVersion,true,false);
 }
 
 TEST_F(BaseTest,Load) {

@@ -268,7 +268,7 @@ void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
 }
 
 
-AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectName,const QStringList& writers)
+AppInstance::AppInstance(AppInstance::AppType appType,int appID,const QString& projectName,const QStringList& writers)
   : _gui(NULL)
   , _projectLock(QMutex::Recursive)
   , _currentProject(new Natron::Project(this))
@@ -276,7 +276,7 @@ AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectNam
   , _isSavingProject(false)
   , _appID(appID)
   , _nodeMapping()
-  , _isBackground(backgroundMode)
+  , _isBackground(appType != APP_GUI)
   , _isQuitting(false)
 {
     appPTR->registerAppInstance(this);
@@ -286,7 +286,7 @@ AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectNam
         appPTR->setLoadingStatus("Creating user interface...");
         _gui = new Gui(this);
     }
-    if(_isBackground && projectName.isEmpty()){
+    if(appType == APP_BACKGROUND_AUTO_RUN && projectName.isEmpty()){
         // cannot start a background process without a file
         throw std::invalid_argument("Project file name empty");
     }
@@ -339,13 +339,16 @@ AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectNam
         }
 
     }else{
-        QString name = SequenceFileDialog::removePath(projectName);
-        QString path = projectName.left(projectName.indexOf(name));
-        if(!loadProject(path,name)){
-            throw std::invalid_argument("Project file loading failed.");
-            
+        
+        if (appType == APP_BACKGROUND_AUTO_RUN) {
+            QString name = SequenceFileDialog::removePath(projectName);
+            QString path = projectName.left(projectName.indexOf(name));
+            if(!loadProject(path,name)){
+                throw std::invalid_argument("Project file loading failed.");
+                
+            }
+            startWritersRendering(writers);
         }
-        startWritersRendering(writers);
     }
     
     
@@ -867,10 +870,10 @@ ViewerTab* AppInstance::addNewViewerTab(ViewerInstance* node,TabWidget* where){
     return  _gui->addNewViewerTab(node, where);
 }
 
-AppInstance* AppManager::newAppInstance(bool background,const QString& projectName,const QStringList& writers){
+AppInstance* AppManager::newAppInstance(AppInstance::AppType appType,const QString& projectName,const QStringList& writers){
     AppInstance* instance = 0;
     try {
-        instance = new AppInstance(background,_availableID,projectName,writers);
+        instance = new AppInstance(appType,_availableID,projectName,writers);
     } catch (const std::exception& e) {
         Natron::errorDialog(NATRON_APPLICATION_NAME, std::string("Cannot create project") + ": " + e.what());
         removeInstance(_availableID);

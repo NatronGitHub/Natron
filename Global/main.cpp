@@ -224,8 +224,8 @@ int main(int argc, char *argv[])
         printBackGroundWelcomeMessage();
     }
     
-
-    AppInstance* mainInstance = manager->newAppInstance(isBackGround,projectFile,writers);
+    AppInstance::AppType mainInstanceType = isBackGround ? AppInstance::APP_BACKGROUND_AUTO_RUN : AppInstance::APP_GUI;
+    AppInstance* mainInstance = manager->newAppInstance(mainInstanceType,projectFile,writers);
     if(!mainInstance){
         printUsage();
         AppManager::quit();
