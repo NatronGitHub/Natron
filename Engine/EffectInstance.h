@@ -452,6 +452,19 @@ public:
      **/
     virtual bool supportsTiles() const { return false; }
     
+    /**
+     * @brief If this effect is a reader then the file path corresponding to the input images path will be fed
+     * with the content of files. Note that an exception is thrown if the file knob does not support image sequences
+     * but you attempt to feed-in several files.
+     **/
+    void setInputFilesForReader(const QStringList& files);
+    
+    /**
+     * @brief If this effect is a writer then the file path corresponding to the output images path will be fed
+     * with the content of pattern.
+     **/
+    void setOutputFilesForWriter(const QString& pattern);
+    
 protected:
     /**
      * @brief This function is provided for means to copy more data than just the knobs from the live instance

@@ -1394,23 +1394,26 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
     
     if (mode == kOfxParamStringIsFilePath) {
         
-        int fileIsImage = properties.getIntProperty(kNatronParamFilePathIsImage);
+        int fileIsImage = (node->isReader() || node->isWriter()) && (getScriptName() == "filename");
         int fileIsOutput = !properties.getIntProperty(kOfxParamPropStringFilePathExists);
+        int filePathSupportsImageSequences = properties.getIntProperty(kNatronParamFilePathIsImageSequence);
         
-        if (fileIsOutput == 0) {
+        
+        if (!fileIsOutput) {
             _fileKnob = Natron::createKnob<File_Knob>(node, getParamLabel(this));
             if(fileIsImage){
                 _fileKnob->setAsInputImage();
-            } else {
+            }
+            if (!filePathSupportsImageSequences) {
                 _fileKnob->turnOffSequences();
             }
         } else {
             _outputFileKnob = Natron::createKnob<OutputFile_Knob>(node, getParamLabel(this));
-            if(fileIsOutput){
+            if(fileIsImage){
                 _outputFileKnob->setAsOutputImageFile();
-                if (!fileIsImage) {
-                    _outputFileKnob->turnOffSequences();
-                }
+            }
+            if (!filePathSupportsImageSequences) {
+                _outputFileKnob->turnOffSequences();
             }
             
         }

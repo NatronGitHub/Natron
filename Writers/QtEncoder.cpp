@@ -191,10 +191,8 @@ Natron::Status QtWriter::render(SequenceTime time, RenderScale scale, const Rect
         output->copy(*src);
     }
     
-    const Format& frmt = getApp()->getProjectFormat();
-    
     ////initializes to black
-    unsigned char* buf = (unsigned char*)calloc(frmt.area() * 4,1);
+    unsigned char* buf = (unsigned char*)calloc(roi.area() * 4,1);
     
     
     QImage::Format type;

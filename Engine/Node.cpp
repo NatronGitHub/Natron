@@ -863,6 +863,15 @@ void Node::notifyRenderingEnded() {
     emit renderingEnded();
 }
 
+
+void Node::setInputFilesForReader(const QStringList& files) {
+    _liveInstance->setInputFilesForReader(files);
+}
+
+void Node::setOutputFilesForWriter(const QString& pattern) {
+    _liveInstance->setOutputFilesForWriter(pattern);
+}
+
 InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin,const std::string& name)
     : Node(app,plugin,name)
     , _inputsCount(1)

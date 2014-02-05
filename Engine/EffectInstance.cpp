@@ -653,6 +653,49 @@ int EffectInstance::getInputNumber(Natron::EffectInstance* inputEffect) const {
     return -1;
 }
 
+
+void EffectInstance::setInputFilesForReader(const QStringList& files) {
+    
+    if (!isReader()) {
+        return;
+    }
+    
+    const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
+            boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
+            assert(fk);
+            if (fk->isInputImageFile()) {
+                if (files.size() > 1 && ! fk->isSequencesDialogEnabled()) {
+                    throw std::invalid_argument("This reader does not support image sequences. Please provide a single file.");
+                }
+                fk->setValue<QStringList>(files);
+                break;
+            }
+        }
+    }
+}
+
+void EffectInstance::setOutputFilesForWriter(const QString& pattern) {
+    
+    if (!isWriter()) {
+        return;
+    }
+    
+    const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        if (knobs[i]->typeName() == OutputFile_Knob::typeNameStatic()) {
+            boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
+            assert(fk);
+            if (fk->isOutputImageFile()) {
+                fk->setValue<QString>(pattern);
+                break;
+            }
+        }
+    }
+
+}
+
 OutputEffectInstance::OutputEffectInstance(Node* node)
 : Natron::EffectInstance(node)
 , _videoEngine(node?new VideoEngine(this):0)

@@ -343,6 +343,17 @@ public:
     
     void notifyRenderingEnded();
     
+    
+    /**
+     * @brief forwarded to the live instance
+     **/
+    void setInputFilesForReader(const QStringList& files);
+    
+    /**
+     * @brief forwarded to the live instance
+     **/
+    void setOutputFilesForWriter(const QString& pattern);
+    
 public slots:
     
     void onGUINameChanged(const QString& str);

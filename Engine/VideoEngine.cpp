@@ -186,7 +186,7 @@ bool VideoEngine::startEngine(bool singleThreaded) {
     
     if(!_tree.isOutputAViewer()){
         
-        if (!singleThreaded) {
+        if (!singleThreaded && !_tree.getOutput()->getApp()->isBackground()) {
             {
                 QMutexLocker l(&_abortedRequestedMutex);
                 if (_abortRequested > 0) {
@@ -442,7 +442,7 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
         
         
         if(viewer){
-            if (singleThreaded) {
+            if (singleThreaded || _tree.getOutput()->getApp()->isBackground()) {
                 getFrameRange();
             } else {
                 {

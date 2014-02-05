@@ -56,7 +56,6 @@ protected:
     QString _writeQtPluginID;
     
     std::vector<QString> _allTestPluginIDs;
-private:
     
     AppInstance* _app;
 };

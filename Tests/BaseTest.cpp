@@ -12,6 +12,7 @@
 
 #include "BaseTest.h"
 
+#include "Engine/Node.h"
 #include "Global/AppManager.h"
 
 using namespace Natron;
@@ -75,9 +76,18 @@ void BaseTest::TearDown() {
 }
 
 Natron::Node* BaseTest::createNode(const QString& pluginID,int majorVersion,int minorVersion) {
-    return _app->createNode(pluginID,majorVersion,minorVersion,true,false);
+    Node* ret =  _app->createNode(pluginID,majorVersion,minorVersion,true,false);
+    EXPECT_TRUE(ret != (Node*)NULL);
+    return ret;
 }
 
-TEST_F(BaseTest,Load) {
+TEST_F(BaseTest,GenerateDot) {
+    Node* generator = createNode(_dotGeneratorPluginID);
+    Node* writer = createNode(_writeQtPluginID);
+    writer->setOutputFilesForWriter("test_dot_generator#.jpg");
+    
+    bool ret = _app->connect(0, generator, writer);
+    ASSERT_TRUE(ret) << "Couldn't connect reader and writer";
 
+    _app->startWritersRendering(QStringList(writer->getName().c_str()));
 }

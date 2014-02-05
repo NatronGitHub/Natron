@@ -686,9 +686,19 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
 }
 
 void AppInstance::autoSave(){
+    
+    if (_isBackground) {
+        return;
+    }
+
     saveProject(_currentProject->getProjectPath(), _currentProject->getProjectName(), true);
 }
 void AppInstance::triggerAutoSave(){
+    
+    if (_isBackground) {
+        return;
+    }
+    
     QMutexLocker l(&_projectLock);
     QtConcurrent::run(this,&AppInstance::autoSave);
     QString text(QCoreApplication::applicationName() + " - ");
