@@ -17,5 +17,5 @@ install:
   - 'echo ''expat: LIBS += -lexpat'' >> config.pri'
   - 'echo ''expat: PKGCONFIG -= expat'' >> config.pri'
 script:
-  - if [ "$CC" = "gcc" ]; then qmake CONFIG+=coverage; else qmake CONFIG+=coverage -spec unsupported/linux-clang; fi
+  - if [ "$CC" = "gcc" ]; then qmake CONFIG+=coverage; else qmake -spec unsupported/linux-clang; fi
   - make
