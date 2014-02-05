@@ -16,8 +16,7 @@
 #include <QtGui/QVector2D>
 #include <QAction>
 #include <QtCore/QThread>
-#include <QtConcurrentMap>
-#include <QtConcurrentRun>
+#include <QCoreApplication>
 #include <QtCore/QSocketNotifier>
 
 #include "Engine/ViewerInstance.h"

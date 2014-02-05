@@ -13,6 +13,7 @@
 
 #include <QDir>
 #include <QSettings>
+#include <QThreadPool>
 
 #include "Global/AppManager.h"
 #include "Global/MemoryInfo.h"

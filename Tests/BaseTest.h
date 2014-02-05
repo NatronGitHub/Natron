@@ -10,20 +10,29 @@
  */
 
 
-#include "BaseTest.h"
+#ifndef BASETEST_H
+#define BASETEST_H
 
-BaseTest::BaseTest()
+#include <vector>
+#include <gtest/gtest.h>
+
+class AppManager;
+class BaseTest : public testing::Test
 {
-}
+public:
+    BaseTest();
 
-BaseTest::~BaseTest() {
+    virtual ~BaseTest();
 
-}
+protected:
 
-void BaseTest::SetUp() {
+    virtual void SetUp();
 
-}
+    virtual void TearDown();
 
-void BaseTest::TearDown() {
+private:
 
-}
+    AppManager* _app;
+};
+
+#endif // BASETEST_H

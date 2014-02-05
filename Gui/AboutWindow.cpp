@@ -11,6 +11,8 @@
 #include <QVBoxLayout>
 #include <QTabWidget>
 #include <QLabel>
+#include <QFile>
+#include <QTextCodec>
 
 #include "Global/GlobalDefines.h"
 #include "Gui/Button.h"

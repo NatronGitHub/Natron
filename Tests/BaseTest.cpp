@@ -10,30 +10,31 @@
  */
 
 
-#ifndef BASETEST_H
-#define BASETEST_H
+#include "BaseTest.h"
 
-#include <gtest/gtest.h>
+#include <map>
+#include <iostream>
+#include "../../Global/AppManager.h"
 
-namespace Natron {
-class OfxHost;
-}
-class BaseTest : public testing::Test
+BaseTest::BaseTest()
+    : testing::Test()
+    , _app(AppManager::instance())
 {
-public:
-    BaseTest();
+    _app->load(NULL);
+}
 
-    virtual ~BaseTest();
+BaseTest::~BaseTest() {
 
-protected:
+}
 
-    virtual void SetUp();
+void BaseTest::SetUp() {
 
-    virtual void TearDown();
+}
 
-private:
+void BaseTest::TearDown() {
+    delete _app;
+}
 
-   Natron::OfxHost* _ofxHost;
-};
+TEST_F(BaseTest,Load) {
 
-#endif // BASETEST_H
+}
