@@ -84,13 +84,125 @@ Natron::Node* BaseTest::createNode(const QString& pluginID,int majorVersion,int 
     return ret;
 }
 
+void BaseTest::connect(Natron::Node* input,Natron::Node* output,int inputNumber,bool expectedReturnValue) {
+    
+    if (expectedReturnValue) {
+        ///check that the connections are internally all set as "expected"
+        
+        EXPECT_TRUE(output->input(inputNumber) == NULL);
+        EXPECT_FALSE(output->isInputConnected(inputNumber));
+    } else {
+        
+        ///the call can only fail for those 2 reasons
+        EXPECT_TRUE(inputNumber > output->maximumInputs() || //< inputNumber is greater than the maximum input number
+                    output->input(inputNumber) != NULL); //< input slot is already filled with another node
+    }
+    
+    
+    bool ret = _app->connect(inputNumber,input,output);
+    EXPECT_TRUE(expectedReturnValue == ret);
+    
+    if (expectedReturnValue) {
+        EXPECT_TRUE(input->hasOutputConnected());
+        EXPECT_TRUE(output->input(inputNumber) == input);
+        EXPECT_TRUE(output->isInputConnected(inputNumber));
+    }
+}
+
+void BaseTest::disconnect(Natron::Node* input,Natron::Node* output,bool expectedReturnvalue) {
+    
+    if (expectedReturnvalue) {
+        ///check that the connections are internally all set as "expected"
+        
+        ///the input must have in its output the node 'output'
+        EXPECT_TRUE(input->hasOutputConnected());
+        const Natron::Node::OutputMap& outputs = input->getOutputs();
+        bool foundOutput = false;
+        for (Natron::Node::OutputMap::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+            if (it->second == output) {
+                foundOutput = true;
+                break;
+            }
+        }
+        
+        ///the output must have in its inputs the node 'input'
+        const Natron::Node::InputMap& inputs = output->getInputs();
+        int inputIndex = 0;
+        bool foundInput = false;
+        for(Natron::Node::InputMap::const_iterator it = inputs.begin(); it!=inputs.end();++it) {
+            if (it->second == input) {
+                foundInput = true;
+                break;
+            }
+            ++inputIndex;
+        }
+        
+        EXPECT_TRUE(foundInput && foundOutput);
+        EXPECT_TRUE(output->input(inputIndex) == input);
+        EXPECT_TRUE(output->isInputConnected(inputIndex));
+    }
+    
+    ///call disconnect
+    bool ret = _app->disconnect(input,output);
+    EXPECT_TRUE(expectedReturnvalue == ret);
+    
+    if (expectedReturnvalue) {
+        ///check that the disconnection went OK
+        
+        const Natron::Node::OutputMap& outputs = input->getOutputs();
+        bool foundOutput = false;
+        for (Natron::Node::OutputMap::const_iterator it = outputs.begin(); it!=outputs.end();++it) {
+            if (it->second == output) {
+                foundOutput = true;
+                break;
+            }
+        }
+        
+        ///the output must have in its inputs the node 'input'
+        const Natron::Node::InputMap& inputs = output->getInputs();
+        int inputIndex = 0;
+        bool foundInput = false;
+        for(Natron::Node::InputMap::const_iterator it = inputs.begin(); it!=inputs.end();++it) {
+            if (it->second == input) {
+                foundInput = true;
+                break;
+            }
+            ++inputIndex;
+        }
+        
+        EXPECT_TRUE(!foundOutput && !foundInput);
+        EXPECT_TRUE(output->input(inputIndex) == NULL);
+        EXPECT_FALSE(output->isInputConnected(inputIndex));
+    }
+}
+
 TEST_F(BaseTest,GenerateDot) {
+    
+    ///create the generator
     Node* generator = createNode(_dotGeneratorPluginID);
+    
+    ///create the writer and set its output filename
     Node* writer = createNode(_writeQtPluginID);
     writer->setOutputFilesForWriter("test_dot_generator#.jpg");
     
-    bool ret = _app->connect(0, generator, writer);
-    ASSERT_TRUE(ret) << "Couldn't connect reader and writer";
-
+    ///attempt to connect the 2 nodes together
+    connect(generator, writer, 0, true);
+    
+    ///and start rendering. This call is blocking.
     _app->startWritersRendering(QStringList(writer->getName().c_str()));
+}
+
+
+TEST_F(BaseTest,SimpleNodeConnections) {
+    ///create the generator
+    Node* generator = createNode(_dotGeneratorPluginID);
+    
+    ///create the writer and set its output filename
+    Node* writer = createNode(_writeQtPluginID);
+    
+    connect(generator, writer, 0, true);
+    connect(generator, writer, 0, false); //< expect it to fail
+    disconnect(generator, writer, true);
+    disconnect(generator, writer, false);
+    connect(generator, writer, 0, true);
 }

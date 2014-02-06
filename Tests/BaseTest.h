@@ -39,6 +39,17 @@ protected:
     ///You should not call this function
     Natron::Node* createNode(const QString& pluginID,int majorVersion = -1,int minorVersion = -1);
     
+    ///Useful function to connect 2 nodes together. It connects the input number inputNumber of
+    ///output to the node input. expectedReturnValue is expected to have the same value as the return
+    ///value of the underlying connect call. That means that if expectedReturnValue is true, the
+    ///connection is expected to succeed, and vice versa.
+    void connect(Natron::Node* input,Natron::Node* output,int inputNumber,bool expectedReturnValue);
+    
+    ///Useful function to disconnect 2 nodes together. expectedReturnValue is expected to have the same value as the return
+    ///value of the underlying disconnect call. That means that if expectedReturnValue is true, the
+    ///disconnection is expected to succeed, and vice versa.
+    void disconnect(Natron::Node* input,Natron::Node* output,bool expectedReturnvalue);
+    
     void registerTestPlugins();
     
     ///////////////Pointers to plug-ins that might be used by all the tests. This makes
