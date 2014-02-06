@@ -875,25 +875,38 @@ private:
              */
     void save(){
         assert(!_lock.tryLock()); // must be locked
-        QString newCachePath(getCachePath());
-        newCachePath.append(QDir::separator());
-        newCachePath.append("restoreFile." NATRON_CACHE_FILE_EXT);
-        std::ofstream ofile(newCachePath.toStdString().c_str(),std::ofstream::out);
-        boost::archive::binary_oarchive oArchive(ofile);
-        CacheTOC tableOfContents;
-        {
-            for(CacheIterator it = _diskCache.begin(); it!= _diskCache.end() ; ++it) {
-                std::list<value_type>& listOfValues  = getValueFromIterator(it);
-                for(typename std::list<value_type>::const_iterator it2 = listOfValues.begin() ;it2 != listOfValues.end(); ++it2){
-                    if((*it2)->isStoredOnDisk()){
-                        tableOfContents.push_back(std::make_pair((*it2)->getHashKey(),(*it2)->getKey()));
-                    }
-                }
 
-            }
-        }
-        oArchive << tableOfContents;
-        ofile.close();
+		try {
+			QString newCachePath(getCachePath());
+			newCachePath.append(QDir::separator());
+			newCachePath.append("restoreFile." NATRON_CACHE_FILE_EXT);
+			std::string cachePathStd = newCachePath.toStdString();
+			std::ofstream ofile(cachePathStd.c_str(),std::ofstream::out);
+			if(!ofile.good()) {
+				std::cout << "Failed to save cache to " << cachePathStd << std::endl;
+				return;
+			}
+			boost::archive::binary_oarchive oArchive(ofile);
+			CacheTOC tableOfContents;
+			{
+				for(CacheIterator it = _diskCache.begin(); it!= _diskCache.end() ; ++it) {
+					std::list<value_type>& listOfValues  = getValueFromIterator(it);
+					for(typename std::list<value_type>::const_iterator it2 = listOfValues.begin() ;it2 != listOfValues.end(); ++it2){
+						if((*it2)->isStoredOnDisk()){
+							tableOfContents.push_back(std::make_pair((*it2)->getHashKey(),(*it2)->getKey()));
+						}
+					}
+
+				}
+			}
+			oArchive << tableOfContents;
+			ofile.close();
+
+		} catch(const std::exception& e) {
+			std::cout << "Error saving the cache: " << e.what() << std::endl;
+		} catch(...) {
+			std::cout << "Unknown error while saving the cache." << std::endl;	
+		}
     }
 
     /*Restores the cache from disk.*/
@@ -905,7 +918,7 @@ private:
                 throw std::runtime_error("Cache does not exist");
             }
             QDir directory(newCachePath);
-            QStringList files = directory.entryList();
+            QStringList files = directory.entryList(QDir::AllDirs);
 
 
             /*Now counting actual data files in the cache*/
@@ -932,35 +945,59 @@ private:
                 std::cout << cacheName() << " doesn't contain sub-folders indexed from 00 to FF. Reseting." << std::endl;
                 cleanUpDiskAndReset();
             }
-            std::ifstream ifile(settingsFilePath.toStdString().c_str(),std::ifstream::in);
-            boost::archive::binary_iarchive iArchive(ifile);
-            CacheTOC tableOfContents;
-            iArchive >> tableOfContents;
+			std::string settingsFilePathStd = settingsFilePath.toStdString();
+            std::ifstream ifile;
+
+			try {
+				ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+				ifile.open(settingsFilePathStd.c_str(),std::ifstream::in);
+			} catch (const std::ifstream::failure& e) {
+				std::cout << e.what() << std::endl;
+				throw std::runtime_error("Failed to open the cache restoration file: " + settingsFilePathStd);
+			}
+
+			if(!ifile.good()) {
+				std::cout << "Failed to cache file for restoration: " << settingsFilePathStd << std::endl;
+				throw std::runtime_error("Failed to open the cache restoration file: " + settingsFilePathStd);
+			}
+
+			try {
+				boost::archive::binary_iarchive iArchive(ifile);
+				CacheTOC tableOfContents;
+				iArchive >> tableOfContents;
 
 
-            for (typename CacheTOC::const_iterator it =
-                 tableOfContents.begin(); it!=tableOfContents.end(); ++it) {
-                if (it->first != it->second.getHash()) {
-                    /*
-                     * If this warning is printed this means that the value computed by it->second.getHash()
-                     * is different of the value stored prior to serialiazing this entry. In other words there're
-                     * 2 possibilities:
-                     * 1) The key has changed since it has been added to the cache
-                     * 2) The hash key computation is unreliable and is depending upong changing parameters which is wrong
-                     */
-                    std::cout << "WARNING: serialized hash key different than the restored one" << std::endl;
-                }
-                ValueType* value = NULL;
-                try {
-                    value = new ValueType(it->second,true,QString(getCachePath()+QDir::separator()).toStdString());
-                } catch (const std::bad_alloc& e) {
-                    std::cout << e.what() << std::endl;
-                    continue;
-                }
-                sealEntry(value_type(value));
-            }
+				for (typename CacheTOC::const_iterator it =
+					tableOfContents.begin(); it!=tableOfContents.end(); ++it) {
+						if (it->first != it->second.getHash()) {
+							/*
+							* If this warning is printed this means that the value computed by it->second.getHash()
+							* is different of the value stored prior to serialiazing this entry. In other words there're
+							* 2 possibilities:
+							* 1) The key has changed since it has been added to the cache
+							* 2) The hash key computation is unreliable and is depending upong changing parameters which is wrong
+							*/
+							std::cout << "WARNING: serialized hash key different than the restored one" << std::endl;
+						}
+						ValueType* value = NULL;
+						try {
+							value = new ValueType(it->second,true,QString(getCachePath()+QDir::separator()).toStdString());
+						} catch (const std::bad_alloc& e) {
+							std::cout << e.what() << std::endl;
+							continue;
+						}
+						sealEntry(value_type(value));
+				}
 
-            ifile.close();
+				ifile.close();
+			} catch (const boost::archive::archive_exception& e) {
+				std::cout << "Exception while loading cache restoration file: " << e.what() << std::endl;
+				throw e;
+			} catch(const std::exception& e) {
+				std::cout << e.what() << std::endl;
+				throw e;
+			} 
+
             QFile restoreFile(settingsFilePath);
             restoreFile.remove();
         } catch (...) {
@@ -994,7 +1031,7 @@ private:
         QDir cacheFolder(getCachePath());
         cacheFolder.mkpath(".");
 
-        QStringList etr = cacheFolder.entryList();
+        QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
         // if not 256 subdirs, we re-create the cache
         if (etr.size() < 256) {
             foreach(QString e, etr){

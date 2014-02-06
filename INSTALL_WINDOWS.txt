@@ -58,21 +58,22 @@ INCLUDEPATH is the path to the include files
 LIBS is the path to the libs
 
 
-
-boost{
-    INCLUDEPATH +=  $$quote(C:\\boost1.54)
-    LIBS += -L$$quote(C:\\boost1.54\\lib) -lboost_serialization-mt -lboost_thread-mt - lboost_system-mt
+boost {
+    INCLUDEPATH +=  $$quote(C:\\local\\boost_1_55_0_vs2010_x86)
+    LIBS += $$quote(C:\\local\\boost_1_55_0_vs2010_x86\\lib\\boost_serialization-vc100-mt-1_55.lib)
+	LIBS += $$quote(C:\\local\\boost_1_55_0_vs2010_x86\\lib\\boost_system-vc100-mt-1_55.lib)
+	LIBS += $$quote(C:\\local\\boost_1_55_0_vs2010_x86\\lib\\boost_thread-vc100-mt-1_55.lib)
 }
 
 glew{
-    INCLUDEPATH +=  $$quote(C:\\glew\\include)
-    LIBS += -L$$quote(C:\\glew\\lib\\Release) -lglew32
+    INCLUDEPATH +=  $$quote(C:\\local\\glew\\include)
+    LIBS += -L$$quote(C:\\local\\glew\\lib\\Release\\Win32\\glew32.lib)
 }
 
 expat{
-    INCLUDEPATH += $$PWD/libs/OpenFX/HostSupport/expat-2.0.1/lib
-    LIBS += -L$$quote(C:\\Users\\Lex\\Desktop\\Natron\\Natron_Core\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\win32\\bin\\Release) -llibexpatMT
-   # LIBS += shell32.lib
+    INCLUDEPATH += $$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\lib)
+    LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\win32\\bin\\Debug\\libexpatMT.lib)
+    LIBS += shell32.lib
 }
 
 ###Copy the dll's over
@@ -99,7 +100,6 @@ You'll need to edit the file /etc/launchd.conf and add this line
 setenv PATH /opt/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
 
 And restart your computer so it takes it into account.
-
 
 
 ###(Optional) Build on Visual Studio:
