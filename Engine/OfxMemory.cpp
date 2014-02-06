@@ -30,7 +30,14 @@ void* OfxMemory::getPtr() {
 }
 
 bool OfxMemory::alloc(size_t nBytes) {
-    return _memory->alloc(nBytes);
+
+    bool ret = false;
+    try {
+        ret = _memory->alloc(nBytes);
+    } catch (const std::bad_alloc&) {
+        return false;
+    }
+    return ret;
 }
 
 void OfxMemory::freeMem() {

@@ -121,6 +121,7 @@ SOURCES += \
     ../Engine/OfxMemory.cpp \
     ../Engine/OfxOverlayInteract.cpp \
     ../Engine/OfxParamInstance.cpp \
+    ../Engine/PluginMemory.cpp \
     ../Engine/Project.cpp \
     ../Engine/ProjectPrivate.cpp \
     ../Engine/ProjectSerialization.cpp \
@@ -220,6 +221,7 @@ HEADERS += \
     ../Engine/OfxMemory.h \
     ../Engine/OfxOverlayInteract.h \
     ../Engine/OfxParamInstance.h \
+    ../Engine/PluginMemory.h \
     ../Engine/Project.h \
     ../Engine/ProjectPrivate.h \
     ../Engine/ProjectSerialization.h \

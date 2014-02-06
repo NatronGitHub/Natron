@@ -39,6 +39,9 @@ BaseTest::~BaseTest() {
 }
 
 void BaseTest::registerTestPlugins() {
+
+    _allTestPluginIDs.clear();
+
     _genericTestPluginID = QString("GenericTest  [OFX]");
     _allTestPluginIDs.push_back(_genericTestPluginID);
     
