@@ -26,7 +26,7 @@ class VideoEngine;
 class RenderTree;
 class Format;
 class ViewerGL;
-
+class PluginMemory;
 namespace Natron{
 
 class Node;
@@ -464,6 +464,16 @@ public:
      * with the content of pattern.
      **/
     void setOutputFilesForWriter(const QString& pattern);
+    
+    /**
+     * @brief Constructs a new memory holder, with nBytes allocated. If the allocation failed, bad_alloc is thrown
+     **/
+    PluginMemory* newMemoryInstance(size_t nBytes) WARN_UNUSED_RETURN;
+    
+    /// used to count the memory used by a plugin
+    /// Don't call these, they're called by PluginMemory automatically
+    void registerPluginMemory(size_t nBytes);
+    void unregisterPluginMemory(size_t nBytes);
     
 protected:
     /**

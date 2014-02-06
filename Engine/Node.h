@@ -354,6 +354,15 @@ public:
      **/
     void setOutputFilesForWriter(const QString& pattern);
     
+    
+    ///called by EffectInstance
+    void registerPluginMemory(size_t nBytes);
+    
+    ///called by EffectInstance
+    void unregisterPluginMemory(size_t nBytes);
+
+    
+    
 public slots:
     
     void onGUINameChanged(const QString& str);
@@ -416,6 +425,8 @@ signals:
     void renderingStarted();
     
     void renderingEnded();
+    
+    void pluginMemoryUsageChanged(unsigned long long);
     
 protected:
     // FIXME: all data members should be private, use getter/setter instead

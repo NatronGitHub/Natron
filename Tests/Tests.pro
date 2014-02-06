@@ -109,6 +109,7 @@ SOURCES += \
     ../Engine/OfxHost.cpp \
     ../Engine/OfxImageEffectInstance.cpp \
     ../Engine/OfxEffectInstance.cpp \
+    ../Engine/OfxMemory.cpp \
     ../Engine/OfxOverlayInteract.cpp \
     ../Engine/OfxParamInstance.cpp \
     ../Engine/Project.cpp \
@@ -207,6 +208,7 @@ HEADERS += \
     ../Engine/OfxHost.h \
     ../Engine/OfxImageEffectInstance.h \
     ../Engine/OfxEffectInstance.h \
+    ../Engine/OfxMemory.h \
     ../Engine/OfxOverlayInteract.h \
     ../Engine/OfxParamInstance.h \
     ../Engine/Project.h \

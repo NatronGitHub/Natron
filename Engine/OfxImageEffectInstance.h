@@ -40,6 +40,8 @@ public:
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
     // overridden for ImageEffect::Instance
+    
+    virtual OFX::Host::Memory::Instance* newMemoryInstance(size_t nBytes) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// get default output fielding. This is passed into the clip prefs action
     /// and  might be mapped (if the host allows such a thing)
@@ -175,6 +177,7 @@ public:
     /// to be called right away after populate() is called. It adds to their group all the params.
     /// This is done in a deferred manner as some params can sometimes not be defined in a good order.
     void addParamsToTheirParents();
+    
 
 private:
     OfxEffectInstance* _node; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //

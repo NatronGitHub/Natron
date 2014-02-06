@@ -95,6 +95,9 @@ struct Node::Implementation {
         , plugin(plugin_)
         , renderInstances()
         , computingPreview(false)
+        , computingPreviewCond()
+        , pluginInstanceMemoryUsed(0)
+        , memoryUsedMutex()
     {
     }
 
@@ -120,6 +123,9 @@ struct Node::Implementation {
     
     bool computingPreview;
     QWaitCondition computingPreviewCond;
+    
+    size_t pluginInstanceMemoryUsed; //< global count on all EffectInstance's of the memory they use.
+    QMutex memoryUsedMutex; //< protects _pluginInstanceMemoryUsed
 };
 
 Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
@@ -870,6 +876,18 @@ void Node::setInputFilesForReader(const QStringList& files) {
 
 void Node::setOutputFilesForWriter(const QString& pattern) {
     _liveInstance->setOutputFilesForWriter(pattern);
+}
+
+void Node::registerPluginMemory(size_t nBytes) {
+    QMutexLocker l(&_imp->memoryUsedMutex);
+    _imp->pluginInstanceMemoryUsed += nBytes;
+    emit pluginMemoryUsageChanged((unsigned long long)_imp->pluginInstanceMemoryUsed);
+}
+
+void Node::unregisterPluginMemory(size_t nBytes) {
+    QMutexLocker l(&_imp->memoryUsedMutex);
+    _imp->pluginInstanceMemoryUsed -= nBytes;
+    emit pluginMemoryUsageChanged((unsigned long long)_imp->pluginInstanceMemoryUsed);
 }
 
 InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin,const std::string& name)

@@ -175,8 +175,10 @@ SOURCES += \
     Engine/OfxHost.cpp \
     Engine/OfxImageEffectInstance.cpp \
     Engine/OfxEffectInstance.cpp \
+    Engine/OfxMemory.cpp \
     Engine/OfxOverlayInteract.cpp \
     Engine/OfxParamInstance.cpp \
+    Engine/PluginMemory.cpp \
     Engine/Project.cpp \
     Engine/ProjectPrivate.cpp \
     Engine/ProjectSerialization.cpp \
@@ -274,7 +276,9 @@ HEADERS += \
     Engine/OfxImageEffectInstance.h \
     Engine/OfxEffectInstance.h \
     Engine/OfxOverlayInteract.h \
+    Engine/OfxMemory.h \
     Engine/OfxParamInstance.h \
+    Engine/PluginMemory.h \
     Engine/Project.h \
     Engine/ProjectPrivate.h \
     Engine/ProjectSerialization.h \
@@ -373,7 +377,7 @@ HEADERS += \
     libs/OpenFX_extensions/tuttle/ofxParamAPI.h \
     libs/OpenFX_extensions/tuttle/ofxReadWrite.h \
     libs/OpenFX_extensions/ofxhParametricParam.h \
-    libs/OpenFX/include/natron/IOExtensions.h \
+    libs/OpenFX/include/natron/IOExtensions.h
 
 INSTALLS += target
 

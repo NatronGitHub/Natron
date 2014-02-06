@@ -26,6 +26,7 @@
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/PluginMemory.h"
 
 using namespace Natron;
 
@@ -693,7 +694,22 @@ void EffectInstance::setOutputFilesForWriter(const QString& pattern) {
             }
         }
     }
+}
 
+PluginMemory* EffectInstance::newMemoryInstance(size_t nBytes) {
+    PluginMemory* ret = new PluginMemory(this);
+    bool wasntLocked = ret->alloc(nBytes);
+    assert(wasntLocked);
+    return ret;
+}
+
+
+void EffectInstance::registerPluginMemory(size_t nBytes) {
+    _node->registerPluginMemory(nBytes);
+}
+
+void EffectInstance::unregisterPluginMemory(size_t nBytes) {
+    _node->unregisterPluginMemory(nBytes);
 }
 
 OutputEffectInstance::OutputEffectInstance(Node* node)

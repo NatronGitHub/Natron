@@ -29,6 +29,7 @@
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFactory.h"
+#include "Engine/OfxMemory.h"
 
 #include "Global/AppManager.h"
 
@@ -476,4 +477,15 @@ void OfxImageEffectInstance::timeLineGetBounds(double &t1, double &t2) {
 // override this to make processing abort, return 1 to abort processing
 int OfxImageEffectInstance::abort() {
     return (int)node()->aborted();
+}
+
+OFX::Host::Memory::Instance* OfxImageEffectInstance::newMemoryInstance(size_t nBytes) {
+    OfxMemory* ret = new OfxMemory(_node);
+    bool wasntLocked = ret->alloc(nBytes);
+    assert(wasntLocked);
+    
+    if (!ret->getPtr()) {
+        qDebug() << node()->getName().c_str() << " failed to allocate memory.";
+    }
+    return ret;
 }
