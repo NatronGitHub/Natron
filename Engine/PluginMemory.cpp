@@ -69,5 +69,9 @@ void PluginMemory::lock() {
 
 void PluginMemory::unlock() {
     QMutexLocker l(_mutex);
-    --_locked;
+    // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxImageEffectSuiteV1_imageMemoryUnlock
+    // "Also note, if you unlock a completely unlocked handle, it has no effect (ie: the lock count can't be negative)."
+    if (locked > 0) {
+        --_locked;
+    }
 }
