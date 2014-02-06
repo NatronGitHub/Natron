@@ -13,6 +13,7 @@
 
 #include <stdexcept>
 #include <QMutex>
+#include "Engine/EffectInstance.h"
 
 PluginMemory::PluginMemory(Natron::EffectInstance* effect)
 : _ptr(0)
@@ -30,7 +31,6 @@ PluginMemory::~PluginMemory() {
 
 bool PluginMemory::alloc(size_t nBytes) {
     QMutexLocker l(_mutex);
-    
     if(!_locked){
         _nBytes = nBytes;
         if(_ptr)
@@ -39,6 +39,9 @@ bool PluginMemory::alloc(size_t nBytes) {
         if (!_ptr) {
             throw std::bad_alloc();
         }
+        
+        _effect->registerPluginMemory(nBytes);
+
         return true;
     } else {
         return false;
@@ -47,6 +50,7 @@ bool PluginMemory::alloc(size_t nBytes) {
 
 void PluginMemory::freeMem() {
     QMutexLocker l(_mutex);
+    _effect->unregisterPluginMemory(_nBytes);
     _nBytes = 0;
     delete [] _ptr;
     _ptr = 0;
