@@ -182,3 +182,10 @@ Makefile
 *.app
 
 *.pro.user.*
+
+# gcov test coverage files
+*.gcda
+*.gcno
+Tests/Tests
+ofxTestLog.txt
+test_dot_generator0.jpg
