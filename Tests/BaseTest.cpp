@@ -176,6 +176,7 @@ void BaseTest::disconnect(Natron::Node* input,Natron::Node* output,bool expected
     }
 }
 
+///High level test: render 1 frame of dot generator
 TEST_F(BaseTest,GenerateDot) {
     
     ///create the generator
@@ -192,7 +193,7 @@ TEST_F(BaseTest,GenerateDot) {
     _app->startWritersRendering(QStringList(writer->getName().c_str()));
 }
 
-
+///High level test: simple node connections test
 TEST_F(BaseTest,SimpleNodeConnections) {
     ///create the generator
     Node* generator = createNode(_dotGeneratorPluginID);

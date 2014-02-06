@@ -187,7 +187,9 @@ SOURCES += \
     ../libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
     ../libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
     ../libs/OpenFX_extensions/ofxhParametricParam.cpp \
-    BaseTest.cpp
+    BaseTest.cpp \
+    Hash64_Test.cpp \
+    Image_Test.cpp
 
 HEADERS += \
     ../Engine/Cache.h \
