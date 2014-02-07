@@ -26,16 +26,9 @@ BaseTest::BaseTest()
     , _writeQtPluginID()
     , _app(0)
 {
-    AppManager* manager = AppManager::instance();
-    manager->load(NULL);
-    _app = manager->newAppInstance(AppInstance::APP_BACKGROUND);
-    
-    registerTestPlugins();
-
 }
 
 BaseTest::~BaseTest() {
-
 }
 
 void BaseTest::registerTestPlugins() {
@@ -69,10 +62,17 @@ void BaseTest::registerTestPlugins() {
     }
 }
 
-void BaseTest::SetUp() {
+void BaseTest::SetUp()
+{
+    AppManager* manager = AppManager::instance();
+    manager->load(NULL);
+    _app = manager->newAppInstance(AppInstance::APP_BACKGROUND);
+    
+    registerTestPlugins();
 }
 
-void BaseTest::TearDown() {
+void BaseTest::TearDown()
+{
     delete _app;
     _app = 0;
     AppManager::quit();
