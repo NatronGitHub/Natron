@@ -186,6 +186,7 @@ Makefile
 # gcov test coverage files
 *.gcda
 *.gcno
+*.gcov
 Tests/Tests
 ofxTestLog.txt
 test_dot_generator0.jpg
