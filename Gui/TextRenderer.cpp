@@ -142,11 +142,6 @@ CharBitmap *TextRendererPrivate::createCharacter(QChar c, const QColor &color)
         }
     }
 
-    GLint currentBoundPBO;
-    //if a pbo is already mapped, this would make the glTex** calls fail
-    glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
-   // assert(currentBoundPBO == 0);
-
     if (_usedTextures.empty()) {
         newTransparantTexture();
     }
