@@ -1050,14 +1050,14 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
 {
     assert(QGLContext::currentContext() == context());
     QMutexLocker locker(&_imp->textureMutex);
+	(void)glGetError();
     GLint currentBoundPBO = 0;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
-	checkGLErrors();
-    if (currentBoundPBO != 0) {
-        cout << "(ViewerGL::allocateAndMapPBO): Another PBO is currently mapped, glMap failed." << endl;
-      //  return;
-    }
-    
+	GLenum err = glGetError();
+	if(err != GL_NO_ERROR || currentBoundPBO != 0) {
+		 qDebug() << "(ViewerGL::allocateAndMapPBO): Another PBO is currently mapped, glMap failed." << endl;
+	}
+
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, getPboID(pboIndex));
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
     GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
@@ -1322,28 +1322,6 @@ QPointF ViewerGL::toWidgetCoordinates(double x, double y){
     double right = left +  w / _imp->zoomCtx.zoomFactor;
     return QPoint(((x - left)/(right - left))*w,(y - top)/((bottom - top))*h);
 }
-
-#if 0
-/*Returns coordinates with 0,0 at top left, Natron inverts
- y as such : y= displayWindow().height() - y  to get the coordinates
- with 0,0 at bottom left*/
-QVector3D ViewerGL::toImgCoordinates_slow(int x,int y){
-    GLint viewport[4];
-    GLdouble modelview[16];
-    GLdouble projection[16];
-    GLfloat winX=0, winY=0, winZ=0;
-    GLdouble posX=0, posY=0, posZ=0;
-    glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
-    glGetDoublev( GL_PROJECTION_MATRIX, projection );
-    glGetIntegerv( GL_VIEWPORT, viewport );
-    winX = (float)x;
-    winY = viewport[3]- y;
-    glReadPixels( x, (int)winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
-    gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
-    checkGLErrors();
-    return QVector3D(posX,posY,posZ);
-}
-#endif
 
 void ViewerGL::fitToFormat(const Format& rod){
     double h = rod.height();
