@@ -110,6 +110,9 @@ namespace Natron{
         std::list<RectI> minimalNonMarkedRects(const RectI& roi) const;
         
         void markForRendered(const RectI& roi);
+
+        const char* getBitmap() const { return _map.get(); }
+
     private:
         RectI minimalNonMarkedBbox(const RectI& roi) const;
 

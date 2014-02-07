@@ -646,6 +646,23 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
     QString actualFileName = filename;
     if(autoSave){
         QString pathCpy = path;
+        
+#ifdef __NATRON_WIN32__
+        ///on windows, we must also modifiy the root name otherwise it would fail to save with a filename containing for example C:/
+        QFileInfoList roots = QDir::drives();
+        QString root;
+        for (int i = 0; i < roots.size(); ++i) {
+            QString rootPath = roots[i].absolutePath();
+            if (pathCpy.startsWith(rootPath)) {
+                root = rootPath;
+                QString rootToPrepend("_ROOT_");
+                rootToPrepend.append(root.at(0)); //< append the root character, e.g the 'C' of C:
+                rootToPrepend.append("_N_ROOT_");
+                pathCpy.replace(rootPath, rootToPrepend);
+            }
+        }
+        
+#endif
         pathCpy = pathCpy.replace("/", "_SEP_");
         pathCpy = pathCpy.replace("\\", "_SEP_");
         actualFileName.prepend(pathCpy);
@@ -753,7 +770,18 @@ bool AppInstance::findAutoSave() {
             bool exists = false;
             
             if(!filename.contains(NATRON_PROJECT_UNTITLED)){
-                
+#ifdef __NATRON_WIN32__
+                ///on windows we must extract the root of the filename (@see saveProjectInternal)
+                int rootPos = filename.indexOf("_ROOT_");
+                int endRootPos =  filename.indexOf("_N_ROOT_");
+                QString rootName;
+                if (rootPos != -1) {
+                    assert(endRootPos != -1);//< if we found _ROOT_ then _N_ROOT must exist too
+                    int startRootNamePos = rootPos + 6;
+                    rootName = filename.mid(startRootNamePos,endRootPos - startRootNamePos);
+                }
+                filename.replace("_ROOT" + rootName + "_N_ROOT_",rootName + ':');
+#endif
                 filename = filename.replace("_SEP_",QDir::separator());
                 exists = QFile::exists(filename);
             }

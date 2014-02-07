@@ -12,3 +12,15 @@
 #include <gtest/gtest.h>
 #include "Engine/Image.h"
 
+
+TEST(BitmapTest,SimpleRect) {
+    RectI rod(0,0,100,100);
+    Natron::Bitmap bm(rod);
+
+    ///assert that the union of all the non rendered rects is the rod
+    std::list<RectI> nonRenderedRects = bm.minimalNonMarkedRects(rod);
+    RectI nonRenderedRectsUnion;
+    for(std::list<RectI>::iterator it = nonRenderedRects.begin();it!=nonRenderedRects.end();++it) {
+        nonRenderedRectsUnion.merge(*it);
+    }
+}
