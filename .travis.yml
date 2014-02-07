@@ -11,7 +11,7 @@ before_install:
   - git submodule update --init --recursive
   - sudo add-apt-repository -y ppa:irie/boost
   - sudo apt-get update
-  - sudo pip install cpp-coveralls --use-mirrors
+  - if [ "$CC" = "gcc" ]; then sudo pip install cpp-coveralls --use-mirrors; fi
 
 # Ubuntu 12.04 precise doesn't have a pkg-config file (expat.pc)
 install:
@@ -25,7 +25,7 @@ install:
 script:
   - if [ "$CC" = "gcc" ]; then qmake; else qmake -spec unsupported/linux-clang; fi
   - make
-  - if [ "$CC" = "gcc" ]; then cd Tests; qmake; make; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..;  fi
+  - if [ "$CC" = "gcc" ]; then make clean; cd Tests; qmake; make; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..;  fi
 
 after_success:
-  - cd Tests; coveralls --exclude ../libs/OpenFX --exclude google-test --exclude-pattern .*/moc_.*\;cpp
+  - if [ "$CC" = "gcc" ]; then coveralls -r Tests --exclude ../libs/OpenFX --exclude google-test --exclude-pattern '.*/moc_.*\.cpp'; fi
