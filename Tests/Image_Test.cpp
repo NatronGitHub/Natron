@@ -9,6 +9,7 @@
  *
  */
 
+#include <cstring>
 #include <gtest/gtest.h>
 #include "Engine/Image.h"
 
@@ -23,4 +24,31 @@ TEST(BitmapTest,SimpleRect) {
     for(std::list<RectI>::iterator it = nonRenderedRects.begin();it!=nonRenderedRects.end();++it) {
         nonRenderedRectsUnion.merge(*it);
     }
+
+    ASSERT_TRUE(rod == nonRenderedRectsUnion);
+
+    ///assert that the "underlying" bitmap is clean
+    const char* map = bm.getBitmap();
+    ASSERT_TRUE(!memchr(map,1,rod.area()));
+
+    RectI halfRoD(0,0,100,50);
+    bm.markForRendered(halfRoD);
+
+    ///assert that non of the rendered rects interesect the non rendered half
+    RectI nonRenderedHalf(0,50,100,100);
+    nonRenderedRects = bm.minimalNonMarkedRects(rod);
+    for(std::list<RectI>::iterator it = nonRenderedRects.begin();it!=nonRenderedRects.end();++it) {
+        ASSERT_TRUE((*it).intersects(nonRenderedHalf));
+    }
+
+
+    ///assert that the underlying bitmap is marked as expected
+    const char* start = map;
+
+    ///check that there are only ones in the rendered half
+    ASSERT_TRUE(!memchr(start,0,halfRoD.area()));
+
+    ///check that there are only 0s in the non rendered half
+    start = map + halfRoD.area();
+    ASSERT_TRUE(!memchr(start,1,halfRoD.area()));
 }
