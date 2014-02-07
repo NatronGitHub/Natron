@@ -12,7 +12,7 @@
 #ifndef PLUGINMEMORY_H
 #define PLUGINMEMORY_H
 
-#include <stddef.h>
+#include <cstddef>
 
 namespace Natron {
 class EffectInstance;

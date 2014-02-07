@@ -28,4 +28,4 @@ script:
   - if [ "$CC" = "gcc" ]; then cd Tests; qmake; make; env OFX_PLUGIN_PATH=Plugins ./Tests; fi
 
 after_success:
-  - coveralls
+  - coveralls --exclude google-test --exclude-pattern 'moc_.*\.cpp' --exclude-pattern '.*\.moc'
