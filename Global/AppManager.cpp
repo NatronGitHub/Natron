@@ -643,6 +643,14 @@ void AppInstance::saveProject(const QString& path,const QString& name,bool autoS
 void AppInstance::saveProjectInternal(const QString& path,const QString& filename,bool autoSave){
     
     QDateTime time = QDateTime::currentDateTime();
+	QString timeStr = time.toString();
+	Hash64 timeHash;
+	for(int i = 0 ; i < timeStr.size();++i) {
+		timeHash.append<unsigned short>(timeStr.at(i).unicode());
+	}
+	timeHash.computeHash();
+	QString timeHashStr = QString::number(timeHash.value());
+
     QString actualFileName = filename;
     if(autoSave){
         QString pathCpy = path;
@@ -653,12 +661,16 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
         QString root;
         for (int i = 0; i < roots.size(); ++i) {
             QString rootPath = roots[i].absolutePath();
+			rootPath = rootPath.remove(QChar('\\'));
+			rootPath = rootPath.remove(QChar('/'));
+			std::cout << rootPath.toStdString() << " " << pathCpy.toStdString() << std::endl;
             if (pathCpy.startsWith(rootPath)) {
                 root = rootPath;
                 QString rootToPrepend("_ROOT_");
                 rootToPrepend.append(root.at(0)); //< append the root character, e.g the 'C' of C:
                 rootToPrepend.append("_N_ROOT_");
                 pathCpy.replace(rootPath, rootToPrepend);
+				break;
             }
         }
         
@@ -666,7 +678,7 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
         pathCpy = pathCpy.replace("/", "_SEP_");
         pathCpy = pathCpy.replace("\\", "_SEP_");
         actualFileName.prepend(pathCpy);
-        actualFileName.append("."+time.toString("dd.MM.yyyy.hh:mm:ss:zzz"));
+        actualFileName.append("."+timeHashStr);
     }
     QString filePath;
     if (autoSave) {
