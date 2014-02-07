@@ -28,4 +28,4 @@ script:
   - if [ "$CC" = "gcc" ]; then cd Tests; qmake; make; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..;  fi
 
 after_success:
-  - coveralls --exclude pch.h --exclude libs/OpenFX --exclude Tests --exclude pch.h
+  - coveralls --exclude pch.h --exclude libs/OpenFX --exclude Tests/google-test --exclude-pattern Tests/.*cpp
