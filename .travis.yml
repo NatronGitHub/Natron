@@ -25,7 +25,7 @@ install:
 script:
   - if [ "$CC" = "gcc" ]; then qmake; else qmake -spec unsupported/linux-clang; fi
   - make
-  - if [ "$CC" = "gcc" ]; then cd Tests; qmake; make; env OFX_PLUGIN_PATH=Plugins ./Tests; fi
+  - if [ "$CC" = "gcc" ]; then cd Tests; qmake; make; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..;  fi
 
 after_success:
-  - coveralls --exclude google-test --exclude-pattern 'moc_.*\.cpp' --exclude-pattern '.*\.moc'
+  - coveralls --exclude pch.h --exclude libs/OpenFX --exclude Tests --exclude pch.h
