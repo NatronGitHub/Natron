@@ -51,4 +51,80 @@ TEST(BitmapTest,SimpleRect) {
     ///check that there are only 0s in the non rendered half
     start = map + halfRoD.area();
     ASSERT_TRUE(!memchr(start,1,halfRoD.area()));
+
+    ///mark for renderer the other half of the rod
+    bm.markForRendered(nonRenderedHalf);
+
+    ///assert that the bm is rendered totally
+    ASSERT_TRUE(bm.minimalNonMarkedRects(rod).empty());
+    ASSERT_TRUE(!memchr(map,0,rod.area()));
 }
+
+TEST(ImageKeyTest,Equality) {
+    srand(2000);
+    int randomHashKey1 = rand();
+
+    int cost1 = 0;
+    SequenceTime time1 = 0;
+    RenderScale scale1;
+    scale1.x = scale1.y = 1.;
+    int view1 = 0;
+    RectI rod1(0,0,100,100);
+    double pa1 = 1.;
+
+    Natron::ImageKey key1(cost1,randomHashKey1,time1,scale1,view1,rod1,pa1);
+    U64 keyHash1 = key1.getHash();
+
+
+    ///make a second ImageKey equal to the first
+    int randomHashKey2 = randomHashKey1;
+    int cost2 = cost1;
+    SequenceTime time2 = time1;
+    RenderScale scale2;
+    scale2.x = scale1.x;
+    scale2.y = scale1.y;
+    int view2 = view1;
+    RectI rod2 = rod1;
+    double pa2 = pa1;
+
+    Natron::ImageKey key2(cost2,randomHashKey2,time2,scale2,view2,rod2,pa2);
+    U64 keyHash2 = key2.getHash();
+    ASSERT_TRUE(keyHash1 == keyHash2);
+
+
+}
+
+TEST(ImageKeyTest,Difference) {
+    srand(2000);
+    int randomHashKey1 = rand() % 100;
+
+    int cost1 = 0;
+    SequenceTime time1 = 0;
+    RenderScale scale1;
+    scale1.x = scale1.y = 1.;
+    int view1 = 0;
+    RectI rod1(0,0,100,100);
+    double pa1 = 1.;
+
+    Natron::ImageKey key1(cost1,randomHashKey1,time1,scale1,view1,rod1,pa1);
+    U64 keyHash1 = key1.getHash();
+
+
+    ///make a second ImageKey different to the first
+    int randomHashKey2 = rand() % 1000  + 150;
+    int cost2 = cost1;
+    SequenceTime time2 = time1;
+    RenderScale scale2;
+    scale2.x = scale1.x;
+    scale2.y = scale1.y;
+    int view2 = view1;
+    RectI rod2 = rod1;
+    double pa2 = pa1;
+
+    Natron::ImageKey key2(cost2,randomHashKey2,time2,scale2,view2,rod2,pa2);
+    U64 keyHash2 = key2.getHash();
+    ASSERT_TRUE(keyHash1 != keyHash2);
+
+
+}
+
