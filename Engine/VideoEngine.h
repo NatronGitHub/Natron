@@ -184,8 +184,9 @@ class VideoEngine : public QThread{
 public slots:
     /**
      @brief Aborts all computations. This turns on the flag _abortRequested and will inform the engine that it needs to stop.
+     * If blocking is true the function will not return before the ending has stopped.
      **/
-    void abortRendering();
+    void abortRendering(bool blocking);
     
     
     /*

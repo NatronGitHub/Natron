@@ -587,7 +587,7 @@ void EffectInstance::abortRendering(){
     if (isClone()) {
         _node->abortRenderingForEffect(this);
     }else if(isOutput()){
-        dynamic_cast<OutputEffectInstance*>(this)->getVideoEngine()->abortRendering();
+        dynamic_cast<OutputEffectInstance*>(this)->getVideoEngine()->abortRendering(true);
     }
 }
 

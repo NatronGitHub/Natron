@@ -538,7 +538,7 @@ void ViewerTab::startPause(bool b){
     }
 }
 void ViewerTab::abortRendering(){
-    _viewerNode->getVideoEngine()->abortRendering();
+    _viewerNode->getVideoEngine()->abortRendering(false);
 }
 void ViewerTab::startBackward(bool b){
     abortRendering();

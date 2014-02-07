@@ -192,34 +192,33 @@ OfxStatus Natron::OfxHost::clearPersistentMessage(){
     return kOfxStatOK;
 }
 
-OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natron::Node* node) {
-    assert(node); // the efgfect_ member should be owned by a Node
+void Natron::OfxHost::getPluginAndContextByID(const std::string& pluginID,  OFX::Host::ImageEffect::ImageEffectPlugin** plugin,std::string& context) {
     // throws out_of_range if the plugin does not exist
-    const OFXPluginEntry& ofxPlugin = _ofxPlugins.at(name);
+    const OFXPluginEntry& ofxPlugin = _ofxPlugins.at(pluginID);
 
-    OFX::Host::ImageEffect::ImageEffectPlugin* plugin = _imageEffectPluginCache.getPluginById(ofxPlugin.openfxId);
-    if (!plugin) {
+    *plugin = _imageEffectPluginCache.getPluginById(ofxPlugin.openfxId);
+    if (!(*plugin)) {
         throw std::runtime_error(std::string("Error: Could not get plugin ") + ofxPlugin.openfxId);
     }
 
+
+    OFX::Host::PluginHandle *pluginHandle;
     // getPluginHandle() must be called before getContexts():
     // it calls kOfxActionLoad on the plugin, which may set properties (including supported contexts)
-    OFX::Host::PluginHandle *ph;
     try {
-        ph = plugin->getPluginHandle();
+        pluginHandle = (*plugin)->getPluginHandle();
     } catch (const std::exception& e) {
-        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + name + ": " + e.what());
+        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + pluginID + ": " + e.what());
     } catch (...) {
-        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + name);
+        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + pluginID);
     }
-    if(!ph) {
-        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + name);
+    if(!pluginHandle) {
+        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + pluginID);
     }
-    assert(ph->getOfxPlugin() && ph->getOfxPlugin()->mainEntry);
+    assert(pluginHandle->getOfxPlugin() && pluginHandle->getOfxPlugin()->mainEntry);
 
-    const std::set<std::string>& contexts = plugin->getContexts();
-    std::string context;
-    
+    const std::set<std::string>& contexts = (*plugin)->getContexts();
+
     if (contexts.size() == 0) {
         throw std::runtime_error(std::string("Error: Plugins supports no context"));
         //context = kOfxImageEffectContextGeneral;
@@ -227,7 +226,7 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
     } else if (contexts.size() == 1) {
         context = (*contexts.begin());
     } else {
-        
+
         std::set<std::string>::iterator found = contexts.find(kOfxImageEffectContextReader);
         if (found != contexts.end()) {
             context = *found;
@@ -260,19 +259,18 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
             }
         }
     }
+}
+
+OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natron::Node* node) {
+
+    assert(node);
+    OFX::Host::ImageEffect::ImageEffectPlugin *plugin;
+    std::string context;
+
+    getPluginAndContextByID(name,&plugin,context);
 
     OfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
-    if(node){
-        hostSideEffect->createOfxImageEffectInstance(plugin, context);
-    }else{
-        
-        //if node is NULL that means we're just checking if the effect is describing and loading OK
-        OFX::Host::ImageEffect::Descriptor* desc = plugin->getContext(context);
-        if(!desc){
-            throw std::runtime_error(std::string("Error: Could not get description for plugin ") + name + " in context " + context);
-        }
-    }
-
+    hostSideEffect->createOfxImageEffectInstance(plugin, context);
     return hostSideEffect;
 }
 

@@ -302,7 +302,7 @@ public:
     void updateRecentFileActions();
     
     static QPixmap screenShot(QWidget* w);
-
+    
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);

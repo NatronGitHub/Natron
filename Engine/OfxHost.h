@@ -116,6 +116,9 @@ signals:
     void toolButtonAdded(QStringList,QString,QString,QString,QString);
     
 private:
+
+    void getPluginAndContextByID(const std::string& pluginID, OFX::Host::ImageEffect::ImageEffectPlugin** plugin,std::string& context);
+
     /*Writes all plugins loaded and their descriptors to
      the OFX plugin cache. (called by the destructor) */
     void writeOFXCache();

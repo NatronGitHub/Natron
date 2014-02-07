@@ -667,7 +667,7 @@ void Node::abortRenderingForEffect(EffectInstance* effect)
 {
     for (std::map<RenderTree*,EffectInstance*>::iterator it = _imp->renderInstances.begin(); it!=_imp->renderInstances.end(); ++it) {
         if(it->second == effect){
-            dynamic_cast<OutputEffectInstance*>(it->first->getOutput())->getVideoEngine()->abortRendering();
+            dynamic_cast<OutputEffectInstance*>(it->first->getOutput())->getVideoEngine()->abortRendering(true);
         }
     }
 }

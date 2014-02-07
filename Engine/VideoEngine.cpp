@@ -97,7 +97,7 @@ void VideoEngine::quitEngineThread(){
         isThreadStarted = _threadStarted;
     }
     if(isThreadStarted){
-        abortRendering();
+        abortRendering(true);
         {
             QMutexLocker locker(&_mustQuitMutex);
             _mustQuit = true;
@@ -667,7 +667,7 @@ void VideoEngine::onProgressUpdate(int /*i*/){
 }
 
 
-void VideoEngine::abortRendering(){
+void VideoEngine::abortRendering(bool blocking){
     {
         if(!isWorking()){
             return;
@@ -689,7 +689,7 @@ void VideoEngine::abortRendering(){
         _gettingFrameRange = false;
         _getFrameRangeCond.wakeOne();
         
-        if (QThread::currentThread() != this && isRunning()) {
+        if (QThread::currentThread() != this && isRunning()  && blocking) {
             while (_abortRequested > 0) {
                 _abortedRequestedCondition.wait(&_abortedRequestedMutex);
             }
@@ -721,7 +721,7 @@ void VideoEngine::updateTreeAndContinueRender(bool initViewer){
     if(isPlaybackRunning){
         int count = _currentRunArgs._frameRequestsCount == - 1 ? -1 :
                                                                  _currentRunArgs._frameRequestsCount - _currentRunArgs._frameRequestIndex ;
-        abortRendering();
+        abortRendering(true);
         render(count,true,true,initViewer,_currentRunArgs._forward,false,false);
     }else{
         render(1,false,true,initViewer,_currentRunArgs._forward,true,false);

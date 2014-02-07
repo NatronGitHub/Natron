@@ -629,7 +629,7 @@ void ViewerInstance::setDisplayChannels(DisplayChannels channels) {
 void ViewerInstance::disconnectViewer()
 {
     if (getVideoEngine()->isWorking()) {
-        getVideoEngine()->abortRendering(); // aborting current work
+        getVideoEngine()->abortRendering(false); // aborting current work
     }
     //_lastRenderedImage.reset(); // if you uncomment this, _lastRenderedImage is not set back when you reconnect the viewer immediately after disconnecting
     emit viewerDisconnected();
