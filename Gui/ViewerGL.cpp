@@ -1050,11 +1050,12 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
 {
     assert(QGLContext::currentContext() == context());
     QMutexLocker locker(&_imp->textureMutex);
-    GLint currentBoundPBO;
+    GLint currentBoundPBO = 0;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
+	checkGLErrors();
     if (currentBoundPBO != 0) {
         cout << "(ViewerGL::allocateAndMapPBO): Another PBO is currently mapped, glMap failed." << endl;
-        return;
+      //  return;
     }
     
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, getPboID(pboIndex));

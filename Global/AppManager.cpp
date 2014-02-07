@@ -663,7 +663,6 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
             QString rootPath = roots[i].absolutePath();
 			rootPath = rootPath.remove(QChar('\\'));
 			rootPath = rootPath.remove(QChar('/'));
-			std::cout << rootPath.toStdString() << " " << pathCpy.toStdString() << std::endl;
             if (pathCpy.startsWith(rootPath)) {
                 root = rootPath;
                 QString rootToPrepend("_ROOT_");
