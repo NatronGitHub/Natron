@@ -9,6 +9,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 INCLUDEPATH += google-test/include
 INCLUDEPATH += google-test
 
+QMAKE_CLEAN += ofxTestLog.txt test_dot_generator0.jpg
+
 *g++* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
   QMAKE_CXXFLAGS_WARN_ON += -Wextra
