@@ -126,16 +126,15 @@ int Project::lastFrame() const {
 
 
 
-int Project::tryAddProjectFormat(const Format& f){
-    getApp()->lockProject();
+int Project::tryAddProjectFormat(const Format& f)
+{
+    QMutexLocker pl(&getApp()->projectMutex());
     
     if(f.left() >= f.right() || f.bottom() >= f.top()){
-        getApp()->unlockProject();
         return -1;
     }
     for (U32 i = 0; i < _imp->availableFormats.size(); ++i) {
         if(f == _imp->availableFormats[i]){
-            getApp()->unlockProject();
             return i;
         }
     }
@@ -152,7 +151,6 @@ int Project::tryAddProjectFormat(const Format& f){
     entries.push_back(formatStr.toStdString());
     _imp->availableFormats.push_back(f);
     _imp->formatKnob->populate(entries);
-    getApp()->unlockProject();
     return _imp->availableFormats.size() - 1;
 }
 
@@ -251,10 +249,11 @@ void Project::setLastTimelineSeekCaller(Natron::OutputEffectInstance* output){
 void Project::onTimeChanged(SequenceTime time,int reason){
     std::vector<ViewerInstance*> viewers;
     
-    getApp()->lockProject();
-    beginProjectWideValueChanges(Natron::TIME_CHANGED,this);
-    getApp()->unlockProject();
-    
+    {
+        QMutexLocker pl(&getApp()->projectMutex());
+        beginProjectWideValueChanges(Natron::TIME_CHANGED,this);
+    }
+
     refreshAfterTimeChange(time); //refresh project knobs
     for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
         //refresh all knobs
@@ -268,10 +267,10 @@ void Project::onTimeChanged(SequenceTime time,int reason){
 
     }
     
-    getApp()->lockProject();
-    endProjectWideValueChanges(this);
-    getApp()->unlockProject();
-
+    {
+        QMutexLocker pl(&getApp()->projectMutex());
+        endProjectWideValueChanges(this);
+    }
     
     for(U32 i = 0; i < viewers.size();++i){
         if(viewers[i] != _imp->lastTimelineSeekCaller || reason == USER_SEEK){

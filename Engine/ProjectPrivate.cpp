@@ -45,11 +45,12 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
 }
 
 
-void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
-    
-    project->getApp()->lockProject();
-    project->beginProjectWideValueChanges(Natron::OTHER_REASON,project);
-    project->getApp()->unlockProject();
+void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj)
+{
+    {
+        QMutexLocker pl(&project->getApp()->projectMutex());
+        project->beginProjectWideValueChanges(Natron::OTHER_REASON,project);
+    }
 
     /*1st OFF RESTORE THE PROJECT KNOBS*/
     
@@ -165,9 +166,10 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
     }
     
-    project->getApp()->lockProject();
-    project->endProjectWideValueChanges(project);
-    project->getApp()->unlockProject();
+    {
+        QMutexLocker pl(&project->getApp()->projectMutex());
+        project->endProjectWideValueChanges(project);
+    }
 }
 
 } // namespace Natron

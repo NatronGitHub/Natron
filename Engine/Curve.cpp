@@ -167,32 +167,31 @@ bool Curve::addKeyFrame(KeyFrame key){
     
     QMutexLocker l(&_imp->_lock);
     
-    ///lock the project if it is saving
-    _imp->owner->getHolder()->getApp()->lockProject();
-    
+    {
+        ///lock the project if it is saving
+        QMutexLocker pl(&_imp->owner->getHolder()->getApp()->projectMutex());
 
-    if(_imp->mustSetCurveType) {
-        if(_imp->owner->typeName() == Int_Knob::typeNameStatic() ||
-           _imp->owner->typeName() == Choice_Knob::typeNameStatic()){
-            _imp->curveType = CurvePrivate::INT_CURVE;
-        }else if(_imp->owner->typeName() == String_Knob::typeNameStatic()){
-            _imp->curveType = CurvePrivate::STRING_CURVE;
-        }else if(_imp->owner->typeName() == Bool_Knob::typeNameStatic()){
-            _imp->curveType = CurvePrivate::BOOL_CURVE;
-        }else{
-            _imp->curveType = CurvePrivate::DOUBLE_CURVE;
+
+        if(_imp->mustSetCurveType) {
+            if(_imp->owner->typeName() == Int_Knob::typeNameStatic() ||
+               _imp->owner->typeName() == Choice_Knob::typeNameStatic()){
+                _imp->curveType = CurvePrivate::INT_CURVE;
+            }else if(_imp->owner->typeName() == String_Knob::typeNameStatic()){
+                _imp->curveType = CurvePrivate::STRING_CURVE;
+            }else if(_imp->owner->typeName() == Bool_Knob::typeNameStatic()){
+                _imp->curveType = CurvePrivate::BOOL_CURVE;
+            }else{
+                _imp->curveType = CurvePrivate::DOUBLE_CURVE;
+            }
+            _imp->mustSetCurveType = false;
         }
-        _imp->mustSetCurveType = false;
+
+        if (_imp->curveType == CurvePrivate::BOOL_CURVE || _imp->curveType == CurvePrivate::STRING_CURVE) {
+            key.setInterpolation(Natron::KEYFRAME_CONSTANT);
+        }
+        
+        std::pair<KeyFrameSet::iterator,bool> it = addKeyFrameNoUpdate(key);
     }
-    
-    if (_imp->curveType == CurvePrivate::BOOL_CURVE || _imp->curveType == CurvePrivate::STRING_CURVE) {
-        key.setInterpolation(Natron::KEYFRAME_CONSTANT);
-    }
-    
-      std::pair<KeyFrameSet::iterator,bool> it = addKeyFrameNoUpdate(key);
-    
-    ///unlock it
-    _imp->owner->getHolder()->getApp()->unlockProject();
     
     evaluateCurveChanged(KEYFRAME_CHANGED,it.first);
     return it.second;

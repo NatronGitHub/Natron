@@ -962,18 +962,19 @@ ConnectCommand::ConnectCommand(NodeGraph* graph,Edge* edge,NodeGui *oldSrc,NodeG
     
 }
 
-void ConnectCommand::undo(){
-    _graph->getGui()->getApp()->lockProject();
-    _edge->setSource(_oldSrc);
-    
-    if(_oldSrc){
-        _graph->getGui()->getApp()->connect(_edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode());
+void ConnectCommand::undo()
+{
+    {
+        QMutexLocker pl(&_graph->getGui()->getApp()->projectMutex());
+        _edge->setSource(_oldSrc);
+
+        if(_oldSrc){
+            _graph->getGui()->getApp()->connect(_edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode());
+        }
+        if(_newSrc){
+            _graph->getGui()->getApp()->disconnect(_newSrc->getNode(), _edge->getDest()->getNode());
+        }
     }
-    if(_newSrc){
-        _graph->getGui()->getApp()->disconnect(_newSrc->getNode(), _edge->getDest()->getNode());
-    }
-    
-    _graph->getGui()->getApp()->unlockProject();
     
     if(_oldSrc){
         setText(QObject::tr("Connect %1 to %2")
@@ -990,39 +991,44 @@ void ConnectCommand::undo(){
         (*it)->updateTreeAndRender();
     }    
 }
-void ConnectCommand::redo(){
-    _graph->getGui()->getApp()->lockProject();
-    NodeGui* dst = _edge->getDest();
-    
-    InspectorNode* inspector = dynamic_cast<InspectorNode*>(dst->getNode());
-    if(inspector){
-        if(!_newSrc){
-            inspector->disconnectInput(_edge->getInputNumber());
-        }else{
-            if(inspector->connectInput(_newSrc->getNode(), _edge->getInputNumber(),false)){
-                _edge->setSource(_newSrc);
-                _newSrc->getNode()->connectOutput(inspector);
-                
+void ConnectCommand::redo()
+{
+    NodeGui* dst;
+    {
+#pragma message WARN("PLEASE comment: why lock the project mutex here?")
+        QMutexLocker pl(&_graph->getGui()->getApp()->projectMutex());
+
+        dst = _edge->getDest();
+
+        InspectorNode* inspector = dynamic_cast<InspectorNode*>(dst->getNode());
+        if (inspector) {
+            if (!_newSrc) {
+                inspector->disconnectInput(_edge->getInputNumber());
+            } else {
+                if (inspector->connectInput(_newSrc->getNode(), _edge->getInputNumber(),false)) {
+                    _edge->setSource(_newSrc);
+                    _newSrc->getNode()->connectOutput(inspector);
+
+                }
+            }
+        } else {
+            _edge->setSource(_newSrc);
+            if (_oldSrc) {
+                if (!_graph->getGui()->getApp()->disconnect(_oldSrc->getNode(), dst->getNode())) {
+                    cout << "Failed to disconnect (input) " << _oldSrc->getNode()->getName()
+                    << " to (output) " << dst->getNode()->getName() << endl;
+                }
+            }
+            if (_newSrc) {
+                if(!_graph->getGui()->getApp()->connect(_edge->getInputNumber(), _newSrc->getNode(), dst->getNode())){
+                    cout << "Failed to connect (input) " << _newSrc->getNode()->getName()
+                    << " to (output) " << dst->getNode()->getName() << endl;
+                }
             }
         }
-    }else{
-        _edge->setSource(_newSrc);
-        if(_oldSrc){
-            if(!_graph->getGui()->getApp()->disconnect(_oldSrc->getNode(), dst->getNode())){
-                cout << "Failed to disconnect (input) " << _oldSrc->getNode()->getName()
-                     << " to (output) " << dst->getNode()->getName() << endl;
-            }
-        }
-        if(_newSrc){
-            if(!_graph->getGui()->getApp()->connect(_edge->getInputNumber(), _newSrc->getNode(), dst->getNode())){
-                cout << "Failed to connect (input) " << _newSrc->getNode()->getName()
-                     << " to (output) " << dst->getNode()->getName() << endl;
-            }
-        }
+        
     }
-    
-    _graph->getGui()->getApp()->unlockProject();
-    
+    assert(dst);
     dst->refreshEdges();
     
     if(_newSrc){

@@ -198,18 +198,15 @@ Knob::ValueChangedReturnCode Knob::setValue(const Variant& v, int dimension, Nat
     ///if the knob is slaved to another knob,return, because we don't want the
     ///gui to be unsynchronized with what lies internally.
     if (!isSlave(dimension)) {
-        ///locking project if it is saving
-        if(_imp->_holder->getApp()){
-            _imp->_holder->getApp()->lockProject();
+        if (!_imp->_holder->getApp()) {
+            _imp->_values[dimension] = v;
+        } else {
+#pragma message WARN("PLEASE comment: why lock the project mutex here? give the exact reason.")
+            ///locking project if it is saving
+            QMutexLocker pl(&_imp->_holder->getApp()->projectMutex());
+            _imp->_values[dimension] = v;
         }
-        
-        _imp->_values[dimension] = v;
-        
-        ///unlocking project if it is saving
-        if(_imp->_holder->getApp()){
-            _imp->_holder->getApp()->unlockProject();
-        }
-        
+
         ///Add automatically a new keyframe
         if(getAnimationLevel(dimension) != Natron::NO_ANIMATION && //< if the knob is animated
            _imp->_holder->getApp() && //< the app pointer is not NULL
