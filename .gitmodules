@@ -7,3 +7,6 @@
 [submodule "Tests/google-test"]
 	path = Tests/google-test
 	url = https://github.com/MrKepzie/google-test.git
+[submodule "Tests/google-mock"]
+	path = Tests/google-mock
+	url = https://github.com/MrKepzie/google-mock.git

@@ -47,6 +47,10 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/KnobTypes.h"
 
+#ifdef NATRON_ENABLE_MOCK
+#include "Tests/OfxEffectInstance_Mock.h"
+#endif
+
 //our version of parametric param suite support
 #include "ofxhParametricParam.h"
 
@@ -269,7 +273,11 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
 
     getPluginAndContextByID(name,&plugin,context);
 
+#ifdef NATRON_ENABLE_MOCK
+    OfxEffectInstance* hostSideEffect = new OfxEffectInstance_Mock(node);
+#else
     OfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
+#endif
     hostSideEffect->createOfxImageEffectInstance(plugin, context);
     return hostSideEffect;
 }

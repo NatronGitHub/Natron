@@ -276,13 +276,13 @@ AppInstance::AppInstance(AppInstance::AppType appType,int appID,const QString& p
   , _isSavingProject(false)
   , _appID(appID)
   , _nodeMapping()
-  , _isBackground(appType != APP_GUI)
+  , _appType(appType)
   , _isQuitting(false)
 {
     appPTR->registerAppInstance(this);
     appPTR->setAsTopLevelInstance(appID);
 
-    if(!_isBackground){
+    if(!isBackground()){
         appPTR->setLoadingStatus("Creating user interface...");
         _gui = new Gui(this);
     }
@@ -296,7 +296,7 @@ AppInstance::AppInstance(AppInstance::AppType appType,int appID,const QString& p
     _currentProject->notifyProjectEndKnobsValuesChanged();
 
     
-    if(!_isBackground){
+    if(!isBackground()){
         _gui->createGui();
         const std::vector<PluginToolButton*>& _toolButtons = appPTR->getPluginsToolButtons();
         for (U32 i = 0; i < _toolButtons.size(); ++i) {
@@ -419,7 +419,7 @@ Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVers
     QObject::connect(node, SIGNAL(activated()), this, SLOT(triggerAutoSave()));
 
     NodeGui* nodegui = 0;
-    if(!_isBackground){
+    if(!isBackground()){
         nodegui = _gui->createNodeGUI(node);
         assert(nodegui);
         _nodeMapping.insert(make_pair(node,nodegui));
@@ -432,17 +432,17 @@ Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVers
         _currentProject->initNodeCountersAndSetName(node);
     }
 
-    if(!_isBackground){
+    if(!isBackground()){
         assert(nodegui);
         _gui->addNodeGuiToCurveEditor(nodegui);
     }
 
-    if(node->pluginID() == "Viewer" && !_isBackground){
+    if(node->pluginID() == "Viewer" && !isBackground()){
         _gui->createViewerGui(node);
     }
     
 
-    if(!_isBackground && !requestedByLoad){
+    if(!isBackground() && !requestedByLoad){
         if(_gui->getSelectedNode()){
             Node* selected = _gui->getSelectedNode()->getNode();
             autoConnect(selected, node);
@@ -465,6 +465,11 @@ void AppInstance::autoConnect(Node* target,Node* created){
     _gui->autoConnect(getNodeGui(target),getNodeGui(created));
 }
 
+int AppInstance::getAppID() const {return _appID;}
+
+bool AppInstance::isBackground() const {return _appType != APP_GUI;}
+
+bool AppInstance::isMock() const { return _appType == APP_BACKGROUND_MOCK; }
 
 const std::vector<NodeGui*>& AppInstance::getVisibleNodes() const{
     assert(_gui->_nodeGraphArea);
@@ -473,7 +478,7 @@ const std::vector<NodeGui*>& AppInstance::getVisibleNodes() const{
 }
 
 bool AppInstance::shouldRefreshPreview() const {
-    return !_isBackground && !_gui->isUserScrubbingTimeline();
+    return !isBackground() && !_gui->isUserScrubbingTimeline();
 }
 
 void AppInstance::lockProject(){
@@ -504,7 +509,7 @@ bool AppInstance::loadProject(const QString& path,const QString& name){
     QMutexLocker l(&_projectLock);
     _isLoadingProject = true;
     
-    if(!_isBackground){
+    if(!isBackground()){
         _gui->_nodeGraphArea->deselect();
     }
     try {
@@ -512,14 +517,14 @@ bool AppInstance::loadProject(const QString& path,const QString& name){
         loadProjectInternal(path,name);
     } catch (const std::exception& e) {
         Natron::errorDialog("Project loader", std::string("Error while loading project") + ": " + e.what());
-        if(!_isBackground)
+        if(!isBackground())
             createNode("Viewer");
         _isLoadingProject = false;
         l.relock();
         return false;
     } catch (...) {
         Natron::errorDialog("Project loader", std::string("Error while loading project"));
-        if(!_isBackground)
+        if(!isBackground())
             createNode("Viewer");
         _isLoadingProject = false;
         l.relock();
@@ -535,7 +540,7 @@ bool AppInstance::loadProject(const QString& path,const QString& name){
     _currentProject->setProjectAgeSinceLastSave(time);
     _currentProject->setProjectAgeSinceLastAutosaveSave(time);
     
-    if(!_isBackground){
+    if(!isBackground()){
         QString text(QCoreApplication::applicationName() + " - ");
         text.append(name);
         _gui->setWindowTitle(text);
@@ -567,7 +572,7 @@ void AppInstance::loadProjectInternal(const QString& path,const QString& name){
         ProjectSerialization projectSerializationObj;
         iArchive >> boost::serialization::make_nvp("Project",projectSerializationObj);
         _currentProject->load(projectSerializationObj);
-        if(!bgProject && !_isBackground){
+        if(!bgProject && !isBackground()){
             ProjectGuiSerialization projectGuiSerializationObj;
             iArchive >> boost::serialization::make_nvp("ProjectGui",projectGuiSerializationObj);
             _gui->_projectGui->load(projectGuiSerializationObj);
@@ -692,12 +697,12 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
         throw std::runtime_error("Failed to open file " + filePath.toStdString());
     }
     boost::archive::xml_oarchive oArchive(ofile);
-    bool bgProject = _isBackground;
+    bool bgProject = isBackground();
     oArchive << boost::serialization::make_nvp("Background_project",bgProject);
     ProjectSerialization projectSerializationObj;
     _currentProject->save(&projectSerializationObj);
     oArchive << boost::serialization::make_nvp("Project",projectSerializationObj);
-    if(!_isBackground){
+    if(!isBackground()){
         ProjectGuiSerialization projectGuiSerializationObj;
         _gui->_projectGui->save(&projectGuiSerializationObj);
         oArchive << boost::serialization::make_nvp("ProjectGui",projectGuiSerializationObj);
@@ -715,7 +720,7 @@ void AppInstance::saveProjectInternal(const QString& path,const QString& filenam
 
 void AppInstance::autoSave(){
     
-    if (_isBackground) {
+    if (isBackground()) {
         return;
     }
 
@@ -723,7 +728,7 @@ void AppInstance::autoSave(){
 }
 void AppInstance::triggerAutoSave(){
     
-    if (_isBackground) {
+    if (isBackground()) {
         return;
     }
     
@@ -1045,7 +1050,7 @@ void AppInstance::clearNodes(){
     QMutexLocker l(&_projectLock);
     _nodeMapping.clear();
     _currentProject->clearNodes();
-    if(!_isBackground){
+    if(!isBackground()){
         _gui->_nodeGraphArea->clearActiveAndTrashNodes();
     }
 }
@@ -1850,7 +1855,7 @@ void AppInstance::startWritersRendering(const QStringList& writers){
 
     }
     
-    if(_isBackground){
+    if(isBackground()){
         //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
         QtConcurrent::blockingMap(renderers,boost::bind(&AppInstance::startRenderingFullSequence,this,_1));
     }else{
@@ -1861,7 +1866,7 @@ void AppInstance::startWritersRendering(const QStringList& writers){
 }
 
 void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer){
-    if(!_isBackground){
+    if(!isBackground()){
 
         /*Start the renderer in a background process.*/
         autoSave(); //< takes a snapshot of the graph at this time, this will be the version loaded by the process

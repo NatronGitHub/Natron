@@ -31,6 +31,7 @@
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
 
+
 #include <ofxhPluginCache.h>
 #include <ofxhPluginAPICache.h>
 #include <ofxhImageEffect.h>
@@ -63,7 +64,6 @@ OfxEffectInstance::OfxEffectInstance(Natron::Node* node)
     , _isOutput(false)
     , _penDown(false)
     , _overlayInteract(0)
-    , _lastKnobLayoutWithNoNewLine(0)
     , _initialized(false)
     , _renderButton()
 {

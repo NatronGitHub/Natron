@@ -723,6 +723,10 @@ void CurveWidgetPrivate::drawScale()
     QPointF btmLeft = _widget->toScaleCoordinates(0,_widget->height()-1);
     QPointF topRight = _widget->toScaleCoordinates(_widget->width()-1, 0);
     
+    ///don't attempt to draw a scale on a widget with an invalid height
+    if (_widget->height() <= 1) {
+        return;
+    }
     
     QFontMetrics fontM(*_font);
     const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.

@@ -8,6 +8,11 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
 INCLUDEPATH += google-test/include
 INCLUDEPATH += google-test
+INCLUDEPATH += google-mock/include
+INCLUDEPATH += google-mock
+
+
+DEFINES += NATRON_ENABLE_MOCK
 
 *g++* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
@@ -98,6 +103,7 @@ DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SU
 SOURCES += \
     google-test/src/gtest-all.cc \
     google-test/src/gtest_main.cc \
+    google-mock/src/gmock-all.cc \
     ../Engine/ChannelSet.cpp \
     ../Engine/Curve.cpp \
     ../Engine/CurveSerialization.cpp \
@@ -189,7 +195,8 @@ SOURCES += \
     ../libs/OpenFX_extensions/ofxhParametricParam.cpp \
     BaseTest.cpp \
     Hash64_Test.cpp \
-    Image_Test.cpp
+    Image_Test.cpp \
+    OfxEffectInstance_Mock.cpp
 
 HEADERS += \
     ../Engine/Cache.h \
@@ -323,7 +330,8 @@ HEADERS += \
     ../libs/OpenFX_extensions/tuttle/ofxReadWrite.h \
     ../libs/OpenFX_extensions/ofxhParametricParam.h \
     ../libs/OpenFX/include/natron/IOExtensions.h \
-    BaseTest.h
+    BaseTest.h \
+    OfxEffectInstance_Mock.h
 
 
 INCLUDEPATH += ../

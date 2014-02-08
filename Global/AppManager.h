@@ -75,19 +75,24 @@ public:
     
     enum AppType {
         APP_BACKGROUND = 0, //< a background AppInstance which will not do anything but instantiate the class making it ready for use.
-                            //This is used by the unit tests.
-        APP_BACKGROUND_AUTO_RUN = 1, //< a background AppInstance that will launch a project and render it. If projectName is empty or
+        
+        APP_BACKGROUND_MOCK, //< This is used by the unit tests to interface Natron with mock objects..
+    
+        APP_BACKGROUND_AUTO_RUN, //< a background AppInstance that will launch a project and render it. If projectName is empty or
                                      //writers is empty, it doesn't make sense to call AppInstance with this parameter.
-        APP_GUI = 2, //< a GUI AppInstance, the end-user can interact with it.
+        
+        APP_GUI //< a GUI AppInstance, the end-user can interact with it.
     };
     
     AppInstance(AppInstance::AppType appType,int appID,const QString& projectName = QString(),const QStringList& writers = QStringList());
 
     ~AppInstance();
+    
+    bool isMock() const;
 
-    int getAppID() const {return _appID;}
+    int getAppID() const;
 
-    bool isBackground() const {return _isBackground;}
+    bool isBackground() const;
 
     /** @brief Create a new node  in the node graph.
       * The name passed in parameter must match a valid node name,
@@ -266,7 +271,7 @@ private:
 
     std::map<Natron::Node*,NodeGui*> _nodeMapping;
 
-    bool _isBackground;
+    AppType _appType;
 
     QMutex _isQuittingMutex;
     bool _isQuitting;
