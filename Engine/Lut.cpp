@@ -198,7 +198,7 @@ namespace Natron {
             for (int i = 0; i < 0x10000; ++i) {
                 float inp = index_to_float((unsigned short)i);
                 float f = _toFunc(inp);
-                toFunc_hipart_to_uint8xx[i] = Color::floatToInt<65536>(f);
+                toFunc_hipart_to_uint8xx[i] = Color::floatToInt<0xff01>(f);
             }
             // fill fromFunc_uint8_to_float, and make sure that
             // the entries of toFunc_hipart_to_uint8xx corresponding
@@ -209,7 +209,7 @@ namespace Natron {
                 float f = _fromFunc(Color::intToFloat<256>(b));
                 fromFunc_uint8_to_float[b] = f;
                 int i = hipart(f);
-                toFunc_hipart_to_uint8xx[i] = Color::charToUint16(b);
+                toFunc_hipart_to_uint8xx[i] = Color::charToUint8xx(b);
             }
             
         }
