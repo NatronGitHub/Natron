@@ -168,9 +168,7 @@ public:
 
     void endProjectWideValueChanges(KnobHolder* caller);
 
-    void lockProject();
-
-    void unlockProject();
+    QMutex& projectMutex() const WARN_UNUSED_RETURN { return _projectLock; }
 
 private:
 
@@ -295,7 +293,7 @@ private:
 
     };
     QMutex _activeRenderersMutex;
-    std::vector<ActiveBackgroundRender*> _activeRenderers;
+    std::list<ActiveBackgroundRender*> _activeRenderers;
 
 
 };

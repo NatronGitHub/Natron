@@ -479,15 +479,6 @@ bool AppInstance::shouldRefreshPreview() const {
     return !isBackground() && !_gui->isUserScrubbingTimeline();
 }
 
-void AppInstance::lockProject(){
-    _projectLock.lock();
-}
-
-void AppInstance::unlockProject(){
-    _projectLock.unlock();
-}
-
-
 void AppInstance::getActiveNodes(std::vector<Natron::Node*>* activeNodes) const{
     
     QMutexLocker l(&_projectLock);
@@ -1583,8 +1574,8 @@ void AppManager::setAsTopLevelInstance(int appID){
     }
 }
 
-void AppInstance::setOrAddProjectFormat(const Format& frmt,bool skipAdd){
-    
+void AppInstance::setOrAddProjectFormat(const Format& frmt,bool skipAdd)
+{
     {
         QMutexLocker l(&_isQuittingMutex);
         if(_isQuitting){
@@ -1592,38 +1583,36 @@ void AppInstance::setOrAddProjectFormat(const Format& frmt,bool skipAdd){
         }
     }
     
-    if(!_currentProject){
+    if (!_currentProject) {
         return;
     }
     
-    _projectLock.lock();
+    QMutexLocker pl(&_projectLock);
     
-    if(_currentProject->shouldAutoSetProjectFormat()){
+    if (_currentProject->shouldAutoSetProjectFormat()) {
         Format dispW;
         _currentProject->setAutoSetProjectFormat(false);
         dispW = frmt;
         
         Format* df = appPTR->findExistingFormat(dispW.width(), dispW.height(),dispW.getPixelAspect());
-        if(df){
+        if (df) {
             dispW.setName(df->getName());
-            _projectLock.unlock(); //< unlock because the following functions assume the lock isn't locked.
+            pl.unlock(); //< unlock because the following functions assume the lock isn't locked.
             _currentProject->setProjectDefaultFormat(dispW);
             
             
-        }else{
-            _projectLock.unlock();
+        } else {
+            pl.unlock();
             _currentProject->setProjectDefaultFormat(dispW);
             
         }
 
-    }else if(!skipAdd){
+    } else if (!skipAdd) {
         Format dispW;
         dispW = frmt;
-        _projectLock.unlock();
+        pl.unlock();
         _currentProject->tryAddProjectFormat(dispW);
         
-    }else{
-        _projectLock.unlock();
     }
 }
 
@@ -1879,22 +1868,20 @@ void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* write
             Natron::errorDialog(writer->getName(), std::string("Error while starting rendering"));
             delete newProcess;
         }
-    }else{
-        _activeRenderersMutex.lock();
-        ActiveBackgroundRender* backgroundRender = new ActiveBackgroundRender(writer);
-        _activeRenderers.push_back(backgroundRender);
-        _activeRenderersMutex.unlock();
+    } else {
+        ActiveBackgroundRender* backgroundRender;
+        {
+            QMutexLocker l(&_activeRenderersMutex);
+            backgroundRender = new ActiveBackgroundRender(writer);
+            _activeRenderers.push_back(backgroundRender);
+        }
         backgroundRender->blockingRender(); //< doesn't return before rendering is finished
         
         //remove the renderer from the list
-        _activeRenderersMutex.lock();
-        for (U32 i = 0; i < _activeRenderers.size(); ++i) {
-            if (_activeRenderers[i] == backgroundRender) {
-                _activeRenderers.erase(_activeRenderers.begin()+i);
-                break;
-            }
+        {
+            QMutexLocker l(&_activeRenderersMutex);
+            _activeRenderers.remove(backgroundRender);
         }
-        _activeRenderersMutex.unlock();
     }
 }
 
@@ -1926,9 +1913,9 @@ void AppInstance::ActiveBackgroundRender::notifyFinished(){
 }
 
 void AppInstance::notifyRenderFinished(Natron::OutputEffectInstance* writer){
-    for (U32 i = 0; i < _activeRenderers.size(); ++i) {
-        if(_activeRenderers[i]->getWriter() == writer){
-            _activeRenderers[i]->notifyFinished();
+    for (std::list<ActiveBackgroundRender*>::iterator it = _activeRenderers.begin(); it != _activeRenderers.end(); ++it) {
+        if ((*it)->getWriter() == writer) {
+            (*it)->notifyFinished();
         }
     }
 }
