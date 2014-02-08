@@ -550,12 +550,6 @@ boost::shared_ptr<Image> Node::getImageBeingRendered(SequenceTime time,int view)
     return boost::shared_ptr<Image>();
 }
 
-static float clamp(float v, float min = 0.f, float max= 1.f){
-    if(v > max) v = max;
-    if(v < min) v = min;
-    return v;
-}
-
 void Node::addImageBeingRendered(boost::shared_ptr<Image> image,SequenceTime time,int view )
 {
     /*before rendering we add to the _imp->imagesBeingRendered member the image*/
@@ -648,10 +642,10 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
         for(int j = 0;j < w;++j) {
             double x = (double)j/xZoomFactor;
             int nearestX = (int)(x+0.5);
-            float r = clamp(Natron::Color::to_func_srgb(src_pixels[nearestX*4]));
-            float g = clamp(Natron::Color::to_func_srgb(src_pixels[nearestX*4+1]));
-            float b = clamp(Natron::Color::to_func_srgb(src_pixels[nearestX*4+2]));
-            dst_pixels[j] = qRgba(r*255, g*255, b*255, 255);
+            int r = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4]));
+            int g = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4+1]));
+            int b = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4+2]));
+            dst_pixels[j] = qRgba(r, g, b, 255);
 
         }
     }

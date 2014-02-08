@@ -460,16 +460,16 @@ void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> 
                     
                     if (!_colorSpace) {
                         
-                        dst_pixels[dstIndex] = toBGRA(Color::clamp((int)(r * 256), 0, 255),
-                                               Color::clamp((int)(g * 256), 0, 255),
-                                               Color::clamp((int)(b * 256), 0, 255),
-                                               255);
+                        dst_pixels[dstIndex] = toBGRA(Color::floatToInt<256>(r),
+                                                      Color::floatToInt<256>(g),
+                                                      Color::floatToInt<256>(b),
+                                                      255);
                         
                     } else {
-                        error_r = (error_r&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(r,0.,1.));
-                        error_g = (error_g&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(g,0.,1.));
-                        error_b = (error_b&0xff) + _colorSpace->toColorSpaceShortFromLinearFloatFast(Natron::Color::clamp(b,0.,1.));
-                        
+                        error_r = (error_r&0xff) + _colorSpace->toColorSpaceUint8xxFromLinearFloatFast(r);
+                        error_g = (error_g&0xff) + _colorSpace->toColorSpaceUint8xxFromLinearFloatFast(g);
+                        error_b = (error_b&0xff) + _colorSpace->toColorSpaceUint8xxFromLinearFloatFast(b);
+                        assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
                         dst_pixels[dstIndex] = toBGRA((U8)(error_r >> 8),
                                                (U8)(error_g >> 8),
                                                (U8)(error_b >> 8),
