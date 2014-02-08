@@ -544,6 +544,7 @@ void AppInstance::loadProjectInternal(const QString& path,const QString& name){
     clearNodes();
 
     QString filePath = path+name;
+    qDebug() << "Loading project " << filePath;
     if(!QFile::exists(filePath)){
         throw std::invalid_argument(QString(filePath + " : no such file.").toStdString());
     }
