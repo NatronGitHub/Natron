@@ -14,6 +14,8 @@ INCLUDEPATH += google-mock
 
 DEFINES += NATRON_ENABLE_MOCK
 
+QMAKE_CLEAN += ofxTestLog.txt test_dot_generator0.jpg
+
 *g++* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
   QMAKE_CXXFLAGS_WARN_ON += -Wextra
