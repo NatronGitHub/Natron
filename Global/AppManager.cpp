@@ -469,8 +469,6 @@ int AppInstance::getAppID() const {return _appID;}
 
 bool AppInstance::isBackground() const {return _appType != APP_GUI;}
 
-bool AppInstance::isMock() const { return _appType == APP_BACKGROUND_MOCK; }
-
 const std::vector<NodeGui*>& AppInstance::getVisibleNodes() const{
     assert(_gui->_nodeGraphArea);
     return  _gui->_nodeGraphArea->getAllActiveNodes();

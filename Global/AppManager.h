@@ -75,9 +75,8 @@ public:
     
     enum AppType {
         APP_BACKGROUND = 0, //< a background AppInstance which will not do anything but instantiate the class making it ready for use.
+                            //this is used by the unit tests
         
-        APP_BACKGROUND_MOCK, //< This is used by the unit tests to interface Natron with mock objects..
-    
         APP_BACKGROUND_AUTO_RUN, //< a background AppInstance that will launch a project and render it. If projectName is empty or
                                      //writers is empty, it doesn't make sense to call AppInstance with this parameter.
         
@@ -88,8 +87,6 @@ public:
 
     ~AppInstance();
     
-    bool isMock() const;
-
     int getAppID() const;
 
     bool isBackground() const;
