@@ -62,6 +62,6 @@ TEST(Hash64,GeneralTest) {
     ASSERT_TRUE(hash2.valid());
 
     EXPECT_NE(hash1.value(), hash2.value());
-    EXPECT_NE(hash1 != hash2);
+    EXPECT_NE(hash1, hash2);
 
 }

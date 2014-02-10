@@ -341,7 +341,8 @@ public:
     virtual ~AppManager();
     
     ///called right away after the constructor by main.cpp
-    void load(SplashScreen* splashScreen,const QString& binaryPath);
+    /// @param binaryPath is used to locate auxiliary files, such as the OpenColorIO config files
+    void load(SplashScreen* splashScreen,const QString& binaryPath = "");
     
     bool isLoaded() const;
     
