@@ -15,7 +15,7 @@ before_install:
 
 # Ubuntu 12.04 precise doesn't have a pkg-config file (expat.pc)
 install:
-  - sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libboost-thread-dev libboost-system-dev libexpat1-dev
+  - sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libboost-thread-dev libboost-system-dev libexpat1-dev gdb
   - if [ "$CC" = "gcc" ]; then make -C libs/OpenFX/Examples BITS=64 clean all; make -C libs/OpenFX/Support/Plugins BITS=64 clean all; make -C libs/OpenFX/Support/PropTester BITS=64 clean all; fi
   - if [ "$CC" = "gcc" ]; then rm -rf Tests/Plugins; mkdir -p Tests/Plugins/Examples Tests/Plugins/Support; mv libs/OpenFX/Examples/*/*-64-debug/*.ofx.bundle Tests/Plugins/Examples; mv libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Tests/Plugins/Support; fi
   - 'echo ''boost: LIBS += -lboost_serialization -lboost_thread -lboost_system'' > config.pri'
