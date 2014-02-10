@@ -127,17 +127,30 @@ CONFIG(debug, debug|release){
 
 *clang* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
-  sanitizer{
-    QMAKE_CXXFLAGS += -fsanitize=address -fsanitize-undefined-trap-on-error -fno-omit-frame-pointer -fno-optimize-sibling-calls
-    QMAKE_LFLAGS += -fsanitize=address -g
-  }
-  !sanitizer{
-    QMAKE_CXXFLAGS_RELEASE += -O3
-  }
   QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
   c++11 {
     QMAKE_CXXFLAGS += -std=c++11
   }
+}
+
+# see http://clang.llvm.org/docs/AddressSanitizer.html and http://blog.qt.digia.com/blog/2013/04/17/using-gccs-4-8-0-address-sanitizer-with-qt/
+addresssanitizer {
+  message("Compiling with AddressSanitizer (for gcc >= 4.8 and clang). Set the ASAN_SYMBOLIZER_PATH environment variable to point to the llvm-symbolizer binary, or make sure llvm-symbolizer in in your PATH.")
+  message("see http://clang.llvm.org/docs/AddressSanitizer.html")
+  CONFIG += debug
+  QMAKE_CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
+  QMAKE_CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
+  QMAKE_LFLAGS += -fsanitize=address -g
+}
+
+# see http://clang.llvm.org/docs/ThreadSanitizer.html
+threadsanitizer {
+  message("Compiling with ThreadSanitizer (for clang).")
+  message("see http://clang.llvm.org/docs/ThreadSanitizer.html")
+  CONFIG += debug
+  QMAKE_CXXFLAGS += -fsanitize=thread -O1
+  QMAKE_CFLAGS += -fsanitize=thread -O1
+  QMAKE_LFLAGS += -fsanitize=thread -g
 }
 
 coverage {
