@@ -6,6 +6,8 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
+- kOfxParamStringIsRichTextFormat  is not supported (it should use a QTextEdit and not convert the string to plain text)
+
 - The quit dialog ("do you want to save...") appears behind float panes.
 
 - Tab traversal is completely broken. This is a major GUI bug.
