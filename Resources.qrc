@@ -79,5 +79,6 @@
         <file>Resources/Images/paint.png</file>
         <file>Resources/Images/time_low.png</file>
         <file>Resources/Images/time.png</file>
+        <file>Resources/Images/viewer_roi.png</file>
     </qresource>
 </RCC>

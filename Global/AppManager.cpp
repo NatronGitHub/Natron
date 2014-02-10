@@ -192,6 +192,10 @@ void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
             img.load(NATRON_IMAGES_PATH"refresh.png");
             *pix = QPixmap::fromImage(img).scaled(20,20);
             break;
+        case NATRON_PIXMAP_VIEWER_ROI:
+            img.load(NATRON_IMAGES_PATH"viewer_roi.png");
+            *pix = QPixmap::fromImage(img).scaled(20,20);
+            break;
         case NATRON_PIXMAP_OPEN_FILE:
             img.load(NATRON_IMAGES_PATH"open-file.png");
             *pix = QPixmap::fromImage(img).scaled(15,15);

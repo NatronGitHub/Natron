@@ -115,6 +115,12 @@ _viewerNode(node)
     _clipToProjectFormatButton->setDown(true);
     _firstRowLayout->addWidget(_clipToProjectFormatButton);
     
+    _enableViewerRoI = new Button(_firstSettingsRow);
+    _enableViewerRoI->setCheckable(true);
+    _enableViewerRoI->setChecked(false);
+    _enableViewerRoI->setDown(false);
+    _firstRowLayout->addWidget(_enableViewerRoI);
+    
     _firstRowLayout->addStretch();
     
     /*2nd row of buttons*/
@@ -358,6 +364,7 @@ _viewerNode(node)
     QPixmap pixCenterViewer ;
     QPixmap pixLoopMode;
     QPixmap pixClipToProject ;
+    QPixmap pixViewerRoI;
     
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_FIRST_FRAME,&pixFirst);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS_KEY,&pixPrevKF);
@@ -374,6 +381,7 @@ _viewerNode(node)
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixCenterViewer);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE,&pixLoopMode);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_CLIP_TO_PROJECT,&pixClipToProject);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_ROI,&pixViewerRoI);
     
     firstFrame_Button->setIcon(QIcon(pixFirst));
     previousKeyFrame_Button->setIcon(QIcon(pixPrevKF));
@@ -390,6 +398,7 @@ _viewerNode(node)
     _centerViewerButton->setIcon(QIcon(pixCenterViewer));
     loopMode_Button->setIcon(QIcon(pixLoopMode));
     _clipToProjectFormatButton->setIcon(QIcon(pixClipToProject));
+    _enableViewerRoI->setIcon(QIcon(pixViewerRoI));
     
     
     _centerViewerButton->setToolTip("Scales the image so it doesn't exceed the size of the viewer and centers it."
@@ -400,6 +409,11 @@ _viewerNode(node)
                                            "When off, everything in the union of all nodes "
                                            "region of definition will be displayed.</p>"
                                            "<p><b>Keyboard shortcut: C</b></p>");
+    
+    QKeySequence enableViewerKey(Qt::SHIFT + Qt::Key_W);
+    _enableViewerRoI->setToolTip("<p>When active, enables the region of interest that will limit"
+                                 " the portion of the viewer that is kept updated.</p>"
+                                 "<p><b>Keyboard shortcut:"+ enableViewerKey.toString() + "</b></p>");
     /*=================================================*/
     
     /*frame seeker*/
@@ -454,6 +468,13 @@ _viewerNode(node)
     
     QObject::connect(_viewsComboBox,SIGNAL(currentIndexChanged(int)),this,SLOT(showView(int)));
     
+    QObject::connect(_enableViewerRoI, SIGNAL(clicked(bool)), this, SLOT(onEnableViewerRoIButtonToggle(bool)));
+    
+}
+
+void ViewerTab::onEnableViewerRoIButtonToggle(bool b) {
+    _enableViewerRoI->setDown(b);
+    viewer->setUserRoIEnabled(b);
 }
 
 void ViewerTab::updateViewsMenu(int count){
@@ -607,70 +628,71 @@ ViewerTab::~ViewerTab()
 
 void ViewerTab::keyPressEvent ( QKeyEvent * event ){
 
-    if(event->key() == Qt::Key_Space){
-        if(parentWidget()){
+    if (event->key() == Qt::Key_Space) {
+        if (parentWidget()) {
             QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
             QCoreApplication::postEvent(parentWidget(),ev);
         }
-    }else if(event->key() == Qt::Key_Y){
+    }else if (event->key() == Qt::Key_Y) {
         _viewerChannels->setCurrentIndex(0);
-    }else if(event->key() == Qt::Key_R && event->modifiers() == Qt::ShiftModifier ){
+    }else if (event->key() == Qt::Key_R && event->modifiers() == Qt::ShiftModifier ) {
         _viewerChannels->setCurrentIndex(1);
-    }else if(event->key() == Qt::Key_R && event->modifiers() == Qt::NoModifier){
+    }else if (event->key() == Qt::Key_R && event->modifiers() == Qt::NoModifier) {
         _viewerChannels->setCurrentIndex(2);
-    }else if(event->key() == Qt::Key_G){
+    }else if (event->key() == Qt::Key_G) {
         _viewerChannels->setCurrentIndex(3);
-    }else if(event->key() == Qt::Key_B){
+    }else if (event->key() == Qt::Key_B) {
         _viewerChannels->setCurrentIndex(4);
-    }else if(event->key() == Qt::Key_A){
+    }else if (event->key() == Qt::Key_A) {
         _viewerChannels->setCurrentIndex(5);
-    }else if(event->key() == Qt::Key_J){
+    }else if (event->key() == Qt::Key_J) {
         startBackward(!play_Backward_Button->isDown());
     }
-    else if(event->key() == Qt::Key_Left && !event->modifiers().testFlag(Qt::ShiftModifier)
-                                         && !event->modifiers().testFlag(Qt::ControlModifier)){
+    else if (event->key() == Qt::Key_Left && !event->modifiers().testFlag(Qt::ShiftModifier)
+                                         && !event->modifiers().testFlag(Qt::ControlModifier)) {
         previousFrame();
     }
-    else if(event->key() == Qt::Key_K){
+    else if (event->key() == Qt::Key_K) {
         abortRendering();
     }
-    else if(event->key() == Qt::Key_Right  && !event->modifiers().testFlag(Qt::ShiftModifier)
-                                            && !event->modifiers().testFlag(Qt::ControlModifier)){
+    else if (event->key() == Qt::Key_Right  && !event->modifiers().testFlag(Qt::ShiftModifier)
+                                            && !event->modifiers().testFlag(Qt::ControlModifier)) {
         nextFrame();
     }
-    else if(event->key() == Qt::Key_L){
+    else if (event->key() == Qt::Key_L) {
         startPause(!play_Forward_Button->isDown());
         
-    }else if(event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ShiftModifier)){
+    }else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ShiftModifier)) {
         //prev incr
         previousIncrement();
     }
-    else if(event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ShiftModifier)){
+    else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ShiftModifier)) {
         //next incr
         nextIncrement();
-    }else if(event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)){
+    }else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)) {
         //first frame
         firstFrame();
     }
-    else if(event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)){
+    else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)) {
         //last frame
         lastFrame();
     }
-    else if(event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)
-            && event->modifiers().testFlag(Qt::ShiftModifier)){
+    else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)
+            && event->modifiers().testFlag(Qt::ShiftModifier)) {
         //prev key
     }
-    else if(event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)
-            &&  event->modifiers().testFlag(Qt::ShiftModifier)){
+    else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)
+            &&  event->modifiers().testFlag(Qt::ShiftModifier)) {
         //next key
-    } else if(event->key() == Qt::Key_F){
+    } else if(event->key() == Qt::Key_F) {
         centerViewer();
         
-    }else if(event->key() == Qt::Key_C){
+    } else if(event->key() == Qt::Key_C) {
         onClipToProjectButtonToggle(!_clipToProjectFormatButton->isDown());
-    }
-    else if(event->key() == Qt::Key_U){
+    } else if(event->key() == Qt::Key_U) {
         refresh();
+    } else if(event->key() == Qt::Key_W && event->modifiers().testFlag(Qt::ShiftModifier)) {
+        onEnableViewerRoIButtonToggle(!_enableViewerRoI->isDown());
     }
     
 }

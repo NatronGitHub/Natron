@@ -78,7 +78,6 @@ public:
     
     bool notifyOverlaysFocusLost();
 
-
 public slots:
     
     void startPause(bool);
@@ -112,6 +111,8 @@ public slots:
     void updateViewsMenu(int count);
     
     void showView(int view);
+    
+    void onEnableViewerRoIButtonToggle(bool);
 
 
 private:
@@ -144,6 +145,7 @@ private:
     ComboBox* _zoomCombobox;
     Button* _centerViewerButton;
     Button* _clipToProjectFormatButton;
+    Button* _enableViewerRoI;
 
     /*2nd row*/
     SpinBox* _gainBox;

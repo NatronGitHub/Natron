@@ -57,6 +57,10 @@ GCC_DIAG_ON(unused-parameter);
 #include "Gui/ViewerTab.h"
 #include "Gui/ProjectGui.h"
 
+#define USER_ROI_BORDER_TICK_SIZE 15.f
+#define USER_ROI_CROSS_RADIUS 15.f
+#define USER_ROI_SELECTION_POINT_SIZE 5.f
+
 /*This class is the the core of the viewer : what displays images, overlays, etc...
  Everything related to OpenGL will (almost always) be in this class */
 
@@ -198,9 +202,10 @@ struct ViewerGL::Implementation {
     , textRenderer()
     , userRoI()
     , isUserRoISet(false)
+    , isUserRoIEnabled(false)
     {
     }
-
+    
     std::vector<GLuint> pboIds; /*!< PBO's id's used by the OpenGL context*/
 
     //   GLuint vaoId; /*!< VAO holding the rendering VBOs for texture mapping.*/
@@ -271,6 +276,7 @@ struct ViewerGL::Implementation {
     
     RectI userRoI;
     bool isUserRoISet;
+    bool isUserRoIEnabled;
 };
 
 //static const GLfloat renderingTextureCoordinates[32] = {
@@ -726,11 +732,73 @@ void ViewerGL::drawOverlay()
         glPopAttrib();
         checkGLErrors();
     }
+    
+    if (_imp->isUserRoIEnabled) {
+        drawUserRoI();
+    }
+    
     _imp->viewerTab->drawOverlays();
 
     //reseting color for next pass
     glColor4f(1., 1., 1., 1.);
     checkGLErrors();
+}
+
+void ViewerGL::drawUserRoI() {
+    glColor4f(0.9, 0.9, 0.9, 1.);
+    
+    
+    ///base rect
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(_imp->userRoI.x1, _imp->userRoI.y1); //bottom left
+    glVertex2f(_imp->userRoI.x1, _imp->userRoI.y2); //top left
+    glVertex2f(_imp->userRoI.x2, _imp->userRoI.y2); //top right
+    glVertex2f(_imp->userRoI.x2, _imp->userRoI.y1); //bottom right
+    glVertex2f(_imp->userRoI.x1, _imp->userRoI.y1); //bottom left
+    glEnd();
+    
+    
+    glBegin(GL_LINES);
+    ///border ticks
+    glVertex2f(_imp->userRoI.x1, (_imp->userRoI.y1 + _imp->userRoI.y2) / 2);
+    glVertex2f(_imp->userRoI.x1 - USER_ROI_BORDER_TICK_SIZE / _imp->zoomCtx.zoomFactor, (_imp->userRoI.y1 + _imp->userRoI.y2) / 2);
+    
+    glVertex2f(_imp->userRoI.x2, (_imp->userRoI.y1 + _imp->userRoI.y2) / 2);
+    glVertex2f(_imp->userRoI.x2 + USER_ROI_BORDER_TICK_SIZE / _imp->zoomCtx.zoomFactor, (_imp->userRoI.y1 + _imp->userRoI.y2) / 2);
+    
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2, _imp->userRoI.y2);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2, _imp->userRoI.y2 + USER_ROI_BORDER_TICK_SIZE / _imp->zoomCtx.zoomFactor);
+    
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2, _imp->userRoI.y1);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2, _imp->userRoI.y1 - USER_ROI_BORDER_TICK_SIZE / _imp->zoomCtx.zoomFactor);
+    
+    ///middle cross
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor);
+    
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2  - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2);
+    glEnd();
+    
+    ///draw handles hint for the user
+    glBegin(GL_QUADS);
+    glVertex2f(_imp->userRoI.x1 + (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor)),
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor)));
+    glVertex2f(_imp->userRoI.x1 + (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor)),
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor)));
+    glVertex2f(_imp->userRoI.x1 - (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor)),
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor)));
+    glVertex2f(_imp->userRoI.x1 - (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor)),
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor)));
+    
+
+    glEnd();
+    
+    
 }
 
 void ViewerGL::drawProgressBar()
@@ -1444,6 +1512,7 @@ void ViewerGL::onProjectFormatChanged(const Format& format){
 
     if (!_imp->isUserRoISet) {
         _imp->userRoI = format;
+        _imp->isUserRoISet = true;
     }
 }
 
@@ -1625,3 +1694,7 @@ void ViewerGL::setProjection(double left,double bottom,double zoomFactor) {
     _imp->zoomOrPannedSinceLastFit = true;
 }
 
+void ViewerGL::setUserRoIEnabled(bool b) {
+    _imp->isUserRoIEnabled = b;
+    update();
+}

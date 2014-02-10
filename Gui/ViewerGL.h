@@ -271,6 +271,8 @@ public:
     
     void setProjection(double left,double bottom,double zoomFactor);
     
+    void setUserRoIEnabled(bool b);
+    
 signals:
     /**
      *@brief Signal emitted when the mouse position changed on the viewport.
@@ -395,6 +397,11 @@ private:
      *VideoEngine::drawOverlay()
      **/
     void drawOverlay();
+    
+    /**
+     * @brief Called by drawOverlay to draw the user region of interest.
+     **/
+    void drawUserRoI();
     
     /**
      *@brief Draws the persistent message if it is on.
