@@ -6,6 +6,12 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
+- String_KnobGui: kOfxParamStringIsRichTextFormat  is not supported (it should use a QTextEdit and not convert the string to plain text)
+
+- File_KnobGui: kOfxParamStringIsFilePath should propose all files (*) by default
+
+- String_KnobGui/File_KnobGui: kOfxParamStringIsDirectoryPath is not supported
+
 - The quit dialog ("do you want to save...") appears behind float panes.
 
 - Tab traversal is completely broken. This is a major GUI bug.

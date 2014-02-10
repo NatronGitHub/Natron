@@ -1412,7 +1412,7 @@ void String_KnobGui::createWidget(QGridLayout *layout, int row)
             _lineEdit->setToolTip(toolTip());
         }
         layout->addWidget(_lineEdit, row, 1);
-        QObject::connect(_lineEdit, SIGNAL(textEdited(QString)), this, SLOT(onStringChanged(QString)));
+        QObject::connect(_lineEdit, SIGNAL(editingFinished()), this, SLOT(onLineChanged()));
         
         if (strKnob->isCustomKnob()) {
             _lineEdit->setReadOnly(true);
@@ -1423,7 +1423,7 @@ void String_KnobGui::createWidget(QGridLayout *layout, int row)
             _textEdit->setToolTip(toolTip());
         }
         layout->addWidget(_textEdit, row, 1);
-        QObject::connect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
+        QObject::connect(_textEdit, SIGNAL(editingFinished()), this, SLOT(onTextChanged()));
         if(strKnob->isCustomKnob()) {
             _textEdit->setReadOnly(true);
         }
@@ -1441,9 +1441,9 @@ String_KnobGui::~String_KnobGui()
     }
 }
 
-void String_KnobGui::onStringChanged(const QString &str)
+void String_KnobGui::onLineChanged()
 {
-    pushValueChangedCommand(Variant(str));
+    pushValueChangedCommand(Variant(_lineEdit->text()));
 }
 
 void String_KnobGui::onTextChanged()
