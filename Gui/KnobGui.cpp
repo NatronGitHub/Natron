@@ -553,7 +553,8 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
         const std::vector< boost::shared_ptr<Knob> >& knobs = allActiveNodes[i]->getKnobs();
         
         for (U32 j = 0; j < knobs.size(); ++j) {
-            if(knobs[j]->isEnabled() && !knobs[j]->isSecret()){
+            if(knobs[j]->isEnabled() && !knobs[j]->isSecret() && knobs[j]->typeName() == from->getKnob()->typeName()
+               && knobs[j]->getDimension() == from->getKnob()->getDimension()){
                 QString name(allActiveNodes[i]->getName().c_str());
                 name.append("/");
                 name.append(knobs[j]->getDescription().c_str());

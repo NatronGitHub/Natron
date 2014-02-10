@@ -54,20 +54,30 @@ struct ProjectPrivate {
     QDateTime lastAutoSave; //< the last time since autosave
     
     boost::shared_ptr<Choice_Knob> formatKnob;
+    std::vector<Format> availableFormats;
+    mutable QMutex formatMutex;
+    
     boost::shared_ptr<Button_Knob> addFormatKnob;
+    
     boost::shared_ptr<Int_Knob> viewsCount;
+    mutable QMutex viewsCountMutex;
+    
     boost::shared_ptr<Bool_Knob> previewMode; //< auto or manual
+    mutable QMutex previewModeMutex;
+    
+    mutable QMutex timelineMutex;
     boost::shared_ptr<TimeLine> timeline; // global timeline
     
     std::map<std::string,int> nodeCounters; //< basic counters to instantiate nodes with an index in the node graph
     bool autoSetProjectFormat; 
     std::vector<Natron::Node*> currentNodes;
     
-    std::vector<Format> availableFormats;
     
     Natron::Project* project;
     
     int _knobsAge; //< the age of the knobs in the app. This is updated on each value changed.
+    mutable QMutex knobsAgeMutex;
+    
     Natron::OutputEffectInstance* lastTimelineSeekCaller;
 
     mutable QMutex beginEndMutex; //< protects begin/stack/end value change
@@ -81,6 +91,7 @@ struct ProjectPrivate {
     bool isSignificantChange;
     Knob* lastKnobChanged;
     
+    mutable QMutex isLoadingProjectMutex;
     bool isLoadingProject; //< true when the project is loading
     
     ProjectPrivate(Natron::Project* project);

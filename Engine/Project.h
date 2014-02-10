@@ -137,11 +137,6 @@ public:
     
     void setOrAddProjectFormat(const Format& frmt,bool skipAdd = false);
     
-    void setProjectDefaultFormat(const Format& f);
-    
-    /*Returns the index of the format*/
-    int tryAddProjectFormat(const Format& f);
-    
     bool isAutoPreviewEnabled() const;
     
     void toggleAutoPreview();
@@ -156,6 +151,10 @@ public:
     int firstFrame() const WARN_UNUSED_RETURN;
     
     int lastFrame() const WARN_UNUSED_RETURN;
+    
+    int leftBound() const WARN_UNUSED_RETURN;
+    
+    int rightBound() const WARN_UNUSED_RETURN;
     
     void initNodeCountersAndSetName(Node* n);
     
@@ -200,6 +199,11 @@ signals:
     void projectNameChanged(QString);
     
 private:
+    
+    /*Returns the index of the format*/
+    int tryAddProjectFormat(const Format& f);
+    
+    void setProjectDefaultFormat(const Format& f);
     
     void loadProjectInternal(const QString& path,const QString& name);
     

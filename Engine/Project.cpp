@@ -41,7 +41,10 @@ Project::~Project() {
 }
 
 bool Project::loadProject(const QString& path,const QString& name){
-    _imp->isLoadingProject = true;
+    {
+        QMutexLocker l(&_imp->isLoadingProjectMutex);
+        _imp->isLoadingProject = true;
+    }
 
     try {
         loadProjectInternal(path,name);
@@ -49,16 +52,25 @@ bool Project::loadProject(const QString& path,const QString& name){
         Natron::errorDialog("Project loader", std::string("Error while loading project") + ": " + e.what());
         if(!getApp()->isBackground())
             getApp()->createNode("Viewer");
-        _imp->isLoadingProject = false;
+        {
+            QMutexLocker l(&_imp->isLoadingProjectMutex);
+            _imp->isLoadingProject = false;
+        }
         return false;
     } catch (...) {
         Natron::errorDialog("Project loader", std::string("Error while loading project"));
         if(!getApp()->isBackground())
             getApp()->createNode("Viewer");
-        _imp->isLoadingProject = false;
+        {
+            QMutexLocker l(&_imp->isLoadingProjectMutex);
+            _imp->isLoadingProject = false;
+        }
         return false;
     }
-    _imp->isLoadingProject = false;
+    {
+        QMutexLocker l(&_imp->isLoadingProjectMutex);
+        _imp->isLoadingProject = false;
+    }
     return true;
 }
 
@@ -121,11 +133,12 @@ void Project::loadProjectInternal(const QString& path,const QString& name) {
 }
 
 void Project::saveProject(const QString& path,const QString& name,bool autoSave){
-    QMutexLocker l(&_imp->projectLock);
-
-    if(_imp->isLoadingProject){
-        qDebug() << "Attempting to save wihle project is loading. This is probably a bug.";
-        return;
+    {
+        QMutexLocker l(&_imp->isLoadingProjectMutex);
+        if(_imp->isLoadingProject){
+            qDebug() << "Attempting to save wihle project is loading. This is probably a bug.";
+            return;
+        }
     }
 
     try {
@@ -381,7 +394,7 @@ void Project::evaluate(Knob* /*knob*/,bool isSignificant){
 
 
 const Format& Project::getProjectDefaultFormat() const{
-    QMutexLocker l(&_imp->projectLock);
+    QMutexLocker l(&_imp->formatMutex);
     int index = _imp->formatKnob->getActiveEntry();
     return _imp->availableFormats[index];
 }
@@ -417,32 +430,38 @@ void Project::clearNodes(){
 }
 
 void Project::setFrameRange(int first, int last){
-    QMutexLocker l(&_imp->projectLock);
+    QMutexLocker l(&_imp->timelineMutex);
     _imp->timeline->setFrameRange(first,last);
 }
 
 
 int Project::currentFrame() const {
-    QMutexLocker l(&_imp->projectLock);
+    QMutexLocker l(&_imp->timelineMutex);
     return _imp->timeline->currentFrame();
 }
 
 int Project::firstFrame() const {
-    QMutexLocker l(&_imp->projectLock);
+    QMutexLocker l(&_imp->timelineMutex);
     return _imp->timeline->firstFrame();
 }
 
 int Project::lastFrame() const {
-    QMutexLocker l(&_imp->projectLock);
+    QMutexLocker l(&_imp->timelineMutex);
     return _imp->timeline->lastFrame();
 }
 
+int Project::leftBound() const  {
+    QMutexLocker l(&_imp->timelineMutex);
+    return _imp->timeline->leftBound();
+}
 
+int Project::rightBound() const  {
+    QMutexLocker l(&_imp->timelineMutex);
+    return _imp->timeline->rightBound();
+}
 
 int Project::tryAddProjectFormat(const Format& f){
-    QMutexLocker l(&_imp->projectLock);
-
-    
+    assert(!_imp->formatMutex.tryLock());
     if(f.left() >= f.right() || f.bottom() >= f.top()){
         return -1;
     }
@@ -468,9 +487,11 @@ int Project::tryAddProjectFormat(const Format& f){
 }
 
 void Project::setProjectDefaultFormat(const Format& f) {
-    QMutexLocker l(&_imp->projectLock);
+    assert(!_imp->formatMutex.tryLock());
     int index = tryAddProjectFormat(f);
-    _imp->formatKnob->setValue(index);
+    {
+        _imp->formatKnob->setValue(index);
+    }
     emit formatChanged(f);
     getApp()->triggerAutoSave();
 }
@@ -478,7 +499,7 @@ void Project::setProjectDefaultFormat(const Format& f) {
 
 
 int Project::getProjectViewsCount() const {
-    QMutexLocker l(&_imp->projectLock);
+    QMutexLocker l(&_imp->viewsCountMutex);
     return _imp->viewsCount->getValue<int>();
 }
 
@@ -521,12 +542,12 @@ const QDateTime& Project::projectAgeSinceLastAutosave() const {
 }
 
 bool Project::isAutoPreviewEnabled() const {
-    QMutexLocker l(&_imp->projectLock);
+    QMutexLocker l(&_imp->previewModeMutex);
     return _imp->previewMode->getValue<bool>();
 }
 
 void Project::toggleAutoPreview() {
-    QMutexLocker l(&_imp->projectLock);
+    QMutexLocker l(&_imp->previewModeMutex);
     _imp->previewMode->setValue<bool>(!_imp->previewMode->getValue<bool>());
 }
 
@@ -534,12 +555,13 @@ boost::shared_ptr<TimeLine> Project::getTimeLine() const  {return _imp->timeline
 
 
 const std::vector<Format>& Project::getProjectFormats() const {
-    QMutexLocker l(&_imp->projectLock);
+    QMutexLocker l(&_imp->formatMutex);
     return _imp->availableFormats;
 }
 
 void Project::incrementKnobsAge() {
-    QMutexLocker l(&_imp->projectLock);
+    ///this is called by a setValue() on a knob which
+    QMutexLocker l(&_imp->knobsAgeMutex);
     if(_imp->_knobsAge < 99999)
         ++_imp->_knobsAge;
     else
@@ -547,7 +569,7 @@ void Project::incrementKnobsAge() {
 }
 
 int Project::getKnobsAge() const {
-    QMutexLocker l(&_imp->projectLock);
+    QMutexLocker l(&_imp->knobsAgeMutex);
     return _imp->_knobsAge;
 }
 
@@ -775,7 +797,7 @@ void Project::onKnobValueChanged(Knob* knob,Natron::ValueChangedReason /*reason*
 }
 
 bool Project::isLoadingProject() const {
-    QMutexLocker l(&_imp->projectLock);
+    QMutexLocker l(&_imp->isLoadingProjectMutex);
     return _imp->isLoadingProject;
 }
 
@@ -825,9 +847,7 @@ void Project::reset(){
 
 void Project::setOrAddProjectFormat(const Format& frmt,bool skipAdd) {
 
-
-    QMutexLocker l(&_imp->projectLock);
-
+    QMutexLocker l(&_imp->formatMutex);
     if(_imp->autoSetProjectFormat){
         Format dispW;
         _imp->autoSetProjectFormat = false;
@@ -910,18 +930,17 @@ bool Project::disconnect(Node* input,Node* output,bool autoReconnect) {
 
     return true;
 }
-    
+
 bool Project::tryLock() const {
     return _imp->projectLock.tryLock();
 }
-    
+
 void Project::unlock() const {
     assert(!_imp->projectLock.tryLock());
     _imp->projectLock.unlock();
 }
 
 void Project::autoConnect(Node* selected,Node* created) {
-    QMutexLocker l(&_imp->projectLock);
     ///We follow this rule:
     //        1) selected is output
     //          a) created is output --> fail

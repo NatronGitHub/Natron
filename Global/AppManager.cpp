@@ -1131,7 +1131,7 @@ void AppManager::setAsTopLevelInstance(int appID){
 }
 
 void AppInstance::checkViewersConnection(){
-    const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
+    const std::vector<Node*> nodes = _currentProject->getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
         if (nodes[i]->pluginID() == "Viewer") {

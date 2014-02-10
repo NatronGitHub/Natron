@@ -91,7 +91,7 @@ void ProjectGui::setVisible(bool visible){
 void ProjectGui::createNewFormat(){
     AddFormatDialog dialog(_project.get(),_project->getApp()->getGui());
     if(dialog.exec()){
-        _project->tryAddProjectFormat(dialog.getFormat());
+        _project->setOrAddProjectFormat(dialog.getFormat());
     }
 }
 

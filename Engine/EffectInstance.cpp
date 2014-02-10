@@ -409,10 +409,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         ///if the project lock is already locked at this point, don't start any othter thread
         ///as it would lead to a deadlock when the project is loading.
         ///Just fall back to Fully_safe
-        if (safety == FULLY_SAFE_FRAME && !getApp()->getProject()->tryLock()) {
-            safety = FULLY_SAFE;
-        } else {
-            getApp()->getProject()->unlock();
+        if (safety == FULLY_SAFE_FRAME) {
+            if (!getApp()->getProject()->tryLock()) {
+                safety = FULLY_SAFE;
+            } else {
+                getApp()->getProject()->unlock();
+            }
         }
         
         switch (safety) {
