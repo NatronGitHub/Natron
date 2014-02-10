@@ -107,6 +107,17 @@ void initOpenColorIOConfig() {
 
 }
 
+/**
+ * @brief Extracts from argv[0] the path of the application's binary
+ **/
+static QString extractBinaryPath(const QString arg0) {
+    int lastSepPos = arg0.lastIndexOf(QDir::separator());
+    if (lastSepPos == -1) {
+        return "";
+    } else {
+        return arg0.left(lastSepPos);
+    }
+}
 
 int main(int argc, char *argv[])
 {	
@@ -121,7 +132,12 @@ int main(int argc, char *argv[])
     bool expectPipeFileNameOnNextArg = false;
     QString mainProcessServerName;
     QStringList args;
+    
+    QString binaryPath;
     for(int i = 0; i < argc ;++i){
+        if (i == 0) {
+            extractBinaryPath(argv[i]);
+        }
         args.push_back(QString(argv[i]));
     }
     for (int i = 0 ; i < args.size(); ++i) {
@@ -176,8 +192,6 @@ int main(int argc, char *argv[])
         app = new QCoreApplication(argc,argv);
         
     }
-    
-    initOpenColorIOConfig();
     
     app->setOrganizationName(NATRON_ORGANIZATION_NAME);
     app->setOrganizationDomain(NATRON_ORGANIZATION_DOMAIN);
