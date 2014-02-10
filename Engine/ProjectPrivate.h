@@ -70,6 +70,7 @@ struct ProjectPrivate {
     int _knobsAge; //< the age of the knobs in the app. This is updated on each value changed.
     Natron::OutputEffectInstance* lastTimelineSeekCaller;
 
+    mutable QMutex beginEndMutex; //< protects begin/stack/end value change
     int beginEndBracketsCount;
     int evaluationsCount;
     

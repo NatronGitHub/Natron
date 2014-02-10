@@ -196,6 +196,8 @@ struct ViewerGL::Implementation {
     , displayPersistentMessage(false)
     , zoomOrPannedSinceLastFit(false)
     , textRenderer()
+    , userRoI()
+    , isUserRoISet(false)
     {
     }
 
@@ -266,6 +268,9 @@ struct ViewerGL::Implementation {
     bool zoomOrPannedSinceLastFit; //< true if the user zoomed or panned the image since the last call to fitToRoD
     
     Natron::TextRenderer textRenderer;
+    
+    RectI userRoI;
+    bool isUserRoISet;
 };
 
 //static const GLfloat renderingTextureCoordinates[32] = {
@@ -1437,6 +1442,9 @@ void ViewerGL::onProjectFormatChanged(const Format& format){
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
     }
 
+    if (!_imp->isUserRoISet) {
+        _imp->userRoI = format;
+    }
 }
 
 void ViewerGL::setClipToDisplayWindow(bool b) {

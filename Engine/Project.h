@@ -179,6 +179,10 @@ public:
      **/
     bool isGraphWorthLess() const;
     
+    bool tryLock() const;
+    
+    void unlock() const;
+    
 public slots:
 
     void onTimeChanged(SequenceTime time,int reason);

@@ -21,7 +21,7 @@
 
 namespace Natron{
 ProjectPrivate::ProjectPrivate(Natron::Project* project)
-    : projectLock(QMutex::Recursive)
+    : projectLock()
     , projectName("Untitled." NATRON_PROJECT_FILE_EXT)
     , hasProjectBeenSavedByUser(false)
     , ageSinceLastSave(QDateTime::currentDateTime())
@@ -36,6 +36,7 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , project(project)
     , _knobsAge(0)
     , lastTimelineSeekCaller(NULL)
+    , beginEndMutex(QMutex::Recursive)
     , beginEndBracketsCount(0)
     , evaluationsCount(0)
     , holdersWhoseBeginWasCalled()

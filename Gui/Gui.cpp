@@ -1107,7 +1107,13 @@ void Gui::openProject(){
         QString name = SequenceFileDialog::removePath(file);
         QString path = file.left(file.indexOf(name));
         
-        _appInstance->getProject()->loadProject(path,name);
+        ///if the current graph has no value, just load the project in the same window
+        if (_appInstance->getProject()->isGraphWorthLess()) {
+            _appInstance->getProject()->loadProject(path, name);
+        } else {
+            AppInstance* newApp = appPTR->newAppInstance(AppInstance::APP_GUI);
+            newApp->getProject()->loadProject(path, name);
+        }
         
         QSettings settings;
         QStringList recentFiles = settings.value("recentFileList").toStringList();

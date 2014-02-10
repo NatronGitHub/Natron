@@ -405,6 +405,16 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         /*depending on the thread-safety of the plug-in we render with a different
          amount of threads*/
         EffectInstance::RenderSafety safety = renderThreadSafety();
+        
+        ///if the project lock is already locked at this point, don't start any othter thread
+        ///as it would lead to a deadlock when the project is loading.
+        ///Just fall back to Fully_safe
+        if (safety == FULLY_SAFE_FRAME && !getApp()->getProject()->tryLock()) {
+            safety = FULLY_SAFE;
+        } else {
+            getApp()->getProject()->unlock();
+        }
+        
         switch (safety) {
             case FULLY_SAFE_FRAME: // the plugin will perform any per frame SMP threading
             {
