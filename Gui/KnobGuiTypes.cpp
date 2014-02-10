@@ -1404,18 +1404,17 @@ void String_KnobGui::createWidget(QGridLayout *layout, int row)
     layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
     
 
-    if(!strKnob->isMultiLine()) {
+    if (!strKnob->isMultiLine()) {
         _lineEdit = new LineEdit(layout->parentWidget());
         if(hasToolTip()) {
             _lineEdit->setToolTip(toolTip());
         }
-        layout->addWidget(_lineEdit, row, 1, Qt::AlignLeft);
+        layout->addWidget(_lineEdit, row, 1);
         QObject::connect(_lineEdit, SIGNAL(textEdited(QString)), this, SLOT(onStringChanged(QString)));
         
-        if(strKnob->isCustomKnob()) {
+        if (strKnob->isCustomKnob()) {
             _lineEdit->setReadOnly(true);
         }
-        
     } else {
         _textEdit = new AnimatingTextEdit(layout->parentWidget());
         if(hasToolTip()) {
@@ -1493,9 +1492,9 @@ void String_KnobGui::setEnabled()
 {
     bool b = getKnob()->isEnabled();
     _descriptionLabel->setEnabled(b);
-    if(_lineEdit){
+    if(_lineEdit) {
         _lineEdit->setEnabled(b);
-    }else{
+    } else {
         assert(_textEdit);
         _textEdit->setEnabled(b);
     }
