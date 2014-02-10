@@ -190,6 +190,50 @@ const Node::OutputMap& Node::getOutputs() const
     return _imp->outputs;
 }
 
+int Node::getPreferredInputForConnection() const {
+    if (maximumInputs() == 0) {
+        return -1;
+    }
+    
+    ///we return the first non-optional empty input
+    int firstNonOptionalEmptyInput = -1;
+    int firstOptionalEmptyInput = -1;
+    int index = 0;
+    for (InputMap::const_iterator it = _inputs.begin() ; it!=_inputs.end(); ++it) {
+        if (!it->second) {
+            if (!_liveInstance->isInputOptional(index)) {
+                if (firstNonOptionalEmptyInput == -1) {
+                    firstNonOptionalEmptyInput = index;
+                    break;
+                }
+            } else {
+                if (firstOptionalEmptyInput == -1) {
+                    firstOptionalEmptyInput = index;
+                }
+            }
+        }
+        ++index;
+    }
+    
+    if (firstNonOptionalEmptyInput != -1) {
+        return firstNonOptionalEmptyInput;
+    } else if(firstOptionalEmptyInput != -1) {
+        return firstOptionalEmptyInput;
+    } else {
+        return -1;
+    }
+}
+
+void Node::getOutputsConnectedToThisNode(std::map<Node*,int>* outputs) {
+    for (OutputMap::const_iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it) {
+        if (it->second) {
+            int indexOfThis = it->second->inputIndex(this);
+            assert(indexOfThis != -1);
+            outputs->insert(std::make_pair(it->second, indexOfThis));
+        }
+    }
+}
+
 const std::string& Node::getName() const
 {
     return _imp->name;
@@ -437,6 +481,21 @@ int Node::disconnectOutput(Node* output)
     return -1;
 }
 
+int Node::inputIndex(Node* n) const {
+    
+    if (!n) {
+        return -1;
+    }
+    
+    int index = 0;
+    for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+        if (n == it->second) {
+            return index;
+        }
+        ++index;
+    }
+    return -1;
+}
 
 /*After this call this node still knows the link to the old inputs/outputs
  but no other node knows this node.*/
@@ -446,13 +505,34 @@ void Node::deactivate()
     //first tell the gui to clear any persistent message link to this node
     clearPersistentMessage();
 
+    ///if the node has 1 non-optional input, attempt to connect the outputs to the input of the current node
+    ///this node is the node the outputs should attempt to connect to
+    Node* inputToConnectTo = 0;
+    
+    int firstNonOptionalInput = -1;
+    bool hasOnlyOneNonOptionalInput = false;
+    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+        if (it->second) {
+            if (!_liveInstance->isInputOptional(it->first)) {
+                if (firstNonOptionalInput == -1) {
+                    firstNonOptionalInput = it->first;
+                    hasOnlyOneNonOptionalInput = true;
+                } else {
+                    hasOnlyOneNonOptionalInput = false;
+                }
+            }
+        }
+    }
+    if (hasOnlyOneNonOptionalInput && firstNonOptionalInput != -1) {
+        inputToConnectTo = input(firstNonOptionalInput);
+    }
+    
     /*Removing this node from the output of all inputs*/
     _imp->deactivatedState.inputConnections.clear();
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if (it->second) {
             int outputNb = it->second->disconnectOutput(this);
             _imp->deactivatedState.inputConnections.insert(make_pair(it->second, make_pair(outputNb, it->first)));
-            it->second = NULL;
         }
     }
     _imp->deactivatedState.outputsConnections.clear();
@@ -464,6 +544,16 @@ void Node::deactivate()
         _imp->deactivatedState.outputsConnections.insert(make_pair(it->second, make_pair(inputNb, it->first)));
     }
     
+    if (inputToConnectTo) {
+        for (OutputConnectionsIterator::iterator it = _imp->deactivatedState.outputsConnections.begin();
+             it!=_imp->deactivatedState.outputsConnections.end(); ++it) {
+            getApp()->getProject()->connect(it->second.first, inputToConnectTo, it->first);
+        }
+    }
+    
+    ///kill any thread it could have started (e.g: VideoEngine or preview)
+    quitAnyProcessing();
+    
     emit deactivated();
     _imp->activated = false;
     
@@ -471,31 +561,28 @@ void Node::deactivate()
 
 void Node::activate()
 {
-    
-    for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        if (!it->second) {
-            continue;
-        }
-        InputConnectionsIterator found = _imp->deactivatedState.inputConnections.find(it->second);
-        if (found == _imp->deactivatedState.inputConnections.end()) {
-            cout << "Big issue while activating this node, canceling process." << endl;
-            return;
-        }
-        /*InputNumber must be the same than the one we stored at disconnection time.*/
-        assert(found->second.first == it->first);
-        it->second->connectOutput(this,found->second.first);
+    ///for all inputs, reconnect their output to this node
+    for (InputConnectionsIterator it = _imp->deactivatedState.inputConnections.begin();
+         it!= _imp->deactivatedState.inputConnections.end(); ++it) {
+        it->first->connectOutput(this,it->second.first);
     }
-    for (OutputMap::const_iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it) {
-        if (!it->second) {
-            continue;
+   
+   
+
+    for (OutputConnectionsIterator it = _imp->deactivatedState.outputsConnections.begin();
+         it!= _imp->deactivatedState.outputsConnections.end(); ++it) {
+        
+        ///before connecting the outputs to this node, disconnect any link that has been made
+        ///between the outputs by the user
+        Node* outputHasInput = it->first->input(it->second.first);
+        if (outputHasInput) {
+            bool ok = getApp()->getProject()->disconnect(outputHasInput, it->first);
+            assert(ok);
         }
-        OutputConnectionsIterator found = _imp->deactivatedState.outputsConnections.find(it->second);
-        if (found == _imp->deactivatedState.outputsConnections.end()) {
-            cout << "Big issue while activating this node, canceling process." << endl;
-            return;
-        }
-        assert(found->second.second == it->first);
-        it->second->connectInput(this,found->second.first);
+
+        ///and connect the output to this node
+        bool ok = it->first->connectInput(this, it->second.first);
+        assert(ok);
     }
     
     emit activated();
@@ -507,7 +594,7 @@ void Node::activate()
 const Format& Node::getRenderFormatForEffect(const EffectInstance* effect) const
 {
     if (effect == _liveInstance) {
-        return getApp()->getProjectFormat();
+        return getApp()->getProject()->getProjectDefaultFormat();
     } else {
         for (std::map<RenderTree*,EffectInstance*>::const_iterator it = _imp->renderInstances.begin();
              it!=_imp->renderInstances.end();++it) {
@@ -516,13 +603,13 @@ const Format& Node::getRenderFormatForEffect(const EffectInstance* effect) const
             }
         }
     }
-    return getApp()->getProjectFormat();
+    return getApp()->getProject()->getProjectDefaultFormat();
 }
 
 int Node::getRenderViewsCountForEffect( const EffectInstance* effect) const
 {
     if(effect == _liveInstance) {
-        return getApp()->getProjectViewsCount();
+        return getApp()->getProject()->getProjectViewsCount();
     } else {
         for (std::map<RenderTree*,EffectInstance*>::const_iterator it = _imp->renderInstances.begin();
              it!=_imp->renderInstances.end();++it) {
@@ -531,7 +618,7 @@ int Node::getRenderViewsCountForEffect( const EffectInstance* effect) const
             }
         }
     }
-    return getApp()->getProjectViewsCount();
+    return getApp()->getProject()->getProjectViewsCount();
 }
 
 
@@ -638,6 +725,13 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
         _imp->computingPreviewCond.wakeOne();
         return;
     }
+    
+    if (!img) {
+        _imp->computingPreview = false;
+        _imp->computingPreviewCond.wakeOne();
+        return;
+    }
+    
     for (int i=0; i < h; ++i) {
         double y = (double)i/yZoomFactor;
         int nearestY = (int)(y+0.5);

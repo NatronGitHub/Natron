@@ -270,10 +270,7 @@ void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
 
 AppInstance::AppInstance(AppInstance::AppType appType,int appID,const QString& projectName,const QStringList& writers)
   : _gui(NULL)
-  , _projectLock(QMutex::Recursive)
   , _currentProject(new Natron::Project(this))
-  , _isLoadingProject(false)
-  , _isSavingProject(false)
   , _appID(appID)
   , _nodeMapping()
   , _appType(appType)
@@ -282,6 +279,9 @@ AppInstance::AppInstance(AppInstance::AppType appType,int appID,const QString& p
     appPTR->registerAppInstance(this);
     appPTR->setAsTopLevelInstance(appID);
 
+    
+    QObject::connect(_currentProject.get(), SIGNAL(nodesCleared()), this, SLOT(onProjectNodesCleared()));
+    
     if(!isBackground()){
         appPTR->setLoadingStatus("Creating user interface...");
         _gui = new Gui(this);
@@ -291,9 +291,9 @@ AppInstance::AppInstance(AppInstance::AppType appType,int appID,const QString& p
         throw std::invalid_argument("Project file name empty");
     }
     
-    _currentProject->notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
+    _currentProject->beginProjectWideValueChanges(Natron::OTHER_REASON,_currentProject.get());
     _currentProject->initializeKnobs();
-    _currentProject->notifyProjectEndKnobsValuesChanged();
+    _currentProject->endProjectWideValueChanges(_currentProject.get());
 
     
     if(!isBackground()){
@@ -307,12 +307,12 @@ AppInstance::AppInstance(AppInstance::AppType appType,int appID,const QString& p
         _gui->show();
         
         /* Create auto-save dir if it does not exists*/
-        QDir dir = autoSavesDir();
+        QDir dir = Project::autoSavesDir();
         dir.mkpath(".");
         
         /*If this is the first instance of the software*/
         if(_appID == 0){
-            if(!findAutoSave()){
+            if(!_currentProject->findAndTryLoadAutoSave()){
                 if(projectName.isEmpty()){
                     QString text(QCoreApplication::applicationName() + " - ");
                     text.append(_currentProject->getProjectName());
@@ -322,7 +322,7 @@ AppInstance::AppInstance(AppInstance::AppType appType,int appID,const QString& p
                     QString name = SequenceFileDialog::removePath(projectName);
                     QString path = projectName.left(projectName.indexOf(name));
                     appPTR->setLoadingStatus("Loading project: " + path + name);
-                    loadProject(path,name);
+                    _currentProject->loadProject(path,name);
                 }
             }
         }else{
@@ -334,7 +334,7 @@ AppInstance::AppInstance(AppInstance::AppType appType,int appID,const QString& p
             }else{
                 QString name = SequenceFileDialog::removePath(projectName);
                 QString path = projectName.left(projectName.indexOf(name));
-                loadProject(path,name);
+                _currentProject->loadProject(path,name);
             }
         }
 
@@ -343,7 +343,7 @@ AppInstance::AppInstance(AppInstance::AppType appType,int appID,const QString& p
         if (appType == APP_BACKGROUND_AUTO_RUN) {
             QString name = SequenceFileDialog::removePath(projectName);
             QString path = projectName.left(projectName.indexOf(name));
-            if(!loadProject(path,name)){
+            if(!_currentProject->loadProject(path,name)){
                 throw std::invalid_argument("Project file loading failed.");
                 
             }
@@ -361,21 +361,14 @@ AppInstance::~AppInstance(){
         _isQuitting = true;
 
     }
-    QMutexLocker l(&_projectLock);
-    removeAutoSaves();
     appPTR->removeInstance(_appID);
-    
-    const std::vector<Natron::Node*>& nodes = _currentProject->getCurrentNodes();
-    
-    l.unlock();
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        nodes[i]->quitAnyProcessing();
-    }
-    l.relock();
-    ///force the project to be deleted before the project lock
+
     _currentProject.reset();
 }
 
+void AppInstance::triggerAutoSave() {
+    _currentProject->triggerAutoSave();
+}
 
 Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVersion,bool requestedByLoad,bool openImageFileDialog) {
     Node* node = 0;
@@ -427,10 +420,7 @@ Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVers
     node->initializeKnobs();
     node->initializeInputs();
 
-    {
-        QMutexLocker l(&_projectLock);
-        _currentProject->initNodeCountersAndSetName(node);
-    }
+    _currentProject->initNodeCountersAndSetName(node);
 
     if(!isBackground()){
         assert(nodegui);
@@ -445,7 +435,7 @@ Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVers
     if(!isBackground() && !requestedByLoad){
         if(_gui->getSelectedNode()){
             Node* selected = _gui->getSelectedNode()->getNode();
-            autoConnect(selected, node);
+            _currentProject->autoConnect(selected, node);
         }
         _gui->selectNode(nodegui);
                 
@@ -458,12 +448,6 @@ Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVers
     return node;
 }
 
-
-
-
-void AppInstance::autoConnect(Node* target,Node* created){
-    _gui->autoConnect(getNodeGui(target),getNodeGui(created));
-}
 
 int AppInstance::getAppID() const {return _appID;}
 
@@ -479,18 +463,8 @@ bool AppInstance::shouldRefreshPreview() const {
     return !isBackground() && !_gui->isUserScrubbingTimeline();
 }
 
-void AppInstance::lockProject(){
-    _projectLock.lock();
-}
-
-void AppInstance::unlockProject(){
-    _projectLock.unlock();
-}
-
-
 void AppInstance::getActiveNodes(std::vector<Natron::Node*>* activeNodes) const{
     
-    QMutexLocker l(&_projectLock);
     const std::vector<Natron::Node*> nodes = _currentProject->getCurrentNodes();
     for(U32 i = 0; i < nodes.size(); ++i){
         if(nodes[i]->isActivated()){
@@ -499,400 +473,8 @@ void AppInstance::getActiveNodes(std::vector<Natron::Node*>* activeNodes) const{
     }
 }
 
-bool AppInstance::isLoadingProject() const {
-    return _isLoadingProject;
-}
-
-bool AppInstance::loadProject(const QString& path,const QString& name){
-    QMutexLocker l(&_projectLock);
-    _isLoadingProject = true;
-    
-    if(!isBackground()){
-        _gui->_nodeGraphArea->deselect();
-    }
-    try {
-        l.unlock();
-        loadProjectInternal(path,name);
-    } catch (const std::exception& e) {
-        Natron::errorDialog("Project loader", std::string("Error while loading project") + ": " + e.what());
-        if(!isBackground())
-            createNode("Viewer");
-        _isLoadingProject = false;
-        l.relock();
-        return false;
-    } catch (...) {
-        Natron::errorDialog("Project loader", std::string("Error while loading project"));
-        if(!isBackground())
-            createNode("Viewer");
-        _isLoadingProject = false;
-        l.relock();
-        return false;
-    }
-    l.relock();
-    
-    QDateTime time = QDateTime::currentDateTime();
-    _currentProject->setAutoSetProjectFormat(false);
-    _currentProject->setHasProjectBeenSavedByUser(true);
-    _currentProject->setProjectName(name);
-    _currentProject->setProjectPath(path);
-    _currentProject->setProjectAgeSinceLastSave(time);
-    _currentProject->setProjectAgeSinceLastAutosaveSave(time);
-    
-    if(!isBackground()){
-        QString text(QCoreApplication::applicationName() + " - ");
-        text.append(name);
-        _gui->setWindowTitle(text);
-    }
-    _isLoadingProject = false;
-
-    return true;
-}
-
-void AppInstance::loadProjectInternal(const QString& path,const QString& name){
-    
-    clearNodes();
-
-    QString filePath = path+name;
-    if(!QFile::exists(filePath)){
-        throw std::invalid_argument(QString(filePath + " : no such file.").toStdString());
-    }
-    std::ifstream ifile;
-    try{
-        ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        ifile.open(filePath.toStdString().c_str(),std::ifstream::in);
-    }catch(const std::ifstream::failure& e){
-        throw std::runtime_error(std::string(std::string("Exception opening ")+ e.what() + filePath.toStdString()));
-    }
-    try{
-        boost::archive::xml_iarchive iArchive(ifile);
-        bool bgProject;
-        iArchive >> boost::serialization::make_nvp("Background_project",bgProject);
-        ProjectSerialization projectSerializationObj;
-        iArchive >> boost::serialization::make_nvp("Project",projectSerializationObj);
-        _currentProject->load(projectSerializationObj);
-        if(!bgProject && !isBackground()){
-            ProjectGuiSerialization projectGuiSerializationObj;
-            iArchive >> boost::serialization::make_nvp("ProjectGui",projectGuiSerializationObj);
-            _gui->_projectGui->load(projectGuiSerializationObj);
-        }
-    }catch(const boost::archive::archive_exception& e){
-        throw std::runtime_error(std::string("Serialization error: ") + std::string(e.what()));
-    }catch(const std::exception& e){
-        throw e;
-    }
-    ifile.close();
-    
-    
-    /*Refresh all viewers as it was*/
-    if(!isBackground()){
-        notifyViewersProjectFormatChanged(_currentProject->getProjectDefaultFormat());
-        const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
-        for (U32 i = 0; i < nodes.size(); ++i) {
-            assert(nodes[i]);
-            if (nodes[i]->pluginID() == "Viewer") {
-                ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
-                assert(n);
-                n->getVideoEngine()->render(1, true,true,false,true,false,true);
-            }
-        }
-    }
-
-}
-
-void AppInstance::saveProject(const QString& path,const QString& name,bool autoSave){
-    QMutexLocker l(&_projectLock);
-    
-    if(_isLoadingProject){
-        qDebug() << "Project is loading!!";
-        return;
-    }
-    
-    if (_isSavingProject) {
-        ///don't save multiple times simultaneously
-        return;
-    } else {
-        _isSavingProject = true;
-    }
-    
-    try {
-        if(!autoSave) {
-            
-            if((_currentProject->projectAgeSinceLastSave() != _currentProject->projectAgeSinceLastAutosave()) ||
-               !QFile::exists(path+name)){
-                
-                saveProjectInternal(path,name);
-                
-                QString text(QCoreApplication::applicationName() + " - ");
-                text.append(name);
-                _gui->setWindowTitle(text);
-            }
-        }else{
-            if(!_gui->isGraphWorthless()){
-                
-                removeAutoSaves();
-                saveProjectInternal(path,name,true);
-            }
-        }
-    } catch (const std::exception& e) {
-        if(!autoSave) {
-            Natron::errorDialog("Save", e.what());
-        } else {
-            qDebug() << "Save failure: " << e.what();
-        }
-    }
-    _isSavingProject = false;
-}
-
-void AppInstance::saveProjectInternal(const QString& path,const QString& filename,bool autoSave){
-    
-    QDateTime time = QDateTime::currentDateTime();
-	QString timeStr = time.toString();
-	Hash64 timeHash;
-	for(int i = 0 ; i < timeStr.size();++i) {
-		timeHash.append<unsigned short>(timeStr.at(i).unicode());
-	}
-	timeHash.computeHash();
-	QString timeHashStr = QString::number(timeHash.value());
-
-    QString actualFileName = filename;
-    if(autoSave){
-        QString pathCpy = path;
-        
-#ifdef __NATRON_WIN32__
-        ///on windows, we must also modifiy the root name otherwise it would fail to save with a filename containing for example C:/
-        QFileInfoList roots = QDir::drives();
-        QString root;
-        for (int i = 0; i < roots.size(); ++i) {
-            QString rootPath = roots[i].absolutePath();
-			rootPath = rootPath.remove(QChar('\\'));
-			rootPath = rootPath.remove(QChar('/'));
-            if (pathCpy.startsWith(rootPath)) {
-                root = rootPath;
-                QString rootToPrepend("_ROOT_");
-                rootToPrepend.append(root.at(0)); //< append the root character, e.g the 'C' of C:
-                rootToPrepend.append("_N_ROOT_");
-                pathCpy.replace(rootPath, rootToPrepend);
-				break;
-            }
-        }
-        
-#endif
-        pathCpy = pathCpy.replace("/", "_SEP_");
-        pathCpy = pathCpy.replace("\\", "_SEP_");
-        actualFileName.prepend(pathCpy);
-        actualFileName.append("."+timeHashStr);
-    }
-    QString filePath;
-    if (autoSave) {
-        filePath = AppInstance::autoSavesDir()+QDir::separator()+actualFileName;
-        _currentProject->setProjectLastAutoSavePath(filePath);
-    } else {
-        filePath = path+actualFileName;
-    }
-    std::ofstream ofile(filePath.toStdString().c_str(),std::ofstream::out);
-    if (!ofile.good()) {
-        qDebug() << "Failed to open file " << filePath.toStdString().c_str();
-        throw std::runtime_error("Failed to open file " + filePath.toStdString());
-    }
-    boost::archive::xml_oarchive oArchive(ofile);
-    bool bgProject = isBackground();
-    oArchive << boost::serialization::make_nvp("Background_project",bgProject);
-    ProjectSerialization projectSerializationObj;
-    _currentProject->save(&projectSerializationObj);
-    oArchive << boost::serialization::make_nvp("Project",projectSerializationObj);
-    if(!isBackground()){
-        ProjectGuiSerialization projectGuiSerializationObj;
-        _gui->_projectGui->save(&projectGuiSerializationObj);
-        oArchive << boost::serialization::make_nvp("ProjectGui",projectGuiSerializationObj);
-    }
-    
-    _currentProject->setProjectName(filename);
-    _currentProject->setProjectPath(path);
-    if(!autoSave){
-        _currentProject->setHasProjectBeenSavedByUser(true);
-        _currentProject->setProjectAgeSinceLastSave(time);
-    }
-    _currentProject->setProjectAgeSinceLastAutosaveSave(time);
-
-}
-
-void AppInstance::autoSave(){
-    
-    if (isBackground()) {
-        return;
-    }
-
-    saveProject(_currentProject->getProjectPath(), _currentProject->getProjectName(), true);
-}
-void AppInstance::triggerAutoSave(){
-    
-    if (isBackground()) {
-        return;
-    }
-    
-    QMutexLocker l(&_projectLock);
-    QtConcurrent::run(this,&AppInstance::autoSave);
-    QString text(QCoreApplication::applicationName() + " - ");
-    text.append(_currentProject->getProjectName());
-    text.append(" (*)");
-    _gui->setWindowTitle(text);
-}
-
-void AppInstance::removeAutoSaves() const{
-    /*removing all previous autosave files*/
-    QDir savesDir(autoSavesDir());
-    QStringList entries = savesDir.entryList();
-    for(int i = 0; i < entries.size();++i) {
-        const QString& entry = entries.at(i);
-        QString searchStr('.');
-        searchStr.append(NATRON_PROJECT_FILE_EXT);
-        searchStr.append('.');
-        int suffixPos = entry.indexOf(searchStr);
-        if (suffixPos != -1) {
-            QFile::remove(savesDir.path()+QDir::separator()+entry);
-        }
-    }
-}
 
 
-bool AppInstance::isSaveUpToDate() const{
-    QMutexLocker l(&_projectLock);
-    return _currentProject->projectAgeSinceLastSave() == _currentProject->projectAgeSinceLastAutosave();
-}
-void AppInstance::resetCurrentProject(){
-    _currentProject->setAutoSetProjectFormat(true);
-    _currentProject->setHasProjectBeenSavedByUser(false);
-    _currentProject->setProjectName(NATRON_PROJECT_UNTITLED);
-    _currentProject->setProjectPath("");
-    QString text(QCoreApplication::applicationName() + " - ");
-    text.append(_currentProject->getProjectName());
-    _gui->setWindowTitle(text);
-}
-
-bool AppInstance::findAutoSave() {
-    QDir savesDir(autoSavesDir());
-    QStringList entries = savesDir.entryList();
-    for (int i = 0; i < entries.size();++i) {
-        const QString& entry = entries.at(i);
-        QString searchStr('.');
-        searchStr.append(NATRON_PROJECT_FILE_EXT);
-        searchStr.append('.');
-        int suffixPos = entry.indexOf(searchStr);
-        if (suffixPos != -1) {
-            
-            QString filename = entry.left(suffixPos+searchStr.size()-1);
-            bool exists = false;
-            
-            if(!filename.contains(NATRON_PROJECT_UNTITLED)){
-#ifdef __NATRON_WIN32__
-                ///on windows we must extract the root of the filename (@see saveProjectInternal)
-                int rootPos = filename.indexOf("_ROOT_");
-                int endRootPos =  filename.indexOf("_N_ROOT_");
-                QString rootName;
-                if (rootPos != -1) {
-                    assert(endRootPos != -1);//< if we found _ROOT_ then _N_ROOT must exist too
-                    int startRootNamePos = rootPos + 6;
-                    rootName = filename.mid(startRootNamePos,endRootPos - startRootNamePos);
-                }
-                filename.replace("_ROOT" + rootName + "_N_ROOT_",rootName + ':');
-#endif
-                filename = filename.replace("_SEP_",QDir::separator());
-                exists = QFile::exists(filename);
-            }
-           
-            QString text;
-            
-            if (exists) {
-                text = QString(tr("A recent auto-save of %1 was found.\n"
-                                  "Would you like to restore it entirely? "
-                                  "Clicking No will remove this auto-save.")).arg(filename);;
-            } else {
-                text = tr("An auto-save was restored successfully. It didn't belong to any project\n"
-                          "Would you like to restore it ? Clicking No will remove this auto-save forever.");
-            }
-            
-            appPTR->hideSplashScreen();
-            
-            QMessageBox::StandardButton ret = QMessageBox::question(_gui, tr("Auto-save"), text,
-                                                                    QMessageBox::Yes | QMessageBox::No,QMessageBox::Yes);
-            if (ret == QMessageBox::No || ret == QMessageBox::Escape) {
-                removeAutoSaves();
-                clearNodes();
-                resetCurrentProject();
-                return false;
-            } else {
-                try {
-                    _isLoadingProject = true;
-                    loadProjectInternal(savesDir.path()+QDir::separator(), entry);
-                    _isLoadingProject = false;
-                } catch (const std::exception& e) {
-                    Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project") + ": " + e.what());
-                    createNode("Viewer");
-                } catch (...) {
-                    Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project"));
-                    createNode("Viewer");
-                }
-                
-                _currentProject->setAutoSetProjectFormat(false);
-                
-                if (exists) {
-                    _currentProject->setHasProjectBeenSavedByUser(true);
-                    QString path = filename.left(filename.lastIndexOf(QDir::separator())+1);
-                    filename = filename.remove(path);
-                    _currentProject->setProjectName(filename);
-                    _currentProject->setProjectPath(path);
-                    
-                } else {
-                    _currentProject->setHasProjectBeenSavedByUser(false);
-                    _currentProject->setProjectName(NATRON_PROJECT_UNTITLED);
-                    _currentProject->setProjectPath("");
-                }
-                _currentProject->setProjectAgeSinceLastAutosaveSave(QDateTime::currentDateTime());
-                _currentProject->setProjectAgeSinceLastSave(QDateTime());
-
-                QString title(QCoreApplication::applicationName() + " - ");
-                title.append(_currentProject->getProjectName());
-                title.append(" (*)");
-                _gui->setWindowTitle(title);
-                return true;
-            }
-        }
-    }
-    removeAutoSaves();
-    return false;
-}
-
-QString AppInstance::autoSavesDir() {
-#if QT_VERSION < 0x050000
-    return QDesktopServices::storageLocation(QDesktopServices::DataLocation) + QDir::separator() + "Autosaves";
-#else
-    return QStandardPaths::writableLocation(QStandardPaths::DataLocation) + QDir::separator() + "Autosaves";
-#endif
-    //return QString(QDir::tempPath() + QDir::separator() + QCoreApplication::applicationName() + QDir::separator());
-}
-
-
-void AppInstance::beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller){
-    QMutexLocker l(&_projectLock);
-    _currentProject->beginProjectWideValueChanges(reason, caller);
-}
-
-void AppInstance::stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHolder* caller, Knob *k, bool isSignificant){
-    QMutexLocker l(&_projectLock);
-    _currentProject->stackEvaluateRequest(reason, caller, k, isSignificant);
-}
-
-
-void AppInstance::endProjectWideValueChanges(KnobHolder* caller){
-    QMutexLocker l(&_projectLock);
-    _currentProject->endProjectWideValueChanges(caller);
-}
-
-
-const std::vector<Natron::Node*>& AppInstance::getCurrentNodes() const{
-    QMutexLocker l(&_projectLock);
-    return _currentProject->getCurrentNodes();
-}
 
 void AppInstance::deselectAllNodes() const{
     _gui->_nodeGraphArea->deselect();
@@ -962,36 +544,7 @@ void AppManager::removeInstance(int appID){
     _appInstances.erase(appID);
 }
 
-bool AppInstance::connect(int inputNumber,const std::string& parentName,Node* output){
-    const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        assert(nodes[i]);
-        if (nodes[i]->getName() == parentName) {
-            return connect(inputNumber,nodes[i], output);
-        }
-    }
-    return false;
-}
 
-bool AppInstance::connect(int inputNumber,Node* input,Node* output){
-    if(!output->connectInput(input, inputNumber)){
-        return false;
-    }
-    if(!input){
-        return true;
-    }
-    input->connectOutput(output);
-    return true;
-}
-bool AppInstance::disconnect(Node* input,Node* output){
-    if(input->disconnectOutput(output) < 0){
-        return false;
-    }
-    if(output->disconnectInput(input) < 0){
-        return false;
-    }
-    return true;
-}
 
 
 NodeGui* AppInstance::getNodeGui(Node* n) const {
@@ -1044,15 +597,9 @@ void AppInstance::disconnectViewersFromViewerCache(){
 }
 
 
-void AppInstance::clearNodes(){
-    QMutexLocker l(&_projectLock);
+void AppInstance::onProjectNodesCleared() {
     _nodeMapping.clear();
-    _currentProject->clearNodes();
-    if(!isBackground()){
-        _gui->_nodeGraphArea->clearActiveAndTrashNodes();
-    }
 }
-
 
 
 void AppManager::clearPlaybackCache(){
@@ -1583,50 +1130,6 @@ void AppManager::setAsTopLevelInstance(int appID){
     }
 }
 
-void AppInstance::setOrAddProjectFormat(const Format& frmt,bool skipAdd){
-    
-    {
-        QMutexLocker l(&_isQuittingMutex);
-        if(_isQuitting){
-            return;
-        }
-    }
-    
-    if(!_currentProject){
-        return;
-    }
-    
-    _projectLock.lock();
-    
-    if(_currentProject->shouldAutoSetProjectFormat()){
-        Format dispW;
-        _currentProject->setAutoSetProjectFormat(false);
-        dispW = frmt;
-        
-        Format* df = appPTR->findExistingFormat(dispW.width(), dispW.height(),dispW.getPixelAspect());
-        if(df){
-            dispW.setName(df->getName());
-            _projectLock.unlock(); //< unlock because the following functions assume the lock isn't locked.
-            _currentProject->setProjectDefaultFormat(dispW);
-            
-            
-        }else{
-            _projectLock.unlock();
-            _currentProject->setProjectDefaultFormat(dispW);
-            
-        }
-
-    }else if(!skipAdd){
-        Format dispW;
-        dispW = frmt;
-        _projectLock.unlock();
-        _currentProject->tryAddProjectFormat(dispW);
-        
-    }else{
-        _projectLock.unlock();
-    }
-}
-
 
 void AppInstance::checkViewersConnection(){
     const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
@@ -1666,19 +1169,7 @@ void AppInstance::setupViewersForViews(int viewsCount){
     }
 }
 
-void AppInstance::notifyViewersProjectFormatChanged(const Format& format){
-    const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        assert(nodes[i]);
-        if (nodes[i]->pluginID() == "Viewer") {
-            ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
-            assert(n);
-            if(n->getUiContext()){
-                n->getUiContext()->viewer->onProjectFormatChanged(format);
-            }
-        }
-    }
-}
+
 void AppInstance::setViewersCurrentView(int view){
     const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -1692,45 +1183,23 @@ void AppInstance::setViewersCurrentView(int view){
         }
     }
 }
-const QString& AppInstance::getCurrentProjectName() const  {
-    QMutexLocker l(&_projectLock);
-    return _currentProject->getProjectName();
-}
 
-const QString& AppInstance::getCurrentProjectPath() const  {
-    QMutexLocker l(&_projectLock);
-    return _currentProject->getProjectPath();
-}
 
 boost::shared_ptr<TimeLine> AppInstance::getTimeLine() const  {
     return _currentProject->getTimeLine();
 }
 
-int AppInstance::getProjectViewsCount() const {
-    QMutexLocker l(&_projectLock);
-    return _currentProject->getProjectViewsCount();
+void AppInstance::loadProjectGui(const ProjectGuiSerialization& obj) const {
+    if (!isBackground()) {
+        _gui->loadProjectGui(obj);
+    }
 }
 
-bool AppInstance::isAutoPreviewEnabled() const {
-    QMutexLocker l(&_projectLock);
-    return _currentProject->isAutoPreviewEnabled();
+void AppInstance::saveProjectGui(ProjectGuiSerialization* obj) {
+    if (!isBackground()) {
+        _gui->saveProjectGui(obj);
+    }
 }
-
-void AppInstance::toggleAutoPreview() {
-    QMutexLocker l(&_projectLock);
-    _currentProject->toggleAutoPreview();
-}
-
-bool AppInstance::hasProjectBeenSavedByUser() const  {
-    QMutexLocker l(&_projectLock);
-    return _currentProject->hasProjectBeenSavedByUser();
-}
-
-const Format& AppInstance::getProjectFormat() const  {
-    QMutexLocker l(&_projectLock);
-    return _currentProject->getProjectDefaultFormat();
-}
-
 
 void AppManager::clearExceedingEntriesFromNodeCache(){
     _nodeCache->clearExceedingEntries();
@@ -1801,17 +1270,6 @@ void AppManager::getKnobClipBoard(KnobSerialization* k,bool* copyAnimation) cons
     *k = _knobsClipBoard->k;
     *copyAnimation = copyAnimation;
 }
-
-int AppInstance::getKnobsAge() const{
-    QMutexLocker l(&_projectLock);
-    return _currentProject->getKnobsAge();
-}
-void AppInstance::incrementKnobsAge(){
-    QMutexLocker l(&_projectLock);
-    _currentProject->incrementKnobsAge();
-}
-
-
 void AppInstance::startWritersRendering(const QStringList& writers){
     
     const std::vector<Node*>& projectNodes = _currentProject->getCurrentNodes();
@@ -1867,7 +1325,7 @@ void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* write
     if(!isBackground()){
 
         /*Start the renderer in a background process.*/
-        autoSave(); //< takes a snapshot of the graph at this time, this will be the version loaded by the process
+        _currentProject->autoSave(); //< takes a snapshot of the graph at this time, this will be the version loaded by the process
     
         ProcessHandler* newProcess = 0;
         try {
@@ -1947,7 +1405,9 @@ void AppManager::removeFromViewerCache(boost::shared_ptr<Natron::FrameEntry> tex
     }
 }
 
-
+void AppManager::setMultiThreadEnabled(bool enabled) {
+    _settings->setMultiThreadingDisabled(!enabled);
+}
 
 void AppInstance::clearOpenFXPluginsCaches(){
     const std::vector<Node*>& activeNodes = _currentProject->getCurrentNodes();

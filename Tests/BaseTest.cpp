@@ -66,6 +66,7 @@ void BaseTest::SetUp()
 {
     AppManager* manager = AppManager::instance();
     manager->load(NULL);
+    manager->setMultiThreadEnabled(false);
     _app = manager->newAppInstance(AppInstance::APP_BACKGROUND);
     
     registerTestPlugins();

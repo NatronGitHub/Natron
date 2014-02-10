@@ -35,7 +35,32 @@ class OfxImageEffectInstance;
 class OfxOverlayInteract;
 }
 
-class OfxEffectInstance : public Natron::OutputEffectInstance {
+class AbstractOfxEffectInstance : public Natron::OutputEffectInstance {
+public:
+    
+    AbstractOfxEffectInstance(Natron::Node* node)
+    : Natron::OutputEffectInstance(node)
+    {
+    }
+    
+    virtual ~AbstractOfxEffectInstance(){}
+    
+    virtual void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                              const std::string& context) = 0;
+    
+    static QStringList getPluginGrouping(const std::string& pluginLabel,const std::string& grouping) WARN_UNUSED_RETURN;
+    
+    static std::string getPluginLabel(const std::string& shortLabel,
+                                      const std::string& label,
+                                      const std::string& longLabel) WARN_UNUSED_RETURN;
+    
+    static std::string generateImageEffectClassName(const std::string& shortLabel,
+                                                    const std::string& label,
+                                                    const std::string& longLabel,
+                                                    const std::string& grouping) WARN_UNUSED_RETURN;
+};
+
+class OfxEffectInstance : public AbstractOfxEffectInstance {
     
     Natron::OfxImageEffectInstance* effect_;
     bool _isOutput;//if the OfxNode can output a file somehow
@@ -67,10 +92,6 @@ public:
     MappedInputV inputClipsCopyWithoutOutput() const WARN_UNUSED_RETURN;
     
     void ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const;
-    
-    /*If the OpenFX effect is an output effect (a writer), this will return the pattern of
-     the output file sequence. */
-    std::string getOutputFileName() const WARN_UNUSED_RETURN;
 
     /********OVERRIDEN FROM EFFECT INSTANCE*************/
     virtual int majorVersion() const OVERRIDE  FINAL WARN_UNUSED_RETURN;
@@ -152,16 +173,7 @@ public:
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
-    static QStringList getPluginGrouping(const std::string& pluginLabel,const std::string& grouping) WARN_UNUSED_RETURN;
-
-    static std::string getPluginLabel(const std::string& shortLabel,
-                                      const std::string& label,
-                                      const std::string& longLabel) WARN_UNUSED_RETURN;
-
-    static std::string generateImageEffectClassName(const std::string& shortLabel,
-                                                const std::string& label,
-                                                const std::string& longLabel,
-                                                const std::string& grouping) WARN_UNUSED_RETURN;
+    
 
 private:
 

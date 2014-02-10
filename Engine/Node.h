@@ -128,6 +128,12 @@ public:
      **/
     Node* input(int index) const;
     
+    /**
+     * @brief Returns the input index of the node n if it exists,
+     * -1 otherwise.
+     **/
+    int inputIndex(Node* n) const;
+    
     void outputs(std::vector<Natron::Node*>* outputsV) const;
     
     const std::map<int, std::string>& getInputLabels() const;
@@ -137,6 +143,20 @@ public:
     bool isInputConnected(int inputNb) const;
     
     bool hasOutputConnected() const;
+    
+    /**
+     * @brief This is used by the auto-connection algorithm.
+     * When connecting nodes together this function helps determine
+     * on which input it should connect a new node.
+     **/
+    int getPreferredInputForConnection() const;
+    
+    /**
+     * @brief Returns in 'outputs' a map of all nodes connected to this node
+     * where the value of the map is the input index from which these outputs
+     * are connected to this node.
+     **/
+    void getOutputsConnectedToThisNode(std::map<Node*,int>* outputs);
     
     const InputMap& getInputs() const {return _inputs;}
     

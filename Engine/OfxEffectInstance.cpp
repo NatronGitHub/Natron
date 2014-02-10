@@ -59,7 +59,7 @@ ChannelSet ofxComponentsToNatronChannels(const std::string& comp) {
 #endif
 
 OfxEffectInstance::OfxEffectInstance(Natron::Node* node)
-    :Natron::OutputEffectInstance(node)
+    : AbstractOfxEffectInstance(node)
     , effect_()
     , _isOutput(false)
     , _penDown(false)
@@ -241,10 +241,10 @@ QStringList ofxExtractAllPartsOfGrouping(const QString& pluginLabel,const QStrin
     return out;
 }
 
-QStringList OfxEffectInstance::getPluginGrouping(const std::string& pluginLabel,const std::string& grouping){
+QStringList AbstractOfxEffectInstance::getPluginGrouping(const std::string& pluginLabel,const std::string& grouping){
     return  ofxExtractAllPartsOfGrouping(pluginLabel.c_str(),grouping.c_str());
 }
-std::string OfxEffectInstance::getPluginLabel(const std::string& shortLabel,
+std::string AbstractOfxEffectInstance::getPluginLabel(const std::string& shortLabel,
                                       const std::string& label,
                                       const std::string& longLabel) {
     std::string labelToUse = label;
@@ -257,7 +257,7 @@ std::string OfxEffectInstance::getPluginLabel(const std::string& shortLabel,
     return labelToUse;
 }
 
-std::string OfxEffectInstance::generateImageEffectClassName(const std::string& shortLabel,
+std::string AbstractOfxEffectInstance::generateImageEffectClassName(const std::string& shortLabel,
                                                             const std::string& label,
                                                             const std::string& longLabel,
                                                             const std::string& grouping){
@@ -530,7 +530,7 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     ofxRoI.x2 = roi.right();
     ofxRoI.y1 = roi.bottom();
     ofxRoI.y2 = roi.top();
-    int viewsCount = getApp()->getProjectViewsCount();
+    int viewsCount = getApp()->getProject()->getProjectViewsCount();
     OfxStatus stat;
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     stat = effect_->renderAction((OfxTime)time, field, ofxRoI, scale, view, viewsCount);
@@ -840,16 +840,6 @@ void OfxEffectInstance::endKnobsValuesChanged(Natron::ValueChangedReason reason)
 
 }
 
-std::string OfxEffectInstance::getOutputFileName() const{
-    const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        if (knobs[i]->typeName() == "OutputFile") {
-            boost::shared_ptr<OutputFile_Knob> knob = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
-            return knob->getValue<QString>().toStdString();
-        }
-    }
-    return "";
-}
 
 void OfxEffectInstance::purgeCaches(){
     // The kOfxActionPurgeCaches is an action that may be passed to a plug-in instance from time to time in low memory situations. Instances recieving this action should destroy any data structures they may have and release the associated memory, they can later reconstruct this from the effect's parameter set and associated information. http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxActionPurgeCaches

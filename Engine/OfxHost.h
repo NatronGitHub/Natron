@@ -20,7 +20,7 @@
 
 #include "Global/Macros.h"
 
-class OfxEffectInstance;
+class AbstractOfxEffectInstance;
 class AppInstance;
 class QMutex;
 namespace Natron {
@@ -100,7 +100,7 @@ public:
     virtual OfxStatus mutexTryLock(const OfxMutexHandle mutex) OVERRIDE;
 #endif
     
-    OfxEffectInstance* createOfxEffect(const std::string& name,Node* node);
+    AbstractOfxEffectInstance* createOfxEffect(const std::string& name,Node* node);
     
     void addPathToLoadOFXPlugins(const std::string path);
 

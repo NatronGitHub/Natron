@@ -17,7 +17,7 @@
 void ProjectSerialization::initialize(const Natron::Project* project){
     std::vector<Natron::Node*> activeNodes;
     
-    const std::vector<Natron::Node*> nodes = project->_imp->currentNodes;
+    const std::vector<Natron::Node*>& nodes = project->getCurrentNodes();
     for(U32 i = 0; i < nodes.size(); ++i){
         if(nodes[i]->isActivated()){
             activeNodes.push_back(nodes[i]);

@@ -58,12 +58,18 @@ int File_Knob::firstFrame() const
 
 int File_Knob::lastFrame() const
 {
-    std::map<int, QString>::const_iterator it = _filesSequence.end();
-    if (it == _filesSequence.begin()) {
+    if (_filesSequence.empty()) {
         return INT_MAX;
     }
+    
+    if (_filesSequence.size() == 1) {
+        return _filesSequence.begin()->first;
+    }
+    
+    std::map<int, QString>::const_iterator it = _filesSequence.end();
     --it;
     return it->first;
+  
 }
 
 int File_Knob::frameCount() const {

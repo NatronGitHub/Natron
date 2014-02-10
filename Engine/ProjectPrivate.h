@@ -15,7 +15,7 @@
 
 #include <QDateTime>
 #include <QString>
-
+#include <QMutex>
 
 #include "Engine/Format.h"
 #include "Engine/KnobTypes.h"
@@ -43,21 +43,24 @@ inline QString generateStringFromFormat(const Format& f){
     
    
 
-struct ProjectPrivate{
-    QString projectName;
-    QString projectPath;
-    QString lastAutoSaveFilePath;
-    bool hasProjectBeenSavedByUser;
-    QDateTime ageSinceLastSave;
-    QDateTime lastAutoSave;
+struct ProjectPrivate {
+    
+    mutable QMutex projectLock; //< protects the whole project
+    QString projectName; //< name of the project, e.g: "Untitled.EXT"
+    QString projectPath; //< path of the project, e.g: /Users/Lala/Projects/
+    QString lastAutoSaveFilePath; //< path + name of the last auto-save file
+    bool hasProjectBeenSavedByUser; //< has this project ever been saved by the user?
+    QDateTime ageSinceLastSave; //< the last time the user saved
+    QDateTime lastAutoSave; //< the last time since autosave
+    
     boost::shared_ptr<Choice_Knob> formatKnob;
     boost::shared_ptr<Button_Knob> addFormatKnob;
     boost::shared_ptr<Int_Knob> viewsCount;
     boost::shared_ptr<Bool_Knob> previewMode; //< auto or manual
     boost::shared_ptr<TimeLine> timeline; // global timeline
     
-    std::map<std::string,int> nodeCounters;
-    bool autoSetProjectFormat;
+    std::map<std::string,int> nodeCounters; //< basic counters to instantiate nodes with an index in the node graph
+    bool autoSetProjectFormat; 
     std::vector<Natron::Node*> currentNodes;
     
     std::vector<Format> availableFormats;
@@ -76,6 +79,8 @@ struct ProjectPrivate{
     
     bool isSignificantChange;
     Knob* lastKnobChanged;
+    
+    bool isLoadingProject; //< true when the project is loading
     
     ProjectPrivate(Natron::Project* project);
     

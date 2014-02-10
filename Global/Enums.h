@@ -72,6 +72,7 @@ namespace Natron{
     /*Copy of QMessageBox::StandardButton*/
     enum StandardButton {
         NoButton           = 0x00000000,
+        Escape             = 0x00000200,        // obsolete
         Ok                 = 0x00000400,
         Save               = 0x00000800,
         SaveAll            = 0x00001000,

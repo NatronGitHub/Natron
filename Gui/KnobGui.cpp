@@ -8,8 +8,6 @@
  *
  */
 
-// TODO: split into KnobGui.cpp, KnobGuiFile.cpp and KnobGuiTypes.cpp
-
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/KnobGui.h"
 

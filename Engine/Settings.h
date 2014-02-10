@@ -64,6 +64,8 @@ public:
     
     bool isMultiThreadingDisabled() const;
     
+    void setMultiThreadingDisabled(bool disabled);
+    
     const std::string& getReaderPluginIDForFileType(const std::string& extension);
     
     const std::string& getWriterPluginIDForFileType(const std::string& extension);

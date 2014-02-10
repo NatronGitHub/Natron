@@ -7,7 +7,7 @@
 //  Created by Frédéric Devernay on 03/09/13.
 //
 //
-
+#include "Global/Mock.h"
 #include "OfxHost.h"
 
 #include <cassert>
@@ -47,9 +47,6 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/KnobTypes.h"
 
-#ifdef NATRON_ENABLE_MOCK
-#include "Tests/OfxEffectInstance_Mock.h"
-#endif
 
 //our version of parametric param suite support
 #include "ofxhParametricParam.h"
@@ -265,7 +262,7 @@ void Natron::OfxHost::getPluginAndContextByID(const std::string& pluginID,  OFX:
     }
 }
 
-OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natron::Node* node) {
+AbstractOfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natron::Node* node) {
 
     assert(node);
     OFX::Host::ImageEffect::ImageEffectPlugin *plugin;
@@ -273,11 +270,7 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
 
     getPluginAndContextByID(name,&plugin,context);
 
-#ifdef NATRON_ENABLE_MOCK
-    OfxEffectInstance* hostSideEffect = new OfxEffectInstance_Mock(node);
-#else
-    OfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
-#endif
+    AbstractOfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
     hostSideEffect->createOfxImageEffectInstance(plugin, context);
     return hostSideEffect;
 }

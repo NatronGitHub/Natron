@@ -252,6 +252,7 @@ HEADERS += \
     ../Global/GlobalDefines.h \
     ../Global/LibraryBinary.h \
     ../Global/Macros.h \
+    ../Global/Mock.h \
     ../Global/MemoryInfo.h \
     ../Global/QtCompat.h \
     ../Gui/AboutWindow.h \

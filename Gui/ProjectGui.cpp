@@ -56,6 +56,8 @@ ProjectGui::~ProjectGui(){
     }
 }
 
+
+
 void ProjectGui::create(boost::shared_ptr<Natron::Project> projectInternal,QVBoxLayout* container,QWidget* parent)
 
 {

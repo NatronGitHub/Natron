@@ -166,10 +166,6 @@ double Curve::getMaximumTimeCovered() const {
 bool Curve::addKeyFrame(KeyFrame key){
     
     QMutexLocker l(&_imp->_lock);
-    
-    ///lock the project if it is saving
-    _imp->owner->getHolder()->getApp()->lockProject();
-    
 
     if(_imp->mustSetCurveType) {
         if(_imp->owner->typeName() == Int_Knob::typeNameStatic() ||
@@ -190,10 +186,7 @@ bool Curve::addKeyFrame(KeyFrame key){
     }
     
       std::pair<KeyFrameSet::iterator,bool> it = addKeyFrameNoUpdate(key);
-    
-    ///unlock it
-    _imp->owner->getHolder()->getApp()->unlockProject();
-    
+
     evaluateCurveChanged(KEYFRAME_CHANGED,it.first);
     return it.second;
 }

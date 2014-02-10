@@ -304,6 +304,7 @@ HEADERS += \
     Global/LibraryBinary.h \
     Global/Macros.h \
     Global/MemoryInfo.h \
+    Global/Mock.h \
     Global/QtCompat.h \
     Gui/AboutWindow.h \
     Gui/AnimatedCheckBox.h \

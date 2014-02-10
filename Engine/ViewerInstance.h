@@ -202,7 +202,7 @@ public slots:
     void onNodeNameChanged(const QString&);
     
     void redrawViewer();
-    
+
 signals:
 
     void mustRedraw();

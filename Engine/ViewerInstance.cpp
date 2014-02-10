@@ -35,6 +35,7 @@
 #include "Engine/Log.h"
 #include "Engine/Lut.h"
 #include "Engine/Settings.h"
+#include "Engine/Project.h"
 
 using namespace Natron;
 using std::make_pair;
@@ -176,7 +177,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
         zoomFactor = viewer->getZoomFactor();
     }
     viewer->setRod(rod);
-    Format dispW = getApp()->getProjectFormat();
+    Format dispW = getApp()->getProject()->getProjectDefaultFormat();
     
     viewer->setDisplayingImage(true);
     
@@ -225,7 +226,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
     }
 
     
-    int viewsCount = getApp()->getProjectViewsCount();
+    int viewsCount = getApp()->getProject()->getProjectViewsCount();
     int view = viewsCount > 0 ? _uiContext->getCurrentView() : 0;
     
     FrameKey key(time,
@@ -258,7 +259,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
         /*Found in viewer cache, we execute the cached engine and leave*/
         _interThreadInfos._ramBuffer = cachedFrame->data();
         Format dispW = cachedFrame->getKey()._displayWindow;
-        getApp()->setOrAddProjectFormat(dispW,true);
+        getApp()->getProject()->setOrAddProjectFormat(dispW,true);
 #ifdef NATRON_LOG
         Natron::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
                                    QString::number(key.getHash())).toStdString());
@@ -299,7 +300,13 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
             int inputIndex = activeInput();
             _node->notifyInputNIsRendering(inputIndex);
             _lastRenderedImage = it->first->renderRoI(time, scale,view,it->second,byPassCache);
-            _node->notifyInputNIsFinishedRendering(inputIndex);;
+            _node->notifyInputNIsFinishedRendering(inputIndex);
+            
+            if (!_lastRenderedImage) {
+                //if render was aborted, remove the frame from the cache as it contains only garbage
+                appPTR->removeFromViewerCache(cachedFrame);
+                return StatFailed;
+            }
             
             //  Natron::debugImage(_lastRenderedImage.get(),"img.png");
             

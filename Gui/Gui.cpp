@@ -235,13 +235,6 @@ void Gui::createViewerGui(Node* viewer){
     _lastSelectedViewer = v->getUiContext();
 }
 
-void Gui::autoConnect(NodeGui* target,NodeGui* created) {
-    assert(_nodeGraphArea);
-    if(target) {
-        _nodeGraphArea->autoConnect(target, created);
-    }
-    _nodeGraphArea->selectNode(created);
-}
 
 NodeGui* Gui::getSelectedNode() const {
     assert(_nodeGraphArea);
@@ -685,7 +678,7 @@ void Gui::setupUi()
     QObject::connect(actionConnectInput10, SIGNAL(triggered()),this,SLOT(connectInput10()));
     
     QObject::connect(actionPreferences,SIGNAL(triggered()),this,SLOT(showSettings()));
-
+    QObject::connect(_appInstance->getProject().get(),SIGNAL(projectNameChanged(QString)),this,SLOT(onProjectNameChanged(QString)));
     QMetaObject::connectSlotsByName(this);
     
     restoreGuiGeometry();
@@ -1114,7 +1107,7 @@ void Gui::openProject(){
         QString name = SequenceFileDialog::removePath(file);
         QString path = file.left(file.indexOf(name));
         
-        _appInstance->loadProject(path,name);
+        _appInstance->getProject()->loadProject(path,name);
         
         QSettings settings;
         QStringList recentFiles = settings.value("recentFileList").toStringList();
@@ -1129,8 +1122,9 @@ void Gui::openProject(){
     
 }
 void Gui::saveProject(){
-    if(_appInstance->hasProjectBeenSavedByUser()){
-        _appInstance->saveProject(_appInstance->getCurrentProjectPath(),_appInstance->getCurrentProjectName(),false);
+    if(_appInstance->getProject()->hasProjectBeenSavedByUser()){
+        _appInstance->getProject()->saveProject(_appInstance->getProject()->getProjectPath(),
+                                                _appInstance->getProject()->getProjectName(),false);
     }else{
         saveProjectAs();
     }
@@ -1145,7 +1139,7 @@ void Gui::saveProjectAs(){
         }
         QString file = SequenceFileDialog::removePath(outFile);
         QString path = outFile.left(outFile.indexOf(file));
-        _appInstance->saveProject(path,file,false);
+        _appInstance->getProject()->saveProject(path,file,false);
     }
 }
 
@@ -1243,18 +1237,15 @@ QString Gui::popSaveFileDialog(bool sequenceDialog,const std::vector<std::string
 }
 
 void Gui::autoSave(){
-    _appInstance->autoSave();
+    _appInstance->getProject()->autoSave();
 }
 
-bool Gui::isGraphWorthless() const{
-    return _nodeGraphArea->isGraphWorthLess();
-}
 
 int Gui::saveWarning(){
     
-    if(!isGraphWorthless() && !_appInstance->isSaveUpToDate()){
+    if(!_appInstance->getProject()->isGraphWorthLess() && !_appInstance->getProject()->isSaveUpToDate()){
         QMessageBox::StandardButton ret =  QMessageBox::question(this, "",
-                                                                 QString("Save changes to " + _appInstance->getCurrentProjectName() + " ?"),
+                                                                 QString("Save changes to " + _appInstance->getProject()->getProjectName() + " ?"),
                                                                  QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,QMessageBox::Save);
         if(ret == QMessageBox::Escape || ret == QMessageBox::Cancel){
             return 2;
@@ -1266,6 +1257,16 @@ int Gui::saveWarning(){
     }
     return -1;
     
+}
+
+void Gui::loadProjectGui(const ProjectGuiSerialization& obj) const {
+    assert(_projectGui);
+    _projectGui->load(obj);
+}
+
+void Gui::saveProjectGui(ProjectGuiSerialization* obj) {
+    assert(_projectGui);
+    _projectGui->save(obj);
 }
 
 void Gui::errorDialog(const std::string& title,const std::string& text){
@@ -1322,7 +1323,7 @@ void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron
     }else{
         _lastQuestionDialogAnswer = (Natron::StandardButton)QMessageBox::question(this,title,content,
                                                                                   (QMessageBox::StandardButtons)buttons,
-                                                                                  (QMessageBox::StandardButtons)defaultB);
+                                                                                  (QMessageBox::StandardButton)defaultB);
     }
     _uiUsingMainThread = false;
     _uiUsingMainThreadCond.wakeOne();
@@ -1633,7 +1634,7 @@ void Gui::openRecentFile() {
     QAction *action = qobject_cast<QAction *>(sender());
     if (action) {
         QFileInfo f(action->data().toString());
-        _appInstance->loadProject(f.path() + QDir::separator(),f.fileName());
+        _appInstance->getProject()->loadProject(f.path() + QDir::separator(),f.fileName());
     }
 }
 
@@ -1665,4 +1666,25 @@ QPixmap Gui::screenShot(QWidget* w) {
 #else
     return QApplication::primaryScreen()->grabWindow(w->winId());
 #endif
+}
+
+void Gui::onProjectNameChanged(const QString& name) {
+    QString text(QCoreApplication::applicationName() + " - ");
+    text.append(name);
+    setWindowTitle(text);
+}
+
+void Gui::setColorPickersColor(const QColor& c) {
+    assert(_projectGui);
+    _projectGui->setPickersColor(c);
+}
+
+void Gui::registerNewColorPicker(boost::shared_ptr<Color_Knob> knob) {
+    assert(_projectGui);
+    _projectGui->registerNewColorPicker(knob);
+}
+
+void Gui::removeColorPicker(boost::shared_ptr<Color_Knob> knob) {
+    assert(_projectGui);
+    _projectGui->removeColorPicker(knob);
 }

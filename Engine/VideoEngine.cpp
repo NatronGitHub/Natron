@@ -640,7 +640,7 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded){
         RectI rod;
         stat = _tree.getOutput()->getRegionOfDefinition(time, &rod);
         if(stat != StatFailed){
-            int viewsCount = _tree.getOutput()->getApp()->getProjectViewsCount();
+            int viewsCount = _tree.getOutput()->getApp()->getProject()->getProjectViewsCount();
             for(int i = 0; i < viewsCount;++i){
                 // Do not catch exceptions: if an exception occurs here it is probably fatal, since
                 // it comes from Natron itself. All exceptions from plugins are already caught
@@ -803,8 +803,8 @@ U64 RenderTree::cloneKnobsAndcomputeTreeHash(EffectInstance* effect,const std::v
     return ret;
 }
 void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(){
-    _renderOutputFormat = _output->getApp()->getProjectFormat();
-    _projectViewsCount = _output->getApp()->getProjectViewsCount();
+    _renderOutputFormat = _output->getApp()->getProject()->getProjectDefaultFormat();
+    _projectViewsCount = _output->getApp()->getProject()->getProjectViewsCount();
     
     //    bool oldVersionValid = _treeVersionValid;
     //    U64 oldVersion = 0;

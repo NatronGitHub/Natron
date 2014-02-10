@@ -27,6 +27,7 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/PluginMemory.h"
+#include "Engine/Project.h"
 
 using namespace Natron;
 
@@ -180,15 +181,6 @@ std::string EffectInstance::inputLabel(int inputNb) const {
 }
 
 boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTime time,RenderScale scale,int view){
-#ifdef NATRON_LOG
-    Natron::Log::beginFunction(getName(),"getImage");
-    Natron::Log::print(QString("Input "+QString::number(inputNb)+
-                                                      " Scale ("+QString::number(scale.x)+
-                                                      ","+QString::number(scale.y)+
-                                                     ") Time " + QString::number(time)
-                                                      +" View " + QString::number(view)).toStdString());
-    
-#endif
     
     EffectInstance* n  = input(inputNb);
     
@@ -204,13 +196,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
         roi = _imp->renderArgs.localData()._roi;//if the thread was spawned by us we take the last render args
     }else{
         Natron::Status stat = n->getRegionOfDefinition(time, &roi);
-        assert(stat != Natron::StatFailed);//we have no choice but compute the full region of definition
+        if(stat == Natron::StatFailed) {//we have no choice but compute the full region of definition
+            return boost::shared_ptr<Natron::Image>();
+        }
     }
     boost::shared_ptr<Image > entry = n->renderRoI(time, scale, view,roi);
 
-#ifdef NATRON_LOG
-    Natron::Log::endFunction(getName(),"getImage");
-#endif
     return entry;
 }
 
@@ -292,28 +283,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
 
     bool identity = isIdentity(time,scale,renderWindow,view,&inputTimeIdentity,&inputNbIdentity);
     if(identity){
-
-        boost::shared_ptr<Natron::Image> inputImage = getImage(inputNbIdentity,inputTimeIdentity,scale,view);
-        if(!inputImage) {
-            QString err("Error in EffectInstance::renderRoI(): getImage(");
-            err.append(QString::number(inputNbIdentity));
-            err.append(",");
-            err.append(QString::number(inputTimeIdentity));
-            err.append(",(");
-            err.append(QString::number(scale.x));
-            err.append(",");
-            err.append(QString::number(scale.y));
-            err.append("),");
-            err.append(QString::number(view));
-            err.append(") returned NULL");
-            throw std::runtime_error(err.toStdString());
-        } else {
-#ifdef NATRON_LOG
-            Natron::Log::print("The effect is an identity");
-            Natron::Log::endFunction(getName(),"renderRoI");
-#endif
-            return inputImage;
-        }
+        return getImage(inputNbIdentity,inputTimeIdentity,scale,view);
     }
 
     /*look-up the cache for any existing image already rendered*/
@@ -338,7 +308,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         Format frmt;
         frmt.set(rod);
         ///FIXME: what about the pixel aspect ratio ?
-        getApp()->setOrAddProjectFormat(frmt);
+        getApp()->getProject()->setOrAddProjectFormat(frmt);
     }
     
     Natron::ImageKey key = Natron::Image::makeKey(cost,_imp->hashValue.value(), time, scale,view,rod);
@@ -556,7 +526,7 @@ void EffectInstance::evaluate(Knob* knob,bool isSignificant){
         std::list<ViewerInstance*> viewers;
         _node->hasViewersConnected(&viewers);
         bool fitToViewer = knob && knob->typeName() == File_Knob::typeNameStatic();
-        bool forcePreview = getApp()->isAutoPreviewEnabled();
+        bool forcePreview = getApp()->getProject()->isAutoPreviewEnabled();
         for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
             if(isSignificant){
                 (*it)->refreshAndContinueRender(fitToViewer,forcePreview);

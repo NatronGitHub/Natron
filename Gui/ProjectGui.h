@@ -41,9 +41,7 @@ public:
         
     void create(boost::shared_ptr<Natron::Project> projectInternal,QVBoxLayout* container,QWidget* parent = NULL);
     
-    void loadProject(const QString& path,const QString& name);
     
-    void saveProject(const QString& path,const QString& filename,bool autoSave = false);
     
     bool isVisible() const;
     

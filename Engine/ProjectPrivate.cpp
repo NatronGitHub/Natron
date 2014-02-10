@@ -21,7 +21,8 @@
 
 namespace Natron{
 ProjectPrivate::ProjectPrivate(Natron::Project* project)
-    : projectName("Untitled." NATRON_PROJECT_FILE_EXT)
+    : projectLock(QMutex::Recursive)
+    , projectName("Untitled." NATRON_PROJECT_FILE_EXT)
     , hasProjectBeenSavedByUser(false)
     , ageSinceLastSave(QDateTime::currentDateTime())
     , formatKnob()
@@ -40,6 +41,7 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , holdersWhoseBeginWasCalled()
     , isSignificantChange(false)
     , lastKnobChanged(NULL)
+    , isLoadingProject(false)
 
 {
 }
@@ -47,9 +49,7 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
 
 void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
-    project->getApp()->lockProject();
     project->beginProjectWideValueChanges(Natron::OTHER_REASON,project);
-    project->getApp()->unlockProject();
 
     /*1st OFF RESTORE THE PROJECT KNOBS*/
     
@@ -156,7 +156,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             }
         }
         for (std::map<int, std::string>::const_iterator input = inputs.begin(); input!=inputs.end(); ++input) {
-            if(!project->getApp()->connect(input->first, input->second,thisNode)) {
+            if(!project->getApp()->getProject()->connect(input->first, input->second,thisNode)) {
                 std::string message = std::string("Failed to connect node ") + serializedNodes[i]->getPluginLabel() + " to " + input->second;
                 qDebug() << message.c_str();
                 throw std::runtime_error(message);
@@ -165,9 +165,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
     }
     
-    project->getApp()->lockProject();
     project->endProjectWideValueChanges(project);
-    project->getApp()->unlockProject();
 }
 
 } // namespace Natron

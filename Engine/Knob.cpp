@@ -67,6 +67,8 @@ struct Knob::KnobPrivate {
     
     std::vector<Natron::AnimationLevel> _animationLevel;//< indicates for each dimension whether it is static/interpolated/onkeyframe
     
+    mutable QMutex _valueMutex; //< protects the content of the knobs while it is serializing/deserializing
+    
     KnobPrivate(Knob* publicInterface,KnobHolder*  holder,int dimension,const std::string& description)
     : _publicInterface(publicInterface)
     , _holder(holder)
@@ -89,6 +91,7 @@ struct Knob::KnobPrivate {
     , _curves(dimension)
     , _masters(dimension)
     , _animationLevel(dimension)
+    , _valueMutex()
     {
         
     }
@@ -198,22 +201,14 @@ Knob::ValueChangedReturnCode Knob::setValue(const Variant& v, int dimension, Nat
     ///if the knob is slaved to another knob,return, because we don't want the
     ///gui to be unsynchronized with what lies internally.
     if (!isSlave(dimension)) {
-        ///locking project if it is saving
-        if(_imp->_holder->getApp()){
-            _imp->_holder->getApp()->lockProject();
-        }
         
+        QMutexLocker l(&_imp->_valueMutex);
         _imp->_values[dimension] = v;
-        
-        ///unlocking project if it is saving
-        if(_imp->_holder->getApp()){
-            _imp->_holder->getApp()->unlockProject();
-        }
-        
+
         ///Add automatically a new keyframe
         if(getAnimationLevel(dimension) != Natron::NO_ANIMATION && //< if the knob is animated
            _imp->_holder->getApp() && //< the app pointer is not NULL
-           !_imp->_holder->getApp()->isLoadingProject() && //< we're not loading the project
+           !_imp->_holder->getApp()->getProject()->isLoadingProject() && //< we're not loading the project
            (reason == Natron::USER_EDITED || reason == Natron::PLUGIN_EDITED) && //< the change was made by the user or plugin
            newKey != NULL){ //< the keyframe to set is not null
             
@@ -260,8 +255,12 @@ bool Knob::setValueAtTime(int time, const Variant& v, int dimension, Natron::Val
     }
 
     *newKey = KeyFrame((double)time,keyFrameValue);
-    bool ret = curve->addKeyFrame(*newKey);
     
+    bool ret;
+    {
+        QMutexLocker l(&_imp->_valueMutex);
+        ret = curve->addKeyFrame(*newKey);
+    }
     if (reason == Natron::PLUGIN_EDITED) {
         setValue(v, dimension,Natron::OTHER_REASON,NULL);
     }
@@ -286,7 +285,11 @@ void Knob::deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason r
     if (isSlave(dimension)) {
         return;
     }
-    _imp->_curves[dimension]->removeKeyFrame((double)time);
+    
+    {
+        QMutexLocker l(&_imp->_valueMutex);
+        _imp->_curves[dimension]->removeKeyFrame((double)time);
+    }
     
     if(reason != Natron::USER_EDITED){
         emit keyFrameRemoved(time,dimension);
@@ -306,7 +309,10 @@ void Knob::removeAnimation(int dimension,Natron::ValueChangedReason reason){
         return;
     }
     
-    _imp->_curves[dimension]->clearKeyFrames();
+    {
+        QMutexLocker l(&_imp->_valueMutex);
+        _imp->_curves[dimension]->clearKeyFrames();
+    }
     
     if(reason != Natron::USER_EDITED){
         emit animationRemoved(dimension);
@@ -403,6 +409,7 @@ void Knob::load(const KnobSerialization& serializationObj){
 }
 
 void Knob::save(KnobSerialization* serializationObj) const {
+    QMutexLocker l(&_imp->_valueMutex);
     serializationObj->initialize(this);
 }
 
@@ -672,12 +679,12 @@ KnobHolder::~KnobHolder(){
 
 void KnobHolder::invalidateHash(){
     if(_app){
-        _app->incrementKnobsAge();
+        _app->getProject()->incrementKnobsAge();
     }
 }
 int KnobHolder::getAppAge() const{
     if(_app){
-        return _app->getKnobsAge();
+        return _app->getProject()->getKnobsAge();
     }else{
         return -1;
     }
@@ -710,19 +717,19 @@ void KnobHolder::refreshAfterTimeChange(SequenceTime time){
 
 void KnobHolder::notifyProjectBeginKnobsValuesChanged(Natron::ValueChangedReason reason){
     if(_app){
-        getApp()->beginProjectWideValueChanges(reason, this);
+        getApp()->getProject()->beginProjectWideValueChanges(reason, this);
     }
 }
 
 void KnobHolder::notifyProjectEndKnobsValuesChanged(){
     if(_app){
-        getApp()->endProjectWideValueChanges(this);
+        getApp()->getProject()->endProjectWideValueChanges(this);
     }
 }
 
 void KnobHolder::notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,Knob* k,bool significant){
     if(_app){
-        getApp()->stackEvaluateRequest(reason,this,k,significant);
+        getApp()->getProject()->stackEvaluateRequest(reason,this,k,significant);
     }else{
         onKnobValueChanged(k, reason);
     }

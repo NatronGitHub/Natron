@@ -458,7 +458,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 
     
     _imp->blankViewerInfos.setChannels(Natron::Mask_RGBA);
-    const Format& projectFormat = parent->getGui()->getApp()->getProjectFormat();
+    const Format& projectFormat = parent->getGui()->getApp()->getProject()->getProjectDefaultFormat();
     _imp->blankViewerInfos.setRoD(projectFormat);
     _imp->blankViewerInfos.setDisplayWindow(projectFormat);
     setRod(_imp->blankViewerInfos.getRoD());
@@ -1121,7 +1121,7 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
             pickerColor.setGreenF(g);
             pickerColor.setBlueF(b);
             pickerColor.setAlphaF(a);
-            _imp->viewerTab->getGui()->_projectGui->setPickersColor(pickerColor);
+            _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
         }
     }
     
@@ -1429,7 +1429,7 @@ void ViewerGL::onProjectFormatChanged(const Format& format){
     _imp->resolutionOverlay.append("x");
     _imp->resolutionOverlay.append(QString::number(format.height()));
     
-    if (!_imp->viewerTab->getGui()->getApp()->isLoadingProject()) {
+    if (!_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject()) {
         fitToFormat(format);
     }
     
@@ -1478,6 +1478,7 @@ void ViewerGL::focusOutEvent(QFocusEvent *event)
 void ViewerGL::enterEvent(QEvent *event)
 {
     updateColorPicker();
+    setFocus();
     QGLWidget::enterEvent(event);
 }
 
@@ -1492,6 +1493,11 @@ void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected
 }
 
 void ViewerGL::keyPressEvent(QKeyEvent* event){
+    
+    if (event->key() == Qt::Key_O) {
+        toggleOverlays();
+    }
+    
     if(event->isAutoRepeat()){
         if(_imp->viewerTab->notifyOverlaysKeyRepeat(event)){
             updateGL();
@@ -1501,7 +1507,7 @@ void ViewerGL::keyPressEvent(QKeyEvent* event){
             updateGL();
         }
     }
-    
+    QGLWidget::keyPressEvent(event);
 }
 
 

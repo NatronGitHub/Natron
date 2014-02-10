@@ -66,7 +66,7 @@ class OfxHost;
 class Node;
 class Project;
 }
-
+class ProjectGuiSerialization;
 
 class AppInstance : public QObject,public boost::noncopyable
 {
@@ -122,89 +122,9 @@ public:
     /*true if the user is NOT scrubbing the timeline*/
     bool shouldRefreshPreview() const;
 
-//////////
-//////////////// PROJECT RELATED
-/////////
-
-    const QString& getCurrentProjectName() const WARN_UNUSED_RETURN ;
-
-    const QString& getCurrentProjectPath() const WARN_UNUSED_RETURN ;
-
-    int getProjectViewsCount() const;
-
-    bool isAutoPreviewEnabled() const;
-
-    void toggleAutoPreview();
-
-    bool hasProjectBeenSavedByUser() const WARN_UNUSED_RETURN ;
-
-    const Format& getProjectFormat() const WARN_UNUSED_RETURN ;
-
-    bool isLoadingProject() const;
-
-    bool loadProject(const QString& path,const QString& name);
-
-    void saveProject(const QString& path,const QString& name,bool autoSave);
-
-    void autoSave();
-
-    void setOrAddProjectFormat(const Format& frmt,bool skipAdd = false);
-
-    int getKnobsAge() const;
-
-    void incrementKnobsAge();
-
-    void clearNodes();
-
-    bool isSaveUpToDate() const WARN_UNUSED_RETURN;
-
-    static QString autoSavesDir() WARN_UNUSED_RETURN;
-
-    const std::vector<Natron::Node*>& getCurrentNodes() const;
-
-    void beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller);
-
-    void stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHolder* caller, Knob *k, bool isSignificant);
-
-    void endProjectWideValueChanges(KnobHolder* caller);
-
-    void lockProject();
-
-    void unlockProject();
-
-private:
-
-    void resetCurrentProject();
-
-    void removeAutoSaves() const;
-
-    void loadProjectInternal(const QString& path,const QString& name);
-
-    void saveProjectInternal(const QString& path,const QString& filename,bool autosave = false);
-
-    /** @brief Attemps to find an autosave. If found one,prompts the user
-     * whether he/she wants to load it. If something was loaded this function
-     * returns true,otherwise false.
-     **/
-    bool findAutoSave() WARN_UNUSED_RETURN;
-
-public:
-/////////
-///////////// END PROJECT RELATED
-/////////
-
     void deselectAllNodes() const;
 
-
     ViewerTab* addNewViewerTab(ViewerInstance* node,TabWidget* where) WARN_UNUSED_RETURN;
-
-    bool connect(int inputNumber,const std::string& inputName,Natron::Node* output);
-
-    bool connect(int inputNumber,Natron::Node* input,Natron::Node* output);
-
-    bool disconnect(Natron::Node* input,Natron::Node* output);
-
-    void autoConnect(Natron::Node* target,Natron::Node* created);
 
     NodeGui* getNodeGui(Natron::Node* n) const WARN_UNUSED_RETURN;
 
@@ -227,6 +147,9 @@ public:
                                           Natron::StandardButton defaultButton = Natron::NoButton) const WARN_UNUSED_RETURN;
     void notifyRenderFinished(Natron::OutputEffectInstance* writer);
 
+    void loadProjectGui(const ProjectGuiSerialization& obj) const;
+
+    void saveProjectGui(ProjectGuiSerialization* obj);
 
 public slots:
 
@@ -237,8 +160,6 @@ public slots:
 
     void setupViewersForViews(int viewsCount);
 
-    void notifyViewersProjectFormatChanged(const Format& format);
-
     void setViewersCurrentView(int view);
 
     void triggerAutoSave();
@@ -247,6 +168,8 @@ public slots:
     void startWritersRendering(const QStringList& writers);
 
     void clearOpenFXPluginsCaches();
+
+    void onProjectNodesCleared();
 
 signals:
 
@@ -259,10 +182,7 @@ private:
 
     Gui* _gui; // the view of the MVC pattern
 
-    mutable QMutex _projectLock;
     boost::shared_ptr<Natron::Project> _currentProject;
-    bool _isLoadingProject;
-    bool _isSavingProject;
 
     int _appID;
 
@@ -514,6 +434,11 @@ public:
     void setLoadingStatus(const QString& str);
 
     void updateAllRecentFileMenus();
+
+    /**
+    * @brief Toggle on/off multi-threading globally in Natron
+    **/
+    void setMultiThreadEnabled(bool enabled);
 
 public slots:
 

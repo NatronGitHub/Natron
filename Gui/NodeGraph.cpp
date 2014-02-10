@@ -129,6 +129,7 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     setAcceptDrops(true);
     
     QObject::connect(_gui->getApp(), SIGNAL(pluginsPopulated()), this, SLOT(populateMenu()));
+    QObject::connect(_gui->getApp()->getProject().get(), SIGNAL(nodesCleared()), this, SLOT(onProjectNodesCleared()));
     
     setMouseTracking(true);
     setCacheMode(CacheBackground);
@@ -222,11 +223,14 @@ NodeGraph::~NodeGraph(){
     QObject::disconnect(&_refreshCacheTextTimer,SIGNAL(timeout()),this,SLOT(updateCacheSizeText()));
     _nodeCreationShortcutEnabled = false;
 
-    clearActiveAndTrashNodes();
+    onProjectNodesCleared();
 
 }
 
-void NodeGraph::clearActiveAndTrashNodes(){
+void NodeGraph::onProjectNodesCleared() {
+    
+    deselect();
+    
     for (U32 i = 0; i < _nodes.size(); ++i) {
         delete _nodes[i];
     }
@@ -284,34 +288,10 @@ QRectF NodeGraph::visibleRect() {
 }
 
 NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Natron::Node *node){
-    QPointF selectedPos;
-    QRectF viewPos = visibleRect();
-    double x,y;
-    
-    if(_nodeSelected){
-        selectedPos = _nodeSelected->scenePos();
-        int yOffset = 0;
-        int xOffset = 0;
-        if(node->makePreviewByDefault() && !_nodeSelected->getNode()->makePreviewByDefault()){
-            xOffset -= NodeGui::PREVIEW_LENGTH/2;
-            yOffset -= NodeGui::PREVIEW_HEIGHT;
-        }
-        if(node->isInputNode() || _nodeSelected->getNode()->isOutputNode()){
-            yOffset -=  (NodeGui::NODE_HEIGHT + 20);
-        }else{
-            yOffset +=  (NodeGui::NODE_HEIGHT + 20);
-        }
-        if(_nodeSelected->getNode()->isInputNode() && node->isInputNode())
-            xOffset -= (NodeGui::NODE_LENGTH + 20);
-        
-        y = selectedPos.y() + yOffset;
-        x = selectedPos.x() + xOffset;
-    }else{
-        x = (viewPos.bottomRight().x()+viewPos.topLeft().x())/2.;
-        y = (viewPos.topLeft().y()+viewPos.bottomRight().y())/2.;
-    }
-    
-    NodeGui* node_ui = new NodeGui(this,dockContainer,node,x,y,_root);
+  
+    NodeGui* node_ui = new NodeGui(this,dockContainer,node,_root);
+    moveNodesForIdealPosition(node_ui);
+
     _nodes.push_back(node_ui);
     
     QUndoStack* nodeStack = node_ui->getUndoStack();
@@ -324,6 +304,130 @@ NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Natron::Node *node
     return node_ui;
     
 }
+
+void NodeGraph::moveNodesForIdealPosition(NodeGui* node) {
+    QRectF viewPos = visibleRect();
+    
+    ///3 possible values:
+    /// 0 = default , i.e: we pop the node in the middle of the graph's current view
+    /// 1 = pop the node above the selected node and move the inputs of the selected node a little
+    /// 2 = pop the node below the selected node and move the outputs of the selected node a little
+    int behavior = 0;
+    
+    if (!_nodeSelected) {
+        behavior = 0;
+    } else {
+        
+        ///this function is redundant with Project::autoConnect, depending on the node selected
+        ///and this node we make some assumptions on to where we could put the node.
+        
+        //        1) selected is output
+        //          a) created is output --> fail
+        //          b) created is input --> connect input
+        //          c) created is regular --> connect input
+        //        2) selected is input
+        //          a) created is output --> connect output
+        //          b) created is input --> fail
+        //          c) created is regular --> connect output
+        //        3) selected is regular
+        //          a) created is output--> connect output
+        //          b) created is input --> connect input
+        //          c) created is regular --> connect output
+        
+        ///1)
+        if (_nodeSelected->getNode()->isOutputNode()) {
+            
+            ///case 1-a) just do default we don't know what else to do
+            if (node->getNode()->isOutputNode()) {
+                behavior = 0;
+            } else {
+                ///for either cases 1-b) or 1-c) we just connect the created node as input of the selected node.
+                behavior = 1;
+            }
+           
+        }
+        ///2) and 3) are similar except for case b)
+        else {
+            
+            ///case 2 or 3- a): connect the created node as output of the selected node.
+            if (node->getNode()->isOutputNode()) {
+                behavior = 2;
+            }
+            ///case b)
+            else if (node->getNode()->isInputNode()) {
+                if (_nodeSelected->getNode()->isInputNode()) {
+                    ///assert we're not in 2-b)
+                    assert(!node->getNode()->isInputNode());
+                } else {
+                    ///case 3-b): connect the created node as input of the selected node
+                    behavior = 1;
+                }
+            }
+            ///case c) connect created as output of the selected node
+            else {
+                behavior = 2;
+            }
+        }
+    }
+    
+
+    ///default
+    int x,y;
+    if (behavior == 0) {
+        x = (viewPos.bottomRight().x() + viewPos.topLeft().x()) / 2.;
+        y = (viewPos.topLeft().y() + viewPos.bottomRight().y()) / 2.;
+    }
+    ///pop it above the selected node
+    else if(behavior == 1) {
+        QSize selectedNodeSize = NodeGui::nodeSize(_nodeSelected->getNode()->isPreviewEnabled());
+        QSize createdNodeSize = NodeGui::nodeSize(node->getNode()->isPreviewEnabled());
+        QPointF selectedNodeMiddlePos = _nodeSelected->scenePos() + QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
+        
+
+        x = selectedNodeMiddlePos.x() - createdNodeSize.width() / 2;
+        y = selectedNodeMiddlePos.y() - selectedNodeSize.height() / 2 - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES - createdNodeSize.height();
+        
+        QRectF createdNodeRect(x,y,createdNodeSize.width(),createdNodeSize.height());
+
+        ///now that we have the position of the node, move the inputs of the selected node to make some space for this node
+        const std::map<int,Edge*>& selectedNodeInputs = _nodeSelected->getInputsArrows();
+        for (std::map<int,Edge*>::const_iterator it = selectedNodeInputs.begin(); it!=selectedNodeInputs.end();++it) {
+            if (it->second->hasSource()) {
+                NodeGui* input = it->second->getSource();
+                input->moveAbovePositionRecursively(createdNodeRect);
+            }
+        }
+        
+    }
+    ///pop it below the selected node
+    else {
+        QSize selectedNodeSize = NodeGui::nodeSize(_nodeSelected->getNode()->isPreviewEnabled());
+        QSize createdNodeSize = NodeGui::nodeSize(node->getNode()->isPreviewEnabled());
+        QPointF selectedNodeMiddlePos = _nodeSelected->scenePos() + QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
+        
+        ///actually move the created node where the selected node is
+        x = selectedNodeMiddlePos.x() - createdNodeSize.width() / 2;
+        y = selectedNodeMiddlePos.y() + selectedNodeSize.height() / 2 + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES;
+
+        QRectF createdNodeRect(x,y,createdNodeSize.width(),createdNodeSize.height());
+        
+        ///and move the selected node below recusively
+        const Natron::Node::OutputMap& outputs = _nodeSelected->getNode()->getOutputs();
+        for (Natron::Node::OutputMap::const_iterator it = outputs.begin(); it!= outputs.end(); ++it) {
+            if (it->second) {
+                NodeGui* output = _gui->getApp()->getNodeGui(it->second);
+                assert(output);
+                output->moveBelowPositionRecursively(createdNodeRect);
+            }
+        }
+    }
+    
+    node->setPos(x, y);
+    
+}
+
+
+
 void NodeGraph::mousePressEvent(QMouseEvent *event) {
     
     assert(event);
@@ -417,9 +521,10 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         appPTR->clearPlaybackCache();
         _gui->getApp()->checkViewersConnection();
     }else if(_evtState == NODE_DRAGGING){
-        if(_nodeSelected)
+        if(_nodeSelected) {
             _undoStack->setActive();
             _undoStack->push(new MoveCommand(_nodeSelected,_lastNodeDragStartPoint));
+        }
     }
     scene()->update();
     
@@ -611,111 +716,6 @@ void NodeGraph::wheelEvent(QWheelEvent *event){
 }
 
 
-void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
-    
-    /*Corner cases*/
-    if(selected->getNode()->isInputNode() && created->getNode()->isInputNode())
-        return;
-    if(selected->getNode()->isOutputNode() && created->getNode()->isOutputNode())
-        return;
-    
-    Edge* first = 0;
-    if(!selected)
-        return;
-    /*If the node selected isn't an output node and the node created isn't an output
-     node we want to connect the node created to the output of the node selected*/
-    if(!selected->getNode()->isOutputNode() && !created->getNode()->isInputNode()){
-        
-        /*check first if the node selected has outputs and connect the outputs to the new node*/
-        if(!created->getNode()->isOutputNode()){
-            while(selected->getNode()->hasOutputConnected()){
-                Natron::Node* outputNode = selected->getNode()->getOutputs().begin()->second;
-                assert(outputNode);
-                
-                /*Find which edge is connected to the selected node */
-                NodeGui* output = _gui->getApp()->getNodeGui(outputNode);
-                assert(output);
-                const NodeGui::InputEdgesMap& outputEdges = output->getInputsArrows();
-                Edge* edgeWithSelectedNode = 0;
-                for (NodeGui::InputEdgesMap::const_iterator i = outputEdges.begin();i!=outputEdges.end();++i) {
-                    if (i->second->getSource() == selected) {
-                        edgeWithSelectedNode = i->second;
-                        break;
-                    }
-                }
-                /*Now connecting the selected node's output to the output of the created node.
-                 If the node created is an output node we don't connect it's output
-                 with the outputs of the selected node since it has no output.*/
-                if(edgeWithSelectedNode){
-                    InspectorNode* v = dynamic_cast<InspectorNode*>(outputNode);
-                    if(v){
-                        if(selected){
-                            selected->getNode()->disconnectOutput(outputNode);
-                        }
-                        if(v->connectInput(created->getNode(), edgeWithSelectedNode->getInputNumber(),true)){
-                            created->getNode()->connectOutput(v);
-                        }
-                        
-                    }else{
-                        _undoStack->setActive();
-                        _undoStack->push(new ConnectCommand(this,edgeWithSelectedNode,selected,created));
-                    }
-                    
-                    /*we now try to move the created node in between the selected node and its
-                     old output.*/
-                    QPointF parentPos = created->mapFromScene(selected->scenePos());
-                    if(selected->getNode()->makePreviewByDefault()){
-                        parentPos.ry() += (NodeGui::NODE_HEIGHT + NodeGui::PREVIEW_HEIGHT);
-                    }else{
-                        parentPos.ry() += (NodeGui::NODE_HEIGHT);
-                    }
-                    QPointF childPos = created->mapFromScene(output->scenePos());
-                    QPointF newPos = (parentPos + childPos)/2.;
-                    QPointF oldPos = created->mapFromScene(created->scenePos());
-                    QPointF diff = newPos - oldPos;
-                    
-                    created->moveBy(diff.x(), diff.y());
-                    
-                    /*now moving the output node so it is at an appropriate distance (not too close to
-                     the created one)*/
-                    QPointF childTopLeft = output->scenePos();
-                    QPointF createdBottomLeft = created->scenePos()+QPointF(0,created->boundingRect().height());
-                    QPointF createdTopLeft = created->scenePos();
-                    QPointF parentBottomLeft = selected->scenePos()+QPointF(0,selected->boundingRect().height());
-                    
-                    double diffY_child_created,diffY_created_parent;
-                    diffY_child_created = childTopLeft.y() - createdBottomLeft.y();
-                    diffY_created_parent = createdTopLeft.y() - parentBottomLeft.y();
-                    
-                    double diffX_child_created,diffX_created_parent;
-                    diffX_child_created = childTopLeft.x() - createdBottomLeft.x();
-                    diffX_created_parent = createdTopLeft.x() - parentBottomLeft.x();
-                    
-                    output->moveBy(diffX_created_parent-diffX_child_created, diffY_created_parent-diffY_child_created);
-                    
-                    selected->refreshEdges();
-                    created->refreshEdges();
-                    refreshAllEdges();
-                }else{
-                    break;
-                }
-            }
-        }
-        first = created->firstAvailableEdge();
-        if(first){
-            _undoStack->setActive();
-            _undoStack->push(new ConnectCommand(this,first,first->getSource(),selected));
-        }
-    }else{
-        /*selected is an output node or the created node is an input node. We want to connect the created node
-         as input of the selected node.*/
-        first = selected->firstAvailableEdge();
-        if(first && !created->getNode()->isOutputNode()){
-            _undoStack->setActive();
-            _undoStack->push(new ConnectCommand(this,first,first->getSource(),created));
-        }
-    }
-}
 
 void NodeGraph::deleteSelectedNode(){
     if(_nodeSelected){
@@ -818,16 +818,6 @@ QImage NodeGraph::getFullSceneScreenShot(){
     painter.fillRect(viewRect, QColor(200,200,200,100));
     setTransform(currentTransform);
     return img;
-}
-bool NodeGraph::isGraphWorthLess() const{
-    bool worthLess = true;
-    for (U32 i = 0; i < _nodes.size(); ++i) {
-        if (!_nodes[i]->getNode()->isOutputNode()) {
-            worthLess = false;
-            break;
-        }
-    }
-    return worthLess;
 }
 
 NodeGraph::NodeGraphNavigator::NodeGraphNavigator(QWidget* parent ):QLabel(parent),
@@ -963,17 +953,15 @@ ConnectCommand::ConnectCommand(NodeGraph* graph,Edge* edge,NodeGui *oldSrc,NodeG
 }
 
 void ConnectCommand::undo(){
-    _graph->getGui()->getApp()->lockProject();
     _edge->setSource(_oldSrc);
     
     if(_oldSrc){
-        _graph->getGui()->getApp()->connect(_edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode());
+        _graph->getGui()->getApp()->getProject()->connect(_edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode());
     }
     if(_newSrc){
-        _graph->getGui()->getApp()->disconnect(_newSrc->getNode(), _edge->getDest()->getNode());
+        _graph->getGui()->getApp()->getProject()->disconnect(_newSrc->getNode(), _edge->getDest()->getNode());
     }
     
-    _graph->getGui()->getApp()->unlockProject();
     
     if(_oldSrc){
         setText(QObject::tr("Connect %1 to %2")
@@ -991,7 +979,6 @@ void ConnectCommand::undo(){
     }    
 }
 void ConnectCommand::redo(){
-    _graph->getGui()->getApp()->lockProject();
     NodeGui* dst = _edge->getDest();
     
     InspectorNode* inspector = dynamic_cast<InspectorNode*>(dst->getNode());
@@ -1008,20 +995,18 @@ void ConnectCommand::redo(){
     }else{
         _edge->setSource(_newSrc);
         if(_oldSrc){
-            if(!_graph->getGui()->getApp()->disconnect(_oldSrc->getNode(), dst->getNode())){
+            if(!_graph->getGui()->getApp()->getProject()->disconnect(_oldSrc->getNode(), dst->getNode())){
                 cout << "Failed to disconnect (input) " << _oldSrc->getNode()->getName()
                      << " to (output) " << dst->getNode()->getName() << endl;
             }
         }
         if(_newSrc){
-            if(!_graph->getGui()->getApp()->connect(_edge->getInputNumber(), _newSrc->getNode(), dst->getNode())){
+            if(!_graph->getGui()->getApp()->getProject()->connect(_edge->getInputNumber(), _newSrc->getNode(), dst->getNode())){
                 cout << "Failed to connect (input) " << _newSrc->getNode()->getName()
                      << " to (output) " << dst->getNode()->getName() << endl;
             }
         }
     }
-    
-    _graph->getGui()->getApp()->unlockProject();
     
     dst->refreshEdges();
     
@@ -1178,7 +1163,7 @@ void NodeGraph::populateMenu(){
     
     QAction* autoPreview = new QAction("Auto preview",this);
     autoPreview->setCheckable(true);
-    autoPreview->setChecked(_gui->getApp()->isAutoPreviewEnabled());
+    autoPreview->setChecked(_gui->getApp()->getProject()->isAutoPreviewEnabled());
     QObject::connect(autoPreview,SIGNAL(triggered()),this,SLOT(toggleAutoPreview()));
     QObject::connect(_gui->getApp()->getProject().get(),SIGNAL(autoPreviewChanged(bool)),autoPreview,SLOT(setChecked(bool)));
     _menu->addAction(autoPreview);
@@ -1203,7 +1188,7 @@ void NodeGraph::populateMenu(){
 }
 
 void NodeGraph::toggleAutoPreview() {
-    _gui->getApp()->toggleAutoPreview();
+    _gui->getApp()->getProject()->toggleAutoPreview();
 }
 
 void NodeGraph::forceRefreshAllPreviews() {

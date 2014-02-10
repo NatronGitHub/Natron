@@ -16,9 +16,9 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
 
-#include "Gui/ProjectGui.h"
 #include "Gui/NodeGuiSerialization.h"
-#include "Gui/NodeGui.h"
+
+class ProjectGui;
 
 struct ViewportProjection {
     double left,bottom,zoomFactor,aspectRatio;

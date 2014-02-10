@@ -264,7 +264,7 @@ static void valueAccordingToType(bool toType,const std::string& doubleType,OfxEf
              doubleType == kOfxParamDoubleTypeNormalisedX ||
              doubleType == kOfxParamDoubleTypeNormalisedXAbsolute){ //< treat absolute as non-absolute...
         
-        const Format& projectFormat = effect->getApp()->getProjectFormat();
+        const Format& projectFormat = effect->getApp()->getProject()->getProjectDefaultFormat();
         if(toType){
             *inOut1stDim *= (double)projectFormat.width();
         }else{
@@ -275,7 +275,7 @@ static void valueAccordingToType(bool toType,const std::string& doubleType,OfxEf
              doubleType == kOfxParamDoubleTypeYAbsolute ||
              doubleType == kOfxParamDoubleTypeNormalisedY ||
              doubleType == kOfxParamDoubleTypeNormalisedYAbsolute){ //< treat absolute as non-absolute...
-        const Format& projectFormat = effect->getApp()->getProjectFormat();
+        const Format& projectFormat = effect->getApp()->getProject()->getProjectDefaultFormat();
         if(toType){
             *inOut1stDim *= (double)projectFormat.height();
         }else{
@@ -287,7 +287,7 @@ static void valueAccordingToType(bool toType,const std::string& doubleType,OfxEf
              doubleType == kOfxParamDoubleTypeNormalisedXY ||
              doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute){
         assert(inOutS2ndDim);
-        const Format& projectFormat = effect->getApp()->getProjectFormat();
+        const Format& projectFormat = effect->getApp()->getProject()->getProjectDefaultFormat();
         if(toType){
             *inOut1stDim *= (double)projectFormat.width();
             *inOutS2ndDim *= (double)projectFormat.height();

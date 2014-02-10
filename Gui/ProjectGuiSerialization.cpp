@@ -21,7 +21,7 @@
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
-
+#include "Gui/ProjectGui.h"
 
  void ProjectGuiSerialization::initialize(const ProjectGui* projectGui){
      std::vector<NodeGui*> activeNodes = projectGui->getInternalProject()->getApp()->getVisibleNodes();

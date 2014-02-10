@@ -69,6 +69,8 @@ class QUndoStack;
 class DockablePanel;
 class PreferencesPanel;
 class AboutWindow;
+class ProjectGuiSerialization;
+class Color_Knob;
 
 namespace Natron{
     class Node;
@@ -186,9 +188,7 @@ public:
     NodeGui* createNodeGUI(Natron::Node *node);
 
     void addNodeGuiToCurveEditor(NodeGui *node);
-    
-    void autoConnect(NodeGui* target,NodeGui* created);
-    
+        
     NodeGui* getSelectedNode() const;
     
     void setLastSelectedViewer(ViewerTab* tab){_lastSelectedViewer = tab;}
@@ -229,9 +229,7 @@ public:
     void registerNewUndoStack(QUndoStack* stack);
     
     void removeUndoStack(QUndoStack* stack);
-    
-    bool isGraphWorthless() const;
-    
+        
     /**
      * @brief An error dialog with title and text customizable
      **/
@@ -303,6 +301,17 @@ public:
     
     static QPixmap screenShot(QWidget* w);
     
+    void loadProjectGui(const ProjectGuiSerialization& obj) const;
+    
+    void saveProjectGui(ProjectGuiSerialization* obj);
+    
+    void setColorPickersColor(const QColor& c);
+    
+    void registerNewColorPicker(boost::shared_ptr<Color_Knob> knob);
+    
+    void removeColorPicker(boost::shared_ptr<Color_Knob> knob);
+
+    
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);
@@ -363,6 +372,8 @@ public slots:
     void showAbout();
 
     void openRecentFile();
+    
+    void onProjectNameChanged(const QString& name);
 private:
 
     void registerSplitter(QSplitter* s); // unused
@@ -501,10 +512,9 @@ public:
 private:
     PreferencesPanel* _settingsGui;
     
-public:
-    ProjectGui* _projectGui; // FIXME: used by AppManager.cpp
-    
 private:
+    
+    ProjectGui* _projectGui;
     
     QWidget* _currentlyDraggedPanel;
     AboutWindow* _aboutWindow;

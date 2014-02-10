@@ -1365,9 +1365,9 @@ void Color_KnobGui::onPickingEnabled(bool enabled){
     if(getKnob()->getHolder()->getApp()){
         boost::shared_ptr<Color_Knob> colorKnob = boost::dynamic_pointer_cast<Color_Knob>(getKnob());
         if (enabled) {
-            getKnob()->getHolder()->getApp()->getGui()->_projectGui->registerNewColorPicker(colorKnob);
+            getKnob()->getHolder()->getApp()->getGui()->registerNewColorPicker(colorKnob);
         }else{
-            getKnob()->getHolder()->getApp()->getGui()->_projectGui->removeColorPicker(colorKnob);
+            getKnob()->getHolder()->getApp()->getGui()->removeColorPicker(colorKnob);
         }
     }
     
