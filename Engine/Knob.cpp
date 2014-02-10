@@ -91,7 +91,7 @@ struct Knob::KnobPrivate {
     , _curves(dimension)
     , _masters(dimension)
     , _animationLevel(dimension)
-    , _valueMutex()
+    , _valueMutex(QMutex::Recursive)
     {
         
     }
