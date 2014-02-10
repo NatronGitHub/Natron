@@ -46,6 +46,8 @@ bool Project::loadProject(const QString& path,const QString& name){
         _imp->isLoadingProject = true;
     }
 
+    reset();
+    
     try {
         loadProjectInternal(path,name);
     } catch (const std::exception& e) {
