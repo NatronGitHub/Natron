@@ -14,6 +14,9 @@ Here is a list of know bugs, ordered by priority from high to low:
   http://qt-project.org/doc/qt-4.8/qwidget.html#setTabOrder
   http://qt-project.org/doc/qt-4.8/focus.html
 
+- On Linux the property dock's scrollbar is broken and doesn't allow the user to span through
+the whole content of the widget.
+
 - On Ubuntu 13.10 with Qt5, Natron is non-functional (transparent widgets, extra windows...)
 
 Missing and wanted features
