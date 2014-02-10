@@ -510,7 +510,7 @@ public:
 public slots:
     
     ///if the knob is not multiline
-    void onStringChanged(const QString &str);
+    void onLineChanged();
 
     ///if the knob is multiline
     void onTextChanged();
