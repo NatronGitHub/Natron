@@ -83,10 +83,12 @@ public:
         APP_GUI //< a GUI AppInstance, the end-user can interact with it.
     };
     
-    AppInstance(AppInstance::AppType appType,int appID,const QString& projectName = QString(),const QStringList& writers = QStringList());
+    AppInstance(AppInstance::AppType appType,int appID);
 
     ~AppInstance();
-    
+
+    void load(const QString& projectName = QString(),const QStringList& writers = QStringList());
+
     int getAppID() const;
 
     bool isBackground() const;

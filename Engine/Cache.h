@@ -633,10 +633,10 @@ public:
                             entry->reOpenFileMapping();
                         } catch (const std::exception& e) {
                             qDebug() << "Error while reopening cache file: " << e.what();
-                            return value_type();
+                            return false;
                         } catch (...) {
                             qDebug() << "Error while reopening cache file";
-                            return value_type();
+                            return false;
                         }
                         
                         //put it back into the RAM

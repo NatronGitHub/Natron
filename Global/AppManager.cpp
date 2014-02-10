@@ -268,7 +268,7 @@ void AppManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
 }
 
 
-AppInstance::AppInstance(AppInstance::AppType appType,int appID,const QString& projectName,const QStringList& writers)
+AppInstance::AppInstance(AppInstance::AppType appType,int appID)
   : _gui(NULL)
   , _currentProject(new Natron::Project(this))
   , _appID(appID)
@@ -278,15 +278,18 @@ AppInstance::AppInstance(AppInstance::AppType appType,int appID,const QString& p
 {
     appPTR->registerAppInstance(this);
     appPTR->setAsTopLevelInstance(appID);
+}
 
-    
+void
+AppInstance::load(const QString& projectName,const QStringList& writers)
+{
     QObject::connect(_currentProject.get(), SIGNAL(nodesCleared()), this, SLOT(onProjectNodesCleared()));
     
     if(!isBackground()){
         appPTR->setLoadingStatus("Creating user interface...");
         _gui = new Gui(this);
     }
-    if(appType == APP_BACKGROUND_AUTO_RUN && projectName.isEmpty()){
+    if(_appType == APP_BACKGROUND_AUTO_RUN && projectName.isEmpty()){
         // cannot start a background process without a file
         throw std::invalid_argument("Project file name empty");
     }
@@ -340,7 +343,7 @@ AppInstance::AppInstance(AppInstance::AppType appType,int appID,const QString& p
 
     }else{
         
-        if (appType == APP_BACKGROUND_AUTO_RUN) {
+        if (_appType == APP_BACKGROUND_AUTO_RUN) {
             QString name = SequenceFileDialog::removePath(projectName);
             QString path = projectName.left(projectName.indexOf(name));
             if(!_currentProject->loadProject(path,name)){
@@ -505,9 +508,9 @@ ViewerTab* AppInstance::addNewViewerTab(ViewerInstance* node,TabWidget* where){
 }
 
 AppInstance* AppManager::newAppInstance(AppInstance::AppType appType,const QString& projectName,const QStringList& writers){
-    AppInstance* instance = 0;
+    AppInstance* instance = new AppInstance(appType,_availableID);
     try {
-        instance = new AppInstance(appType,_availableID,projectName,writers);
+        instance->load(projectName,writers);
     } catch (const std::exception& e) {
         Natron::errorDialog(NATRON_APPLICATION_NAME, std::string("Cannot create project") + ": " + e.what());
         removeInstance(_availableID);
