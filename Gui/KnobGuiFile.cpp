@@ -86,14 +86,19 @@ void File_KnobGui::onButtonClicked() {
 
 void File_KnobGui::open_file(bool openSequence)
 {
-    std::map<std::string,std::string> readersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-    std::vector<std::string> filters;
-    for (std::map<std::string,std::string>::const_iterator it = readersForFormat.begin(); it!=readersForFormat.end(); ++it) {
-        filters.push_back(it->first);
-    }
-
     
+    std::vector<std::string> filters;
+    
+    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
+    if (!fk->isInputImageFile()) {
+        filters.push_back("*");
+    } else {
+        std::map<std::string,std::string> readersForFormat;
+        appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
+        for (std::map<std::string,std::string>::const_iterator it = readersForFormat.begin(); it!=readersForFormat.end(); ++it) {
+            filters.push_back(it->first);
+        }
+    }
     QStringList files;
     
     SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, openSequence, SequenceFileDialog::OPEN_DIALOG, _lastOpened.toStdString());
@@ -147,6 +152,13 @@ void File_KnobGui::_show()
     _lineEdit->show();
 }
 
+void File_KnobGui::setEnabled() {
+    bool enabled = getKnob()->isEnabled();
+    _openFileButton->setEnabled(enabled);
+    _descriptionLabel->setEnabled(enabled);
+    _lineEdit->setEnabled(enabled);
+
+}
 
 //============================OUTPUT_FILE_KNOB_GUI====================================
 OutputFile_KnobGui::OutputFile_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
@@ -207,12 +219,21 @@ void OutputFile_KnobGui::onButtonClicked() {
 
 void OutputFile_KnobGui::open_file(bool openSequence)
 {
-    std::map<std::string,std::string> writersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
+    
     std::vector<std::string> filters;
-    for (std::map<std::string,std::string>::const_iterator it = writersForFormat.begin(); it!=writersForFormat.end(); ++it) {
-        filters.push_back(it->first);
+    
+    boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(getKnob());
+    if (!fk->isOutputImageFile()) {
+        filters.push_back("*");
+    } else {
+        std::map<std::string,std::string> writersForFormat;
+        appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
+        for (std::map<std::string,std::string>::const_iterator it = writersForFormat.begin(); it!=writersForFormat.end(); ++it) {
+            filters.push_back(it->first);
+        }
+
     }
+    
     SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, openSequence, SequenceFileDialog::SAVE_DIALOG, _lastOpened.toStdString());
     if (dialog.exec()) {
         QString oldPattern = _lineEdit->text();
@@ -258,3 +279,12 @@ void OutputFile_KnobGui::_show()
     _descriptionLabel->show();
     _lineEdit->show();
 }
+
+void OutputFile_KnobGui::setEnabled() {
+    bool enabled = getKnob()->isEnabled();
+    _openFileButton->setEnabled(enabled);
+    _descriptionLabel->setEnabled(enabled);
+    _lineEdit->setEnabled(enabled);
+    
+}
+

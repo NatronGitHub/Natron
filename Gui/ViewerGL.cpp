@@ -59,7 +59,8 @@ GCC_DIAG_ON(unused-parameter);
 
 #define USER_ROI_BORDER_TICK_SIZE 15.f
 #define USER_ROI_CROSS_RADIUS 15.f
-#define USER_ROI_SELECTION_POINT_SIZE 5.f
+#define USER_ROI_SELECTION_POINT_SIZE 8.f
+#define USER_ROI_CLICK_TOLERANCE 8.f
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
  Everything related to OpenGL will (almost always) be in this class */
@@ -156,7 +157,18 @@ struct ZoomContext{
  *@enum MOUSE_STATE
  *@brief basic state switching for mouse events
  **/
-enum MOUSE_STATE{DRAGGING,UNDEFINED};
+enum MOUSE_STATE{
+    DRAGGING_IMAGE = 0,
+    DRAGGING_ROI_LEFT_EDGE,
+    DRAGGING_ROI_RIGHT_EDGE,
+    DRAGGING_ROI_TOP_EDGE,
+    DRAGGING_ROI_BOTTOM_EDGE,
+    DRAGGING_ROI_TOP_LEFT,
+    DRAGGING_ROI_TOP_RIGHT,
+    DRAGGING_ROI_BOTTOM_RIGHT,
+    DRAGGING_ROI_BOTTOM_LEFT,
+    DRAGGING_ROI_CROSS,
+    UNDEFINED};
 } // namespace
 
 struct ViewerGL::Implementation {
@@ -203,6 +215,7 @@ struct ViewerGL::Implementation {
     , userRoI()
     , isUserRoISet(false)
     , isUserRoIEnabled(false)
+    , lastMousePosition()
     {
     }
     
@@ -277,6 +290,7 @@ struct ViewerGL::Implementation {
     RectI userRoI;
     bool isUserRoISet;
     bool isUserRoIEnabled;
+    QPoint lastMousePosition;
 };
 
 //static const GLfloat renderingTextureCoordinates[32] = {
@@ -784,17 +798,86 @@ void ViewerGL::drawUserRoI() {
                (_imp->userRoI.y1 + _imp->userRoI.y2) / 2);
     glEnd();
     
+    int rectHalfSize = (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor));
+    
     ///draw handles hint for the user
     glBegin(GL_QUADS);
-    glVertex2f(_imp->userRoI.x1 + (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor)),
-               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor)));
-    glVertex2f(_imp->userRoI.x1 + (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor)),
-               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor)));
-    glVertex2f(_imp->userRoI.x1 - (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor)),
-               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor)));
-    glVertex2f(_imp->userRoI.x1 - (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor)),
-               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor)));
     
+    //left
+    glVertex2f(_imp->userRoI.x1 + rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 + rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 - rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 - rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - rectHalfSize);
+    
+    //top
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 - rectHalfSize,
+               _imp->userRoI.y2 - rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 - rectHalfSize,
+               _imp->userRoI.y2 + rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 + rectHalfSize,
+               _imp->userRoI.y2 + rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 + rectHalfSize,
+               _imp->userRoI.y2 - rectHalfSize);
+
+    //right
+    glVertex2f(_imp->userRoI.x2 - rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 - rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 + rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 + rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - rectHalfSize);
+    
+    //bottom
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 - rectHalfSize,
+               _imp->userRoI.y1 - rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 - rectHalfSize,
+               _imp->userRoI.y1 + rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 + rectHalfSize,
+               _imp->userRoI.y1 + rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 + rectHalfSize,
+               _imp->userRoI.y1 - rectHalfSize);
+
+    //middle
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 - rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 - rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 + rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 + rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - rectHalfSize);
+    
+    
+    //top left
+    glVertex2f(_imp->userRoI.x1 - rectHalfSize, _imp->userRoI.y2 - rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 - rectHalfSize, _imp->userRoI.y2 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 + rectHalfSize, _imp->userRoI.y2 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 + rectHalfSize, _imp->userRoI.y2 - rectHalfSize);
+    
+    //top right
+    glVertex2f(_imp->userRoI.x2 - rectHalfSize, _imp->userRoI.y2 - rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 - rectHalfSize, _imp->userRoI.y2 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 + rectHalfSize, _imp->userRoI.y2 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 + rectHalfSize, _imp->userRoI.y2 - rectHalfSize);
+    
+    //bottom right
+    glVertex2f(_imp->userRoI.x2 - rectHalfSize, _imp->userRoI.y1 - rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 - rectHalfSize, _imp->userRoI.y1 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 + rectHalfSize, _imp->userRoI.y1 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 + rectHalfSize, _imp->userRoI.y1 - rectHalfSize);
+
+    
+    //bottom left
+    glVertex2f(_imp->userRoI.x1 - rectHalfSize, _imp->userRoI.y1 - rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 - rectHalfSize, _imp->userRoI.y1 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 + rectHalfSize, _imp->userRoI.y1 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 + rectHalfSize, _imp->userRoI.y1 - rectHalfSize);
 
     glEnd();
     
@@ -1174,13 +1257,9 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
     }
     
     _imp->zoomCtx.oldClick = event->pos();
+    _imp->lastMousePosition = event->pos();
     if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
-        _imp->ms = DRAGGING;
-    } else if (event->button() == Qt::LeftButton && !event->modifiers().testFlag(Qt::ControlModifier)) {
-        if(_imp->viewerTab->notifyOverlaysPenDown(QMouseEventLocalPos(event),
-                                                  toImgCoordinates_fast(event->x(), event->y()))){
-            updateGL();
-        }
+        _imp->ms = DRAGGING_IMAGE;
     } else if(event->button() == Qt::LeftButton &&
               event->modifiers().testFlag(Qt::ControlModifier) &&
               _imp->displayingImage) {
@@ -1195,6 +1274,29 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
             pickerColor.setBlueF(b);
             pickerColor.setAlphaF(a);
             _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
+        }
+    } else if(event->button() == Qt::LeftButton && isNearByUserRoIBottomEdge(event->pos())) {
+        _imp->ms = DRAGGING_ROI_BOTTOM_EDGE;
+    } else if(event->button() == Qt::LeftButton && isNearByUserRoILeftEdge(event->pos())) {
+        _imp->ms = DRAGGING_ROI_LEFT_EDGE;
+    } else if(event->button() == Qt::LeftButton && isNearByUserRoIRightEdge(event->pos())) {
+        _imp->ms = DRAGGING_ROI_RIGHT_EDGE;
+    } else if(event->button() == Qt::LeftButton && isNearByUserRoITopEdge(event->pos())) {
+        _imp->ms = DRAGGING_ROI_TOP_EDGE;
+    } else if(event->button() == Qt::LeftButton && isNearByUserRoIMiddleHandle(event->pos())) {
+        _imp->ms = DRAGGING_ROI_CROSS;
+    } else if(event->button() == Qt::LeftButton && isNearByUserRoITopLeft(event->pos())) {
+        _imp->ms = DRAGGING_ROI_TOP_LEFT;
+    } else if(event->button() == Qt::LeftButton && isNearByUserRoITopRight(event->pos())) {
+        _imp->ms = DRAGGING_ROI_TOP_RIGHT;
+    }  else if(event->button() == Qt::LeftButton && isNearByUserRoIBottomLeft(event->pos())) {
+        _imp->ms = DRAGGING_ROI_BOTTOM_LEFT;
+    }  else if(event->button() == Qt::LeftButton && isNearByUserRoIBottomRight(event->pos())) {
+        _imp->ms = DRAGGING_ROI_BOTTOM_RIGHT;
+    }  else if (event->button() == Qt::LeftButton && !event->modifiers().testFlag(Qt::ControlModifier)) {
+        if(_imp->viewerTab->notifyOverlaysPenDown(QMouseEventLocalPos(event),
+                                                  toImgCoordinates_fast(event->x(), event->y()))){
+            updateGL();
         }
     }
     
@@ -1233,31 +1335,122 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
         }
     }
     
-    
-    if (_imp->ms == DRAGGING) {
-        QPoint newClick =  event->pos();
-        QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
-        QPointF oldClick_opengl = toImgCoordinates_fast(_imp->zoomCtx.oldClick.x(),_imp->zoomCtx.oldClick.y());
-        float dy = (oldClick_opengl.y() - newClick_opengl.y());
-        _imp->zoomCtx.bottom += dy;
-        _imp->zoomCtx.left += (oldClick_opengl.x() - newClick_opengl.x());
-        _imp->zoomCtx.oldClick = newClick;
-        if(_imp->displayingImage){
-            _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
-        }
-        //else {
-        updateGL();
-        _imp->zoomOrPannedSinceLastFit = true;
+    //update the cursor if it is hovering an overlay and we're not dragging the image
+    if (_imp->ms != DRAGGING_IMAGE) {
+        if (isNearByUserRoIBottomEdge(event->pos()) || isNearByUserRoITopEdge(event->pos())
+            || _imp->ms == DRAGGING_ROI_BOTTOM_EDGE || _imp->ms == DRAGGING_ROI_TOP_EDGE) {
+            setCursor(QCursor(Qt::SizeVerCursor));
+        } else if(isNearByUserRoILeftEdge(event->pos()) || isNearByUserRoIRightEdge(event->pos())
+                  || _imp->ms == DRAGGING_ROI_LEFT_EDGE || _imp->ms == DRAGGING_ROI_RIGHT_EDGE) {
+            setCursor(QCursor(Qt::SizeHorCursor));
+        } else if(isNearByUserRoIMiddleHandle(event->pos()) || _imp->ms == DRAGGING_ROI_CROSS) {
+            setCursor(QCursor(Qt::SizeAllCursor));
+        } else if(isNearByUserRoIBottomRight(event->pos()) || isNearByUserRoITopLeft(event->pos()) ||
+                  _imp->ms == DRAGGING_ROI_BOTTOM_RIGHT) {
+            setCursor(QCursor(Qt::SizeFDiagCursor));
 
-        // }
-        // no need to update the color picker or mouse posn: they should be unchanged
-    } else {
-        if(_imp->viewerTab->notifyOverlaysPenMotion(QMouseEventLocalPos(event),pos)){
-            updateGL();
+        } else if(isNearByUserRoIBottomLeft(event->pos()) || isNearByUserRoITopRight(event->pos())
+                  || _imp->ms == DRAGGING_ROI_BOTTOM_LEFT) {
+            setCursor(QCursor(Qt::SizeBDiagCursor));
+
+        }else {
+            setCursor(QCursor(Qt::ArrowCursor));
         }
     }
+    
+    QPoint newClick =  event->pos();
+    QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
+    QPointF oldClick_opengl = toImgCoordinates_fast(_imp->zoomCtx.oldClick.x(),_imp->zoomCtx.oldClick.y());
+    float dy = (oldClick_opengl.y() - newClick_opengl.y());
+    
+    QPointF oldPosition_opengl = toImgCoordinates_fast(_imp->lastMousePosition.x(), _imp->lastMousePosition.y());
+    int dxSinceLastMove = (oldPosition_opengl.x() - newClick_opengl.x());
+    int dySinceLastMove = (oldPosition_opengl.y() - newClick_opengl.y());
 
-
+    switch (_imp->ms) {
+        case DRAGGING_IMAGE: {
+            _imp->zoomCtx.bottom += dy;
+            _imp->zoomCtx.left += (oldClick_opengl.x() - newClick_opengl.x());
+            _imp->zoomCtx.oldClick = newClick;
+            if(_imp->displayingImage){
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+            }
+            updateGL();
+            _imp->zoomOrPannedSinceLastFit = true;
+            // no need to update the color picker or mouse posn: they should be unchanged
+        } break;
+        case DRAGGING_ROI_BOTTOM_EDGE: {
+            if ((_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
+                _imp->userRoI.y1 -= dySinceLastMove;
+                updateGL();
+            }
+        } break;
+        case DRAGGING_ROI_LEFT_EDGE: {
+            if ((_imp->userRoI.x1 - dxSinceLastMove) < _imp->userRoI.x2 ) {
+                _imp->userRoI.x1 -= dxSinceLastMove;
+            }
+            updateGL();
+        } break;
+        case DRAGGING_ROI_RIGHT_EDGE: {
+            if ((_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
+                _imp->userRoI.x2 -= dxSinceLastMove;
+            }
+            updateGL();
+        } break;
+        case DRAGGING_ROI_TOP_EDGE: {
+            if ((_imp->userRoI.y2 - dySinceLastMove) > _imp->userRoI.y1 ) {
+                _imp->userRoI.y2 -= dySinceLastMove;
+            }
+            updateGL();
+        } break;
+        case DRAGGING_ROI_CROSS: {
+            _imp->userRoI.move(-dxSinceLastMove,-dySinceLastMove);
+            updateGL();
+        } break;
+        case DRAGGING_ROI_TOP_LEFT: {
+            if ((_imp->userRoI.y2 - dySinceLastMove) > _imp->userRoI.y1 ) {
+                _imp->userRoI.y2 -= dySinceLastMove;
+            }
+            if ((_imp->userRoI.x1 - dxSinceLastMove) < _imp->userRoI.x2 ) {
+                _imp->userRoI.x1 -= dxSinceLastMove;
+            }
+            updateGL();
+        } break;
+        case DRAGGING_ROI_TOP_RIGHT: {
+            if ((_imp->userRoI.y2 - dySinceLastMove) > _imp->userRoI.y1 ) {
+                _imp->userRoI.y2 -= dySinceLastMove;
+            }
+            if ((_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
+                _imp->userRoI.x2 -= dxSinceLastMove;
+            }
+            updateGL();
+        } break;
+        case DRAGGING_ROI_BOTTOM_RIGHT: {
+            if ((_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
+                _imp->userRoI.x2 -= dxSinceLastMove;
+            }
+            if ((_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
+                _imp->userRoI.y1 -= dySinceLastMove;
+            }
+            updateGL();
+        } break;
+        case DRAGGING_ROI_BOTTOM_LEFT: {
+            if ((_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
+                _imp->userRoI.y1 -= dySinceLastMove;
+            }
+            if ((_imp->userRoI.x1 - dxSinceLastMove) < _imp->userRoI.x2 ) {
+                _imp->userRoI.x1 -= dxSinceLastMove;
+            }
+            updateGL();
+        } break;
+        default: {
+            if(_imp->viewerTab->notifyOverlaysPenMotion(QMouseEventLocalPos(event),pos)){
+                updateGL();
+            }
+        }break;
+    }
+  
+    _imp->lastMousePosition = newClick;
     //FIXME: This is bugged, somehow we can't set our custom picker cursor...
 //    if(_imp->viewerTab->getGui()->_projectGui->hasPickers()){
 //        setCursor(appPTR->getColorPickerCursor());
@@ -1697,4 +1890,92 @@ void ViewerGL::setProjection(double left,double bottom,double zoomFactor) {
 void ViewerGL::setUserRoIEnabled(bool b) {
     _imp->isUserRoIEnabled = b;
     update();
+}
+
+bool ViewerGL::isNearByUserRoITopEdge(const QPoint& mousePos) {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    int length = std::min(_imp->userRoI.x2 - _imp->userRoI.x1 - 10,(int)(USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor) * 2);
+    RectI r(_imp->userRoI.x1 + length / 2,
+            _imp->userRoI.y2 - USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.x2 - length / 2,
+            _imp->userRoI.y2 + USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor);
+    return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isNearByUserRoIRightEdge(const QPoint& mousePos)  {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    int length = std::min(_imp->userRoI.y2 - _imp->userRoI.y1 - 10,(int)(USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor) * 2);
+
+    RectI r(_imp->userRoI.x2 - USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y1 + length / 2,
+            _imp->userRoI.x2 + USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y2 - length / 2);
+    return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isNearByUserRoILeftEdge(const QPoint& mousePos) {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    int length = std::min(_imp->userRoI.y2 - _imp->userRoI.y1 - 10,(int)(USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor) * 2);
+
+    RectI r(_imp->userRoI.x1 - USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y1 + length / 2,
+            _imp->userRoI.x1 + USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y2 - length / 2);
+    return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isNearByUserRoIBottomEdge(const QPoint& mousePos) {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    int length = std::min(_imp->userRoI.x2 - _imp->userRoI.x1 - 10,(int)(USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor) * 2);
+
+    RectI r(_imp->userRoI.x1 + length / 2,
+            _imp->userRoI.y1 - USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.x2 - length / 2,
+            _imp->userRoI.y1 + USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor);
+    return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isNearByUserRoIMiddleHandle(const QPoint& mousePos) {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    RectI r((_imp->userRoI.x1 + _imp->userRoI.x2) / 2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            (_imp->userRoI.x1 + _imp->userRoI.x2) / 2 + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor);
+    return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isNearByUserRoITopLeft(const QPoint& mousePos) {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    RectI r(_imp->userRoI.x1 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.x1  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y2  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor);
+    return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isNearByUserRoITopRight(const QPoint& mousePos) {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    RectI r(_imp->userRoI.x2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.x2  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y2  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor);
+    return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isNearByUserRoIBottomRight(const QPoint& mousePos) {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    RectI r(_imp->userRoI.x2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y1 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.x2  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y1  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor);
+    return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isNearByUserRoIBottomLeft(const QPoint& mousePos) {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    RectI r(_imp->userRoI.x1 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y1 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.x1  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y1  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor);
+    return r.contains(openglPos.x(),openglPos.y());
 }

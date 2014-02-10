@@ -417,8 +417,25 @@ private:
      *@brief Resets the mouse position
      **/
     void resetMousePos();
+    
+    bool isNearByUserRoITopEdge(const QPoint& mousePos);
+    
+    bool isNearByUserRoIRightEdge(const QPoint& mousePos);
+    
+    bool isNearByUserRoILeftEdge(const QPoint& mousePos);
+    
+    bool isNearByUserRoIBottomEdge(const QPoint& mousePos);
+    
+    bool isNearByUserRoIMiddleHandle(const QPoint& mousePos);
+    
+    bool isNearByUserRoITopLeft(const QPoint& mousePos);
+    
+    bool isNearByUserRoITopRight(const QPoint& mousePos);
+    
+    bool isNearByUserRoIBottomRight(const QPoint& mousePos);
+    
+    bool isNearByUserRoIBottomLeft(const QPoint& mousePos);
 
-private:
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
 };
