@@ -107,9 +107,10 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row)
         boxContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
+        boxContainerLayout->setSpacing(1);
         QLabel *subDesc = 0;
         if (dim != 1) {
-            subDesc = new QLabel(getKnob()->getDimensionName(i).c_str(), boxContainer);
+            subDesc = new QLabel(QString(getKnob()->getDimensionName(i).c_str())+':', boxContainer);
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::INT_SPINBOX);
@@ -385,9 +386,10 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row)
         boxContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
+        boxContainerLayout->setSpacing(1);
         QLabel *subDesc = 0;
         if (dim != 1) {
-            subDesc = new QLabel(getKnob()->getDimensionName(i).c_str(), boxContainer);
+            subDesc = new QLabel(QString(getKnob()->getDimensionName(i).c_str())+':', boxContainer);
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::DOUBLE_SPINBOX);
@@ -986,7 +988,7 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
     boxLayout = new QHBoxLayout(boxContainers);
     boxContainers->setLayout(boxLayout);
     boxLayout->setContentsMargins(0, 0, 0, 0);
-    boxLayout->setSpacing(0);
+    boxLayout->setSpacing(1);
     
     
     _rBox = new SpinBox(boxContainers, SpinBox::DOUBLE_SPINBOX);
@@ -1404,24 +1406,23 @@ void String_KnobGui::createWidget(QGridLayout *layout, int row)
     layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
     
 
-    if(!strKnob->isMultiLine()) {
+    if (!strKnob->isMultiLine()) {
         _lineEdit = new LineEdit(layout->parentWidget());
         if(hasToolTip()) {
             _lineEdit->setToolTip(toolTip());
         }
-        layout->addWidget(_lineEdit, row, 1, Qt::AlignLeft);
+        layout->addWidget(_lineEdit, row, 1);
         QObject::connect(_lineEdit, SIGNAL(textEdited(QString)), this, SLOT(onStringChanged(QString)));
         
-        if(strKnob->isCustomKnob()) {
+        if (strKnob->isCustomKnob()) {
             _lineEdit->setReadOnly(true);
         }
-        
     } else {
         _textEdit = new AnimatingTextEdit(layout->parentWidget());
         if(hasToolTip()) {
             _textEdit->setToolTip(toolTip());
         }
-        layout->addWidget(_textEdit, row, 1, Qt::AlignLeft);
+        layout->addWidget(_textEdit, row, 1);
         QObject::connect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
         if(strKnob->isCustomKnob()) {
             _textEdit->setReadOnly(true);
@@ -1493,9 +1494,9 @@ void String_KnobGui::setEnabled()
 {
     bool b = getKnob()->isEnabled();
     _descriptionLabel->setEnabled(b);
-    if(_lineEdit){
+    if(_lineEdit) {
         _lineEdit->setEnabled(b);
-    }else{
+    } else {
         assert(_textEdit);
         _textEdit->setEnabled(b);
     }
