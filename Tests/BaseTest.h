@@ -43,12 +43,12 @@ protected:
     ///output to the node input. expectedReturnValue is expected to have the same value as the return
     ///value of the underlying connect call. That means that if expectedReturnValue is true, the
     ///connection is expected to succeed, and vice versa.
-    void connect(Natron::Node* input,Natron::Node* output,int inputNumber,bool expectedReturnValue);
+    void connectNodes(Natron::Node* input,Natron::Node* output,int inputNumber,bool expectedReturnValue);
     
     ///Useful function to disconnect 2 nodes together. expectedReturnValue is expected to have the same value as the return
     ///value of the underlying disconnect call. That means that if expectedReturnValue is true, the
     ///disconnection is expected to succeed, and vice versa.
-    void disconnect(Natron::Node* input,Natron::Node* output,bool expectedReturnvalue);
+    void disconnectNodes(Natron::Node* input,Natron::Node* output,bool expectedReturnvalue);
     
     void registerTestPlugins();
     
