@@ -29,6 +29,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Curve.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Lut.h"
 
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Button.h"
@@ -1117,16 +1118,16 @@ void Color_KnobGui::updateGUI(int dimension, const Variant &variant)
             throw std::logic_error("wrong dimension");
     }
     
-    uchar r = (uchar)std::min(_rBox->value() * 256., 255.);
+    uchar r = Color::floatToInt<256>(_rBox->value());
     uchar g = r;
     uchar b = r;
     uchar a = 255;
     if (_dimension >= 3) {
-        g = (uchar)std::min(_gBox->value() * 256., 255.);
-        b = (uchar)std::min(_bBox->value() * 256., 255.);
+        g = Color::floatToInt<256>(_gBox->value());
+        b = Color::floatToInt<256>(_bBox->value());
     }
     if (_dimension >= 4) {
-        a = (uchar)std::min(_aBox->value() * 256., 255.);
+        a = Color::floatToInt<256>(_aBox->value());
     }
     QColor color(r, g, b, a);
     updateLabel(color);

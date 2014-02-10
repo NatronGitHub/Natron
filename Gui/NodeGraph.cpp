@@ -962,7 +962,6 @@ void ConnectCommand::undo(){
         _graph->getGui()->getApp()->getProject()->disconnect(_newSrc->getNode(), _edge->getDest()->getNode());
     }
     
-    
     if(_oldSrc){
         setText(QObject::tr("Connect %1 to %2")
                 .arg(_edge->getDest()->getNode()->getName().c_str()).arg(_oldSrc->getNode()->getName().c_str()));
@@ -1004,10 +1003,13 @@ void ConnectCommand::redo(){
             if(!_graph->getGui()->getApp()->getProject()->connect(_edge->getInputNumber(), _newSrc->getNode(), dst->getNode())){
                 cout << "Failed to connect (input) " << _newSrc->getNode()->getName()
                      << " to (output) " << dst->getNode()->getName() << endl;
+
             }
         }
+        
     }
-    
+
+    assert(dst);
     dst->refreshEdges();
     
     if(_newSrc){

@@ -48,10 +48,8 @@ TEST(Hash64,GeneralTest) {
     hash2.computeHash();
     ASSERT_TRUE(hash2.valid());
 
-    EXPECT_TRUE(hash1.value() == hash2.value()) << "Hashs with same elements should be equal.";
-    EXPECT_FALSE(hash1.value() != hash2.value());
-    EXPECT_TRUE(hash1 == hash2);
-    EXPECT_FALSE(hash1 != hash2);
+    EXPECT_EQ(hash1.value(), hash2.value()) << "Hashs with same elements should be equal.";
+    EXPECT_EQ(hash1, hash2);
 
     hash2.reset();
     ASSERT_FALSE(hash2.valid());
@@ -63,7 +61,7 @@ TEST(Hash64,GeneralTest) {
     hash2.computeHash();
     ASSERT_TRUE(hash2.valid());
 
-    EXPECT_TRUE(hash1.value() != hash2.value());
-    EXPECT_TRUE(hash1 != hash2);
+    EXPECT_NE(hash1.value(), hash2.value());
+    EXPECT_NE(hash1 != hash2);
 
 }

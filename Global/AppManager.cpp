@@ -1130,7 +1130,6 @@ void AppManager::setAsTopLevelInstance(int appID){
     }
 }
 
-
 void AppInstance::checkViewersConnection(){
     const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -1337,22 +1336,20 @@ void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* write
             Natron::errorDialog(writer->getName(), std::string("Error while starting rendering"));
             delete newProcess;
         }
-    }else{
-        _activeRenderersMutex.lock();
-        ActiveBackgroundRender* backgroundRender = new ActiveBackgroundRender(writer);
-        _activeRenderers.push_back(backgroundRender);
-        _activeRenderersMutex.unlock();
+    } else {
+        ActiveBackgroundRender* backgroundRender;
+        {
+            QMutexLocker l(&_activeRenderersMutex);
+            backgroundRender = new ActiveBackgroundRender(writer);
+            _activeRenderers.push_back(backgroundRender);
+        }
         backgroundRender->blockingRender(); //< doesn't return before rendering is finished
         
         //remove the renderer from the list
-        _activeRenderersMutex.lock();
-        for (U32 i = 0; i < _activeRenderers.size(); ++i) {
-            if (_activeRenderers[i] == backgroundRender) {
-                _activeRenderers.erase(_activeRenderers.begin()+i);
-                break;
-            }
+        {
+            QMutexLocker l(&_activeRenderersMutex);
+            _activeRenderers.remove(backgroundRender);
         }
-        _activeRenderersMutex.unlock();
     }
 }
 
@@ -1384,9 +1381,9 @@ void AppInstance::ActiveBackgroundRender::notifyFinished(){
 }
 
 void AppInstance::notifyRenderFinished(Natron::OutputEffectInstance* writer){
-    for (U32 i = 0; i < _activeRenderers.size(); ++i) {
-        if(_activeRenderers[i]->getWriter() == writer){
-            _activeRenderers[i]->notifyFinished();
+    for (std::list<ActiveBackgroundRender*>::iterator it = _activeRenderers.begin(); it != _activeRenderers.end(); ++it) {
+        if ((*it)->getWriter() == writer) {
+            (*it)->notifyFinished();
         }
     }
 }

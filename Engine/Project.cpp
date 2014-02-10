@@ -440,6 +440,7 @@ int Project::lastFrame() const {
 
 int Project::tryAddProjectFormat(const Format& f){
     QMutexLocker l(&_imp->projectLock);
+
     
     if(f.left() >= f.right() || f.bottom() >= f.top()){
         return -1;

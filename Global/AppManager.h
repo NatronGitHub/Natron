@@ -215,7 +215,7 @@ private:
 
     };
     QMutex _activeRenderersMutex;
-    std::vector<ActiveBackgroundRender*> _activeRenderers;
+    std::list<ActiveBackgroundRender*> _activeRenderers;
 
 
 };
