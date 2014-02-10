@@ -61,6 +61,8 @@ public:
     
     void setPickersColor(const QColor& color);
     
+    void initializeKnobsGui();
+    
 public slots:
     
     void createNewFormat();

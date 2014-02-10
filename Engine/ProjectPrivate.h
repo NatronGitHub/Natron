@@ -24,6 +24,7 @@
 class TimeLine;
 class NodeSerialization;
 class ProjectSerialization;
+class File_Knob;
 namespace Natron{
 class Node;
 class OutputEffectInstance;
@@ -97,6 +98,7 @@ struct ProjectPrivate {
     ProjectPrivate(Natron::Project* project);
     
     void restoreFromSerialization(const ProjectSerialization& obj);
+    
 };
     
 

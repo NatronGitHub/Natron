@@ -288,6 +288,7 @@ AppInstance::load(const QString& projectName,const QStringList& writers)
     if(!isBackground()){
         appPTR->setLoadingStatus("Creating user interface...");
         _gui = new Gui(this);
+        _gui->createGui();
     }
     if(_appType == APP_BACKGROUND_AUTO_RUN && projectName.isEmpty()){
         // cannot start a background process without a file
@@ -300,7 +301,7 @@ AppInstance::load(const QString& projectName,const QStringList& writers)
 
     
     if(!isBackground()){
-        _gui->createGui();
+        _gui->initProjectGuiKnobs();
         const std::vector<PluginToolButton*>& _toolButtons = appPTR->getPluginsToolButtons();
         for (U32 i = 0; i < _toolButtons.size(); ++i) {
             assert(_toolButtons[i]);
@@ -708,6 +709,7 @@ AppManager::AppManager()
     ,_backgroundIPC(0)
     ,_splashScreen(0)
     ,_loaded(false)
+    ,_binaryPath()
 {
 
 }
@@ -724,8 +726,9 @@ void AppManager::hideSplashScreen() {
     }
 }
 
-void AppManager::load(SplashScreen* splashScreen) {
+void AppManager::load(SplashScreen* splashScreen,const QString& binaryPath) {
     
+    _binaryPath = binaryPath;
     _splashScreen = splashScreen;
     
     if (_initialized) {
@@ -880,7 +883,6 @@ void AppManager::loadAllPlugins() {
     _settings->populateWriterPluginsAndFormats(writersMap);
     
 }
-
 
 void AppManager::loadNodePlugins(std::map<std::string,std::vector<std::string> >* readersMap,
                                  std::map<std::string,std::vector<std::string> >* writersMap){
@@ -1405,6 +1407,10 @@ void AppManager::removeFromViewerCache(boost::shared_ptr<Natron::FrameEntry> tex
     }
 }
 
+const QString& AppManager::getApplicationBinaryPath() const {
+    return _binaryPath;
+}
+
 void AppManager::setMultiThreadEnabled(bool enabled) {
     _settings->setMultiThreadingDisabled(!enabled);
 }
@@ -1468,6 +1474,7 @@ void AppManager::updateAllRecentFileMenus() {
 namespace Natron{
 
 void errorDialog(const std::string& title,const std::string& message){
+    appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     assert(topLvlInstance);
     if(!topLvlInstance->isBackground()){
@@ -1484,6 +1491,7 @@ void errorDialog(const std::string& title,const std::string& message){
 }
 
 void warningDialog(const std::string& title,const std::string& message){
+    appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     assert(topLvlInstance);
     if(!topLvlInstance->isBackground()){
@@ -1499,6 +1507,7 @@ void warningDialog(const std::string& title,const std::string& message){
 }
 
 void informationDialog(const std::string& title,const std::string& message){
+    appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     assert(topLvlInstance);
     if(!topLvlInstance->isBackground()){
@@ -1515,7 +1524,7 @@ void informationDialog(const std::string& title,const std::string& message){
 
 Natron::StandardButton questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons,
                                       Natron::StandardButton defaultButton){
-    
+    appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     assert(topLvlInstance);
     if(!topLvlInstance->isBackground()){

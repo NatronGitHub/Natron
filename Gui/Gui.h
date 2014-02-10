@@ -311,7 +311,7 @@ public:
     
     void removeColorPicker(boost::shared_ptr<Color_Knob> knob);
 
-    
+    void initProjectGuiKnobs();
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);

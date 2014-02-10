@@ -20,13 +20,17 @@
 #include "Engine/ViewerInstance.h"
 #include "Engine/ProjectSerialization.h"
 #include "Engine/Settings.h"
+#include "Engine/KnobFile.h"
 
 #include "Gui/ProjectGuiSerialization.h" // for ProjectGuiSerialization, it doesn't include any Gui type
+
 
 using std::cout; using std::endl;
 using std::make_pair;
 
+
 namespace Natron{
+    
 
 Project::Project(AppInstance* appInstance)
     : KnobHolder(appInstance)
@@ -352,6 +356,7 @@ bool Project::findAndTryLoadAutoSave() {
 
 
 void Project::initializeKnobs(){
+    
     _imp->formatKnob = Natron::createKnob<Choice_Knob>(this, "Output Format");
     const std::vector<Format*>& appFormats = appPTR->getFormats();
     std::vector<std::string> entries;
@@ -383,6 +388,8 @@ void Project::initializeKnobs(){
     _imp->previewMode->turnOffAnimation();
     bool autoPreviewEnabled = appPTR->getCurrentSettings()->isAutoPreviewOnForNewProjects();
     _imp->previewMode->setValue<bool>(autoPreviewEnabled);
+    
+    
 }
 
 
@@ -768,6 +775,8 @@ void Project::beginKnobsValuesChanged(Natron::ValueChangedReason /*reason*/){}
 
 void Project::endKnobsValuesChanged(Natron::ValueChangedReason /*reason*/) {}
 
+
+    
 ///this function is only called on the main thread
 void Project::onKnobValueChanged(Knob* knob,Natron::ValueChangedReason /*reason*/) {
     if (knob == _imp->viewsCount.get()) {
@@ -788,9 +797,10 @@ void Project::onKnobValueChanged(Knob* knob,Natron::ValueChangedReason /*reason*
         emit mustCreateFormat();
     } else if(knob == _imp->previewMode.get()) {
         emit autoPreviewChanged(_imp->previewMode->getValue<bool>());
-    }
-
+    } 
+    
 }
+
 
 bool Project::isLoadingProject() const {
     QMutexLocker l(&_imp->isLoadingProjectMutex);

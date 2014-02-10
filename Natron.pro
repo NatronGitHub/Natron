@@ -399,6 +399,9 @@ HEADERS += \
     libs/OpenFX/include/natron/IOExtensions.h
 
 INSTALLS += target
+install_it.path = %{buildDir}/../OpenColorIO-Configs
+install_it.files += %{sourceDir}/Resources/OpenColorIO-Configs
+INSTALLS += install_it
 
 RESOURCES += \
     Resources.qrc

@@ -111,7 +111,7 @@ public:
                         std::map<std::string,std::vector<std::string> >* writersMap);
 
     void clearPluginsLoadedCache();
-    
+        
 signals:
     void toolButtonAdded(QStringList,QString,QString,QString,QString);
     
@@ -123,7 +123,7 @@ private:
      the OFX plugin cache. (called by the destructor) */
     void writeOFXCache();
     
-    OFX::Host::ImageEffect::PluginCache _imageEffectPluginCache;
+    OFX::Host::ImageEffect::PluginCache* _imageEffectPluginCache;
 
 
     /*plugin name -> pair< plugin id , plugin grouping >

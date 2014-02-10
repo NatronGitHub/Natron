@@ -70,42 +70,6 @@ void printUsage(){
 
 }
 
-void initOpenColorIOConfig() {
-    ///set the env var OCIO so all OpenColorIO plug-ins will use by default the same config
-    QByteArray ocioEnvVar = qgetenv("OCIO");
-    QString ocioEnvVarStr(ocioEnvVar);
-    
-    //if the variable is empty then set it
-    if (ocioEnvVarStr.isEmpty()) {
-        
-        ///we must copy all the Luts + config.ocio of the default OCIO profile to a "known" location
-        //in order for OCIO to be able to open it.
-        
-        ///first off copy all the luts inside the luts/ directory. We assume that the luts directory is
-        ///placed right next to the config.ocio file.
-        QDir lutsToCopyDir(QString(NATRON_DEFAULT_OCIO_CONFIG_DIR_PATH) + QDir::separator() + "luts");
-        QDir::temp().mkdir("luts");
-        QDir lutsCopyDir(QDir::tempPath() + QDir::separator() + "luts");
-        QStringList entries = lutsToCopyDir.entryList(QDir::Files);
-        for (int i = 0; i < entries.size(); ++i) {
-            QString filePath = lutsToCopyDir.absoluteFilePath(entries.at(i));
-            QFile file(filePath);
-            file.copy(lutsCopyDir.absolutePath() + QDir::separator() + entries.at(i));
-        }
-        
-        
-        ///now copy the config file
-        QString configPath(QString(NATRON_DEFAULT_OCIO_CONFIG_DIR_PATH) + QDir::separator() + "config.ocio");
-        QString configCopyPath = QDir::tempPath() + QDir::separator() + "config.ocio";
-        
-        QFile configFile(configPath);
-        configFile.copy(configCopyPath);
-        
-        qputenv("OCIO",configCopyPath.toUtf8());
-
-    }
-
-}
 
 /**
  * @brief Extracts from argv[0] the path of the application's binary
@@ -231,7 +195,7 @@ int main(int argc, char *argv[])
     
     AppManager* manager = AppManager::instance(); //< load the AppManager singleton
     
-    manager->load(splashScreen);
+    manager->load(splashScreen,binaryPath);
     
     if (isBackGround && !mainProcessServerName.isEmpty()) {
         manager->initProcessInputChannel(mainProcessServerName);

@@ -686,6 +686,10 @@ void Gui::setupUi()
     
 } // setupUi
 
+void Gui::initProjectGuiKnobs() {
+    assert(_projectGui);
+    _projectGui->initializeKnobsGui();
+}
 
 QKeySequence Gui::keySequenceForView(int v){
     switch (v) {

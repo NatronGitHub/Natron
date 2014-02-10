@@ -56,7 +56,10 @@ ProjectGui::~ProjectGui(){
     }
 }
 
-
+void ProjectGui::initializeKnobsGui() {
+    assert(_panel);
+    _panel->initializeKnobs();
+}
 
 void ProjectGui::create(boost::shared_ptr<Natron::Project> projectInternal,QVBoxLayout* container,QWidget* parent)
 
@@ -74,7 +77,6 @@ void ProjectGui::create(boost::shared_ptr<Natron::Project> projectInternal,QVBox
                                true,
                                "Rendering",
                                parent);
-    _panel->initializeKnobs();
     
     
     _created = true;

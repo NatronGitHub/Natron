@@ -20,10 +20,12 @@
 #include "Global/LibraryBinary.h"
 
 #include "Engine/KnobTypes.h"
+#include "Engine/KnobFile.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
+#define NATRON_CUSTOM_OCIO_CONFIG_NAME "Custom config"
 
 using namespace Natron;
 
@@ -33,6 +35,20 @@ Settings::Settings(AppInstance* appInstance)
 , _wereChangesMadeSinceLastSave(false)
 {
     
+}
+
+static QString getDefaultOcioConfigPath() {
+    QString binaryPath = appPTR->getApplicationBinaryPath();
+    if (!binaryPath.isEmpty()) {
+        binaryPath += QDir::separator();
+    }
+#ifdef __NATRON_LINUX__
+    return binaryPath + "../share/OpenColorIO-Configs";
+#elif defined(__NATRON_WIN32__)
+    return binaryPath + "../Resources/OpenColorIO-Configs";
+#elif defined(__NATRON_OSX__)
+    return binaryPath + "../Resources/OpenColorIO-Configs";
+#endif
 }
 
 void Settings::initializeKnobs(){
@@ -58,6 +74,40 @@ void Settings::initializeKnobs(){
     _autoPreviewEnabledForNewProjects->setHintToolTip("If checked then when creating a new project, the Auto-preview option"
                                                       " will be enabled.");
     _generalTab->addKnob(_autoPreviewEnabledForNewProjects);
+    
+    
+    boost::shared_ptr<Tab_Knob> ocioTab = Natron::createKnob<Tab_Knob>(this, "OpenColorIO");
+    
+    
+    _ocioConfigKnob = Natron::createKnob<Choice_Knob>(this, "OpenColorIO config");
+    _ocioConfigKnob->turnOffAnimation();
+    
+    QString defaultOcioConfigsPath = getDefaultOcioConfigPath();
+    QDir ocioConfigsDir(defaultOcioConfigsPath);
+    std::vector<std::string> configs;
+    int defaultIndex = 0;
+    if (!ocioConfigsDir.exists()) {
+        Natron::warningDialog("OpenColorIO", std::string("The OpenColorIO configuration files couldn't be found at: ")
+                              + ocioConfigsDir.absolutePath().toStdString());
+    } else {
+        QStringList entries = ocioConfigsDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
+        for (int i = 0; i < entries.size(); ++i) {
+            if (entries[i].contains("nuke-default")) {
+                defaultIndex = i;
+            }
+            configs.push_back(entries[i].toStdString());
+        }
+    }
+    configs.push_back(NATRON_CUSTOM_OCIO_CONFIG_NAME);
+    _ocioConfigKnob->populate(configs);
+    _ocioConfigKnob->setValue<int>(defaultIndex);
+    
+    ocioTab->addKnob(_ocioConfigKnob);
+    
+    _customOcioConfigFile = Natron::createKnob<File_Knob>(this, "Custom OpenColorIO config file");
+    _customOcioConfigFile->setEnabled(false);
+    ocioTab->addKnob(_customOcioConfigFile);
+
     
     _viewersTab = Natron::createKnob<Tab_Knob>(this, "Viewers");
     
@@ -153,6 +203,14 @@ void Settings::saveSettings(){
     settings.setValue("AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue<bool>());
     settings.endGroup();
     
+    settings.beginGroup("OpenColorIO");
+    QStringList configList = _customOcioConfigFile->getValue<QStringList>();
+    if (!configList.isEmpty()) {
+        settings.setValue("OCIOConfigFile", configList.at(0));
+    }
+    settings.setValue("OCIOConfig", _ocioConfigKnob->getValue<int>());
+    settings.endGroup();
+    
     settings.beginGroup("Caching");
     settings.setValue("MaximumRAMUsagePercentage", _maxRAMPercent->getValue<int>());
     settings.setValue("MaximumPlaybackRAMUsage", _maxPlayBackPercent->getValue<int>());
@@ -195,6 +253,15 @@ void Settings::restoreSettings(){
     }
     if (settings.contains("AutoPreviewDefault")) {
         _autoPreviewEnabledForNewProjects->setValue<bool>(settings.value("AutoPreviewDefault").toBool());
+    }
+    settings.endGroup();
+    
+    settings.beginGroup("OpenColorIO");
+    if (settings.contains("OCIOConfigFile")) {
+        _customOcioConfigFile->setValue<QStringList>(QStringList(settings.value("OCIOConfigFile").toString()));
+    }
+    if (settings.contains("OCIOConfig")) {
+        _ocioConfigKnob->setValue<int>(settings.value("OCIOConfig").toInt());
     }
     settings.endGroup();
     
@@ -246,6 +313,48 @@ void Settings::restoreSettings(){
 
 }
 
+bool Settings::tryLoadOpenColorIOConfig() {
+    if (_customOcioConfigFile->isEnabled()) {
+        ///try to load from the file
+        QStringList files = _customOcioConfigFile->getValue<QStringList>();
+        if (files.isEmpty()) {
+            return false;
+        }
+        if (!QFile::exists(files.at(0))) {
+            Natron::errorDialog("OpenColorIO", files.at(0).toStdString() + ": No such file.");
+            return false;
+        }
+        qputenv("OCIO", files.at(0).toUtf8());
+    } else {
+        ///try to load from the combobox
+        QString activeEntryText(_ocioConfigKnob->getActiveEntryText().c_str());
+        QString configFileName = QString(activeEntryText + ".ocio");
+        QString defaultConfigsPath = getDefaultOcioConfigPath();
+        QDir defaultConfigsDir(defaultConfigsPath);
+        if (!defaultConfigsDir.exists()) {
+            qDebug() << "Attempt to read an OpenColorIO configuration but the configuration directory does not exist.";
+            return false;
+        }
+        ///try to open the .ocio config file first in the defaultConfigsDir
+        ///if we can't find it, try to look in a subdirectory with the name of the config for the file config.ocio
+        if (!defaultConfigsDir.exists(configFileName)) {
+            QDir subDir(defaultConfigsPath + QDir::separator() + activeEntryText);
+            if (!subDir.exists()) {
+                Natron::errorDialog("OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + ": No such file or directory.");
+                return false;
+            }
+            if (!subDir.exists("config.ocio")) {
+                Natron::errorDialog("OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + ": No such file or directory.");
+                return false;
+            }
+            qputenv("OCIO",subDir.absoluteFilePath("config.ocio").toUtf8());
+        } else {
+            qputenv("OCIO", defaultConfigsDir.absoluteFilePath(configFileName).toUtf8());
+        }
+    }
+    return true;
+}
+
 void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
     
     if (!appPTR->isInitialized()) {
@@ -290,6 +399,16 @@ void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/)
         } else {
             QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
         }
+    } else if(k == _ocioConfigKnob.get()) {
+        if (_ocioConfigKnob->getActiveEntryText() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
+            _customOcioConfigFile->setEnabled(true);
+        } else {
+            _customOcioConfigFile->setEnabled(false);
+        }
+        tryLoadOpenColorIOConfig();
+         
+    } else if (k == _customOcioConfigFile.get()) {
+        tryLoadOpenColorIOConfig();
     }
 }
 

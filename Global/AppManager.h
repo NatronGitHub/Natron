@@ -341,7 +341,7 @@ public:
     virtual ~AppManager();
     
     ///called right away after the constructor by main.cpp
-    void load(SplashScreen* splashScreen);
+    void load(SplashScreen* splashScreen,const QString& binaryPath);
     
     bool isLoaded() const;
     
@@ -442,6 +442,9 @@ public:
     **/
     void setMultiThreadEnabled(bool enabled);
 
+    const QString& getApplicationBinaryPath() const;
+
+
 public slots:
 
     void clearPlaybackCache();
@@ -530,6 +533,8 @@ private:
                                          //if this app is background, see the ProcessInputChannel def
     SplashScreen* _splashScreen;
     bool _loaded;
+
+    QString _binaryPath; //< the path to the application's binary
 
 };
 

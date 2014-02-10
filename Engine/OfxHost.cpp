@@ -56,7 +56,7 @@
 using namespace Natron;
 
 Natron::OfxHost::OfxHost()
-:_imageEffectPluginCache(*this)
+:_imageEffectPluginCache(new OFX::Host::ImageEffect::PluginCache(*this))
 {
     _properties.setStringProperty(kOfxPropName,NATRON_APPLICATION_NAME "Host");
     _properties.setStringProperty(kOfxPropLabel, NATRON_APPLICATION_NAME);
@@ -99,6 +99,7 @@ Natron::OfxHost::~OfxHost()
 {
     //Clean up, to be polite.
     OFX::Host::PluginCache::clearPluginCache();
+    delete _imageEffectPluginCache;
 }
 
 OFX::Host::ImageEffect::Instance* Natron::OfxHost::newInstance(void* ,
@@ -199,7 +200,7 @@ void Natron::OfxHost::getPluginAndContextByID(const std::string& pluginID,  OFX:
     // throws out_of_range if the plugin does not exist
     const OFXPluginEntry& ofxPlugin = _ofxPlugins.at(pluginID);
 
-    *plugin = _imageEffectPluginCache.getPluginById(ofxPlugin.openfxId);
+    *plugin = _imageEffectPluginCache->getPluginById(ofxPlugin.openfxId);
     if (!(*plugin)) {
         throw std::runtime_error(std::string("Error: Could not get plugin ") + ofxPlugin.openfxId);
     }
@@ -281,6 +282,7 @@ void Natron::OfxHost::addPathToLoadOFXPlugins(const std::string path) {
     OFX::Host::PluginCache::getPluginCache()->addFileToPath(path);
 }
 
+
 void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
                                      std::map<std::string,std::vector<std::string> >* readersMap,
                                      std::map<std::string,std::vector<std::string> >* writersMap) {
@@ -288,11 +290,9 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
     assert(OFX::Host::PluginCache::getPluginCache());
     /// set the version label in the global cache
     OFX::Host::PluginCache::getPluginCache()->setCacheVersion(NATRON_APPLICATION_NAME "OFXCachev1");
-    
-    /// make an image effect plugin cache
-    
+        
     /// register the image effect cache with the global plugin cache
-    _imageEffectPluginCache.registerInCache(*OFX::Host::PluginCache::getPluginCache());
+    _imageEffectPluginCache->registerInCache(*OFX::Host::PluginCache::getPluginCache());
     
     
 #if defined(WINDOWS)
@@ -308,6 +308,8 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
     /// now read an old cache
     // The cache location depends on the OS.
     // On OSX, it will be ~/Library/Caches/<organization>/<application>/OFXCache.xml
+    //on Linux ~/.cache/<organization>/<application>/OFXCache.xml
+    //on windows:
 #if QT_VERSION < 0x050000
     QString ofxcachename = QDesktopServices::storageLocation(QDesktopServices::CacheLocation) + QDir::separator() + "OFXCache.xml";
 #else
@@ -325,7 +327,7 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
     writeOFXCache();
 
     /*Filling node name list and plugin grouping*/
-    const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& ofxPlugins = _imageEffectPluginCache.getPlugins();
+    const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& ofxPlugins = _imageEffectPluginCache->getPlugins();
     for (unsigned int i = 0 ; i < ofxPlugins.size(); ++i) {
         OFX::Host::ImageEffect::ImageEffectPlugin* p = ofxPlugins[i];
         assert(p);
@@ -385,9 +387,13 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
             std::transform(formats[k].begin(), formats[k].end(), formats[k].begin(), ::tolower);
         }
         
-        OFX::Host::ImageEffect::Descriptor* isGenerator = p->getContext(kOfxImageEffectContextGenerator);
+
+        const std::set<std::string>& contexts = p->getContexts();
+        std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
+        std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
+
         
-        if(isGenerator && formatsCount > 0 && readersMap){
+        if(foundReader != contexts.end() && formatsCount > 0 && readersMap){
             ///we're safe to assume that this plugin is a reader
             for(U32 k = 0; k < formats.size();++k){
                 std::map<std::string,std::vector<std::string> >::iterator it;
@@ -401,7 +407,7 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
                     readersMap->insert(std::make_pair(formats[k], newVec));
                 }
             }
-        }else if(!isGenerator && formatsCount > 0 && writersMap){
+        }else if(foundWriter != contexts.end() && formatsCount > 0 && writersMap){
             ///we're safe to assume that this plugin is a writer.
             for(U32 k = 0; k < formats.size();++k){
                 std::map<std::string,std::vector<std::string> >::iterator it;

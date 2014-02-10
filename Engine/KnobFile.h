@@ -75,7 +75,7 @@ public:
     
     bool isInputImageFile() const { return _isInputImage; }
 
-    void open_file() { emit openFile(_sequenceDialog); }
+    void open_file() { emit openFile(_sequenceDialog && _isInputImage); }
 private:
     int frameCount() const;
 
@@ -130,7 +130,7 @@ public:
     
     bool isOutputImageFile() const { return _isOutputImage; }
     
-    void open_file() { emit openFile(_sequenceDialog); }
+    void open_file() { emit openFile(_sequenceDialog && _isOutputImage); }
     
     void turnOffSequences() { _sequenceDialog = false; }
     
