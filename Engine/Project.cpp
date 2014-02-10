@@ -10,6 +10,7 @@
 
 #include "Project.h"
 
+#include <QtConcurrentRun>
 
 #include "Global/AppManager.h"
 
