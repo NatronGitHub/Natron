@@ -105,7 +105,9 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             continue;
         }
 
-        Natron::Node* n = project->getApp()->createNode(serializedNodes[i]->getPluginID().c_str()
+        Natron::Node* n = 0;
+        ///this code may throw an exception which will be caught above
+        n = project->getApp()->createNode(serializedNodes[i]->getPluginID().c_str()
                                                         ,serializedNodes[i]->getPluginMajorVersion()
                                                         ,serializedNodes[i]->getPluginMinorVersion(),true);
         if(!n){

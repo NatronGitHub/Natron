@@ -60,7 +60,7 @@ bool Project::loadProject(const QString& path,const QString& name){
         }
         return false;
     } catch (...) {
-        Natron::errorDialog("Project loader", std::string("Error while loading project"));
+        Natron::errorDialog("Project loader", std::string("Unkown error while loading project"));
         if(!getApp()->isBackground())
             getApp()->createNode("Viewer");
         {
@@ -105,8 +105,6 @@ void Project::loadProjectInternal(const QString& path,const QString& name) {
         }
     }catch(const boost::archive::archive_exception& e){
         throw std::runtime_error(std::string("Serialization error: ") + std::string(e.what()));
-    }catch(const std::exception& e){
-        throw e;
     }
     ifile.close();
 
@@ -618,17 +616,13 @@ void Project::onTimeChanged(SequenceTime time,int reason) {
 void Project::save(ProjectSerialization* serializationObject) const {
     serializationObject->initialize(this);
 }
-
+    
 void Project::load(const ProjectSerialization& obj){
     _imp->nodeCounters.clear();
-    try{
-        _imp->restoreFromSerialization(obj);
-        emit formatChanged(getProjectDefaultFormat());
-    }catch(const std::exception& e){
-        throw e;
-    }
+    _imp->restoreFromSerialization(obj);
+    emit formatChanged(getProjectDefaultFormat());
 }
-
+    
 void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller){
     QMutexLocker l(&_imp->beginEndMutex);
     
