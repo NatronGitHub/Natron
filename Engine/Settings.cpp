@@ -52,6 +52,13 @@ void Settings::initializeKnobs(){
     _multiThreadedDisabled->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will not spawn any thread to render.");
     _generalTab->addKnob(_multiThreadedDisabled);
     
+    _autoPreviewEnabledForNewProjects = Natron::createKnob<Bool_Knob>(this, "Auto-preview enabled by default for new projects");
+    _autoPreviewEnabledForNewProjects->turnOffAnimation();
+    _autoPreviewEnabledForNewProjects->setValue<bool>(true);
+    _autoPreviewEnabledForNewProjects->setHintToolTip("If checked then when creating a new project, the Auto-preview option"
+                                                      " will be enabled.");
+    _generalTab->addKnob(_autoPreviewEnabledForNewProjects);
+    
     _viewersTab = Natron::createKnob<Tab_Knob>(this, "Viewers");
     
     _texturesMode = Natron::createKnob<Choice_Knob>(this, "Viewer textures bit depth");
@@ -143,6 +150,7 @@ void Settings::saveSettings(){
     settings.beginGroup("General");
     settings.setValue("LinearColorPickers",_linearPickers->getValue<bool>());
     settings.setValue("MultiThreadingDisabled", _multiThreadedDisabled->getValue<bool>());
+    settings.setValue("AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue<bool>());
     settings.endGroup();
     
     settings.beginGroup("Caching");
@@ -184,6 +192,9 @@ void Settings::restoreSettings(){
     }
     if (settings.contains("MultiThreadingDisabled")) {
         _multiThreadedDisabled->setValue<bool>(settings.value("MultiThreadingDisabled").toBool());
+    }
+    if (settings.contains("AutoPreviewDefault")) {
+        _autoPreviewEnabledForNewProjects->setValue<bool>(settings.value("AutoPreviewDefault").toBool());
     }
     settings.endGroup();
     
@@ -311,6 +322,10 @@ bool Settings::isMultiThreadingDisabled() const {
 
 void Settings::setMultiThreadingDisabled(bool disabled) {
     _multiThreadedDisabled->setValue<bool>(disabled);
+}
+
+bool Settings::isAutoPreviewOnForNewProjects() const {
+    return _autoPreviewEnabledForNewProjects->getValue<bool>();
 }
 
 const std::string& Settings::getReaderPluginIDForFileType(const std::string& extension){

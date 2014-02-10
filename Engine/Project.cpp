@@ -19,6 +19,7 @@
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ProjectSerialization.h"
+#include "Engine/Settings.h"
 
 #include "Gui/ProjectGuiSerialization.h" // for ProjectGuiSerialization, it doesn't include any Gui type
 
@@ -368,7 +369,8 @@ void Project::initializeKnobs(){
                                       "refreshed automatically. You can uncheck this option to improve performances."
                                       " Press <p><b>P</b></p> in the node graph to refresh the previews yourself.");
     _imp->previewMode->turnOffAnimation();
-    _imp->previewMode->setValue<bool>(true);
+    bool autoPreviewEnabled = appPTR->getCurrentSettings()->isAutoPreviewOnForNewProjects();
+    _imp->previewMode->setValue<bool>(autoPreviewEnabled);
 }
 
 

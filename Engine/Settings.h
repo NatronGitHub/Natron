@@ -86,11 +86,14 @@ public:
     
     bool wereChangesMadeSinceLastSave() const { return _wereChangesMadeSinceLastSave; }
     
+    bool isAutoPreviewOnForNewProjects() const;
+    
 private:
     
     boost::shared_ptr<Tab_Knob> _generalTab;
     boost::shared_ptr<Bool_Knob> _linearPickers;
     boost::shared_ptr<Bool_Knob> _multiThreadedDisabled;
+    boost::shared_ptr<Bool_Knob> _autoPreviewEnabledForNewProjects;
     
     boost::shared_ptr<Tab_Knob> _cachingTab;
     boost::shared_ptr<Int_Knob> _maxPlayBackPercent;
