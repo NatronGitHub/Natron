@@ -7,7 +7,6 @@
 //  Created by Frédéric Devernay on 03/09/13.
 //
 //
-#include "Global/Mock.h"
 #include "OfxHost.h"
 
 #include <cassert>

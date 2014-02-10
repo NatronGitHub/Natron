@@ -12,8 +12,6 @@ INCLUDEPATH += google-mock/include
 INCLUDEPATH += google-mock
 
 
-DEFINES += NATRON_ENABLE_MOCK
-
 QMAKE_CLEAN += ofxTestLog.txt test_dot_generator0.jpg
 
 include(../global.pri)
@@ -115,8 +113,7 @@ SOURCES += \
     BaseTest.cpp \
     Hash64_Test.cpp \
     Image_Test.cpp \
-    Lut_Test.cpp \
-    OfxEffectInstance_Mock.cpp
+    Lut_Test.cpp
 
 HEADERS += \
     ../Engine/Cache.h \
@@ -170,7 +167,6 @@ HEADERS += \
     ../Global/GlobalDefines.h \
     ../Global/LibraryBinary.h \
     ../Global/Macros.h \
-    ../Global/Mock.h \
     ../Global/MemoryInfo.h \
     ../Global/QtCompat.h \
     ../Gui/AboutWindow.h \
@@ -251,8 +247,7 @@ HEADERS += \
     ../libs/OpenFX_extensions/tuttle/ofxReadWrite.h \
     ../libs/OpenFX_extensions/ofxhParametricParam.h \
     ../libs/OpenFX/include/natron/IOExtensions.h \
-    BaseTest.h \
-    OfxEffectInstance_Mock.h
+    BaseTest.h
 
 
 INCLUDEPATH += ../

@@ -14,8 +14,6 @@
 
 #include <gmock/gmock.h>
 
-#include "Engine/OfxEffectInstance.h"
-
 ///https://code.google.com/p/googlemock/wiki/V1_7_CookBook#Delegating_Calls_to_a_Parent_Class
 
 class OfxEffectInstance_Mock : public OfxEffectInstance

@@ -9,8 +9,12 @@
  *
  */
 
-#include "OfxEffectInstance_Mock.h"
+#include "Global/Mock.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/Rect.h"
+
+#undef OfxEffectInstance
+#include "OfxEffectInstance_Mock.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
