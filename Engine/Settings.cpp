@@ -86,10 +86,7 @@ void Settings::initializeKnobs(){
     QDir ocioConfigsDir(defaultOcioConfigsPath);
     std::vector<std::string> configs;
     int defaultIndex = 0;
-    if (!ocioConfigsDir.exists()) {
-        Natron::warningDialog("OpenColorIO", std::string("The OpenColorIO configuration files couldn't be found at: ")
-                              + ocioConfigsDir.absolutePath().toStdString());
-    } else {
+    if (ocioConfigsDir.exists()) {
         QStringList entries = ocioConfigsDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
         for (int i = 0; i < entries.size(); ++i) {
             if (entries[i].contains("nuke-default")) {
