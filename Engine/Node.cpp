@@ -545,7 +545,7 @@ void Node::deactivate()
     }
     
     if (inputToConnectTo) {
-        for (OutputConnectionsIterator::iterator it = _imp->deactivatedState.outputsConnections.begin();
+        for (OutputConnectionsIterator it = _imp->deactivatedState.outputsConnections.begin();
              it!=_imp->deactivatedState.outputsConnections.end(); ++it) {
             getApp()->getProject()->connect(it->second.first, inputToConnectTo, it->first);
         }

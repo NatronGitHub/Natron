@@ -25,7 +25,9 @@
 #include <QStandardPaths>
 #endif
 
+#ifdef OFX_SUPPORTS_MULTITHREAD
 #include <boost/thread.hpp>
+#endif
 
 //ofx
 #include <ofxParametricParam.h>
