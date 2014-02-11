@@ -177,6 +177,8 @@ Desktop.ini
 $RECYCLE.BIN/
 
 *.o
+*.a
+*.lib
 
 Makefile
 *.app
