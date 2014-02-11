@@ -260,6 +260,12 @@ void NodeGui::refreshPosition(double x,double y){
         }
     }
 }
+
+void NodeGui::changePosition(double dx,double dy) {
+    QPointF p = pos();
+    refreshPosition(p.x() + dx, p.y() + dy);
+}
+
 void NodeGui::refreshEdges(){
     for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i!= _inputEdges.end(); ++i){
         const Natron::Node::InputMap& nodeInputs = _internalNode->getInputs();
@@ -707,7 +713,7 @@ void NodeGui::moveBelowPositionRecursively(const QRectF& r) {
     QRectF sceneRect = mapToScene(boundingRect()).boundingRect();
 
     if (r.intersects(sceneRect)) {
-        moveBy(0,  r.height() + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
+        changePosition(0, r.height() + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
         const Natron::Node::OutputMap& outputs = getNode()->getOutputs();
         for (Natron::Node::OutputMap::const_iterator it = outputs.begin(); it!= outputs.end(); ++it) {
             if (it->second) {
@@ -725,7 +731,7 @@ void NodeGui::moveAbovePositionRecursively(const QRectF& r) {
 
     QRectF sceneRect = mapToScene(boundingRect()).boundingRect();
     if (r.intersects(sceneRect)) {
-        moveBy(0,- r.height() - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
+        changePosition(0,- r.height() - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
         for (std::map<int,Edge*>::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end();++it) {
             if (it->second->hasSource()) {
                 sceneRect = mapToScene(boundingRect()).boundingRect();

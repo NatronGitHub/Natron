@@ -143,6 +143,8 @@ public:
     
     void refreshPosition(double x,double y);
     
+    void changePosition(double dx,double dy);
+    
     bool isSettingsPanelVisible() const;
     
     void setSelectedGradient(const QLinearGradient& gradient);
