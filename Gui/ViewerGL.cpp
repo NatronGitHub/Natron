@@ -2020,3 +2020,7 @@ bool ViewerGL::isUserRoIEnabled() const {
 const RectI& ViewerGL::getUserRoI() const {
     return _imp->userRoI;
 }
+
+void ViewerGL::setUserRoI(const RectI& r) {
+    _imp->userRoI = r;
+}

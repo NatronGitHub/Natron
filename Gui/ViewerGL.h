@@ -277,6 +277,8 @@ public:
     
     const RectI& getUserRoI() const;
     
+    void setUserRoI(const RectI& r);
+    
 signals:
     /**
      *@brief Signal emitted when the mouse position changed on the viewport.

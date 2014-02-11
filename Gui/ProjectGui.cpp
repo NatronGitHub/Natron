@@ -262,7 +262,7 @@ void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneL
 
 void ProjectGui::load(const ProjectGuiSerialization& obj){
     
-    const std::map<std::string, ViewportProjection >& viewersProjections = obj.getViewersProjections();
+    const std::map<std::string, ViewerData >& viewersProjections = obj.getViewersProjections();
     
     const std::vector< boost::shared_ptr<NodeGuiSerialization> >& nodesGuiSerialization = obj.getSerializedNodesGui();
     for (U32 i = 0; i < nodesGuiSerialization.size(); ++i) {
@@ -276,10 +276,16 @@ void ProjectGui::load(const ProjectGuiSerialization& obj){
         }
         
         if (nGui->getNode()->pluginID() == "Viewer") {
-            std::map<std::string, ViewportProjection >::const_iterator found = viewersProjections.find(name);
+            std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
             if (found != viewersProjections.end()) {
                 ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(nGui->getNode()->getLiveInstance());
                 viewer->getUiContext()->viewer->setProjection(found->second.left, found->second.bottom, found->second.zoomFactor);
+                viewer->getUiContext()->setChannels(found->second.channels);
+                viewer->getUiContext()->setColorSpace(found->second.colorSpace);
+                viewer->getUiContext()->setExposure(found->second.exposure);
+                viewer->getUiContext()->setUserRoIEnabled(found->second.userRoIenabled);
+                viewer->getUiContext()->setUserRoI(found->second.userRoI);
+                viewer->getUiContext()->setClipToProject(found->second.isClippedToProject);
             }
         }
         
