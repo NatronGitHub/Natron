@@ -1342,7 +1342,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
     }
     
     //update the cursor if it is hovering an overlay and we're not dragging the image
-    if (_imp->ms != DRAGGING_IMAGE && _imp->overlay) {
+    if (_imp->ms != DRAGGING_IMAGE && _imp->overlay && _imp->isUserRoIEnabled) {
         if (isNearByUserRoIBottomEdge(event->pos()) || isNearByUserRoITopEdge(event->pos())
             || _imp->ms == DRAGGING_ROI_BOTTOM_EDGE || _imp->ms == DRAGGING_ROI_TOP_EDGE) {
             setCursor(QCursor(Qt::SizeVerCursor));
