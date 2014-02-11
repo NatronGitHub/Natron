@@ -512,10 +512,7 @@ void Gui::setupUi()
     _splitters.push_back(_viewerWorkshopSplitter);
     _viewerWorkshopSplitter->setContentsMargins(0, 0, 0, 0);
     _viewerWorkshopSplitter->setOrientation(Qt::Vertical);
-    _viewerWorkshopSplitter->setChildrenCollapsible(false);
-    QSize viewerWorkshopSplitterSize = _viewerWorkshopSplitter->sizeHint();
-    QList<int> sizesViewerSplitter; sizesViewerSplitter <<  viewerWorkshopSplitterSize.height()/2;
-    sizesViewerSplitter  << viewerWorkshopSplitterSize.height()/2;
+    _viewerWorkshopSplitter->setChildrenCollapsible(false);;
     
     /*VIEWERS related*/
     
@@ -546,6 +543,12 @@ void Gui::setupUi()
     _workshopPane->makeCurrentTab(0);
     
     _viewerWorkshopSplitter->addWidget(_workshopPane);
+    
+    ///if the preferences are not set, give a "basic" shape to the splitter so it doesn't look collapsed
+    QList<int> sizesViewerSplitter;
+    sizesViewerSplitter << 500;
+    sizesViewerSplitter << 500;
+    _viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
     
 
     _middleRightSplitter = new QSplitter(_centralWidget);
@@ -579,11 +582,10 @@ void Gui::setupUi()
     _propertiesPane->appendTab(_propertiesScrollArea);
     
     _middleRightSplitter->addWidget(_propertiesPane);
-    QSize horizontalSplitterSize = _middleRightSplitter->sizeHint();
-    QList<int> sizes;
-    sizes << 195;
-    sizes << horizontalSplitterSize.width()- 195;
-    _middleRightSplitter->setSizes(sizes);
+    QList<int> sizesMiddleRightSplitter;
+    sizesMiddleRightSplitter << 800;
+    sizesMiddleRightSplitter << 300;
+    _middleRightSplitter->setSizes(sizesMiddleRightSplitter);
 
     
     _leftRightSplitter->addWidget(_middleRightSplitter);
