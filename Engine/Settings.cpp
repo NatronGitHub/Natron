@@ -257,7 +257,10 @@ void Settings::restoreSettings(){
         _customOcioConfigFile->setValue<QStringList>(QStringList(settings.value("OCIOConfigFile").toString()));
     }
     if (settings.contains("OCIOConfig")) {
-        _ocioConfigKnob->setValue<int>(settings.value("OCIOConfig").toInt());
+        int activeIndex = settings.value("OCIOConfig").toInt();
+        if (activeIndex < (int)_ocioConfigKnob->getEntries().size()) {
+            _ocioConfigKnob->setValue<int>(activeIndex);
+        }
     }
     settings.endGroup();
     

@@ -530,7 +530,9 @@ int Choice_Knob::getActiveEntry() const
 
 const std::string &Choice_Knob::getActiveEntryText() const
 {
-    return _entries[getActiveEntry()];
+    int activeIndex = getActiveEntry();
+    assert(activeIndex < (int)_entries.size());
+    return _entries[activeIndex];
 }
 
 /******************************TABLE_KNOB**************************************/
