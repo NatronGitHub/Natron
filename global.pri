@@ -28,6 +28,9 @@ CONFIG(debug, debug|release){
     DEFINES += NATRON_DEBUG
 }
 
+# https://qt.gitorious.org/qt-creator/qt-creator/commit/b48ba2c25da4d785160df4fd0d69420b99b85152
+unix:LIBS += $$QMAKE_LIBS_DYNLOAD
+
 *g++* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
   QMAKE_CXXFLAGS_WARN_ON += -Wextra
