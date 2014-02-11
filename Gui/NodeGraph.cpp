@@ -425,7 +425,7 @@ void NodeGraph::moveNodesForIdealPosition(NodeGui* node) {
         
         ///actually move the created node where the selected node is
         x = selectedNodeMiddlePos.x() - createdNodeSize.width() / 2;
-        y = selectedNodeMiddlePos.y() + selectedNodeSize.height() / 2 + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES;
+        y = selectedNodeMiddlePos.y() + (selectedNodeSize.height() / 2) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES;
 
         QRectF createdNodeRect(x,y,createdNodeSize.width(),createdNodeSize.height());
         
