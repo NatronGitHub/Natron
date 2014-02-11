@@ -245,17 +245,14 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
     /*if we want to force a refresh, we by-pass the cache*/
     bool byPassCache = false;
     
-    ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
-    ///is very low, we better render again (and let the NodeCache do the work) rather than just
-    ///overload the ViewerCache which may become slower.
-    if (viewer->isUserRoIEnabled()) {
-        _forceRender = true;
-    }
-    
+
+
     {
         QMutexLocker forceRenderLocker(&_forceRenderMutex);
         if(!_forceRender){
-            isCached = Natron::getTextureFromCache(key, &cachedFrame);
+            if (!viewer->isUserRoIEnabled()) {
+                isCached = Natron::getTextureFromCache(key, &cachedFrame);
+            }
         }else{
             byPassCache = true;
             _forceRender = false;
@@ -283,7 +280,10 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
             _mustFreeBuffer = false;
         }
         
-        if(byPassCache){
+        ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
+        ///is very low, we better render again (and let the NodeCache do the work) rather than just
+        ///overload the ViewerCache which may become slowe
+        if(byPassCache || viewer->isUserRoIEnabled()){
             assert(!cachedFrame);
             _buffer = (unsigned char*)malloc( _interThreadInfos._bytesCount);
             _mustFreeBuffer = true;
