@@ -244,6 +244,14 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
     bool isCached = false;
     /*if we want to force a refresh, we by-pass the cache*/
     bool byPassCache = false;
+    
+    ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
+    ///is very low, we better render again (and let the NodeCache do the work) rather than just
+    ///overload the ViewerCache which may become slower.
+    if (viewer->isUserRoIEnabled()) {
+        _forceRender = true;
+    }
+    
     {
         QMutexLocker forceRenderLocker(&_forceRenderMutex);
         if(!_forceRender){
@@ -265,7 +273,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
                                    QString::number(key.getHash())).toStdString());
         Natron::Log::endFunction(getName(),"renderViewer");
 #endif
-    }else{
+    } else {
     
         /*We didn't find it in the viewer cache, hence we render
          the frame*/
@@ -290,7 +298,14 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
             /*for now we skip the render scale*/
             RenderScale scale;
             scale.x = scale.y = 1.;
-            EffectInstance::RoIMap inputsRoi = getRegionOfInterest(time, scale, texRectClipped);
+            
+            RectI toRender = texRectClipped;
+            if (viewer->isUserRoIEnabled()) {
+                if(!toRender.intersect(viewer->getUserRoI(), &toRender)) {
+                    return StatOK;
+                }
+            }
+            EffectInstance::RoIMap inputsRoi = getRegionOfInterest(time, scale, toRender);
             //inputsRoi only contains 1 element
             EffectInstance::RoIMap::const_iterator it = inputsRoi.begin();
             
@@ -317,16 +332,16 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
             }
             
             if (singleThreaded) {
-                renderFunctor(_lastRenderedImage, std::make_pair(textureRect.y1,textureRect.y2), textureRect, closestPowerOf2);
+                renderFunctor(_lastRenderedImage, std::make_pair(toRender.y1,toRender.y2), textureRect, closestPowerOf2);
             } else {
                 
-                int rowsPerThread = std::ceil((double)texRect.height()/(double)QThread::idealThreadCount());
+                int rowsPerThread = std::ceil((double)(toRender.x2 - toRender.x1) / (double)QThread::idealThreadCount());
                 // group of group of rows where first is image coordinate, second is texture coordinate
                 std::vector< std::pair<int, int> > splitRows;
-                int k = textureRect.y1;
-                while (k < textureRect.y2) {
+                int k = toRender.y1;
+                while (k < toRender.y2) {
                     int top = k + rowsPerThread;
-                    int realTop = top > textureRect.y2 ? textureRect.y2 : top;
+                    int realTop = top > toRender.y2 ? toRender.y2 : top;
                     splitRows.push_back(std::make_pair(k,realTop));
                     k += rowsPerThread;
                 }
@@ -426,7 +441,6 @@ void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> 
     ///the base output buffer
     U32* output = reinterpret_cast<U32*>(_buffer);
 
-    
     ///offset the output buffer at the starting point
     output += ((yRange.first - texRect.y1) / closestPowerOf2) * texRect.w;
     
@@ -453,7 +467,8 @@ void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> 
             while(dstIndex < texRect.w && dstIndex >= 0) {
                 
                 if (srcIndex > ( texRect.x2 - texRect.x1)) {
-                    dst_pixels[dstIndex] = toBGRA(0,0,0,255);
+                    break;
+                    //dst_pixels[dstIndex] = toBGRA(0,0,0,255);
                 } else {
                     
                     double r = src_pixels[srcIndex * 4 + rOffset] * _exposure;
