@@ -1018,10 +1018,13 @@ void Project::autoConnectNodes(Node* selected,Node* created) {
             assert(ok);
         } else {
             ///connect it to the first input
-            bool ok = connectNodes(selected->getPreferredInputForConnection(), created, selected,true);
-            assert(ok);
-        }
+            int selectedInput = selected->getPreferredInputForConnection();
+            if (selectedInput != -1) {
+                bool ok = connectNodes(selectedInput, created, selected,true);
+                assert(ok);
 
+            }
+        }
     } else {
 
         if (!created->isOutputNode()) {
@@ -1039,8 +1042,11 @@ void Project::autoConnectNodes(Node* selected,Node* created) {
 
         }
         ///finally we connect the created node to the selected node
-        bool ok = connectNodes(created->getPreferredInputForConnection(), selected, created);
-        assert(ok);
+        int createdInput = created->getPreferredInputForConnection();
+        if (createdInput != -1) {
+            bool ok = connectNodes(createdInput, selected, created);
+            assert(ok);
+        }
     }
 
     ///update the render trees
