@@ -150,6 +150,7 @@ int main(int argc, char *argv[])
     QCoreApplication* app = NULL;
     if(!isBackGround){
         QApplication* guiApp = new QApplication(argc, argv);
+        Q_INIT_RESOURCE(GuiResources);
         guiApp->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_12));
         app = guiApp;
     }else{
