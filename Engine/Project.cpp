@@ -890,7 +890,6 @@ bool Project::connectNodes(int inputNumber,const std::string& parentName,Node* o
 }
 
 bool Project::connectNodes(int inputNumber,Node* input,Node* output,bool force) {
-    QMutexLocker l(&_imp->projectLock);
 
     Node* existingInput = output->input(inputNumber);
     if (force && existingInput) {
@@ -900,6 +899,8 @@ bool Project::connectNodes(int inputNumber,Node* input,Node* output,bool force) 
             assert(ok);
         }
     }
+
+    QMutexLocker l(&_imp->projectLock);
 
     if(!output->connectInput(input, inputNumber)){
         return false;
