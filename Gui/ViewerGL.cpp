@@ -1922,6 +1922,9 @@ void ViewerGL::setProjection(double left,double bottom,double zoomFactor) {
 
 void ViewerGL::setUserRoIEnabled(bool b) {
     _imp->isUserRoIEnabled = b;
+    if (_imp->displayingImage) {
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+    }
     update();
 }
 
