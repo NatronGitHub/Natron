@@ -23,7 +23,10 @@
 #include <QTextEdit>
 #include <QStyle> // in QtGui on Qt4, in QtWidgets on Qt5
 
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QKeyEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QColorDialog>
 #include <QGroupBox>
 #include <QtGui/QVector4D>

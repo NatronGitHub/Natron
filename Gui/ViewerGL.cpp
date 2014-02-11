@@ -60,6 +60,9 @@ GCC_DIAG_ON(unused-parameter);
 #include "Gui/ViewerTab.h"
 #include "Gui/ProjectGui.h"
 
+// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
+CLANG_DIAG_OFF(deprecated-declarations)
+
 #define USER_ROI_BORDER_TICK_SIZE 15.f
 #define USER_ROI_CROSS_RADIUS 15.f
 #define USER_ROI_SELECTION_POINT_SIZE 8.f

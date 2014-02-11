@@ -41,6 +41,9 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/KnobGui.h"
 #include "Gui/SequenceFileDialog.h"
 
+// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
+CLANG_DIAG_OFF(deprecated-declarations)
+
 using namespace Natron;
 
 #define CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE 5 //maximum distance from a curve that accepts a mouse click

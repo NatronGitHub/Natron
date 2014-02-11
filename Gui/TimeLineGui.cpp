@@ -29,6 +29,9 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/ticks.h"
 #include "Gui/Gui.h"
 
+// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
+CLANG_DIAG_OFF(deprecated-declarations)
+
 using namespace Natron;
 
 #define TICK_HEIGHT 7

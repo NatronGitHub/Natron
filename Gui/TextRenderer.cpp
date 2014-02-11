@@ -13,8 +13,12 @@
 #include <QtGui/QImage>
 #include <QtCore/QHash>
 
+#include "Global/Macros.h"
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
+
+// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
+CLANG_DIAG_OFF(deprecated-declarations)
 
 using namespace Natron;
 

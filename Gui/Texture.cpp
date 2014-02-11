@@ -14,6 +14,9 @@
 #include "Global/GLIncludes.h"
 #include "Gui/ViewerGL.h"
 
+// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
+CLANG_DIAG_OFF(deprecated-declarations)
+
 Texture::Texture(){
     glGenTextures(1, &_texID);
     
