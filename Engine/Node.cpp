@@ -547,7 +547,7 @@ void Node::deactivate()
     if (inputToConnectTo) {
         for (OutputConnectionsIterator it = _imp->deactivatedState.outputsConnections.begin();
              it!=_imp->deactivatedState.outputsConnections.end(); ++it) {
-            getApp()->getProject()->connect(it->second.first, inputToConnectTo, it->first);
+            getApp()->getProject()->connectNodes(it->second.first, inputToConnectTo, it->first);
         }
     }
     
@@ -576,7 +576,7 @@ void Node::activate()
         ///between the outputs by the user
         Node* outputHasInput = it->first->input(it->second.first);
         if (outputHasInput) {
-            bool ok = getApp()->getProject()->disconnect(outputHasInput, it->first);
+            bool ok = getApp()->getProject()->disconnectNodes(outputHasInput, it->first);
             assert(ok);
         }
 

@@ -443,7 +443,7 @@ Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVers
     if(!isBackground() && !requestedByLoad){
         if(_gui->getSelectedNode()){
             Node* selected = _gui->getSelectedNode()->getNode();
-            _currentProject->autoConnect(selected, node);
+            _currentProject->autoConnectNodes(selected, node);
         }
         _gui->selectNode(nodegui);
                 

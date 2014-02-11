@@ -956,10 +956,10 @@ void ConnectCommand::undo(){
     _edge->setSource(_oldSrc);
     
     if(_oldSrc){
-        _graph->getGui()->getApp()->getProject()->connect(_edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode());
+        _graph->getGui()->getApp()->getProject()->connectNodes(_edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode());
     }
     if(_newSrc){
-        _graph->getGui()->getApp()->getProject()->disconnect(_newSrc->getNode(), _edge->getDest()->getNode());
+        _graph->getGui()->getApp()->getProject()->disconnectNodes(_newSrc->getNode(), _edge->getDest()->getNode());
     }
     
     if(_oldSrc){
@@ -994,13 +994,13 @@ void ConnectCommand::redo(){
     }else{
         _edge->setSource(_newSrc);
         if(_oldSrc){
-            if(!_graph->getGui()->getApp()->getProject()->disconnect(_oldSrc->getNode(), dst->getNode())){
+            if(!_graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode(), dst->getNode())){
                 cout << "Failed to disconnect (input) " << _oldSrc->getNode()->getName()
                      << " to (output) " << dst->getNode()->getName() << endl;
             }
         }
         if(_newSrc){
-            if(!_graph->getGui()->getApp()->getProject()->connect(_edge->getInputNumber(), _newSrc->getNode(), dst->getNode())){
+            if(!_graph->getGui()->getApp()->getProject()->connectNodes(_edge->getInputNumber(), _newSrc->getNode(), dst->getNode())){
                 cout << "Failed to connect (input) " << _newSrc->getNode()->getName()
                      << " to (output) " << dst->getNode()->getName() << endl;
 

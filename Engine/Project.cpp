@@ -10,6 +10,7 @@
 
 #include "Project.h"
 
+#include <QtConcurrentRun>
 
 #include "Global/AppManager.h"
 
@@ -876,25 +877,25 @@ void Project::setOrAddProjectFormat(const Format& frmt,bool skipAdd) {
 }
 
 ///do not need to lock this function as all calls are thread-safe already
-bool Project::connect(int inputNumber,const std::string& parentName,Node* output){
+bool Project::connectNodes(int inputNumber,const std::string& parentName,Node* output){
     const std::vector<Node*> nodes = getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
         if (nodes[i]->getName() == parentName) {
-            return connect(inputNumber,nodes[i], output);
+            return connectNodes(inputNumber,nodes[i], output);
         }
     }
     return false;
 }
 
-bool Project::connect(int inputNumber,Node* input,Node* output,bool force) {
+bool Project::connectNodes(int inputNumber,Node* input,Node* output,bool force) {
     QMutexLocker l(&_imp->projectLock);
 
     Node* existingInput = output->input(inputNumber);
     if (force && existingInput) {
-        bool ok = disconnect(existingInput, output);
+        bool ok = disconnectNodes(existingInput, output);
         if (!input->isInputNode()) {
-            ok = connect(input->getPreferredInputForConnection(), existingInput, input);
+            ok = connectNodes(input->getPreferredInputForConnection(), existingInput, input);
             assert(ok);
         }
     }
@@ -908,7 +909,7 @@ bool Project::connect(int inputNumber,Node* input,Node* output,bool force) {
     input->connectOutput(output);
     return true;
 }
-bool Project::disconnect(Node* input,Node* output,bool autoReconnect) {
+bool Project::disconnectNodes(Node* input,Node* output,bool autoReconnect) {
     QMutexLocker l(&_imp->projectLock);
 
     Node* inputToReconnectTo = 0;
@@ -930,7 +931,7 @@ bool Project::disconnect(Node* input,Node* output,bool autoReconnect) {
     }
 
     if (autoReconnect && inputToReconnectTo) {
-        bool ok = connect(indexOfInput, inputToReconnectTo, output);
+        bool ok = connectNodes(indexOfInput, inputToReconnectTo, output);
         assert(ok);
     }
 
@@ -946,7 +947,7 @@ void Project::unlock() const {
     _imp->projectLock.unlock();
 }
 
-void Project::autoConnect(Node* selected,Node* created) {
+void Project::autoConnectNodes(Node* selected,Node* created) {
     ///We follow this rule:
     //        1) selected is output
     //          a) created is output --> fail
@@ -1011,11 +1012,11 @@ void Project::autoConnect(Node* selected,Node* created) {
         InspectorNode* inspector = dynamic_cast<InspectorNode*>(selected);
         if (inspector) {
             int activeInputIndex = inspector->activeInput();
-            bool ok = connect(activeInputIndex, created, selected,true);
+            bool ok = connectNodes(activeInputIndex, created, selected,true);
             assert(ok);
         } else {
             ///connect it to the first input
-            bool ok = connect(selected->getPreferredInputForConnection(), created, selected,true);
+            bool ok = connectNodes(selected->getPreferredInputForConnection(), created, selected,true);
             assert(ok);
         }
 
@@ -1027,16 +1028,16 @@ void Project::autoConnect(Node* selected,Node* created) {
             std::map<Node*,int> outputsConnectedToSelectedNode;
             selected->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
             for (std::map<Node*,int>::iterator it = outputsConnectedToSelectedNode.begin(); it!=outputsConnectedToSelectedNode.end(); ++it) {
-                bool ok = disconnect(selected, it->first);
+                bool ok = disconnectNodes(selected, it->first);
                 assert(ok);
 
-                ok = connect(it->second, created, it->first);
+                ok = connectNodes(it->second, created, it->first);
                 assert(ok);
             }
 
         }
         ///finally we connect the created node to the selected node
-        bool ok = connect(created->getPreferredInputForConnection(), selected, created);
+        bool ok = connectNodes(created->getPreferredInputForConnection(), selected, created);
         assert(ok);
     }
 
