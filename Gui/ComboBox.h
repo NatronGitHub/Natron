@@ -102,6 +102,8 @@ public:
     
     void clear();
     
+    QString getCurrentIndexText() const;
+    
     public slots:
     
     void setCurrentIndex(int index);

@@ -880,3 +880,50 @@ bool ViewerTab::notifyOverlaysFocusLost(){
     return ret;
 }
 
+bool ViewerTab::isClippedToProject() const {
+    return _clipToProjectFormatButton->isDown();
+}
+
+std::string ViewerTab::getColorSpace() const {
+    return _viewerColorSpace->getCurrentIndexText().toStdString();
+}
+
+void ViewerTab::setUserRoIEnabled(bool b) {
+    onEnableViewerRoIButtonToggle(b);
+}
+
+void ViewerTab::setUserRoI(const RectI& r) {
+    viewer->setUserRoI(r);
+}
+
+void ViewerTab::setClipToProject(bool b) {
+    onClipToProjectButtonToggle(b);
+}
+
+void ViewerTab::setColorSpace(const std::string& colorSpaceName) {
+    int index = _viewerColorSpace->itemIndex(colorSpaceName.c_str());
+    if (index != -1) {
+        _viewerColorSpace->setCurrentIndex(index);
+    }
+}
+
+void ViewerTab::setExposure(double d) {
+    _gainBox->setValue(d);
+    _gainSlider->seekScalePosition(d);
+    _viewerNode->onExposureChanged(d);
+}
+
+double ViewerTab::getExposure() const {
+    return _gainBox->value();
+}
+
+std::string ViewerTab::getChannelsString() const {
+    return _viewerChannels->getCurrentIndexText().toStdString();
+}
+
+void ViewerTab::setChannels(const std::string& channelsStr) {
+    int index = _viewerChannels->itemIndex(channelsStr.c_str());
+    if (index != -1) {
+        _viewerChannels->setCurrentIndex(index);
+    }
+}

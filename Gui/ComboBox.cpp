@@ -213,6 +213,11 @@ int ComboBox::activeIndex() const{
     return _currentIndex;
 }
 
+QString ComboBox::getCurrentIndexText() const {
+    assert(_currentIndex < (int)_actions.size());
+    return _actions[_currentIndex]->text();
+}
+
 void ComboBox::setCurrentIndex(int index)
 {
     QString str;

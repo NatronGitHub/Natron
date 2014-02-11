@@ -351,6 +351,14 @@ void ViewerGL::drawRenderingVAO() {
 
     rod.intersect(r.x1,r.y1,r.x2,r.y2,&rod);
     
+    //if user RoI is enabled, clip the rod to that roi
+    if (_imp->isUserRoIEnabled) {
+        //if the userRoI isn't intersecting the rod, just don't render anything
+        if(!rod.intersect(_imp->userRoI,&rod)) {
+            return;
+        }
+    }
+   
     /*setup the scissor box to paint only what's contained in the project's window*/
     QPointF scissorBoxBtmLeft = toWidgetCoordinates(rod.x1, rod.y1);
     QPointF scissorBoxTopRight = toWidgetCoordinates(rod.x2, rod.y2);
@@ -361,7 +369,6 @@ void ViewerGL::drawRenderingVAO() {
     
     glScissor(scissorBoxBtmLeft.x(),scissorBoxBtmLeft.y(),scissorBoxTopRight.x() - scissorBoxBtmLeft.x(),
               scissorBoxTopRight.y() - scissorBoxBtmLeft.y());
-
     
     GLfloat vertices[32] = {
         (GLfloat)rod.left() ,(GLfloat)rod.top()  , //0
@@ -630,10 +637,9 @@ void ViewerGL::paintGL()
             
         }
 
-        checkGLErrors();
         clearColorBuffer(_imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF());
-        checkGLErrors();
         drawRenderingVAO();
+        checkGLErrors();
     }
     
     if (_imp->displayingImage) {
@@ -1038,7 +1044,7 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD) {
     QPointF bottomRight = toImgCoordinates_fast(width()-1, height()-1);
     ret.x2 = std::ceil(bottomRight.x());
     ret.y1 = std::floor(bottomRight.y());
-    if(!ret.intersect(imageRoD, &ret)){
+    if (!ret.intersect(imageRoD, &ret)) {
         ret.clear();
     }
     return ret;
@@ -1339,7 +1345,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
     }
     
     //update the cursor if it is hovering an overlay and we're not dragging the image
-    if (_imp->ms != DRAGGING_IMAGE) {
+    if (_imp->ms != DRAGGING_IMAGE && _imp->overlay && _imp->isUserRoIEnabled) {
         if (isNearByUserRoIBottomEdge(event->pos()) || isNearByUserRoITopEdge(event->pos())
             || _imp->ms == DRAGGING_ROI_BOTTOM_EDGE || _imp->ms == DRAGGING_ROI_TOP_EDGE) {
             setCursor(QCursor(Qt::SizeVerCursor));
@@ -1359,6 +1365,8 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
         }else {
             setCursor(QCursor(Qt::ArrowCursor));
         }
+    } else {
+        setCursor(QCursor(Qt::ArrowCursor));
     }
     
     QPoint newClick =  event->pos();
@@ -1385,29 +1393,44 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
         case DRAGGING_ROI_BOTTOM_EDGE: {
             if ((_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
                 _imp->userRoI.y1 -= dySinceLastMove;
+                if(_imp->displayingImage){
+                    _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                }
                 updateGL();
             }
         } break;
         case DRAGGING_ROI_LEFT_EDGE: {
             if ((_imp->userRoI.x1 - dxSinceLastMove) < _imp->userRoI.x2 ) {
                 _imp->userRoI.x1 -= dxSinceLastMove;
+                if(_imp->displayingImage){
+                    _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                }
+                updateGL();
             }
-            updateGL();
         } break;
         case DRAGGING_ROI_RIGHT_EDGE: {
             if ((_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
                 _imp->userRoI.x2 -= dxSinceLastMove;
+                if(_imp->displayingImage){
+                    _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                }
+                updateGL();
             }
-            updateGL();
         } break;
         case DRAGGING_ROI_TOP_EDGE: {
             if ((_imp->userRoI.y2 - dySinceLastMove) > _imp->userRoI.y1 ) {
                 _imp->userRoI.y2 -= dySinceLastMove;
+                if(_imp->displayingImage){
+                    _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                }
+                updateGL();
             }
-            updateGL();
         } break;
         case DRAGGING_ROI_CROSS: {
             _imp->userRoI.move(-dxSinceLastMove,-dySinceLastMove);
+            if(_imp->displayingImage){
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+            }
             updateGL();
         } break;
         case DRAGGING_ROI_TOP_LEFT: {
@@ -1416,6 +1439,9 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
             }
             if ((_imp->userRoI.x1 - dxSinceLastMove) < _imp->userRoI.x2 ) {
                 _imp->userRoI.x1 -= dxSinceLastMove;
+            }
+            if(_imp->displayingImage){
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
             }
             updateGL();
         } break;
@@ -1426,8 +1452,10 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
             if ((_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
                 _imp->userRoI.x2 -= dxSinceLastMove;
             }
-            updateGL();
-        } break;
+            if(_imp->displayingImage){
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+            }
+            updateGL();        } break;
         case DRAGGING_ROI_BOTTOM_RIGHT: {
             if ((_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
                 _imp->userRoI.x2 -= dxSinceLastMove;
@@ -1435,14 +1463,19 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
             if ((_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
                 _imp->userRoI.y1 -= dySinceLastMove;
             }
-            updateGL();
-        } break;
+            if(_imp->displayingImage){
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+            }
+            updateGL();        } break;
         case DRAGGING_ROI_BOTTOM_LEFT: {
             if ((_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
                 _imp->userRoI.y1 -= dySinceLastMove;
             }
             if ((_imp->userRoI.x1 - dxSinceLastMove) < _imp->userRoI.x2 ) {
                 _imp->userRoI.x1 -= dxSinceLastMove;
+            }
+            if(_imp->displayingImage){
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
             }
             updateGL();
         } break;
@@ -1892,6 +1925,9 @@ void ViewerGL::setProjection(double left,double bottom,double zoomFactor) {
 
 void ViewerGL::setUserRoIEnabled(bool b) {
     _imp->isUserRoIEnabled = b;
+    if (_imp->displayingImage) {
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+    }
     update();
 }
 
@@ -1981,4 +2017,16 @@ bool ViewerGL::isNearByUserRoIBottomLeft(const QPoint& mousePos) {
             _imp->userRoI.x1  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
             _imp->userRoI.y1  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor);
     return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isUserRoIEnabled() const {
+    return _imp->isUserRoIEnabled;
+}
+
+const RectI& ViewerGL::getUserRoI() const {
+    return _imp->userRoI;
+}
+
+void ViewerGL::setUserRoI(const RectI& r) {
+    _imp->userRoI = r;
 }

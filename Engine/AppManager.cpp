@@ -769,14 +769,18 @@ void AppManager::load(SplashScreen* splashScreen,const QString& binaryPath) {
     }
     
     setLoadingStatus("Restoring user settings...");
+    
+    _knobsClipBoard->isEmpty = true;
+    
+    ///flag initialized before restoring settings otherwise the value changes wouldn't be taken into account
+    _initialized = true;
+
     _settings->restoreSettings();
     
     ///and save these restored settings in case some couldn't be found
     _settings->saveSettings();
     
-    _knobsClipBoard->isEmpty = true;
     
-    _initialized = true;
 }
 
 void AppManager::initProcessInputChannel(const QString& mainProcessServerName) {
@@ -1374,14 +1378,13 @@ AppInstance::ActiveBackgroundRender::ActiveBackgroundRender(Natron::OutputEffect
 
 void AppInstance::ActiveBackgroundRender::blockingRender(){
     _writer->renderFullSequence();
-    {
+    if (!appPTR->getCurrentSettings()->isMultiThreadingDisabled()) {
         QMutexLocker locker(&_runningMutex);
         _running = true;
         while (_running) {
             _runningCond.wait(&_runningMutex);
         }
     }
-
 }
 
 void AppInstance::ActiveBackgroundRender::notifyFinished(){

@@ -104,7 +104,6 @@ void Settings::initializeKnobs(){
     _customOcioConfigFile = Natron::createKnob<File_Knob>(this, "Custom OpenColorIO config file");
     _customOcioConfigFile->setEnabled(false);
     ocioTab->addKnob(_customOcioConfigFile);
-
     
     _viewersTab = Natron::createKnob<Tab_Knob>(this, "Viewers");
     

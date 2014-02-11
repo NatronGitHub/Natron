@@ -34,10 +34,16 @@
          if (activeNodes[i]->getNode()->pluginID() == "Viewer") {
              ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(activeNodes[i]->getNode()->getLiveInstance());
              assert(viewer);
-             ViewportProjection proj;
-             proj.aspectRatio = 1.;
-             viewer->getUiContext()->viewer->getProjection(proj.left, proj.bottom, proj.zoomFactor);
-             _viewersProjection.insert(std::make_pair(viewer->getName(),proj));
+             ViewerData viewerData;
+             viewerData.aspectRatio = 1.;
+             viewer->getUiContext()->viewer->getProjection(viewerData.left, viewerData.bottom, viewerData.zoomFactor);
+             viewerData.userRoI = viewer->getUiContext()->viewer->getUserRoI();
+             viewerData.userRoIenabled = viewer->getUiContext()->viewer->isUserRoIEnabled();
+             viewerData.isClippedToProject = viewer->getUiContext()->isClippedToProject();
+             viewerData.exposure = viewer->getUiContext()->getExposure();
+             viewerData.colorSpace = viewer->getUiContext()->getColorSpace();
+             viewerData.channels = viewer->getUiContext()->getChannelsString();
+             _viewersData.insert(std::make_pair(viewer->getName(),viewerData));
          }
      }
      

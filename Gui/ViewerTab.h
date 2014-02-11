@@ -36,6 +36,7 @@ class ScaleSliderQWidget;
 class TimeLineGui;
 class ViewerInstance;
 class Gui;
+class RectI;
 
 class ViewerTab: public QWidget 
 { 
@@ -77,6 +78,31 @@ public:
     bool notifyOverlaysFocusGained();
     
     bool notifyOverlaysFocusLost();
+    
+    
+    
+    ////////
+    /////////////The following functions are used when serializing/deserializing the project gui
+    ///////////// so the viewer can restore the exact same settings to the user.
+    bool isClippedToProject() const;
+    
+    std::string getColorSpace() const;
+    
+    void setUserRoIEnabled(bool b);
+    
+    void setUserRoI(const RectI& r);
+    
+    void setClipToProject(bool b);
+    
+    void setColorSpace(const std::string& colorSpaceName);
+    
+    void setExposure(double d);
+    
+    double getExposure() const;
+    
+    std::string getChannelsString() const;
+    
+    void setChannels(const std::string& channelsStr);
 
 public slots:
     

@@ -493,7 +493,10 @@ void NodeGraph::deselect(){
 }
 
 void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
-    if(_evtState == ARROW_DRAGGING){
+    EVENT_STATE state = _evtState;
+    _evtState = DEFAULT;
+
+    if(state == ARROW_DRAGGING){
         bool foundSrc=false;
         NodeGui* dst = _arrowSelected->getDest();
         for(U32 i = 0; i<_nodes.size() ;++i){
@@ -523,7 +526,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         scene()->update();
         appPTR->clearPlaybackCache();
         _gui->getApp()->checkViewersConnection();
-    }else if(_evtState == NODE_DRAGGING){
+    }else if(state == NODE_DRAGGING){
         if(_nodeSelected) {
             _undoStack->setActive();
             _undoStack->push(new MoveCommand(_nodeSelected,_lastNodeDragStartPoint));
@@ -532,17 +535,15 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
     scene()->update();
     
     
-    _evtState=DEFAULT;
     setCursor(QCursor(Qt::ArrowCursor));
 }
 void NodeGraph::mouseMoveEvent(QMouseEvent *event){
     QPointF newPos = mapToScene(event->pos());
-    
     if(_evtState == ARROW_DRAGGING){
         
         QPointF np=_arrowSelected->mapFromScene(newPos);
         _arrowSelected->updatePosition(np);
-        
+
     }else if(_evtState == NODE_DRAGGING && _nodeSelected){
         
         QPointF op = _nodeSelected->mapFromScene(_lastScenePosClick);

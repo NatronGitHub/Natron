@@ -20,12 +20,20 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
 
+#include "Engine/Rect.h"
 #include "Gui/NodeGuiSerialization.h"
 
 class ProjectGui;
 
-struct ViewportProjection {
+struct ViewerData {
     double left,bottom,zoomFactor,aspectRatio;
+    bool userRoIenabled;
+    RectI userRoI;
+    bool isClippedToProject;
+    double exposure;
+    std::string colorSpace;
+    std::string channels;
+    
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar,const unsigned int version)
@@ -35,7 +43,12 @@ struct ViewportProjection {
         ar & boost::serialization::make_nvp("Bottom",bottom);
         ar & boost::serialization::make_nvp("ZoomFactor",zoomFactor);
         ar & boost::serialization::make_nvp("AspectRatio",aspectRatio);
-
+        ar & boost::serialization::make_nvp("UserRoIEnabled",userRoIenabled);
+        ar & boost::serialization::make_nvp("UserRoI",userRoI);
+        ar & boost::serialization::make_nvp("ClippedToProject",isClippedToProject);
+        ar & boost::serialization::make_nvp("Exposure",exposure);
+        ar & boost::serialization::make_nvp("ColorSpace",colorSpace);
+        ar & boost::serialization::make_nvp("Channels",channels);
     }
 };
 
@@ -75,7 +88,7 @@ class ProjectGuiSerialization {
     //splitter name, splitter serialization
     std::map<std::string,std::string> _splittersStates;
     
-    std::map<std::string, ViewportProjection > _viewersProjection;
+    std::map<std::string, ViewerData > _viewersData;
     
     
     friend class boost::serialization::access;
@@ -86,7 +99,7 @@ class ProjectGuiSerialization {
         ar & boost::serialization::make_nvp("NodesGui",_serializedNodes);
         ar & boost::serialization::make_nvp("Gui_Layout",_layout);
         ar & boost::serialization::make_nvp("Splitters_states",_splittersStates);
-        ar & boost::serialization::make_nvp("ViewersProjections",_viewersProjection);
+        ar & boost::serialization::make_nvp("ViewersData",_viewersData);
 
     }
     
@@ -104,7 +117,7 @@ public:
     
     const std::map<std::string,std::string>& getSplittersStates() const { return _splittersStates; }
     
-    const std::map<std::string, ViewportProjection >& getViewersProjections() const { return _viewersProjection; }
+    const std::map<std::string, ViewerData >& getViewersProjections() const { return _viewersData; }
     
 private:
     

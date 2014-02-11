@@ -386,7 +386,7 @@ void Project::initializeKnobs(){
     _imp->previewMode = Natron::createKnob<Bool_Knob>(this, "Auto previews");
     _imp->previewMode->setHintToolTip("When true, preview images on the node graph will be"
                                       "refreshed automatically. You can uncheck this option to improve performances."
-                                      " Press <p><b>P</b></p> in the node graph to refresh the previews yourself.");
+                                      "Press P in the node graph to refresh the previews yourself.");
     _imp->previewMode->turnOffAnimation();
     bool autoPreviewEnabled = appPTR->getCurrentSettings()->isAutoPreviewOnForNewProjects();
     _imp->previewMode->setValue<bool>(autoPreviewEnabled);

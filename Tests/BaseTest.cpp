@@ -178,8 +178,6 @@ void BaseTest::disconnectNodes(Natron::Node* input,Natron::Node* output,bool exp
     }
 }
 
-#pragma message WARN("***** TEST DISABLED ***** because it never exits")
-#if 0
 ///High level test: render 1 frame of dot generator
 TEST_F(BaseTest,GenerateDot)
 {
@@ -197,7 +195,6 @@ TEST_F(BaseTest,GenerateDot)
     ///and start rendering. This call is blocking.
     _app->startWritersRendering(QStringList(writer->getName().c_str()));
 }
-#endif
 
 ///High level test: simple node connections test
 TEST_F(BaseTest,SimpleNodeConnections) {
