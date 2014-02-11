@@ -1372,14 +1372,13 @@ AppInstance::ActiveBackgroundRender::ActiveBackgroundRender(Natron::OutputEffect
 
 void AppInstance::ActiveBackgroundRender::blockingRender(){
     _writer->renderFullSequence();
-    {
+    if (!appPTR->getCurrentSettings()->isMultiThreadingDisabled()) {
         QMutexLocker locker(&_runningMutex);
         _running = true;
         while (_running) {
             _runningCond.wait(&_runningMutex);
         }
     }
-
 }
 
 void AppInstance::ActiveBackgroundRender::notifyFinished(){
