@@ -373,7 +373,22 @@ void NodeGraph::moveNodesForIdealPosition(NodeGui* node) {
         }
     }
     
-
+    ///if behaviour is 1 , just check that we can effectively connect the node to avoid moving them for nothing
+    ///otherwise fallback on behaviour 0
+    if (behavior == 1) {
+        const Natron::Node::InputMap& inputs = _nodeSelected->getNode()->getInputs();
+        bool oneInputEmpty = false;
+        for (Natron::Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it) {
+            if (!it->second) {
+                oneInputEmpty = true;
+                break;
+            }
+        }
+        if (!oneInputEmpty) {
+            behavior = 0;
+        }
+    }
+    
     ///default
     int x,y;
     if (behavior == 0) {

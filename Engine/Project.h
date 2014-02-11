@@ -113,7 +113,7 @@ public:
      * @brief Attempts to add automatically the node 'created' to the node graph.
      * 'selected' is the node currently selected by the user.
      **/
-    void autoConnectNodes(Natron::Node* selected,Natron::Node* created);
+    bool autoConnectNodes(Natron::Node* selected,Natron::Node* created);
     
     const QString& getProjectName() const WARN_UNUSED_RETURN ;
     

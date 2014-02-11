@@ -949,7 +949,7 @@ void Project::unlock() const {
     _imp->projectLock.unlock();
 }
 
-void Project::autoConnectNodes(Node* selected,Node* created) {
+bool Project::autoConnectNodes(Node* selected,Node* created) {
     ///We follow this rule:
     //        1) selected is output
     //          a) created is output --> fail
@@ -970,11 +970,11 @@ void Project::autoConnectNodes(Node* selected,Node* created) {
 
     ///cannot connect 2 input nodes together: case 2-b)
     if (selected->isInputNode() && created->isInputNode()) {
-        return;
+        return false;
     }
     ///cannot connect 2 output nodes together: case 1-a)
     if (selected->isOutputNode() && created->isOutputNode()) {
-        return;
+        return false;
     }
 
     ///1)
@@ -1009,6 +1009,7 @@ void Project::autoConnectNodes(Node* selected,Node* created) {
         }
     }
 
+    bool ret = false;
     if (connectAsInput) {
         ///if the selected node is and inspector, we want to connect the created node on the active input
         InspectorNode* inspector = dynamic_cast<InspectorNode*>(selected);
@@ -1016,13 +1017,16 @@ void Project::autoConnectNodes(Node* selected,Node* created) {
             int activeInputIndex = inspector->activeInput();
             bool ok = connectNodes(activeInputIndex, created, selected,true);
             assert(ok);
+            ret = true;
         } else {
             ///connect it to the first input
             int selectedInput = selected->getPreferredInputForConnection();
             if (selectedInput != -1) {
                 bool ok = connectNodes(selectedInput, created, selected,true);
                 assert(ok);
-
+                ret = true;
+            } else {
+                ret = false;
             }
         }
     } else {
@@ -1038,6 +1042,7 @@ void Project::autoConnectNodes(Node* selected,Node* created) {
 
                 ok = connectNodes(it->second, created, it->first);
                 assert(ok);
+                ret = true;
             }
 
         }
@@ -1046,6 +1051,9 @@ void Project::autoConnectNodes(Node* selected,Node* created) {
         if (createdInput != -1) {
             bool ok = connectNodes(createdInput, selected, created);
             assert(ok);
+            ret = true;
+        } else {
+            ret = false;
         }
     }
 
@@ -1055,6 +1063,7 @@ void Project::autoConnectNodes(Node* selected,Node* created) {
     for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
         (*it)->updateTreeAndRender();
     }
+    return ret;
 
 }
 
