@@ -14,17 +14,20 @@
 
 #include <vector>
 #include <map>
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QGraphicsView>
 #include <QtCore/QRectF>
 #include <QtCore/QTimer>
 #include <QDialog>
 #include <QLabel>
 #include <QUndoCommand>
+CLANG_DIAG_ON(deprecated)
+
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
 #endif
-
-#include "Global/Macros.h"
 
 class QVBoxLayout;
 class QScrollArea;

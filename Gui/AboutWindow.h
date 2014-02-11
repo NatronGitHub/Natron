@@ -7,7 +7,10 @@
 #ifndef ABOUTWINDOW_H
 #define ABOUTWINDOW_H
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QDialog>
+CLANG_DIAG_ON(deprecated)
 
 class QTextBrowser;
 class QLabel;

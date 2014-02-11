@@ -11,11 +11,15 @@
 #ifndef NATRON_ENGINE_OFXPARAMINSTANCE_H_
 #define NATRON_ENGINE_OFXPARAMINSTANCE_H_
 
+#include "Global/Macros.h"
 #include <map>
 #include <string>
 #include <vector>
 #include <boost/shared_ptr.hpp>
+CLANG_DIAG_OFF(deprecated)
 #include <QStringList>
+CLANG_DIAG_ON(deprecated)
+
 #include <QVector4D>
 #include <QThreadStorage>
 

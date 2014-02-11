@@ -14,8 +14,15 @@
 #define BASETEST_H
 
 #include <vector>
+
+#include "Global/Macros.h"
+
 #include <gtest/gtest.h>
+
+CLANG_DIAG_OFF(deprecated)
 #include <QString>
+CLANG_DIAG_ON(deprecated)
+
 class AppInstance;
 
 namespace Natron{

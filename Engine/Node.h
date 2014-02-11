@@ -16,7 +16,11 @@
 #include <string>
 #include <map>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QMetaType>
+CLANG_DIAG_ON(deprecated)
+#include <QObject>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>

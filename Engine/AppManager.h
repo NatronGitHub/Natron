@@ -15,8 +15,12 @@
 #include <string>
 #include <map>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
+// /usr/include/qt5/QtCore/qgenericatomic.h:177:13: warning: 'register' storage class specifier is deprecated [-Wdeprecated]
 #include <QtCore/QObject>
 #include <QtCore/QDateTime>
+CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>

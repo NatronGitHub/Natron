@@ -16,7 +16,10 @@
 #include <boost/shared_ptr.hpp>
 
 #include <QtCore/QRectF>
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QGraphicsItem>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 

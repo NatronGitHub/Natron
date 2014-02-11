@@ -13,7 +13,10 @@
 #define NATRON_GUI_COMBOBOX_H_
 
 #include <vector>
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QFrame>
+CLANG_DIAG_ON(deprecated)
 #include <QtGui/QKeySequence>
 #include <QtGui/QIcon>
 

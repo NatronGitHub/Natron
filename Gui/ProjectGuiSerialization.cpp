@@ -10,7 +10,10 @@
 
 #include "ProjectGuiSerialization.h"
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QSplitter>
+CLANG_DIAG_ON(deprecated)
 
 #include "Engine/AppManager.h"
 #include "Engine/Project.h"

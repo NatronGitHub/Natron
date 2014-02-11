@@ -17,11 +17,14 @@
 #include <windows.h>
 #endif
 
+#include "Global/Macros.h"
 #ifndef Q_MOC_RUN
 #include <boost/cstdint.hpp>
 #endif
 #include <QtCore/QForeachContainer>
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMetaType>
+CLANG_DIAG_ON(deprecated)
 #include "Global/Macros.h"
 #include "Global/Enums.h"
 

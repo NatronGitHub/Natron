@@ -12,7 +12,10 @@
 #ifndef NATRON_GUI_BUTTON_H_
 #define NATRON_GUI_BUTTON_H_
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QPushButton>
+CLANG_DIAG_ON(deprecated)
 
 class Button : public QPushButton {
 public:

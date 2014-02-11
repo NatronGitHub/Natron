@@ -14,8 +14,12 @@
 
 #include <map>
 #include <vector>
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QFrame>
 #include <QTabBar>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/Macros.h"
 

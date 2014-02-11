@@ -8,10 +8,13 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QString>
 #include <QtGui/QFont>
 #include <QtGui/QImage>
 #include <QtCore/QHash>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/Macros.h"
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h

@@ -15,7 +15,10 @@
 #include <vector>
 #include <cmath> // for std::pow()
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QWidget>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 

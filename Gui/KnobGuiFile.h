@@ -12,9 +12,11 @@
 #ifndef NATRON_GUI_KNOBGUIFILE_H_
 #define NATRON_GUI_KNOBGUIFILE_H_
 
-#include <QtCore/QString>
-
 #include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
+#include <QtCore/QString>
+CLANG_DIAG_ON(deprecated)
+
 #include "Global/GlobalDefines.h"
 
 #include "Gui/KnobGui.h"

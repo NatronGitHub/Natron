@@ -12,7 +12,10 @@
 #ifndef NATRON_GUI_VIEWERTAB_H_
 #define NATRON_GUI_VIEWERTAB_H_ 
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QWidget>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 /*The ViewerTab encapsulates a viewer with all the graphical interface surrounding it. It should be instantiable as

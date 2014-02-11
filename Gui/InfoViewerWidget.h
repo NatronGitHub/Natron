@@ -12,7 +12,10 @@
 #ifndef NATRON_GUI_INFOVIEWERWIDGET_H_
 #define NATRON_GUI_INFOVIEWERWIDGET_H_
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QWidget>
+CLANG_DIAG_ON(deprecated)
 #include <QtCore/QPoint>
 #include <QtGui/QVector4D>
 #include "Engine/Format.h"

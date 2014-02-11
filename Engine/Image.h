@@ -22,7 +22,9 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/scoped_array.hpp>
 
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QHash>
+CLANG_DIAG_ON(deprecated)
 #include <QtCore/QMutex>
 
 #include "Engine/Cache.h"

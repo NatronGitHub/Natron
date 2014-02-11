@@ -1333,7 +1333,7 @@ void Gui::informationDialog(const std::string& title,const std::string& text){
         emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
     }
 }
-void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB){
+void Gui::onDoDialog(int type, const QString& title, const QString& content, Natron::StandardButtons buttons, int defaultB){
     
     QMutexLocker locker(&_uiUsingMainThreadMutex);
 
@@ -1344,6 +1344,7 @@ void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron
     }else if(type == 2){
         QMessageBox::information(this, title,content);
     }else{
+#pragma message WARN("This kind of enum cast is very dangerous, and QMessageBox should not be used by Global/Enums.h")
         _lastQuestionDialogAnswer = (Natron::StandardButton)QMessageBox::question(this,title,content,
                                                                                   (QMessageBox::StandardButtons)buttons,
                                                                                   (QMessageBox::StandardButton)defaultB);

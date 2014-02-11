@@ -5,6 +5,9 @@
 
 TEMPLATE = subdirs
 
+# build things in the order we give
+CONFIG += ordered
+
 SUBDIRS += \
     HostSupport \
     Engine \
