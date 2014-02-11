@@ -114,6 +114,14 @@ void Project::loadProjectInternal(const QString& path,const QString& name) {
     }
     ifile.close();
 
+    QDateTime time = QDateTime::currentDateTime();
+    _imp->autoSetProjectFormat = false;
+    _imp->hasProjectBeenSavedByUser = true;
+    _imp->projectName = name;
+    _imp->projectPath = path;
+    _imp->ageSinceLastSave = time;
+    _imp->lastAutoSave = time;
+    emit projectNameChanged(name);
 
     /*Refresh all previews*/
     for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
