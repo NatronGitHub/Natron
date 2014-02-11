@@ -194,7 +194,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     RectI roi;
     if (_imp->renderArgs.hasLocalData()) {
         roi = _imp->renderArgs.localData()._roi;//if the thread was spawned by us we take the last render args
-    }else{
+    } else {
         Natron::Status stat = n->getRegionOfDefinition(time, &roi);
         if(stat == Natron::StatFailed) {//we have no choice but compute the full region of definition
             return boost::shared_ptr<Natron::Image>();

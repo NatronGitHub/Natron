@@ -12,7 +12,7 @@
 #include <cassert>
 #include <sstream>
 #include <cmath>
-
+#include <iostream>
 #include "ofxhParametricParam.h"
 
 // ofx

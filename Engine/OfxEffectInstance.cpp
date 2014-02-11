@@ -506,7 +506,7 @@ bool OfxEffectInstance::isIdentity(SequenceTime time,RenderScale scale,const Rec
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     std::string inputclip;
     OfxTime inputTimeOfx = time;
-        OfxStatus stat = effect_->isIdentityAction(inputTimeOfx,field,ofxRoI,scale,inputclip);
+    OfxStatus stat = effect_->isIdentityAction(inputTimeOfx,field,ofxRoI,scale,inputclip);
     if(stat == kOfxStatOK){
         OFX::Host::ImageEffect::ClipInstance* clip = effect_->getClip(inputclip);
         if (!clip) {
