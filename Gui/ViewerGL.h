@@ -19,6 +19,7 @@
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
 
+#include "Engine/Rect.h"
 #include "Global/Macros.h"
 
 class QKeyEvent;
@@ -34,7 +35,6 @@ class AppInstance;
 class ViewerInstance;
 class ViewerTab;
 class ImageInfo;
-class RectI;
 class TextureRect;
 class Format;
 

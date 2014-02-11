@@ -103,56 +103,56 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5BE18AA403700EF3180 /* HostSupport.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = A2E5C945B6EC37DFE2BAA55D;
+			remoteGlobalIDString = ED08CA340BFEF8FE1A2D2AD0;
 			remoteInfo = HostSupport;
 		};
 		1EADE60218AA40E300EF3180 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C118AA403700EF3180 /* Engine.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = FB4FF9ABC3D227CED5B58CAB;
+			remoteGlobalIDString = 4037D4193E4219AF3CA213FA;
 			remoteInfo = Engine;
 		};
 		1EADE60418AA40E300EF3180 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C418AA403700EF3180 /* Gui.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 0CDBAB9EF8E64199ACB009F8;
+			remoteGlobalIDString = 7F7885FA157803963BE4F88F;
 			remoteInfo = Gui;
 		};
 		1EADE60618AA40EA00EF3180 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5CA18AA403700EF3180 /* Natron.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 7F75FBDDA1A24444736ED8C5;
+			remoteGlobalIDString = DC0BFCDE67DB0C1AE83A9378;
 			remoteInfo = Natron;
 		};
 		1EADE60818AA415000EF3180 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5BE18AA403700EF3180 /* HostSupport.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = A2E5C945B6EC37DFE2BAA55D;
+			remoteGlobalIDString = ED08CA340BFEF8FE1A2D2AD0;
 			remoteInfo = HostSupport;
 		};
 		1EADE60A18AA415000EF3180 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C118AA403700EF3180 /* Engine.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = FB4FF9ABC3D227CED5B58CAB;
+			remoteGlobalIDString = 4037D4193E4219AF3CA213FA;
 			remoteInfo = Engine;
 		};
 		1EADE60C18AA415000EF3180 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C418AA403700EF3180 /* Gui.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 0CDBAB9EF8E64199ACB009F8;
+			remoteGlobalIDString = 7F7885FA157803963BE4F88F;
 			remoteInfo = Gui;
 		};
 		1EADE60E18AA415000EF3180 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C718AA403700EF3180 /* Tests.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 4941E133AE788675167A7B50;
+			remoteGlobalIDString = 91723E39E578F037AB8FBF70;
 			remoteInfo = Tests;
 		};
 /* End PBXContainerItemProxy section */
@@ -439,6 +439,7 @@
 				1EADE5F718AA407500EF3180 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		1EADE5F918AA407D00EF3180 /* Build configuration list for PBXAggregateTarget "Tests" */ = {
 			isa = XCConfigurationList;
@@ -447,6 +448,7 @@
 				1EADE5FB18AA407D00EF3180 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
