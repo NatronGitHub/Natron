@@ -18,7 +18,10 @@
 #include <QtGui/QIcon>
 #include <QtCore/QMimeData>
 #include <QtGui/QDrag>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QDragEnterEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QDragLeaveEvent>
 #include <QtGui/QPaintEvent>
 #include <QScrollArea>
@@ -26,7 +29,7 @@
 #include <QTextDocument> // for Qt::convertFromPlainText
 
 #include "Gui/Button.h"
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 #include "Gui/Gui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveEditor.h"

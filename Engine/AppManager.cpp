@@ -33,8 +33,8 @@
 #include <QStandardPaths>
 #endif
 
-#include "Global/LibraryBinary.h"
 #include "Global/MemoryInfo.h"
+#include "Engine/LibraryBinary.h"
 #include "Engine/Project.h"
 #include "Engine/ProjectSerialization.h"
 #include "Engine/VideoEngine.h"
@@ -50,6 +50,8 @@
 #include "Engine/KnobFile.h"
 #include "Engine/TextureRectSerialization.h"
 
+// FIXME: too much Gui stuff in here!
+#pragma message WARN("too much Gui stuff in the Engine")
 #include "Gui/ViewerGL.h"
 #include "Gui/Gui.h"
 #include "Gui/ViewerTab.h"
@@ -62,9 +64,9 @@
 #include "Gui/ProcessHandler.h"
 #include "Gui/SplashScreen.h"
 
-#include "Readers/QtDecoder.h"
+#include "Gui/QtDecoder.h"
 
-#include "Writers/QtEncoder.h"
+#include "Gui/QtEncoder.h"
 
 using namespace Natron;
 using std::cout; using std::endl;

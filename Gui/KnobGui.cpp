@@ -32,8 +32,8 @@
 #include <QMenu>
 #include <QComboBox>
 
-#include "Global/AppManager.h"
-#include "Global/LibraryBinary.h"
+#include "Engine/AppManager.h"
+#include "Engine/LibraryBinary.h"
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Node.h"

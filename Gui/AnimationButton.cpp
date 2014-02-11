@@ -17,7 +17,7 @@
 #include "Gui/KnobGui.h"
 #include "Engine/Project.h"
 #include "Engine/Knob.h"
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 void AnimationButton::mousePressEvent(QMouseEvent* event){
     if (event->button() == Qt::LeftButton) {

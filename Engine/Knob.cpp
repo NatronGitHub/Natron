@@ -13,6 +13,7 @@
 #include <QtCore/QDataStream>
 #include <QtCore/QByteArray>
 
+#include "Global/GlobalDefines.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/TimeLine.h"
@@ -22,9 +23,8 @@
 #include "Engine/Project.h"
 #include "Engine/KnobSerialization.h"
 
-#include "Global/AppManager.h"
-#include "Global/LibraryBinary.h"
-#include "Global/GlobalDefines.h"
+#include "Engine/AppManager.h"
+#include "Engine/LibraryBinary.h"
 
 
 using namespace Natron;

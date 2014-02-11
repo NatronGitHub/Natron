@@ -29,7 +29,10 @@
 #include <QDialog>
 #include <QFileDialog>
 #include <QtCore/QRegExp>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QKeyEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QColor>
 #if QT_VERSION < 0x050000
 #include <QtGui/QAction>
@@ -52,7 +55,7 @@
 
 #include <QtCore/QSettings>
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 #include "Global/QtCompat.h"
 #include "Gui/Button.h"
 #include "Gui/LineEdit.h"

@@ -15,7 +15,7 @@
 #include <QCoreApplication>
 #include <QThreadStorage>
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"

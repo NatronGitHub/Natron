@@ -15,10 +15,20 @@
 #include <limits>
 #include <stdexcept>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
+#pragma message WARN("QKeyEvent is Gui stuff!")
 #include <QKeyEvent>
+CLANG_DIAG_ON(unused-private-field)
 
-#include "Global/AppManager.h"
+#include <ofxhPluginCache.h>
+#include <ofxhPluginAPICache.h>
+#include <ofxhImageEffect.h>
+#include <ofxhImageEffectAPI.h>
+#include <ofxhHost.h>
 
+#include "Engine/AppManager.h"
 #include "Engine/OfxParamInstance.h"
 #include "Engine/Row.h"
 #include "Engine/OfxClipInstance.h"
@@ -31,12 +41,6 @@
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
 
-
-#include <ofxhPluginCache.h>
-#include <ofxhPluginAPICache.h>
-#include <ofxhImageEffect.h>
-#include <ofxhImageEffectAPI.h>
-#include <ofxhHost.h>
 
 using namespace Natron;
 using std::cout; using std::endl;

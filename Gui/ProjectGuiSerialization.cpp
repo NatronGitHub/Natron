@@ -12,7 +12,7 @@
 
 #include <QSplitter>
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"

@@ -16,8 +16,10 @@
 
 #include <QtConcurrentMap>
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
+#pragma message WARN("Clean the code, use the C++ force, remove the Gui stuff from the Engine")
+// FIXME: Gui stuff in the Engine
 #include "Gui/Gui.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"

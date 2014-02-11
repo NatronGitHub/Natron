@@ -17,7 +17,7 @@
 #include <QtGui/QColor>
 #include <QtGui/QImageReader>
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #include "Engine/Image.h"
 #include "Engine/Lut.h"

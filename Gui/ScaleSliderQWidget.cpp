@@ -12,7 +12,10 @@
 #include "ScaleSliderQWidget.h"
 
 #include <cassert>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QPaintEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QMouseEvent>
 #include <QtGui/QPainter>
 #include <QStyleOption>

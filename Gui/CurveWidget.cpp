@@ -12,7 +12,10 @@
 #include "CurveWidget.h"
 
 #include <QMenu>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QtCore/QCoreApplication>
 #include <QtCore/QRectF>
 #include <QtGui/QPolygonF>
@@ -21,7 +24,7 @@
 #include <QVBoxLayout> // in QtGui on Qt4, in QtWidgets on Qt5
 
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 #include "Engine/Knob.h"
 #include "Engine/Rect.h"
 #include "Engine/TimeLine.h"
