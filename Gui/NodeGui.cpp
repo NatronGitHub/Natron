@@ -705,27 +705,31 @@ void NodeGui::onInputNRenderingFinished(int input) {
 
 void NodeGui::moveBelowPositionRecursively(const QRectF& r) {
     QRectF sceneRect = mapToScene(boundingRect()).boundingRect();
+
     if (r.intersects(sceneRect)) {
-        moveBy(0, r.height() + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
-        for (std::map<int,Edge*>::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end();++it) {
-            if (it->second->hasSource()) {
-                it->second->getSource()->moveAbovePositionRecursively(sceneRect);
+        moveBy(0,  r.height() + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
+        const Natron::Node::OutputMap& outputs = getNode()->getOutputs();
+        for (Natron::Node::OutputMap::const_iterator it = outputs.begin(); it!= outputs.end(); ++it) {
+            if (it->second) {
+                NodeGui* output = _internalNode->getApp()->getNodeGui(it->second);
+                assert(output);
+                sceneRect = mapToScene(boundingRect()).boundingRect();
+                output->moveBelowPositionRecursively(sceneRect);
             }
         }
     }
 }
 
 void NodeGui::moveAbovePositionRecursively(const QRectF& r) {
-    QRectF sceneRect = mapToScene(boundingRect()).boundingRect();
 
+
+    QRectF sceneRect = mapToScene(boundingRect()).boundingRect();
     if (r.intersects(sceneRect)) {
-        moveBy(0, - r.height() - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
-        const Natron::Node::OutputMap& outputs = getNode()->getOutputs();
-        for (Natron::Node::OutputMap::const_iterator it = outputs.begin(); it!= outputs.end(); ++it) {
-            if (it->second) {
-                NodeGui* output = _internalNode->getApp()->getNodeGui(it->second);
-                assert(output);
-                output->moveBelowPositionRecursively(sceneRect);
+        moveBy(0,- r.height() - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
+        for (std::map<int,Edge*>::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end();++it) {
+            if (it->second->hasSource()) {
+                sceneRect = mapToScene(boundingRect()).boundingRect();
+                it->second->getSource()->moveAbovePositionRecursively(sceneRect);
             }
         }
     }
