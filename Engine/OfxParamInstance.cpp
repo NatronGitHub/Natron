@@ -20,7 +20,7 @@
 
 #include <ofxParametricParam.h>
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #include "Engine/Knob.h"
 #include "Engine/KnobFactory.h"

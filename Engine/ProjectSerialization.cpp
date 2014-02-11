@@ -11,7 +11,7 @@
 #include "ProjectSerialization.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Project.h"
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 
 void ProjectSerialization::initialize(const Natron::Project* project){

@@ -13,6 +13,8 @@
 #include <cfloat>
 #include <limits>
 
+#include "Global/Macros.h"
+
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Settings.h"
@@ -21,8 +23,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/Hash64.h"
 
-#include "Global/AppManager.h"
-#include "Global/Macros.h"
+#include "Engine/AppManager.h"
 
 using namespace Natron;
 

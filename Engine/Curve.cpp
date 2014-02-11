@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <boost/math/special_functions/fpclassify.hpp>
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #include "Engine/CurvePrivate.h"
 #include "Engine/Interpolation.h"

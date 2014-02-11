@@ -11,7 +11,7 @@
 
 #include "ProjectPrivate.h"
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/TimeLine.h"
 #include "Engine/EffectInstance.h"

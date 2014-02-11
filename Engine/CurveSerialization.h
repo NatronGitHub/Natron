@@ -14,7 +14,11 @@
 #ifndef NATRON_ENGINE_CURVESERIALIZATION_H_
 #define NATRON_ENGINE_CURVESERIALIZATION_H_
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(unused-parameter)
+// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
+CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/set.hpp>

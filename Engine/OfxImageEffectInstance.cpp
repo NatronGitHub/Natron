@@ -31,7 +31,7 @@
 #include "Engine/KnobFactory.h"
 #include "Engine/OfxMemory.h"
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 using namespace Natron;
 

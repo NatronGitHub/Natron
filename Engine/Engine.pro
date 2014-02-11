@@ -1,0 +1,123 @@
+#This Source Code Form is subject to the terms of the Mozilla Public
+#License, v. 2.0. If a copy of the MPL was not distributed with this
+#file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+
+TARGET = Engine
+TEMPLATE = lib
+CONFIG += staticlib
+CONFIG += moc
+CONFIG += boost qt
+QT += core network
+warning("Engine is still using QtGui")
+#QT -= gui
+greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
+
+
+precompile_header {
+  # Use Precompiled headers (PCH)
+  # we specify PRECOMPILED_DIR, or qmake places precompiled headers in Natron/c++.pch, thus blocking the creation of the Unix executable
+  PRECOMPILED_DIR = pch
+  PRECOMPILED_HEADER = pch.h
+}
+
+include(../global.pri)
+include(../config.pri)
+
+
+#OpenFX C api includes and OpenFX c++ layer includes that are located in the submodule under /libs/OpenFX
+INCLUDEPATH += $$PWD/../libs/OpenFX/include
+DEPENDPATH  += $$PWD/../libs/OpenFX/include
+INCLUDEPATH += $$PWD/../libs/OpenFX_extensions
+DEPENDPATH  += $$PWD/../libs/OpenFX_extensions
+INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
+DEPENDPATH  += $$PWD/../libs/OpenFX/HostSupport/include
+INCLUDEPATH += $$PWD/..
+
+DEPENDPATH += $$PWD/../Global
+
+SOURCES += \
+    AppManager.cpp \
+    ChannelSet.cpp \
+    Curve.cpp \
+    CurveSerialization.cpp \
+    EffectInstance.cpp \
+    Hash64.cpp \
+    Image.cpp \
+    Knob.cpp \
+    KnobSerialization.cpp \
+    KnobFactory.cpp \
+    KnobFile.cpp \
+    KnobTypes.cpp \
+    LibraryBinary.cpp \
+    Log.cpp \
+    Lut.cpp \
+    MemoryFile.cpp \
+    Node.cpp \
+    NodeSerialization.cpp \
+    OfxClipInstance.cpp \
+    OfxHost.cpp \
+    OfxImageEffectInstance.cpp \
+    OfxEffectInstance.cpp \
+    OfxMemory.cpp \
+    OfxOverlayInteract.cpp \
+    OfxParamInstance.cpp \
+    PluginMemory.cpp \
+    Project.cpp \
+    ProjectPrivate.cpp \
+    ProjectSerialization.cpp \
+    Row.cpp \
+    Settings.cpp \
+    TimeLine.cpp \
+    Timer.cpp \
+    VideoEngine.cpp \
+    ViewerInstance.cpp
+
+HEADERS += \
+    AppManager.h \
+    Cache.h \
+    Curve.h \
+    CurveSerialization.h \
+    CurvePrivate.h \
+    Rect.h \
+    ChannelSet.h \
+    EffectInstance.h \
+    Format.h \
+    FrameEntry.h \
+    Hash64.h \
+    ImageInfo.h \
+    Image.h \
+    Interpolation.h \
+    Knob.h \
+    KnobSerialization.h \
+    KnobFactory.h \
+    KnobFile.h \
+    KnobTypes.h \
+    LibraryBinary.h \
+    Log.h \
+    LRUHashTable.h \
+    Lut.h \
+    MemoryFile.h \
+    Node.h \
+    NodeSerialization.h \
+    OfxClipInstance.h \
+    OfxHost.h \
+    OfxImageEffectInstance.h \
+    OfxEffectInstance.h \
+    OfxOverlayInteract.h \
+    OfxMemory.h \
+    OfxParamInstance.h \
+    PluginMemory.h \
+    Project.h \
+    ProjectPrivate.h \
+    ProjectSerialization.h \
+    Row.h \
+    Settings.h \
+    Singleton.h \
+    TextureRect.h \
+    TextureRectSerialization.h \
+    TimeLine.h \
+    Timer.h \
+    Variant.h \
+    VideoEngine.h \
+    ViewerInstance.h

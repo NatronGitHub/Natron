@@ -37,7 +37,7 @@
 #include "Engine/Timer.h"
 #include "Engine/Project.h"
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #define NATRON_STATE_INDICATOR_OFFSET 5
 

@@ -12,7 +12,10 @@
 #include "LineEdit.h"
 
 #include <QLineEdit>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QDragEnterEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QDragLeaveEvent>
 #include <QDragMoveEvent>
 #include <QDropEvent>

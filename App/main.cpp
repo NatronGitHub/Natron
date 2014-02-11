@@ -20,7 +20,7 @@
 #include <QAbstractSocket>
 
 #include "Global/GlobalDefines.h"
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #include "Engine/Knob.h"
 #include "Engine/ChannelSet.h"

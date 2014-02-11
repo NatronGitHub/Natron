@@ -24,7 +24,10 @@
 #include <QMenu> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QDockWidget> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QtGui/QPainter>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QKeyEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QVector4D>
 #include <QtOpenGL/QGLShaderProgram>
 
@@ -32,7 +35,7 @@
 GCC_DIAG_OFF(unused-parameter);
 GCC_DIAG_ON(unused-parameter);
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"

@@ -12,7 +12,10 @@
 
 #include <cfloat>
 
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QWheelEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QDoubleValidator>
 #include <QtGui/QIntValidator>
 #include <QStyle> // in QtGui on Qt4, in QtWidgets on Qt5

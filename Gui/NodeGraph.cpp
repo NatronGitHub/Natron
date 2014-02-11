@@ -11,7 +11,10 @@
 #include "NodeGraph.h"
 
 #include <cstdlib>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QGraphicsProxyWidget>
+CLANG_DIAG_ON(unused-private-field)
 #include <QGraphicsTextItem>
 #include <QFileSystemModel>
 #include <QScrollArea>
@@ -27,7 +30,7 @@
 #include <QMimeData>
 #include <QLineEdit>
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #include "Engine/VideoEngine.h"
 #include "Engine/OfxEffectInstance.h"

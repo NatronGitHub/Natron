@@ -24,7 +24,7 @@
 #include <QApplication>
 #include <QScrollArea>
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Curve.h"

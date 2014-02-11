@@ -32,8 +32,8 @@
 #include "Engine/Log.h"
 #include "Engine/NodeSerialization.h"
 
-#include "Global/AppManager.h"
-#include "Global/LibraryBinary.h"
+#include "Engine/AppManager.h"
+#include "Engine/LibraryBinary.h"
 
 using namespace Natron;
 using std::make_pair;

@@ -12,7 +12,7 @@
 
 #include <QtConcurrentRun>
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #include "Engine/ProjectPrivate.h"
 #include "Engine/VideoEngine.h"
@@ -23,6 +23,7 @@
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
 
+#pragma message WARN("Use the C++ force, remove Gui stuff from the engine")
 #include "Gui/ProjectGuiSerialization.h" // for ProjectGuiSerialization, it doesn't include any Gui type
 
 

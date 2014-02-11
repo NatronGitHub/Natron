@@ -19,6 +19,8 @@
 #include <QCoreApplication>
 #include <QtCore/QSocketNotifier>
 
+#include "Global/MemoryInfo.h"
+
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
@@ -35,8 +37,7 @@
 
 #include "Engine/EffectInstance.h"
 
-#include "Global/AppManager.h"
-#include "Global/MemoryInfo.h"
+#include "Engine/AppManager.h"
 
 
 #define NATRON_FPS_REFRESH_RATE 10

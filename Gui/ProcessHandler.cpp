@@ -19,7 +19,7 @@
 #include <QWaitCondition>
 #include <QMutex>
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 #include "Engine/KnobFile.h"
 #include "Engine/EffectInstance.h"
 #include "Gui/Gui.h"

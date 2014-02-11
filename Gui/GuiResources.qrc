@@ -72,8 +72,8 @@
         <file>Resources/Images/multiview.png</file>
         <file>Resources/Images/transform_low.png</file>
         <file>Resources/Images/transform.png</file>
-        <file>CONTRIBUTORS.txt</file>
-        <file>LICENSE.txt</file>
+        <file alias="CONTRIBUTORS.txt">../CONTRIBUTORS.txt</file>
+        <file alias="LICENSE.txt">../LICENSE.txt</file>
         <file>Resources/Images/natronIcon256_linux.png</file>
         <file>Resources/Images/paint_low.png</file>
         <file>Resources/Images/paint.png</file>

@@ -14,7 +14,7 @@
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 using namespace Natron;
 

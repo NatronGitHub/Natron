@@ -10,8 +10,8 @@
  */
 #include "KnobGuiFactory.h"
 
-#include "Global/AppManager.h"
-#include "Global/LibraryBinary.h"
+#include "Engine/AppManager.h"
+#include "Engine/LibraryBinary.h"
 
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"

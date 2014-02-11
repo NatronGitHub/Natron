@@ -41,16 +41,16 @@
 #include <natron/IOExtensions.h>
 #include <tuttle/ofxReadWrite.h>
 
-#include "Global/AppManager.h"
-#include "Global/LibraryBinary.h"
+//our version of parametric param suite support
+#include "ofxhParametricParam.h"
+
+#include "Engine/AppManager.h"
+#include "Engine/LibraryBinary.h"
 
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/KnobTypes.h"
 
-
-//our version of parametric param suite support
-#include "ofxhParametricParam.h"
 
 using namespace Natron;
 

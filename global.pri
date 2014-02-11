@@ -1,3 +1,9 @@
+#This Source Code Form is subject to the terms of the Mozilla Public
+#License, v. 2.0. If a copy of the MPL was not distributed with this
+#file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+CONFIG += warn_on
+
 DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SUPPORTS_PARAMETRIC OFX_EXTENSIONS_NATRON OFX_EXTENSIONS_TUTTLE
 #DEFINES += OFX_SUPPORTS_MULTITHREAD
 
@@ -25,9 +31,16 @@ CONFIG(debug, debug|release){
 *g++* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
   QMAKE_CXXFLAGS_WARN_ON += -Wextra
+  GCCVer = $$system($$QMAKE_CXX --version)
+  contains(GCCVer,[0-3]\\.[0-9]+.*) {
+  } else {
+    contains(GCCVer,4\\.[0-6].*) {
+    } else {
+      QMAKE_CXXFLAGS += -Wno-c++11-extensions
+    }
+  }
   c++11 {
     # check for at least version 4.7
-    GCCVer = $$system($$QMAKE_CXX --version)
     contains(GCCVer,[0-3]\\.[0-9]+.*) {
       error("At least GCC 4.6 is required.")
     } else {
@@ -96,8 +109,8 @@ unix {
 }
 
 *clang* {
-  QMAKE_CXXFLAGS += -ftemplate-depth-1024
-  QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
+  QMAKE_CXXFLAGS += -ftemplate-depth-1024 -Wno-c++11-extensions
+  QMAKE_CXXFLAGS_WARN_ON += -Wextra
   c++11 {
     QMAKE_CXXFLAGS += -std=c++11
   }

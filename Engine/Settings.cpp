@@ -15,9 +15,9 @@
 #include <QSettings>
 #include <QThreadPool>
 
-#include "Global/AppManager.h"
 #include "Global/MemoryInfo.h"
-#include "Global/LibraryBinary.h"
+#include "Engine/AppManager.h"
+#include "Engine/LibraryBinary.h"
 
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"

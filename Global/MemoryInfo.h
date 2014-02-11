@@ -45,6 +45,7 @@
 #endif
 
 #include <QtCore/QString>
+#include <QtCore/QLocale>
 #include <QFileSystemModel>
 
 inline size_t getSystemTotalRAM(){

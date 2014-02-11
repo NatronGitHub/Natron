@@ -12,7 +12,10 @@
 
 #include <cassert>
 #include <QtCore/QEvent>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QCloseEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QApplication>
 #include <QMenu>
 #include <QUrl>
@@ -33,7 +36,7 @@
 #include <QScreen>
 #endif
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"

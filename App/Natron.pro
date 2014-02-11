@@ -3,37 +3,33 @@
 #file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
+TARGET = Natron
 TEMPLATE = app
-CONFIG += console
-CONFIG -= app_bundle
-CONFIG += moc rcc
+CONFIG += app
+CONFIG += moc
 CONFIG += boost glew opengl qt expat
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
-INCLUDEPATH += google-test/include
-INCLUDEPATH += google-test
-INCLUDEPATH += google-mock/include
-INCLUDEPATH += google-mock
-
-
-QMAKE_CLEAN += ofxTestLog.txt test_dot_generator0.jpg
+macx {
+  ### custom variables for the Info.plist file
+  # use a custom Info.plist template
+  #QMAKE_INFO_PLIST = ...
+  # Set the application icon
+  ICON = $$PWD/../Gui/Resources/Images/natronIcon256_osx.icns
+  # replace com.yourcompany with something more meaningful
+  QMAKE_TARGET_BUNDLE_PREFIX = fr.inria
+}
 
 include(../global.pri)
 include(../config.pri)
+
 
 #OpenFX C api includes and OpenFX c++ layer includes that are located in the submodule under /libs/OpenFX
 INCLUDEPATH += $$PWD/../libs/OpenFX/include
 INCLUDEPATH += $$PWD/../libs/OpenFX_extensions
 INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
 INCLUDEPATH += $$PWD/..
-
-################
-# HostSupport
-
-win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../HostSupport/release/ -lHostSupport
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../HostSupport/debug/ -lHostSupport
-else:unix: LIBS += -L$$OUT_PWD/../HostSupport/ -lHostSupport
 
 INCLUDEPATH += $$PWD/../HostSupport
 DEPENDPATH += $$PWD/../HostSupport
@@ -42,14 +38,6 @@ win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../HostSup
 else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../HostSupport/debug/libHostSupport.a
 else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../HostSupport/release/HostSupport.lib
 else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../HostSupport/debug/HostSupport.lib
-else:unix: PRE_TARGETDEPS += $$OUT_PWD/../HostSupport/libHostSupport.a
-
-################
-# Engine
-
-win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Engine/release/ -lEngine
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../Engine/debug/ -lEngine
-else:unix: LIBS += -L$$OUT_PWD/../Engine/ -lEngine
 
 INCLUDEPATH += $$PWD/../Engine
 DEPENDPATH += $$PWD/../Engine
@@ -58,14 +46,6 @@ win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Engine/
 else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Engine/debug/libEngine.a
 else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Engine/release/Engine.lib
 else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Engine/debug/Engine.lib
-else:unix: PRE_TARGETDEPS += $$OUT_PWD/../Engine/libEngine.a
-
-################
-# Gui
-
-win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Gui/release/ -lGui
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../Gui/debug/ -lGui
-else:unix: LIBS += -L$$OUT_PWD/../Gui/ -lGui
 
 INCLUDEPATH += $$PWD/../Gui
 DEPENDPATH += $$PWD/../Gui
@@ -74,16 +54,13 @@ win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Gui/rel
 else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Gui/debug/libGui.a
 else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Gui/release/Gui.lib
 else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Gui/debug/Gui.lib
-else:unix: PRE_TARGETDEPS += $$OUT_PWD/../Gui/libGui.a
 
 SOURCES += \
-    google-test/src/gtest-all.cc \
-    google-test/src/gtest_main.cc \
-    google-mock/src/gmock-all.cc \
-    BaseTest.cpp \
-    Hash64_Test.cpp \
-    Image_Test.cpp \
-    Lut_Test.cpp
+    main.cpp
 
-HEADERS += \
-    BaseTest.h
+INSTALLS += target
+install_it.path = %{buildDir}/../OpenColorIO-Configs
+install_it.files += %{sourceDir}/../Gui/Resources/OpenColorIO-Configs
+INSTALLS += install_it
+
+INSTALLS += data

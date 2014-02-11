@@ -20,7 +20,7 @@
 #include <QDebug>
 #include <QTextDocument> // for Qt::convertFromPlainText
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"

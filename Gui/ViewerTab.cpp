@@ -22,7 +22,10 @@
 #include <QVBoxLayout>
 #include <QAbstractItemView>
 #include <QCoreApplication>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QKeyEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QKeySequence>
 
 #include "Engine/ViewerInstance.h"
@@ -41,7 +44,7 @@
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 using namespace Natron;
 
