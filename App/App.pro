@@ -21,10 +21,6 @@ macx {
   QMAKE_TARGET_BUNDLE_PREFIX = fr.inria
 }
 
-include(../global.pri)
-include(../config.pri)
-
-
 #OpenFX C api includes and OpenFX c++ layer includes that are located in the submodule under /libs/OpenFX
 INCLUDEPATH += $$PWD/../libs/OpenFX/include
 INCLUDEPATH += $$PWD/../libs/OpenFX_extensions
@@ -91,6 +87,8 @@ else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Gui/
 else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Gui/build/Debug/libGui.a
 else:unix: PRE_TARGETDEPS += $$OUT_PWD/../Gui/libGui.a
 
+include(../global.pri)
+include(../config.pri)
 
 SOURCES += \
     main.cpp

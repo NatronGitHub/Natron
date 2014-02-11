@@ -19,9 +19,6 @@ INCLUDEPATH += google-mock
 
 QMAKE_CLEAN += ofxTestLog.txt test_dot_generator0.jpg
 
-include(../global.pri)
-include(../config.pri)
-
 #OpenFX C api includes and OpenFX c++ layer includes that are located in the submodule under /libs/OpenFX
 INCLUDEPATH += $$PWD/../libs/OpenFX/include
 INCLUDEPATH += $$PWD/../libs/OpenFX_extensions
@@ -87,6 +84,9 @@ else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/
 else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Gui/build/Release/libGui.a
 else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Gui/build/Debug/libGui.a
 else:unix: PRE_TARGETDEPS += $$OUT_PWD/../Gui/libGui.a
+
+include(../global.pri)
+include(../config.pri)
 
 SOURCES += \
     google-test/src/gtest-all.cc \
