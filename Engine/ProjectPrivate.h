@@ -13,7 +13,10 @@
 
 #include <map>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QDateTime>
+CLANG_DIAG_ON(deprecated)
 #include <QString>
 #include <QMutex>
 

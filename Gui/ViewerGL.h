@@ -16,8 +16,11 @@
 #include <utility>
 #include <boost/scoped_ptr.hpp>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
+CLANG_DIAG_ON(deprecated)
 
 #include "Engine/Rect.h"
 #include "Global/Macros.h"

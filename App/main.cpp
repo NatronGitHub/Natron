@@ -9,6 +9,9 @@
 */
 
 #include <iostream>
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QApplication>
 #include <QtCore/QObject>
 #include <QtCore/QString>
@@ -18,6 +21,7 @@
 #include <QFontDatabase>
 #include <QMetaType>
 #include <QAbstractSocket>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 #include "Engine/AppManager.h"

@@ -17,8 +17,12 @@
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
 #endif
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 #include <QToolButton>
+CLANG_DIAG_ON(deprecated)
 #include <QIcon>
 #include <QDialog>
 #include <QAction>

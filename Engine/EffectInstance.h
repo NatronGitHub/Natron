@@ -19,6 +19,8 @@
 
 #include "Engine/Knob.h" // for KnobHolder
 
+class QKeyEvent;
+
 class RectI;
 class Hash64;
 class RenderTree;
@@ -27,6 +29,7 @@ class RenderTree;
 class Format;
 class ViewerGL;
 class PluginMemory;
+
 namespace Natron{
 
 class Node;

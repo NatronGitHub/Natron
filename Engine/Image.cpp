@@ -13,6 +13,8 @@
 
 #include "Engine/Lut.h"
 
+#include <QImage>
+
 RectI Natron::Bitmap::minimalNonMarkedBbox(const RectI& roi) const
 {
     /*if we rendered everything we just append

@@ -12,7 +12,11 @@
 #ifndef NATRON_GUI_KNOBGUI_H_
 #define NATRON_GUI_KNOBGUI_H_
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
+#include <QDialog>
+CLANG_DIAG_ON(deprecated)
 
 #include <boost/shared_ptr.hpp>
 
@@ -25,7 +29,7 @@ class QVBoxLayout; //used by KnobGui
 class QHBoxLayout; //used by KnobGui
 class QMenu;
 class QComboBox;
-
+class QLabel;
 
 // Engine
 class Knob; //used by KnobGui

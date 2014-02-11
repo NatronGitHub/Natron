@@ -9,8 +9,11 @@
 #ifndef NATRON_ENGINE_TIMELINE_H_
 #define NATRON_ENGINE_TIMELINE_H_
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 #include <QtCore/QObject>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 

@@ -15,7 +15,11 @@
 #include <cassert>
 #include <vector>
 #include <list>
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
+CLANG_DIAG_ON(deprecated)
 #include <QtCore/QThreadPool>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>

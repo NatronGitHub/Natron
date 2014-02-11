@@ -12,7 +12,11 @@
 #include "PluginMemory.h"
 
 #include <stdexcept>
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QMutex>
+CLANG_DIAG_ON(deprecated)
 #include "Engine/EffectInstance.h"
 
 PluginMemory::PluginMemory(Natron::EffectInstance* effect)

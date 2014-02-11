@@ -13,7 +13,7 @@
 #include <QDropEvent>
 #include <QDrag>
 #include <QPainter>
-
+#include <QMimeData>
 #include "Gui/KnobGui.h"
 #include "Engine/Project.h"
 #include "Engine/Knob.h"

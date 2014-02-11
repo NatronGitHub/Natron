@@ -18,6 +18,8 @@
 #include <functional>
 #include <list>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QObject>
@@ -31,6 +33,7 @@
 #else
 #include <QStandardPaths>
 #endif
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(unused-parameter)

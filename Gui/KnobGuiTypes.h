@@ -14,7 +14,10 @@
 
 #include <vector> // Int_KnobGui
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QLabel>
+CLANG_DIAG_ON(deprecated)
 #include <QObject>
 #include <QStyledItemDelegate>
 #include <QTextEdit>

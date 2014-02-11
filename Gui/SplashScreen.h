@@ -12,9 +12,12 @@
 #ifndef SPLASHSCREEN_H
 #define SPLASHSCREEN_H
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QWidget>
 #include <QPixmap>
 #include <QString>
+CLANG_DIAG_ON(deprecated)
 
 class SplashScreen : public QWidget
 {

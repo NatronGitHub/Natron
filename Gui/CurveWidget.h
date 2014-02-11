@@ -15,7 +15,10 @@
 #include <set>
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QtOpenGL/QGLWidget>
+CLANG_DIAG_ON(deprecated)
 #include <QMetaType>
 #include <QDialog>
 

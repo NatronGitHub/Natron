@@ -14,7 +14,10 @@
 
 #include <map>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QFrame>
+CLANG_DIAG_ON(deprecated)
 
 #include <boost/shared_ptr.hpp>
 

@@ -14,9 +14,13 @@
 #define NATRON_MAX_CHANNEL_COUNT 31 // ChannelSet can handle channels 1..31, so it must be 31
 #define NATRON_MAX_VALID_CHANNEL_INDEX 6
 
+#include "Global/Macros.h"
 #include <QFlags>
+// FIXME: QMessageBox should not be used in a core include
+CLANG_DIAG_OFF(deprecated)
 #include <QMessageBox>
 #include <QMetaType>
+CLANG_DIAG_ON(deprecated)
 
 namespace Natron{
     

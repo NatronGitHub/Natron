@@ -16,7 +16,10 @@
 
 #include <boost/noncopyable.hpp>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Knob.h"

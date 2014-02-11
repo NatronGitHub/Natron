@@ -12,7 +12,10 @@
 #ifndef NATRON_ENGINE_VARIANT_H_
 #define NATRON_ENGINE_VARIANT_H_
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QVariant>
+CLANG_DIAG_ON(deprecated)
 #include <QtCore/QMetaType>
 #include <QtCore/QDataStream>
 #include <QtCore/QByteArray>

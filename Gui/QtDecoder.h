@@ -15,7 +15,10 @@
 #include <vector>
 #include <string>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
+CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EffectInstance.h"
 

@@ -10,8 +10,13 @@
 #ifndef PROJECTGUI_H
 #define PROJECTGUI_H
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QObject>
 #include <QDialog>
+CLANG_DIAG_ON(deprecated)
+
+
 #include <boost/shared_ptr.hpp>
 #include "Engine/Format.h"
 class Button;

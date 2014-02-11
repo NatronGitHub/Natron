@@ -14,7 +14,10 @@
 #include <cassert>
 #include <QtCore/QMutex>
 #include <QtGui/QVector2D>
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QAction>
+CLANG_DIAG_ON(deprecated)
 #include <QtCore/QThread>
 #include <QCoreApplication>
 #include <QtCore/QSocketNotifier>

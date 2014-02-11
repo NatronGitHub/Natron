@@ -15,7 +15,10 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QWidget>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 #include "Global/Macros.h"

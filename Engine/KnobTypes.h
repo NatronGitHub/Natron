@@ -16,7 +16,11 @@
 #include <string>
 #include <map>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QObject>
+CLANG_DIAG_ON(deprecated)
+#include <QVector>
 
 #include "Engine/Knob.h"
 

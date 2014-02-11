@@ -6,7 +6,10 @@
 #ifndef NATRON_GUI_ANIMATEDCHECKBOX_H_
 #define NATRON_GUI_ANIMATEDCHECKBOX_H_
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QCheckBox>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/Macros.h"
 
