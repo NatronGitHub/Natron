@@ -7,7 +7,12 @@ build*
 *html*
 *latex*
 DerivedData/*
-*.xcodeproj
+Natron.xcodeproj
+Tests.xcodeproj
+HostSupport.xcodeproj
+Gui.xcodeproj
+Engine.xcodeproj
+Project.xcodeproj
 *.sln
 *.xcworkspace
 *xcuserdata
@@ -23,7 +28,6 @@ TestWrite
 TODO.txt
 .pro.user
 config.pri
-*.xcodeproj
 *.vcxproj
 *Info.plist
 *Win32
