@@ -396,7 +396,7 @@ void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/)
             QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
         }
     } else if(k == _ocioConfigKnob.get()) {
-        if (_ocioConfigKnob->getActiveEntryText() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
+        if (_ocioConfigKnob->getActiveEntryText() == std::string(NATRON_CUSTOM_OCIO_CONFIG_NAME)) {
             _customOcioConfigFile->setEnabled(true);
         } else {
             _customOcioConfigFile->setEnabled(false);
