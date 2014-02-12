@@ -50,7 +50,7 @@ class Group_Knob;
 class RichText_Knob;
 class Parametric_Knob;
 class OfxEffectInstance;
-class CurveWidget;
+class OverlaySupport;
 class Knob;
 class Format;
 
@@ -674,7 +674,7 @@ public slots:
     
     void onCustomBackgroundDrawingRequested();
     
-    void initializeInteract(CurveWidget* widget);
+    void initializeInteract(OverlaySupport* widget);
 
     void onResetToDefault(const QVector<int>& dimensions);
     

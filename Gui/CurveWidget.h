@@ -27,6 +27,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 #include "Gui/CurveEditorUndoRedo.h"
+#include "Engine/OverlaySupport.h"
 
 class QFont;
 class Variant;
@@ -94,6 +95,8 @@ public:
     boost::shared_ptr<Curve>  getInternalCurve() const { return _internalCurve; }
 
     void drawCurve(int curveIndex,int curvesCount);
+
+
     
 signals:
 
@@ -154,7 +157,7 @@ typedef std::set< SelectedKey,SelectedKey_compare_time > SelectedKeys;
 class QMenu;
 class CurveWidgetPrivate;
 
-class CurveWidget : public QGLWidget
+class CurveWidget : public QGLWidget , public OverlaySupport
 {
     friend class CurveGui;
     friend class CurveWidgetPrivate;
@@ -196,12 +199,35 @@ public:
     double getPixelAspectRatio() const;
     
     double getZoomFactor() const;
-    
-    void getBackgroundColor(double *r,double *g,double* b) const;
-   
+       
     void getProjection(double& bottom,double &left,double &zoomFactor,double &aspectRatio) const;
     
     void setProjection(double bottom,double left,double zoomFactor,double aspectRatio);
+
+    /**
+    * @brief Swap the OpenGL buffers.
+    **/
+    virtual void swapOpenGLBuffers() OVERRIDE FINAL;
+
+    /**
+     * @brief Repaint
+    **/
+    virtual void redraw() OVERRIDE FINAL;
+
+   /**
+    * @brief Returns the width and height of the viewport in window coordinates.
+    **/
+    virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL ;
+
+    /**
+    * @brief Returns the pixel scale of the viewport.
+    **/
+    virtual void getPixelScale(double& xScale, double& yScale) const  OVERRIDE FINAL;
+
+    /**
+    * @brief Returns the colour of the background (i.e: clear color) of the viewport.
+    **/
+    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL ;
     
 public slots:
     

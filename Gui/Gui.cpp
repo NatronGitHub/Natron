@@ -61,6 +61,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/DockablePanel.h"
 #include "Gui/PreferencesPanel.h"
 #include "Gui/AboutWindow.h"
+#include "Gui/FromQtEnums.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_IMAGE "Image"
@@ -1344,10 +1345,9 @@ void Gui::onDoDialog(int type, const QString& title, const QString& content, Nat
     }else if(type == 2){
         QMessageBox::information(this, title,content);
     }else{
-#pragma message WARN("This kind of enum cast is very dangerous, and QMessageBox should not be used by Global/Enums.h")
         _lastQuestionDialogAnswer = (Natron::StandardButton)QMessageBox::question(this,title,content,
-                                                                                  (QMessageBox::StandardButtons)buttons,
-                                                                                  (QMessageBox::StandardButton)defaultB);
+                                                            QtEnumConvert::toQtStandarButtons(buttons),
+                                                            QtEnumConvert::toQtStandardButton((Natron::StandardButton)defaultB));
     }
     _uiUsingMainThread = false;
     _uiUsingMainThreadCond.wakeOne();

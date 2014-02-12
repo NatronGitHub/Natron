@@ -39,7 +39,6 @@ OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance
     assert(_effect);
 }
 
-/// Get the Raw Unmapped Pixel Depth from the host. We are always 8 bits in our example
 const std::string& OfxClipInstance::getUnmappedBitDepth() const
 {
     // we always use floats
@@ -47,25 +46,13 @@ const std::string& OfxClipInstance::getUnmappedBitDepth() const
     return v;
 }
 
-/// Get the Raw Unmapped Components from the host. In our example we are always RGBA
 const std::string &OfxClipInstance::getUnmappedComponents() const
 {
     static const std::string rgbStr(kOfxImageComponentRGB);
     static const std::string noneStr(kOfxImageComponentNone);
     static const std::string rgbaStr(kOfxImageComponentRGBA);
     static const std::string alphaStr(kOfxImageComponentAlpha);
-    
-    //bool rgb = false;
-    //bool alpha = false;
-    
-    //const ChannelSet& channels = _effect->info().channels();
-    //if(channels & alpha) alpha = true;
-    //if(channels & Mask_RGB) rgb = true;
-    
-//    if(!rgb && !alpha) return noneStr;
-//    else if(rgb && !alpha) return rgbStr;
-//    else if(!rgb && alpha) return alphaStr;
-     return rgbaStr;
+    return rgbaStr;
 }
 
 

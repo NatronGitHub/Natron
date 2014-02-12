@@ -19,6 +19,7 @@ OTHER_FILES += \
     Global/Enums.h \
     Global/GLIncludes.h \
     Global/GlobalDefines.h \
+    Global/KeySymbols.h \
     Global/Macros.h \
     Global/MemoryInfo.h \
     Global/QtCompat.h \

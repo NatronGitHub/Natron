@@ -853,19 +853,19 @@ bool Node::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos)
     return _liveInstance->onOverlayPenUp(viewportPos, pos);
 }
 
-bool Node::onOverlayKeyDown(QKeyEvent* e)
+bool Node::onOverlayKeyDown(Natron::Key key,Natron::KeyboardModifiers modifiers)
 {
-    return _liveInstance->onOverlayKeyDown(e);
+    return _liveInstance->onOverlayKeyDown(key,modifiers);
 }
 
-bool Node::onOverlayKeyUp(QKeyEvent* e)
+bool Node::onOverlayKeyUp(Natron::Key key,Natron::KeyboardModifiers modifiers)
 {
-    return _liveInstance->onOverlayKeyUp(e);
+    return _liveInstance->onOverlayKeyUp(key,modifiers);
 }
 
-bool Node::onOverlayKeyRepeat(QKeyEvent* e)
+bool Node::onOverlayKeyRepeat(Natron::Key key,Natron::KeyboardModifiers modifiers)
 {
-    return _liveInstance->onOverlayKeyRepeat(e);
+    return _liveInstance->onOverlayKeyRepeat(key,modifiers);
 }
 
 bool Node::onOverlayFocusGained()

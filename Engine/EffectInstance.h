@@ -16,10 +16,8 @@
 #include <boost/scoped_ptr.hpp>
 
 #include "Global/GlobalDefines.h"
-
+#include "Global/KeySymbols.h"
 #include "Engine/Knob.h" // for KnobHolder
-
-class QKeyEvent;
 
 class RectI;
 class Hash64;
@@ -27,7 +25,7 @@ class RenderTree;
 class VideoEngine;
 class RenderTree;
 class Format;
-class ViewerGL;
+class OverlaySupport;
 class PluginMemory;
 
 namespace Natron{
@@ -317,17 +315,17 @@ public:
     
     virtual bool onOverlayPenUp(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) WARN_UNUSED_RETURN { return false; }
     
-    virtual bool onOverlayKeyDown(QKeyEvent* /*e*/) WARN_UNUSED_RETURN { return false; }
+    virtual bool onOverlayKeyDown(Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN { return false; }
     
-    virtual bool onOverlayKeyUp(QKeyEvent* /*e*/) WARN_UNUSED_RETURN { return false; }
+    virtual bool onOverlayKeyUp(Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN { return false; }
     
-    virtual bool onOverlayKeyRepeat(QKeyEvent* /*e*/) WARN_UNUSED_RETURN { return false; }
+    virtual bool onOverlayKeyRepeat(Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN { return false; }
     
     virtual bool onOverlayFocusGained() WARN_UNUSED_RETURN { return false; }
     
     virtual bool onOverlayFocusLost() WARN_UNUSED_RETURN { return false; }
     
-    virtual void setCurrentViewerForOverlays(ViewerGL* /*viewer*/) {}
+    virtual void setCurrentViewportForOverlays(OverlaySupport* /*viewport*/) {}
 
     /**
      * @brief Overload this and return true if your operator should dislay a preview image by default.

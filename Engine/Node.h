@@ -27,13 +27,12 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
-
+#include "Global/KeySymbols.h"
 
 class AppInstance;
 class NodeSettingsPanel;
 class Knob;
 class ViewerInstance;
-class QKeyEvent;
 class RenderTree;
 class Format;
 class NodeSerialization;
@@ -268,11 +267,11 @@ public:
     
     bool onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos);
     
-    bool onOverlayKeyDown(QKeyEvent* e);
+    bool onOverlayKeyDown(Natron::Key key,Natron::KeyboardModifiers modifiers);
     
-    bool onOverlayKeyUp(QKeyEvent* e);
+    bool onOverlayKeyUp(Natron::Key key,Natron::KeyboardModifiers modifiers);
     
-    bool onOverlayKeyRepeat(QKeyEvent* e);
+    bool onOverlayKeyRepeat(Natron::Key key,Natron::KeyboardModifiers modifiers);
     
     bool onOverlayFocusGained();
     

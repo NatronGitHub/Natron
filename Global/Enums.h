@@ -16,9 +16,7 @@
 
 #include "Global/Macros.h"
 #include <QFlags>
-// FIXME: QMessageBox should not be used in a core include
 CLANG_DIAG_OFF(deprecated)
-#include <QMessageBox>
 #include <QMetaType>
 CLANG_DIAG_ON(deprecated)
 
@@ -96,11 +94,10 @@ namespace Natron{
         Reset              = 0x04000000,
         RestoreDefaults    = 0x08000000
     };
+
+    typedef QFlags<Natron::StandardButton> StandardButtons;
     
     enum MessageType{INFO_MESSAGE = 0,ERROR_MESSAGE = 1,WARNING_MESSAGE = 2,QUESTION_MESSAGE = 3};
-
-    
-    typedef QFlags<QMessageBox::StandardButton> StandardButtons;
 
     enum KeyframeType {
         KEYFRAME_CONSTANT = 0,

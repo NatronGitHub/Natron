@@ -681,12 +681,6 @@ void ViewerGL::toggleOverlays()
     updateGL();
 }
 
-void ViewerGL::backgroundColor(double &r,double &g,double &b)
-{
-    r = _imp->clearColor.redF();
-    g = _imp->clearColor.greenF();
-    b = _imp->clearColor.blueF();
-}
 
 void ViewerGL::drawOverlay()
 {
@@ -1034,7 +1028,7 @@ GLuint ViewerGL::getPboID(int index)
 /**
  *@returns Returns the current zoom factor that is applied to the display.
  **/
-double ViewerGL::getZoomFactor()
+double ViewerGL::getZoomFactor() const
 {
     return _imp->zoomCtx.zoomFactor;
 }
@@ -1860,9 +1854,6 @@ void ViewerGL::stopDisplayingProgressBar()
 //    _imp->updatingTexture = false;
 //}
 
-void ViewerGL::doSwapBuffers(){
-    swapBuffers();
-}
 void ViewerGL::populateMenu(){
     _imp->menu->clear();
     QAction* displayOverlaysAction = new QAction("Display overlays",this);
@@ -2032,4 +2023,43 @@ const RectI& ViewerGL::getUserRoI() const {
 
 void ViewerGL::setUserRoI(const RectI& r) {
     _imp->userRoI = r;
+}
+
+/**
+* @brief Swap the OpenGL buffers.
+**/
+void ViewerGL::swapOpenGLBuffers() {
+    swapBuffers();
+}
+
+/**
+ * @brief Repaint
+**/
+void ViewerGL::redraw() {
+    update();
+}
+
+/**
+* @brief Returns the width and height of the viewport in window coordinates.
+**/
+void ViewerGL::getViewportSize(double &width, double &height) const {
+    width = this->width();
+    height = this->height();
+}
+
+/**
+* @brief Returns the pixel scale of the viewport.
+**/
+void ViewerGL::getPixelScale(double& xScale, double& yScale) const  {
+    xScale = 1. / getZoomFactor();
+    yScale = xScale;
+}
+
+/**
+* @brief Returns the colour of the background (i.e: clear color) of the viewport.
+**/
+void ViewerGL::getBackgroundColour(double &r, double &g, double &b) const {
+    r = _imp->clearColor.redF();
+    g = _imp->clearColor.greenF();
+    b = _imp->clearColor.blueF();
 }

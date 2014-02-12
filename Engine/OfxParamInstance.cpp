@@ -1777,11 +1777,12 @@ void OfxParametricInstance::onResetToDefault(const QVector<int>& dimensions){
     }
 }
 
-void OfxParametricInstance::initializeInteract(CurveWidget* widget){
+void OfxParametricInstance::initializeInteract(OverlaySupport* widget){
     
     OfxPluginEntryPoint* interactEntryPoint = (OfxPluginEntryPoint*)getProperties().getPointerProperty(kOfxParamPropParametricInteractBackground);
     if(interactEntryPoint){
-        _overlayInteract = new Natron::OfxOverlayInteract((*_effect->effectInstance()),8,true,widget);
+        _overlayInteract = new Natron::OfxOverlayInteract((*_effect->effectInstance()),8,true);
+        _overlayInteract->setCallingViewport(widget);
         _overlayInteract->createInstanceAction();
         QObject::connect(_knob.get(), SIGNAL(customBackgroundRequested()), this, SLOT(onCustomBackgroundDrawingRequested()));
     }

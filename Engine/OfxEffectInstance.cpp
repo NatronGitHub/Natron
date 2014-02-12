@@ -14,13 +14,9 @@
 #include <locale>
 #include <limits>
 #include <stdexcept>
+#include <QByteArray>
 
 #include "Global/Macros.h"
-CLANG_DIAG_OFF(unused-private-field)
-// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
-#pragma message WARN("QKeyEvent is Gui stuff!")
-#include <QKeyEvent>
-CLANG_DIAG_ON(unused-private-field)
 
 #include <ofxhPluginCache.h>
 #include <ofxhPluginAPICache.h>
@@ -170,7 +166,7 @@ void OfxEffectInstance::tryInitializeOverlayInteracts(){
     if(isLiveInstance()){
         OfxPluginEntryPoint *overlayEntryPoint = effect_->getOverlayInteractMainEntry();
         if(overlayEntryPoint){
-            _overlayInteract = new OfxOverlayInteract(*effect_,8,true,NULL);
+            _overlayInteract = new OfxOverlayInteract(*effect_,8,true);
             _overlayInteract->createInstanceAction();
             getApp()->redrawAllViewers();
         }
@@ -588,9 +584,9 @@ void OfxEffectInstance::drawOverlay(){
     }
 }
 
-void OfxEffectInstance::setCurrentViewerForOverlays(ViewerGL* viewer) {
+void OfxEffectInstance::setCurrentViewportForOverlays(OverlaySupport* viewport) {
     if (_overlayInteract) {
-        _overlayInteract->setCallingViewer(viewer);
+        _overlayInteract->setCallingViewport(viewport);
     }
 }
 
@@ -664,7 +660,7 @@ bool OfxEffectInstance::onOverlayPenUp(const QPointF& viewportPos,const QPointF&
     return false;
 }
 
-bool OfxEffectInstance::onOverlayKeyDown(QKeyEvent* e){
+bool OfxEffectInstance::onOverlayKeyDown(Natron::Key key,Natron::KeyboardModifiers /*modifiers*/){
     if(!_initialized){
         return false;;
     }
@@ -672,7 +668,8 @@ bool OfxEffectInstance::onOverlayKeyDown(QKeyEvent* e){
         OfxPointD rs;
         rs.x = rs.y = 1.;
         OfxTime time = effect_->getFrameRecursive();
-        OfxStatus stat = _overlayInteract->keyDownAction(time, rs, e->nativeVirtualKey(), e->text().toUtf8().data());
+        QByteArray keyStr;
+        OfxStatus stat = _overlayInteract->keyDownAction(time, rs, (int)key, keyStr.data());
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -680,7 +677,7 @@ bool OfxEffectInstance::onOverlayKeyDown(QKeyEvent* e){
     return false;
 }
 
-bool OfxEffectInstance::onOverlayKeyUp(QKeyEvent* e){
+bool OfxEffectInstance::onOverlayKeyUp(Natron::Key key,Natron::KeyboardModifiers /* modifiers*/){
     if(!_initialized){
         return false;
     }
@@ -688,7 +685,8 @@ bool OfxEffectInstance::onOverlayKeyUp(QKeyEvent* e){
         OfxPointD rs;
         rs.x = rs.y = 1.;
         OfxTime time = effect_->getFrameRecursive();
-        OfxStatus stat = _overlayInteract->keyUpAction(time, rs, e->nativeVirtualKey(), e->text().toUtf8().data());
+        QByteArray keyStr;
+        OfxStatus stat = _overlayInteract->keyUpAction(time, rs, (int)key, keyStr.data());
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
@@ -697,7 +695,7 @@ bool OfxEffectInstance::onOverlayKeyUp(QKeyEvent* e){
     return false;
 }
 
-bool OfxEffectInstance::onOverlayKeyRepeat(QKeyEvent* e){
+bool OfxEffectInstance::onOverlayKeyRepeat(Natron::Key key,Natron::KeyboardModifiers /*modifiers*/){
     if(!_initialized){
         return false;
     }
@@ -705,7 +703,8 @@ bool OfxEffectInstance::onOverlayKeyRepeat(QKeyEvent* e){
         OfxPointD rs;
         rs.x = rs.y = 1.;
         OfxTime time = effect_->getFrameRecursive();
-        OfxStatus stat = _overlayInteract->keyRepeatAction(time, rs, e->nativeVirtualKey(), e->text().toUtf8().data());
+        QByteArray keyStr;
+        OfxStatus stat = _overlayInteract->keyRepeatAction(time, rs, (int)key, keyStr.data());
         if (stat == kOfxStatOK) {
             return true;
         }

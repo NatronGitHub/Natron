@@ -40,6 +40,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Format.h"
 #include "Engine/KnobFactory.h"
 
+
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
 

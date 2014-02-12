@@ -63,21 +63,21 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5BE18AA403700EF3180 /* HostSupport.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 0E116598542859DA9320C015;
+			remoteGlobalIDString = ED08CA340BFEF8FE1A2D2AD0;
 			remoteInfo = HostSupport;
 		};
 		1E5F8F5718AA913D0045A477 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C118AA403700EF3180 /* Engine.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = F82FF8B1AB092B635B8D3C44;
+			remoteGlobalIDString = 4037D4193E4219AF3CA213FA;
 			remoteInfo = Engine;
 		};
 		1E5F8F5918AA913D0045A477 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C418AA403700EF3180 /* Gui.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 9B38B1D5C33AF4E4B0F859F7;
+			remoteGlobalIDString = 7F7885FA157803963BE4F88F;
 			remoteInfo = Gui;
 		};
 		1E5F8F5B18AA91430045A477 /* PBXContainerItemProxy */ = {
@@ -440,6 +440,7 @@
 				1E5F8F5418AA91330045A477 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		1EADE5BB18AA400B00EF3180 /* Build configuration list for PBXProject "Project-xcode" */ = {
 			isa = XCConfigurationList;

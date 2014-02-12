@@ -23,6 +23,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 
 #include "Engine/Rect.h"
+#include "Engine/OverlaySupport.h"
 #include "Global/Macros.h"
 
 class QKeyEvent;
@@ -46,7 +47,7 @@ class Format;
  *@brief The main viewport. This class is part of the ViewerTab GUI and handles all
  *OpenGL related code as well as user events.
  **/
-class ViewerGL : public QGLWidget
+class ViewerGL : public QGLWidget , public OverlaySupport
 {
     Q_OBJECT
     
@@ -132,7 +133,7 @@ public:
     /**
      *@returns Returns the current zoom factor that is applied to the display.
      **/
-    double getZoomFactor();
+    double getZoomFactor() const;
 
     /**
      * @brief Returns the rectangle of the image displayed by the viewer
@@ -224,9 +225,7 @@ public:
     void disconnectViewer();
     
     void stopDisplayingProgressBar();
-    
-    void backgroundColor(double &r,double &g,double &b);
-    
+        
     void setPersistentMessage(int type,const QString& message);
     
     void clearPersistentMessage();
@@ -259,17 +258,18 @@ public:
      *@brief Updates the Viewer with what has been computed so far in the texture.
      **/
     //void updateProgressOnViewer(const RectI& region,int y , int texY);
-    
-    void doSwapBuffers();
-    
+        
     void clearColorBuffer(double r = 0.,double g = 0.,double b = 0.,double a = 1.);
     
     void toggleOverlays();
-    
-    void renderText(int x, int y, const QString &string,const QColor& color,const QFont& font);
-    
+        
     void onProjectFormatChanged(const Format& format);
-    
+
+public:
+
+    void renderText(int x, int y, const QString &string,const QColor& color,const QFont& font);
+
+
     void getProjection(double &left,double &bottom,double &zoomFactor) const;
     
     void setProjection(double left,double bottom,double zoomFactor);
@@ -281,6 +281,31 @@ public:
     const RectI& getUserRoI() const;
     
     void setUserRoI(const RectI& r);
+
+    /**
+    * @brief Swap the OpenGL buffers.
+    **/
+    virtual void swapOpenGLBuffers() OVERRIDE FINAL;
+
+    /**
+     * @brief Repaint
+    **/
+    virtual void redraw() OVERRIDE FINAL;
+
+   /**
+    * @brief Returns the width and height of the viewport in window coordinates.
+    **/
+    virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL ;
+
+    /**
+    * @brief Returns the pixel scale of the viewport.
+    **/
+    virtual void getPixelScale(double& xScale, double& yScale) const  OVERRIDE FINAL;
+
+    /**
+    * @brief Returns the colour of the background (i.e: clear color) of the viewport.
+    **/
+    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL ;
     
 signals:
     /**

@@ -109,6 +109,7 @@ HEADERS += \
     OfxOverlayInteract.h \
     OfxMemory.h \
     OfxParamInstance.h \
+    OverlaySupport.h \
     PluginMemory.h \
     Project.h \
     ProjectPrivate.h \
@@ -140,6 +141,7 @@ SOURCES += \
     ../Gui/CurveWidget.cpp \
     ../Gui/DockablePanel.cpp \
     ../Gui/Edge.cpp \
+    ../Gui/FromQtEnums.cpp \
     ../Gui/GroupBoxLabel.cpp \
     ../Gui/Gui.cpp \
     ../Gui/InfoViewerWidget.cpp \
@@ -183,6 +185,7 @@ HEADERS += \
     ../Gui/CurveWidget.h \
     ../Gui/DockablePanel.h \
     ../Gui/Edge.h \
+    ../Gui/FromQtEnums.h \
     ../Gui/GroupBoxLabel.h \
     ../Gui/Gui.h \
     ../Gui/InfoViewerWidget.h \

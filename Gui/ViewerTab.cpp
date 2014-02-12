@@ -43,6 +43,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
+#include "Gui/FromQtEnums.h"
 
 #include "Engine/AppManager.h"
 
@@ -764,7 +765,7 @@ void ViewerTab::drawOverlays() const{
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
-        effect->setCurrentViewerForOverlays(viewer);
+        effect->setCurrentViewportForOverlays(viewer);
         effect->drawOverlay();
     }
 }
@@ -777,7 +778,7 @@ bool ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& 
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         
-        effect->setCurrentViewerForOverlays(viewer);
+        effect->setCurrentViewportForOverlays(viewer);
         ret = effect->onOverlayPenDown(viewportPos, pos);
     }
     return ret;
@@ -790,7 +791,7 @@ bool ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
-        effect->setCurrentViewerForOverlays(viewer);
+        effect->setCurrentViewportForOverlays(viewer);
         ret = effect->onOverlayPenMotion(viewportPos, pos);
     }
     return ret;
@@ -803,7 +804,7 @@ bool ViewerTab::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& po
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
-        effect->setCurrentViewerForOverlays(viewer);
+        effect->setCurrentViewportForOverlays(viewer);
         ret = effect->onOverlayPenUp(viewportPos, pos);
     }
     return ret;
@@ -816,9 +817,8 @@ bool ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
-        
-        effect->setCurrentViewerForOverlays(viewer);
-        ret = effect->onOverlayKeyDown(e);
+        effect->setCurrentViewportForOverlays(viewer);
+        ret = effect->onOverlayKeyDown(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
     }
     return ret;
 }
@@ -831,8 +831,8 @@ bool ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         
-        effect->setCurrentViewerForOverlays(viewer);
-        ret = effect->onOverlayKeyUp(e);
+        effect->setCurrentViewportForOverlays(viewer);
+        ret = effect->onOverlayKeyUp(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
     }
     return ret;
 }
@@ -845,8 +845,8 @@ bool ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         
-        effect->setCurrentViewerForOverlays(viewer);
-        ret = effect->onOverlayKeyRepeat(e);
+        effect->setCurrentViewportForOverlays(viewer);
+        ret = effect->onOverlayKeyRepeat(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
     }
     return ret;
 }
@@ -859,7 +859,7 @@ bool ViewerTab::notifyOverlaysFocusGained(){
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         
-        effect->setCurrentViewerForOverlays(viewer);
+        effect->setCurrentViewportForOverlays(viewer);
         ret = effect->onOverlayFocusGained();
         
     }
@@ -874,7 +874,7 @@ bool ViewerTab::notifyOverlaysFocusLost(){
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         
-        effect->setCurrentViewerForOverlays(viewer);
+        effect->setCurrentViewportForOverlays(viewer);
         ret = effect->onOverlayFocusLost();
     }
     return ret;

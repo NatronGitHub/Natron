@@ -25,13 +25,11 @@ CLANG_DIAG_ON(deprecated)
 //ofx
 #include "ofxhImageEffect.h"
 
-#include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
 
-class QImage;
 class OfxClipInstance;
-class QKeyEvent;
 class Button_Knob;
+class OverlaySupport;
 namespace Natron {
 class Node;
 class OfxImageEffectInstance;
@@ -145,17 +143,17 @@ public:
 
     virtual bool onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool onOverlayKeyDown(QKeyEvent* e) OVERRIDE FINAL;
+    virtual bool onOverlayKeyDown(Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
 
-    virtual bool onOverlayKeyUp(QKeyEvent* e) OVERRIDE FINAL;
+    virtual bool onOverlayKeyUp(Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
 
-    virtual bool onOverlayKeyRepeat(QKeyEvent* e) OVERRIDE FINAL;
+    virtual bool onOverlayKeyRepeat(Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
 
     virtual bool onOverlayFocusGained() OVERRIDE FINAL;
 
     virtual bool onOverlayFocusLost() OVERRIDE FINAL;
 
-    virtual void setCurrentViewerForOverlays(ViewerGL* viewer) OVERRIDE FINAL;
+    virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
 
     virtual void beginKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE;
 

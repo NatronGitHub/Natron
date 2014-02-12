@@ -1604,10 +1604,44 @@ double CurveWidget::getPixelAspectRatio() const{
     return _imp->_zoomCtx.aspectRatio;
 }
 
-void CurveWidget::getBackgroundColor(double *r,double *g,double* b) const{
-    *r = _imp->_clearColor.redF();
-    *g = _imp->_clearColor.greenF();
-    *b = _imp->_clearColor.blueF();
+
+/**
+* @brief Swap the OpenGL buffers.
+**/
+void CurveWidget::swapOpenGLBuffers() {
+    swapBuffers();
+}
+
+/**
+ * @brief Repaint
+**/
+void CurveWidget::redraw() {
+    update();
+}
+
+/**
+* @brief Returns the width and height of the viewport in window coordinates.
+**/
+void CurveWidget::getViewportSize(double &width, double &height) const {
+    width = this->width();
+    height = this->height();
+}
+
+/**
+* @brief Returns the pixel scale of the viewport.
+**/
+void CurveWidget::getPixelScale(double& xScale, double& yScale) const  {
+    xScale = 1. / getZoomFactor();
+    yScale = xScale;
+}
+
+/**
+* @brief Returns the colour of the background (i.e: clear color) of the viewport.
+**/
+void CurveWidget::getBackgroundColour(double &r, double &g, double &b) const {
+    r = _imp->_clearColor.redF();
+    g = _imp->_clearColor.greenF();
+    b = _imp->_clearColor.blueF();
 }
 
 void CurveWidget::resizeGL(int width,int height){
