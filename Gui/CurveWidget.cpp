@@ -43,6 +43,7 @@ CLANG_DIAG_ON(unused-private-field)
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
+GCC_DIAG_OFF(deprecated-declarations)
 
 using namespace Natron;
 
