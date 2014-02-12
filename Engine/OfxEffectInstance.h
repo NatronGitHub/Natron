@@ -172,11 +172,17 @@ public:
     virtual void purgeCaches() OVERRIDE;
 
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
+    
+    virtual void onMultipleInputsChanged() OVERRIDE FINAL;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
     
 
 private:
+    
+    OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
 
     void tryInitializeOverlayInteracts();
 

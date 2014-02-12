@@ -72,7 +72,7 @@ OfxStatus OfxImageEffectInstance::setPersistentMessage(const char* type,
     char buf[10000];
     sprintf(buf, format,args);
     std::string message(buf);
-    
+
     if(strcmp(type, kOfxMessageError) == 0) {
         
         _node->setPersistentMessage(Natron::ERROR_MESSAGE, message);
