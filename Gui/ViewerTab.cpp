@@ -614,7 +614,7 @@ void ViewerTab::centerViewer(){
         _viewerNode->refreshAndContinueRender(true,false);
         
     }else{
-        viewer->fitToFormat(viewer->getDisplayWindow());
+        viewer->fitImageToFormat(viewer->getDisplayWindow());
         viewer->updateGL();
     }
 }

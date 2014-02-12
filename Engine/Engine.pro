@@ -109,6 +109,7 @@ HEADERS += \
     OfxOverlayInteract.h \
     OfxMemory.h \
     OfxParamInstance.h \
+    OpenGLViewerI.h \
     OverlaySupport.h \
     PluginMemory.h \
     Project.h \
@@ -124,7 +125,6 @@ HEADERS += \
     Variant.h \
     VideoEngine.h \
     ViewerInstance.h
-
 # dirty dirty gui stuff is mixed with Engine
 
 DEPENDPATH += $$PWD/../Gui

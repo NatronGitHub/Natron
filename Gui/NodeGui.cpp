@@ -522,8 +522,7 @@ void NodeGui::activate(){
         }
     }else{
         ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
-        _graph->getGui()->addViewerTab(viewer->getUiContext(), _graph->getGui()->_viewersPane);
-        viewer->getUiContext()->show();
+        _graph->getGui()->activateViewerTab(viewer);
     }
     if(_internalNode->isOpenFXNode()){
         OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
@@ -550,8 +549,7 @@ void NodeGui::deactivate(){
         
     }else{
         ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
-        _graph->getGui()->removeViewerTab(viewer->getUiContext(), false,false);
-        viewer->getUiContext()->hide();
+        _graph->getGui()->deactivateViewerTab(viewer);
     }
     if(_internalNode->isOpenFXNode()){
         OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
@@ -605,7 +603,9 @@ void NodeGui::onPersistentMessageChanged(int type,const QString& message){
     std::list<ViewerInstance*> viewers;
     _internalNode->hasViewersConnected(&viewers);
     for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
-        (*it)->getUiContext()->viewer->setPersistentMessage(type,message);
+        ViewerTab* tab = _graph->getGui()->getViewerTabForInstance(*it);
+        assert(tab);
+        tab->viewer->setPersistentMessage(type,message);
     }
     QRectF rect = _boundingBox->rect();
     updateShape(rect.width(), rect.height());
@@ -618,7 +618,9 @@ void NodeGui::onPersistentMessageCleared(){
     std::list<ViewerInstance*> viewers;
     _internalNode->hasViewersConnected(&viewers);
     for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
-        (*it)->getUiContext()->viewer->clearPersistentMessage();
+        ViewerTab* tab = _graph->getGui()->getViewerTabForInstance(*it);
+        assert(tab);
+        tab->viewer->clearPersistentMessage();
     }
 }
 

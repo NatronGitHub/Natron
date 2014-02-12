@@ -37,8 +37,8 @@
 #include "Gui/ViewerGL.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/NodeGui.h"
-#include "Gui/ProjectGuiSerialization.h"
 #include "Gui/TabWidget.h"
+#include "Gui/ProjectGuiSerialization.h"
 
 ProjectGui::ProjectGui()
 : _project()
@@ -99,7 +99,8 @@ void ProjectGui::createNewFormat(){
 
 
 
-AddFormatDialog::AddFormatDialog(Natron::Project *project, QWidget* parent):QDialog(parent),
+AddFormatDialog::AddFormatDialog(Natron::Project *project,Gui* gui):QDialog(gui),
+_gui(gui),
 _project(project)
 {
     _mainLayout = new QVBoxLayout(this);
@@ -195,8 +196,9 @@ void AddFormatDialog::onCopyFromViewer(){
     for(U32 i = 0 ; i < nodes.size(); ++i){
         if(nodes[i]->getName() == activeText.toStdString()){
             ViewerInstance* v = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
-            const RectI& f = v->getUiContext()->viewer->getCurrentViewerInfos().getRoD();
-            const Format& format = v->getUiContext()->viewer->getCurrentViewerInfos().getDisplayWindow();
+            ViewerTab* tab = _gui->getViewerTabForInstance(v);
+            const RectI& f = tab->viewer->getCurrentViewerInfos().getRoD();
+            const Format& format = tab->viewer->getCurrentViewerInfos().getDisplayWindow();
             _widthSpinBox->setValue(f.width());
             _heightSpinBox->setValue(f.height());
             _pixelAspectSpinBox->setValue(format.getPixelAspect());
@@ -214,8 +216,10 @@ Format AddFormatDialog::getFormat() const{
 
 
 
-void ProjectGui::save(ProjectGuiSerialization* serializationObject) const{
-    serializationObject->initialize(this);
+void ProjectGui::save(boost::archive::xml_oarchive& archive) const {
+    ProjectGuiSerialization projectGuiSerializationObj;
+    projectGuiSerializationObj.initialize(this);
+    archive << boost::serialization::make_nvp("ProjectGui",projectGuiSerializationObj);
 }
 
 void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneLayout>& guiLayout,
@@ -260,7 +264,10 @@ void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneL
     
 }
 
-void ProjectGui::load(const ProjectGuiSerialization& obj){
+void ProjectGui::load(boost::archive::xml_iarchive& archive){
+    
+    ProjectGuiSerialization obj;
+    archive >> boost::serialization::make_nvp("ProjectGui",obj);
     
     const std::map<std::string, ViewerData >& viewersProjections = obj.getViewersProjections();
     
@@ -279,13 +286,14 @@ void ProjectGui::load(const ProjectGuiSerialization& obj){
             std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
             if (found != viewersProjections.end()) {
                 ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(nGui->getNode()->getLiveInstance());
-                viewer->getUiContext()->viewer->setProjection(found->second.left, found->second.bottom, found->second.zoomFactor);
-                viewer->getUiContext()->setChannels(found->second.channels);
-                viewer->getUiContext()->setColorSpace(found->second.colorSpace);
-                viewer->getUiContext()->setExposure(found->second.exposure);
-                viewer->getUiContext()->setUserRoIEnabled(found->second.userRoIenabled);
-                viewer->getUiContext()->setUserRoI(found->second.userRoI);
-                viewer->getUiContext()->setClipToProject(found->second.isClippedToProject);
+                ViewerTab* tab = _project->getApp()->getGui()->getViewerTabForInstance(viewer);
+                tab->viewer->setProjection(found->second.left, found->second.bottom, found->second.zoomFactor);
+                tab->setChannels(found->second.channels);
+                tab->setColorSpace(found->second.colorSpace);
+                tab->setExposure(found->second.exposure);
+                tab->setUserRoIEnabled(found->second.userRoIenabled);
+                tab->setUserRoI(found->second.userRoI);
+                tab->setClipToProject(found->second.isClippedToProject);
             }
         }
         

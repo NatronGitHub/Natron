@@ -36,16 +36,17 @@ CLANG_DIAG_ON(deprecated)
          
          if (activeNodes[i]->getNode()->pluginID() == "Viewer") {
              ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(activeNodes[i]->getNode()->getLiveInstance());
+             ViewerTab* tab = projectGui->getInternalProject()->getApp()->getGui()->getViewerTabForInstance(viewer);
              assert(viewer);
              ViewerData viewerData;
              viewerData.aspectRatio = 1.;
-             viewer->getUiContext()->viewer->getProjection(viewerData.left, viewerData.bottom, viewerData.zoomFactor);
-             viewerData.userRoI = viewer->getUiContext()->viewer->getUserRoI();
-             viewerData.userRoIenabled = viewer->getUiContext()->viewer->isUserRoIEnabled();
-             viewerData.isClippedToProject = viewer->getUiContext()->isClippedToProject();
-             viewerData.exposure = viewer->getUiContext()->getExposure();
-             viewerData.colorSpace = viewer->getUiContext()->getColorSpace();
-             viewerData.channels = viewer->getUiContext()->getChannelsString();
+             tab->viewer->getProjection(viewerData.left, viewerData.bottom, viewerData.zoomFactor);
+             viewerData.userRoI = tab->viewer->getUserRegionOfInterest();
+             viewerData.userRoIenabled = tab->viewer->isUserRegionOfInterestEnabled();
+             viewerData.isClippedToProject = tab->isClippedToProject();
+             viewerData.exposure = tab->getExposure();
+             viewerData.colorSpace = tab->getColorSpace();
+             viewerData.channels = tab->getChannelsString();
              _viewersData.insert(std::make_pair(viewer->getName(),viewerData));
          }
      }

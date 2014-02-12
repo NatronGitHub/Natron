@@ -18,14 +18,6 @@
 
 #include "Engine/AppManager.h"
 
-#pragma message WARN("Clean the code, use the C++ force, remove the Gui stuff from the Engine")
-// FIXME: Gui stuff in the Engine
-#include "Gui/Gui.h"
-#include "Gui/ViewerTab.h"
-#include "Gui/ViewerGL.h"
-#include "Gui/TimeLineGui.h"
-#include "Gui/TabWidget.h"
-
 #include "Engine/Row.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/MemoryFile.h"
@@ -38,6 +30,7 @@
 #include "Engine/Lut.h"
 #include "Engine/Settings.h"
 #include "Engine/Project.h"
+#include "Engine/OpenGLViewerI.h"
 
 using namespace Natron;
 using std::make_pair;
@@ -73,8 +66,9 @@ Natron::OutputEffectInstance(node)
 }
 
 ViewerInstance::~ViewerInstance(){
-    if(_uiContext && _uiContext->getGui())
-        _uiContext->getGui()->removeViewerTab(_uiContext,true);
+    if(_uiContext) {
+        _uiContext->removeGUI();
+    }
     if(_mustFreeBuffer)
         free(_buffer);
 }
@@ -92,21 +86,15 @@ void ViewerInstance::disconnectSlotsToViewerCache(){
     QObject::disconnect(emitter, SIGNAL(removedLRUEntry()), this, SIGNAL(removedLRUCachedFrame()));
     QObject::disconnect(emitter, SIGNAL(clearedInMemoryPortion()), this, SIGNAL(clearedViewerCache()));
 }
-void ViewerInstance::initializeViewerTab(TabWidget* where){
-    if(isLiveInstance()){
-        _uiContext = getNode()->getApp()->addNewViewerTab(this,where);
-    }
+
+void ViewerInstance::setUiContext(OpenGLViewerI* viewer) {
+    _uiContext = viewer;
 }
 
 void ViewerInstance::onNodeNameChanged(const QString& name) {
     ///update the gui tab name
     if (_uiContext) {
-        _uiContext->getGui()->unregisterTab(_uiContext);
-        TabWidget* parent = dynamic_cast<TabWidget*>(_uiContext->parentWidget());
-        if ( parent ) {
-            parent->setTabName(_uiContext, name);
-        }
-        _uiContext->getGui()->registerTab(_uiContext);
+        _uiContext->onViewerNodeNameChanged(name);
     }
 }
 
@@ -153,9 +141,8 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
     Natron::Log::beginFunction(getName(),"renderViewer");
     Natron::Log::print(QString("Time "+QString::number(time)).toStdString());
 #endif
-    ViewerGL *viewer = _uiContext->viewer;
-    assert(viewer);
-    double zoomFactor = viewer->getZoomFactor();
+
+    double zoomFactor = _uiContext->getZoomFactor();
     
     if(aborted()){
         return StatFailed;
@@ -175,22 +162,20 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
     
     ifInfiniteclipRectToProjectDefault(&rod);
     if(fitToViewer){
-        viewer->fitToFormat(Format(rod));
-        zoomFactor = viewer->getZoomFactor();
+        _uiContext->fitImageToFormat(Format(rod));
+        zoomFactor = _uiContext->getZoomFactor();
     }
-    viewer->setRod(rod);
+    _uiContext->setRegionOfDefinition(rod);
     Format dispW = getApp()->getProject()->getProjectDefaultFormat();
-    
-    viewer->setDisplayingImage(true);
-    
-    if(!viewer->isClippingToDisplayWindow()){
+        
+    if(!_uiContext->isClippingImageToProjectWindow()){
         dispW.set(rod);
     }
     
     /*computing the RoI*/
     double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(zoomFactor) / std::log(2.)));
 
-    RectI roi = viewer->getImageRectangleDisplayed(rod);
+    RectI roi = _uiContext->getImageRectangleDisplayed(rod);
 
     RectI texRect;
     double tileSize = std::pow(2., (double)appPTR->getCurrentSettings()->getViewerTilesPowerOf2());
@@ -223,7 +208,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
     _interThreadInfos._bytesCount = textureRect.w * textureRect.h * 4;
     
     //half float is not supported yet so it is the same as float
-    if(viewer->bitDepth() == FLOAT || viewer->bitDepth() == HALF_FLOAT){
+    if(_uiContext->getBitDepth() == OpenGLViewerI::FLOAT || _uiContext->getBitDepth() == OpenGLViewerI::HALF_FLOAT){
         _interThreadInfos._bytesCount *= sizeof(float);
     }
 
@@ -235,7 +220,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
                  hash().value(),
                  _exposure,
                  _lut,
-                 viewer->bitDepth(),
+                 (int)_uiContext->getBitDepth(),
                  _channels,
                  view,
                  rod,
@@ -252,7 +237,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
     {
         QMutexLocker forceRenderLocker(&_forceRenderMutex);
         if(!_forceRender){
-            if (!viewer->isUserRoIEnabled()) {
+            if (!_uiContext->isUserRegionOfInterestEnabled()) {
                 isCached = Natron::getTextureFromCache(key, &cachedFrame);
             }
         }else{
@@ -285,7 +270,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
         ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
         ///is very low, we better render again (and let the NodeCache do the work) rather than just
         ///overload the ViewerCache which may become slowe
-        if(byPassCache || viewer->isUserRoIEnabled()){
+        if(byPassCache || _uiContext->isUserRegionOfInterestEnabled()){
             assert(!cachedFrame);
             _buffer = (unsigned char*)malloc( _interThreadInfos._bytesCount);
             _mustFreeBuffer = true;
@@ -302,8 +287,8 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
             scale.x = scale.y = 1.;
             
             RectI toRender = texRectClipped;
-            if (viewer->isUserRoIEnabled()) {
-                if(!toRender.intersect(viewer->getUserRoI(), &toRender)) {
+            if (_uiContext->isUserRegionOfInterestEnabled()) {
+                if(!toRender.intersect(_uiContext->getUserRegionOfInterest(), &toRender)) {
                     return StatOK;
                 }
             }
@@ -362,8 +347,6 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
         }
         //we released the input image and force the cache to clear exceeding entries
         appPTR->clearExceedingEntriesFromNodeCache();
-        
-        viewer->stopDisplayingProgressBar();
         
     }
     
@@ -425,7 +408,7 @@ void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputI
             bOffset = 3;
             break;
     }
-    if(_uiContext->viewer->bitDepth() == FLOAT || _uiContext->viewer->bitDepth() == HALF_FLOAT){
+    if(_uiContext->getBitDepth() == OpenGLViewerI::FLOAT || _uiContext->getBitDepth() == OpenGLViewerI::HALF_FLOAT){
         // image is stored as linear, the OpenGL shader with do gamma/sRGB/Rec709 decompression
         scaleToTexture32bits(inputImage,yRange,texRect,closestPowerOf2,rOffset,gOffset,bOffset,luminance);
     }
@@ -574,18 +557,17 @@ void ViewerInstance::wakeUpAnySleepingThread(){
 
 void ViewerInstance::updateViewer(){
     QMutexLocker locker(&_usingOpenGLMutex);
-    ViewerGL* viewer = _uiContext->viewer;
-    viewer->makeCurrent();
+    _uiContext->makeOpenGLcontextCurrent();
     if(!aborted()){
-        viewer->transferBufferFromRAMtoGPU(_interThreadInfos._ramBuffer,
+        _uiContext->transferBufferFromRAMtoGPU(_interThreadInfos._ramBuffer,
                                            _interThreadInfos._bytesCount,
                                            _interThreadInfos._textureRect,
                                            _pboIndex);
         _pboIndex = (_pboIndex+1)%2;
     }
     
-    viewer->updateColorPicker();
-    viewer->update();
+    _uiContext->updateColorPicker();
+    _uiContext->redraw();
     
     _usingOpenGL = false;
     _usingOpenGLCond.wakeOne();
@@ -599,7 +581,7 @@ void ViewerInstance::onExposureChanged(double exp){
     QMutexLocker l(&_renderArgsMutex);
     _exposure = exp;
     
-    if((_uiContext->viewer->bitDepth() == BYTE  || !_uiContext->viewer->supportsGLSL())
+    if((_uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_uiContext->supportsGLSL())
        && input(activeInput()) != NULL) {
         refreshAndContinueRender(false,false);
     } else {
@@ -633,7 +615,7 @@ void ViewerInstance::onColorSpaceChanged(const QString& colorspaceName){
         _colorSpace->validate();
     }
     
-    if((_uiContext->viewer->bitDepth() == BYTE  || !_uiContext->viewer->supportsGLSL())
+    if((_uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_uiContext->supportsGLSL())
        && input(activeInput()) != NULL){
         refreshAndContinueRender(false,false);
     }else{
@@ -691,7 +673,7 @@ bool ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,
 }
 
 bool ViewerInstance::supportsGLSL() const{
-    return _uiContext->viewer->supportsGLSL();
+    return _uiContext->supportsGLSL();
 }
 
 void ViewerInstance::redrawViewer(){

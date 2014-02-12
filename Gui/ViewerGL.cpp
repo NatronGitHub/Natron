@@ -208,9 +208,7 @@ struct ViewerGL::Implementation {
     , textFont(new QFont(NATRON_FONT, NATRON_FONT_SIZE_13))
     , overlay(true)
     , supportsGLSL(true)
-    , drawProgressBar(false)
     , updatingTexture(false)
-    , progressBarY(-1)
     , clearColor(0,0,0,255)
     , menu(new QMenu(_this))
     , clipToDisplayWindow(true)
@@ -274,11 +272,7 @@ struct ViewerGL::Implementation {
 
     bool supportsGLSL;/*!< True if the user has a GLSL version supporting everything requested.*/
 
-    bool drawProgressBar;
-
     bool updatingTexture;
-
-    int progressBarY;
 
     QColor clearColor;
 
@@ -500,7 +494,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
     const Format& projectFormat = parent->getGui()->getApp()->getProject()->getProjectDefaultFormat();
     _imp->blankViewerInfos.setRoD(projectFormat);
     _imp->blankViewerInfos.setDisplayWindow(projectFormat);
-    setRod(_imp->blankViewerInfos.getRoD());
+    setRegionOfDefinition(_imp->blankViewerInfos.getRoD());
     onProjectFormatChanged(projectFormat);
 
 }
@@ -579,7 +573,7 @@ void ViewerGL::resizeGL(int width, int height){
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
     if (!_imp->displayingImage && !_imp->zoomOrPannedSinceLastFit) {
-        fitToFormat(getDisplayWindow());
+        fitImageToFormat(getDisplayWindow());
     }
     if (viewer->getUiContext()) {
         viewer->refreshAndContinueRender(!_imp->zoomOrPannedSinceLastFit,false);
@@ -659,9 +653,7 @@ void ViewerGL::paintGL()
     if (_imp->overlay) {
         drawOverlay();
     }
-    if (_imp->drawProgressBar) {
-        drawProgressBar();
-    }
+
     if (_imp->displayPersistentMessage) {
         drawPersistentMessage();
     }
@@ -891,22 +883,6 @@ void ViewerGL::drawUserRoI() {
     
 }
 
-void ViewerGL::drawProgressBar()
-{
-    assert(QGLContext::currentContext() == context());
-
-    const Format& dW = getDisplayWindow();
-    glLineWidth(5);
-    glBegin(GL_LINES);
-    
-    glVertex3f(dW.left(),_imp->progressBarY,1);
-    glVertex3f(dW.right(),_imp->progressBarY,1);
-    
-    glEnd();
-    glLineWidth(1);
-    checkGLErrors();
-}
-
 
 /**
  *@brief Resets the mouse position
@@ -1117,7 +1093,7 @@ void ViewerGL::activateShaderRGB()
 
     assert(_imp->supportsGLSL );
     // don't even bind the shader on 8-bits gamma-compressed textures
-    if (!(bitDepth() != ViewerInstance::BYTE)) {
+    if (!(getBitDepth() != OpenGLViewerI::BYTE)) {
         return;
     }
     if (!_imp->shaderRGB->bind()) {
@@ -1232,21 +1208,23 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();
     
-    if(bitDepth() == ViewerInstance::BYTE){
+    OpenGLViewerI::BitDepth bd = getBitDepth();
+    if(bd == OpenGLViewerI::BYTE){
         _imp->defaultDisplayTexture->fillOrAllocateTexture(region,Texture::BYTE);
-    }else if((bitDepth() == ViewerInstance::FLOAT || bitDepth() == ViewerInstance::HALF_FLOAT)){
+    }else if(bd == OpenGLViewerI::FLOAT || bd == OpenGLViewerI::HALF_FLOAT){
         
         //do 32bit fp textures either way, don't bother with half float. We might support it further on.
         _imp->defaultDisplayTexture->fillOrAllocateTexture(region,Texture::FLOAT);
     }
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,0);
     checkGLErrors();
+    _imp->displayingImage = true;
 }
 
 /**
  *@returns Returns true if the graphic card supports GLSL.
  **/
-bool ViewerGL::supportsGLSL()
+bool ViewerGL::supportsGLSL() const
 {
     return _imp->supportsGLSL;
 }
@@ -1623,7 +1601,7 @@ QPointF ViewerGL::toWidgetCoordinates(double x, double y){
     return QPoint(((x - left)/(right - left))*w,(y - top)/((bottom - top))*h);
 }
 
-void ViewerGL::fitToFormat(const Format& rod){
+void ViewerGL::fitImageToFormat(const Format& rod){
     double h = rod.height();
     double w = rod.width();
     assert(h > 0. && w > 0.);
@@ -1686,8 +1664,7 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
 
 void ViewerGL::disconnectViewer(){
     if (displayingImage()) {
-        setRod(_imp->blankViewerInfos.getRoD());
-        //fitToFormat(getDisplayWindow());
+        setRegionOfDefinition(_imp->blankViewerInfos.getRoD());
         clearViewer();
     }
 }
@@ -1701,7 +1678,7 @@ const RectI& ViewerGL::getRoD() const {return _imp->currentViewerInfos.getRoD();
 const Format& ViewerGL::getDisplayWindow() const {return _imp->currentViewerInfos.getDisplayWindow();}
 
 
-void ViewerGL::setRod(const RectI& rod){
+void ViewerGL::setRegionOfDefinition(const RectI& rod){
 
     _imp->currentViewerInfos.setRoD(rod);
     emit infoDataWindowChanged();
@@ -1730,7 +1707,7 @@ void ViewerGL::onProjectFormatChanged(const Format& format){
     _imp->resolutionOverlay.append(QString::number(format.height()));
     
     if (!_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject()) {
-        fitToFormat(format);
+        fitImageToFormat(format);
     }
     
     if(_imp->displayingImage) {
@@ -1752,7 +1729,7 @@ void ViewerGL::setClipToDisplayWindow(bool b) {
     }
 }
 
-bool ViewerGL::isClippingToDisplayWindow() const
+bool ViewerGL::isClippingImageToProjectWindow() const
 {
     return _imp->clipToDisplayWindow;
 }
@@ -1822,38 +1799,15 @@ void ViewerGL::keyReleaseEvent(QKeyEvent* event){
 }
 
 
-int ViewerGL::bitDepth() const {
-    ViewerInstance::BitDepth e = (ViewerInstance::BitDepth)appPTR->getCurrentSettings()->getViewersBitDepth();
+OpenGLViewerI::BitDepth ViewerGL::getBitDepth() const {
+    OpenGLViewerI::BitDepth e = (OpenGLViewerI::BitDepth)appPTR->getCurrentSettings()->getViewersBitDepth();
     if(!_imp->supportsGLSL){
-        e = ViewerInstance::BYTE;
+        e = OpenGLViewerI::BYTE;
     }
     return e;
 }
 
 
-void ViewerGL::stopDisplayingProgressBar()
-{
-    _imp->drawProgressBar = false;
-}
-
-//void ViewerGL::updateProgressOnViewer(const RectI& /*region*/,int /*y*/ , int /*texY*/) {
-//    _imp->updatingTexture = true;
-//    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-//    checkGLErrors();
-//    if(byteMode() == 1.f || !_imp->hasHW){
-//        _imp->defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::BYTE);
-//    }else{
-//        _imp->defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::FLOAT);
-//    }
-//    _imp->drawProgressBar = true;
-//    _imp->progressBarY = y;
-//    updateGL();
-//    assert(!frameData);
-//    frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-//    checkGLErrors();
-//
-//    _imp->updatingTexture = false;
-//}
 
 void ViewerGL::populateMenu(){
     _imp->menu->clear();
@@ -2014,11 +1968,11 @@ bool ViewerGL::isNearByUserRoIBottomLeft(const QPoint& mousePos) {
     return r.contains(openglPos.x(),openglPos.y());
 }
 
-bool ViewerGL::isUserRoIEnabled() const {
+bool ViewerGL::isUserRegionOfInterestEnabled() const {
     return _imp->isUserRoIEnabled;
 }
 
-const RectI& ViewerGL::getUserRoI() const {
+const RectI& ViewerGL::getUserRegionOfInterest() const {
     return _imp->userRoI;
 }
 
@@ -2063,4 +2017,25 @@ void ViewerGL::getBackgroundColour(double &r, double &g, double &b) const {
     r = _imp->clearColor.redF();
     g = _imp->clearColor.greenF();
     b = _imp->clearColor.blueF();
+}
+
+void ViewerGL::makeOpenGLcontextCurrent() {
+    makeCurrent();
+}
+
+void ViewerGL::onViewerNodeNameChanged(const QString& name) {
+    _imp->viewerTab->getGui()->unregisterTab(_imp->viewerTab);
+    TabWidget* parent = dynamic_cast<TabWidget*>(_imp->viewerTab->parentWidget());
+    if ( parent ) {
+        parent->setTabName(_imp->viewerTab, name);
+    }
+    _imp->viewerTab->getGui()->registerTab(_imp->viewerTab);
+}
+
+void ViewerGL::removeGUI() {
+    _imp->viewerTab->getGui()->removeViewerTab(_imp->viewerTab, true);
+}
+
+int ViewerGL::getCurrentView() const {
+    return _imp->viewerTab->getCurrentView();
 }

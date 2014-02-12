@@ -509,11 +509,6 @@ Natron::StandardButton AppInstance::questionDialog(const std::string& title,cons
     return _gui->questionDialog(title, message,buttons,defaultButton);
 }
 
-
-ViewerTab* AppInstance::addNewViewerTab(ViewerInstance* node,TabWidget* where){
-    return  _gui->addNewViewerTab(node, where);
-}
-
 AppInstance* AppManager::newAppInstance(AppInstance::AppType appType,const QString& projectName,const QStringList& writers){
     AppInstance* instance = new AppInstance(appType,_availableID);
     try {
@@ -1169,32 +1164,16 @@ void AppInstance::redrawAllViewers() {
     }
 }
 
-void AppInstance::setupViewersForViews(int viewsCount){
-    const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        assert(nodes[i]);
-        if (nodes[i]->pluginID() == "Viewer") {
-            ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
-            assert(n);
-            if(n->getUiContext()){
-                n->getUiContext()->updateViewsMenu(viewsCount);
-            }
-        }
+void AppInstance::setupViewersForViews(int viewsCount) {
+    if (_gui) {
+        _gui->updateViewersViewsMenu(viewsCount);
     }
 }
 
 
-void AppInstance::setViewersCurrentView(int view){
-    const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        assert(nodes[i]);
-        if (nodes[i]->pluginID() == "Viewer") {
-            ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
-            assert(n);
-            if(n->getUiContext()){
-                n->getUiContext()->setCurrentView(view);
-            }
-        }
+void AppInstance::setViewersCurrentView(int view) {
+    if (_gui) {
+        _gui->setViewersCurrentView(view);
     }
 }
 
@@ -1203,15 +1182,15 @@ boost::shared_ptr<TimeLine> AppInstance::getTimeLine() const  {
     return _currentProject->getTimeLine();
 }
 
-void AppInstance::loadProjectGui(const ProjectGuiSerialization& obj) const {
+void AppInstance::loadProjectGui(boost::archive::xml_iarchive& archive) const {
     if (!isBackground()) {
-        _gui->loadProjectGui(obj);
+        _gui->loadProjectGui(archive);
     }
 }
 
-void AppInstance::saveProjectGui(ProjectGuiSerialization* obj) {
+void AppInstance::saveProjectGui(boost::archive::xml_oarchive& archive) {
     if (!isBackground()) {
-        _gui->saveProjectGui(obj);
+        _gui->saveProjectGui(archive);
     }
 }
 

@@ -235,8 +235,8 @@ void Gui::createViewerGui(Node* viewer){
     }
     ViewerInstance* v = dynamic_cast<ViewerInstance*>(viewer->getLiveInstance());
     assert(v);
-    v->initializeViewerTab(where);
-    _lastSelectedViewer = v->getUiContext();
+    _lastSelectedViewer = addNewViewerTab(v, where);
+    v->setUiContext(_lastSelectedViewer->viewer);
 }
 
 
@@ -1283,14 +1283,14 @@ int Gui::saveWarning(){
     
 }
 
-void Gui::loadProjectGui(const ProjectGuiSerialization& obj) const {
+void Gui::loadProjectGui(boost::archive::xml_iarchive& obj) const {
     assert(_projectGui);
     _projectGui->load(obj);
 }
 
-void Gui::saveProjectGui(ProjectGuiSerialization* obj) {
+void Gui::saveProjectGui(boost::archive::xml_oarchive& archive) {
     assert(_projectGui);
-    _projectGui->save(obj);
+    _projectGui->save(archive);
 }
 
 void Gui::errorDialog(const std::string& title,const std::string& text){
@@ -1711,4 +1711,51 @@ void Gui::registerNewColorPicker(boost::shared_ptr<Color_Knob> knob) {
 void Gui::removeColorPicker(boost::shared_ptr<Color_Knob> knob) {
     assert(_projectGui);
     _projectGui->removeColorPicker(knob);
+}
+
+void Gui::updateViewersViewsMenu(int viewsCount) {
+    for (std::list<ViewerTab*>::iterator it = _viewerTabs.begin();it!=_viewerTabs.end();++it) {
+        (*it)->updateViewsMenu(viewsCount);
+    }
+}
+
+void Gui::setViewersCurrentView(int view) {
+    for (std::list<ViewerTab*>::iterator it = _viewerTabs.begin();it!=_viewerTabs.end();++it) {
+        (*it)->setCurrentView(view);
+    }
+
+}
+
+const std::list<ViewerTab*>& Gui::getViewersList() const {
+    return _viewerTabs;
+}
+
+
+void Gui::activateViewerTab(ViewerInstance* viewer) {
+    OpenGLViewerI* viewport = viewer->getUiContext();
+    for (std::list<ViewerTab*>::iterator it = _viewerTabs.begin();it!=_viewerTabs.end();++it) {
+        if ((*it)->viewer == viewport) {
+            addViewerTab(*it, _viewersPane);
+            (*it)->show();
+        }
+    }
+}
+
+void Gui::deactivateViewerTab(ViewerInstance* viewer) {
+    OpenGLViewerI* viewport = viewer->getUiContext();
+    for (std::list<ViewerTab*>::iterator it = _viewerTabs.begin();it!=_viewerTabs.end();++it) {
+        if ((*it)->viewer == viewport) {
+            removeViewerTab(*it, false,false);
+            (*it)->hide();
+        }
+    }
+}
+
+ViewerTab* Gui::getViewerTabForInstance(ViewerInstance* node) {
+    for (std::list<ViewerTab*>::iterator it = _viewerTabs.begin();it!=_viewerTabs.end();++it) {
+        if ((*it)->getInternalNode() == node) {
+            return *it;
+        }
+    }
+    return NULL;
 }

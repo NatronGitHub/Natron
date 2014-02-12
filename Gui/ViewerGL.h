@@ -23,7 +23,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 
 #include "Engine/Rect.h"
-#include "Engine/OverlaySupport.h"
+#include "Engine/OpenGLViewerI.h"
 #include "Global/Macros.h"
 
 class QKeyEvent;
@@ -47,7 +47,7 @@ class Format;
  *@brief The main viewport. This class is part of the ViewerTab GUI and handles all
  *OpenGL related code as well as user events.
  **/
-class ViewerGL : public QGLWidget , public OverlaySupport
+class ViewerGL : public QGLWidget , public OpenGLViewerI
 {
     Q_OBJECT
     
@@ -87,16 +87,17 @@ public:
      **/
     const RectI& getRoD() const ;
     
+    virtual void setRegionOfDefinition(const RectI& rod) OVERRIDE FINAL;
+    
     /**
      *@returns Returns a const reference to the displayWindow of the currentFrame(Resolution)
      **/
     const Format& getDisplayWindow() const;
     
-    void setRod(const RectI& rod);
-        
+    
     void setClipToDisplayWindow(bool b);
     
-    bool isClippingToDisplayWindow() const;
+    virtual bool isClippingImageToProjectWindow() const OVERRIDE FINAL;
     
     /**
      *@brief Saves the OpenGL context so it can be restored later-on .
@@ -107,12 +108,9 @@ public:
      *@brief Restores the OpenGL context to the state it was when calling ViewerGL::saveGLState().
      **/
     void restoreGLState();
-        
-    /**
-     *@returns Returns 1.f if the viewer is using 8bit textures.
-     *Returns 0.f if the viewer is using 32bit f.p textures.
-     **/
-    int bitDepth() const;
+
+    
+    OpenGLViewerI::BitDepth getBitDepth() const OVERRIDE FINAL;
     
     /**
      *@brief Hack to allow the resizeEvent to be publicly used elsewhere.
@@ -138,7 +136,7 @@ public:
     /**
      * @brief Returns the rectangle of the image displayed by the viewer
      **/
-    RectI getImageRectangleDisplayed(const RectI& imageRoD);
+    virtual RectI getImageRectangleDisplayed(const RectI& imageRoD) OVERRIDE FINAL;
     
     /**
      *@brief Computes the viewport coordinates of the point passed in parameter.
@@ -179,7 +177,7 @@ public:
      *@brief Handy function that zoom automatically the viewer so it fit
      *the displayWindow  entirely in the viewer
      **/
-    void fitToFormat(const Format &rod);
+    virtual void fitImageToFormat(const Format &rod) OVERRIDE FINAL;
     
     /**
      *@returns Returns a pointer to the current viewer infos.
@@ -209,13 +207,14 @@ public:
      * 3) glUnmapBuffer
      * 4) glTexSubImage2D or glTexImage2D depending whether we resize the texture or not.
      **/
-    void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region,int pboIndex);
+    virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount,
+                                            const TextureRect& region,int pboIndex) OVERRIDE FINAL;
     
     
     /**
      *@returns Returns true if the graphic card supports GLSL.
      **/
-    bool supportsGLSL();
+    virtual bool supportsGLSL() const OVERRIDE FINAL;
     
     /**
      *@brief Disconnects the viewer.
@@ -224,8 +223,6 @@ public:
      **/
     void disconnectViewer();
     
-    void stopDisplayingProgressBar();
-        
     void setPersistentMessage(int type,const QString& message);
     
     void clearPersistentMessage();
@@ -251,20 +248,23 @@ public:
     void zoomSlot(QString);
     
     
-    void updateColorPicker(int x = INT_MAX,int y = INT_MAX);
+    virtual void updateColorPicker(int x = INT_MAX,int y = INT_MAX) OVERRIDE FINAL;
     
-    
-    /**
-     *@brief Updates the Viewer with what has been computed so far in the texture.
-     **/
-    //void updateProgressOnViewer(const RectI& region,int y , int texY);
         
     void clearColorBuffer(double r = 0.,double g = 0.,double b = 0.,double a = 1.);
     
     void toggleOverlays();
         
     void onProjectFormatChanged(const Format& format);
+    
+    virtual void makeOpenGLcontextCurrent() OVERRIDE FINAL;
+    
+    virtual void onViewerNodeNameChanged(const QString& name) OVERRIDE FINAL;
+    
+    virtual void removeGUI() OVERRIDE FINAL;
 
+    virtual int getCurrentView() const OVERRIDE FINAL;
+    
 public:
 
     void renderText(int x, int y, const QString &string,const QColor& color,const QFont& font);
@@ -276,9 +276,9 @@ public:
     
     void setUserRoIEnabled(bool b);
     
-    bool isUserRoIEnabled() const;
+    virtual bool isUserRegionOfInterestEnabled() const OVERRIDE FINAL;
     
-    const RectI& getUserRoI() const;
+    virtual const RectI& getUserRegionOfInterest() const OVERRIDE FINAL;
     
     void setUserRoI(const RectI& r);
 
@@ -441,12 +441,7 @@ private:
      *@brief Draws the persistent message if it is on.
      **/
     void drawPersistentMessage();
-    
-    /**
-     *@brief draws the progress bar
-     **/
-    void drawProgressBar();
-    
+
     /**
      *@brief Resets the mouse position
      **/

@@ -34,7 +34,12 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/Format.h"
 
-
+namespace boost {
+    namespace archive {
+        class xml_iarchive;
+        class xml_oarchive;
+    }
+}
 class QString;
 class TabWidget;
 class AppInstance;
@@ -305,9 +310,9 @@ public:
     
     static QPixmap screenShot(QWidget* w);
     
-    void loadProjectGui(const ProjectGuiSerialization& obj) const;
+    void loadProjectGui(boost::archive::xml_iarchive& obj) const;
     
-    void saveProjectGui(ProjectGuiSerialization* obj);
+    void saveProjectGui(boost::archive::xml_oarchive& archive);
     
     void setColorPickersColor(const QColor& c);
     
@@ -316,6 +321,18 @@ public:
     void removeColorPicker(boost::shared_ptr<Color_Knob> knob);
 
     void initProjectGuiKnobs();
+    
+    void updateViewersViewsMenu(int viewsCount);
+    
+    void setViewersCurrentView(int view);
+    
+    const std::list<ViewerTab*>& getViewersList() const;
+    
+    void activateViewerTab(ViewerInstance* viewer);
+    
+    void deactivateViewerTab(ViewerInstance* viewer);
+    
+    ViewerTab* getViewerTabForInstance(ViewerInstance* node);
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);

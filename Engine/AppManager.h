@@ -44,6 +44,12 @@ CLANG_DIAG_ON(deprecated)
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
 
+namespace boost {
+    namespace archive {
+        class xml_iarchive;
+        class xml_oarchive;
+    }
+}
 class AppInstance;
 class KnobGuiFactory;
 class KnobHolder;
@@ -131,8 +137,6 @@ public:
 
     void deselectAllNodes() const;
 
-    ViewerTab* addNewViewerTab(ViewerInstance* node,TabWidget* where) WARN_UNUSED_RETURN;
-
     NodeGui* getNodeGui(Natron::Node* n) const WARN_UNUSED_RETURN;
 
     NodeGui* getNodeGui(const std::string& nodeName) const WARN_UNUSED_RETURN;
@@ -154,9 +158,9 @@ public:
                                           Natron::StandardButton defaultButton = Natron::NoButton) const WARN_UNUSED_RETURN;
     void notifyRenderFinished(Natron::OutputEffectInstance* writer);
 
-    void loadProjectGui(const ProjectGuiSerialization& obj) const;
+    void loadProjectGui(boost::archive::xml_iarchive& obj) const;
 
-    void saveProjectGui(ProjectGuiSerialization* obj);
+    void saveProjectGui(boost::archive::xml_oarchive& archive);
 
 public slots:
 

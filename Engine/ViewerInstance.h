@@ -25,8 +25,6 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/ImageInfo.h"
 #include "Engine/EffectInstance.h"
 #include "Gui/Texture.h"
-class TabWidget;
-class ViewerTab;
 class AppInstance;
 class Timer;
 namespace Natron{
@@ -35,6 +33,7 @@ namespace Color{
 class Lut;
 }
 }
+class OpenGLViewerI;
 
 class ViewerInstance : public QObject, public Natron::OutputEffectInstance {
     
@@ -57,11 +56,6 @@ public:
         Rec709
     };
     
-    enum BitDepth{
-        BYTE = 0,
-        HALF_FLOAT ,
-        FLOAT
-    };
 
 private:
     
@@ -77,7 +71,7 @@ private:
         size_t _bytesCount;
     };
     
-    ViewerTab* _uiContext;
+    OpenGLViewerI* _uiContext;
     
     int _pboIndex;
     
@@ -120,13 +114,9 @@ public:
     
     virtual ~ViewerInstance();
     
-    ViewerTab* getUiContext() const WARN_UNUSED_RETURN {return _uiContext;}
-    
-    void setUiContext(ViewerTab* ptr){_uiContext = ptr;}
-    
-    /*Add a new viewer tab to the GUI*/
-    void initializeViewerTab(TabWidget* where);
-    
+    OpenGLViewerI* getUiContext() const WARN_UNUSED_RETURN {return _uiContext;}
+
+    void setUiContext(OpenGLViewerI* viewer);
 
     /**
      * @brief This function renders the image at time 'time' on the viewer.

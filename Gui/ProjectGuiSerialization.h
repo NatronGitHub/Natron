@@ -19,6 +19,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
+#include <boost/serialization/shared_ptr.hpp>
 
 #include "Engine/Rect.h"
 #include "Gui/NodeGuiSerialization.h"

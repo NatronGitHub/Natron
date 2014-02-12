@@ -23,9 +23,6 @@
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
 
-#pragma message WARN("Use the C++ force, remove Gui stuff from the engine")
-#include "Gui/ProjectGuiSerialization.h" // for ProjectGuiSerialization, it doesn't include any Gui type
-
 
 using std::cout; using std::endl;
 using std::make_pair;
@@ -105,9 +102,7 @@ void Project::loadProjectInternal(const QString& path,const QString& name) {
         iArchive >> boost::serialization::make_nvp("Project",projectSerializationObj);
         load(projectSerializationObj);
         if(!bgProject){
-            ProjectGuiSerialization projectGuiSerializationObj;
-            iArchive >> boost::serialization::make_nvp("ProjectGui",projectGuiSerializationObj);
-            getApp()->loadProjectGui(projectGuiSerializationObj);
+            getApp()->loadProjectGui(iArchive);
         }
     }catch(const boost::archive::archive_exception& e){
         throw std::runtime_error(std::string("Serialization error: ") + std::string(e.what()));
@@ -234,9 +229,7 @@ void Project::saveProjectInternal(const QString& path,const QString& name,bool a
     save(&projectSerializationObj);
     oArchive << boost::serialization::make_nvp("Project",projectSerializationObj);
     if(!bgProject){
-        ProjectGuiSerialization projectGuiSerializationObj;
-        getApp()->saveProjectGui(&projectGuiSerializationObj);
-        oArchive << boost::serialization::make_nvp("ProjectGui",projectGuiSerializationObj);
+        getApp()->saveProjectGui(oArchive);
     }
 
     _imp->projectName = name;

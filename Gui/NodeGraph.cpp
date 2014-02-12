@@ -766,8 +766,14 @@ void NodeGraph::selectNode(NodeGui* n) {
     for(U32 i = 0 ; i < _nodes.size() ;++i) {
         _nodes[i]->setSelected(false);
     }
-    if(n->getNode()->pluginID() == "Viewer"){
-        _gui->setLastSelectedViewer(dynamic_cast<ViewerInstance*>(n->getNode()->getLiveInstance())->getUiContext());
+    if(n->getNode()->pluginID() == "Viewer") {
+        OpenGLViewerI* viewer = dynamic_cast<ViewerInstance*>(n->getNode()->getLiveInstance())->getUiContext();
+        const std::list<ViewerTab*>& viewerTabs = _gui->getViewersList();
+        for(std::list<ViewerTab*>::const_iterator it = viewerTabs.begin();it!=viewerTabs.end();++it) {
+            if((*it)->viewer == viewer) {
+                _gui->setLastSelectedViewer((*it));
+            }
+        }
     }
     n->setSelected(true);
 }
