@@ -36,10 +36,6 @@ class Lut;
 }
 }
 
-class QKeyEvent;
-
-
-
 class ViewerInstance : public QObject, public Natron::OutputEffectInstance {
     
 
