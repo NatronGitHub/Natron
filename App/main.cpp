@@ -48,6 +48,7 @@ void registerMetaTypes(){
     qRegisterMetaType<Knob*>();
     qRegisterMetaType<Natron::Node*>();
     qRegisterMetaType<CurveWidget*>();
+    qRegisterMetaType<Natron::StandardButtons>();
 #if QT_VERSION < 0x050000
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
 #endif
