@@ -895,8 +895,8 @@ bool Project::connectNodes(int inputNumber,Node* input,Node* output,bool force) 
 
     Node* existingInput = output->input(inputNumber);
     if (force && existingInput) {
-#pragma message WARN("Value stored to 'ok' during its initialization is never read")
-        bool ok = disconnectNodes(existingInput, output); // never read (overwritten below). BUG?
+        bool ok = disconnectNodes(existingInput, output);
+        assert(ok);
         if (!input->isInputNode()) {
             ok = connectNodes(input->getPreferredInputForConnection(), existingInput, input);
             assert(ok);
@@ -1045,8 +1045,6 @@ bool Project::autoConnectNodes(Node* selected,Node* created) {
 
                 ok = connectNodes(it->second, created, it->first);
                 assert(ok);
-#pragma message WARN("value stored to 'ret' is never read")
-                ret = true; // never read: it is overwritten below anyway. BUG?
             }
 
         }

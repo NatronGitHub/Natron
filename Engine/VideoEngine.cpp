@@ -120,6 +120,10 @@ void VideoEngine::quitEngineThread(){
         }
         QMutexLocker quitLocker(&_mustQuitMutex);
         _threadStarted = false;
+    } else {
+        
+        ///single threaded- no locking required
+        _mustQuit = true;
     }
 }
 
@@ -418,8 +422,18 @@ void VideoEngine::runSameThread() {
         stopEngine();
     } else {
         QCoreApplication::processEvents();
+        ///if single threaded: the user might have requested to exit and the engine might be deleted after the events process.
+
+        if (_mustQuit) {
+            return;
+        }
         iterateKernel(true);
         QCoreApplication::processEvents();
+        ///if single threaded: the user might have requested to exit and the engine might be deleted after the events process.
+
+        if (_mustQuit) {
+            return;
+        }
         stopEngine();
     }
     
@@ -592,6 +606,11 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
         
         if (singleThreaded) {
             QCoreApplication::processEvents();
+            
+            ///if single threaded: the user might have requested to exit and the engine might be deleted after the events process.
+            if (_mustQuit) {
+                return;
+            }
         }
         
         if(_currentRunArgs._frameRequestIndex == 0 && _currentRunArgs._frameRequestsCount == 1 && !_currentRunArgs._sameFrame){
