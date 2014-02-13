@@ -359,8 +359,8 @@ void NodeGraph::moveNodesForIdealPosition(NodeGui* node) {
             ///case b)
             else if (node->getNode()->isInputNode()) {
                 if (_nodeSelected->getNode()->isInputNode()) {
-                    ///assert we're not in 2-b)
-                    assert(!node->getNode()->isInputNode());
+                    ///case 2-b) just do default we don't know what else to do
+                    behavior = 0;
                 } else {
                     ///case 3-b): connect the created node as input of the selected node
                     behavior = 1;
