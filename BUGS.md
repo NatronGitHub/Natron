@@ -6,6 +6,24 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
+- fix setValue infinite loop bug: if a parameter change by the user,
+  which calls changedParam(), causes a setValue, it triggers a
+  changedParam with reason=eChangeUserEdit instead of
+  reason=eChangePluginEdit
+  Alex has the full bug report for this.
+  
+- File_KnobGui: when the filename is already set, browsing should
+  start in the same directory as the file itself (try saving a project
+  with a filename parameter in another directory, then reopen the
+  project)
+
+- Recent files: the "Open Recent" menu should appear just below the
+  "Open..." menu item
+
+- Recent files: when a project is saved, it should be placed on to of
+  the Recent Files. It seems that Recent Files is only updated when
+  *loading* a project.
+
 - String_KnobGui: kOfxParamStringIsRichTextFormat  is not supported (it should use a QTextEdit and not convert the string to plain text)
 
 - String_KnobGui/File_KnobGui: kOfxParamStringIsDirectoryPath is not supported
