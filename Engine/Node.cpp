@@ -98,6 +98,9 @@ struct Node::Implementation {
         , computingPreviewCond()
         , pluginInstanceMemoryUsed(0)
         , memoryUsedMutex()
+        , mustQuitProcessing(false)
+        , mustQuitProcessingMutex()
+        , mustQuitProcessingCond()
     {
     }
 
@@ -126,6 +129,10 @@ struct Node::Implementation {
     
     size_t pluginInstanceMemoryUsed; //< global count on all EffectInstance's of the memory they use.
     QMutex memoryUsedMutex; //< protects _pluginInstanceMemoryUsed
+    
+    bool mustQuitProcessing;
+    QMutex mustQuitProcessingMutex;
+    QWaitCondition mustQuitProcessingCond;
 };
 
 Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
@@ -163,9 +170,17 @@ void Node::quitAnyProcessing() {
     if (isOutputNode()) {
         dynamic_cast<Natron::OutputEffectInstance*>(this->getLiveInstance())->getVideoEngine()->quitEngineThread();
     }
-    QMutexLocker l(&_imp->previewMutex);
-    while (_imp->computingPreview) {
-        _imp->computingPreviewCond.wait(&_imp->previewMutex);
+    {
+        QMutexLocker locker(&_imp->nodeInstanceLock);
+        _imp->imagesBeingRenderedNotEmpty.wakeAll();
+        if (_imp->computingPreview) {
+            QMutexLocker l(&_imp->mustQuitProcessingMutex);
+            _imp->mustQuitProcessing = true;
+            while (_imp->mustQuitProcessing) {
+                _imp->mustQuitProcessingCond.wait(&_imp->mustQuitProcessingMutex);
+            }
+        }
+        
     }
 }
 
@@ -660,9 +675,24 @@ void Node::removeImageBeingRendered(SequenceTime time,int view )
 
 void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf)
 {
+
+    {
+        QMutexLocker locker(&_imp->nodeInstanceLock);
+        while(!_imp->imagesBeingRendered.empty()){
+            _imp->imagesBeingRenderedNotEmpty.wait(&_imp->nodeInstanceLock);
+        }
+    }
+    {
+        QMutexLocker locker(&_imp->mustQuitProcessingMutex);
+        if (_imp->mustQuitProcessing) {
+            _imp->mustQuitProcessing = false;
+            _imp->mustQuitProcessingCond.wakeOne();
+            return;
+        }
+    }
+  
     int knobsAge = _imp->previewInstance->getAppAge();
 
-    
     QMutexLocker locker(&_imp->previewMutex); /// prevent 2 previews to occur at the same time since there's only 1 preview instance
     _imp->computingPreview = true;
     
@@ -679,12 +709,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     w = rod.width() < width ? rod.width() : width;
     double yZoomFactor = (double)h/(double)rod.height();
     double xZoomFactor = (double)w/(double)rod.width();
-    {
-        QMutexLocker locker(&_imp->nodeInstanceLock);
-        while(!_imp->imagesBeingRendered.empty()){
-            _imp->imagesBeingRenderedNotEmpty.wait(&_imp->nodeInstanceLock);
-        }
-    }
+
 #ifdef NATRON_LOG
     Log::beginFunction(getName(),"makePreviewImage");
     Log::print(QString("Time "+QString::number(time)).toStdString());
