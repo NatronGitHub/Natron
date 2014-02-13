@@ -16,11 +16,6 @@ Here is a list of know bugs, ordered by priority from high to low:
     }
 ```
 
-- File_KnobGui: when the filename is already set, browsing should
-  start in the same directory as the file itself (try saving a project
-  with a filename parameter in another directory, then reopen the
-  project)
-
 - Recent files: the "Open Recent" menu should appear just below the
   "Open..." menu item
 

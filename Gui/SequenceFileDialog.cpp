@@ -1063,6 +1063,15 @@ bool SequenceFileDialog::isASupportedFileExtension(const std::string& ext) const
     return false;
 }
 
+QString SequenceFileDialog::getFilePath(const QString& str) {
+    int slashPos = str.lastIndexOf(QDir::separator());
+    if (slashPos != -1) {
+        return str.left(slashPos);
+    } else {
+        return QString(".");
+    }
+}
+
 QString SequenceFileDialog::removePath(const QString& str){
     int i = str.lastIndexOf(".");
     if(i!=-1){

@@ -101,7 +101,16 @@ void File_KnobGui::open_file(bool openSequence)
     }
     QStringList files;
     
-    SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, openSequence, SequenceFileDialog::OPEN_DIALOG, _lastOpened.toStdString());
+    QString pathWhereToOpen;
+    QStringList currentFiles = fk->getValue<QStringList>();
+    if (currentFiles.isEmpty()) {
+        pathWhereToOpen = _lastOpened;
+    } else {
+        QString first = currentFiles.at(0);
+        pathWhereToOpen = SequenceFileDialog::getFilePath(first);
+    }
+    
+    SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, openSequence, SequenceFileDialog::OPEN_DIALOG, pathWhereToOpen.toStdString());
     if (dialog.exec()) {
         files = dialog.selectedFiles();
     }
