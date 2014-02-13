@@ -78,3 +78,15 @@ void LineEdit::setAnimation(int v) {
     style()->polish(this);
     repaint();
 }
+
+void LineEdit::focusOutEvent(QFocusEvent* e) {
+    emit editingFinished();
+    QLineEdit::focusOutEvent(e);
+}
+
+void LineEdit::keyPressEvent(QKeyEvent* e) {
+    if (e->key() == Qt::Key_Return) {
+        emit editingFinished();
+    }
+    QLineEdit::keyPressEvent(e);
+}
