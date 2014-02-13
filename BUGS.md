@@ -23,6 +23,10 @@ Here is a list of know bugs, ordered by priority from high to low:
   the Recent Files. It seems that Recent Files is only updated when
   *loading* a project.
 
+- File dialog: when entering a directory, the file list should be scrolled to the top
+
+- File dialog: the file list should be a few pixels wider, so that the horizontal scrollbar does not appear.
+
 - String_KnobGui: kOfxParamStringIsRichTextFormat  is not supported (it should use a QTextEdit and not convert the string to plain text)
 
 - String_KnobGui/File_KnobGui: kOfxParamStringIsDirectoryPath is not supported
