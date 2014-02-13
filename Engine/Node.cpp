@@ -101,10 +101,12 @@ struct Node::Implementation {
         , mustQuitProcessing(false)
         , mustQuitProcessingMutex()
         , mustQuitProcessingCond()
+        , isUsingInputs(false)
+        , isUsingInputsCond()
     {
     }
 
-    AppInstance* app; // pointer to the model: needed to access the application's default-project's format
+    AppInstance* app; // pointer to the app: needed to access the application's default-project's format
     std::multimap<int,Node*> outputs; //multiple outputs per slot
     EffectInstance* previewInstance;//< the instance used only to render a preview image
     RenderTree* previewRenderTree;//< the render tree used to render the preview
@@ -133,6 +135,9 @@ struct Node::Implementation {
     bool mustQuitProcessing;
     QMutex mustQuitProcessingMutex;
     QWaitCondition mustQuitProcessingCond;
+    
+    bool isUsingInputs; //< set when a render tree is actively using the connections informations
+    QWaitCondition isUsingInputsCond;
 };
 
 Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
@@ -404,6 +409,7 @@ std::string Node::getInputLabel(int inputNb) const
 
 bool Node::isInputConnected(int inputNb) const
 {
+    
     InputMap::const_iterator it = _inputs.find(inputNb);
     if(it != _inputs.end()){
         return it->second != NULL;
@@ -422,6 +428,11 @@ bool Node::hasOutputConnected() const
 
 bool Node::connectInput(Node* input,int inputNumber,bool /*autoConnection*/ )
 {
+    
+    QMutexLocker l(&isUsingInputsMutex);
+    waitForRenderTreesToBeDone();
+
+
     assert(input);
     InputMap::iterator it = _inputs.find(inputNumber);
     if (it == _inputs.end()) {
@@ -441,6 +452,10 @@ bool Node::connectInput(Node* input,int inputNumber,bool /*autoConnection*/ )
 
 void Node::connectOutput(Node* output,int outputNumber )
 {
+    QMutexLocker l(&isUsingInputsMutex);
+    waitForRenderTreesToBeDone();
+
+
     assert(output);
     _imp->outputs.insert(make_pair(outputNumber,output));
     _liveInstance->updateInputs(NULL);
@@ -448,6 +463,11 @@ void Node::connectOutput(Node* output,int outputNumber )
 
 int Node::disconnectInput(int inputNumber)
 {
+    
+    QMutexLocker l(&isUsingInputsMutex);
+    waitForRenderTreesToBeDone();
+
+
     InputMap::iterator it = _inputs.find(inputNumber);
     if (it == _inputs.end() || it->second == NULL) {
         return -1;
@@ -462,6 +482,10 @@ int Node::disconnectInput(int inputNumber)
 
 int Node::disconnectInput(Node* input)
 {
+    QMutexLocker l(&isUsingInputsMutex);
+    waitForRenderTreesToBeDone();
+
+
     assert(input);
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if (it->second != input) {
@@ -480,6 +504,10 @@ int Node::disconnectInput(Node* input)
 
 int Node::disconnectOutput(Node* output)
 {
+    QMutexLocker l(&isUsingInputsMutex);
+    waitForRenderTreesToBeDone();
+
+
     assert(output);
     for (OutputMap::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
         if (it->second == output) {
@@ -999,6 +1027,26 @@ void Node::unregisterPluginMemory(size_t nBytes) {
     emit pluginMemoryUsageChanged((unsigned long long)_imp->pluginInstanceMemoryUsed);
 }
 
+
+void Node::setRenderTreeIsUsingInputs(bool b) {
+    
+    ///it doesn't matter if 2 RenderTree are using the inputs at the same time (because it's obvious concurrent
+    ///threads are going to use the inputs concurrently after this function) because RenderTree's are just reading
+    ///information, the only writer is the node itself.
+    QMutexLocker l(&isUsingInputsMutex);
+    _imp->isUsingInputs = b;
+    if (!b) {
+        _imp->isUsingInputsCond.wakeAll();
+    }
+}
+
+void Node::waitForRenderTreesToBeDone() {
+    assert(!isUsingInputsMutex.tryLock());
+    while (_imp->isUsingInputs) {
+        _imp->isUsingInputsCond.wait(&isUsingInputsMutex);
+    }
+}
+
 InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin,const std::string& name)
     : Node(app,plugin,name)
     , _inputsCount(1)
@@ -1011,6 +1059,13 @@ InspectorNode::~InspectorNode(){
 }
 
 bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection) {
+    
+    QMutexLocker l(&isUsingInputsMutex);
+    waitForRenderTreesToBeDone();
+    
+    ///cannot connect more than 10 inputs.
+    assert(inputNumber <= 10);
+    
     assert(input);
     if(input == this){
         return false;
@@ -1021,8 +1076,12 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
     //        return false;
     //    }
     /*Adding all empty edges so it creates at least the inputNB'th one.*/
-    while(_inputsCount <= inputNumber){
-        tryAddEmptyInput();
+    while (_inputsCount <= inputNumber) {
+        
+        ///this function might not succeed if we already have 10 inputs OR the last input is already empty
+        if (!tryAddEmptyInput()) {
+            break;
+        }
     }
     //#1: first case, If the inputNB of the viewer is already connected & this is not
     // an autoConnection, just refresh it*/
@@ -1036,7 +1095,9 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
     
     if(found!=_inputs.end() && found->second && !autoConnection &&
             ((inputAlreadyConnected!=_inputs.end()) )){
+        l.unlock();
         setActiveInputAndRefresh(found->first);
+        l.relock();
         _liveInstance->updateInputs(NULL);
         return false;
     }
@@ -1044,7 +1105,9 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
      selected node, in which case we just refresh the already connected edge.*/
     for (InputMap::const_iterator i = _inputs.begin(); i!=_inputs.end(); ++i) {
         if(i->second && i->second == input){
+            l.unlock();
             setActiveInputAndRefresh(i->first);
+            l.relock();
             _liveInstance->updateInputs(NULL);
             return false;
         }
@@ -1059,19 +1122,29 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
     }
     return false;
 }
-bool InspectorNode::tryAddEmptyInput(){
-    if(_inputs.size() <= 10){
-        if(_inputs.size() > 0){
+bool InspectorNode::tryAddEmptyInput() {
+    
+    ///if we already reached 10 inputs, just don't do anything
+    if (_inputs.size() <= 10) {
+        
+        
+        if (_inputs.size() > 0) {
+            ///if there are already liviing inputs, look at the last one
+            ///and if it is not connected, just don't add an input.
+            ///Otherwise, add an empty input.
             InputMap::const_iterator it = _inputs.end();
             --it;
             if(it->second != NULL){
                 addEmptyInput();
                 return true;
             }
-        }else{
+            
+        } else {
+            ///there'is no inputs yet, just add one.
             addEmptyInput();
             return true;
         }
+        
     }
     return false;
 }
@@ -1104,6 +1177,11 @@ void InspectorNode::removeEmptyInputs(){
 }
 int InspectorNode::disconnectInput(int inputNumber){
     int ret = Node::disconnectInput(inputNumber);
+ 
+    QMutexLocker l(&isUsingInputsMutex);
+    waitForRenderTreesToBeDone();
+
+    
     if(ret!=-1){
         removeEmptyInputs();
         _activeInput = _inputs.size()-1;
@@ -1122,6 +1200,11 @@ int InspectorNode::disconnectInput(Node* input){
 }
 
 void InspectorNode::setActiveInputAndRefresh(int inputNb){
+   
+    QMutexLocker l(&isUsingInputsMutex);
+    waitForRenderTreesToBeDone();
+
+
     InputMap::iterator it = _inputs.find(inputNb);
     if(it!=_inputs.end() && it->second!=NULL){
         _activeInput = inputNb;

@@ -772,6 +772,7 @@ void RenderTree::refreshTree(int knobsAge){
         it->second->clone();
         ret = it->second->computeHash(inputsHash,knobsAge);
         inputsHash.push_back(ret);
+        it->first->setRenderTreeIsUsingInputs(false);
     }
 }
 
@@ -779,10 +780,12 @@ void RenderTree::refreshTree(int knobsAge){
 void RenderTree::fillGraph(EffectInstance *effect){
     
     /*call fillGraph recursivly on all the node's inputs*/
+    effect->getNode()->setRenderTreeIsUsingInputs(true);
+    
     const Node::InputMap& inputs = effect->getNode()->getInputs();
     for(Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
         if(it->second){
-            /*if the node is an inspector*/
+            /*if the node is an inspector we're interested just by the active input*/
             const InspectorNode* insp = dynamic_cast<const InspectorNode*>(effect->getNode());
             if (insp && it->first != insp->activeInput()) {
                 continue;
