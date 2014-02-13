@@ -442,7 +442,6 @@ private:
     QAction *actionClearAllCaches;
     QAction *actionShowAboutWindow;
     QAction *actionsOpenRecentFile[NATRON_MAX_RECENT_FILES];
-    QAction *actionSeparatorRecentFiles;
     
     QAction* actionConnectInput1;
     QAction* actionConnectInput2;

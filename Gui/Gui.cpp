@@ -115,7 +115,6 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
     actionClearAllCaches(0),
     actionShowAboutWindow(0),
     actionsOpenRecentFile(),
-    actionSeparatorRecentFiles(0),
     actionConnectInput1(0),
     actionConnectInput2(0),
     actionConnectInput3(0),
@@ -445,8 +444,6 @@ void Gui::setupUi()
         actionsOpenRecentFile[c]->setVisible(false);
         connect(actionsOpenRecentFile[c], SIGNAL(triggered()),this, SLOT(openRecentFile()));
     }
-    actionSeparatorRecentFiles = new QAction(this);
-    actionSeparatorRecentFiles->setVisible(false);
     
     actionConnectInput1 = new QAction(this);
     actionConnectInput1->setCheckable(false);
@@ -619,18 +616,17 @@ void Gui::setupUi()
     menuFile->addAction(actionShowAboutWindow);
     menuFile->addAction(actionNew_project);
     menuFile->addAction(actionOpen_project);
-    menuFile->addAction(actionSave_project);
-    menuFile->addAction(actionSaveAs_project);
-    actionSeparatorRecentFiles = menuFile->addSeparator();
     menuFile->addAction(menuRecentFiles->menuAction());
     updateRecentFileActions();
-    menuFile->addSeparator();
-    menuFile->addAction(actionExit);
-    
     for (int c = 0; c < NATRON_MAX_RECENT_FILES; ++c) {
         menuRecentFiles->addAction(actionsOpenRecentFile[c]);
     }
 
+    menuFile->addAction(actionSave_project);
+    menuFile->addAction(actionSaveAs_project);
+    menuFile->addSeparator();
+    menuFile->addAction(actionExit);
+    
     menuEdit->addAction(actionPreferences);
 
     menuOptions->addAction(actionProject_settings);
@@ -1658,7 +1654,16 @@ void Gui::openRecentFile() {
     QAction *action = qobject_cast<QAction *>(sender());
     if (action) {
         QFileInfo f(action->data().toString());
-        _appInstance->getProject()->loadProject(f.path() + QDir::separator(),f.fileName());
+        
+        QString path = f.path() + QDir::separator();
+        ///if the current graph has no value, just load the project in the same window
+        if (_appInstance->getProject()->isGraphWorthLess()) {
+            _appInstance->getProject()->loadProject(path,f.fileName());
+        } else {
+            AppInstance* newApp = appPTR->newAppInstance(AppInstance::APP_GUI);
+            newApp->getProject()->loadProject(path,f.fileName());
+        }
+        
     }
 }
 
@@ -1678,7 +1683,6 @@ void Gui::updateRecentFileActions() {
     for (int j = numRecentFiles; j < NATRON_MAX_RECENT_FILES; ++j)
         actionsOpenRecentFile[j]->setVisible(false);
     
-    actionSeparatorRecentFiles->setVisible(numRecentFiles > 0);
 }
 
 QPixmap Gui::screenShot(QWidget* w) {

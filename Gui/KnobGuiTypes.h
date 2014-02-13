@@ -481,7 +481,7 @@ class AnimatingTextEdit : public QTextEdit {
 
 public:
     
-    AnimatingTextEdit(QWidget* parent = 0) : QTextEdit(parent){}
+    AnimatingTextEdit(QWidget* parent = 0) : QTextEdit(parent) , animation(0) {}
     
     virtual ~AnimatingTextEdit(){}
     

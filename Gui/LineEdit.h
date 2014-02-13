@@ -30,6 +30,8 @@ class LineEdit : public QLineEdit {
     Q_OBJECT
     Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
     
+    bool _hasChanged;
+    
 public:
     explicit LineEdit(QWidget* parent = 0);
     virtual ~LineEdit() OVERRIDE;
@@ -44,6 +46,8 @@ signals:
     
 private:
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
+    
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE;
     
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE;
     
