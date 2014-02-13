@@ -54,7 +54,7 @@ Natron::OutputEffectInstance(node)
 ,_exposure(1.)
 ,_colorSpace(Natron::Color::LutManager::sRGBLut())
 ,_lut(sRGB)
-,_channels(RGBA)
+,_channels(RGB)
 ,_lastRenderedImage()
 {
     connectSlotsToViewerCache();
@@ -379,7 +379,7 @@ void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputI
     int rOffset = 0,gOffset = 0,bOffset = 0;
     bool luminance = false;
     switch (_channels) {
-        case RGBA:
+        case RGB:
             rOffset = 0;
             gOffset = 1;
             bOffset = 2;

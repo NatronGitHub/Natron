@@ -42,7 +42,7 @@ class ViewerInstance : public QObject, public Natron::OutputEffectInstance {
     
 public:
     enum DisplayChannels{
-        RGBA = 0,
+        RGB = 0,
         R,
         G,
         B,

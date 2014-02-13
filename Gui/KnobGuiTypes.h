@@ -489,7 +489,14 @@ public:
     
     void setAnimation(int v) ;
     
+signals:
+    
+    void editingFinished();
 private:
+    
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE;
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
     
     int animation;
 

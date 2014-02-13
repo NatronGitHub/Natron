@@ -80,7 +80,7 @@ _viewerNode(node)
     _firstRowLayout->addWidget(_viewerChannels);
     
     _viewerChannels->addItem("Luminance",QIcon(),QKeySequence(Qt::Key_Y));
-    _viewerChannels->addItem("RGBA",QIcon(),QKeySequence(Qt::SHIFT+Qt::Key_R));
+    _viewerChannels->addItem("RGB",QIcon(),QKeySequence(Qt::SHIFT+Qt::Key_R));
     _viewerChannels->addItem("R",QIcon(),QKeySequence(Qt::Key_R));
     _viewerChannels->addItem("G",QIcon(),QKeySequence(Qt::Key_G));
     _viewerChannels->addItem("B",QIcon(),QKeySequence(Qt::Key_B));
@@ -708,7 +708,7 @@ void ViewerTab::onViewerChannelsChanged(int i){
             channels = ViewerInstance::LUMINANCE;
             break;
         case 1:
-            channels = ViewerInstance::RGBA;
+            channels = ViewerInstance::RGB;
             break;
         case 2:
             channels = ViewerInstance::R;
@@ -723,7 +723,7 @@ void ViewerTab::onViewerChannelsChanged(int i){
             channels = ViewerInstance::A;
             break;
         default:
-            channels = ViewerInstance::RGBA;
+            channels = ViewerInstance::RGB;
             break;
     }
     _viewerNode->setDisplayChannels(channels);

@@ -27,6 +27,7 @@ class QDragLeaveEvent;
 
 class LineEdit : public QLineEdit {
     
+    Q_OBJECT
     Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
     
 public:
@@ -37,8 +38,16 @@ public:
     
     void setAnimation(int v) ;
     
+signals:
+    
+    void editingFinished();
+    
 private:
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
+    
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE;
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
 
     void dropEvent(QDropEvent* event);
 

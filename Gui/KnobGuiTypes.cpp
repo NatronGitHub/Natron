@@ -23,6 +23,7 @@
 #include <QHeaderView>
 #include <QApplication>
 #include <QScrollArea>
+#include <QKeyEvent>
 
 #include "Engine/AppManager.h"
 
@@ -1383,6 +1384,18 @@ void AnimatingTextEdit::setAnimation(int v) {
     style()->unpolish(this);
     style()->polish(this);
     repaint();
+}
+
+void AnimatingTextEdit::focusOutEvent(QFocusEvent* e) {
+    emit editingFinished();
+    QTextEdit::focusOutEvent(e);
+}
+
+void AnimatingTextEdit::keyPressEvent(QKeyEvent* e) {
+    if (e->key() == Qt::Key_Return) {
+        emit editingFinished();
+    }
+    QTextEdit::keyPressEvent(e);
 }
 
 String_KnobGui::String_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)

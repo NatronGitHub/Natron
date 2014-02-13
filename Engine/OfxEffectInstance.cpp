@@ -119,7 +119,9 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         if(stat != kOfxStatOK && stat != kOfxStatReplyDefault){
             throw std::runtime_error("Could not create effect instance for plugin");
         }
-
+        if (!effect_->getClipPreferences()) {
+            Natron::errorDialog(getName(),"The plugin failed in the getClipPreferencesAction.");
+        }
 
     } catch (const std::exception& e) {
         qDebug() << "Error: Caught exception while creating OfxImageEffectInstance" << ": " << e.what();
@@ -312,6 +314,14 @@ OfxEffectInstance::MappedInputV OfxEffectInstance::inputClipsCopyWithoutOutput()
     return copy;
 }
 
+OfxClipInstance* OfxEffectInstance::getClipCorrespondingToInput(int inputNo) const {
+    OfxEffectInstance::MappedInputV clips = inputClipsCopyWithoutOutput();
+    assert(inputNo < (int)clips.size());
+    OFX::Host::ImageEffect::ClipInstance* clip = effect_->getClip(clips[inputNo]->getName());
+    assert(clip);
+    return dynamic_cast<OfxClipInstance*>(clip);
+}
+
 int OfxEffectInstance::maximumInputs() const {
     const std::string& context = effectInstance()->getContext();
     if(context == kOfxImageEffectContextReader ||
@@ -359,6 +369,21 @@ void OfxEffectInstance::ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const{
         rod->y2 = projectDefault.top();
     }
     
+}
+
+
+void OfxEffectInstance::onInputChanged(int inputNo) {
+    OfxClipInstance* clip = getClipCorrespondingToInput(inputNo);
+    assert(clip);
+    double time = effect_->getFrameRecursive();
+    RenderScale s;
+    s.x = s.y = 1.;
+    effect_->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
+    
+}
+
+void OfxEffectInstance::onMultipleInputsChanged() {
+    effect_->runGetClipPrefsConditionally();
 }
 
 Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod){
@@ -782,6 +807,9 @@ void OfxEffectInstance::onKnobValueChanged(Knob* k,Natron::ValueChangedReason re
         return;
     }
     
+    if (effect_->isClipPreferencesSlaveParam(k->getName())) {
+        effect_->runGetClipPrefsConditionally();
+    }
     if(_overlayInteract){
         std::vector<std::string> params;
         _overlayInteract->getSlaveToParam(params);

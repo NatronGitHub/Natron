@@ -476,6 +476,17 @@ public:
     void registerPluginMemory(size_t nBytes);
     void unregisterPluginMemory(size_t nBytes);
     
+    /**
+     * @brief Called everytimes an input connection is changed
+     **/
+    virtual void onInputChanged(int /*inputNo*/) {}
+    
+    
+    /**
+     * @brief Same as onInputChanged but called once for many changes.
+     **/
+    virtual void onMultipleInputsChanged() {}
+    
 protected:
     /**
      * @brief This function is provided for means to copy more data than just the knobs from the live instance

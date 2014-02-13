@@ -582,31 +582,58 @@ void EffectInstance::togglePreview() {
 }
 
 void EffectInstance::updateInputs(RenderTree* tree) {
+    Inputs inputsCopy = _imp->inputs;
     _imp->inputs.clear();
     const Node::InputMap& inputs = _node->getInputs();
-    _imp->inputs.reserve(inputs.size());
-    
+    InspectorNode* insp = dynamic_cast<InspectorNode*>(_node);
     
     for (Node::InputMap::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {
+        EffectInstance* inputInstance = NULL;
         if (it->second) {
-            InspectorNode* insp = dynamic_cast<InspectorNode*>(_node);
-            if(insp){
+            if (insp) {
                 Node* activeInput = insp->input(insp->activeInput());
-                if(it->second != activeInput){
-                    _imp->inputs.push_back((EffectInstance*)NULL);
-                    continue;
+                if(it->second == activeInput){
+                    if(tree){
+                        inputInstance = tree->getEffectForNode(it->second);
+                    }else{
+                        inputInstance = it->second->getLiveInstance();
+                    }
+                    assert(inputInstance);
+                }
+            } else {
+                if(tree){
+                    inputInstance = tree->getEffectForNode(it->second);
+                }else{
+                    inputInstance = it->second->getLiveInstance();
+                }
+                assert(inputInstance);
+            }
+        }
+        _imp->inputs.push_back(inputInstance);
+    }
+    if (!insp) {
+        if (!inputsCopy.empty()) {
+            bool hasChanged = false;
+            assert(_imp->inputs.size() == inputsCopy.size());
+            for (unsigned int i = 0; i < inputsCopy.size(); ++i) {
+                if (_imp->inputs[i] != inputsCopy[i]) {
+                    onInputChanged(i);
+                    hasChanged = true;
                 }
             }
-            EffectInstance* inputEffect = 0;
-            if(tree){
-                inputEffect = tree->getEffectForNode(it->second);
-            }else{
-                inputEffect = it->second->getLiveInstance();
+            if (hasChanged) {
+                onMultipleInputsChanged();
             }
-            assert(inputEffect);
-            _imp->inputs.push_back(inputEffect);
-        }else{
-            _imp->inputs.push_back((EffectInstance*)NULL);
+        } else {
+            bool hasChanged = false;
+            for (unsigned int i = 0; i < inputsCopy.size(); ++i) {
+                onInputChanged(i);
+                hasChanged = true;
+            }
+            if (hasChanged) {
+                onMultipleInputsChanged();
+            }
+            
         }
     }
     
