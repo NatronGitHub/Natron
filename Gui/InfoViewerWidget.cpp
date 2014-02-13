@@ -15,9 +15,11 @@
 #include <QHBoxLayout>
 #include <QLabel>
 
+#include "Engine/Lut.h"
 #include "Gui/ViewerGL.h"
 
 using std::cout; using std::endl;
+using namespace Natron;
 
 InfoViewerWidget::InfoViewerWidget(ViewerGL* v,QWidget* parent) : QWidget(parent),_colorAndMouseVisible(false),
 mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
@@ -158,10 +160,10 @@ void InfoViewerWidget::updateColor(){
 
     rgbaValues->setText(values);
     
-    int r = std::max(std::min((int)(colorUnderMouse.x()*255.),255),0);
-    int g = std::max(std::min((int)(colorUnderMouse.y()*255.),255),0);
-    int b = std::max(std::min((int)(colorUnderMouse.z()*255.),255),0);
-    int a = std::max(std::min((int)(colorUnderMouse.w()*255.),255),0);
+    int r = Color::floatToInt<256>(colorUnderMouse.x());
+    int g = Color::floatToInt<256>(colorUnderMouse.y());
+    int b = Color::floatToInt<256>(colorUnderMouse.z());
+    int a = Color::floatToInt<256>(colorUnderMouse.w());
     QColor c(r,g,b,a);
     QImage img(20,20,QImage::Format_RGB32);
     img.fill(c.rgb());

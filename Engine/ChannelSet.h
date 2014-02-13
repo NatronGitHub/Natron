@@ -12,12 +12,17 @@
 #ifndef NATRON_ENGINE_CHANNELSET_H_
 #define NATRON_ENGINE_CHANNELSET_H_
 
+#include "Global/Macros.h"
 #include <string>
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMetaType>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_OFF(unused-parameter)
+// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/binary_iarchive.hpp>
+CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/binary_oarchive.hpp>
 
-#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 namespace Natron {

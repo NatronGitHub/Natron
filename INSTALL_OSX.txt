@@ -135,4 +135,8 @@ Also there's a bug with Xcode and quake so please use this command in order to b
 
 ln -s <absolulePath>/Info.plist .
 
+###Testing
 
+To run the tests on Natron, go at the root of the project, i.e: Natron/ and type the following commands:
+
+(cd Tests && qmake CONFIG+=debug CONFIG+=coverage && make -j4 && ./Tests)

@@ -16,7 +16,10 @@
 #include <boost/shared_ptr.hpp>
 
 #include <QtCore/QRectF>
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QGraphicsItem>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 
@@ -55,7 +58,6 @@ public:
     NodeGui(NodeGraph* dag,
             QVBoxLayout *dockContainer,
             Natron::Node *_internalNode,
-            qreal x,qreal y ,
             QGraphicsItem *parent=0);
 
     ~NodeGui() OVERRIDE;
@@ -129,8 +131,12 @@ public:
     
     static const int NODE_LENGTH = 80;
     static const int NODE_HEIGHT = 30;
-    static const int PREVIEW_LENGTH = 40;
-    static const int PREVIEW_HEIGHT = 40;
+    static const int NODE_WITH_PREVIEW_LENGTH = NODE_LENGTH / 2 + NATRON_PREVIEW_WIDTH ;
+    static const int NODE_WITH_PREVIEW_HEIGHT = NODE_HEIGHT + NATRON_PREVIEW_HEIGHT;
+    static const int DEFAULT_OFFSET_BETWEEN_NODES = 20;
+
+    
+    static QSize nodeSize(bool withPreview);
     
         
     /*Returns an edge if the node has an edge close to the
@@ -139,6 +145,8 @@ public:
     
     
     void refreshPosition(double x,double y);
+    
+    void changePosition(double dx,double dy);
     
     bool isSettingsPanelVisible() const;
     
@@ -152,6 +160,20 @@ public:
     
     void removeUndoStack();
     
+    /**
+     * @brief Given the rectangle r, move the node down so it doesn't belong
+     * to this rectangle and call the same function with the new bounding box of this node
+     * recursively on its outputs.
+     **/
+    void moveBelowPositionRecursively(const QRectF& r);
+    
+    /**
+     * @brief Given the rectangle r, move the node up so it doesn't belong
+     * to this rectangle and call the same function with the new bounding box of this node
+     * recursively on its inputs.
+     **/
+    void moveAbovePositionRecursively(const QRectF& r);
+    
 public slots:
   
     void togglePreview();
@@ -162,8 +184,11 @@ public slots:
      **/
     void updateShape(int width,int height);
     
-    /*Updates the preview image.*/
+    /*Updates the preview image, only if the project is in auto-preview mode*/
 	void updatePreviewImage(int time);
+    
+    /*Updates the preview image no matter what*/
+    void forceComputePreview(int time);
     
     /*Updates the channels tooltip. This is called by Node::validate(),
      i.e, when the channel requested for the node change.*/

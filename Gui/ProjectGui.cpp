@@ -18,8 +18,9 @@
 #include <QLabel>
 #include <QSplitter>
 #include <QDebug>
+#include <QTextDocument> // for Qt::convertFromPlainText
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
@@ -36,8 +37,8 @@
 #include "Gui/ViewerGL.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/NodeGui.h"
-#include "Gui/ProjectGuiSerialization.h"
 #include "Gui/TabWidget.h"
+#include "Gui/ProjectGuiSerialization.h"
 
 ProjectGui::ProjectGui()
 : _project()
@@ -55,6 +56,11 @@ ProjectGui::~ProjectGui(){
     }
 }
 
+void ProjectGui::initializeKnobsGui() {
+    assert(_panel);
+    _panel->initializeKnobs();
+}
+
 void ProjectGui::create(boost::shared_ptr<Natron::Project> projectInternal,QVBoxLayout* container,QWidget* parent)
 
 {
@@ -65,12 +71,12 @@ void ProjectGui::create(boost::shared_ptr<Natron::Project> projectInternal,QVBox
     _panel = new DockablePanel(projectInternal.get(),
                                container,
                                DockablePanel::READ_ONLY_NAME,
+                               false,
                                "Project Settings",
                                "The settings of the current project.",
                                true,
                                "Rendering",
                                parent);
-    _panel->initializeKnobs();
     
     
     _created = true;
@@ -87,13 +93,14 @@ void ProjectGui::setVisible(bool visible){
 void ProjectGui::createNewFormat(){
     AddFormatDialog dialog(_project.get(),_project->getApp()->getGui());
     if(dialog.exec()){
-        _project->tryAddProjectFormat(dialog.getFormat());
+        _project->setOrAddProjectFormat(dialog.getFormat());
     }
 }
 
 
 
-AddFormatDialog::AddFormatDialog(Natron::Project *project, QWidget* parent):QDialog(parent),
+AddFormatDialog::AddFormatDialog(Natron::Project *project,Gui* gui):QDialog(gui),
+_gui(gui),
 _project(project)
 {
     _mainLayout = new QVBoxLayout(this);
@@ -117,9 +124,10 @@ _project(project)
     _fromViewerLineLayout->addWidget(_copyFromViewerCombo);
     
     _copyFromViewerButton = new Button("Copy from",_fromViewerLine);
-    _copyFromViewerButton->setToolTip("Fill the new format with the currently"
+    _copyFromViewerButton->setToolTip(Qt::convertFromPlainText(
+                                      "Fill the new format with the currently"
                                       " displayed region of definition of the viewer"
-                                      " indicated on the left.");
+                                      " indicated on the left.", Qt::WhiteSpaceNormal));
     QObject::connect(_copyFromViewerButton,SIGNAL(clicked()),this,SLOT(onCopyFromViewer()));
     _mainLayout->addWidget(_fromViewerLine);
     
@@ -188,8 +196,9 @@ void AddFormatDialog::onCopyFromViewer(){
     for(U32 i = 0 ; i < nodes.size(); ++i){
         if(nodes[i]->getName() == activeText.toStdString()){
             ViewerInstance* v = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
-            const RectI& f = v->getUiContext()->viewer->getCurrentViewerInfos().getRoD();
-            const Format& format = v->getUiContext()->viewer->getCurrentViewerInfos().getDisplayWindow();
+            ViewerTab* tab = _gui->getViewerTabForInstance(v);
+            const RectI& f = tab->viewer->getCurrentViewerInfos().getRoD();
+            const Format& format = tab->viewer->getCurrentViewerInfos().getDisplayWindow();
             _widthSpinBox->setValue(f.width());
             _heightSpinBox->setValue(f.height());
             _pixelAspectSpinBox->setValue(format.getPixelAspect());
@@ -207,8 +216,10 @@ Format AddFormatDialog::getFormat() const{
 
 
 
-void ProjectGui::save(ProjectGuiSerialization* serializationObject) const{
-    serializationObject->initialize(this);
+void ProjectGui::save(boost::archive::xml_oarchive& archive) const {
+    ProjectGuiSerialization projectGuiSerializationObj;
+    projectGuiSerializationObj.initialize(this);
+    archive << boost::serialization::make_nvp("ProjectGui",projectGuiSerializationObj);
 }
 
 void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneLayout>& guiLayout,
@@ -253,7 +264,13 @@ void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneL
     
 }
 
-void ProjectGui::load(const ProjectGuiSerialization& obj){
+void ProjectGui::load(boost::archive::xml_iarchive& archive){
+    
+    ProjectGuiSerialization obj;
+    archive >> boost::serialization::make_nvp("ProjectGui",obj);
+    
+    const std::map<std::string, ViewerData >& viewersProjections = obj.getViewersProjections();
+    
     const std::vector< boost::shared_ptr<NodeGuiSerialization> >& nodesGuiSerialization = obj.getSerializedNodesGui();
     for (U32 i = 0; i < nodesGuiSerialization.size(); ++i) {
         const std::string& name = nodesGuiSerialization[i]->getName();
@@ -265,7 +282,24 @@ void ProjectGui::load(const ProjectGuiSerialization& obj){
             nGui->togglePreview();
         }
         
+        if (nGui->getNode()->pluginID() == "Viewer") {
+            std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
+            if (found != viewersProjections.end()) {
+                ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(nGui->getNode()->getLiveInstance());
+                ViewerTab* tab = _project->getApp()->getGui()->getViewerTabForInstance(viewer);
+                tab->viewer->setProjection(found->second.left, found->second.bottom, found->second.zoomFactor);
+                tab->setChannels(found->second.channels);
+                tab->setColorSpace(found->second.colorSpace);
+                tab->setExposure(found->second.exposure);
+                tab->setUserRoIEnabled(found->second.userRoIenabled);
+                tab->setUserRoI(found->second.userRoI);
+                tab->setClipToProject(found->second.isClippedToProject);
+            }
+        }
+        
     }
+    
+    
     const std::vector<NodeGui*> nodesGui = _project->getApp()->getVisibleNodes();
     for(U32 i = 0 ; i < nodesGui.size();++i){
         nodesGui[i]->refreshEdges();

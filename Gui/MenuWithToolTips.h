@@ -7,7 +7,10 @@
 #ifndef NATRON_GUI_MENUWITHTOOLTIPS_H_
 #define NATRON_GUI_MENUWITHTOOLTIPS_H_
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QMenu>
+CLANG_DIAG_ON(deprecated)
 
 class MenuWithToolTips : public QMenu {
 public:

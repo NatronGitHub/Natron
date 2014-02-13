@@ -12,7 +12,10 @@
 
 #include <cassert>
 #include <QtCore/QEvent>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QCloseEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QApplication>
 #include <QMenu>
 #include <QUrl>
@@ -28,8 +31,12 @@
 #include <QScrollBar>
 #include <QUndoGroup>
 #include <QDropEvent>
+#include <QTextDocument> // for Qt::convertFromPlainText
+#if QT_VERSION >= 0x050000
+#include <QScreen>
+#endif
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
@@ -53,7 +60,8 @@
 #include "Gui/ProjectGui.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/PreferencesPanel.h"
-
+#include "Gui/AboutWindow.h"
+#include "Gui/FromQtEnums.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_IMAGE "Image"
@@ -63,6 +71,8 @@
 #define PLUGIN_GROUP_DEEP "Deep"
 #define PLUGIN_GROUP_MULTIVIEW "Views"
 #define PLUGIN_GROUP_OFX "OFX"
+#define PLUGIN_GROUP_TIME "Time"
+#define PLUGIN_GROUP_PAINT "Paint"
 
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH"misc_low.png"
 
@@ -103,6 +113,9 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
     actionClearNodeCache(0),
     actionClearPluginsLoadingCache(0),
     actionClearAllCaches(0),
+    actionShowAboutWindow(0),
+    actionsOpenRecentFile(),
+    actionSeparatorRecentFiles(0),
     actionConnectInput1(0),
     actionConnectInput2(0),
     actionConnectInput3(0),
@@ -135,6 +148,7 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
     _layoutPropertiesBin(0),
     menubar(0),
     menuFile(0),
+    menuRecentFiles(0),
     menuEdit(0),
     menuDisplay(0),
     menuOptions(0),
@@ -143,7 +157,8 @@ Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
     cacheMenu(0),
     _settingsGui(0),
     _projectGui(0),
-    _currentlyDraggedPanel(0)
+    _currentlyDraggedPanel(0),
+    _aboutWindow(0)
 {
     QObject::connect(this,SIGNAL(doDialog(int,QString,QString,Natron::StandardButtons,int)),this,
                      SLOT(onDoDialog(int,QString,QString,Natron::StandardButtons,int)));
@@ -220,17 +235,10 @@ void Gui::createViewerGui(Node* viewer){
     }
     ViewerInstance* v = dynamic_cast<ViewerInstance*>(viewer->getLiveInstance());
     assert(v);
-    v->initializeViewerTab(where);
-    _lastSelectedViewer = v->getUiContext();
+    _lastSelectedViewer = addNewViewerTab(v, where);
+    v->setUiContext(_lastSelectedViewer->viewer);
 }
 
-void Gui::autoConnect(NodeGui* target,NodeGui* created) {
-    assert(_nodeGraphArea);
-    if(target) {
-        _nodeGraphArea->autoConnect(target, created);
-    }
-    _nodeGraphArea->selectNode(created);
-}
 
 NodeGui* Gui::getSelectedNode() const {
     assert(_nodeGraphArea);
@@ -299,6 +307,8 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
     actionClearPluginsLoadingCache->setText(tr("Clear plugins loading cache"));
     assert(actionClearAllCaches);
     actionClearAllCaches->setText(tr("Clear all caches"));
+    assert(actionShowAboutWindow);
+    actionShowAboutWindow->setText(tr("About"));
     
     assert(actionConnectInput1);
     actionConnectInput1 ->setText(tr("Connect to input 1"));
@@ -326,6 +336,8 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
     //WorkShop->setTabText(WorkShop->indexOf(GraphEditor), tr("Graph Editor"));
     assert(menuFile);
     menuFile->setTitle(tr("File"));
+    assert(menuRecentFiles);
+    menuRecentFiles->setTitle(tr("Open recent"));
     assert(menuEdit);
     menuEdit->setTitle(tr("Edit"));
     assert(menuDisplay);
@@ -362,8 +374,8 @@ void Gui::setupUi()
     /*TOOL BAR menus*/
     //======================
     menubar = new QMenuBar(this);
-    //menubar->setGeometry(QRect(0, 0, 1159, 21)); // why set the geometry of a menubar?
     menuFile = new QMenu(menubar);
+    menuRecentFiles = new QMenu(menuFile);
     menuEdit = new QMenu(menubar);
     menuDisplay = new QMenu(menubar);
     menuOptions = new QMenu(menubar);
@@ -425,6 +437,16 @@ void Gui::setupUi()
     actionClearAllCaches->setObjectName(QString::fromUtf8("actionClearAllCaches"));
     actionClearAllCaches->setCheckable(false);
     actionClearAllCaches->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_K));
+    actionShowAboutWindow = new QAction(this);
+    actionShowAboutWindow->setObjectName(QString::fromUtf8("actionShowAboutWindow"));
+    actionShowAboutWindow->setCheckable(false);
+    for (int c = 0; c < NATRON_MAX_RECENT_FILES; ++c) {
+        actionsOpenRecentFile[c] = new QAction(this);
+        actionsOpenRecentFile[c]->setVisible(false);
+        connect(actionsOpenRecentFile[c], SIGNAL(triggered()),this, SLOT(openRecentFile()));
+    }
+    actionSeparatorRecentFiles = new QAction(this);
+    actionSeparatorRecentFiles->setVisible(false);
     
     actionConnectInput1 = new QAction(this);
     actionConnectInput1->setCheckable(false);
@@ -494,10 +516,7 @@ void Gui::setupUi()
     _splitters.push_back(_viewerWorkshopSplitter);
     _viewerWorkshopSplitter->setContentsMargins(0, 0, 0, 0);
     _viewerWorkshopSplitter->setOrientation(Qt::Vertical);
-    _viewerWorkshopSplitter->setChildrenCollapsible(false);
-    QSize viewerWorkshopSplitterSize = _viewerWorkshopSplitter->sizeHint();
-    QList<int> sizesViewerSplitter; sizesViewerSplitter <<  viewerWorkshopSplitterSize.height()/2;
-    sizesViewerSplitter  << viewerWorkshopSplitterSize.height()/2;
+    _viewerWorkshopSplitter->setChildrenCollapsible(false);;
     
     /*VIEWERS related*/
     
@@ -528,6 +547,12 @@ void Gui::setupUi()
     _workshopPane->makeCurrentTab(0);
     
     _viewerWorkshopSplitter->addWidget(_workshopPane);
+    
+    ///if the preferences are not set, give a "basic" shape to the splitter so it doesn't look collapsed
+    QList<int> sizesViewerSplitter;
+    sizesViewerSplitter << 500;
+    sizesViewerSplitter << 500;
+    _viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
     
 
     _middleRightSplitter = new QSplitter(_centralWidget);
@@ -561,11 +586,10 @@ void Gui::setupUi()
     _propertiesPane->appendTab(_propertiesScrollArea);
     
     _middleRightSplitter->addWidget(_propertiesPane);
-    QSize horizontalSplitterSize = _middleRightSplitter->sizeHint();
-    QList<int> sizes;
-    sizes << 195;
-    sizes << horizontalSplitterSize.width()- 195;
-    _middleRightSplitter->setSizes(sizes);
+    QList<int> sizesMiddleRightSplitter;
+    sizesMiddleRightSplitter << 800;
+    sizesMiddleRightSplitter << 300;
+    _middleRightSplitter->setSizes(sizesMiddleRightSplitter);
 
     
     _leftRightSplitter->addWidget(_middleRightSplitter);
@@ -584,18 +608,28 @@ void Gui::setupUi()
 
     setVisibleProjectSettingsPanel();
     
+    _aboutWindow = new AboutWindow(this);
+    _aboutWindow->hide();
+    
     menubar->addAction(menuFile->menuAction());
     menubar->addAction(menuEdit->menuAction());
     menubar->addAction(menuDisplay->menuAction());
     menubar->addAction(menuOptions->menuAction());
     menubar->addAction(cacheMenu->menuAction());
+    menuFile->addAction(actionShowAboutWindow);
     menuFile->addAction(actionNew_project);
     menuFile->addAction(actionOpen_project);
     menuFile->addAction(actionSave_project);
     menuFile->addAction(actionSaveAs_project);
-    menuFile->addSeparator();
+    actionSeparatorRecentFiles = menuFile->addSeparator();
+    menuFile->addAction(menuRecentFiles->menuAction());
+    updateRecentFileActions();
     menuFile->addSeparator();
     menuFile->addAction(actionExit);
+    
+    for (int c = 0; c < NATRON_MAX_RECENT_FILES; ++c) {
+        menuRecentFiles->addAction(actionsOpenRecentFile[c]);
+    }
 
     menuEdit->addAction(actionPreferences);
 
@@ -623,6 +657,8 @@ void Gui::setupUi()
     cacheMenu->addAction(actionClearAllCaches);
     retranslateUi(this);
     
+    
+    QObject::connect(actionShowAboutWindow,SIGNAL(triggered()),this,SLOT(showAbout()));
     QObject::connect(actionFullScreen, SIGNAL(triggered()),this,SLOT(toggleFullScreen()));
     QObject::connect(actionClearDiskCache, SIGNAL(triggered()),appPTR,SLOT(clearDiskCache()));
     QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),appPTR,SLOT(clearPlaybackCache()));
@@ -648,7 +684,7 @@ void Gui::setupUi()
     QObject::connect(actionConnectInput10, SIGNAL(triggered()),this,SLOT(connectInput10()));
     
     QObject::connect(actionPreferences,SIGNAL(triggered()),this,SLOT(showSettings()));
-
+    QObject::connect(_appInstance->getProject().get(),SIGNAL(projectNameChanged(QString)),this,SLOT(onProjectNameChanged(QString)));
     QMetaObject::connectSlotsByName(this);
     
     restoreGuiGeometry();
@@ -656,6 +692,10 @@ void Gui::setupUi()
     
 } // setupUi
 
+void Gui::initProjectGuiKnobs() {
+    assert(_projectGui);
+    _projectGui->initializeKnobsGui();
+}
 
 QKeySequence Gui::keySequenceForView(int v){
     switch (v) {
@@ -948,6 +988,10 @@ static void getPixmapForGrouping(QPixmap* pixmap,const QString& grouping) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_DEEP_GROUPING, pixmap);
     } else if (grouping == PLUGIN_GROUP_MULTIVIEW) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_MULTIVIEW_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_TIME) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_TIME_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_PAINT) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_PAINT_GROUPING, pixmap);
     } else if (grouping == PLUGIN_GROUP_DEFAULT) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
     } else {
@@ -1041,7 +1085,7 @@ void Gui::addToolButttonsToToolBar(){
             button->setIcon(_toolButtons[i]->getIcon());
             button->setMenu(_toolButtons[i]->getMenu());
             button->setPopupMode(QToolButton::InstantPopup);
-            button->setToolTip(_toolButtons[i]->getLabel());
+            button->setToolTip(Qt::convertFromPlainText(_toolButtons[i]->getLabel(), Qt::WhiteSpaceNormal));
             _toolBox->addWidget(button);
         }
     }
@@ -1060,7 +1104,7 @@ void Gui::setUndoRedoActions(QAction* undoAction,QAction* redoAction){
     menuEdit->addAction(redoAction);
 }
 void Gui::newProject(){
-    appPTR->newAppInstance(false);
+    appPTR->newAppInstance(AppInstance::APP_GUI);
 }
 void Gui::openProject(){
     std::vector<std::string> filters;
@@ -1069,18 +1113,34 @@ void Gui::openProject(){
     
     if (selectedFiles.size() > 0) {
         //clearing current graph
-        _appInstance->clearNodes();
         QString file = selectedFiles.at(0);
         QString name = SequenceFileDialog::removePath(file);
         QString path = file.left(file.indexOf(name));
         
-        _appInstance->loadProject(path,name);
+        ///if the current graph has no value, just load the project in the same window
+        if (_appInstance->getProject()->isGraphWorthLess()) {
+            _appInstance->getProject()->loadProject(path, name);
+        } else {
+            AppInstance* newApp = appPTR->newAppInstance(AppInstance::APP_GUI);
+            newApp->getProject()->loadProject(path, name);
+        }
+        
+        QSettings settings;
+        QStringList recentFiles = settings.value("recentFileList").toStringList();
+        recentFiles.removeAll(file);
+        recentFiles.prepend(file);
+        while (recentFiles.size() > NATRON_MAX_RECENT_FILES)
+            recentFiles.removeLast();
+        
+        settings.setValue("recentFileList", recentFiles);
+        appPTR->updateAllRecentFileMenus();
     }
     
 }
 void Gui::saveProject(){
-    if(_appInstance->hasProjectBeenSavedByUser()){
-        _appInstance->saveProject(_appInstance->getCurrentProjectPath(),_appInstance->getCurrentProjectName(),false);
+    if(_appInstance->getProject()->hasProjectBeenSavedByUser()){
+        _appInstance->getProject()->saveProject(_appInstance->getProject()->getProjectPath(),
+                                                _appInstance->getProject()->getProjectName(),false);
     }else{
         saveProjectAs();
     }
@@ -1095,7 +1155,7 @@ void Gui::saveProjectAs(){
         }
         QString file = SequenceFileDialog::removePath(outFile);
         QString path = outFile.left(outFile.indexOf(file));
-        _appInstance->saveProject(path,file,false);
+        _appInstance->getProject()->saveProject(path,file,false);
     }
 }
 
@@ -1116,6 +1176,10 @@ void Gui::createReader(){
             errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
         } else {
             Node* n = _appInstance->createNode(found->second.c_str(),-1,-1,false,false);
+            
+            if (!n) {
+                return;
+            }
             const std::vector<boost::shared_ptr<Knob> >& knobs = n->getKnobs();
             for (U32 i = 0; i < knobs.size(); ++i) {
                 if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
@@ -1127,6 +1191,11 @@ void Gui::createReader(){
                         break;
                     } else {
                         fk->setValue<QStringList>(files);
+                        
+                        if (n->isPreviewEnabled()) {
+                            n->computePreviewImage(_appInstance->getTimeLine()->currentFrame());
+                        }
+                        
                         break;
                     }
                 
@@ -1151,6 +1220,10 @@ void Gui::createWriter(){
         std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
         if(found != writersForFormat.end()){
             Node* n = _appInstance->createNode(found->second.c_str(),-1,-1,false,false);
+            if (!n) {
+                return;
+            }
+
             const std::vector<boost::shared_ptr<Knob> >& knobs = n->getKnobs();
             for (U32 i = 0; i < knobs.size(); ++i) {
                 if (knobs[i]->typeName() == OutputFile_Knob::typeNameStatic()) {
@@ -1188,18 +1261,15 @@ QString Gui::popSaveFileDialog(bool sequenceDialog,const std::vector<std::string
 }
 
 void Gui::autoSave(){
-    _appInstance->autoSave();
+    _appInstance->getProject()->autoSave();
 }
 
-bool Gui::isGraphWorthless() const{
-    return _nodeGraphArea->isGraphWorthLess();
-}
 
 int Gui::saveWarning(){
     
-    if(!isGraphWorthless() && !_appInstance->isSaveUpToDate()){
+    if(!_appInstance->getProject()->isGraphWorthLess() && !_appInstance->getProject()->isSaveUpToDate()){
         QMessageBox::StandardButton ret =  QMessageBox::question(this, "",
-                                                                 QString("Save changes to " + _appInstance->getCurrentProjectName() + " ?"),
+                                                                 QString("Save changes to " + _appInstance->getProject()->getProjectName() + " ?"),
                                                                  QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,QMessageBox::Save);
         if(ret == QMessageBox::Escape || ret == QMessageBox::Cancel){
             return 2;
@@ -1211,6 +1281,16 @@ int Gui::saveWarning(){
     }
     return -1;
     
+}
+
+void Gui::loadProjectGui(boost::archive::xml_iarchive& obj) const {
+    assert(_projectGui);
+    _projectGui->load(obj);
+}
+
+void Gui::saveProjectGui(boost::archive::xml_oarchive& archive) {
+    assert(_projectGui);
+    _projectGui->save(archive);
 }
 
 void Gui::errorDialog(const std::string& title,const std::string& text){
@@ -1254,9 +1334,9 @@ void Gui::informationDialog(const std::string& title,const std::string& text){
         emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
     }
 }
-void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB){
+void Gui::onDoDialog(int type, const QString& title, const QString& content, Natron::StandardButtons buttons, int defaultB){
     
-    _uiUsingMainThreadMutex.lock();
+    QMutexLocker locker(&_uiUsingMainThreadMutex);
 
     if(type == 0){
         QMessageBox::critical(this, title, content);
@@ -1266,12 +1346,11 @@ void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron
         QMessageBox::information(this, title,content);
     }else{
         _lastQuestionDialogAnswer = (Natron::StandardButton)QMessageBox::question(this,title,content,
-                                                                                  (QMessageBox::StandardButtons)buttons,
-                                                                                  (QMessageBox::StandardButtons)defaultB);
+                                                            QtEnumConvert::toQtStandarButtons(buttons),
+                                                            QtEnumConvert::toQtStandardButton((Natron::StandardButton)defaultB));
     }
     _uiUsingMainThread = false;
     _uiUsingMainThreadCond.wakeOne();
-    _uiUsingMainThreadMutex.unlock();
     
 }
 
@@ -1546,6 +1625,17 @@ void Gui::refreshAllPreviews() {
     }
 }
 
+void Gui::forceRefreshAllPreviews() {
+    int time = _appInstance->getTimeLine()->currentFrame();
+    std::vector<Natron::Node*> nodes;
+    _appInstance->getActiveNodes(&nodes);
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        if (nodes[i]->isPreviewEnabled()) {
+            nodes[i]->computePreviewImage(time);
+        }
+    }
+}
+
 void Gui::startDragPanel(QWidget* panel) {
     assert(!_currentlyDraggedPanel);
     _currentlyDraggedPanel = panel;
@@ -1556,4 +1646,116 @@ QWidget* Gui::stopDragPanel() {
     QWidget* ret = _currentlyDraggedPanel;
     _currentlyDraggedPanel = 0;
     return ret;
+}
+
+
+void Gui::showAbout() {
+    _aboutWindow->show();
+    _aboutWindow->exec();
+}
+
+void Gui::openRecentFile() {
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (action) {
+        QFileInfo f(action->data().toString());
+        _appInstance->getProject()->loadProject(f.path() + QDir::separator(),f.fileName());
+    }
+}
+
+void Gui::updateRecentFileActions() {
+    QSettings settings;
+    QStringList files = settings.value("recentFileList").toStringList();
+    
+    int numRecentFiles = std::min(files.size(), (int)NATRON_MAX_RECENT_FILES);
+    
+    for (int i = 0; i < numRecentFiles; ++i) {
+        
+        QString text = tr("&%1 %2").arg(i + 1).arg(QFileInfo(files[i]).fileName());
+        actionsOpenRecentFile[i]->setText(text);
+        actionsOpenRecentFile[i]->setData(files[i]);
+        actionsOpenRecentFile[i]->setVisible(true);
+    }
+    for (int j = numRecentFiles; j < NATRON_MAX_RECENT_FILES; ++j)
+        actionsOpenRecentFile[j]->setVisible(false);
+    
+    actionSeparatorRecentFiles->setVisible(numRecentFiles > 0);
+}
+
+QPixmap Gui::screenShot(QWidget* w) {
+#if QT_VERSION < 0x050000
+    if (w->objectName() == "CurveEditor") {
+        return QPixmap::grabWidget(w);
+    }
+    return QPixmap::grabWindow(w->winId());
+#else
+    return QApplication::primaryScreen()->grabWindow(w->winId());
+#endif
+}
+
+void Gui::onProjectNameChanged(const QString& name) {
+    QString text(QCoreApplication::applicationName() + " - ");
+    text.append(name);
+    setWindowTitle(text);
+}
+
+void Gui::setColorPickersColor(const QColor& c) {
+    assert(_projectGui);
+    _projectGui->setPickersColor(c);
+}
+
+void Gui::registerNewColorPicker(boost::shared_ptr<Color_Knob> knob) {
+    assert(_projectGui);
+    _projectGui->registerNewColorPicker(knob);
+}
+
+void Gui::removeColorPicker(boost::shared_ptr<Color_Knob> knob) {
+    assert(_projectGui);
+    _projectGui->removeColorPicker(knob);
+}
+
+void Gui::updateViewersViewsMenu(int viewsCount) {
+    for (std::list<ViewerTab*>::iterator it = _viewerTabs.begin();it!=_viewerTabs.end();++it) {
+        (*it)->updateViewsMenu(viewsCount);
+    }
+}
+
+void Gui::setViewersCurrentView(int view) {
+    for (std::list<ViewerTab*>::iterator it = _viewerTabs.begin();it!=_viewerTabs.end();++it) {
+        (*it)->setCurrentView(view);
+    }
+
+}
+
+const std::list<ViewerTab*>& Gui::getViewersList() const {
+    return _viewerTabs;
+}
+
+
+void Gui::activateViewerTab(ViewerInstance* viewer) {
+    OpenGLViewerI* viewport = viewer->getUiContext();
+    for (std::list<ViewerTab*>::iterator it = _viewerTabs.begin();it!=_viewerTabs.end();++it) {
+        if ((*it)->viewer == viewport) {
+            addViewerTab(*it, _viewersPane);
+            (*it)->show();
+        }
+    }
+}
+
+void Gui::deactivateViewerTab(ViewerInstance* viewer) {
+    OpenGLViewerI* viewport = viewer->getUiContext();
+    for (std::list<ViewerTab*>::iterator it = _viewerTabs.begin();it!=_viewerTabs.end();++it) {
+        if ((*it)->viewer == viewport) {
+            removeViewerTab(*it, false,false);
+            (*it)->hide();
+        }
+    }
+}
+
+ViewerTab* Gui::getViewerTabForInstance(ViewerInstance* node) {
+    for (std::list<ViewerTab*>::iterator it = _viewerTabs.begin();it!=_viewerTabs.end();++it) {
+        if ((*it)->getInternalNode() == node) {
+            return *it;
+        }
+    }
+    return NULL;
 }

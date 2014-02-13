@@ -13,7 +13,10 @@
 #define NATRON_GUI_COMBOBOX_H_
 
 #include <vector>
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QFrame>
+CLANG_DIAG_ON(deprecated)
 #include <QtGui/QKeySequence>
 #include <QtGui/QIcon>
 
@@ -91,6 +94,8 @@ public:
     
     void setCurrentText(const QString& text);
     
+    void setMaximumWidthFromText(const QString& str);
+
     /*this function returns the displayed text with some padding
      ,i.e two spaces before and after the text, as such:
      "  test  " .*/
@@ -99,6 +104,8 @@ public:
     int activeIndex() const;
     
     void clear();
+    
+    QString getCurrentIndexText() const;
     
     public slots:
     
@@ -117,7 +124,7 @@ private:
     void mouseReleaseEvent(QMouseEvent* e);
     
 private:
-    void adjustSize(const QString& str);
+    void growMaximumWidthFromText(const QString& str);
     void createMenu();
     
 };

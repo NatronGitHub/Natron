@@ -14,7 +14,10 @@
 
 #include <vector> // Int_KnobGui
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QLabel>
+CLANG_DIAG_ON(deprecated)
 #include <QObject>
 #include <QStyledItemDelegate>
 #include <QTextEdit>
@@ -486,7 +489,14 @@ public:
     
     void setAnimation(int v) ;
     
+signals:
+    
+    void editingFinished();
 private:
+    
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE;
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
     
     int animation;
 
@@ -510,7 +520,7 @@ public:
 public slots:
     
     ///if the knob is not multiline
-    void onStringChanged(const QString &str);
+    void onLineChanged();
 
     ///if the knob is multiline
     void onTextChanged();

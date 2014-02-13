@@ -12,7 +12,10 @@
 #ifndef NATRON_GUI_VIEWERTAB_H_
 #define NATRON_GUI_VIEWERTAB_H_ 
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QWidget>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 /*The ViewerTab encapsulates a viewer with all the graphical interface surrounding it. It should be instantiable as
@@ -36,6 +39,7 @@ class ScaleSliderQWidget;
 class TimeLineGui;
 class ViewerInstance;
 class Gui;
+class RectI;
 
 class ViewerTab: public QWidget 
 { 
@@ -77,7 +81,31 @@ public:
     bool notifyOverlaysFocusGained();
     
     bool notifyOverlaysFocusLost();
-
+    
+    
+    
+    ////////
+    /////////////The following functions are used when serializing/deserializing the project gui
+    ///////////// so the viewer can restore the exact same settings to the user.
+    bool isClippedToProject() const;
+    
+    std::string getColorSpace() const;
+    
+    void setUserRoIEnabled(bool b);
+    
+    void setUserRoI(const RectI& r);
+    
+    void setClipToProject(bool b);
+    
+    void setColorSpace(const std::string& colorSpaceName);
+    
+    void setExposure(double d);
+    
+    double getExposure() const;
+    
+    std::string getChannelsString() const;
+    
+    void setChannels(const std::string& channelsStr);
 
 public slots:
     
@@ -112,6 +140,8 @@ public slots:
     void updateViewsMenu(int count);
     
     void showView(int view);
+    
+    void onEnableViewerRoIButtonToggle(bool);
 
 
 private:
@@ -144,6 +174,7 @@ private:
     ComboBox* _zoomCombobox;
     Button* _centerViewerButton;
     Button* _clipToProjectFormatButton;
+    Button* _enableViewerRoI;
 
     /*2nd row*/
     SpinBox* _gainBox;

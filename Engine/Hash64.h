@@ -64,7 +64,7 @@ public:
         return this->hash==h.value();
     }
     bool operator!= (const Hash64& h) const {
-        return this->hash==h.value();
+        return this->hash!=h.value();
 
     }
 

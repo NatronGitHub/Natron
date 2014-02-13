@@ -15,7 +15,11 @@
 #include <cassert>
 #include <vector>
 #include <list>
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
+CLANG_DIAG_ON(deprecated)
 #include <QtCore/QThreadPool>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
@@ -184,8 +188,9 @@ class VideoEngine : public QThread{
 public slots:
     /**
      @brief Aborts all computations. This turns on the flag _abortRequested and will inform the engine that it needs to stop.
+     * If blocking is true the function will not return before the ending has stopped.
      **/
-    void abortRendering();
+    void abortRendering(bool blocking);
     
     
     /*
@@ -219,6 +224,9 @@ public slots:
      *Do not call this yourself.
      */
     void quitEngineThread();
+    
+    
+    void getFrameRange();
     /************************************************************************************************************
      ************************************************************************************************************
      **************************************END PRIVATE SLOTS*****************************************************
@@ -256,6 +264,8 @@ signals:
      *@brief emitted when a frame has been rendered successfully.
      **/
     void frameRendered(int frameNumber);
+    
+    void mustGetFrameRange();
     
 public:
    
@@ -298,7 +308,7 @@ public:
      *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
      *serve to render the frames.
      **/
-    void refreshAndContinueRender(bool initViewer);
+    void refreshAndContinueRender(bool initViewer,bool forcePreview);
     
     /**
      *@brief This function internally calls render(). If the playback is running, then it will resume the playback
@@ -330,10 +340,14 @@ public:
     
 private:
 
-    /*The function doing all the processing, called by render()*/
+    /*The function doing all the processing in a separate thread, called by render()*/
     virtual void run() OVERRIDE FINAL;
     
-    void getFrameRange(int *firstFrame,int *lastFrame) const;
+    /*Same as run() but in the same thread*/
+    void runSameThread();
+    
+    /*Used by run() and runSameThread()*/
+    void iterateKernel(bool singleThreaded);
     
     /**
      *@brief Resets and computes the hash key for all the nodes in the graph. The tree version is the hash key of the output node
@@ -359,9 +373,9 @@ private:
      *It is used internally by the run function
      *@returns Returns true if started,false otherwise
      **/
-    bool startEngine();
+    bool startEngine(bool singleThreaded);
     
-    Natron::Status renderFrame(SequenceTime time);
+    Natron::Status renderFrame(SequenceTime time,bool singleThreaded);
 
 private:
     // FIXME: PIMPL
@@ -445,6 +459,14 @@ private:
     timeval _startRenderFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
 
     boost::shared_ptr<TimeLine> _timeline;/*!< ptr to the timeline*/
+    
+    QWaitCondition _getFrameRangeCond;
+    mutable QMutex _getFrameRangeMutex;
+    bool _gettingFrameRange;
+    int _firstFrame;
+    int _lastFrame;
+    
+    bool _doingARenderSingleThreaded;
 
 };
 

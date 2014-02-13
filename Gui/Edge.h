@@ -12,7 +12,10 @@
 #ifndef NATRON_GUI_EDGE_H_
 #define NATRON_GUI_EDGE_H_
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QGraphicsLineItem>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/Macros.h"
 

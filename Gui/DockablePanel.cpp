@@ -18,9 +18,13 @@
 #include <QUndoStack>
 #include <QUndoCommand>
 #include <QToolTip>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QPaintEvent>
+CLANG_DIAG_ON(unused-private-field)
+#include <QTextDocument> // for Qt::convertFromPlainText
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"
@@ -42,6 +46,7 @@ using namespace Natron;
 DockablePanel::DockablePanel(KnobHolder* holder
                              , QVBoxLayout* container
                              , HeaderMode headerMode
+                             ,bool useScrollAreasForTabs
                              , const QString& initialName
                              , const QString& helpToolTip
                              , bool createDefaultTab, const QString& defaultTab
@@ -65,6 +70,7 @@ DockablePanel::DockablePanel(KnobHolder* holder
 ,_holder(holder)
 ,_tabs()
 ,_defaultTabName(defaultTab)
+,_useScrollAreasForTabs(useScrollAreasForTabs)
 {
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setSpacing(0);
@@ -86,24 +92,9 @@ DockablePanel::DockablePanel(KnobHolder* holder
         QPixmap pixHelp ;
         appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
         _helpButton = new Button(QIcon(pixHelp),"",_headerWidget);
-        
-        QString tooltip = helpToolTip;
-        int countSinceLastNewLine = 0;
-        for (int i = 0; i < tooltip.size();++i) {
-            if(tooltip.at(i) != QChar('\n')){
-                ++countSinceLastNewLine;
-            }else{
-                countSinceLastNewLine = 0;
-            }
-            if (countSinceLastNewLine%80 == 0 && i!=0) {
-                /*Find closest word end and insert a new line*/
-                while(i < tooltip.size() && tooltip.at(i)!=QChar(' ')){
-                    ++i;
-                }
-                tooltip.insert(i, QChar('\n'));
-            }
+        if (!helpToolTip.isEmpty()) {
+            _helpButton->setToolTip(Qt::convertFromPlainText(helpToolTip, Qt::WhiteSpaceNormal));
         }
-        _helpButton->setToolTip(tooltip);
         _helpButton->setFixedSize(15, 15);
         QObject::connect(_helpButton, SIGNAL(clicked()), this, SLOT(showHelp()));
         
@@ -130,7 +121,7 @@ DockablePanel::DockablePanel(KnobHolder* holder
         icUndo.addPixmap(pixUndo,QIcon::Normal);
         icUndo.addPixmap(pixUndo_gray,QIcon::Disabled);
         _undoButton = new Button(icUndo,"",_headerWidget);
-        _undoButton->setToolTip("Undo the last change made to this operator");
+        _undoButton->setToolTip(Qt::convertFromPlainText("Undo the last change made to this operator", Qt::WhiteSpaceNormal));
         _undoButton->setEnabled(false);
         
         QPixmap pixRedo ;
@@ -141,7 +132,7 @@ DockablePanel::DockablePanel(KnobHolder* holder
         icRedo.addPixmap(pixRedo,QIcon::Normal);
         icRedo.addPixmap(pixRedo_gray,QIcon::Disabled);
         _redoButton = new Button(icRedo,"",_headerWidget);
-        _redoButton->setToolTip("Redo the last change undone to this operator");
+        _redoButton->setToolTip(Qt::convertFromPlainText("Redo the last change undone to this operator", Qt::WhiteSpaceNormal));
         _redoButton->setEnabled(false);
         
         
@@ -214,7 +205,6 @@ void DockablePanel::initializeKnobs(){
     std::vector< boost::shared_ptr<Knob> >  emptyVec;
     while(!knobsCpy.empty()){
         boost::shared_ptr<Knob>& k = *knobsCpy.begin();
-        if(!k->getParentKnob()){
             if (k->typeName() == Tab_Knob::typeNameStatic()) {
                 knobsMap.push_back(std::make_pair(k, boost::dynamic_pointer_cast<Tab_Knob>(k)->getKnobs()));
             }else if( k->typeName() == Group_Knob::typeNameStatic()){
@@ -222,7 +212,6 @@ void DockablePanel::initializeKnobs(){
             }else{
                 knobsMap.push_back(std::make_pair(k,emptyVec));
             }
-        }
         knobsCpy.erase(knobsCpy.begin());
     }
     
@@ -259,7 +248,14 @@ void DockablePanel::initializeKnobs(){
     /////The following code addresses this feature that we don't want:
     ///// http://stackoverflow.com/questions/14033902/qt-qgridlayout-automatically-centers-moves-items-to-the-middle
     for(std::map<QString,std::pair<QWidget*,int> >::const_iterator it = _tabs.begin();it!=_tabs.end();++it){
-        QGridLayout* layout = dynamic_cast<QGridLayout*>(it->second.first->layout());
+        
+        QGridLayout* layout;
+        if (_useScrollAreasForTabs) {
+            layout = dynamic_cast<QGridLayout*>(
+                                                dynamic_cast<QScrollArea*>(it->second.first)->widget()->layout());
+        } else {
+            layout = dynamic_cast<QGridLayout*>(it->second.first->layout());
+        }
         assert(layout);
         if(layout->rowCount() > 0){
             QLayoutItem* item = layout->itemAtPosition(layout->rowCount()-1,0);
@@ -344,8 +340,14 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
         //                    --parentTab->second.second;
         //                }
         //
-        ret->createGUI(dynamic_cast<QGridLayout*>(parentTab->second.first->layout()),//< ptr to the grid layout
-                       parentTab->second.second); //< the row index
+        QGridLayout* layout;
+        if (_useScrollAreasForTabs) {
+            layout = dynamic_cast<QGridLayout*>(
+                                                dynamic_cast<QScrollArea*>(parentTab->second.first)->widget()->layout());
+        } else {
+            layout = dynamic_cast<QGridLayout*>(parentTab->second.first->layout());
+        }
+        ret->createGUI(layout,parentTab->second.second); //< the row index
         
         /// if this knob is within a group, check that the group is visible, i.e. the toplevel group is unfolded
         if (parentKnob && parentKnob->typeName() == Group_Knob::typeNameStatic()) {
@@ -390,10 +392,21 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
 
 
 void DockablePanel::addTab(const QString& name){
-    QWidget* newTab = new QWidget(_tabWidget);
+    QWidget* newTab;
+    QWidget* layoutContainer;
+    if (_useScrollAreasForTabs) {
+        QScrollArea* sa = new QScrollArea(_tabWidget);
+        layoutContainer = new QWidget(sa);
+        sa->setWidgetResizable(true);
+        sa->setWidget(layoutContainer);
+        newTab = sa;
+    } else {
+        newTab = new QWidget(_tabWidget);
+        layoutContainer = newTab;
+    }
     newTab->setObjectName(name);
-    QGridLayout *tabLayout = new QGridLayout(newTab);
-    newTab->setLayout(tabLayout);
+    QGridLayout *tabLayout = new QGridLayout(layoutContainer);
+    layoutContainer->setLayout(tabLayout);
     tabLayout->setVerticalSpacing(2);
     tabLayout->setContentsMargins(3, 0, 0, 0);
     tabLayout->setHorizontalSpacing(5);
@@ -516,6 +529,7 @@ NodeSettingsPanel::NodeSettingsPanel(NodeGui* NodeUi ,QVBoxLayout* container,QWi
 :DockablePanel(NodeUi->getNode()->getLiveInstance(),
                container,
                DockablePanel::FULLY_FEATURED,
+               false,
                NodeUi->getNode()->getName().c_str(),
                NodeUi->getNode()->description().c_str(),
                true,

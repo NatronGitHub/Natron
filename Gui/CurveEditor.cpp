@@ -20,7 +20,10 @@
 #include <QHeaderView>
 #include <QUndoStack> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QAction>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
+CLANG_DIAG_ON(unused-private-field)
 
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"
@@ -69,6 +72,7 @@ CurveEditor::CurveEditor(boost::shared_ptr<TimeLine> timeline, QWidget *parent)
     , _undoStack(new QUndoStack())
 {
 
+    setObjectName("CurveEditor");
     _undoAction = _undoStack->createUndoAction(this,tr("&Undo"));
     _undoAction->setShortcuts(QKeySequence::Undo);
     _redoAction = _undoStack->createRedoAction(this,tr("&Redo"));

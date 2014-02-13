@@ -6,18 +6,22 @@
 
 #include "AnimationButton.h"
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QApplication>
 #include <QDragEnterEvent>
 #include <QDragLeaveEvent>
 #include <QDropEvent>
 #include <QDrag>
 #include <QPainter>
-
+#include <QMimeData>
 #include "Gui/KnobGui.h"
 #include "Engine/Project.h"
 #include "Engine/Knob.h"
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 void AnimationButton::mousePressEvent(QMouseEvent* event){
     if (event->button() == Qt::LeftButton) {

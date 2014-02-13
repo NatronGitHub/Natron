@@ -11,7 +11,7 @@
 
 #include "ProjectPrivate.h"
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/TimeLine.h"
 #include "Engine/EffectInstance.h"
@@ -21,24 +21,34 @@
 
 namespace Natron{
 ProjectPrivate::ProjectPrivate(Natron::Project* project)
-    : projectName("Untitled." NATRON_PROJECT_FILE_EXT)
+    : projectLock()
+    , projectName("Untitled." NATRON_PROJECT_FILE_EXT)
     , hasProjectBeenSavedByUser(false)
     , ageSinceLastSave(QDateTime::currentDateTime())
     , formatKnob()
+    , availableFormats()
+    , formatMutex()
     , addFormatKnob()
     , viewsCount()
+    , viewsCountMutex()
+    , previewMode()
+    , previewModeMutex()
+    , timelineMutex()
     , timeline(new TimeLine(project))
     , autoSetProjectFormat(true)
     , currentNodes()
-    , availableFormats()
     , project(project)
     , _knobsAge(0)
+    , knobsAgeMutex()
     , lastTimelineSeekCaller(NULL)
+    , beginEndMutex(QMutex::Recursive)
     , beginEndBracketsCount(0)
     , evaluationsCount(0)
     , holdersWhoseBeginWasCalled()
     , isSignificantChange(false)
     , lastKnobChanged(NULL)
+    , isLoadingProjectMutex()
+    , isLoadingProject(false)
 
 {
 }
@@ -46,9 +56,8 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
 
 void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
-    project->getApp()->lockProject();
     project->beginProjectWideValueChanges(Natron::OTHER_REASON,project);
-    project->getApp()->unlockProject();
+
 
     /*1st OFF RESTORE THE PROJECT KNOBS*/
     
@@ -96,7 +105,9 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             continue;
         }
 
-        Natron::Node* n = project->getApp()->createNode(serializedNodes[i]->getPluginID().c_str()
+        Natron::Node* n = 0;
+        ///this code may throw an exception which will be caught above
+        n = project->getApp()->createNode(serializedNodes[i]->getPluginID().c_str()
                                                         ,serializedNodes[i]->getPluginMajorVersion()
                                                         ,serializedNodes[i]->getPluginMinorVersion(),true);
         if(!n){
@@ -155,7 +166,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             }
         }
         for (std::map<int, std::string>::const_iterator input = inputs.begin(); input!=inputs.end(); ++input) {
-            if(!project->getApp()->connect(input->first, input->second,thisNode)) {
+            if(!project->getApp()->getProject()->connectNodes(input->first, input->second,thisNode)) {
                 std::string message = std::string("Failed to connect node ") + serializedNodes[i]->getPluginLabel() + " to " + input->second;
                 qDebug() << message.c_str();
                 throw std::runtime_error(message);
@@ -164,9 +175,8 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
     }
     
-    project->getApp()->lockProject();
     project->endProjectWideValueChanges(project);
-    project->getApp()->unlockProject();
+
 }
 
 } // namespace Natron

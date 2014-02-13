@@ -16,7 +16,10 @@
 
 #include <boost/noncopyable.hpp>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Knob.h"
@@ -34,64 +37,100 @@ namespace Natron{
 class Node;
 class OutputEffectInstance;
 struct ProjectPrivate;
+    
 class Project : public QObject,  public KnobHolder , public boost::noncopyable {
     
     Q_OBJECT
     
-    ////////All the public functions in Project must be only referred to
-    //////// by the AppInstance which is responsible for thread-safety of this class.
-    friend class ::AppInstance;
-    friend struct ProjectPrivate;
-    friend class ::ProjectSerialization;
-    friend class ::ProjectGui;
-    friend class ::AddFormatDialog;
 public:
-    
-    virtual ~Project();
-
-private:
     
     Project(AppInstance* appInstance);
     
+    virtual ~Project();
     
     /**
      * @brief Must be implemented to initialize any knob using the
      * KnobFactory.
      **/
-    virtual void initializeKnobs() OVERRIDE;
+    virtual void initializeKnobs() OVERRIDE FINAL;
     
     /**
-     * @brief Must be implemented to evaluate a value change
-     * made to a knob(e.g: force a new render).
-     * @param knob[in] The knob whose value changed.
+     * @brief Loads the project with the given path and name corresponding to a file on disk.
      **/
-    virtual void evaluate(Knob* knob,bool isSignificant) OVERRIDE;
+    bool loadProject(const QString& path,const QString& name);
     
-    const std::vector<Node*>& getCurrentNodes() const;
+    /**
+     * @brief Saves the project with the given path and name corresponding to a file on disk.
+     * @param autoSave If true then it will save the project in a temporary file instead (see autoSave()).
+     **/
+    void saveProject(const QString& path,const QString& name,bool autoSave);
+    
+    /**
+     * @brief Same as saveProject except that it will save the project in a temporary file
+     * so it doesn't overwrite the project.
+     **/
+    void autoSave();
+    
+    /**
+     * @brief Same as autoSave() but the auto-save is run in a separate thread instead.
+     **/
+    void triggerAutoSave();
+    
+    /**
+     * @brief Returns the path to where the auto save files are stored on disk.
+     **/
+    static QString autoSavesDir() WARN_UNUSED_RETURN;
+
+    
+    /** @brief Attemps to find an autosave. If found one,prompts the user
+     * whether he/she wants to load it. If something was loaded this function
+     * returns true,otherwise false.
+     * DO NOT CALL THIS: This is called by AppInstance when the application is launching.
+     **/
+    bool findAndTryLoadAutoSave() WARN_UNUSED_RETURN;
+    
+    /**
+     * @brief Returns true if the project is currently loading.
+     **/
+    bool isLoadingProject() const;
+    
+    const std::vector<Node*> getCurrentNodes() const;
+    
+    bool connectNodes(int inputNumber,const std::string& inputName,Natron::Node* output);
+    
+    /**
+     * @brief Connects the node 'input' to the node 'output' on the input number 'inputNumber'
+     * of the node 'output'. If 'force' is true, then it will disconnect any previous connection
+     * existing on 'inputNumber' and connect the previous input as input of the new 'input' node.
+     **/
+    bool connectNodes(int inputNumber,Natron::Node* input,Natron::Node* output,bool force = false);
+    
+    /**
+     * @brief Disconnects the node 'input' and 'output' if any connection between them is existing.
+     * If autoReconnect is true, after disconnecting 'input' and 'output', if the 'input' had only
+     * 1 input, and it was connected, it will connect output to the input of  'input'.
+     **/
+    bool disconnectNodes(Natron::Node* input,Natron::Node* output,bool autoReconnect = false);
+    
+    /**
+     * @brief Attempts to add automatically the node 'created' to the node graph.
+     * 'selected' is the node currently selected by the user.
+     **/
+    bool autoConnectNodes(Natron::Node* selected,Natron::Node* created);
     
     const QString& getProjectName() const WARN_UNUSED_RETURN ;
-    
-    void setProjectName(const QString& name) ;
     
     const QString& getLastAutoSaveFilePath() const;
     
     const QString& getProjectPath() const WARN_UNUSED_RETURN;
     
-    void setProjectPath(const QString& path);
-    
     bool hasProjectBeenSavedByUser() const WARN_UNUSED_RETURN;
     
-    void setHasProjectBeenSavedByUser(bool s) ;
+    bool isSaveUpToDate() const WARN_UNUSED_RETURN;
     
     const QDateTime& projectAgeSinceLastSave() const WARN_UNUSED_RETURN ;
     
-    void setProjectAgeSinceLastSave(const QDateTime& t);
-    
-    void setProjectLastAutoSavePath(const QString& str);
-    
     const QDateTime& projectAgeSinceLastAutosave() const WARN_UNUSED_RETURN;
-    
-    void setProjectAgeSinceLastAutosaveSave(const QDateTime& t) ;
     
     const Format& getProjectDefaultFormat() const WARN_UNUSED_RETURN ;
     
@@ -99,14 +138,11 @@ private:
     
     int getProjectViewsCount() const;
     
-    void setProjectDefaultFormat(const Format& f);
+    void setOrAddProjectFormat(const Format& frmt,bool skipAdd = false);
     
-    /*Returns the index of the format*/
-    int tryAddProjectFormat(const Format& f);
+    bool isAutoPreviewEnabled() const;
     
-    bool shouldAutoSetProjectFormat() const ;
-    
-    void setAutoSetProjectFormat(bool b);
+    void toggleAutoPreview();
     
     boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN;
     
@@ -119,22 +155,80 @@ private:
     
     int lastFrame() const WARN_UNUSED_RETURN;
     
+    int leftBound() const WARN_UNUSED_RETURN;
+    
+    int rightBound() const WARN_UNUSED_RETURN;
+    
     void initNodeCountersAndSetName(Node* n);
     
     void clearNodes();
     
-    void incrementKnobsAge() ;
+    void incrementKnobsAge();
     
     int getKnobsAge() const;
     
-    friend void TimeLine::seekFrame(SequenceTime,Natron::OutputEffectInstance*);
     void setLastTimelineSeekCaller(Natron::OutputEffectInstance* output);
 
-    void save(ProjectSerialization* serializationObject) const;
-    
-    void load(const ProjectSerialization& obj);
-    
+    void beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller);
 
+    void stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHolder* caller, Knob *k, bool isSignificant);
+
+    void endProjectWideValueChanges(KnobHolder* caller);
+
+    /**
+     * @brief Returns true if the project is considered as irrelevant and shouldn't be autosaved anyway.
+     * Such a graph is for example a simple Viewer.
+     **/
+    bool isGraphWorthLess() const;
+    
+    bool tryLock() const;
+    
+    void unlock() const;
+    
+public slots:
+
+    void onTimeChanged(SequenceTime time,int reason);
+
+signals:
+    
+    void mustCreateFormat();
+    
+    void formatChanged(Format);
+    
+    void autoPreviewChanged(bool);
+    
+    void nodesCleared();
+    
+    void projectNameChanged(QString);
+    
+private:
+    
+    /*Returns the index of the format*/
+    int tryAddProjectFormat(const Format& f);
+    
+    void setProjectDefaultFormat(const Format& f);
+    
+    void loadProjectInternal(const QString& path,const QString& name);
+    
+    void saveProjectInternal(const QString& path,const QString& name,bool autosave = false);
+    
+    /**
+     * @brief Remove all the autosave files from the disk.
+     **/
+    void removeAutoSaves() const;
+    
+    /**
+     * @brief Resets the project state.
+     **/
+    void reset();
+    
+    /**
+     * @brief Must be implemented to evaluate a value change
+     * made to a knob(e.g: force a new render).
+     * @param knob[in] The knob whose value changed.
+     **/
+    virtual void evaluate(Knob* knob,bool isSignificant) OVERRIDE FINAL;
+    
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
      * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
@@ -155,26 +249,11 @@ private:
      * not done already.
      **/
     virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason)  OVERRIDE FINAL;
+
+    void save(ProjectSerialization* serializationObject) const;
     
-
+    void load(const ProjectSerialization& obj);
     
-    void beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller);
-
-    void stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHolder* caller, Knob *k, bool isSignificant);
-
-    void endProjectWideValueChanges(KnobHolder* caller);
-
-public slots:
-
-    void onTimeChanged(SequenceTime time,int reason);
-
-signals:
-    
-    void mustCreateFormat();
-    
-    void formatChanged(Format);
-    
-private:
 
     boost::scoped_ptr<ProjectPrivate> _imp;
 

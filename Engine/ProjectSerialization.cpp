@@ -11,13 +11,13 @@
 #include "ProjectSerialization.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Project.h"
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 
 void ProjectSerialization::initialize(const Natron::Project* project){
     std::vector<Natron::Node*> activeNodes;
     
-    const std::vector<Natron::Node*> nodes = project->_imp->currentNodes;
+    const std::vector<Natron::Node*>& nodes = project->getCurrentNodes();
     for(U32 i = 0; i < nodes.size(); ++i){
         if(nodes[i]->isActivated()){
             activeNodes.push_back(nodes[i]);
@@ -41,7 +41,7 @@ void ProjectSerialization::initialize(const Natron::Project* project){
         }
     }
 
-    _timelineLeft = project->getTimeLine()->leftBound();
-    _timelineRight = project->getTimeLine()->rightBound();
-    _timelineCurrent = project->getTimeLine()->currentFrame();
+    _timelineLeft = project->leftBound();
+    _timelineRight = project->rightBound();
+    _timelineCurrent = project->currentFrame();
 }

@@ -18,14 +18,18 @@
 #include <QtGui/QIcon>
 #include <QtCore/QMimeData>
 #include <QtGui/QDrag>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QDragEnterEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QDragLeaveEvent>
 #include <QtGui/QPaintEvent>
 #include <QScrollArea>
 #include <QSplitter>
+#include <QTextDocument> // for Qt::convertFromPlainText
 
 #include "Gui/Button.h"
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 #include "Gui/Gui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveEditor.h"
@@ -107,7 +111,7 @@ TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent
     if(decorations != NONE){
         
         _leftCornerButton = new Button(QIcon(pixL),"",_header);
-        _leftCornerButton->setToolTip(tr("Manage the layouts for this pane."));
+        _leftCornerButton->setToolTip(Qt::convertFromPlainText(tr("Manage the layouts for this pane."), Qt::WhiteSpaceNormal));
         _leftCornerButton->setFixedSize(15,15);
         _headerLayout->addWidget(_leftCornerButton);
         _headerLayout->addSpacing(10);
@@ -120,14 +124,14 @@ TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent
     _headerLayout->addStretch();
     if(decorations != NONE){
         _floatButton = new Button(QIcon(pixM),"",_header);
-        _floatButton->setToolTip(tr("Float pane."));
+        _floatButton->setToolTip(Qt::convertFromPlainText(tr("Float pane."), Qt::WhiteSpaceNormal));
         _floatButton->setFixedSize(15,15);
         _floatButton->setEnabled(true);
         QObject::connect(_floatButton, SIGNAL(clicked()), this, SLOT(floatCurrentWidget()));
         _headerLayout->addWidget(_floatButton);
         
         _closeButton = new Button(QIcon(pixC),"",_header);
-        _closeButton->setToolTip(tr("Close pane."));
+        _closeButton->setToolTip(Qt::convertFromPlainText(tr("Close pane."), Qt::WhiteSpaceNormal));
         _closeButton->setFixedSize(15,15);
         if(decorations == NOT_CLOSABLE){
             _closeButton->setVisible(false);
@@ -694,12 +698,11 @@ QPixmap TabBar::makePixmapForDrag(int index) {
     ///insert just the tab we want to screen shot
     addTab(tabs[index].second, tabs[index].first);
     
+    QPixmap currentTabPixmap =  Gui::screenShot(_tabWidget->tabAt(index));
 #if QT_VERSION < 0x050000
     QPixmap tabBarPixmap = QPixmap::grabWidget(this);
-    QPixmap currentTabPixmap =  QPixmap::grabWidget(_tabWidget->tabAt(index));
 #else
     QPixmap tabBarPixmap = grab();
-    QPixmap currentTabPixmap =  _tabWidget->tabAt(index)->grab();
 #endif
     
     ///re-insert all the tabs into the tab bar

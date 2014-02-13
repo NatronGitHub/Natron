@@ -14,11 +14,17 @@
 #include <locale>
 #include <limits>
 #include <stdexcept>
+#include <QByteArray>
 
-#include <QKeyEvent>
+#include "Global/Macros.h"
 
-#include "Global/AppManager.h"
+#include <ofxhPluginCache.h>
+#include <ofxhPluginAPICache.h>
+#include <ofxhImageEffect.h>
+#include <ofxhImageEffectAPI.h>
+#include <ofxhHost.h>
 
+#include "Engine/AppManager.h"
 #include "Engine/OfxParamInstance.h"
 #include "Engine/Row.h"
 #include "Engine/OfxClipInstance.h"
@@ -29,12 +35,8 @@
 #include "Engine/TimeLine.h"
 #include "Engine/Project.h"
 #include "Engine/KnobFile.h"
+#include "Engine/KnobTypes.h"
 
-#include <ofxhPluginCache.h>
-#include <ofxhPluginAPICache.h>
-#include <ofxhImageEffect.h>
-#include <ofxhImageEffectAPI.h>
-#include <ofxhHost.h>
 
 using namespace Natron;
 using std::cout; using std::endl;
@@ -57,13 +59,13 @@ ChannelSet ofxComponentsToNatronChannels(const std::string& comp) {
 #endif
 
 OfxEffectInstance::OfxEffectInstance(Natron::Node* node)
-    :Natron::OutputEffectInstance(node)
+    : AbstractOfxEffectInstance(node)
     , effect_()
     , _isOutput(false)
     , _penDown(false)
     , _overlayInteract(0)
-    , _lastKnobLayoutWithNoNewLine(0)
     , _initialized(false)
+    , _renderButton()
 {
     if(node && !node->getLiveInstance()){
         node->setLiveInstance(this);
@@ -80,6 +82,11 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
      All these subclasses need a valid pointer to an this. Hence we need to set the pointer to this in
      OfxImageEffect BEFORE calling populate().
      */
+    
+    if (context == kOfxImageEffectContextWriter) {
+        setAsOutputNode();
+    }
+    
     OFX::Host::PluginHandle* ph = plugin->getPluginHandle();
     assert(ph->getOfxPlugin());
     assert(ph->getOfxPlugin()->mainEntry);
@@ -95,6 +102,9 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         effect_->setOfxEffectInstancePointer(this);
         notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
         OfxStatus stat = effect_->populate();
+        
+        initializeContextDependentParams();
+        
         effect_->addParamsToTheirParents();
         notifyProjectEndKnobsValuesChanged();
 
@@ -109,7 +119,9 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         if(stat != kOfxStatOK && stat != kOfxStatReplyDefault){
             throw std::runtime_error("Could not create effect instance for plugin");
         }
-
+        if (!effect_->getClipPreferences()) {
+            Natron::errorDialog(getName(),"The plugin failed in the getClipPreferencesAction.");
+        }
 
     } catch (const std::exception& e) {
         qDebug() << "Error: Caught exception while creating OfxImageEffectInstance" << ": " << e.what();
@@ -123,7 +135,6 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
 
 OfxEffectInstance::~OfxEffectInstance(){
     
-    ///interact has to be deleted AFTER the effect_
     if(_overlayInteract){
         delete _overlayInteract;
     }
@@ -133,6 +144,16 @@ OfxEffectInstance::~OfxEffectInstance(){
 }
 
 
+
+void OfxEffectInstance::initializeContextDependentParams() {
+    
+    if (isWriter()) {
+        _renderButton = Natron::createKnob<Button_Knob>(this, "Render");
+        _renderButton->setHintToolTip("Starts rendering the frame range specified.");
+        _renderButton->setAsRenderButton();
+    }
+    
+}
 
 std::string OfxEffectInstance::description() const {
     if(effectInstance()){
@@ -147,7 +168,7 @@ void OfxEffectInstance::tryInitializeOverlayInteracts(){
     if(isLiveInstance()){
         OfxPluginEntryPoint *overlayEntryPoint = effect_->getOverlayInteractMainEntry();
         if(overlayEntryPoint){
-            _overlayInteract = new OfxOverlayInteract(*effect_,8,true,NULL);
+            _overlayInteract = new OfxOverlayInteract(*effect_,8,true);
             _overlayInteract->createInstanceAction();
             getApp()->redrawAllViewers();
         }
@@ -222,10 +243,10 @@ QStringList ofxExtractAllPartsOfGrouping(const QString& pluginLabel,const QStrin
     return out;
 }
 
-QStringList OfxEffectInstance::getPluginGrouping(const std::string& pluginLabel,const std::string& grouping){
+QStringList AbstractOfxEffectInstance::getPluginGrouping(const std::string& pluginLabel,const std::string& grouping){
     return  ofxExtractAllPartsOfGrouping(pluginLabel.c_str(),grouping.c_str());
 }
-std::string OfxEffectInstance::getPluginLabel(const std::string& shortLabel,
+std::string AbstractOfxEffectInstance::getPluginLabel(const std::string& shortLabel,
                                       const std::string& label,
                                       const std::string& longLabel) {
     std::string labelToUse = label;
@@ -238,7 +259,7 @@ std::string OfxEffectInstance::getPluginLabel(const std::string& shortLabel,
     return labelToUse;
 }
 
-std::string OfxEffectInstance::generateImageEffectClassName(const std::string& shortLabel,
+std::string AbstractOfxEffectInstance::generateImageEffectClassName(const std::string& shortLabel,
                                                             const std::string& label,
                                                             const std::string& longLabel,
                                                             const std::string& grouping){
@@ -293,6 +314,14 @@ OfxEffectInstance::MappedInputV OfxEffectInstance::inputClipsCopyWithoutOutput()
     return copy;
 }
 
+OfxClipInstance* OfxEffectInstance::getClipCorrespondingToInput(int inputNo) const {
+    OfxEffectInstance::MappedInputV clips = inputClipsCopyWithoutOutput();
+    assert(inputNo < (int)clips.size());
+    OFX::Host::ImageEffect::ClipInstance* clip = effect_->getClip(clips[inputNo]->getName());
+    assert(clip);
+    return dynamic_cast<OfxClipInstance*>(clip);
+}
+
 int OfxEffectInstance::maximumInputs() const {
     const std::string& context = effectInstance()->getContext();
     if(context == kOfxImageEffectContextReader ||
@@ -301,7 +330,7 @@ int OfxEffectInstance::maximumInputs() const {
     } else {
         assert(effectInstance());
         int totalClips = effectInstance()->getDescriptor().getClips().size();
-        return totalClips-1;
+        return totalClips > 0  ?  totalClips-1 : 0;
     }
     
 }
@@ -340,6 +369,21 @@ void OfxEffectInstance::ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const{
         rod->y2 = projectDefault.top();
     }
     
+}
+
+
+void OfxEffectInstance::onInputChanged(int inputNo) {
+    OfxClipInstance* clip = getClipCorrespondingToInput(inputNo);
+    assert(clip);
+    double time = effect_->getFrameRecursive();
+    RenderScale s;
+    s.x = s.y = 1.;
+    effect_->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
+    
+}
+
+void OfxEffectInstance::onMultipleInputsChanged() {
+    effect_->runGetClipPrefsConditionally();
 }
 
 Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod){
@@ -483,7 +527,7 @@ bool OfxEffectInstance::isIdentity(SequenceTime time,RenderScale scale,const Rec
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     std::string inputclip;
     OfxTime inputTimeOfx = time;
-        OfxStatus stat = effect_->isIdentityAction(inputTimeOfx,field,ofxRoI,scale,inputclip);
+    OfxStatus stat = effect_->isIdentityAction(inputTimeOfx,field,ofxRoI,scale,inputclip);
     if(stat == kOfxStatOK){
         OFX::Host::ImageEffect::ClipInstance* clip = effect_->getClip(inputclip);
         if (!clip) {
@@ -511,7 +555,7 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     ofxRoI.x2 = roi.right();
     ofxRoI.y1 = roi.bottom();
     ofxRoI.y2 = roi.top();
-    int viewsCount = getApp()->getProjectViewsCount();
+    int viewsCount = getApp()->getProject()->getProjectViewsCount();
     OfxStatus stat;
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     stat = effect_->renderAction((OfxTime)time, field, ofxRoI, scale, view, viewsCount);
@@ -565,9 +609,9 @@ void OfxEffectInstance::drawOverlay(){
     }
 }
 
-void OfxEffectInstance::setCurrentViewerForOverlays(ViewerGL* viewer) {
+void OfxEffectInstance::setCurrentViewportForOverlays(OverlaySupport* viewport) {
     if (_overlayInteract) {
-        _overlayInteract->setCallingViewer(viewer);
+        _overlayInteract->setCallingViewport(viewport);
     }
 }
 
@@ -641,7 +685,7 @@ bool OfxEffectInstance::onOverlayPenUp(const QPointF& viewportPos,const QPointF&
     return false;
 }
 
-bool OfxEffectInstance::onOverlayKeyDown(QKeyEvent* e){
+bool OfxEffectInstance::onOverlayKeyDown(Natron::Key key,Natron::KeyboardModifiers /*modifiers*/){
     if(!_initialized){
         return false;;
     }
@@ -649,7 +693,8 @@ bool OfxEffectInstance::onOverlayKeyDown(QKeyEvent* e){
         OfxPointD rs;
         rs.x = rs.y = 1.;
         OfxTime time = effect_->getFrameRecursive();
-        OfxStatus stat = _overlayInteract->keyDownAction(time, rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+        QByteArray keyStr;
+        OfxStatus stat = _overlayInteract->keyDownAction(time, rs, (int)key, keyStr.data());
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -657,7 +702,7 @@ bool OfxEffectInstance::onOverlayKeyDown(QKeyEvent* e){
     return false;
 }
 
-bool OfxEffectInstance::onOverlayKeyUp(QKeyEvent* e){
+bool OfxEffectInstance::onOverlayKeyUp(Natron::Key key,Natron::KeyboardModifiers /* modifiers*/){
     if(!_initialized){
         return false;
     }
@@ -665,7 +710,8 @@ bool OfxEffectInstance::onOverlayKeyUp(QKeyEvent* e){
         OfxPointD rs;
         rs.x = rs.y = 1.;
         OfxTime time = effect_->getFrameRecursive();
-        OfxStatus stat = _overlayInteract->keyUpAction(time, rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+        QByteArray keyStr;
+        OfxStatus stat = _overlayInteract->keyUpAction(time, rs, (int)key, keyStr.data());
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
@@ -674,7 +720,7 @@ bool OfxEffectInstance::onOverlayKeyUp(QKeyEvent* e){
     return false;
 }
 
-bool OfxEffectInstance::onOverlayKeyRepeat(QKeyEvent* e){
+bool OfxEffectInstance::onOverlayKeyRepeat(Natron::Key key,Natron::KeyboardModifiers /*modifiers*/){
     if(!_initialized){
         return false;
     }
@@ -682,7 +728,8 @@ bool OfxEffectInstance::onOverlayKeyRepeat(QKeyEvent* e){
         OfxPointD rs;
         rs.x = rs.y = 1.;
         OfxTime time = effect_->getFrameRecursive();
-        OfxStatus stat = _overlayInteract->keyRepeatAction(time, rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+        QByteArray keyStr;
+        OfxStatus stat = _overlayInteract->keyRepeatAction(time, rs, (int)key, keyStr.data());
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -729,6 +776,13 @@ void OfxEffectInstance::onKnobValueChanged(Knob* k,Natron::ValueChangedReason re
     if(!_initialized){
         return;
     }
+    
+    if (_renderButton && k == _renderButton.get()) {
+        
+        ///don't do anything since it is handled upstream
+        return;
+    }
+    
     OfxPointD renderScale;
     effect_->getRenderScaleRecursive(renderScale.x, renderScale.y);
     OfxTime time = effect_->getFrameRecursive();
@@ -753,6 +807,9 @@ void OfxEffectInstance::onKnobValueChanged(Knob* k,Natron::ValueChangedReason re
         return;
     }
     
+    if (effect_->isClipPreferencesSlaveParam(k->getName())) {
+        effect_->runGetClipPrefsConditionally();
+    }
     if(_overlayInteract){
         std::vector<std::string> params;
         _overlayInteract->getSlaveToParam(params);
@@ -814,16 +871,6 @@ void OfxEffectInstance::endKnobsValuesChanged(Natron::ValueChangedReason reason)
 
 }
 
-std::string OfxEffectInstance::getOutputFileName() const{
-    const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        if (knobs[i]->typeName() == "OutputFile") {
-            boost::shared_ptr<OutputFile_Knob> knob = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
-            return knob->getValue<QString>().toStdString();
-        }
-    }
-    return "";
-}
 
 void OfxEffectInstance::purgeCaches(){
     // The kOfxActionPurgeCaches is an action that may be passed to a plug-in instance from time to time in low memory situations. Instances recieving this action should destroy any data structures they may have and release the associated memory, they can later reconstruct this from the effect's parameter set and associated information. http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxActionPurgeCaches
@@ -840,4 +887,8 @@ int OfxEffectInstance::majorVersion() const {
 
 int OfxEffectInstance::minorVersion() const {
     return effectInstance()->getPlugin()->getVersionMinor();
+}
+
+bool OfxEffectInstance::supportsTiles() const {
+    return effectInstance()->supportsTiles() && effectInstance()->getClip(kOfxImageEffectOutputClipName)->supportsTiles();
 }

@@ -12,8 +12,11 @@
 #ifndef CURVEEDITORUNDOREDO_H
 #define CURVEEDITORUNDOREDO_H
 
-
+#include <vector>
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QUndoCommand> // in QtGui on Qt4, in QtWidgets on Qt5
+CLANG_DIAG_ON(deprecated)
 
 #include "Engine/Curve.h"
 

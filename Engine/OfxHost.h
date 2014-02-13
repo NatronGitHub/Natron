@@ -11,7 +11,10 @@
 #ifndef NATRON_ENGINE_OFXHOST_H_
 #define NATRON_ENGINE_OFXHOST_H_
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QStringList>
+CLANG_DIAG_ON(deprecated)
 #include <QtCore/QObject>
 #include <QtCore/QString>
 
@@ -20,7 +23,7 @@
 
 #include "Global/Macros.h"
 
-class OfxEffectInstance;
+class AbstractOfxEffectInstance;
 class AppInstance;
 class QMutex;
 namespace Natron {
@@ -80,6 +83,7 @@ public:
     ///fetch the parametric parameters suite or returns the base class version
     virtual void* fetchSuite(const char *suiteName, int suiteVersion) OVERRIDE;
     
+#ifdef OFX_SUPPORTS_MULTITHREAD
     virtual OfxStatus multiThread(OfxThreadFunctionV1 func,unsigned int nThreads, void *customArg) OVERRIDE;
 
     virtual OfxStatus multiThreadNumCPUS(unsigned int *nCPUs) const OVERRIDE;
@@ -97,8 +101,11 @@ public:
     virtual OfxStatus mutexUnLock(const OfxMutexHandle mutex) OVERRIDE;
 
     virtual OfxStatus mutexTryLock(const OfxMutexHandle mutex) OVERRIDE;
+#endif
     
-    OfxEffectInstance* createOfxEffect(const std::string& name,Node* node);
+    AbstractOfxEffectInstance* createOfxEffect(const std::string& name,Node* node);
+    
+    void addPathToLoadOFXPlugins(const std::string path);
 
     /*Reads OFX plugin cache and scan plugins directories
      to load them all.*/
@@ -107,16 +114,19 @@ public:
                         std::map<std::string,std::vector<std::string> >* writersMap);
 
     void clearPluginsLoadedCache();
-    
+        
 signals:
     void toolButtonAdded(QStringList,QString,QString,QString,QString);
     
 private:
+
+    void getPluginAndContextByID(const std::string& pluginID, OFX::Host::ImageEffect::ImageEffectPlugin** plugin,std::string& context);
+
     /*Writes all plugins loaded and their descriptors to
      the OFX plugin cache. (called by the destructor) */
     void writeOFXCache();
     
-    OFX::Host::ImageEffect::PluginCache _imageEffectPluginCache;
+    OFX::Host::ImageEffect::PluginCache* _imageEffectPluginCache;
 
 
     /*plugin name -> pair< plugin id , plugin grouping >

@@ -24,7 +24,10 @@
 #include <QMenu> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QDockWidget> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QtGui/QPainter>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QKeyEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QVector4D>
 #include <QtOpenGL/QGLShaderProgram>
 
@@ -32,7 +35,7 @@
 GCC_DIAG_OFF(unused-parameter);
 GCC_DIAG_ON(unused-parameter);
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
@@ -56,6 +59,15 @@ GCC_DIAG_ON(unused-parameter);
 #include "Gui/TimeLineGui.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ProjectGui.h"
+
+// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
+CLANG_DIAG_OFF(deprecated-declarations)
+GCC_DIAG_OFF(deprecated-declarations)
+
+#define USER_ROI_BORDER_TICK_SIZE 15.f
+#define USER_ROI_CROSS_RADIUS 15.f
+#define USER_ROI_SELECTION_POINT_SIZE 8.f
+#define USER_ROI_CLICK_TOLERANCE 8.f
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
  Everything related to OpenGL will (almost always) be in this class */
@@ -152,7 +164,18 @@ struct ZoomContext{
  *@enum MOUSE_STATE
  *@brief basic state switching for mouse events
  **/
-enum MOUSE_STATE{DRAGGING,UNDEFINED};
+enum MOUSE_STATE{
+    DRAGGING_IMAGE = 0,
+    DRAGGING_ROI_LEFT_EDGE,
+    DRAGGING_ROI_RIGHT_EDGE,
+    DRAGGING_ROI_TOP_EDGE,
+    DRAGGING_ROI_BOTTOM_EDGE,
+    DRAGGING_ROI_TOP_LEFT,
+    DRAGGING_ROI_TOP_RIGHT,
+    DRAGGING_ROI_BOTTOM_RIGHT,
+    DRAGGING_ROI_BOTTOM_LEFT,
+    DRAGGING_ROI_CROSS,
+    UNDEFINED};
 } // namespace
 
 struct ViewerGL::Implementation {
@@ -185,9 +208,7 @@ struct ViewerGL::Implementation {
     , textFont(new QFont(NATRON_FONT, NATRON_FONT_SIZE_13))
     , overlay(true)
     , supportsGLSL(true)
-    , drawProgressBar(false)
     , updatingTexture(false)
-    , progressBarY(-1)
     , clearColor(0,0,0,255)
     , menu(new QMenu(_this))
     , clipToDisplayWindow(true)
@@ -196,9 +217,13 @@ struct ViewerGL::Implementation {
     , displayPersistentMessage(false)
     , zoomOrPannedSinceLastFit(false)
     , textRenderer()
+    , userRoI()
+    , isUserRoISet(false)
+    , isUserRoIEnabled(false)
+    , lastMousePosition()
     {
     }
-
+    
     std::vector<GLuint> pboIds; /*!< PBO's id's used by the OpenGL context*/
 
     //   GLuint vaoId; /*!< VAO holding the rendering VBOs for texture mapping.*/
@@ -247,11 +272,7 @@ struct ViewerGL::Implementation {
 
     bool supportsGLSL;/*!< True if the user has a GLSL version supporting everything requested.*/
 
-    bool drawProgressBar;
-
     bool updatingTexture;
-
-    int progressBarY;
 
     QColor clearColor;
 
@@ -266,6 +287,11 @@ struct ViewerGL::Implementation {
     bool zoomOrPannedSinceLastFit; //< true if the user zoomed or panned the image since the last call to fitToRoD
     
     Natron::TextRenderer textRenderer;
+    
+    RectI userRoI;
+    bool isUserRoISet;
+    bool isUserRoIEnabled;
+    QPoint lastMousePosition;
 };
 
 //static const GLfloat renderingTextureCoordinates[32] = {
@@ -323,6 +349,14 @@ void ViewerGL::drawRenderingVAO() {
 
     rod.intersect(r.x1,r.y1,r.x2,r.y2,&rod);
     
+    //if user RoI is enabled, clip the rod to that roi
+    if (_imp->isUserRoIEnabled) {
+        //if the userRoI isn't intersecting the rod, just don't render anything
+        if(!rod.intersect(_imp->userRoI,&rod)) {
+            return;
+        }
+    }
+   
     /*setup the scissor box to paint only what's contained in the project's window*/
     QPointF scissorBoxBtmLeft = toWidgetCoordinates(rod.x1, rod.y1);
     QPointF scissorBoxTopRight = toWidgetCoordinates(rod.x2, rod.y2);
@@ -333,7 +367,6 @@ void ViewerGL::drawRenderingVAO() {
     
     glScissor(scissorBoxBtmLeft.x(),scissorBoxBtmLeft.y(),scissorBoxTopRight.x() - scissorBoxBtmLeft.x(),
               scissorBoxTopRight.y() - scissorBoxBtmLeft.y());
-
     
     GLfloat vertices[32] = {
         (GLfloat)rod.left() ,(GLfloat)rod.top()  , //0
@@ -449,7 +482,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 , _imp(new Implementation(parent, this))
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-    
+    setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
     
     QObject::connect(parent->getGui()->getApp()->getProject().get(),SIGNAL(formatChanged(Format)),this,SLOT(onProjectFormatChanged(Format)));
@@ -458,10 +491,10 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 
     
     _imp->blankViewerInfos.setChannels(Natron::Mask_RGBA);
-    const Format& projectFormat = parent->getGui()->getApp()->getProjectFormat();
+    const Format& projectFormat = parent->getGui()->getApp()->getProject()->getProjectDefaultFormat();
     _imp->blankViewerInfos.setRoD(projectFormat);
     _imp->blankViewerInfos.setDisplayWindow(projectFormat);
-    setRod(_imp->blankViewerInfos.getRoD());
+    setRegionOfDefinition(_imp->blankViewerInfos.getRoD());
     onProjectFormatChanged(projectFormat);
 
 }
@@ -539,8 +572,11 @@ void ViewerGL::resizeGL(int width, int height){
     assert(_imp->viewerTab);
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
-    if (viewer->getUiContext() && !_imp->zoomOrPannedSinceLastFit && _imp->displayingImage) {
-        viewer->refreshAndContinueRender(true);
+    if (!_imp->displayingImage && !_imp->zoomOrPannedSinceLastFit) {
+        fitImageToFormat(getDisplayWindow());
+    }
+    if (viewer->getUiContext()) {
+        viewer->refreshAndContinueRender(!_imp->zoomOrPannedSinceLastFit,false);
         updateGL();
     }
 }
@@ -599,10 +635,9 @@ void ViewerGL::paintGL()
             
         }
 
-        checkGLErrors();
         clearColorBuffer(_imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF());
-        checkGLErrors();
         drawRenderingVAO();
+        checkGLErrors();
     }
     
     if (_imp->displayingImage) {
@@ -618,9 +653,7 @@ void ViewerGL::paintGL()
     if (_imp->overlay) {
         drawOverlay();
     }
-    if (_imp->drawProgressBar) {
-        drawProgressBar();
-    }
+
     if (_imp->displayPersistentMessage) {
         drawPersistentMessage();
     }
@@ -641,12 +674,6 @@ void ViewerGL::toggleOverlays()
     updateGL();
 }
 
-void ViewerGL::backgroundColor(double &r,double &g,double &b)
-{
-    r = _imp->clearColor.redF();
-    g = _imp->clearColor.greenF();
-    b = _imp->clearColor.blueF();
-}
 
 void ViewerGL::drawOverlay()
 {
@@ -718,6 +745,11 @@ void ViewerGL::drawOverlay()
         glPopAttrib();
         checkGLErrors();
     }
+    
+    if (_imp->isUserRoIEnabled) {
+        drawUserRoI();
+    }
+    
     _imp->viewerTab->drawOverlays();
 
     //reseting color for next pass
@@ -725,20 +757,130 @@ void ViewerGL::drawOverlay()
     checkGLErrors();
 }
 
-void ViewerGL::drawProgressBar()
-{
-    assert(QGLContext::currentContext() == context());
-
-    const Format& dW = getDisplayWindow();
-    glLineWidth(5);
-    glBegin(GL_LINES);
+void ViewerGL::drawUserRoI() {
+    glColor4f(0.9, 0.9, 0.9, 1.);
     
-    glVertex3f(dW.left(),_imp->progressBarY,1);
-    glVertex3f(dW.right(),_imp->progressBarY,1);
     
+    ///base rect
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(_imp->userRoI.x1, _imp->userRoI.y1); //bottom left
+    glVertex2f(_imp->userRoI.x1, _imp->userRoI.y2); //top left
+    glVertex2f(_imp->userRoI.x2, _imp->userRoI.y2); //top right
+    glVertex2f(_imp->userRoI.x2, _imp->userRoI.y1); //bottom right
+    glVertex2f(_imp->userRoI.x1, _imp->userRoI.y1); //bottom left
     glEnd();
-    glLineWidth(1);
-    checkGLErrors();
+    
+    
+    glBegin(GL_LINES);
+    ///border ticks
+    glVertex2f(_imp->userRoI.x1, (_imp->userRoI.y1 + _imp->userRoI.y2) / 2);
+    glVertex2f(_imp->userRoI.x1 - USER_ROI_BORDER_TICK_SIZE / _imp->zoomCtx.zoomFactor, (_imp->userRoI.y1 + _imp->userRoI.y2) / 2);
+    
+    glVertex2f(_imp->userRoI.x2, (_imp->userRoI.y1 + _imp->userRoI.y2) / 2);
+    glVertex2f(_imp->userRoI.x2 + USER_ROI_BORDER_TICK_SIZE / _imp->zoomCtx.zoomFactor, (_imp->userRoI.y1 + _imp->userRoI.y2) / 2);
+    
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2, _imp->userRoI.y2);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2, _imp->userRoI.y2 + USER_ROI_BORDER_TICK_SIZE / _imp->zoomCtx.zoomFactor);
+    
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2, _imp->userRoI.y1);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2, _imp->userRoI.y1 - USER_ROI_BORDER_TICK_SIZE / _imp->zoomCtx.zoomFactor);
+    
+    ///middle cross
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor);
+    
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2  - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2);
+    glEnd();
+    
+    int rectHalfSize = (USER_ROI_SELECTION_POINT_SIZE / (2.f * _imp->zoomCtx.zoomFactor));
+    
+    ///draw handles hint for the user
+    glBegin(GL_QUADS);
+    
+    //left
+    glVertex2f(_imp->userRoI.x1 + rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 + rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 - rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 - rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - rectHalfSize);
+    
+    //top
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 - rectHalfSize,
+               _imp->userRoI.y2 - rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 - rectHalfSize,
+               _imp->userRoI.y2 + rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 + rectHalfSize,
+               _imp->userRoI.y2 + rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 + rectHalfSize,
+               _imp->userRoI.y2 - rectHalfSize);
+
+    //right
+    glVertex2f(_imp->userRoI.x2 - rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 - rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 + rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 + rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - rectHalfSize);
+    
+    //bottom
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 - rectHalfSize,
+               _imp->userRoI.y1 - rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 - rectHalfSize,
+               _imp->userRoI.y1 + rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 + rectHalfSize,
+               _imp->userRoI.y1 + rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 + rectHalfSize,
+               _imp->userRoI.y1 - rectHalfSize);
+
+    //middle
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 - rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 - rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 + rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + rectHalfSize);
+    glVertex2f((_imp->userRoI.x1 +  _imp->userRoI.x2) / 2 + rectHalfSize,
+               (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - rectHalfSize);
+    
+    
+    //top left
+    glVertex2f(_imp->userRoI.x1 - rectHalfSize, _imp->userRoI.y2 - rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 - rectHalfSize, _imp->userRoI.y2 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 + rectHalfSize, _imp->userRoI.y2 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 + rectHalfSize, _imp->userRoI.y2 - rectHalfSize);
+    
+    //top right
+    glVertex2f(_imp->userRoI.x2 - rectHalfSize, _imp->userRoI.y2 - rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 - rectHalfSize, _imp->userRoI.y2 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 + rectHalfSize, _imp->userRoI.y2 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 + rectHalfSize, _imp->userRoI.y2 - rectHalfSize);
+    
+    //bottom right
+    glVertex2f(_imp->userRoI.x2 - rectHalfSize, _imp->userRoI.y1 - rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 - rectHalfSize, _imp->userRoI.y1 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 + rectHalfSize, _imp->userRoI.y1 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x2 + rectHalfSize, _imp->userRoI.y1 - rectHalfSize);
+
+    
+    //bottom left
+    glVertex2f(_imp->userRoI.x1 - rectHalfSize, _imp->userRoI.y1 - rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 - rectHalfSize, _imp->userRoI.y1 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 + rectHalfSize, _imp->userRoI.y1 + rectHalfSize);
+    glVertex2f(_imp->userRoI.x1 + rectHalfSize, _imp->userRoI.y1 - rectHalfSize);
+
+    glEnd();
+    
+    
 }
 
 
@@ -863,7 +1005,7 @@ GLuint ViewerGL::getPboID(int index)
 /**
  *@returns Returns the current zoom factor that is applied to the display.
  **/
-double ViewerGL::getZoomFactor()
+double ViewerGL::getZoomFactor() const
 {
     return _imp->zoomCtx.zoomFactor;
 }
@@ -871,106 +1013,18 @@ double ViewerGL::getZoomFactor()
 RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD) {
     RectI ret;
     QPointF topLeft = toImgCoordinates_fast(0, 0);
-    ret.x1 = topLeft.x();
-    ret.y2 = topLeft.y();
+    ret.x1 = std::floor(topLeft.x());
+    ret.y2 = std::ceil(topLeft.y());
     QPointF bottomRight = toImgCoordinates_fast(width()-1, height()-1);
-    ret.x2 = bottomRight.x();
-    ret.y1 = bottomRight.y();
-    if(!ret.intersect(imageRoD, &ret)){
+    ret.x2 = std::ceil(bottomRight.x());
+    ret.y1 = std::floor(bottomRight.y());
+    if (!ret.intersect(imageRoD, &ret)) {
         ret.clear();
     }
     return ret;
 }
 
-std::pair<int,int> ViewerGL::computeRowSpan(int bottom,int top, std::vector<int>* rows) {
-    /*First off,we test the 1st and last row to check wether the
-     image is contained in the viewer*/
-    // testing top of the image
-    assert(rows);
-    assert(rows->size() == 0);
-    std::pair<int,int> ret;
-    int y = 0;
-    int prev = -1;
-    double res = toImgCoordinates_fast(0,y).y();
-    ret.first = bottom;
-    ret.second = top-1;
-    if (res < 0.) { // all the image is above the viewer
-        return ret; // do not add any row
-    }
-    // testing bottom now
-    y = height()-1;
-    res = toImgCoordinates_fast(0,y).y();
-    /*for all the others row (apart the first and last) we can check.
-     */
-    while(y >= 0 && res < bottom){
-        /*while y is an invalid line, iterate*/
-        --y;
-        res = toImgCoordinates_fast(0,y).y();
-    }
-    while(y >= 0 && res >= bottom && res < top){
-        /*y is a valid line in widget coord && res contains the image y coord.*/
-        int row = (int)std::floor(res);
-        assert(row >= bottom && row < top);
-        if(row != prev){
-            rows->push_back(row);
-            prev = row;
-        }
-        --y;
-        res = toImgCoordinates_fast(0,y).y();
-    }
-    if(rows->size() > 0){
-        ret.first = rows->front();
-        ret.second = rows->back();
-    }
-    assert(ret.first >= bottom && ret.first <= std::max(bottom, top-1));
-    assert(ret.second >= std::min(bottom,top-1) && ret.second < top);
-    return ret;
-}
 
-std::pair<int,int> ViewerGL::computeColumnSpan(int left,int right, std::vector<int>* columns) {
-    /*First off,we test the 1st and last columns to check wether the
-     image is contained in the viewer*/
-    // testing right of the image
-    assert(columns);
-    assert(columns->size() == 0);
-    std::pair<int,int> ret;
-    int x = width()-1;
-    int prev = -1;
-    double res = toImgCoordinates_fast(x,0).x();
-    ret.first = left;
-    ret.second = right-1;
-    if (res < 0.) { // all the image is on the left of the viewer
-        return ret;
-    }
-    // testing right now
-    x = 0;
-    res = toImgCoordinates_fast(x,0).x();
-    /*for all the others columns (apart the first and last) we can check.
-     */
-    while(x < width() && res < left) {
-        /*while x is an invalid column, iterate from left to right*/
-        ++x;
-        res = toImgCoordinates_fast(x,0).x();
-    }
-    while(x < width() && res >= left && res < right) {
-        /*y is a valid column in widget coord && res contains the image x coord.*/
-        int column = (int)std::floor(res);
-        assert(column >= left && column < right);
-        if(column != prev){
-            columns->push_back(column);
-            prev = column;
-        }
-        ++x;
-        res = toImgCoordinates_fast(x,0).x();
-    }
-    if(columns->size() > 0){
-        ret.first = columns->front();
-        ret.second = columns->back();
-    }
-    assert(ret.first >= left && ret.first <= std::max(left, right-1));
-    assert(ret.second >= std::min(left,right-1) && ret.second < right);
-    return ret;
-}
 
 int ViewerGL::isExtensionSupported(const char *extension){
     const GLubyte *extensions = NULL;
@@ -1039,7 +1093,7 @@ void ViewerGL::activateShaderRGB()
 
     assert(_imp->supportsGLSL );
     // don't even bind the shader on 8-bits gamma-compressed textures
-    if (!(bitDepth() != ViewerInstance::BYTE)) {
+    if (!(getBitDepth() != OpenGLViewerI::BYTE)) {
         return;
     }
     if (!_imp->shaderRGB->bind()) {
@@ -1105,7 +1159,7 @@ void ViewerGL::restoreGLState()
 void ViewerGL::initBlackTex()
 {
     assert(QGLContext::currentContext() == context());
-    fitToFormat(getDisplayWindow());
+    //fitToFormat(getDisplayWindow());
     
     TextureRect texSize(0, 0, 2048, 1556,2048,1556,1);
     
@@ -1135,13 +1189,14 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
 {
     assert(QGLContext::currentContext() == context());
     QMutexLocker locker(&_imp->textureMutex);
-    GLint currentBoundPBO;
+	(void)glGetError();
+    GLint currentBoundPBO = 0;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
-    if (currentBoundPBO != 0) {
-        cout << "(ViewerGL::allocateAndMapPBO): Another PBO is currently mapped, glMap failed." << endl;
-        return;
-    }
-    
+	GLenum err = glGetError();
+	if(err != GL_NO_ERROR || currentBoundPBO != 0) {
+		 qDebug() << "(ViewerGL::allocateAndMapPBO): Another PBO is currently mapped, glMap failed." << endl;
+	}
+
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, getPboID(pboIndex));
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
     GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
@@ -1153,21 +1208,23 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();
     
-    if(bitDepth() == ViewerInstance::BYTE){
+    OpenGLViewerI::BitDepth bd = getBitDepth();
+    if(bd == OpenGLViewerI::BYTE){
         _imp->defaultDisplayTexture->fillOrAllocateTexture(region,Texture::BYTE);
-    }else if((bitDepth() == ViewerInstance::FLOAT || bitDepth() == ViewerInstance::HALF_FLOAT)){
+    }else if(bd == OpenGLViewerI::FLOAT || bd == OpenGLViewerI::HALF_FLOAT){
         
         //do 32bit fp textures either way, don't bother with half float. We might support it further on.
         _imp->defaultDisplayTexture->fillOrAllocateTexture(region,Texture::FLOAT);
     }
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,0);
     checkGLErrors();
+    _imp->displayingImage = true;
 }
 
 /**
  *@returns Returns true if the graphic card supports GLSL.
  **/
-bool ViewerGL::supportsGLSL()
+bool ViewerGL::supportsGLSL() const
 {
     return _imp->supportsGLSL;
 }
@@ -1185,24 +1242,47 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
     }
     
     _imp->zoomCtx.oldClick = event->pos();
+    _imp->lastMousePosition = event->pos();
     if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
-        _imp->ms = DRAGGING;
-    } else if (event->button() == Qt::LeftButton && !event->modifiers().testFlag(Qt::ControlModifier)) {
+        _imp->ms = DRAGGING_IMAGE;
+    } else if(event->button() == Qt::LeftButton &&
+              event->modifiers().testFlag(Qt::ControlModifier) &&
+              _imp->displayingImage) {
+        float r,g,b,a;
+        QPointF imgPos = toImgCoordinates_fast(event->x(), event->y());
+        bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
+        bool picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
+        if (picked) {
+            QColor pickerColor;
+            pickerColor.setRedF(r);
+            pickerColor.setGreenF(g);
+            pickerColor.setBlueF(b);
+            pickerColor.setAlphaF(a);
+            _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
+        }
+    } else if(event->button() == Qt::LeftButton && isNearByUserRoIBottomEdge(event->pos())) {
+        _imp->ms = DRAGGING_ROI_BOTTOM_EDGE;
+    } else if(event->button() == Qt::LeftButton && isNearByUserRoILeftEdge(event->pos())) {
+        _imp->ms = DRAGGING_ROI_LEFT_EDGE;
+    } else if(event->button() == Qt::LeftButton && isNearByUserRoIRightEdge(event->pos())) {
+        _imp->ms = DRAGGING_ROI_RIGHT_EDGE;
+    } else if(event->button() == Qt::LeftButton && isNearByUserRoITopEdge(event->pos())) {
+        _imp->ms = DRAGGING_ROI_TOP_EDGE;
+    } else if(event->button() == Qt::LeftButton && isNearByUserRoIMiddleHandle(event->pos())) {
+        _imp->ms = DRAGGING_ROI_CROSS;
+    } else if(event->button() == Qt::LeftButton && isNearByUserRoITopLeft(event->pos())) {
+        _imp->ms = DRAGGING_ROI_TOP_LEFT;
+    } else if(event->button() == Qt::LeftButton && isNearByUserRoITopRight(event->pos())) {
+        _imp->ms = DRAGGING_ROI_TOP_RIGHT;
+    }  else if(event->button() == Qt::LeftButton && isNearByUserRoIBottomLeft(event->pos())) {
+        _imp->ms = DRAGGING_ROI_BOTTOM_LEFT;
+    }  else if(event->button() == Qt::LeftButton && isNearByUserRoIBottomRight(event->pos())) {
+        _imp->ms = DRAGGING_ROI_BOTTOM_RIGHT;
+    }  else if (event->button() == Qt::LeftButton && !event->modifiers().testFlag(Qt::ControlModifier)) {
         if(_imp->viewerTab->notifyOverlaysPenDown(QMouseEventLocalPos(event),
                                                   toImgCoordinates_fast(event->x(), event->y()))){
             updateGL();
         }
-    }else if(event->button() == Qt::LeftButton && event->modifiers().testFlag(Qt::ControlModifier)){
-        float r,g,b,a;
-        QPointF imgPos = toImgCoordinates_fast(event->x(), event->y());
-        bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
-        _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
-        QColor pickerColor;
-        pickerColor.setRedF(r);
-        pickerColor.setGreenF(g);
-        pickerColor.setBlueF(b);
-        pickerColor.setAlphaF(a);
-        _imp->viewerTab->getGui()->_projectGui->setPickersColor(pickerColor);
     }
     
 }
@@ -1240,32 +1320,149 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
         }
     }
     
-    
-    if (_imp->ms == DRAGGING) {
-        QPoint newClick =  event->pos();
-        QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
-        QPointF oldClick_opengl = toImgCoordinates_fast(_imp->zoomCtx.oldClick.x(),_imp->zoomCtx.oldClick.y());
-        float dy = (oldClick_opengl.y() - newClick_opengl.y());
-        _imp->zoomCtx.bottom += dy;
-        _imp->zoomCtx.left += (oldClick_opengl.x() - newClick_opengl.x());
-        _imp->zoomCtx.oldClick = newClick;
-        if(_imp->displayingImage){
-            _imp->viewerTab->getInternalNode()->refreshAndContinueRender();
-        }
-        //else {
-        updateGL();
-        _imp->zoomOrPannedSinceLastFit = true;
+    //update the cursor if it is hovering an overlay and we're not dragging the image
+    if (_imp->ms != DRAGGING_IMAGE && _imp->overlay && _imp->isUserRoIEnabled) {
+        if (isNearByUserRoIBottomEdge(event->pos()) || isNearByUserRoITopEdge(event->pos())
+            || _imp->ms == DRAGGING_ROI_BOTTOM_EDGE || _imp->ms == DRAGGING_ROI_TOP_EDGE) {
+            setCursor(QCursor(Qt::SizeVerCursor));
+        } else if(isNearByUserRoILeftEdge(event->pos()) || isNearByUserRoIRightEdge(event->pos())
+                  || _imp->ms == DRAGGING_ROI_LEFT_EDGE || _imp->ms == DRAGGING_ROI_RIGHT_EDGE) {
+            setCursor(QCursor(Qt::SizeHorCursor));
+        } else if(isNearByUserRoIMiddleHandle(event->pos()) || _imp->ms == DRAGGING_ROI_CROSS) {
+            setCursor(QCursor(Qt::SizeAllCursor));
+        } else if(isNearByUserRoIBottomRight(event->pos()) || isNearByUserRoITopLeft(event->pos()) ||
+                  _imp->ms == DRAGGING_ROI_BOTTOM_RIGHT) {
+            setCursor(QCursor(Qt::SizeFDiagCursor));
 
-        // }
-        // no need to update the color picker or mouse posn: they should be unchanged
+        } else if(isNearByUserRoIBottomLeft(event->pos()) || isNearByUserRoITopRight(event->pos())
+                  || _imp->ms == DRAGGING_ROI_BOTTOM_LEFT) {
+            setCursor(QCursor(Qt::SizeBDiagCursor));
+
+        }else {
+            setCursor(QCursor(Qt::ArrowCursor));
+        }
     } else {
-        if(_imp->viewerTab->notifyOverlaysPenMotion(QMouseEventLocalPos(event),pos)){
-            updateGL();
-        }
+        setCursor(QCursor(Qt::ArrowCursor));
     }
-    qApp->sendEvent(_imp->viewerTab->parentWidget(), event);
+    
+    QPoint newClick =  event->pos();
+    QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
+    QPointF oldClick_opengl = toImgCoordinates_fast(_imp->zoomCtx.oldClick.x(),_imp->zoomCtx.oldClick.y());
+    float dy = (oldClick_opengl.y() - newClick_opengl.y());
+    
+    QPointF oldPosition_opengl = toImgCoordinates_fast(_imp->lastMousePosition.x(), _imp->lastMousePosition.y());
+    int dxSinceLastMove = (oldPosition_opengl.x() - newClick_opengl.x());
+    int dySinceLastMove = (oldPosition_opengl.y() - newClick_opengl.y());
 
-
+    switch (_imp->ms) {
+        case DRAGGING_IMAGE: {
+            _imp->zoomCtx.bottom += dy;
+            _imp->zoomCtx.left += (oldClick_opengl.x() - newClick_opengl.x());
+            _imp->zoomCtx.oldClick = newClick;
+            if(_imp->displayingImage){
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+            }
+            updateGL();
+            _imp->zoomOrPannedSinceLastFit = true;
+            // no need to update the color picker or mouse posn: they should be unchanged
+        } break;
+        case DRAGGING_ROI_BOTTOM_EDGE: {
+            if ((_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
+                _imp->userRoI.y1 -= dySinceLastMove;
+                if(_imp->displayingImage){
+                    _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                }
+                updateGL();
+            }
+        } break;
+        case DRAGGING_ROI_LEFT_EDGE: {
+            if ((_imp->userRoI.x1 - dxSinceLastMove) < _imp->userRoI.x2 ) {
+                _imp->userRoI.x1 -= dxSinceLastMove;
+                if(_imp->displayingImage){
+                    _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                }
+                updateGL();
+            }
+        } break;
+        case DRAGGING_ROI_RIGHT_EDGE: {
+            if ((_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
+                _imp->userRoI.x2 -= dxSinceLastMove;
+                if(_imp->displayingImage){
+                    _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                }
+                updateGL();
+            }
+        } break;
+        case DRAGGING_ROI_TOP_EDGE: {
+            if ((_imp->userRoI.y2 - dySinceLastMove) > _imp->userRoI.y1 ) {
+                _imp->userRoI.y2 -= dySinceLastMove;
+                if(_imp->displayingImage){
+                    _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                }
+                updateGL();
+            }
+        } break;
+        case DRAGGING_ROI_CROSS: {
+            _imp->userRoI.move(-dxSinceLastMove,-dySinceLastMove);
+            if(_imp->displayingImage){
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+            }
+            updateGL();
+        } break;
+        case DRAGGING_ROI_TOP_LEFT: {
+            if ((_imp->userRoI.y2 - dySinceLastMove) > _imp->userRoI.y1 ) {
+                _imp->userRoI.y2 -= dySinceLastMove;
+            }
+            if ((_imp->userRoI.x1 - dxSinceLastMove) < _imp->userRoI.x2 ) {
+                _imp->userRoI.x1 -= dxSinceLastMove;
+            }
+            if(_imp->displayingImage){
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+            }
+            updateGL();
+        } break;
+        case DRAGGING_ROI_TOP_RIGHT: {
+            if ((_imp->userRoI.y2 - dySinceLastMove) > _imp->userRoI.y1 ) {
+                _imp->userRoI.y2 -= dySinceLastMove;
+            }
+            if ((_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
+                _imp->userRoI.x2 -= dxSinceLastMove;
+            }
+            if(_imp->displayingImage){
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+            }
+            updateGL();        } break;
+        case DRAGGING_ROI_BOTTOM_RIGHT: {
+            if ((_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
+                _imp->userRoI.x2 -= dxSinceLastMove;
+            }
+            if ((_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
+                _imp->userRoI.y1 -= dySinceLastMove;
+            }
+            if(_imp->displayingImage){
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+            }
+            updateGL();        } break;
+        case DRAGGING_ROI_BOTTOM_LEFT: {
+            if ((_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
+                _imp->userRoI.y1 -= dySinceLastMove;
+            }
+            if ((_imp->userRoI.x1 - dxSinceLastMove) < _imp->userRoI.x2 ) {
+                _imp->userRoI.x1 -= dxSinceLastMove;
+            }
+            if(_imp->displayingImage){
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+            }
+            updateGL();
+        } break;
+        default: {
+            if(_imp->viewerTab->notifyOverlaysPenMotion(QMouseEventLocalPos(event),pos)){
+                updateGL();
+            }
+        }break;
+    }
+  
+    _imp->lastMousePosition = newClick;
     //FIXME: This is bugged, somehow we can't set our custom picker cursor...
 //    if(_imp->viewerTab->getGui()->_projectGui->hasPickers()){
 //        setCursor(appPTR->getColorPickerCursor());
@@ -1276,6 +1473,10 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
 
 
 void ViewerGL::updateColorPicker(int x,int y){
+    if (!_imp->displayingImage) {
+        _imp->infoViewer->hideColorAndMouseInfo();
+        return;
+    }
     QPoint pos;
     bool xInitialized = false;
     bool yInitialized = false;
@@ -1295,10 +1496,17 @@ void ViewerGL::updateColorPicker(int x,int y){
         pos.setY(currentPos.y());
     }
     float r,g,b,a;
-    getColorUnderMouse(pos.x(),pos.y(),&r,&g,&b,&a);
-    //   cout << "r: " << color.x() << " g: " << color.y() << " b: " << color.z() << endl;
-    _imp->infoViewer->setColor(r,g,b,a);
-    emit infoColorUnderMouseChanged();
+    QPointF imgPos = toImgCoordinates_fast(pos.x(), pos.y());
+    
+    bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
+    bool picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
+    if (!picked) {
+        _imp->infoViewer->hideColorAndMouseInfo();
+    } else {
+        //   cout << "r: " << color.x() << " g: " << color.y() << " b: " << color.z() << endl;
+        _imp->infoViewer->setColor(r,g,b,a);
+        emit infoColorUnderMouseChanged();
+    }
 }
 
 void ViewerGL::wheelEvent(QWheelEvent *event) {
@@ -1319,8 +1527,8 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     
     _imp->zoomCtx.zoomFactor = newZoomFactor;
     if(_imp->displayingImage){
-        appPTR->clearPlaybackCache();
-        _imp->viewerTab->getInternalNode()->refreshAndContinueRender();
+        //appPTR->clearPlaybackCache();
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
     }
     //else {
     updateGL();
@@ -1358,8 +1566,8 @@ void ViewerGL::zoomSlot(int v) {
     
     _imp->zoomCtx.zoomFactor = newZoomFactor;
     if(_imp->displayingImage){
-        appPTR->clearPlaybackCache();
-        _imp->viewerTab->getInternalNode()->refreshAndContinueRender();
+        // appPTR->clearPlaybackCache();
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
     } else {
         updateGL();
     }
@@ -1393,88 +1601,20 @@ QPointF ViewerGL::toWidgetCoordinates(double x, double y){
     return QPoint(((x - left)/(right - left))*w,(y - top)/((bottom - top))*h);
 }
 
-#if 0
-/*Returns coordinates with 0,0 at top left, Natron inverts
- y as such : y= displayWindow().height() - y  to get the coordinates
- with 0,0 at bottom left*/
-QVector3D ViewerGL::toImgCoordinates_slow(int x,int y){
-    GLint viewport[4];
-    GLdouble modelview[16];
-    GLdouble projection[16];
-    GLfloat winX=0, winY=0, winZ=0;
-    GLdouble posX=0, posY=0, posZ=0;
-    glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
-    glGetDoublev( GL_PROJECTION_MATRIX, projection );
-    glGetIntegerv( GL_VIEWPORT, viewport );
-    winX = (float)x;
-    winY = viewport[3]- y;
-    glReadPixels( x, (int)winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
-    gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
-    checkGLErrors();
-    return QVector3D(posX,posY,posZ);
-}
-#endif
-
-void ViewerGL::getColorUnderMouse(int x,int y,float* r,float *g,float* b,float* a){
-    QPointF imgCoord = toImgCoordinates_fast(x, y);
-    getColorAt(imgCoord.x(),imgCoord.y(),r,g,b,a,x,y);
-}
-
-void ViewerGL::getColorAt(int x,int y,float* r,float *g,float* b,float* a,int viewPortX,int viewPortY)
-{
-    makeCurrent();
-    assert(QGLContext::currentContext() == context());
-    *r = 0;
-    *g = 0;
-    *b = 0;
-    *a = 0;
-    if(viewPortX == INT_MAX || viewPortY == INT_MAX){
-        QPointF viewPortCoord = toWidgetCoordinates(x, y);
-        viewPortX = viewPortCoord.x();
-        viewPortY = viewPortCoord.y();
-    }
-    if(x < getDisplayWindow().left() || x >= getDisplayWindow().width() || y < getDisplayWindow().bottom() || y >=getDisplayWindow().height()){
-        return ;
-    }
-    
-    if(bitDepth() == ViewerInstance::BYTE){
-        U32 pixel;
-        glReadBuffer(GL_FRONT);
-        glReadPixels( viewPortX, height()- viewPortY, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
-        U8 r_=0,g_=0,b_=0,a_=0;
-        b_ |= pixel;
-        g_ |= (pixel >> 8);
-        r_ |= (pixel >> 16);
-        a_ |= (pixel >> 24);
-        checkGLErrors();
-        *r = std::min(r_/255.f,1.f);
-        *g = std::min(g_/255.f,1.f);
-        *b = std::min(b_/255.f,1.f);
-        *a = std::min(a_/255.f,1.f);
-    }else{
-        GLfloat pixel[4];
-        glReadPixels( viewPortX, height()- viewPortY, 1, 1, GL_RGBA, GL_FLOAT, pixel);
-        checkGLErrors();
-        *r = pixel[0];
-        *g = pixel[1];
-        *b = pixel[2];
-        *a = pixel[3];
-    }
-}
-
-void ViewerGL::fitToFormat(const Format& rod){
+void ViewerGL::fitImageToFormat(const Format& rod){
     double h = rod.height();
     double w = rod.width();
     assert(h > 0. && w > 0.);
     double zoomFactor = height()/h;
     zoomFactor = (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01);
     assert(zoomFactor>=0.01 && zoomFactor <= 1024);
-    _imp->zoomCtx.zoomFactor = zoomFactor;
-    emit zoomChanged(zoomFactor * 100);
+    if (_imp->zoomCtx.zoomFactor != zoomFactor) {
+        _imp->zoomCtx.zoomFactor = zoomFactor;
+        emit zoomChanged(zoomFactor * 100);
+    }
     resetMousePos();
     _imp->zoomCtx.left = w/2.f - (width()/(2.f*_imp->zoomCtx.zoomFactor));
     _imp->zoomCtx.bottom = h/2.f - (height()/(2.f*_imp->zoomCtx.zoomFactor)) * rod.getPixelAspect();
-    
     _imp->zoomOrPannedSinceLastFit = false;
 }
 
@@ -1523,9 +1663,10 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
 
 
 void ViewerGL::disconnectViewer(){
-    setRod(_imp->blankViewerInfos.getRoD());
-    fitToFormat(getDisplayWindow());
-    clearViewer();
+    if (displayingImage()) {
+        setRegionOfDefinition(_imp->blankViewerInfos.getRoD());
+        clearViewer();
+    }
 }
 
 
@@ -1537,7 +1678,7 @@ const RectI& ViewerGL::getRoD() const {return _imp->currentViewerInfos.getRoD();
 const Format& ViewerGL::getDisplayWindow() const {return _imp->currentViewerInfos.getDisplayWindow();}
 
 
-void ViewerGL::setRod(const RectI& rod){
+void ViewerGL::setRegionOfDefinition(const RectI& rod){
 
     _imp->currentViewerInfos.setRoD(rod);
     emit infoDataWindowChanged();
@@ -1564,12 +1705,19 @@ void ViewerGL::onProjectFormatChanged(const Format& format){
     _imp->resolutionOverlay.append(QString::number(format.width()));
     _imp->resolutionOverlay.append("x");
     _imp->resolutionOverlay.append(QString::number(format.height()));
-    fitToFormat(format);
+    
+    if (!_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject()) {
+        fitImageToFormat(format);
+    }
     
     if(_imp->displayingImage) {
-        _imp->viewerTab->getInternalNode()->refreshAndContinueRender();
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
     }
 
+    if (!_imp->isUserRoISet) {
+        _imp->userRoI = format;
+        _imp->isUserRoISet = true;
+    }
 }
 
 void ViewerGL::setClipToDisplayWindow(bool b) {
@@ -1577,11 +1725,11 @@ void ViewerGL::setClipToDisplayWindow(bool b) {
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
     if (viewer->getUiContext()) {
-        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
     }
 }
 
-bool ViewerGL::isClippingToDisplayWindow() const
+bool ViewerGL::isClippingImageToProjectWindow() const
 {
     return _imp->clipToDisplayWindow;
 }
@@ -1597,21 +1745,40 @@ void ViewerGL::focusInEvent(QFocusEvent *event){
     if(_imp->viewerTab->notifyOverlaysFocusGained()){
         updateGL();
     }
-    QGLWidget::enterEvent(event);
+    QGLWidget::focusInEvent(event);
 }
+
 void ViewerGL::focusOutEvent(QFocusEvent *event)
 {
     if(_imp->viewerTab->notifyOverlaysFocusLost()){
         updateGL();
     }
-    QGLWidget::leaveEvent(event);
-
+    QGLWidget::focusOutEvent(event);
 }
+
+void ViewerGL::enterEvent(QEvent *event)
+{
+    updateColorPicker();
+    setFocus();
+    QGLWidget::enterEvent(event);
+}
+
+void ViewerGL::leaveEvent(QEvent *event)
+{
+    _imp->infoViewer->hideColorAndMouseInfo();
+    QGLWidget::leaveEvent(event);
+}
+
 void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected field
     QGLWidget::resizeEvent(event);
 }
 
 void ViewerGL::keyPressEvent(QKeyEvent* event){
+    
+    if (event->key() == Qt::Key_O) {
+        toggleOverlays();
+    }
+    
     if(event->isAutoRepeat()){
         if(_imp->viewerTab->notifyOverlaysKeyRepeat(event)){
             updateGL();
@@ -1621,7 +1788,7 @@ void ViewerGL::keyPressEvent(QKeyEvent* event){
             updateGL();
         }
     }
-    
+    QGLWidget::keyPressEvent(event);
 }
 
 
@@ -1632,42 +1799,16 @@ void ViewerGL::keyReleaseEvent(QKeyEvent* event){
 }
 
 
-int ViewerGL::bitDepth() const {
-    ViewerInstance::BitDepth e = (ViewerInstance::BitDepth)appPTR->getCurrentSettings()->getViewersBitDepth();
+OpenGLViewerI::BitDepth ViewerGL::getBitDepth() const {
+    OpenGLViewerI::BitDepth e = (OpenGLViewerI::BitDepth)appPTR->getCurrentSettings()->getViewersBitDepth();
     if(!_imp->supportsGLSL){
-        e = ViewerInstance::BYTE;
+        e = OpenGLViewerI::BYTE;
     }
     return e;
 }
 
 
-void ViewerGL::stopDisplayingProgressBar()
-{
-    _imp->drawProgressBar = false;
-}
 
-//void ViewerGL::updateProgressOnViewer(const RectI& /*region*/,int /*y*/ , int /*texY*/) {
-//    _imp->updatingTexture = true;
-//    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-//    checkGLErrors();
-//    if(byteMode() == 1.f || !_imp->hasHW){
-//        _imp->defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::BYTE);
-//    }else{
-//        _imp->defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::FLOAT);
-//    }
-//    _imp->drawProgressBar = true;
-//    _imp->progressBarY = y;
-//    updateGL();
-//    assert(!frameData);
-//    frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-//    checkGLErrors();
-//
-//    _imp->updatingTexture = false;
-//}
-
-void ViewerGL::doSwapBuffers(){
-    swapBuffers();
-}
 void ViewerGL::populateMenu(){
     _imp->menu->clear();
     QAction* displayOverlaysAction = new QAction("Display overlays",this);
@@ -1684,7 +1825,7 @@ void ViewerGL::renderText( int x, int y, const QString &string,const QColor& col
     if (string.isEmpty()) {
         return;
     }
-    
+
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
     double h = (double)height();
@@ -1718,3 +1859,183 @@ void ViewerGL::clearPersistentMessage()
     updateGL();
 }
 
+void ViewerGL::getProjection(double &left,double &bottom,double &zoomFactor) const {
+    left = _imp->zoomCtx.left;
+    bottom = _imp->zoomCtx.bottom;
+    zoomFactor = _imp->zoomCtx.zoomFactor;
+}
+
+void ViewerGL::setProjection(double left,double bottom,double zoomFactor) {
+    _imp->zoomCtx.left = left;
+    _imp->zoomCtx.bottom = bottom;
+    _imp->zoomCtx.zoomFactor = zoomFactor;
+    _imp->zoomOrPannedSinceLastFit = true;
+}
+
+void ViewerGL::setUserRoIEnabled(bool b) {
+    _imp->isUserRoIEnabled = b;
+    if (_imp->displayingImage) {
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+    }
+    update();
+}
+
+bool ViewerGL::isNearByUserRoITopEdge(const QPoint& mousePos) {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    int length = std::min(_imp->userRoI.x2 - _imp->userRoI.x1 - 10,(int)(USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor) * 2);
+    RectI r(_imp->userRoI.x1 + length / 2,
+            _imp->userRoI.y2 - USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.x2 - length / 2,
+            _imp->userRoI.y2 + USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor);
+    return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isNearByUserRoIRightEdge(const QPoint& mousePos)  {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    int length = std::min(_imp->userRoI.y2 - _imp->userRoI.y1 - 10,(int)(USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor) * 2);
+
+    RectI r(_imp->userRoI.x2 - USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y1 + length / 2,
+            _imp->userRoI.x2 + USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y2 - length / 2);
+    return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isNearByUserRoILeftEdge(const QPoint& mousePos) {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    int length = std::min(_imp->userRoI.y2 - _imp->userRoI.y1 - 10,(int)(USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor) * 2);
+
+    RectI r(_imp->userRoI.x1 - USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y1 + length / 2,
+            _imp->userRoI.x1 + USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y2 - length / 2);
+    return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isNearByUserRoIBottomEdge(const QPoint& mousePos) {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    int length = std::min(_imp->userRoI.x2 - _imp->userRoI.x1 - 10,(int)(USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor) * 2);
+
+    RectI r(_imp->userRoI.x1 + length / 2,
+            _imp->userRoI.y1 - USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.x2 - length / 2,
+            _imp->userRoI.y1 + USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor);
+    return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isNearByUserRoIMiddleHandle(const QPoint& mousePos) {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    RectI r((_imp->userRoI.x1 + _imp->userRoI.x2) / 2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            (_imp->userRoI.x1 + _imp->userRoI.x2) / 2 + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor);
+    return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isNearByUserRoITopLeft(const QPoint& mousePos) {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    RectI r(_imp->userRoI.x1 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.x1  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y2  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor);
+    return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isNearByUserRoITopRight(const QPoint& mousePos) {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    RectI r(_imp->userRoI.x2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.x2  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y2  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor);
+    return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isNearByUserRoIBottomRight(const QPoint& mousePos) {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    RectI r(_imp->userRoI.x2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y1 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.x2  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y1  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor);
+    return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isNearByUserRoIBottomLeft(const QPoint& mousePos) {
+    QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
+    RectI r(_imp->userRoI.x1 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y1 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.x1  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
+            _imp->userRoI.y1  + USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor);
+    return r.contains(openglPos.x(),openglPos.y());
+}
+
+bool ViewerGL::isUserRegionOfInterestEnabled() const {
+    return _imp->isUserRoIEnabled;
+}
+
+const RectI& ViewerGL::getUserRegionOfInterest() const {
+    return _imp->userRoI;
+}
+
+void ViewerGL::setUserRoI(const RectI& r) {
+    _imp->userRoI = r;
+}
+
+/**
+* @brief Swap the OpenGL buffers.
+**/
+void ViewerGL::swapOpenGLBuffers() {
+    swapBuffers();
+}
+
+/**
+ * @brief Repaint
+**/
+void ViewerGL::redraw() {
+    update();
+}
+
+/**
+* @brief Returns the width and height of the viewport in window coordinates.
+**/
+void ViewerGL::getViewportSize(double &width, double &height) const {
+    width = this->width();
+    height = this->height();
+}
+
+/**
+* @brief Returns the pixel scale of the viewport.
+**/
+void ViewerGL::getPixelScale(double& xScale, double& yScale) const  {
+    xScale = 1. / getZoomFactor();
+    yScale = xScale;
+}
+
+/**
+* @brief Returns the colour of the background (i.e: clear color) of the viewport.
+**/
+void ViewerGL::getBackgroundColour(double &r, double &g, double &b) const {
+    r = _imp->clearColor.redF();
+    g = _imp->clearColor.greenF();
+    b = _imp->clearColor.blueF();
+}
+
+void ViewerGL::makeOpenGLcontextCurrent() {
+    makeCurrent();
+}
+
+void ViewerGL::onViewerNodeNameChanged(const QString& name) {
+    _imp->viewerTab->getGui()->unregisterTab(_imp->viewerTab);
+    TabWidget* parent = dynamic_cast<TabWidget*>(_imp->viewerTab->parentWidget());
+    if ( parent ) {
+        parent->setTabName(_imp->viewerTab, name);
+    }
+    _imp->viewerTab->getGui()->registerTab(_imp->viewerTab);
+}
+
+void ViewerGL::removeGUI() {
+    _imp->viewerTab->getGui()->removeViewerTab(_imp->viewerTab, true);
+}
+
+int ViewerGL::getCurrentView() const {
+    return _imp->viewerTab->getCurrentView();
+}

@@ -10,13 +10,21 @@
 
 #include "ProjectGuiSerialization.h"
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QSplitter>
+CLANG_DIAG_ON(deprecated)
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 #include "Engine/Project.h"
+#include "Engine/Node.h"
+#include "Engine/ViewerInstance.h"
 #include "Gui/NodeGui.h"
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
+#include "Gui/ViewerTab.h"
+#include "Gui/ViewerGL.h"
+#include "Gui/ProjectGui.h"
 
  void ProjectGuiSerialization::initialize(const ProjectGui* projectGui){
      std::vector<NodeGui*> activeNodes = projectGui->getInternalProject()->getApp()->getVisibleNodes();
@@ -25,9 +33,25 @@
          boost::shared_ptr<NodeGuiSerialization> state(new NodeGuiSerialization);
          activeNodes[i]->serialize(state.get());
          _serializedNodes.push_back(state);
+         
+         if (activeNodes[i]->getNode()->pluginID() == "Viewer") {
+             ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(activeNodes[i]->getNode()->getLiveInstance());
+             ViewerTab* tab = projectGui->getInternalProject()->getApp()->getGui()->getViewerTabForInstance(viewer);
+             assert(viewer);
+             ViewerData viewerData;
+             viewerData.aspectRatio = 1.;
+             tab->viewer->getProjection(viewerData.left, viewerData.bottom, viewerData.zoomFactor);
+             viewerData.userRoI = tab->viewer->getUserRegionOfInterest();
+             viewerData.userRoIenabled = tab->viewer->isUserRegionOfInterestEnabled();
+             viewerData.isClippedToProject = tab->isClippedToProject();
+             viewerData.exposure = tab->getExposure();
+             viewerData.colorSpace = tab->getColorSpace();
+             viewerData.channels = tab->getChannelsString();
+             _viewersData.insert(std::make_pair(viewer->getName(),viewerData));
+         }
      }
      
-     const std::list<TabWidget*>& tabWidgets = projectGui->getInternalProject()->getApp()->getGui()->getPanes();
+    const std::list<TabWidget*>& tabWidgets = projectGui->getInternalProject()->getApp()->getGui()->getPanes();
      for (std::list<TabWidget*>::const_iterator it = tabWidgets.begin(); it!= tabWidgets.end(); ++it) {
          const QString& widgetName = (*it)->objectName();
          if(widgetName.isEmpty()){
@@ -82,6 +106,8 @@
          _splittersStates.insert(std::make_pair((*it)->objectName().toStdString(),str.toStdString()));
 
      }
+     
+     
      
 }
 

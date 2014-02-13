@@ -11,11 +11,15 @@
 #ifndef NATRON_ENGINE_OFXPARAMINSTANCE_H_
 #define NATRON_ENGINE_OFXPARAMINSTANCE_H_
 
+#include "Global/Macros.h"
 #include <map>
 #include <string>
 #include <vector>
 #include <boost/shared_ptr.hpp>
+CLANG_DIAG_OFF(deprecated)
 #include <QStringList>
+CLANG_DIAG_ON(deprecated)
+
 #include <QVector4D>
 #include <QThreadStorage>
 
@@ -46,7 +50,7 @@ class Group_Knob;
 class RichText_Knob;
 class Parametric_Knob;
 class OfxEffectInstance;
-class CurveWidget;
+class OverlaySupport;
 class Knob;
 class Format;
 
@@ -670,7 +674,7 @@ public slots:
     
     void onCustomBackgroundDrawingRequested();
     
-    void initializeInteract(CurveWidget* widget);
+    void initializeInteract(OverlaySupport* widget);
 
     void onResetToDefault(const QVector<int>& dimensions);
     

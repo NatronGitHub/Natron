@@ -16,7 +16,7 @@
 #include <boost/scoped_ptr.hpp>
 
 #include "Global/GlobalDefines.h"
-
+#include "Global/KeySymbols.h"
 #include "Engine/Knob.h" // for KnobHolder
 
 class RectI;
@@ -25,7 +25,8 @@ class RenderTree;
 class VideoEngine;
 class RenderTree;
 class Format;
-class ViewerGL;
+class OverlaySupport;
+class PluginMemory;
 
 namespace Natron{
 
@@ -314,17 +315,17 @@ public:
     
     virtual bool onOverlayPenUp(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) WARN_UNUSED_RETURN { return false; }
     
-    virtual bool onOverlayKeyDown(QKeyEvent* /*e*/) WARN_UNUSED_RETURN { return false; }
+    virtual bool onOverlayKeyDown(Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN { return false; }
     
-    virtual bool onOverlayKeyUp(QKeyEvent* /*e*/) WARN_UNUSED_RETURN { return false; }
+    virtual bool onOverlayKeyUp(Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN { return false; }
     
-    virtual bool onOverlayKeyRepeat(QKeyEvent* /*e*/) WARN_UNUSED_RETURN { return false; }
+    virtual bool onOverlayKeyRepeat(Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN { return false; }
     
     virtual bool onOverlayFocusGained() WARN_UNUSED_RETURN { return false; }
     
     virtual bool onOverlayFocusLost() WARN_UNUSED_RETURN { return false; }
     
-    virtual void setCurrentViewerForOverlays(ViewerGL* /*viewer*/) {}
+    virtual void setCurrentViewportForOverlays(OverlaySupport* /*viewport*/) {}
 
     /**
      * @brief Overload this and return true if your operator should dislay a preview image by default.
@@ -447,6 +448,45 @@ public:
      **/
     void clearPersistentMessage();
     
+    /**
+     * @brief Does this effect supports tiling ?
+     **/
+    virtual bool supportsTiles() const { return false; }
+    
+    /**
+     * @brief If this effect is a reader then the file path corresponding to the input images path will be fed
+     * with the content of files. Note that an exception is thrown if the file knob does not support image sequences
+     * but you attempt to feed-in several files.
+     **/
+    void setInputFilesForReader(const QStringList& files);
+    
+    /**
+     * @brief If this effect is a writer then the file path corresponding to the output images path will be fed
+     * with the content of pattern.
+     **/
+    void setOutputFilesForWriter(const QString& pattern);
+    
+    /**
+     * @brief Constructs a new memory holder, with nBytes allocated. If the allocation failed, bad_alloc is thrown
+     **/
+    PluginMemory* newMemoryInstance(size_t nBytes) WARN_UNUSED_RETURN;
+    
+    /// used to count the memory used by a plugin
+    /// Don't call these, they're called by PluginMemory automatically
+    void registerPluginMemory(size_t nBytes);
+    void unregisterPluginMemory(size_t nBytes);
+    
+    /**
+     * @brief Called everytimes an input connection is changed
+     **/
+    virtual void onInputChanged(int /*inputNo*/) {}
+    
+    
+    /**
+     * @brief Same as onInputChanged but called once for many changes.
+     **/
+    virtual void onMultipleInputsChanged() {}
+    
 protected:
     /**
      * @brief This function is provided for means to copy more data than just the knobs from the live instance
@@ -517,7 +557,7 @@ public:
 
     void updateTreeAndRender(bool initViewer = false);
 
-    void refreshAndContinueRender(bool initViewer = false);
+    void refreshAndContinueRender(bool initViewer,bool forcePreview);
 
     void ifInfiniteclipRectToProjectDefault(RectI* rod) const;
 

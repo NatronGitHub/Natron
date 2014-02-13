@@ -13,24 +13,42 @@
 
 #include <QDir>
 #include <QSettings>
+#include <QThreadPool>
 
-#include "Global/AppManager.h"
 #include "Global/MemoryInfo.h"
-#include "Global/LibraryBinary.h"
+#include "Engine/AppManager.h"
+#include "Engine/LibraryBinary.h"
 
 #include "Engine/KnobTypes.h"
+#include "Engine/KnobFile.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
+#define NATRON_CUSTOM_OCIO_CONFIG_NAME "Custom config"
 
 using namespace Natron;
 
 
 Settings::Settings(AppInstance* appInstance)
 : KnobHolder(appInstance)
+, _wereChangesMadeSinceLastSave(false)
 {
     
+}
+
+static QString getDefaultOcioConfigPath() {
+    QString binaryPath = appPTR->getApplicationBinaryPath();
+    if (!binaryPath.isEmpty()) {
+        binaryPath += QDir::separator();
+    }
+#ifdef __NATRON_LINUX__
+    return binaryPath + "../share/OpenColorIO-Configs";
+#elif defined(__NATRON_WIN32__)
+    return binaryPath + "../Resources/OpenColorIO-Configs";
+#elif defined(__NATRON_OSX__)
+    return binaryPath + "../Resources/OpenColorIO-Configs";
+#endif
 }
 
 void Settings::initializeKnobs(){
@@ -44,9 +62,52 @@ void Settings::initializeKnobs(){
                                    " as the viewer they were picked from.");
     _generalTab->addKnob(_linearPickers);
     
+    _multiThreadedDisabled = Natron::createKnob<Bool_Knob>(this, "Disable multi-threading");
+    _multiThreadedDisabled->turnOffAnimation();
+    _multiThreadedDisabled->setValue<bool>(false);
+    _multiThreadedDisabled->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will not spawn any thread to render.");
+    _generalTab->addKnob(_multiThreadedDisabled);
+    
+    _autoPreviewEnabledForNewProjects = Natron::createKnob<Bool_Knob>(this, "Auto-preview enabled by default for new projects");
+    _autoPreviewEnabledForNewProjects->turnOffAnimation();
+    _autoPreviewEnabledForNewProjects->setValue<bool>(true);
+    _autoPreviewEnabledForNewProjects->setHintToolTip("If checked then when creating a new project, the Auto-preview option"
+                                                      " will be enabled.");
+    _generalTab->addKnob(_autoPreviewEnabledForNewProjects);
+    
+    
+    boost::shared_ptr<Tab_Knob> ocioTab = Natron::createKnob<Tab_Knob>(this, "OpenColorIO");
+    
+    
+    _ocioConfigKnob = Natron::createKnob<Choice_Knob>(this, "OpenColorIO config");
+    _ocioConfigKnob->turnOffAnimation();
+    
+    QString defaultOcioConfigsPath = getDefaultOcioConfigPath();
+    QDir ocioConfigsDir(defaultOcioConfigsPath);
+    std::vector<std::string> configs;
+    int defaultIndex = 0;
+    if (ocioConfigsDir.exists()) {
+        QStringList entries = ocioConfigsDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
+        for (int i = 0; i < entries.size(); ++i) {
+            if (entries[i].contains("nuke-default")) {
+                defaultIndex = i;
+            }
+            configs.push_back(entries[i].toStdString());
+        }
+    }
+    configs.push_back(NATRON_CUSTOM_OCIO_CONFIG_NAME);
+    _ocioConfigKnob->populate(configs);
+    _ocioConfigKnob->setValue<int>(defaultIndex);
+    
+    ocioTab->addKnob(_ocioConfigKnob);
+    
+    _customOcioConfigFile = Natron::createKnob<File_Knob>(this, "Custom OpenColorIO config file");
+    _customOcioConfigFile->setEnabled(false);
+    ocioTab->addKnob(_customOcioConfigFile);
+    
     _viewersTab = Natron::createKnob<Tab_Knob>(this, "Viewers");
     
-    _texturesMode = Natron::createKnob<Choice_Knob>(this, "Textures bit depth");
+    _texturesMode = Natron::createKnob<Choice_Knob>(this, "Viewer textures bit depth");
     _texturesMode->turnOffAnimation();
     std::vector<std::string> textureModes;
     std::vector<std::string> helpStringsTextureModes;
@@ -55,7 +116,7 @@ void Settings::initializeKnobs(){
                                       "by the software. Cached textures will be smaller in  the viewer cache.");
     textureModes.push_back("16bits half-float");
     helpStringsTextureModes.push_back("Not available yet. Similar to 32bits fp.");
-    textureModes.push_back("32bits fp");
+    textureModes.push_back("32bits floating-point");
     helpStringsTextureModes.push_back("Viewer's post-process like color-space conversion will be done\n"
                                       "by the hardware using GLSL. Cached textures will be larger in the viewer cache.");
     _texturesMode->populate(textureModes,helpStringsTextureModes);
@@ -64,7 +125,7 @@ void Settings::initializeKnobs(){
                                   " Hover each option with the mouse for a more detailed comprehension.");
     _viewersTab->addKnob(_texturesMode);
     
-    _powerOf2Tiling = Natron::createKnob<Int_Knob>(this, "Tiles power of two");
+    _powerOf2Tiling = Natron::createKnob<Int_Knob>(this, "Viewer tile size is 2 to the power of...");
     _powerOf2Tiling->setHintToolTip("The power of 2 of the tiles size used by the Viewer to render."
                                     " A high value means that the viewer will usually render big tiles, which means"
                                     " you have good chances when panning/zooming to find an already rendered texture in the cache."
@@ -128,9 +189,22 @@ void Settings::initializeKnobs(){
 
 
 void Settings::saveSettings(){
+    
+    _wereChangesMadeSinceLastSave = false;
+    
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
     settings.setValue("LinearColorPickers",_linearPickers->getValue<bool>());
+    settings.setValue("MultiThreadingDisabled", _multiThreadedDisabled->getValue<bool>());
+    settings.setValue("AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue<bool>());
+    settings.endGroup();
+    
+    settings.beginGroup("OpenColorIO");
+    QStringList configList = _customOcioConfigFile->getValue<QStringList>();
+    if (!configList.isEmpty()) {
+        settings.setValue("OCIOConfigFile", configList.at(0));
+    }
+    settings.setValue("OCIOConfig", _ocioConfigKnob->getValue<int>());
     settings.endGroup();
     
     settings.beginGroup("Caching");
@@ -158,15 +232,35 @@ void Settings::saveSettings(){
     }
     settings.endGroup();
     
-    //not serialiazing readers/writers settings as they are meaningless for now
 }
 
 void Settings::restoreSettings(){
+    
+    _wereChangesMadeSinceLastSave = false;
+    
     notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
     if(settings.contains("LinearColorPickers")){
         _linearPickers->setValue<bool>(settings.value("LinearColorPickers").toBool());
+    }
+    if (settings.contains("MultiThreadingDisabled")) {
+        _multiThreadedDisabled->setValue<bool>(settings.value("MultiThreadingDisabled").toBool());
+    }
+    if (settings.contains("AutoPreviewDefault")) {
+        _autoPreviewEnabledForNewProjects->setValue<bool>(settings.value("AutoPreviewDefault").toBool());
+    }
+    settings.endGroup();
+    
+    settings.beginGroup("OpenColorIO");
+    if (settings.contains("OCIOConfigFile")) {
+        _customOcioConfigFile->setValue<QStringList>(QStringList(settings.value("OCIOConfigFile").toString()));
+    }
+    if (settings.contains("OCIOConfig")) {
+        int activeIndex = settings.value("OCIOConfig").toInt();
+        if (activeIndex < (int)_ocioConfigKnob->getEntries().size()) {
+            _ocioConfigKnob->setValue<int>(activeIndex);
+        }
     }
     settings.endGroup();
     
@@ -218,15 +312,62 @@ void Settings::restoreSettings(){
 
 }
 
+bool Settings::tryLoadOpenColorIOConfig() {
+    if (_customOcioConfigFile->isEnabled()) {
+        ///try to load from the file
+        QStringList files = _customOcioConfigFile->getValue<QStringList>();
+        if (files.isEmpty()) {
+            return false;
+        }
+        if (!QFile::exists(files.at(0))) {
+            Natron::errorDialog("OpenColorIO", files.at(0).toStdString() + ": No such file.");
+            return false;
+        }
+        qputenv("OCIO", files.at(0).toUtf8());
+    } else {
+        ///try to load from the combobox
+        QString activeEntryText(_ocioConfigKnob->getActiveEntryText().c_str());
+        QString configFileName = QString(activeEntryText + ".ocio");
+        QString defaultConfigsPath = getDefaultOcioConfigPath();
+        QDir defaultConfigsDir(defaultConfigsPath);
+        if (!defaultConfigsDir.exists()) {
+            qDebug() << "Attempt to read an OpenColorIO configuration but the configuration directory does not exist.";
+            return false;
+        }
+        ///try to open the .ocio config file first in the defaultConfigsDir
+        ///if we can't find it, try to look in a subdirectory with the name of the config for the file config.ocio
+        if (!defaultConfigsDir.exists(configFileName)) {
+            QDir subDir(defaultConfigsPath + QDir::separator() + activeEntryText);
+            if (!subDir.exists()) {
+                Natron::errorDialog("OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + ": No such file or directory.");
+                return false;
+            }
+            if (!subDir.exists("config.ocio")) {
+                Natron::errorDialog("OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + ": No such file or directory.");
+                return false;
+            }
+            qputenv("OCIO",subDir.absoluteFilePath("config.ocio").toUtf8());
+        } else {
+            qputenv("OCIO", defaultConfigsDir.absoluteFilePath(configFileName).toUtf8());
+        }
+    }
+    return true;
+}
+
 void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
-    if(!appPTR->isInitialized()){
+    
+    if (!appPTR->isInitialized()) {
         return;
     }
-    if(k == _texturesMode.get()){
+    
+    _wereChangesMadeSinceLastSave = true;
+
+    
+    if (k == _texturesMode.get()) {
         std::map<int,AppInstance*> apps = appPTR->getAppInstances();
         bool isFirstViewer = true;
         for(std::map<int,AppInstance*>::iterator it = apps.begin();it!=apps.end();++it){
-            const std::vector<Node*>& nodes = it->second->getCurrentNodes();
+            const std::vector<Node*> nodes = it->second->getProject()->getCurrentNodes();
             for (U32 i = 0; i < nodes.size(); ++i) {
                 assert(nodes[i]);
                 if (nodes[i]->pluginID() == "Viewer") {
@@ -244,16 +385,33 @@ void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/)
                 }
             }
         }
-    }else if(k == _maxDiskCacheGB.get()){
+    } else if(k == _maxDiskCacheGB.get()) {
         appPTR->setApplicationsCachesMaximumDiskSpace(getMaximumDiskCacheSize());
-    }else if(k == _maxRAMPercent.get()){
+    } else if(k == _maxRAMPercent.get()) {
         appPTR->setApplicationsCachesMaximumMemoryPercent(getRamMaximumPercent());
-    }else if(k == _maxPlayBackPercent.get()){
+    } else if(k == _maxPlayBackPercent.get()) {
         appPTR->setPlaybackCacheMaximumSize(getRamPlaybackMaximumPercent());
+    } else if(k == _multiThreadedDisabled.get()) {
+        if (isMultiThreadingDisabled()) {
+            QThreadPool::globalInstance()->setMaxThreadCount(1);
+            appPTR->abortAnyProcessing();
+        } else {
+            QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
+        }
+    } else if(k == _ocioConfigKnob.get()) {
+        if (_ocioConfigKnob->getActiveEntryText() == std::string(NATRON_CUSTOM_OCIO_CONFIG_NAME)) {
+            _customOcioConfigFile->setEnabled(true);
+        } else {
+            _customOcioConfigFile->setEnabled(false);
+        }
+        tryLoadOpenColorIOConfig();
+         
+    } else if (k == _customOcioConfigFile.get()) {
+        tryLoadOpenColorIOConfig();
     }
 }
 
-int Settings::getViewersBitDepth() const{
+int Settings::getViewersBitDepth() const {
     return _texturesMode->getValue<int>();
 }
 
@@ -261,18 +419,31 @@ int Settings::getViewerTilesPowerOf2() const {
     return _powerOf2Tiling->getValue<int>();
 }
 
-double Settings::getRamMaximumPercent() const{
+double Settings::getRamMaximumPercent() const {
     return (double)_maxRAMPercent->getValue<int>() / 100.;
 }
+
 double Settings::getRamPlaybackMaximumPercent() const{
     return (double)_maxPlayBackPercent->getValue<int>() / 100.;
 }
 
-U64 Settings::getMaximumDiskCacheSize() const{
+U64 Settings::getMaximumDiskCacheSize() const {
     return ((U64)(_maxDiskCacheGB->getValue<int>()) * std::pow(1024.,3.));
 }
-bool Settings::getColorPickerLinear() const{
+bool Settings::getColorPickerLinear() const {
     return _linearPickers->getValue<bool>();
+}
+
+bool Settings::isMultiThreadingDisabled() const {
+    return _multiThreadedDisabled->getValue<bool>();
+}
+
+void Settings::setMultiThreadingDisabled(bool disabled) {
+    _multiThreadedDisabled->setValue<bool>(disabled);
+}
+
+bool Settings::isAutoPreviewOnForNewProjects() const {
+    return _autoPreviewEnabledForNewProjects->getValue<bool>();
 }
 
 const std::string& Settings::getReaderPluginIDForFileType(const std::string& extension){
@@ -341,3 +512,4 @@ void Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::strin
         formats->insert(std::make_pair(_writersMapping[i]->getDescription(),entries[index]));
     }
 }
+

@@ -13,7 +13,10 @@
 #include <cmath>
 
 #include <QtGui/QFont>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QMouseEvent>
+CLANG_DIAG_ON(unused-private-field)
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
@@ -25,6 +28,10 @@
 #include "Gui/TextRenderer.h"
 #include "Gui/ticks.h"
 #include "Gui/Gui.h"
+
+// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
+CLANG_DIAG_OFF(deprecated-declarations)
+GCC_DIAG_OFF(deprecated-declarations)
 
 using namespace Natron;
 

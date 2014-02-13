@@ -18,6 +18,7 @@
 #include <QtConcurrentRun>
 #include <QFontMetrics>
 #include <QMenu>
+#include <QTextDocument> // for Qt::convertFromPlainText
 
 #include "Gui/Edge.h"
 #include "Gui/DockablePanel.h"
@@ -34,8 +35,9 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/ChannelSet.h"
 #include "Engine/Timer.h"
+#include "Engine/Project.h"
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #define NATRON_STATE_INDICATOR_OFFSET 5
 
@@ -48,7 +50,6 @@ static const double pi=3.14159265358979323846264338327950288419717;
 NodeGui::NodeGui(NodeGraph* dag,
                  QVBoxLayout *dockContainer_,
                  Natron::Node *node_,
-                 qreal x, qreal y,
                  QGraphicsItem *parent)
 : QObject()
 , QGraphicsItem(parent)
@@ -81,6 +82,7 @@ NodeGui::NodeGui(NodeGraph* dag,
     QObject::connect(_internalNode, SIGNAL(knobsInitialized()),this,SLOT(initializeKnobs()));
     QObject::connect(_internalNode, SIGNAL(inputsInitialized()),this,SLOT(initializeInputs()));
     QObject::connect(_internalNode, SIGNAL(previewImageChanged(int)), this, SLOT(updatePreviewImage(int)));
+    QObject::connect(_internalNode, SIGNAL(previewRefreshRequested(int)), this, SLOT(forceComputePreview(int)));
     QObject::connect(_internalNode, SIGNAL(deactivated()),this,SLOT(deactivate()));
     QObject::connect(_internalNode, SIGNAL(activated()), this, SLOT(activate()));
     QObject::connect(_internalNode, SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)));
@@ -96,28 +98,28 @@ NodeGui::NodeGui(NodeGraph* dag,
     /*Disabled for now*/
     
     setCacheMode(DeviceCoordinateCache);
-    setZValue(-1);
-    setPos(x,y);	
+    setZValue(1);
 
     _boundingBox = new QGraphicsRectItem(this);
-    _boundingBox->setZValue(-1);
+    _boundingBox->setZValue(0.5);
 	
     QPixmap pixmap;
     appPTR->getIcon(NATRON_PIXMAP_RGBA_CHANNELS,&pixmap);
-    _channelsPixmap= new QGraphicsPixmapItem(pixmap,this);
+    //_channelsPixmap= new QGraphicsPixmapItem(pixmap,this);
 	
     _nameItem = new QGraphicsTextItem(_internalNode->getName().c_str(),this);
     _nameItem->setDefaultTextColor(QColor(0,0,0,255));
+    _nameItem->setZValue(0.6);
 
     _persistentMessage = new QGraphicsTextItem("",this);
-    _persistentMessage->setZValue(1);
+    _persistentMessage->setZValue(0.7);
     QFont f = _persistentMessage->font();
     f.setPixelSize(25);
     _persistentMessage->setFont(f);
     _persistentMessage->hide();
     
     _stateIndicator = new QGraphicsRectItem(this);
-    _stateIndicator->setZValue(-5);
+    _stateIndicator->setZValue(-1);
     _stateIndicator->hide();
 
     /*building settings panel*/
@@ -167,13 +169,26 @@ void NodeGui::togglePreview(){
             prev.fill(Qt::black);
             QPixmap prev_pixmap = QPixmap::fromImage(prev);
             _previewPixmap = new QGraphicsPixmapItem(prev_pixmap,this);
+            _previewPixmap->setZValue(0.6);
         }
-        updateShape(NODE_LENGTH+PREVIEW_LENGTH,NODE_HEIGHT+PREVIEW_HEIGHT);
+        updateShape(NODE_WITH_PREVIEW_LENGTH,NODE_WITH_PREVIEW_HEIGHT);
         _previewPixmap->show();
     }else{
         _previewPixmap->hide();
         updateShape(NODE_LENGTH,NODE_HEIGHT);
     }
+}
+
+QSize NodeGui::nodeSize(bool withPreview) {
+    QSize ret;
+    if (withPreview) {
+        ret.setWidth(NodeGui::NODE_WITH_PREVIEW_LENGTH);
+        ret.setHeight(NodeGui::NODE_WITH_PREVIEW_HEIGHT);
+    } else {
+        ret.setWidth(NodeGui::NODE_LENGTH);
+        ret.setHeight(NodeGui::NODE_HEIGHT);
+    }
+    return ret;
 }
 
 NodeGui::~NodeGui(){
@@ -212,7 +227,7 @@ void NodeGui::removeSettingsPanel(){
 void NodeGui::updateShape(int width,int height){
     QPointF topLeft = mapFromParent(pos());
     _boundingBox->setRect(topLeft.x(),topLeft.y(),width,height);
-    _channelsPixmap->setPos(topLeft.x()+1,topLeft.y()+1);
+    //_channelsPixmap->setPos(topLeft.x()+1,topLeft.y()+1);
     
     QFont f(NATRON_FONT_ALT, NATRON_FONT_SIZE_12);
     QFontMetrics metrics(f);
@@ -229,7 +244,8 @@ void NodeGui::updateShape(int width,int height){
     _stateIndicator->setRect(topLeft.x()-NATRON_STATE_INDICATOR_OFFSET,topLeft.y()-NATRON_STATE_INDICATOR_OFFSET,
                              width+NATRON_STATE_INDICATOR_OFFSET*2,height+NATRON_STATE_INDICATOR_OFFSET*2);
     if(_previewPixmap)
-        _previewPixmap->setPos(topLeft.x() + NATRON_PREVIEW_WIDTH/2,topLeft.y() + NATRON_PREVIEW_HEIGHT/2);
+        _previewPixmap->setPos(topLeft.x() + width / 2 - NATRON_PREVIEW_WIDTH / 2,
+                               topLeft.y() + height / 2 - NATRON_PREVIEW_HEIGHT / 2 + 10);
 
     refreshEdges();
     refreshPosition(pos().x(), pos().y());
@@ -244,6 +260,12 @@ void NodeGui::refreshPosition(double x,double y){
         }
     }
 }
+
+void NodeGui::changePosition(double dx,double dy) {
+    QPointF p = pos();
+    refreshPosition(p.x() + dx, p.y() + dy);
+}
+
 void NodeGui::refreshEdges(){
     for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i!= _inputEdges.end(); ++i){
         const Natron::Node::InputMap& nodeInputs = _internalNode->getInputs();
@@ -268,17 +290,22 @@ void NodeGui::markInputNull(Edge* e){
 
 void NodeGui::updateChannelsTooltip(const Natron::ChannelSet& chan){
     QString tooltip;
-    tooltip.append("Channels in input: ");
+    tooltip += "Channels in input: ";
     foreachChannels( z,chan){
-        tooltip.append("\n");
-        tooltip.append(Natron::getChannelName(z).c_str());
-        
+        tooltip += "\n";
+        tooltip += Natron::getChannelName(z).c_str();
     }
-    _channelsPixmap->setToolTip(tooltip);
+    //_channelsPixmap->setToolTip(Qt::convertFromPlainText(tooltip, Qt::WhiteSpaceNormal));
 }
 
-void NodeGui::updatePreviewImage(int time){
+void NodeGui::updatePreviewImage(int time) {
     
+    if(_internalNode->isPreviewEnabled()  && _internalNode->getApp()->getProject()->isAutoPreviewEnabled()) {
+        QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
+    }
+}
+
+void NodeGui::forceComputePreview(int time) {
     if(_internalNode->isPreviewEnabled()) {
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
     }
@@ -480,7 +507,7 @@ void NodeGui::activate(){
     _graph->getGui()->_curveEditor->addNode(this);
     for (NodeGui::InputEdgesMap::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
         _graph->scene()->addItem(it->second);
-        it->second->setParentItem(this);
+        it->second->setParentItem(parentItem());
         it->second->setActive(true);
     }
     refreshEdges();
@@ -495,8 +522,7 @@ void NodeGui::activate(){
         }
     }else{
         ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
-        _graph->getGui()->addViewerTab(viewer->getUiContext(), _graph->getGui()->_viewersPane);
-        viewer->getUiContext()->show();
+        _graph->getGui()->activateViewerTab(viewer);
     }
     if(_internalNode->isOpenFXNode()){
         OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
@@ -523,8 +549,7 @@ void NodeGui::deactivate(){
         
     }else{
         ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
-        _graph->getGui()->removeViewerTab(viewer->getUiContext(), false,false);
-        viewer->getUiContext()->hide();
+        _graph->getGui()->deactivateViewerTab(viewer);
     }
     if(_internalNode->isOpenFXNode()){
         OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
@@ -578,7 +603,9 @@ void NodeGui::onPersistentMessageChanged(int type,const QString& message){
     std::list<ViewerInstance*> viewers;
     _internalNode->hasViewersConnected(&viewers);
     for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
-        (*it)->getUiContext()->viewer->setPersistentMessage(type,message);
+        ViewerTab* tab = _graph->getGui()->getViewerTabForInstance(*it);
+        assert(tab);
+        tab->viewer->setPersistentMessage(type,message);
     }
     QRectF rect = _boundingBox->rect();
     updateShape(rect.width(), rect.height());
@@ -591,7 +618,9 @@ void NodeGui::onPersistentMessageCleared(){
     std::list<ViewerInstance*> viewers;
     _internalNode->hasViewersConnected(&viewers);
     for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
-        (*it)->getUiContext()->viewer->clearPersistentMessage();
+        ViewerTab* tab = _graph->getGui()->getViewerTabForInstance(*it);
+        assert(tab);
+        tab->viewer->clearPersistentMessage();
     }
 }
 
@@ -680,4 +709,36 @@ void NodeGui::onInputNRenderingFinished(int input) {
     std::map<int,Edge*>::iterator it = _inputEdges.find(input);
     assert(it != _inputEdges.end());
     it->second->turnOffRenderingColor();
+}
+
+void NodeGui::moveBelowPositionRecursively(const QRectF& r) {
+    QRectF sceneRect = mapToScene(boundingRect()).boundingRect();
+
+    if (r.intersects(sceneRect)) {
+        changePosition(0, r.height() + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
+        const Natron::Node::OutputMap& outputs = getNode()->getOutputs();
+        for (Natron::Node::OutputMap::const_iterator it = outputs.begin(); it!= outputs.end(); ++it) {
+            if (it->second) {
+                NodeGui* output = _internalNode->getApp()->getNodeGui(it->second);
+                assert(output);
+                sceneRect = mapToScene(boundingRect()).boundingRect();
+                output->moveBelowPositionRecursively(sceneRect);
+            }
+        }
+    }
+}
+
+void NodeGui::moveAbovePositionRecursively(const QRectF& r) {
+
+
+    QRectF sceneRect = mapToScene(boundingRect()).boundingRect();
+    if (r.intersects(sceneRect)) {
+        changePosition(0,- r.height() - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
+        for (std::map<int,Edge*>::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end();++it) {
+            if (it->second->hasSource()) {
+                sceneRect = mapToScene(boundingRect()).boundingRect();
+                it->second->getSource()->moveAbovePositionRecursively(sceneRect);
+            }
+        }
+    }
 }

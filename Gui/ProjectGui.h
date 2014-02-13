@@ -10,8 +10,13 @@
 #ifndef PROJECTGUI_H
 #define PROJECTGUI_H
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QObject>
 #include <QDialog>
+CLANG_DIAG_ON(deprecated)
+
+
 #include <boost/shared_ptr.hpp>
 #include "Engine/Format.h"
 class Button;
@@ -25,7 +30,14 @@ class LineEdit;
 class Color_Knob;
 class DockablePanel;
 class ProjectGuiSerialization;
+class Gui;
 class NodeGuiSerialization;
+namespace boost {
+    namespace archive {
+        class xml_archive;
+    }
+}
+
 namespace Natron{
     class Project;
 }
@@ -41,9 +53,7 @@ public:
         
     void create(boost::shared_ptr<Natron::Project> projectInternal,QVBoxLayout* container,QWidget* parent = NULL);
     
-    void loadProject(const QString& path,const QString& name);
     
-    void saveProject(const QString& path,const QString& filename,bool autoSave = false);
     
     bool isVisible() const;
     
@@ -51,9 +61,9 @@ public:
     
     boost::shared_ptr<Natron::Project> getInternalProject() const { return _project; }
     
-    void save(ProjectGuiSerialization* serializationObject) const;
+    void save(boost::archive::xml_oarchive& archive) const;
     
-    void load(const ProjectGuiSerialization& obj);
+    void load(boost::archive::xml_iarchive& archive);
     
     void registerNewColorPicker(boost::shared_ptr<Color_Knob> knob);
     
@@ -62,6 +72,8 @@ public:
     bool hasPickers() const { return !_colorPickersEnabled.empty(); }
     
     void setPickersColor(const QColor& color);
+    
+    void initializeKnobsGui();
     
 public slots:
     
@@ -88,7 +100,7 @@ class AddFormatDialog : public QDialog {
     
 public:
     
-    AddFormatDialog(Natron::Project* project,QWidget* parent = 0);
+    AddFormatDialog(Natron::Project* project,Gui* gui);
     
     virtual ~AddFormatDialog(){}
     
@@ -100,7 +112,7 @@ public:
     
 private:
     
-    
+    Gui* _gui;
     Natron::Project* _project;
     
     QVBoxLayout* _mainLayout;

@@ -14,9 +14,11 @@
 #define NATRON_MAX_CHANNEL_COUNT 31 // ChannelSet can handle channels 1..31, so it must be 31
 #define NATRON_MAX_VALID_CHANNEL_INDEX 6
 
+#include "Global/Macros.h"
 #include <QFlags>
-#include <QMessageBox>
+CLANG_DIAG_OFF(deprecated)
 #include <QMetaType>
+CLANG_DIAG_ON(deprecated)
 
 namespace Natron{
     
@@ -72,6 +74,7 @@ namespace Natron{
     /*Copy of QMessageBox::StandardButton*/
     enum StandardButton {
         NoButton           = 0x00000000,
+        Escape             = 0x00000200,        // obsolete
         Ok                 = 0x00000400,
         Save               = 0x00000800,
         SaveAll            = 0x00001000,
@@ -91,11 +94,10 @@ namespace Natron{
         Reset              = 0x04000000,
         RestoreDefaults    = 0x08000000
     };
+
+    typedef QFlags<Natron::StandardButton> StandardButtons;
     
     enum MessageType{INFO_MESSAGE = 0,ERROR_MESSAGE = 1,WARNING_MESSAGE = 2,QUESTION_MESSAGE = 3};
-
-    
-    typedef QFlags<QMessageBox::StandardButton> StandardButtons;
 
     enum KeyframeType {
         KEYFRAME_CONSTANT = 0,
@@ -145,6 +147,7 @@ namespace Natron{
         NATRON_PIXMAP_VIEWER_CENTER,
         NATRON_PIXMAP_VIEWER_CLIP_TO_PROJECT,
         NATRON_PIXMAP_VIEWER_REFRESH,
+        NATRON_PIXMAP_VIEWER_ROI,
 
         NATRON_PIXMAP_OPEN_FILE,
         NATRON_PIXMAP_RGBA_CHANNELS,
@@ -159,6 +162,8 @@ namespace Natron{
         NATRON_PIXMAP_MULTIVIEW_GROUPING,
         NATRON_PIXMAP_MISC_GROUPING,
         NATRON_PIXMAP_OPEN_EFFECTS_GROUPING,
+        NATRON_PIXMAP_TIME_GROUPING,
+        NATRON_PIXMAP_PAINT_GROUPING,
         
         NATRON_PIXMAP_COMBOBOX,
         NATRON_PIXMAP_COMBOBOX_PRESSED,

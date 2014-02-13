@@ -8,8 +8,6 @@
  *
  */
 
-// TODO: split into KnobGui.cpp, KnobGuiFile.cpp and KnobGuiTypes.cpp
-
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/KnobGui.h"
 
@@ -25,7 +23,10 @@
 #include <QTextEdit>
 #include <QStyle> // in QtGui on Qt4, in QtWidgets on Qt5
 
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QKeyEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QColorDialog>
 #include <QGroupBox>
 #include <QtGui/QVector4D>
@@ -34,8 +35,8 @@
 #include <QMenu>
 #include <QComboBox>
 
-#include "Global/AppManager.h"
-#include "Global/LibraryBinary.h"
+#include "Engine/AppManager.h"
+#include "Engine/LibraryBinary.h"
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Node.h"
@@ -124,7 +125,7 @@ void KnobGui::createGUI(QGridLayout* layout,int row){
 void KnobGui::createAnimationButton(QGridLayout* layout,int row){
     _animationMenu = new QMenu(layout->parentWidget());
     _animationButton = new AnimationButton(this,"A",layout->parentWidget());
-    _animationButton->setToolTip("Animation menu");
+    _animationButton->setToolTip(Qt::convertFromPlainText("Animation menu", Qt::WhiteSpaceNormal));
     QObject::connect(_animationButton,SIGNAL(clicked()),this,SLOT(showAnimationMenu()));
     layout->addWidget(_animationButton, row, 3,Qt::AlignLeft);
 }
@@ -386,6 +387,15 @@ void KnobGui::removeKeyFrame(SequenceTime time,int dimension){
     checkAnimationLevel(dimension);
 }
 
+QString KnobGui::toolTip() const
+{
+    return Qt::convertFromPlainText(getKnob()->getHintToolTip().c_str(), Qt::WhiteSpaceNormal);
+}
+
+bool KnobGui::hasToolTip() const {
+    return !getKnob()->getHintToolTip().empty();
+}
+
 void KnobGui::onRemoveKeyActionTriggered(){
     assert(_knob->getHolder()->getApp());
     //get the current time on the global timeline
@@ -546,7 +556,8 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
         const std::vector< boost::shared_ptr<Knob> >& knobs = allActiveNodes[i]->getKnobs();
         
         for (U32 j = 0; j < knobs.size(); ++j) {
-            if(knobs[j]->isEnabled() && !knobs[j]->isSecret()){
+            if(knobs[j]->isEnabled() && !knobs[j]->isSecret() && knobs[j]->typeName() == from->getKnob()->typeName()
+               && knobs[j]->getDimension() == from->getKnob()->getDimension()){
                 QString name(allActiveNodes[i]->getName().c_str());
                 name.append("/");
                 name.append(knobs[j]->getDescription().c_str());

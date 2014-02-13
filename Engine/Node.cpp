@@ -32,8 +32,8 @@
 #include "Engine/Log.h"
 #include "Engine/NodeSerialization.h"
 
-#include "Global/AppManager.h"
-#include "Global/LibraryBinary.h"
+#include "Engine/AppManager.h"
+#include "Engine/LibraryBinary.h"
 
 using namespace Natron;
 using std::make_pair;
@@ -95,6 +95,9 @@ struct Node::Implementation {
         , plugin(plugin_)
         , renderInstances()
         , computingPreview(false)
+        , computingPreviewCond()
+        , pluginInstanceMemoryUsed(0)
+        , memoryUsedMutex()
     {
     }
 
@@ -120,6 +123,9 @@ struct Node::Implementation {
     
     bool computingPreview;
     QWaitCondition computingPreviewCond;
+    
+    size_t pluginInstanceMemoryUsed; //< global count on all EffectInstance's of the memory they use.
+    QMutex memoryUsedMutex; //< protects _pluginInstanceMemoryUsed
 };
 
 Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
@@ -182,6 +188,50 @@ const std::map<int, std::string>& Node::getInputLabels() const
 const Node::OutputMap& Node::getOutputs() const
 {
     return _imp->outputs;
+}
+
+int Node::getPreferredInputForConnection() const {
+    if (maximumInputs() == 0) {
+        return -1;
+    }
+    
+    ///we return the first non-optional empty input
+    int firstNonOptionalEmptyInput = -1;
+    int firstOptionalEmptyInput = -1;
+    int index = 0;
+    for (InputMap::const_iterator it = _inputs.begin() ; it!=_inputs.end(); ++it) {
+        if (!it->second) {
+            if (!_liveInstance->isInputOptional(index)) {
+                if (firstNonOptionalEmptyInput == -1) {
+                    firstNonOptionalEmptyInput = index;
+                    break;
+                }
+            } else {
+                if (firstOptionalEmptyInput == -1) {
+                    firstOptionalEmptyInput = index;
+                }
+            }
+        }
+        ++index;
+    }
+    
+    if (firstNonOptionalEmptyInput != -1) {
+        return firstNonOptionalEmptyInput;
+    } else if(firstOptionalEmptyInput != -1) {
+        return firstOptionalEmptyInput;
+    } else {
+        return -1;
+    }
+}
+
+void Node::getOutputsConnectedToThisNode(std::map<Node*,int>* outputs) {
+    for (OutputMap::const_iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it) {
+        if (it->second) {
+            int indexOfThis = it->second->inputIndex(this);
+            assert(indexOfThis != -1);
+            outputs->insert(std::make_pair(it->second, indexOfThis));
+        }
+    }
 }
 
 const std::string& Node::getName() const
@@ -431,6 +481,21 @@ int Node::disconnectOutput(Node* output)
     return -1;
 }
 
+int Node::inputIndex(Node* n) const {
+    
+    if (!n) {
+        return -1;
+    }
+    
+    int index = 0;
+    for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+        if (n == it->second) {
+            return index;
+        }
+        ++index;
+    }
+    return -1;
+}
 
 /*After this call this node still knows the link to the old inputs/outputs
  but no other node knows this node.*/
@@ -440,13 +505,34 @@ void Node::deactivate()
     //first tell the gui to clear any persistent message link to this node
     clearPersistentMessage();
 
+    ///if the node has 1 non-optional input, attempt to connect the outputs to the input of the current node
+    ///this node is the node the outputs should attempt to connect to
+    Node* inputToConnectTo = 0;
+    
+    int firstNonOptionalInput = -1;
+    bool hasOnlyOneNonOptionalInput = false;
+    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+        if (it->second) {
+            if (!_liveInstance->isInputOptional(it->first)) {
+                if (firstNonOptionalInput == -1) {
+                    firstNonOptionalInput = it->first;
+                    hasOnlyOneNonOptionalInput = true;
+                } else {
+                    hasOnlyOneNonOptionalInput = false;
+                }
+            }
+        }
+    }
+    if (hasOnlyOneNonOptionalInput && firstNonOptionalInput != -1) {
+        inputToConnectTo = input(firstNonOptionalInput);
+    }
+    
     /*Removing this node from the output of all inputs*/
     _imp->deactivatedState.inputConnections.clear();
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if (it->second) {
             int outputNb = it->second->disconnectOutput(this);
             _imp->deactivatedState.inputConnections.insert(make_pair(it->second, make_pair(outputNb, it->first)));
-            it->second = NULL;
         }
     }
     _imp->deactivatedState.outputsConnections.clear();
@@ -458,6 +544,16 @@ void Node::deactivate()
         _imp->deactivatedState.outputsConnections.insert(make_pair(it->second, make_pair(inputNb, it->first)));
     }
     
+    if (inputToConnectTo) {
+        for (OutputConnectionsIterator it = _imp->deactivatedState.outputsConnections.begin();
+             it!=_imp->deactivatedState.outputsConnections.end(); ++it) {
+            getApp()->getProject()->connectNodes(it->second.first, inputToConnectTo, it->first);
+        }
+    }
+    
+    ///kill any thread it could have started (e.g: VideoEngine or preview)
+    quitAnyProcessing();
+    
     emit deactivated();
     _imp->activated = false;
     
@@ -465,31 +561,28 @@ void Node::deactivate()
 
 void Node::activate()
 {
-    
-    for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        if (!it->second) {
-            continue;
-        }
-        InputConnectionsIterator found = _imp->deactivatedState.inputConnections.find(it->second);
-        if (found == _imp->deactivatedState.inputConnections.end()) {
-            cout << "Big issue while activating this node, canceling process." << endl;
-            return;
-        }
-        /*InputNumber must be the same than the one we stored at disconnection time.*/
-        assert(found->second.first == it->first);
-        it->second->connectOutput(this,found->second.first);
+    ///for all inputs, reconnect their output to this node
+    for (InputConnectionsIterator it = _imp->deactivatedState.inputConnections.begin();
+         it!= _imp->deactivatedState.inputConnections.end(); ++it) {
+        it->first->connectOutput(this,it->second.first);
     }
-    for (OutputMap::const_iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it) {
-        if (!it->second) {
-            continue;
+   
+   
+
+    for (OutputConnectionsIterator it = _imp->deactivatedState.outputsConnections.begin();
+         it!= _imp->deactivatedState.outputsConnections.end(); ++it) {
+        
+        ///before connecting the outputs to this node, disconnect any link that has been made
+        ///between the outputs by the user
+        Node* outputHasInput = it->first->input(it->second.first);
+        if (outputHasInput) {
+            bool ok = getApp()->getProject()->disconnectNodes(outputHasInput, it->first);
+            assert(ok);
         }
-        OutputConnectionsIterator found = _imp->deactivatedState.outputsConnections.find(it->second);
-        if (found == _imp->deactivatedState.outputsConnections.end()) {
-            cout << "Big issue while activating this node, canceling process." << endl;
-            return;
-        }
-        assert(found->second.second == it->first);
-        it->second->connectInput(this,found->second.first);
+
+        ///and connect the output to this node
+        bool ok = it->first->connectInput(this, it->second.first);
+        assert(ok);
     }
     
     emit activated();
@@ -501,7 +594,7 @@ void Node::activate()
 const Format& Node::getRenderFormatForEffect(const EffectInstance* effect) const
 {
     if (effect == _liveInstance) {
-        return getApp()->getProjectFormat();
+        return getApp()->getProject()->getProjectDefaultFormat();
     } else {
         for (std::map<RenderTree*,EffectInstance*>::const_iterator it = _imp->renderInstances.begin();
              it!=_imp->renderInstances.end();++it) {
@@ -510,13 +603,13 @@ const Format& Node::getRenderFormatForEffect(const EffectInstance* effect) const
             }
         }
     }
-    return getApp()->getProjectFormat();
+    return getApp()->getProject()->getProjectDefaultFormat();
 }
 
 int Node::getRenderViewsCountForEffect( const EffectInstance* effect) const
 {
     if(effect == _liveInstance) {
-        return getApp()->getProjectViewsCount();
+        return getApp()->getProject()->getProjectViewsCount();
     } else {
         for (std::map<RenderTree*,EffectInstance*>::const_iterator it = _imp->renderInstances.begin();
              it!=_imp->renderInstances.end();++it) {
@@ -525,7 +618,7 @@ int Node::getRenderViewsCountForEffect( const EffectInstance* effect) const
             }
         }
     }
-    return getApp()->getProjectViewsCount();
+    return getApp()->getProject()->getProjectViewsCount();
 }
 
 
@@ -542,12 +635,6 @@ boost::shared_ptr<Image> Node::getImageBeingRendered(SequenceTime time,int view)
         return it->second;
     }
     return boost::shared_ptr<Image>();
-}
-
-static float clamp(float v, float min = 0.f, float max= 1.f){
-    if(v > max) v = max;
-    if(v < min) v = min;
-    return v;
 }
 
 void Node::addImageBeingRendered(boost::shared_ptr<Image> image,SequenceTime time,int view )
@@ -632,6 +719,13 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
         _imp->computingPreviewCond.wakeOne();
         return;
     }
+    
+    if (!img) {
+        _imp->computingPreview = false;
+        _imp->computingPreviewCond.wakeOne();
+        return;
+    }
+    
     for (int i=0; i < h; ++i) {
         double y = (double)i/yZoomFactor;
         int nearestY = (int)(y+0.5);
@@ -642,10 +736,10 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
         for(int j = 0;j < w;++j) {
             double x = (double)j/xZoomFactor;
             int nearestX = (int)(x+0.5);
-            float r = clamp(Natron::Color::to_func_srgb(src_pixels[nearestX*4]));
-            float g = clamp(Natron::Color::to_func_srgb(src_pixels[nearestX*4+1]));
-            float b = clamp(Natron::Color::to_func_srgb(src_pixels[nearestX*4+2]));
-            dst_pixels[j] = qRgba(r*255, g*255, b*255, 255);
+            int r = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4]));
+            int g = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4+1]));
+            int b = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4+2]));
+            dst_pixels[j] = qRgba(r, g, b, 255);
 
         }
     }
@@ -661,7 +755,7 @@ void Node::abortRenderingForEffect(EffectInstance* effect)
 {
     for (std::map<RenderTree*,EffectInstance*>::iterator it = _imp->renderInstances.begin(); it!=_imp->renderInstances.end(); ++it) {
         if(it->second == effect){
-            dynamic_cast<OutputEffectInstance*>(it->first->getOutput())->getVideoEngine()->abortRendering();
+            dynamic_cast<OutputEffectInstance*>(it->first->getOutput())->getVideoEngine()->abortRendering(true);
         }
     }
 }
@@ -759,19 +853,19 @@ bool Node::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos)
     return _liveInstance->onOverlayPenUp(viewportPos, pos);
 }
 
-bool Node::onOverlayKeyDown(QKeyEvent* e)
+bool Node::onOverlayKeyDown(Natron::Key key,Natron::KeyboardModifiers modifiers)
 {
-    return _liveInstance->onOverlayKeyDown(e);
+    return _liveInstance->onOverlayKeyDown(key,modifiers);
 }
 
-bool Node::onOverlayKeyUp(QKeyEvent* e)
+bool Node::onOverlayKeyUp(Natron::Key key,Natron::KeyboardModifiers modifiers)
 {
-    return _liveInstance->onOverlayKeyUp(e);
+    return _liveInstance->onOverlayKeyUp(key,modifiers);
 }
 
-bool Node::onOverlayKeyRepeat(QKeyEvent* e)
+bool Node::onOverlayKeyRepeat(Natron::Key key,Natron::KeyboardModifiers modifiers)
 {
-    return _liveInstance->onOverlayKeyRepeat(e);
+    return _liveInstance->onOverlayKeyRepeat(key,modifiers);
 }
 
 bool Node::onOverlayFocusGained()
@@ -861,6 +955,27 @@ void Node::notifyRenderingStarted() {
 
 void Node::notifyRenderingEnded() {
     emit renderingEnded();
+}
+
+
+void Node::setInputFilesForReader(const QStringList& files) {
+    _liveInstance->setInputFilesForReader(files);
+}
+
+void Node::setOutputFilesForWriter(const QString& pattern) {
+    _liveInstance->setOutputFilesForWriter(pattern);
+}
+
+void Node::registerPluginMemory(size_t nBytes) {
+    QMutexLocker l(&_imp->memoryUsedMutex);
+    _imp->pluginInstanceMemoryUsed += nBytes;
+    emit pluginMemoryUsageChanged((unsigned long long)_imp->pluginInstanceMemoryUsed);
+}
+
+void Node::unregisterPluginMemory(size_t nBytes) {
+    QMutexLocker l(&_imp->memoryUsedMutex);
+    _imp->pluginInstanceMemoryUsed -= nBytes;
+    emit pluginMemoryUsageChanged((unsigned long long)_imp->pluginInstanceMemoryUsed);
 }
 
 InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin,const std::string& name)

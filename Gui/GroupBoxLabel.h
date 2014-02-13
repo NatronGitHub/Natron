@@ -6,7 +6,10 @@
 #ifndef NATRON_GUI_GROUPBOXLABEL_H_
 #define NATRON_GUI_GROUPBOXLABEL_H_
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QLabel> // in QtGui on Qt4, in QtWidgets on Qt5
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/Macros.h"
 

@@ -13,7 +13,10 @@
 #define NATRON_ENGINE_VIEWERNODE_H_
 
 #include <string>
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QFutureWatcher>
+CLANG_DIAG_ON(deprecated)
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 
@@ -22,19 +25,15 @@
 #include "Engine/ImageInfo.h"
 #include "Engine/EffectInstance.h"
 #include "Gui/Texture.h"
-class TabWidget;
-class ViewerTab;
 class AppInstance;
 class Timer;
 namespace Natron{
+class Image;
 namespace Color{
 class Lut;
 }
 }
-
-class QKeyEvent;
-
-
+class OpenGLViewerI;
 
 class ViewerInstance : public QObject, public Natron::OutputEffectInstance {
     
@@ -43,7 +42,7 @@ class ViewerInstance : public QObject, public Natron::OutputEffectInstance {
     
 public:
     enum DisplayChannels{
-        RGBA = 0,
+        RGB = 0,
         R,
         G,
         B,
@@ -57,11 +56,6 @@ public:
         Rec709
     };
     
-    enum BitDepth{
-        BYTE = 0,
-        HALF_FLOAT ,
-        FLOAT
-    };
 
 private:
     
@@ -77,7 +71,7 @@ private:
         size_t _bytesCount;
     };
     
-    ViewerTab* _uiContext;
+    OpenGLViewerI* _uiContext;
     
     int _pboIndex;
     
@@ -107,24 +101,22 @@ private:
     
     DisplayChannels _channels;
     
+    boost::shared_ptr<Natron::Image> _lastRenderedImage;
+    
 public:
     
     
     
     
-    static Natron::EffectInstance* BuildEffect(Natron::Node* n) { return new ViewerInstance(n); }
+    static Natron::EffectInstance* BuildEffect(Natron::Node* n) WARN_UNUSED_RETURN { return new ViewerInstance(n); }
     
     ViewerInstance(Natron::Node* node);
     
     virtual ~ViewerInstance();
     
-    ViewerTab* getUiContext() const {return _uiContext;}
-    
-    void setUiContext(ViewerTab* ptr){_uiContext = ptr;}
-    
-    /*Add a new viewer tab to the GUI*/
-    void initializeViewerTab(TabWidget* where);
-    
+    OpenGLViewerI* getUiContext() const WARN_UNUSED_RETURN {return _uiContext;}
+
+    void setUiContext(OpenGLViewerI* viewer);
 
     /**
      * @brief This function renders the image at time 'time' on the viewer.
@@ -136,7 +128,7 @@ public:
      * Otherwise it just calls renderRoi(...) on the active input and
      * and then render to the PBO.
      **/
-    Natron::Status renderViewer(SequenceTime time,bool fitToViewer);
+    Natron::Status renderViewer(SequenceTime time,bool fitToViewer,bool singleThreaded) WARN_UNUSED_RETURN;
 
 
     /**
@@ -156,20 +148,20 @@ public:
 
     void wakeUpAnySleepingThread();
 
-    int activeInput() const;
+    int activeInput() const WARN_UNUSED_RETURN;
 
-    int getLutType() const {return _lut;}
+    int getLutType() const WARN_UNUSED_RETURN {return _lut;}
 
-    double getExposure() const {return _exposure;}
+    double getExposure() const WARN_UNUSED_RETURN {return _exposure;}
 
-    const Natron::Color::Lut* getLut() const {return _colorSpace;}
+    const Natron::Color::Lut* getLut() const WARN_UNUSED_RETURN {return _colorSpace;}
 
-    bool supportsGLSL() const;
+    bool supportsGLSL() const WARN_UNUSED_RETURN;
 /**
  *@brief Actually converting to ARGB... but it is called BGRA by
  the texture format GL_UNSIGNED_INT_8_8_8_8_REV
  **/
-    static U32 toBGRA(U32 r,U32 g,U32 b,U32 a);
+    static U32 toBGRA(U32 r,U32 g,U32 b,U32 a) WARN_UNUSED_RETURN;
 
     void setDisplayChannels(DisplayChannels channels) ;
 
@@ -178,8 +170,9 @@ public:
      * If forceLinear is true, then it will not use the viewer current colorspace
      * to get r,g and b values, otherwise the color returned will be in the same color-space
      * than the one chosen by the user on the gui.
+     * @return true if the point is inside the image and colors were set
     **/
-    void getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear);
+    bool getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear) WARN_UNUSED_RETURN;
 
 public slots:
 
@@ -198,7 +191,7 @@ public slots:
     void onNodeNameChanged(const QString&);
     
     void redrawViewer();
-    
+
 signals:
 
     void mustRedraw();

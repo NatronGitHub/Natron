@@ -47,7 +47,10 @@
 #include <map>
 #include <string>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QMutex>
+CLANG_DIAG_ON(deprecated)
 
 
 class RectI;
@@ -145,8 +148,8 @@ namespace Natron {
             
             /// the fast lookup tables are mutable, because they are automatically initialized post-construction,
             /// and never change afterwards
-            mutable unsigned short to_byte_table[0x10000]; /// contains  2^16 = 65536 values between 0-255
-            mutable float from_byte_table[256]; /// values between 0-1.f
+            mutable unsigned short toFunc_hipart_to_uint8xx[0x10000]; /// contains  2^16 = 65536 values between 0-255
+            mutable float fromFunc_uint8_to_float[256]; /// values between 0-1.f
             mutable bool init_; ///< false if the tables are not yet initialized
             mutable QMutex _lock; ///< protects init_
             
@@ -203,12 +206,12 @@ namespace Natron {
             /* @brief Converts a float ranging in [0 - 1.f] in linear color-space using the look-up tables.
              * @return A byte in [0 - 255] in the destination color-space.
              */
-            unsigned char toColorSpaceByteFromLinearFloatFast(float v) const;
+            unsigned char toColorSpaceUint8FromLinearFloatFast(float v) const;
             
             /* @brief Converts a float ranging in [0 - 1.f] in linear color-space using the look-up tables.
-             * @return A byte in [0 - 255] in the destination color-space.
+             * @return An unsigned short in [0 - 0xff00] in the destination color-space.
              */
-            unsigned short toColorSpaceShortFromLinearFloatFast(float v) const;
+            unsigned short toColorSpaceUint8xxFromLinearFloatFast(float v) const;
 
             
             /* @brief Converts a float ranging in [0 - 1.f] in the destination color-space using the look-up tables.
@@ -348,15 +351,6 @@ namespace Natron {
         
         namespace Linear {
             
-            ///utility functions
-            inline float toFloat(unsigned char v) { return (float)v / 255.f; }
-            inline float toFloat(unsigned short v) { return (float)v / 65535.f; }
-            inline float toFloat(float v) { return v; }
-            
-            inline unsigned char fromFloatB(float v) { return (unsigned char)(v * 255.f); }
-            inline unsigned short fromFloatS(float v) { return (unsigned short)(v * 65535.f); }
-            inline float fromFloatF(float v) { return v; }
-            
             /////the following functions expects a float input buffer, one could extend it to cover all bitdepths.
             
             /**
@@ -489,12 +483,77 @@ namespace Natron {
                 return 1.055f * std::pow(v, 1.0f / 2.4f) - 0.055f;
         }
         
-        
-        inline float clamp(float v,float min,float max){
-            return v > max ? max : v;
-            return v < min ? min : v;
+        /// numvals should be 256 for byte, 65536 for 16-bits, etc.
+
+        /// maps 0-(numvals-1) to 0.-1.
+        template<int numvals>
+        float intToFloat(int value)
+        {
+            return value / (float)(numvals-1);
         }
-        
+
+        /// maps °.-1. to 0-(numvals-1)
+        template<int numvals>
+        int floatToInt(float value)
+        {
+            if (value <= 0) {
+                return 0;
+            } else if (value >= 1.) {
+                return numvals - 1;
+            }
+            return value * (numvals-1) + 0.5;
+        }
+
+        /// maps 0x0-0xffff to 0x0-0xff
+        inline unsigned char uint16ToChar(unsigned short quantum)
+        {
+            // see ScaleQuantumToChar() in ImageMagick's magick/quantum.h
+            /* test:
+             for(int i=0; i < 0x10000; ++i) {
+                printf("%x -> %x,%x\n", i, uint16ToChar(i), floatToInt<256>(intToFloat<65536>(i)));
+                assert(uint16ToChar(i) == floatToInt<256>(intToFloat<65536>(i)));
+             }
+             */
+            return (unsigned char) (((quantum+128UL)-((quantum+128UL) >> 8)) >> 8);
+        }
+
+        /// maps 0x0-0xff to 0x0-0xffff
+        inline unsigned short charToUint16(unsigned char quantum)
+        {
+            /* test:
+            for(int i=0; i < 0x100; ++i) {
+                printf("%x -> %x,%x\n", i, charToUint16(i), floatToInt<65536>(intToFloat<256>(i)));
+             assert(charToUint16(i) == floatToInt<65536>(intToFloat<256>(i)));
+             assert(i == uint16ToChar(charToUint16(i)));
+            }
+             */
+            return (unsigned short) ((quantum << 8) | quantum);
+        }
+
+        // maps 0x0-0xff00 to 0x0-0xff
+        inline unsigned char uint8xxToChar(unsigned short quantum)
+        {
+            /* test:
+            for(int i=0; i < 0xff01; ++i) {
+                printf("%x -> %x,%x, err=%d\n", i, uint8xxToChar(i), floatToInt<256>(intToFloat<0xff01>(i)),i - charToUint8xx(uint8xxToChar(i)));
+                assert(uint8xxToChar(i) == floatToInt<256>(intToFloat<0xff01>(i)));
+            }
+             */
+            return (unsigned char) ((quantum +0x80)>> 8);
+        }
+
+        // maps 0x0-0xff to 0x0-0xff00
+        inline unsigned short charToUint8xx(unsigned char quantum)
+        {
+            /* test:
+            for(int i=0; i < 0x100; ++i) {
+                printf("%x -> %x,%x\n", i, charToUint8xx(i), floatToInt<0xff01>(intToFloat<256>(i)));
+                assert(charToUint8xx(i) == floatToInt<0xff01>(intToFloat<256>(i)));
+                assert(i == uint8xxToChar(charToUint8xx(i)));
+            }
+            */
+            return (unsigned short) (quantum << 8);
+        }
     } //namespace Color
 } //namespace Natron
 

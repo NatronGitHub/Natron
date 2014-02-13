@@ -22,7 +22,10 @@
 #include <QVBoxLayout>
 #include <QAbstractItemView>
 #include <QCoreApplication>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QKeyEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QKeySequence>
 
 #include "Engine/ViewerInstance.h"
@@ -40,8 +43,9 @@
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
+#include "Gui/FromQtEnums.h"
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 using namespace Natron;
 
@@ -71,12 +75,12 @@ _viewerNode(node)
     //_firstRowLayout->addWidget(_viewerLayers);
     
     _viewerChannels = new ComboBox(_firstSettingsRow);
-    _viewerChannels->setToolTip("<p></br><b>Channels: \n</b></p>"
+    _viewerChannels->setToolTip("<p><b>Channels: \n</b></p>"
                                 "The channels to display on the viewer.");
     _firstRowLayout->addWidget(_viewerChannels);
     
     _viewerChannels->addItem("Luminance",QIcon(),QKeySequence(Qt::Key_Y));
-    _viewerChannels->addItem("RGBA",QIcon(),QKeySequence(Qt::SHIFT+Qt::Key_R));
+    _viewerChannels->addItem("RGB",QIcon(),QKeySequence(Qt::SHIFT+Qt::Key_R));
     _viewerChannels->addItem("R",QIcon(),QKeySequence(Qt::Key_R));
     _viewerChannels->addItem("G",QIcon(),QKeySequence(Qt::Key_G));
     _viewerChannels->addItem("B",QIcon(),QKeySequence(Qt::Key_B));
@@ -85,7 +89,7 @@ _viewerNode(node)
     QObject::connect(_viewerChannels, SIGNAL(currentIndexChanged(int)), this, SLOT(onViewerChannelsChanged(int)));
     
     _zoomCombobox = new ComboBox(_firstSettingsRow);
-    _zoomCombobox->setToolTip("<p></br><b>Zoom: \n</b></p>"
+    _zoomCombobox->setToolTip("<p><b>Zoom: \n</b></p>"
                               "The zoom applied to the image on the viewer.");
     _zoomCombobox->addItem("10%");
     _zoomCombobox->addItem("25%");
@@ -101,7 +105,8 @@ _viewerNode(node)
     _zoomCombobox->addItem("2400%");
     _zoomCombobox->addItem("3200%");
     _zoomCombobox->addItem("6400%");
-    
+    _zoomCombobox->setMaximumWidthFromText("100000%");
+
     _firstRowLayout->addWidget(_zoomCombobox);
     
     _centerViewerButton = new Button(_firstSettingsRow);
@@ -113,6 +118,12 @@ _viewerNode(node)
     _clipToProjectFormatButton->setChecked(true);
     _clipToProjectFormatButton->setDown(true);
     _firstRowLayout->addWidget(_clipToProjectFormatButton);
+    
+    _enableViewerRoI = new Button(_firstSettingsRow);
+    _enableViewerRoI->setCheckable(true);
+    _enableViewerRoI->setChecked(false);
+    _enableViewerRoI->setDown(false);
+    _firstRowLayout->addWidget(_enableViewerRoI);
     
     _firstRowLayout->addStretch();
     
@@ -126,7 +137,7 @@ _viewerNode(node)
     _mainLayout->addWidget(_secondSettingsRow);
     
     _gainBox = new SpinBox(_secondSettingsRow,SpinBox::DOUBLE_SPINBOX);
-    _gainBox->setToolTip("<p></br><b>Gain: \n</b></p>"
+    _gainBox->setToolTip("<p><b>Gain: \n</b></p>"
                          "Multiplies the image by \nthis amount before display.");
     _gainBox->setIncrement(0.1);
     _gainBox->setValue(1.0);
@@ -135,18 +146,18 @@ _viewerNode(node)
     
     
     _gainSlider=new ScaleSliderQWidget(0, 64,1.0,Natron::LINEAR_SCALE,_secondSettingsRow);
-    _gainSlider->setToolTip("<p></br><b>Gain: \n</b></p>"
+    _gainSlider->setToolTip("<p><b>Gain: \n</b></p>"
                             "Multiplies the image by \nthis amount before display.");
     _secondRowLayout->addWidget(_gainSlider);
     
     
     _refreshButton = new Button(_secondSettingsRow);
     _refreshButton->setToolTip("Force a new render of the current frame."
-                               "<p></br><b>Keyboard shortcut: U</b></p>");
+                               "<p><b>Keyboard shortcut: U</b></p>");
     _secondRowLayout->addWidget(_refreshButton);
     
     _viewerColorSpace=new ComboBox(_secondSettingsRow);
-    _viewerColorSpace->setToolTip("<p></br><b>Viewer color process: \n</b></p>"
+    _viewerColorSpace->setToolTip("<p><b>Viewer color process: \n</b></p>"
                                   "The operation applied to the image before it is displayed\n"
                                   "on screen. All the color pipeline \n"
                                   "is linear,thus the process converts from linear\n"
@@ -159,11 +170,11 @@ _viewerNode(node)
     _viewerColorSpace->setCurrentIndex(1);
     
     _viewsComboBox = new ComboBox(_secondSettingsRow);
-    _viewsComboBox->setToolTip("<p></br><b>Active view: \n</b></p>"
+    _viewsComboBox->setToolTip("<p><b>Active view: \n</b></p>"
                                "Tells the viewer what view should be displayed.");
     _secondRowLayout->addWidget(_viewsComboBox);
     _viewsComboBox->hide();
-    int viewsCount = _gui->getApp()->getProjectViewsCount(); //getProjectViewsCount
+    int viewsCount = _gui->getApp()->getProject()->getProjectViewsCount(); //getProjectViewsCount
     updateViewsMenu(viewsCount);
     
     _secondRowLayout->addStretch();
@@ -192,7 +203,7 @@ _viewerNode(node)
     
     _currentFrameBox=new SpinBox(_playerButtonsContainer,SpinBox::INT_SPINBOX);
     _currentFrameBox->setValue(0);
-    _currentFrameBox->setToolTip("<p></br><b>Current frame number</b></p>");
+    _currentFrameBox->setToolTip("<p><b>Current frame number</b></p>");
     _playerLayout->addWidget(_currentFrameBox);
     
     _playerLayout->addStretch();
@@ -200,7 +211,7 @@ _viewerNode(node)
     firstFrame_Button = new Button(_playerButtonsContainer);
     QKeySequence firstFrameKey(Qt::CTRL + Qt::Key_Left);
     QString tooltip = "First frame";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(firstFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     firstFrame_Button->setToolTip(tooltip);
@@ -211,7 +222,7 @@ _viewerNode(node)
     previousKeyFrame_Button->hide();
     QKeySequence previousKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Left);
     tooltip = "Previous keyframe";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(previousKeyFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     previousKeyFrame_Button->setToolTip(tooltip);
@@ -221,7 +232,7 @@ _viewerNode(node)
     play_Backward_Button=new Button(_playerButtonsContainer);
     QKeySequence playbackFrameKey(Qt::Key_J);
     tooltip = "Play backward";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(playbackFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     play_Backward_Button->setToolTip(tooltip);
@@ -232,7 +243,7 @@ _viewerNode(node)
     previousFrame_Button = new Button(_playerButtonsContainer);
     QKeySequence previousFrameKey(Qt::Key_Left);
     tooltip = "Previous frame";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(previousFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     previousFrame_Button->setToolTip(tooltip);
@@ -242,7 +253,7 @@ _viewerNode(node)
     stop_Button = new Button(_playerButtonsContainer);
     QKeySequence stopKey(Qt::Key_K);
     tooltip = "Stop";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(stopKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     stop_Button->setToolTip(tooltip);
@@ -252,7 +263,7 @@ _viewerNode(node)
     nextFrame_Button = new Button(_playerButtonsContainer);
     QKeySequence nextFrameKey(Qt::Key_Right);
     tooltip = "Next frame";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(nextFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     nextFrame_Button->setToolTip(tooltip);
@@ -262,7 +273,7 @@ _viewerNode(node)
     play_Forward_Button = new Button(_playerButtonsContainer);
     QKeySequence playKey(Qt::Key_L);
     tooltip = "Play forward";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(playKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     play_Forward_Button->setToolTip(tooltip);
@@ -274,7 +285,7 @@ _viewerNode(node)
     nextKeyFrame_Button->hide();
     QKeySequence nextKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Right);
     tooltip = "Next keyframe";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(nextKeyFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     nextKeyFrame_Button->setToolTip(tooltip);
@@ -284,7 +295,7 @@ _viewerNode(node)
     lastFrame_Button = new Button(_playerButtonsContainer);
     QKeySequence lastFrameKey(Qt::CTRL + Qt::Key_Right);
     tooltip = "Last frame";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(lastFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     lastFrame_Button->setToolTip(tooltip);
@@ -297,7 +308,7 @@ _viewerNode(node)
     previousIncrement_Button = new Button(_playerButtonsContainer);
     QKeySequence previousIncrFrameKey(Qt::SHIFT + Qt::Key_Left);
     tooltip = "Previous increment";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(previousIncrFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     previousIncrement_Button->setToolTip(tooltip);
@@ -306,7 +317,7 @@ _viewerNode(node)
     
     incrementSpinBox=new SpinBox(_playerButtonsContainer);
     incrementSpinBox->setValue(10);
-    incrementSpinBox->setToolTip("<p></br><b>Frame increment: \n</b></p>"
+    incrementSpinBox->setToolTip("<p><b>Frame increment: \n</b></p>"
                                  "The previous/next increment buttons step"
                                  " with this increment.");
     _playerLayout->addWidget(incrementSpinBox);
@@ -315,7 +326,7 @@ _viewerNode(node)
     nextIncrement_Button = new Button(_playerButtonsContainer);
     QKeySequence nextIncrFrameKey(Qt::SHIFT + Qt::Key_Right);
     tooltip = "Next increment";
-    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(nextIncrFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     nextIncrement_Button->setToolTip(tooltip);
@@ -337,7 +348,7 @@ _viewerNode(node)
     fpsBox->decimals(1);
     fpsBox->setValue(24.0);
     fpsBox->setIncrement(0.1);
-    fpsBox->setToolTip("<p></br><b>fps: \n</b></p>"
+    fpsBox->setToolTip("<p><b>fps: \n</b></p>"
                        "Enter here the desired playback rate.");
     _playerLayout->addWidget(fpsBox);
     
@@ -357,6 +368,7 @@ _viewerNode(node)
     QPixmap pixCenterViewer ;
     QPixmap pixLoopMode;
     QPixmap pixClipToProject ;
+    QPixmap pixViewerRoI;
     
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_FIRST_FRAME,&pixFirst);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS_KEY,&pixPrevKF);
@@ -373,6 +385,7 @@ _viewerNode(node)
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixCenterViewer);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE,&pixLoopMode);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_CLIP_TO_PROJECT,&pixClipToProject);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_ROI,&pixViewerRoI);
     
     firstFrame_Button->setIcon(QIcon(pixFirst));
     previousKeyFrame_Button->setIcon(QIcon(pixPrevKF));
@@ -389,16 +402,22 @@ _viewerNode(node)
     _centerViewerButton->setIcon(QIcon(pixCenterViewer));
     loopMode_Button->setIcon(QIcon(pixLoopMode));
     _clipToProjectFormatButton->setIcon(QIcon(pixClipToProject));
+    _enableViewerRoI->setIcon(QIcon(pixViewerRoI));
     
     
     _centerViewerButton->setToolTip("Scales the image so it doesn't exceed the size of the viewer and centers it."
-                                    "<p></br><b>Keyboard shortcut: F</b></p>");
+                                    "<p><b>Keyboard shortcut: F</b></p>");
     
-    _clipToProjectFormatButton->setToolTip("<p> Clips the portion of the image displayed <br/>"
-                                           "on the viewer to the project format. <br/>"
-                                           "When off, everything in the union of all nodes <br/>"
-                                           "region of definition will be displayed. <br/> <br/>"
-                                           "<b>Keyboard shortcut: C</b></p>");
+    _clipToProjectFormatButton->setToolTip("<p>Clips the portion of the image displayed "
+                                           "on the viewer to the project format. "
+                                           "When off, everything in the union of all nodes "
+                                           "region of definition will be displayed.</p>"
+                                           "<p><b>Keyboard shortcut: C</b></p>");
+    
+    QKeySequence enableViewerKey(Qt::SHIFT + Qt::Key_W);
+    _enableViewerRoI->setToolTip("<p>When active, enables the region of interest that will limit"
+                                 " the portion of the viewer that is kept updated.</p>"
+                                 "<p><b>Keyboard shortcut:"+ enableViewerKey.toString() + "</b></p>");
     /*=================================================*/
     
     /*frame seeker*/
@@ -453,6 +472,13 @@ _viewerNode(node)
     
     QObject::connect(_viewsComboBox,SIGNAL(currentIndexChanged(int)),this,SLOT(showView(int)));
     
+    QObject::connect(_enableViewerRoI, SIGNAL(clicked(bool)), this, SLOT(onEnableViewerRoIButtonToggle(bool)));
+    
+}
+
+void ViewerTab::onEnableViewerRoIButtonToggle(bool b) {
+    _enableViewerRoI->setDown(b);
+    viewer->setUserRoIEnabled(b);
 }
 
 void ViewerTab::updateViewsMenu(int count){
@@ -537,7 +563,7 @@ void ViewerTab::startPause(bool b){
     }
 }
 void ViewerTab::abortRendering(){
-    _viewerNode->getVideoEngine()->abortRendering();
+    _viewerNode->getVideoEngine()->abortRendering(false);
 }
 void ViewerTab::startBackward(bool b){
     abortRendering();
@@ -553,7 +579,6 @@ void ViewerTab::startBackward(bool b){
 void ViewerTab::seek(SequenceTime time){
     _currentFrameBox->setValue(time);
     _timeLineGui->seek(time);
-    //_viewerNode->refreshAndContinueRender();
 }
 
 void ViewerTab::previousFrame(){
@@ -577,7 +602,6 @@ void ViewerTab::lastFrame(){
 
 void ViewerTab::onTimeLineTimeChanged(SequenceTime time,int /*reason*/){
     _currentFrameBox->setValue(time);
-    //_viewerNode->refreshAndContinueRender();
 }
 
 void ViewerTab::onCurrentTimeSpinBoxChanged(double time){
@@ -587,10 +611,10 @@ void ViewerTab::onCurrentTimeSpinBoxChanged(double time){
 
 void ViewerTab::centerViewer(){
     if(viewer->displayingImage()){
-        _viewerNode->refreshAndContinueRender(true);
+        _viewerNode->refreshAndContinueRender(true,false);
         
     }else{
-        viewer->fitToFormat(viewer->getDisplayWindow());
+        viewer->fitImageToFormat(viewer->getDisplayWindow());
         viewer->updateGL();
     }
 }
@@ -608,70 +632,71 @@ ViewerTab::~ViewerTab()
 
 void ViewerTab::keyPressEvent ( QKeyEvent * event ){
 
-    if(event->key() == Qt::Key_Space){
-        if(parentWidget()){
+    if (event->key() == Qt::Key_Space) {
+        if (parentWidget()) {
             QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
             QCoreApplication::postEvent(parentWidget(),ev);
         }
-    }else if(event->key() == Qt::Key_Y){
+    }else if (event->key() == Qt::Key_Y) {
         _viewerChannels->setCurrentIndex(0);
-    }else if(event->key() == Qt::Key_R && event->modifiers() == Qt::ShiftModifier ){
+    }else if (event->key() == Qt::Key_R && event->modifiers() == Qt::ShiftModifier ) {
         _viewerChannels->setCurrentIndex(1);
-    }else if(event->key() == Qt::Key_R && event->modifiers() == Qt::NoModifier){
+    }else if (event->key() == Qt::Key_R && event->modifiers() == Qt::NoModifier) {
         _viewerChannels->setCurrentIndex(2);
-    }else if(event->key() == Qt::Key_G){
+    }else if (event->key() == Qt::Key_G) {
         _viewerChannels->setCurrentIndex(3);
-    }else if(event->key() == Qt::Key_B){
+    }else if (event->key() == Qt::Key_B) {
         _viewerChannels->setCurrentIndex(4);
-    }else if(event->key() == Qt::Key_A){
+    }else if (event->key() == Qt::Key_A) {
         _viewerChannels->setCurrentIndex(5);
-    }else if(event->key() == Qt::Key_J){
+    }else if (event->key() == Qt::Key_J) {
         startBackward(!play_Backward_Button->isDown());
     }
-    else if(event->key() == Qt::Key_Left && !event->modifiers().testFlag(Qt::ShiftModifier)
-                                         && !event->modifiers().testFlag(Qt::ControlModifier)){
+    else if (event->key() == Qt::Key_Left && !event->modifiers().testFlag(Qt::ShiftModifier)
+                                         && !event->modifiers().testFlag(Qt::ControlModifier)) {
         previousFrame();
     }
-    else if(event->key() == Qt::Key_K){
+    else if (event->key() == Qt::Key_K) {
         abortRendering();
     }
-    else if(event->key() == Qt::Key_Right  && !event->modifiers().testFlag(Qt::ShiftModifier)
-                                            && !event->modifiers().testFlag(Qt::ControlModifier)){
+    else if (event->key() == Qt::Key_Right  && !event->modifiers().testFlag(Qt::ShiftModifier)
+                                            && !event->modifiers().testFlag(Qt::ControlModifier)) {
         nextFrame();
     }
-    else if(event->key() == Qt::Key_L){
+    else if (event->key() == Qt::Key_L) {
         startPause(!play_Forward_Button->isDown());
         
-    }else if(event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ShiftModifier)){
+    }else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ShiftModifier)) {
         //prev incr
         previousIncrement();
     }
-    else if(event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ShiftModifier)){
+    else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ShiftModifier)) {
         //next incr
         nextIncrement();
-    }else if(event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)){
+    }else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)) {
         //first frame
         firstFrame();
     }
-    else if(event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)){
+    else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)) {
         //last frame
         lastFrame();
     }
-    else if(event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)
-            && event->modifiers().testFlag(Qt::ShiftModifier)){
+    else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)
+            && event->modifiers().testFlag(Qt::ShiftModifier)) {
         //prev key
     }
-    else if(event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)
-            &&  event->modifiers().testFlag(Qt::ShiftModifier)){
+    else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)
+            &&  event->modifiers().testFlag(Qt::ShiftModifier)) {
         //next key
-    } else if(event->key() == Qt::Key_F){
+    } else if(event->key() == Qt::Key_F) {
         centerViewer();
         
-    }else if(event->key() == Qt::Key_C){
+    } else if(event->key() == Qt::Key_C) {
         onClipToProjectButtonToggle(!_clipToProjectFormatButton->isDown());
-    }
-    else if(event->key() == Qt::Key_U){
+    } else if(event->key() == Qt::Key_U) {
         refresh();
+    } else if(event->key() == Qt::Key_W && event->modifiers().testFlag(Qt::ShiftModifier)) {
+        onEnableViewerRoIButtonToggle(!_enableViewerRoI->isDown());
     }
     
 }
@@ -683,7 +708,7 @@ void ViewerTab::onViewerChannelsChanged(int i){
             channels = ViewerInstance::LUMINANCE;
             break;
         case 1:
-            channels = ViewerInstance::RGBA;
+            channels = ViewerInstance::RGB;
             break;
         case 2:
             channels = ViewerInstance::R;
@@ -698,7 +723,7 @@ void ViewerTab::onViewerChannelsChanged(int i){
             channels = ViewerInstance::A;
             break;
         default:
-            channels = ViewerInstance::RGBA;
+            channels = ViewerInstance::RGB;
             break;
     }
     _viewerNode->setDisplayChannels(channels);
@@ -712,7 +737,9 @@ bool ViewerTab::eventFilter(QObject *target, QEvent *event){
 }
 
 void ViewerTab::disconnectViewer(){
-    viewer->disconnectViewer();
+    if (viewer->displayingImage()) {
+        viewer->disconnectViewer();
+    }
 }
 
 
@@ -727,7 +754,8 @@ QSize ViewerTab::sizeHint() const{
 
 void ViewerTab::showView(int /*view*/){
     abortRendering();
-    _viewerNode->refreshAndContinueRender();
+    bool isAutoPreview = _gui->getApp()->getProject()->isAutoPreviewEnabled();
+    _viewerNode->refreshAndContinueRender(false,isAutoPreview);
 }
 
 
@@ -737,19 +765,8 @@ void ViewerTab::drawOverlays() const{
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
-        
-        effect->setCurrentViewerForOverlays(viewer);
-        
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            effect->drawOverlay();
-            pluginLock->unlock();
-        } else {
-            effect->drawOverlay();
-        }
+        effect->setCurrentViewportForOverlays(viewer);
+        effect->drawOverlay();
     }
 }
 
@@ -761,19 +778,8 @@ bool ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& 
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         
-        effect->setCurrentViewerForOverlays(viewer);
-
-    
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            ret = effect->onOverlayPenDown(viewportPos, pos);
-            pluginLock->unlock();
-        } else {
-            ret = effect->onOverlayPenDown(viewportPos, pos);
-        }
+        effect->setCurrentViewportForOverlays(viewer);
+        ret = effect->onOverlayPenDown(viewportPos, pos);
     }
     return ret;
 }
@@ -785,19 +791,8 @@ bool ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
-        
-        effect->setCurrentViewerForOverlays(viewer);
-
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            ret = effect->onOverlayPenMotion(viewportPos, pos);
-            pluginLock->unlock();
-        } else {
-            ret = effect->onOverlayPenMotion(viewportPos, pos);
-        }
+        effect->setCurrentViewportForOverlays(viewer);
+        ret = effect->onOverlayPenMotion(viewportPos, pos);
     }
     return ret;
 }
@@ -809,19 +804,8 @@ bool ViewerTab::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& po
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
-        
-        effect->setCurrentViewerForOverlays(viewer);
-
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            ret = effect->onOverlayPenUp(viewportPos, pos);
-            pluginLock->unlock();
-        } else {
-            ret = effect->onOverlayPenUp(viewportPos, pos);
-        }
+        effect->setCurrentViewportForOverlays(viewer);
+        ret = effect->onOverlayPenUp(viewportPos, pos);
     }
     return ret;
 }
@@ -833,19 +817,8 @@ bool ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
-        
-        effect->setCurrentViewerForOverlays(viewer);
-
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            ret = effect->onOverlayKeyDown(e);
-            pluginLock->unlock();
-        } else {
-            ret = effect->onOverlayKeyDown(e);
-        }
+        effect->setCurrentViewportForOverlays(viewer);
+        ret = effect->onOverlayKeyDown(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
     }
     return ret;
 }
@@ -858,18 +831,8 @@ bool ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         
-        effect->setCurrentViewerForOverlays(viewer);
-
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            ret = effect->onOverlayKeyUp(e);
-            pluginLock->unlock();
-        } else {
-            ret = effect->onOverlayKeyUp(e);
-        }
+        effect->setCurrentViewportForOverlays(viewer);
+        ret = effect->onOverlayKeyUp(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
     }
     return ret;
 }
@@ -882,18 +845,8 @@ bool ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         
-        effect->setCurrentViewerForOverlays(viewer);
-
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            ret = effect->onOverlayKeyRepeat(e);
-            pluginLock->unlock();
-        } else {
-            ret = effect->onOverlayKeyRepeat(e);
-        }
+        effect->setCurrentViewportForOverlays(viewer);
+        ret = effect->onOverlayKeyRepeat(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
     }
     return ret;
 }
@@ -906,18 +859,9 @@ bool ViewerTab::notifyOverlaysFocusGained(){
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         
-        effect->setCurrentViewerForOverlays(viewer);
-
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            ret = effect->onOverlayFocusGained();
-            pluginLock->unlock();
-        } else {
-            ret = effect->onOverlayFocusGained();
-        }
+        effect->setCurrentViewportForOverlays(viewer);
+        ret = effect->onOverlayFocusGained();
+        
     }
     return ret;
 }
@@ -930,19 +874,56 @@ bool ViewerTab::notifyOverlaysFocusLost(){
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         
-        effect->setCurrentViewerForOverlays(viewer);
-
-        EffectInstance::RenderSafety safety = effect->renderThreadSafety();
-        if(safety == EffectInstance::UNSAFE) {
-            QMutex* pluginLock = appPTR->getMutexForPlugin(effect->pluginID().c_str());
-            assert(pluginLock);
-            pluginLock->lock();
-            ret = effect->onOverlayFocusLost();
-            pluginLock->unlock();
-        } else {
-            ret = effect->onOverlayFocusLost();
-        }
+        effect->setCurrentViewportForOverlays(viewer);
+        ret = effect->onOverlayFocusLost();
     }
     return ret;
 }
 
+bool ViewerTab::isClippedToProject() const {
+    return _clipToProjectFormatButton->isDown();
+}
+
+std::string ViewerTab::getColorSpace() const {
+    return _viewerColorSpace->getCurrentIndexText().toStdString();
+}
+
+void ViewerTab::setUserRoIEnabled(bool b) {
+    onEnableViewerRoIButtonToggle(b);
+}
+
+void ViewerTab::setUserRoI(const RectI& r) {
+    viewer->setUserRoI(r);
+}
+
+void ViewerTab::setClipToProject(bool b) {
+    onClipToProjectButtonToggle(b);
+}
+
+void ViewerTab::setColorSpace(const std::string& colorSpaceName) {
+    int index = _viewerColorSpace->itemIndex(colorSpaceName.c_str());
+    if (index != -1) {
+        _viewerColorSpace->setCurrentIndex(index);
+    }
+}
+
+void ViewerTab::setExposure(double d) {
+    _gainBox->setValue(d);
+    _gainSlider->seekScalePosition(d);
+    _viewerNode->onExposureChanged(d);
+}
+
+double ViewerTab::getExposure() const {
+    return _gainBox->value();
+}
+
+std::string ViewerTab::getChannelsString() const {
+    return _viewerChannels->getCurrentIndexText().toStdString();
+}
+
+void ViewerTab::setChannels(const std::string& channelsStr) {
+    int index = _viewerChannels->itemIndex(channelsStr.c_str());
+    if (index != -1) {
+        _viewerChannels->setCurrentIndex(index);
+    }
+}

@@ -8,13 +8,21 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QString>
 #include <QtGui/QFont>
 #include <QtGui/QImage>
 #include <QtCore/QHash>
+CLANG_DIAG_ON(deprecated)
 
+#include "Global/Macros.h"
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
+
+// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
+CLANG_DIAG_OFF(deprecated-declarations)
+GCC_DIAG_OFF(deprecated-declarations)
 
 using namespace Natron;
 
@@ -141,11 +149,6 @@ CharBitmap *TextRendererPrivate::createCharacter(QChar c, const QColor &color)
             return &(*it2).second;
         }
     }
-
-    GLint currentBoundPBO;
-    //if a pbo is already mapped, this would make the glTex** calls fail
-    glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
-    assert(currentBoundPBO == 0);
 
     if (_usedTextures.empty()) {
         newTransparantTexture();

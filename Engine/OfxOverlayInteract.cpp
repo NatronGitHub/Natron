@@ -14,76 +14,53 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Format.h"
+#include "Engine/OverlaySupport.h"
 
 #include "Gui/CurveWidget.h"
 #include "Gui/ViewerGL.h"
 
 using namespace Natron;
 
-OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v, int bitDepthPerComponent, bool hasAlpha,CurveWidget* curveWidget):
+OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v, int bitDepthPerComponent, bool hasAlpha):
 OFX::Host::ImageEffect::OverlayInteract(v,bitDepthPerComponent,hasAlpha)
-, _curveWidget(curveWidget)
-, _currentViewer(NULL)
+, _viewport(NULL)
 {
 }
 
-void OfxOverlayInteract::setCallingViewer(ViewerGL* viewer) {
-    _currentViewer = viewer;
+void OfxOverlayInteract::setCallingViewport(OverlaySupport* viewport) {
+    _viewport = viewport;
 }
 
 OfxStatus OfxOverlayInteract::swapBuffers(){
-    if(_curveWidget) {
-        _curveWidget->swapBuffers();
-    } else if(_currentViewer) {
-        _currentViewer->swapBuffers();
+    if (_viewport) {
+        _viewport->swapOpenGLBuffers();
     }
     return kOfxStatOK;
 }
 
 OfxStatus OfxOverlayInteract::redraw(){
-    if(_curveWidget) {
-        _curveWidget->update();
-    } else if(_currentViewer) {
-        _currentViewer->update();
+    if (_viewport) {
+        _viewport->redraw();
     }
     return kOfxStatOK;
 }
 
-void OfxOverlayInteract::getViewportSize(double &width, double &height) const{
-    if(_curveWidget){
-        width = _curveWidget->width();
-        height = _curveWidget->height();
-    }else{
-        if(!_currentViewer) {
-            return;
-        }
-        const Format& f = _currentViewer->getDisplayWindow();
-        width = f.width();
-        height = f.height();
+void OfxOverlayInteract::getViewportSize(double &width, double &height) const {
+
+    if (_viewport) {
+        _viewport->getViewportSize(width,height);
     }
 }
 
 void OfxOverlayInteract::getPixelScale(double& xScale, double& yScale) const{
-    if(_curveWidget){
-        xScale = 1. / _curveWidget->getZoomFactor();
-        yScale = xScale;
-    }else{
-        if(!_currentViewer) {
-            return;
-        }
-        xScale = 1. / _currentViewer->getZoomFactor();
-        yScale = xScale;
+    if (_viewport) {
+        _viewport->getPixelScale(xScale,yScale);
     }
 }
 
 void OfxOverlayInteract::getBackgroundColour(double &r, double &g, double &b) const{
-    if(_curveWidget){
-        _curveWidget->getBackgroundColor(&r, &g, &b);
-    }else{
-        if(!_currentViewer) {
-            return;
-        }
-        _currentViewer->backgroundColor(r,g,b);
+    if (_viewport) {
+        _viewport->getBackgroundColour(r,g,b);
     }
 }
 

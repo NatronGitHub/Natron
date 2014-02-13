@@ -10,13 +10,14 @@
  */
 #include "KnobFactory.h"
 
+#include "Global/GlobalDefines.h"
+
 #include "Engine/Knob.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
 
-#include "Global/AppManager.h"
-#include "Global/LibraryBinary.h"
-#include "Global/GlobalDefines.h"
+#include "Engine/AppManager.h"
+#include "Engine/LibraryBinary.h"
 
 using namespace Natron;
 using std::make_pair;

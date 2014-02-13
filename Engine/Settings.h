@@ -29,6 +29,7 @@ namespace Natron {
     class LibraryBinary;
 }
 
+class File_Knob;
 class Tab_Knob;
 class Double_Knob;
 class Int_Knob;
@@ -62,6 +63,10 @@ public:
     
     bool getColorPickerLinear() const;
     
+    bool isMultiThreadingDisabled() const;
+    
+    void setMultiThreadingDisabled(bool disabled);
+    
     const std::string& getReaderPluginIDForFileType(const std::string& extension);
     
     const std::string& getWriterPluginIDForFileType(const std::string& extension);
@@ -80,11 +85,22 @@ public:
     ///restores the settings from disk
     void restoreSettings();
     
+    bool wereChangesMadeSinceLastSave() const { return _wereChangesMadeSinceLastSave; }
+    
+    bool isAutoPreviewOnForNewProjects() const;
     
 private:
     
+    bool tryLoadOpenColorIOConfig();
+
+    
     boost::shared_ptr<Tab_Knob> _generalTab;
     boost::shared_ptr<Bool_Knob> _linearPickers;
+    boost::shared_ptr<Bool_Knob> _multiThreadedDisabled;
+    boost::shared_ptr<Bool_Knob> _autoPreviewEnabledForNewProjects;
+    
+    boost::shared_ptr<Choice_Knob> _ocioConfigKnob;
+    boost::shared_ptr<File_Knob> _customOcioConfigFile;
     
     boost::shared_ptr<Tab_Knob> _cachingTab;
     boost::shared_ptr<Int_Knob> _maxPlayBackPercent;
@@ -100,6 +116,8 @@ private:
     
     boost::shared_ptr<Tab_Knob> _writersTab;
     std::vector< boost::shared_ptr<Choice_Knob> >  _writersMapping;
+    
+    bool _wereChangesMadeSinceLastSave;
     
 };
 

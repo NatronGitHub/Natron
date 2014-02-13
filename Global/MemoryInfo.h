@@ -44,8 +44,12 @@
 #  error "Cannot define getPeakRSS( ) or getCurrentRSS( ) for an unknown OS."
 #endif
 
+#include "Global/Macros.h"
 #include <QtCore/QString>
+#include <QtCore/QLocale>
+CLANG_DIAG_OFF(deprecated)
 #include <QFileSystemModel>
+CLANG_DIAG_ON(deprecated)
 
 inline size_t getSystemTotalRAM(){
 #if defined(__APPLE__)

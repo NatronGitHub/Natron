@@ -22,6 +22,11 @@
 using namespace Natron;
 
 void Hash64::computeHash() {
+
+    if (node_values.empty() ) {
+        return;
+    }
+
     const unsigned char* data = reinterpret_cast<const unsigned char*>(node_values.data());
     boost::crc_optimal<64,0x42F0E1EBA9EA3693ULL,0,0,false,false> crc_64;
     crc_64 = std::for_each( data, data+node_values.size()*sizeof(node_values[0]), crc_64 );

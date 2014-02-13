@@ -12,14 +12,21 @@
 #ifndef NATRON_ENGINE_VARIANT_H_
 #define NATRON_ENGINE_VARIANT_H_
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QVariant>
+CLANG_DIAG_ON(deprecated)
 #include <QtCore/QMetaType>
 #include <QtCore/QDataStream>
 #include <QtCore/QByteArray>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(unused-parameter)
+// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
+CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/split_member.hpp>

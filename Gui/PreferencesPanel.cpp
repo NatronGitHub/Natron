@@ -11,32 +11,66 @@
 #include "PreferencesPanel.h"
 
 #include <QVBoxLayout>
-#include <QScrollArea>
+#include <QDesktopWidget>
+#include <QApplication>
 #include "Engine/Settings.h"
 #include "Gui/DockablePanel.h"
-
+#include "Gui/Button.h"
 PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,QWidget *parent)
-    : QScrollArea(parent)
+    : QWidget(parent)
     , _settings(settings)
 {
     
-    _viewPort = new QWidget(this);
-    _viewPort->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
     setWindowTitle("Preferences");
-    _mainLayout = new QVBoxLayout(_viewPort);
+    _mainLayout = new QVBoxLayout(this);
     _mainLayout->setContentsMargins(0,0,0,0);
     _mainLayout->setSpacing(0);
-
-    setWidget(_viewPort);
-    setWidgetResizable(true);
     
-    _panel = new DockablePanel(_settings.get(),_mainLayout,DockablePanel::NO_HEADER,
+    _panel = new DockablePanel(_settings.get(),_mainLayout,DockablePanel::NO_HEADER,true,
                                "","",false,"",this);
     // _panel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     _mainLayout->addWidget(_panel);
 
+    _buttonsContainer = new QWidget(this);
+    _buttonsLayout = new QHBoxLayout(_buttonsContainer);
+    _buttonsLayout->addStretch();
+    _cancelB = new Button("Cancel",_buttonsContainer);
+    _okB = new Button("Save",_buttonsContainer);
+    _buttonsLayout->addWidget(_cancelB);
+    _buttonsLayout->addWidget(_okB);
+    
+    _mainLayout->addStretch();
+    _mainLayout->addWidget(_buttonsContainer);
+    
+    QObject::connect(_cancelB, SIGNAL(clicked()), this, SLOT(cancelChanges()));
+    QObject::connect(_okB, SIGNAL(clicked()), this, SLOT(saveChanges()));
+    
     _panel->initializeKnobs();
-    resize(640, 480);
+    
+    
+}
+
+
+void PreferencesPanel::cancelChanges() {
+    close();
+}
+
+void PreferencesPanel::saveChanges() {
+    _settings->saveSettings();
+    close();
+}
+
+void PreferencesPanel::showEvent(QShowEvent* /*e*/) {
+    QDesktopWidget* desktop = QApplication::desktop();
+    const QRect rect = desktop->screenGeometry();
+    move(QPoint(rect.width() / 2 - width() / 2,rect.height() / 2 - height() / 2));
+}
+
+void PreferencesPanel::closeEvent(QCloseEvent*) {
+    if (_settings->wereChangesMadeSinceLastSave()) {
+        _settings->restoreSettings();
+    }
 }

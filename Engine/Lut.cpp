@@ -11,6 +11,8 @@
 
 #include "Lut.h"
 
+#include <cstring> // for memcpy
+
 #include "Engine/Rect.h"
 
 namespace Natron {
@@ -164,26 +166,25 @@ namespace Natron {
         
         float Lut::fromColorSpaceFloatToLinearFloatFast(float v) const
         {
-            validate();
-            return from_byte_table[(int)(v * 255)];
+            assert(init_);
+            return fromFunc_uint8_to_float[Color::floatToInt<256>(v)];
         }
         
         float Lut::toColorSpaceFloatFromLinearFloatFast(float v) const
         {
-            validate();
-            return (float)to_byte_table[hipart(v)] / 65535.f;
+            assert(init_);
+            return Color::intToFloat<0xff01>(toFunc_hipart_to_uint8xx[hipart(v)]);
         }
         
-        unsigned char Lut::toColorSpaceByteFromLinearFloatFast(float v) const
+        unsigned char Lut::toColorSpaceUint8FromLinearFloatFast(float v) const
         {
-            validate();
-            return to_byte_table[hipart(v)] / 255;
-        }
+            assert(init_);
+            return Color::uint8xxToChar(toFunc_hipart_to_uint8xx[hipart(v)]);        }
         
-        unsigned short Lut::toColorSpaceShortFromLinearFloatFast(float v) const
+        unsigned short Lut::toColorSpaceUint8xxFromLinearFloatFast(float v) const
         {
-            validate();
-            return to_byte_table[hipart(v)];
+            assert(init_);
+            return toFunc_hipart_to_uint8xx[hipart(v)];
         }
         
         
@@ -193,23 +194,22 @@ namespace Natron {
             if (init_) {
                 return;
             }
+            // fill all
             for (int i = 0; i < 0x10000; ++i) {
                 float inp = index_to_float((unsigned short)i);
-                float f = _toFunc(inp) * 255.f;
-                if (f <= 0) {
-                    to_byte_table[i] = 0;
-                } else if (f < 255) {
-                    to_byte_table[i] = (unsigned short)(f * 0x100 + .5);
-                } else {
-                    to_byte_table[i] = 0xff00;
-                }   
+                float f = _toFunc(inp);
+                toFunc_hipart_to_uint8xx[i] = Color::floatToInt<0xff01>(f);
             }
-            
+            // fill fromFunc_uint8_to_float, and make sure that
+            // the entries of toFunc_hipart_to_uint8xx corresponding
+            // to the transform of each byte value contain the same value,
+            // so that toFunc(fromFunc(b)) is identity
+            //
             for (int b = 0; b <= 255; ++b) {
-                float f = _fromFunc((float)b / 255.f);
-                from_byte_table[b] = f;
+                float f = _fromFunc(Color::intToFloat<256>(b));
+                fromFunc_uint8_to_float[b] = f;
                 int i = hipart(f);
-                to_byte_table[i] = (unsigned short)(b * 0x100);
+                toFunc_hipart_to_uint8xx[i] = Color::charToUint8xx(b);
             }
             
         }
@@ -225,14 +225,14 @@ namespace Natron {
                 /* go fowards from starting point to end of line: */
                 error = 0x80;
                 for (p = to + start * outDelta, q = from + start * inDelta; p < end; p += outDelta , q += inDelta) {
-                    error = (error & 0xff) + to_byte_table[hipart(*q)];
+                    error = (error & 0xff) + toFunc_hipart_to_uint8xx[hipart(*q)];
                     *p = (unsigned char)(error >> 8);
                 }
                 /* go backwards from starting point to start of line: */
                 error = 0x80;
                 for (p = to + (start - 1) * outDelta, q = from + start * inDelta; p >= to; p -= outDelta) {
                     q -= inDelta;
-                    error = (error & 0xff) + to_byte_table[hipart(*q)];
+                    error = (error & 0xff) + toFunc_hipart_to_uint8xx[hipart(*q)];
                     *p = (unsigned char)(error >> 8);
                 }
             }else{
@@ -241,7 +241,7 @@ namespace Natron {
                 error = 0x80;
                 for (p = to + start * outDelta, q = from + start * inDelta, a += start * inDelta; p < end; p += outDelta, q += inDelta, a+= inDelta) {
                     const float v = *q * *a;
-                    error = (error & 0xff) + to_byte_table[hipart(v)];
+                    error = (error & 0xff) + toFunc_hipart_to_uint8xx[hipart(v)];
                     ++a;
                     *p = (unsigned char)(error >> 8);
                 }
@@ -251,7 +251,7 @@ namespace Natron {
                     const float v = *q * *a;
                     q -= inDelta;
                     q -= inDelta;
-                    error = (error & 0xff) + to_byte_table[hipart(v)];
+                    error = (error & 0xff) + toFunc_hipart_to_uint8xx[hipart(v)];
                     *p = (unsigned char)(error >> 8);
                 }
                 
@@ -326,14 +326,15 @@ namespace Natron {
                     int outCol = x * outPackingSize;
                     
                     float a = (inputHasAlpha && premult) ? src_pixels[inCol + inAOffset] : 1.f;
-                    error_r = (error_r & 0xff) + to_byte_table[hipart(src_pixels[inCol + inROffset] * a)];
-                    error_g = (error_g & 0xff) + to_byte_table[hipart(src_pixels[inCol + inGOffset] * a)];
-                    error_b = (error_b & 0xff) + to_byte_table[hipart(src_pixels[inCol + inBOffset] * a)];
+                    error_r = (error_r & 0xff) + toFunc_hipart_to_uint8xx[hipart(src_pixels[inCol + inROffset] * a)];
+                    error_g = (error_g & 0xff) + toFunc_hipart_to_uint8xx[hipart(src_pixels[inCol + inGOffset] * a)];
+                    error_b = (error_b & 0xff) + toFunc_hipart_to_uint8xx[hipart(src_pixels[inCol + inBOffset] * a)];
+                    assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
                     dst_pixels[outCol + outROffset] = (unsigned char)(error_r >> 8);
                     dst_pixels[outCol + outGOffset] = (unsigned char)(error_g >> 8);
                     dst_pixels[outCol + outBOffset] = (unsigned char)(error_b >> 8);
                     if(outputHasAlpha){
-                        dst_pixels[outCol + outAOffset] = (unsigned char)(std::min(a * 256.f, 255.f));
+                        dst_pixels[outCol + outAOffset] = floatToInt<256>(a);
                     }
                 }
                 /* go backwards from starting point to start of line: */
@@ -344,14 +345,15 @@ namespace Natron {
                     int outCol = x * outPackingSize;
                     
                     float a = (inputHasAlpha && premult) ? src_pixels[inCol + inAOffset] : 1.f;
-                    error_r = (error_r & 0xff) + to_byte_table[hipart(src_pixels[inCol + inROffset] * a)];
-                    error_g = (error_g & 0xff) + to_byte_table[hipart(src_pixels[inCol + inGOffset] * a)];
-                    error_b = (error_b & 0xff) + to_byte_table[hipart(src_pixels[inCol + inBOffset] * a)];
+                    error_r = (error_r & 0xff) + toFunc_hipart_to_uint8xx[hipart(src_pixels[inCol + inROffset] * a)];
+                    error_g = (error_g & 0xff) + toFunc_hipart_to_uint8xx[hipart(src_pixels[inCol + inGOffset] * a)];
+                    error_b = (error_b & 0xff) + toFunc_hipart_to_uint8xx[hipart(src_pixels[inCol + inBOffset] * a)];
+                    assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
                     dst_pixels[outCol + outROffset] = (unsigned char)(error_r >> 8);
                     dst_pixels[outCol + outGOffset] = (unsigned char)(error_g >> 8);
                     dst_pixels[outCol + outBOffset] = (unsigned char)(error_b >> 8);
                     if(outputHasAlpha){
-                        dst_pixels[outCol + outAOffset] = (unsigned char)(std::min(a * 256.f, 255.f));
+                        dst_pixels[outCol + outAOffset] = floatToInt<256>(a);
                     }
                 }
             }
@@ -422,13 +424,13 @@ namespace Natron {
         void Lut::from_byte_planar(float* to,const unsigned char* from,int W,const unsigned char* alpha ,int inDelta,int outDelta) const {
             
             validate();
-            if(!alpha){
+            if (!alpha) {
                 for (int f = 0,t = 0 ; f < W ; f += inDelta, t += outDelta) {
-                    to[f] = from_byte_table[(int)from[f]];
+                    to[f] = fromFunc_uint8_to_float[(int)from[f]];
                 }
-            }else{
+            } else {
                 for (int f = 0,t = 0 ; f < W ; f += inDelta, t += outDelta) {
-                    to[t] = alpha[f] <= 0 ? 0 : from_byte_table[(from[f]*255 + 128) / alpha[f]] * alpha[f] / 255.;
+                    to[t] = alpha[f] <= 0 ? 0 : Color::intToFloat<256>(fromFunc_uint8_to_float[(from[f]*255 + 128) / alpha[f]] * alpha[f]);
                 }
             }
             
@@ -503,9 +505,9 @@ namespace Natron {
                         b8 = ((src_pixels[inCol + inBOffset] / 255.f) / a) * 255;
                         assert(r8 >= 0 && r8 < 256 && g8 >= 0 && g8 < 256 && b8 >= 0 && b8 < 256);
                     }
-                    dst_pixels[outCol + outROffset] = from_byte_table[r8] * a;
-                    dst_pixels[outCol + outGOffset] = from_byte_table[g8] * a;
-                    dst_pixels[outCol + outBOffset] = from_byte_table[b8] * a;
+                    dst_pixels[outCol + outROffset] = fromFunc_uint8_to_float[r8] * a;
+                    dst_pixels[outCol + outGOffset] = fromFunc_uint8_to_float[g8] * a;
+                    dst_pixels[outCol + outBOffset] = fromFunc_uint8_to_float[b8] * a;
                     if (outputHasAlpha) {
                         dst_pixels[outCol + outAOffset] = a;
                     }
@@ -591,14 +593,14 @@ namespace Natron {
                 to += W * outDelta;
                 for (; --W >= 0; from -= inDelta) {
                     to -= outDelta;
-                    *to = Linear::toFloat(*from);
+                    *to = intToFloat<256>(*from);
                 }
             }
             
             void from_short_planar(float *to, const unsigned short *from, int W,  int inDelta,int outDelta)
             {
                 for (int f = 0,t = 0 ; f < W ; f += inDelta, t += outDelta) {
-                    to[t] = Linear::toFloat(from[f]);
+                    to[t] = intToFloat<65536>(from[f]);
                 }
                 
             }
@@ -905,7 +907,7 @@ namespace Natron {
                         dst_pixels[outCol + outGOffset] = (unsigned char)(error_g >> 8);
                         dst_pixels[outCol + outBOffset] = (unsigned char)(error_b >> 8);
                         if(outputHasAlpha) {
-                            dst_pixels[outCol + outAOffset] = (unsigned char)(std::min(a * 256.f, 255.f));
+                            dst_pixels[outCol + outAOffset] = floatToInt<256>(a);
                         }
                         
                     }
@@ -926,7 +928,7 @@ namespace Natron {
                         dst_pixels[outCol + outGOffset] = (unsigned char)(error_g >> 8);
                         dst_pixels[outCol + outBOffset] = (unsigned char)(error_b >> 8);
                         if(outputHasAlpha) {
-                            dst_pixels[outCol + outAOffset] = (unsigned char)(std::min(a * 256.f, 255.f));
+                            dst_pixels[outCol + outAOffset] = floatToInt<256>(a);
                         }
                     }
                 }

@@ -12,7 +12,10 @@
 #include "CurveWidget.h"
 
 #include <QMenu>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QtCore/QCoreApplication>
 #include <QtCore/QRectF>
 #include <QtGui/QPolygonF>
@@ -21,7 +24,7 @@
 #include <QVBoxLayout> // in QtGui on Qt4, in QtWidgets on Qt5
 
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 #include "Engine/Knob.h"
 #include "Engine/Rect.h"
 #include "Engine/TimeLine.h"
@@ -37,6 +40,10 @@
 #include "Gui/CurveEditorUndoRedo.h"
 #include "Gui/KnobGui.h"
 #include "Gui/SequenceFileDialog.h"
+
+// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
+CLANG_DIAG_OFF(deprecated-declarations)
+GCC_DIAG_OFF(deprecated-declarations)
 
 using namespace Natron;
 
@@ -723,6 +730,10 @@ void CurveWidgetPrivate::drawScale()
     QPointF btmLeft = _widget->toScaleCoordinates(0,_widget->height()-1);
     QPointF topRight = _widget->toScaleCoordinates(_widget->width()-1, 0);
     
+    ///don't attempt to draw a scale on a widget with an invalid height
+    if (_widget->height() <= 1) {
+        return;
+    }
     
     QFontMetrics fontM(*_font);
     const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
@@ -1594,10 +1605,44 @@ double CurveWidget::getPixelAspectRatio() const{
     return _imp->_zoomCtx.aspectRatio;
 }
 
-void CurveWidget::getBackgroundColor(double *r,double *g,double* b) const{
-    *r = _imp->_clearColor.redF();
-    *g = _imp->_clearColor.greenF();
-    *b = _imp->_clearColor.blueF();
+
+/**
+* @brief Swap the OpenGL buffers.
+**/
+void CurveWidget::swapOpenGLBuffers() {
+    swapBuffers();
+}
+
+/**
+ * @brief Repaint
+**/
+void CurveWidget::redraw() {
+    update();
+}
+
+/**
+* @brief Returns the width and height of the viewport in window coordinates.
+**/
+void CurveWidget::getViewportSize(double &width, double &height) const {
+    width = this->width();
+    height = this->height();
+}
+
+/**
+* @brief Returns the pixel scale of the viewport.
+**/
+void CurveWidget::getPixelScale(double& xScale, double& yScale) const  {
+    xScale = 1. / getZoomFactor();
+    yScale = xScale;
+}
+
+/**
+* @brief Returns the colour of the background (i.e: clear color) of the viewport.
+**/
+void CurveWidget::getBackgroundColour(double &r, double &g, double &b) const {
+    r = _imp->_clearColor.redF();
+    g = _imp->_clearColor.greenF();
+    b = _imp->_clearColor.blueF();
 }
 
 void CurveWidget::resizeGL(int width,int height){
@@ -2341,6 +2386,21 @@ bool CurveWidget::isSupportingOpenGLVAO() const { return _imp->_hasOpenGLVAOSupp
 
 
 const QFont& CurveWidget::getTextFont() const { return *_imp->_font; }
+
+void CurveWidget::getProjection(double &left,double &bottom,double &zoomFactor,double &aspectRatio) const {
+    left = _imp->_zoomCtx.left;
+    bottom = _imp->_zoomCtx.bottom;
+    zoomFactor = _imp->_zoomCtx.zoomFactor;
+    aspectRatio = _imp->_zoomCtx.aspectRatio;
+}
+
+void CurveWidget::setProjection(double left,double bottom,double zoomFactor,double aspectRatio) {
+    _imp->_zoomCtx.left = left;
+    _imp->_zoomCtx.bottom = bottom;
+    _imp->_zoomCtx.zoomFactor = zoomFactor;
+    _imp->_zoomCtx.aspectRatio = aspectRatio;
+}
+
 
 void CurveWidget::exportCurveToAscii() {
     std::vector<CurveGui*> curves;

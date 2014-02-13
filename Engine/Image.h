@@ -14,11 +14,17 @@
 
 #include <list>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(unused-parameter)
+// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/binary_iarchive.hpp>
+CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/scoped_array.hpp>
 
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QHash>
+CLANG_DIAG_ON(deprecated)
 #include <QtCore/QMutex>
 
 #include "Engine/Cache.h"
@@ -110,7 +116,12 @@ namespace Natron{
         std::list<RectI> minimalNonMarkedRects(const RectI& roi) const;
         
         void markForRendered(const RectI& roi);
+
+        const char* getBitmap() const { return _map.get(); }
+
     private:
+        RectI minimalNonMarkedBbox(const RectI& roi) const;
+
         RectI _rod;
         boost::scoped_array<char> _map;
     };

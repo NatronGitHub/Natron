@@ -13,6 +13,8 @@
 #include <cfloat>
 #include <limits>
 
+#include "Global/Macros.h"
+
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Settings.h"
@@ -21,8 +23,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/Hash64.h"
 
-#include "Global/AppManager.h"
-#include "Global/Macros.h"
+#include "Engine/AppManager.h"
 
 using namespace Natron;
 
@@ -38,7 +39,6 @@ OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance
     assert(_effect);
 }
 
-/// Get the Raw Unmapped Pixel Depth from the host. We are always 8 bits in our example
 const std::string& OfxClipInstance::getUnmappedBitDepth() const
 {
     // we always use floats
@@ -46,25 +46,13 @@ const std::string& OfxClipInstance::getUnmappedBitDepth() const
     return v;
 }
 
-/// Get the Raw Unmapped Components from the host. In our example we are always RGBA
 const std::string &OfxClipInstance::getUnmappedComponents() const
 {
     static const std::string rgbStr(kOfxImageComponentRGB);
     static const std::string noneStr(kOfxImageComponentNone);
     static const std::string rgbaStr(kOfxImageComponentRGBA);
     static const std::string alphaStr(kOfxImageComponentAlpha);
-    
-    //bool rgb = false;
-    //bool alpha = false;
-    
-    //const ChannelSet& channels = _effect->info().channels();
-    //if(channels & alpha) alpha = true;
-    //if(channels & Mask_RGB) rgb = true;
-    
-//    if(!rgb && !alpha) return noneStr;
-//    else if(rgb && !alpha) return rgbStr;
-//    else if(!rgb && alpha) return alphaStr;
-     return rgbaStr;
+    return rgbaStr;
 }
 
 
@@ -174,7 +162,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     if (n && n != _nodeInstance) {
         Natron::Status st = n->getRegionOfDefinition(time,&rod);
         if (st == StatFailed) {
-            assert(!"cannot compute ROD");
+            //assert(!"cannot compute ROD");
             ret.x1 = kOfxFlagInfiniteMin;
             ret.x2 = kOfxFlagInfiniteMax;
             ret.y1 = kOfxFlagInfiniteMin;

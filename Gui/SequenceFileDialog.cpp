@@ -29,7 +29,10 @@
 #include <QDialog>
 #include <QFileDialog>
 #include <QtCore/QRegExp>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QKeyEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QColor>
 #if QT_VERSION < 0x050000
 #include <QtGui/QAction>
@@ -52,7 +55,7 @@
 
 #include <QtCore/QSettings>
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 #include "Global/QtCompat.h"
 #include "Gui/Button.h"
 #include "Gui/LineEdit.h"
@@ -103,7 +106,6 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
                                        FileDialogMode mode, // if it is an open or save dialog
                                        const std::string& currentDirectory) // the directory to show first
 : QDialog(parent)
-, _frameSequences()
 , _nameMappingMutex()
 , _nameMapping()
 , _filters(filters)
@@ -540,7 +542,6 @@ void SequenceFileDialog::createMenuActions(){
 }
 
 void SequenceFileDialog::enableSequenceMode(bool b){
-    _frameSequences.clear();
     _proxy->clear();
     if(!b){
         QWriteLocker locker(&_nameMappingMutex);
@@ -865,13 +866,8 @@ void SequenceFileDialog::setRootIndex(const QModelIndex& index){
     _view->setRootIndex(index);
 }
 
-
-void SequenceFileDialog::setFrameSequence(const Natron::FrameSequences &frameSequences){
-    /*Removing from the sequence any element with a sequence of 1 element*/
-    _frameSequences = frameSequences;
-}
 boost::shared_ptr<FileSequence>  SequenceFileDialog::frameRangesForSequence(const std::string& sequenceName, const std::string& extension) const{
-    std::pair<Natron::ConstSequenceIterator,Natron::ConstSequenceIterator> found =  _frameSequences.equal_range(sequenceName);
+    std::pair<Natron::ConstSequenceIterator,Natron::ConstSequenceIterator> found =  _proxy->getFrameSequence().equal_range(sequenceName);
     for(Natron::ConstSequenceIterator it = found.first ;it!=found.second;++it) {
         if(it->second->getFileType() == extension){
             return it->second;
@@ -1438,12 +1434,19 @@ void SequenceFileDialog::autoCompleteFileName(const QString& text){
             else
                 newFiles.append(idx);
         }
-        for (int i = 0; i < newFiles.count(); ++i)
-            select(newFiles.at(i));
+        
+        _view->selectionModel()->blockSignals(true);
+
         if (_selectionLineEdit->hasFocus())
-            for (int i = 0; i < oldFiles.count(); ++i)
-                _view->selectionModel()->select(oldFiles.at(i),
-                                                QItemSelectionModel::Toggle | QItemSelectionModel::Rows);
+            for (int i = 0; i < oldFiles.count(); ++i) {
+                _view->selectionModel()->select(oldFiles.at(i),QItemSelectionModel::Toggle | QItemSelectionModel::Rows);
+            }
+        
+        for (int i = 0; i < newFiles.count(); ++i){
+            select(newFiles.at(i));
+        }
+        _view->selectionModel()->blockSignals(false);
+       
     }
 }
 void SequenceFileDialog::goToDirectory(const QString& path){
@@ -1529,7 +1532,7 @@ QStringList SequenceFileDialog::selectedFiles(){
         ++i;
         path = path.left(i);
         // FileSequence *sequence = 0;
-        std::pair<Natron::SequenceIterator,Natron::SequenceIterator> range = _frameSequences.equal_range(path.toStdString());
+        std::pair<Natron::ConstSequenceIterator,Natron::ConstSequenceIterator> range = _proxy->getFrameSequence().equal_range(path.toStdString());
 
         /*if this is not a registered sequence. i.e: this is a single image file*/
         if(range.first == range.second){
@@ -1588,6 +1591,17 @@ QString SequenceFileDialog::getSequencePatternFromLineEdit(){
 QStringList SequenceFileDialog::filesListFromPattern(const QString& pattern){
     QStringList ret;
     QString unpathed = removePath(pattern);
+    
+    QString patternExtension;
+    int lastDotPos = unpathed.lastIndexOf('.');
+    if (lastDotPos != -1) {
+        ++lastDotPos; //bypass the '.'
+        while (lastDotPos < unpathed.size()) {
+            patternExtension.push_back(unpathed.at(lastDotPos));
+            ++lastDotPos;
+        }
+    }
+    
     int indexOfCommonPart = pattern.indexOf(unpathed);
     QString path = pattern.left(indexOfCommonPart);
     assert(pattern == (path + unpathed));
@@ -1605,7 +1619,13 @@ QStringList SequenceFileDialog::filesListFromPattern(const QString& pattern){
     if(d.isReadable()) {
         QStringList files = d.entryList();
         for (int j = 0; j < files.size() ; ++j) {
-            if (files.at(j).contains(commonPart)) {
+            QString file = files.at(j);
+            int fnumber;
+            QString extension;
+            SequenceDialogProxyModel::parseFilename(file, &fnumber, extension);
+            
+            
+            if (file == commonPart && extension == patternExtension) {
                 ret << QString(path + files.at(j));
             }
         }

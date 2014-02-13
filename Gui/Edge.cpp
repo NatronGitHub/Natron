@@ -42,7 +42,7 @@ Edge::Edge(int inputNb_, double angle_, NodeGui *dest_, QGraphicsItem *parent)
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
     setFlag(QGraphicsItem::ItemStacksBehindParent);
-    setZValue(-1.1);
+    setZValue(0);
 }
 
 Edge::Edge(int inputNb_, NodeGui *src, NodeGui* dest_, QGraphicsItem *parent)
@@ -60,6 +60,7 @@ Edge::Edge(int inputNb_, NodeGui *src, NodeGui* dest_, QGraphicsItem *parent)
     setPen(QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     label=scene()->addText(QString(dest->getNode()->getInputLabel(inputNb).c_str()));
     label->setParentItem(this);
+    label->setZValue(zValue());
     initLine();
 }
 
@@ -70,41 +71,28 @@ Edge::~Edge(){
 }
 
 void Edge::initLine(){
-    int h = NodeGui::NODE_HEIGHT;
-    int w = NodeGui::NODE_LENGTH;
-    if(dest->getNode()->isPreviewEnabled()){
-        h += NodeGui::PREVIEW_HEIGHT;
-        w += NodeGui::PREVIEW_LENGTH;
-    }
+    QSize dstNodeSize = NodeGui::nodeSize(dest->getNode()->isPreviewEnabled());
+    
     QPointF dst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
-                                           + QPointF(w/2.,h/2.));
+                                           + QPointF(dstNodeSize.width() / 2., dstNodeSize.height() / 2.));
     QPointF srcpt;
     if(has_source){
-        h = NodeGui::NODE_HEIGHT;
-        w = NodeGui::NODE_LENGTH;
+        
+        QSize srcNodeSize = NodeGui::nodeSize(source->getNode()->isPreviewEnabled());
 
-        if(source->getNode()->isPreviewEnabled()){
-            h += NodeGui::PREVIEW_HEIGHT;
-            w += NodeGui::PREVIEW_LENGTH;
-        }
+        
         srcpt= mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y()))
-            + QPointF(w/2.,h/2.);
+            + QPointF(srcNodeSize.width() / 2.,srcNodeSize.height() / 2.);
         setLine(dst.x(),dst.y(),srcpt.x(),srcpt.y());
         
         
         /*adjusting src and dst to show label at the middle of the line*/
         QPointF labelSrcpt= mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y()))
-        + QPointF(w/2.,h);
+        + QPointF(srcNodeSize.width() / 2.,srcNodeSize.height());
 
-        h = NodeGui::NODE_HEIGHT;
-        w = NodeGui::NODE_LENGTH;
         
-        if(dest->getNode()->isPreviewEnabled()){
-            h += NodeGui::PREVIEW_HEIGHT;
-            w += NodeGui::PREVIEW_LENGTH;
-        }
         QPointF labelDst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
-                          + QPointF(w/2.,0));
+                          + QPointF(dstNodeSize.width() / 2.,0));
                double norm = sqrt(pow(labelDst.x() - labelSrcpt.x(),2) + pow(labelDst.y() - labelSrcpt.y(),2));
         if(norm > 20.){
             label->setPos((labelDst.x()+labelSrcpt.x())/2.-5.,
@@ -132,24 +120,31 @@ void Edge::initLine(){
         }
         
         /*adjusting dst to show label at the middle of the line*/
-        h = NodeGui::NODE_HEIGHT;
-        w = NodeGui::NODE_LENGTH;
-        
-        if(dest->getNode()->isPreviewEnabled()){
-            h += NodeGui::PREVIEW_HEIGHT;
-            w += NodeGui::PREVIEW_LENGTH;
-        }
+    
         QPointF labelDst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
-                          + QPointF(w/2.,0));
+                          + QPointF(dstNodeSize.width() / 2.,0));
                
         label->setPos(((labelDst.x()+srcpt.x())/2.)+yOffset,(labelDst.y()+srcpt.y())/2.-20);
         
     }
     QPointF dstPost = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y()));
-    QLineF edges[] = { QLineF(dstPost.x()+w,dstPost.y(),dstPost.x()+w,dstPost.y()+h), // right
-        QLineF(dstPost.x()+w,dstPost.y()+h,dstPost.x(),dstPost.y()+h), // bottom
-        QLineF(dstPost.x(),dstPost.y()+h,dstPost.x(),dstPost.y()), // left
-        QLineF(dstPost.x(),dstPost.y(),dstPost.x()+w,dstPost.y())}; // top
+    QLineF edges[] = {
+        QLineF(dstPost.x()+dstNodeSize.width(), // right
+                dstPost.y(),
+               dstPost.x()+dstNodeSize.width(),
+               dstPost.y()+dstNodeSize.height()),
+        QLineF(dstPost.x()+dstNodeSize.width(), // bottom
+               dstPost.y()+dstNodeSize.height(),
+               dstPost.x(),
+               dstPost.y()+dstNodeSize.height()),
+        QLineF(dstPost.x(),  // left
+               dstPost.y()+dstNodeSize.height(),
+               dstPost.x(),
+               dstPost.y()),
+        QLineF(dstPost.x(), // top
+               dstPost.y(),
+               dstPost.x()+dstNodeSize.width(),
+               dstPost.y())};
     
     for (int i = 0; i < 4; ++i) {
         QPointF intersection;

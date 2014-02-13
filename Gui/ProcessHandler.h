@@ -11,7 +11,11 @@
 #ifndef PROCESSHANDLER_H
 #define PROCESSHANDLER_H
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QProcess>
+#include <QThread>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 
@@ -23,11 +27,12 @@ class OutputEffectInstance;
 class RenderingProgressDialog;
 
 //qt
-class QProcess;
 class QLocalServer;
 class QLocalSocket;
 class QString;
 class QStringList;
+class QMutex;
+class QWaitCondition;
 
 /**
  * @brief This class represents a background render process. It starts a render and reports progress via a
@@ -210,6 +215,10 @@ private:
     QLocalServer* _backgroundIPCServer;//< for a background app used to manage input IPC  with the gui app
     QLocalSocket* _backgroundInputPipe; //<if the process is bg but managed by a gui process then the pipe is used
                                         //to read input messages
+    
+    bool _mustQuit;
+    QWaitCondition* _mustQuitCond;
+    QMutex* _mustQuitMutex;
 };
 
 #endif // PROCESSHANDLER_H

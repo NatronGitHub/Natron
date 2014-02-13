@@ -6,7 +6,7 @@
 #include "Gui/KnobUndoCommand.h"
 
 #include "Global/GlobalDefines.h" // SequenceTime
-#include "Global/AppManager.h" // AppInstance
+#include "Engine/AppManager.h" // AppInstance
 
 #include "Engine/TimeLine.h"
 #include "Engine/Curve.h"

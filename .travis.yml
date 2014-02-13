@@ -3,6 +3,10 @@ language: cpp
 compiler:
   - gcc
   - clang
+
+env:
+  - CONFIG="coverage debug"
+
 # Natron requires boost >= 1.49 to compile in C++11 mode
 # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
 # we use the irie/boost ppa for that purpose
@@ -10,12 +14,21 @@ before_install:
   - git submodule update --init --recursive
   - sudo add-apt-repository -y ppa:irie/boost
   - sudo apt-get update
+  - if [ "$CC" = "gcc" ]; then sudo pip install cpp-coveralls --use-mirrors; fi
+
 # Ubuntu 12.04 precise doesn't have a pkg-config file (expat.pc)
 install:
-  - sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libboost-thread-dev libboost-system-dev libexpat1-dev
+  - sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libboost-thread-dev libboost-system-dev libexpat1-dev gdb
+  - if [ "$CC" = "gcc" ]; then make -C libs/OpenFX/Examples BITS=64 clean all; make -C libs/OpenFX/Support/Plugins BITS=64 clean all; make -C libs/OpenFX/Support/PropTester BITS=64 clean all; fi
+  - if [ "$CC" = "gcc" ]; then rm -rf Tests/Plugins; mkdir -p Tests/Plugins/Examples Tests/Plugins/Support; mv libs/OpenFX/Examples/*/*-64-debug/*.ofx.bundle Tests/Plugins/Examples; mv libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Tests/Plugins/Support; fi
   - 'echo ''boost: LIBS += -lboost_serialization -lboost_thread -lboost_system'' > config.pri'
   - 'echo ''expat: LIBS += -lexpat'' >> config.pri'
   - 'echo ''expat: PKGCONFIG -= expat'' >> config.pri'
+
 script:
-  - if [ "$CC" = "gcc" ]; then qmake; else qmake -spec unsupported/linux-clang; fi
+  - if [ "$CC" = "gcc" ]; then qmake CONFIG+="coverage debug"; else qmake -spec unsupported/linux-clang; fi
   - make
+  - cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..
+
+after_success:
+  - if [ "$CC" = "gcc" ]; then cd Tests; gcov *.gcno > /dev/null; cd ..; coveralls -n --exclude 'Tests/google-test' --exclude 'Tests/google-mock' --exclude 'libs/OpenFX' --exclude-pattern '.*/moc_.*\.cpp' --exclude-pattern='.*/Tests/.*\.cpp' --exclude-pattern='.*/Tests/.*\.h'; fi

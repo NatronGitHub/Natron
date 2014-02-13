@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <boost/math/special_functions/fpclassify.hpp>
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #include "Engine/CurvePrivate.h"
 #include "Engine/Interpolation.h"
@@ -163,23 +163,20 @@ double Curve::getMaximumTimeCovered() const {
     return (*_imp->keyFrames.rbegin()).getTime();
 }
 
-bool Curve::addKeyFrame(KeyFrame key){
+bool Curve::addKeyFrame(KeyFrame key)
+{
     
     QMutexLocker l(&_imp->_lock);
     
-    ///lock the project if it is saving
-    _imp->owner->getHolder()->getApp()->lockProject();
-    
-
-    if(_imp->mustSetCurveType) {
-        if(_imp->owner->typeName() == Int_Knob::typeNameStatic() ||
-           _imp->owner->typeName() == Choice_Knob::typeNameStatic()){
+    if (_imp->mustSetCurveType) {
+        if (_imp->owner->typeName() == Int_Knob::typeNameStatic() ||
+            _imp->owner->typeName() == Choice_Knob::typeNameStatic()) {
             _imp->curveType = CurvePrivate::INT_CURVE;
-        }else if(_imp->owner->typeName() == String_Knob::typeNameStatic()){
+        } else if (_imp->owner->typeName() == String_Knob::typeNameStatic()) {
             _imp->curveType = CurvePrivate::STRING_CURVE;
-        }else if(_imp->owner->typeName() == Bool_Knob::typeNameStatic()){
+        } else if (_imp->owner->typeName() == Bool_Knob::typeNameStatic()) {
             _imp->curveType = CurvePrivate::BOOL_CURVE;
-        }else{
+        } else {
             _imp->curveType = CurvePrivate::DOUBLE_CURVE;
         }
         _imp->mustSetCurveType = false;
@@ -189,10 +186,7 @@ bool Curve::addKeyFrame(KeyFrame key){
         key.setInterpolation(Natron::KEYFRAME_CONSTANT);
     }
     
-      std::pair<KeyFrameSet::iterator,bool> it = addKeyFrameNoUpdate(key);
-    
-    ///unlock it
-    _imp->owner->getHolder()->getApp()->unlockProject();
+    std::pair<KeyFrameSet::iterator,bool> it = addKeyFrameNoUpdate(key);
     
     evaluateCurveChanged(KEYFRAME_CHANGED,it.first);
     return it.second;

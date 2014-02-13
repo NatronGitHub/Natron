@@ -16,20 +16,23 @@
 #include <string>
 #include <map>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QMetaType>
+CLANG_DIAG_ON(deprecated)
+#include <QObject>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
-
+#include "Global/KeySymbols.h"
 
 class AppInstance;
 class NodeSettingsPanel;
 class Knob;
 class ViewerInstance;
-class QKeyEvent;
 class RenderTree;
 class Format;
 class NodeSerialization;
@@ -128,6 +131,12 @@ public:
      **/
     Node* input(int index) const;
     
+    /**
+     * @brief Returns the input index of the node n if it exists,
+     * -1 otherwise.
+     **/
+    int inputIndex(Node* n) const;
+    
     void outputs(std::vector<Natron::Node*>* outputsV) const;
     
     const std::map<int, std::string>& getInputLabels() const;
@@ -137,6 +146,20 @@ public:
     bool isInputConnected(int inputNb) const;
     
     bool hasOutputConnected() const;
+    
+    /**
+     * @brief This is used by the auto-connection algorithm.
+     * When connecting nodes together this function helps determine
+     * on which input it should connect a new node.
+     **/
+    int getPreferredInputForConnection() const;
+    
+    /**
+     * @brief Returns in 'outputs' a map of all nodes connected to this node
+     * where the value of the map is the input index from which these outputs
+     * are connected to this node.
+     **/
+    void getOutputsConnectedToThisNode(std::map<Node*,int>* outputs);
     
     const InputMap& getInputs() const {return _inputs;}
     
@@ -244,11 +267,11 @@ public:
     
     bool onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos);
     
-    bool onOverlayKeyDown(QKeyEvent* e);
+    bool onOverlayKeyDown(Natron::Key key,Natron::KeyboardModifiers modifiers);
     
-    bool onOverlayKeyUp(QKeyEvent* e);
+    bool onOverlayKeyUp(Natron::Key key,Natron::KeyboardModifiers modifiers);
     
-    bool onOverlayKeyRepeat(QKeyEvent* e);
+    bool onOverlayKeyRepeat(Natron::Key key,Natron::KeyboardModifiers modifiers);
     
     bool onOverlayFocusGained();
     
@@ -343,6 +366,26 @@ public:
     
     void notifyRenderingEnded();
     
+    
+    /**
+     * @brief forwarded to the live instance
+     **/
+    void setInputFilesForReader(const QStringList& files);
+    
+    /**
+     * @brief forwarded to the live instance
+     **/
+    void setOutputFilesForWriter(const QString& pattern);
+    
+    
+    ///called by EffectInstance
+    void registerPluginMemory(size_t nBytes);
+    
+    ///called by EffectInstance
+    void unregisterPluginMemory(size_t nBytes);
+
+    
+    
 public slots:
     
     void onGUINameChanged(const QString& str);
@@ -351,11 +394,17 @@ public slots:
         emit refreshEdgesGUI();
     }
     
-    void refreshPreviewImage(int time){
+    /*will force a preview re-computation not matter of the project's preview mode*/
+    void computePreviewImage(int time) {
+        emit previewRefreshRequested(time);
+    }
+    
+    /*will refresh the preview only if the project is in auto-preview mode*/
+    void refreshPreviewImage(int time) {
         emit previewImageChanged(time);
     }
     
-    void notifyGuiChannelChanged(const Natron::ChannelSet& c){
+    void notifyGuiChannelChanged(const Natron::ChannelSet& c) {
         emit channelsChanged(c);
     }
    
@@ -388,6 +437,8 @@ signals:
 
     void previewImageChanged(int);
     
+    void previewRefreshRequested(int);
+    
     void channelsChanged(const Natron::ChannelSet&);
 
     void inputNIsRendering(int inputNb);
@@ -397,6 +448,8 @@ signals:
     void renderingStarted();
     
     void renderingEnded();
+    
+    void pluginMemoryUsageChanged(unsigned long long);
     
 protected:
     // FIXME: all data members should be private, use getter/setter instead

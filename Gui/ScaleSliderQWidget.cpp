@@ -12,7 +12,10 @@
 #include "ScaleSliderQWidget.h"
 
 #include <cassert>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QPaintEvent>
+CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QMouseEvent>
 #include <QtGui/QPainter>
 #include <QStyleOption>
@@ -126,9 +129,9 @@ void ScaleSliderQWidget::setMinimumAndMaximum(double min,double max){
 }
 
 void ScaleSliderQWidget::centerOn(double left,double right){
-    double scaleWidth = right - left + 10;
+    double scaleWidth = (right - left) * 1.1;
     double w = width();
-    _zoomCtx.left = left - 5;
+    _zoomCtx.left = left - (right - left) * 0.05;;
     _zoomCtx.zoomFactor = w / scaleWidth;
     
     update();

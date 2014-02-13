@@ -25,7 +25,7 @@ SplashScreen::SplashScreen(const QString& filePath)
 : QWidget(0,Qt::ToolTip | Qt::FramelessWindowHint | Qt::X11BypassWindowManagerHint)
 , _pixmap()
 , _text()
-, _versionString("v" NATRON_VERSION_STRING " built on " __DATE__ )
+, _versionString("v" NATRON_VERSION_STRING " - " NATRON_DEVELOPMENT_STATUS " - built on " __DATE__ )
 {
     setAttribute( Qt::WA_TransparentForMouseEvents );
     setAttribute(Qt::WA_TranslucentBackground, true);
@@ -60,5 +60,5 @@ void SplashScreen::paintEvent(QPaintEvent*)
     p.drawPixmap(0,0,_pixmap);
     p.setPen(Qt::white);
     p.drawText(QPointF(120,100), _text);
-    p.drawText(QPointF(180, 250),_versionString);
+    p.drawText(QPointF(130, 250),_versionString);
 }

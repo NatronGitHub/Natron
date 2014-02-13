@@ -7,7 +7,6 @@
 //  Created by Frédéric Devernay on 03/09/13.
 //
 //
-
 #include "OfxHost.h"
 
 #include <cassert>
@@ -25,7 +24,9 @@
 #include <QStandardPaths>
 #endif
 
+#ifdef OFX_SUPPORTS_MULTITHREAD
 #include <boost/thread.hpp>
+#endif
 
 //ofx
 #include <ofxParametricParam.h>
@@ -40,23 +41,24 @@
 #include <natron/IOExtensions.h>
 #include <tuttle/ofxReadWrite.h>
 
-#include "Global/AppManager.h"
-#include "Global/LibraryBinary.h"
+//our version of parametric param suite support
+#include "ofxhParametricParam.h"
+
+#include "Engine/AppManager.h"
+#include "Engine/LibraryBinary.h"
 
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/KnobTypes.h"
 
-//our version of parametric param suite support
-#include "ofxhParametricParam.h"
 
 using namespace Natron;
 
 Natron::OfxHost::OfxHost()
-:_imageEffectPluginCache(*this)
+:_imageEffectPluginCache(new OFX::Host::ImageEffect::PluginCache(*this))
 {
-    _properties.setStringProperty(kOfxPropName,NATRON_APPLICATION_NAME "Host");
-    _properties.setStringProperty(kOfxPropLabel, NATRON_APPLICATION_NAME);
+    _properties.setStringProperty(kOfxPropName,NATRON_APPLICATION_NAME "Host"); //"uk.co.thefoundry.nuke" //< use this to pass for nuke
+    _properties.setStringProperty(kOfxPropLabel, NATRON_APPLICATION_NAME); // "nuke" //< use this to pass for nuke
     _properties.setIntProperty(kOfxPropAPIVersion, 1 , 0); //API v1.0
     _properties.setIntProperty(kOfxPropAPIVersion, 0 , 1);
     _properties.setIntProperty(kOfxPropVersion, NATRON_VERSION_MAJOR , 0); //Software version v1.0
@@ -96,6 +98,7 @@ Natron::OfxHost::~OfxHost()
 {
     //Clean up, to be polite.
     OFX::Host::PluginCache::clearPluginCache();
+    delete _imageEffectPluginCache;
 }
 
 OFX::Host::ImageEffect::Instance* Natron::OfxHost::newInstance(void* ,
@@ -192,34 +195,33 @@ OfxStatus Natron::OfxHost::clearPersistentMessage(){
     return kOfxStatOK;
 }
 
-OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natron::Node* node) {
-    assert(node); // the efgfect_ member should be owned by a Node
+void Natron::OfxHost::getPluginAndContextByID(const std::string& pluginID,  OFX::Host::ImageEffect::ImageEffectPlugin** plugin,std::string& context) {
     // throws out_of_range if the plugin does not exist
-    const OFXPluginEntry& ofxPlugin = _ofxPlugins.at(name);
+    const OFXPluginEntry& ofxPlugin = _ofxPlugins.at(pluginID);
 
-    OFX::Host::ImageEffect::ImageEffectPlugin* plugin = _imageEffectPluginCache.getPluginById(ofxPlugin.openfxId);
-    if (!plugin) {
+    *plugin = _imageEffectPluginCache->getPluginById(ofxPlugin.openfxId);
+    if (!(*plugin)) {
         throw std::runtime_error(std::string("Error: Could not get plugin ") + ofxPlugin.openfxId);
     }
 
+
+    OFX::Host::PluginHandle *pluginHandle;
     // getPluginHandle() must be called before getContexts():
     // it calls kOfxActionLoad on the plugin, which may set properties (including supported contexts)
-    OFX::Host::PluginHandle *ph;
     try {
-        ph = plugin->getPluginHandle();
+        pluginHandle = (*plugin)->getPluginHandle();
     } catch (const std::exception& e) {
-        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + name + ": " + e.what());
+        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + pluginID + ": " + e.what());
     } catch (...) {
-        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + name);
+        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + pluginID);
     }
-    if(!ph) {
-        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + name);
+    if(!pluginHandle) {
+        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + pluginID);
     }
-    assert(ph->getOfxPlugin() && ph->getOfxPlugin()->mainEntry);
+    assert(pluginHandle->getOfxPlugin() && pluginHandle->getOfxPlugin()->mainEntry);
 
-    const std::set<std::string>& contexts = plugin->getContexts();
-    std::string context;
-    
+    const std::set<std::string>& contexts = (*plugin)->getContexts();
+
     if (contexts.size() == 0) {
         throw std::runtime_error(std::string("Error: Plugins supports no context"));
         //context = kOfxImageEffectContextGeneral;
@@ -227,7 +229,7 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
     } else if (contexts.size() == 1) {
         context = (*contexts.begin());
     } else {
-        
+
         std::set<std::string>::iterator found = contexts.find(kOfxImageEffectContextReader);
         if (found != contexts.end()) {
             context = *found;
@@ -260,21 +262,25 @@ OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natr
             }
         }
     }
+}
 
-    OfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
-    if(node){
-        hostSideEffect->createOfxImageEffectInstance(plugin, context);
-    }else{
-        
-        //if node is NULL that means we're just checking if the effect is describing and loading OK
-        OFX::Host::ImageEffect::Descriptor* desc = plugin->getContext(context);
-        if(!desc){
-            throw std::runtime_error(std::string("Error: Could not get description for plugin ") + name + " in context " + context);
-        }
-    }
+AbstractOfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natron::Node* node) {
 
+    assert(node);
+    OFX::Host::ImageEffect::ImageEffectPlugin *plugin;
+    std::string context;
+
+    getPluginAndContextByID(name,&plugin,context);
+
+    AbstractOfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
+    hostSideEffect->createOfxImageEffectInstance(plugin, context);
     return hostSideEffect;
 }
+
+void Natron::OfxHost::addPathToLoadOFXPlugins(const std::string path) {
+    OFX::Host::PluginCache::getPluginCache()->addFileToPath(path);
+}
+
 
 void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
                                      std::map<std::string,std::vector<std::string> >* readersMap,
@@ -283,11 +289,9 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
     assert(OFX::Host::PluginCache::getPluginCache());
     /// set the version label in the global cache
     OFX::Host::PluginCache::getPluginCache()->setCacheVersion(NATRON_APPLICATION_NAME "OFXCachev1");
-    
-    /// make an image effect plugin cache
-    
+        
     /// register the image effect cache with the global plugin cache
-    _imageEffectPluginCache.registerInCache(*OFX::Host::PluginCache::getPluginCache());
+    _imageEffectPluginCache->registerInCache(*OFX::Host::PluginCache::getPluginCache());
     
     
 #if defined(WINDOWS)
@@ -303,6 +307,8 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
     /// now read an old cache
     // The cache location depends on the OS.
     // On OSX, it will be ~/Library/Caches/<organization>/<application>/OFXCache.xml
+    //on Linux ~/.cache/<organization>/<application>/OFXCache.xml
+    //on windows:
 #if QT_VERSION < 0x050000
     QString ofxcachename = QDesktopServices::storageLocation(QDesktopServices::CacheLocation) + QDir::separator() + "OFXCache.xml";
 #else
@@ -320,7 +326,7 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
     writeOFXCache();
 
     /*Filling node name list and plugin grouping*/
-    const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& ofxPlugins = _imageEffectPluginCache.getPlugins();
+    const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& ofxPlugins = _imageEffectPluginCache->getPlugins();
     for (unsigned int i = 0 ; i < ofxPlugins.size(); ++i) {
         OFX::Host::ImageEffect::ImageEffectPlugin* p = ofxPlugins[i];
         assert(p);
@@ -380,9 +386,13 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
             std::transform(formats[k].begin(), formats[k].end(), formats[k].begin(), ::tolower);
         }
         
-        OFX::Host::ImageEffect::Descriptor* isGenerator = p->getContext(kOfxImageEffectContextGenerator);
+
+        const std::set<std::string>& contexts = p->getContexts();
+        std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
+        std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
+
         
-        if(isGenerator && formatsCount > 0){
+        if(foundReader != contexts.end() && formatsCount > 0 && readersMap){
             ///we're safe to assume that this plugin is a reader
             for(U32 k = 0; k < formats.size();++k){
                 std::map<std::string,std::vector<std::string> >::iterator it;
@@ -396,7 +406,7 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
                     readersMap->insert(std::make_pair(formats[k], newVec));
                 }
             }
-        }else if(!isGenerator && formatsCount > 0){
+        }else if(foundWriter != contexts.end() && formatsCount > 0 && writersMap){
             ///we're safe to assume that this plugin is a writer.
             for(U32 k = 0; k < formats.size();++k){
                 std::map<std::string,std::vector<std::string> >::iterator it;
@@ -453,7 +463,9 @@ void Natron::OfxHost::clearPluginsLoadedCache() {
 }
 
 void Natron::OfxHost::loadingStatus(const std::string & pluginId) {
-    appPTR->setLoadingStatus("OpenFX: " + QString(pluginId.c_str()));
+    if (appPTR) {
+        appPTR->setLoadingStatus("OpenFX: " + QString(pluginId.c_str()));
+    }
 }
 
 void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
@@ -468,10 +480,10 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
 /////////////////////////////////////////////////// MULTI_THREAD SUITE ///////////////////////////////////////////////////
 /////////////////
 
-#ifndef OFX_SUPPORTS_MULTITHREAD
-#error "Natron should be compiled with OFX_SUPPORTS_MULTITHREAD defined"
-#endif
 
+#ifdef OFX_SUPPORTS_MULTITHREAD
+#pragma message WARN("Natron begin compiled with OFX_SUPPORTS_MULTITHREAD defined, some plug-ins might crash.")
+namespace {
 struct Thread_Group {
     typedef std::list<boost::thread*> ThreadsList;
     ThreadsList threads;
@@ -500,6 +512,7 @@ struct Thread_Group {
         
     }
 };
+}
 
 static Thread_Group tg = Thread_Group();
 
@@ -589,6 +602,7 @@ OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const {
     if (!threadIndex)
         return kOfxStatFailed;
     U32 i = 0;
+    boost::mutex::scoped_lock lock(tg.lock);
     for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
         if((*it)->get_id() == boost::this_thread::get_id()){
             *threadIndex = i;
@@ -601,6 +615,7 @@ OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const {
 }
 
 int Natron::OfxHost::multiThreadIsSpawnedThread() const {
+    boost::mutex::scoped_lock lock(tg.lock);
     for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
         if((*it)->get_id() == boost::this_thread::get_id()){
             return true;
@@ -615,12 +630,7 @@ OfxStatus Natron::OfxHost::mutexCreate(OfxMutexHandle *mutex, int lockCount) {
     }
     // suite functions should not throw
     try {
-        QMutex* m;
-        if(lockCount > 1) {
-            m = new QMutex(QMutex::Recursive);
-        } else {
-            m = new QMutex;
-        }
+        QMutex* m = new QMutex(QMutex::Recursive);
         for (int i = 0; i < lockCount; ++i) {
             m->lock();
         }
@@ -720,5 +730,5 @@ OfxStatus Natron::OfxHost::mutexTryLock(const OfxMutexHandle mutex) {
         return kOfxStatErrUnknown;
     }
 }
-
+#endif
 

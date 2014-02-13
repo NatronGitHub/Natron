@@ -17,8 +17,12 @@
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
 #endif
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 #include <QToolButton>
+CLANG_DIAG_ON(deprecated)
 #include <QIcon>
 #include <QDialog>
 #include <QAction>
@@ -30,7 +34,12 @@
 
 #include "Engine/Format.h"
 
-
+namespace boost {
+    namespace archive {
+        class xml_iarchive;
+        class xml_oarchive;
+    }
+}
 class QString;
 class TabWidget;
 class AppInstance;
@@ -68,6 +77,9 @@ class QUndoGroup;
 class QUndoStack;
 class DockablePanel;
 class PreferencesPanel;
+class AboutWindow;
+class ProjectGuiSerialization;
+class Color_Knob;
 
 namespace Natron{
     class Node;
@@ -185,9 +197,7 @@ public:
     NodeGui* createNodeGUI(Natron::Node *node);
 
     void addNodeGuiToCurveEditor(NodeGui *node);
-    
-    void autoConnect(NodeGui* target,NodeGui* created);
-    
+        
     NodeGui* getSelectedNode() const;
     
     void setLastSelectedViewer(ViewerTab* tab){_lastSelectedViewer = tab;}
@@ -228,9 +238,7 @@ public:
     void registerNewUndoStack(QUndoStack* stack);
     
     void removeUndoStack(QUndoStack* stack);
-    
-    bool isGraphWorthless() const;
-    
+        
     /**
      * @brief An error dialog with title and text customizable
      **/
@@ -286,7 +294,11 @@ public:
     
     bool isUserScrubbingTimeline() const { return _isUserScrubbingTimeline; }
     
+    /*Refresh all previews if the project's preview mode is auto*/
     void refreshAllPreviews();
+    
+    /*force a refresh on all previews no matter what*/
+    void forceRefreshAllPreviews();
     
     void startDragPanel(QWidget* panel)  ;
     
@@ -294,6 +306,33 @@ public:
     
     bool isDraggingPanel() const { return _currentlyDraggedPanel!=NULL; }
     
+    void updateRecentFileActions();
+    
+    static QPixmap screenShot(QWidget* w);
+    
+    void loadProjectGui(boost::archive::xml_iarchive& obj) const;
+    
+    void saveProjectGui(boost::archive::xml_oarchive& archive);
+    
+    void setColorPickersColor(const QColor& c);
+    
+    void registerNewColorPicker(boost::shared_ptr<Color_Knob> knob);
+    
+    void removeColorPicker(boost::shared_ptr<Color_Knob> knob);
+
+    void initProjectGuiKnobs();
+    
+    void updateViewersViewsMenu(int viewsCount);
+    
+    void setViewersCurrentView(int view);
+    
+    const std::list<ViewerTab*>& getViewersList() const;
+    
+    void activateViewerTab(ViewerInstance* viewer);
+    
+    void deactivateViewerTab(ViewerInstance* viewer);
+    
+    ViewerTab* getViewerTabForInstance(ViewerInstance* node);
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);
@@ -351,8 +390,11 @@ public slots:
     
     void showSettings();
     
-    
+    void showAbout();
 
+    void openRecentFile();
+    
+    void onProjectNameChanged(const QString& name);
 private:
 
     void registerSplitter(QSplitter* s); // unused
@@ -362,7 +404,7 @@ private:
     void restoreGuiGeometry();
 
     void saveGuiGeometry();
-
+    
 
 private:
     // FIXME: PIMPL
@@ -398,6 +440,9 @@ private:
     QAction *actionClearNodeCache;
     QAction *actionClearPluginsLoadingCache;
     QAction *actionClearAllCaches;
+    QAction *actionShowAboutWindow;
+    QAction *actionsOpenRecentFile[NATRON_MAX_RECENT_FILES];
+    QAction *actionSeparatorRecentFiles;
     
     QAction* actionConnectInput1;
     QAction* actionConnectInput2;
@@ -409,6 +454,7 @@ private:
     QAction* actionConnectInput8;
     QAction* actionConnectInput9;
     QAction* actionConnectInput10;
+
         
     QWidget *_centralWidget;
     QHBoxLayout* _mainLayout;
@@ -468,6 +514,7 @@ private:
     //======================
     QMenuBar *menubar;
     QMenu *menuFile;
+    QMenu *menuRecentFiles;
     QMenu *menuEdit;
     QMenu *menuDisplay;
     QMenu *menuOptions;
@@ -486,12 +533,12 @@ public:
 private:
     PreferencesPanel* _settingsGui;
     
-public:
-    ProjectGui* _projectGui; // FIXME: used by AppManager.cpp
-    
 private:
     
+    ProjectGui* _projectGui;
+    
     QWidget* _currentlyDraggedPanel;
+    AboutWindow* _aboutWindow;
     
     void setupUi();
    

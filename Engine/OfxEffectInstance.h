@@ -12,31 +12,56 @@
 #ifndef NATRON_ENGINE_OFXNODE_H_
 #define NATRON_ENGINE_OFXNODE_H_
 
+#include "Global/Macros.h"
 #include <map>
 #include <string>
 #include <boost/shared_ptr.hpp>
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 #include <QtCore/QString>
 #include <QtCore/QObject>
+CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
 //ofx
 #include "ofxhImageEffect.h"
 
-#include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
 
-class QHBoxLayout;
-class QImage;
 class OfxClipInstance;
-class QKeyEvent;
+class Button_Knob;
+class OverlaySupport;
 namespace Natron {
 class Node;
 class OfxImageEffectInstance;
 class OfxOverlayInteract;
 }
 
+class AbstractOfxEffectInstance : public Natron::OutputEffectInstance {
+public:
+    
+    AbstractOfxEffectInstance(Natron::Node* node)
+    : Natron::OutputEffectInstance(node)
+    {
+    }
+    
+    virtual ~AbstractOfxEffectInstance(){}
+    
+    virtual void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                              const std::string& context) = 0;
+    
+    static QStringList getPluginGrouping(const std::string& pluginLabel,const std::string& grouping) WARN_UNUSED_RETURN;
+    
+    static std::string getPluginLabel(const std::string& shortLabel,
+                                      const std::string& label,
+                                      const std::string& longLabel) WARN_UNUSED_RETURN;
+    
+    static std::string generateImageEffectClassName(const std::string& shortLabel,
+                                                    const std::string& label,
+                                                    const std::string& longLabel,
+                                                    const std::string& grouping) WARN_UNUSED_RETURN;
+};
 
-class OfxEffectInstance : public Natron::OutputEffectInstance {
+class OfxEffectInstance : public AbstractOfxEffectInstance {
     
     Natron::OfxImageEffectInstance* effect_;
     bool _isOutput;//if the OfxNode can output a file somehow
@@ -44,9 +69,8 @@ class OfxEffectInstance : public Natron::OutputEffectInstance {
     bool _penDown; // true when the overlay trapped a penDow action
     Natron::OfxOverlayInteract* _overlayInteract; // ptr to the overlay interact if any
 
-    QHBoxLayout* _lastKnobLayoutWithNoNewLine; // for nuke layout hint extension
     bool _initialized; //true when the image effect instance has been created and populated
-   
+    boost::shared_ptr<Button_Knob> _renderButton; //< render button for writers
 public:
     
     
@@ -62,11 +86,6 @@ public:
     const Natron::OfxImageEffectInstance* effectInstance() const WARN_UNUSED_RETURN { return effect_; }
 
     void setAsOutputNode() {_isOutput = true;}
-
-    void setLastKnobLayoutWithNoNewLine(QHBoxLayout* layout) {_lastKnobLayoutWithNoNewLine = layout;}
-
-    QHBoxLayout* getLastKnobLayoutWithNoNewLine() const WARN_UNUSED_RETURN {return _lastKnobLayoutWithNoNewLine;}
-    
     
     const std::string& getShortLabel() const WARN_UNUSED_RETURN;
     
@@ -74,10 +93,6 @@ public:
     MappedInputV inputClipsCopyWithoutOutput() const WARN_UNUSED_RETURN;
     
     void ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const;
-    
-    /*If the OpenFX effect is an output effect (a writer), this will return the pattern of
-     the output file sequence. */
-    std::string getOutputFileName() const WARN_UNUSED_RETURN;
 
     /********OVERRIDEN FROM EFFECT INSTANCE*************/
     virtual int majorVersion() const OVERRIDE  FINAL WARN_UNUSED_RETURN;
@@ -108,13 +123,13 @@ public:
 
     virtual std::string inputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool isInputOptional(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isInputOptional(int inputNb) const OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod) OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual Natron::EffectInstance::RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual Natron::EffectInstance::RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE FINAL;
+    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
 
     virtual Natron::Status preProcessFrame(SequenceTime /*time*/) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -128,50 +143,50 @@ public:
 
     virtual bool onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool onOverlayKeyDown(QKeyEvent* e) OVERRIDE FINAL;
+    virtual bool onOverlayKeyDown(Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
 
-    virtual bool onOverlayKeyUp(QKeyEvent* e) OVERRIDE FINAL;
+    virtual bool onOverlayKeyUp(Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
 
-    virtual bool onOverlayKeyRepeat(QKeyEvent* e) OVERRIDE FINAL;
+    virtual bool onOverlayKeyRepeat(Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
 
     virtual bool onOverlayFocusGained() OVERRIDE FINAL;
 
     virtual bool onOverlayFocusLost() OVERRIDE FINAL;
 
-    virtual void setCurrentViewerForOverlays(ViewerGL* viewer) OVERRIDE FINAL;
+    virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
 
-    virtual void beginKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void beginKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE;
 
-    virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE;
 
-    virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE;
 
     virtual Natron::Status render(SequenceTime time,RenderScale scale,
-                                   const RectI& roi,int view,boost::shared_ptr<Natron::Image> output) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                   const RectI& roi,int view,boost::shared_ptr<Natron::Image> output) OVERRIDE WARN_UNUSED_RETURN;
 
     virtual bool isIdentity(SequenceTime time,RenderScale scale,const RectI& roi,
-                                int view,SequenceTime* inputTime,int* inputNb) OVERRIDE FINAL;
+                                int view,SequenceTime* inputTime,int* inputNb) OVERRIDE;
 
     virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual void purgeCaches() OVERRIDE;
+
+    virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
+    
+    virtual void onMultipleInputsChanged() OVERRIDE FINAL;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
-    static QStringList getPluginGrouping(const std::string& pluginLabel,const std::string& grouping) WARN_UNUSED_RETURN;
-
-    static std::string getPluginLabel(const std::string& shortLabel,
-                                      const std::string& label,
-                                      const std::string& longLabel) WARN_UNUSED_RETURN;
-
-    static std::string generateImageEffectClassName(const std::string& shortLabel,
-                                                const std::string& label,
-                                                const std::string& longLabel,
-                                                const std::string& grouping) WARN_UNUSED_RETURN;
+    
 
 private:
+    
+    OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
 
     void tryInitializeOverlayInteracts();
 
+    void initializeContextDependentParams();
 
 };
 

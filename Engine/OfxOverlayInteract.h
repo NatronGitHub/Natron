@@ -13,8 +13,7 @@
 
 #include <ofxhImageEffect.h>
 
-class CurveWidget;
-class ViewerGL;
+class OverlaySupport;
 namespace Natron {
    
     
@@ -22,16 +21,15 @@ class OfxImageEffectInstance;
 class OfxOverlayInteract :  public OFX::Host::ImageEffect::OverlayInteract
 {
     
-    CurveWidget* _curveWidget;
-    ViewerGL* _currentViewer;
+    OverlaySupport* _viewport;
     
 public:
     
-    OfxOverlayInteract(OfxImageEffectInstance &v, int bitDepthPerComponent = 8, bool hasAlpha = false,CurveWidget* curveWidget = NULL);
+    OfxOverlayInteract(OfxImageEffectInstance &v, int bitDepthPerComponent = 8, bool hasAlpha = false);
     
     virtual ~OfxOverlayInteract(){}
     
-    void setCallingViewer(ViewerGL* viewer);
+    void setCallingViewport(OverlaySupport* viewport);
     
     /*Swaps the buffer of the attached viewer*/
     virtual OfxStatus swapBuffers();

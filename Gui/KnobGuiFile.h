@@ -12,9 +12,11 @@
 #ifndef NATRON_GUI_KNOBGUIFILE_H_
 #define NATRON_GUI_KNOBGUIFILE_H_
 
-#include <QtCore/QString>
-
 #include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
+#include <QtCore/QString>
+CLANG_DIAG_ON(deprecated)
+
 #include "Global/GlobalDefines.h"
 
 #include "Gui/KnobGui.h"
@@ -62,7 +64,7 @@ private:
 
     virtual void _show() OVERRIDE FINAL;
 
-    virtual void setEnabled() OVERRIDE FINAL {}
+    virtual void setEnabled() OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
@@ -107,7 +109,7 @@ private:
 
     virtual void _show() OVERRIDE FINAL;
 
-    virtual void setEnabled() OVERRIDE FINAL {}
+    virtual void setEnabled() OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 

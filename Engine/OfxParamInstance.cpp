@@ -20,7 +20,7 @@
 
 #include <ofxParametricParam.h>
 
-#include "Global/AppManager.h"
+#include "Engine/AppManager.h"
 
 #include "Engine/Knob.h"
 #include "Engine/KnobFactory.h"
@@ -145,10 +145,6 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
 {
     _knob = Natron::createKnob<Button_Knob>(node, getParamLabel(this));
     
-    int isRenderButton = getProperties().getIntProperty(kNatronParamPropButtonIsRender);
-    if (isRenderButton > 0) {
-        _knob->setAsRenderButton();
-    }
 }
 
 
@@ -268,7 +264,7 @@ static void valueAccordingToType(bool toType,const std::string& doubleType,OfxEf
              doubleType == kOfxParamDoubleTypeNormalisedX ||
              doubleType == kOfxParamDoubleTypeNormalisedXAbsolute){ //< treat absolute as non-absolute...
         
-        const Format& projectFormat = effect->getApp()->getProjectFormat();
+        const Format& projectFormat = effect->getApp()->getProject()->getProjectDefaultFormat();
         if(toType){
             *inOut1stDim *= (double)projectFormat.width();
         }else{
@@ -279,7 +275,7 @@ static void valueAccordingToType(bool toType,const std::string& doubleType,OfxEf
              doubleType == kOfxParamDoubleTypeYAbsolute ||
              doubleType == kOfxParamDoubleTypeNormalisedY ||
              doubleType == kOfxParamDoubleTypeNormalisedYAbsolute){ //< treat absolute as non-absolute...
-        const Format& projectFormat = effect->getApp()->getProjectFormat();
+        const Format& projectFormat = effect->getApp()->getProject()->getProjectDefaultFormat();
         if(toType){
             *inOut1stDim *= (double)projectFormat.height();
         }else{
@@ -291,7 +287,7 @@ static void valueAccordingToType(bool toType,const std::string& doubleType,OfxEf
              doubleType == kOfxParamDoubleTypeNormalisedXY ||
              doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute){
         assert(inOutS2ndDim);
-        const Format& projectFormat = effect->getApp()->getProjectFormat();
+        const Format& projectFormat = effect->getApp()->getProject()->getProjectDefaultFormat();
         if(toType){
             *inOut1stDim *= (double)projectFormat.width();
             *inOutS2ndDim *= (double)projectFormat.height();
@@ -1398,24 +1394,26 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
     
     if (mode == kOfxParamStringIsFilePath) {
         
-        int fileIsImage = properties.getIntProperty(kNatronParamFilePathIsImage);
-        int fileIsOutput = properties.getIntProperty(kNatronParamFilePathIsOutput);
+        int fileIsImage = (node->isReader() || node->isWriter()) && (getScriptName() == "filename");
+        int fileIsOutput = !properties.getIntProperty(kOfxParamPropStringFilePathExists);
+        int filePathSupportsImageSequences = properties.getIntProperty(kNatronParamFilePathIsImageSequence);
         
-        if (fileIsOutput == 0) {
+        
+        if (!fileIsOutput) {
             _fileKnob = Natron::createKnob<File_Knob>(node, getParamLabel(this));
             if(fileIsImage){
                 _fileKnob->setAsInputImage();
-            } else {
+            }
+            if (!filePathSupportsImageSequences) {
                 _fileKnob->turnOffSequences();
             }
         } else {
-            _node->setAsOutputNode(); // IMPORTANT !
             _outputFileKnob = Natron::createKnob<OutputFile_Knob>(node, getParamLabel(this));
-            if(fileIsOutput){
+            if(fileIsImage){
                 _outputFileKnob->setAsOutputImageFile();
-                if (!fileIsImage) {
-                    _outputFileKnob->turnOffSequences();
-                }
+            }
+            if (!filePathSupportsImageSequences) {
+                _outputFileKnob->turnOffSequences();
             }
             
         }
@@ -1430,8 +1428,10 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
             _stringKnob->setAsMultiLine();
         }
     }
-    
-    set(properties.getStringProperty(kOfxParamPropDefault).c_str());
+    std::string defaultVal = properties.getStringProperty(kOfxParamPropDefault).c_str();
+    if (!defaultVal.empty()) {
+        set(defaultVal.c_str());
+    }
 }
 
 OfxStatus OfxStringInstance::get(std::string &str) {
@@ -1777,11 +1777,12 @@ void OfxParametricInstance::onResetToDefault(const QVector<int>& dimensions){
     }
 }
 
-void OfxParametricInstance::initializeInteract(CurveWidget* widget){
+void OfxParametricInstance::initializeInteract(OverlaySupport* widget){
     
     OfxPluginEntryPoint* interactEntryPoint = (OfxPluginEntryPoint*)getProperties().getPointerProperty(kOfxParamPropParametricInteractBackground);
     if(interactEntryPoint){
-        _overlayInteract = new Natron::OfxOverlayInteract((*_effect->effectInstance()),8,true,widget);
+        _overlayInteract = new Natron::OfxOverlayInteract((*_effect->effectInstance()),8,true);
+        _overlayInteract->setCallingViewport(widget);
         _overlayInteract->createInstanceAction();
         QObject::connect(_knob.get(), SIGNAL(customBackgroundRequested()), this, SLOT(onCustomBackgroundDrawingRequested()));
     }

@@ -14,17 +14,20 @@
 
 #include <vector>
 #include <map>
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QGraphicsView>
 #include <QtCore/QRectF>
 #include <QtCore/QTimer>
 #include <QDialog>
 #include <QLabel>
 #include <QUndoCommand>
+CLANG_DIAG_ON(deprecated)
+
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
 #endif
-
-#include "Global/Macros.h"
 
 class QVBoxLayout;
 class QScrollArea;
@@ -81,8 +84,6 @@ public:
     NodeGui* getSelectedNode() const {return _nodeSelected;}
     
     void removeNode(NodeGui* n);
-
-    void autoConnect(NodeGui* selected,NodeGui* created);
     
     void setSmartNodeCreationEnabled(bool enabled){smartNodeCreationEnabled=enabled;}
     
@@ -105,12 +106,6 @@ public:
     void moveToTrash(NodeGui* node);
     
     void restoreFromTrash(NodeGui* node);
-    
-    void clearActiveAndTrashNodes();
-    
-    /*Returns true if the graph has no value, i.e:
-     this is just output nodes*/
-    bool isGraphWorthLess() const;
         
     Gui* getGui() const {return _gui;}
     
@@ -135,8 +130,24 @@ public slots:
     void turnOffPreviewForAllNodes();
     
     void deleteNode(Natron::Node*);
+    
+    void toggleAutoPreview();
+    
+    void forceRefreshAllPreviews();
 
+    void onProjectNodesCleared();
 private:
+    
+    /**
+     * @brief Given the node, it tries to move it to the ideal position
+     * according to the position of the selected node and its inputs/outputs.
+     * This is used when creating a node to position it correctly.
+     * It will move the inputs / outputs slightly to fit this node into the nodegraph
+     * so they do not overlap.
+     **/
+    void moveNodesForIdealPosition(NodeGui* n);
+    
+  
 
     virtual void enterEvent(QEvent *event) OVERRIDE FINAL;
 
