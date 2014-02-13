@@ -120,7 +120,7 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
             throw std::runtime_error("Could not create effect instance for plugin");
         }
         if (!effect_->getClipPreferences()) {
-            Natron::errorDialog(getName(),"The plugin failed in the getClipPreferencesAction.");
+           qDebug() << "The plugin failed in the getClipPreferencesAction.";
         }
 
     } catch (const std::exception& e) {
