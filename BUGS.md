@@ -6,12 +6,16 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
-- fix setValue infinite loop bug: if a parameter change by the user,
-  which calls changedParam(), causes a setValue, it triggers a
-  changedParam with reason=eChangeUserEdit instead of
-  reason=eChangePluginEdit
-  Alex has the full bug report for this.
-  
+- render() is called on the plugin when moving the mouse over the timeline
+
+- the following code at Node.cpp:1024 creates an inifinite loop whenever tryAddEmptyInput() does nothing
+```
+    /*Adding all empty edges so it creates at least the inputNB'th one.*/
+    while(_inputsCount <= inputNumber){
+        tryAddEmptyInput();
+    }
+```
+
 - File_KnobGui: when the filename is already set, browsing should
   start in the same directory as the file itself (try saving a project
   with a filename parameter in another directory, then reopen the
