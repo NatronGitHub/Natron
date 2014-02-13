@@ -403,6 +403,7 @@ class KnobHolder {
     AppInstance* _app;
     std::vector< boost::shared_ptr<Knob> > _knobs;
     bool _isClone;
+    bool _knobsInitialized;
 public:
     
     /**
@@ -503,7 +504,8 @@ public:
      **/
     void invalidateHash();
     
-   
+    
+    void initializeKnobsPublic();
     
 private:
 

@@ -676,9 +676,10 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
         ///flag that we called begin
         wasBeginCalled = false;
     } else {
+        ///THIS IS WRONG AND COMMENTED OUT : THIS LEADS TO INFINITE RECURSION.
         ///if we found a call made to begin already for this caller, adjust the reason to the reason of the
         /// outermost begin call
-        reason = found->second.second;
+        //   reason = found->second.second;
     }
 
     ///if the evaluation is significant , set the flag isSignificantChange to true

@@ -47,8 +47,6 @@ public:
         
     virtual void evaluate(Knob* /*knob*/,bool /*isSignificant*/) OVERRIDE FINAL {}
     
-    virtual void initializeKnobs() OVERRIDE FINAL;
-        
     virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE FINAL;
     
     int getViewersBitDepth() const;
@@ -90,6 +88,9 @@ public:
     bool isAutoPreviewOnForNewProjects() const;
     
 private:
+    
+    virtual void initializeKnobs() OVERRIDE FINAL;
+
     
     bool tryLoadOpenColorIOConfig();
 

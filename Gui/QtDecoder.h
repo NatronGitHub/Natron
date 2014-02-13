@@ -72,7 +72,6 @@ public:
     virtual Natron::Status render(SequenceTime time,RenderScale scale,
                                   const RectI& roi,int view,boost::shared_ptr<Natron::Image> output) OVERRIDE;
     
-    virtual void initializeKnobs() OVERRIDE;
 
     virtual void onKnobValueChanged(Knob* k, Natron::ValueChangedReason reason) OVERRIDE;
 
@@ -83,6 +82,8 @@ public:
     
     
 private:
+
+    virtual void initializeKnobs() OVERRIDE;
 
     void getSequenceTimeDomain(SequenceTime& first,SequenceTime& last);
 

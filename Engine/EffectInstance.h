@@ -357,11 +357,6 @@ public:
     void createKnobDynamically();
     
     
-    /**
-     * @brief Must be implemented to initialize any knob using the
-     * KnobFactory.
-     **/
-    virtual void initializeKnobs() OVERRIDE {};
     
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
@@ -488,6 +483,13 @@ public:
     virtual void onMultipleInputsChanged() {}
     
 protected:
+    
+    /**
+     * @brief Must be implemented to initialize any knob using the
+     * KnobFactory.
+     **/
+    virtual void initializeKnobs() OVERRIDE {};
+    
     /**
      * @brief This function is provided for means to copy more data than just the knobs from the live instance
      * to the render clones.

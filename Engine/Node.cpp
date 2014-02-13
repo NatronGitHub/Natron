@@ -154,9 +154,7 @@ Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
     assert(_imp->previewInstance);
 
     _imp->previewInstance->setClone();
-    _imp->previewInstance->notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
-    _imp->previewInstance->initializeKnobs();
-    _imp->previewInstance->notifyProjectEndKnobsValuesChanged();
+    _imp->previewInstance->initializeKnobsPublic();
     _imp->previewRenderTree = new RenderTree(_imp->previewInstance);
     _imp->renderInstances.insert(std::make_pair(_imp->previewRenderTree,_imp->previewInstance));
 }
@@ -275,9 +273,7 @@ void Node::onGUINameChanged(const QString& str){
 }
 
 void Node::initializeKnobs(){
-    _liveInstance->notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
-    _liveInstance->initializeKnobs();
-    _liveInstance->notifyProjectEndKnobsValuesChanged();
+    _liveInstance->initializeKnobsPublic();
     emit knobsInitialized();
 }
 
@@ -315,7 +311,7 @@ EffectInstance*  Node::createLiveInstanceClone()
     }
     assert(ret);
     ret->setClone();
-    ret->initializeKnobs();
+    ret->initializeKnobsPublic();
     return ret;
 }
 

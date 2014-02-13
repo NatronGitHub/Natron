@@ -301,10 +301,7 @@ AppInstance::load(const QString& projectName,const QStringList& writers)
         throw std::invalid_argument("Project file name empty");
     }
     
-    _currentProject->beginProjectWideValueChanges(Natron::OTHER_REASON,_currentProject.get());
-    _currentProject->initializeKnobs();
-    _currentProject->endProjectWideValueChanges(_currentProject.get());
-
+    _currentProject->initializeKnobsPublic();
     
     if(!isBackground()){
         _gui->initProjectGuiKnobs();
@@ -736,7 +733,7 @@ void AppManager::load(SplashScreen* splashScreen,const QString& binaryPath) {
         return;
     }
     
-    _settings->initializeKnobs();
+    _settings->initializeKnobsPublic();
     
     
     connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString,QString)),

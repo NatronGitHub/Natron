@@ -669,12 +669,18 @@ KnobHolder::KnobHolder(AppInstance* appInstance):
 _app(appInstance)
 , _knobs()
 , _isClone(false)
+, _knobsInitialized(false)
 {}
 
 KnobHolder::~KnobHolder(){
     for (U32 i = 0; i < _knobs.size(); ++i) {
         _knobs[i]->_imp->_holder = NULL;
     }
+}
+
+void KnobHolder::initializeKnobsPublic() {
+    initializeKnobs();
+    _knobsInitialized = true;
 }
 
 void KnobHolder::invalidateHash(){
@@ -716,18 +722,32 @@ void KnobHolder::refreshAfterTimeChange(SequenceTime time){
 }
 
 void KnobHolder::notifyProjectBeginKnobsValuesChanged(Natron::ValueChangedReason reason){
+    
+    if (!_knobsInitialized) {
+        return;
+    }
+    
     if(_app){
         getApp()->getProject()->beginProjectWideValueChanges(reason, this);
     }
 }
 
 void KnobHolder::notifyProjectEndKnobsValuesChanged(){
+    
+    if (!_knobsInitialized) {
+        return;
+    }
+    
     if(_app){
         getApp()->getProject()->endProjectWideValueChanges(this);
     }
 }
 
 void KnobHolder::notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,Knob* k,bool significant){
+    if (!_knobsInitialized) {
+        return;
+    }
+    
     if(_app){
         getApp()->getProject()->stackEvaluateRequest(reason,this,k,significant);
     }else{
