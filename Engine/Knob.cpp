@@ -368,6 +368,7 @@ int Knob::getDimension() const { return _imp->_dimension; }
 void Knob::load(const KnobSerialization& serializationObj){
     
     assert(_imp->_dimension == serializationObj.getDimension());
+    assert(isPersistent()); // a non-persistent Knob should never be loaded!
     
     ///restore masters
     const std::vector< std::string >& serializedMasters = serializationObj.getMasters();

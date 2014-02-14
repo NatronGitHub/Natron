@@ -82,7 +82,9 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         ///try to find a serialized value for this knob
         for(U32 j = 0 ; j < projectSerializedValues.size();++j){
             if(projectSerializedValues[j]->getLabel() == projectKnobs[i]->getDescription()){
-                projectKnobs[i]->load(*projectSerializedValues[j]);
+                if (projectKnobs[i]->isPersistent()) {
+                    projectKnobs[i]->load(*projectSerializedValues[j]);
+                }
                 break;
             }
         }
@@ -136,7 +138,10 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             ///try to find a serialized value for this knob
             for (U32 k = 0; k < knobsValues.size(); ++k) {
                 if(knobsValues[k]->getLabel() == nodeKnobs[j]->getDescription()){
-                    nodeKnobs[j]->load(*knobsValues[k]);
+                    // don't load the value if the Knob is not persistant! (it is just the default value in this case)
+                    if (nodeKnobs[j]->isPersistent()) {
+                        nodeKnobs[j]->load(*knobsValues[k]);
+                    }
                     break;
                 }
             }
