@@ -608,7 +608,10 @@ void Choice_KnobGui::createWidget(QGridLayout *layout, int row)
         _comboBox->addItem(_entries[i].c_str(), QIcon(), QKeySequence(), QString(helpStr.c_str()));
     }
     if (_entries.size() > 0) {
+#pragma message WARN("[FD->AG] why not use setCurrentIndex() instead?")
+        // PLEASE COMMENT
         _comboBox->setCurrentText(_entries[0].c_str());
+        //_comboBox->setCurrentIndex(0); // why not?
     }
     if(hasToolTip()) {
         _comboBox->setToolTip(toolTip());
@@ -630,8 +633,11 @@ void Choice_KnobGui::onEntriesPopulated()
     for (U32 j = 0; j < _entries.size(); ++j) {
         _comboBox->addItem(QString(_entries[j].c_str()));
     }
-    if(_entries.size() > 0 && i >= 0) {
+    if (0 <= i && i < _entries.size()) {
+#pragma message WARN("[FD->AG] why not use setCurrentIndex() instead?")
+        // PLEASE COMMENT
         _comboBox->setCurrentText(QString(_entries[i].c_str()));
+        //_comboBox->setCurrentIndex(i); // why not?
     } else {
         _comboBox->setCurrentText("");
     }
@@ -640,8 +646,11 @@ void Choice_KnobGui::onEntriesPopulated()
 void Choice_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 {
     int i = variant.toInt();
-    if(i < (int)_entries.size() && i >= (int)0){
+    if (0 <= i && i < (int)_entries.size()) {
+#pragma message WARN("[FD->AG] why not use setCurrentIndex() instead?")
+        // PLEASE COMMENT
         _comboBox->setCurrentText(_entries[i].c_str());
+        //_comboBox->setCurrentIndex(i); // why not?
     }
 }
 
