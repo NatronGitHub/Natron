@@ -116,7 +116,7 @@ public:
     int getAnimation() const { return animation; }
 signals:
     void currentIndexChanged(int index);
-    void currentIndexChanged(const QString &text);
+    //void currentIndexChanged(const QString &text);
     
 private:
     void paintEvent(QPaintEvent *);
