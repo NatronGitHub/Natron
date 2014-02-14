@@ -8,6 +8,7 @@
 *
 */
 
+#include <clocale>
 #include <iostream>
 
 #include "Global/Macros.h"
@@ -100,7 +101,7 @@ int main(int argc, char *argv[])
     bool expectPipeFileNameOnNextArg = false;
     QString mainProcessServerName;
     QStringList args;
-    
+
     QString binaryPath;
     for(int i = 0; i < argc ;++i){
         if (i == 0) {
@@ -161,7 +162,20 @@ int main(int argc, char *argv[])
         app = new QCoreApplication(argc,argv);
         
     }
-    
+    // Natron is not yet internationalized, so it is better for now to use the "C" locale,
+    // until it is tested for robustness against locale choice.
+    // The locale affects numerics printing and scanning, date and time.
+    // Note that with other locales (e.g. "de" or "fr"), the floating-point numbers may have
+    // a comma (",") as the decimal separator instead of a point (".").
+    // There is also an OpenCOlorIO issue with non-C numeric locales:
+    // https://github.com/imageworks/OpenColorIO/issues/297
+    //
+    // this must be done after initializing the QCoreApplication, see
+    // https://qt-project.org/doc/qt-5/qcoreapplication.html#locale-settings
+    //std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
+    std::setlocale(LC_ALL,"C"); // set the locale for everything
+
+
     app->setOrganizationName(NATRON_ORGANIZATION_NAME);
     app->setOrganizationDomain(NATRON_ORGANIZATION_DOMAIN);
     app->setApplicationName(NATRON_APPLICATION_NAME);
