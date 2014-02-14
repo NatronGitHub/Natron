@@ -1134,12 +1134,25 @@ void Gui::openProject(){
     
 }
 void Gui::saveProject(){
+    
     if(_appInstance->getProject()->hasProjectBeenSavedByUser()){
         _appInstance->getProject()->saveProject(_appInstance->getProject()->getProjectPath(),
                                                 _appInstance->getProject()->getProjectName(),false);
+        ///update the open recents
+        QString file = _appInstance->getProject()->getProjectPath() + _appInstance->getProject()->getProjectName();
+        QSettings settings;
+        QStringList recentFiles = settings.value("recentFileList").toStringList();
+        recentFiles.removeAll(file);
+        recentFiles.prepend(file);
+        while (recentFiles.size() > NATRON_MAX_RECENT_FILES)
+            recentFiles.removeLast();
+        
+        settings.setValue("recentFileList", recentFiles);
+        appPTR->updateAllRecentFileMenus();
     }else{
         saveProjectAs();
     }
+    
 }
 void Gui::saveProjectAs(){
     std::vector<std::string> filter;
@@ -1152,6 +1165,18 @@ void Gui::saveProjectAs(){
         QString file = SequenceFileDialog::removePath(outFile);
         QString path = outFile.left(outFile.indexOf(file));
         _appInstance->getProject()->saveProject(path,file,false);
+        
+        QString filePath = path + file;
+        QSettings settings;
+        QStringList recentFiles = settings.value("recentFileList").toStringList();
+        recentFiles.removeAll(filePath);
+        recentFiles.prepend(filePath);
+        while (recentFiles.size() > NATRON_MAX_RECENT_FILES)
+            recentFiles.removeLast();
+        
+        settings.setValue("recentFileList", recentFiles);
+        appPTR->updateAllRecentFileMenus();
+
     }
 }
 

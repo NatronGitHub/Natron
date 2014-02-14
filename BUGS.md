@@ -6,24 +6,7 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
-- render() is called on the plugin when moving the mouse over the timeline
-
-- the following code at Node.cpp:1024 creates an inifinite loop whenever tryAddEmptyInput() does nothing
-```
-    /*Adding all empty edges so it creates at least the inputNB'th one.*/
-    while(_inputsCount <= inputNumber){
-        tryAddEmptyInput();
-    }
-```
-
-- Recent files: the "Open Recent" menu should appear just below the
-  "Open..." menu item
-
-- Recent files: when a project is saved, it should be placed on to of
-  the Recent Files. It seems that Recent Files is only updated when
-  *loading* a project.
-
-- File dialog: when entering a directory, the file list should be scrolled to the top
+- render() is called on the plugin when moving the mouse over the timeline [Can't reproduce it]
 
 - File dialog: the file list should be a few pixels wider, so that the horizontal scrollbar does not appear.
 
@@ -97,10 +80,6 @@ http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#Par
     function for each value (its integral from -infinity to +infinity is
     exactly 1).
 
-- Viewer ROI
-
-  For image analysis purposes (histogram, colorscope, auto contrast), it
-  would be necessary to have an ROI in the viewer
 
 - Autocontrast
 

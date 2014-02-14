@@ -153,6 +153,7 @@ void Project::saveProject(const QString& path,const QString& name,bool autoSave)
     try {
         if (!autoSave) {
             if  (!isSaveUpToDate() || !QFile::exists(path+name)) {
+
                 saveProjectInternal(path,name);
             }
         } else {

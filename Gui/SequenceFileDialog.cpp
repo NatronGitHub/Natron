@@ -27,6 +27,7 @@
 #include <QSplitter>
 #include <QtGui/QIcon>
 #include <QDialog>
+#include <QScrollBar>
 #include <QFileDialog>
 #include <QtCore/QRegExp>
 CLANG_DIAG_OFF(unused-private-field)
@@ -450,7 +451,6 @@ bool SequenceFileDialog::restoreState(const QByteArray& state){
     QHeaderView *headerView = _view->header();
     if (!headerView->restoreState(headerData))
         return false;
-    
     QList<QAction*> actions = headerView->actions();
     QAbstractItemModel *abstractModel = _model;
     if (_proxy)
@@ -598,7 +598,7 @@ void SequenceFileDialog::setDirectory(const QString &directory){
     if(directory.isEmpty()) return;
     QString newDirectory = directory;
     _view->selectionModel()->clear();
-    
+    _view->verticalScrollBar()->setValue(0);
     //we remove .. and . from the given path if exist
     if (!directory.isEmpty())
         newDirectory = QDir::cleanPath(directory);
