@@ -42,7 +42,7 @@ class KnobSerialization
     void serialize(Archive & ar, const unsigned int version)
     {
         (void)version;
-        ar & boost::serialization::make_nvp("Dimension",_label);
+        ar & boost::serialization::make_nvp("Label",_label);
         ar & boost::serialization::make_nvp("Dimension",_dimension);
         ar & boost::serialization::make_nvp("Values",_values);
         ar & boost::serialization::make_nvp("Curves",_curves);
