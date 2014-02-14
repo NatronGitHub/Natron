@@ -65,20 +65,24 @@ namespace OfxKeyFrame{
         nKeys =  sum;
         return kOfxStatOK;
     }
+
     OfxStatus getKeyTime(boost::shared_ptr<Knob> knob,int nth, OfxTime& time)
     {
+        if (nth < 0) {
+            return kOfxStatErrBadIndex;
+        }
         int dimension = 0;
         int indexSoFar = 0;
-        while(dimension < knob->getDimension()){
+        while (dimension < knob->getDimension()) {
             const KeyFrameSet& set = knob->getCurve(dimension)->getKeyFrames();
             ++dimension;
-            if(nth >= (int)(set.size() + indexSoFar)){
+            if (nth >= (int)(set.size() + indexSoFar)) {
                 indexSoFar += set.size();
                 continue;
-            }else{
+            } else {
                 KeyFrameSet::const_iterator it = set.begin();
-                while(it != set.end()){
-                    if(indexSoFar == nth){
+                while (it != set.end()) {
+                    if (indexSoFar == nth) {
                         time = it->getTime();
                         return kOfxStatOK;
                     }
