@@ -190,9 +190,9 @@ Variant Knob::getValueAtTime(double time,int dimension) const{
     }
 }
 
-Knob::ValueChangedReturnCode Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason,KeyFrame* newKey){
-   
-    if(dimension > (int)_imp->_values.size()){
+Knob::ValueChangedReturnCode Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason,KeyFrame* newKey)
+{
+    if (0 > dimension || dimension > (int)_imp->_values.size()) {
         throw std::invalid_argument("Knob::setValue(): Dimension out of range");
     }
     
@@ -464,8 +464,9 @@ void Knob::endValueChange() {
 
 
 void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
-    if(!_imp->_isInsignificant)
+    if (!_imp->_isInsignificant) {
         _imp->updateHash(getValueForEachDimension());
+    }
     processNewValue();
     if(reason != Natron::USER_EDITED && !_imp->_holder->isClone()){
         emit valueChanged(dimension);
