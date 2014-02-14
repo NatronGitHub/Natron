@@ -557,20 +557,20 @@ OfxStatus OfxChoiceInstance::get(OfxTime /*time*/, int& v) {
 }
 
 OfxStatus OfxChoiceInstance::set(int v){
-    if(v < (int)_entries.size()){
+    if (0 <= v && v < (int)_entries.size()) {
         _knob->setValue<int>(v);
         return kOfxStatOK;
-    }else{
+    } else {
         return kOfxStatErrBadIndex;
     }
 }
 
 OfxStatus OfxChoiceInstance::set(OfxTime /*time*/, int v) {
     assert(!Choice_Knob::canAnimateStatic());
-    if(v < (int)_entries.size()){
+    if (0 <= v && v < (int)_entries.size()) {
         _knob->setValue<int>(v);
         return kOfxStatOK;
-    }else{
+    } else {
         return kOfxStatErrBadIndex;
     }
 }
