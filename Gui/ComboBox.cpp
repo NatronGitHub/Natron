@@ -183,12 +183,21 @@ void ComboBox::setCurrentText(const QString& text){
     str.append("  ");
     assert(_currentText);
     _currentText->setText(str);
+    // if no action matches this text, set the index to a dirty value
+    int index = -1;
     for (U32 i = 0; i < _actions.size(); ++i) {
         if(_actions[i]->text() == text){
-            _currentIndex = i;
+            index = i;
             break;
         }
     }
+    if (_currentIndex != index) {
+        _currentIndex = index;
+#pragma message WARN("[FD->AG] why not emit currentIndexChanged?")
+        // FIXME: why not emit currentIndexChanged?
+        //emit currentIndexChanged(_currentIndex);
+    }
+    //emit currentIndexChanged(text);
 }
 
 void ComboBox::setMaximumWidthFromText(const QString& str)
@@ -221,11 +230,11 @@ QString ComboBox::getCurrentIndexText() const {
 void ComboBox::setCurrentIndex(int index)
 {
     QString str;
-    QString rawStr;
-    if (index >= 0 && index < (int)_actions.size()) {
-        str = _actions[index]->text();
-        rawStr = str;
+    QString text;
+    if (0 <= index && index < (int)_actions.size()) {
+        text = _actions[index]->text();
     }
+    str = text;
     /*before displaying,prepend and append the text by some spacing.
      This is a dirty way to do this but QLayout::addSpacing() doesn't preserve
      the same style for the label.*/
@@ -239,12 +248,15 @@ void ComboBox::setCurrentIndex(int index)
 #endif
     str.prepend("  ");
     str.append("  ");
-    _currentIndex = index;
     _currentText->setText(str);
     // already called growMaximumWidthFromText() from addItem() and insertItem()
     //setMaximumWidthFromText(str);
-    emit currentIndexChanged(index);
-    emit currentIndexChanged(rawStr);
+#pragma message WARN("[FD->AG] is it OK to emit currentIndexChanged only if the index changed?")
+    if (_currentIndex != index) {
+        _currentIndex = index;
+        emit currentIndexChanged(_currentIndex);
+    }
+    //emit currentIndexChanged(text);
 }
 
 void ComboBox::addSeparator(){
