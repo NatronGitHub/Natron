@@ -46,6 +46,7 @@ Project::~Project() {
 bool Project::loadProject(const QString& path,const QString& name){
     {
         QMutexLocker l(&_imp->isLoadingProjectMutex);
+        assert(!_imp->isLoadingProject);
         _imp->isLoadingProject = true;
     }
 
@@ -54,21 +55,23 @@ bool Project::loadProject(const QString& path,const QString& name){
     try {
         loadProjectInternal(path,name);
     } catch (const std::exception& e) {
-        Natron::errorDialog("Project loader", std::string("Error while loading project") + ": " + e.what());
-        if(!getApp()->isBackground())
-            getApp()->createNode("Viewer");
         {
             QMutexLocker l(&_imp->isLoadingProjectMutex);
             _imp->isLoadingProject = false;
         }
+        Natron::errorDialog("Project loader", std::string("Error while loading project") + ": " + e.what());
+        if(!getApp()->isBackground()) {
+            getApp()->createNode("Viewer");
+        }
         return false;
     } catch (...) {
-        Natron::errorDialog("Project loader", std::string("Unkown error while loading project"));
-        if(!getApp()->isBackground())
-            getApp()->createNode("Viewer");
         {
             QMutexLocker l(&_imp->isLoadingProjectMutex);
             _imp->isLoadingProject = false;
+        }
+        Natron::errorDialog("Project loader", std::string("Unkown error while loading project"));
+        if(!getApp()->isBackground()) {
+            getApp()->createNode("Viewer");
         }
         return false;
     }
@@ -318,16 +321,23 @@ bool Project::findAndTryLoadAutoSave() {
                 reset();
                 return false;
             } else {
-                try {
+                {
+                    QMutexLocker l(&_imp->isLoadingProjectMutex);
+                    assert(!_imp->isLoadingProject);
                     _imp->isLoadingProject = true;
+                }
+                try {
                     loadProjectInternal(savesDir.path()+QDir::separator(), entry);
-                    _imp->isLoadingProject = false;
                 } catch (const std::exception& e) {
                     Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project") + ": " + e.what());
                     getApp()->createNode("Viewer");
                 } catch (...) {
                     Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project"));
                     getApp()->createNode("Viewer");
+                }
+                {
+                    QMutexLocker l(&_imp->isLoadingProjectMutex);
+                    _imp->isLoadingProject = false;
                 }
 
                 _imp->autoSetProjectFormat = false;
