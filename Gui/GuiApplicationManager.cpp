@@ -15,7 +15,7 @@
 #include <QPixmapCache>
 #include <QBitmap>
 #include <QImage>
-#include <Qapplication>
+#include <QApplication>
 #include <QFontDatabase>
 #include <QIcon>
 
