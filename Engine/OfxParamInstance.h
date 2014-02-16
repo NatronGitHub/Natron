@@ -20,7 +20,6 @@ CLANG_DIAG_OFF(deprecated)
 #include <QStringList>
 CLANG_DIAG_ON(deprecated)
 
-#include <QVector4D>
 #include <QThreadStorage>
 
 

@@ -10,9 +10,7 @@ CONFIG += moc
 CONFIG += boost qt
 QT += core network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
-
-warning("Engine is still using QtGui")
-#QT -= gui
+QT -= gui
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 
@@ -133,101 +131,3 @@ HEADERS += \
     Variant.h \
     VideoEngine.h \
     ViewerInstance.h
-# dirty dirty gui stuff is mixed with Engine
-
-DEPENDPATH += $$PWD/../Gui
-
-SOURCES += \
-    ../Gui/AboutWindow.cpp \
-    ../Gui/AnimatedCheckBox.cpp \
-    ../Gui/AnimationButton.cpp \
-    ../Gui/Button.cpp \
-    ../Gui/ClickableLabel.cpp \
-    ../Gui/ComboBox.cpp \
-    ../Gui/CurveEditor.cpp \
-    ../Gui/CurveEditorUndoRedo.cpp \
-    ../Gui/CurveWidget.cpp \
-    ../Gui/DockablePanel.cpp \
-    ../Gui/Edge.cpp \
-    ../Gui/FromQtEnums.cpp \
-    ../Gui/GroupBoxLabel.cpp \
-    ../Gui/Gui.cpp \
-    ../Gui/GuiApplicationManager.cpp \
-    ../Gui/GuiAppInstance.cpp \
-    ../Gui/InfoViewerWidget.cpp \
-    ../Gui/KnobGui.cpp \
-    ../Gui/KnobGuiFactory.cpp \
-    ../Gui/KnobGuiFile.cpp \
-    ../Gui/KnobGuiTypes.cpp \
-    ../Gui/KnobUndoCommand.cpp \
-    ../Gui/LineEdit.cpp \
-    ../Gui/MenuWithToolTips.cpp \
-    ../Gui/NodeGraph.cpp \
-    ../Gui/NodeGui.cpp \
-    ../Gui/NodeGuiSerialization.cpp \
-    ../Gui/PreferencesPanel.cpp \
-    ../Gui/ProjectGui.cpp \
-    ../Gui/ProjectGuiSerialization.cpp \
-    ../Gui/QtDecoder.cpp \
-    ../Gui/QtEncoder.cpp \
-    ../Gui/RenderingProgressDialog.cpp \
-    ../Gui/ScaleSliderQWidget.cpp \
-    ../Gui/SequenceFileDialog.cpp \
-    ../Gui/SpinBox.cpp \
-    ../Gui/SplashScreen.cpp \
-    ../Gui/TabWidget.cpp \
-    ../Gui/TextRenderer.cpp \
-    ../Gui/Texture.cpp \
-    ../Gui/ticks.cpp \
-    ../Gui/ToolButton.cpp \
-    ../Gui/TimeLineGui.cpp \
-    ../Gui/ViewerGL.cpp \
-    ../Gui/ViewerTab.cpp
-
-HEADERS += \
-    ../Gui/AboutWindow.h \
-    ../Gui/AnimatedCheckBox.h \
-    ../Gui/AnimationButton.h \
-    ../Gui/Button.h \
-    ../Gui/ClickableLabel.h \
-    ../Gui/ComboBox.h \
-    ../Gui/CurveEditor.h \
-    ../Gui/CurveEditorUndoRedo.h \
-    ../Gui/CurveWidget.h \
-    ../Gui/DockablePanel.h \
-    ../Gui/Edge.h \
-    ../Gui/FromQtEnums.h \
-    ../Gui/GroupBoxLabel.h \
-    ../Gui/Gui.h \
-    ../Gui/GuiApplicationManager.h \
-    ../Gui/GuiAppInstance.h \
-    ../Gui/InfoViewerWidget.h \
-    ../Gui/KnobGui.h \
-    ../Gui/KnobGuiFactory.h \
-    ../Gui/KnobGuiFile.h \
-    ../Gui/KnobGuiTypes.h \
-    ../Gui/KnobUndoCommand.h \
-    ../Gui/LineEdit.h \
-    ../Gui/MenuWithToolTips.h \
-    ../Gui/NodeGraph.h \
-    ../Gui/NodeGui.h \
-    ../Gui/NodeGuiSerialization.h \
-    ../Gui/PreferencesPanel.h \
-    ../Gui/ProjectGui.h \
-    ../Gui/ProjectGuiSerialization.h \
-    ../Gui/QtDecoder.h \
-    ../Gui/QtEncoder.h \
-    ../Gui/RenderingProgressDialog.h \
-    ../Gui/ScaleSliderQWidget.h \
-    ../Gui/SequenceFileDialog.h \
-    ../Gui/Shaders.h \
-    ../Gui/SpinBox.h \
-    ../Gui/SplashScreen.h \
-    ../Gui/TabWidget.h \
-    ../Gui/TextRenderer.h \
-    ../Gui/Texture.h \
-    ../Gui/ticks.h \
-    ../Gui/TimeLineGui.h \
-    ../Gui/ToolButton.h \
-    ../Gui/ViewerGL.h \
-    ../Gui/ViewerTab.h

@@ -15,6 +15,7 @@
 #include <limits>
 #include <stdexcept>
 #include <QByteArray>
+#include <QPointF>
 
 #include "Global/Macros.h"
 

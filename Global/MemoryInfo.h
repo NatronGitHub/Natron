@@ -47,9 +47,9 @@
 #include "Global/Macros.h"
 #include <QtCore/QString>
 #include <QtCore/QLocale>
-CLANG_DIAG_OFF(deprecated)
-#include <QFileSystemModel>
-CLANG_DIAG_ON(deprecated)
+//CLANG_DIAG_OFF(deprecated)
+//#include <QFileSystemModel>
+//CLANG_DIAG_ON(deprecated)
 
 inline size_t getSystemTotalRAM(){
 #if defined(__APPLE__)
@@ -88,14 +88,14 @@ inline QString printAsRAM(U64 bytes){
     const U64 gb = 1024 * mb;
     const U64 tb = 1024 * gb;
     if (bytes >= tb)
-        return QFileSystemModel::tr("%1 TB").arg(QLocale().toString(qreal(bytes) / tb, 'f', 3));
+        return QObject::tr("%1 TB").arg(QLocale().toString(qreal(bytes) / tb, 'f', 3));
     if (bytes >= gb)
-        return QFileSystemModel::tr("%1 GB").arg(QLocale().toString(qreal(bytes) / gb, 'f', 2));
+        return QObject::tr("%1 GB").arg(QLocale().toString(qreal(bytes) / gb, 'f', 2));
     if (bytes >= mb)
-        return QFileSystemModel::tr("%1 MB").arg(QLocale().toString(qreal(bytes) / mb, 'f', 1));
+        return QObject::tr("%1 MB").arg(QLocale().toString(qreal(bytes) / mb, 'f', 1));
     if (bytes >= kb)
-        return QFileSystemModel::tr("%1 KB").arg(QLocale().toString((uint)(bytes / kb)));
-    return QFileSystemModel::tr("%1 byte(s)").arg(QLocale().toString((uint)bytes));
+        return QObject::tr("%1 KB").arg(QLocale().toString((uint)(bytes / kb)));
+    return QObject::tr("%1 byte(s)").arg(QLocale().toString((uint)bytes));
 }
 
 

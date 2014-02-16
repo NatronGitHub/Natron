@@ -11,8 +11,6 @@
 
 #include "OfxParamInstance.h"
 #include <iostream>
-#include <QColor>
-#include <QHBoxLayout>
 
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
