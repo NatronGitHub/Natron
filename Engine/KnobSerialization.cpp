@@ -15,14 +15,16 @@
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"
 KnobSerialization::KnobSerialization()
-    : _values()
+    : _hasAnimation(false)
+    , _values()
     , _dimension(0)
     , _curves()
 {
 
 }
 
-void KnobSerialization::initialize(const Knob* knob){
+void KnobSerialization::initialize(const Knob* knob) {
+    _hasAnimation = knob->hasAnimation();
     _label = knob->getDescription();
     _values = knob->getValueForEachDimension();
     _dimension = knob->getDimension();

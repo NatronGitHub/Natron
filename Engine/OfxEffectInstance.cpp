@@ -36,7 +36,7 @@
 #include "Engine/Project.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
-
+#include "Engine/AppInstance.h"
 
 using namespace Natron;
 using std::cout; using std::endl;

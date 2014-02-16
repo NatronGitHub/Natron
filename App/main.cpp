@@ -15,10 +15,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QApplication>
 #include <QtCore/QObject>
 #include <QtCore/QString>
-#include <QIcon>
-#include <QtGui/QPixmap>
-#include <QDebug>
-#include <QFontDatabase>
+#include <QtCore/QDir>
 #include <QMetaType>
 #include <QAbstractSocket>
 CLANG_DIAG_ON(deprecated)
@@ -31,10 +28,10 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Log.h"
 #include "Engine/Settings.h"
 #include "Engine/Node.h"
+#include "Engine/Format.h"
 
-#include "Gui/KnobGui.h"
 #include "Gui/CurveWidget.h"
-#include "Gui/SplashScreen.h"
+#include "Gui/GuiApplicationManager.h"
 
 #if QT_VERSION < 0x050000
 Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
@@ -54,15 +51,7 @@ void registerMetaTypes(){
 #endif
 }
 
-void printBackGroundWelcomeMessage(){
-    std::cout << "================================================================================" << std::endl;
-    std::cout << NATRON_APPLICATION_NAME << "    " << " version: " << NATRON_VERSION_STRING << std::endl;
-    std::cout << ">>>Running in background mode (off-screen rendering only).<<<" << std::endl;
-    std::cout << "Please note that the background mode is in early stage and accepts only project files "
-    "that would produce a valid output from the graphical version of " NATRON_APPLICATION_NAME << std::endl;
-    std::cout << "If the background mode doesn't output any result, please adjust your project via the application interface "
-    "and then re-try using the background mode." << std::endl;
-}
+
 
 void printUsage(){
     std::cout << NATRON_APPLICATION_NAME << " usage: " << std::endl;
@@ -170,63 +159,28 @@ int main(int argc, char *argv[])
     
     Natron::Log::instance();//< enable logging
     
-    SplashScreen* splashScreen = 0;
-    if(!isBackGround){
-        /*Display a splashscreen while we wait for the engine to load*/
-        QString filename(NATRON_IMAGES_PATH"splashscreen.png");
-        splashScreen = new SplashScreen(filename);
-        QCoreApplication::processEvents();
-        
-        QPixmap appIcPixmap;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_APP_ICON, &appIcPixmap);
-        QIcon appIc(appIcPixmap);
-        qApp->setWindowIcon(appIc);
-        //load custom fonts
-        QString fontResource = QString(":/Resources/Fonts/%1.ttf");
-        
-        
-        QStringList fontFilenames;
-        fontFilenames << fontResource.arg("DroidSans");
-        fontFilenames << fontResource.arg("DroidSans-Bold");
-        
-        foreach(QString fontFilename, fontFilenames)
-        {
-            splashScreen->updateText("Loading font " + fontFilename);
-            //qDebug() << "attempting to load" << fontFilename;
-            int fontID = QFontDatabase::addApplicationFont(fontFilename);
-            qDebug() << "fontID=" << fontID << "families=" << QFontDatabase::applicationFontFamilies(fontID);
+    
+    //the AppManager singleton
+    AppManager* manager;
+    if (isBackGround) {
+        manager = new AppManager;
+    } else {
+        manager = new GuiApplicationManager;
+    }
+    
+    
+    //load and create data structures
+    bool loaded = manager->load(binaryPath,mainProcessServerName,projectFile,writers);
+    if (isBackGround) {
+        int rVal = 0;
+        delete manager;
+        if (!loaded) {
+            printUsage();
+            rVal = 1;
         }
+        return rVal;
     }
-    
-    AppManager* manager = AppManager::instance(); //< load the AppManager singleton
-    
-    manager->load(splashScreen,binaryPath);
-    
-    if (isBackGround && !mainProcessServerName.isEmpty()) {
-        manager->initProcessInputChannel(mainProcessServerName);
-        printBackGroundWelcomeMessage();
-    }
-    
-    AppInstance::AppType mainInstanceType = isBackGround ? AppInstance::APP_BACKGROUND_AUTO_RUN : AppInstance::APP_GUI;
-    AppInstance* mainInstance = manager->newAppInstance(mainInstanceType,projectFile,writers);
-    if(!mainInstance){
-        printUsage();
-        AppManager::quit();
-        return 1;
-    }else{
-        if(isBackGround){
-            delete mainInstance;
-        }
-    }
- 
-    if(!isBackGround){
-        manager->hideSplashScreen();
-    }else{
-        //in background mode, exit...
-        AppManager::quit();
-        return 0;
-    }
-    
+
     int retCode =  app->exec();
     delete app;
     return retCode;

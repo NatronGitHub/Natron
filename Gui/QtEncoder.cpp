@@ -19,7 +19,7 @@
 #include <QtGui/QImageWriter>
 
 #include "Engine/AppManager.h"
-
+#include "Engine/AppInstance.h"
 #include "Engine/Lut.h"
 #include "Engine/Format.h"
 #include "Engine/Image.h"

@@ -27,12 +27,12 @@ class RenderTree;
 class Format;
 class OverlaySupport;
 class PluginMemory;
+class BlockingBackgroundRender;
 
 namespace Natron{
 
 class Node;
 class Image;
-
 
 /**
  * @brief This is the base class for visual effects.
@@ -541,6 +541,8 @@ class OutputEffectInstance : public Natron::EffectInstance {
                              It avoids snchronizing all viewers in the app to the render*/
     SequenceTime _writerFirstFrame;
     SequenceTime _writerLastFrame;
+    
+    BlockingBackgroundRender* _renderController; //< pointer to a blocking renderer
 public:
 
     OutputEffectInstance(Node* node);
@@ -555,7 +557,9 @@ public:
      * @brief Starts rendering of all the sequence available, from start to end.
      * This function is meant to be called for on-disk renderer only (i.e: not viewers).
      **/
-    void renderFullSequence();
+    void renderFullSequence(BlockingBackgroundRender* renderController);
+    
+    void notifyRenderFinished();
 
     void updateTreeAndRender(bool initViewer = false);
 

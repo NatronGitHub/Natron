@@ -17,14 +17,16 @@
 
 #include "Global/MemoryInfo.h"
 #include "Engine/AppManager.h"
+#include "Engine/AppInstance.h"
 #include "Engine/LibraryBinary.h"
-
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
+
+
 #define NATRON_CUSTOM_OCIO_CONFIG_NAME "Custom config"
 
 using namespace Natron;

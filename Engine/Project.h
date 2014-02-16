@@ -196,6 +196,8 @@ signals:
     
     void projectNameChanged(QString);
     
+    void knobsInitialized();
+    
 private:
     
     /*Returns the index of the format*/

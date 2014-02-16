@@ -25,6 +25,8 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
+#include "Engine/AppInstance.h"
+#include "Engine/Hash64.h"
 
 
 using namespace Natron;
@@ -317,6 +319,8 @@ void Knob::removeAnimation(int dimension,Natron::ValueChangedReason reason){
     if(reason != Natron::USER_EDITED){
         emit animationRemoved(dimension);
     }
+    
+    _imp->_holder->getApp()->triggerAutoSave();
 }
 
 void Knob::setValue(const Variant& value,int dimension,bool turnOffAutoKeying){
@@ -566,6 +570,15 @@ void Knob::appendHashVectorToHash(Hash64* hash) const {
     }
 }
 
+bool Knob::hasAnimation() const {
+    for (int i = 0; i < getDimension(); ++i) {
+        if (isAnimated(i)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 KnobHolder*  Knob::getHolder() const { return _imp->_holder; }
 
 void Knob::turnOffAnimation() { _imp->_isAnimationEnabled = false; }
@@ -615,20 +628,20 @@ bool Knob::slaveTo(int dimension,boost::shared_ptr<Knob> other){
     }
     _imp->_masters[dimension] = other;
     
-    //copy values and add keyframes
-    //    _imp->_values[dimension] = other->getValue(dimension);
-    //    _imp->_curves[dimension]->clone(*(other->getCurve(dimension)));
+    _imp->_holder->getApp()->triggerAutoSave();
     return true;
 }
 
 
 void Knob::unSlave(int dimension){
+    
     assert(isSlave(dimension));
     //copy the state before cloning
     _imp->_values[dimension] =  _imp->_masters[dimension]->getValue(dimension);
     _imp->_curves[dimension]->clone(*( _imp->_masters[dimension]->getCurve(dimension)));
     
     _imp->_masters[dimension].reset();
+    _imp->_holder->getApp()->triggerAutoSave();
 }
 
 

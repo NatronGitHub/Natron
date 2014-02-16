@@ -35,7 +35,6 @@ CLANG_DIAG_ON(unused-private-field)
 GCC_DIAG_OFF(unused-parameter);
 GCC_DIAG_ON(unused-parameter);
 
-#include "Engine/AppManager.h"
 
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
@@ -49,6 +48,8 @@ GCC_DIAG_ON(unused-parameter);
 #include "Engine/ViewerInstance.h"
 #include "Engine/Project.h"
 
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiAppInstance.h"
 #include "Gui/Gui.h"
 #include "Gui/InfoViewerWidget.h"
 #include "Gui/Texture.h"

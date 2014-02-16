@@ -39,7 +39,9 @@ INCLUDEPATH += $$PWD/..
 DEPENDPATH += $$PWD/../Global
 
 SOURCES += \
+    AppInstance.cpp \
     AppManager.cpp \
+    BlockingBackgroundRender.cpp \
     ChannelSet.cpp \
     Curve.cpp \
     CurveSerialization.cpp \
@@ -64,7 +66,9 @@ SOURCES += \
     OfxMemory.cpp \
     OfxOverlayInteract.cpp \
     OfxParamInstance.cpp \
+    Plugin.cpp \
     PluginMemory.cpp \
+    ProcessHandler.cpp \
     Project.cpp \
     ProjectPrivate.cpp \
     ProjectSerialization.cpp \
@@ -76,7 +80,9 @@ SOURCES += \
     ViewerInstance.cpp
 
 HEADERS += \
+    AppInstance.h \
     AppManager.h \
+    BlockingBackgroundRender.h \
     Cache.h \
     Curve.h \
     CurveSerialization.h \
@@ -111,7 +117,9 @@ HEADERS += \
     OfxParamInstance.h \
     OpenGLViewerI.h \
     OverlaySupport.h \
+    Plugin.h \
     PluginMemory.h \
+    ProcessHandler.h \
     Project.h \
     ProjectPrivate.h \
     ProjectSerialization.h \
@@ -144,6 +152,8 @@ SOURCES += \
     ../Gui/FromQtEnums.cpp \
     ../Gui/GroupBoxLabel.cpp \
     ../Gui/Gui.cpp \
+    ../Gui/GuiApplicationManager.cpp \
+    ../Gui/GuiAppInstance.cpp \
     ../Gui/InfoViewerWidget.cpp \
     ../Gui/KnobGui.cpp \
     ../Gui/KnobGuiFactory.cpp \
@@ -156,11 +166,11 @@ SOURCES += \
     ../Gui/NodeGui.cpp \
     ../Gui/NodeGuiSerialization.cpp \
     ../Gui/PreferencesPanel.cpp \
-    ../Gui/ProcessHandler.cpp \
     ../Gui/ProjectGui.cpp \
     ../Gui/ProjectGuiSerialization.cpp \
     ../Gui/QtDecoder.cpp \
     ../Gui/QtEncoder.cpp \
+    ../Gui/RenderingProgressDialog.cpp \
     ../Gui/ScaleSliderQWidget.cpp \
     ../Gui/SequenceFileDialog.cpp \
     ../Gui/SpinBox.cpp \
@@ -169,6 +179,7 @@ SOURCES += \
     ../Gui/TextRenderer.cpp \
     ../Gui/Texture.cpp \
     ../Gui/ticks.cpp \
+    ../Gui/ToolButton.cpp \
     ../Gui/TimeLineGui.cpp \
     ../Gui/ViewerGL.cpp \
     ../Gui/ViewerTab.cpp
@@ -188,6 +199,8 @@ HEADERS += \
     ../Gui/FromQtEnums.h \
     ../Gui/GroupBoxLabel.h \
     ../Gui/Gui.h \
+    ../Gui/GuiApplicationManager.h \
+    ../Gui/GuiAppInstance.h \
     ../Gui/InfoViewerWidget.h \
     ../Gui/KnobGui.h \
     ../Gui/KnobGuiFactory.h \
@@ -200,11 +213,11 @@ HEADERS += \
     ../Gui/NodeGui.h \
     ../Gui/NodeGuiSerialization.h \
     ../Gui/PreferencesPanel.h \
-    ../Gui/ProcessHandler.h \
     ../Gui/ProjectGui.h \
     ../Gui/ProjectGuiSerialization.h \
     ../Gui/QtDecoder.h \
     ../Gui/QtEncoder.h \
+    ../Gui/RenderingProgressDialog.h \
     ../Gui/ScaleSliderQWidget.h \
     ../Gui/SequenceFileDialog.h \
     ../Gui/Shaders.h \
@@ -215,5 +228,6 @@ HEADERS += \
     ../Gui/Texture.h \
     ../Gui/ticks.h \
     ../Gui/TimeLineGui.h \
+    ../Gui/ToolButton.h \
     ../Gui/ViewerGL.h \
     ../Gui/ViewerTab.h

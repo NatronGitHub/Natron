@@ -13,7 +13,6 @@
 
 #include <boost/bind.hpp>
 
-#include <QtGui/QRgb>
 
 #include "Engine/Hash64.h"
 #include "Engine/ChannelSet.h"
@@ -31,7 +30,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Log.h"
 #include "Engine/NodeSerialization.h"
-
+#include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
 
@@ -151,9 +150,9 @@ Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
         _liveInstance         = func.second(this);
         _imp->previewInstance = func.second(this);
     } else { //ofx plugin
-        _liveInstance = appPTR->getOfxHost()->createOfxEffect(name,this);
+        _liveInstance = appPTR->createOFXEffect(name,this);
         _liveInstance->initializeOverlayInteract(); 
-        _imp->previewInstance = appPTR->getOfxHost()->createOfxEffect(name,this);
+        _imp->previewInstance = appPTR->createOFXEffect(name,this);
     }
     assert(_liveInstance);
     assert(_imp->previewInstance);
@@ -312,7 +311,7 @@ EffectInstance*  Node::createLiveInstanceClone()
         assert(func.first);
         ret =  func.second(this);
     } else {
-        ret = appPTR->getOfxHost()->createOfxEffect(_liveInstance->pluginID(),this);
+        ret = appPTR->createOFXEffect(_liveInstance->pluginID(),this);
     }
     assert(ret);
     ret->setClone();
@@ -788,7 +787,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
             int r = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4]));
             int g = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4+1]));
             int b = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4+2]));
-            dst_pixels[j] = qRgba(r, g, b, 255);
+            dst_pixels[j] = ViewerInstance::toBGRA(r, g, b, 255);
 
         }
     }
@@ -949,7 +948,7 @@ bool Node::message(MessageType type,const std::string& content) const
 
 void Node::setPersistentMessage(MessageType type,const std::string& content)
 {
-    if (!getApp()->isBackground()) {
+    if (!appPTR->isBackground()) {
         //if the message is just an information, display a popup instead.
         if (type == INFO_MESSAGE) {
             message(type,content);
@@ -972,7 +971,7 @@ void Node::setPersistentMessage(MessageType type,const std::string& content)
 
 void Node::clearPersistentMessage()
 {
-    if(!getApp()->isBackground()){
+    if(!appPTR->isBackground()){
         emit persistentMessageCleared();
     }
 }

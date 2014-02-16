@@ -50,6 +50,7 @@
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Plugin.h"
 
 
 using namespace Natron;

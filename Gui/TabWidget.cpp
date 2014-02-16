@@ -29,7 +29,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QTextDocument> // for Qt::convertFromPlainText
 
 #include "Gui/Button.h"
-#include "Engine/AppManager.h"
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiAppInstance.h"
 #include "Gui/Gui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveEditor.h"
@@ -315,13 +316,13 @@ void TabWidget::addNewViewer(){
 }
 
 void TabWidget::moveNodeGraphHere(){
-    QWidget* what = dynamic_cast<QWidget*>(_gui->_nodeGraphArea);
+    QWidget* what = dynamic_cast<QWidget*>(_gui->getNodeGraph());
     what->setParent(this);
     moveTab(what,this);
 }
 
 void TabWidget::moveCurveEditorHere(){
-    QWidget* what = dynamic_cast<QWidget*>(_gui->_curveEditor);
+    QWidget* what = dynamic_cast<QWidget*>(_gui->getCurveEditor());
     what->setParent(this);
     moveTab(what,this);
 }
@@ -392,7 +393,7 @@ void TabWidget::closeTab(int index){
 }
 
 void TabWidget::movePropertiesBinHere(){
-    QWidget* what = dynamic_cast<QWidget*>(_gui->_propertiesScrollArea);
+    QWidget* what = dynamic_cast<QWidget*>(_gui->getPropertiesScrollArea());
     what->setParent(this);
     moveTab(what, this);
 }
@@ -415,7 +416,7 @@ void TabWidget::splitHorizontally(){
     setParent(newSplitter);
     newSplitter->addWidget(this);
     setVisible(true);
-    
+    _gui->registerSplitter(newSplitter);
     
     /*Adding now a new tab*/
     TabWidget* newTab = new TabWidget(_gui,TabWidget::CLOSABLE,newSplitter);
@@ -451,6 +452,8 @@ void TabWidget::splitVertically(){
     setParent(newSplitter);
     newSplitter->addWidget(this);
     setVisible(true);
+    _gui->registerSplitter(newSplitter);
+
     
     /*Adding now a new tab*/
     TabWidget* newTab = new TabWidget(_gui,TabWidget::CLOSABLE,newSplitter);

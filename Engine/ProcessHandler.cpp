@@ -18,11 +18,12 @@
 #include <QTemporaryFile>
 #include <QWaitCondition>
 #include <QMutex>
+#include <QDir>
 
+#include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/KnobFile.h"
 #include "Engine/EffectInstance.h"
-#include "Gui/Gui.h"
 
 ProcessHandler::ProcessHandler(AppInstance* app,
                                const QString& projectPath,
@@ -30,7 +31,6 @@ ProcessHandler::ProcessHandler(AppInstance* app,
     : _app(app)
     ,_process(new QProcess)
     ,_writer(writer)
-    ,_dialog(NULL)
     ,_ipcServer(0)
     ,_bgProcessOutputSocket(0)
     ,_bgProcessInputSocket(0)
@@ -77,12 +77,7 @@ ProcessHandler::ProcessHandler(AppInstance* app,
             }
         }
     }
-    assert(app->getGui());
-
-    ///make the dialog which will show the progress
-    _dialog = new RenderingProgressDialog(outputFileSequence.c_str(),firstFrame,lastFrame,app->getGui());
-    QObject::connect(_dialog,SIGNAL(canceled()),this,SLOT(onProcessCanceled()));
-    _dialog->show();
+    app->notifyRenderProcessHandlerStarted(outputFileSequence.c_str(),firstFrame,lastFrame,this);
 
 }
 
@@ -114,14 +109,14 @@ void ProcessHandler::onDataWrittenToSocket() {
     qDebug() << "ProcessHandler::onDataWrittenToSocket() received " << str;
     if (str.startsWith(kFrameRenderedStringShort)) {
         str = str.remove(kFrameRenderedStringShort);
-        _dialog->onFrameRendered(str.toInt());
+        emit frameRendered(str.toInt());
     } else if (str.startsWith(kRenderingFinishedStringShort)) {
         if(_process->state() == QProcess::Running) {
             _process->waitForFinished();
         }
     } else if (str.startsWith(kProgressChangedStringShort)) {
         str = str.remove(kProgressChangedStringShort);
-        _dialog->onCurrentFrameProgress(str.toInt());
+        emit frameProgress(str.toInt());
         
     } else if (str.startsWith(kBgProcessServerCreatedShort)) {
         str = str.remove(kBgProcessServerCreatedShort);
@@ -162,7 +157,7 @@ void ProcessHandler::onStandardErrorBytesWritten() {
 }
 
 void ProcessHandler::onProcessCanceled(){
-    _dialog->hide();
+    emit processCanceled();
     if(!_bgProcessInputSocket) {
         _earlyCancel = true;
     } else {
@@ -192,7 +187,7 @@ void ProcessHandler::onProcessEnd(int exitCode,QProcess::ExitStatus stat){
     }else{
         Natron::informationDialog(_writer->getName(),"Render finished!");
     }
-    _dialog->hide();
+    emit processCanceled();
     delete this;
 }
 

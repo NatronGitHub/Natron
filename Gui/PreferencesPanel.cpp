@@ -16,8 +16,10 @@
 #include "Engine/Settings.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/Button.h"
-PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,QWidget *parent)
+#include "Gui/Gui.h"
+PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,Gui *parent)
     : QWidget(parent)
+    , _gui(parent)
     , _settings(settings)
 {
     
@@ -29,7 +31,7 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,QWidget 
     _mainLayout->setContentsMargins(0,0,0,0);
     _mainLayout->setSpacing(0);
     
-    _panel = new DockablePanel(_settings.get(),_mainLayout,DockablePanel::NO_HEADER,true,
+    _panel = new DockablePanel(_gui,_settings.get(),_mainLayout,DockablePanel::NO_HEADER,true,
                                "","",false,"",this);
     // _panel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     _mainLayout->addWidget(_panel);

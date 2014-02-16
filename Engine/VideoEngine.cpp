@@ -12,14 +12,10 @@
 #endif
 #include <iterator>
 #include <cassert>
+
 #include <QtCore/QMutex>
-#include <QtGui/QVector2D>
-#include "Global/Macros.h"
-CLANG_DIAG_OFF(deprecated)
-#include <QAction>
-CLANG_DIAG_ON(deprecated)
 #include <QtCore/QThread>
-#include <QCoreApplication>
+#include <QtCore/QCoreApplication>
 #include <QtCore/QSocketNotifier>
 
 #include "Global/MemoryInfo.h"
@@ -37,10 +33,9 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/TimeLine.h"
 #include "Engine/Timer.h"
 #include "Engine/Log.h"
-
 #include "Engine/EffectInstance.h"
-
 #include "Engine/AppManager.h"
+#include "Engine/AppInstance.h"
 
 
 #define NATRON_FPS_REFRESH_RATE 10
@@ -194,7 +189,7 @@ bool VideoEngine::startEngine(bool singleThreaded) {
     
     if(!_tree.isOutputAViewer()){
         
-        if (!singleThreaded && !_tree.getOutput()->getApp()->isBackground()) {
+        if (!singleThreaded && !appPTR->isBackground()) {
             {
                 QMutexLocker l(&_abortedRequestedMutex);
                 if (_abortRequested > 0) {
@@ -264,7 +259,7 @@ bool VideoEngine::startEngine(bool singleThreaded) {
         _timer->playState = RUNNING; /*activating the timer*/
 
     }
-    if(_tree.getOutput()->getApp()->isBackground()){
+    if(appPTR->isBackground()){
         appPTR->writeToOutputPipe(kRenderingStartedLong, kRenderingStartedShort);
     }
     return true;
@@ -333,8 +328,8 @@ bool VideoEngine::stopEngine() {
         }
     }
     
-    if(_tree.getOutput()->getApp()->isBackground()){
-        _tree.getOutput()->getApp()->notifyRenderFinished(dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput()));
+    if(appPTR->isBackground()){
+        dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput())->notifyRenderFinished();
         _mustQuit = false;
         _mustQuitCondition.wakeAll();
         _threadStarted = false;
@@ -460,7 +455,7 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
         
         
         if(viewer){
-            if (singleThreaded || _tree.getOutput()->getApp()->isBackground()) {
+            if (singleThreaded || appPTR->isBackground()) {
                 getFrameRange();
             } else {
                 {
@@ -599,7 +594,7 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
          update viewers
          and appropriately increment counters for the next frame in the sequence.*/
         emit frameRendered(currentFrame);
-        if(_tree.getOutput()->getApp()->isBackground()){
+        if(appPTR->isBackground()){
             QString frameStr = QString::number(currentFrame);
             appPTR->writeToOutputPipe(kFrameRenderedStringLong + frameStr,kFrameRenderedStringShort + frameStr);
         }

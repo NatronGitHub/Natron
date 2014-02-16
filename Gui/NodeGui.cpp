@@ -29,6 +29,8 @@
 #include "Gui/ViewerGL.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/NodeGuiSerialization.h"
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiAppInstance.h"
 
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/ViewerInstance.h"
@@ -37,7 +39,7 @@
 #include "Engine/Timer.h"
 #include "Engine/Project.h"
 
-#include "Engine/AppManager.h"
+
 
 #define NATRON_STATE_INDICATOR_OFFSET 5
 
@@ -126,7 +128,7 @@ NodeGui::NodeGui(NodeGraph* dag,
     if(_internalNode->pluginID() != "Viewer"){
         _panelDisplayed=true;
         assert(dockContainer_);
-        _settingsPanel = new NodeSettingsPanel(this,dockContainer_,dockContainer_->parentWidget());
+        _settingsPanel = new NodeSettingsPanel(_graph->getGui(),this,dockContainer_,dockContainer_->parentWidget());
         QObject::connect(_settingsPanel,SIGNAL(nameChanged(QString)),this,SLOT(setName(QString)));
         dockContainer_->addWidget(_settingsPanel);
         if(_internalNode->isOpenFXNode()){
@@ -504,7 +506,7 @@ void NodeGui::activate(){
     show();
     setActive(true);
     _graph->restoreFromTrash(this);
-    _graph->getGui()->_curveEditor->addNode(this);
+    _graph->getGui()->getCurveEditor()->addNode(this);
     for (NodeGui::InputEdgesMap::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
         _graph->scene()->addItem(it->second);
         it->second->setParentItem(parentItem());
@@ -535,7 +537,7 @@ void NodeGui::deactivate(){
     hide();
     setActive(false);
     _graph->moveToTrash(this);
-    _graph->getGui()->_curveEditor->removeNode(this);
+    _graph->getGui()->getCurveEditor()->removeNode(this);
     for (NodeGui::InputEdgesMap::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
         _graph->scene()->removeItem(it->second);
         it->second->setActive(false);
@@ -605,7 +607,7 @@ void NodeGui::onPersistentMessageChanged(int type,const QString& message){
     for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
         ViewerTab* tab = _graph->getGui()->getViewerTabForInstance(*it);
         assert(tab);
-        tab->viewer->setPersistentMessage(type,message);
+        tab->getViewer()->setPersistentMessage(type,message);
     }
     QRectF rect = _boundingBox->rect();
     updateShape(rect.width(), rect.height());
@@ -620,7 +622,7 @@ void NodeGui::onPersistentMessageCleared(){
     for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
         ViewerTab* tab = _graph->getGui()->getViewerTabForInstance(*it);
         assert(tab);
-        tab->viewer->clearPersistentMessage();
+        tab->getViewer()->clearPersistentMessage();
     }
 }
 
@@ -719,7 +721,7 @@ void NodeGui::moveBelowPositionRecursively(const QRectF& r) {
         const Natron::Node::OutputMap& outputs = getNode()->getOutputs();
         for (Natron::Node::OutputMap::const_iterator it = outputs.begin(); it!= outputs.end(); ++it) {
             if (it->second) {
-                NodeGui* output = _internalNode->getApp()->getNodeGui(it->second);
+                NodeGui* output = _graph->getGui()->getApp()->getNodeGui(it->second);
                 assert(output);
                 sceneRect = mapToScene(boundingRect()).boundingRect();
                 output->moveBelowPositionRecursively(sceneRect);

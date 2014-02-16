@@ -13,7 +13,7 @@
 #include <QtConcurrentRun>
 
 #include "Engine/AppManager.h"
-
+#include "Engine/AppInstance.h"
 #include "Engine/ProjectPrivate.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/EffectInstance.h"
@@ -55,7 +55,7 @@ bool Project::loadProject(const QString& path,const QString& name){
         loadProjectInternal(path,name);
     } catch (const std::exception& e) {
         Natron::errorDialog("Project loader", std::string("Error while loading project") + ": " + e.what());
-        if(!getApp()->isBackground())
+        if(!appPTR->isBackground())
             getApp()->createNode("Viewer");
         {
             QMutexLocker l(&_imp->isLoadingProjectMutex);
@@ -64,7 +64,7 @@ bool Project::loadProject(const QString& path,const QString& name){
         return false;
     } catch (...) {
         Natron::errorDialog("Project loader", std::string("Unkown error while loading project"));
-        if(!getApp()->isBackground())
+        if(!appPTR->isBackground())
             getApp()->createNode("Viewer");
         {
             QMutexLocker l(&_imp->isLoadingProjectMutex);
@@ -126,7 +126,7 @@ void Project::loadProjectInternal(const QString& path,const QString& name) {
     }
 
     /*Refresh all viewers as it was*/
-    if(!getApp()->isBackground()){
+    if(!appPTR->isBackground()){
         emit formatChanged(getProjectDefaultFormat());
         const std::vector<Node*>& nodes = getCurrentNodes();
         for (U32 i = 0; i < nodes.size(); ++i) {
@@ -224,7 +224,7 @@ void Project::saveProjectInternal(const QString& path,const QString& name,bool a
         throw std::runtime_error("Failed to open file " + filePath.toStdString());
     }
     boost::archive::xml_oarchive oArchive(ofile);
-    bool bgProject = getApp()->isBackground();
+    bool bgProject = appPTR->isBackground();
     oArchive << boost::serialization::make_nvp("Background_project",bgProject);
     ProjectSerialization projectSerializationObj;
     save(&projectSerializationObj);
@@ -251,7 +251,7 @@ void Project::saveProjectInternal(const QString& path,const QString& name,bool a
 void Project::autoSave(){
 
     ///don't autosave in background mode...
-    if (getApp()->isBackground()) {
+    if (appPTR->isBackground()) {
         return;
     }
 
@@ -260,7 +260,7 @@ void Project::autoSave(){
 
 void Project::triggerAutoSave() {
 
-    if (getApp()->isBackground()) {
+    if (appPTR->isBackground()) {
         return;
     }
     QtConcurrent::run(this,&Project::autoSave);
@@ -354,6 +354,7 @@ bool Project::findAndTryLoadAutoSave() {
         }
     }
     removeAutoSaves();
+    reset();
     return false;
 }
 
@@ -393,6 +394,7 @@ void Project::initializeKnobs(){
     bool autoPreviewEnabled = appPTR->getCurrentSettings()->isAutoPreviewOnForNewProjects();
     _imp->previewMode->setValue<bool>(autoPreviewEnabled);
     
+    emit knobsInitialized();
     
 }
 

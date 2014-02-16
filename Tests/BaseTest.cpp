@@ -68,7 +68,7 @@ void BaseTest::SetUp()
     AppManager* manager = AppManager::instance();
     manager->load(NULL);
     manager->setMultiThreadEnabled(false);
-    _app = manager->newAppInstance(AppInstance::APP_BACKGROUND);
+    _app = manager->newAppInstance();
     
     registerTestPlugins();
 }
@@ -77,7 +77,7 @@ void BaseTest::TearDown()
 {
     delete _app;
     _app = 0;
-    AppManager::quit();
+    delete appPTR;
 }
 
 Natron::Node* BaseTest::createNode(const QString& pluginID,int majorVersion,int minorVersion) {

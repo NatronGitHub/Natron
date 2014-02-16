@@ -28,13 +28,12 @@ CLANG_DIAG_OFF(unused-private-field)
 #include <QKeyEvent>
 CLANG_DIAG_ON(unused-private-field)
 
-#include "Engine/AppManager.h"
-
 #include "Engine/KnobTypes.h"
 #include "Engine/Curve.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Lut.h"
 
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
@@ -1372,9 +1371,9 @@ void Color_KnobGui::onPickingEnabled(bool enabled){
     if(getKnob()->getHolder()->getApp()){
         boost::shared_ptr<Color_Knob> colorKnob = boost::dynamic_pointer_cast<Color_Knob>(getKnob());
         if (enabled) {
-            getKnob()->getHolder()->getApp()->getGui()->registerNewColorPicker(colorKnob);
+            getGui()->registerNewColorPicker(colorKnob);
         }else{
-            getKnob()->getHolder()->getApp()->getGui()->removeColorPicker(colorKnob);
+            getGui()->removeColorPicker(colorKnob);
         }
     }
     

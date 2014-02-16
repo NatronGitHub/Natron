@@ -28,6 +28,7 @@ class Knob;
 class KnobGui;
 class KnobHolder;
 class NodeGui;
+class Gui;
 class QVBoxLayout;
 class QGridLayout;
 class QTabWidget;
@@ -55,7 +56,8 @@ public:
         NO_HEADER
     };
     
-    explicit DockablePanel(KnobHolder* holder
+    explicit DockablePanel(Gui* gui
+                  ,KnobHolder* holder
                   ,QVBoxLayout* container
                   ,HeaderMode headerMode
                   ,bool useScrollAreasForTabs
@@ -92,6 +94,8 @@ public:
     QUndoStack* getUndoStack() const { return _undoStack; }
     
     const QUndoCommand* getLastUndoCommand() const;
+    
+    Gui* getGui() const;
 
 public slots:
     
@@ -154,6 +158,8 @@ private:
     
 private:
     // FIXME: PIMPL
+    Gui* _gui;
+    
     QVBoxLayout* _container; /*!< ptr to the layout containing this DockablePanel*/
 
     /*global layout*/
@@ -204,7 +210,7 @@ class NodeSettingsPanel : public DockablePanel
 
 public:
 
-    explicit NodeSettingsPanel(NodeGui* NodeUi,QVBoxLayout* container, QWidget *parent = 0);
+    explicit NodeSettingsPanel(Gui* gui,NodeGui* NodeUi,QVBoxLayout* container, QWidget *parent = 0);
     
     virtual ~NodeSettingsPanel();
     

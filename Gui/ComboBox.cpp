@@ -19,7 +19,7 @@
 #include <QFontMetrics>
 #include <QTextDocument> // for Qt::convertFromPlainText
 
-#include "Engine/AppManager.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/MenuWithToolTips.h"
 
 using namespace Natron;

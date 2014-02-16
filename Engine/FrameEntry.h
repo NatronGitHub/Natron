@@ -20,6 +20,7 @@
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
 #include "Engine/TextureRect.h"
+#include "Engine/TextureRectSerialization.h"
 
 class Hash64;
 

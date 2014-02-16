@@ -24,14 +24,13 @@ CLANG_DIAG_OFF(unused-private-field)
 CLANG_DIAG_ON(unused-private-field)
 #include <QTextDocument> // for Qt::convertFromPlainText
 
-#include "Engine/AppManager.h"
-
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/EffectInstance.h"
 
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/NodeGui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiTypes.h" // for Group_KnobGui
@@ -43,7 +42,8 @@ CLANG_DIAG_ON(unused-private-field)
 using std::make_pair;
 using namespace Natron;
 
-DockablePanel::DockablePanel(KnobHolder* holder
+DockablePanel::DockablePanel(Gui* gui
+                             ,KnobHolder* holder
                              , QVBoxLayout* container
                              , HeaderMode headerMode
                              ,bool useScrollAreasForTabs
@@ -52,6 +52,7 @@ DockablePanel::DockablePanel(KnobHolder* holder
                              , bool createDefaultTab, const QString& defaultTab
                              , QWidget *parent)
 :QFrame(parent)
+,_gui(gui)
 ,_container(container)
 ,_mainLayout(NULL)
 ,_headerWidget(NULL)
@@ -286,11 +287,10 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
     
     QObject::connect(knob.get(),SIGNAL(deleted(Knob*)),this,SLOT(onKnobDeletion(Knob*)));
     
-    KnobGui* ret =  appPTR->getKnobGuiFactory().createGuiForKnob(knob,this);
-    if(!ret){
+    KnobGui* ret =  appPTR->createGuiForKnob(knob,this);
+    if (!ret) {
         // this should happen for Custom Knobs, which have no GUI (only an interact)
-        // this should happen for tab Knobs, which have no GUI
-        if(knob->typeName() != Tab_Knob::typeNameStatic()){
+        if (knob->typeName() != Tab_Knob::typeNameStatic()) {
             std::cout << "Failed to create gui for Knob " << knob->getName() << " of type " << knob->typeName() << std::endl;
         }
         return NULL;
@@ -523,10 +523,12 @@ void DockablePanel::onKnobDeletion(Knob* k){
 }
 
 
+Gui* DockablePanel::getGui() const {
+    return _gui;
+}
 
-
-NodeSettingsPanel::NodeSettingsPanel(NodeGui* NodeUi ,QVBoxLayout* container,QWidget *parent)
-:DockablePanel(NodeUi->getNode()->getLiveInstance(),
+NodeSettingsPanel::NodeSettingsPanel(Gui* gui,NodeGui* NodeUi ,QVBoxLayout* container,QWidget *parent)
+:DockablePanel(gui,NodeUi->getNode()->getLiveInstance(),
                container,
                DockablePanel::FULLY_FEATURED,
                false,

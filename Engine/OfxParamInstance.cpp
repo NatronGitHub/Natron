@@ -35,7 +35,7 @@
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/Format.h"
 #include "Engine/Project.h"
-
+#include "Engine/AppInstance.h"
 using namespace Natron;
 
 

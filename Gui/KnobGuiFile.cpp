@@ -14,10 +14,10 @@
 #include <QGridLayout> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QHBoxLayout> // in QtGui on Qt4, in QtWidgets on Qt5
 
-#include "Engine/AppManager.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
 
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/Button.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/LineEdit.h"

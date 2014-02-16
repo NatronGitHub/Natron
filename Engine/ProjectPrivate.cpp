@@ -11,7 +11,10 @@
 
 #include "ProjectPrivate.h"
 
+#include <QDebug>
+
 #include "Engine/AppManager.h"
+#include "Engine/AppInstance.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/TimeLine.h"
 #include "Engine/EffectInstance.h"
@@ -100,7 +103,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     /*first create all nodes and restore the knobs values*/
     for (U32 i = 0; i <  serializedNodes.size() ; ++i){
 
-        if (project->getApp()->isBackground() && serializedNodes[i]->getPluginID() == "Viewer") {
+        if (appPTR->isBackground() && serializedNodes[i]->getPluginID() == "Viewer") {
             //if the node is a viewer, don't try to load it in background mode
             continue;
         }
@@ -144,7 +147,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
     }
 
-    if(!hasProjectAWriter && project->getApp()->isBackground()){
+    if(!hasProjectAWriter && appPTR->isBackground()){
         project->clearNodes();
         throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
     }
@@ -152,7 +155,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     /*now that we have all nodes, just connect them*/
     for(U32 i = 0; i <  serializedNodes.size() ; ++i){
 
-        if(project->getApp()->isBackground() && serializedNodes[i]->getPluginID() == "Viewer"){
+        if(appPTR->isBackground() && serializedNodes[i]->getPluginID() == "Viewer"){
             //ignore viewers on background mode
             continue;
         }

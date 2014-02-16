@@ -15,11 +15,8 @@
 #include <vector>
 #include <string>
 
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-
-#include "Global/GlobalDefines.h"
 #include "Engine/Variant.h"
+#include "Engine/AppManager.h"
 
 class Curve;
 class KeyFrame;
@@ -179,6 +176,9 @@ public:
     boost::shared_ptr<Curve> getCurve(int dimension = 0) const;
 
     bool isAnimated(int dimension) const;
+    
+    ///same as isAnimated but across all dims
+    bool hasAnimation() const;
 
     const std::vector< boost::shared_ptr<Curve>  >& getCurves() const;
 
@@ -418,6 +418,11 @@ public:
     bool isClone() const { return _isClone; }
 
     void setClone() { _isClone = true; }
+    
+    template<typename K>
+    boost::shared_ptr<K> createKnob(const std::string &description, int dimension = 1) const {
+        return Natron::createKnob<K>(this, description,dimension);
+    }
     
     /**
      * @brief Clone each knob of "other" into this KnobHolder.

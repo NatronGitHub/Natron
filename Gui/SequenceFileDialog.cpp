@@ -56,11 +56,11 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include <QtCore/QSettings>
 
-#include "Engine/AppManager.h"
 #include "Global/QtCompat.h"
 #include "Gui/Button.h"
 #include "Gui/LineEdit.h"
 #include "Gui/ComboBox.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Global/MemoryInfo.h"
 
 using std::make_pair;

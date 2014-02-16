@@ -12,183 +12,57 @@
 #ifndef NATRON_GUI_GUI_H_
 #define NATRON_GUI_GUI_H_
 
-#include <map>
-#include <string>
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #endif
 
-#include "Global/Macros.h"
-CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QObject>
-#include <QToolButton>
-CLANG_DIAG_ON(deprecated)
-#include <QIcon>
-#include <QDialog>
-#include <QAction>
 #include <QMainWindow>
-#include <QWaitCondition>
-#include <QMutex>
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/Format.h"
-
+//boost
 namespace boost {
     namespace archive {
         class xml_iarchive;
         class xml_oarchive;
     }
 }
-class QString;
-class TabWidget;
-class AppInstance;
-class QDockWidget;
-class QScrollArea;
-class QWidget;
-class QVBoxLayout;
-class QSplitter;
-class QHBoxLayout;
-class QFrame;
-class QMenu;
-class QMenuBar;
-class QProgressBar;
-class QStatusBar;
-class QTreeView;
-class AppInstance;
-class NodeGraph;
-class ViewerTab;
-class InspectorNode;
-class QToolBar;
-class QGraphicsScene;
-class NodeGui;
-class QProgressBar;
-class ViewerInstance;
-class Button;
-class QLabel;
-class Gui;
-class SpinBox;
-class LineEdit;
-class ProjectGui;
-class PluginToolButton;
-class ComboBox;
-class CurveEditor;
-class QUndoGroup;
-class QUndoStack;
-class DockablePanel;
-class PreferencesPanel;
-class AboutWindow;
-class ProjectGuiSerialization;
-class Color_Knob;
 
-namespace Natron{
+//QtGui
+class QSplitter;
+class QUndoStack;
+class QScrollArea;
+
+//Natron gui
+class GuiAppInstance;
+class NodeGui;
+class TabWidget;
+class ToolButton;
+class ViewerTab;
+class DockablePanel;
+class NodeGraph;
+class CurveEditor;
+
+//Natron engine
+class ViewerInstance;
+class PluginGroupNode;
+class Color_Knob;
+class ProcessHandler;
+namespace Natron {
     class Node;
-    class OutputEffectInstance;
-    class Project;
+    class Image;
 }
 
 
-class ToolButton : public QObject {
-    Q_OBJECT
-    
-public:
-    
-    ToolButton(AppInstance* app,
-               PluginToolButton* pluginToolButton,
-               const QString& pluginID,
-               const QString& label,
-               QIcon icon = QIcon())
-    : _app(app)
-    , _id(pluginID)
-    , _label(label)
-    , _icon(icon)
-    , _menu(NULL)
-    , _children()
-    , _action(NULL)
-    , _pluginToolButton(pluginToolButton)
-    {
-    }
-    
-    
-    virtual ~ToolButton() OVERRIDE {}
-    
-    const QString& getID() const { return _id; }
-
-    const QString& getLabel() const { return _label; };
-    
-    const QIcon& getIcon() const { return _icon; };
-    
-    bool hasChildren() const { return !_children.empty(); }
-
-    QMenu* getMenu() const { assert(_menu); return _menu; }
-    
-    void setMenu(QMenu* menu ) { _menu = menu; }
-    
-    void tryAddChild(ToolButton* child);
-    
-    const std::vector<ToolButton*>& getChildren() const { return _children; }
-    
-    QAction* getAction() const { return _action; }
-    
-    void setAction(QAction* action) {_action = action;}
-    
-    PluginToolButton* getPluginToolButton() const { return _pluginToolButton; }
-    
-public slots:
-    
-    void onTriggered();
-
-private:
-    // FIXME: PIMPL
-    AppInstance* _app;
-    QString _id;
-    QString _label;
-    QIcon _icon;
-    QMenu* _menu;
-    std::vector<ToolButton*> _children;
-    QAction* _action;
-    PluginToolButton* _pluginToolButton;
-};
-
-
-class RenderingProgressDialog : public QDialog {
-    
-    Q_OBJECT
-    
-public:
-    
-    RenderingProgressDialog(const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent = 0);
-    
-    virtual ~RenderingProgressDialog() OVERRIDE {}
-    
-    void onFrameRendered(int);
-    
-    void onCurrentFrameProgress(int);
-
-signals:
-    
-    void canceled();
-    
-private:
-    // FIXME: PIMPL
-    QVBoxLayout* _mainLayout;
-    QLabel* _totalLabel;
-    QProgressBar* _totalProgress;
-    QFrame* _separator;
-    QLabel* _perFrameLabel;
-    QProgressBar* _perFrameProgress;
-    Button* _cancelButton;
-    QString _sequenceName;
-    int _firstFrame;
-    int _lastFrame;
-};
-
-class Gui : public QMainWindow,public boost::noncopyable
+struct GuiPrivate;
+class Gui : public QMainWindow , public boost::noncopyable
 {
     Q_OBJECT
     
 public:
-    explicit Gui(AppInstance* app,QWidget* parent=0);
+    explicit Gui(GuiAppInstance* app,QWidget* parent=0);
     
     virtual ~Gui() OVERRIDE;
     
@@ -200,9 +74,9 @@ public:
         
     NodeGui* getSelectedNode() const;
     
-    void setLastSelectedViewer(ViewerTab* tab){_lastSelectedViewer = tab;}
+    void setLastSelectedViewer(ViewerTab* tab);
     
-    ViewerTab* getLastSelectedViewer() const {return _lastSelectedViewer;}
+    ViewerTab* getLastSelectedViewer() const;
     
     bool eventFilter(QObject *target, QEvent *event);
 
@@ -221,7 +95,7 @@ public:
      to destroy the tab/node or just hide them.*/
     void removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData = true);
     
-    void setNewViewerAnchor(TabWidget* where){_nextViewerTabPlace = where;}
+    void setNewViewerAnchor(TabWidget* where);
         
     void maximize(TabWidget* what);
     
@@ -231,9 +105,9 @@ public:
     
     ToolButton* findExistingToolButton(const QString& name) const;
     
-    ToolButton* findOrCreateToolButton(PluginToolButton* plugin);
+    ToolButton* findOrCreateToolButton(PluginGroupNode* plugin);
     
-    const std::vector<ToolButton*>& getToolButtons() const {return _toolButtons;}
+    const std::vector<ToolButton*>& getToolButtons() const;
 
     void registerNewUndoStack(QUndoStack* stack);
     
@@ -254,7 +128,7 @@ public:
     
     void selectNode(NodeGui* node);
     
-    AppInstance* getApp() const { return _appInstance; }
+    GuiAppInstance* getApp() const;
         
     void updateViewsActions(int viewsCount);
     
@@ -263,7 +137,7 @@ public:
     /*set the curve editor as the active widget of its pane*/
     void setCurveEditorOnTop();
     
-    const std::list<TabWidget*>& getPanes() const { return _panes; }
+    const std::list<TabWidget*>& getPanes() const;
     
     void removePane(TabWidget* pane);
     
@@ -278,9 +152,11 @@ public:
     QWidget* findExistingTab(const std::string& name) const;
     
 
-    const std::list<QSplitter*>& getSplitters() const { return _splitters; }
+    const std::list<QSplitter*>& getSplitters() const;
 
     void removeSplitter(QSplitter* s);
+    
+    void registerSplitter(QSplitter* s); 
 
     QStringList popOpenFileDialog(bool sequenceDialog,const std::vector<std::string>& initialfilters,const std::string& initialDir);
     
@@ -290,9 +166,9 @@ public:
     
     void createWriter();
     
-    void setUserScrubbingTimeline(bool b) { _isUserScrubbingTimeline = b; }
+    void setUserScrubbingTimeline(bool b);
     
-    bool isUserScrubbingTimeline() const { return _isUserScrubbingTimeline; }
+    bool isUserScrubbingTimeline() const;
     
     /*Refresh all previews if the project's preview mode is auto*/
     void refreshAllPreviews();
@@ -304,7 +180,7 @@ public:
     
     QWidget* stopDragPanel()  ;
     
-    bool isDraggingPanel() const { return _currentlyDraggedPanel!=NULL; }
+    bool isDraggingPanel() const;
     
     void updateRecentFileActions();
     
@@ -332,7 +208,28 @@ public:
     
     void deactivateViewerTab(ViewerInstance* viewer);
     
-    ViewerTab* getViewerTabForInstance(ViewerInstance* node);
+    ViewerTab* getViewerTabForInstance(ViewerInstance* node) const;
+    
+    const std::vector<NodeGui*>& getVisibleNodes() const;
+    
+    void deselectAllNodes() const;
+    
+    void onProcessHandlerStarter(const QString& sequenceName,int firstFrame,int lastFrame,ProcessHandler* process);
+    
+    NodeGraph* getNodeGraph() const;
+    
+    CurveEditor* getCurveEditor() const;
+    
+    QScrollArea* getPropertiesScrollArea() const;
+    
+    TabWidget* getWorkshopPane() const;
+
+    const std::map<std::string,QWidget*>& getRegisteredTabs() const;
+    
+    /*Useful function that saves on disk the image in png format.
+     The name of the image will be the hash key of the image.*/
+    static void debugImage(Natron::Image* image,const QString& filename = QString());
+    
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);
@@ -395,153 +292,12 @@ public slots:
     void openRecentFile();
     
     void onProjectNameChanged(const QString& name);
-private:
-
-    void registerSplitter(QSplitter* s); // unused
-
-    void setUndoRedoActions(QAction* undoAction,QAction* redoAction);
-
-    void restoreGuiGeometry();
-
-    void saveGuiGeometry();
-    
-
-private:
-    // FIXME: PIMPL
-    bool _isUserScrubbingTimeline;
-    
-    ViewerTab* _lastSelectedViewer;
-    AppInstance* _appInstance;
-    QWaitCondition _uiUsingMainThreadCond;
-    bool _uiUsingMainThread;
-    mutable QMutex _uiUsingMainThreadMutex;
-    Natron::StandardButton _lastQuestionDialogAnswer;
-
-    QAction* _currentUndoAction;
-    QAction* _currentRedoAction;
-    
-    QUndoGroup* _undoStacksGroup;
-    std::map<QUndoStack*,std::pair<QAction*,QAction*> > _undoStacksActions;
-    
-    std::list<QSplitter*> _splitters;
-    
-    /*TOOL BAR ACTIONS*/
-    //======================
-    QAction *actionNew_project;
-    QAction *actionOpen_project;
-    QAction *actionSave_project;
-    QAction *actionSaveAs_project;
-    QAction *actionPreferences;
-    QAction *actionExit;
-    QAction *actionProject_settings;
-    QAction *actionFullScreen;
-    QAction *actionClearDiskCache;
-    QAction *actionClearPlayBackCache;
-    QAction *actionClearNodeCache;
-    QAction *actionClearPluginsLoadingCache;
-    QAction *actionClearAllCaches;
-    QAction *actionShowAboutWindow;
-    QAction *actionsOpenRecentFile[NATRON_MAX_RECENT_FILES];
-    
-    QAction* actionConnectInput1;
-    QAction* actionConnectInput2;
-    QAction* actionConnectInput3;
-    QAction* actionConnectInput4;
-    QAction* actionConnectInput5;
-    QAction* actionConnectInput6;
-    QAction* actionConnectInput7;
-    QAction* actionConnectInput8;
-    QAction* actionConnectInput9;
-    QAction* actionConnectInput10;
-
-        
-    QWidget *_centralWidget;
-    QHBoxLayout* _mainLayout;
-    
-    QString _lastLoadSequenceOpenedDir;
-    QString _lastLoadProjectOpenedDir;
-    QString _lastSaveSequenceOpenedDir;
-    QString _lastSaveProjectOpenedDir;
-    
-    // FIXME: public pointer members are the sign of a serious design flaw!!! at least use a getter!
-public:
-    TabWidget* _viewersPane; // FIXME: used by NodeGui.cpp
-private:
-    // this one is a ptr to others TabWidget.
-    //It tells where to put the viewer when making a new one
-    // If null it places it on default tab widget
-    TabWidget* _nextViewerTabPlace;
-    
-public:
-    TabWidget* _workshopPane; // FIXME: used by NodeGraph.cpp
-private:
-    QSplitter* _viewerWorkshopSplitter;
-    
-    TabWidget* _propertiesPane;
-    QSplitter* _middleRightSplitter;
-
-    QSplitter* _leftRightSplitter;
-    
-	/*VIEWERS*/
-	//======================
-    std::list<ViewerTab*> _viewerTabs;
-    
-    /*GRAPH*/
-    //======================
-    
-    QGraphicsScene* _graphScene;
-public:
-    NodeGraph *_nodeGraphArea; // FIXME: used by AppManager.cpp
-    CurveEditor *_curveEditor; // FIXME: used by KnobGui.cpp
-private:
-
-    /*TOOLBOX*/
-    QToolBar* _toolBox;
-    std::vector<ToolButton*> _toolButtons;
-    
-    /*PROPERTIES*/
-    //======================
-public:
-    QScrollArea *_propertiesScrollArea; // FIXME: used by TabWidget.cpp
-private:
-    QWidget *_propertiesContainer;
-    QVBoxLayout *_layoutPropertiesBin;
-    
-    
- 
-    /*MENU*/
-    //======================
-    QMenuBar *menubar;
-    QMenu *menuFile;
-    QMenu *menuRecentFiles;
-    QMenu *menuEdit;
-    QMenu *menuDisplay;
-    QMenu *menuOptions;
-	QMenu *viewersMenu;
-    QMenu *viewerInputsMenu;
-    QMenu *viewersViewMenu;
-    QMenu *cacheMenu;
-    
-    
-    /*all TabWidget's : used to know what to hide/show for fullscreen mode*/
-    std::list<TabWidget*> _panes;
-    
-    /*Registered tabs: for drag&drop purpose*/
-public:
-    std::map<std::string,QWidget*> _registeredTabs; // FIXME: used by ProjectGui.cpp
-private:
-    PreferencesPanel* _settingsGui;
     
 private:
-    
-    ProjectGui* _projectGui;
-    
-    QWidget* _currentlyDraggedPanel;
-    AboutWindow* _aboutWindow;
-    
+
     void setupUi();
-   
-	void retranslateUi(QMainWindow *MainWindow);
+    
+    boost::scoped_ptr<GuiPrivate> _imp;
     
 };
 

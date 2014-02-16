@@ -30,7 +30,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/OfxMemory.h"
-
+#include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 
 using namespace Natron;

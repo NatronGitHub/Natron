@@ -6,7 +6,6 @@
 #include "Gui/KnobUndoCommand.h"
 
 #include "Global/GlobalDefines.h" // SequenceTime
-#include "Engine/AppManager.h" // AppInstance
 
 #include "Engine/TimeLine.h"
 #include "Engine/Curve.h"
@@ -16,6 +15,7 @@
 #include "Gui/Gui.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
+#include "Gui/GuiAppInstance.h"
 //================================================================
 
 
@@ -51,7 +51,7 @@ void KnobUndoCommand::undo()
         
     }
     if(modifiedKeyFrame){
-        _knob->getKnob()->getHolder()->getApp()->getGui()->_curveEditor->getCurveWidget()->refreshSelectedKeys();
+        _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();
     }
 
     _knob->getKnob()->endValueChange();
@@ -89,7 +89,7 @@ void KnobUndoCommand::redo()
     }
     
     if(modifiedKeyFrames){
-        _knob->getKnob()->getHolder()->getApp()->getGui()->_curveEditor->getCurveWidget()->refreshSelectedKeys();
+        _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();
     }
     
     _knob->getKnob()->endValueChange();
