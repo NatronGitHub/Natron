@@ -192,9 +192,9 @@ Variant Knob::getValueAtTime(double time,int dimension) const{
     }
 }
 
-Knob::ValueChangedReturnCode Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason,KeyFrame* newKey){
-   
-    if(dimension > (int)_imp->_values.size()){
+Knob::ValueChangedReturnCode Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason,KeyFrame* newKey)
+{
+    if (0 > dimension || dimension > (int)_imp->_values.size()) {
         throw std::invalid_argument("Knob::setValue(): Dimension out of range");
     }
     
@@ -372,6 +372,7 @@ int Knob::getDimension() const { return _imp->_dimension; }
 void Knob::load(const KnobSerialization& serializationObj){
     
     assert(_imp->_dimension == serializationObj.getDimension());
+    assert(isPersistent()); // a non-persistent Knob should never be loaded!
     
     ///restore masters
     const std::vector< std::string >& serializedMasters = serializationObj.getMasters();
@@ -468,8 +469,9 @@ void Knob::endValueChange() {
 
 
 void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
-    if(!_imp->_isInsignificant)
+    if (!_imp->_isInsignificant) {
         _imp->updateHash(getValueForEachDimension());
+    }
     processNewValue();
     if(reason != Natron::USER_EDITED && !_imp->_holder->isClone()){
         emit valueChanged(dimension);

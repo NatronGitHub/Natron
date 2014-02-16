@@ -92,6 +92,8 @@ public:
     
     void setPressed(bool b) {pressed = b;}
     
+    ///Changes the text displayed by the combobox. It doesn't have to match the text
+    ///of an entry in the combobox. No signal will be emitted.
     void setCurrentText(const QString& text);
     
     void setMaximumWidthFromText(const QString& str);
@@ -107,16 +109,18 @@ public:
     
     QString getCurrentIndexText() const;
     
-    public slots:
+public slots:
     
+    ///Changes the current index AND emits the signal void currentIndexChanged(int)
     void setCurrentIndex(int index);
     
     void setAnimation(int i);
     
     int getAnimation() const { return animation; }
+    
 signals:
+    
     void currentIndexChanged(int index);
-    void currentIndexChanged(const QString &text);
     
 private:
     void paintEvent(QPaintEvent *);

@@ -607,7 +607,8 @@ void Choice_KnobGui::createWidget(QGridLayout *layout, int row)
         _comboBox->addItem(_entries[i].c_str(), QIcon(), QKeySequence(), QString(helpStr.c_str()));
     }
     if (_entries.size() > 0) {
-        _comboBox->setCurrentText(_entries[0].c_str());
+        ///we can only use this function because the signal currentIndexChanged(int) of the combobox is not yet connected.
+        _comboBox->setCurrentIndex(0); // why not?
     }
     if(hasToolTip()) {
         _comboBox->setToolTip(toolTip());
@@ -629,7 +630,9 @@ void Choice_KnobGui::onEntriesPopulated()
     for (U32 j = 0; j < _entries.size(); ++j) {
         _comboBox->addItem(QString(_entries[j].c_str()));
     }
-    if(_entries.size() > 0 && i >= 0) {
+    if (0 <= i && i < (int)_entries.size()) {
+        ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
+        ///we don't want that to happen because the index actually didn't change.
         _comboBox->setCurrentText(QString(_entries[i].c_str()));
     } else {
         _comboBox->setCurrentText("");
@@ -639,7 +642,11 @@ void Choice_KnobGui::onEntriesPopulated()
 void Choice_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 {
     int i = variant.toInt();
-    if(i < (int)_entries.size() && i >= (int)0){
+    if (0 <= i && i < (int)_entries.size()) {
+        ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
+        ///change the internal value of the knob again...
+        ///The slot connected to onCurrentIndexChanged is reserved to catch user interaction with the combobox.
+        ///This function is called in response to an internal change.
         _comboBox->setCurrentText(_entries[i].c_str());
     }
 }
