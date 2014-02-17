@@ -14,6 +14,13 @@
 #include <CoreServices/CoreServices.h>
 #elif defined(__NATRON_WIN32__)
 #include <windows.h>
+#include <IntShCut.h>
+#include <ShlObj.h>
+#ifndef CSIDL_MYMUSIC
+#define CSIDL_MYMUSIC 13
+#define CSIDL_MYVIDEO 14
+#endif
+#include <QFileInfo>
 #elif defined(__NATRON_LINUX__)
 #include <cerrno>
 #include <sys/stat.h>
@@ -117,17 +124,64 @@ static QString macLocation(StandardPaths::StandardLocation type, short domain)
 }
 
 #elif defined(__NATRON_WIN32__)
+	static QString qSystemDirectory()
+	{
+		QVarLengthArray<char, MAX_PATH> fullPath;
+
+		UINT retLen = ::GetSystemDirectory(fullPath.data(), MAX_PATH);
+		if (retLen > MAX_PATH) {
+			fullPath.resize(retLen);
+			retLen = ::GetSystemDirectory(fullPath.data(), retLen);
+		}
+		// in some rare cases retLen might be 0
+		return QString::fromAscii(fullPath.constData(), int(retLen));
+	}
+
+ static HINSTANCE load(const wchar_t *libraryName, bool onlySystemDirectory = true){
+	 QStringList searchOrder;
+
+#if !defined(QT_BOOTSTRAPPED)
+	 if (!onlySystemDirectory)
+		 searchOrder << QFileInfo(QCoreApplication::applicationFilePath()).path();
+#endif
+	 searchOrder << qSystemDirectory();
+
+	 if (!onlySystemDirectory) {
+		 const QString PATH(QLatin1String(qgetenv("PATH").constData()));
+		 searchOrder << PATH.split(QLatin1Char(';'), QString::SkipEmptyParts);
+	 }
+	 QString fileName = QString::fromWCharArray(libraryName);
+	 fileName.append(QLatin1String(".dll"));
+
+	 // Start looking in the order specified
+	 for (int i = 0; i < searchOrder.count(); ++i) {
+		 QString fullPathAttempt = searchOrder.at(i);
+		 if (!fullPathAttempt.endsWith(QLatin1Char('\\'))) {
+			 fullPathAttempt.append(QLatin1Char('\\'));
+		 }
+		 fullPathAttempt.append(fileName);
+		 HINSTANCE inst = ::LoadLibrary((LPCSTR)fullPathAttempt.utf16());
+		 if (inst != 0)
+			 return inst;
+	 }
+	 return 0;
+ }
+
 typedef BOOL (WINAPI*GetSpecialFolderPath)(HWND, LPWSTR, int, BOOL);
 static GetSpecialFolderPath resolveGetSpecialFolderPath()
 {
     static GetSpecialFolderPath gsfp = 0;
     if (!gsfp) {
+		
 #ifndef Q_OS_WINCE
-        QSystemLibrary library(QLatin1String("shell32"));
+       QString lib("shell32");
 #else
-        QSystemLibrary library(QLatin1String("coredll"));
+       QString lib("coredll");
 #endif // Q_OS_WINCE
-        gsfp = (GetSpecialFolderPath)library.resolve("SHGetSpecialFolderPathW");
+	   HINSTANCE libHandle = load((const wchar_t*)lib.utf16());
+	   if(libHandle) {
+		 gsfp = (GetSpecialFolderPath)(void*)GetProcAddress(libHandle,(const char*)QString::fromLatin1("SHGetSpecialFolderPathW").utf16());
+	   }
     }
     return gsfp;
 }
@@ -370,8 +424,6 @@ QString StandardPaths::writableLocation(StandardLocation type) {
         if (SHGetSpecialFolderPath(0, path, CSIDL_LOCAL_APPDATA, FALSE))
 #endif
             result = convertCharArray(path);
-        if (isTestModeEnabled())
-            result += QLatin1String("/qttest");
 #ifndef QT_BOOTSTRAPPED
         if (type != GenericDataLocation) {
             if (!QCoreApplication::organizationName().isEmpty())
