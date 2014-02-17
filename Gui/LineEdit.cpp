@@ -27,7 +27,6 @@ class QPaintEvent;
 
 LineEdit::LineEdit(QWidget* parent)
 : QLineEdit(parent)
-, _hasChanged(false)
 , animation(0)
 {
     setAttribute(Qt::WA_MacShowFocusRect,0);
@@ -79,30 +78,4 @@ void LineEdit::setAnimation(int v) {
     style()->unpolish(this);
     style()->polish(this);
     repaint();
-}
-
-void LineEdit::focusInEvent(QFocusEvent* e) {
-    _hasChanged = false;
-    QLineEdit::focusInEvent(e);
-}
-
-void LineEdit::focusOutEvent(QFocusEvent* e) {
-    
-    if (_hasChanged) {
-        emit editingFinished();
-    }
-    _hasChanged = false;
-    QLineEdit::focusOutEvent(e);
-}
-
-void LineEdit::keyPressEvent(QKeyEvent* e) {
-    if (e->key() == Qt::Key_Return) {
-        if (_hasChanged) {
-            emit editingFinished();
-        }
-        _hasChanged = false;
-    } else {
-        _hasChanged = true;
-    }
-    QLineEdit::keyPressEvent(e);
 }
