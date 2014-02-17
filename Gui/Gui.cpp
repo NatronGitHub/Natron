@@ -358,11 +358,12 @@ bool Gui::exit(){
     bool rVal = false;
     if (appId != 0) {
         delete _imp->_appInstance;
+        delete this;
     } else {
+        delete this;
         delete appPTR;
         rVal = true;
     }
-    delete this;
     return rVal;
 }
 

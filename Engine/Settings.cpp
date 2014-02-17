@@ -82,7 +82,7 @@ void Settings::initializeKnobs(){
     _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "Extra plugins search paths");
     _extraPluginPaths->setHintToolTip("All paths in this variable are separated by ';' and indicate"
                                       " extra search paths where " NATRON_APPLICATION_NAME " should scan for plug-ins. "
-                                      NATRON_APPLICATION_NAME " already search for for plug-ins at these locations:\n "
+                                      NATRON_APPLICATION_NAME " already searchs for plug-ins at these locations:\n "
                                       " C:\\Program Files\\Common Files\\OFX\\Plugins on Windows, \n "
                                       " /usr/OFX/Plugins on Linux and \n "
                                       " /Library/OFX/Plugins on MacOSX. \n"
@@ -491,6 +491,13 @@ void Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::v
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
         k->turnOffAnimation();
         k->populate(it->second);
+        for (U32 i = 0; i < it->second.size(); ++i) {
+            ///do not make ReadQt appear as default when there is other options as it is deprecated.
+            if (it->second[i] != "ReadQt") {
+                k->setValue<int>(i);
+                break;
+            }
+        }
         _readersMapping.push_back(k);
         _readersTab->addKnob(k);
     }
@@ -501,6 +508,13 @@ void Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::v
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
         k->turnOffAnimation();
         k->populate(it->second);
+        for (U32 i = 0; i < it->second.size(); ++i) {
+            ///do not make WriteQt appear as default when there is other options as it is deprecated.
+            if (it->second[i] != "WriteQt") {
+                k->setValue<int>(i);
+                break;
+            }
+        }
         _writersMapping.push_back(k);
         _writersTab->addKnob(k);
     }
