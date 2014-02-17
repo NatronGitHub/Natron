@@ -535,15 +535,7 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::
     
     _knob = Natron::createKnob<Choice_Knob>(node, getParamLabel(this));
     
-    std::vector<std::string> helpStrings;
-    for (int i = 0 ; i < properties.getDimension(kOfxParamPropChoiceOption) ; ++i) {
-        std::string str = properties.getStringProperty(kOfxParamPropChoiceOption,i);
-        std::string help = properties.getStringProperty(kOfxParamPropChoiceLabelOption,i);
-        
-        _entries.push_back(str);
-        helpStrings.push_back(help);
-    }
-    _knob->populate(_entries,helpStrings);
+    setOption(0); // this actually sets all the options
     
     int def = properties.getIntProperty(kOfxParamPropDefault);
     set(def);
@@ -591,10 +583,15 @@ void OfxChoiceInstance::setSecret() {
 void OfxChoiceInstance::setOption(int /*num*/) {
     int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
     _entries.clear();
+    std::vector<std::string> helpStrings;
     for (int i = 0; i < dim; ++i) {
-        _entries.push_back(getProperties().getStringProperty(kOfxParamPropChoiceOption,i));
+        std::string str = getProperties().getStringProperty(kOfxParamPropChoiceOption,i);
+        std::string help = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption,i);
+
+        _entries.push_back(str);
+        helpStrings.push_back(help);
     }
-    _knob->populate(_entries);
+    _knob->populate(_entries, helpStrings);
 }
 
 boost::shared_ptr<Knob> OfxChoiceInstance::getKnob() const{
