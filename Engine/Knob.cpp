@@ -413,7 +413,9 @@ void Knob::load(const KnobSerialization& serializationObj){
     emit restorationComplete();
 }
 
-void Knob::save(KnobSerialization* serializationObj) const {
+void Knob::save(KnobSerialization* serializationObj) const
+{
+    assert(isPersistent()); // a non-persistent Knob should never be saved!
     QMutexLocker l(&_imp->_valueMutex);
     serializationObj->initialize(this);
 }
