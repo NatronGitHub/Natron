@@ -35,6 +35,7 @@ CLANG_DIAG_ON(deprecated)
  never call them. When the user interact with a knob, the onInstanceChanged() slot
  is called. In turn, the plug-in will fetch the value that has changed by calling get(...).
  */
+class Path_Knob;
 class String_Knob;
 class File_Knob;
 class OutputFile_Knob;
@@ -551,6 +552,7 @@ private:
     boost::shared_ptr<File_Knob> _fileKnob;
     boost::shared_ptr<OutputFile_Knob> _outputFileKnob;
     boost::shared_ptr<String_Knob> _stringKnob;
+    boost::shared_ptr<Path_Knob> _pathKnob;
     QThreadStorage<std::string> _localString;
 };
 

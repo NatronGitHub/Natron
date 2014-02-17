@@ -347,7 +347,7 @@ class SequenceFileDialog: public QDialog
     Q_OBJECT
     
 public:
-    enum FileDialogMode{OPEN_DIALOG = 0,SAVE_DIALOG = 1} ;
+    enum FileDialogMode{OPEN_DIALOG = 0,SAVE_DIALOG = 1,DIR_DIALOG = 2} ;
 
     typedef std::pair<QString,std::pair<qint64,QString> > NameMappingElement;
     typedef std::vector<NameMappingElement> NameMapping;
@@ -472,6 +472,7 @@ public slots:
     void createDir();
     void addFavorite();
     void openSelectedFiles();
+    void selectDirectory();
     void cancelSlot();
     void doubleClickOpen(const QModelIndex& index);
     void seekUrl(const QUrl& url);

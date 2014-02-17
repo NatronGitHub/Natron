@@ -925,8 +925,9 @@ void Separator_KnobGui::createWidget(QGridLayout *layout, int row)
     if(hasToolTip()) {
         _descriptionLabel->setToolTip(toolTip());
     }
-    layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
+    layout->addWidget(_descriptionLabel, row, 0, Qt::AlignLeft);
     
+    ///FIXME: this line is never visible.
     _line = new QFrame(layout->parentWidget());
     _line->setFrameShape(QFrame::HLine);
     _line->setFrameShadow(QFrame::Sunken);

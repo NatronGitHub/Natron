@@ -77,6 +77,19 @@ void Settings::initializeKnobs(){
                                                       " will be enabled.");
     _generalTab->addKnob(_autoPreviewEnabledForNewProjects);
     
+    _generalTab->addKnob(Natron::createKnob<Separator_Knob>(this, "OpenFX Plugins"));
+    
+    _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "Extra plugins search paths");
+    _extraPluginPaths->setHintToolTip("All paths in this variable are separated by ';' and indicate"
+                                      " extra search paths where " NATRON_APPLICATION_NAME " should scan for plug-ins. "
+                                      NATRON_APPLICATION_NAME " already search for for plug-ins at these locations:\n "
+                                      " C:\\Program Files\\Common Files\\OFX\\Plugins on Windows, \n "
+                                      " /usr/OFX/Plugins on Linux and \n "
+                                      " /Library/OFX/Plugins on MacOSX. \n"
+                                      " The changes made to the OpenFX plugins search paths will take effect"
+                                      " upon the next launch of " NATRON_APPLICATION_NAME);
+    _extraPluginPaths->setMultiPath(true);
+    _generalTab->addKnob(_extraPluginPaths);
     
     boost::shared_ptr<Tab_Knob> ocioTab = Natron::createKnob<Tab_Knob>(this, "OpenColorIO");
     
@@ -199,6 +212,7 @@ void Settings::saveSettings(){
     settings.setValue("LinearColorPickers",_linearPickers->getValue<bool>());
     settings.setValue("MultiThreadingDisabled", _multiThreadedDisabled->getValue<bool>());
     settings.setValue("AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue<bool>());
+    settings.setValue("ExtraPluginsPaths", _extraPluginPaths->getValue<QString>());
     settings.endGroup();
     
     settings.beginGroup("OpenColorIO");
@@ -251,6 +265,9 @@ void Settings::restoreSettings(){
     }
     if (settings.contains("AutoPreviewDefault")) {
         _autoPreviewEnabledForNewProjects->setValue<bool>(settings.value("AutoPreviewDefault").toBool());
+    }
+    if (settings.contains("ExtraPluginsPaths")) {
+        _extraPluginPaths->setValue<QString>(settings.value("ExtraPluginsPaths").toString());
     }
     settings.endGroup();
     
@@ -511,3 +528,7 @@ void Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::strin
     }
 }
 
+QStringList Settings::getPluginsExtraSearchPaths() const {
+    QString paths = _extraPluginPaths->getValue<QString>();
+    return paths.split(QChar(';'));
+}
