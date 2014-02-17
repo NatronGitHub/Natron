@@ -420,6 +420,7 @@ void VideoEngine::runSameThread() {
         ///if single threaded: the user might have requested to exit and the engine might be deleted after the events process.
 
         if (_mustQuit) {
+            _mustQuit = false;
             return;
         }
         iterateKernel(true);
@@ -427,6 +428,7 @@ void VideoEngine::runSameThread() {
         ///if single threaded: the user might have requested to exit and the engine might be deleted after the events process.
 
         if (_mustQuit) {
+            _mustQuit = false;
             return;
         }
         stopEngine();
