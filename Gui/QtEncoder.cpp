@@ -100,7 +100,7 @@ void QtWriter::initializeKnobs(){
     _frameRangeChoosal = Natron::createKnob<Choice_Knob>(this, "Frame range");
     _frameRangeChoosal->turnOffAnimation();
     std::vector<std::string> frameRangeChoosalEntries;
-    frameRangeChoosalEntries.push_back("Inputs union");
+    frameRangeChoosalEntries.push_back("Union of input ranges");
     frameRangeChoosalEntries.push_back("Timeline bounds");
     frameRangeChoosalEntries.push_back("Manual");
     _frameRangeChoosal->populate(frameRangeChoosalEntries);
