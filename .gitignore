@@ -6,8 +6,9 @@ moc*.cpp
 build*
 *html*
 *latex*
-DerivedData/*
+DerivedData
 Natron.xcodeproj
+NatronRenderer.xcodeproj
 Tests.xcodeproj
 HostSupport.xcodeproj
 Gui.xcodeproj
