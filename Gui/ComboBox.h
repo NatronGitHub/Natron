@@ -92,16 +92,7 @@ public:
     
     void setPressed(bool b) {pressed = b;}
     
-    ///Changes the text displayed by the combobox. It doesn't have to match the text
-    ///of an entry in the combobox. No signal will be emitted.
-    void setCurrentText(const QString& text);
-    
     void setMaximumWidthFromText(const QString& str);
-
-    /*this function returns the displayed text with some padding
-     ,i.e two spaces before and after the text, as such:
-     "  test  " .*/
-    QString text() const;
     
     int activeIndex() const;
     
@@ -114,6 +105,16 @@ public slots:
     ///Changes the current index AND emits the signal void currentIndexChanged(int)
     void setCurrentIndex(int index);
     
+    ///Same as setCurrentIndex but does not emit any signal.
+    void setCurrentIndex_no_emit(int index);
+    
+    ///Changes the text displayed by the combobox. It doesn't have to match the text
+    ///of an entry in the combobox.
+    void setCurrentText(const QString& text);
+    
+    ///Same as setCurrentText but no signal will be emitted.
+    void setCurrentText_no_emit(const QString& text);
+    
     void setAnimation(int i);
     
     int getAnimation() const { return animation; }
@@ -122,15 +123,21 @@ signals:
     
     void currentIndexChanged(int index);
     
+    void currentIndexChanged(QString);
+    
 private:
     void paintEvent(QPaintEvent *);
     void mousePressEvent(QMouseEvent* e);
     void mouseReleaseEvent(QMouseEvent* e);
     
-private:
     void growMaximumWidthFromText(const QString& str);
     void createMenu();
     
+    ///changes the current index and returns true if the index really changed, false if it is the same.
+    bool setCurrentIndex_internal(int index);
+    
+    ///changes the combobox text and returns an entry index if a matching one with the same name was found, -1 otherwise.
+    int setCurrentText_internal(const QString& text);
 };
 
 #endif

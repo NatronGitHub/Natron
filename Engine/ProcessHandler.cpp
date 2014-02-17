@@ -45,10 +45,9 @@ ProcessHandler::ProcessHandler(AppInstance* app,
     _ipcServer->listen(serverName);
 
 
-    ///the process args
-    QStringList appArgs = QCoreApplication::arguments();
+ 
     QStringList processArgs;
-    processArgs << projectPath  << "-b" << "--writer" << writer->getName().c_str();
+    processArgs << projectPath << "-b" << "-w" << writer->getName().c_str();
     processArgs << "--IPCpipe" << (_ipcServer->fullServerName());
 
     ///connect the useful slots of the process
@@ -64,7 +63,7 @@ ProcessHandler::ProcessHandler(AppInstance* app,
         throw std::invalid_argument("First frame in the sequence is greater than the last frame");
 
     ///start the process
-    _process->start(appArgs.at(0),processArgs);
+    _process->start(QCoreApplication::applicationFilePath(),processArgs);
 
     ///get the output file knob to get the same of the sequence
     std::string outputFileSequence;

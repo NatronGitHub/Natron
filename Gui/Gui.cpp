@@ -355,15 +355,15 @@ bool Gui::exit(){
     _imp->saveGuiGeometry();
     assert(_imp->_appInstance);
 	int appId = _imp->_appInstance->getAppID();
-    delete _imp->_appInstance;
-    delete this;
+    bool rVal = false;
     if (appId != 0) {
-        return false;
+        delete _imp->_appInstance;
     } else {
         delete appPTR;
-        QCoreApplication::instance()->quit();
-        return true;
+        rVal = true;
     }
+    delete this;
+    return rVal;
 }
 
 void Gui::toggleFullScreen()

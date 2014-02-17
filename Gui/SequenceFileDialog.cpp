@@ -325,7 +325,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
             _fileExtensionCombo->addItem(_filters[i].c_str());
         }
         _filterLineLayout->addWidget(_fileExtensionCombo);
-        QObject::connect(_fileExtensionCombo, SIGNAL(currentIndexChanged(QString)), this, SLOT(setFileExtensionOnLineEdit(QString)));
+        QObject::connect(_fileExtensionCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onFileExtensionComboChanged(int)));
         if(isSequenceDialog)
             _fileExtensionCombo->setCurrentIndex(_fileExtensionCombo->itemIndex("jpg"));
         _filterLineLayout->addStretch();
@@ -398,6 +398,10 @@ SequenceFileDialog::~SequenceFileDialog(){
     
     
     
+}
+
+void SequenceFileDialog::onFileExtensionComboChanged(int index) {
+    setFileExtensionOnLineEdit(_fileExtensionCombo->itemText(index));
 }
 
 QByteArray SequenceFileDialog::saveState() const{

@@ -12,6 +12,7 @@ SUBDIRS += \
     HostSupport \
     Engine \
     Gui \
+    Renderer \
     Tests \
     App
 

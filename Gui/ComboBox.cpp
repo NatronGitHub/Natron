@@ -144,7 +144,7 @@ void ComboBox::insertItem(int index,const QString& item,QIcon icon,QKeySequence 
     _actions.insert(_actions.begin()+index, action);
     /*if this is the first action we add, make it current*/
     if(_actions.size() == 1){
-        setCurrentText(itemText(0));
+        setCurrentText_no_emit(itemText(0));
     }
  
 }
@@ -172,11 +172,23 @@ void ComboBox::addItem(const QString& item,QIcon icon ,QKeySequence key,const QS
     
     /*if this is the first action we add, make it current*/
     if(_actions.size() == 1){
-        setCurrentText(itemText(0));
+        setCurrentText_no_emit(itemText(0));
     }
 }
 
-void ComboBox::setCurrentText(const QString& text){
+void ComboBox::setCurrentText_no_emit(const QString& text) {
+    setCurrentText_internal(text);
+}
+
+void ComboBox::setCurrentText(const QString& text) {
+    int index = setCurrentText_internal(text);
+    if (index != -1) {
+        emit currentIndexChanged(index);
+        emit currentIndexChanged(getCurrentIndexText());
+    }
+}
+
+int ComboBox::setCurrentText_internal(const QString& text) {
     QString str(text);
     growMaximumWidthFromText(str);
     str.prepend("  ");
@@ -191,9 +203,11 @@ void ComboBox::setCurrentText(const QString& text){
             break;
         }
     }
-    if (_currentIndex != index) {
+    if (_currentIndex != index && index != -1) {
         _currentIndex = index;
+        return index;
     }
+    return -1;
 }
 
 void ComboBox::setMaximumWidthFromText(const QString& str)
@@ -210,10 +224,6 @@ void ComboBox::growMaximumWidthFromText(const QString& str)
     }
 }
 
-QString ComboBox::text() const{
-    return _currentText->text();
-}
-
 int ComboBox::activeIndex() const{
     return _currentIndex;
 }
@@ -223,8 +233,7 @@ QString ComboBox::getCurrentIndexText() const {
     return _actions[_currentIndex]->text();
 }
 
-void ComboBox::setCurrentIndex(int index)
-{
+bool ComboBox::setCurrentIndex_internal(int index) {
     QString str;
     QString text;
     if (0 <= index && index < (int)_actions.size()) {
@@ -245,12 +254,27 @@ void ComboBox::setCurrentIndex(int index)
     str.prepend("  ");
     str.append("  ");
     _currentText->setText(str);
-
-    if (_currentIndex != index) {
+    
+    if (_currentIndex != index && index != -1) {
         _currentIndex = index;
+        return true;
+    } else {
+        return false;
+    }
+
+}
+
+void ComboBox::setCurrentIndex(int index)
+{
+    if (setCurrentIndex_internal(index)) {
         ///emit the signal only if the entry changed
         emit currentIndexChanged(_currentIndex);
+        emit currentIndexChanged(getCurrentIndexText());
     }
+}
+
+void ComboBox::setCurrentIndex_no_emit(int index) {
+    setCurrentIndex_internal(index);
 }
 
 void ComboBox::addSeparator(){

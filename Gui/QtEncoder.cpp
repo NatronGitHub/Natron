@@ -33,7 +33,7 @@ QtWriter::QtWriter(Natron::Node* node)
 :Natron::OutputEffectInstance(node)
 , _lut(Natron::Color::LutManager::sRGBLut())
 {
-    
+   
 }
 
 QtWriter::~QtWriter(){
@@ -84,6 +84,12 @@ void QtWriter::getFrameRange(SequenceTime *first,SequenceTime *last){
 
 
 void QtWriter::initializeKnobs(){
+    
+    if (isLiveInstance()) {
+        Natron::warningDialog(getName(), "This plugin exists only to help the developpers team to test " NATRON_APPLICATION_NAME
+                              ". You cannot use it to render a project.");
+    }
+    
     _premultKnob = Natron::createKnob<Bool_Knob>(this, "Premultiply by alpha");
     _premultKnob->turnOffAnimation();
     _premultKnob->setValue<bool>(false);

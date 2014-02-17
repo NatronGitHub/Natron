@@ -613,7 +613,7 @@ void ViewerTab::updateZoomComboBox(int value){
     str.append(QChar('%'));
     str.prepend("  ");
     str.append("  ");
-    _imp->_zoomCombobox->setCurrentText(str);
+    _imp->_zoomCombobox->setCurrentText_no_emit(str);
 }
 
 /*In case they're several viewer around, we need to reset the dag and tell it

@@ -1,25 +1,15 @@
-#This Source Code Form is subject to the terms of the Mozilla Public
-#License, v. 2.0. If a copy of the MPL was not distributed with this
-#file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+QT       += core network
+QT       -= gui
+greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
-TARGET = Natron
-TEMPLATE = app
-CONFIG += app
+TARGET = NatronRenderer
+CONFIG += console
+CONFIG -= app_bundle
 CONFIG += moc
-CONFIG += boost glew opengl qt expat
-QT += gui core opengl network
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
+CONFIG += boost qt expat
 
-macx {
-  ### custom variables for the Info.plist file
-  # use a custom Info.plist template
-  #QMAKE_INFO_PLIST = ...
-  # Set the application icon
-  ICON = ../Gui/Resources/Images/natronIcon256_osx.icns
-  # replace com.yourcompany with something more meaningful
-  QMAKE_TARGET_BUNDLE_PREFIX = fr.inria
-}
+TEMPLATE = app
 
 #OpenFX C api includes and OpenFX c++ layer includes that are located in the submodule under /libs/OpenFX
 INCLUDEPATH += $$PWD/../libs/OpenFX/include
@@ -27,25 +17,6 @@ INCLUDEPATH += $$PWD/../libs/OpenFX_extensions
 INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
 INCLUDEPATH += $$PWD/..
 
-################
-# Gui
-
-win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Gui/release/ -lGui
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../Gui/debug/ -lGui
-else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Gui/build/Release/ -lGui
-else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../Gui/build/Debug/ -lGui
-else:unix: LIBS += -L$$OUT_PWD/../Gui/ -lGui
-
-INCLUDEPATH += $$PWD/../Gui
-DEPENDPATH += $$PWD/../Gui
-
-win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Gui/release/libGui.a
-else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Gui/debug/libGui.a
-else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Gui/release/Gui.lib
-else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Gui/debug/Gui.lib
-else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Gui/build/Release/libGui.a
-else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Gui/build/Debug/libGui.a
-else:unix: PRE_TARGETDEPS += $$OUT_PWD/../Gui/libGui.a
 
 ################
 # Engine
@@ -91,17 +62,7 @@ include(../global.pri)
 include(../config.pri)
 
 SOURCES += \
-    NatronApp_main.cpp
+    NatronRenderer_main.cpp
 
 INSTALLS += target
-
-Resources.files = ../Gui/Resources/OpenColorIO-Configs
-macx {
-    Resources.path = Contents/Resources
-    QMAKE_BUNDLE_DATA += Resources
-}
-!macx {
-    Resources.path = $$OUT_PWD
-    INSTALLS += Resources
-}
 

@@ -70,8 +70,8 @@ protected:
     QString _genericTestPluginID;
     QString _gainPluginID;
     QString _dotGeneratorPluginID;
-    QString _readQtPluginID;
-    QString _writeQtPluginID;
+    QString _readOIIOPluginID;
+    QString _writeOIIOPluginID;
     
     std::vector<QString> _allTestPluginIDs;
     

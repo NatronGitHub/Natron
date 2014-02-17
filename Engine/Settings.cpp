@@ -357,11 +357,7 @@ bool Settings::tryLoadOpenColorIOConfig() {
 }
 
 void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
-    
-    if (!appPTR->isInitialized()) {
-        return;
-    }
-    
+
     _wereChangesMadeSinceLastSave = true;
 
     

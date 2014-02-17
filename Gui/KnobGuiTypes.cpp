@@ -551,7 +551,7 @@ void Button_KnobGui::createWidget(QGridLayout *layout, int row)
     if(hasToolTip()) {
         _button->setToolTip(toolTip());
     }
-    layout->addWidget(_button, row, 0, Qt::AlignRight);
+    layout->addWidget(_button, row, 1, Qt::AlignLeft);
 }
 
 Button_KnobGui::~Button_KnobGui()
@@ -633,9 +633,9 @@ void Choice_KnobGui::onEntriesPopulated()
     if (0 <= i && i < (int)_entries.size()) {
         ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
         ///we don't want that to happen because the index actually didn't change.
-        _comboBox->setCurrentText(QString(_entries[i].c_str()));
+        _comboBox->setCurrentText_no_emit(QString(_entries[i].c_str()));
     } else {
-        _comboBox->setCurrentText("");
+        _comboBox->setCurrentText_no_emit("");
     }
 }
 
@@ -647,7 +647,7 @@ void Choice_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
         ///change the internal value of the knob again...
         ///The slot connected to onCurrentIndexChanged is reserved to catch user interaction with the combobox.
         ///This function is called in response to an internal change.
-        _comboBox->setCurrentText(_entries[i].c_str());
+        _comboBox->setCurrentText_no_emit(_entries[i].c_str());
     }
 }
 

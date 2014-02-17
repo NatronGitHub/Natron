@@ -18,7 +18,6 @@
 #include <QtGui/QImageReader>
 
 #include "Engine/AppManager.h"
-
 #include "Engine/Image.h"
 #include "Engine/Lut.h"
 #include "Engine/KnobTypes.h"
@@ -44,6 +43,7 @@ QtReader::QtReader(Natron::Node* node)
 , _timeOffset()
 , _settingFrameRange(false)
 {
+    
 }
 
 
@@ -65,6 +65,12 @@ std::string QtReader::description() const {
 }
 
 void QtReader::initializeKnobs() {
+    
+    if (isLiveInstance()) {
+        Natron::warningDialog(getName(), "This plugin exists only to help the developpers team to test " NATRON_APPLICATION_NAME
+                              ". You cannot use it when rendering a project.");
+    }
+    
     _fileKnob = Natron::createKnob<File_Knob>(this, "File");
     _fileKnob->setAsInputImage();
     

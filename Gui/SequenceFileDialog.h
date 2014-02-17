@@ -489,6 +489,7 @@ public slots:
     void pathChanged(const QString &newPath);
     void autoCompleteFileName(const QString&);
     void goToDirectory(const QString&);
+    void onFileExtensionComboChanged(int index);
     void setFileExtensionOnLineEdit(const QString&);
 
 private:

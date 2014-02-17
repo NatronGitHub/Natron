@@ -18,11 +18,7 @@
 #include <string>
 #include <QtCore/QDir>
 #include <QtCore/QMutex>
-#if QT_VERSION < 0x050000
-#include <QtGui/QDesktopServices>
-#else
-#include <QStandardPaths>
-#endif
+
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
 #include <boost/thread.hpp>
@@ -51,6 +47,7 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Plugin.h"
+#include "Engine/StandardPaths.h"
 
 
 using namespace Natron;
@@ -310,11 +307,8 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
     // On OSX, it will be ~/Library/Caches/<organization>/<application>/OFXCache.xml
     //on Linux ~/.cache/<organization>/<application>/OFXCache.xml
     //on windows:
-#if QT_VERSION < 0x050000
-    QString ofxcachename = QDesktopServices::storageLocation(QDesktopServices::CacheLocation) + QDir::separator() + "OFXCache.xml";
-#else
-    QString ofxcachename = QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + QDir::separator() + "OFXCache.xml";
-#endif
+    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation) + QDir::separator() + "OFXCache.xml";
+
     std::ifstream ifs(ofxcachename.toStdString().c_str());
     if (ifs.is_open()) {
         OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
@@ -431,12 +425,7 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
 
 void Natron::OfxHost::writeOFXCache(){
     /// and write a new cache, long version with everything in there
-#if QT_VERSION < 0x050000
-    QString ofxcachename = QDesktopServices::storageLocation(QDesktopServices::CacheLocation);
-    
-#else
-    QString ofxcachename = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
-#endif
+    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
     QDir().mkpath(ofxcachename);
     ofxcachename +=  QDir::separator();
     ofxcachename += "OFXCache.xml";
@@ -448,12 +437,9 @@ void Natron::OfxHost::writeOFXCache(){
 }
 
 void Natron::OfxHost::clearPluginsLoadedCache() {
-#if QT_VERSION < 0x050000
-    QString ofxcachename = QDesktopServices::storageLocation(QDesktopServices::CacheLocation);
-    
-#else
-    QString ofxcachename = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
-#endif
+
+    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
+
     QDir().mkpath(ofxcachename);
     ofxcachename +=  QDir::separator();
     ofxcachename += "OFXCache.xml";

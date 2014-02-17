@@ -79,11 +79,20 @@ public:
     AppManager::AppType getAppType() const;
     
     static void printBackGroundWelcomeMessage();
+
+    static void printUsage();
     
-    ///called right away after the constructor by main.cpp
-    /// @param binaryPath is used to locate auxiliary files, such as the OpenColorIO config files
-    bool load(const QString& binaryPath,const QString& mainProcServerName,
-              const QString& projectName = QString(),const QStringList& writers = QStringList());
+    /**
+     * @brief This function initializes the QCoreApplication (or QApplication) object and the AppManager object (load plugins etc...)
+     * See the second load function.
+    **/
+    bool load(int argc, char *argv[]);
+
+    /**
+    * @brief Same as load(argc,argv) but assumes the QCoreApplication object has already been created.
+    * Attempting to call this function with an empty projectFilename will return false.
+    **/
+    bool load(const QString& projectFilename,const QStringList& writers,const QString& mainProcessServerName);
     
     bool isLoaded() const;
     
@@ -146,8 +155,6 @@ public:
 
     boost::shared_ptr<Settings> getCurrentSettings() const WARN_UNUSED_RETURN;
 
-    bool isInitialized() const WARN_UNUSED_RETURN;
-
     const KnobFactory& getKnobFactory() const WARN_UNUSED_RETURN;
 
     /**
@@ -167,6 +174,11 @@ public:
 
     const QString& getApplicationBinaryPath() const;
 
+    static bool parseCmdLineArgs(int argc,char* argv[],
+                                 bool* isBackground,
+                                 QString& projectFilename,
+                                 QStringList& writers,
+                                 QString& mainProcessServerName);
 
 public slots:
 
@@ -196,15 +208,22 @@ signals:
 
 protected:
 
-    virtual void loadExtra(){}
+    virtual void initGui(){}
 
     virtual void loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
                                     std::map<std::string,std::vector<std::string> >* readersMap,
                                     std::map<std::string,std::vector<std::string> >* writersMap);
 
     virtual AppInstance* makeNewInstance(int appID) const;
-private:
     
+    virtual void registerGuiMetaTypes() const {}
+    
+    virtual void initializeQApp(int argc,char* argv[]) const;
+private:
+
+    bool loadInternal(const QString& projectFilename,const QStringList& writers,const QString& mainProcessServerName);
+
+    void registerEngineMetaTypes() const;
 
     void loadAllPlugins();
 

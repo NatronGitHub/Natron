@@ -22,7 +22,7 @@
 #include "Engine/ProjectSerialization.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
-
+#include "Engine/StandardPaths.h"
 
 using std::cout; using std::endl;
 using std::make_pair;
@@ -148,7 +148,6 @@ void Project::saveProject(const QString& path,const QString& name,bool autoSave)
     {
         QMutexLocker l(&_imp->isLoadingProjectMutex);
         if(_imp->isLoadingProject){
-            qDebug() << "Attempting to save wihle project is loading. This is probably a bug.";
             return;
         }
     }
@@ -852,11 +851,7 @@ void Project::removeAutoSaves() const {
 }
 
 QString Project::autoSavesDir() {
-#if QT_VERSION < 0x050000
-    return QDesktopServices::storageLocation(QDesktopServices::DataLocation) + QDir::separator() + "Autosaves";
-#else
-    return QStandardPaths::writableLocation(QStandardPaths::DataLocation) + QDir::separator() + "Autosaves";
-#endif
+    return Natron::StandardPaths::writableLocation(Natron::StandardPaths::DataLocation) + QDir::separator() + "Autosaves";
 }
 
 void Project::reset(){

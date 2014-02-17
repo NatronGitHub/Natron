@@ -10,8 +10,11 @@
 
 #include "AppManager.h"
 
-#include <QDebug>
+#include <clocale>
 
+#include <QDebug>
+#include <QAbstractSocket>
+#include <QCoreApplication>
 
 #include "Global/MemoryInfo.h"
 
@@ -27,6 +30,7 @@
 #include "Engine/Image.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Format.h"
+#include "Engine/Log.h"
 
 using namespace Natron;
 
@@ -45,36 +49,36 @@ struct AppManagerPrivate {
     boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
     boost::shared_ptr<Natron::Cache<Natron::Image> >  _nodeCache; //< Images cache
     boost::shared_ptr<Natron::Cache<Natron::FrameEntry> > _viewerCache; //< Viewer textures cache
-    bool _initialized; //< whether load() has successfully finished
     ProcessInputChannel* _backgroundIPC; //< object used to communicate with the main app
-                                         //if this app is background, see the ProcessInputChannel def
+    //if this app is background, see the ProcessInputChannel def
     bool _loaded; //< true when the first instance is completly loaded.
     QString _binaryPath; //< the path to the application's binary
 
     AppManagerPrivate()
-    : _appType(AppManager::APP_BACKGROUND)
-    , _appInstances()
-    , _availableID(0)
-    , _topLevelInstanceID(0)
-    , _settings(new Settings(NULL))
-    , _formats()
-    , _plugins()
-    , ofxHost(new Natron::OfxHost())
-    , _knobFactory(new KnobFactory())
-    , _nodeCache()
-    , _viewerCache()
-    ,_initialized(false)
-    ,_backgroundIPC(0)
-    ,_loaded(false)
-    ,_binaryPath()
+        : _appType(AppManager::APP_BACKGROUND)
+        , _appInstances()
+        , _availableID(0)
+        , _topLevelInstanceID(0)
+        , _settings(new Settings(NULL))
+        , _formats()
+        , _plugins()
+        , ofxHost(new Natron::OfxHost())
+        , _knobFactory(new KnobFactory())
+        , _nodeCache()
+        , _viewerCache()
+        ,_backgroundIPC(0)
+        ,_loaded(false)
+        ,_binaryPath()
     {
         
     }
     
     void initProcessInputChannel(const QString& mainProcessServerName);
-        
+
     
     void loadBuiltinFormats();
+    
+
 };
 
 
@@ -83,14 +87,90 @@ void AppManager::printBackGroundWelcomeMessage(){
     std::cout << NATRON_APPLICATION_NAME << "    " << " version: " << NATRON_VERSION_STRING << std::endl;
     std::cout << ">>>Running in background mode (off-screen rendering only).<<<" << std::endl;
     std::cout << "Please note that the background mode is in early stage and accepts only project files "
-    "that would produce a valid output from the graphical version of " NATRON_APPLICATION_NAME << std::endl;
+                 "that would produce a valid output from the graphical version of " NATRON_APPLICATION_NAME << std::endl;
     std::cout << "If the background mode doesn't output any result, please adjust your project via the application interface "
-    "and then re-try using the background mode." << std::endl;
+                 "and then re-try using the background mode." << std::endl;
+}
+
+void AppManager::printUsage() {
+    std::cout << NATRON_APPLICATION_NAME << " usage: " << std::endl;
+    std::cout << "./" NATRON_APPLICATION_NAME "    <project file path>" << std::endl;
+    std::cout << "[--background] or [-b] enables background mode rendering. No graphical interface will be shown." << std::endl;
+    std::cout << "[--writer <Writer node name>] When in background mode, the renderer will only try to render with the node"
+                 " name following the --writer argument. If no such node exists in the project file, the process will abort."
+                 "Note that if you don't pass the --writer argument, it will try to start rendering with all the writers in the project's file."<< std::endl;
+
+}
+
+bool AppManager::parseCmdLineArgs(int argc,char* argv[],
+                                  bool* isBackground,
+                                  QString& projectFilename,
+                                  QStringList& writers,
+                                  QString& mainProcessServerName) {
+    
+    if (!argv) {
+        return false;
+    }
+    
+    *isBackground = false;
+    bool expectWriterNameOnNextArg = false;
+    bool expectPipeFileNameOnNextArg = false;
+    
+    QStringList args;
+    for(int i = 0; i < argc ;++i){
+        args.push_back(QString(argv[i]));
+    }
+    
+    for (int i = 0 ; i < args.size(); ++i) {
+        
+        if (args.at(i).contains("." NATRON_PROJECT_FILE_EXT)) {
+            if(expectWriterNameOnNextArg || expectPipeFileNameOnNextArg) {
+                AppManager::printUsage();
+                return false;
+            }
+            projectFilename = args.at(i);
+            continue;
+        } else if (args.at(i) == "--background" || args.at(i) == "-b") {
+            if(expectWriterNameOnNextArg  || expectPipeFileNameOnNextArg){
+                AppManager::printUsage();
+                return false;
+            }
+            *isBackground = true;
+            continue;
+        } else if (args.at(i) == "--writer" || args.at(i) == "-w") {
+            if(expectWriterNameOnNextArg  || expectPipeFileNameOnNextArg){
+                AppManager::printUsage();
+                return false;
+            }
+            expectWriterNameOnNextArg = true;
+            continue;
+        } else if (args.at(i) == "--IPCpipe") {
+            if (expectWriterNameOnNextArg || expectPipeFileNameOnNextArg) {
+                AppManager::printUsage();
+                return false;
+            }
+            expectPipeFileNameOnNextArg = true;
+            continue;
+        }
+        
+        if (expectWriterNameOnNextArg) {
+            assert(!expectPipeFileNameOnNextArg);
+            writers << args.at(i);
+            expectWriterNameOnNextArg = false;
+        }
+        if (expectPipeFileNameOnNextArg) {
+            assert(!expectWriterNameOnNextArg);
+            mainProcessServerName = args.at(i);
+            expectPipeFileNameOnNextArg = false;
+        }
+    }
+
+    return true;
 }
 
 AppManager::AppManager()
-: QObject()
-, _imp(new AppManagerPrivate())
+    : QObject()
+    , _imp(new AppManagerPrivate())
 {
     assert(!_instance);
     _instance = this;
@@ -98,6 +178,10 @@ AppManager::AppManager()
 
 
 AppManager::~AppManager(){
+    
+    AppInstance* mainInstance = getAppInstance(0);
+    assert(mainInstance);
+    delete mainInstance;
     
     assert(_imp->_appInstances.empty());
     
@@ -115,62 +199,89 @@ AppManager::~AppManager(){
         delete _imp->_backgroundIPC;
     }
     
+    _imp->_nodeCache.reset();
+    _imp->_viewerCache.reset();
+    _imp->_knobFactory.reset();
+    _imp->_settings.reset();
+    _imp->ofxHost.reset();
+    
+    _instance = 0;
 }
 
+void AppManager::initializeQApp(int argc,char* argv[]) const {
+    new QCoreApplication(argc,argv);
+}
 
-bool AppManager::load(const QString& binaryPath,const QString& mainProcServerName,const QString& projectName ,const QStringList& writers ) {
+bool AppManager::loadInternal(const QString& projectFilename,const QStringList& writers,const QString& mainProcessServerName) {
+    assert(!_imp->_loaded);
+
+    _imp->_binaryPath = QCoreApplication::applicationDirPath();
     
-    
-    if (_imp->_initialized) {
-        return false;
-    }
-    _imp->_binaryPath = binaryPath;
-    
-    loadExtra();
-    
+    registerEngineMetaTypes();
+    registerGuiMetaTypes();
+
+    qApp->setOrganizationName(NATRON_ORGANIZATION_NAME);
+    qApp->setOrganizationDomain(NATRON_ORGANIZATION_DOMAIN);
+    qApp->setApplicationName(NATRON_APPLICATION_NAME);
+
+
+    // Natron is not yet internationalized, so it is better for now to use the "C" locale,
+    // until it is tested for robustness against locale choice.
+    // The locale affects numerics printing and scanning, date and time.
+    // Note that with other locales (e.g. "de" or "fr"), the floating-point numbers may have
+    // a comma (",") as the decimal separator instead of a point (".").
+    // There is also an OpenCOlorIO issue with non-C numeric locales:
+    // https://github.com/imageworks/OpenColorIO/issues/297
+    //
+    // this must be done after initializing the QCoreApplication, see
+    // https://qt-project.org/doc/qt-5/qcoreapplication.html#locale-settings
+    //std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
+    std::setlocale(LC_ALL,"C"); // set the locale for everything
+
+    Natron::Log::instance();//< enable logging
+
+    ///basically show a splashScreen
+    initGui();
+
     _imp->_settings->initializeKnobsPublic();
 
-    
+
     QObject::connect(_imp->ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString,QString)),
-            this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString,QString)));
+                     this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString,QString)));
     size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM();
     U64 maxDiskCache = _imp->_settings->getMaximumDiskCacheSize();
     U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
-    
+
     setLoadingStatus("Restoring the image cache...");
     _imp->_nodeCache.reset(new Cache<Image>("NodeCache",0x1, maxCacheRAM - playbackSize,1));
     _imp->_viewerCache.reset(new Cache<FrameEntry>("ViewerCache",0x1,maxDiskCache,(double)playbackSize / (double)maxDiskCache));
-    
+
     qDebug() << "NodeCache RAM size: " << printAsRAM(_imp->_nodeCache->getMaximumMemorySize());
     qDebug() << "ViewerCache RAM size (playback-cache): " << printAsRAM(_imp->_viewerCache->getMaximumMemorySize());
     qDebug() << "ViewerCache disk size: " << printAsRAM(maxDiskCache);
-    
-    
+
+
     /*loading all plugins*/
     loadAllPlugins();
     _imp->loadBuiltinFormats();
-    
-    
+
+
     setLoadingStatus("Restoring user settings...");
-    
-    
-    ///flag initialized before restoring settings otherwise the value changes wouldn't be taken into account
-    _imp->_initialized = true;
-    
+
+
     _imp->_settings->restoreSettings();
-    
+
     ///and save these restored settings in case some couldn't be found
     _imp->_settings->saveSettings();
-    
-    
-    if (isBackground() && !mainProcServerName.isEmpty()) {
-        _imp->initProcessInputChannel(mainProcServerName);
+
+    if (isBackground() && !mainProcessServerName.isEmpty()) {
+        _imp->initProcessInputChannel(mainProcessServerName);
         printBackGroundWelcomeMessage();
     }
-    
-    
+
+
     if (isBackground()) {
-        if (!projectName.isEmpty()) {
+        if (!projectFilename.isEmpty()) {
             _imp->_appType = APP_BACKGROUND_AUTO_RUN;
         } else {
             _imp->_appType = APP_BACKGROUND;
@@ -178,22 +289,67 @@ bool AppManager::load(const QString& binaryPath,const QString& mainProcServerNam
     } else {
         _imp->_appType = APP_GUI;
     }
-    
-    AppInstance* mainInstance = newAppInstance(projectName,writers);
-    
+
+    AppInstance* mainInstance = newAppInstance(projectFilename,writers);
+
     hideSplashScreen();
-    
+
     if (!mainInstance) {
         return false;
     } else {
-        
-        if (_imp->_appType == APP_BACKGROUND_AUTO_RUN) {
-            ///we finished rendering, delete the instance.
-            delete mainInstance;
-        }
         return true;
     }
 }
+
+bool AppManager::load(int argc, char *argv[]) {
+    
+    
+    ///if the user didn't specify launch arguments (e.g unit testing)
+    ///find out the binary path
+    bool hadArgs = true;
+    if (!argv) {
+        QString binaryPath = QDir::currentPath();
+        argc = 1;
+        argv = new char*[1];
+        argv[0] = new char[binaryPath.size() + 1];
+        for (int i = 0; i < binaryPath.size(); ++i) {
+            argv[0][i] = binaryPath.at(i).toAscii();
+        }
+        argv[0][binaryPath.size()] = '\0';
+        hadArgs = false;
+    }
+    initializeQApp(argc, argv);
+    
+    assert(argv);
+    if (!hadArgs) {
+        delete [] argv[0];
+        delete [] argv;
+    }
+
+    QString projectFilename,mainProcessServerName;
+    QStringList writers;
+    bool bg;
+    AppManager::parseCmdLineArgs(argc, argv,&bg ,projectFilename, writers, mainProcessServerName);
+    assert(isBackground() == bg);
+
+    return loadInternal(projectFilename,writers,mainProcessServerName);
+
+}
+
+bool AppManager::load(const QString& projectFilename,const QStringList& writers,const QString& mainProcessServerName) {
+    ///cannot load a backround auto run app without a filename
+    if (projectFilename.isEmpty()) {
+        return false;
+    }
+    
+    ///the QCoreApplication must have been created so far.
+    assert(qApp);
+    return loadInternal(projectFilename,writers,mainProcessServerName);
+
+}
+
+
+
 
 AppInstance* AppManager::newAppInstance(const QString& projectName,const QStringList& writers){
     AppInstance* instance = makeNewInstance(_imp->_availableID);
@@ -588,9 +744,9 @@ Natron::LibraryBinary* AppManager::getPluginBinary(const QString& pluginId,int m
     
     if(matches.empty()){
         QString exc = QString("Couldn't find a plugin named %1, with a major version of %2 and a minor version greater or equal to %3.")
-        .arg(pluginId)
-        .arg(majorVersion)
-        .arg(minorVersion);
+                .arg(pluginId)
+                .arg(majorVersion)
+                .arg(minorVersion);
         throw std::invalid_argument(exc.toStdString());
     }else{
         std::map<int,Natron::Plugin*>::iterator greatest = matches.end();
@@ -669,10 +825,6 @@ boost::shared_ptr<Settings> AppManager::getCurrentSettings() const {
     return _imp->_settings;
 }
 
-bool AppManager::isInitialized() const {
-    return _imp->_initialized;
-}
-
 void AppManager::setLoadingStatus(const QString& str) {
     if (isLoaded()) {
         return;
@@ -683,6 +835,24 @@ void AppManager::setLoadingStatus(const QString& str) {
 AppInstance* AppManager::makeNewInstance(int appID) const {
     return new AppInstance(appID);
 }
+
+#if QT_VERSION < 0x050000
+Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
+#endif
+
+void AppManager::registerEngineMetaTypes() const {
+    qRegisterMetaType<Variant>();
+    qRegisterMetaType<Natron::ChannelSet>();
+    qRegisterMetaType<Format>();
+    qRegisterMetaType<SequenceTime>("SequenceTime");
+    qRegisterMetaType<Knob*>();
+    qRegisterMetaType<Natron::Node*>();
+    qRegisterMetaType<Natron::StandardButtons>();
+#if QT_VERSION < 0x050000
+    qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
+#endif
+}
+
 
 namespace Natron{
 
@@ -753,7 +923,7 @@ Natron::StandardButton questionDialog(const std::string& title,const std::string
     Log::endFunction(title,"QUESTION");
 #endif
 }
-    
+
 
 
 } //Namespace Natron

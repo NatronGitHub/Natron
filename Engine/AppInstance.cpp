@@ -13,7 +13,7 @@
 #include <list>
 #include <stdexcept>
 
-#include <QFileInfo>
+#include <QDir>
 #include <QtConcurrentMap>
 
 #include <boost/bind.hpp>
@@ -58,8 +58,6 @@ AppInstance::AppInstance(int appID)
 AppInstance::~AppInstance(){
     
     appPTR->removeInstance(_imp->_appID);
-    
-    //_imp->_currentProject.reset();
 }
 
 void AppInstance::load(const QString& projectName,const QStringList& writers)
@@ -71,11 +69,21 @@ void AppInstance::load(const QString& projectName,const QStringList& writers)
         // cannot start a background process without a file
         throw std::invalid_argument("Project file name empty");
     }
-    
     if (appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN) {
-        QFileInfo infos(projectName);
-        QString name = infos.fileName();
-        QString path = infos.filePath();
+        
+        QString realProjectName = projectName;
+        int lastSep = realProjectName.lastIndexOf(QDir::separator());
+        if (lastSep == -1) {
+            throw std::invalid_argument("Filename has no path. It must be absolute.");
+        }
+        
+        QString path = realProjectName.left(lastSep);
+        if (!path.isEmpty() && path.at(path.size() - 1) != QDir::separator()) {
+            path += QDir::separator();
+        }
+        
+        QString name = realProjectName.remove(path);
+        
         if(!_imp->_currentProject->loadProject(path,name)){
             throw std::invalid_argument("Project file loading failed.");
             

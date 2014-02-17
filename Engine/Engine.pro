@@ -72,6 +72,7 @@ SOURCES += \
     ProjectSerialization.cpp \
     Row.cpp \
     Settings.cpp \
+    StandardPaths.cpp \
     TimeLine.cpp \
     Timer.cpp \
     VideoEngine.cpp \
@@ -124,6 +125,7 @@ HEADERS += \
     Row.h \
     Settings.h \
     Singleton.h \
+    StandardPaths.h \
     TextureRect.h \
     TextureRectSerialization.h \
     TimeLine.h \

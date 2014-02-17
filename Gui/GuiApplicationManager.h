@@ -78,10 +78,14 @@ private:
                                         std::map<std::string,std::vector<std::string> >* readersMap,
                                         std::map<std::string,std::vector<std::string> >* writersMap);
     
-    virtual void loadExtra() OVERRIDE FINAL;
+    virtual void initGui() OVERRIDE FINAL;
     
     virtual AppInstance* makeNewInstance(int appID) const OVERRIDE FINAL;
     
+    virtual void registerGuiMetaTypes() const OVERRIDE FINAL;
+
+    virtual void initializeQApp(int argc,char* argv[]) const OVERRIDE FINAL;
+
     boost::scoped_ptr<GuiApplicationManagerPrivate> _imp;
 
 };

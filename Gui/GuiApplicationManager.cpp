@@ -21,7 +21,7 @@
 
 //core
 #include <QDebug>
-
+#include <QMetaType>
 
 //engine
 #include "Global/Enums.h"
@@ -37,6 +37,7 @@
 #include "Gui/QtDecoder.h"
 #include "Gui/QtEncoder.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/CurveWidget.h"
 
 using namespace Natron;
 
@@ -283,7 +284,7 @@ const std::vector<PluginGroupNode*>& GuiApplicationManager::getPluginsToolButton
 const QCursor& GuiApplicationManager::getColorPickerCursor() const  { return *(_imp->_colorPickerCursor); }
 
 
-void GuiApplicationManager::loadExtra() {
+void GuiApplicationManager::initGui() {
     
     /*Display a splashscreen while we wait for the engine to load*/
     QString filename(NATRON_IMAGES_PATH"splashscreen.png");
@@ -490,4 +491,15 @@ AppInstance* GuiApplicationManager::makeNewInstance(int appID) const {
 
 KnobGui* GuiApplicationManager::createGuiForKnob(boost::shared_ptr<Knob> knob, DockablePanel *container) const {
     return _imp->_knobGuiFactory->createGuiForKnob(knob,container);
+}
+
+
+void GuiApplicationManager::registerGuiMetaTypes() const {
+    qRegisterMetaType<CurveWidget*>();
+}
+
+void GuiApplicationManager::initializeQApp(int argc,char* argv[]) const {
+    QApplication* app = new QApplication(argc, argv);
+    Q_INIT_RESOURCE(GuiResources);
+    app->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_12));
 }

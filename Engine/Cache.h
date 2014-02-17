@@ -28,11 +28,6 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QDebug>
 #include <QtCore/QTextStream>
 #include <QtCore/QBuffer>
-#if QT_VERSION < 0x050000
-#include <QtGui/QDesktopServices>
-#else
-#include <QStandardPaths>
-#endif
 CLANG_DIAG_ON(deprecated)
 
 #include "Global/Macros.h"
@@ -53,7 +48,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/LRUHashTable.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/Hash64.h"
-
+#include "Engine/StandardPaths.h"
 
 namespace Natron{
 
@@ -717,11 +712,7 @@ public:
 
     /*Returns the name of the cache with its path preprended*/
     QString getCachePath() const {
-#if QT_VERSION < 0x050000
-        QString cacheFolderName(QDesktopServices::storageLocation(QDesktopServices::CacheLocation));
-#else
-        QString cacheFolderName(QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + QDir::separator());
-#endif
+        QString cacheFolderName(Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation) + QDir::separator());
         cacheFolderName.append(QDir::separator());
         QString str(cacheFolderName);
         str.append(cacheName().c_str());

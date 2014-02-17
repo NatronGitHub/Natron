@@ -65,7 +65,10 @@ macx{
   QMAKE_PBUILDER_VERSION = 46
   universal {
     CONFIG += x86 x86_64
-  }	    
+  }
+
+    #link against the CoreFoundation framework for the StandardPaths functionnality
+   LIBS += -framework CoreServices
 }
 
 !macx|!universal {
@@ -149,4 +152,3 @@ coverage {
   QMAKE_LFLAGS += -fprofile-arcs -ftest-coverage
   QMAKE_CLEAN += $(OBJECTS_DIR)/*.gcda $(OBJECTS_DIR)/*.gcno
 }
-
