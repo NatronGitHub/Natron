@@ -391,7 +391,14 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI*
     if(!_initialized){
         return Natron::StatFailed;
     }
+
     assert(effect_);
+    
+    if (isWriter()) {
+        rod->set(getRenderFormat());
+        return StatReplyDefault;
+    }
+    
     OfxPointD rS;
     rS.x = rS.y = 1.0;
     OfxRectD ofxRod;

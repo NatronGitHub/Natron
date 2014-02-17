@@ -77,32 +77,6 @@
 			isa = PBXSourcesBuildPhase;
 			name = "Build Sources";
 		};
-		74489810E6C17DC0FC613821 = {
-			isa = PBXFileReference;
-			name = "Engine";
-			path = "../Engine/build/Debug/libEngine.a";
-			refType = 4;
-			sourceTree = "SOURCE_ROOT";
-		};
-		221FCAAF735DEA609EF512AF = {
-			fileRef = "74489810E6C17DC0FC613821";
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
-		A69DD5547B8D4C67D78037C8 = {
-			isa = PBXFileReference;
-			name = "HostSupport";
-			path = "../HostSupport/build/Debug/libHostSupport.a";
-			refType = 4;
-			sourceTree = "SOURCE_ROOT";
-		};
-		8DD25B1641AFEFD018DC8429 = {
-			fileRef = "A69DD5547B8D4C67D78037C8";
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
 		D0A1AADFEA73F78641C682A5 = {
 			isa = PBXFileReference;
 			name = "CoreServices.framework";
@@ -159,8 +133,6 @@
 		};
 		ED1E82605DD74B483AF3C982 = {
 			children = (
-				"74489810E6C17DC0FC613821",
-				"A69DD5547B8D4C67D78037C8",
 				"D0A1AADFEA73F78641C682A5",
 				"08165872A633F1FDA187808B",
 				"51AC7138AE59E200E74173AA",
@@ -174,8 +146,6 @@
 		2A1043669E6E5A7426EA502A = {
 			buildActionMask = 2147483647;
 			files = (
-				"221FCAAF735DEA609EF512AF",
-				"8DD25B1641AFEFD018DC8429",
 				"9C3DD8DCBC0821F151F42E8D",
 				"CB4D9253CE19B47D82985D22",
 				"CFC0B9F2AF15F2A103D250EF",
@@ -229,7 +199,9 @@
 						"-F/opt/local/Library/Frameworks",
 						"-F/opt/local/lib",
 						"-L/Users/Lex/Development/Natron/Natron/Renderer/../Engine/build/Debug/",
+						"-lEngine",
 						"-L/Users/Lex/Development/Natron/Natron/Renderer/../HostSupport/build/Debug/",
+						"-lHostSupport",
 						"-L/opt/local/lib",
 						"-F/opt/local/Library/Frameworks",
 						"-F/opt/local/lib",
@@ -280,9 +252,7 @@
 					"/opt/local/share/qt4/mkspecs/macx-xcode");
 				LIBRARY_SEARCH_PATHS = (
 					"/Users/Lex/Development/Natron/Natron/Renderer/../Engine/build/Debug/",
-					"/Users/Lex/Development/Natron/Natron/Engine/build/Debug/",
 					"/Users/Lex/Development/Natron/Natron/Renderer/../HostSupport/build/Debug/",
-					"/Users/Lex/Development/Natron/Natron/HostSupport/build/Debug/",
 					"/System/Library/Frameworks/",
 					"/opt/local/lib",
 					"/opt/local/Library/Frameworks");
@@ -330,7 +300,9 @@
 						"-F/opt/local/Library/Frameworks",
 						"-F/opt/local/lib",
 						"-L/Users/Lex/Development/Natron/Natron/Renderer/../Engine/build/Debug/",
+						"-lEngine",
 						"-L/Users/Lex/Development/Natron/Natron/Renderer/../HostSupport/build/Debug/",
+						"-lHostSupport",
 						"-L/opt/local/lib",
 						"-F/opt/local/Library/Frameworks",
 						"-F/opt/local/lib",
@@ -389,9 +361,7 @@
 					"/opt/local/share/qt4/mkspecs/macx-xcode");
 				LIBRARY_SEARCH_PATHS = (
 					"/Users/Lex/Development/Natron/Natron/Renderer/../Engine/build/Debug/",
-					"/Users/Lex/Development/Natron/Natron/Engine/build/Debug/",
 					"/Users/Lex/Development/Natron/Natron/Renderer/../HostSupport/build/Debug/",
-					"/Users/Lex/Development/Natron/Natron/HostSupport/build/Debug/",
 					"/System/Library/Frameworks/",
 					"/opt/local/lib",
 					"/opt/local/Library/Frameworks");
@@ -439,7 +409,9 @@
 						"-F/opt/local/Library/Frameworks",
 						"-F/opt/local/lib",
 						"-L/Users/Lex/Development/Natron/Natron/Renderer/../Engine/build/Debug/",
+						"-lEngine",
 						"-L/Users/Lex/Development/Natron/Natron/Renderer/../HostSupport/build/Debug/",
+						"-lHostSupport",
 						"-L/opt/local/lib",
 						"-F/opt/local/Library/Frameworks",
 						"-F/opt/local/lib",
