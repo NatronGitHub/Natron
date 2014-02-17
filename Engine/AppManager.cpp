@@ -330,7 +330,6 @@ bool AppManager::load(int argc, char *argv[]) {
     QStringList writers;
     bool bg;
     AppManager::parseCmdLineArgs(argc, argv,&bg ,projectFilename, writers, mainProcessServerName);
-    assert(isBackground() == bg);
 
     return loadInternal(projectFilename,writers,mainProcessServerName);
 

@@ -14,6 +14,15 @@
 #include <CoreServices/CoreServices.h>
 #elif defined(__NATRON_WIN32__)
 #include <windows.h>
+#elif defined(__NATRON_LINUX__)
+#include <cerrno>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <QTextStream>
+#include <QHash>
+#include <QVarLengthArray>
+
 #endif
 
 namespace Natron {
@@ -36,6 +45,8 @@ static void appendOrganizationAndApp(QString &path)
     Q_UNUSED(path);
 #endif
 }
+
+namespace {
 
 #ifdef __NATRON_OSX__
 CLANG_DIAG_OFF(deprecated)
@@ -125,8 +136,35 @@ static QString convertCharArray(const wchar_t *path)
 {
     return QDir::fromNativeSeparators(QString::fromWCharArray(path));
 }
+#elif defined(__NATRON_LINUX__)
+//static
+QString resolveUserName(uint userId)
+{
+#if !defined(QT_NO_THREAD) && defined(_POSIX_THREAD_SAFE_FUNCTIONS) && !defined(Q_OS_OPENBSD)
+    int size_max = sysconf(_SC_GETPW_R_SIZE_MAX);
+    if (size_max == -1)
+        size_max = 1024;
+    QVarLengthArray<char, 1024> buf(size_max);
+#endif
+
+    struct passwd *pw = 0;
+#if !defined(Q_OS_INTEGRITY)
+#if !defined(QT_NO_THREAD) && defined(_POSIX_THREAD_SAFE_FUNCTIONS) && !defined(Q_OS_OPENBSD) && !defined(Q_OS_VXWORKS)
+    struct passwd entry;
+    getpwuid_r(userId, &entry, buf.data(), buf.size(), &pw);
+#else
+    pw = getpwuid(userId);
+#endif
+#endif
+    if (pw)
+        return QFile::decodeName(QByteArray(pw->pw_name));
+    return QString();
+}
+
 
 #endif
+
+}
 
 QString StandardPaths::writableLocation(StandardLocation type) {
 #if QT_VERSION < 0x050000
@@ -158,7 +196,7 @@ QString StandardPaths::writableLocation(StandardLocation type) {
         QString xdgCacheHome = QFile::decodeName(qgetenv("XDG_CACHE_HOME"));
         if (xdgCacheHome.isEmpty())
             xdgCacheHome = QDir::homePath() + QLatin1String("/.cache");
-        if (type == QStandardPaths::CacheLocation)
+        if (type == Natron::StandardPaths::CacheLocation)
             appendOrganizationAndApp(xdgCacheHome);
         return xdgCacheHome;
     }
@@ -168,7 +206,7 @@ QString StandardPaths::writableLocation(StandardLocation type) {
         QString xdgDataHome = QFile::decodeName(qgetenv("XDG_DATA_HOME"));
         if (xdgDataHome.isEmpty())
             xdgDataHome = QDir::homePath() + QLatin1String("/.local/share");
-        if (type == QStandardPaths::DataLocation)
+        if (type == Natron::StandardPaths::DataLocation)
             appendOrganizationAndApp(xdgDataHome);
         return xdgDataHome;
     }
@@ -186,7 +224,7 @@ QString StandardPaths::writableLocation(StandardLocation type) {
         // http://standards.freedesktop.org/basedir-spec/latest/
         QString xdgRuntimeDir = QFile::decodeName(qgetenv("XDG_RUNTIME_DIR"));
         if (xdgRuntimeDir.isEmpty()) {
-            const QString userName = QFileSystemEngine::resolveUserName(myUid);
+            const QString userName = resolveUserName(myUid);
             xdgRuntimeDir = QDir::tempPath() + QLatin1String("/runtime-") + userName;
             QDir dir(xdgRuntimeDir);
             if (!dir.exists()) {
