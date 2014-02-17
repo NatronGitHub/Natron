@@ -107,4 +107,4 @@ And restart your computer so it takes it into account.
 You need to install the Qt add-in for visual studio. Open the Qt menu within visual studio and select "open a .pro file". This will generate a proper .sln working with qt command line tools.
 
 Alternatively you can type the following command in a terminal:
-qmake.exe -tp vc -spec win32-msvc2010 Natron.pro
+qmake.exe -r -tp vc -spec win32-msvc2010 Natron.pro
