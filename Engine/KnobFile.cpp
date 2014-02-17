@@ -183,7 +183,6 @@ void File_Knob::processNewValue()
 }
 
 
-
 /***********************************OUTPUT_FILE_KNOB*****************************************/
 
 OutputFile_Knob::OutputFile_Knob(KnobHolder *holder, const std::string &description, int dimension)

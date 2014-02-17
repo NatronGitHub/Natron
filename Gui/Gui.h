@@ -226,6 +226,10 @@ public:
 
     const std::map<std::string,QWidget*>& getRegisteredTabs() const;
     
+    void updateLastSequenceOpenedPath(const QString& path);
+    
+    void updateLastSequenceSavedPath(const QString& path);
+    
     /*Useful function that saves on disk the image in png format.
      The name of the image will be the hash key of the image.*/
     static void debugImage(Natron::Image* image,const QString& filename = QString());

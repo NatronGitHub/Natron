@@ -125,6 +125,8 @@ void File_KnobGui::updateLastOpened(const QString &str)
     QString withoutPath = SequenceFileDialog::removePath(str);
     int pos = str.indexOf(withoutPath);
     _lastOpened = str.left(pos);
+    getGui()->updateLastSequenceOpenedPath(_lastOpened);
+
 }
 
 void File_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
@@ -258,6 +260,8 @@ void OutputFile_KnobGui::updateLastOpened(const QString &str)
     QString withoutPath = SequenceFileDialog::removePath(str);
     int pos = str.indexOf(withoutPath);
     _lastOpened = str.left(pos);
+    getGui()->updateLastSequenceSavedPath(_lastOpened);
+
 }
 
 void OutputFile_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
