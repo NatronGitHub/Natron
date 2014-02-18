@@ -284,7 +284,8 @@ void ProcessInputChannel::initialize() {
 
     QString serverName;
     {
-        QTemporaryFile tmpf(QDir::tempPath() + QDir::separator() + NATRON_APPLICATION_NAME "_INPUT_SOCKET");
+        QTemporaryFile tmpf(QDir::tempPath() + QDir::separator() + NATRON_APPLICATION_NAME "_INPUT_SOCKET"
+                            + QString::number(QCoreApplication::applicationPid()));
         tmpf.open();
         serverName = tmpf.fileName();
     }
