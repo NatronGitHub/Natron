@@ -370,8 +370,11 @@ void Path_KnobGui::open_file()
 
         if (fk->isMultiPath()) {
             QString existingPath = fk->getValue<QString>();
-            existingPath.append(QChar(';'));
-            dirPath.prepend(existingPath);
+            if (!existingPath.isEmpty()) {
+                existingPath.append(QChar(';'));
+                dirPath.prepend(existingPath);
+            }
+            
         }
         pushValueChangedCommand(Variant(dirPath));
     }
@@ -412,8 +415,10 @@ void Path_KnobGui::onReturnPressed()
     
     if (fk->isMultiPath()) {
         QString existingPath = fk->getValue<QString>();
-        existingPath.append(QChar(';'));
-        dirPath.prepend(existingPath);
+        if (!existingPath.isEmpty() && !dirPath.isEmpty()) {
+            existingPath.append(QChar(';'));
+            dirPath.prepend(existingPath);
+        }
     }
     pushValueChangedCommand(Variant(dirPath));
 }
