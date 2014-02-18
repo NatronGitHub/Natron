@@ -150,7 +150,7 @@ void OfxEffectInstance::initializeContextDependentParams() {
     
     if (isWriter()) {
         _renderButton = Natron::createKnob<Button_Knob>(this, "Render");
-        _renderButton->setHintToolTip("Starts rendering the specified frame range specified.");
+        _renderButton->setHintToolTip("Starts rendering the specified frame range.");
         _renderButton->setAsRenderButton();
     }
     

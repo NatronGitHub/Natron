@@ -511,10 +511,12 @@ int Project::tryAddProjectFormat(const Format& f){
 void Project::setProjectDefaultFormat(const Format& f) {
     assert(!_imp->formatMutex.tryLock());
     int index = tryAddProjectFormat(f);
-    {
-        _imp->formatKnob->setValue(index);
-    }
+    _imp->formatMutex.unlock();
+    _imp->formatKnob->setValue(index);
+    ///if locked it will trigger a deadlock because some parameters
+    ///might respond to this signal by checking the content of the project format.
     emit formatChanged(f);
+    _imp->formatMutex.lock();
     getApp()->triggerAutoSave();
 }
 

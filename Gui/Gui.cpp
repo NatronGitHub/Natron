@@ -358,11 +358,12 @@ bool Gui::exit(){
     bool rVal = false;
     if (appId != 0) {
         delete _imp->_appInstance;
+        delete this;
     } else {
+        delete this;
         delete appPTR;
         rVal = true;
     }
-    delete this;
     return rVal;
 }
 
@@ -1466,7 +1467,9 @@ void Gui::errorDialog(const std::string& title,const std::string& text){
     if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
+        locker.unlock();
         emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
+        locker.relock();
         while(_imp->_uiUsingMainThread){
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
@@ -1480,7 +1483,9 @@ void Gui::warningDialog(const std::string& title,const std::string& text){
     if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
+        locker.unlock();
         emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
+        locker.relock();
         while(_imp->_uiUsingMainThread){
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
@@ -1494,7 +1499,9 @@ void Gui::informationDialog(const std::string& title,const std::string& text){
     if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
+        locker.unlock();
         emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
+        locker.relock();
         while(_imp->_uiUsingMainThread){
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
@@ -1502,10 +1509,8 @@ void Gui::informationDialog(const std::string& title,const std::string& text){
         emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
     }
 }
-void Gui::onDoDialog(int type, const QString& title, const QString& content, Natron::StandardButtons buttons, int defaultB){
-    
-    QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
-
+void Gui::onDoDialog(int type, const QString& title, const QString& content, Natron::StandardButtons buttons, int defaultB)
+{
     if(type == 0){
         QMessageBox::critical(this, title, content);
     }else if(type == 1){
@@ -1517,6 +1522,8 @@ void Gui::onDoDialog(int type, const QString& title, const QString& content, Nat
                                                             QtEnumConvert::toQtStandarButtons(buttons),
                                                             QtEnumConvert::toQtStandardButton((Natron::StandardButton)defaultB));
     }
+
+    QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
     _imp->_uiUsingMainThread = false;
     _imp->_uiUsingMainThreadCond.wakeOne();
     
@@ -1527,7 +1534,9 @@ Natron::StandardButton Gui::questionDialog(const std::string& title,const std::s
     if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
+        locker.unlock();
         emit doDialog(3,QString(title.c_str()),QString(message.c_str()),buttons,(int)defaultButton);
+        locker.relock();
         while(_imp->_uiUsingMainThread){
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
@@ -1614,6 +1623,18 @@ void GuiPrivate::restoreGuiGeometry(){
     }
     
     settings.endGroup();
+    if (settings.contains("LastOpenProjectDialogPath")) {
+        _lastLoadSequenceOpenedDir = settings.value("LastOpenProjectDialogPath").toString();
+    }
+    if (settings.contains("LastSaveProjectDialogPath")) {
+        _lastLoadSequenceOpenedDir = settings.value("LastSaveProjectDialogPath").toString();
+    }
+    if (settings.contains("LastLoadSequenceDialogPath")) {
+        _lastLoadSequenceOpenedDir = settings.value("LastLoadSequenceDialogPath").toString();
+    }
+    if (settings.contains("LastSaveSequenceDialogPath")) {
+        _lastLoadSequenceOpenedDir = settings.value("LastSaveSequenceDialogPath").toString();
+    }
 }
 
 void GuiPrivate::saveGuiGeometry(){
@@ -1632,7 +1653,13 @@ void GuiPrivate::saveGuiGeometry(){
     settings.setValue("splitters", splittersData);
     
     settings.endGroup();
-    
+    settings.setValue("LastOpenProjectDialogPath", _lastLoadProjectOpenedDir);
+    settings.setValue("LastSaveProjectDialogPath", _lastSaveProjectOpenedDir);
+    settings.setValue("LastLoadSequenceDialogPath", _lastLoadSequenceOpenedDir);
+    settings.setValue("LastSaveSequenceDialogPath", _lastSaveSequenceOpenedDir);
+
+
+
 }
 
 
@@ -1927,4 +1954,12 @@ void Gui::debugImage(Natron::Image* image,const QString& filename ) {
     QString realFileName = filename.isEmpty() ? QString(hashKeyStr+".png") : filename;
     output.save(realFileName);
 
+}
+
+void Gui::updateLastSequenceOpenedPath(const QString& path) {
+    _imp->_lastLoadSequenceOpenedDir = path;
+}
+
+void Gui::updateLastSequenceSavedPath(const QString& path) {
+    _imp->_lastSaveSequenceOpenedDir = path;
 }
