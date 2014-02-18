@@ -18,7 +18,7 @@
 #include <string>
 #include <QtCore/QDir>
 #include <QtCore/QMutex>
-
+#include <QtCore/QCoreApplication>
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
 #include <boost/thread.hpp>
@@ -48,7 +48,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Plugin.h"
 #include "Engine/StandardPaths.h"
-
+#include "Engine/Settings.h"
 
 using namespace Natron;
 
@@ -301,6 +301,15 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
 #if defined(__APPLE__)
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("/Library/OFX/Nuke");
 #endif
+    
+    QStringList extraPluginsSearchPaths = appPTR->getCurrentSettings()->getPluginsExtraSearchPaths();
+    for (int i = 0; i < extraPluginsSearchPaths.size(); ++i) {
+        OFX::Host::PluginCache::getPluginCache()->addFileToPath(extraPluginsSearchPaths.at(i).toStdString());
+    }
+    
+    QDir dir(QCoreApplication::applicationDirPath());
+    dir.cdUp();
+    OFX::Host::PluginCache::getPluginCache()->addFileToPath(QString(dir.absolutePath()+ QDir::separator() + "Plugins").toStdString());
     
     /// now read an old cache
     // The cache location depends on the OS.

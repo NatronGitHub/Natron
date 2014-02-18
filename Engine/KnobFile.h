@@ -155,4 +155,40 @@ private:
 };
 
 
+/******************************PATH_KNOB**************************************/
+class Path_Knob: public Knob
+{
+    
+    Q_OBJECT
+public:
+    
+    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+        return new Path_Knob(holder, description, dimension);
+    }
+    
+    Path_Knob(KnobHolder *holder, const std::string &description, int dimension);
+    
+    static const std::string& typeNameStatic();
+    
+    void open_file() { emit openFile(); }
+    
+    void setMultiPath(bool b);
+    
+    bool isMultiPath() const;
+    
+signals:
+    
+    void openFile();
+    
+private:
+    
+    virtual bool canAnimate() const OVERRIDE FINAL;
+    
+    virtual const std::string& typeName() const OVERRIDE FINAL;
+    
+private:
+    static const std::string _typeNameStr;
+    bool _isMultiPath;
+};
+
 #endif // NATRON_ENGINE_KNOBFILE_H_

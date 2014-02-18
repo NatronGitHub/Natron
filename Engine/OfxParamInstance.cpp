@@ -1387,6 +1387,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
 , _fileKnob()
 , _outputFileKnob()
 , _stringKnob()
+, _pathKnob()
 {
     const OFX::Host::Property::Set &properties = getProperties();
     std::string mode = properties.getStringProperty(kOfxParamPropStringMode);
@@ -1416,8 +1417,10 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
             }
             
         }
-    } else if (mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel || mode == kOfxParamStringIsMultiLine
-               || mode == kOfxParamStringIsDirectoryPath) {
+    } else if (mode == kOfxParamStringIsDirectoryPath) {
+        _pathKnob = Natron::createKnob<Path_Knob>(node, getParamLabel(this));
+        _pathKnob->setMultiPath(false);
+    } else if (mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel || mode == kOfxParamStringIsMultiLine) {
         
         _stringKnob = Natron::createKnob<String_Knob>(node, getParamLabel(this));
         if (mode == kOfxParamStringIsLabel) {
@@ -1443,6 +1446,8 @@ OfxStatus OfxStringInstance::get(std::string &str) {
         str = _outputFileKnob->getValue<QString>().toStdString();
     }else if(_stringKnob){
         str = _stringKnob->getValueAtTime(currentFrame,0).toString().toStdString();
+    }else if(_pathKnob){
+        str = _pathKnob->getValue<QString>().toStdString();
     }
     return kOfxStatOK;
 }
@@ -1455,6 +1460,8 @@ OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
         str = _outputFileKnob->getValue<QString>().toStdString();
     }else if(_stringKnob){
         str = _stringKnob->getValueAtTime(std::floor(time + 0.5), 0).toString().toStdString();
+    }else if(_pathKnob){
+        str = _pathKnob->getValue<QString>().toStdString();
     }
     return kOfxStatOK;
 }
@@ -1468,6 +1475,9 @@ OfxStatus OfxStringInstance::set(const char* str) {
     }
     if(_stringKnob){
         _stringKnob->setValue(str);
+    }
+    if(_pathKnob){
+        _pathKnob->setValue(str);
     }
     return kOfxStatOK;
 }
@@ -1483,7 +1493,9 @@ OfxStatus OfxStringInstance::set(OfxTime time, const char* str) {
     if(_stringKnob){
         _stringKnob->setValueAtTime((int)time,Variant(QString(str)),0);
     }
-
+    if (_pathKnob) {
+        _pathKnob->setValue(str);
+    }
     return kOfxStatOK;
 }
 OfxStatus OfxStringInstance::getV(va_list arg){
@@ -1513,6 +1525,9 @@ boost::shared_ptr<Knob> OfxStringInstance::getKnob() const{
     if(_stringKnob){
         return _stringKnob;
     }
+    if (_pathKnob) {
+        return _pathKnob;
+    }
 
     return boost::shared_ptr<Knob>();
 }
@@ -1527,7 +1542,9 @@ void OfxStringInstance::setEnabled(){
     if (_stringKnob) {
         _stringKnob->setEnabled(getEnabled());
     }
- 
+    if (_pathKnob) {
+        _pathKnob->setEnabled(getEnabled());
+    }
 }
 
 // callback which should set secret state as appropriate
@@ -1541,7 +1558,9 @@ void OfxStringInstance::setSecret(){
     if (_stringKnob) {
         _stringKnob->setSecret(getSecret());
     }
-
+    if (_pathKnob) {
+        _pathKnob->setSecret(getSecret());
+    }
 }
 
 

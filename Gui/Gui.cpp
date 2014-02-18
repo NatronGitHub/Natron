@@ -358,11 +358,12 @@ bool Gui::exit(){
     bool rVal = false;
     if (appId != 0) {
         delete _imp->_appInstance;
+        delete this;
     } else {
+        delete this;
         delete appPTR;
         rVal = true;
     }
-    delete this;
     return rVal;
 }
 
@@ -1622,6 +1623,18 @@ void GuiPrivate::restoreGuiGeometry(){
     }
     
     settings.endGroup();
+    if (settings.contains("LastOpenProjectDialogPath")) {
+        _lastLoadSequenceOpenedDir = settings.value("LastOpenProjectDialogPath").toString();
+    }
+    if (settings.contains("LastSaveProjectDialogPath")) {
+        _lastLoadSequenceOpenedDir = settings.value("LastSaveProjectDialogPath").toString();
+    }
+    if (settings.contains("LastLoadSequenceDialogPath")) {
+        _lastLoadSequenceOpenedDir = settings.value("LastLoadSequenceDialogPath").toString();
+    }
+    if (settings.contains("LastSaveSequenceDialogPath")) {
+        _lastLoadSequenceOpenedDir = settings.value("LastSaveSequenceDialogPath").toString();
+    }
 }
 
 void GuiPrivate::saveGuiGeometry(){
@@ -1640,7 +1653,13 @@ void GuiPrivate::saveGuiGeometry(){
     settings.setValue("splitters", splittersData);
     
     settings.endGroup();
-    
+    settings.setValue("LastOpenProjectDialogPath", _lastLoadProjectOpenedDir);
+    settings.setValue("LastSaveProjectDialogPath", _lastSaveProjectOpenedDir);
+    settings.setValue("LastLoadSequenceDialogPath", _lastLoadSequenceOpenedDir);
+    settings.setValue("LastSaveSequenceDialogPath", _lastSaveSequenceOpenedDir);
+
+
+
 }
 
 
@@ -1935,4 +1954,12 @@ void Gui::debugImage(Natron::Image* image,const QString& filename ) {
     QString realFileName = filename.isEmpty() ? QString(hashKeyStr+".png") : filename;
     output.save(realFileName);
 
+}
+
+void Gui::updateLastSequenceOpenedPath(const QString& path) {
+    _imp->_lastLoadSequenceOpenedDir = path;
+}
+
+void Gui::updateLastSequenceSavedPath(const QString& path) {
+    _imp->_lastSaveSequenceOpenedDir = path;
 }

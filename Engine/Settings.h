@@ -36,6 +36,7 @@ class Int_Knob;
 class Bool_Knob;
 class Choice_Knob;
 class Table_Knob;
+class Path_Knob;
 
 class Settings : public KnobHolder
 {
@@ -87,6 +88,8 @@ public:
     
     bool isAutoPreviewOnForNewProjects() const;
     
+    QStringList getPluginsExtraSearchPaths() const;
+    
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -99,6 +102,7 @@ private:
     boost::shared_ptr<Bool_Knob> _linearPickers;
     boost::shared_ptr<Bool_Knob> _multiThreadedDisabled;
     boost::shared_ptr<Bool_Knob> _autoPreviewEnabledForNewProjects;
+    boost::shared_ptr<Path_Knob> _extraPluginPaths;
     
     boost::shared_ptr<Choice_Knob> _ocioConfigKnob;
     boost::shared_ptr<File_Knob> _customOcioConfigFile;

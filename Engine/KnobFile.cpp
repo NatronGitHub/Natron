@@ -183,7 +183,6 @@ void File_Knob::processNewValue()
 }
 
 
-
 /***********************************OUTPUT_FILE_KNOB*****************************************/
 
 OutputFile_Knob::OutputFile_Knob(KnobHolder *holder, const std::string &description, int dimension)
@@ -218,5 +217,34 @@ const std::string& OutputFile_Knob::typeName() const
     return typeNameStatic();
 }
 
+/***********************************PATH_KNOB*****************************************/
 
+Path_Knob::Path_Knob(KnobHolder *holder, const std::string &description, int dimension)
+: Knob(holder,description,dimension)
+, _isMultiPath(false)
+{
+    
+}
+
+const std::string Path_Knob::_typeNameStr("Path");
+
+const std::string& Path_Knob::typeNameStatic() {
+    return _typeNameStr;
+}
+
+bool Path_Knob::canAnimate() const {
+    return false;
+}
+
+const std::string& Path_Knob::typeName() const {
+    return typeNameStatic();
+}
+
+void Path_Knob::setMultiPath(bool b) {
+    _isMultiPath = b;
+}
+
+bool Path_Knob::isMultiPath() const {
+    return _isMultiPath;
+}
 

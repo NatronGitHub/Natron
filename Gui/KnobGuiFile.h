@@ -122,5 +122,49 @@ private:
     QString _lastOpened;
 };
 
+
+//================================
+
+class Path_KnobGui : public KnobGui
+{
+    Q_OBJECT
+public:
+    
+    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
+        return new Path_KnobGui(knob, container);
+    }
+    
+    Path_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
+    
+    virtual ~Path_KnobGui() OVERRIDE;
+    
+    public slots:
+    
+    void onReturnPressed();
+
+    void onButtonClicked();
+    
+    void open_file();
+    
+private:
+    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+    
+    virtual void _hide() OVERRIDE FINAL;
+    
+    virtual void _show() OVERRIDE FINAL;
+    
+    virtual void setEnabled() OVERRIDE FINAL;
+    
+    virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
+    
+    void updateLastOpened(const QString &str);
+    
+private:
+    LineEdit *_lineEdit;
+    QLabel *_descriptionLabel;
+    Button *_openFileButton;
+    QString _lastOpened;
+};
+
 #endif // NATRON_GUI_KNOBGUIFILE_H_
 
