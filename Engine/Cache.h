@@ -665,28 +665,29 @@ public:
     void clear(){
         clearInMemoryPortion();
         QMutexLocker locker(&_lock);
-        while(_diskCache.size() > 0){
-            std::pair<hash_type,value_type> evictedFromDisk = _diskCache.evict();
-            //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
-            //we'll let the user of these entries purge the extra entries left in the cache later on
-            if(!evictedFromDisk.second){
-                break;
+        
+        for (CacheIterator it = _diskCache.begin(); it != _diskCache.end(); ++it) {
+            std::list<value_type>& values = getValueFromIterator(it);
+            for (typename std::list<value_type>::iterator it2 = values.begin(); it2!=values.end(); ++it2) {
+                _diskCacheSize -= (*it2)->size();
+                (*it2)->removeAnyBackingFile();
             }
-            /*remove the sum of the size of all entries within the same hash key*/
-            _diskCacheSize -= evictedFromDisk.second->size();
-            evictedFromDisk.second->removeAnyBackingFile();
-
         }
-    }
+        _diskCache.clear();
 
+    }
+    
 
     void clearInMemoryPortion(){
         QMutexLocker locker(&_lock);
-        while (_memoryCache.size() > 0) {
-            if(!tryEvictEntry()){
-                break;
+        for (CacheIterator it = _memoryCache.begin(); it != _memoryCache.end(); ++it) {
+            std::list<value_type>& values = getValueFromIterator(it);
+            for (typename std::list<value_type>::iterator it2 = values.begin(); it2!=values.end(); ++it2) {
+                _memoryCacheSize -= (*it2)->size();
+                (*it2)->removeAnyBackingFile();
             }
         }
+        _memoryCache.clear();
         if(_signalEmitter){
             _signalEmitter->emitSignalClearedInMemoryPortion();
         }
