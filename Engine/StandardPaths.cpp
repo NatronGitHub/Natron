@@ -4,7 +4,7 @@
 #include <QDir>
 #if QT_VERSION < 0x050000
 
-#else 
+#else
 #include <QStandardPaths>
 #endif
 
@@ -23,6 +23,7 @@
 #include <QFileInfo>
 #elif defined(__NATRON_LINUX__)
 #include <cerrno>
+#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <pwd.h>
