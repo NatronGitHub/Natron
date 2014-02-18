@@ -12,11 +12,16 @@
 #ifndef FROMQTENUMS_H
 #define FROMQTENUMS_H
 
-#include "Global/KeySymbols.h"
-#include "Global/Enums.h"
+#include <vector>
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <Qt>
 #include <QMessageBox>
-#include <vector>
+CLANG_DIAG_OFF(deprecated)
+
+#include "Global/KeySymbols.h"
+#include "Global/Enums.h"
 
 class QtEnumConvert {
     

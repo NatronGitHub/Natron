@@ -16,7 +16,9 @@
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
 
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMetaType>
+CLANG_DIAG_ON(deprecated)
 
 #include "Engine/Rect.h"
 

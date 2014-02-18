@@ -18,7 +18,11 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+#include "Global/Macros.h"
+
+CLANG_DIAG_OFF(deprecated)
 #include <QMainWindow>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 

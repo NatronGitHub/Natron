@@ -15,9 +15,9 @@
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QWidget>
-CLANG_DIAG_ON(deprecated)
 #include <QtCore/QPoint>
 #include <QtGui/QVector4D>
+CLANG_DIAG_ON(deprecated)
 #include "Engine/Format.h"
 
 class ViewerGL;

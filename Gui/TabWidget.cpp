@@ -10,6 +10,8 @@
 
 #include "TabWidget.h"
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QLayout>
 #include <QMenu>
 #include <QApplication>
@@ -27,6 +29,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QScrollArea>
 #include <QSplitter>
 #include <QTextDocument> // for Qt::convertFromPlainText
+CLANG_DIAG_ON(deprecated)
 
 #include "Gui/Button.h"
 #include "Gui/GuiApplicationManager.h"
