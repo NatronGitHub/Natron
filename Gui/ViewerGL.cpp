@@ -344,11 +344,11 @@ static const GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
 void ViewerGL::drawRenderingVAO() {
     assert(QGLContext::currentContext() == context());
     
-
+    ///the texture rectangle in image coordinates
     const TextureRect &r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
+    
+    ///the RoD of the iamge
     RectI rod = _imp->clipToDisplayWindow ? getDisplayWindow() : getRoD();
-
-    rod.intersect(r.x1,r.y1,r.x2,r.y2,&rod);
     
     //if user RoI is enabled, clip the rod to that roi
     if (_imp->isUserRoIEnabled) {
@@ -396,8 +396,8 @@ void ViewerGL::drawRenderingVAO() {
     texLeft = 0;
     texRight = (GLfloat)(r.x2 - r.x1) / (GLfloat)(r.w * r.closestPo2);
     
-    texTop = texTop > 1 ? 1 : texTop;
-    texRight = texRight > 1 ? 1 : texRight;
+    // texTop = texTop > 1 ? 1 : texTop;
+    // texRight = texRight > 1 ? 1 : texRight;
     
     
     GLfloat renderingTextureCoordinates[32] = {
