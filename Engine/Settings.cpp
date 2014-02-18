@@ -58,7 +58,6 @@ void Settings::initializeKnobs(){
     
     _linearPickers = Natron::createKnob<Bool_Knob>(this, "Linear color pickers");
     _linearPickers->turnOffAnimation();
-    _linearPickers->setValue<bool>(true);
     _linearPickers->setHintToolTip("When activated, all colors picked from the color parameters will be converted"
                                    " to linear before being fetched. Otherwise they will be in the same color-space "
                                    " as the viewer they were picked from.");
@@ -66,13 +65,11 @@ void Settings::initializeKnobs(){
     
     _multiThreadedDisabled = Natron::createKnob<Bool_Knob>(this, "Disable multi-threading");
     _multiThreadedDisabled->turnOffAnimation();
-    _multiThreadedDisabled->setValue<bool>(false);
     _multiThreadedDisabled->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will not spawn any thread to render.");
     _generalTab->addKnob(_multiThreadedDisabled);
     
     _autoPreviewEnabledForNewProjects = Natron::createKnob<Bool_Knob>(this, "Auto-preview enabled by default for new projects");
     _autoPreviewEnabledForNewProjects->turnOffAnimation();
-    _autoPreviewEnabledForNewProjects->setValue<bool>(true);
     _autoPreviewEnabledForNewProjects->setHintToolTip("If checked then when creating a new project, the Auto-preview option"
                                                       " will be enabled.");
     _generalTab->addKnob(_autoPreviewEnabledForNewProjects);
@@ -135,7 +132,6 @@ void Settings::initializeKnobs(){
     helpStringsTextureModes.push_back("Viewer's post-process like color-space conversion will be done\n"
                                       "by the hardware using GLSL. Cached textures will be larger in the viewer cache.");
     _texturesMode->populate(textureModes,helpStringsTextureModes);
-    _texturesMode->setValue<int>(0);
     _texturesMode->setHintToolTip("Bitdepth of the viewer textures used for rendering."
                                   " Hover each option with the mouse for a more detailed comprehension.");
     _viewersTab->addKnob(_texturesMode);
@@ -151,7 +147,6 @@ void Settings::initializeKnobs(){
     _powerOf2Tiling->setMaximum(9);
     _powerOf2Tiling->setDisplayMaximum(9);
     
-    _powerOf2Tiling->setValue<int>(8);
     _powerOf2Tiling->turnOffAnimation();
     _viewersTab->addKnob(_powerOf2Tiling);
     
@@ -161,7 +156,6 @@ void Settings::initializeKnobs(){
     _maxRAMPercent->turnOffAnimation();
     _maxRAMPercent->setMinimum(0);
     _maxRAMPercent->setMaximum(100);
-    _maxRAMPercent->setValue<int>(50);
     std::string ramHint("This setting indicates the percentage of the system's total RAM "
                         NATRON_APPLICATION_NAME "'s caches are allowed to use."
                         " Your system has ");
@@ -174,7 +168,6 @@ void Settings::initializeKnobs(){
     _maxPlayBackPercent->turnOffAnimation();
     _maxPlayBackPercent->setMinimum(0);
     _maxPlayBackPercent->setMaximum(100);
-    _maxPlayBackPercent->setValue(25);
     _maxPlayBackPercent->setHintToolTip("This setting indicates the percentage of the Maximum system's RAM for caching"
                                         " dedicated for the playback cache. Normally you shouldn't change this value"
                                         " as it is tuned automatically by the Maximum system's RAM for caching, but"
@@ -184,7 +177,6 @@ void Settings::initializeKnobs(){
     _maxDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum disk cache size");
     _maxDiskCacheGB->turnOffAnimation();
     _maxDiskCacheGB->setMinimum(0);
-    _maxDiskCacheGB->setValue<int>(10);
     _maxDiskCacheGB->setMaximum(100);
     _maxDiskCacheGB->setHintToolTip("The maximum disk space the caches can use. (in GB)");
     _cachingTab->addKnob(_maxDiskCacheGB);
@@ -198,11 +190,45 @@ void Settings::initializeKnobs(){
     _writersTab = Natron::createKnob<Tab_Knob>(this, "Writers");
     
     
-    
+    setDefaultValues();
 }
 
 
+void Settings::setDefaultValues() {
+    
+    beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
+    _linearPickers->setValue<bool>(true);
+    _multiThreadedDisabled->setValue<bool>(false);
+    _autoPreviewEnabledForNewProjects->setValue<bool>(true);
+    _extraPluginPaths->setValue<QString>("");
+    _texturesMode->setValue<int>(0);
+    _powerOf2Tiling->setValue<int>(8);
+    _maxRAMPercent->setValue<int>(50);
+    _maxPlayBackPercent->setValue(25);
+    _maxDiskCacheGB->setValue<int>(10);
 
+    for (U32 i = 0; i < _readersMapping.size(); ++i) {
+        const std::vector<std::string>& entries = _readersMapping[i]->getEntries();
+        for (U32 j = 0; j < entries.size(); ++j) {
+            if (QString(entries[j].c_str()).contains("ReadOIIOOFX")) {
+                _readersMapping[i]->setValue<int>(j);
+                break;
+            }
+        }
+    }
+    
+    for (U32 i = 0; i < _writersMapping.size(); ++i) {
+        const std::vector<std::string>& entries = _writersMapping[i]->getEntries();
+        for (U32 j = 0; j < entries.size(); ++j) {
+            if (QString(entries[j].c_str()).contains("WriteOIIOOFX")) {
+                _writersMapping[i]->setValue<int>(j);
+                break;
+            }
+        }
+    }
+    endKnobsValuesChanged(Natron::PLUGIN_EDITED);
+}
+ 
 void Settings::saveSettings(){
     
     _wereChangesMadeSinceLastSave = false;
@@ -545,4 +571,12 @@ void Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::strin
 QStringList Settings::getPluginsExtraSearchPaths() const {
     QString paths = _extraPluginPaths->getValue<QString>();
     return paths.split(QChar(';'));
+}
+
+void Settings::restoreDefault() {
+    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    if (!QFile::remove(settings.fileName())) {
+        qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
+    }
+    setDefaultValues();
 }

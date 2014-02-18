@@ -1512,15 +1512,21 @@ void Gui::informationDialog(const std::string& title,const std::string& text){
 void Gui::onDoDialog(int type, const QString& title, const QString& content, Natron::StandardButtons buttons, int defaultB)
 {
     if(type == 0){
-        QMessageBox::critical(this, title, content);
+        QMessageBox critical(QMessageBox::Critical,title,content,QMessageBox::NoButton,this,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        critical.exec();
     }else if(type == 1){
-        QMessageBox::warning(this, title, content);
+        QMessageBox warning(QMessageBox::Warning,title,content,QMessageBox::NoButton,this,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        warning.exec();
     }else if(type == 2){
-        QMessageBox::information(this, title,content);
+        QMessageBox info(QMessageBox::Information,title,content,QMessageBox::NoButton,this,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        info.exec();
     }else{
-        _imp->_lastQuestionDialogAnswer = (Natron::StandardButton)QMessageBox::question(this,title,content,
-                                                            QtEnumConvert::toQtStandarButtons(buttons),
-                                                            QtEnumConvert::toQtStandardButton((Natron::StandardButton)defaultB));
+        QMessageBox ques(QMessageBox::Question,title,content,QtEnumConvert::toQtStandarButtons(buttons),
+                         this,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        ques.setDefaultButton(QtEnumConvert::toQtStandardButton((Natron::StandardButton)defaultB));
+        if (ques.exec()) {
+            _imp->_lastQuestionDialogAnswer = QtEnumConvert::fromQtStandardButton(ques.standardButton(ques.clickedButton()));
+        }
     }
 
     QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);

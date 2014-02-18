@@ -90,10 +90,13 @@ public:
     
     QStringList getPluginsExtraSearchPaths() const;
     
+    void restoreDefault();
+    
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
 
+    void setDefaultValues();
     
     bool tryLoadOpenColorIOConfig();
 

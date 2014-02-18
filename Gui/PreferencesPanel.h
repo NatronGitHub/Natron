@@ -36,6 +36,8 @@ public:
 
 public slots:
     
+    void restoreDefaults();
+    
     void cancelChanges();
     
     void saveChanges();
@@ -51,6 +53,7 @@ private:
     DockablePanel* _panel;
     QWidget* _buttonsContainer;
     QHBoxLayout* _buttonsLayout;
+    Button* _restoreDefaultsB;
     Button* _cancelB;
     Button* _okB;
     boost::shared_ptr<Settings> _settings;
