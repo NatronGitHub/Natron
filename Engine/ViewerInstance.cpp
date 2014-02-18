@@ -202,7 +202,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
     TextureRect textureRect(texRectClipped.x1,texRectClipped.y1,texRectClipped.x2,
                             texRectClipped.y2,texW,texH,closestPowerOf2);
     
-    //  std::cout << "x1: " << textureRect.x1 << " x2: " << textureRect.x2 << " y1: " << textureRect.y1 <<
+    //  std::cout << "ViewerInstance: x1: " << textureRect.x1 << " x2: " << textureRect.x2 << " y1: " << textureRect.y1 <<
     //" y2: " << textureRect.y2 << " w: " << textureRect.w << " h: " << textureRect.h << " po2: " << textureRect.closestPo2 << std::endl;
     
     _interThreadInfos._textureRect = textureRect;

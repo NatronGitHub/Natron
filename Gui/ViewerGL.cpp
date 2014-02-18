@@ -388,6 +388,8 @@ void ViewerGL::drawRenderingVAO() {
         (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
     };
 
+   // std::cout << "ViewerGL: x1= " << r.x1 << " x2= " << r.x2 << " y1= " << r.y1 << " y2= " << r.y2 << std::endl;
+
     GLfloat texBottom,texLeft,texRight,texTop;
     texBottom =  0;
     texTop =  (GLfloat)(r.y2 - r.y1)/ (GLfloat)(r.h * r.closestPo2);
@@ -1363,7 +1365,9 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
             if(_imp->displayingImage){
                 _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
             }
-            updateGL();
+            else {
+                updateGL();
+            }
             _imp->zoomOrPannedSinceLastFit = true;
             // no need to update the color picker or mouse posn: they should be unchanged
         } break;
@@ -1531,9 +1535,9 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
         //appPTR->clearPlaybackCache();
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
     }
-    //else {
-    updateGL();
-    //}
+    else {
+        updateGL();
+    }
     
     assert(0 < _imp->zoomCtx.zoomFactor && _imp->zoomCtx.zoomFactor <= 1024);
     int zoomValue = (int)(100*_imp->zoomCtx.zoomFactor);
