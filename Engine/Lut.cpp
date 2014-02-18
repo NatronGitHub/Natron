@@ -205,7 +205,7 @@ namespace Natron {
             // to the transform of each byte value contain the same value,
             // so that toFunc(fromFunc(b)) is identity
             //
-            for (int b = 0; b <= 255; ++b) {
+            for (int b = 0; b < 256; ++b) {
                 float f = _fromFunc(Color::intToFloat<256>(b));
                 fromFunc_uint8_to_float[b] = f;
                 int i = hipart(f);
@@ -497,19 +497,33 @@ namespace Natron {
                 for (int x = rect.x1; x < rect.x2; ++x) {
                     int inCol = x * inPackingSize;
                     int outCol = x * outPackingSize;
-                    float a = (inputHasAlpha && premult) ? src_pixels[inCol + inAOffset] / 255.f : 1.f;
-                    int r8 = 0, g8 = 0, b8 = 0;
-                    if (a > 0) {
-                        r8 = ((src_pixels[inCol + inROffset] / 255.f) / a) * 255;
-                        g8 = ((src_pixels[inCol + inGOffset] / 255.f) / a) * 255;
-                        b8 = ((src_pixels[inCol + inBOffset] / 255.f) / a) * 255;
+                    if (inputHasAlpha && premult) {
+                        float rf = 0., gf = 0., bf = 0.;
+                        float a = Color::intToFloat<256>(src_pixels[inCol + inAOffset]);
+                        if (a > 0) {
+                            rf = Color::intToFloat<256>(src_pixels[inCol + inROffset]) / a;
+                            gf = Color::intToFloat<256>(src_pixels[inCol + inGOffset]) / a;
+                            bf = Color::intToFloat<256>(src_pixels[inCol + inBOffset]) / a;
+                        }
+                        dst_pixels[outCol + outROffset] = fromColorSpaceFloatToLinearFloatFast(rf) * a;
+                        dst_pixels[outCol + outGOffset] = fromColorSpaceFloatToLinearFloatFast(gf) * a;
+                        dst_pixels[outCol + outBOffset] = fromColorSpaceFloatToLinearFloatFast(bf) * a;
+                        if (outputHasAlpha) {
+                            dst_pixels[outCol + outAOffset] = a;
+                        }
+                    } else {
+                        int r8 = 0, g8 = 0, b8 = 0;
+                        r8 = src_pixels[inCol + inROffset];
+                        g8 = src_pixels[inCol + inGOffset];
+                        b8 = src_pixels[inCol + inBOffset];
                         assert(r8 >= 0 && r8 < 256 && g8 >= 0 && g8 < 256 && b8 >= 0 && b8 < 256);
-                    }
-                    dst_pixels[outCol + outROffset] = fromFunc_uint8_to_float[r8] * a;
-                    dst_pixels[outCol + outGOffset] = fromFunc_uint8_to_float[g8] * a;
-                    dst_pixels[outCol + outBOffset] = fromFunc_uint8_to_float[b8] * a;
-                    if (outputHasAlpha) {
-                        dst_pixels[outCol + outAOffset] = a;
+                        dst_pixels[outCol + outROffset] = fromFunc_uint8_to_float[r8];
+                        dst_pixels[outCol + outGOffset] = fromFunc_uint8_to_float[g8];
+                        dst_pixels[outCol + outBOffset] = fromFunc_uint8_to_float[b8];
+                        if (outputHasAlpha) {
+                            float a = Color::intToFloat<256>(src_pixels[inCol + inAOffset]);
+                            dst_pixels[outCol + outAOffset] = a;
+                        }
                     }
                 }
             }
@@ -566,10 +580,11 @@ namespace Natron {
                     float a = (inputHasAlpha && premult) ? src_pixels[inCol + inAOffset] : 1.f;;
                     float rf = 0., gf = 0., bf = 0.;
                     if (a > 0.) {
-                        rf = (src_pixels[inCol + inROffset] / a) * 255.f;
-                        gf = (src_pixels[inCol + inGOffset] / a) * 255.f;
-                        bf = (src_pixels[inCol + inBOffset] / a) * 255.f;
+                        rf = src_pixels[inCol + inROffset] / a;
+                        gf = src_pixels[inCol + inGOffset] / a;
+                        bf = src_pixels[inCol + inBOffset] / a;
                     }
+#pragma message WARN("do we really want to quantize during float to float conversion?")
                     dst_pixels[outCol + outROffset] = fromColorSpaceFloatToLinearFloatFast(rf) * a;
                     dst_pixels[outCol + outGOffset] = fromColorSpaceFloatToLinearFloatFast(gf) * a;
                     dst_pixels[outCol + outBOffset] = fromColorSpaceFloatToLinearFloatFast(bf) * a;
@@ -662,11 +677,11 @@ namespace Natron {
                         int inCol = x * inPackingSize;
                         int outCol = x * outPackingSize;
                         unsigned char a = inputHasAlpha ? src_pixels[inCol + inAOffset] : 255;
-                        dst_pixels[outCol + outROffset] = src_pixels[inCol + inROffset] / 255.f;
-                        dst_pixels[outCol + outGOffset] = src_pixels[inCol + inGOffset] / 255.f;
-                        dst_pixels[outCol + outBOffset] = src_pixels[inCol + inBOffset] / 255.f;
+                        dst_pixels[outCol + outROffset] = Color::intToFloat<256>(src_pixels[inCol + inROffset]);
+                        dst_pixels[outCol + outGOffset] = Color::intToFloat<256>(src_pixels[inCol + inGOffset]);
+                        dst_pixels[outCol + outBOffset] = Color::intToFloat<256>(src_pixels[inCol + inBOffset]);
                         if(outputHasAlpha) {
-                            dst_pixels[outCol + outAOffset] = a / 255.f;
+                            dst_pixels[outCol + outAOffset] = Color::intToFloat<256>(a);
                         }
                     }
                 }
