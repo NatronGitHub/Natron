@@ -1365,9 +1365,9 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
             if(_imp->displayingImage){
                 _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
             }
-            else {
-                updateGL();
-            }
+            //  else {
+            updateGL();
+            // }
             _imp->zoomOrPannedSinceLastFit = true;
             // no need to update the color picker or mouse posn: they should be unchanged
         } break;
@@ -1535,9 +1535,9 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
         //appPTR->clearPlaybackCache();
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
     }
-    else {
+    //else {
         updateGL();
-    }
+    // }
     
     assert(0 < _imp->zoomCtx.zoomFactor && _imp->zoomCtx.zoomFactor <= 1024);
     int zoomValue = (int)(100*_imp->zoomCtx.zoomFactor);
