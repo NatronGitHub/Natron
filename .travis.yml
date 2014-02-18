@@ -36,7 +36,7 @@ install:
   - if [ "$CC" = "gcc" ]; then sudo apt-get install libopenexr-dev libilmbase-dev; fi
   - if [ "$CC" = "gcc" ]; then sudo apt-get install libopenjpeg-dev libtiff-dev libjpeg-dev libpng-dev libboost-filesystem-dev libboost-regex-dev libboost-thread-dev libboost-system-dev libwebp-dev libfreetype6-dev libssl-dev; git clone -b "RB-1.2" git://github.com/OpenImageIO/oiio.git oiio; cd oiio; make USE_QT=0 USE_TBB=0 USE_PYTHON=0 USE_FIELD3D=0 USE_OPENJPEG=1 USE_OCIO=1 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=/opt/ocio INSTALLDIR=/opt/oiio dist_dir=. cmake; sudo make dist_dir=.; cd ..; fi
   - if [ "$CC" = "gcc" ]; then sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libavutil-dev; fi
-  - if [ "$CC" = "gcc" ]; then make -C openfx-io BITS=64 OIIO_HOME=/opt/oiio clean all; fi
+  - if [ "$CC" = "gcc" ]; then env PKG_CONFIG_PATH=/opt/ocio/lib/pkgconfig make -C openfx-io BITS=64 OIIO_HOME=/opt/oiio clean all; fi
   - if [ "$CC" = "gcc" ]; then mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO;  fi
 # config.pri
   - 'echo ''boost: LIBS += -lboost_serialization -lboost_thread -lboost_system'' > config.pri'
