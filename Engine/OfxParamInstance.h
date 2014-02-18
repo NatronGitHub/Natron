@@ -74,12 +74,12 @@ public:
     OfxPushButtonInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
 
     // callback which should set enabled state as appropriate
-    virtual void setEnabled();
+    virtual void setEnabled() OVERRIDE FINAL;
     
     // callback which should set secret state as appropriate
-    virtual void setSecret();
+    virtual void setSecret() OVERRIDE FINAL;
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
 
 private:
     boost::shared_ptr<Button_Knob> _knob;
@@ -94,27 +94,27 @@ class OfxIntegerInstance :  public QObject, public OFX::Host::Param::IntegerInst
 public:
     
     OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
-    OfxStatus get(int&);
-    OfxStatus get(OfxTime time, int&);
-    OfxStatus set(int);
-    OfxStatus set(OfxTime time, int);
+    virtual OfxStatus get(int&) OVERRIDE FINAL;
+    virtual OfxStatus get(OfxTime time, int&) OVERRIDE FINAL;
+    virtual OfxStatus set(int) OVERRIDE FINAL;
+    virtual OfxStatus set(OfxTime time, int) OVERRIDE FINAL;
     
     // callback which should set enabled state as appropriate
-    virtual void setEnabled();
+    virtual void setEnabled() OVERRIDE FINAL;
     
     // callback which should set secret state as appropriate
-    virtual void setSecret();
+    virtual void setSecret() OVERRIDE FINAL;
     
-    virtual void setDisplayRange();
+    virtual void setDisplayRange() OVERRIDE FINAL;
     
     ///keyframes support
-    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
-    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
-    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
-    virtual OfxStatus deleteKey(OfxTime time) ;
-    virtual OfxStatus deleteAllKeys();
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
+    virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
+    virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
 
 public slots:
     
@@ -130,30 +130,30 @@ class OfxDoubleInstance :  public QObject,  public OFX::Host::Param::DoubleInsta
     
 public:
     OfxDoubleInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
-    OfxStatus get(double&);
-    OfxStatus get(OfxTime time, double&);
-    OfxStatus set(double);
-    OfxStatus set(OfxTime time, double);
-    OfxStatus derive(OfxTime time, double&);
-    OfxStatus integrate(OfxTime time1, OfxTime time2, double&);
+    virtual OfxStatus get(double&) OVERRIDE FINAL;
+    virtual OfxStatus get(OfxTime time, double&) OVERRIDE FINAL;
+    virtual OfxStatus set(double) OVERRIDE FINAL;
+    virtual OfxStatus set(OfxTime time, double) OVERRIDE FINAL;
+    virtual OfxStatus derive(OfxTime time, double&) OVERRIDE FINAL;
+    virtual OfxStatus integrate(OfxTime time1, OfxTime time2, double&) OVERRIDE FINAL;
     
     // callback which should set enabled state as appropriate
-    virtual void setEnabled();
+    virtual void setEnabled() OVERRIDE FINAL;
     
     // callback which should set secret state as appropriate
-    virtual void setSecret();
+    virtual void setSecret() OVERRIDE FINAL;
     
-    virtual void setDisplayRange();
+    virtual void setDisplayRange() OVERRIDE FINAL;
     
     
     ///keyframes support
-    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
-    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
-    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
-    virtual OfxStatus deleteKey(OfxTime time) ;
-    virtual OfxStatus deleteAllKeys();
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
+    virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
+    virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
 
     bool isAnimated() const;
     
@@ -174,28 +174,28 @@ class OfxBooleanInstance :  public QObject,  public OFX::Host::Param::BooleanIns
     
 public:
     OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
-    OfxStatus get(bool&);
-    OfxStatus get(OfxTime time, bool&);
-    OfxStatus set(bool);
-    OfxStatus set(OfxTime time, bool);
+    virtual OfxStatus get(bool&) OVERRIDE FINAL;
+    virtual OfxStatus get(OfxTime time, bool&) OVERRIDE FINAL;
+    virtual OfxStatus set(bool) OVERRIDE FINAL;
+    virtual OfxStatus set(OfxTime time, bool) OVERRIDE FINAL;
     
     
     
     // callback which should set enabled state as appropriate
-    virtual void setEnabled();
+    virtual void setEnabled() OVERRIDE FINAL;
     
     // callback which should set secret state as appropriate
-    virtual void setSecret();
+    virtual void setSecret() OVERRIDE FINAL;
     
     ///keyframes support
-    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
-    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
-    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
-    virtual OfxStatus deleteKey(OfxTime time) ;
-    virtual OfxStatus deleteAllKeys();
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
+    virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
+    virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
 
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
     
 public slots:
     
@@ -211,28 +211,28 @@ class OfxChoiceInstance : public QObject, public OFX::Host::Param::ChoiceInstanc
     
 public:
     OfxChoiceInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor);
-    OfxStatus get(int&);
-    OfxStatus get(OfxTime time, int&);
-    OfxStatus set(int);
-    OfxStatus set(OfxTime time, int);
+    virtual OfxStatus get(int&) OVERRIDE FINAL;
+    virtual OfxStatus get(OfxTime time, int&) OVERRIDE FINAL;
+    virtual OfxStatus set(int) OVERRIDE FINAL;
+    virtual OfxStatus set(OfxTime time, int) OVERRIDE FINAL;
     
     // callback which should set enabled state as appropriate
-    virtual void setEnabled();
+    virtual void setEnabled() OVERRIDE FINAL;
     
     // callback which should set secret state as appropriate
-    virtual void setSecret();
+    virtual void setSecret() OVERRIDE FINAL;
     
     // callback which should set option as appropriate
-    virtual void setOption(int num);
+    virtual void setOption(int num) OVERRIDE FINAL;
     
     ///keyframes support
-    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
-    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
-    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
-    virtual OfxStatus deleteKey(OfxTime time) ;
-    virtual OfxStatus deleteAllKeys();
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
+    virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
+    virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
 
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
     
 public slots:
     
@@ -249,28 +249,28 @@ class OfxRGBAInstance :  public QObject, public OFX::Host::Param::RGBAInstance ,
     
 public:
     OfxRGBAInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
-    OfxStatus get(double&,double&,double&,double&);
-    OfxStatus get(OfxTime time, double&,double&,double&,double&);
-    OfxStatus set(double,double,double,double);
-    OfxStatus set(OfxTime time, double,double,double,double);
-    OfxStatus derive(OfxTime time, double&, double&, double&, double&);
-    OfxStatus integrate(OfxTime time1, OfxTime time2, double&, double&, double&, double&);
+    virtual OfxStatus get(double&,double&,double&,double&) OVERRIDE FINAL;
+    virtual OfxStatus get(OfxTime time, double&,double&,double&,double&) OVERRIDE FINAL;
+    virtual OfxStatus set(double,double,double,double) OVERRIDE FINAL;
+    virtual OfxStatus set(OfxTime time, double,double,double,double) OVERRIDE FINAL;
+    virtual OfxStatus derive(OfxTime time, double&, double&, double&, double&) OVERRIDE FINAL;
+    virtual OfxStatus integrate(OfxTime time1, OfxTime time2, double&, double&, double&, double&) OVERRIDE FINAL;
 
     // callback which should set enabled state as appropriate
-    virtual void setEnabled();
+    virtual void setEnabled() OVERRIDE FINAL;
     
     // callback which should set secret state as appropriate
-    virtual void setSecret();
+    virtual void setSecret() OVERRIDE FINAL;
     
     ///keyframes support
-    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
-    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
-    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
-    virtual OfxStatus deleteKey(OfxTime time) ;
-    virtual OfxStatus deleteAllKeys();
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
+    virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
+    virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
 
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
@@ -290,28 +290,28 @@ class OfxRGBInstance :  public QObject,  public OFX::Host::Param::RGBInstance, p
     
 public:
     OfxRGBInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
-    OfxStatus get(double&,double&,double&);
-    OfxStatus get(OfxTime time, double&,double&,double&);
-    OfxStatus set(double,double,double);
-    OfxStatus set(OfxTime time, double,double,double);
-    OfxStatus derive(OfxTime time, double&, double&, double&);
-    OfxStatus integrate(OfxTime time1, OfxTime time2, double&, double&, double&);
+    virtual OfxStatus get(double&,double&,double&) OVERRIDE FINAL;
+    virtual OfxStatus get(OfxTime time, double&,double&,double&) OVERRIDE FINAL;
+    virtual OfxStatus set(double,double,double) OVERRIDE FINAL;
+    virtual OfxStatus set(OfxTime time, double,double,double) OVERRIDE FINAL;
+    virtual OfxStatus derive(OfxTime time, double&, double&, double&) OVERRIDE FINAL;
+    virtual OfxStatus integrate(OfxTime time1, OfxTime time2, double&, double&, double&) OVERRIDE FINAL;
 
     // callback which should set enabled state as appropriate
-    virtual void setEnabled();
+    virtual void setEnabled() OVERRIDE FINAL;
     
     // callback which should set secret state as appropriate
-    virtual void setSecret();
+    virtual void setSecret() OVERRIDE FINAL;
     
     ///keyframes support
-    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
-    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
-    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
-    virtual OfxStatus deleteKey(OfxTime time) ;
-    virtual OfxStatus deleteAllKeys();
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
+    virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
+    virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
 
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
@@ -330,30 +330,30 @@ class OfxDouble2DInstance :  public QObject, public OFX::Host::Param::Double2DIn
     
 public:
     OfxDouble2DInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
-    OfxStatus get(double&,double&);
-    OfxStatus get(OfxTime time,double&,double&);
-    OfxStatus set(double,double);
-    OfxStatus set(OfxTime time,double,double);
-    OfxStatus derive(OfxTime time, double&, double&);
-    OfxStatus integrate(OfxTime time1, OfxTime time2, double&, double&);
+    virtual OfxStatus get(double&,double&) OVERRIDE FINAL;
+    virtual OfxStatus get(OfxTime time,double&,double&) OVERRIDE FINAL;
+    virtual OfxStatus set(double,double) OVERRIDE FINAL;
+    virtual OfxStatus set(OfxTime time,double,double) OVERRIDE FINAL;
+    virtual OfxStatus derive(OfxTime time, double&, double&) OVERRIDE FINAL;
+    virtual OfxStatus integrate(OfxTime time1, OfxTime time2, double&, double&) OVERRIDE FINAL;
 
     // callback which should set enabled state as appropriate
-    virtual void setEnabled();
+    virtual void setEnabled() OVERRIDE FINAL;
     
     // callback which should set secret state as appropriate
-    virtual void setSecret();
+    virtual void setSecret() OVERRIDE FINAL;
     
-    virtual void setDisplayRange();
+    virtual void setDisplayRange() OVERRIDE FINAL;
     
     ///keyframes support
-    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
-    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
-    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
-    virtual OfxStatus deleteKey(OfxTime time) ;
-    virtual OfxStatus deleteAllKeys();
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
+    virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
+    virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
 
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
@@ -375,26 +375,26 @@ class OfxInteger2DInstance :  public QObject, public OFX::Host::Param::Integer2D
     
 public:
     OfxInteger2DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
-    OfxStatus get(int&,int&);
-    OfxStatus get(OfxTime time,int&,int&);
-    OfxStatus set(int,int);
-    OfxStatus set(OfxTime time,int,int);
+    virtual OfxStatus get(int&,int&) OVERRIDE FINAL;
+    virtual OfxStatus get(OfxTime time,int&,int&) OVERRIDE FINAL;
+    virtual OfxStatus set(int,int) OVERRIDE FINAL;
+    virtual OfxStatus set(OfxTime time,int,int) OVERRIDE FINAL;
 
     // callback which should set enabled state as appropriate
-    virtual void setEnabled();
+    virtual void setEnabled() OVERRIDE FINAL;
 
     // callback which should set secret state as appropriate
-    virtual void setSecret();
+    virtual void setSecret() OVERRIDE FINAL;
     
     ///keyframes support
-    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
-    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
-    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
-    virtual OfxStatus deleteKey(OfxTime time) ;
-    virtual OfxStatus deleteAllKeys();
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
+    virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
+    virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
 
 
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
     
 public slots:
     
@@ -409,28 +409,28 @@ class OfxDouble3DInstance :  public QObject, public OFX::Host::Param::Double3DIn
     
 public:
     OfxDouble3DInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
-    OfxStatus get(double&,double&,double&);
-    OfxStatus get(OfxTime time,double&,double&,double&);
-    OfxStatus set(double,double,double);
-    OfxStatus set(OfxTime time,double,double,double);
-    OfxStatus derive(OfxTime time, double&, double&, double&);
-    OfxStatus integrate(OfxTime time1, OfxTime time2, double&, double&, double&);
+    virtual OfxStatus get(double&,double&,double&) OVERRIDE FINAL;
+    virtual OfxStatus get(OfxTime time,double&,double&,double&) OVERRIDE FINAL;
+    virtual OfxStatus set(double,double,double) OVERRIDE FINAL;
+    virtual OfxStatus set(OfxTime time,double,double,double) OVERRIDE FINAL;
+    virtual OfxStatus derive(OfxTime time, double&, double&, double&) OVERRIDE FINAL;
+    virtual OfxStatus integrate(OfxTime time1, OfxTime time2, double&, double&, double&) OVERRIDE FINAL;
 
     // callback which should set enabled state as appropriate
-    virtual void setEnabled();
+    virtual void setEnabled() OVERRIDE FINAL;
 
     // callback which should set secret state as appropriate
-    virtual void setSecret();
+    virtual void setSecret() OVERRIDE FINAL;
 
     ///keyframes support
-    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
-    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
-    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
-    virtual OfxStatus deleteKey(OfxTime time) ;
-    virtual OfxStatus deleteAllKeys();
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
+    virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
+    virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     
 
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
@@ -447,26 +447,26 @@ class OfxInteger3DInstance :  public QObject, public OFX::Host::Param::Integer3D
     
 public:
     OfxInteger3DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
-    OfxStatus get(int&,int&,int&);
-    OfxStatus get(OfxTime time,int&,int&,int&);
-    OfxStatus set(int,int,int);
-    OfxStatus set(OfxTime time,int,int,int);
+    virtual OfxStatus get(int&,int&,int&) OVERRIDE FINAL;
+    virtual OfxStatus get(OfxTime time,int&,int&,int&) OVERRIDE FINAL;
+    virtual OfxStatus set(int,int,int) OVERRIDE FINAL;
+    virtual OfxStatus set(OfxTime time,int,int,int) OVERRIDE FINAL;
 
     // callback which should set enabled state as appropriate
-    virtual void setEnabled();
+    virtual void setEnabled() OVERRIDE FINAL;
 
     // callback which should set secret state as appropriate
-    virtual void setSecret();
+    virtual void setSecret() OVERRIDE FINAL;
     
     ///keyframes support
-    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
-    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
-    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
-    virtual OfxStatus deleteKey(OfxTime time) ;
-    virtual OfxStatus deleteAllKeys();
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
+    virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
+    virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
 
 
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
 
 public slots:
     
@@ -482,7 +482,7 @@ public:
 
     void addKnob(boost::shared_ptr<Knob> k);
 
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
 
     virtual ~OfxGroupInstance(){}
 
@@ -497,27 +497,27 @@ class OfxStringInstance : public QObject, public OFX::Host::Param::StringInstanc
 public:
     OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
     
-    virtual OfxStatus get(std::string&) OVERRIDE;
-    virtual OfxStatus get(OfxTime time, std::string&) OVERRIDE;
-    virtual OfxStatus set(const char*) OVERRIDE;
-    virtual OfxStatus set(OfxTime time, const char*) OVERRIDE;
+    virtual OfxStatus get(std::string&) OVERRIDE FINAL;
+    virtual OfxStatus get(OfxTime time, std::string&) OVERRIDE FINAL;
+    virtual OfxStatus set(const char*) OVERRIDE FINAL;
+    virtual OfxStatus set(OfxTime time, const char*) OVERRIDE FINAL;
     
     /// implementation of var args function
     /// Be careful: the char* is only valid until next API call
     /// see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ArchitectureStrings
-    virtual OfxStatus getV(va_list arg) OVERRIDE;
+    virtual OfxStatus getV(va_list arg) OVERRIDE FINAL;
     
     /// implementation of var args function
     /// Be careful: the char* is only valid until next API call
     /// see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ArchitectureStrings
-    virtual OfxStatus getV(OfxTime time, va_list arg) OVERRIDE;
+    virtual OfxStatus getV(OfxTime time, va_list arg) OVERRIDE FINAL;
 
     
     // callback which should set enabled state as appropriate
-    virtual void setEnabled();
+    virtual void setEnabled() OVERRIDE FINAL;
     
     // callback which should set secret state as appropriate
-    virtual void setSecret();
+    virtual void setSecret() OVERRIDE FINAL;
 
     // returns true if it is a file param and that it is not empty
     bool isValid() const;
@@ -532,14 +532,14 @@ public:
     const QString getRandomFrameName(int f) const;
     
     ///keyframes support
-    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
-    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
-    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
-    virtual OfxStatus deleteKey(OfxTime time) ;
-    virtual OfxStatus deleteAllKeys();
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
+    virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
+    virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
 
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
     
     virtual ~OfxStringInstance(){}
     
@@ -562,38 +562,38 @@ Q_OBJECT
 public:
     OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
 
-    virtual OfxStatus get(std::string&) OVERRIDE;
-    virtual OfxStatus get(OfxTime time, std::string&) OVERRIDE;
-    virtual OfxStatus set(const char*) OVERRIDE;
-    virtual OfxStatus set(OfxTime time, const char*) OVERRIDE;
+    virtual OfxStatus get(std::string&) OVERRIDE FINAL;
+    virtual OfxStatus get(OfxTime time, std::string&) OVERRIDE FINAL;
+    virtual OfxStatus set(const char*) OVERRIDE FINAL;
+    virtual OfxStatus set(OfxTime time, const char*) OVERRIDE FINAL;
 
     /// implementation of var args function
     /// Be careful: the char* is only valid until next API call
     /// see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ArchitectureStrings
-    virtual OfxStatus getV(va_list arg) OVERRIDE;
+    virtual OfxStatus getV(va_list arg) OVERRIDE FINAL;
 
     /// implementation of var args function
     /// Be careful: the char* is only valid until next API call
     /// see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ArchitectureStrings
-    virtual OfxStatus getV(OfxTime time, va_list arg) OVERRIDE;
+    virtual OfxStatus getV(OfxTime time, va_list arg) OVERRIDE FINAL;
 
 
     // callback which should set enabled state as appropriate
-    virtual void setEnabled();
+    virtual void setEnabled() OVERRIDE FINAL;
 
     // callback which should set secret state as appropriate
-    virtual void setSecret();
+    virtual void setSecret() OVERRIDE FINAL;
 
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
 
     virtual ~OfxCustomInstance(){}
     
     ///keyframes support
-    virtual OfxStatus getNumKeys(unsigned int &nKeys) const ;
-    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const ;
-    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const ;
-    virtual OfxStatus deleteKey(OfxTime time) ;
-    virtual OfxStatus deleteAllKeys();
+    virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyTime(int nth, OfxTime& time) const OVERRIDE FINAL;
+    virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
+    virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
+    virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
 
     
 public slots:
@@ -628,48 +628,48 @@ public:
     virtual ~OfxParametricInstance();
     
     // callback which should set enabled state as appropriate
-    virtual void setEnabled() OVERRIDE;
+    virtual void setEnabled() OVERRIDE FINAL;
     
     // callback which should set secret state as appropriate
-    virtual void setSecret() OVERRIDE;
+    virtual void setSecret() OVERRIDE FINAL;
     
     /// callback which should update label
-    virtual void setLabel() OVERRIDE;
+    virtual void setLabel() OVERRIDE FINAL;
     
     /// callback which should set
-    virtual void setDisplayRange() OVERRIDE;
+    virtual void setDisplayRange() OVERRIDE FINAL;
     
     
     ///derived from CurveHolder
-    virtual OfxStatus getValue(int curveIndex,OfxTime time,double parametricPosition,double *returnValue) OVERRIDE;
+    virtual OfxStatus getValue(int curveIndex,OfxTime time,double parametricPosition,double *returnValue) OVERRIDE FINAL;
     
-    virtual OfxStatus getNControlPoints(int curveIndex,double time,int *returnValue) OVERRIDE;
+    virtual OfxStatus getNControlPoints(int curveIndex,double time,int *returnValue) OVERRIDE FINAL;
     
     virtual OfxStatus getNthControlPoint(int curveIndex,
                                          double time,
-                                         int    nthCtl,
+                                         int nthCtl,
                                          double *key,
-                                         double *value) OVERRIDE;
+                                         double *value) OVERRIDE FINAL;
     
-    virtual OfxStatus setNthControlPoint(int   curveIndex,
+    virtual OfxStatus setNthControlPoint(int curveIndex,
                                          double time,
-                                         int   nthCtl,
+                                         int nthCtl,
                                          double key,
                                          double value,
                                          bool addAnimationKey
-                                         ) OVERRIDE;
+                                         ) OVERRIDE FINAL;
     
-    virtual OfxStatus addControlPoint(int   curveIndex,
+    virtual OfxStatus addControlPoint(int curveIndex,
                                       double time,
                                       double key,
                                       double value,
-                                      bool addAnimationKey) OVERRIDE;
+                                      bool addAnimationKey) OVERRIDE FINAL;
     
-    virtual OfxStatus  deleteControlPoint(int   curveIndex,int   nthCtl) OVERRIDE;
+    virtual OfxStatus  deleteControlPoint(int curveIndex, int nthCtl) OVERRIDE FINAL;
     
-    virtual OfxStatus  deleteAllControlPoints(int   curveIndex) OVERRIDE;
+    virtual OfxStatus  deleteAllControlPoints(int curveIndex) OVERRIDE FINAL;
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE;
+    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
     
 public slots:
     
