@@ -27,6 +27,7 @@ CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QKeyEvent>
 CLANG_DIAG_ON(unused-private-field)
+#include <QDebug>
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Curve.h"
@@ -586,69 +587,58 @@ Choice_KnobGui::Choice_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *cont
     _entries = cbKnob->getEntries();
     QObject::connect(cbKnob.get(), SIGNAL(populated()), this, SLOT(onEntriesPopulated()));
 }
+
 Choice_KnobGui::~Choice_KnobGui()
 {
     delete _comboBox;
     delete _descriptionLabel;
 }
+
 void Choice_KnobGui::createWidget(QGridLayout *layout, int row)
 {
     _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-    if(hasToolTip()) {
+    if (hasToolTip()) {
         _descriptionLabel->setToolTip(toolTip());
     }
     layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
     
     _comboBox = new ComboBox(layout->parentWidget());
-    
-    const std::vector<std::string> &help =  boost::dynamic_pointer_cast<Choice_Knob>(getKnob())->getEntriesHelp();
-    for (U32 i = 0; i < _entries.size(); ++i) {
-        std::string helpStr = help.empty() ? "" : help[i];
-        _comboBox->addItem(_entries[i].c_str(), QIcon(), QKeySequence(), QString(helpStr.c_str()));
-    }
-    if (_entries.size() > 0) {
-        ///we can only use this function because the signal currentIndexChanged(int) of the combobox is not yet connected.
-        _comboBox->setCurrentIndex(0); // why not?
-    }
-    if(hasToolTip()) {
+    onEntriesPopulated();
+    if (hasToolTip()) {
         _comboBox->setToolTip(toolTip());
     }
     QObject::connect(_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
     layout->addWidget(_comboBox, row, 1, Qt::AlignLeft);
 }
+
 void Choice_KnobGui::onCurrentIndexChanged(int i)
 {
     pushValueChangedCommand(Variant(i));
-    
 }
+
 void Choice_KnobGui::onEntriesPopulated()
 {
-    int i = _comboBox->activeIndex();
+    int activeIndex = _comboBox->activeIndex();
     _comboBox->clear();
-    const std::vector<std::string> entries = boost::dynamic_pointer_cast<Choice_Knob>(getKnob())->getEntries();
-    _entries = entries;
-    for (U32 j = 0; j < _entries.size(); ++j) {
-        _comboBox->addItem(QString(_entries[j].c_str()));
+    _entries = boost::dynamic_pointer_cast<Choice_Knob>(getKnob())->getEntries();
+    const std::vector<std::string> &help =  boost::dynamic_pointer_cast<Choice_Knob>(getKnob())->getEntriesHelp();
+    for (U32 i = 0; i < _entries.size(); ++i) {
+        std::string helpStr = help.empty() ? "" : help[i];
+        _comboBox->addItem(_entries[i].c_str(), QIcon(), QKeySequence(), QString(helpStr.c_str()));
     }
-    if (0 <= i && i < (int)_entries.size()) {
-        ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
-        ///we don't want that to happen because the index actually didn't change.
-        _comboBox->setCurrentText_no_emit(QString(_entries[i].c_str()));
-    } else {
-        _comboBox->setCurrentText_no_emit("");
-    }
+    ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
+    ///we don't want that to happen because the index actually didn't change.
+    _comboBox->setCurrentIndex_no_emit(activeIndex);
 }
 
 void Choice_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 {
     int i = variant.toInt();
-    if (0 <= i && i < (int)_entries.size()) {
-        ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
-        ///change the internal value of the knob again...
-        ///The slot connected to onCurrentIndexChanged is reserved to catch user interaction with the combobox.
-        ///This function is called in response to an internal change.
-        _comboBox->setCurrentText_no_emit(_entries[i].c_str());
-    }
+    ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
+    ///change the internal value of the knob again...
+    ///The slot connected to onCurrentIndexChanged is reserved to catch user interaction with the combobox.
+    ///This function is called in response to an internal change.
+    _comboBox->setCurrentIndex_no_emit(i);
 }
 
 void Choice_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevel level) {
@@ -679,6 +669,7 @@ void Choice_KnobGui::_show()
     _descriptionLabel->show();
     _comboBox->show();
 }
+
 void Choice_KnobGui::setEnabled()
 {
     bool b = getKnob()->isEnabled();
