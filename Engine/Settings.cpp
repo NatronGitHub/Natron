@@ -492,8 +492,8 @@ void Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::v
         k->turnOffAnimation();
         k->populate(it->second);
         for (U32 i = 0; i < it->second.size(); ++i) {
-            ///do not make ReadQt appear as default when there is other options as it is deprecated.
-            if (it->second[i] != "ReadQt") {
+            ///promote ReadOIIO !
+            if (QString(it->second[i].c_str()).contains("ReadOIIOOFX")) {
                 k->setValue<int>(i);
                 break;
             }
@@ -509,8 +509,8 @@ void Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::v
         k->turnOffAnimation();
         k->populate(it->second);
         for (U32 i = 0; i < it->second.size(); ++i) {
-            ///do not make WriteQt appear as default when there is other options as it is deprecated.
-            if (it->second[i] != "WriteQt") {
+            ///promote WriteOIIOOFX !
+            if (QString(it->second[i].c_str()).contains("WriteOIIOOFX")) {
                 k->setValue<int>(i);
                 break;
             }
