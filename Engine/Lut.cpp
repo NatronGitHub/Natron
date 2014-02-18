@@ -163,19 +163,22 @@ namespace Natron {
             }
         }
         
-        
-        float Lut::fromColorSpaceFloatToLinearFloatFast(float v) const
+        float Lut::fromColorSpaceUint8ToLinearFloatFast(unsigned char v) const
         {
             assert(init_);
-            return fromFunc_uint8_to_float[Color::floatToInt<256>(v)];
+            return fromFunc_uint8_to_float[v];
         }
         
+#if 0
+        // It is not recommended to use this function, because the output is quantized
+        // If one really needs float, one has to use the full function (or OpenColorIO)
         float Lut::toColorSpaceFloatFromLinearFloatFast(float v) const
         {
             assert(init_);
             return Color::intToFloat<0xff01>(toFunc_hipart_to_uint8xx[hipart(v)]);
         }
-        
+#endif
+
         unsigned char Lut::toColorSpaceUint8FromLinearFloatFast(float v) const
         {
             assert(init_);
@@ -270,11 +273,11 @@ namespace Natron {
             validate();
             if(!alpha){
                 for (int f = 0,t = 0; f < W; f += inDelta, t+= outDelta) {
-                    to[t] = toColorSpaceFloatFromLinearFloatFast(from[f]);
+                    to[t] = toColorSpaceFloatFromLinearFloat(from[f]);
                 }
             }else{
                 for (int f = 0,t = 0; f < W; f += inDelta, t+= outDelta) {
-                    to[t] = toColorSpaceFloatFromLinearFloatFast(from[f] * alpha[f]);
+                    to[t] = toColorSpaceFloatFromLinearFloat(from[f] * alpha[f]);
                 }
             }
         }
@@ -408,9 +411,9 @@ namespace Natron {
                     int inCol = x * inPackingSize;
                     int outCol = x * outPackingSize;
                     float a = (inputHasAlpha && premult) ? src_pixels[inCol + inAOffset] : 1.f;;
-                    dst_pixels[outCol + outROffset] = toColorSpaceFloatFromLinearFloatFast(src_pixels[inCol + inROffset] * a);
-                    dst_pixels[outCol + outGOffset] = toColorSpaceFloatFromLinearFloatFast(src_pixels[inCol + inGOffset] * a);
-                    dst_pixels[outCol + outBOffset] = toColorSpaceFloatFromLinearFloatFast(src_pixels[inCol + inBOffset] * a);
+                    dst_pixels[outCol + outROffset] = toColorSpaceFloatFromLinearFloat(src_pixels[inCol + inROffset] * a);
+                    dst_pixels[outCol + outGOffset] = toColorSpaceFloatFromLinearFloat(src_pixels[inCol + inGOffset] * a);
+                    dst_pixels[outCol + outBOffset] = toColorSpaceFloatFromLinearFloat(src_pixels[inCol + inBOffset] * a);
                     if(outputHasAlpha) {
                         dst_pixels[outCol + outAOffset] = a;
                     }
@@ -447,12 +450,12 @@ namespace Natron {
             validate();
             if(!alpha){
                 for (int f = 0,t = 0 ; f < W ; f += inDelta, t += outDelta) {
-                    to[t] = fromColorSpaceFloatToLinearFloatFast(from[f]);
+                    to[t] = fromColorSpaceFloatToLinearFloat(from[f]);
                 }
             }else{
                 for (int f = 0,t = 0 ; f < W ; f += inDelta, t += outDelta) {
                     float a = alpha[f];
-                    to[t] = a <= 0. ? 0. : fromColorSpaceFloatToLinearFloatFast(from[f] / a) * a;
+                    to[t] = a <= 0. ? 0. : fromColorSpaceFloatToLinearFloat(from[f] / a) * a;
                 }
             }
         }
@@ -505,9 +508,10 @@ namespace Natron {
                             gf = Color::intToFloat<256>(src_pixels[inCol + inGOffset]) / a;
                             bf = Color::intToFloat<256>(src_pixels[inCol + inBOffset]) / a;
                         }
-                        dst_pixels[outCol + outROffset] = fromColorSpaceFloatToLinearFloatFast(rf) * a;
-                        dst_pixels[outCol + outGOffset] = fromColorSpaceFloatToLinearFloatFast(gf) * a;
-                        dst_pixels[outCol + outBOffset] = fromColorSpaceFloatToLinearFloatFast(bf) * a;
+                        // we may lose a bit of information, but hey, it's 8-bits anyway, who cares?
+                        dst_pixels[outCol + outROffset] = fromColorSpaceUint8ToLinearFloatFast(Color::floatToInt<256>(rf)) * a;
+                        dst_pixels[outCol + outGOffset] = fromColorSpaceUint8ToLinearFloatFast(Color::floatToInt<256>(gf)) * a;
+                        dst_pixels[outCol + outBOffset] = fromColorSpaceUint8ToLinearFloatFast(Color::floatToInt<256>(bf)) * a;
                         if (outputHasAlpha) {
                             dst_pixels[outCol + outAOffset] = a;
                         }
@@ -584,10 +588,9 @@ namespace Natron {
                         gf = src_pixels[inCol + inGOffset] / a;
                         bf = src_pixels[inCol + inBOffset] / a;
                     }
-#pragma message WARN("do we really want to quantize during float to float conversion?")
-                    dst_pixels[outCol + outROffset] = fromColorSpaceFloatToLinearFloatFast(rf) * a;
-                    dst_pixels[outCol + outGOffset] = fromColorSpaceFloatToLinearFloatFast(gf) * a;
-                    dst_pixels[outCol + outBOffset] = fromColorSpaceFloatToLinearFloatFast(bf) * a;
+                    dst_pixels[outCol + outROffset] = fromColorSpaceFloatToLinearFloat(rf) * a;
+                    dst_pixels[outCol + outGOffset] = fromColorSpaceFloatToLinearFloat(gf) * a;
+                    dst_pixels[outCol + outBOffset] = fromColorSpaceFloatToLinearFloat(bf) * a;
                     if(outputHasAlpha) {
                         dst_pixels[outCol + outAOffset] = a;
                     }
