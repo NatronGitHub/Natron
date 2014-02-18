@@ -314,7 +314,7 @@ bool AppManager::load(int argc, char *argv[]) {
         argv = new char*[1];
         argv[0] = new char[binaryPath.size() + 1];
         for (int i = 0; i < binaryPath.size(); ++i) {
-            argv[0][i] = binaryPath.at(i).toAscii();
+            argv[0][i] = binaryPath.at(i).unicode();
         }
         argv[0][binaryPath.size()] = '\0';
         hadArgs = false;
