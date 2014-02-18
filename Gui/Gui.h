@@ -245,8 +245,8 @@ public slots:
     void closeEvent(QCloseEvent *e);
     void newProject();
     void openProject();
-    void saveProject();
-    void saveProjectAs();
+    bool saveProject();
+    bool saveProjectAs();
     void autoSave();
     
     void connectInput1();

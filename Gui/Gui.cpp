@@ -348,7 +348,9 @@ Gui::~Gui()
 bool Gui::exit(){
     int ret = saveWarning();
     if (ret == 0) {
-        saveProject();
+        if (!saveProject()) {
+            return false;
+        }
     } else if (ret == 2) {
         return false;
     }
@@ -1281,7 +1283,7 @@ void Gui::openProject(){
     }
     
 }
-void Gui::saveProject(){
+bool Gui::saveProject(){
     
     if(_imp->_appInstance->getProject()->hasProjectBeenSavedByUser()){
         _imp->_appInstance->getProject()->saveProject(_imp->_appInstance->getProject()->getProjectPath(),
@@ -1297,12 +1299,13 @@ void Gui::saveProject(){
         
         settings.setValue("recentFileList", recentFiles);
         appPTR->updateAllRecentFileMenus();
+        return true;
     }else{
-        saveProjectAs();
+        return saveProjectAs();
     }
     
 }
-void Gui::saveProjectAs(){
+bool Gui::saveProjectAs(){
     std::vector<std::string> filter;
     filter.push_back(NATRON_PROJECT_FILE_EXT);
     QString outFile = popSaveFileDialog(false, filter,_imp->_lastSaveProjectOpenedDir.toStdString());
@@ -1324,8 +1327,9 @@ void Gui::saveProjectAs(){
         
         settings.setValue("recentFileList", recentFiles);
         appPTR->updateAllRecentFileMenus();
-
+        return true;
     }
+    return false;
 }
 
 void Gui::createReader(){
@@ -1437,12 +1441,12 @@ void Gui::autoSave(){
 int Gui::saveWarning(){
     
     if(!_imp->_appInstance->getProject()->isGraphWorthLess() && !_imp->_appInstance->getProject()->isSaveUpToDate()){
-        QMessageBox::StandardButton ret =  QMessageBox::question(this, "",
-                                                QString("Save changes to " + _imp->_appInstance->getProject()->getProjectName() + " ?"),
-                                                QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,QMessageBox::Save);
-        if(ret == QMessageBox::Escape || ret == QMessageBox::Cancel){
+        Natron::StandardButton ret =  Natron::questionDialog(NATRON_APPLICATION_NAME,"Save changes to " +
+                               _imp->_appInstance->getProject()->getProjectName().toStdString() + " ?",
+                               Natron::StandardButtons(Natron::Save | Natron::Discard | Natron::Cancel),Natron::Save);
+        if(ret == Natron::Escape || ret == Natron::Cancel){
             return 2;
-        }else if(ret == QMessageBox::Discard){
+        }else if(ret == Natron::Discard){
             return 1;
         }else{
             return 0;
