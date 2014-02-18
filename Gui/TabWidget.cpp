@@ -317,13 +317,11 @@ void TabWidget::addNewViewer(){
 
 void TabWidget::moveNodeGraphHere(){
     QWidget* what = dynamic_cast<QWidget*>(_gui->getNodeGraph());
-    what->setParent(this);
     moveTab(what,this);
 }
 
 void TabWidget::moveCurveEditorHere(){
     QWidget* what = dynamic_cast<QWidget*>(_gui->getCurveEditor());
-    what->setParent(this);
     moveTab(what,this);
 }
 /*Get the header name of the tab at index "index".*/
@@ -872,7 +870,7 @@ void TabWidget::moveTab(QWidget* what,TabWidget *where){
     from->removeTab(what);
     assert(where);
     where->appendTab(what);
-    
+    what->setParent(where);
     where->getGui()->getApp()->triggerAutoSave();
 }
 

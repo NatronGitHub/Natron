@@ -298,10 +298,11 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     
     if(_dialogMode == OPEN_DIALOG){
         _filterLabel = new QLabel("Filter:",_filterLineWidget);
+        _filterLineLayout->addWidget(_filterLabel);
     }else if(_dialogMode == SAVE_DIALOG){
         _filterLabel = new QLabel("File type:",_filterLineWidget);
+        _filterLineLayout->addWidget(_filterLabel);
     }
-    _filterLineLayout->addWidget(_filterLabel);
     
     _filterWidget = new QWidget(_filterLineWidget);
     _filterLayout = new QHBoxLayout(_filterWidget);
@@ -1276,6 +1277,7 @@ void SequenceFileDialog::addFavorite(const QString& name,const QString& path){
 void SequenceFileDialog::selectDirectory() {
     QString str = _selectionLineEdit->text();
     if (isDirectory(str)) {
+        setDirectory(str);
         QDialog::accept();
     }
 }
