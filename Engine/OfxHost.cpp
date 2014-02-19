@@ -140,42 +140,34 @@ OFX::Host::ImageEffect::Descriptor *Natron::OfxHost::makeDescriptor(const std::s
 
 
 /// message
-OfxStatus Natron::OfxHost::vmessage(const char* type,
-                                     const char* ,
+OfxStatus Natron::OfxHost::vmessage(const char* msgtype,
+                                     const char* /*id*/,
                                      const char* format,
                                      va_list args)
 {
-    assert(type);
+    assert(msgtype);
     assert(format);
     char buf[10000];
     sprintf(buf, format,args);
     std::string message(buf);
     
-    if (strcmp(type, kOfxMessageLog) == 0) {
-        
+    std::string type(msgtype);
+
+    if (type == kOfxMessageLog) {
+#pragma message WARN("Log in a log buffer, not on stdout!")
         std::cout << message << std::endl;
-        
-    }else if(strcmp(type, kOfxMessageFatal) == 0 ||
-             strcmp(type, kOfxMessageError) == 0) {
-        
+    } else if (type == kOfxMessageFatal || type == kOfxMessageError) {
         Natron::errorDialog(NATRON_APPLICATION_NAME, message);
-        
-    }else if(strcmp(type, kOfxMessageWarning)){
-        
+    } else if (type == kOfxMessageWarning) {
         Natron::warningDialog(NATRON_APPLICATION_NAME, message);
-        
-    }else if(strcmp(type, kOfxMessageMessage)){
-        
+    } else if (type == kOfxMessageMessage) {
         Natron::informationDialog(NATRON_APPLICATION_NAME, message);
-        
-    }else if(strcmp(type, kOfxMessageQuestion) == 0) {
-        
-        if(Natron::questionDialog(NATRON_APPLICATION_NAME, message) == Natron::Yes){
+    } else if (type == kOfxMessageQuestion) {
+        if (Natron::questionDialog(NATRON_APPLICATION_NAME, message) == Natron::Yes) {
             return kOfxStatReplyYes;
-        }else{
+        } else {
             return kOfxStatReplyNo;
         }
-        
     }
     return kOfxStatReplyDefault;
 }
