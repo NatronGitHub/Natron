@@ -10,7 +10,6 @@
 
 #include "ProcessHandler.h"
 
-#include <QDateTime>
 #include <QProcess>
 #include <QLocalServer>
 #include <QLocalSocket>
@@ -19,6 +18,7 @@
 #include <QWaitCondition>
 #include <QMutex>
 #include <QDir>
+#include <QDebug>
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -38,10 +38,9 @@ ProcessHandler::ProcessHandler(AppInstance* app,
 {
 
     ///setup the server used to listen the output of the background process
-    QDateTime now = QDateTime::currentDateTime();
     _ipcServer = new QLocalServer();
     QObject::connect(_ipcServer,SIGNAL(newConnection()),this,SLOT(onNewConnectionPending()));
-    QString serverName(NATRON_APPLICATION_NAME "_OUTPUT_PIPE_" + now.toString());
+    QString serverName(NATRON_APPLICATION_NAME "_OUTPUT_PIPE_" + QString::number(qApp->applicationPid()));
     _ipcServer->listen(serverName);
 
 
@@ -49,7 +48,7 @@ ProcessHandler::ProcessHandler(AppInstance* app,
     QStringList processArgs;
     processArgs << projectPath << "-b" << "-w" << writer->getName().c_str();
     processArgs << "--IPCpipe" << (_ipcServer->fullServerName());
-
+    
     ///connect the useful slots of the process
     QObject::connect(_process,SIGNAL(readyReadStandardOutput()),this,SLOT(onStandardOutputBytesWritten()));
     QObject::connect(_process,SIGNAL(readyReadStandardError()),this,SLOT(onStandardErrorBytesWritten()));
@@ -63,6 +62,7 @@ ProcessHandler::ProcessHandler(AppInstance* app,
         throw std::invalid_argument("First frame in the sequence is greater than the last frame");
 
     ///start the process
+    qDebug() << "Starting background rendering: " << QCoreApplication::applicationFilePath() << processArgs;
     _process->start(QCoreApplication::applicationFilePath(),processArgs);
 
     ///get the output file knob to get the same of the sequence
@@ -279,13 +279,13 @@ void ProcessInputChannel::initialize() {
     QObject::connect(_backgroundOutputPipe, SIGNAL(connected()), this, SLOT(onOutputPipeConnectionMade()));
     _backgroundOutputPipe->connectToServer(_mainProcessServerName,QLocalSocket::ReadWrite);
     
-    QDateTime now = QDateTime::currentDateTime();
     _backgroundIPCServer = new QLocalServer();
     QObject::connect(_backgroundIPCServer,SIGNAL(newConnection()),this,SLOT(onNewConnectionPending()));
 
     QString serverName;
     {
-        QTemporaryFile tmpf(QDir::tempPath() + QDir::separator() + NATRON_APPLICATION_NAME "_INPUT_SOCKET");
+        QTemporaryFile tmpf(QDir::tempPath() + QDir::separator() + NATRON_APPLICATION_NAME "_INPUT_SOCKET"
+                            + QString::number(QCoreApplication::applicationPid()));
         tmpf.open();
         serverName = tmpf.fileName();
     }

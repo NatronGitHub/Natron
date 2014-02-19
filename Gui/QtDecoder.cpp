@@ -453,16 +453,25 @@ Natron::Status QtReader::render(SequenceTime /*time*/,RenderScale /*scale*/,
         case QImage::Format_MonoLSB: // The image is stored using 1-bit per pixel. Bytes are packed with the less significant bit (LSB) first.
         case QImage::Format_Indexed8: // The image is stored using 8-bit indexes into a colormap.
         case QImage::Format_RGB16: // The image is stored using a 16-bit RGB format (5-6-5).
-        case QImage::Format_ARGB8565_Premultiplied: // The image is stored using a premultiplied 24-bit ARGB format (8-5-6-5).
         case QImage::Format_RGB666: // The image is stored using a 24-bit RGB format (6-6-6). The unused most significant bits is always zero.
-        case QImage::Format_ARGB6666_Premultiplied: // The image is stored using a premultiplied 24-bit ARGB format (6-6-6-6).
         case QImage::Format_RGB555: // The image is stored using a 16-bit RGB format (5-5-5). The unused most significant bit is always zero.
-        case QImage::Format_ARGB8555_Premultiplied: // The image is stored using a premultiplied 24-bit ARGB format (8-5-5-5).
         case QImage::Format_RGB888: // The image is stored using a 24-bit RGB format (8-8-8).
         case QImage::Format_RGB444: // The image is stored using a 16-bit RGB format (4-4-4). The unused bits are always zero.
+        {
+            QImage img = _img->convertToFormat(QImage::Format_ARGB32);
+            _lut->from_byte_packed(output->pixelAt(0, 0), img.bits(), roi, output->getRoD(), output->getRoD(),
+                                   Natron::Color::PACKING_BGRA, Natron::Color::PACKING_RGBA, true, false);
+        }
+            break;
+        case QImage::Format_ARGB8565_Premultiplied: // The image is stored using a premultiplied 24-bit ARGB format (8-5-6-5).
+        case QImage::Format_ARGB6666_Premultiplied: // The image is stored using a premultiplied 24-bit ARGB format (6-6-6-6).
+        case QImage::Format_ARGB8555_Premultiplied: // The image is stored using a premultiplied 24-bit ARGB format (8-5-5-5).
         case QImage::Format_ARGB4444_Premultiplied: // The image is stored using a premultiplied 16-bit ARGB format (4-4-4-4).
-            _lut->from_byte_packed(output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),output->getRoD(),
-                                   Natron::Color::PACKING_BGRA,Natron::Color::PACKING_RGBA,true,true);
+        {
+            QImage img = _img->convertToFormat(QImage::Format_ARGB32_Premultiplied);
+            _lut->from_byte_packed(output->pixelAt(0, 0), img.bits(), roi, output->getRoD(), output->getRoD(),
+                                   Natron::Color::PACKING_BGRA, Natron::Color::PACKING_RGBA, true, true);
+        }
             break;
         case QImage::Format_Invalid:
         default:

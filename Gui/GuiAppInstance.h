@@ -13,6 +13,8 @@
 
 #include "Engine/AppInstance.h"
 
+#include "Global/Macros.h"
+
 class NodeGui;
 
 class Gui;
@@ -50,7 +52,7 @@ public:
     
     virtual Natron::StandardButton questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons =
                                     Natron::StandardButtons(Natron::Yes | Natron::No),
-                                    Natron::StandardButton defaultButton = Natron::NoButton) const WARN_UNUSED_RETURN OVERRIDE FINAL;
+                                    Natron::StandardButton defaultButton = Natron::NoButton) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void loadProjectGui(boost::archive::xml_iarchive& archive) const OVERRIDE FINAL;
     

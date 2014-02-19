@@ -131,8 +131,14 @@ void File_KnobGui::updateLastOpened(const QString &str)
 
 void File_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 {
-    std::string pattern = SequenceFileDialog::patternFromFilesList(variant.toStringList()).toStdString();
-    _lineEdit->setText(pattern.c_str());
+    QStringList list = variant.toStringList();
+    QString str;
+    if (list.size() > 1) {
+        str = SequenceFileDialog::patternFromFilesList(list);
+    } else if(list.size() == 1) {
+        str = list.at(0);
+    }
+    _lineEdit->setText(str);
 }
 
 void File_KnobGui::onReturnPressed()
@@ -370,8 +376,11 @@ void Path_KnobGui::open_file()
 
         if (fk->isMultiPath()) {
             QString existingPath = fk->getValue<QString>();
-            existingPath.append(QChar(';'));
-            dirPath.prepend(existingPath);
+            if (!existingPath.isEmpty()) {
+                existingPath.append(QChar(';'));
+                dirPath.prepend(existingPath);
+            }
+            
         }
         pushValueChangedCommand(Variant(dirPath));
     }
@@ -412,8 +421,10 @@ void Path_KnobGui::onReturnPressed()
     
     if (fk->isMultiPath()) {
         QString existingPath = fk->getValue<QString>();
-        existingPath.append(QChar(';'));
-        dirPath.prepend(existingPath);
+        if (!existingPath.isEmpty() && !dirPath.isEmpty()) {
+            existingPath.append(QChar(';'));
+            dirPath.prepend(existingPath);
+        }
     }
     pushValueChangedCommand(Variant(dirPath));
 }

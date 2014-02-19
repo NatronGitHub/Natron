@@ -348,7 +348,9 @@ Gui::~Gui()
 bool Gui::exit(){
     int ret = saveWarning();
     if (ret == 0) {
-        saveProject();
+        if (!saveProject()) {
+            return false;
+        }
     } else if (ret == 2) {
         return false;
     }
@@ -1281,7 +1283,7 @@ void Gui::openProject(){
     }
     
 }
-void Gui::saveProject(){
+bool Gui::saveProject(){
     
     if(_imp->_appInstance->getProject()->hasProjectBeenSavedByUser()){
         _imp->_appInstance->getProject()->saveProject(_imp->_appInstance->getProject()->getProjectPath(),
@@ -1297,12 +1299,13 @@ void Gui::saveProject(){
         
         settings.setValue("recentFileList", recentFiles);
         appPTR->updateAllRecentFileMenus();
+        return true;
     }else{
-        saveProjectAs();
+        return saveProjectAs();
     }
     
 }
-void Gui::saveProjectAs(){
+bool Gui::saveProjectAs(){
     std::vector<std::string> filter;
     filter.push_back(NATRON_PROJECT_FILE_EXT);
     QString outFile = popSaveFileDialog(false, filter,_imp->_lastSaveProjectOpenedDir.toStdString());
@@ -1324,8 +1327,9 @@ void Gui::saveProjectAs(){
         
         settings.setValue("recentFileList", recentFiles);
         appPTR->updateAllRecentFileMenus();
-
+        return true;
     }
+    return false;
 }
 
 void Gui::createReader(){
@@ -1437,12 +1441,12 @@ void Gui::autoSave(){
 int Gui::saveWarning(){
     
     if(!_imp->_appInstance->getProject()->isGraphWorthLess() && !_imp->_appInstance->getProject()->isSaveUpToDate()){
-        QMessageBox::StandardButton ret =  QMessageBox::question(this, "",
-                                                QString("Save changes to " + _imp->_appInstance->getProject()->getProjectName() + " ?"),
-                                                QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,QMessageBox::Save);
-        if(ret == QMessageBox::Escape || ret == QMessageBox::Cancel){
+        Natron::StandardButton ret =  Natron::questionDialog(NATRON_APPLICATION_NAME,"Save changes to " +
+                               _imp->_appInstance->getProject()->getProjectName().toStdString() + " ?",
+                               Natron::StandardButtons(Natron::Save | Natron::Discard | Natron::Cancel),Natron::Save);
+        if(ret == Natron::Escape || ret == Natron::Cancel){
             return 2;
-        }else if(ret == QMessageBox::Discard){
+        }else if(ret == Natron::Discard){
             return 1;
         }else{
             return 0;
@@ -1512,15 +1516,21 @@ void Gui::informationDialog(const std::string& title,const std::string& text){
 void Gui::onDoDialog(int type, const QString& title, const QString& content, Natron::StandardButtons buttons, int defaultB)
 {
     if(type == 0){
-        QMessageBox::critical(this, title, content);
+        QMessageBox critical(QMessageBox::Critical,title,content,QMessageBox::NoButton,this,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        critical.exec();
     }else if(type == 1){
-        QMessageBox::warning(this, title, content);
+        QMessageBox warning(QMessageBox::Warning,title,content,QMessageBox::NoButton,this,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        warning.exec();
     }else if(type == 2){
-        QMessageBox::information(this, title,content);
+        QMessageBox info(QMessageBox::Information,title,content,QMessageBox::NoButton,this,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        info.exec();
     }else{
-        _imp->_lastQuestionDialogAnswer = (Natron::StandardButton)QMessageBox::question(this,title,content,
-                                                            QtEnumConvert::toQtStandarButtons(buttons),
-                                                            QtEnumConvert::toQtStandardButton((Natron::StandardButton)defaultB));
+        QMessageBox ques(QMessageBox::Question,title,content,QtEnumConvert::toQtStandarButtons(buttons),
+                         this,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        ques.setDefaultButton(QtEnumConvert::toQtStandardButton((Natron::StandardButton)defaultB));
+        if (ques.exec()) {
+            _imp->_lastQuestionDialogAnswer = QtEnumConvert::fromQtStandardButton(ques.standardButton(ques.clickedButton()));
+        }
     }
 
     QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);

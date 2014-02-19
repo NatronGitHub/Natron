@@ -1,3 +1,4 @@
+*.h.cpp
 *.com
 *.DS_Store
 *_moc.cpp

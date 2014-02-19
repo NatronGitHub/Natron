@@ -12,8 +12,12 @@
 #ifndef TOOLBUTTON_H
 #define TOOLBUTTON_H
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QObject>
 #include <QIcon>
+CLANG_DIAG_ON(deprecated)
+
 #include <boost/scoped_ptr.hpp>
 
 class PluginGroupNode;

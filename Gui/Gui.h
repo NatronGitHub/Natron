@@ -18,7 +18,11 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+#include "Global/Macros.h"
+
+CLANG_DIAG_OFF(deprecated)
 #include <QMainWindow>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 
@@ -245,8 +249,8 @@ public slots:
     void closeEvent(QCloseEvent *e);
     void newProject();
     void openProject();
-    void saveProject();
-    void saveProjectAs();
+    bool saveProject();
+    bool saveProjectAs();
     void autoSave();
     
     void connectInput1();

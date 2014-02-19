@@ -4,7 +4,7 @@
 #include <QDir>
 #if QT_VERSION < 0x050000
 
-#else 
+#else
 #include <QStandardPaths>
 #endif
 
@@ -23,12 +23,15 @@
 #include <QFileInfo>
 #elif defined(__NATRON_LINUX__)
 #include <cerrno>
+#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <pwd.h>
+CLANG_DIAG_OFF(deprecated)
 #include <QTextStream>
 #include <QHash>
 #include <QVarLengthArray>
+CLANG_DIAG_ON(deprecated)
 
 #endif
 
@@ -39,6 +42,7 @@ StandardPaths::StandardPaths()
 {
 }
 
+#if QT_VERSION < 0x050000
 static void appendOrganizationAndApp(QString &path)
 {
 #ifndef QT_BOOTSTRAPPED
@@ -52,13 +56,14 @@ static void appendOrganizationAndApp(QString &path)
     Q_UNUSED(path);
 #endif
 }
+#endif // QT_VERSION < 0x050000
 
 namespace {
 
 #ifdef __NATRON_OSX__
 CLANG_DIAG_OFF(deprecated)
 
-    
+static
 OSType translateLocation(StandardPaths::StandardLocation type)
 {
     switch (type) {
@@ -124,48 +129,48 @@ static QString macLocation(StandardPaths::StandardLocation type, short domain)
 }
 
 #elif defined(__NATRON_WIN32__)
-	static QString qSystemDirectory()
-	{
-		QVarLengthArray<char, MAX_PATH> fullPath;
+static QString qSystemDirectory()
+{
+    QVarLengthArray<char, MAX_PATH> fullPath;
 
-		UINT retLen = ::GetSystemDirectory(fullPath.data(), MAX_PATH);
-		if (retLen > MAX_PATH) {
-			fullPath.resize(retLen);
-			retLen = ::GetSystemDirectory(fullPath.data(), retLen);
-		}
-		// in some rare cases retLen might be 0
-		return QString::fromAscii(fullPath.constData(), int(retLen));
-	}
+    UINT retLen = ::GetSystemDirectory(fullPath.data(), MAX_PATH);
+    if (retLen > MAX_PATH) {
+        fullPath.resize(retLen);
+        retLen = ::GetSystemDirectory(fullPath.data(), retLen);
+    }
+    // in some rare cases retLen might be 0
+    return QString::fromAscii(fullPath.constData(), int(retLen));
+}
 
- static HINSTANCE load(const wchar_t *libraryName, bool onlySystemDirectory = true){
-	 QStringList searchOrder;
+static HINSTANCE load(const wchar_t *libraryName, bool onlySystemDirectory = true){
+    QStringList searchOrder;
 
 #if !defined(QT_BOOTSTRAPPED)
-	 if (!onlySystemDirectory)
-		 searchOrder << QFileInfo(QCoreApplication::applicationFilePath()).path();
+    if (!onlySystemDirectory)
+        searchOrder << QFileInfo(QCoreApplication::applicationFilePath()).path();
 #endif
-	 searchOrder << qSystemDirectory();
+    searchOrder << qSystemDirectory();
 
-	 if (!onlySystemDirectory) {
-		 const QString PATH(QLatin1String(qgetenv("PATH").constData()));
-		 searchOrder << PATH.split(QLatin1Char(';'), QString::SkipEmptyParts);
-	 }
-	 QString fileName = QString::fromWCharArray(libraryName);
-	 fileName.append(QLatin1String(".dll"));
+    if (!onlySystemDirectory) {
+        const QString PATH(QLatin1String(qgetenv("PATH").constData()));
+        searchOrder << PATH.split(QLatin1Char(';'), QString::SkipEmptyParts);
+    }
+    QString fileName = QString::fromWCharArray(libraryName);
+    fileName.append(QLatin1String(".dll"));
 
-	 // Start looking in the order specified
-	 for (int i = 0; i < searchOrder.count(); ++i) {
-		 QString fullPathAttempt = searchOrder.at(i);
-		 if (!fullPathAttempt.endsWith(QLatin1Char('\\'))) {
-			 fullPathAttempt.append(QLatin1Char('\\'));
-		 }
-		 fullPathAttempt.append(fileName);
-		 HINSTANCE inst = ::LoadLibrary((LPCSTR)fullPathAttempt.utf16());
-		 if (inst != 0)
-			 return inst;
-	 }
-	 return 0;
- }
+    // Start looking in the order specified
+    for (int i = 0; i < searchOrder.count(); ++i) {
+        QString fullPathAttempt = searchOrder.at(i);
+        if (!fullPathAttempt.endsWith(QLatin1Char('\\'))) {
+            fullPathAttempt.append(QLatin1Char('\\'));
+        }
+        fullPathAttempt.append(fileName);
+        HINSTANCE inst = ::LoadLibrary((LPCSTR)fullPathAttempt.utf16());
+        if (inst != 0)
+            return inst;
+    }
+    return 0;
+}
 
 typedef BOOL (WINAPI*GetSpecialFolderPath)(HWND, LPWSTR, int, BOOL);
 static GetSpecialFolderPath resolveGetSpecialFolderPath()
@@ -493,47 +498,47 @@ QString StandardPaths::writableLocation(StandardLocation type) {
 #error "Unsupported operating system"
 #endif
     
-#else
+#else // QT_VERSION >= 0x050000
     QStandardPaths::StandardLocation path;
     switch (type) {
-    case QStandardPaths::DesktopLocation :
-        path = Natron::StandardPaths::DesktopLocation;
+    case Natron::StandardPaths::DesktopLocation :
+        path = QStandardPaths::DesktopLocation;
         break;
-    case QStandardPaths::DocumentsLocation :
-        path = Natron::StandardPaths::DocumentsLocation;
+    case Natron::StandardPaths::DocumentsLocation :
+        path = QStandardPaths::DocumentsLocation;
         break;
-    case QStandardPaths::FontsLocation :
-        path = Natron::StandardPaths::FontsLocation;
+    case Natron::StandardPaths::FontsLocation :
+        path = QStandardPaths::FontsLocation;
         break;
-    case QStandardPaths::ApplicationsLocation :
-        path = Natron::StandardPaths::ApplicationsLocation;
+    case Natron::StandardPaths::ApplicationsLocation :
+        path = QStandardPaths::ApplicationsLocation;
         break;
-    case QStandardPaths::MusicLocation :
-        path = Natron::StandardPaths::MusicLocation;
+    case Natron::StandardPaths::MusicLocation :
+        path = QStandardPaths::MusicLocation;
         break;
-    case QStandardPaths::MoviesLocation :
-        path = Natron::StandardPaths::MoviesLocation;
+    case Natron::StandardPaths::MoviesLocation :
+        path = QStandardPaths::MoviesLocation;
         break;
-    case QStandardPaths::PicturesLocation :
-        path = Natron::StandardPaths::PicturesLocation;
+    case Natron::StandardPaths::PicturesLocation :
+        path = QStandardPaths::PicturesLocation;
         break;
-    case QStandardPaths::TempLocation :
-        path = Natron::StandardPaths::TempLocation;
+    case Natron::StandardPaths::TempLocation :
+        path = QStandardPaths::TempLocation;
         break;
-    case QStandardPaths::HomeLocation :
-        path = Natron::StandardPaths::HomeLocation;
+    case Natron::StandardPaths::HomeLocation :
+        path = QStandardPaths::HomeLocation;
         break;
-    case QStandardPaths::DataLocation :
-        path = Natron::StandardPaths::DataLocation;
+    case Natron::StandardPaths::DataLocation :
+        path = QStandardPaths::DataLocation;
         break;
-    case QStandardPaths::CacheLocation :
-        path = Natron::StandardPaths::CacheLocation;
+    case Natron::StandardPaths::CacheLocation :
+        path = QStandardPaths::CacheLocation;
         break;
     default:
         break;
     }
     return QStandardPaths::writableLocation(path);
-#endif
+#endif // QT_VERSION >= 0x050000
 }
 
 } //namespace Natron

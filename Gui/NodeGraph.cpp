@@ -525,7 +525,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                     (n->getNode()->getName()!=_arrowSelected->getDest()->getNode()->getName())){
                 ///can't connect to a viewer
                 if(n->getNode()->isOutputNode()){
-                    break;
+                    //     break;
                 }
                 _undoStack->setActive();
                 _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),n));

@@ -13,12 +13,15 @@
 
 
 #include <ctime>
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QPainter>
 #include <QStyleOption>
 #include <QApplication>
 #include <QDesktopWidget>
+CLANG_DIAG_ON(deprecated)
 
-#include "Global/Macros.h"
 
 
 SplashScreen::SplashScreen(const QString& filePath)

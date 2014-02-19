@@ -121,6 +121,10 @@ void GuiAppInstance::createNodeGui(Natron::Node *node,bool loadRequest,bool open
         
         if (openImageFileDialog) {
             node->getLiveInstance()->openImageFileKnob();
+            if (node->isPreviewEnabled()) {
+                node->computePreviewImage(getTimeLine()->currentFrame());
+            }
+
         }
     }
 }

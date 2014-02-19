@@ -119,7 +119,7 @@ public slots:
     void onKnobDeletion(Knob* knob);
     
     /*Internal slot, not meant to be called externally.*/
-    void onUndoPressed();
+    void onUndoClicked();
     
     /*Internal slot, not meant to be called externally.*/
     void onRedoPressed();

@@ -284,7 +284,7 @@ void Node::initializeKnobs(){
 EffectInstance* Node::findOrCreateLiveInstanceClone(RenderTree* tree)
 {
     if (isOutputNode()) {
-        _liveInstance->updateInputs(tree);
+        //_liveInstance->updateInputs(tree);
         return _liveInstance;
     }
     EffectInstance* ret = 0;

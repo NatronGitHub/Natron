@@ -10,6 +10,8 @@
 
 #include "TabWidget.h"
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QLayout>
 #include <QMenu>
 #include <QApplication>
@@ -27,6 +29,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QScrollArea>
 #include <QSplitter>
 #include <QTextDocument> // for Qt::convertFromPlainText
+CLANG_DIAG_ON(deprecated)
 
 #include "Gui/Button.h"
 #include "Gui/GuiApplicationManager.h"
@@ -317,13 +320,11 @@ void TabWidget::addNewViewer(){
 
 void TabWidget::moveNodeGraphHere(){
     QWidget* what = dynamic_cast<QWidget*>(_gui->getNodeGraph());
-    what->setParent(this);
     moveTab(what,this);
 }
 
 void TabWidget::moveCurveEditorHere(){
     QWidget* what = dynamic_cast<QWidget*>(_gui->getCurveEditor());
-    what->setParent(this);
     moveTab(what,this);
 }
 /*Get the header name of the tab at index "index".*/
@@ -872,7 +873,7 @@ void TabWidget::moveTab(QWidget* what,TabWidget *where){
     from->removeTab(what);
     assert(where);
     where->appendTab(what);
-    
+    what->setParent(where);
     where->getGui()->getApp()->triggerAutoSave();
 }
 

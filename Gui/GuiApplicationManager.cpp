@@ -12,12 +12,15 @@
 #include "GuiApplicationManager.h"
 
 ///gui
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QPixmapCache>
 #include <QBitmap>
 #include <QImage>
 #include <QApplication>
 #include <QFontDatabase>
 #include <QIcon>
+CLANG_DIAG_ON(deprecated)
 
 //core
 #include <QDebug>

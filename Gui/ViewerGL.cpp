@@ -344,10 +344,15 @@ static const GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
 void ViewerGL::drawRenderingVAO() {
     assert(QGLContext::currentContext() == context());
     
-
+    ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
+    ///
     const TextureRect &r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
+    
+    ///the RoD of the iamge
     RectI rod = _imp->clipToDisplayWindow ? getDisplayWindow() : getRoD();
 
+    ///clip the RoD to the portion where data lies. (i.e: r might be smaller than rod when it is the project window.)
+    ///if so then we don't want to display "all" the project window.
     rod.intersect(r.x1,r.y1,r.x2,r.y2,&rod);
     
     //if user RoI is enabled, clip the rod to that roi
@@ -388,33 +393,35 @@ void ViewerGL::drawRenderingVAO() {
         (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
     };
 
+   // std::cout << "ViewerGL: x1= " << r.x1 << " x2= " << r.x2 << " y1= " << r.y1 << " y2= " << r.y2 << std::endl;
+
     GLfloat texBottom,texLeft,texRight,texTop;
     texBottom =  0;
     texTop =  (GLfloat)(r.y2 - r.y1)/ (GLfloat)(r.h * r.closestPo2);
     texLeft = 0;
     texRight = (GLfloat)(r.x2 - r.x1) / (GLfloat)(r.w * r.closestPo2);
     
-    texTop = texTop > 1 ? 1 : texTop;
-    texRight = texRight > 1 ? 1 : texRight;
+    // texTop = texTop > 1 ? 1 : texTop;
+    //  texRight = texRight > 1 ? 1 : texRight;
     
     
     GLfloat renderingTextureCoordinates[32] = {
-        texLeft , texTop , //0
-        texLeft , texTop , //1
-        texRight , texTop ,//2
-        texRight , texTop , //3
-        texLeft , texTop , //4
+        0 , 1 , //0
+        texLeft , 1 , //1
+        texRight , 1 ,//2
+        1 , 1 , //3
+        0 , texTop , //4
         texLeft , texTop , //5
         texRight , texTop , //6
-        texRight , texTop , //7
-        texLeft , texBottom , //8
+        1 , texTop , //7
+        0 , texBottom , //8
         texLeft , texBottom , //9
         texRight , texBottom ,  //10
-        texRight , texBottom , //11
-        texLeft , texBottom , // 12
-        texLeft , texBottom , //13
-        texRight , texBottom , //14
-        texRight , texBottom   //15
+        1 , texBottom , //11
+        0 , 0 , // 12
+        texLeft , 0 , //13
+        texRight , 0 , //14
+        1 , 0   //15
     };
     
     glEnable(GL_SCISSOR_TEST);
@@ -1363,7 +1370,9 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
             if(_imp->displayingImage){
                 _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
             }
+            //  else {
             updateGL();
+            // }
             _imp->zoomOrPannedSinceLastFit = true;
             // no need to update the color picker or mouse posn: they should be unchanged
         } break;
@@ -1532,8 +1541,8 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
     }
     //else {
-    updateGL();
-    //}
+        updateGL();
+    // }
     
     assert(0 < _imp->zoomCtx.zoomFactor && _imp->zoomCtx.zoomFactor <= 1024);
     int zoomValue = (int)(100*_imp->zoomCtx.zoomFactor);

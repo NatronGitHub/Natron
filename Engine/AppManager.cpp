@@ -261,11 +261,7 @@ bool AppManager::loadInternal(const QString& projectFilename,const QStringList& 
     qDebug() << "ViewerCache disk size: " << printAsRAM(maxDiskCache);
 
 
-    /*loading all plugins*/
-    loadAllPlugins();
-    _imp->loadBuiltinFormats();
-
-
+    
     setLoadingStatus("Restoring user settings...");
 
 
@@ -273,6 +269,11 @@ bool AppManager::loadInternal(const QString& projectFilename,const QStringList& 
 
     ///and save these restored settings in case some couldn't be found
     _imp->_settings->saveSettings();
+    
+    /*loading all plugins*/
+    loadAllPlugins();
+    _imp->loadBuiltinFormats();
+     
 
     if (isBackground() && !mainProcessServerName.isEmpty()) {
         _imp->initProcessInputChannel(mainProcessServerName);
@@ -313,7 +314,7 @@ bool AppManager::load(int argc, char *argv[]) {
         argv = new char*[1];
         argv[0] = new char[binaryPath.size() + 1];
         for (int i = 0; i < binaryPath.size(); ++i) {
-            argv[0][i] = binaryPath.at(i).toAscii();
+            argv[0][i] = binaryPath.at(i).unicode();
         }
         argv[0][binaryPath.size()] = '\0';
         hadArgs = false;

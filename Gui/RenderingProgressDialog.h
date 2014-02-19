@@ -12,7 +12,10 @@
 #ifndef RENDERINGPROGRESSDIALOG_H
 #define RENDERINGPROGRESSDIALOG_H
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QDialog>
+CLANG_DIAG_ON(deprecated)
 
 #include <boost/scoped_ptr.hpp>
 

@@ -65,10 +65,10 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
     
     QString values;
     values = QString("<font color='red'>%1</font> <font color='green'>%2</font> <font color='blue'>%3</font> <font color=\"#DBE0E0\">%4</font>")
-        .arg(colorUnderMouse.x(),0,'f',2)
-        .arg(colorUnderMouse.y(),0,'f',2)
-        .arg(colorUnderMouse.z(),0,'f',2)
-        .arg(colorUnderMouse.w(),0,'f',2);
+        .arg(colorUnderMouse.x(),0,'f',5)
+        .arg(colorUnderMouse.y(),0,'f',5)
+        .arg(colorUnderMouse.z(),0,'f',5)
+        .arg(colorUnderMouse.w(),0,'f',5);
     
    // rgbaValues->setText(values);
     
@@ -86,7 +86,7 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
         .arg(hsv.hslHue())
         .arg(hsv.hslSaturationF(),0,'f',2)
         .arg(hsv.valueF(),0,'f',2)
-        .arg(hsl.lightnessF(),0,'f',2);
+        .arg(hsl.lightnessF(),0,'f',5);
     
     hvl_lastOption = new QLabel(this);
     hvl_lastOption->setContentsMargins(10, 0, 0, 0);
@@ -153,10 +153,10 @@ InfoViewerWidget::~InfoViewerWidget(){
 void InfoViewerWidget::updateColor(){
     QString values;
     values = QString("<font color='red'>%1</font> <font color='green'>%2</font> <font color='blue'>%3</font> <font color=\"#DBE0E0\">%4</font>")
-    .arg(colorUnderMouse.x(),0,'f',2)
-    .arg(colorUnderMouse.y(),0,'f',2)
-    .arg(colorUnderMouse.z(),0,'f',2)
-    .arg(colorUnderMouse.w(),0,'f',2);
+    .arg(colorUnderMouse.x(),0,'f',5)
+    .arg(colorUnderMouse.y(),0,'f',5)
+    .arg(colorUnderMouse.z(),0,'f',5)
+    .arg(colorUnderMouse.w(),0,'f',5);
 
     rgbaValues->setText(values);
     
@@ -179,7 +179,7 @@ void InfoViewerWidget::updateColor(){
     .arg(hsv.hslHue())
     .arg(hsv.hslSaturationF(),0,'f',2)
     .arg(hsv.valueF(),0,'f',2)
-    .arg(hsl.lightnessF(),0,'f',2);
+    .arg(hsl.lightnessF(),0,'f',5);
     hvl_lastOption->setText(hsvlValues);
 }
 

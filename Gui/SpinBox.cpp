@@ -114,7 +114,8 @@ void SpinBox::wheelEvent(QWheelEvent *e) {
         bool ok;
         double cur = text().toDouble(&ok);
         clear();
-        double maxiD,miniD;
+        double maxiD = 0.;
+        double miniD = 0.;
         _currentDelta += e->delta();
         double inc = _currentDelta * _increment / 120.;
         switch (_type) {

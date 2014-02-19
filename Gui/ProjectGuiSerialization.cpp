@@ -26,6 +26,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/ProjectGui.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/NodeGraph.h"
 
  void ProjectGuiSerialization::initialize(const ProjectGui* projectGui){
      std::vector<NodeGui*> activeNodes = projectGui->getVisibleNodes();
@@ -108,7 +109,7 @@ CLANG_DIAG_ON(deprecated)
 
      }
      
-     
+     _arePreviewTurnedOffGlobally = projectGui->getGui()->getNodeGraph()->areAllPreviewTurnedOff();
      
 }
 

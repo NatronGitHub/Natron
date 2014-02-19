@@ -39,6 +39,7 @@
 #include "Gui/TabWidget.h"
 #include "Gui/ProjectGuiSerialization.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/NodeGraph.h"
 
 ProjectGui::ProjectGui(Gui* gui)
 : _gui(gui)
@@ -272,6 +273,10 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     ProjectGuiSerialization obj;
     archive >> boost::serialization::make_nvp("ProjectGui",obj);
     
+    if (obj.arePreviewsTurnedOffGlobally()) {
+        _gui->getNodeGraph()->turnOffPreviewForAllNodes();
+    }
+    
     const std::map<std::string, ViewerData >& viewersProjections = obj.getViewersProjections();
     
     const std::vector< boost::shared_ptr<NodeGuiSerialization> >& nodesGuiSerialization = obj.getSerializedNodesGui();
@@ -281,8 +286,16 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
         assert(nGui);
         nGui->setPos(nodesGuiSerialization[i]->getX(),nodesGuiSerialization[i]->getY());
         _gui->deselectAllNodes();
-        if(nodesGuiSerialization[i]->isPreviewEnabled() && !nGui->getNode()->isPreviewEnabled()){
-            nGui->togglePreview();
+        
+        if (obj.arePreviewsTurnedOffGlobally()) {
+            if (nGui->getNode()->isPreviewEnabled()) {
+                nGui->togglePreview();
+            }
+        } else {
+            if((nodesGuiSerialization[i]->isPreviewEnabled() && !nGui->getNode()->isPreviewEnabled()) ||
+               (!nodesGuiSerialization[i]->isPreviewEnabled() && nGui->getNode()->isPreviewEnabled())){
+                nGui->togglePreview();
+            }
         }
         
         if (nGui->getNode()->pluginID() == "Viewer") {
@@ -339,6 +352,8 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
         }
         
     }
+    
+   
 }
 
 const std::vector<NodeGui*> ProjectGui::getVisibleNodes() const {

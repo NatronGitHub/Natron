@@ -11,7 +11,9 @@
 
 #include "ToolButton.h"
 
+CLANG_DIAG_OFF(deprecated)
 #include <QMenu>
+CLANG_DIAG_ON(deprecated)
 
 #include "Gui/GuiAppInstance.h"
 
