@@ -6,14 +6,12 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
-- render() is called on the plugin when moving the mouse over the timeline [Can't reproduce it]
-
 - File dialog: the file list should be a few pixels wider, so that the horizontal scrollbar does not appear.
 
 - String_KnobGui: kOfxParamStringIsRichTextFormat  is not supported (it should use a QTextEdit and not convert the string to plain text)
 
-- Tab traversal is completely broken. This is a major GUI bug.
-  Many users still have a keyboard and use it, so this must be fixed.
+- Tab traversal is not set up properly, and sometimes couter-intuitive.
+  Many users still have a keyboard and use it, so this should be fixed.
   Refs:
   http://qt-project.org/doc/qt-4.8/qwidget.html#setTabOrder
   http://qt-project.org/doc/qt-4.8/focus.html
@@ -39,6 +37,9 @@ Here is a list of non-blocking bugs / wanted features:
 
 - support Parameter Interacts, which are OpenGL "widgets" integrated in the parameters panel
 http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParametersInteracts
+  An example can be found in the "Prop Tester" plugin from the Support
+  plugins ("OFX Test" plugin group). The "RGB Custom" and "RGB Custom
+  2" parameters have parameter interacts.
 
 - implement Fields and Field Rendering:
   http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ImageEffectsFieldRendering
