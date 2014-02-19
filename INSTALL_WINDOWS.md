@@ -59,21 +59,32 @@ Of course you need to provide valid paths that are valid on your system.
 Here's an example of a config.pri file:
 ---------------------------------------
 
-boost {
-    INCLUDEPATH +=  $$quote(C:\\local\\boost_1_55_0_vs2010_x86)
-    LIBS += $$quote(C:\\local\\boost_1_55_0_vs2010_x86\\lib\\boost_serialization-vc100-mt-1_55.lib)
-}
+	boost {
 
-glew{
-    INCLUDEPATH +=  $$quote(C:\\local\\glew\\include)
-    LIBS += -L$$quote(C:\\local\\glew\\lib\\Release\\Win32\\glew32.lib)
-}
+    	INCLUDEPATH +=  $$quote(C:\\local\\boost_1_55_0_vs2010_x86)
+    
+	    LIBS += $$quote(C:\\local\\boost_1_55_0_vs2010_x86\\lib\\boost_serialization-vc100-mt-1_55.lib)
+	    
+	}
 
-expat{
-    INCLUDEPATH += $$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\lib)
-    LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\win32\\bin\\Debug\\libexpatMT.lib)
-    LIBS += shell32.lib
-}
+
+	glew {
+	
+    	INCLUDEPATH +=  $$quote(C:\\local\\glew\\include)
+    	
+	    LIBS += -L$$quote(C:\\local\\glew\\lib\\Release\\Win32\\glew32.lib)
+	    
+	}
+
+	expat {
+	
+    	INCLUDEPATH += $$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\lib)
+    	
+    	LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\win32\\bin\\Debug\\libexpatMT.lib)
+    	
+	    LIBS += shell32.lib
+	    
+	}
 
 ---------------------------------------------
 
