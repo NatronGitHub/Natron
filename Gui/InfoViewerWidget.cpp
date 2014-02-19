@@ -72,6 +72,7 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
     
    // rgbaValues->setText(values);
     
+    // FIXME: HSV+L is not the same as in Nuke, and the values are downsampled to 8 bits.
     QColor c(0,0,0,0);
     color = new QLabel(this);
     color->setMaximumSize(20, 20);
@@ -86,7 +87,7 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
         .arg(hsv.hslHue())
         .arg(hsv.hslSaturationF(),0,'f',2)
         .arg(hsv.valueF(),0,'f',2)
-        .arg(hsl.lightnessF(),0,'f',5);
+        .arg(hsl.lightnessF(),0,'f',2/*5 is not useful here (8-bits downsampling)*/);
     
     hvl_lastOption = new QLabel(this);
     hvl_lastOption->setContentsMargins(10, 0, 0, 0);
@@ -159,7 +160,8 @@ void InfoViewerWidget::updateColor(){
     .arg(colorUnderMouse.w(),0,'f',5);
 
     rgbaValues->setText(values);
-    
+
+    // FIXME: HSV+L is not the same as in Nuke, and the values are downsampled to 8 bits.
     int r = Color::floatToInt<256>(colorUnderMouse.x());
     int g = Color::floatToInt<256>(colorUnderMouse.y());
     int b = Color::floatToInt<256>(colorUnderMouse.z());
@@ -179,7 +181,7 @@ void InfoViewerWidget::updateColor(){
     .arg(hsv.hslHue())
     .arg(hsv.hslSaturationF(),0,'f',2)
     .arg(hsv.valueF(),0,'f',2)
-    .arg(hsl.lightnessF(),0,'f',5);
+    .arg(hsl.lightnessF(),0,'f',2/*5 is not useful here (8-bits downsampling)*/);
     hvl_lastOption->setText(hsvlValues);
 }
 
