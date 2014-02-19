@@ -284,9 +284,9 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     _selectionLayout->addWidget(_openButton);
     
     if (_dialogMode != DIR_DIALOG) {
-        QObject::connect(_openButton, SIGNAL(pressed()), this, SLOT(openSelectedFiles()));
+        QObject::connect(_openButton, SIGNAL(clicked()), this, SLOT(openSelectedFiles()));
     } else {
-        QObject::connect(_openButton,SIGNAL(pressed()),this,SLOT(selectDirectory()));
+        QObject::connect(_openButton,SIGNAL(clicked()),this,SLOT(selectDirectory()));
     }
     _mainLayout->addWidget(_selectionWidget);
     

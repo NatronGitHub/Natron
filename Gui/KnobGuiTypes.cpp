@@ -548,7 +548,7 @@ void Double_KnobGui::setEnabled()
 void Button_KnobGui::createWidget(QGridLayout *layout, int row)
 {
     _button = new Button(QString(QString(getKnob()->getDescription().c_str())), layout->parentWidget());
-    QObject::connect(_button, SIGNAL(pressed()), this, SLOT(emitValueChanged()));
+    QObject::connect(_button, SIGNAL(clicked()), this, SLOT(emitValueChanged()));
     if(hasToolTip()) {
         _button->setToolTip(toolTip());
     }
@@ -1078,7 +1078,7 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
     appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, &buttonPix);
     
     _colorDialogButton = new Button(QIcon(buttonPix), "", colorContainer);
-    QObject::connect(_colorDialogButton, SIGNAL(pressed()), this, SLOT(showColorDialog()));
+    QObject::connect(_colorDialogButton, SIGNAL(clicked()), this, SLOT(showColorDialog()));
     colorLayout->addWidget(_colorDialogButton);
     
     mainLayout->addWidget(boxContainers);
@@ -1712,7 +1712,7 @@ void Parametric_KnobGui::createWidget(QGridLayout *layout, int row) {
     
     _resetButton = new Button("Reset",treeColumn);
     _resetButton->setToolTip(Qt::convertFromPlainText("Reset the selected curves in the tree to their default shape", Qt::WhiteSpaceNormal));
-    QObject::connect(_resetButton, SIGNAL(pressed()), this, SLOT(resetSelectedCurves()));
+    QObject::connect(_resetButton, SIGNAL(clicked()), this, SLOT(resetSelectedCurves()));
     treeColumnLayout->addWidget(_resetButton);
     
     layout->addWidget(treeColumn, row, 0);

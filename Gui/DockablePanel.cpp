@@ -137,8 +137,8 @@ DockablePanel::DockablePanel(Gui* gui
         _redoButton->setEnabled(false);
         
         
-        QObject::connect(_undoButton, SIGNAL(pressed()),this, SLOT(onUndoPressed()));
-        QObject::connect(_redoButton, SIGNAL(pressed()),this, SLOT(onRedoPressed()));
+        QObject::connect(_undoButton, SIGNAL(clicked()),this, SLOT(onUndoClicked()));
+        QObject::connect(_redoButton, SIGNAL(clicked()),this, SLOT(onRedoPressed()));
         
         if(headerMode != READ_ONLY_NAME){
             _nameLineEdit = new LineEdit(_headerWidget);
@@ -427,7 +427,7 @@ void DockablePanel::pushUndoCommand(QUndoCommand* cmd){
     }
 }
 
-void DockablePanel::onUndoPressed(){
+void DockablePanel::onUndoClicked(){
     _undoStack->undo();
     if(_undoButton && _redoButton){
         _undoButton->setEnabled(_undoStack->canUndo());
