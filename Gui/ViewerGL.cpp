@@ -344,11 +344,15 @@ static const GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
 void ViewerGL::drawRenderingVAO() {
     assert(QGLContext::currentContext() == context());
     
-    ///the texture rectangle in image coordinates
+    ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
+    ///
     const TextureRect &r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
     
     ///the RoD of the iamge
     RectI rod = _imp->clipToDisplayWindow ? getDisplayWindow() : getRoD();
+
+    ///clip the RoD to the portion where data lies. (i.e: r might be different than rod)
+    rod.intersect(r.x1,r.y1,r.x2,r.y2,&rod);
     
     //if user RoI is enabled, clip the rod to that roi
     if (_imp->isUserRoIEnabled) {
@@ -397,26 +401,26 @@ void ViewerGL::drawRenderingVAO() {
     texRight = (GLfloat)(r.x2 - r.x1) / (GLfloat)(r.w * r.closestPo2);
     
     // texTop = texTop > 1 ? 1 : texTop;
-    // texRight = texRight > 1 ? 1 : texRight;
+    //  texRight = texRight > 1 ? 1 : texRight;
     
     
     GLfloat renderingTextureCoordinates[32] = {
-        texLeft , texTop , //0
-        texLeft , texTop , //1
-        texRight , texTop ,//2
-        texRight , texTop , //3
-        texLeft , texTop , //4
+        0 , 1 , //0
+        texLeft , 1 , //1
+        texRight , 1 ,//2
+        1 , 1 , //3
+        0 , texTop , //4
         texLeft , texTop , //5
         texRight , texTop , //6
-        texRight , texTop , //7
-        texLeft , texBottom , //8
+        1 , texTop , //7
+        0 , texBottom , //8
         texLeft , texBottom , //9
         texRight , texBottom ,  //10
-        texRight , texBottom , //11
-        texLeft , texBottom , // 12
-        texLeft , texBottom , //13
-        texRight , texBottom , //14
-        texRight , texBottom   //15
+        1 , texBottom , //11
+        0 , 0 , // 12
+        texLeft , 0 , //13
+        texRight , 0 , //14
+        1 , 0   //15
     };
     
     glEnable(GL_SCISSOR_TEST);
