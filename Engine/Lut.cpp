@@ -1148,6 +1148,40 @@ namespace Natron {
         const Lut* LutManager::AlexaV3LogCLut(){
             return LutManager::m_instance.getLut("AlexaV3LogC",from_func_AlexaV3LogC,to_func_AlexaV3LogC);
         }
-        
+
+        // r,g,b values are from 0 to 1
+        // h = [0,360], s = [0,1], v = [0,1]
+        //		if s == 0, then h = -1 (undefined)
+        void rgb_to_hsv( float r, float g, float b, float *h, float *s, float *v )
+        {
+            float min, max, delta;
+
+            min = std::min(std::min(r, g), b);
+            max = std::max(std::max(r, g), b);
+            *v = max;				// v
+
+            delta = max - min;
+
+            if( max != 0 )
+                *s = delta / max;		// s
+            else {
+                // r = g = b = 0		// s = 0, v is undefined
+                *s = 0;
+                *h = -1;
+                return;
+            }
+
+            if( r == max )
+                *h = ( g - b ) / delta;		// between yellow & magenta
+            else if( g == max )
+                *h = 2 + ( b - r ) / delta;	// between cyan & yellow
+            else
+                *h = 4 + ( r - g ) / delta;	// between magenta & cyan
+
+            *h *= 60;				// degrees
+            if( *h < 0 )
+                *h += 360;
+            
+        }
     }
 }
