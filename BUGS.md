@@ -6,6 +6,10 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
+- black borders around the viewer when zooming out and multithreading is disabled
+
+- RenderROI is called when disabling the viewer ROI, is it normal?
+
 - File dialog: the file list should be a few pixels wider, so that the horizontal scrollbar does not appear.
 
 - String_KnobGui: kOfxParamStringIsRichTextFormat  is not supported (it should use a QTextEdit and not convert the string to plain text)
