@@ -1001,8 +1001,8 @@ private:
             restoreFile.remove();
         } catch (...) {
             /*re-create cache*/
-
-            QDir(getCachePath()).mkpath(".");
+			QDir cacheFolder(getCachePath());
+			cacheFolder.mkpath(".");
             cleanUpDiskAndReset();
         }
 

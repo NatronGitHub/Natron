@@ -286,7 +286,7 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
     
 #if defined(WINDOWS)
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("C:\\Program Files\\Common Files\\OFX\\Nuke");
-    OFX::Host::PluginCache::getPluginCache()->addFileToPath("C:\\Program Files (x86)\\Common Files\\OFX\\");
+    OFX::Host::PluginCache::getPluginCache()->addFileToPath("C:\\Program Files (x86)\\Common Files\\OFX");
 #endif
 #if defined(__linux__)
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("/usr/OFX/Nuke");
@@ -297,7 +297,10 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
     
     QStringList extraPluginsSearchPaths = appPTR->getCurrentSettings()->getPluginsExtraSearchPaths();
     for (int i = 0; i < extraPluginsSearchPaths.size(); ++i) {
-        OFX::Host::PluginCache::getPluginCache()->addFileToPath(extraPluginsSearchPaths.at(i).toStdString());
+		std::string path = extraPluginsSearchPaths.at(i).toStdString();
+		if (!path.empty()) {
+			OFX::Host::PluginCache::getPluginCache()->addFileToPath(path);
+		}
     }
     
     QDir dir(QCoreApplication::applicationDirPath());

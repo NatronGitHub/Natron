@@ -165,7 +165,7 @@ static HINSTANCE load(const wchar_t *libraryName, bool onlySystemDirectory = tru
             fullPathAttempt.append(QLatin1Char('\\'));
         }
         fullPathAttempt.append(fileName);
-        HINSTANCE inst = ::LoadLibrary((LPCSTR)fullPathAttempt.utf16());
+        HINSTANCE inst = ::LoadLibrary((LPCSTR)fullPathAttempt.toStdString().c_str());
         if (inst != 0)
             return inst;
     }
@@ -185,7 +185,7 @@ static GetSpecialFolderPath resolveGetSpecialFolderPath()
 #endif // Q_OS_WINCE
 	   HINSTANCE libHandle = load((const wchar_t*)lib.utf16());
 	   if(libHandle) {
-		 gsfp = (GetSpecialFolderPath)(void*)GetProcAddress(libHandle,(const char*)QString::fromLatin1("SHGetSpecialFolderPathW").utf16());
+		 gsfp = (GetSpecialFolderPath)(void*)GetProcAddress(libHandle,"SHGetSpecialFolderPathW");
 	   }
     }
     return gsfp;

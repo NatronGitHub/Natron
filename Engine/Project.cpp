@@ -220,7 +220,13 @@ void Project::saveProjectInternal(const QString& path,const QString& name,bool a
     } else {
         filePath = path+actualFileName;
     }
-    std::ofstream ofile(filePath.toStdString().c_str(),std::ofstream::out);
+    std::ofstream ofile;
+	try {
+		ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+		ofile.open(filePath.toStdString().c_str(),std::ofstream::out);
+	} catch (const std::ofstream::failure& e) {
+		throw std::runtime_error(std::string(std::string("Exception opening ")+ e.what() + filePath.toStdString()));
+	}
     if (!ofile.good()) {
         qDebug() << "Failed to open file " << filePath.toStdString().c_str();
         throw std::runtime_error("Failed to open file " + filePath.toStdString());
