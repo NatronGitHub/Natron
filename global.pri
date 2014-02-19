@@ -86,7 +86,7 @@ win32{
   #microsoft compiler needs _MBCS to compile with the multi-byte character set.
   DEFINES += WINDOWS _MBCS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
   DEFINES -= _UNICODE UNICODE
-  RC_FILE += Natron.rc
+  RC_FILE += ../Natron.rc
 }
 
 unix {
