@@ -351,7 +351,8 @@ void ViewerGL::drawRenderingVAO() {
     ///the RoD of the iamge
     RectI rod = _imp->clipToDisplayWindow ? getDisplayWindow() : getRoD();
 
-    ///clip the RoD to the portion where data lies. (i.e: r might be different than rod)
+    ///clip the RoD to the portion where data lies. (i.e: r might be smaller than rod when it is the project window.)
+    ///if so then we don't want to display "all" the project window.
     rod.intersect(r.x1,r.y1,r.x2,r.y2,&rod);
     
     //if user RoI is enabled, clip the rod to that roi

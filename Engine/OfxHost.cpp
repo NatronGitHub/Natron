@@ -286,6 +286,7 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
     
 #if defined(WINDOWS)
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("C:\\Program Files\\Common Files\\OFX\\Nuke");
+    OFX::Host::PluginCache::getPluginCache()->addFileToPath("C:\\Program Files (x86)\\Common Files\\OFX\\");
 #endif
 #if defined(__linux__)
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("/usr/OFX/Nuke");
