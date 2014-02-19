@@ -21,9 +21,14 @@
 using std::cout; using std::endl;
 using namespace Natron;
 
-InfoViewerWidget::InfoViewerWidget(ViewerGL* v,QWidget* parent) : QWidget(parent),_colorAndMouseVisible(false),
-mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
-    
+InfoViewerWidget::InfoViewerWidget(ViewerGL* v,QWidget* parent)
+: QWidget(parent)
+, _colorAndMouseVisible(false)
+, mousePos(0,0)
+, rectUser(0,0)
+, colorUnderMouse(0,0,0,0)
+, _fps(0)
+{
     this->viewer = v;
     setObjectName(QString::fromUtf8("infoViewer"));
     setMinimumHeight(20);
@@ -62,37 +67,15 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
     
     rgbaValues = new QLabel(this);
     rgbaValues->setContentsMargins(0, 0, 0, 0);
-    
-    QString values;
-    values = QString("<font color='red'>%1</font> <font color='green'>%2</font> <font color='blue'>%3</font> <font color=\"#DBE0E0\">%4</font>")
-        .arg(colorUnderMouse.x(),0,'f',5)
-        .arg(colorUnderMouse.y(),0,'f',5)
-        .arg(colorUnderMouse.z(),0,'f',5)
-        .arg(colorUnderMouse.w(),0,'f',5);
-    
-   // rgbaValues->setText(values);
-    
-    QColor c(0,0,0,0);
+
     color = new QLabel(this);
     color->setMaximumSize(20, 20);
     color->setContentsMargins(0, 0, 0, 0);
     color->setStyleSheet(QString("background-color:black;"));
     
-    QColor hsv= c.toHsv();
-    QColor hsl= c.toHsl();
-    
-    QString hsvlValues;
-    hsvlValues = QString("<font color=\"#DBE0E0\">H:%1 S:%2 V:%3  L:%4</font>")
-        .arg(hsv.hslHue())
-        .arg(hsv.hslSaturationF(),0,'f',2)
-        .arg(hsv.valueF(),0,'f',2)
-        .arg(hsl.lightnessF(),0,'f',5);
-    
     hvl_lastOption = new QLabel(this);
     hvl_lastOption->setContentsMargins(10, 0, 0, 0);
-    
-    
-    
+
     layout->addWidget(resolution);
     layout->addWidget(coordDispWindow);
     layout->addWidget(_fpsLabel);
@@ -150,36 +133,34 @@ InfoViewerWidget::~InfoViewerWidget(){
 }
 
 
-void InfoViewerWidget::updateColor(){
+void InfoViewerWidget::updateColor()
+{
+    float r = colorUnderMouse.x();
+    float g = colorUnderMouse.y();
+    float b = colorUnderMouse.z();
+    float a = colorUnderMouse.w();
+
     QString values;
     values = QString("<font color='red'>%1</font> <font color='green'>%2</font> <font color='blue'>%3</font> <font color=\"#DBE0E0\">%4</font>")
-    .arg(colorUnderMouse.x(),0,'f',5)
-    .arg(colorUnderMouse.y(),0,'f',5)
-    .arg(colorUnderMouse.z(),0,'f',5)
-    .arg(colorUnderMouse.w(),0,'f',5);
+        .arg(r,0,'f',5)
+        .arg(g,0,'f',5)
+        .arg(b,0,'f',5)
+        .arg(a,0,'f',5);
 
     rgbaValues->setText(values);
-    
-    int r = Color::floatToInt<256>(colorUnderMouse.x());
-    int g = Color::floatToInt<256>(colorUnderMouse.y());
-    int b = Color::floatToInt<256>(colorUnderMouse.z());
-    int a = Color::floatToInt<256>(colorUnderMouse.w());
-    QColor c(r,g,b,a);
-    QImage img(20,20,QImage::Format_RGB32);
-    img.fill(c.rgb());
 
-    QPixmap pix=QPixmap::fromImage(img);
-    color->setPixmap(pix);
-
-    QColor hsv= c.toHsv();
-    QColor hsl= c.toHsl();
-
+    float h,s,v,l;
+    // Nuke's HSV display is based on sRGB, an L is Rec.709.
+    // see http://forums.thefoundry.co.uk/phpBB2/viewtopic.php?t=2283
+    Color::rgb_to_hsv(Color::to_func_srgb(r),Color::to_func_srgb(g),Color::to_func_srgb(b),&h,&s,&v);
+    l = 0.2125*r + 0.7154*g + 0.0721*b; // L according to Rec.709
     QString hsvlValues;
     hsvlValues = QString("<font color=\"#DBE0E0\">H:%1 S:%2 V:%3  L:%4</font>")
-    .arg(hsv.hslHue())
-    .arg(hsv.hslSaturationF(),0,'f',2)
-    .arg(hsv.valueF(),0,'f',2)
-    .arg(hsl.lightnessF(),0,'f',5);
+        .arg(h,0,'f',0)
+        .arg(s,0,'f',2)
+        .arg(v,0,'f',2)
+        .arg(l,0,'f',5);
+
     hvl_lastOption->setText(hsvlValues);
 }
 
