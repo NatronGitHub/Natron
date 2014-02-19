@@ -26,6 +26,8 @@ Missing and wanted features
 
 Here is a list of non-blocking bugs / wanted features:
 
+- a log window with OFX and Natron log messages (see OfxImageEffectInstance::vmessage, OfxHost::vmessage)
+
 - derive and integrate are not implemented for animated Double,
   Double2D, Double3D, RGBA, RGB parameters (derive returns 0,
   integrate returns (t2-t1)*getValue())
