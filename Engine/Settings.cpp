@@ -68,7 +68,7 @@ void Settings::initializeKnobs(){
     _multiThreadedDisabled->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will not spawn any thread to render.");
     _generalTab->addKnob(_multiThreadedDisabled);
     
-    _renderInSeparateProcess = Natron::createKnob<Bool_Knob>(this, "Render in a separate process.");
+    _renderInSeparateProcess = Natron::createKnob<Bool_Knob>(this, "Render in a separate process");
     _renderInSeparateProcess->turnOffAnimation();
     _renderInSeparateProcess->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will render (using the write nodes) in "
                                              "a separate process. Disabling it is most helpful for the dev team.");
