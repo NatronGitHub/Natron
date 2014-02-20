@@ -821,7 +821,7 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
         }
         boost::shared_ptr<FileSequence> frameRanges = frameRangesForSequence(name.toStdString(),extension.toStdString());
 
-        if(!frameRanges){
+        if(!frameRanges || frameRanges->size() <= 1){
             continue;
         }
 
