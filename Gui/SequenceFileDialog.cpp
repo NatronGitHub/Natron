@@ -368,6 +368,9 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     QItemSelectionModel *selectionModel = _view->selectionModel();
     QObject::connect(selectionModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),this, SLOT(selectionChanged()));
     QObject::connect(_selectionLineEdit, SIGNAL(textChanged(QString)),this, SLOT(autoCompleteFileName(QString)));
+    if (_dialogMode == SAVE_DIALOG) {
+        QObject::connect(_selectionLineEdit,SIGNAL(textEdited(QString)),this,SLOT(onSelectionLineEditing(QString)));
+    }
     QObject::connect(_view, SIGNAL(customContextMenuRequested(QPoint)),
                      this, SLOT(showContextMenu(QPoint)));
     QObject::connect(_model, SIGNAL(rootPathChanged(QString)),
@@ -630,7 +633,17 @@ void SequenceFileDialog::setDirectory(const QString &directory){
     }
     
     _selectionLineEdit->blockSignals(true);
-    _selectionLineEdit->setText(newDirectory);
+    
+    if (_dialogMode == OPEN_DIALOG || _dialogMode == DIR_DIALOG) {
+        _selectionLineEdit->setText(newDirectory);
+    } else {
+        ///find out if there's already a filename typed by the user
+        ///and append it to the new path
+        QString existingText = _selectionLineEdit->text();
+        QString unpathed = SequenceFileDialog::removePath(existingText);
+        _selectionLineEdit->setText(newDirectory + unpathed);
+    }
+    
     _selectionLineEdit->blockSignals(false);
 
 
@@ -2384,6 +2397,21 @@ void SequenceFileDialog::appendFilesFromDirRecursively(QDir* currentDir,QStringL
         //else if it is a file, append it
         if(QFile::exists(entryWithPath)){
             files->append(entryWithPath);
+        }
+    }
+}
+
+void SequenceFileDialog::onSelectionLineEditing(const QString& text) {
+    
+    if (_dialogMode != SAVE_DIALOG) {
+        return;
+    }
+    QString textCpy = text;
+    QString extension = Natron::removeFileExtension(textCpy);
+    for (int i = 0; i < _fileExtensionCombo->count(); ++i) {
+        if (_fileExtensionCombo->itemText(i) == extension) {
+            _fileExtensionCombo->setCurrentIndex_no_emit(i);
+            break;
         }
     }
 }

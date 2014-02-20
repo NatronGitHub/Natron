@@ -491,6 +491,7 @@ public slots:
     void showContextMenu(const QPoint &position);
     void pathChanged(const QString &newPath);
     void autoCompleteFileName(const QString&);
+    void onSelectionLineEditing(const QString&);
     void goToDirectory(const QString&);
     void onFileExtensionComboChanged(int index);
     void setFileExtensionOnLineEdit(const QString&);
