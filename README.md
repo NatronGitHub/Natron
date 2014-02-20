@@ -32,6 +32,10 @@ Features
 - OpenFX: Currently almost all features of OpenFX v1.3 are supported
   (see Documentation/ofxActionsSupported.rtf and
   Documentation/ofxPropSupported.rtf in the source distribution)
+  
+- Linear 32-bits floating point workflow: all images are internally stored with linear colors
+and with floating point values for best results.
+  
 - A minimum of OpenGL 1.5 is required, hence most graphics cards should be supported, 
 platforms not supporting GLSL are also supported
 - Fast Viewer interaction with no delay 
@@ -45,6 +49,8 @@ platforms not supporting GLSL are also supported
 - The project saves also the layout of the application.
 - Command line tool for execution of project files. The command line version is executable from ssh on a computer without any display.
 - Animation support and possibility to change it with a curve editor
+- OpenColorIO support via the plug-ins located in  [OpenFX-IO](https://github.com/MrKepzie/openfx-io)
+- OpenImageIO support via the plug-ins located in  [OpenFX-IO](https://github.com/MrKepzie/openfx-io)
 
 Requirements
 ------------
@@ -69,19 +75,18 @@ Planned features
 ### High priority
 
 - Real-time histograms,vectorscope,waveforms [All source code already exists,it's just a matter of hours to implement them]
-- Graphical user interface colours customisation
 - Proxy mode(i.e: downscaling of the input images to render faster)
 
 ### Features planned for next major version
 
 - Dopesheet
-- Progress report on the viewer (it is already implemented)
+- Rotopainting node
 - Multi-view (http://imagine.enpc.fr/~moulonp/openMVG/) support.
 - Meta-data support as well as per-plugin meta-data support by the node-graph
-- Rotopainting node
 
 ### Features planned for future versions
 
+- Graphical user interface colours customisation
 - OpenGL rendering support to make processing nodes even faster
 - 3D models viewer + renderer (using libQGLViewer)
 - And many more features that are in the list but that I can't think off the top of my head!
@@ -96,8 +101,9 @@ The main development branch is called
 ["workshop"](https://github.com/MrKepzie/Natron/tree/workshop).
 The master branch contains the last known stable version.
 
-Feel free to
-report bugs, discuss tasks, or pick up work there. If you want to make
+You can check out the easy tasks left to do [here](https://natron.inria.fr/easy-task-list/).
+
+Feel free to report bugs, discuss tasks, or pick up work there. If you want to make
 changes, please fork, edit, and [send us a pull
 request](https://github.com/MrKepzie/Natron/pull/new/workshop),
 preferably on the ["workshop"](https://github.com/MrKepzie/Natron/tree/workshop)
