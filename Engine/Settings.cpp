@@ -68,6 +68,12 @@ void Settings::initializeKnobs(){
     _multiThreadedDisabled->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will not spawn any thread to render.");
     _generalTab->addKnob(_multiThreadedDisabled);
     
+    _renderInSeparateProcess = Natron::createKnob<Bool_Knob>(this, "Render in a separate process.");
+    _renderInSeparateProcess->turnOffAnimation();
+    _renderInSeparateProcess->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will render (using the write nodes) in "
+                                             "a separate process. Disabling it is most helpful for the dev team.");
+    _generalTab->addKnob(_renderInSeparateProcess);
+    
     _autoPreviewEnabledForNewProjects = Natron::createKnob<Bool_Knob>(this, "Auto-preview enabled by default for new projects");
     _autoPreviewEnabledForNewProjects->turnOffAnimation();
     _autoPreviewEnabledForNewProjects->setHintToolTip("If checked then when creating a new project, the Auto-preview option"
@@ -199,6 +205,7 @@ void Settings::setDefaultValues() {
     beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
     _linearPickers->setValue<bool>(true);
     _multiThreadedDisabled->setValue<bool>(false);
+    _renderInSeparateProcess->setValue<bool>(true);
     _autoPreviewEnabledForNewProjects->setValue<bool>(true);
     _extraPluginPaths->setValue<QString>("");
     _texturesMode->setValue<int>(0);
@@ -237,6 +244,7 @@ void Settings::saveSettings(){
     settings.beginGroup("General");
     settings.setValue("LinearColorPickers",_linearPickers->getValue<bool>());
     settings.setValue("MultiThreadingDisabled", _multiThreadedDisabled->getValue<bool>());
+    settings.setValue("RenderInSeparateProcess", _renderInSeparateProcess->getValue<bool>());
     settings.setValue("AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue<bool>());
     settings.setValue("ExtraPluginsPaths", _extraPluginPaths->getValue<QString>());
     settings.endGroup();
@@ -288,6 +296,9 @@ void Settings::restoreSettings(){
     }
     if (settings.contains("MultiThreadingDisabled")) {
         _multiThreadedDisabled->setValue<bool>(settings.value("MultiThreadingDisabled").toBool());
+    }
+    if (settings.contains("RenderInSeparateProcess")) {
+        _renderInSeparateProcess->setValue<bool>(settings.value("RenderInSeparateProcess").toBool());
     }
     if (settings.contains("AutoPreviewDefault")) {
         _autoPreviewEnabledForNewProjects->setValue<bool>(settings.value("AutoPreviewDefault").toBool());
@@ -579,4 +590,8 @@ void Settings::restoreDefault() {
         qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
     }
     setDefaultValues();
+}
+
+bool Settings::isRenderInSeparatedProcessEnabled() const {
+    return _renderInSeparateProcess->getValue<bool>();
 }
