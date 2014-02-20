@@ -309,6 +309,8 @@ public:
      *the frame number truncated.
      *It returns in framenumber the number of the frame, or -1 if it had no frame number
      *and in extension the name of file type
+     * e.g: for /Users/Bla/Pictures/toto15.jpg it would return
+     * path = /Users/Bla/Pictures/toto , frameNumber = 15 and extension = jpg
      **/
     static void parseFilename(QString &path, int* frameNumber, QString &extension);
 

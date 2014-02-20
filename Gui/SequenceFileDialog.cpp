@@ -63,6 +63,9 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiApplicationManager.h"
 #include "Global/MemoryInfo.h"
 
+///the maximum number of non existing frame before Natron gives up trying to figure out a sequence layout.
+#define NATRON_DIALOG_MAX_SEQUENCES_HOLE 1000
+
 using std::make_pair;
 using namespace Natron;
 
@@ -740,6 +743,13 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
         return QSortFilterProxyModel::filterAcceptsRow(source_row,source_parent);
     }
     
+    ///for filenames which consist only of digits (e.g: 7239290309283.jpg) , just
+    /// take the frameNumber as the filepath otherwise it would mess with the sequences detection.
+    QString filenameUnPathed = SequenceFileDialog::removePath(pathCpy);
+    if (filenameUnPathed.isEmpty()) {
+        pathCpy = QString::number(frameNumber);
+    }
+    
     /*Locking the access to the frame sequences multi-map*/
     QMutexLocker locker(&_frameSequencesMutex);
     std::pair<Natron::SequenceIterator,Natron::SequenceIterator> it = _frameSequences.equal_range(pathCpy.toStdString());
@@ -823,8 +833,14 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
             int first = frameRanges->firstFrame();
             while(first <= frameRanges->lastFrame()){
                 
-                while (!(frameRanges->isInSequence(first))) {
+                int breakCounter = 0;
+                while (!(frameRanges->isInSequence(first)) && breakCounter < NATRON_DIALOG_MAX_SEQUENCES_HOLE) {
                     ++first;
+                    ++breakCounter;
+                }
+                
+                if (breakCounter >= NATRON_DIALOG_MAX_SEQUENCES_HOLE) {
+                    break;
                 }
                 
                 chunks.push_back(std::make_pair(first, frameRanges->lastFrame()));
