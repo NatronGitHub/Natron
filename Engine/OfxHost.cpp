@@ -18,11 +18,7 @@
 #include <string>
 #include <QtCore/QDir>
 #include <QtCore/QMutex>
-#if QT_VERSION < 0x050000
-#include <QtGui/QDesktopServices>
-#else
-#include <QStandardPaths>
-#endif
+#include <QtCore/QCoreApplication>
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
 #include <boost/thread.hpp>
@@ -50,7 +46,9 @@
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/KnobTypes.h"
-
+#include "Engine/Plugin.h"
+#include "Engine/StandardPaths.h"
+#include "Engine/Settings.h"
 
 using namespace Natron;
 
@@ -142,42 +140,34 @@ OFX::Host::ImageEffect::Descriptor *Natron::OfxHost::makeDescriptor(const std::s
 
 
 /// message
-OfxStatus Natron::OfxHost::vmessage(const char* type,
-                                     const char* ,
+OfxStatus Natron::OfxHost::vmessage(const char* msgtype,
+                                     const char* /*id*/,
                                      const char* format,
                                      va_list args)
 {
-    assert(type);
+    assert(msgtype);
     assert(format);
     char buf[10000];
     sprintf(buf, format,args);
     std::string message(buf);
     
-    if (strcmp(type, kOfxMessageLog) == 0) {
-        
+    std::string type(msgtype);
+
+    if (type == kOfxMessageLog) {
+#pragma message WARN("Log in a log buffer, not on stdout!")
         std::cout << message << std::endl;
-        
-    }else if(strcmp(type, kOfxMessageFatal) == 0 ||
-             strcmp(type, kOfxMessageError) == 0) {
-        
+    } else if (type == kOfxMessageFatal || type == kOfxMessageError) {
         Natron::errorDialog(NATRON_APPLICATION_NAME, message);
-        
-    }else if(strcmp(type, kOfxMessageWarning)){
-        
+    } else if (type == kOfxMessageWarning) {
         Natron::warningDialog(NATRON_APPLICATION_NAME, message);
-        
-    }else if(strcmp(type, kOfxMessageMessage)){
-        
+    } else if (type == kOfxMessageMessage) {
         Natron::informationDialog(NATRON_APPLICATION_NAME, message);
-        
-    }else if(strcmp(type, kOfxMessageQuestion) == 0) {
-        
-        if(Natron::questionDialog(NATRON_APPLICATION_NAME, message) == Natron::Yes){
+    } else if (type == kOfxMessageQuestion) {
+        if (Natron::questionDialog(NATRON_APPLICATION_NAME, message) == Natron::Yes) {
             return kOfxStatReplyYes;
-        }else{
+        } else {
             return kOfxStatReplyNo;
         }
-        
     }
     return kOfxStatReplyDefault;
 }
@@ -296,6 +286,7 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
     
 #if defined(WINDOWS)
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("C:\\Program Files\\Common Files\\OFX\\Nuke");
+    OFX::Host::PluginCache::getPluginCache()->addFileToPath("C:\\Program Files (x86)\\Common Files\\OFX");
 #endif
 #if defined(__linux__)
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("/usr/OFX/Nuke");
@@ -304,16 +295,25 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("/Library/OFX/Nuke");
 #endif
     
+    QStringList extraPluginsSearchPaths = appPTR->getCurrentSettings()->getPluginsExtraSearchPaths();
+    for (int i = 0; i < extraPluginsSearchPaths.size(); ++i) {
+		std::string path = extraPluginsSearchPaths.at(i).toStdString();
+		if (!path.empty()) {
+			OFX::Host::PluginCache::getPluginCache()->addFileToPath(path);
+		}
+    }
+    
+    QDir dir(QCoreApplication::applicationDirPath());
+    dir.cdUp();
+    OFX::Host::PluginCache::getPluginCache()->addFileToPath(QString(dir.absolutePath()+ QDir::separator() + "Plugins").toStdString());
+    
     /// now read an old cache
     // The cache location depends on the OS.
     // On OSX, it will be ~/Library/Caches/<organization>/<application>/OFXCache.xml
     //on Linux ~/.cache/<organization>/<application>/OFXCache.xml
     //on windows:
-#if QT_VERSION < 0x050000
-    QString ofxcachename = QDesktopServices::storageLocation(QDesktopServices::CacheLocation) + QDir::separator() + "OFXCache.xml";
-#else
-    QString ofxcachename = QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + QDir::separator() + "OFXCache.xml";
-#endif
+    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation) + QDir::separator() + "OFXCache.xml";
+
     std::ifstream ifs(ofxcachename.toStdString().c_str());
     if (ifs.is_open()) {
         OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
@@ -430,12 +430,7 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
 
 void Natron::OfxHost::writeOFXCache(){
     /// and write a new cache, long version with everything in there
-#if QT_VERSION < 0x050000
-    QString ofxcachename = QDesktopServices::storageLocation(QDesktopServices::CacheLocation);
-    
-#else
-    QString ofxcachename = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
-#endif
+    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
     QDir().mkpath(ofxcachename);
     ofxcachename +=  QDir::separator();
     ofxcachename += "OFXCache.xml";
@@ -447,12 +442,9 @@ void Natron::OfxHost::writeOFXCache(){
 }
 
 void Natron::OfxHost::clearPluginsLoadedCache() {
-#if QT_VERSION < 0x050000
-    QString ofxcachename = QDesktopServices::storageLocation(QDesktopServices::CacheLocation);
-    
-#else
-    QString ofxcachename = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
-#endif
+
+    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
+
     QDir().mkpath(ofxcachename);
     ofxcachename +=  QDir::separator();
     ofxcachename += "OFXCache.xml";

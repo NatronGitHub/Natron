@@ -35,7 +35,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QMenu>
 #include <QComboBox>
 
-#include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
 #include "Global/GlobalDefines.h"
 
@@ -64,6 +63,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/CurveEditor.h"
 #include "Gui/KnobGuiTypes.h"
 #include "Gui/CurveWidget.h"
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiAppInstance.h"
 
 using namespace Natron;
 
@@ -92,6 +93,10 @@ KnobGui::~KnobGui(){
     
     delete _animationButton;
     delete _animationMenu;
+}
+
+Gui* KnobGui::getGui() const {
+    return _container->getGui();
 }
 
 const QUndoCommand* KnobGui::getLastUndoCommand() const{
@@ -269,7 +274,7 @@ void KnobGui::showAnimationMenu(){
 
 void KnobGui::onShowInCurveEditorActionTriggered(){
     assert(_knob->getHolder()->getApp());
-    _knob->getHolder()->getApp()->getGui()->setCurveEditorOnTop();
+    getGui()->setCurveEditorOnTop();
     std::vector<boost::shared_ptr<Curve> > curves;
     for(int i = 0; i < _knob->getDimension();++i){
         boost::shared_ptr<Curve> c = _knob->getCurve(i);
@@ -278,7 +283,7 @@ void KnobGui::onShowInCurveEditorActionTriggered(){
         }
     }
     if(!curves.empty()){
-        _knob->getHolder()->getApp()->getGui()->_curveEditor->centerOn(curves);
+        getGui()->getCurveEditor()->centerOn(curves);
     }
     
     
@@ -288,13 +293,13 @@ void KnobGui::onRemoveAnyAnimationActionTriggered(){
     assert(_knob->getHolder()->getApp());
     std::vector<std::pair<CurveGui *, KeyFrame > > toRemove;
     for(int i = 0; i < _knob->getDimension();++i){
-        CurveGui* curve = _knob->getHolder()->getApp()->getGui()->_curveEditor->findCurve(this, i);
+        CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
         const KeyFrameSet& keys = curve->getInternalCurve()->getKeyFrames();
         for(KeyFrameSet::const_iterator it = keys.begin();it!=keys.end();++it){
             toRemove.push_back(std::make_pair(curve,*it));
         }
     }
-    pushUndoCommand(new RemoveKeysCommand(_knob->getHolder()->getApp()->getGui()->_curveEditor->getCurveWidget(),
+    pushUndoCommand(new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),
                                           toRemove));
     //refresh the gui so it doesn't indicate the parameter is animated anymore
     for(int i = 0; i < _knob->getDimension();++i){
@@ -371,10 +376,11 @@ void KnobGui::onSetKeyActionTriggered(){
     //get the current time on the global timeline
     SequenceTime time = _knob->getHolder()->getApp()->getTimeLine()->currentFrame();
     for(int i = 0; i < _knob->getDimension();++i){
-        CurveGui* curve = _knob->getHolder()->getApp()->getGui()->_curveEditor->findCurve(this, i);
+        CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
+        assert(curve);
         std::vector<KeyFrame> kVec;
         kVec.push_back(KeyFrame((double)time,_knob->getValue<double>(i)));
-        pushUndoCommand(new AddKeysCommand(_knob->getHolder()->getApp()->getGui()->_curveEditor->getCurveWidget(),
+        pushUndoCommand(new AddKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),
                                            curve,kVec));
     }
     
@@ -402,10 +408,10 @@ void KnobGui::onRemoveKeyActionTriggered(){
     SequenceTime time = _knob->getHolder()->getApp()->getTimeLine()->currentFrame();
     std::vector<std::pair<CurveGui*,KeyFrame> > toRemove;
     for(int i = 0; i < _knob->getDimension();++i){
-        CurveGui* curve = _knob->getHolder()->getApp()->getGui()->_curveEditor->findCurve(this, i);
+        CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
         toRemove.push_back(std::make_pair(curve,KeyFrame(time,_knob->getValue<double>(i))));
     }
-    pushUndoCommand(new RemoveKeysCommand(_knob->getHolder()->getApp()->getGui()->_curveEditor->getCurveWidget(),
+    pushUndoCommand(new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),
                                           toRemove));
 }
 
@@ -415,7 +421,7 @@ void KnobGui::hide(){
         _animationButton->hide();
     //also  hide the curve from the curve editor if there's any
     if(_knob->getHolder()->getApp()){
-        _knob->getHolder()->getApp()->getGui()->_curveEditor->hideCurves(this);
+       getGui()->getCurveEditor()->hideCurves(this);
     }
     
 }
@@ -426,7 +432,7 @@ void KnobGui::show(){
         _animationButton->show();
     //also show the curve from the curve editor if there's any
     if(_knob->getHolder()->getApp()){
-        _knob->getHolder()->getApp()->getGui()->_curveEditor->showCurves(this);
+        getGui()->getCurveEditor()->showCurves(this);
     }
 }
 
@@ -434,9 +440,9 @@ void KnobGui::setEnabledSlot(){
     setEnabled();
     if(_knob->getHolder()->getApp()){
         if(!_knob->isEnabled()){
-            _knob->getHolder()->getApp()->getGui()->_curveEditor->hideCurves(this);
+            getGui()->getCurveEditor()->hideCurves(this);
         }else{
-            _knob->getHolder()->getApp()->getGui()->_curveEditor->showCurves(this);
+            getGui()->getCurveEditor()->showCurves(this);
         }
     }
 }

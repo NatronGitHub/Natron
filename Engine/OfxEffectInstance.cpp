@@ -15,6 +15,7 @@
 #include <limits>
 #include <stdexcept>
 #include <QByteArray>
+#include <QPointF>
 
 #include "Global/Macros.h"
 
@@ -36,7 +37,7 @@
 #include "Engine/Project.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
-
+#include "Engine/AppInstance.h"
 
 using namespace Natron;
 using std::cout; using std::endl;
@@ -120,7 +121,7 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
             throw std::runtime_error("Could not create effect instance for plugin");
         }
         if (!effect_->getClipPreferences()) {
-            Natron::errorDialog(getName(),"The plugin failed in the getClipPreferencesAction.");
+           qDebug() << "The plugin failed in the getClipPreferencesAction.";
         }
 
     } catch (const std::exception& e) {
@@ -149,7 +150,7 @@ void OfxEffectInstance::initializeContextDependentParams() {
     
     if (isWriter()) {
         _renderButton = Natron::createKnob<Button_Knob>(this, "Render");
-        _renderButton->setHintToolTip("Starts rendering the frame range specified.");
+        _renderButton->setHintToolTip("Starts rendering the specified frame range.");
         _renderButton->setAsRenderButton();
     }
     
@@ -390,7 +391,14 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI*
     if(!_initialized){
         return Natron::StatFailed;
     }
+
     assert(effect_);
+    
+    if (isWriter()) {
+        rod->set(getRenderFormat());
+        return StatReplyDefault;
+    }
+    
     OfxPointD rS;
     rS.x = rS.y = 1.0;
     OfxRectD ofxRod;

@@ -19,7 +19,7 @@
 #include <QtGui/QImageWriter>
 
 #include "Engine/AppManager.h"
-
+#include "Engine/AppInstance.h"
 #include "Engine/Lut.h"
 #include "Engine/Format.h"
 #include "Engine/Image.h"
@@ -33,7 +33,7 @@ QtWriter::QtWriter(Natron::Node* node)
 :Natron::OutputEffectInstance(node)
 , _lut(Natron::Color::LutManager::sRGBLut())
 {
-    
+   
 }
 
 QtWriter::~QtWriter(){
@@ -84,6 +84,12 @@ void QtWriter::getFrameRange(SequenceTime *first,SequenceTime *last){
 
 
 void QtWriter::initializeKnobs(){
+    
+    if (isLiveInstance()) {
+        Natron::warningDialog(getName(), "This plugin exists only to help the developpers team to test " NATRON_APPLICATION_NAME
+                              ". You cannot use it to render a project.");
+    }
+    
     _premultKnob = Natron::createKnob<Bool_Knob>(this, "Premultiply by alpha");
     _premultKnob->turnOffAnimation();
     _premultKnob->setValue<bool>(false);
@@ -94,7 +100,7 @@ void QtWriter::initializeKnobs(){
     _frameRangeChoosal = Natron::createKnob<Choice_Knob>(this, "Frame range");
     _frameRangeChoosal->turnOffAnimation();
     std::vector<std::string> frameRangeChoosalEntries;
-    frameRangeChoosalEntries.push_back("Inputs union");
+    frameRangeChoosalEntries.push_back("Union of input ranges");
     frameRangeChoosalEntries.push_back("Timeline bounds");
     frameRangeChoosalEntries.push_back("Manual");
     _frameRangeChoosal->populate(frameRangeChoosalEntries);

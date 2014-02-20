@@ -27,6 +27,7 @@
 #include <QSplitter>
 #include <QtGui/QIcon>
 #include <QDialog>
+#include <QScrollBar>
 #include <QFileDialog>
 #include <QtCore/QRegExp>
 CLANG_DIAG_OFF(unused-private-field)
@@ -55,12 +56,15 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include <QtCore/QSettings>
 
-#include "Engine/AppManager.h"
 #include "Global/QtCompat.h"
 #include "Gui/Button.h"
 #include "Gui/LineEdit.h"
 #include "Gui/ComboBox.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Global/MemoryInfo.h"
+
+///the maximum number of non existing frame before Natron gives up trying to figure out a sequence layout.
+#define NATRON_DIALOG_MAX_SEQUENCES_HOLE 1000
 
 using std::make_pair;
 using namespace Natron;
@@ -269,19 +273,24 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     QObject::connect(_sequenceButton,SIGNAL(currentIndexChanged(int)),this,SLOT(sequenceComboBoxSlot(int)));
     _selectionLayout->addWidget(_sequenceButton);
     
-    if(!isSequenceDialog){
+    if(!isSequenceDialog || _dialogMode == DIR_DIALOG){
         _sequenceButton->setVisible(false);
     }
     _selectionLineEdit = new LineEdit(_selectionWidget);
     _selectionLayout->addWidget(_selectionLineEdit);
     
-    if(mode==SequenceFileDialog::OPEN_DIALOG)
+    if(mode == SequenceFileDialog::OPEN_DIALOG || mode == SequenceFileDialog::DIR_DIALOG) {
         _openButton = new Button("Open",_selectionWidget);
-    else
+    } else {
         _openButton = new Button("Save",_selectionWidget);
+    }
     _selectionLayout->addWidget(_openButton);
-    QObject::connect(_openButton, SIGNAL(pressed()), this, SLOT(openSelectedFiles()));
     
+    if (_dialogMode != DIR_DIALOG) {
+        QObject::connect(_openButton, SIGNAL(clicked()), this, SLOT(openSelectedFiles()));
+    } else {
+        QObject::connect(_openButton,SIGNAL(clicked()),this,SLOT(selectDirectory()));
+    }
     _mainLayout->addWidget(_selectionWidget);
     
     /*creating filter zone*/
@@ -292,10 +301,11 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     
     if(_dialogMode == OPEN_DIALOG){
         _filterLabel = new QLabel("Filter:",_filterLineWidget);
-    }else{
+        _filterLineLayout->addWidget(_filterLabel);
+    }else if(_dialogMode == SAVE_DIALOG){
         _filterLabel = new QLabel("File type:",_filterLineWidget);
+        _filterLineLayout->addWidget(_filterLabel);
     }
-    _filterLineLayout->addWidget(_filterLabel);
     
     _filterWidget = new QWidget(_filterLineWidget);
     _filterLayout = new QHBoxLayout(_filterWidget);
@@ -318,15 +328,17 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
         QObject::connect(_filterLineEdit,SIGNAL(textEdited(QString)),this,SLOT(applyFilter(QString)));
         
         
-    }else{
+    }else if(_dialogMode == SAVE_DIALOG){
         _fileExtensionCombo = new ComboBox(_filterWidget);
         for (U32 i = 0; i < _filters.size(); ++i) {
             _fileExtensionCombo->addItem(_filters[i].c_str());
         }
         _filterLineLayout->addWidget(_fileExtensionCombo);
-        QObject::connect(_fileExtensionCombo, SIGNAL(currentIndexChanged(QString)), this, SLOT(setFileExtensionOnLineEdit(QString)));
+        QObject::connect(_fileExtensionCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onFileExtensionComboChanged(int)));
         if(isSequenceDialog)
             _fileExtensionCombo->setCurrentIndex(_fileExtensionCombo->itemIndex("jpg"));
+        _filterLineLayout->addStretch();
+    } else {
         _filterLineLayout->addStretch();
     }
     _proxy->setFilter(filter);
@@ -356,6 +368,9 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     QItemSelectionModel *selectionModel = _view->selectionModel();
     QObject::connect(selectionModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),this, SLOT(selectionChanged()));
     QObject::connect(_selectionLineEdit, SIGNAL(textChanged(QString)),this, SLOT(autoCompleteFileName(QString)));
+    if (_dialogMode == SAVE_DIALOG) {
+        QObject::connect(_selectionLineEdit,SIGNAL(textEdited(QString)),this,SLOT(onSelectionLineEditing(QString)));
+    }
     QObject::connect(_view, SIGNAL(customContextMenuRequested(QPoint)),
                      this, SLOT(showContextMenu(QPoint)));
     QObject::connect(_model, SIGNAL(rootPathChanged(QString)),
@@ -367,11 +382,13 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
             setWindowTitle("Open Sequence");
         else
             setWindowTitle("Open File");
-    }else{
+    }else if(_dialogMode == SAVE_DIALOG){
         if(isSequenceDialog)
             setWindowTitle("Save Sequence");
         else
             setWindowTitle("Save File");
+    } else {
+        setWindowTitle("Select directory");
     }
     
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
@@ -397,6 +414,10 @@ SequenceFileDialog::~SequenceFileDialog(){
     
     
     
+}
+
+void SequenceFileDialog::onFileExtensionComboChanged(int index) {
+    setFileExtensionOnLineEdit(_fileExtensionCombo->itemText(index));
 }
 
 QByteArray SequenceFileDialog::saveState() const{
@@ -450,7 +471,6 @@ bool SequenceFileDialog::restoreState(const QByteArray& state){
     QHeaderView *headerView = _view->header();
     if (!headerView->restoreState(headerData))
         return false;
-    
     QList<QAction*> actions = headerView->actions();
     QAbstractItemModel *abstractModel = _model;
     if (_proxy)
@@ -598,7 +618,7 @@ void SequenceFileDialog::setDirectory(const QString &directory){
     if(directory.isEmpty()) return;
     QString newDirectory = directory;
     _view->selectionModel()->clear();
-    
+    _view->verticalScrollBar()->setValue(0);
     //we remove .. and . from the given path if exist
     if (!directory.isEmpty())
         newDirectory = QDir::cleanPath(directory);
@@ -613,7 +633,17 @@ void SequenceFileDialog::setDirectory(const QString &directory){
     }
     
     _selectionLineEdit->blockSignals(true);
-    _selectionLineEdit->setText(newDirectory);
+    
+    if (_dialogMode == OPEN_DIALOG || _dialogMode == DIR_DIALOG) {
+        _selectionLineEdit->setText(newDirectory);
+    } else {
+        ///find out if there's already a filename typed by the user
+        ///and append it to the new path
+        QString existingText = _selectionLineEdit->text();
+        QString unpathed = SequenceFileDialog::removePath(existingText);
+        _selectionLineEdit->setText(newDirectory + unpathed);
+    }
+    
     _selectionLineEdit->blockSignals(false);
 
 
@@ -726,6 +756,13 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
         return QSortFilterProxyModel::filterAcceptsRow(source_row,source_parent);
     }
     
+    ///for filenames which consist only of digits (e.g: 7239290309283.jpg) , just
+    /// take the frameNumber as the filepath otherwise it would mess with the sequences detection.
+    QString filenameUnPathed = SequenceFileDialog::removePath(pathCpy);
+    if (filenameUnPathed.isEmpty()) {
+        pathCpy = QString::number(frameNumber);
+    }
+    
     /*Locking the access to the frame sequences multi-map*/
     QMutexLocker locker(&_frameSequencesMutex);
     std::pair<Natron::SequenceIterator,Natron::SequenceIterator> it = _frameSequences.equal_range(pathCpy.toStdString());
@@ -797,7 +834,7 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
         }
         boost::shared_ptr<FileSequence> frameRanges = frameRangesForSequence(name.toStdString(),extension.toStdString());
 
-        if(!frameRanges){
+        if(!frameRanges || frameRanges->size() <= 1){
             continue;
         }
 
@@ -809,8 +846,14 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
             int first = frameRanges->firstFrame();
             while(first <= frameRanges->lastFrame()){
                 
-                while (!(frameRanges->isInSequence(first))) {
+                int breakCounter = 0;
+                while (!(frameRanges->isInSequence(first)) && breakCounter < NATRON_DIALOG_MAX_SEQUENCES_HOLE) {
                     ++first;
+                    ++breakCounter;
+                }
+                
+                if (breakCounter >= NATRON_DIALOG_MAX_SEQUENCES_HOLE) {
+                    break;
                 }
                 
                 chunks.push_back(std::make_pair(first, frameRanges->lastFrame()));
@@ -1063,6 +1106,15 @@ bool SequenceFileDialog::isASupportedFileExtension(const std::string& ext) const
     return false;
 }
 
+QString SequenceFileDialog::getFilePath(const QString& str) {
+    int slashPos = str.lastIndexOf(QDir::separator());
+    if (slashPos != -1) {
+        return str.left(slashPos);
+    } else {
+        return QString(".");
+    }
+}
+
 QString SequenceFileDialog::removePath(const QString& str){
     int i = str.lastIndexOf(".");
     if(i!=-1){
@@ -1251,69 +1303,84 @@ void SequenceFileDialog::addFavorite(const QString& name,const QString& path){
     }
 }
 
+void SequenceFileDialog::selectDirectory() {
+    QString str = _selectionLineEdit->text();
+    if (isDirectory(str)) {
+        setDirectory(str);
+        QDialog::accept();
+    }
+}
+
 void SequenceFileDialog::openSelectedFiles(){
     QString str = _selectionLineEdit->text();
-    if(!isDirectory(str)){
-        if(_dialogMode == OPEN_DIALOG){
-            QStringList files = selectedFiles();
-            if(!files.isEmpty()){
+    if (_dialogMode != DIR_DIALOG) {
+        if(!isDirectory(str)){
+            if (_dialogMode == OPEN_DIALOG) {
+                QStringList files = selectedFiles();
+                if(!files.isEmpty()){
+                    QDialog::accept();
+                }
+            } else {
+                QString pattern = getSequencePatternFromLineEdit();
+                if(!pattern.isEmpty())
+                    str = pattern;
+                QString unpathed = removePath(str);
+                int pos;
+                if(sequenceModeEnabled()){
+                    pos = unpathed.indexOf("#");
+                    if(pos == -1){
+                        pos = unpathed.lastIndexOf(".");
+                        if (pos == -1) {
+                            str.append("#");
+                        }else{
+                            str.insert(pos, "#");
+                        }
+                    }else{
+                        int dotPos = unpathed.lastIndexOf(".");
+                        if(dotPos != pos+1){
+                            //natron only supports padding character # before the . marking the file extension
+                            QMessageBox::critical(this, "Filename error", QCoreApplication::applicationName() + " only supports padding character"
+                                                  " (#) before the '.' marking the file extension.");
+                            return;
+                        }
+                    }
+                    
+                }
+                pos = unpathed.lastIndexOf(".");
+                if(pos == -1){
+                    str.append(".");
+                    str.append(_fileExtensionCombo->itemText(_fileExtensionCombo->activeIndex()));
+                }
+                _selectionLineEdit->setText(str);
+                QStringList files = filesListFromPattern(str);
+                if(files.size() > 0){
+                    QString text;
+                    if(files.size() == 1){
+                        text = "The file ";
+                        text.append(files.at(0));
+                        text.append(" already exists.\n Would you like to replace it ?");
+                    }else{
+                        text = "The sequence ";
+                        text.append(removePath(str));
+                        text.append(" already exists.\n Would you like to replace it ?");
+                    }
+                    QMessageBox::StandardButton ret = QMessageBox::question(this, "Existing file", text,
+                                                                            QMessageBox::Yes | QMessageBox::No);
+                    if(ret != QMessageBox::Yes){
+                        return;
+                    }
+                    
+                }
                 QDialog::accept();
             }
         }else{
-            QString pattern = getSequencePatternFromLineEdit();
-            if(!pattern.isEmpty())
-                str = pattern;
-            QString unpathed = removePath(str);
-            int pos;
-            if(sequenceModeEnabled()){
-                pos = unpathed.indexOf("#");
-                if(pos == -1){
-                    pos = unpathed.lastIndexOf(".");
-                    if (pos == -1) {
-                        str.append("#");
-                    }else{
-                        str.insert(pos, "#");
-                    }
-                }else{
-                    int dotPos = unpathed.lastIndexOf(".");
-                    if(dotPos != pos+1){
-                        //natron only supports padding character # before the . marking the file extension
-                        QMessageBox::critical(this, "Filename error", QCoreApplication::applicationName() + " only supports padding character"
-                                              " (#) before the '.' marking the file extension.");
-                        return;
-                    }
-                }
-
-            }
-            pos = unpathed.lastIndexOf(".");
-            if(pos == -1){
-                str.append(".");
-                str.append(_fileExtensionCombo->itemText(_fileExtensionCombo->activeIndex()));
-            }
-            _selectionLineEdit->setText(str);
-            QStringList files = filesListFromPattern(str);
-            if(files.size() > 0){
-                QString text;
-                if(files.size() == 1){
-                    text = "The file ";
-                    text.append(files.at(0));
-                    text.append(" already exists.\n Would you like to replace it ?");
-                }else{
-                    text = "The sequence ";
-                    text.append(removePath(str));
-                    text.append(" already exists.\n Would you like to replace it ?");
-                }
-                QMessageBox::StandardButton ret = QMessageBox::question(this, "Existing file", text,
-                                                                        QMessageBox::Yes | QMessageBox::No);
-                if(ret != QMessageBox::Yes){
-                    return;
-                }
-
-            }
-            QDialog::accept();
+            setDirectory(str);
         }
-    }else{
-        setDirectory(str);
+    } else {
+        
+        if (isDirectory(str)) {
+            _selectionLineEdit->setText(str);
+        }
     }
 }
 void SequenceFileDialog::cancelSlot(){
@@ -2330,6 +2397,21 @@ void SequenceFileDialog::appendFilesFromDirRecursively(QDir* currentDir,QStringL
         //else if it is a file, append it
         if(QFile::exists(entryWithPath)){
             files->append(entryWithPath);
+        }
+    }
+}
+
+void SequenceFileDialog::onSelectionLineEditing(const QString& text) {
+    
+    if (_dialogMode != SAVE_DIALOG) {
+        return;
+    }
+    QString textCpy = text;
+    QString extension = Natron::removeFileExtension(textCpy);
+    for (int i = 0; i < _fileExtensionCombo->count(); ++i) {
+        if (_fileExtensionCombo->itemText(i) == extension) {
+            _fileExtensionCombo->setCurrentIndex_no_emit(i);
+            break;
         }
     }
 }

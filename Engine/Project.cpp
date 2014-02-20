@@ -13,7 +13,7 @@
 #include <QtConcurrentRun>
 
 #include "Engine/AppManager.h"
-
+#include "Engine/AppInstance.h"
 #include "Engine/ProjectPrivate.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/EffectInstance.h"
@@ -22,7 +22,7 @@
 #include "Engine/ProjectSerialization.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
-
+#include "Engine/StandardPaths.h"
 
 using std::cout; using std::endl;
 using std::make_pair;
@@ -46,6 +46,7 @@ Project::~Project() {
 bool Project::loadProject(const QString& path,const QString& name){
     {
         QMutexLocker l(&_imp->isLoadingProjectMutex);
+        assert(!_imp->isLoadingProject);
         _imp->isLoadingProject = true;
     }
 
@@ -54,21 +55,23 @@ bool Project::loadProject(const QString& path,const QString& name){
     try {
         loadProjectInternal(path,name);
     } catch (const std::exception& e) {
-        Natron::errorDialog("Project loader", std::string("Error while loading project") + ": " + e.what());
-        if(!getApp()->isBackground())
-            getApp()->createNode("Viewer");
         {
             QMutexLocker l(&_imp->isLoadingProjectMutex);
             _imp->isLoadingProject = false;
         }
+        Natron::errorDialog("Project loader", std::string("Error while loading project") + ": " + e.what());
+        if(!appPTR->isBackground()) {
+            getApp()->createNode("Viewer");
+        }
         return false;
     } catch (...) {
-        Natron::errorDialog("Project loader", std::string("Unkown error while loading project"));
-        if(!getApp()->isBackground())
-            getApp()->createNode("Viewer");
         {
             QMutexLocker l(&_imp->isLoadingProjectMutex);
             _imp->isLoadingProject = false;
+        }
+        Natron::errorDialog("Project loader", std::string("Unkown error while loading project"));
+        if(!appPTR->isBackground()) {
+            getApp()->createNode("Viewer");
         }
         return false;
     }
@@ -126,7 +129,7 @@ void Project::loadProjectInternal(const QString& path,const QString& name) {
     }
 
     /*Refresh all viewers as it was*/
-    if(!getApp()->isBackground()){
+    if(!appPTR->isBackground()){
         emit formatChanged(getProjectDefaultFormat());
         const std::vector<Node*>& nodes = getCurrentNodes();
         for (U32 i = 0; i < nodes.size(); ++i) {
@@ -145,7 +148,6 @@ void Project::saveProject(const QString& path,const QString& name,bool autoSave)
     {
         QMutexLocker l(&_imp->isLoadingProjectMutex);
         if(_imp->isLoadingProject){
-            qDebug() << "Attempting to save wihle project is loading. This is probably a bug.";
             return;
         }
     }
@@ -153,6 +155,7 @@ void Project::saveProject(const QString& path,const QString& name,bool autoSave)
     try {
         if (!autoSave) {
             if  (!isSaveUpToDate() || !QFile::exists(path+name)) {
+
                 saveProjectInternal(path,name);
             }
         } else {
@@ -217,13 +220,19 @@ void Project::saveProjectInternal(const QString& path,const QString& name,bool a
     } else {
         filePath = path+actualFileName;
     }
-    std::ofstream ofile(filePath.toStdString().c_str(),std::ofstream::out);
+    std::ofstream ofile;
+	try {
+		ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+		ofile.open(filePath.toStdString().c_str(),std::ofstream::out);
+	} catch (const std::ofstream::failure& e) {
+		throw std::runtime_error(std::string(std::string("Exception opening ")+ e.what() + filePath.toStdString()));
+	}
     if (!ofile.good()) {
         qDebug() << "Failed to open file " << filePath.toStdString().c_str();
         throw std::runtime_error("Failed to open file " + filePath.toStdString());
     }
     boost::archive::xml_oarchive oArchive(ofile);
-    bool bgProject = getApp()->isBackground();
+    bool bgProject = appPTR->isBackground();
     oArchive << boost::serialization::make_nvp("Background_project",bgProject);
     ProjectSerialization projectSerializationObj;
     save(&projectSerializationObj);
@@ -250,7 +259,7 @@ void Project::saveProjectInternal(const QString& path,const QString& name,bool a
 void Project::autoSave(){
 
     ///don't autosave in background mode...
-    if (getApp()->isBackground()) {
+    if (appPTR->isBackground()) {
         return;
     }
 
@@ -259,7 +268,7 @@ void Project::autoSave(){
 
 void Project::triggerAutoSave() {
 
-    if (getApp()->isBackground()) {
+    if (appPTR->isBackground()) {
         return;
     }
     QtConcurrent::run(this,&Project::autoSave);
@@ -317,16 +326,23 @@ bool Project::findAndTryLoadAutoSave() {
                 reset();
                 return false;
             } else {
-                try {
+                {
+                    QMutexLocker l(&_imp->isLoadingProjectMutex);
+                    assert(!_imp->isLoadingProject);
                     _imp->isLoadingProject = true;
+                }
+                try {
                     loadProjectInternal(savesDir.path()+QDir::separator(), entry);
-                    _imp->isLoadingProject = false;
                 } catch (const std::exception& e) {
                     Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project") + ": " + e.what());
                     getApp()->createNode("Viewer");
                 } catch (...) {
                     Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project"));
                     getApp()->createNode("Viewer");
+                }
+                {
+                    QMutexLocker l(&_imp->isLoadingProjectMutex);
+                    _imp->isLoadingProject = false;
                 }
 
                 _imp->autoSetProjectFormat = false;
@@ -353,6 +369,7 @@ bool Project::findAndTryLoadAutoSave() {
         }
     }
     removeAutoSaves();
+    reset();
     return false;
 }
 
@@ -392,6 +409,7 @@ void Project::initializeKnobs(){
     bool autoPreviewEnabled = appPTR->getCurrentSettings()->isAutoPreviewOnForNewProjects();
     _imp->previewMode->setValue<bool>(autoPreviewEnabled);
     
+    emit knobsInitialized();
     
 }
 
@@ -499,10 +517,12 @@ int Project::tryAddProjectFormat(const Format& f){
 void Project::setProjectDefaultFormat(const Format& f) {
     assert(!_imp->formatMutex.tryLock());
     int index = tryAddProjectFormat(f);
-    {
-        _imp->formatKnob->setValue(index);
-    }
+    _imp->formatMutex.unlock();
+    _imp->formatKnob->setValue(index);
+    ///if locked it will trigger a deadlock because some parameters
+    ///might respond to this signal by checking the content of the project format.
     emit formatChanged(f);
+    _imp->formatMutex.lock();
     getApp()->triggerAutoSave();
 }
 
@@ -676,9 +696,10 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
         ///flag that we called begin
         wasBeginCalled = false;
     } else {
+        ///THIS IS WRONG AND COMMENTED OUT : THIS LEADS TO INFINITE RECURSION.
         ///if we found a call made to begin already for this caller, adjust the reason to the reason of the
         /// outermost begin call
-        reason = found->second.second;
+        //   reason = found->second.second;
     }
 
     ///if the evaluation is significant , set the flag isSignificantChange to true
@@ -838,11 +859,7 @@ void Project::removeAutoSaves() const {
 }
 
 QString Project::autoSavesDir() {
-#if QT_VERSION < 0x050000
-    return QDesktopServices::storageLocation(QDesktopServices::DataLocation) + QDir::separator() + "Autosaves";
-#else
-    return QStandardPaths::writableLocation(QStandardPaths::DataLocation) + QDir::separator() + "Autosaves";
-#endif
+    return Natron::StandardPaths::writableLocation(Natron::StandardPaths::DataLocation) + QDir::separator() + "Autosaves";
 }
 
 void Project::reset(){
@@ -895,6 +912,7 @@ bool Project::connectNodes(int inputNumber,Node* input,Node* output,bool force) 
     Node* existingInput = output->input(inputNumber);
     if (force && existingInput) {
         bool ok = disconnectNodes(existingInput, output);
+        assert(ok);
         if (!input->isInputNode()) {
             ok = connectNodes(input->getPreferredInputForConnection(), existingInput, input);
             assert(ok);
@@ -1043,7 +1061,6 @@ bool Project::autoConnectNodes(Node* selected,Node* created) {
 
                 ok = connectNodes(it->second, created, it->first);
                 assert(ok);
-                ret = true;
             }
 
         }

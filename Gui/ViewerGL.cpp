@@ -35,7 +35,6 @@ CLANG_DIAG_ON(unused-private-field)
 GCC_DIAG_OFF(unused-parameter);
 GCC_DIAG_ON(unused-parameter);
 
-#include "Engine/AppManager.h"
 
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
@@ -49,6 +48,8 @@ GCC_DIAG_ON(unused-parameter);
 #include "Engine/ViewerInstance.h"
 #include "Engine/Project.h"
 
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiAppInstance.h"
 #include "Gui/Gui.h"
 #include "Gui/InfoViewerWidget.h"
 #include "Gui/Texture.h"
@@ -343,11 +344,18 @@ static const GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
 void ViewerGL::drawRenderingVAO() {
     assert(QGLContext::currentContext() == context());
     
-
+    ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
+    ///
     const TextureRect &r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
+    
+    ///the RoD of the iamge
     RectI rod = _imp->clipToDisplayWindow ? getDisplayWindow() : getRoD();
 
-    rod.intersect(r.x1,r.y1,r.x2,r.y2,&rod);
+    ///clip the RoD to the portion where data lies. (i.e: r might be smaller than rod when it is the project window.)
+    ///if so then we don't want to display "all" the project window.
+    if (_imp->clipToDisplayWindow) {
+        rod.intersect(getRoD(), &rod);
+    }
     
     //if user RoI is enabled, clip the rod to that roi
     if (_imp->isUserRoIEnabled) {
@@ -387,14 +395,16 @@ void ViewerGL::drawRenderingVAO() {
         (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
     };
 
+   // std::cout << "ViewerGL: x1= " << r.x1 << " x2= " << r.x2 << " y1= " << r.y1 << " y2= " << r.y2 << std::endl;
+
     GLfloat texBottom,texLeft,texRight,texTop;
     texBottom =  0;
     texTop =  (GLfloat)(r.y2 - r.y1)/ (GLfloat)(r.h * r.closestPo2);
     texLeft = 0;
     texRight = (GLfloat)(r.x2 - r.x1) / (GLfloat)(r.w * r.closestPo2);
     
-    texTop = texTop > 1 ? 1 : texTop;
-    texRight = texRight > 1 ? 1 : texRight;
+    // texTop = texTop > 1 ? 1 : texTop;
+    //  texRight = texRight > 1 ? 1 : texRight;
     
     
     GLfloat renderingTextureCoordinates[32] = {
@@ -1362,7 +1372,9 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
             if(_imp->displayingImage){
                 _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
             }
+            //  else {
             updateGL();
+            // }
             _imp->zoomOrPannedSinceLastFit = true;
             // no need to update the color picker or mouse posn: they should be unchanged
         } break;
@@ -1531,8 +1543,8 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
     }
     //else {
-    updateGL();
-    //}
+        updateGL();
+    // }
     
     assert(0 < _imp->zoomCtx.zoomFactor && _imp->zoomCtx.zoomFactor <= 1024);
     int zoomValue = (int)(100*_imp->zoomCtx.zoomFactor);

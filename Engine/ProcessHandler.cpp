@@ -10,7 +10,6 @@
 
 #include "ProcessHandler.h"
 
-#include <QDateTime>
 #include <QProcess>
 #include <QLocalServer>
 #include <QLocalSocket>
@@ -18,19 +17,21 @@
 #include <QTemporaryFile>
 #include <QWaitCondition>
 #include <QMutex>
+#include <QDir>
+#include <QDebug>
 
+#include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
-#include "Engine/KnobFile.h"
 #include "Engine/EffectInstance.h"
-#include "Gui/Gui.h"
 
 ProcessHandler::ProcessHandler(AppInstance* app,
                                const QString& projectPath,
+                               const QString& outputFileSequence,
+                               int firstFrame,int lastFrame,
                                Natron::OutputEffectInstance* writer)
     : _app(app)
     ,_process(new QProcess)
     ,_writer(writer)
-    ,_dialog(NULL)
     ,_ipcServer(0)
     ,_bgProcessOutputSocket(0)
     ,_bgProcessInputSocket(0)
@@ -38,51 +39,29 @@ ProcessHandler::ProcessHandler(AppInstance* app,
 {
 
     ///setup the server used to listen the output of the background process
-    QDateTime now = QDateTime::currentDateTime();
     _ipcServer = new QLocalServer();
     QObject::connect(_ipcServer,SIGNAL(newConnection()),this,SLOT(onNewConnectionPending()));
-    QString serverName(NATRON_APPLICATION_NAME "_OUTPUT_PIPE_" + now.toString());
+    QString serverName(NATRON_APPLICATION_NAME "_OUTPUT_PIPE_" + QString::number(qApp->applicationPid()));
     _ipcServer->listen(serverName);
 
 
-    ///the process args
-    QStringList appArgs = QCoreApplication::arguments();
+ 
     QStringList processArgs;
-    processArgs << projectPath  << "-b" << "--writer" << writer->getName().c_str();
+    processArgs << projectPath << "-b" << "-w" << writer->getName().c_str();
     processArgs << "--IPCpipe" << (_ipcServer->fullServerName());
-
+    
     ///connect the useful slots of the process
     QObject::connect(_process,SIGNAL(readyReadStandardOutput()),this,SLOT(onStandardOutputBytesWritten()));
     QObject::connect(_process,SIGNAL(readyReadStandardError()),this,SLOT(onStandardErrorBytesWritten()));
     QObject::connect(_process,SIGNAL(error(QProcess::ProcessError)),this,SLOT(onProcessError(QProcess::ProcessError)));
     QObject::connect(_process,SIGNAL(finished(int,QProcess::ExitStatus)),this,SLOT(onProcessEnd(int,QProcess::ExitStatus)));
 
-    ///validate the frame range to render
-    int firstFrame,lastFrame;
-    writer->getFrameRange(&firstFrame, &lastFrame);
-    if(firstFrame > lastFrame)
-        throw std::invalid_argument("First frame in the sequence is greater than the last frame");
-
+    
     ///start the process
-    _process->start(appArgs.at(0),processArgs);
+    qDebug() << "Starting background rendering: " << QCoreApplication::applicationFilePath() << processArgs;
+    _process->start(QCoreApplication::applicationFilePath(),processArgs);
 
-    ///get the output file knob to get the same of the sequence
-    std::string outputFileSequence;
-    const std::vector< boost::shared_ptr<Knob> >& knobs = writer->getKnobs();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        if (knobs[i]->typeName() == OutputFile_Knob::typeNameStatic()) {
-            boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
-            if(fk->isOutputImageFile()){
-                outputFileSequence = fk->getValue().toString().toStdString();
-            }
-        }
-    }
-    assert(app->getGui());
-
-    ///make the dialog which will show the progress
-    _dialog = new RenderingProgressDialog(outputFileSequence.c_str(),firstFrame,lastFrame,app->getGui());
-    QObject::connect(_dialog,SIGNAL(canceled()),this,SLOT(onProcessCanceled()));
-    _dialog->show();
+    app->notifyRenderProcessHandlerStarted(outputFileSequence,firstFrame,lastFrame,this);
 
 }
 
@@ -114,14 +93,14 @@ void ProcessHandler::onDataWrittenToSocket() {
     qDebug() << "ProcessHandler::onDataWrittenToSocket() received " << str;
     if (str.startsWith(kFrameRenderedStringShort)) {
         str = str.remove(kFrameRenderedStringShort);
-        _dialog->onFrameRendered(str.toInt());
+        emit frameRendered(str.toInt());
     } else if (str.startsWith(kRenderingFinishedStringShort)) {
         if(_process->state() == QProcess::Running) {
             _process->waitForFinished();
         }
     } else if (str.startsWith(kProgressChangedStringShort)) {
         str = str.remove(kProgressChangedStringShort);
-        _dialog->onCurrentFrameProgress(str.toInt());
+        emit frameProgress(str.toInt());
         
     } else if (str.startsWith(kBgProcessServerCreatedShort)) {
         str = str.remove(kBgProcessServerCreatedShort);
@@ -162,7 +141,7 @@ void ProcessHandler::onStandardErrorBytesWritten() {
 }
 
 void ProcessHandler::onProcessCanceled(){
-    _dialog->hide();
+    emit processCanceled();
     if(!_bgProcessInputSocket) {
         _earlyCancel = true;
     } else {
@@ -192,7 +171,7 @@ void ProcessHandler::onProcessEnd(int exitCode,QProcess::ExitStatus stat){
     }else{
         Natron::informationDialog(_writer->getName(),"Render finished!");
     }
-    _dialog->hide();
+    emit processCanceled();
     delete this;
 }
 
@@ -285,13 +264,13 @@ void ProcessInputChannel::initialize() {
     QObject::connect(_backgroundOutputPipe, SIGNAL(connected()), this, SLOT(onOutputPipeConnectionMade()));
     _backgroundOutputPipe->connectToServer(_mainProcessServerName,QLocalSocket::ReadWrite);
     
-    QDateTime now = QDateTime::currentDateTime();
     _backgroundIPCServer = new QLocalServer();
     QObject::connect(_backgroundIPCServer,SIGNAL(newConnection()),this,SLOT(onNewConnectionPending()));
 
     QString serverName;
     {
-        QTemporaryFile tmpf(QDir::tempPath() + QDir::separator() + NATRON_APPLICATION_NAME "_INPUT_SOCKET");
+        QTemporaryFile tmpf(QDir::tempPath() + QDir::separator() + NATRON_APPLICATION_NAME "_INPUT_SOCKET"
+                            + QString::number(QCoreApplication::applicationPid()));
         tmpf.open();
         serverName = tmpf.fileName();
     }

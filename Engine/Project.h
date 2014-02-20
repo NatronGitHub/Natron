@@ -48,11 +48,6 @@ public:
     
     virtual ~Project();
     
-    /**
-     * @brief Must be implemented to initialize any knob using the
-     * KnobFactory.
-     **/
-    virtual void initializeKnobs() OVERRIDE FINAL;
     
     /**
      * @brief Loads the project with the given path and name corresponding to a file on disk.
@@ -201,6 +196,8 @@ signals:
     
     void projectNameChanged(QString);
     
+    void knobsInitialized();
+    
 private:
     
     /*Returns the index of the format*/
@@ -221,6 +218,13 @@ private:
      * @brief Resets the project state.
      **/
     void reset();
+    
+    /**
+     * @brief Must be implemented to initialize any knob using the
+     * KnobFactory.
+     **/
+    virtual void initializeKnobs() OVERRIDE FINAL;
+
     
     /**
      * @brief Must be implemented to evaluate a value change

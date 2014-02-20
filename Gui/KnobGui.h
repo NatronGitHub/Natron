@@ -40,6 +40,7 @@ class KeyFrame;
 class Button;
 class AnimationButton; //used by KnobGui
 class DockablePanel; //used by KnobGui
+class Gui;
 
 class KnobGui : public QObject
 {
@@ -81,6 +82,8 @@ public:
     QString toolTip() const;
     
     bool hasToolTip() const;
+    
+    Gui* getGui() const;
 
 public slots:
     /*Called when the value held by the knob is changed internally.

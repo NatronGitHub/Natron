@@ -17,14 +17,16 @@
 
 #include "Global/MemoryInfo.h"
 #include "Engine/AppManager.h"
+#include "Engine/AppInstance.h"
 #include "Engine/LibraryBinary.h"
-
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
+
+
 #define NATRON_CUSTOM_OCIO_CONFIG_NAME "Custom config"
 
 using namespace Natron;
@@ -56,7 +58,6 @@ void Settings::initializeKnobs(){
     
     _linearPickers = Natron::createKnob<Bool_Knob>(this, "Linear color pickers");
     _linearPickers->turnOffAnimation();
-    _linearPickers->setValue<bool>(true);
     _linearPickers->setHintToolTip("When activated, all colors picked from the color parameters will be converted"
                                    " to linear before being fetched. Otherwise they will be in the same color-space "
                                    " as the viewer they were picked from.");
@@ -64,17 +65,34 @@ void Settings::initializeKnobs(){
     
     _multiThreadedDisabled = Natron::createKnob<Bool_Knob>(this, "Disable multi-threading");
     _multiThreadedDisabled->turnOffAnimation();
-    _multiThreadedDisabled->setValue<bool>(false);
     _multiThreadedDisabled->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will not spawn any thread to render.");
     _generalTab->addKnob(_multiThreadedDisabled);
     
+    _renderInSeparateProcess = Natron::createKnob<Bool_Knob>(this, "Render in a separate process");
+    _renderInSeparateProcess->turnOffAnimation();
+    _renderInSeparateProcess->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will render (using the write nodes) in "
+                                             "a separate process. Disabling it is most helpful for the dev team.");
+    _generalTab->addKnob(_renderInSeparateProcess);
+    
     _autoPreviewEnabledForNewProjects = Natron::createKnob<Bool_Knob>(this, "Auto-preview enabled by default for new projects");
     _autoPreviewEnabledForNewProjects->turnOffAnimation();
-    _autoPreviewEnabledForNewProjects->setValue<bool>(true);
     _autoPreviewEnabledForNewProjects->setHintToolTip("If checked then when creating a new project, the Auto-preview option"
                                                       " will be enabled.");
     _generalTab->addKnob(_autoPreviewEnabledForNewProjects);
     
+    _generalTab->addKnob(Natron::createKnob<Separator_Knob>(this, "OpenFX Plugins"));
+    
+    _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "Extra plugins search paths");
+    _extraPluginPaths->setHintToolTip("All paths in this variable are separated by ';' and indicate"
+                                      " extra search paths where " NATRON_APPLICATION_NAME " should scan for plug-ins. "
+                                      NATRON_APPLICATION_NAME " already searchs for plug-ins at these locations:\n "
+                                      " C:\\Program Files\\Common Files\\OFX\\Plugins on Windows, \n "
+                                      " /usr/OFX/Plugins on Linux and \n "
+                                      " /Library/OFX/Plugins on MacOSX. \n"
+                                      " The changes made to the OpenFX plugins search paths will take effect"
+                                      " upon the next launch of " NATRON_APPLICATION_NAME);
+    _extraPluginPaths->setMultiPath(true);
+    _generalTab->addKnob(_extraPluginPaths);
     
     boost::shared_ptr<Tab_Knob> ocioTab = Natron::createKnob<Tab_Knob>(this, "OpenColorIO");
     
@@ -120,7 +138,6 @@ void Settings::initializeKnobs(){
     helpStringsTextureModes.push_back("Viewer's post-process like color-space conversion will be done\n"
                                       "by the hardware using GLSL. Cached textures will be larger in the viewer cache.");
     _texturesMode->populate(textureModes,helpStringsTextureModes);
-    _texturesMode->setValue<int>(0);
     _texturesMode->setHintToolTip("Bitdepth of the viewer textures used for rendering."
                                   " Hover each option with the mouse for a more detailed comprehension.");
     _viewersTab->addKnob(_texturesMode);
@@ -136,7 +153,6 @@ void Settings::initializeKnobs(){
     _powerOf2Tiling->setMaximum(9);
     _powerOf2Tiling->setDisplayMaximum(9);
     
-    _powerOf2Tiling->setValue<int>(8);
     _powerOf2Tiling->turnOffAnimation();
     _viewersTab->addKnob(_powerOf2Tiling);
     
@@ -146,7 +162,6 @@ void Settings::initializeKnobs(){
     _maxRAMPercent->turnOffAnimation();
     _maxRAMPercent->setMinimum(0);
     _maxRAMPercent->setMaximum(100);
-    _maxRAMPercent->setValue<int>(50);
     std::string ramHint("This setting indicates the percentage of the system's total RAM "
                         NATRON_APPLICATION_NAME "'s caches are allowed to use."
                         " Your system has ");
@@ -159,7 +174,6 @@ void Settings::initializeKnobs(){
     _maxPlayBackPercent->turnOffAnimation();
     _maxPlayBackPercent->setMinimum(0);
     _maxPlayBackPercent->setMaximum(100);
-    _maxPlayBackPercent->setValue(25);
     _maxPlayBackPercent->setHintToolTip("This setting indicates the percentage of the Maximum system's RAM for caching"
                                         " dedicated for the playback cache. Normally you shouldn't change this value"
                                         " as it is tuned automatically by the Maximum system's RAM for caching, but"
@@ -169,7 +183,6 @@ void Settings::initializeKnobs(){
     _maxDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum disk cache size");
     _maxDiskCacheGB->turnOffAnimation();
     _maxDiskCacheGB->setMinimum(0);
-    _maxDiskCacheGB->setValue<int>(10);
     _maxDiskCacheGB->setMaximum(100);
     _maxDiskCacheGB->setHintToolTip("The maximum disk space the caches can use. (in GB)");
     _cachingTab->addKnob(_maxDiskCacheGB);
@@ -183,11 +196,46 @@ void Settings::initializeKnobs(){
     _writersTab = Natron::createKnob<Tab_Knob>(this, "Writers");
     
     
-    
+    setDefaultValues();
 }
 
 
+void Settings::setDefaultValues() {
+    
+    beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
+    _linearPickers->setValue<bool>(true);
+    _multiThreadedDisabled->setValue<bool>(false);
+    _renderInSeparateProcess->setValue<bool>(true);
+    _autoPreviewEnabledForNewProjects->setValue<bool>(true);
+    _extraPluginPaths->setValue<QString>("");
+    _texturesMode->setValue<int>(0);
+    _powerOf2Tiling->setValue<int>(8);
+    _maxRAMPercent->setValue<int>(50);
+    _maxPlayBackPercent->setValue(25);
+    _maxDiskCacheGB->setValue<int>(10);
 
+    for (U32 i = 0; i < _readersMapping.size(); ++i) {
+        const std::vector<std::string>& entries = _readersMapping[i]->getEntries();
+        for (U32 j = 0; j < entries.size(); ++j) {
+            if (QString(entries[j].c_str()).contains("ReadOIIOOFX")) {
+                _readersMapping[i]->setValue<int>(j);
+                break;
+            }
+        }
+    }
+    
+    for (U32 i = 0; i < _writersMapping.size(); ++i) {
+        const std::vector<std::string>& entries = _writersMapping[i]->getEntries();
+        for (U32 j = 0; j < entries.size(); ++j) {
+            if (QString(entries[j].c_str()).contains("WriteOIIOOFX")) {
+                _writersMapping[i]->setValue<int>(j);
+                break;
+            }
+        }
+    }
+    endKnobsValuesChanged(Natron::PLUGIN_EDITED);
+}
+ 
 void Settings::saveSettings(){
     
     _wereChangesMadeSinceLastSave = false;
@@ -196,7 +244,9 @@ void Settings::saveSettings(){
     settings.beginGroup("General");
     settings.setValue("LinearColorPickers",_linearPickers->getValue<bool>());
     settings.setValue("MultiThreadingDisabled", _multiThreadedDisabled->getValue<bool>());
+    settings.setValue("RenderInSeparateProcess", _renderInSeparateProcess->getValue<bool>());
     settings.setValue("AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue<bool>());
+    settings.setValue("ExtraPluginsPaths", _extraPluginPaths->getValue<QString>());
     settings.endGroup();
     
     settings.beginGroup("OpenColorIO");
@@ -247,8 +297,14 @@ void Settings::restoreSettings(){
     if (settings.contains("MultiThreadingDisabled")) {
         _multiThreadedDisabled->setValue<bool>(settings.value("MultiThreadingDisabled").toBool());
     }
+    if (settings.contains("RenderInSeparateProcess")) {
+        _renderInSeparateProcess->setValue<bool>(settings.value("RenderInSeparateProcess").toBool());
+    }
     if (settings.contains("AutoPreviewDefault")) {
         _autoPreviewEnabledForNewProjects->setValue<bool>(settings.value("AutoPreviewDefault").toBool());
+    }
+    if (settings.contains("ExtraPluginsPaths")) {
+        _extraPluginPaths->setValue<QString>(settings.value("ExtraPluginsPaths").toString());
     }
     settings.endGroup();
     
@@ -355,11 +411,7 @@ bool Settings::tryLoadOpenColorIOConfig() {
 }
 
 void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
-    
-    if (!appPTR->isInitialized()) {
-        return;
-    }
-    
+
     _wereChangesMadeSinceLastSave = true;
 
     
@@ -476,6 +528,13 @@ void Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::v
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
         k->turnOffAnimation();
         k->populate(it->second);
+        for (U32 i = 0; i < it->second.size(); ++i) {
+            ///promote ReadOIIO !
+            if (QString(it->second[i].c_str()).contains("ReadOIIOOFX")) {
+                k->setValue<int>(i);
+                break;
+            }
+        }
         _readersMapping.push_back(k);
         _readersTab->addKnob(k);
     }
@@ -486,6 +545,13 @@ void Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::v
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
         k->turnOffAnimation();
         k->populate(it->second);
+        for (U32 i = 0; i < it->second.size(); ++i) {
+            ///promote WriteOIIOOFX !
+            if (QString(it->second[i].c_str()).contains("WriteOIIOOFX")) {
+                k->setValue<int>(i);
+                break;
+            }
+        }
         _writersMapping.push_back(k);
         _writersTab->addKnob(k);
     }
@@ -513,3 +579,19 @@ void Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::strin
     }
 }
 
+QStringList Settings::getPluginsExtraSearchPaths() const {
+    QString paths = _extraPluginPaths->getValue<QString>();
+    return paths.split(QChar(';'));
+}
+
+void Settings::restoreDefault() {
+    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    if (!QFile::remove(settings.fileName())) {
+        qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
+    }
+    setDefaultValues();
+}
+
+bool Settings::isRenderInSeparatedProcessEnabled() const {
+    return _renderInSeparateProcess->getValue<bool>();
+}

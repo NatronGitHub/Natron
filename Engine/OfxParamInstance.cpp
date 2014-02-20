@@ -11,8 +11,6 @@
 
 #include "OfxParamInstance.h"
 #include <iostream>
-#include <QColor>
-#include <QHBoxLayout>
 
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
@@ -35,7 +33,7 @@
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/Format.h"
 #include "Engine/Project.h"
-
+#include "Engine/AppInstance.h"
 using namespace Natron;
 
 
@@ -65,20 +63,24 @@ namespace OfxKeyFrame{
         nKeys =  sum;
         return kOfxStatOK;
     }
+
     OfxStatus getKeyTime(boost::shared_ptr<Knob> knob,int nth, OfxTime& time)
     {
+        if (nth < 0) {
+            return kOfxStatErrBadIndex;
+        }
         int dimension = 0;
         int indexSoFar = 0;
-        while(dimension < knob->getDimension()){
+        while (dimension < knob->getDimension()) {
             const KeyFrameSet& set = knob->getCurve(dimension)->getKeyFrames();
             ++dimension;
-            if(nth >= (int)(set.size() + indexSoFar)){
+            if (nth >= (int)(set.size() + indexSoFar)) {
                 indexSoFar += set.size();
                 continue;
-            }else{
+            } else {
                 KeyFrameSet::const_iterator it = set.begin();
-                while(it != set.end()){
-                    if(indexSoFar == nth){
+                while (it != set.end()) {
+                    if (indexSoFar == nth) {
                         time = it->getTime();
                         return kOfxStatOK;
                     }
@@ -533,15 +535,7 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::
     
     _knob = Natron::createKnob<Choice_Knob>(node, getParamLabel(this));
     
-    std::vector<std::string> helpStrings;
-    for (int i = 0 ; i < properties.getDimension(kOfxParamPropChoiceOption) ; ++i) {
-        std::string str = properties.getStringProperty(kOfxParamPropChoiceOption,i);
-        std::string help = properties.getStringProperty(kOfxParamPropChoiceLabelOption,i);
-        
-        _entries.push_back(str);
-        helpStrings.push_back(help);
-    }
-    _knob->populate(_entries,helpStrings);
+    setOption(0); // this actually sets all the options
     
     int def = properties.getIntProperty(kOfxParamPropDefault);
     set(def);
@@ -557,20 +551,20 @@ OfxStatus OfxChoiceInstance::get(OfxTime /*time*/, int& v) {
 }
 
 OfxStatus OfxChoiceInstance::set(int v){
-    if(v < (int)_entries.size()){
+    if (0 <= v && v < (int)_entries.size()) {
         _knob->setValue<int>(v);
         return kOfxStatOK;
-    }else{
+    } else {
         return kOfxStatErrBadIndex;
     }
 }
 
 OfxStatus OfxChoiceInstance::set(OfxTime /*time*/, int v) {
     assert(!Choice_Knob::canAnimateStatic());
-    if(v < (int)_entries.size()){
+    if (0 <= v && v < (int)_entries.size()) {
         _knob->setValue<int>(v);
         return kOfxStatOK;
-    }else{
+    } else {
         return kOfxStatErrBadIndex;
     }
 }
@@ -589,10 +583,15 @@ void OfxChoiceInstance::setSecret() {
 void OfxChoiceInstance::setOption(int /*num*/) {
     int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
     _entries.clear();
+    std::vector<std::string> helpStrings;
     for (int i = 0; i < dim; ++i) {
-        _entries.push_back(getProperties().getStringProperty(kOfxParamPropChoiceOption,i));
+        std::string str = getProperties().getStringProperty(kOfxParamPropChoiceOption,i);
+        std::string help = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption,i);
+
+        _entries.push_back(str);
+        helpStrings.push_back(help);
     }
-    _knob->populate(_entries);
+    _knob->populate(_entries, helpStrings);
 }
 
 boost::shared_ptr<Knob> OfxChoiceInstance::getKnob() const{
@@ -1388,6 +1387,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
 , _fileKnob()
 , _outputFileKnob()
 , _stringKnob()
+, _pathKnob()
 {
     const OFX::Host::Property::Set &properties = getProperties();
     std::string mode = properties.getStringProperty(kOfxParamPropStringMode);
@@ -1417,8 +1417,10 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
             }
             
         }
-    } else if (mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel || mode == kOfxParamStringIsMultiLine
-               || mode == kOfxParamStringIsDirectoryPath) {
+    } else if (mode == kOfxParamStringIsDirectoryPath) {
+        _pathKnob = Natron::createKnob<Path_Knob>(node, getParamLabel(this));
+        _pathKnob->setMultiPath(false);
+    } else if (mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel || mode == kOfxParamStringIsMultiLine) {
         
         _stringKnob = Natron::createKnob<String_Knob>(node, getParamLabel(this));
         if (mode == kOfxParamStringIsLabel) {
@@ -1444,6 +1446,8 @@ OfxStatus OfxStringInstance::get(std::string &str) {
         str = _outputFileKnob->getValue<QString>().toStdString();
     }else if(_stringKnob){
         str = _stringKnob->getValueAtTime(currentFrame,0).toString().toStdString();
+    }else if(_pathKnob){
+        str = _pathKnob->getValue<QString>().toStdString();
     }
     return kOfxStatOK;
 }
@@ -1456,6 +1460,8 @@ OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
         str = _outputFileKnob->getValue<QString>().toStdString();
     }else if(_stringKnob){
         str = _stringKnob->getValueAtTime(std::floor(time + 0.5), 0).toString().toStdString();
+    }else if(_pathKnob){
+        str = _pathKnob->getValue<QString>().toStdString();
     }
     return kOfxStatOK;
 }
@@ -1469,6 +1475,9 @@ OfxStatus OfxStringInstance::set(const char* str) {
     }
     if(_stringKnob){
         _stringKnob->setValue(str);
+    }
+    if(_pathKnob){
+        _pathKnob->setValue(str);
     }
     return kOfxStatOK;
 }
@@ -1484,7 +1493,9 @@ OfxStatus OfxStringInstance::set(OfxTime time, const char* str) {
     if(_stringKnob){
         _stringKnob->setValueAtTime((int)time,Variant(QString(str)),0);
     }
-
+    if (_pathKnob) {
+        _pathKnob->setValue(str);
+    }
     return kOfxStatOK;
 }
 OfxStatus OfxStringInstance::getV(va_list arg){
@@ -1514,6 +1525,9 @@ boost::shared_ptr<Knob> OfxStringInstance::getKnob() const{
     if(_stringKnob){
         return _stringKnob;
     }
+    if (_pathKnob) {
+        return _pathKnob;
+    }
 
     return boost::shared_ptr<Knob>();
 }
@@ -1528,7 +1542,9 @@ void OfxStringInstance::setEnabled(){
     if (_stringKnob) {
         _stringKnob->setEnabled(getEnabled());
     }
- 
+    if (_pathKnob) {
+        _pathKnob->setEnabled(getEnabled());
+    }
 }
 
 // callback which should set secret state as appropriate
@@ -1542,7 +1558,9 @@ void OfxStringInstance::setSecret(){
     if (_stringKnob) {
         _stringKnob->setSecret(getSecret());
     }
-
+    if (_pathKnob) {
+        _pathKnob->setSecret(getSecret());
+    }
 }
 
 

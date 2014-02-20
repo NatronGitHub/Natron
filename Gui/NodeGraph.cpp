@@ -40,12 +40,13 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Project.h"
+#include "Engine/Plugin.h"
 
 #include "Gui/TabWidget.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
 #include "Gui/DockablePanel.h"
-
+#include "Gui/ToolButton.h"
 #include "Gui/KnobGui.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
@@ -53,6 +54,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/Gui.h"
 #include "Gui/TimeLineGui.h"
 #include "Gui/SequenceFileDialog.h"
+#include "Gui/GuiAppInstance.h"
 
 
 #define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
@@ -523,7 +525,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                     (n->getNode()->getName()!=_arrowSelected->getDest()->getNode()->getName())){
                 ///can't connect to a viewer
                 if(n->getNode()->isOutputNode()){
-                    break;
+                    //     break;
                 }
                 _undoStack->setActive();
                 _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),n));
@@ -638,7 +640,7 @@ bool NodeGraph::event(QEvent* event){
                 QPoint global = mapToGlobal(mapFromScene(_lastScenePosClick.toPoint()));
                 SmartInputDialog* nodeCreation=new SmartInputDialog(this);
                 nodeCreation->move(global.x(), global.y());
-                QPoint position=_gui->_workshopPane->pos();
+                QPoint position=_gui->getWorkshopPane()->pos();
                 position+=QPoint(_gui->width()/2,0);
                 nodeCreation->move(position);
                 setMouseTracking(false);
@@ -770,7 +772,7 @@ void NodeGraph::selectNode(NodeGui* n) {
         OpenGLViewerI* viewer = dynamic_cast<ViewerInstance*>(n->getNode()->getLiveInstance())->getUiContext();
         const std::list<ViewerTab*>& viewerTabs = _gui->getViewersList();
         for(std::list<ViewerTab*>::const_iterator it = viewerTabs.begin();it!=viewerTabs.end();++it) {
-            if((*it)->viewer == viewer) {
+            if((*it)->getViewer() == viewer) {
                 _gui->setLastSelectedViewer((*it));
             }
         }
@@ -1157,8 +1159,7 @@ static QString QDirModelPrivate_size(quint64 bytes)
 
 void NodeGraph::updateCacheSizeText(){
     _cacheSizeText->setPlainText(QString("Memory cache size: %1")
-                                 .arg(QDirModelPrivate_size(appPTR->getViewerCache().getMemoryCacheSize()
-                                                            + appPTR->getNodeCache().getMemoryCacheSize())));
+                                 .arg(QDirModelPrivate_size(appPTR->getCachesTotalMemorySize())));
 }
 QRectF NodeGraph::calcNodesBoundingRect(){
     QRectF ret;

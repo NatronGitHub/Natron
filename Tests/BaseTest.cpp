@@ -15,6 +15,7 @@
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/AppManager.h"
+#include "Engine/AppInstance.h"
 
 using namespace Natron;
 
@@ -23,8 +24,8 @@ BaseTest::BaseTest()
     , _genericTestPluginID()
     , _gainPluginID()
     , _dotGeneratorPluginID()
-    , _readQtPluginID()
-    , _writeQtPluginID()
+    , _readOIIOPluginID()
+    , _writeOIIOPluginID()
     , _app(0)
 {
 }
@@ -45,11 +46,11 @@ void BaseTest::registerTestPlugins() {
     _dotGeneratorPluginID = QString("Dot Generator  [OFX]");
     _allTestPluginIDs.push_back(_dotGeneratorPluginID);
 
-    _readQtPluginID = QString("ReadQt");
-    _allTestPluginIDs.push_back(_readQtPluginID);
+    _readOIIOPluginID = QString("ReadOIIOOFX  [Image]");
+    _allTestPluginIDs.push_back(_readOIIOPluginID);
 
-    _writeQtPluginID = QString("WriteQt");
-    _allTestPluginIDs.push_back(_writeQtPluginID);
+    _writeOIIOPluginID = QString("WriteOIIOOFX  [Image]");
+    _allTestPluginIDs.push_back(_writeOIIOPluginID);
     
     for (unsigned int i = 0; i < _allTestPluginIDs.size(); ++i) {
         ///make sure the generic test plugin is present
@@ -65,19 +66,18 @@ void BaseTest::registerTestPlugins() {
 
 void BaseTest::SetUp()
 {
-    AppManager* manager = AppManager::instance();
-    manager->load(NULL);
+    AppManager* manager = new AppManager();
+    manager->load(0,NULL);
     manager->setMultiThreadEnabled(false);
-    _app = manager->newAppInstance(AppInstance::APP_BACKGROUND);
+    _app = manager->getTopLevelInstance();
     
     registerTestPlugins();
 }
 
 void BaseTest::TearDown()
 {
-    delete _app;
     _app = 0;
-    AppManager::quit();
+    delete appPTR;
 }
 
 Natron::Node* BaseTest::createNode(const QString& pluginID,int majorVersion,int minorVersion) {
@@ -186,7 +186,7 @@ TEST_F(BaseTest,GenerateDot)
     Node* generator = createNode(_dotGeneratorPluginID);
     
     ///create the writer and set its output filename
-    Node* writer = createNode(_writeQtPluginID);
+    Node* writer = createNode(_writeOIIOPluginID);
     writer->setOutputFilesForWriter("test_dot_generator#.jpg");
     
     ///attempt to connect the 2 nodes together
@@ -202,7 +202,7 @@ TEST_F(BaseTest,SimpleNodeConnections) {
     Node* generator = createNode(_dotGeneratorPluginID);
     
     ///create the writer and set its output filename
-    Node* writer = createNode(_writeQtPluginID);
+    Node* writer = createNode(_writeOIIOPluginID);
     
     connectNodes(generator, writer, 0, true);
     connectNodes(generator, writer, 0, false); //< expect it to fail

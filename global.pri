@@ -36,8 +36,7 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
   GCCVer = $$system($$QMAKE_CXX --version)
   contains(GCCVer,[0-3]\\.[0-9]+.*) {
   } else {
-    contains(GCCVer,4\\.[0-6].*) {
-    } else {
+    contains(GCCVer,4\\.7.*) {
       QMAKE_CXXFLAGS += -Wno-c++11-extensions
     }
   }
@@ -65,7 +64,10 @@ macx{
   QMAKE_PBUILDER_VERSION = 46
   universal {
     CONFIG += x86 x86_64
-  }	    
+  }
+
+    #link against the CoreFoundation framework for the StandardPaths functionnality
+   LIBS += -framework CoreServices
 }
 
 !macx|!universal {
@@ -83,7 +85,7 @@ win32{
   #microsoft compiler needs _MBCS to compile with the multi-byte character set.
   DEFINES += WINDOWS _MBCS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
   DEFINES -= _UNICODE UNICODE
-  RC_FILE += Natron.rc
+  RC_FILE += ../Natron.rc
 }
 
 unix {
@@ -149,4 +151,3 @@ coverage {
   QMAKE_LFLAGS += -fprofile-arcs -ftest-coverage
   QMAKE_CLEAN += $(OBJECTS_DIR)/*.gcda $(OBJECTS_DIR)/*.gcno
 }
-

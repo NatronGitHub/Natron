@@ -16,43 +16,32 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QWidget>
 CLANG_DIAG_ON(deprecated)
+#include <boost/scoped_ptr.hpp>
 
 #include "Global/GlobalDefines.h"
-/*The ViewerTab encapsulates a viewer with all the graphical interface surrounding it. It should be instantiable as
- a tab , and several ViewerTab should run in parallel seemlessly.*/
 
-
-class Button;
-class QVBoxLayout;
-class QSlider;
-class ComboBox;
-class QHBoxLayout;
-class QSpacerItem;
-class QGridLayout;
-class QLabel;
-class QGroupBox;
 class ViewerGL;
-class InfoViewerWidget;
-class AppInstance;
-class SpinBox;
-class ScaleSliderQWidget;
-class TimeLineGui;
 class ViewerInstance;
 class Gui;
 class RectI;
 
+
+struct ViewerTabPrivate;
 class ViewerTab: public QWidget 
 { 
     Q_OBJECT
+    
 public:
     explicit ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent=0);
     
 	virtual ~ViewerTab() OVERRIDE;
     
     
-    ViewerInstance* getInternalNode() const {return _viewerNode;}
-public:
-    Gui* getGui() const {return _gui;}
+    ViewerInstance* getInternalNode() const;
+
+    Gui* getGui() const;
+    
+    ViewerGL* getViewer() const;
     
     void setCurrentView(int view);
     
@@ -150,71 +139,14 @@ private:
     
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
-    virtual void enterEvent(QEvent*) OVERRIDE FINAL { setFocus(); }
+    virtual void enterEvent(QEvent*) OVERRIDE FINAL;
 
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
+    
     virtual QSize sizeHint() const OVERRIDE FINAL;
 
-
-public:
-    // FIXME: public pointer members are the sign of a serious design flaw!!! at least use a getter!
-	/*OpenGL viewer*/
-	ViewerGL* viewer; // FIXME: used by ViewerInstance
-private:
-    // FIXME: PIMPL
-    QVBoxLayout* _mainLayout;
-
-	/*Viewer Settings*/
-    QWidget* _firstSettingsRow,*_secondSettingsRow;
-    QHBoxLayout* _firstRowLayout,*_secondRowLayout;
-
-    /*1st row*/
-	//ComboBox* _viewerLayers;
-	ComboBox* _viewerChannels;
-    ComboBox* _zoomCombobox;
-    Button* _centerViewerButton;
-    Button* _clipToProjectFormatButton;
-    Button* _enableViewerRoI;
-
-    /*2nd row*/
-    SpinBox* _gainBox;
-    ScaleSliderQWidget* _gainSlider;
-    Button* _refreshButton;
-    ComboBox* _viewerColorSpace;
-    ComboBox* _viewsComboBox;
-
-    /*Infos*/
-    InfoViewerWidget* _infosWidget;
-
-
-	/*TimeLine buttons*/
-    QWidget* _playerButtonsContainer;
-	QHBoxLayout* _playerLayout;
-	SpinBox* _currentFrameBox;
-	Button* firstFrame_Button;
-    Button* previousKeyFrame_Button;
-    Button* play_Backward_Button;
-	Button* previousFrame_Button;
-    Button* stop_Button;
-    Button* nextFrame_Button;
-	Button* play_Forward_Button;
-    Button* nextKeyFrame_Button;
-	Button* lastFrame_Button;
-    Button* previousIncrement_Button;
-    SpinBox* incrementSpinBox;
-    Button* nextIncrement_Button;
-    Button* loopMode_Button;
-
-    QLabel* fpsName;
-    SpinBox* fpsBox;
-
-	/*frame seeker*/
-    TimeLineGui* _timeLineGui;
-
-
-    Gui* _gui;
-
-    ViewerInstance* _viewerNode;// < pointer to the internal node
+    
+    boost::scoped_ptr<ViewerTabPrivate> _imp;
 };
 
 #endif // NATRON_GUI_VIEWERTAB_H_

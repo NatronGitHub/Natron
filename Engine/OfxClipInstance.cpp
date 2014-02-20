@@ -22,7 +22,7 @@
 #include "Engine/Image.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Hash64.h"
-
+#include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 
 using namespace Natron;

@@ -6,14 +6,16 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
+- black borders around the viewer when zooming out and multithreading is disabled
+
+- RenderROI is called when disabling the viewer ROI, is it normal?
+
+- File dialog: the file list should be a few pixels wider, so that the horizontal scrollbar does not appear.
+
 - String_KnobGui: kOfxParamStringIsRichTextFormat  is not supported (it should use a QTextEdit and not convert the string to plain text)
 
-- String_KnobGui/File_KnobGui: kOfxParamStringIsDirectoryPath is not supported
-
-- The quit dialog ("do you want to save...") appears behind float panes.
-
-- Tab traversal is completely broken. This is a major GUI bug.
-  Many users still have a keyboard and use it, so this must be fixed.
+- Tab traversal is not set up properly, and sometimes couter-intuitive.
+  Many users still have a keyboard and use it, so this should be fixed.
   Refs:
   http://qt-project.org/doc/qt-4.8/qwidget.html#setTabOrder
   http://qt-project.org/doc/qt-4.8/focus.html
@@ -28,6 +30,10 @@ Missing and wanted features
 
 Here is a list of non-blocking bugs / wanted features:
 
+- Progress suite is not implemented (GUI is blocked until the operation has ended)
+
+- a log window with OFX and Natron log messages (see OfxImageEffectInstance::vmessage, OfxHost::vmessage)
+
 - derive and integrate are not implemented for animated Double,
   Double2D, Double3D, RGBA, RGB parameters (derive returns 0,
   integrate returns (t2-t1)*getValue())
@@ -39,6 +45,9 @@ Here is a list of non-blocking bugs / wanted features:
 
 - support Parameter Interacts, which are OpenGL "widgets" integrated in the parameters panel
 http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParametersInteracts
+  An example can be found in the "Prop Tester" plugin from the Support
+  plugins ("OFX Test" plugin group). The "RGB Custom" and "RGB Custom
+  2" parameters have parameter interacts.
 
 - implement Fields and Field Rendering:
   http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ImageEffectsFieldRendering
@@ -76,10 +85,6 @@ http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#Par
     function for each value (its integral from -infinity to +infinity is
     exactly 1).
 
-- Viewer ROI
-
-  For image analysis purposes (histogram, colorscope, auto contrast), it
-  would be necessary to have an ROI in the viewer
 
 - Autocontrast
 

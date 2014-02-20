@@ -166,22 +166,22 @@ namespace Natron {
             }
             
             ///init luts
-            ///it uses fromFloat(float) and toFloat(float)
+            ///it uses fromColorSpaceFloatToLinearFloat(float) and toColorSpaceFloatFromLinearFloat(float)
             ///Called by validate()
             void fillTables() const;
             
             
             /* @brief Converts a float ranging in [0 - 1.f] in the desired color-space to linear color-space also ranging in [0 - 1.f]
              * This function is not fast!
-             * @see fromFloatFast(float)
+             * @see fromColorSpaceFloatToLinearFloatFast(float)
              */
-            float fromFloat(float v) const { return _fromFunc(v); }
+            float fromColorSpaceFloatToLinearFloat(float v) const { return _fromFunc(v); }
             
             /* @brief Converts a float ranging in [0 - 1.f] in  linear color-space to the desired color-space to also ranging in [0 - 1.f]
              * This function is not fast!
-             * @see toFloatFast(float)
+             * @see toColorSpaceFloatFromLinearFloatFast(float)
              */
-            float toFloat(float v) const { return _toFunc(v); }
+            float toColorSpaceFloatFromLinearFloat(float v) const { return _toFunc(v); }
             
         public:
             
@@ -197,11 +197,13 @@ namespace Natron {
 
             
             const std::string& getName() const { return _name; }
-            
+
             /* @brief Converts a float ranging in [0 - 1.f] in linear color-space using the look-up tables.
              * @return A float in [0 - 1.f] in the destination color-space.
              */
-            float toColorSpaceFloatFromLinearFloatFast(float v) const;
+            // It is not recommended to use this function, because the output is quantized
+            // If one really needs float, one has to use the full function (or OpenColorIO)
+            //float toColorSpaceFloatFromLinearFloatFast(float v) const;
             
             /* @brief Converts a float ranging in [0 - 1.f] in linear color-space using the look-up tables.
              * @return A byte in [0 - 255] in the destination color-space.
@@ -214,10 +216,10 @@ namespace Natron {
             unsigned short toColorSpaceUint8xxFromLinearFloatFast(float v) const;
 
             
-            /* @brief Converts a float ranging in [0 - 1.f] in the destination color-space using the look-up tables.
+            /* @brief Converts a float ranging in [0 - 255] in the destination color-space using the look-up tables.
              * @return A float in [0 - 1.f] in linear color-space.
              */
-            float fromColorSpaceFloatToLinearFloatFast(float v) const;
+            float fromColorSpaceUint8ToLinearFloatFast(unsigned char v) const;
             
             
             
@@ -482,7 +484,15 @@ namespace Natron {
             else
                 return 1.055f * std::pow(v, 1.0f / 2.4f) - 0.055f;
         }
-        
+
+        /// convert RGB to HSV
+        /// In Nuke's viewer, sRGB values are used (apply to_func_srgb to linear
+        /// RGB values before calling this fuunction)
+        // r,g,b values are from 0 to 1
+        /// h = [0,360], s = [0,1], v = [0,1]
+        ///		if s == 0, then h = -1 (undefined)
+        void rgb_to_hsv( float r, float g, float b, float *h, float *s, float *v );
+
         /// numvals should be 256 for byte, 65536 for 16-bits, etc.
 
         /// maps 0-(numvals-1) to 0.-1.

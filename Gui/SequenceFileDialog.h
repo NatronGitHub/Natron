@@ -309,6 +309,8 @@ public:
      *the frame number truncated.
      *It returns in framenumber the number of the frame, or -1 if it had no frame number
      *and in extension the name of file type
+     * e.g: for /Users/Bla/Pictures/toto15.jpg it would return
+     * path = /Users/Bla/Pictures/toto , frameNumber = 15 and extension = jpg
      **/
     static void parseFilename(QString &path, int* frameNumber, QString &extension);
 
@@ -347,7 +349,7 @@ class SequenceFileDialog: public QDialog
     Q_OBJECT
     
 public:
-    enum FileDialogMode{OPEN_DIALOG = 0,SAVE_DIALOG = 1} ;
+    enum FileDialogMode{OPEN_DIALOG = 0,SAVE_DIALOG = 1,DIR_DIALOG = 2} ;
 
     typedef std::pair<QString,std::pair<qint64,QString> > NameMappingElement;
     typedef std::vector<NameMappingElement> NameMapping;
@@ -375,6 +377,8 @@ public:
      * If no such digits could be found, this function returns false.
      **/
     static bool removeSequenceDigits(QString& file,int* frameNumber);
+    
+    static QString getFilePath(const QString& str);
     
     static QString removePath(const QString& str);
     
@@ -470,6 +474,7 @@ public slots:
     void createDir();
     void addFavorite();
     void openSelectedFiles();
+    void selectDirectory();
     void cancelSlot();
     void doubleClickOpen(const QModelIndex& index);
     void seekUrl(const QUrl& url);
@@ -486,7 +491,9 @@ public slots:
     void showContextMenu(const QPoint &position);
     void pathChanged(const QString &newPath);
     void autoCompleteFileName(const QString&);
+    void onSelectionLineEditing(const QString&);
     void goToDirectory(const QString&);
+    void onFileExtensionComboChanged(int index);
     void setFileExtensionOnLineEdit(const QString&);
 
 private:

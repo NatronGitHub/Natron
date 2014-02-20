@@ -21,6 +21,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QMetaType>
 CLANG_DIAG_ON(deprecated)
 #include <QObject>
+#include <QMutex>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -140,6 +141,12 @@ public:
     void outputs(std::vector<Natron::Node*>* outputsV) const;
     
     const std::map<int, std::string>& getInputLabels() const;
+    
+    /**
+     * @brief Called by RenderTree: This external locking allows the render tree not to be corrupted
+     * by another user action. The architecture doesn't allow internal locking.
+     **/
+    void setRenderTreeIsUsingInputs(bool b);
     
     std::string getInputLabel(int inputNb) const;
     
@@ -452,11 +459,18 @@ signals:
     void pluginMemoryUsageChanged(unsigned long long);
     
 protected:
+    
+    ///waits for any RenderTree to be done reading
+    ///this function must be called explicitly while isUsingInputsMutex is locked!
+    void waitForRenderTreesToBeDone();
+    
     // FIXME: all data members should be private, use getter/setter instead
+    mutable QMutex isUsingInputsMutex;
     std::map<int,Node*> _inputs;//only 1 input per slot
     Natron::EffectInstance*  _liveInstance; //< the instance of the effect interacting with the GUI of this node.
 
 private:
+    
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp;
 

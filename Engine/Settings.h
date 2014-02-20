@@ -36,6 +36,7 @@ class Int_Knob;
 class Bool_Knob;
 class Choice_Knob;
 class Table_Knob;
+class Path_Knob;
 
 class Settings : public KnobHolder
 {
@@ -47,8 +48,6 @@ public:
         
     virtual void evaluate(Knob* /*knob*/,bool /*isSignificant*/) OVERRIDE FINAL {}
     
-    virtual void initializeKnobs() OVERRIDE FINAL;
-        
     virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE FINAL;
     
     int getViewersBitDepth() const;
@@ -89,7 +88,17 @@ public:
     
     bool isAutoPreviewOnForNewProjects() const;
     
+    QStringList getPluginsExtraSearchPaths() const;
+    
+    bool isRenderInSeparatedProcessEnabled() const;
+    
+    void restoreDefault();
+    
 private:
+    
+    virtual void initializeKnobs() OVERRIDE FINAL;
+
+    void setDefaultValues();
     
     bool tryLoadOpenColorIOConfig();
 
@@ -97,7 +106,9 @@ private:
     boost::shared_ptr<Tab_Knob> _generalTab;
     boost::shared_ptr<Bool_Knob> _linearPickers;
     boost::shared_ptr<Bool_Knob> _multiThreadedDisabled;
+    boost::shared_ptr<Bool_Knob> _renderInSeparateProcess;
     boost::shared_ptr<Bool_Knob> _autoPreviewEnabledForNewProjects;
+    boost::shared_ptr<Path_Knob> _extraPluginPaths;
     
     boost::shared_ptr<Choice_Knob> _ocioConfigKnob;
     boost::shared_ptr<File_Knob> _customOcioConfigFile;

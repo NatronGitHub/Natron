@@ -28,6 +28,8 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/PluginMemory.h"
 #include "Engine/Project.h"
+#include "Engine/BlockingBackgroundRender.h"
+#include "Engine/AppInstance.h"
 
 using namespace Natron;
 
@@ -767,9 +769,17 @@ void OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
     
 }
 
-void OutputEffectInstance::renderFullSequence(){
+void OutputEffectInstance::renderFullSequence(BlockingBackgroundRender* renderController) {
+    _renderController = renderController;
     assert(pluginID() != "Viewer"); //< this function is not meant to be called for rendering on the viewer
     getVideoEngine()->refreshTree();
     getVideoEngine()->render(-1,true,true,false,true,false);
     
+}
+
+void OutputEffectInstance::notifyRenderFinished() {
+    if (_renderController) {
+        _renderController->notifyFinished();
+        _renderController = 0;
+    }
 }

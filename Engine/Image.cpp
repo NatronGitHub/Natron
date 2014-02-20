@@ -11,10 +11,6 @@
 
 #include "Image.h"
 
-#include "Engine/Lut.h"
-
-#include <QImage>
-
 RectI Natron::Bitmap::minimalNonMarkedBbox(const RectI& roi) const
 {
     /*if we rendered everything we just append
@@ -228,7 +224,7 @@ std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const
 #endif // NATRON_BITMAP_DISABLE_OPTIMIZATION
     qDebug() << "render " << ret.size() << " rectangles";
     for (std::list<RectI>::const_iterator it = ret.begin(); it != ret.end(); ++it) {
-        qDebug() << "rect: " << it->x1 << ',' << it->x2 << ',' << it->y1 << ',' << it->y2;
+        qDebug() << "rect: " << "x1= "<<  it->x1 << " , x2= "<< it->x2 << " , y1= " << it->y1 << " , y2= " << it->y2;
     }
     return ret;
 }
@@ -253,19 +249,3 @@ void Natron::Image::copy(const Natron::Image& other){
     float* dst = pixelAt(0, 0);
     memcpy(dst, src, intersection.area());
 }
-
-namespace Natron{
-    void debugImage(Natron::Image* img,const QString& filename){
-        const RectI& rod = img->getRoD();
-        QImage output(rod.width(),rod.height(),QImage::Format_ARGB32);
-        const Natron::Color::Lut* lut = Natron::Color::LutManager::sRGBLut();
-        lut->to_byte_packed(output.bits(), img->pixelAt(0, 0), rod, rod, rod,
-                            Natron::Color::PACKING_RGBA,Natron::Color::PACKING_BGRA, true,false);
-        U64 hashKey = img->getHashKey();
-        QString hashKeyStr = QString::number(hashKey);
-        QString realFileName = filename.isEmpty() ? QString(hashKeyStr+".png") : filename;
-        output.save(realFileName);
-    }
-    
-}
-

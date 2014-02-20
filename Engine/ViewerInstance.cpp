@@ -17,7 +17,7 @@
 #include <QtConcurrentMap>
 
 #include "Engine/AppManager.h"
-
+#include "Engine/AppInstance.h"
 #include "Engine/Row.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/MemoryFile.h"
@@ -31,6 +31,7 @@
 #include "Engine/Settings.h"
 #include "Engine/Project.h"
 #include "Engine/OpenGLViewerI.h"
+#include "Engine/Image.h"
 
 using namespace Natron;
 using std::make_pair;
@@ -74,14 +75,14 @@ ViewerInstance::~ViewerInstance(){
 }
 
 void ViewerInstance::connectSlotsToViewerCache(){
-    Natron::CacheSignalEmitter* emitter = appPTR->getViewerCache().activateSignalEmitter();
+    Natron::CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
     QObject::connect(emitter, SIGNAL(addedEntry()), this, SLOT(onViewerCacheFrameAdded()));
     QObject::connect(emitter, SIGNAL(removedLRUEntry()), this, SIGNAL(removedLRUCachedFrame()));
     QObject::connect(emitter, SIGNAL(clearedInMemoryPortion()), this, SIGNAL(clearedViewerCache()));
 }
 
 void ViewerInstance::disconnectSlotsToViewerCache(){
-    Natron::CacheSignalEmitter* emitter = appPTR->getViewerCache().activateSignalEmitter();
+    Natron::CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
     QObject::disconnect(emitter, SIGNAL(addedEntry()), this, SLOT(onViewerCacheFrameAdded()));
     QObject::disconnect(emitter, SIGNAL(removedLRUEntry()), this, SIGNAL(removedLRUCachedFrame()));
     QObject::disconnect(emitter, SIGNAL(clearedInMemoryPortion()), this, SIGNAL(clearedViewerCache()));
@@ -201,7 +202,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
     TextureRect textureRect(texRectClipped.x1,texRectClipped.y1,texRectClipped.x2,
                             texRectClipped.y2,texW,texH,closestPowerOf2);
     
-    //  std::cout << "x1: " << textureRect.x1 << " x2: " << textureRect.x2 << " y1: " << textureRect.y1 <<
+    //  std::cout << "ViewerInstance: x1: " << textureRect.x1 << " x2: " << textureRect.x2 << " y1: " << textureRect.y1 <<
     //" y2: " << textureRect.y2 << " w: " << textureRect.w << " h: " << textureRect.h << " po2: " << textureRect.closestPo2 << std::endl;
     
     _interThreadInfos._textureRect = textureRect;

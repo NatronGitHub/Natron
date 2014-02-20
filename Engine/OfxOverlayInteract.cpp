@@ -16,8 +16,6 @@
 #include "Engine/Format.h"
 #include "Engine/OverlaySupport.h"
 
-#include "Gui/CurveWidget.h"
-#include "Gui/ViewerGL.h"
 
 using namespace Natron;
 

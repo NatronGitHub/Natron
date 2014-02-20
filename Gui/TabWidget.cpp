@@ -10,6 +10,8 @@
 
 #include "TabWidget.h"
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QLayout>
 #include <QMenu>
 #include <QApplication>
@@ -27,9 +29,11 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QScrollArea>
 #include <QSplitter>
 #include <QTextDocument> // for Qt::convertFromPlainText
+CLANG_DIAG_ON(deprecated)
 
 #include "Gui/Button.h"
-#include "Engine/AppManager.h"
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiAppInstance.h"
 #include "Gui/Gui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveEditor.h"
@@ -315,14 +319,12 @@ void TabWidget::addNewViewer(){
 }
 
 void TabWidget::moveNodeGraphHere(){
-    QWidget* what = dynamic_cast<QWidget*>(_gui->_nodeGraphArea);
-    what->setParent(this);
+    QWidget* what = dynamic_cast<QWidget*>(_gui->getNodeGraph());
     moveTab(what,this);
 }
 
 void TabWidget::moveCurveEditorHere(){
-    QWidget* what = dynamic_cast<QWidget*>(_gui->_curveEditor);
-    what->setParent(this);
+    QWidget* what = dynamic_cast<QWidget*>(_gui->getCurveEditor());
     moveTab(what,this);
 }
 /*Get the header name of the tab at index "index".*/
@@ -392,7 +394,7 @@ void TabWidget::closeTab(int index){
 }
 
 void TabWidget::movePropertiesBinHere(){
-    QWidget* what = dynamic_cast<QWidget*>(_gui->_propertiesScrollArea);
+    QWidget* what = dynamic_cast<QWidget*>(_gui->getPropertiesScrollArea());
     what->setParent(this);
     moveTab(what, this);
 }
@@ -415,7 +417,7 @@ void TabWidget::splitHorizontally(){
     setParent(newSplitter);
     newSplitter->addWidget(this);
     setVisible(true);
-    
+    _gui->registerSplitter(newSplitter);
     
     /*Adding now a new tab*/
     TabWidget* newTab = new TabWidget(_gui,TabWidget::CLOSABLE,newSplitter);
@@ -451,6 +453,8 @@ void TabWidget::splitVertically(){
     setParent(newSplitter);
     newSplitter->addWidget(this);
     setVisible(true);
+    _gui->registerSplitter(newSplitter);
+
     
     /*Adding now a new tab*/
     TabWidget* newTab = new TabWidget(_gui,TabWidget::CLOSABLE,newSplitter);
@@ -869,7 +873,7 @@ void TabWidget::moveTab(QWidget* what,TabWidget *where){
     from->removeTab(what);
     assert(where);
     where->appendTab(what);
-    
+    what->setParent(where);
     where->getGui()->getApp()->triggerAutoSave();
 }
 

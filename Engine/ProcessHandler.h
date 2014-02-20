@@ -24,7 +24,6 @@ class AppInstance;
 namespace Natron{
 class OutputEffectInstance;
 }
-class RenderingProgressDialog;
 
 //qt
 class QLocalServer;
@@ -78,7 +77,6 @@ class ProcessHandler : public QObject {
     AppInstance* _app;//< pointer to the app executing this process
     QProcess* _process; //< the process executing the render
     Natron::OutputEffectInstance* _writer;//< pointer to the writer that will render in the bg process
-    RenderingProgressDialog* _dialog;//< a dialog to report progress and allow the user to cancel the process
     QLocalServer* _ipcServer; //< the server for IPC with the background process
     QLocalSocket* _bgProcessOutputSocket; //< the socket where data is output by the process
     
@@ -97,6 +95,8 @@ public:
      **/
     ProcessHandler(AppInstance* app,
                    const QString& projectPath,
+                   const QString& outputFileSequence,
+                   int firstFrame,int lastFrame,
                    Natron::OutputEffectInstance* writer);
 
     virtual ~ProcessHandler();
@@ -146,6 +146,14 @@ public slots:
      * @brief Called when the input pipe connection is successfully sealed.
      **/
     void onInputPipeConnectionMade();
+    
+signals:
+    
+    void frameRendered(int);
+    
+    void frameProgress(int);
+    
+    void processCanceled();
 };
 
 /**

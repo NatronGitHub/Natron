@@ -13,7 +13,7 @@
 			buildPhases = (
 			);
 			dependencies = (
-				1E5F8F5618AA913D0045A477 /* PBXTargetDependency */,
+				D7A1964818B2242E00F412DA /* PBXTargetDependency */,
 				1E5F8F5818AA913D0045A477 /* PBXTargetDependency */,
 				1E5F8F5A18AA913D0045A477 /* PBXTargetDependency */,
 			);
@@ -28,6 +28,7 @@
 			dependencies = (
 				1EADE5FD18AA408B00EF3180 /* PBXTargetDependency */,
 				1EADE5FF18AA408B00EF3180 /* PBXTargetDependency */,
+				D7A1965E18B2257700F412DA /* PBXTargetDependency */,
 			);
 			name = all;
 			productName = all;
@@ -56,16 +57,20 @@
 			name = Tests;
 			productName = Tests;
 		};
+		D7A1965518B2255200F412DA /* NatronRenderer */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = D7A1965618B2255200F412DA /* Build configuration list for PBXAggregateTarget "NatronRenderer" */;
+			buildPhases = (
+			);
+			dependencies = (
+				D7A1965C18B2256400F412DA /* PBXTargetDependency */,
+			);
+			name = NatronRenderer;
+			productName = NatronRenderer;
+		};
 /* End PBXAggregateTarget section */
 
 /* Begin PBXContainerItemProxy section */
-		1E5F8F5518AA913D0045A477 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1EADE5BE18AA403700EF3180 /* HostSupport.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = ED08CA340BFEF8FE1A2D2AD0;
-			remoteInfo = HostSupport;
-		};
 		1E5F8F5718AA913D0045A477 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C118AA403700EF3180 /* Engine.xcodeproj */;
@@ -108,13 +113,6 @@
 			remoteGlobalIDString = 1EADE5A018AA3E9300EF3180;
 			remoteInfo = Gui;
 		};
-		1EADE5D418AA403700EF3180 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1EADE5BE18AA403700EF3180 /* HostSupport.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 1EADE59C18AA3E9300EF3180;
-			remoteInfo = HostSupport;
-		};
 		1EADE5D718AA403700EF3180 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5CA18AA403700EF3180 /* Natron.xcodeproj */;
@@ -143,34 +141,63 @@
 			remoteGlobalIDString = 1EADE5F818AA407D00EF3180;
 			remoteInfo = Tests;
 		};
+		D7A1962B18B2234100F412DA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D7A1962518B2234100F412DA /* NatronRenderer.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = D7A1962818B2234100F412DA;
+			remoteInfo = NatronRenderer;
+		};
+		D7A1964518B2242500F412DA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = D7A1964218B2242500F412DA;
+			remoteInfo = HostSupport;
+		};
+		D7A1964718B2242E00F412DA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = ED08CA340BFEF8FE1A2D2AD0;
+			remoteInfo = HostSupport;
+		};
+		D7A1965B18B2256400F412DA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1EADE5B818AA400B00EF3180 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1EADE5F418AA407500EF3180;
+			remoteInfo = Natron;
+		};
+		D7A1965D18B2257700F412DA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1EADE5B818AA400B00EF3180 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D7A1965518B2255200F412DA;
+			remoteInfo = NatronRenderer;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		1EADE5BE18AA403700EF3180 /* HostSupport.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = HostSupport.xcodeproj; path = HostSupport/HostSupport.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C118AA403700EF3180 /* Engine.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Engine.xcodeproj; path = Engine/Engine.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C418AA403700EF3180 /* Gui.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Gui.xcodeproj; path = Gui/Gui.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C718AA403700EF3180 /* Tests.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Tests.xcodeproj; path = Tests/Tests.xcodeproj; sourceTree = "<group>"; };
 		1EADE5CA18AA403700EF3180 /* Natron.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Natron.xcodeproj; path = App/Natron.xcodeproj; sourceTree = "<group>"; };
+		D7A1962518B2234100F412DA /* NatronRenderer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronRenderer.xcodeproj; path = Renderer/NatronRenderer.xcodeproj; sourceTree = "<group>"; };
+		D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = HostSupport.xcodeproj; path = HostSupport/HostSupport.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		1EADE5B718AA400B00EF3180 = {
 			isa = PBXGroup;
 			children = (
-				1EADE5BE18AA403700EF3180 /* HostSupport.xcodeproj */,
+				D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */,
+				D7A1962518B2234100F412DA /* NatronRenderer.xcodeproj */,
 				1EADE5C118AA403700EF3180 /* Engine.xcodeproj */,
 				1EADE5C418AA403700EF3180 /* Gui.xcodeproj */,
 				1EADE5C718AA403700EF3180 /* Tests.xcodeproj */,
 				1EADE5CA18AA403700EF3180 /* Natron.xcodeproj */,
 			);
-			sourceTree = "<group>";
-		};
-		1EADE5BF18AA403700EF3180 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				1EADE5D518AA403700EF3180 /* libHostSupport.a */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 		1EADE5C218AA403700EF3180 /* Products */ = {
@@ -205,6 +232,22 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		D7A1962618B2234100F412DA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D7A1962C18B2234100F412DA /* NatronRenderer */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D7A1964018B2242500F412DA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D7A1964618B2242500F412DA /* libHostSupport.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXProject section */
@@ -232,12 +275,16 @@
 					ProjectRef = 1EADE5C418AA403700EF3180 /* Gui.xcodeproj */;
 				},
 				{
-					ProductGroup = 1EADE5BF18AA403700EF3180 /* Products */;
-					ProjectRef = 1EADE5BE18AA403700EF3180 /* HostSupport.xcodeproj */;
+					ProductGroup = D7A1964018B2242500F412DA /* Products */;
+					ProjectRef = D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */;
 				},
 				{
 					ProductGroup = 1EADE5CB18AA403700EF3180 /* Products */;
 					ProjectRef = 1EADE5CA18AA403700EF3180 /* Natron.xcodeproj */;
+				},
+				{
+					ProductGroup = D7A1962618B2234100F412DA /* Products */;
+					ProjectRef = D7A1962518B2234100F412DA /* NatronRenderer.xcodeproj */;
 				},
 				{
 					ProductGroup = 1EADE5C818AA403700EF3180 /* Products */;
@@ -250,6 +297,7 @@
 				1EADE5F418AA407500EF3180 /* Natron */,
 				1EADE5F818AA407D00EF3180 /* Tests */,
 				1E5F8F5118AA91330045A477 /* libs */,
+				D7A1965518B2255200F412DA /* NatronRenderer */,
 			);
 		};
 /* End PBXProject section */
@@ -269,13 +317,6 @@
 			remoteRef = 1EADE5D118AA403700EF3180 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		1EADE5D518AA403700EF3180 /* libHostSupport.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = libHostSupport.a;
-			remoteRef = 1EADE5D418AA403700EF3180 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
 		1EADE5D818AA403700EF3180 /* Natron.app */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.application;
@@ -288,6 +329,20 @@
 			fileType = "compiled.mach-o.executable";
 			path = Tests;
 			remoteRef = 1EADE5DA18AA403700EF3180 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		D7A1962C18B2234100F412DA /* NatronRenderer */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = NatronRenderer;
+			remoteRef = D7A1962B18B2234100F412DA /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		D7A1964618B2242500F412DA /* libHostSupport.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libHostSupport.a;
+			remoteRef = D7A1964518B2242500F412DA /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 /* End PBXReferenceProxy section */
@@ -304,7 +359,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "xcodebuild App/Natron.xcodeproj -configuration $CONFIGURATION";
+			shellScript = "xcodebuild -project App/Natron.xcodeproj -configuration $CONFIGURATION";
 			showEnvVarsInLog = 0;
 		};
 		1E5F8F5018AA911E0045A477 /* ShellScript */ = {
@@ -318,17 +373,12 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "xcodebuild Tests/Tests.xcodeproj -configuration $CONFIGURATION";
+			shellScript = "xcodebuild -project Tests/Tests.xcodeproj -configuration $CONFIGURATION";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		1E5F8F5618AA913D0045A477 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = HostSupport;
-			targetProxy = 1E5F8F5518AA913D0045A477 /* PBXContainerItemProxy */;
-		};
 		1E5F8F5818AA913D0045A477 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = Engine;
@@ -358,6 +408,21 @@
 			isa = PBXTargetDependency;
 			target = 1EADE5F818AA407D00EF3180 /* Tests */;
 			targetProxy = 1EADE5FE18AA408B00EF3180 /* PBXContainerItemProxy */;
+		};
+		D7A1964818B2242E00F412DA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = HostSupport;
+			targetProxy = D7A1964718B2242E00F412DA /* PBXContainerItemProxy */;
+		};
+		D7A1965C18B2256400F412DA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1EADE5F418AA407500EF3180 /* Natron */;
+			targetProxy = D7A1965B18B2256400F412DA /* PBXContainerItemProxy */;
+		};
+		D7A1965E18B2257700F412DA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D7A1965518B2255200F412DA /* NatronRenderer */;
+			targetProxy = D7A1965D18B2257700F412DA /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -430,6 +495,20 @@
 			};
 			name = Release;
 		};
+		D7A1965718B2255200F412DA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		D7A1965818B2255200F412DA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -474,6 +553,15 @@
 			buildConfigurations = (
 				1EADE5FA18AA407D00EF3180 /* Debug */,
 				1EADE5FB18AA407D00EF3180 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D7A1965618B2255200F412DA /* Build configuration list for PBXAggregateTarget "NatronRenderer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D7A1965718B2255200F412DA /* Debug */,
+				D7A1965818B2255200F412DA /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

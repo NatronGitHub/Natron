@@ -25,15 +25,18 @@ class DockablePanel;
 class QVBoxLayout;
 class QHBoxLayout;
 class Button;
+class Gui;
 class PreferencesPanel : public QWidget
 {
     Q_OBJECT
     
 public:
-    PreferencesPanel(boost::shared_ptr<Settings> settings,QWidget* parent= NULL);
+    PreferencesPanel(boost::shared_ptr<Settings> settings,Gui* parent);
     ~PreferencesPanel() OVERRIDE {}
 
 public slots:
+    
+    void restoreDefaults();
     
     void cancelChanges();
     
@@ -45,10 +48,12 @@ private:
     virtual void closeEvent(QCloseEvent* e) OVERRIDE;
     
     // FIXME: PIMPL
+    Gui* _gui;
     QVBoxLayout* _mainLayout;
     DockablePanel* _panel;
     QWidget* _buttonsContainer;
     QHBoxLayout* _buttonsLayout;
+    Button* _restoreDefaultsB;
     Button* _cancelB;
     Button* _okB;
     boost::shared_ptr<Settings> _settings;

@@ -193,6 +193,9 @@ public slots:
     void abortRendering(bool blocking);
     
     
+    ///convenience function for signal/slots
+    void abortRenderingNonBlocking() { abortRendering(false); }
+    
     /*
      *@brief Slot called internally by the render() function when it reports progress for the current frame.
      *Do not call this yourself.

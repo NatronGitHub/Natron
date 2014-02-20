@@ -18,7 +18,9 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Global/Macros.h"
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
+CLANG_DIAG_OFF(deprecated)
 #include <QtOpenGL/QGLWidget>
+CLANG_DIAG_ON(deprecated)
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)

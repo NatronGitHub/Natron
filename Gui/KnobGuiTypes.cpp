@@ -23,15 +23,18 @@
 #include <QHeaderView>
 #include <QApplication>
 #include <QScrollArea>
+CLANG_DIAG_OFF(unused-private-field)
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QKeyEvent>
-
-#include "Engine/AppManager.h"
+CLANG_DIAG_ON(unused-private-field)
+#include <QDebug>
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Curve.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Lut.h"
 
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
@@ -545,11 +548,11 @@ void Double_KnobGui::setEnabled()
 void Button_KnobGui::createWidget(QGridLayout *layout, int row)
 {
     _button = new Button(QString(QString(getKnob()->getDescription().c_str())), layout->parentWidget());
-    QObject::connect(_button, SIGNAL(pressed()), this, SLOT(emitValueChanged()));
+    QObject::connect(_button, SIGNAL(clicked()), this, SLOT(emitValueChanged()));
     if(hasToolTip()) {
         _button->setToolTip(toolTip());
     }
-    layout->addWidget(_button, row, 0, Qt::AlignRight);
+    layout->addWidget(_button, row, 1, Qt::AlignLeft);
 }
 
 Button_KnobGui::~Button_KnobGui()
@@ -584,62 +587,58 @@ Choice_KnobGui::Choice_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *cont
     _entries = cbKnob->getEntries();
     QObject::connect(cbKnob.get(), SIGNAL(populated()), this, SLOT(onEntriesPopulated()));
 }
+
 Choice_KnobGui::~Choice_KnobGui()
 {
     delete _comboBox;
     delete _descriptionLabel;
 }
+
 void Choice_KnobGui::createWidget(QGridLayout *layout, int row)
 {
     _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-    if(hasToolTip()) {
+    if (hasToolTip()) {
         _descriptionLabel->setToolTip(toolTip());
     }
     layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
     
     _comboBox = new ComboBox(layout->parentWidget());
-    
-    const std::vector<std::string> &help =  boost::dynamic_pointer_cast<Choice_Knob>(getKnob())->getEntriesHelp();
-    for (U32 i = 0; i < _entries.size(); ++i) {
-        std::string helpStr = help.empty() ? "" : help[i];
-        _comboBox->addItem(_entries[i].c_str(), QIcon(), QKeySequence(), QString(helpStr.c_str()));
-    }
-    if (_entries.size() > 0) {
-        _comboBox->setCurrentText(_entries[0].c_str());
-    }
-    if(hasToolTip()) {
+    onEntriesPopulated();
+    if (hasToolTip()) {
         _comboBox->setToolTip(toolTip());
     }
     QObject::connect(_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
     layout->addWidget(_comboBox, row, 1, Qt::AlignLeft);
 }
+
 void Choice_KnobGui::onCurrentIndexChanged(int i)
 {
     pushValueChangedCommand(Variant(i));
-    
 }
+
 void Choice_KnobGui::onEntriesPopulated()
 {
-    int i = _comboBox->activeIndex();
+    int activeIndex = _comboBox->activeIndex();
     _comboBox->clear();
-    const std::vector<std::string> entries = boost::dynamic_pointer_cast<Choice_Knob>(getKnob())->getEntries();
-    _entries = entries;
-    for (U32 j = 0; j < _entries.size(); ++j) {
-        _comboBox->addItem(QString(_entries[j].c_str()));
+    _entries = boost::dynamic_pointer_cast<Choice_Knob>(getKnob())->getEntries();
+    const std::vector<std::string> &help =  boost::dynamic_pointer_cast<Choice_Knob>(getKnob())->getEntriesHelp();
+    for (U32 i = 0; i < _entries.size(); ++i) {
+        std::string helpStr = help.empty() ? "" : help[i];
+        _comboBox->addItem(_entries[i].c_str(), QIcon(), QKeySequence(), QString(helpStr.c_str()));
     }
-    if(_entries.size() > 0 && i >= 0) {
-        _comboBox->setCurrentText(QString(_entries[i].c_str()));
-    } else {
-        _comboBox->setCurrentText("");
-    }
+    ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
+    ///we don't want that to happen because the index actually didn't change.
+    _comboBox->setCurrentIndex_no_emit(activeIndex);
 }
 
 void Choice_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 {
     int i = variant.toInt();
-    if(i < (int)_entries.size() && i >= (int)0){
-        _comboBox->setCurrentText(_entries[i].c_str());
-    }
+    ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
+    ///change the internal value of the knob again...
+    ///The slot connected to onCurrentIndexChanged is reserved to catch user interaction with the combobox.
+    ///This function is called in response to an internal change.
+    _comboBox->setCurrentIndex_no_emit(i);
 }
 
 void Choice_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevel level) {
@@ -670,6 +669,7 @@ void Choice_KnobGui::_show()
     _descriptionLabel->show();
     _comboBox->show();
 }
+
 void Choice_KnobGui::setEnabled()
 {
     bool b = getKnob()->isEnabled();
@@ -916,8 +916,9 @@ void Separator_KnobGui::createWidget(QGridLayout *layout, int row)
     if(hasToolTip()) {
         _descriptionLabel->setToolTip(toolTip());
     }
-    layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
+    layout->addWidget(_descriptionLabel, row, 0, Qt::AlignLeft);
     
+    ///FIXME: this line is never visible.
     _line = new QFrame(layout->parentWidget());
     _line->setFrameShape(QFrame::HLine);
     _line->setFrameShadow(QFrame::Sunken);
@@ -1077,7 +1078,7 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
     appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, &buttonPix);
     
     _colorDialogButton = new Button(QIcon(buttonPix), "", colorContainer);
-    QObject::connect(_colorDialogButton, SIGNAL(pressed()), this, SLOT(showColorDialog()));
+    QObject::connect(_colorDialogButton, SIGNAL(clicked()), this, SLOT(showColorDialog()));
     colorLayout->addWidget(_colorDialogButton);
     
     mainLayout->addWidget(boxContainers);
@@ -1369,9 +1370,9 @@ void Color_KnobGui::onPickingEnabled(bool enabled){
     if(getKnob()->getHolder()->getApp()){
         boost::shared_ptr<Color_Knob> colorKnob = boost::dynamic_pointer_cast<Color_Knob>(getKnob());
         if (enabled) {
-            getKnob()->getHolder()->getApp()->getGui()->registerNewColorPicker(colorKnob);
+            getGui()->registerNewColorPicker(colorKnob);
         }else{
-            getKnob()->getHolder()->getApp()->getGui()->removeColorPicker(colorKnob);
+            getGui()->removeColorPicker(colorKnob);
         }
     }
     
@@ -1671,6 +1672,22 @@ void Group_KnobGui::_show()
     
 }
 
+void Group_KnobGui::setEnabled() {
+    
+    if (getKnob()->isEnabled()) {
+        for (U32 i = 0; i < _childrenToEnable.size(); ++i) {
+            _childrenToEnable[i]->getKnob()->setEnabled(true);
+        }
+    } else {
+        _childrenToEnable.clear();
+        for (U32 i = 0; i < _children.size(); ++i) {
+            if (_children[i].first->getKnob()->isEnabled()) {
+                _childrenToEnable.push_back(_children[i].first);
+                _children[i].first->getKnob()->setEnabled(false);
+            }
+        }
+    }
+}
 
 
 //=============================Parametric_KnobGui===================================
@@ -1711,7 +1728,7 @@ void Parametric_KnobGui::createWidget(QGridLayout *layout, int row) {
     
     _resetButton = new Button("Reset",treeColumn);
     _resetButton->setToolTip(Qt::convertFromPlainText("Reset the selected curves in the tree to their default shape", Qt::WhiteSpaceNormal));
-    QObject::connect(_resetButton, SIGNAL(pressed()), this, SLOT(resetSelectedCurves()));
+    QObject::connect(_resetButton, SIGNAL(clicked()), this, SLOT(resetSelectedCurves()));
     treeColumnLayout->addWidget(_resetButton);
     
     layout->addWidget(treeColumn, row, 0);

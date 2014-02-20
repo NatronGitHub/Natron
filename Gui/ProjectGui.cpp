@@ -20,14 +20,13 @@
 #include <QDebug>
 #include <QTextDocument> // for Qt::convertFromPlainText
 
-#include "Engine/AppManager.h"
-
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/VideoEngine.h"
 
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
 #include "Gui/ComboBox.h"
 #include "Gui/Button.h"
@@ -39,9 +38,12 @@
 #include "Gui/NodeGui.h"
 #include "Gui/TabWidget.h"
 #include "Gui/ProjectGuiSerialization.h"
+#include "Gui/GuiAppInstance.h"
+#include "Gui/NodeGraph.h"
 
-ProjectGui::ProjectGui()
-: _project()
+ProjectGui::ProjectGui(Gui* gui)
+: _gui(gui)
+, _project()
 , _panel(NULL)
 , _created(false)
 , _colorPickersEnabled()
@@ -67,8 +69,10 @@ void ProjectGui::create(boost::shared_ptr<Natron::Project> projectInternal,QVBox
     _project = projectInternal;
     
     QObject::connect(projectInternal.get(),SIGNAL(mustCreateFormat()),this,SLOT(createNewFormat()));
+    QObject::connect(projectInternal.get(),SIGNAL(knobsInitialized()),this,SLOT(initializeKnobsGui()));
     
-    _panel = new DockablePanel(projectInternal.get(),
+    _panel = new DockablePanel(_gui,
+                               projectInternal.get(),
                                container,
                                DockablePanel::READ_ONLY_NAME,
                                false,
@@ -91,7 +95,7 @@ void ProjectGui::setVisible(bool visible){
 }
 
 void ProjectGui::createNewFormat(){
-    AddFormatDialog dialog(_project.get(),_project->getApp()->getGui());
+    AddFormatDialog dialog(_project.get(),_gui->getApp()->getGui());
     if(dialog.exec()){
         _project->setOrAddProjectFormat(dialog.getFormat());
     }
@@ -197,8 +201,8 @@ void AddFormatDialog::onCopyFromViewer(){
         if(nodes[i]->getName() == activeText.toStdString()){
             ViewerInstance* v = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             ViewerTab* tab = _gui->getViewerTabForInstance(v);
-            const RectI& f = tab->viewer->getCurrentViewerInfos().getRoD();
-            const Format& format = tab->viewer->getCurrentViewerInfos().getDisplayWindow();
+            const RectI& f = tab->getViewer()->getCurrentViewerInfos().getRoD();
+            const Format& format = tab->getViewer()->getCurrentViewerInfos().getDisplayWindow();
             _widthSpinBox->setValue(f.width());
             _heightSpinBox->setValue(f.height());
             _pixelAspectSpinBox->setValue(format.getPixelAspect());
@@ -225,7 +229,7 @@ void ProjectGui::save(boost::archive::xml_oarchive& archive) const {
 void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneLayout>& guiLayout,
                                        std::map<std::string,PaneLayout>::const_iterator layout){
     const std::list<TabWidget*>& initialWidgets = gui->getPanes();
-    const std::map<std::string,QWidget*>& registeredTabs = gui->_registeredTabs;
+    const std::map<std::string,QWidget*>& registeredTabs = gui->getRegisteredTabs();
     for(std::list<TabWidget*>::const_iterator it = initialWidgets.begin();it!=initialWidgets.end();++it){
         
         if((*it)->objectName().toStdString() == layout->first){
@@ -269,25 +273,37 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     ProjectGuiSerialization obj;
     archive >> boost::serialization::make_nvp("ProjectGui",obj);
     
+    if (obj.arePreviewsTurnedOffGlobally()) {
+        _gui->getNodeGraph()->turnOffPreviewForAllNodes();
+    }
+    
     const std::map<std::string, ViewerData >& viewersProjections = obj.getViewersProjections();
     
     const std::vector< boost::shared_ptr<NodeGuiSerialization> >& nodesGuiSerialization = obj.getSerializedNodesGui();
     for (U32 i = 0; i < nodesGuiSerialization.size(); ++i) {
         const std::string& name = nodesGuiSerialization[i]->getName();
-        NodeGui* nGui = _project->getApp()->getNodeGui(name);
+        NodeGui* nGui = _gui->getApp()->getNodeGui(name);
         assert(nGui);
         nGui->setPos(nodesGuiSerialization[i]->getX(),nodesGuiSerialization[i]->getY());
-        _project->getApp()->deselectAllNodes();
-        if(nodesGuiSerialization[i]->isPreviewEnabled() && !nGui->getNode()->isPreviewEnabled()){
-            nGui->togglePreview();
+        _gui->deselectAllNodes();
+        
+        if (obj.arePreviewsTurnedOffGlobally()) {
+            if (nGui->getNode()->isPreviewEnabled()) {
+                nGui->togglePreview();
+            }
+        } else {
+            if((nodesGuiSerialization[i]->isPreviewEnabled() && !nGui->getNode()->isPreviewEnabled()) ||
+               (!nodesGuiSerialization[i]->isPreviewEnabled() && nGui->getNode()->isPreviewEnabled())){
+                nGui->togglePreview();
+            }
         }
         
         if (nGui->getNode()->pluginID() == "Viewer") {
             std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
             if (found != viewersProjections.end()) {
                 ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(nGui->getNode()->getLiveInstance());
-                ViewerTab* tab = _project->getApp()->getGui()->getViewerTabForInstance(viewer);
-                tab->viewer->setProjection(found->second.left, found->second.bottom, found->second.zoomFactor);
+                ViewerTab* tab = _gui->getApp()->getGui()->getViewerTabForInstance(viewer);
+                tab->getViewer()->setProjection(found->second.left, found->second.bottom, found->second.zoomFactor);
                 tab->setChannels(found->second.channels);
                 tab->setColorSpace(found->second.colorSpace);
                 tab->setExposure(found->second.exposure);
@@ -300,7 +316,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     }
     
     
-    const std::vector<NodeGui*> nodesGui = _project->getApp()->getVisibleNodes();
+    const std::vector<NodeGui*> nodesGui = getVisibleNodes();
     for(U32 i = 0 ; i < nodesGui.size();++i){
         nodesGui[i]->refreshEdges();
     }
@@ -313,13 +329,13 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
         ///if it is a top level tab (i.e: the original tabs)
         ///this will recursively restore all their splits
         if(it->second.parentName.empty()){
-            restoreTabWidgetLayoutRecursively(_project->getApp()->getGui(), guiLayout, it);
+            restoreTabWidgetLayoutRecursively(_gui->getApp()->getGui(), guiLayout, it);
         }
     }
     
     ///now restore the splitters
     const std::map<std::string,std::string>& splitters = obj.getSplittersStates();
-    const std::list<QSplitter*>& appSplitters = _project->getApp()->getGui()->getSplitters();
+    const std::list<QSplitter*>& appSplitters = _gui->getApp()->getGui()->getSplitters();
     for (std::map<std::string,std::string>::const_iterator it = splitters.begin();it!=splitters.end();++it) {
         //find the splitter by name
         for (std::list<QSplitter*>::const_iterator it2 = appSplitters.begin(); it2!=appSplitters.end(); ++it2) {
@@ -336,9 +352,13 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
         }
         
     }
+    
+   
 }
 
-
+const std::vector<NodeGui*> ProjectGui::getVisibleNodes() const {
+    return _gui->getVisibleNodes();
+}
 
 
 void ProjectGui::registerNewColorPicker(boost::shared_ptr<Color_Knob> knob){

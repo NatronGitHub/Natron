@@ -27,12 +27,12 @@ class RenderTree;
 class Format;
 class OverlaySupport;
 class PluginMemory;
+class BlockingBackgroundRender;
 
 namespace Natron{
 
 class Node;
 class Image;
-
 
 /**
  * @brief This is the base class for visual effects.
@@ -357,11 +357,6 @@ public:
     void createKnobDynamically();
     
     
-    /**
-     * @brief Must be implemented to initialize any knob using the
-     * KnobFactory.
-     **/
-    virtual void initializeKnobs() OVERRIDE {};
     
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
@@ -488,6 +483,13 @@ public:
     virtual void onMultipleInputsChanged() {}
     
 protected:
+    
+    /**
+     * @brief Must be implemented to initialize any knob using the
+     * KnobFactory.
+     **/
+    virtual void initializeKnobs() OVERRIDE {};
+    
     /**
      * @brief This function is provided for means to copy more data than just the knobs from the live instance
      * to the render clones.
@@ -539,6 +541,8 @@ class OutputEffectInstance : public Natron::EffectInstance {
                              It avoids snchronizing all viewers in the app to the render*/
     SequenceTime _writerFirstFrame;
     SequenceTime _writerLastFrame;
+    
+    BlockingBackgroundRender* _renderController; //< pointer to a blocking renderer
 public:
 
     OutputEffectInstance(Node* node);
@@ -553,7 +557,9 @@ public:
      * @brief Starts rendering of all the sequence available, from start to end.
      * This function is meant to be called for on-disk renderer only (i.e: not viewers).
      **/
-    void renderFullSequence();
+    void renderFullSequence(BlockingBackgroundRender* renderController);
+    
+    void notifyRenderFinished();
 
     void updateTreeAndRender(bool initViewer = false);
 

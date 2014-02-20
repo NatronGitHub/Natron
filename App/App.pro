@@ -91,11 +91,17 @@ include(../global.pri)
 include(../config.pri)
 
 SOURCES += \
-    main.cpp
+    NatronApp_main.cpp
 
 INSTALLS += target
-install_it.path = %{buildDir}/../OpenColorIO-Configs
-install_it.files += %{sourceDir}/../Gui/Resources/OpenColorIO-Configs
-INSTALLS += install_it
 
-INSTALLS += data
+Resources.files = ../Gui/Resources/OpenColorIO-Configs
+macx {
+    Resources.path = Contents/Resources
+    QMAKE_BUNDLE_DATA += Resources
+}
+!macx {
+    Resources.path = $$OUT_PWD
+    INSTALLS += Resources
+}
+

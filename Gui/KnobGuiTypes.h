@@ -17,10 +17,10 @@
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QLabel>
-CLANG_DIAG_ON(deprecated)
 #include <QObject>
 #include <QStyledItemDelegate>
 #include <QTextEdit>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
@@ -481,7 +481,7 @@ class AnimatingTextEdit : public QTextEdit {
 
 public:
     
-    AnimatingTextEdit(QWidget* parent = 0) : QTextEdit(parent){}
+    AnimatingTextEdit(QWidget* parent = 0) : QTextEdit(parent) , animation(0) {}
     
     virtual ~AnimatingTextEdit(){}
     
@@ -577,7 +577,7 @@ private:
 
     virtual void _show() OVERRIDE FINAL;
 
-    virtual void setEnabled()  OVERRIDE FINAL {}
+    virtual void setEnabled()  OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
@@ -589,6 +589,8 @@ private:
     GroupBoxLabel *_button;
     QLabel *_descriptionLabel;
     std::vector< std::pair< KnobGui *, std::pair<int, int> > > _children;
+    std::vector< KnobGui* > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
+                                               //enabled too
 };
 
 /*****************************/

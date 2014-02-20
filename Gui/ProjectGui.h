@@ -31,6 +31,7 @@ class Color_Knob;
 class DockablePanel;
 class ProjectGuiSerialization;
 class Gui;
+class NodeGui;
 class NodeGuiSerialization;
 namespace boost {
     namespace archive {
@@ -48,7 +49,7 @@ class ProjectGui : public QObject
     
 public:
     
-    ProjectGui();
+    ProjectGui(Gui* gui);
     virtual ~ProjectGui() OVERRIDE;
         
     void create(boost::shared_ptr<Natron::Project> projectInternal,QVBoxLayout* container,QWidget* parent = NULL);
@@ -73,7 +74,9 @@ public:
     
     void setPickersColor(const QColor& color);
     
-    void initializeKnobsGui();
+    const std::vector<NodeGui*> getVisibleNodes() const;
+    
+    const Gui* getGui() const { return _gui; }
     
 public slots:
     
@@ -81,9 +84,13 @@ public slots:
 
     void setVisible(bool visible);
 
+    void initializeKnobsGui();
+
 private:
     
-        
+    
+    Gui* _gui;
+    
     boost::shared_ptr<Natron::Project> _project;
     
     DockablePanel* _panel;

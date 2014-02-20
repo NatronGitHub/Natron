@@ -28,6 +28,7 @@ CLANG_DIAG_ON(unused-parameter)
 class Curve;
 class KnobSerialization
 {
+    bool _hasAnimation;
     std::string _label;
     std::vector<Variant> _values;
     int _dimension;
@@ -42,10 +43,13 @@ class KnobSerialization
     void serialize(Archive & ar, const unsigned int version)
     {
         (void)version;
-        ar & boost::serialization::make_nvp("Dimension",_label);
+        ar & boost::serialization::make_nvp("Label",_label);
         ar & boost::serialization::make_nvp("Dimension",_dimension);
         ar & boost::serialization::make_nvp("Values",_values);
-        ar & boost::serialization::make_nvp("Curves",_curves);
+        ar & boost::serialization::make_nvp("HasAnimation",_hasAnimation);
+        if (_hasAnimation) {
+            ar & boost::serialization::make_nvp("Curves",_curves);
+        }
         ar & boost::serialization::make_nvp("Masters",_masters);
         ar & boost::serialization::make_nvp("Extra_datas",_extraData);
     }

@@ -19,7 +19,7 @@
 #include <QFontMetrics>
 #include <QTextDocument> // for Qt::convertFromPlainText
 
-#include "Engine/AppManager.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/MenuWithToolTips.h"
 
 using namespace Natron;
@@ -144,7 +144,7 @@ void ComboBox::insertItem(int index,const QString& item,QIcon icon,QKeySequence 
     _actions.insert(_actions.begin()+index, action);
     /*if this is the first action we add, make it current*/
     if(_actions.size() == 1){
-        setCurrentText(itemText(0));
+        setCurrentText_no_emit(itemText(0));
     }
  
 }
@@ -172,23 +172,42 @@ void ComboBox::addItem(const QString& item,QIcon icon ,QKeySequence key,const QS
     
     /*if this is the first action we add, make it current*/
     if(_actions.size() == 1){
-        setCurrentText(itemText(0));
+        setCurrentText_no_emit(itemText(0));
     }
 }
 
-void ComboBox::setCurrentText(const QString& text){
+void ComboBox::setCurrentText_no_emit(const QString& text) {
+    setCurrentText_internal(text);
+}
+
+void ComboBox::setCurrentText(const QString& text) {
+    int index = setCurrentText_internal(text);
+    if (index != -1) {
+        emit currentIndexChanged(index);
+        emit currentIndexChanged(getCurrentIndexText());
+    }
+}
+
+int ComboBox::setCurrentText_internal(const QString& text) {
     QString str(text);
     growMaximumWidthFromText(str);
     str.prepend("  ");
     str.append("  ");
     assert(_currentText);
     _currentText->setText(str);
+    // if no action matches this text, set the index to a dirty value
+    int index = -1;
     for (U32 i = 0; i < _actions.size(); ++i) {
         if(_actions[i]->text() == text){
-            _currentIndex = i;
+            index = i;
             break;
         }
     }
+    if (_currentIndex != index && index != -1) {
+        _currentIndex = index;
+        return index;
+    }
+    return -1;
 }
 
 void ComboBox::setMaximumWidthFromText(const QString& str)
@@ -205,10 +224,6 @@ void ComboBox::growMaximumWidthFromText(const QString& str)
     }
 }
 
-QString ComboBox::text() const{
-    return _currentText->text();
-}
-
 int ComboBox::activeIndex() const{
     return _currentIndex;
 }
@@ -218,14 +233,13 @@ QString ComboBox::getCurrentIndexText() const {
     return _actions[_currentIndex]->text();
 }
 
-void ComboBox::setCurrentIndex(int index)
-{
+bool ComboBox::setCurrentIndex_internal(int index) {
     QString str;
-    QString rawStr;
-    if (index >= 0 && index < (int)_actions.size()) {
-        str = _actions[index]->text();
-        rawStr = str;
+    QString text;
+    if (0 <= index && index < (int)_actions.size()) {
+        text = _actions[index]->text();
     }
+    str = text;
     /*before displaying,prepend and append the text by some spacing.
      This is a dirty way to do this but QLayout::addSpacing() doesn't preserve
      the same style for the label.*/
@@ -239,12 +253,28 @@ void ComboBox::setCurrentIndex(int index)
 #endif
     str.prepend("  ");
     str.append("  ");
-    _currentIndex = index;
     _currentText->setText(str);
-    // already called growMaximumWidthFromText() from addItem() and insertItem()
-    //setMaximumWidthFromText(str);
-    emit currentIndexChanged(index);
-    emit currentIndexChanged(rawStr);
+    
+    if (_currentIndex != index && index != -1) {
+        _currentIndex = index;
+        return true;
+    } else {
+        return false;
+    }
+
+}
+
+void ComboBox::setCurrentIndex(int index)
+{
+    if (setCurrentIndex_internal(index)) {
+        ///emit the signal only if the entry changed
+        emit currentIndexChanged(_currentIndex);
+        emit currentIndexChanged(getCurrentIndexText());
+    }
+}
+
+void ComboBox::setCurrentIndex_no_emit(int index) {
+    setCurrentIndex_internal(index);
 }
 
 void ComboBox::addSeparator(){

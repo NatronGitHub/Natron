@@ -6,6 +6,8 @@
 
 #include "AboutWindow.h"
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
 #include <QTextBrowser>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -13,6 +15,7 @@
 #include <QLabel>
 #include <QFile>
 #include <QTextCodec>
+CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 #include "Gui/Button.h"

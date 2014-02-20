@@ -16,8 +16,10 @@
 #include "Engine/Settings.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/Button.h"
-PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,QWidget *parent)
+#include "Gui/Gui.h"
+PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,Gui *parent)
     : QWidget(parent)
+    , _gui(parent)
     , _settings(settings)
 {
     
@@ -29,7 +31,7 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,QWidget 
     _mainLayout->setContentsMargins(0,0,0,0);
     _mainLayout->setSpacing(0);
     
-    _panel = new DockablePanel(_settings.get(),_mainLayout,DockablePanel::NO_HEADER,true,
+    _panel = new DockablePanel(_gui,_settings.get(),_mainLayout,DockablePanel::NO_HEADER,true,
                                "","",false,"",this);
     // _panel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     _mainLayout->addWidget(_panel);
@@ -37,14 +39,17 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,QWidget 
     _buttonsContainer = new QWidget(this);
     _buttonsLayout = new QHBoxLayout(_buttonsContainer);
     _buttonsLayout->addStretch();
+    _restoreDefaultsB = new Button("Restore default",_buttonsContainer);
     _cancelB = new Button("Cancel",_buttonsContainer);
     _okB = new Button("Save",_buttonsContainer);
+    _buttonsLayout->addWidget(_restoreDefaultsB);
     _buttonsLayout->addWidget(_cancelB);
     _buttonsLayout->addWidget(_okB);
     
     _mainLayout->addStretch();
     _mainLayout->addWidget(_buttonsContainer);
     
+    QObject::connect(_restoreDefaultsB, SIGNAL(clicked()), this, SLOT(restoreDefaults()));
     QObject::connect(_cancelB, SIGNAL(clicked()), this, SLOT(cancelChanges()));
     QObject::connect(_okB, SIGNAL(clicked()), this, SLOT(saveChanges()));
     
@@ -53,6 +58,14 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,QWidget 
     
 }
 
+void PreferencesPanel::restoreDefaults() {
+    Natron::StandardButton reply = Natron::questionDialog("Preferences",
+                                        "Restoring the settings will delete any custom configuration, are you sure you want to do this?");
+    if (reply == Natron::Yes) {
+        _settings->restoreDefault();
+    }
+    
+}
 
 void PreferencesPanel::cancelChanges() {
     close();

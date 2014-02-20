@@ -13,7 +13,6 @@
 
 #include <boost/bind.hpp>
 
-#include <QtGui/QRgb>
 
 #include "Engine/Hash64.h"
 #include "Engine/ChannelSet.h"
@@ -31,7 +30,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Log.h"
 #include "Engine/NodeSerialization.h"
-
+#include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
 
@@ -98,10 +97,15 @@ struct Node::Implementation {
         , computingPreviewCond()
         , pluginInstanceMemoryUsed(0)
         , memoryUsedMutex()
+        , mustQuitProcessing(false)
+        , mustQuitProcessingMutex()
+        , mustQuitProcessingCond()
+        , isUsingInputs(false)
+        , isUsingInputsCond()
     {
     }
 
-    AppInstance* app; // pointer to the model: needed to access the application's default-project's format
+    AppInstance* app; // pointer to the app: needed to access the application's default-project's format
     std::multimap<int,Node*> outputs; //multiple outputs per slot
     EffectInstance* previewInstance;//< the instance used only to render a preview image
     RenderTree* previewRenderTree;//< the render tree used to render the preview
@@ -126,6 +130,13 @@ struct Node::Implementation {
     
     size_t pluginInstanceMemoryUsed; //< global count on all EffectInstance's of the memory they use.
     QMutex memoryUsedMutex; //< protects _pluginInstanceMemoryUsed
+    
+    bool mustQuitProcessing;
+    QMutex mustQuitProcessingMutex;
+    QWaitCondition mustQuitProcessingCond;
+    
+    bool isUsingInputs; //< set when a render tree is actively using the connections informations
+    QWaitCondition isUsingInputsCond;
 };
 
 Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
@@ -139,17 +150,15 @@ Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
         _liveInstance         = func.second(this);
         _imp->previewInstance = func.second(this);
     } else { //ofx plugin
-        _liveInstance = appPTR->getOfxHost()->createOfxEffect(name,this);
+        _liveInstance = appPTR->createOFXEffect(name,this);
         _liveInstance->initializeOverlayInteract(); 
-        _imp->previewInstance = appPTR->getOfxHost()->createOfxEffect(name,this);
+        _imp->previewInstance = appPTR->createOFXEffect(name,this);
     }
     assert(_liveInstance);
     assert(_imp->previewInstance);
 
     _imp->previewInstance->setClone();
-    _imp->previewInstance->notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
-    _imp->previewInstance->initializeKnobs();
-    _imp->previewInstance->notifyProjectEndKnobsValuesChanged();
+    _imp->previewInstance->initializeKnobsPublic();
     _imp->previewRenderTree = new RenderTree(_imp->previewInstance);
     _imp->renderInstances.insert(std::make_pair(_imp->previewRenderTree,_imp->previewInstance));
 }
@@ -163,9 +172,17 @@ void Node::quitAnyProcessing() {
     if (isOutputNode()) {
         dynamic_cast<Natron::OutputEffectInstance*>(this->getLiveInstance())->getVideoEngine()->quitEngineThread();
     }
-    QMutexLocker l(&_imp->previewMutex);
-    while (_imp->computingPreview) {
-        _imp->computingPreviewCond.wait(&_imp->previewMutex);
+    {
+        QMutexLocker locker(&_imp->nodeInstanceLock);
+        _imp->imagesBeingRenderedNotEmpty.wakeAll();
+        if (_imp->computingPreview) {
+            QMutexLocker l(&_imp->mustQuitProcessingMutex);
+            _imp->mustQuitProcessing = true;
+            while (_imp->mustQuitProcessing) {
+                _imp->mustQuitProcessingCond.wait(&_imp->mustQuitProcessingMutex);
+            }
+        }
+        
     }
 }
 
@@ -260,16 +277,14 @@ void Node::onGUINameChanged(const QString& str){
 }
 
 void Node::initializeKnobs(){
-    _liveInstance->notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
-    _liveInstance->initializeKnobs();
-    _liveInstance->notifyProjectEndKnobsValuesChanged();
+    _liveInstance->initializeKnobsPublic();
     emit knobsInitialized();
 }
 
 EffectInstance* Node::findOrCreateLiveInstanceClone(RenderTree* tree)
 {
     if (isOutputNode()) {
-        _liveInstance->updateInputs(tree);
+        //_liveInstance->updateInputs(tree);
         return _liveInstance;
     }
     EffectInstance* ret = 0;
@@ -296,11 +311,11 @@ EffectInstance*  Node::createLiveInstanceClone()
         assert(func.first);
         ret =  func.second(this);
     } else {
-        ret = appPTR->getOfxHost()->createOfxEffect(_liveInstance->pluginID(),this);
+        ret = appPTR->createOFXEffect(_liveInstance->pluginID(),this);
     }
     assert(ret);
     ret->setClone();
-    ret->initializeKnobs();
+    ret->initializeKnobsPublic();
     return ret;
 }
 
@@ -393,6 +408,7 @@ std::string Node::getInputLabel(int inputNb) const
 
 bool Node::isInputConnected(int inputNb) const
 {
+    
     InputMap::const_iterator it = _inputs.find(inputNb);
     if(it != _inputs.end()){
         return it->second != NULL;
@@ -411,6 +427,11 @@ bool Node::hasOutputConnected() const
 
 bool Node::connectInput(Node* input,int inputNumber,bool /*autoConnection*/ )
 {
+    
+    QMutexLocker l(&isUsingInputsMutex);
+    waitForRenderTreesToBeDone();
+
+
     assert(input);
     InputMap::iterator it = _inputs.find(inputNumber);
     if (it == _inputs.end()) {
@@ -430,6 +451,10 @@ bool Node::connectInput(Node* input,int inputNumber,bool /*autoConnection*/ )
 
 void Node::connectOutput(Node* output,int outputNumber )
 {
+    QMutexLocker l(&isUsingInputsMutex);
+    waitForRenderTreesToBeDone();
+
+
     assert(output);
     _imp->outputs.insert(make_pair(outputNumber,output));
     _liveInstance->updateInputs(NULL);
@@ -437,6 +462,11 @@ void Node::connectOutput(Node* output,int outputNumber )
 
 int Node::disconnectInput(int inputNumber)
 {
+    
+    QMutexLocker l(&isUsingInputsMutex);
+    waitForRenderTreesToBeDone();
+
+
     InputMap::iterator it = _inputs.find(inputNumber);
     if (it == _inputs.end() || it->second == NULL) {
         return -1;
@@ -451,6 +481,10 @@ int Node::disconnectInput(int inputNumber)
 
 int Node::disconnectInput(Node* input)
 {
+    QMutexLocker l(&isUsingInputsMutex);
+    waitForRenderTreesToBeDone();
+
+
     assert(input);
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if (it->second != input) {
@@ -469,6 +503,10 @@ int Node::disconnectInput(Node* input)
 
 int Node::disconnectOutput(Node* output)
 {
+    QMutexLocker l(&isUsingInputsMutex);
+    waitForRenderTreesToBeDone();
+
+
     assert(output);
     for (OutputMap::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
         if (it->second == output) {
@@ -660,9 +698,24 @@ void Node::removeImageBeingRendered(SequenceTime time,int view )
 
 void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf)
 {
+
+    {
+        QMutexLocker locker(&_imp->nodeInstanceLock);
+        while(!_imp->imagesBeingRendered.empty()){
+            _imp->imagesBeingRenderedNotEmpty.wait(&_imp->nodeInstanceLock);
+        }
+    }
+    {
+        QMutexLocker locker(&_imp->mustQuitProcessingMutex);
+        if (_imp->mustQuitProcessing) {
+            _imp->mustQuitProcessing = false;
+            _imp->mustQuitProcessingCond.wakeOne();
+            return;
+        }
+    }
+  
     int knobsAge = _imp->previewInstance->getAppAge();
 
-    
     QMutexLocker locker(&_imp->previewMutex); /// prevent 2 previews to occur at the same time since there's only 1 preview instance
     _imp->computingPreview = true;
     
@@ -679,12 +732,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     w = rod.width() < width ? rod.width() : width;
     double yZoomFactor = (double)h/(double)rod.height();
     double xZoomFactor = (double)w/(double)rod.width();
-    {
-        QMutexLocker locker(&_imp->nodeInstanceLock);
-        while(!_imp->imagesBeingRendered.empty()){
-            _imp->imagesBeingRenderedNotEmpty.wait(&_imp->nodeInstanceLock);
-        }
-    }
+
 #ifdef NATRON_LOG
     Log::beginFunction(getName(),"makePreviewImage");
     Log::print(QString("Time "+QString::number(time)).toStdString());
@@ -739,7 +787,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
             int r = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4]));
             int g = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4+1]));
             int b = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4+2]));
-            dst_pixels[j] = qRgba(r, g, b, 255);
+            dst_pixels[j] = ViewerInstance::toBGRA(r, g, b, 255);
 
         }
     }
@@ -900,7 +948,7 @@ bool Node::message(MessageType type,const std::string& content) const
 
 void Node::setPersistentMessage(MessageType type,const std::string& content)
 {
-    if (!getApp()->isBackground()) {
+    if (!appPTR->isBackground()) {
         //if the message is just an information, display a popup instead.
         if (type == INFO_MESSAGE) {
             message(type,content);
@@ -923,7 +971,7 @@ void Node::setPersistentMessage(MessageType type,const std::string& content)
 
 void Node::clearPersistentMessage()
 {
-    if(!getApp()->isBackground()){
+    if(!appPTR->isBackground()){
         emit persistentMessageCleared();
     }
 }
@@ -978,6 +1026,26 @@ void Node::unregisterPluginMemory(size_t nBytes) {
     emit pluginMemoryUsageChanged((unsigned long long)_imp->pluginInstanceMemoryUsed);
 }
 
+
+void Node::setRenderTreeIsUsingInputs(bool b) {
+    
+    ///it doesn't matter if 2 RenderTree are using the inputs at the same time (because it's obvious concurrent
+    ///threads are going to use the inputs concurrently after this function) because RenderTree's are just reading
+    ///information, the only writer is the node itself.
+    QMutexLocker l(&isUsingInputsMutex);
+    _imp->isUsingInputs = b;
+    if (!b) {
+        _imp->isUsingInputsCond.wakeAll();
+    }
+}
+
+void Node::waitForRenderTreesToBeDone() {
+    assert(!isUsingInputsMutex.tryLock());
+    while (_imp->isUsingInputs) {
+        _imp->isUsingInputsCond.wait(&isUsingInputsMutex);
+    }
+}
+
 InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin,const std::string& name)
     : Node(app,plugin,name)
     , _inputsCount(1)
@@ -990,6 +1058,13 @@ InspectorNode::~InspectorNode(){
 }
 
 bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection) {
+    
+    QMutexLocker l(&isUsingInputsMutex);
+    waitForRenderTreesToBeDone();
+    
+    ///cannot connect more than 10 inputs.
+    assert(inputNumber <= 10);
+    
     assert(input);
     if(input == this){
         return false;
@@ -1000,8 +1075,12 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
     //        return false;
     //    }
     /*Adding all empty edges so it creates at least the inputNB'th one.*/
-    while(_inputsCount <= inputNumber){
-        tryAddEmptyInput();
+    while (_inputsCount <= inputNumber) {
+        
+        ///this function might not succeed if we already have 10 inputs OR the last input is already empty
+        if (!tryAddEmptyInput()) {
+            break;
+        }
     }
     //#1: first case, If the inputNB of the viewer is already connected & this is not
     // an autoConnection, just refresh it*/
@@ -1015,7 +1094,9 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
     
     if(found!=_inputs.end() && found->second && !autoConnection &&
             ((inputAlreadyConnected!=_inputs.end()) )){
+        l.unlock();
         setActiveInputAndRefresh(found->first);
+        l.relock();
         _liveInstance->updateInputs(NULL);
         return false;
     }
@@ -1023,7 +1104,9 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
      selected node, in which case we just refresh the already connected edge.*/
     for (InputMap::const_iterator i = _inputs.begin(); i!=_inputs.end(); ++i) {
         if(i->second && i->second == input){
+            l.unlock();
             setActiveInputAndRefresh(i->first);
+            l.relock();
             _liveInstance->updateInputs(NULL);
             return false;
         }
@@ -1038,19 +1121,29 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
     }
     return false;
 }
-bool InspectorNode::tryAddEmptyInput(){
-    if(_inputs.size() <= 10){
-        if(_inputs.size() > 0){
+bool InspectorNode::tryAddEmptyInput() {
+    
+    ///if we already reached 10 inputs, just don't do anything
+    if (_inputs.size() <= 10) {
+        
+        
+        if (_inputs.size() > 0) {
+            ///if there are already liviing inputs, look at the last one
+            ///and if it is not connected, just don't add an input.
+            ///Otherwise, add an empty input.
             InputMap::const_iterator it = _inputs.end();
             --it;
             if(it->second != NULL){
                 addEmptyInput();
                 return true;
             }
-        }else{
+            
+        } else {
+            ///there'is no inputs yet, just add one.
             addEmptyInput();
             return true;
         }
+        
     }
     return false;
 }
@@ -1083,6 +1176,11 @@ void InspectorNode::removeEmptyInputs(){
 }
 int InspectorNode::disconnectInput(int inputNumber){
     int ret = Node::disconnectInput(inputNumber);
+ 
+    QMutexLocker l(&isUsingInputsMutex);
+    waitForRenderTreesToBeDone();
+
+    
     if(ret!=-1){
         removeEmptyInputs();
         _activeInput = _inputs.size()-1;
@@ -1101,6 +1199,11 @@ int InspectorNode::disconnectInput(Node* input){
 }
 
 void InspectorNode::setActiveInputAndRefresh(int inputNb){
+   
+    QMutexLocker l(&isUsingInputsMutex);
+    waitForRenderTreesToBeDone();
+
+
     InputMap::iterator it = _inputs.find(inputNb);
     if(it!=_inputs.end() && it->second!=NULL){
         _activeInput = inputNb;

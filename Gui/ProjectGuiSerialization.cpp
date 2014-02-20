@@ -15,7 +15,6 @@ CLANG_DIAG_OFF(deprecated)
 #include <QSplitter>
 CLANG_DIAG_ON(deprecated)
 
-#include "Engine/AppManager.h"
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
@@ -25,9 +24,12 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ProjectGui.h"
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiAppInstance.h"
+#include "Gui/NodeGraph.h"
 
  void ProjectGuiSerialization::initialize(const ProjectGui* projectGui){
-     std::vector<NodeGui*> activeNodes = projectGui->getInternalProject()->getApp()->getVisibleNodes();
+     std::vector<NodeGui*> activeNodes = projectGui->getVisibleNodes();
      _serializedNodes.clear();
      for (U32 i = 0; i < activeNodes.size(); ++i) {
          boost::shared_ptr<NodeGuiSerialization> state(new NodeGuiSerialization);
@@ -36,13 +38,13 @@ CLANG_DIAG_ON(deprecated)
          
          if (activeNodes[i]->getNode()->pluginID() == "Viewer") {
              ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(activeNodes[i]->getNode()->getLiveInstance());
-             ViewerTab* tab = projectGui->getInternalProject()->getApp()->getGui()->getViewerTabForInstance(viewer);
+             ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
              assert(viewer);
              ViewerData viewerData;
              viewerData.aspectRatio = 1.;
-             tab->viewer->getProjection(viewerData.left, viewerData.bottom, viewerData.zoomFactor);
-             viewerData.userRoI = tab->viewer->getUserRegionOfInterest();
-             viewerData.userRoIenabled = tab->viewer->isUserRegionOfInterestEnabled();
+             tab->getViewer()->getProjection(viewerData.left, viewerData.bottom, viewerData.zoomFactor);
+             viewerData.userRoI = tab->getViewer()->getUserRegionOfInterest();
+             viewerData.userRoIenabled = tab->getViewer()->isUserRegionOfInterestEnabled();
              viewerData.isClippedToProject = tab->isClippedToProject();
              viewerData.exposure = tab->getExposure();
              viewerData.colorSpace = tab->getColorSpace();
@@ -51,7 +53,7 @@ CLANG_DIAG_ON(deprecated)
          }
      }
      
-    const std::list<TabWidget*>& tabWidgets = projectGui->getInternalProject()->getApp()->getGui()->getPanes();
+    const std::list<TabWidget*>& tabWidgets = projectGui->getGui()->getPanes();
      for (std::list<TabWidget*>::const_iterator it = tabWidgets.begin(); it!= tabWidgets.end(); ++it) {
          const QString& widgetName = (*it)->objectName();
          if(widgetName.isEmpty()){
@@ -98,7 +100,7 @@ CLANG_DIAG_ON(deprecated)
      }
      
      ///save application's splitters states
-     const std::list<QSplitter*>& splitters = projectGui->getInternalProject()->getApp()->getGui()->getSplitters();
+     const std::list<QSplitter*>& splitters = projectGui->getGui()->getSplitters();
      for (std::list<QSplitter*>::const_iterator it = splitters.begin(); it!= splitters.end(); ++it) {
          QByteArray ba = (*it)->saveState();
          ba = ba.toBase64();
@@ -107,7 +109,7 @@ CLANG_DIAG_ON(deprecated)
 
      }
      
-     
+     _arePreviewTurnedOffGlobally = projectGui->getGui()->getNodeGraph()->areAllPreviewTurnedOff();
      
 }
 

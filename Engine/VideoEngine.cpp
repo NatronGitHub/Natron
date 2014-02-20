@@ -12,14 +12,10 @@
 #endif
 #include <iterator>
 #include <cassert>
+
 #include <QtCore/QMutex>
-#include <QtGui/QVector2D>
-#include "Global/Macros.h"
-CLANG_DIAG_OFF(deprecated)
-#include <QAction>
-CLANG_DIAG_ON(deprecated)
 #include <QtCore/QThread>
-#include <QCoreApplication>
+#include <QtCore/QCoreApplication>
 #include <QtCore/QSocketNotifier>
 
 #include "Global/MemoryInfo.h"
@@ -37,10 +33,9 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/TimeLine.h"
 #include "Engine/Timer.h"
 #include "Engine/Log.h"
-
 #include "Engine/EffectInstance.h"
-
 #include "Engine/AppManager.h"
+#include "Engine/AppInstance.h"
 
 
 #define NATRON_FPS_REFRESH_RATE 10
@@ -120,6 +115,10 @@ void VideoEngine::quitEngineThread(){
         }
         QMutexLocker quitLocker(&_mustQuitMutex);
         _threadStarted = false;
+    } else {
+        
+        ///single threaded- no locking required
+        _mustQuit = true;
     }
 }
 
@@ -190,7 +189,7 @@ bool VideoEngine::startEngine(bool singleThreaded) {
     
     if(!_tree.isOutputAViewer()){
         
-        if (!singleThreaded && !_tree.getOutput()->getApp()->isBackground()) {
+        if (!singleThreaded && !appPTR->isBackground()) {
             {
                 QMutexLocker l(&_abortedRequestedMutex);
                 if (_abortRequested > 0) {
@@ -260,7 +259,7 @@ bool VideoEngine::startEngine(bool singleThreaded) {
         _timer->playState = RUNNING; /*activating the timer*/
 
     }
-    if(_tree.getOutput()->getApp()->isBackground()){
+    if(appPTR->isBackground()){
         appPTR->writeToOutputPipe(kRenderingStartedLong, kRenderingStartedShort);
     }
     return true;
@@ -329,8 +328,8 @@ bool VideoEngine::stopEngine() {
         }
     }
     
-    if(_tree.getOutput()->getApp()->isBackground()){
-        _tree.getOutput()->getApp()->notifyRenderFinished(dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput()));
+    if(appPTR->isBackground()){
+        dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput())->notifyRenderFinished();
         _mustQuit = false;
         _mustQuitCondition.wakeAll();
         _threadStarted = false;
@@ -418,8 +417,20 @@ void VideoEngine::runSameThread() {
         stopEngine();
     } else {
         QCoreApplication::processEvents();
+        ///if single threaded: the user might have requested to exit and the engine might be deleted after the events process.
+
+        if (_mustQuit) {
+            _mustQuit = false;
+            return;
+        }
         iterateKernel(true);
         QCoreApplication::processEvents();
+        ///if single threaded: the user might have requested to exit and the engine might be deleted after the events process.
+
+        if (_mustQuit) {
+            _mustQuit = false;
+            return;
+        }
         stopEngine();
     }
     
@@ -446,7 +457,7 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
         
         
         if(viewer){
-            if (singleThreaded || _tree.getOutput()->getApp()->isBackground()) {
+            if (singleThreaded || appPTR->isBackground()) {
                 getFrameRange();
             } else {
                 {
@@ -585,13 +596,18 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
          update viewers
          and appropriately increment counters for the next frame in the sequence.*/
         emit frameRendered(currentFrame);
-        if(_tree.getOutput()->getApp()->isBackground()){
+        if(appPTR->isBackground()){
             QString frameStr = QString::number(currentFrame);
             appPTR->writeToOutputPipe(kFrameRenderedStringLong + frameStr,kFrameRenderedStringShort + frameStr);
         }
         
         if (singleThreaded) {
             QCoreApplication::processEvents();
+            
+            ///if single threaded: the user might have requested to exit and the engine might be deleted after the events process.
+            if (_mustQuit) {
+                return;
+            }
         }
         
         if(_currentRunArgs._frameRequestIndex == 0 && _currentRunArgs._frameRequestsCount == 1 && !_currentRunArgs._sameFrame){
@@ -772,6 +788,7 @@ void RenderTree::refreshTree(int knobsAge){
         it->second->clone();
         ret = it->second->computeHash(inputsHash,knobsAge);
         inputsHash.push_back(ret);
+        it->first->setRenderTreeIsUsingInputs(false);
     }
 }
 
@@ -779,10 +796,12 @@ void RenderTree::refreshTree(int knobsAge){
 void RenderTree::fillGraph(EffectInstance *effect){
     
     /*call fillGraph recursivly on all the node's inputs*/
+    effect->getNode()->setRenderTreeIsUsingInputs(true);
+    
     const Node::InputMap& inputs = effect->getNode()->getInputs();
     for(Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
         if(it->second){
-            /*if the node is an inspector*/
+            /*if the node is an inspector we're interested just by the active input*/
             const InspectorNode* insp = dynamic_cast<const InspectorNode*>(effect->getNode());
             if (insp && it->first != insp->activeInput()) {
                 continue;

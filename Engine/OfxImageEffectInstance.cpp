@@ -30,7 +30,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/OfxMemory.h"
-
+#include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 
 using namespace Natron;
@@ -93,41 +93,33 @@ OfxStatus OfxImageEffectInstance::clearPersistentMessage(){
     _node->clearPersistentMessage();
     return kOfxStatOK;
 }
-OfxStatus OfxImageEffectInstance::vmessage(const char* type,
+OfxStatus OfxImageEffectInstance::vmessage(const char* msgtype,
                                            const char* /*id*/,
                                            const char* format,
-                                           va_list args) {
-    assert(type);
+                                           va_list args)
+{
+    assert(msgtype);
     assert(format);
     char buf[10000];
     sprintf(buf, format,args);
     std::string message(buf);
-    
-    if (strcmp(type, kOfxMessageLog) == 0) {
-        
+    std::string type(msgtype);
+
+    if (type == kOfxMessageLog) {
+#pragma message WARN("Log in a log buffer, not on stdout!")
         std::cout << message << std::endl;
-        
-    }else if(strcmp(type, kOfxMessageFatal) == 0 ||
-            strcmp(type, kOfxMessageError) == 0) {
-        
+    } else if (type == kOfxMessageFatal || type == kOfxMessageError) {
         _node->message(Natron::ERROR_MESSAGE, message);
-        
-    }else if(strcmp(type, kOfxMessageWarning)){
-        
+    } else if (type == kOfxMessageWarning) {
         _node->message(Natron::WARNING_MESSAGE, message);
-        
-    }else if(strcmp(type, kOfxMessageMessage)){
-        
+    } else if (type == kOfxMessageMessage) {
         _node->message(Natron::INFO_MESSAGE, message);
-        
-    }else if(strcmp(type, kOfxMessageQuestion) == 0) {
-        
-        if(_node->message(Natron::QUESTION_MESSAGE, message)){
+    } else if (type == kOfxMessageQuestion) {
+        if (_node->message(Natron::QUESTION_MESSAGE, message)) {
             return kOfxStatReplyYes;
-        }else{
+        } else {
             return kOfxStatReplyNo;
         }
-        
     }
     return kOfxStatReplyDefault;
 }

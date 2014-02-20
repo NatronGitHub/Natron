@@ -25,6 +25,8 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
+#include "Engine/AppInstance.h"
+#include "Engine/Hash64.h"
 
 
 using namespace Natron;
@@ -190,9 +192,9 @@ Variant Knob::getValueAtTime(double time,int dimension) const{
     }
 }
 
-Knob::ValueChangedReturnCode Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason,KeyFrame* newKey){
-   
-    if(dimension > (int)_imp->_values.size()){
+Knob::ValueChangedReturnCode Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason,KeyFrame* newKey)
+{
+    if (0 > dimension || dimension > (int)_imp->_values.size()) {
         throw std::invalid_argument("Knob::setValue(): Dimension out of range");
     }
     
@@ -317,6 +319,8 @@ void Knob::removeAnimation(int dimension,Natron::ValueChangedReason reason){
     if(reason != Natron::USER_EDITED){
         emit animationRemoved(dimension);
     }
+    
+    _imp->_holder->getApp()->triggerAutoSave();
 }
 
 void Knob::setValue(const Variant& value,int dimension,bool turnOffAutoKeying){
@@ -368,6 +372,7 @@ int Knob::getDimension() const { return _imp->_dimension; }
 void Knob::load(const KnobSerialization& serializationObj){
     
     assert(_imp->_dimension == serializationObj.getDimension());
+    assert(isPersistent()); // a non-persistent Knob should never be loaded!
     
     ///restore masters
     const std::vector< std::string >& serializedMasters = serializationObj.getMasters();
@@ -408,7 +413,9 @@ void Knob::load(const KnobSerialization& serializationObj){
     emit restorationComplete();
 }
 
-void Knob::save(KnobSerialization* serializationObj) const {
+void Knob::save(KnobSerialization* serializationObj) const
+{
+    assert(isPersistent()); // a non-persistent Knob should never be saved!
     QMutexLocker l(&_imp->_valueMutex);
     serializationObj->initialize(this);
 }
@@ -464,8 +471,9 @@ void Knob::endValueChange() {
 
 
 void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
-    if(!_imp->_isInsignificant)
+    if (!_imp->_isInsignificant) {
         _imp->updateHash(getValueForEachDimension());
+    }
     processNewValue();
     if(reason != Natron::USER_EDITED && !_imp->_holder->isClone()){
         emit valueChanged(dimension);
@@ -566,6 +574,15 @@ void Knob::appendHashVectorToHash(Hash64* hash) const {
     }
 }
 
+bool Knob::hasAnimation() const {
+    for (int i = 0; i < getDimension(); ++i) {
+        if (isAnimated(i)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 KnobHolder*  Knob::getHolder() const { return _imp->_holder; }
 
 void Knob::turnOffAnimation() { _imp->_isAnimationEnabled = false; }
@@ -615,20 +632,20 @@ bool Knob::slaveTo(int dimension,boost::shared_ptr<Knob> other){
     }
     _imp->_masters[dimension] = other;
     
-    //copy values and add keyframes
-    //    _imp->_values[dimension] = other->getValue(dimension);
-    //    _imp->_curves[dimension]->clone(*(other->getCurve(dimension)));
+    _imp->_holder->getApp()->triggerAutoSave();
     return true;
 }
 
 
 void Knob::unSlave(int dimension){
+    
     assert(isSlave(dimension));
     //copy the state before cloning
     _imp->_values[dimension] =  _imp->_masters[dimension]->getValue(dimension);
     _imp->_curves[dimension]->clone(*( _imp->_masters[dimension]->getCurve(dimension)));
     
     _imp->_masters[dimension].reset();
+    _imp->_holder->getApp()->triggerAutoSave();
 }
 
 
@@ -669,12 +686,18 @@ KnobHolder::KnobHolder(AppInstance* appInstance):
 _app(appInstance)
 , _knobs()
 , _isClone(false)
+, _knobsInitialized(false)
 {}
 
 KnobHolder::~KnobHolder(){
     for (U32 i = 0; i < _knobs.size(); ++i) {
         _knobs[i]->_imp->_holder = NULL;
     }
+}
+
+void KnobHolder::initializeKnobsPublic() {
+    initializeKnobs();
+    _knobsInitialized = true;
 }
 
 void KnobHolder::invalidateHash(){
@@ -716,18 +739,32 @@ void KnobHolder::refreshAfterTimeChange(SequenceTime time){
 }
 
 void KnobHolder::notifyProjectBeginKnobsValuesChanged(Natron::ValueChangedReason reason){
+    
+    if (!_knobsInitialized) {
+        return;
+    }
+    
     if(_app){
         getApp()->getProject()->beginProjectWideValueChanges(reason, this);
     }
 }
 
 void KnobHolder::notifyProjectEndKnobsValuesChanged(){
+    
+    if (!_knobsInitialized) {
+        return;
+    }
+    
     if(_app){
         getApp()->getProject()->endProjectWideValueChanges(this);
     }
 }
 
 void KnobHolder::notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,Knob* k,bool significant){
+    if (!_knobsInitialized) {
+        return;
+    }
+    
     if(_app){
         getApp()->getProject()->stackEvaluateRequest(reason,this,k,significant);
     }else{
