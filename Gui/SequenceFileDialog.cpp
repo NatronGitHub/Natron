@@ -736,6 +736,11 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
     /*if it is a directory, we accept it*/
     if(qobject_cast<QFileSystemModel*>(sourceModel())->isDir(item)){
         return true;
+    } else {
+        ///in dir mode just don't accept any file.
+        if (_fd->getDialogMode() == SequenceFileDialog::DIR_DIALOG) {
+            return false;
+        }
     }
     
     /*if the item does not match the filter set by the user, discard it*/

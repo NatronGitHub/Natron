@@ -606,8 +606,11 @@ void NodeGui::onPersistentMessageChanged(int type,const QString& message){
     _internalNode->hasViewersConnected(&viewers);
     for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
         ViewerTab* tab = _graph->getGui()->getViewerTabForInstance(*it);
-        assert(tab);
-        tab->getViewer()->setPersistentMessage(type,message);
+        ///the tab might not exist if the node is being deactivated following a tab close request by the user.
+
+        if (tab) {
+            tab->getViewer()->setPersistentMessage(type,message);
+        }
     }
     QRectF rect = _boundingBox->rect();
     updateShape(rect.width(), rect.height());
@@ -621,8 +624,11 @@ void NodeGui::onPersistentMessageCleared(){
     _internalNode->hasViewersConnected(&viewers);
     for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
         ViewerTab* tab = _graph->getGui()->getViewerTabForInstance(*it);
-        assert(tab);
-        tab->getViewer()->clearPersistentMessage();
+
+        ///the tab might not exist if the node is being deactivated following a tab close request by the user.
+        if (tab) {
+            tab->getViewer()->clearPersistentMessage();
+        }
     }
 }
 
