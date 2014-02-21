@@ -460,6 +460,17 @@ void Natron::OfxHost::loadingStatus(const std::string & pluginId) {
     }
 }
 
+bool Natron::OfxHost::pluginSupported(OFX::Host::ImageEffect::ImageEffectPlugin *plugin, std::string &reason) const
+{
+    // check that the plugin supports kOfxBitDepthFloat
+    if (plugin->getDescriptor().getParamSetProps().findStringPropValueIndex(kOfxImageEffectPropSupportedPixelDepths, kOfxBitDepthFloat) == -1) {
+        reason = "32-bits floating-point bit depth not supported by plugin";
+        return false;
+    }
+
+    return true;
+}
+
 void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
     if (strcmp(suiteName, kOfxParametricParameterSuite)==0  && suiteVersion == 1) {
         return OFX::Host::ParametricParam::GetSuite(suiteVersion);

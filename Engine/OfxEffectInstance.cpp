@@ -97,6 +97,11 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
     if (!desc) {
         throw std::runtime_error(std::string("Failed to get description for OFX plugin in context ") + context);
     }
+    // check that the plugin supports kOfxImageComponentRGBA
+    if (desc->getParamSetProps().findStringPropValueIndex(kOfxImageEffectPropSupportedComponents, kOfxImageComponentRGBA) == -1) {
+        throw std::runtime_error(std::string("RGBA components not supported by OFX plugin in context ") + context);
+    }
+
     try {
         effect_ = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
         assert(effect_);

@@ -80,6 +80,8 @@ public:
 
     virtual void loadingStatus(const std::string &) OVERRIDE;
     
+    virtual bool pluginSupported(OFX::Host::ImageEffect::ImageEffectPlugin *plugin, std::string &reason) const override;
+
     ///fetch the parametric parameters suite or returns the base class version
     virtual void* fetchSuite(const char *suiteName, int suiteVersion) OVERRIDE;
     
