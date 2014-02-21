@@ -577,7 +577,7 @@ private:
 
     virtual void _show() OVERRIDE FINAL;
 
-    virtual void setEnabled()  OVERRIDE FINAL {}
+    virtual void setEnabled()  OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
@@ -589,6 +589,8 @@ private:
     GroupBoxLabel *_button;
     QLabel *_descriptionLabel;
     std::vector< std::pair< KnobGui *, std::pair<int, int> > > _children;
+    std::vector< KnobGui* > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
+                                               //enabled too
 };
 
 /*****************************/

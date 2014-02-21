@@ -22,11 +22,12 @@
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
-#include "Engine/KnobFile.h"
 #include "Engine/EffectInstance.h"
 
 ProcessHandler::ProcessHandler(AppInstance* app,
                                const QString& projectPath,
+                               const QString& outputFileSequence,
+                               int firstFrame,int lastFrame,
                                Natron::OutputEffectInstance* writer)
     : _app(app)
     ,_process(new QProcess)
@@ -55,28 +56,12 @@ ProcessHandler::ProcessHandler(AppInstance* app,
     QObject::connect(_process,SIGNAL(error(QProcess::ProcessError)),this,SLOT(onProcessError(QProcess::ProcessError)));
     QObject::connect(_process,SIGNAL(finished(int,QProcess::ExitStatus)),this,SLOT(onProcessEnd(int,QProcess::ExitStatus)));
 
-    ///validate the frame range to render
-    int firstFrame,lastFrame;
-    writer->getFrameRange(&firstFrame, &lastFrame);
-    if(firstFrame > lastFrame)
-        throw std::invalid_argument("First frame in the sequence is greater than the last frame");
-
+    
     ///start the process
     qDebug() << "Starting background rendering: " << QCoreApplication::applicationFilePath() << processArgs;
     _process->start(QCoreApplication::applicationFilePath(),processArgs);
 
-    ///get the output file knob to get the same of the sequence
-    std::string outputFileSequence;
-    const std::vector< boost::shared_ptr<Knob> >& knobs = writer->getKnobs();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        if (knobs[i]->typeName() == OutputFile_Knob::typeNameStatic()) {
-            boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
-            if(fk->isOutputImageFile()){
-                outputFileSequence = fk->getValue().toString().toStdString();
-            }
-        }
-    }
-    app->notifyRenderProcessHandlerStarted(outputFileSequence.c_str(),firstFrame,lastFrame,this);
+    app->notifyRenderProcessHandlerStarted(outputFileSequence,firstFrame,lastFrame,this);
 
 }
 

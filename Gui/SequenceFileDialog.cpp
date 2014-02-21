@@ -63,6 +63,9 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiApplicationManager.h"
 #include "Global/MemoryInfo.h"
 
+///the maximum number of non existing frame before Natron gives up trying to figure out a sequence layout.
+#define NATRON_DIALOG_MAX_SEQUENCES_HOLE 1000
+
 using std::make_pair;
 using namespace Natron;
 
@@ -365,6 +368,9 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     QItemSelectionModel *selectionModel = _view->selectionModel();
     QObject::connect(selectionModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),this, SLOT(selectionChanged()));
     QObject::connect(_selectionLineEdit, SIGNAL(textChanged(QString)),this, SLOT(autoCompleteFileName(QString)));
+    if (_dialogMode == SAVE_DIALOG) {
+        QObject::connect(_selectionLineEdit,SIGNAL(textEdited(QString)),this,SLOT(onSelectionLineEditing(QString)));
+    }
     QObject::connect(_view, SIGNAL(customContextMenuRequested(QPoint)),
                      this, SLOT(showContextMenu(QPoint)));
     QObject::connect(_model, SIGNAL(rootPathChanged(QString)),
@@ -627,7 +633,17 @@ void SequenceFileDialog::setDirectory(const QString &directory){
     }
     
     _selectionLineEdit->blockSignals(true);
-    _selectionLineEdit->setText(newDirectory);
+    
+    if (_dialogMode == OPEN_DIALOG || _dialogMode == DIR_DIALOG) {
+        _selectionLineEdit->setText(newDirectory);
+    } else {
+        ///find out if there's already a filename typed by the user
+        ///and append it to the new path
+        QString existingText = _selectionLineEdit->text();
+        QString unpathed = SequenceFileDialog::removePath(existingText);
+        _selectionLineEdit->setText(newDirectory + unpathed);
+    }
+    
     _selectionLineEdit->blockSignals(false);
 
 
@@ -720,6 +736,11 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
     /*if it is a directory, we accept it*/
     if(qobject_cast<QFileSystemModel*>(sourceModel())->isDir(item)){
         return true;
+    } else {
+        ///in dir mode just don't accept any file.
+        if (_fd->getDialogMode() == SequenceFileDialog::DIR_DIALOG) {
+            return false;
+        }
     }
     
     /*if the item does not match the filter set by the user, discard it*/
@@ -738,6 +759,13 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
     /*If file sequence fetching is disabled, just call the base class version*/
     if(!_fd->sequenceModeEnabled() || frameNumber == -1){
         return QSortFilterProxyModel::filterAcceptsRow(source_row,source_parent);
+    }
+    
+    ///for filenames which consist only of digits (e.g: 7239290309283.jpg) , just
+    /// take the frameNumber as the filepath otherwise it would mess with the sequences detection.
+    QString filenameUnPathed = SequenceFileDialog::removePath(pathCpy);
+    if (filenameUnPathed.isEmpty()) {
+        pathCpy = QString::number(frameNumber);
     }
     
     /*Locking the access to the frame sequences multi-map*/
@@ -811,7 +839,7 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
         }
         boost::shared_ptr<FileSequence> frameRanges = frameRangesForSequence(name.toStdString(),extension.toStdString());
 
-        if(!frameRanges){
+        if(!frameRanges || frameRanges->size() <= 1){
             continue;
         }
 
@@ -823,8 +851,14 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
             int first = frameRanges->firstFrame();
             while(first <= frameRanges->lastFrame()){
                 
-                while (!(frameRanges->isInSequence(first))) {
+                int breakCounter = 0;
+                while (!(frameRanges->isInSequence(first)) && breakCounter < NATRON_DIALOG_MAX_SEQUENCES_HOLE) {
                     ++first;
+                    ++breakCounter;
+                }
+                
+                if (breakCounter >= NATRON_DIALOG_MAX_SEQUENCES_HOLE) {
+                    break;
                 }
                 
                 chunks.push_back(std::make_pair(first, frameRanges->lastFrame()));
@@ -2368,6 +2402,21 @@ void SequenceFileDialog::appendFilesFromDirRecursively(QDir* currentDir,QStringL
         //else if it is a file, append it
         if(QFile::exists(entryWithPath)){
             files->append(entryWithPath);
+        }
+    }
+}
+
+void SequenceFileDialog::onSelectionLineEditing(const QString& text) {
+    
+    if (_dialogMode != SAVE_DIALOG) {
+        return;
+    }
+    QString textCpy = text;
+    QString extension = Natron::removeFileExtension(textCpy);
+    for (int i = 0; i < _fileExtensionCombo->count(); ++i) {
+        if (_fileExtensionCombo->itemText(i) == extension) {
+            _fileExtensionCombo->setCurrentIndex_no_emit(i);
+            break;
         }
     }
 }
