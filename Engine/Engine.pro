@@ -11,7 +11,6 @@ CONFIG += boost qt expat
 QT += core network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 QT -= gui
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 
 precompile_header {
