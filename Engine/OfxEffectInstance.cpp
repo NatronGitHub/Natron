@@ -97,10 +97,7 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
     if (!desc) {
         throw std::runtime_error(std::string("Failed to get description for OFX plugin in context ") + context);
     }
-    // check that the plugin supports kOfxImageComponentRGBA
-    if (desc->getParamSetProps().findStringPropValueIndex(kOfxImageEffectPropSupportedComponents, kOfxImageComponentRGBA) == -1) {
-        throw std::runtime_error(std::string("RGBA components not supported by OFX plugin in context ") + context);
-    }
+    
 
     try {
         effect_ = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
@@ -128,6 +125,16 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         if (!effect_->getClipPreferences()) {
            qDebug() << "The plugin failed in the getClipPreferencesAction.";
         }
+        
+        // check that the plugin supports kOfxImageComponentRGBA for all the clips
+        const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = effectInstance()->getDescriptor().getClipsByOrder();
+        for (U32 i = 0; i < clips.size(); ++i) {
+            if (clips[i]->getProps().findStringPropValueIndex(kOfxImageEffectPropSupportedComponents, kOfxImageComponentRGBA) == -1
+                && !clips[i]->isOptional()) {
+                throw std::runtime_error(std::string("RGBA components not supported by OFX plugin in context ") + context);
+            }
+        }
+    
 
     } catch (const std::exception& e) {
         qDebug() << "Error: Caught exception while creating OfxImageEffectInstance" << ": " << e.what();
