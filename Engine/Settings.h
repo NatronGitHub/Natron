@@ -90,6 +90,8 @@ public:
     
     QStringList getPluginsExtraSearchPaths() const;
     
+    bool isRenderInSeparatedProcessEnabled() const;
+    
     void restoreDefault();
     
 private:
@@ -104,6 +106,7 @@ private:
     boost::shared_ptr<Tab_Knob> _generalTab;
     boost::shared_ptr<Bool_Knob> _linearPickers;
     boost::shared_ptr<Bool_Knob> _multiThreadedDisabled;
+    boost::shared_ptr<Bool_Knob> _renderInSeparateProcess;
     boost::shared_ptr<Bool_Knob> _autoPreviewEnabledForNewProjects;
     boost::shared_ptr<Path_Knob> _extraPluginPaths;
     

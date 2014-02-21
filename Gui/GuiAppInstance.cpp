@@ -20,7 +20,8 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/ProcessHandler.h"
-
+#include "Engine/Settings.h"
+#include "Engine/KnobFile.h"
 using namespace Natron;
 
 struct GuiAppInstancePrivate {
@@ -207,17 +208,41 @@ void GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* wr
     /*Start the renderer in a background process.*/
     getProject()->autoSave(); //< takes a snapshot of the graph at this time, this will be the version loaded by the process
     
-    ProcessHandler* newProcess = 0;
-    try {
-        newProcess = new ProcessHandler(this,getProject()->getLastAutoSaveFilePath() ,writer); //< the process will delete itself
-    } catch (const std::exception& e) {
-        Natron::errorDialog(writer->getName(), std::string("Error while starting rendering") + ": " + e.what());
-        delete newProcess;
-    } catch (...) {
-        Natron::errorDialog(writer->getName(), std::string("Error while starting rendering"));
-        delete newProcess;
+    
+    ///validate the frame range to render
+    int firstFrame,lastFrame;
+    writer->getFrameRange(&firstFrame, &lastFrame);
+    if(firstFrame > lastFrame) {
+        throw std::invalid_argument("First frame in the sequence is greater than the last frame");
+    }
+    ///get the output file knob to get the same of the sequence
+    QString outputFileSequence;
+    const std::vector< boost::shared_ptr<Knob> >& knobs = writer->getKnobs();
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        if (knobs[i]->typeName() == OutputFile_Knob::typeNameStatic()) {
+            boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
+            if(fk->isOutputImageFile()){
+                outputFileSequence = fk->getValue().toString();
+            }
+        }
     }
 
+    
+    if (appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled()) {
+        ProcessHandler* newProcess = 0;
+        try {
+            newProcess = new ProcessHandler(this,getProject()->getLastAutoSaveFilePath(),outputFileSequence,firstFrame,lastFrame ,writer); //< the process will delete itself
+        } catch (const std::exception& e) {
+            Natron::errorDialog(writer->getName(), std::string("Error while starting rendering") + ": " + e.what());
+            delete newProcess;
+        } catch (...) {
+            Natron::errorDialog(writer->getName(), std::string("Error while starting rendering"));
+            delete newProcess;
+        }
+    } else {
+        writer->renderFullSequence(NULL);
+        _imp->_gui->onWriterRenderStarted(outputFileSequence, firstFrame, lastFrame, writer);
+    }
 }
 
 void GuiAppInstance::onProjectNodesCleared() {
