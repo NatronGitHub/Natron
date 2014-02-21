@@ -200,3 +200,4 @@ ofxTestLog.txt
 test_dot_generator0.jpg
 Tests/Plugins
 pch
+*.filters
