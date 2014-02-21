@@ -14,6 +14,9 @@ Here is a list of know bugs, ordered by priority from high to low:
 
 - String_KnobGui: kOfxParamStringIsRichTextFormat  is not supported (it should use a QTextEdit and not convert the string to plain text)
 
+- When a Group_KnobGui is disabled, all its children should be disables too
+  (but when it's enabled, only enabled children should be enabled)
+
 - Tab traversal is not set up properly, and sometimes couter-intuitive.
   Many users still have a keyboard and use it, so this should be fixed.
   Refs:

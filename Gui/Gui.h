@@ -57,7 +57,6 @@ class ProcessHandler;
 namespace Natron {
     class Node;
     class Image;
-    class OutputEffectInstance;
 }
 
 
@@ -220,8 +219,6 @@ public:
     void deselectAllNodes() const;
     
     void onProcessHandlerStarter(const QString& sequenceName,int firstFrame,int lastFrame,ProcessHandler* process);
-    
-    void onWriterRenderStarted(const QString& sequenceName,int firstFrame,int lastFrame,Natron::OutputEffectInstance* writer);
     
     NodeGraph* getNodeGraph() const;
     

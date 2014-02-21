@@ -778,8 +778,6 @@ void OutputEffectInstance::renderFullSequence(BlockingBackgroundRender* renderCo
 }
 
 void OutputEffectInstance::notifyRenderFinished() {
-    if (_renderController) {
-        _renderController->notifyFinished();
-        _renderController = 0;
-    }
+    _renderController->notifyFinished();
+    _renderController = 0;
 }

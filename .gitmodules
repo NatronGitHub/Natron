@@ -1,6 +1,9 @@
 [submodule "libs/OpenFX"]
 	path = libs/OpenFX
 	url = https://github.com/devernay/openfx.git
+[submodule "Resources/OpenColorIO-Configs"]
+	path = Resources/OpenColorIO-Configs
+	url = https://github.com/MrKepzie/OpenColorIO-Configs
 [submodule "Tests/google-test"]
 	path = Tests/google-test
 	url = https://github.com/MrKepzie/google-test.git

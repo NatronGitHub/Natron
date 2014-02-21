@@ -199,6 +199,12 @@ AppManager::~AppManager(){
         delete _imp->_backgroundIPC;
     }
     
+    _imp->_nodeCache.reset();
+    _imp->_viewerCache.reset();
+    _imp->_knobFactory.reset();
+    _imp->_settings.reset();
+    _imp->ofxHost.reset();
+    
     _instance = 0;
 }
 

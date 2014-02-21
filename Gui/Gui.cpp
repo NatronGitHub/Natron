@@ -67,7 +67,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/ProcessHandler.h"
 #include "Engine/Lut.h"
 #include "Engine/Image.h"
-#include "Engine/VideoEngine.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_IMAGE "Image"
@@ -1973,14 +1972,4 @@ void Gui::updateLastSequenceOpenedPath(const QString& path) {
 
 void Gui::updateLastSequenceSavedPath(const QString& path) {
     _imp->_lastSaveSequenceOpenedDir = path;
-}
-
-void Gui::onWriterRenderStarted(const QString& sequenceName,int firstFrame,int lastFrame,Natron::OutputEffectInstance* writer) {
-    RenderingProgressDialog *dialog = new RenderingProgressDialog(sequenceName,firstFrame,lastFrame,this);
-    VideoEngine* ve = writer->getVideoEngine().get();
-    QObject::connect(dialog,SIGNAL(canceled()),ve,SLOT(abortRenderingNonBlocking()));
-    QObject::connect(ve,SIGNAL(frameRendered(int)),dialog,SLOT(onFrameRendered(int)));
-    QObject::connect(ve,SIGNAL(progressChanged(int)),dialog,SLOT(onCurrentFrameProgress(int)));
-    QObject::connect(ve,SIGNAL(engineStopped()),dialog,SLOT(onProcessCanceled()));
-    dialog->show();
 }

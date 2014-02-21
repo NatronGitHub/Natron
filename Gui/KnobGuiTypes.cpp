@@ -1672,22 +1672,6 @@ void Group_KnobGui::_show()
     
 }
 
-void Group_KnobGui::setEnabled() {
-    
-    if (getKnob()->isEnabled()) {
-        for (U32 i = 0; i < _childrenToEnable.size(); ++i) {
-            _childrenToEnable[i]->getKnob()->setEnabled(true);
-        }
-    } else {
-        _childrenToEnable.clear();
-        for (U32 i = 0; i < _children.size(); ++i) {
-            if (_children[i].first->getKnob()->isEnabled()) {
-                _childrenToEnable.push_back(_children[i].first);
-                _children[i].first->getKnob()->setEnabled(false);
-            }
-        }
-    }
-}
 
 
 //=============================Parametric_KnobGui===================================
