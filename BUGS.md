@@ -10,9 +10,6 @@ Here is a list of know bugs, ordered by priority from high to low:
 
 - Natron never sets kOfxParamPropIsAnimating. It should be set by the host for every parameter which is animated, including "File_Knob" when it represents a sequence.
 
-- kNatronParamFilePathIsImageSequence extension should be removed. It can be replaced simply by kOfxParamPropAnimates ! If the StringParam
-  represents a filename but does not Animate, then it's not a sequence!!! easy!!
-
 - file knobs should be master/slave-able too. A string/inputfile/outputfile should be slaveable to any string/inputfile/outputfile parameter (all these types are compatible). For example, a reader could follow a writer in the graph and should re-read the file that was written just above. This is necessary for external script nodes.
 
 - black borders around the viewer when zooming out and multithreading is disabled

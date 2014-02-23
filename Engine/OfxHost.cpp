@@ -34,7 +34,6 @@
 #include <ofxhHost.h>
 #include <ofxhParam.h>
 
-#include <natron/IOExtensions.h>
 #include <tuttle/ofxReadWrite.h>
 
 //our version of parametric param suite support

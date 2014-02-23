@@ -14,7 +14,6 @@
 
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
-#include <natron/IOExtensions.h>
 
 #include <ofxParametricParam.h>
 
@@ -1396,7 +1395,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
         
         int fileIsImage = (node->isReader() || node->isWriter()) && (getScriptName() == "filename");
         int fileIsOutput = !properties.getIntProperty(kOfxParamPropStringFilePathExists);
-        int filePathSupportsImageSequences = properties.getIntProperty(kNatronParamFilePathIsImageSequence);
+        int filePathSupportsImageSequences = getCanAnimate();
         
         
         if (!fileIsOutput) {
