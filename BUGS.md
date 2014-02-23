@@ -8,7 +8,7 @@ Here is a list of know bugs, ordered by priority from high to low:
 
 - non-animated parameters should be master/slave-able too
 
-- Natron never sets kOfxParamPropIsAnimating. It should be set by the host for every parameter which is animated, including "File_Knob" when it represents a sequence.
+- Natron never sets kOfxParamPropIsAnimating. It should be set by the host for every parameter which is animated, including "File_Knob" when it represents a sequence. -> this is done in OfxParamInstance, except for File_Knobs
 
 - file knobs should be master/slave-able too. A string/inputfile/outputfile should be slaveable to any string/inputfile/outputfile parameter (all these types are compatible). For example, a reader could follow a writer in the graph and should re-read the file that was written just above. This is necessary for external script nodes.
 

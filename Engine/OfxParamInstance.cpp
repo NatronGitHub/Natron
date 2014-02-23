@@ -239,6 +239,10 @@ void OfxIntegerInstance::onKnobAnimationLevelChanged(int lvl){
         autoKeying = 1;
     }
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
+        assert(getCanAnimate());
+        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
+    }
 }
 
 void OfxIntegerInstance::setDisplayRange(){
@@ -448,6 +452,10 @@ void OfxDoubleInstance::onKnobAnimationLevelChanged(int lvl){
         autoKeying = 1;
     }
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
+        assert(getCanAnimate());
+        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
+    }
 }
 
 ////////////////////////// OfxBooleanInstance /////////////////////////////////////////////////
@@ -521,6 +529,10 @@ void OfxBooleanInstance::onKnobAnimationLevelChanged(int lvl){
         autoKeying = 1;
     }
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
+        assert(getCanAnimate());
+        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
+    }
 }
 
 ////////////////////////// OfxChoiceInstance /////////////////////////////////////////////////
@@ -620,6 +632,10 @@ void OfxChoiceInstance::onKnobAnimationLevelChanged(int lvl){
         autoKeying = 1;
     }
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
+        assert(getCanAnimate());
+        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
+    }
 }
 
 
@@ -730,6 +746,10 @@ void OfxRGBAInstance::onKnobAnimationLevelChanged(int lvl){
         autoKeying = 1;
     }
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
+        assert(getCanAnimate());
+        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
+    }
 }
 ////////////////////////// OfxRGBInstance /////////////////////////////////////////////////
 
@@ -832,6 +852,10 @@ void OfxRGBInstance::onKnobAnimationLevelChanged(int lvl){
         autoKeying = 1;
     }
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
+        assert(getCanAnimate());
+        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
+    }
 }
 ////////////////////////// OfxDouble2DInstance /////////////////////////////////////////////////
 
@@ -998,6 +1022,10 @@ void OfxDouble2DInstance::onKnobAnimationLevelChanged(int lvl){
         autoKeying = 1;
     }
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
+        assert(getCanAnimate());
+        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
+    }
 }
 
 
@@ -1102,6 +1130,10 @@ void OfxInteger2DInstance::onKnobAnimationLevelChanged(int lvl){
         autoKeying = 1;
     }
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
+        assert(getCanAnimate());
+        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
+    }
 }
 ////////////////////////// OfxDouble3DInstance /////////////////////////////////////////////////
 
@@ -1235,6 +1267,10 @@ void OfxDouble3DInstance::onKnobAnimationLevelChanged(int lvl){
         autoKeying = 1;
     }
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
+        assert(getCanAnimate());
+        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
+    }
 }
 
 ////////////////////////// OfxInteger3DInstance /////////////////////////////////////////////////
@@ -1336,6 +1372,10 @@ void OfxInteger3DInstance::onKnobAnimationLevelChanged(int lvl){
         autoKeying = 1;
     }
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
+        assert(getCanAnimate());
+        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
+    }
 }
 
 
@@ -1484,6 +1524,7 @@ OfxStatus OfxStringInstance::set(const char* str) {
 OfxStatus OfxStringInstance::set(OfxTime time, const char* str) {
     assert(!String_Knob::canAnimateStatic());
     if(_fileKnob){
+#pragma message WARN("BUG: a _fileKnob should be just like an animated string. setValueAtTime changes the value at that time, thus ading a filename to the sequence")
         _fileKnob->setValue(str);
     }
     if(_outputFileKnob){
@@ -1629,6 +1670,10 @@ void OfxStringInstance::onKnobAnimationLevelChanged(int lvl){
         autoKeying = 1;
     }
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
+        assert(getCanAnimate());
+        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
+    }
 }
 
 
@@ -1751,6 +1796,10 @@ void OfxCustomInstance::onKnobAnimationLevelChanged(int lvl){
         autoKeying = 1;
     }
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
+    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
+        assert(getCanAnimate());
+        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
+    }
 }
 
 

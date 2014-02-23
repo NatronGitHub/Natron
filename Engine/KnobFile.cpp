@@ -100,7 +100,7 @@ int File_Knob::nearestFrame(int f) const
 
 QString File_Knob::getRandomFrameName(int f, bool loadNearestIfNotFound) const
 {
-    ///when the sequence has juste 1 file (i.e: this is a video or maybe a single image) just return it.
+    ///when the sequence has just 1 file (i.e: this is a video or maybe a single image) just return it.
     if(_filesSequence.size() == 1) {
         return _filesSequence.begin()->second;
     }
