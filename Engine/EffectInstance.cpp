@@ -313,7 +313,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         getApp()->getProject()->setOrAddProjectFormat(frmt);
     }
     
-#pragma WARN message("Specify image components here");
+#pragma message WARN("Specify image components here")
     Natron::ImageKey key = Natron::Image::makeKey(cost,_imp->hashValue.value(), time, scale,view,Natron::ImageComponentRGBA,rod);
     
     if(getCachePolicy(time) == NEVER_CACHE){
