@@ -43,6 +43,10 @@ Missing and wanted features
 
 Here is a list of non-blocking bugs / wanted features:
 
+- Knobs are missing a "reset default value" feature
+
+- Separate the link and copy/paste functionalities from the animation menu
+
 - Progress suite is not implemented (GUI is blocked until the operation has ended)
 
 - a log window with OFX and Natron log messages (see OfxImageEffectInstance::vmessage, OfxHost::vmessage)
