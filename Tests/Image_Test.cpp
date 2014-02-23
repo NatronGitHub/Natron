@@ -72,7 +72,7 @@ TEST(ImageKeyTest,Equality) {
     RectI rod1(0,0,100,100);
     double pa1 = 1.;
 
-    Natron::ImageKey key1(cost1,randomHashKey1,time1,scale1,view1,rod1,pa1);
+    Natron::ImageKey key1(cost1,randomHashKey1,time1,scale1,view1,Natron::ImageComponentRGBA,rod1,pa1);
     U64 keyHash1 = key1.getHash();
 
 
@@ -87,7 +87,7 @@ TEST(ImageKeyTest,Equality) {
     RectI rod2 = rod1;
     double pa2 = pa1;
 
-    Natron::ImageKey key2(cost2,randomHashKey2,time2,scale2,view2,rod2,pa2);
+    Natron::ImageKey key2(cost2,randomHashKey2,time2,scale2,view2,Natron::ImageComponentRGBA,rod2,pa2);
     U64 keyHash2 = key2.getHash();
     ASSERT_TRUE(keyHash1 == keyHash2);
 
@@ -106,7 +106,7 @@ TEST(ImageKeyTest,Difference) {
     RectI rod1(0,0,100,100);
     double pa1 = 1.;
 
-    Natron::ImageKey key1(cost1,randomHashKey1,time1,scale1,view1,rod1,pa1);
+    Natron::ImageKey key1(cost1,randomHashKey1,time1,scale1,view1,Natron::ImageComponentRGBA,rod1,pa1);
     U64 keyHash1 = key1.getHash();
 
 
@@ -121,7 +121,7 @@ TEST(ImageKeyTest,Difference) {
     RectI rod2 = rod1;
     double pa2 = pa1;
 
-    Natron::ImageKey key2(cost2,randomHashKey2,time2,scale2,view2,rod2,pa2);
+    Natron::ImageKey key2(cost2,randomHashKey2,time2,scale2,view2,Natron::ImageComponentRGBA,rod2,pa2);
     U64 keyHash2 = key2.getHash();
     ASSERT_TRUE(keyHash1 != keyHash2);
 
