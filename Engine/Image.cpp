@@ -249,3 +249,31 @@ void Natron::Image::copy(const Natron::Image& other){
     float* dst = pixelAt(0, 0);
     memcpy(dst, src, intersection.area());
 }
+
+void Natron::Image::fill(const RectI& rect,float r,float g,float b,float a) {
+    ImageComponents comps = getComponents();
+    for (int i = rect.bottom(); i < rect.top();++i) {
+        float* dst = pixelAt(rect.left(),i);
+        for (int j = 0; j < rect.width();++j) {
+            switch (comps) {
+                case ImageComponentAlpha:
+                    dst[j * 4] = a;
+                    break;
+                case ImageComponentRGB:
+                    dst[j * 4] = r;
+                    dst[j * 4 + 1] = g;
+                    dst[j * 4 + 2] = b;
+                    break;
+                case ImageComponentRGBA:
+                    dst[j * 4] = r;
+                    dst[j * 4 + 1] = g;
+                    dst[j * 4 + 2] = b;
+                    dst[j * 4 + 3] = a;
+                    break;
+                case ImageComponentNone:
+                default:
+                    break;
+            }
+        }
+    }
+}

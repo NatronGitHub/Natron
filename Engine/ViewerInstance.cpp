@@ -206,6 +206,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
     //" y2: " << textureRect.y2 << " w: " << textureRect.w << " h: " << textureRect.h << " po2: " << textureRect.closestPo2 << std::endl;
     
     _interThreadInfos._textureRect = textureRect;
+#pragma WARN message("Specify image components here");
     _interThreadInfos._bytesCount = textureRect.w * textureRect.h * 4;
     
     //half float is not supported yet so it is the same as float
@@ -420,6 +421,8 @@ void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputI
 
 }
 
+
+#pragma WARN message("Adjust the 8bits and 32bits functions to take into account the image components.");
 void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> inputImage,std::pair<int,int> yRange,
                                          const TextureRect& texRect,int closestPowerOf2,int rOffset,int gOffset,int bOffset,bool luminance) {
     assert(_buffer);

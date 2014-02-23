@@ -218,6 +218,26 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time, i
 
 }
 
+std::string natronsComponentsToOfxComponents(Natron::ImageComponents comp) {
+    switch (comp) {
+        case Natron::ImageComponentNone:
+            return kOfxImageComponentNone;
+            break;
+        case Natron::ImageComponentAlpha:
+            return kOfxImageComponentAlpha;
+            break;
+        case Natron::ImageComponentRGB:
+            return kOfxImageComponentRGB;
+            break;
+        case Natron::ImageComponentRGBA:
+            return kOfxImageComponentRGBA;
+            break;
+        default:
+            assert(false);//comp unsupported
+            break;
+    }
+}
+
 OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,OfxClipInstance &clip):
 OFX::Host::ImageEffect::Image(clip)
 ,_bitDepth(OfxImage::eBitDepthFloat)
@@ -239,8 +259,10 @@ OFX::Host::ImageEffect::Image(clip)
     setIntProperty(kOfxImagePropRegionOfDefinition, rod.right(), 2);
     setIntProperty(kOfxImagePropRegionOfDefinition, rod.top(), 3);
     // row bytes
-    setIntProperty(kOfxImagePropRowBytes, rod.width()*4*sizeof(float));
-    setStringProperty(kOfxImageEffectPropComponents, kOfxImageComponentRGBA);
+    setIntProperty(kOfxImagePropRowBytes, rod.width() *
+                   Natron::ImageKey::getElementsCountForComponents(internalImage->getComponents()) *
+                   sizeof(float));
+    setStringProperty(kOfxImageEffectPropComponents, natronsComponentsToOfxComponents(internalImage->getComponents()));
     setStringProperty(kOfxImageEffectPropPixelDepth, clip.getPixelDepth());
     setStringProperty(kOfxImageEffectPropPreMultiplication, clip.getPremult());
     setStringProperty(kOfxImagePropField, kOfxImageFieldNone);

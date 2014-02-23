@@ -313,7 +313,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         getApp()->getProject()->setOrAddProjectFormat(frmt);
     }
     
-    Natron::ImageKey key = Natron::Image::makeKey(cost,_imp->hashValue.value(), time, scale,view,rod);
+#pragma WARN message("Specify image components here");
+    Natron::ImageKey key = Natron::Image::makeKey(cost,_imp->hashValue.value(), time, scale,view,Natron::ImageComponentRGBA,rod);
     
     if(getCachePolicy(time) == NEVER_CACHE){
         byPassCache = true;
@@ -328,7 +329,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         /*allocate a new image*/
         if(byPassCache){
             assert(!image);
-            image.reset(new Natron::Image(key._rod,scale,time));
+            image.reset(new Natron::Image(Natron::ImageComponentRGBA,key._rod,scale,time));
         }
     } else {
 #ifdef NATRON_LOG

@@ -30,7 +30,14 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Cache.h"
 #include "Engine/Rect.h"
 
-namespace Natron{
+namespace Natron {
+    
+    enum ImageComponents {
+        ImageComponentNone = 0,
+        ImageComponentAlpha,
+        ImageComponentRGB,
+        ImageComponentRGBA
+    };
     
     class ImageKey :  public KeyHelper<U64>
     {
@@ -38,6 +45,7 @@ namespace Natron{
         
     public:
         
+        ImageComponents _components;
         U64 _nodeHashKey;
         SequenceTime _time;
         RenderScale _renderScale;
@@ -47,6 +55,7 @@ namespace Natron{
 
         ImageKey()
 		: KeyHelper<U64>()
+        , _components(ImageComponentNone)
         , _nodeHashKey(0)
         , _time(0)
         , _renderScale()
@@ -56,8 +65,16 @@ namespace Natron{
         {}
 
         
-        ImageKey(int cost,U64 nodeHashKey,SequenceTime time,RenderScale scale,int view,const RectI& regionOfDefinition,double pixelAspect = 1.)
-		: KeyHelper<U64>(cost,regionOfDefinition.area() * 4) //< images are only RGBA for now hence the 4
+        ImageKey(int cost,
+                 U64 nodeHashKey,
+                 SequenceTime time,
+                 RenderScale scale,
+                 int view,
+                 ImageComponents components,
+                 const RectI& regionOfDefinition,
+                 double pixelAspect = 1.)
+		: KeyHelper<U64>(cost,regionOfDefinition.area() * getElementsCountForComponents(components)) //< images are only RGBA for now hence the 4
+        , _components(components)
         , _nodeHashKey(nodeHashKey)
         , _time(time)
         , _rod(regionOfDefinition)
@@ -65,7 +82,8 @@ namespace Natron{
         , _pixelAspect(pixelAspect)
         { _renderScale = scale; }
         
-        void fillHash(Hash64* hash) const{
+        void fillHash(Hash64* hash) const {
+            hash->append(_components);
             hash->append(_nodeHashKey);
             hash->append(_renderScale.x);
             hash->append(_renderScale.y);
@@ -74,11 +92,29 @@ namespace Natron{
             hash->append(_pixelAspect);
         }
         
+        static int getElementsCountForComponents(ImageComponents comp) {
+            switch (comp) {
+                case ImageComponentNone:
+                    return 0;
+                case ImageComponentAlpha:
+                    return 1;
+                case ImageComponentRGB:
+                    return 3;
+                case ImageComponentRGBA:
+                    return 4;
+                default:
+                    ///unsupported components
+                    assert(false);
+                    break;
+            }
+        }
+        
         bool operator==(const ImageKey& other) const {
-            return _nodeHashKey == other._nodeHashKey &&
+            return _components == other._components &&
+            _nodeHashKey == other._nodeHashKey &&
             _renderScale.x == other._renderScale.x &&
             _renderScale.y == other._renderScale.y &&
-            // _rod == other._rod &&
+            // _rod == other._rod && //< do not compare the rod (@see renderRoI)
             _time == other._time &&
             _view == other._view &&
             _pixelAspect == other._pixelAspect;
@@ -91,6 +127,7 @@ namespace Natron{
         {
             (void)version;
             ar & _rod;
+            ar & _components;
             ar & _nodeHashKey;
             ar & _renderScale.x;
             ar & _renderScale.y;
@@ -145,16 +182,22 @@ namespace Natron{
         /*This constructor can be used to allocate a local Image. The deallocation should
          then be handled by the user. Note that no view number is passed in parameter
          as it is not needed.*/
-        Image(const RectI& regionOfDefinition,RenderScale scale,SequenceTime time)
-        : CacheEntryHelper<float,ImageKey>(makeKey(0,0,time,scale,0,regionOfDefinition),false,"")
+        Image(ImageComponents components,const RectI& regionOfDefinition,RenderScale scale,SequenceTime time)
+        : CacheEntryHelper<float,ImageKey>(makeKey(0,0,time,scale,0,components,regionOfDefinition),false,"")
         , _bitmap(regionOfDefinition)
         {
         }
         
         virtual ~Image(){}
         
-        static ImageKey makeKey(int cost,U64 nodeHashKey,SequenceTime time,RenderScale scale,int view,const RectI& regionOfDefinition){
-            return ImageKey(cost,nodeHashKey,time,scale,view,regionOfDefinition);
+        static ImageKey makeKey(int cost,
+                                U64 nodeHashKey,
+                                SequenceTime time,
+                                RenderScale scale,
+                                int view,
+                                ImageComponents components,
+                                const RectI& regionOfDefinition){
+            return ImageKey(cost,nodeHashKey,time,scale,view,components,regionOfDefinition);
         }
         
         const RectI& getRoD() const {return _bitmap.getRoD();}
@@ -163,18 +206,22 @@ namespace Natron{
         
         SequenceTime getTime() const {return this->_params._time;}
         
+        ImageComponents getComponents() const {return this->_params._components;}
+        
         void setPixelAspect(double pa) { this->_params._pixelAspect = pa; }
         
         double getPixelAspect() const { return this->_params._pixelAspect; }
         
         float* pixelAt(int x,int y){
             const RectI& rod = _bitmap.getRoD();
-            return this->_data.writable() + (y-rod.bottom())*4*rod.width() + (x-rod.left())*4;
+            int compsCount = ImageKey::getElementsCountForComponents(getComponents());
+            return this->_data.writable() + (y-rod.bottom()) * compsCount * rod.width() + (x-rod.left()) * compsCount;
         }
         
-        const float* pixelAt(int x,int y) const{
+        const float* pixelAt(int x,int y) const {
             const RectI& rod = _bitmap.getRoD();
-            return this->_data.readable() + (y-rod.bottom())*4*rod.width() + (x-rod.left())*4;
+            int compsCount = ImageKey::getElementsCountForComponents(getComponents());
+            return this->_data.readable() + (y-rod.bottom()) * compsCount * rod.width() + (x-rod.left()) * compsCount;
         }
         /**
          * @brief Returns a list of portions of image that are not yet rendered within the 
@@ -195,27 +242,32 @@ namespace Natron{
         
         
         
-        void fill(const RectI& rect,float r,float g,float b,float a){
-            for(int i = rect.bottom(); i < rect.top();++i){
-                float* dst = pixelAt(rect.left(),i);
-                for(int j = 0; j < rect.width();++j){
-                    dst[j*4] = r;
-                    dst[j*4+1] = g;
-                    dst[j*4+2] = b;
-                    dst[j*4+3] = a;
-                }
-            }
-        }
+        /**
+         * @brief Fills the image with the given colour. If the image components
+         * are not RGBA it will ignore the unsupported components. 
+         * For example if the image comps is ImageComponentAlpha, then only the alpha value 'a' will
+         * be used.
+         **/
+        void fill(const RectI& rect,float r,float g,float b,float a);
         
+        /**
+         * @brief Same as fill(const RectI&,float,float,float,float) but fills the R,G and B
+         * components with the same value.
+         **/
         void fill(const RectI& rect,float colorValue = 0.f,float alphaValue = 1.f){
             fill(rect,colorValue,colorValue,colorValue,alphaValue);
         }
 
-        
+        /**
+         * @brief Fills the entire image with the given R,G,B value and an alpha value.
+         **/
         void defaultInitialize(float colorValue = 0.f,float alphaValue = 1.f){
             fill(_bitmap.getRoD(),colorValue,alphaValue);
         }
         
+        /**
+         * @brief Copies the content of the other image pixels into this image.
+         **/
         void copy(const Natron::Image& other);
     
     
