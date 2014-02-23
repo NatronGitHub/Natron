@@ -6,9 +6,20 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
+- non-animated parameters should be master/slave-able too
+
+- file knobs should be master/slave-able too. A string/inputfile/outputfile should be slaveable to any string/inputfile/outputfile parameter (all these types are compatible). For example, a reader could follow a writer in the graph and should re-read the file that was written just above. This is necessary for external script nodes.
+
 - black borders around the viewer when zooming out and multithreading is disabled
 
 - RenderROI is called when disabling the viewer ROI, is it normal?
+
+- Check why TuttleOFX's generators (e.g. ColorBars) have this strange behaviour when changing the "channel" parameter
+
+- File Dialog: in plugins with a list of supported formats, only these formats should appear in the default filter (reader)
+  or the pulldown menu (write)
+
+- File Dialog: in a writer that supports a given format (e.g. pfm), selecting a file with this extension doesn't change the "File type" pulldown (whereas changing the filename in the text entry does)
 
 - File dialog: the file list should be a few pixels wider, so that the horizontal scrollbar does not appear.
 
