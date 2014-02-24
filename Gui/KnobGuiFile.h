@@ -33,12 +33,14 @@ class Variant;
 class LineEdit;
 class DockablePanel;
 class Button;
+class File_Knob_UndoCommand;
 
 //================================
 class File_KnobGui: public KnobGui
 {
     Q_OBJECT
 
+    friend class File_Knob_UndoCommand;
 public:
 
     static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {

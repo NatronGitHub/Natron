@@ -1422,7 +1422,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
                 _fileKnob->setAsInputImage();
             }
             if (!filePathSupportsImageSequences) {
-                _fileKnob->turnOffSequences();
+                _fileKnob->turnOffAnimation();
             }
         } else {
             _outputFileKnob = Natron::createKnob<OutputFile_Knob>(node, getParamLabel(this));
@@ -1430,7 +1430,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
                 _outputFileKnob->setAsOutputImageFile();
             }
             if (!filePathSupportsImageSequences) {
-                _outputFileKnob->turnOffSequences();
+                _outputFileKnob->turnOffAnimation();
             }
             
         }
@@ -1480,7 +1480,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
 OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
     assert(_node->effectInstance());
     if(_fileKnob){
-        str = _fileKnob->getRandomFrameName(time,false).toStdString();
+        str = _fileKnob->getRandomFrameName(time,true).toStdString();
     }else if(_outputFileKnob){
         str = _outputFileKnob->getValue<QString>().toStdString();
     }else if(_stringKnob){
@@ -1510,8 +1510,7 @@ OfxStatus OfxStringInstance::set(const char* str) {
 OfxStatus OfxStringInstance::set(OfxTime time, const char* str) {
     assert(!String_Knob::canAnimateStatic());
     if(_fileKnob){
-#pragma message WARN("BUG: a _fileKnob should be just like an animated string. setValueAtTime changes the value at that time, thus ading a filename to the sequence")
-        _fileKnob->setValue(str);
+        _fileKnob->setValueAtTime<QString>(time,QString(str));
     }
     if(_outputFileKnob){
         _outputFileKnob->setValue(str);
@@ -1592,15 +1591,6 @@ void OfxStringInstance::setSecret(){
 
 const QString OfxStringInstance::getRandomFrameName(int f) const{
     return _fileKnob ? _fileKnob->getRandomFrameName(f,true) : "";
-}
-bool OfxStringInstance::isValid() const{
-    if(_fileKnob){
-        return !_fileKnob->getValue<QStringList>().isEmpty();
-    }
-    if(_outputFileKnob){
-        return !_outputFileKnob->getValue<QString>().toStdString().empty();
-    }
-    return true;
 }
 
 

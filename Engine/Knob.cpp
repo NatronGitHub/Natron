@@ -297,6 +297,9 @@ void Knob::deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason r
         _imp->_curves[dimension]->removeKeyFrame((double)time);
     }
     
+    //virtual portion
+    onKeyFrameRemoved(dimension, time);
+    
     if(reason != Natron::USER_EDITED){
         emit keyFrameRemoved(time,dimension);
     }
@@ -320,6 +323,9 @@ void Knob::removeAnimation(int dimension,Natron::ValueChangedReason reason){
         _imp->_curves[dimension]->clearKeyFrames();
     }
     
+    //virtual portion
+    onKeyframesRemoved(dimension);
+        
     if(reason != Natron::USER_EDITED){
         emit animationRemoved(dimension);
     }
@@ -458,7 +464,7 @@ void Knob::evaluateAnimationChange(){
         }
     }
     if(!hasEvaluatedOnce && !_imp->_holder->isClone()){
-        evaluateValueChange(0, Natron::PLUGIN_EDITED);
+        evaluateValueChange(0, Natron::OTHER_REASON);
     }
     
     endValueChange();
@@ -713,6 +719,181 @@ void Knob::resetToDefaultValues() {
 }
 
 
+bool Knob::getKeyFrameTime(int index,int dimension,double* time) const {
+    
+    ///if the knob is slaved to another knob, returns the other knob value
+    boost::shared_ptr<Knob> master = getMaster(dimension);
+    if (master) {
+        return master->getKeyFrameTime(index,dimension,time);
+    }
+    
+    assert(dimension < getDimension());
+    if (!isAnimated(dimension)) {
+        return false;
+    }
+    boost::shared_ptr<Curve> curve = getCurve(dimension);
+    assert(curve);
+    const KeyFrameSet& ks =  curve->getKeyFrames();
+    
+    if ((int)ks.size() <= index) {
+        return false;
+    }
+    
+    int c = 0;
+    for (KeyFrameSet::const_iterator it = ks.begin(); it!=ks.end(); ++it) {
+        if (c == index) {
+            *time = (*it).getTime();
+            return true;
+        }
+        ++c;
+    }
+    
+    return false;
+}
+
+
+bool Knob::getLastKeyFrameTime(int dimension,double* time) const {
+    
+    ///if the knob is slaved to another knob, returns the other knob value
+    boost::shared_ptr<Knob> master = getMaster(dimension);
+    if (master) {
+        return master->getLastKeyFrameTime(dimension,time);
+    }
+    
+    assert(dimension < getDimension());
+    if (!isAnimated(dimension)) {
+        return false;
+    }
+    
+    boost::shared_ptr<Curve> curve = getCurve(dimension);
+    assert(curve);
+    const KeyFrameSet& ks =  curve->getKeyFrames();
+    assert(!ks.empty());
+    
+    KeyFrameSet::const_iterator it = ks.end();
+    --it;
+    *time = (*it).getTime();
+    return true;
+}
+
+bool Knob::getFirstKeyFrameTime(int dimension,double* time) const {
+    return getKeyFrameTime(0, dimension, time);
+}
+
+int Knob::getKeyFramesCount(int dimension) const {
+    //get curve forwards it to the master
+    return getCurve(dimension)->keyFramesCount();
+}
+
+bool Knob::getNearestKeyFrameTime(int dimension,double time,double* nearestTime) const {
+    
+    ///if the knob is slaved to another knob, returns the other knob value
+    boost::shared_ptr<Knob> master = getMaster(dimension);
+    if (master) {
+        return master->getNearestKeyFrameTime(dimension, time, nearestTime);
+    }
+    
+    assert(dimension < getDimension());
+    if (!isAnimated(dimension)) {
+        return false;
+    }
+    
+    boost::shared_ptr<Curve> curve = getCurve(dimension);
+    assert(curve);
+    const KeyFrameSet& ks =  curve->getKeyFrames();
+    assert(!ks.empty());
+
+    KeyFrameSet::const_iterator upper = ks.end();
+    for (KeyFrameSet::const_iterator it = ks.begin(); it!=ks.end(); ++it) {
+        if (it->getTime() > time) {
+            upper = it;
+            break;
+        } else if (it->getTime() == time) {
+            *nearestTime = time;
+            return true;
+        }
+    }
+    
+    if (upper == ks.begin()) {
+        *nearestTime = upper->getTime();
+        return true;
+    }
+    
+    KeyFrameSet::const_iterator lower = upper;
+    --lower;
+    if (upper == ks.end()) {
+        *nearestTime = lower->getTime();
+        return true;
+    }
+    
+    assert(time - lower->getTime() > 0);
+    assert(upper->getTime() - time > 0);
+    
+    if ((upper->getTime() - time) < (time - lower->getTime())) {
+        *nearestTime = upper->getTime();
+    } else {
+        *nearestTime = lower->getTime();
+    }
+    return true;
+}
+
+int Knob::getKeyFrameIndex(int dimension, double time) const {
+    
+    ///if the knob is slaved to another knob, returns the other knob value
+    boost::shared_ptr<Knob> master = getMaster(dimension);
+    if (master) {
+        return master->getKeyFrameIndex(dimension,time);
+    }
+    
+    assert(dimension < getDimension());
+    if (!isAnimated(dimension)) {
+        return -1;
+    }
+    
+    boost::shared_ptr<Curve> curve = getCurve(dimension);
+    assert(curve);
+    const KeyFrameSet& ks =  curve->getKeyFrames();
+    assert(!ks.empty());
+
+    int i = 0;
+    for (KeyFrameSet::const_iterator it = ks.begin(); it!=ks.end(); ++it) {
+        if (it->getTime() == time) {
+            return i;
+        }
+        ++i;
+    }
+    return -1;
+}
+
+
+bool Knob::getKeyFrameValueByIndex(int dimension,int index,Variant* value) const {
+    ///if the knob is slaved to another knob, returns the other knob value
+    boost::shared_ptr<Knob> master = getMaster(dimension);
+    if (master) {
+        return master->getKeyFrameValueByIndex(dimension,index,value);
+    }
+
+    
+    assert(dimension < getDimension());
+    if (!isAnimated(dimension)) {
+        return false;
+    }
+    
+    boost::shared_ptr<Curve> curve = getCurve(dimension);
+    assert(curve);
+    
+    if (index >= curve->keyFramesCount()) {
+        return false;
+    }
+    
+    KeyFrame kf;
+    bool wasFound =  curve->getKeyFrameByIndex(index,&kf);
+    if (!wasFound) {
+        return false;
+    }
+    variantFromInterpolatedValue(kf.getValue(),value);
+    return true;
+}
 
 /***************************KNOB HOLDER******************************************/
 

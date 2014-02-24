@@ -87,8 +87,53 @@ void File_KnobGui::createWidget(QGridLayout *layout, int row)
 void File_KnobGui::onButtonClicked() {
     boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
     assert(fk);
-    open_file(fk->isSequencesDialogEnabled());
+    open_file(fk->isAnimationEnabled());
 }
+
+class File_Knob_UndoCommand : public QUndoCommand {
+    
+    File_KnobGui* _knob;
+    QStringList _oldFiles;
+    QStringList _newFiles;
+    
+public:
+    
+    File_Knob_UndoCommand(File_KnobGui *knob,
+                          const QStringList& oldFiles,
+                          const QStringList& newFiles,
+                          QUndoCommand *parent = 0)
+    : QUndoCommand(parent)
+    , _knob(knob)
+    , _oldFiles(oldFiles)
+    , _newFiles(newFiles)
+    {
+        
+    }
+    
+private:
+    
+    virtual void undo() OVERRIDE FINAL {
+        boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(_knob->getKnob());
+        fk->setFiles(_oldFiles);
+        QString value;
+        if (_oldFiles.size() > 0) {
+            value = _oldFiles.at(0);
+        }
+        _knob->updateGUI(0, Variant(value));
+    }
+    
+    virtual void redo() OVERRIDE FINAL {
+        boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(_knob->getKnob());
+        fk->setFiles(_newFiles);
+        QString value;
+        if (_newFiles.size() > 0) {
+            value = _newFiles.at(0);
+        }
+        _knob->updateGUI(0, Variant(value));
+    }
+    
+};
+
 
 void File_KnobGui::open_file(bool openSequence)
 {
@@ -122,7 +167,9 @@ void File_KnobGui::open_file(bool openSequence)
     }
     if (!files.isEmpty()) {
         updateLastOpened(files.at(0));
-        pushValueChangedCommand(Variant(files));
+        QStringList oldFiles;
+        fk->getFiles(&oldFiles);
+        pushUndoCommand(new File_Knob_UndoCommand(this,oldFiles,files));
     }
 }
 
@@ -137,14 +184,13 @@ void File_KnobGui::updateLastOpened(const QString &str)
 
 void File_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 {
-    QStringList list = variant.toStringList();
-    QString str;
-    if (list.size() > 1) {
-        str = SequenceFileDialog::patternFromFilesList(list);
-    } else if(list.size() == 1) {
-        str = list.at(0);
+    QString file = variant.toString();
+    if (getKnob()->isAnimationEnabled() && getKnob()->getKeyFramesCount(0) > 1) {
+        file = SequenceFileDialog::patternFromFilesList(file);
+        _lineEdit->setText(file);
+    } else {
+        _lineEdit->setText(file);
     }
-    _lineEdit->setText(str);
 }
 
 void File_KnobGui::onReturnPressed()
@@ -157,7 +203,12 @@ void File_KnobGui::onReturnPressed()
     if (newList.isEmpty()) {
         return;
     }
-    pushValueChangedCommand(Variant(newList));
+    
+    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
+
+    QStringList oldFiles;
+    fk->getFiles(&oldFiles);
+    pushUndoCommand(new File_Knob_UndoCommand(this,oldFiles,newList));
 }
 
 

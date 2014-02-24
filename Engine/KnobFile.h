@@ -25,6 +25,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Global/Macros.h"
 
+class StringAnimationManager;
 /******************************FILE_KNOB**************************************/
 
 class File_Knob : public Knob
@@ -39,49 +40,76 @@ public:
     }
 
     File_Knob(KnobHolder *holder, const std::string &description, int dimension);
+    
+    virtual ~File_Knob();
 
     static const std::string& typeNameStatic();
     
-    /*The file dialog will not attempt to show files as image sequences*/
-    void turnOffSequences() { _sequenceDialog = false; }
+    void setAsInputImage() { _isInputImage = true; }
     
-    bool isSequencesDialogEnabled() const { return _sequenceDialog; }
+    bool isInputImageFile() const { return _isInputImage; }
+    
+    void setFiles(const QStringList& files);
 
-private:
-    virtual bool canAnimate() const OVERRIDE FINAL;
-
-    virtual const std::string& typeName() const OVERRIDE FINAL;
-
+    void setFiles(const std::map<int, QString>& fileSequence);
     
-signals:
+    void getFiles(QStringList* files);
     
-    void openFile(bool);
+    static void filesListToSequence(const QStringList& files,std::map<int, QString>* sequence);
     
-    void frameRangeChanged(int,int);
-    
-public:
-    void setFiles(const QStringList& stringList);
-
     /**
      * @brief firstFrame
      * @return Returns the index of the first frame in the sequence held by this Reader.
      */
     int firstFrame() const;
-
+    
     /**
      * @brief lastFrame
      * @return Returns the index of the last frame in the sequence held by this Reader.
      */
     int lastFrame() const;
     
-    void setAsInputImage() { _isInputImage = true; }
+    void open_file() { emit openFile(isAnimationEnabled()); }
+
+    /**
+     * @brief getRandomFrameName
+     * @param f The index of the frame.
+     * @return The file name associated to the frame index. Returns an empty string if it couldn't find it.
+     */
+    QString getRandomFrameName(int f, bool loadNearestIfNotFound) const;
+
+
+
     
-    bool isInputImageFile() const { return _isInputImage; }
-
-    void open_file() { emit openFile(_sequenceDialog && _isInputImage); }
+signals:
+    
+    void openFile(bool);
+    
 private:
-    int frameCount() const;
+    
+    virtual void onKeyFrameRemoved(int dimension, double time) OVERRIDE FINAL;
+    
+    virtual void onKeyframesRemoved(int dimension) OVERRIDE FINAL;
+    
+    virtual bool canAnimate() const OVERRIDE FINAL;
+    
+    virtual const std::string& typeName() const OVERRIDE FINAL;
+    
+    virtual void cloneExtraData(const Knob &other) OVERRIDE FINAL;
+    
+    ///called by setValueAtTime
+    virtual Natron::Status variantToKeyFrameValue(int time,const Variant& v,double* returnValue) OVERRIDE FINAL;
+    
+    ///called by getValueAtTime
+    virtual void variantFromInterpolatedValue(double interpolated,Variant* returnValue) const OVERRIDE FINAL;
+    
+    virtual void loadExtraData(const QString& str) OVERRIDE FINAL;
+    
+    virtual QString saveExtraData() const OVERRIDE FINAL;
 
+
+    int frameCount() const;
+    
     /**
      * @brief nearestFrame
      * @return Returns the index of the nearest frame in the Range [ firstFrame() - lastFrame( ].
@@ -89,24 +117,10 @@ private:
      */
     int nearestFrame(int f) const;
 
-public:
-    /**
-     * @brief getRandomFrameName
-     * @param f The index of the frame.
-     * @return The file name associated to the frame index. Returns an empty string if it couldn't find it.
-     */
-    QString getRandomFrameName(int f, bool loadNearestIfNotFound) const;
-private:
-    virtual void cloneExtraData(const Knob &other) OVERRIDE FINAL;
 
-    virtual void processNewValue() OVERRIDE FINAL;
-
-
-private:
-    std::map<int, QString> _filesSequence; ///mapping <frameNumber,fileName>
     static const std::string _typeNameStr;
-    bool _isInputImage;
-    bool _sequenceDialog;
+    StringAnimationManager* _animation;
+    int _isInputImage;
 };
 
 /******************************OUTPUT_FILE_KNOB**************************************/

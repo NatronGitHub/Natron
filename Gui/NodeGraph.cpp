@@ -1282,11 +1282,11 @@ void NodeGraph::dropEvent(QDropEvent* event){
                     boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
                     assert(fk);
                     
-                    if(!fk->isInputImageFile() && list.size() > 1){
+                    if(!fk->isAnimationEnabled() && list.size() > 1){
                         errorDialog("Reader", "This plug-in doesn't support image sequences, please select only 1 file.");
                         break;
                     } else {
-                        fk->setValue<QStringList>(list);
+                        fk->setFiles(list);
                         if (n->isPreviewEnabled()) {
                             n->computePreviewImage(_gui->getApp()->getTimeLine()->currentFrame());
                         }

@@ -72,6 +72,7 @@ SOURCES += \
     Row.cpp \
     Settings.cpp \
     StandardPaths.cpp \
+    StringAnimationManager.cpp \
     TimeLine.cpp \
     Timer.cpp \
     VideoEngine.cpp \
@@ -125,6 +126,7 @@ HEADERS += \
     Settings.h \
     Singleton.h \
     StandardPaths.h \
+    StringAnimationManager.h \
     TextureRect.h \
     TextureRectSerialization.h \
     TimeLine.h \

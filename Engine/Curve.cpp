@@ -774,6 +774,19 @@ int Curve::keyFrameIndex(double time) const {
 
 }
 
+bool Curve::getKeyFrameByIndex(int index,KeyFrame* ret) const {
+    QMutexLocker l(&_imp->_lock);
+    int c = 0;
+    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it!=_imp->keyFrames.end(); ++it) {
+        if (c == index) {
+            *ret = *it;
+            return true;
+        }
+        ++c;
+    }
+    return false;
+}
+
 KeyFrameSet::const_iterator Curve::begin() const {
     return _imp->keyFrames.begin();
 }

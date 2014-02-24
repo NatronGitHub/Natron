@@ -521,19 +521,7 @@ Natron::Status OfxEffectInstance::preProcessFrame(SequenceTime /*time*/){
             return StatFailed;
         }
     }
-    //  }
-    //iterate over param and find if there's an unvalid param
-    // e.g: an empty filename
-    const std::map<std::string,OFX::Host::Param::Instance*>& params = effectInstance()->getParams();
-    for (std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it!=params.end(); ++it) {
-        if(it->second->getType() == kOfxParamTypeString){
-            OfxStringInstance* param = dynamic_cast<OfxStringInstance*>(it->second);
-            assert(param);
-            if(!param->isValid()){
-                return StatFailed;
-            }
-        }
-    }
+    
     return StatOK;
 }
 

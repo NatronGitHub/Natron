@@ -16,6 +16,7 @@
 
 #include "Engine/Curve.h"
 #include "Engine/Hash64.h"
+#include "Engine/StringAnimationManager.h"
 
 using namespace Natron;
 using std::make_pair;
@@ -665,14 +666,21 @@ const std::string& Color_Knob::typeName() const
 
 String_Knob::String_Knob(KnobHolder *holder, const std::string &description, int dimension):
 Knob(holder, description, dimension)
-, _keyframes()
 , _multiLine(false)
 , _isCustom(false)
-, _customInterpolation(0)
-, _ofxParamHandle(0)
+, _animation(new StringAnimationManager(this))
 {
     
 }
+
+String_Knob::~String_Knob() {
+    delete _animation;
+}
+
+void String_Knob::setCustomInterpolation(customParamInterpolationV1Entry_t func,void* ofxParamHandle) {
+    _animation->setCustomInterpolation(func, ofxParamHandle);
+}
+
 
 bool String_Knob::canAnimate() const
 {
@@ -692,103 +700,26 @@ const std::string& String_Knob::typeName() const
 }
 
 Natron::Status String_Knob::variantToKeyFrameValue(int time,const Variant& v,double* returnValue) {
-    StringKeyFrame k;
-    k.time = time;
-    k.value = v.toString();
-    std::pair<Keyframes::iterator,bool> ret = _keyframes.insert(k);
-    if(!ret.second){
-        _keyframes.erase(ret.first);
-        ret = _keyframes.insert(k);
-        assert(ret.second);
-    }
-    *returnValue = std::distance(_keyframes.begin(), ret.first);
+    _animation->insertKeyFrame(time, v.toString(), returnValue);
     return StatOK;
 }
 
 void String_Knob::variantFromInterpolatedValue(double interpolated,Variant* returnValue) const {
-    int index = std::floor(interpolated + 0.5);
-    int i = 0;
-    for (Keyframes::const_iterator it = _keyframes.begin(); it != _keyframes.end(); ++it) {
-        if (i == index) {
-            returnValue->setValue<QString>(it->value);
-            return;
-        }
-        ++i;
-    }
-    ///the index is wrong, something is wrong upstream in the knob class
-    assert(false);
+    QString str;
+    _animation->stringFromInterpolatedIndex(interpolated, &str);
+    returnValue->setValue<QString>(str);
 }
 
 Variant String_Knob::getValueAtTime(double time, int dimension) const {
-    if (_customInterpolation) {
-        ///if there's a single keyframe, return it
-        const String_Knob::Keyframes& ks = getKeyFrames();
-        
-        if (ks.empty()) {
+    if (_animation->hasCustomInterp()) {
+        QString ret;
+        bool succeeded = _animation->customInterpolation(time, &ret);
+        if (!succeeded) {
             return getValue();
-        }
-        
-        if (ks.size() == 1) {
-            return Variant(ks.begin()->value);
-        }
-        
-        /// get the keyframes surrounding the time
-        String_Knob::Keyframes::const_iterator upper = ks.end();
-        String_Knob::Keyframes::const_iterator lower = ks.end();
-        for (String_Knob::Keyframes::const_iterator it = ks.begin(); it!=ks.end(); ++it) {
-            if (it->time > time) {
-                upper = it;
-                break;
-            } else if(it->time == time) {
-                ///if there's a keyframe exactly at this time, return its value
-                return Variant(it->value);
-            }
-        }
-        
-        if (upper == ks.end()) {
-            ///if the time is greater than the time of all keyframes return the last
-            
-            --upper;
-            return Variant(upper->value);
-        } else if(upper == ks.begin()) {
-            ///if the time is lesser than the time of all keyframes, return the first
-            return Variant(upper->value);
         } else {
-            ///general case, we're in-between 2 keyframes
-            lower = upper;
-            --lower;
+            return Variant(ret);
         }
-        
-        OFX::Host::Property::PropSpec inArgsSpec[] = {
-            { kOfxPropName,    OFX::Host::Property::eString, 1, true, "" },
-            { kOfxPropTime,    OFX::Host::Property::eDouble, 1, true, "" },
-            { kOfxParamPropCustomValue,    OFX::Host::Property::eString, 2, true, ""},
-            { kOfxParamPropInterpolationTime,    OFX::Host::Property::eDouble, 2, true, "" },
-            { kOfxParamPropInterpolationAmount,    OFX::Host::Property::eDouble, 1, true, "" },
-            OFX::Host::Property::propSpecEnd
-        };
-        OFX::Host::Property::Set inArgs(inArgsSpec);
-        inArgs.setStringProperty(kOfxPropName, getName());
-        inArgs.setDoubleProperty(kOfxPropTime, time);
-        
-        inArgs.setStringProperty(kOfxParamPropCustomValue, lower->value.toStdString(),0);
-        inArgs.setStringProperty(kOfxParamPropCustomValue, upper->value.toStdString(),1);
-        inArgs.setDoubleProperty(kOfxParamPropInterpolationTime, lower->time,0);
-        inArgs.setDoubleProperty(kOfxParamPropInterpolationTime, upper->time,1);
-        inArgs.setDoubleProperty(kOfxParamPropInterpolationAmount, (time - lower->time) / (double)(upper->time - lower->time));
-        
-        
-        
-        OFX::Host::Property::PropSpec outArgsSpec[] = {
-            { kOfxParamPropCustomValue,    OFX::Host::Property::eString, 1, false, ""},
-            OFX::Host::Property::propSpecEnd
-        };
-        OFX::Host::Property::Set outArgs(outArgsSpec);
-        
-        _customInterpolation(_ofxParamHandle,inArgs.getHandle(),outArgs.getHandle());
-        
-        std::string ret = outArgs.getStringProperty(kOfxParamPropCustomValue,0);
-        return Variant(QString(ret.c_str()));
+    
     } else {
         return Knob::getValueAtTime(time, dimension);
     }
@@ -796,62 +727,16 @@ Variant String_Knob::getValueAtTime(double time, int dimension) const {
 
 void String_Knob::cloneExtraData(const Knob& other) {
     const String_Knob& o = dynamic_cast<const String_Knob&>(other);
-    _keyframes = o._keyframes;
+    _animation->clone(*(o._animation));
 }
 
 
-static const QString stringSeparatorTag = QString("__SEP__");
-static const QString keyframeSepTag = QString("__,__");
-
 void String_Knob::loadExtraData(const QString& str) {
-    if (str.isEmpty()) {
-        return;
-    }
-    int sepIndex = str.indexOf(stringSeparatorTag);
-    
-    int i = 0;
-    while (sepIndex != -1) {
-        
-        int keyFrameSepIndex = str.indexOf(keyframeSepTag,i);
-        assert(keyFrameSepIndex != -1);
-        
-        QString keyframeTime;
-        while (i < keyFrameSepIndex) {
-            keyframeTime.push_back(str.at(i));
-            ++i;
-        }
-        
-        i+= keyframeSepTag.size();
-        
-        QString keyframevalue;
-        while (i < sepIndex) {
-            keyframevalue.push_back(str.at(i));
-            ++i;
-        }
-        
-        StringKeyFrame k;
-        k.time = keyframeTime.toInt();
-        k.value = keyframevalue;
-        _keyframes.insert(k);
-        
-        i+= stringSeparatorTag.size();
-        sepIndex = str.indexOf(stringSeparatorTag,sepIndex + 1);
-    }
+    _animation->load(str);
 }
 
 QString String_Knob::saveExtraData() const {
-    if (_keyframes.empty()) {
-        return "";
-    }
-    QString ret;
-
-    for (Keyframes::const_iterator it = _keyframes.begin();it!=_keyframes.end();++it) {
-        ret.push_back(QString::number(it->time));
-        ret.push_back(keyframeSepTag);
-        ret.push_back(it->value);
-        ret.push_back(stringSeparatorTag);
-    }
-    return ret;
+    return _animation->save();
 }
 
 /******************************GROUP_KNOB**************************************/

@@ -1360,11 +1360,11 @@ void Gui::createReader(){
                     boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
                     assert(fk);
                     
-                    if(!fk->isInputImageFile() && files.size() > 1){
+                    if(!fk->isAnimationEnabled() && files.size() > 1){
                         errorDialog("Reader", "This plug-in doesn't support image sequences, please select only 1 file.");
                         break;
                     } else {
-                        fk->setValue<QStringList>(files);
+                        fk->setFiles(files);
                         
                         if (n->isPreviewEnabled()) {
                             n->computePreviewImage(_imp->_appInstance->getTimeLine()->currentFrame());

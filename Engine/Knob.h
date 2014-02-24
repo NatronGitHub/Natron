@@ -171,6 +171,40 @@ public:
     T getValueAtTime(double time,int dimension = 0) const {
         return getValueAtTime(time,dimension).value<T>();
     }
+    
+    /**
+     * @brief Places in time the keyframe time at the given index.
+     * If it exists the function returns true, false otherwise.
+     **/
+    bool getKeyFrameTime(int index,int dimension,double* time) const;
+    
+    /**
+     * @brief Convenience function, does the same as getKeyFrameByIndex but returns the last
+     * keyframe.
+     **/
+    bool getLastKeyFrameTime(int dimension,double* time) const;
+    
+    /**
+     * @brief Convenience function, does the same as getKeyFrameByIndex but returns the first
+     * keyframe.
+     **/
+    bool getFirstKeyFrameTime(int dimension,double* time) const;
+    
+    int getKeyFramesCount(int dimension) const;
+    
+    /**
+     * @brief Returns the nearest keyframe time if it was found.
+     * Returns true if it succeeded, false otherwise.
+     **/
+    bool getNearestKeyFrameTime(int dimension,double time,double* nearestTime) const;
+    
+    /**
+     * @brief Returns the keyframe index if there's any keyframe in the curve 
+     * at the given dimension and the given time. -1 otherwise.
+     **/
+    int getKeyFrameIndex(int dimension, double time) const;
+    
+    bool getKeyFrameValueByIndex(int dimension,int index,Variant* value) const;
 
 
     boost::shared_ptr<Curve> getCurve(int dimension = 0) const;
@@ -316,6 +350,8 @@ public:
      **/
     void resetToDefaultValues();
     
+    
+    
 public slots:
     
   
@@ -376,6 +412,17 @@ private:
      * also the sequence it has parsed.
     **/
     virtual void cloneExtraData(const Knob& other){(void)other;}
+    
+    
+    /**
+     * @brief Called when a keyframe is removed.
+     **/
+    virtual void onKeyFrameRemoved(int /*dimension*/, double /*time*/) {}
+    
+    /**
+     * @brief Called when all keyframes are removed
+     **/
+    virtual void onKeyframesRemoved(int /*dimension*/) {}
     
     /** @brief This function is called right after that the _value has changed
      * but before any signal notifying that it has changed. It can be useful

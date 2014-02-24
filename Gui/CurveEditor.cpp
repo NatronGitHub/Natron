@@ -28,6 +28,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"
 #include "Engine/Node.h"
+#include "Engine/KnobFile.h"
 
 #include "Gui/CurveWidget.h"
 #include "Gui/NodeGui.h"
@@ -173,7 +174,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
 
         const boost::shared_ptr<Knob>& k = it->first;
         KnobGui* kgui = it->second;
-        if(!k->canAnimate()){
+        if(!k->canAnimate() || k->typeName() == File_Knob::typeNameStatic()){
             continue;
         }
 

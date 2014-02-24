@@ -215,6 +215,12 @@ public:
     
     int keyFrameIndex(double time) const WARN_UNUSED_RETURN;
     
+    /**
+     * @brief Places in kf the keyframe at the given index.
+     * Returns true on success, false otherwise.
+     **/
+    bool getKeyFrameByIndex(int index,KeyFrame* kf) const WARN_UNUSED_RETURN;
+    
     ///////The following functions are not thread-safe
     KeyFrameSet::const_iterator find(double time) const WARN_UNUSED_RETURN;
     

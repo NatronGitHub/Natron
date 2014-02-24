@@ -1705,24 +1705,23 @@ QStringList SequenceFileDialog::filesListFromPattern(const QString& pattern){
     return ret;
 
 }
-QString SequenceFileDialog::patternFromFilesList(const QStringList& files){
-    if(files.size() == 0)
+QString SequenceFileDialog::patternFromFilesList(const QString& file){
+    if(file.size() == 0)
         return "";
-    QString firstFile = files.at(0);
-    int pos = firstFile.lastIndexOf(QChar('.'));
+    int pos = file.lastIndexOf(QChar('.'));
     int extensionPos = pos+1;
     --pos;
-    while (pos >=0 && firstFile.at(pos).isDigit()) {
+    while (pos >=0 && file.at(pos).isDigit()) {
         --pos;
     }
     ++pos;
-    QString commonPart = firstFile.left(pos);
+    QString commonPart = file.left(pos);
     QString ext;
-    while(extensionPos < firstFile.size()){
-        ext.append(firstFile.at(extensionPos));
+    while(extensionPos < file.size()){
+        ext.append(file.at(extensionPos));
         ++extensionPos;
     }
-    if(files.size() > 1)
+    if(file.size() > 1)
         return QString(commonPart + "#." +  ext);
     else
         return QString(commonPart + "." + ext);

@@ -393,7 +393,7 @@ public:
     static QStringList filesListFromPattern(const QString& pattern);
     
     /*files must have the same extension and a digit placed before the . character prepending the extension*/
-    static QString patternFromFilesList(const QStringList& files);
+    static QString patternFromFilesList(const QString& file);
     
     QString filesToSave();
     

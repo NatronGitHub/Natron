@@ -509,8 +509,8 @@ void EffectInstance::openImageFileKnob() {
             boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
             assert(fk);
             if (fk->isInputImageFile()) {
-                QStringList files = fk->getValue<QStringList>();
-                if (files.isEmpty()) {
+                QString file = fk->getValue<QString>();
+                if (file.isEmpty()) {
                     fk->open_file();
                 }
                 break;
@@ -575,10 +575,6 @@ void EffectInstance::abortRendering(){
         dynamic_cast<OutputEffectInstance*>(this)->getVideoEngine()->abortRendering(true);
     }
 }
-
-//void EffectInstance::notifyFrameRangeChanged(int first,int last){
-//    _node->notifyFrameRangeChanged(first, last);
-//}
 
 void EffectInstance::togglePreview() {
     _imp->previewEnabled = !_imp->previewEnabled;
@@ -679,10 +675,10 @@ void EffectInstance::setInputFilesForReader(const QStringList& files) {
             boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
             assert(fk);
             if (fk->isInputImageFile()) {
-                if (files.size() > 1 && ! fk->isSequencesDialogEnabled()) {
+                if (files.size() > 1 && ! fk->isAnimationEnabled()) {
                     throw std::invalid_argument("This reader does not support image sequences. Please provide a single file.");
                 }
-                fk->setValue<QStringList>(files);
+                fk->setFiles(files);
                 break;
             }
         }

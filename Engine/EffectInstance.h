@@ -404,12 +404,7 @@ public:
      **/
     void abortRendering();
     
-    /**
-     * @brief Call this whenever the frame range for this operator changed (i.e: through reading a file sequence for instance).
-     * This in turns updates the timeline of the project.
-     **/
-    //void notifyFrameRangeChanged(int first,int last);
-    
+
     /**
      * @brief This function is called by the node holding this effect. Never call this yourself.
      **/

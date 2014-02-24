@@ -14,6 +14,9 @@
 #include <QtCore/QStringList>
 #include <QtCore/QMutexLocker>
 
+#include "Engine/StringAnimationManager.h"
+#include "Global/QtCompat.h"
+
 using namespace Natron;
 using std::make_pair;
 using std::pair;
@@ -22,13 +25,16 @@ using std::pair;
 
 File_Knob::File_Knob(KnobHolder *holder, const std::string &description, int dimension)
 : Knob(holder, description, dimension)
-, _isInputImage(false)
-, _sequenceDialog(true)
+, _animation(new StringAnimationManager(this))
 {
 }
 
+File_Knob::~File_Knob() {
+    delete _animation;
+}
+
 bool File_Knob::canAnimate() const {
-    return false;
+    return true;
 }
 
 const std::string File_Knob::_typeNameStr("InputFile");
@@ -43,145 +49,135 @@ const std::string& File_Knob::typeName() const
     return typeNameStatic();
 }
 
+
+Natron::Status File_Knob::variantToKeyFrameValue(int time,const Variant& v,double* returnValue) {
+    _animation->insertKeyFrame(time, v.toString(), returnValue);
+    return StatOK;
+}
+
+void File_Knob::variantFromInterpolatedValue(double interpolated,Variant* returnValue) const {
+    QString str;
+    _animation->stringFromInterpolatedIndex(interpolated, &str);
+    returnValue->setValue<QString>(str);
+}
+
+void File_Knob::cloneExtraData(const Knob& other) {
+    const File_Knob& o = dynamic_cast<const File_Knob&>(other);
+    _animation->clone(*(o._animation));
+}
+
+
+void File_Knob::loadExtraData(const QString& str) {
+    _animation->load(str);
+}
+
+QString File_Knob::saveExtraData() const {
+    return _animation->save();
+}
+
 void File_Knob::setFiles(const QStringList& files) {
-    setValue(Variant(files), 0);
+    std::map<int, QString> seq;
+    filesListToSequence(files, &seq);
+    setFiles(seq);
+}
+
+void File_Knob::setFiles(const std::map<int, QString>& fileSequence) {
+    if (fileSequence.empty()) {
+        return;
+    }
+    beginValueChange(Natron::PLUGIN_EDITED);
+    if (isAnimationEnabled()) {
+        for (std::map<int, QString>::const_iterator it = fileSequence.begin(); it!=fileSequence.end(); ++it) {
+            setValueAtTime<QString>(it->first, it->second);
+        }
+      
+    }
+    ///necessary for the changedParam call!
+    setValue(Variant(fileSequence.begin()->second),0,true);
+    endValueChange();
 }
 
 int File_Knob::firstFrame() const
 {
-    std::map<int, QString>::const_iterator it = _filesSequence.begin();
-    if (it == _filesSequence.end()) {
-        return INT_MIN;
-    }
-    return it->first;
+    double time;
+    bool foundKF = getFirstKeyFrameTime(0, &time);
+    return foundKF ? (int)time : INT_MIN;
 }
 
 int File_Knob::lastFrame() const
 {
-    if (_filesSequence.empty()) {
-        return INT_MAX;
-    }
-    
-    if (_filesSequence.size() == 1) {
-        return _filesSequence.begin()->first;
-    }
-    
-    std::map<int, QString>::const_iterator it = _filesSequence.end();
-    --it;
-    return it->first;
+    double time;
+    bool foundKF = getLastKeyFrameTime(0, &time);
+    return foundKF ? (int)time : INT_MAX;
   
 }
 
 int File_Knob::frameCount() const {
-    return _filesSequence.size();
+    return getKeyFramesCount(0);
 }
 
 int File_Knob::nearestFrame(int f) const
 {
-    int first = firstFrame();
-    int last = lastFrame();
-    if (f < first) {
-        return first;
-    }
-    if (f > last) {
-        return last;
-    }
-
-    std::map<int, int> distanceMap;
-    for (std::map<int, QString>::const_iterator it = _filesSequence.begin(); it != _filesSequence.end(); ++it) {
-        distanceMap.insert(make_pair(std::abs(f - it->first), it->first));
-    }
-    if (!distanceMap.empty()) {
-        return distanceMap.begin()->second;
-    } else {
-        return 0;
-    }
+    double nearest;
+    getNearestKeyFrameTime(0, f, &nearest);
+    return (int)nearest;
 }
 
 QString File_Knob::getRandomFrameName(int f, bool loadNearestIfNotFound) const
 {
-    ///when the sequence has just 1 file (i.e: this is a video or maybe a single image) just return it.
-    if(_filesSequence.size() == 1) {
-        return _filesSequence.begin()->second;
-    }
-    
-    if (loadNearestIfNotFound) {
-        f = nearestFrame(f);
-    }
-    std::map<int, QString>::const_iterator it = _filesSequence.find(f);
-    if (it != _filesSequence.end()) {
-        return it->second;
+    if (!isAnimationEnabled()) {
+        return getValue().toString();
     } else {
-        return "";
-    }
-}
-
-void File_Knob::cloneExtraData(const Knob &other)
-{
-    _filesSequence = dynamic_cast<const File_Knob &>(other)._filesSequence;
-}
-
-void File_Knob::processNewValue()
-{
-    _filesSequence.clear();
-    QStringList fileNameList = getValue<QStringList>();
-    bool first_time = true;
-    QString originalName;
-    for (int i = 0 ; i < fileNameList.size(); ++i) {
-        QString fileName = fileNameList.at(i);
-        QString unModifiedName = fileName;
-        if (first_time) {
-            int extensionPos = fileName.lastIndexOf('.');
-            if (extensionPos != -1) {
-                fileName = fileName.left(extensionPos);
-            } else {
-                continue;
-            }
-            int j = fileName.size() - 1;
-            QString frameIndexStr;
-            while (j > 0 && fileName.at(j).isDigit()) {
-                frameIndexStr.push_front(fileName.at(j));
-                --j;
-            }
-            if (j > 0) {
-                int frameNumber = 0;
-                if (fileNameList.size() > 1) {
-                    frameNumber = frameIndexStr.toInt();
-                }
-                _filesSequence.insert(make_pair(frameNumber, unModifiedName));
-                originalName = fileName.left(fileName.indexOf(frameIndexStr));
-
-            } else {
-                _filesSequence.insert(make_pair(0, unModifiedName));
-            }
-            first_time = false;
-        } else {
-            if (fileName.contains(originalName)) {
-                int extensionPos = fileName.lastIndexOf('.');
-                if (extensionPos != -1) {
-                    fileName = fileName.left(extensionPos);
-                } else {
-                    continue;
-                }
-                int j = fileName.size() - 1;
-                QString frameIndexStr;
-                while (j > 0 && fileName.at(j).isDigit()) {
-                    frameIndexStr.push_front(fileName.at(j));
-                    --j;
-                }
-                if (j > 0) {
-                    int number = frameIndexStr.toInt();
-                    _filesSequence.insert(make_pair(number, unModifiedName));
-                } else {
-                    std::cout << " File_Knob : WARNING !! several frames in sequence but no frame count found in their name " << std::endl;
-                }
+        
+        if (!loadNearestIfNotFound) {
+            int ksIndex = getKeyFrameIndex(0, f);
+            if (ksIndex == -1) {
+                return "";
             }
         }
+        return getValueAtTime(f, 0).toString();
     }
-    emit frameRangeChanged(firstFrame(), lastFrame());
-
 }
 
+void File_Knob::filesListToSequence(const QStringList& files,std::map<int, QString>* sequence) {
+    for (int i = 0; i < files.size(); ++i) {
+        const QString& file = files.at(i);
+        QString fileWithoutExtension = file;
+        Natron::removeFileExtension(fileWithoutExtension);
+        int time;
+        int pos = fileWithoutExtension.size() -1;
+        QString timeStr;
+        while (pos >= 0 && fileWithoutExtension.at(pos).isDigit()) {
+            timeStr.prepend(fileWithoutExtension.at(pos));
+            --pos;
+        }
+        if (!timeStr.isEmpty()) {
+            time = timeStr.toInt();
+        } else {
+            time = -1;
+        }
+        sequence->insert(std::make_pair(time, file));
+    }
+}
+
+
+void File_Knob::getFiles(QStringList* files) {
+    int kfCount = getKeyFramesCount(0);
+    for (int i = 0; i < kfCount; ++i) {
+        Variant v;
+        bool success = getKeyFrameValueByIndex(0, i, &v);
+        assert(success);
+        files->push_back(v.toString());
+    }
+}
+
+void File_Knob::onKeyframesRemoved(int /*dimension*/) {
+    _animation->clearKeyFrames();
+}
+
+void File_Knob::onKeyFrameRemoved(int /*dimension*/, double time) {
+    _animation->removeKeyFrame(time);
+}
 
 /***********************************OUTPUT_FILE_KNOB*****************************************/
 

@@ -27,7 +27,8 @@ CLANG_DIAG_ON(deprecated)
 #include "Global/GlobalDefines.h"
 
 class Curve;
-class CurveWidget;
+class OverlaySupport;
+class StringAnimationManager;
 /******************************INT_KNOB**************************************/
 
 class Int_Knob: public Knob
@@ -413,6 +414,7 @@ public:
     
     String_Knob(KnobHolder *holder, const std::string &description, int dimension);
     
+    virtual ~String_Knob();
     
     /// Can this type be animated?
     /// String animation consists in setting constant strings at
@@ -429,19 +431,14 @@ public:
     void setAsCustom() { _isCustom = true; }
     
     bool isCustomKnob() const { return _isCustom; }
-    
-    const String_Knob::Keyframes& getKeyFrames() const { return _keyframes; }
-    
+        
     ///for integration of openfx custom params
     typedef OfxStatus (*customParamInterpolationV1Entry_t)(
                                                           const void*            handleRaw,
                                                           OfxPropertySetHandle   inArgsRaw,
                                                           OfxPropertySetHandle   outArgsRaw);
     
-    void setCustomInterpolation(customParamInterpolationV1Entry_t func,void* ofxParamHandle) {
-        _customInterpolation = func;
-        _ofxParamHandle = ofxParamHandle;
-    }
+    void setCustomInterpolation(customParamInterpolationV1Entry_t func,void* ofxParamHandle);
     
     virtual Variant getValueAtTime(double time, int dimension) const OVERRIDE FINAL;
     
@@ -464,12 +461,10 @@ private:
 private:
     static const std::string _typeNameStr;
     
-  
-    Keyframes _keyframes;
     bool _multiLine;
     bool _isCustom;
-    customParamInterpolationV1Entry_t _customInterpolation;
-    void* _ofxParamHandle;
+    StringAnimationManager* _animation;
+
 
 };
 
@@ -598,7 +593,7 @@ public slots:
         emit customBackgroundRequested();
     }
     
-    virtual void initializeOverlayInteract(CurveWidget* widget){
+    virtual void initializeOverlayInteract(OverlaySupport* widget){
         emit mustInitializeOverlayInteract(widget);
     }
     
@@ -614,7 +609,7 @@ signals:
     //if you can't overload drawCustomBackground()
     void customBackgroundRequested();
     
-    void mustInitializeOverlayInteract(CurveWidget*);
+    void mustInitializeOverlayInteract(OverlaySupport*);
     
     ///emitted when the state of a curve changed at the indicated dimension
     void curveChanged(int);

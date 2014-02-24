@@ -519,10 +519,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
 
-    // returns true if it is a file param and that it is not empty
-    bool isValid() const;
-  
-    
+
     /**
      * @brief getRandomFrameName Valid only for OfxStringInstance's of type kOfxParamStringIsFilePath with
      * an OfxImageEffectInstance of type kOfxImageEffectContextGenerator
