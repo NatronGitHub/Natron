@@ -1598,7 +1598,8 @@ OfxStatus OfxStringInstance::getNumKeys(unsigned int &nKeys) const {
     boost::shared_ptr<Knob> knob;
     if(_stringKnob){
         knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
-    }else{
+    } else {
+#pragma message WARN("getNumKeys() should not return kOfxStatErrUnsupported!!! why not return nKeys=0???")
         return kOfxStatErrUnsupported;
     }
     return OfxKeyFrame::getNumKeys(knob, nKeys);
@@ -1607,7 +1608,8 @@ OfxStatus OfxStringInstance::getKeyTime(int nth, OfxTime& time) const {
     boost::shared_ptr<Knob> knob;
     if(_stringKnob){
         knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
-    }else{
+    } else {
+#pragma message WARN("getKeyTime() should not return kOfxStatErrUnsupported!!!")
         return kOfxStatErrUnsupported;
     }
     return OfxKeyFrame::getKeyTime(knob, nth, time);
@@ -1616,7 +1618,8 @@ OfxStatus OfxStringInstance::getKeyIndex(OfxTime time, int direction, int & inde
     boost::shared_ptr<Knob> knob;
     if(_stringKnob){
         knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
-    }else{
+    } else {
+#pragma message WARN("getKeyIndex() should not return kOfxStatErrUnsupported!!!")
         return kOfxStatErrUnsupported;
     }
     return OfxKeyFrame::getKeyIndex(knob, time, direction, index);
@@ -1625,7 +1628,8 @@ OfxStatus OfxStringInstance::deleteKey(OfxTime time) {
     boost::shared_ptr<Knob> knob;
     if(_stringKnob){
         knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
-    }else{
+    } else {
+#pragma message WARN("deleteKey() should not return kOfxStatErrUnsupported!!!")
         return kOfxStatErrUnsupported;
     }
     return OfxKeyFrame::deleteKey(knob, time);
@@ -1634,7 +1638,8 @@ OfxStatus OfxStringInstance::deleteAllKeys(){
     boost::shared_ptr<Knob> knob;
     if(_stringKnob){
         knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
-    }else{
+    } else {
+#pragma message WARN("deleteAllKeys() should not return kOfxStatErrUnsupported!!!")
         return kOfxStatErrUnsupported;
     }
     return OfxKeyFrame::deleteAllKeys(knob);

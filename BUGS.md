@@ -6,6 +6,24 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
+- Natron must not call paramChanged on any parameter when loading a
+  project. Parameters should just be *set* to their values, and thus
+  they are not changed, since they had no value before.
+  Parameters setup may be done by the plugin in the
+  kOfxActionBeginInstanceEdit action.
+
+- Instance::beginInstanceEditAction() / kOfxActionBeginInstanceEdit
+  must be called after all parameters have been set to their initial
+  value. When loading a project, the initial value may not be the
+  default value. Setting the initial values must *not* call
+  paramChanged.
+
+- gParamSuite->paramGetNumKeys should *never* throw an exception, but
+  should return 0 keys by default.
+
+- setEvaluateOnChange() seems to have no effect when called from
+  Instance::beginInstanceEditAction()
+  
 - non-animated parameters should be master/slave-able too
 
 - Natron never sets kOfxParamPropIsAnimating. It should be set by the host for every parameter which is animated, including "File_Knob" when it represents a sequence. -> this is done in OfxParamInstance, except for File_Knobs
