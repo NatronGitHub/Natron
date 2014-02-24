@@ -384,7 +384,7 @@ void Project::initializeKnobs(){
         Format* f = appFormats[i];
         QString formatStr = Natron::generateStringFromFormat(*f);
         if(f->width() == 1920 && f->height() == 1080){
-            _imp->formatKnob->setValue(i);
+            _imp->formatKnob->setDefaultValue<int>(i);
         }
         entries.push_back(formatStr.toStdString());
         _imp->availableFormats.push_back(*f);
@@ -398,7 +398,7 @@ void Project::initializeKnobs(){
     _imp->viewsCount = Natron::createKnob<Int_Knob>(this,"Number of views");
     _imp->viewsCount->turnOffAnimation();
     _imp->viewsCount->setMinimum(1);
-    _imp->viewsCount->setValue(1);
+    _imp->viewsCount->setDefaultValue<int>(1);
     _imp->viewsCount->disableSlider();
     
     _imp->previewMode = Natron::createKnob<Bool_Knob>(this, "Auto previews");
@@ -407,7 +407,7 @@ void Project::initializeKnobs(){
                                       "Press P in the node graph to refresh the previews yourself.");
     _imp->previewMode->turnOffAnimation();
     bool autoPreviewEnabled = appPTR->getCurrentSettings()->isAutoPreviewOnForNewProjects();
-    _imp->previewMode->setValue<bool>(autoPreviewEnabled);
+    _imp->previewMode->setDefaultValue<bool>(autoPreviewEnabled);
     
     emit knobsInitialized();
     

@@ -183,7 +183,7 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param:
     _knob->setMinimum(min);
     _knob->setIncrement(1); // kOfxParamPropIncrement only exists for Double
     _knob->setMaximum(max);
-    set(def);
+    _knob->setDefaultValue<int>(def);
 }
 OfxStatus OfxIntegerInstance::get(int& v) {
     v = _knob->getValue<int>();
@@ -351,7 +351,8 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
         _knob->setDecimals(decimals);
     }
     
-    set(def);
+    valueAccordingToType(true,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&def);
+    _knob->setDefaultValue<double>(def);
     
 }
 OfxStatus OfxDoubleInstance::get(double& v){
@@ -461,7 +462,7 @@ OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param
     
     _knob = Natron::createKnob<Bool_Knob>(node, getParamLabel(this));
     int def = properties.getIntProperty(kOfxParamPropDefault);
-    set((bool)def);
+    _knob->setDefaultValue<bool>((bool)def);
     
 }
 OfxStatus OfxBooleanInstance::get(bool& b){
@@ -538,7 +539,7 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::
     setOption(0); // this actually sets all the options
     
     int def = properties.getIntProperty(kOfxParamPropDefault);
-    set(def);
+    _knob->setDefaultValue<int>(def);
 }
 OfxStatus OfxChoiceInstance::get(int& v){
     v = _knob->getActiveEntry();
@@ -635,7 +636,10 @@ OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descr
     double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
     double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);
     double defA = properties.getDoubleProperty(kOfxParamPropDefault,3);
-    set(defR, defG, defB, defA);
+    _knob->setDefaultValue<double>(defR,0);
+    _knob->setDefaultValue<double>(defG,1);
+    _knob->setDefaultValue<double>(defB,2);
+    _knob->setDefaultValue<double>(defA,3);
 }
 OfxStatus OfxRGBAInstance::get(double& r, double& g, double& b, double& a) {
     
@@ -744,7 +748,10 @@ OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descr
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
     double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
     double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);
-    set(defR, defG, defB);
+    _knob->setDefaultValue<double>(defR, 0);
+    _knob->setDefaultValue<double>(defG, 1);
+    _knob->setDefaultValue<double>(defB, 2);
+    
 }
 OfxStatus OfxRGBInstance::get(double& r, double& g, double& b) {
     r = _knob->getValue<double>(0);
@@ -895,7 +902,9 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
     setDisplayRange();
     _knob->setIncrement(increment);
     _knob->setDecimals(decimals);
-    _knob->setValue<double>(def.get(),dims);
+    _knob->setDefaultValue<double>(def[0], 0);
+    _knob->setDefaultValue<double>(def[1], 1);
+
 }
 
 OfxStatus OfxDouble2DInstance::get(double& x1, double& x2) {
@@ -1040,7 +1049,9 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::P
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setIncrement(increment);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
-    _knob->setValue<int>(def.get(),dims);
+    _knob->setDefaultValue<int>(def[0], 0);
+    _knob->setDefaultValue<int>(def[1], 1);
+
 }
 
 OfxStatus OfxInteger2DInstance::get(int& x1, int& x2) {
@@ -1145,7 +1156,9 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Par
     _knob->setIncrement(increment);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
     _knob->setDecimals(decimals);
-    _knob->setValue<double>(def.get(),dims);
+    _knob->setDefaultValue<double>(def[0],0);
+    _knob->setDefaultValue<double>(def[1],1);
+    _knob->setDefaultValue<double>(def[2],2);
 }
 
 OfxStatus OfxDouble3DInstance::get(double& x1, double& x2, double& x3) {
@@ -1272,7 +1285,9 @@ OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::P
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setIncrement(increment);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
-    _knob->setValue<int>(def.get(),dims);
+    _knob->setDefaultValue<int>(def[0],0);
+    _knob->setDefaultValue<int>(def[1],1);
+    _knob->setDefaultValue<int>(def[2],2);
 }
 
 OfxStatus OfxInteger3DInstance::get(int& x1, int& x2, int& x3) {
@@ -1358,7 +1373,7 @@ OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Des
     }else{
         _groupKnob = Natron::createKnob<Group_Knob>(node, getParamLabel(this));
         int opened = properties.getIntProperty(kOfxParamPropGroupOpen);
-        _groupKnob->setValue((bool)opened);
+        _groupKnob->setDefaultValue<bool>(opened);
     }
     
     
@@ -1434,7 +1449,15 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
     }
     std::string defaultVal = properties.getStringProperty(kOfxParamPropDefault).c_str();
     if (!defaultVal.empty()) {
-        set(defaultVal.c_str());
+        if (_fileKnob) {
+            _fileKnob->setDefaultValue<QStringList>(QStringList(defaultVal.c_str()));
+        } else if (_outputFileKnob) {
+            _outputFileKnob->setDefaultValue<QString>(QString(defaultVal.c_str()));
+        } else if (_stringKnob) {
+            _stringKnob->setDefaultValue<QString>(QString(defaultVal.c_str()));
+        } else if (_pathKnob) {
+            _pathKnob->setDefaultValue<QString>(QString(defaultVal.c_str()));
+        }
     }
 }
 
@@ -1668,7 +1691,7 @@ OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::D
     _knob = Natron::createKnob<String_Knob>(node, getParamLabel(this));
     _knob->setAsCustom();
     
-    set(properties.getStringProperty(kOfxParamPropDefault).c_str());
+    _knob->setDefaultValue<QString>(properties.getStringProperty(kOfxParamPropDefault).c_str());
     
     _customParamInterpolationV1Entry = (customParamInterpolationV1Entry_t)properties.getPointerProperty(kOfxParamPropCustomInterpCallbackV1);
     if (_customParamInterpolationV1Entry) {

@@ -144,6 +144,8 @@ public slots:
     void onLinkToActionTriggered();
     
     void onUnlinkActionTriggered();
+    
+    void onResetDefaultValuesActionTriggered();
     /******************************************************/
 
 signals:

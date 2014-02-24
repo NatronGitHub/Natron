@@ -296,7 +296,26 @@ public:
      This is called by the GUI.*/
     ValueChangedReturnCode onValueChanged(int dimension,const Variant& variant,KeyFrame* newKey);
     
-
+    /**
+     * @brief Set the default values for the knob. The vector 'values' must have exactly the same size
+     * as the dimension of the knob. 
+     * @see int getDimension()
+     **/
+    void setDefaultValues(const std::vector<Variant>& values);
+    
+    
+    void setDefaultValue(const Variant& v,int dimension);
+    
+    template <typename T>
+    void setDefaultValue(const T& v,int dimension = 0) {
+        setDefaultValue(Variant(v),dimension);
+    }
+    
+    /**
+     * @brief Restores the default value for all dimension and remove any animation.
+     **/
+    void resetToDefaultValues();
+    
 public slots:
     
   

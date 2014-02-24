@@ -46,7 +46,7 @@ public:
     void disableSlider();
     
     bool isSliderDisabled() const;
-    
+        
     static const std::string& typeNameStatic();
     
 public:

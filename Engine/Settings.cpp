@@ -203,22 +203,22 @@ void Settings::initializeKnobs(){
 void Settings::setDefaultValues() {
     
     beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
-    _linearPickers->setValue<bool>(true);
-    _multiThreadedDisabled->setValue<bool>(false);
-    _renderInSeparateProcess->setValue<bool>(true);
-    _autoPreviewEnabledForNewProjects->setValue<bool>(true);
-    _extraPluginPaths->setValue<QString>("");
-    _texturesMode->setValue<int>(0);
-    _powerOf2Tiling->setValue<int>(8);
-    _maxRAMPercent->setValue<int>(50);
-    _maxPlayBackPercent->setValue(25);
-    _maxDiskCacheGB->setValue<int>(10);
+    _linearPickers->setDefaultValue<bool>(true);
+    _multiThreadedDisabled->setDefaultValue<bool>(false);
+    _renderInSeparateProcess->setDefaultValue<bool>(true);
+    _autoPreviewEnabledForNewProjects->setDefaultValue<bool>(true);
+    _extraPluginPaths->setDefaultValue<QString>("");
+    _texturesMode->setDefaultValue<int>(0);
+    _powerOf2Tiling->setDefaultValue<int>(8);
+    _maxRAMPercent->setDefaultValue<int>(50);
+    _maxPlayBackPercent->setDefaultValue(25);
+    _maxDiskCacheGB->setDefaultValue<int>(10);
 
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
         const std::vector<std::string>& entries = _readersMapping[i]->getEntries();
         for (U32 j = 0; j < entries.size(); ++j) {
             if (QString(entries[j].c_str()).contains("ReadOIIOOFX")) {
-                _readersMapping[i]->setValue<int>(j);
+                _readersMapping[i]->setDefaultValue<int>(j);
                 break;
             }
         }
@@ -228,7 +228,7 @@ void Settings::setDefaultValues() {
         const std::vector<std::string>& entries = _writersMapping[i]->getEntries();
         for (U32 j = 0; j < entries.size(); ++j) {
             if (QString(entries[j].c_str()).contains("WriteOIIOOFX")) {
-                _writersMapping[i]->setValue<int>(j);
+                _writersMapping[i]->setDefaultValue<int>(j);
                 break;
             }
         }
