@@ -698,6 +698,11 @@ void Knob::setDefaultValue(const Variant& v,int dimension) {
 }
 
 void Knob::resetToDefaultValues() {
+    
+    if (typeName() == Button_Knob::typeNameStatic()) {
+        return;
+    }
+    
     for (int i = 0; i < getDimension(); ++i) {
         removeAnimation(i);
     }

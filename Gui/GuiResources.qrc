@@ -80,5 +80,6 @@
         <file>Resources/Images/time_low.png</file>
         <file>Resources/Images/time.png</file>
         <file>Resources/Images/viewer_roi.png</file>
+        <file>Resources/Images/restoreDefaults.png</file>
     </qresource>
 </RCC>

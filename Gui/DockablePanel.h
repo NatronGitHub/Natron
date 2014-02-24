@@ -124,6 +124,7 @@ public slots:
     /*Internal slot, not meant to be called externally.*/
     void onRedoPressed();
     
+    void onRestoreDefaultsButtonClicked();
 
 signals:
     
@@ -181,6 +182,7 @@ private:
 
     Button* _undoButton;
     Button* _redoButton;
+    Button* _restoreDefaultsButton;
 
     bool _minimized; /*!< true if the panel is minimized*/
     QUndoStack* _undoStack; /*!< undo/redo stack*/

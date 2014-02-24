@@ -179,6 +179,10 @@ void GuiApplicationManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
                 img.load(NATRON_IMAGES_PATH"redo_grayscale.png");
                 *pix = QPixmap::fromImage(img).scaled(15, 15);
                 break;
+            case NATRON_PIXMAP_RESTORE_DEFAULTS:
+                img.load(NATRON_IMAGES_PATH"restoreDefaults.png");
+                *pix = QPixmap::fromImage(img).scaled(15, 15);
+                break;
             case NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON:
                 img.load(NATRON_IMAGES_PATH"layout.png");
                 *pix = QPixmap::fromImage(img).scaled(12,12);

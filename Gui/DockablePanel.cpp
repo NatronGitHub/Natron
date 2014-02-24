@@ -65,6 +65,7 @@ DockablePanel::DockablePanel(Gui* gui
 ,_cross(NULL)
 ,_undoButton(NULL)
 ,_redoButton(NULL)
+,_restoreDefaultsButton(NULL)
 ,_minimized(false)
 ,_undoStack(new QUndoStack)
 ,_knobs()
@@ -136,6 +137,15 @@ DockablePanel::DockablePanel(Gui* gui
         _redoButton->setToolTip(Qt::convertFromPlainText("Redo the last change undone to this operator", Qt::WhiteSpaceNormal));
         _redoButton->setEnabled(false);
         
+        QPixmap pixRestore;
+        appPTR->getIcon(NATRON_PIXMAP_RESTORE_DEFAULTS, &pixRestore);
+        QIcon icRestore;
+        icRestore.addPixmap(pixRestore);
+        _restoreDefaultsButton = new Button(icRestore,"",_headerWidget);
+        _restoreDefaultsButton->setToolTip(Qt::convertFromPlainText("Restore default values for this operator."
+                                                                    " This cannot be undone!",Qt::WhiteSpaceNormal));
+        QObject::connect(_restoreDefaultsButton,SIGNAL(clicked()),this,SLOT(onRestoreDefaultsButtonClicked()));
+
         
         QObject::connect(_undoButton, SIGNAL(clicked()),this, SLOT(onUndoClicked()));
         QObject::connect(_redoButton, SIGNAL(clicked()),this, SLOT(onRedoPressed()));
@@ -154,6 +164,7 @@ DockablePanel::DockablePanel(Gui* gui
         
         _headerLayout->addWidget(_undoButton);
         _headerLayout->addWidget(_redoButton);
+        _headerLayout->addWidget(_restoreDefaultsButton);
         
         _headerLayout->addStretch();
         _headerLayout->addWidget(_helpButton);
@@ -183,6 +194,12 @@ DockablePanel::~DockablePanel(){
             QObject::disconnect(it->first.get(),SIGNAL(deleted(Knob*)),this,SLOT(onKnobDeletion(Knob*)));
             delete it->second;
         }
+    }
+}
+
+void DockablePanel::onRestoreDefaultsButtonClicked() {
+    for(std::map<boost::shared_ptr<Knob>,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it){
+        it->first->resetToDefaultValues();
     }
 }
 
