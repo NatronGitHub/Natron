@@ -59,6 +59,8 @@ struct Knob::KnobPrivate {
     
     /* A variant storing all the values in any dimension. <dimension,value>*/
     std::vector<Variant> _values;
+    std::vector<Variant> _defaultValues;
+    
     int _dimension;
     /* the keys for a specific dimension*/
     CurvesMap _curves;
@@ -89,6 +91,7 @@ struct Knob::KnobPrivate {
     , _tooltipHint()
     , _isAnimationEnabled(true)
     , _values(dimension)
+    , _defaultValues(dimension)
     , _dimension(dimension)
     , _curves(dimension)
     , _masters(dimension)
@@ -129,6 +132,7 @@ Knob::Knob(KnobHolder* holder,const std::string& description,int dimension)
     
     for(int i = 0; i < dimension ; ++i){
         _imp->_values[i] = Variant();
+        _imp->_defaultValues[i] = Variant();
         _imp->_curves[i] = boost::shared_ptr<Curve>(new Curve(this));
         _imp->_animationLevel[i] = Natron::NO_ANIMATION;
     }
@@ -679,6 +683,31 @@ Natron::AnimationLevel Knob::getAnimationLevel(int dimension) const{
 void Knob::variantFromInterpolatedValue(double interpolated,Variant* returnValue) const {
     returnValue->setValue<double>(interpolated);
 }
+
+
+void Knob::setDefaultValues(const std::vector<Variant>& values) {
+    assert(values.size() == _imp->_defaultValues.size());
+    _imp->_defaultValues = values;
+    _imp->_values = _imp->_defaultValues;
+}
+
+void Knob::setDefaultValue(const Variant& v,int dimension) {
+    assert(dimension < getDimension());
+    _imp->_defaultValues[dimension] = v;
+    _imp->_values[dimension] = v;
+}
+
+void Knob::resetToDefaultValues() {
+    for (int i = 0; i < getDimension(); ++i) {
+        removeAnimation(i);
+    }
+    
+    for (int i = 0; i < getDimension(); ++i) {
+        setValue(_imp->_defaultValues[i], i,true);
+    }
+}
+
+
 
 /***************************KNOB HOLDER******************************************/
 

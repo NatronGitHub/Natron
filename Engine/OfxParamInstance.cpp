@@ -1395,7 +1395,7 @@ OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Des
     }else{
         _groupKnob = Natron::createKnob<Group_Knob>(node, getParamLabel(this));
         int opened = properties.getIntProperty(kOfxParamPropGroupOpen);
-        _groupKnob->setValue((bool)opened);
+        _groupKnob->setDefaultValue<bool>(opened);
     }
     
     
@@ -1471,7 +1471,15 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
     }
     std::string defaultVal = properties.getStringProperty(kOfxParamPropDefault).c_str();
     if (!defaultVal.empty()) {
-        set(defaultVal.c_str());
+        if (_fileKnob) {
+            _fileKnob->setDefaultValue<QStringList>(QStringList(defaultVal.c_str()));
+        } else if (_outputFileKnob) {
+            _outputFileKnob->setDefaultValue<QString>(QString(defaultVal.c_str()));
+        } else if (_stringKnob) {
+            _stringKnob->setDefaultValue<QString>(QString(defaultVal.c_str()));
+        } else if (_pathKnob) {
+            _pathKnob->setDefaultValue<QString>(QString(defaultVal.c_str()));
+        }
     }
 }
 

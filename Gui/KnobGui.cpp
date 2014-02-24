@@ -169,6 +169,13 @@ void KnobGui::showRightClickMenu(const QPoint&) {
         }
     }
     
+    QAction* resetDefaultAction = new QAction(tr("Set default value"),_copyRightClickMenu);
+    QObject::connect(resetDefaultAction,SIGNAL(triggered()),this,SLOT(onResetDefaultValuesActionTriggered()));
+    _copyRightClickMenu->addAction(resetDefaultAction);
+    if (isSlave) {
+        resetDefaultAction->setEnabled(false);
+    }
+    
     if(!isSlave) {
         QAction* linkToAction = new QAction(tr("Link to"),_copyRightClickMenu);
         QObject::connect(linkToAction,SIGNAL(triggered()),this,SLOT(onLinkToActionTriggered()));
@@ -811,4 +818,10 @@ void KnobGui::onMasterChange(int dimension) {
         updateGUI(dimension, _knob->getValue(dimension));
         checkAnimationLevel(dimension);
     }
+}
+
+void KnobGui::onResetDefaultValuesActionTriggered() {
+    
+    ///this cannot be undone for now. it's kinda lots of effort to do it and frankly not much necessary.
+    getKnob()->resetToDefaultValues();
 }

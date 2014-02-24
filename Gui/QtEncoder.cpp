@@ -92,7 +92,7 @@ void QtWriter::initializeKnobs(){
     
     _premultKnob = Natron::createKnob<Bool_Knob>(this, "Premultiply by alpha");
     _premultKnob->turnOffAnimation();
-    _premultKnob->setValue<bool>(false);
+    _premultKnob->setDefaultValue<bool>(false);
     
     _fileKnob = Natron::createKnob<OutputFile_Knob>(this, "File");
     _fileKnob->setAsOutputImageFile();
@@ -104,7 +104,7 @@ void QtWriter::initializeKnobs(){
     frameRangeChoosalEntries.push_back("Timeline bounds");
     frameRangeChoosalEntries.push_back("Manual");
     _frameRangeChoosal->populate(frameRangeChoosalEntries);
-    _frameRangeChoosal->setValue<int>(1);
+    _frameRangeChoosal->setDefaultValue<int>(1);
     
     _firstFrameKnob = Natron::createKnob<Int_Knob>(this, "First frame");
     _firstFrameKnob->turnOffAnimation();
