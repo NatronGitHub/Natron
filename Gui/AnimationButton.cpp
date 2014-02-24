@@ -99,7 +99,7 @@ void AnimationButton::dropEvent(QDropEvent* event){
     event->accept();
     QStringList formats = event->mimeData()->formats();
     if (formats.contains("Animation")) {
-        _knob->onPasteActionTriggered();
+        _knob->onPasteAnimationActionTriggered();
         event->acceptProposedAction();
     }
 }

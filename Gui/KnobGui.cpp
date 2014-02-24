@@ -78,6 +78,7 @@ KnobGui::KnobGui(boost::shared_ptr<Knob> knob,DockablePanel* container)
 , _container(container)
 , _animationMenu(NULL)
 , _animationButton(NULL)
+, _copyRightClickMenu(new QMenu(container))
 {
     QObject::connect(knob.get(),SIGNAL(valueChanged(int)),this,SLOT(onInternalValueChanged(int)));
     QObject::connect(knob.get(),SIGNAL(keyFrameSet(SequenceTime,int)),this,SLOT(onInternalKeySet(SequenceTime,int)));
@@ -135,6 +136,53 @@ void KnobGui::createAnimationButton(QGridLayout* layout,int row){
     layout->addWidget(_animationButton, row, 3,Qt::AlignLeft);
 }
 
+void KnobGui::showRightClickMenu(const QPoint&) {
+    
+    if (!getKnob()->isEnabled() || getKnob()->isSecret()) {
+        return;
+    }
+    
+    _copyRightClickMenu->clear();
+    
+    bool isSlave = false;
+    for (int i = 0; i < getKnob()->getDimension(); ++i) {
+        if (getKnob()->isSlave(i)) {
+            isSlave = true;
+            break;
+        }
+    }
+
+    
+    QAction* copyValuesAction = new QAction(tr("Copy values"),_copyRightClickMenu);
+    QObject::connect(copyValuesAction,SIGNAL(triggered()),this,SLOT(onCopyValuesActionTriggered()));
+    _copyRightClickMenu->addAction(copyValuesAction);
+
+    if(!isSlave) {
+        
+        bool isClipBoardEmpty = appPTR->isClipBoardEmpty();
+        
+        QAction* pasteAction = new QAction(tr("Paste values"),_copyRightClickMenu);
+        QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(onPasteValuesActionTriggered()));
+        _copyRightClickMenu->addAction(pasteAction);
+        if (isClipBoardEmpty) {
+            pasteAction->setEnabled(false);
+        }
+    }
+    
+    if(!isSlave) {
+        QAction* linkToAction = new QAction(tr("Link to"),_copyRightClickMenu);
+        QObject::connect(linkToAction,SIGNAL(triggered()),this,SLOT(onLinkToActionTriggered()));
+        _copyRightClickMenu->addAction(linkToAction);
+    } else {
+        QAction* unlinkAction = new QAction(tr("Unlink"),_copyRightClickMenu);
+        QObject::connect(unlinkAction,SIGNAL(triggered()),this,SLOT(onUnlinkActionTriggered()));
+        _copyRightClickMenu->addAction(unlinkAction);
+    }
+
+    _copyRightClickMenu->exec(QCursor::pos());
+
+}
+
 void KnobGui::createAnimationMenu(){
     _animationMenu->clear();
     bool isOnKeyFrame = false;
@@ -164,18 +212,22 @@ void KnobGui::createAnimationMenu(){
             _animationMenu->addAction(removeKeyAction);
         }
         
+        QAction* removeAnyAnimationAction = new QAction(tr("Remove animation"),_animationMenu);
+        QObject::connect(removeAnyAnimationAction,SIGNAL(triggered()),this,SLOT(onRemoveAnyAnimationActionTriggered()));
+        _animationMenu->addAction(removeAnyAnimationAction);
+        if (!getKnob()->hasAnimation()) {
+            removeAnyAnimationAction->setEnabled(false);
+        }
+        
+        
+        
+        
     }
     QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"),_animationMenu);
     QObject::connect(showInCurveEditorAction,SIGNAL(triggered()),this,SLOT(onShowInCurveEditorActionTriggered()));
     _animationMenu->addAction(showInCurveEditorAction);
     
     if(!isSlave) {
-        
-        QAction* removeAnyAnimationAction = new QAction(tr("Remove animation"),_animationMenu);
-        QObject::connect(removeAnyAnimationAction,SIGNAL(triggered()),this,SLOT(onRemoveAnyAnimationActionTriggered()));
-        _animationMenu->addAction(removeAnyAnimationAction);
-        
-        
         
         QMenu* interpolationMenu = new QMenu(_animationMenu);
         interpolationMenu->setTitle("Interpolation");
@@ -206,39 +258,23 @@ void KnobGui::createAnimationMenu(){
         interpolationMenu->addAction(horizInterpAction);
         
     }
-    QMenu* copyMenu = new QMenu(_animationMenu);
-    copyMenu->setTitle("Copy");
-    _animationMenu->addAction(copyMenu->menuAction());
-    
-    QAction* copyValuesAction = new QAction(tr("Copy values"),copyMenu);
-    QObject::connect(copyValuesAction,SIGNAL(triggered()),this,SLOT(onCopyValuesActionTriggered()));
-    copyMenu->addAction(copyValuesAction);
-    
-    QAction* copyAnimationAction = new QAction(tr("Copy animation"),copyMenu);
+
+    QAction* copyAnimationAction = new QAction(tr("Copy animation"),_animationMenu);
     QObject::connect(copyAnimationAction,SIGNAL(triggered()),this,SLOT(onCopyAnimationActionTriggered()));
-    copyMenu->addAction(copyAnimationAction);
+    _animationMenu->addAction(copyAnimationAction);
     
     if(!isSlave) {
         
         bool isClipBoardEmpty = appPTR->isClipBoardEmpty();
         
-        QAction* pasteAction = new QAction(tr("Paste"),copyMenu);
-        QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(onPasteActionTriggered()));
-        copyMenu->addAction(pasteAction);
+        QAction* pasteAction = new QAction(tr("Paste animation"),_animationMenu);
+        QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(onPasteAnimationActionTriggered()));
+        _animationMenu->addAction(pasteAction);
         if (isClipBoardEmpty) {
             pasteAction->setEnabled(false);
         }
     }
     
-    if(!isSlave) {
-        QAction* linkToAction = new QAction(tr("Link to"),_animationMenu);
-        QObject::connect(linkToAction,SIGNAL(triggered()),this,SLOT(onLinkToActionTriggered()));
-        _animationMenu->addAction(linkToAction);
-    } else {
-        QAction* unlinkAction = new QAction(tr("Unlink"),_animationMenu);
-        QObject::connect(unlinkAction,SIGNAL(triggered()),this,SLOT(onUnlinkActionTriggered()));
-        _animationMenu->addAction(unlinkAction);
-    }
     
 }
 
@@ -474,11 +510,64 @@ void KnobGui::onCopyAnimationActionTriggered(){
     appPTR->setKnobClipBoard(k,true);
 }
 
-void KnobGui::onPasteActionTriggered(){
+void KnobGui::onPasteAnimationActionTriggered() {
     if (appPTR->isClipBoardEmpty()) {
         return;
     }
+
+    KnobSerialization k;
+    bool copyAnimation;
+    appPTR->getKnobClipBoard(&k, &copyAnimation);
     
+    if (!copyAnimation) {
+        return;
+    }
+    
+    _knob->beginValueChange(Natron::PLUGIN_EDITED);
+    
+    const std::vector<Variant>& values =  k.getValues();
+    
+    const Variant& thisValue = _knob->getValue();
+    if (thisValue.type() != values[0].type()) {
+        QString err = QString("Cannot paste values of a %1 parameter to a %2 parameter")
+        .arg(values[0].typeName()).arg(thisValue.typeName());
+        
+        Natron::errorDialog("Paste",err.toStdString());
+        return;
+    }
+    
+    if ((int)values.size() == _knob->getDimension()) {
+        if(!copyAnimation) {
+            pushValueChangedCommand(values);
+        }else {
+            for (U32 i = 0; i < values.size(); ++i) {
+                _knob->setValue(values[i], i,true);
+            }
+        }
+    }else{
+        Natron::errorDialog("Paste values", "You cannot copy/paste values from/to parameters with different dimensions.");
+    }
+
+
+    const  std::vector< boost::shared_ptr<Curve> >& curves = k.getCurves();
+    if((int)curves.size() == _knob->getDimension()){
+        for (U32 i = 0; i < curves.size(); ++i) {
+            _knob->getCurve(i)->clone(*curves[i]);
+        }
+        emit keyFrameSet();
+    }else{
+        Natron::errorDialog("Paste animation", "You cannot copy/paste animation from/to parameters with different dimensions.");
+    }
+    
+    _knob->endValueChange();
+
+
+}
+
+void KnobGui::onPasteValuesActionTriggered(){
+    if (appPTR->isClipBoardEmpty()) {
+        return;
+    }
     
     KnobSerialization k;
     bool copyAnimation;
@@ -509,19 +598,7 @@ void KnobGui::onPasteActionTriggered(){
         Natron::errorDialog("Paste values", "You cannot copy/paste values from/to parameters with different dimensions.");
     }
     
-
-    if (copyAnimation) {
-        const  std::vector< boost::shared_ptr<Curve> >& curves = k.getCurves();
-        if((int)curves.size() == _knob->getDimension()){
-            for (U32 i = 0; i < curves.size(); ++i) {
-                _knob->getCurve(i)->clone(*curves[i]);
-            }
-            emit keyFrameSet();
-        }else{
-            Natron::errorDialog("Paste animation", "You cannot copy/paste animation from/to parameters with different dimensions.");
-        }
-    }
-        _knob->endValueChange();
+    _knob->endValueChange();
 }
 
 

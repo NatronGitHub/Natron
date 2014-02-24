@@ -175,15 +175,24 @@ public:
 
     boost::shared_ptr<Curve> getCurve(int dimension = 0) const;
 
+    /**
+     * @brief Returns true if the dimension is animated with keyframes.
+     **/
     bool isAnimated(int dimension) const;
     
-    ///same as isAnimated but across all dims
+    /**
+     * @brief Returns true if at least 1 dimension is animated.
+     **/
     bool hasAnimation() const;
 
     const std::vector< boost::shared_ptr<Curve>  >& getCurves() const;
 
     void turnOffAnimation() ;
 
+    /**
+     * @brief Returns true if the animation is enabled for this knob. A return value of
+     * true doesn't necessarily means that the knob is animated at all.
+     **/
     bool isAnimationEnabled() const;
 
     const std::string& getDescription() const;

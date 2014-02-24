@@ -18,6 +18,7 @@
 #include <QFont>
 #include <QFontMetrics>
 #include <QTextDocument> // for Qt::convertFromPlainText
+#include <QMouseEvent>
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/MenuWithToolTips.h"
@@ -72,14 +73,18 @@ void ComboBox::paintEvent(QPaintEvent *e)
 }
 
 void ComboBox::mousePressEvent(QMouseEvent* e){
-    QPixmap pixC;
-    appPTR->getIcon(NATRON_PIXMAP_COMBOBOX_PRESSED, &pixC);
-    _dropDownIcon->setPixmap(pixC);
-    setPressed(true);
-    style()->unpolish(this);
-    style()->polish(this);
-    createMenu();
-    QFrame::mousePressEvent(e);
+    
+    if (!e->buttons().testFlag(Qt::RightButton) && e->buttons().testFlag(Qt::LeftButton)) {
+        QPixmap pixC;
+        appPTR->getIcon(NATRON_PIXMAP_COMBOBOX_PRESSED, &pixC);
+        _dropDownIcon->setPixmap(pixC);
+        setPressed(true);
+        style()->unpolish(this);
+        style()->polish(this);
+        createMenu();
+        QFrame::mousePressEvent(e);
+
+    }
 }
 
 void ComboBox::mouseReleaseEvent(QMouseEvent* e){

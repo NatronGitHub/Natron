@@ -54,6 +54,12 @@ void File_KnobGui::createWidget(QGridLayout *layout, int row)
     _lineEdit = new LineEdit(layout->parentWidget());
     _lineEdit->setPlaceholderText("File path...");
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    
+    ///set the copy/link actions in the right click menu
+    _lineEdit->setContextMenuPolicy(Qt::CustomContextMenu);
+    QObject::connect(_lineEdit,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+
+    
     if(hasToolTip()) {
         _lineEdit->setToolTip(toolTip());
     }
@@ -208,6 +214,12 @@ void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row)
         _lineEdit->setToolTip(toolTip());
     }
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    
+    ///set the copy/link actions in the right click menu
+    _lineEdit->setContextMenuPolicy(Qt::CustomContextMenu);
+    QObject::connect(_lineEdit,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+
+    
     _openFileButton = new Button(layout->parentWidget());
 
     QPixmap pix;
@@ -337,6 +349,12 @@ void Path_KnobGui::createWidget(QGridLayout *layout, int row)
         _lineEdit->setToolTip(toolTip());
     }
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    
+    ///set the copy/link actions in the right click menu
+    _lineEdit->setContextMenuPolicy(Qt::CustomContextMenu);
+    QObject::connect(_lineEdit,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+
+    
     _openFileButton = new Button(layout->parentWidget());
     _openFileButton->setToolTip("Click to select a path to append to/replace this variable.");
     QPixmap pix;

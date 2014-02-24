@@ -120,6 +120,10 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row)
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::INT_SPINBOX);
         QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()));
         
+        ///set the copy/link actions in the right click menu
+        box->setContextMenuPolicy(Qt::CustomContextMenu);
+        QObject::connect(box,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+        
         int min = displayMins[i];
         int max = displayMaxs[i];
         
@@ -139,6 +143,10 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row)
                     _slider->setToolTip(toolTip());
                 }
                 QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
+                _slider->setContextMenuPolicy(Qt::CustomContextMenu);
+                QObject::connect(_slider,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+
+                
                 boxContainerLayout->addWidget(_slider);
             }
             
@@ -275,6 +283,13 @@ void Bool_KnobGui::createWidget(QGridLayout *layout, int row)
     }
     QObject::connect(_checkBox, SIGNAL(clicked(bool)), this, SLOT(onCheckBoxStateChanged(bool)));
     QObject::connect(_descriptionLabel, SIGNAL(clicked(bool)), this, SLOT(onCheckBoxStateChanged(bool)));
+    
+    ///set the copy/link actions in the right click menu
+    _checkBox->setContextMenuPolicy(Qt::CustomContextMenu);
+    QObject::connect(_checkBox,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+    ///set the copy/link actions in the right click menu
+    _descriptionLabel->setContextMenuPolicy(Qt::CustomContextMenu);
+    QObject::connect(_descriptionLabel,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
     layout->addWidget(_checkBox, row, 1, Qt::AlignLeft);
 }
 
@@ -399,6 +414,10 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row)
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::DOUBLE_SPINBOX);
         QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()));
         
+        ///set the copy/link actions in the right click menu
+        box->setContextMenuPolicy(Qt::CustomContextMenu);
+        QObject::connect(box,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+        
         double min = displayMins[i];
         double max = displayMaxs[i];
         
@@ -420,6 +439,11 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row)
                     _slider->setToolTip(toolTip());
                 }
                 QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
+                
+                ///set the copy/link actions in the right click menu
+                _slider->setContextMenuPolicy(Qt::CustomContextMenu);
+                QObject::connect(_slider,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+
                 boxContainerLayout->addWidget(_slider);
             }
         }
@@ -608,6 +632,12 @@ void Choice_KnobGui::createWidget(QGridLayout *layout, int row)
         _comboBox->setToolTip(toolTip());
     }
     QObject::connect(_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
+    
+    ///set the copy/link actions in the right click menu
+    _comboBox->setContextMenuPolicy(Qt::CustomContextMenu);
+    QObject::connect(_comboBox,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+
+    
     layout->addWidget(_comboBox, row, 1, Qt::AlignLeft);
 }
 
@@ -1011,6 +1041,12 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
     _rBox->setMaximum(1.);
     _rBox->setMinimum(0.);
     _rBox->setIncrement(0.1);
+    
+    ///set the copy/link actions in the right click menu
+    _rBox->setContextMenuPolicy(Qt::CustomContextMenu);
+    QObject::connect(_rBox,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+
+    
     if(hasToolTip()) {
         _rBox->setToolTip(toolTip());
     }
@@ -1025,6 +1061,12 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
         _gBox->setMaximum(1.);
         _gBox->setMinimum(0.);
         _gBox->setIncrement(0.1);
+        
+        ///set the copy/link actions in the right click menu
+        _gBox->setContextMenuPolicy(Qt::CustomContextMenu);
+        QObject::connect(_gBox,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+
+        
         if(hasToolTip()) {
             _gBox->setToolTip(toolTip());
         }
@@ -1038,6 +1080,12 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
         _bBox->setMaximum(1.);
         _bBox->setMinimum(0.);
         _bBox->setIncrement(0.1);
+        
+        ///set the copy/link actions in the right click menu
+        _bBox->setContextMenuPolicy(Qt::CustomContextMenu);
+        QObject::connect(_bBox,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+
+        
         if(hasToolTip()) {
             _bBox->setToolTip(toolTip());
         }
@@ -1052,6 +1100,12 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
         _aBox->setMaximum(1.);
         _aBox->setMinimum(0.);
         _aBox->setIncrement(0.1);
+        
+        ///set the copy/link actions in the right click menu
+        _aBox->setContextMenuPolicy(Qt::CustomContextMenu);
+        QObject::connect(_aBox,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+
+        
         if(hasToolTip()) {
             _aBox->setToolTip(toolTip());
         }
@@ -1431,6 +1485,12 @@ void String_KnobGui::createWidget(QGridLayout *layout, int row)
         if (strKnob->isCustomKnob()) {
             _lineEdit->setReadOnly(true);
         }
+        
+        ///set the copy/link actions in the right click menu
+        _lineEdit->setContextMenuPolicy(Qt::CustomContextMenu);
+        QObject::connect(_lineEdit,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+
+        
     } else {
         _textEdit = new AnimatingTextEdit(layout->parentWidget());
         if(hasToolTip()) {
@@ -1441,6 +1501,11 @@ void String_KnobGui::createWidget(QGridLayout *layout, int row)
         if(strKnob->isCustomKnob()) {
             _textEdit->setReadOnly(true);
         }
+        
+        ///set the copy/link actions in the right click menu
+        _textEdit->setContextMenuPolicy(Qt::CustomContextMenu);
+        QObject::connect(_textEdit,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+
     }
 }
 

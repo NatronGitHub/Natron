@@ -384,7 +384,7 @@ bool GuiApplicationManager::isClipBoardEmpty() const{
 
 void GuiApplicationManager::getKnobClipBoard(KnobSerialization* k,bool* copyAnimation) const{
     *k = _imp->_knobsClipBoard->k;
-    *copyAnimation = copyAnimation;
+    *copyAnimation = _imp->_knobsClipBoard->copyAnimation;
 }
 
 void GuiApplicationManager::updateAllRecentFileMenus() {

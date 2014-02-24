@@ -99,6 +99,8 @@ public slots:
 
     void showAnimationMenu();
     
+    void showRightClickMenu(const QPoint& pos);
+    
     void setEnabledSlot();
     
     void hide();
@@ -135,7 +137,9 @@ public slots:
     
     void onCopyAnimationActionTriggered();
     
-    void onPasteActionTriggered();
+    void onPasteValuesActionTriggered();
+    
+    void onPasteAnimationActionTriggered();
     
     void onLinkToActionTriggered();
     
@@ -217,6 +221,7 @@ private:
     DockablePanel* const _container;
     QMenu* _animationMenu;
     AnimationButton* _animationButton;
+    QMenu* _copyRightClickMenu;
 };
 
 
