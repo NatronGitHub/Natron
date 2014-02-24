@@ -233,16 +233,12 @@ OfxStatus OfxIntegerInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxIntegerInstance::onKnobAnimationLevelChanged(int lvl){
-    int autoKeying = 0;
-    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
-        autoKeying = 1;
-    }
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
-    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
-        assert(getCanAnimate());
-        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
-    }
+void OfxIntegerInstance::onKnobAnimationLevelChanged(int lvl)
+{
+    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    assert(l == Natron::NO_ANIMATION || getCanAnimate());
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
 }
 
 void OfxIntegerInstance::setDisplayRange(){
@@ -252,6 +248,7 @@ void OfxIntegerInstance::setDisplayRange(){
     _knob->setDisplayMaximum(displayMax);
 
 }
+
 
 ////////////////////////// OfxDoubleInstance /////////////////////////////////////////////////
 
@@ -446,20 +443,16 @@ OfxStatus OfxDoubleInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxDoubleInstance::onKnobAnimationLevelChanged(int lvl){
-    int autoKeying = 0;
-    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
-        autoKeying = 1;
-    }
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
-    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
-        assert(getCanAnimate());
-        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
-    }
+void OfxDoubleInstance::onKnobAnimationLevelChanged(int lvl)
+{
+    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    assert(l == Natron::NO_ANIMATION || getCanAnimate());
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
 }
 
-////////////////////////// OfxBooleanInstance /////////////////////////////////////////////////
 
+////////////////////////// OfxBooleanInstance /////////////////////////////////////////////////
 
 OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::BooleanInstance(descriptor,node->effectInstance())
@@ -523,20 +516,16 @@ OfxStatus OfxBooleanInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxBooleanInstance::onKnobAnimationLevelChanged(int lvl){
-    int autoKeying = 0;
-    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
-        autoKeying = 1;
-    }
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
-    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
-        assert(getCanAnimate());
-        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
-    }
+void OfxBooleanInstance::onKnobAnimationLevelChanged(int lvl)
+{
+    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    assert(l == Natron::NO_ANIMATION || getCanAnimate());
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
 }
 
-////////////////////////// OfxChoiceInstance /////////////////////////////////////////////////
 
+////////////////////////// OfxChoiceInstance /////////////////////////////////////////////////
 
 OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::ChoiceInstance(descriptor,node->effectInstance())
@@ -626,21 +615,16 @@ OfxStatus OfxChoiceInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxChoiceInstance::onKnobAnimationLevelChanged(int lvl){
-    int autoKeying = 0;
-    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
-        autoKeying = 1;
-    }
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
-    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
-        assert(getCanAnimate());
-        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
-    }
+void OfxChoiceInstance::onKnobAnimationLevelChanged(int lvl)
+{
+    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    assert(l == Natron::NO_ANIMATION || getCanAnimate());
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
 }
 
 
 ////////////////////////// OfxRGBAInstance /////////////////////////////////////////////////
-
 
 OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::RGBAInstance(descriptor,node->effectInstance())
@@ -740,19 +724,16 @@ OfxStatus OfxRGBAInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxRGBAInstance::onKnobAnimationLevelChanged(int lvl){
-    int autoKeying = 0;
-    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
-        autoKeying = 1;
-    }
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
-    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
-        assert(getCanAnimate());
-        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
-    }
+void OfxRGBAInstance::onKnobAnimationLevelChanged(int lvl)
+{
+    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    assert(l == Natron::NO_ANIMATION || getCanAnimate());
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
 }
-////////////////////////// OfxRGBInstance /////////////////////////////////////////////////
 
+
+////////////////////////// OfxRGBInstance /////////////////////////////////////////////////
 
 OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::RGBInstance(descriptor,node->effectInstance())
@@ -846,19 +827,16 @@ OfxStatus OfxRGBInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxRGBInstance::onKnobAnimationLevelChanged(int lvl){
-    int autoKeying = 0;
-    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
-        autoKeying = 1;
-    }
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
-    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
-        assert(getCanAnimate());
-        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
-    }
+void OfxRGBInstance::onKnobAnimationLevelChanged(int lvl)
+{
+    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    assert(l == Natron::NO_ANIMATION || getCanAnimate());
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
 }
-////////////////////////// OfxDouble2DInstance /////////////////////////////////////////////////
 
+
+////////////////////////// OfxDouble2DInstance /////////////////////////////////////////////////
 
 OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance())
@@ -1016,18 +994,13 @@ OfxStatus OfxDouble2DInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxDouble2DInstance::onKnobAnimationLevelChanged(int lvl){
-    int autoKeying = 0;
-    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
-        autoKeying = 1;
-    }
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
-    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
-        assert(getCanAnimate());
-        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
-    }
+void OfxDouble2DInstance::onKnobAnimationLevelChanged(int lvl)
+{
+    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    assert(l == Natron::NO_ANIMATION || getCanAnimate());
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
 }
-
 
 void OfxDouble2DInstance::onProjectFormatChanged(const Format& /*f*/){
     double v1,v2;
@@ -1035,8 +1008,9 @@ void OfxDouble2DInstance::onProjectFormatChanged(const Format& /*f*/){
     set(v1,v2); //refresh using the valueAccordingToType function
     setDisplayRange();
 }
-////////////////////////// OfxInteger2DInstance /////////////////////////////////////////////////
 
+
+////////////////////////// OfxInteger2DInstance /////////////////////////////////////////////////
 
 OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Integer2DInstance(descriptor,node->effectInstance())
@@ -1124,19 +1098,16 @@ OfxStatus OfxInteger2DInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxInteger2DInstance::onKnobAnimationLevelChanged(int lvl){
-    int autoKeying = 0;
-    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
-        autoKeying = 1;
-    }
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
-    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
-        assert(getCanAnimate());
-        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
-    }
+void OfxInteger2DInstance::onKnobAnimationLevelChanged(int lvl)
+{
+    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    assert(l == Natron::NO_ANIMATION || getCanAnimate());
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
 }
-////////////////////////// OfxDouble3DInstance /////////////////////////////////////////////////
 
+
+////////////////////////// OfxDouble3DInstance /////////////////////////////////////////////////
 
 OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Double3DInstance(descriptor,node->effectInstance())
@@ -1261,20 +1232,16 @@ OfxStatus OfxDouble3DInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxDouble3DInstance::onKnobAnimationLevelChanged(int lvl){
-    int autoKeying = 0;
-    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
-        autoKeying = 1;
-    }
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
-    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
-        assert(getCanAnimate());
-        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
-    }
+void OfxDouble3DInstance::onKnobAnimationLevelChanged(int lvl)
+{
+    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    assert(l == Natron::NO_ANIMATION || getCanAnimate());
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
 }
 
-////////////////////////// OfxInteger3DInstance /////////////////////////////////////////////////
 
+////////////////////////// OfxInteger3DInstance /////////////////////////////////////////////////
 
 OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Integer3DInstance(descriptor,node->effectInstance())
@@ -1366,16 +1333,12 @@ OfxStatus OfxInteger3DInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxInteger3DInstance::onKnobAnimationLevelChanged(int lvl){
-    int autoKeying = 0;
-    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
-        autoKeying = 1;
-    }
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
-    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
-        assert(getCanAnimate());
-        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
-    }
+void OfxInteger3DInstance::onKnobAnimationLevelChanged(int lvl)
+{
+    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    assert(l == Natron::NO_ANIMATION || getCanAnimate());
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
 }
 
 
@@ -1664,16 +1627,12 @@ OfxStatus OfxStringInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(knob);
 }
 
-void OfxStringInstance::onKnobAnimationLevelChanged(int lvl){
-    int autoKeying = 0;
-    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
-        autoKeying = 1;
-    }
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
-    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
-        assert(getCanAnimate());
-        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
-    }
+void OfxStringInstance::onKnobAnimationLevelChanged(int lvl)
+{
+    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    assert(l == Natron::NO_ANIMATION || getCanAnimate());
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
 }
 
 
@@ -1790,16 +1749,12 @@ OfxStatus OfxCustomInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxCustomInstance::onKnobAnimationLevelChanged(int lvl){
-    int autoKeying = 0;
-    if((Natron::AnimationLevel)lvl == Natron::INTERPOLATED_VALUE){
-        autoKeying = 1;
-    }
-    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, autoKeying);
-    if ((Natron::AnimationLevel)lvl != Natron::NO_ANIMATION) {
-        assert(getCanAnimate());
-        getProperties().setIntProperty(kOfxParamPropIsAnimating, 1);
-    }
+void OfxCustomInstance::onKnobAnimationLevelChanged(int lvl)
+{
+    Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
+    assert(l == Natron::NO_ANIMATION || getCanAnimate());
+    getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
+    getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
 }
 
 
