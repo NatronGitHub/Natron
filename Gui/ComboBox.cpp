@@ -18,7 +18,9 @@
 #include <QFont>
 #include <QFontMetrics>
 #include <QTextDocument> // for Qt::convertFromPlainText
+CLANG_DIAG_OFF(unused-private-field)
 #include <QMouseEvent>
+CLANG_DIAG_ON(unused-private-field)
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/MenuWithToolTips.h"
