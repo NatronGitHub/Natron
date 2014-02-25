@@ -426,7 +426,8 @@ void DockablePanel::addTab(const QString& name){
     newTab->setObjectName(name);
     QGridLayout *tabLayout = new QGridLayout(layoutContainer);
     layoutContainer->setLayout(tabLayout);
-    tabLayout->setVerticalSpacing(2);
+    //tabLayout->setVerticalSpacing(2); // unfortunately, this leaves extra space when parameters are hidden
+    tabLayout->setVerticalSpacing(0); // must be 0, or secret/hidden parameters will take extra space
     tabLayout->setContentsMargins(3, 0, 0, 0);
     tabLayout->setHorizontalSpacing(5);
     _tabWidget->addTab(newTab,name);
