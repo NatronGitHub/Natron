@@ -139,17 +139,20 @@ void SpinBox::wheelEvent(QWheelEvent *e) {
     }
 }
 
-void SpinBox::focusInEvent(QFocusEvent* /*event*/){
+void SpinBox::focusInEvent(QFocusEvent* event){
     _valueWhenEnteringFocus = text().toDouble();
+    LineEdit::focusInEvent(event);
 }
 
-void SpinBox::focusOutEvent(QFocusEvent * /*event*/){
+void SpinBox::focusOutEvent(QFocusEvent * event){
     double newValue = text().toDouble();
     if(newValue != _valueWhenEnteringFocus){
         if(validateText()) {
             emit valueChanged(value());
         }
     }
+    LineEdit::focusOutEvent(event);
+
 }
 
 void SpinBox::keyPressEvent(QKeyEvent *e){

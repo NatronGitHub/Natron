@@ -129,7 +129,7 @@ void KnobGui::createGUI(QGridLayout* layout,int row){
     setSecret();
 }
 
-void KnobGui::createAnimationButton(QGridLayout* layout,int row){
+void KnobGui::createAnimationButton(QGridLayout* layout,int row) {
     _animationMenu = new QMenu(layout->parentWidget());
     _animationButton = new AnimationButton(this,"A",layout->parentWidget());
     _animationButton->setToolTip(Qt::convertFromPlainText("Animation menu", Qt::WhiteSpaceNormal));
@@ -175,9 +175,7 @@ void KnobGui::showRightClickMenuForDimension(const QPoint&,int dimension) {
     copyValuesAction->setData(QVariant(dimension));
     QObject::connect(copyValuesAction,SIGNAL(triggered()),this,SLOT(onCopyValuesActionTriggered()));
     _copyRightClickMenu->addAction(copyValuesAction);
-    if (!enabled) {
-        copyValuesAction->setEnabled(false);
-    }
+    copyValuesAction->setEnabled(false);
 
     if(!isSlave) {
         

@@ -442,7 +442,10 @@ public:
     
     bool isMultiLine() const { return _multiLine; }
     
-    void setAsLabel() { _isLabel = true; }
+    void setAsLabel() {
+        turnOffAnimation(); //< labels cannot animate
+        _isLabel = true;
+    }
 
     bool isLabel() const { return _isLabel; }
 
