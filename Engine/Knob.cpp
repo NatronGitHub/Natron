@@ -34,7 +34,7 @@ using std::make_pair; using std::pair;
 
 
 /***********************************KNOB BASE******************************************/
-typedef std::vector< boost::shared_ptr<Knob> > MastersMap;
+typedef std::vector< std::pair< int,boost::shared_ptr<Knob> > > MastersMap;
 typedef std::vector< boost::shared_ptr<Curve> > CurvesMap;
 
 struct Knob::KnobPrivate {
@@ -50,7 +50,7 @@ struct Knob::KnobPrivate {
     
     boost::shared_ptr<Knob> _parentKnob;
     bool _secret;
-    bool _enabled;
+    std::vector<bool> _enabled;
     bool _canUndo;
     bool _isInsignificant; //< if true, a value change will never trigger an evaluation
     bool _isPersistent;//will it be serialized?
@@ -84,7 +84,7 @@ struct Knob::KnobPrivate {
     , _itemSpacing(0)
     , _parentKnob()
     , _secret(false)
-    , _enabled(true)
+    , _enabled(dimension)
     , _canUndo(true)
     , _isInsignificant(false)
     , _isPersistent(true)
@@ -131,6 +131,7 @@ Knob::Knob(KnobHolder* holder,const std::string& description,int dimension)
     
     
     for(int i = 0; i < dimension ; ++i){
+        _imp->_enabled[i] = true;
         _imp->_values[i] = Variant();
         _imp->_defaultValues[i] = Variant();
         _imp->_curves[i] = boost::shared_ptr<Curve>(new Curve(this));
@@ -162,9 +163,9 @@ Variant Knob::getValue(int dimension) const {
         throw std::invalid_argument("Knob::getValue(): Dimension out of range");
     }
     ///if the knob is slaved to another knob, returns the other knob value
-    boost::shared_ptr<Knob> master = getMaster(dimension);
-    if (master) {
-        return master->getValue(dimension);
+    std::pair<int,boost::shared_ptr<Knob> > master = getMaster(dimension);
+    if (master.second) {
+        return master.second->getValue(master.first);
     }
     
     return _imp->_values[dimension];
@@ -178,11 +179,10 @@ Variant Knob::getValueAtTime(double time,int dimension) const{
     }
     
     ///if the knob is slaved to another knob, returns the other knob value
-    boost::shared_ptr<Knob> master = getMaster(dimension);
-    if (master) {
-        return master->getValueAtTime(time,dimension);
+    std::pair<int,boost::shared_ptr<Knob> > master = getMaster(dimension);
+    if (master.second) {
+        return master.second->getValueAtTime(time,master.first);
     }
-    
     
     boost::shared_ptr<Curve> curve  = _imp->_curves[dimension];
     if (curve->isAnimated()) {
@@ -298,7 +298,7 @@ void Knob::deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason r
     }
     
     //virtual portion
-    onKeyFrameRemoved(dimension, time);
+    keyframeRemoved_virtual(dimension, time);
     
     if(reason != Natron::USER_EDITED){
         emit keyFrameRemoved(time,dimension);
@@ -324,7 +324,7 @@ void Knob::removeAnimation(int dimension,Natron::ValueChangedReason reason){
     }
     
     //virtual portion
-    onKeyframesRemoved(dimension);
+    animationRemoved_virtual(dimension);
         
     if(reason != Natron::USER_EDITED){
         emit animationRemoved(dimension);
@@ -360,9 +360,9 @@ void Knob::removeAnimation(int dimension){
 boost::shared_ptr<Curve> Knob::getCurve(int dimension) const {
     assert(dimension < (int)_imp->_curves.size());
     
-    boost::shared_ptr<Knob> master = getMaster(dimension);
-    if (master) {
-        return master->getCurve(dimension);
+    std::pair<int,boost::shared_ptr<Knob> > master = getMaster(dimension);
+    if (master.second) {
+        return master.second->getCurve(master.first);
     }
     return _imp->_curves[dimension];
 }
@@ -385,21 +385,61 @@ void Knob::load(const KnobSerialization& serializationObj){
     assert(isPersistent()); // a non-persistent Knob should never be loaded!
     
     ///restore masters
-    const std::vector< std::string >& serializedMasters = serializationObj.getMasters();
-    for(U32 i = 0 ; i < serializedMasters.size();++i){
-        const std::vector< boost::shared_ptr<Knob> >& otherKnobs = _imp->_holder->getKnobs();
-        for(U32 j = 0 ; j < otherKnobs.size();++j)
-        {
-            if(otherKnobs[j]->getDescription() == serializedMasters[i]){
-                _imp->_masters[i] = otherKnobs[j];
-                setEnabled(false);
+    const std::vector< std::pair<int,std::string> >& serializedMasters = serializationObj.getMasters();
+    for(U32 i = 0 ; i < serializedMasters.size();++i) {
+        
+        ///the serialized master string is as following: effectname.knobdescription
+        
+        std::string splitStr("_SPLIT_");
+        size_t posSplit = serializedMasters[i].second.find(splitStr);
+        if (posSplit == std::string::npos) {
+            Natron::errorDialog("Link slave/master", getDescription() + " failed to restore the following linkage: "
+                                + serializedMasters[i].second + ". Please submit a bug report.");
+            continue;
+        }
+        std::string nodeName = serializedMasters[i].second.substr(0,posSplit);
+        size_t posDescription = posSplit + splitStr.size();
+        std::string knobDesc = serializedMasters[i].second.substr(posDescription);
+        
+        ///we need to cycle through all the nodes of the project to find the real master
+        std::vector<Natron::Node*> allNodes;
+        getHolder()->getApp()->getActiveNodes(&allNodes);
+        Natron::Node* masterNode = 0;
+        for (U32 k = 0; k < allNodes.size(); ++k) {
+            if (allNodes[k]->getName() == nodeName) {
+                masterNode = allNodes[k];
                 break;
             }
+        }
+        if (!masterNode) {
+            Natron::errorDialog("Link slave/master", getDescription() + " failed to restore the following linkage: "
+                                + serializedMasters[i].second + ". Please submit a bug report.");
+            continue;
+
+        }
+        
+        ///now that we have the master node, find the corresponding knob
+        const std::vector< boost::shared_ptr<Knob> >& otherKnobs = masterNode->getKnobs();
+        bool found = false;
+        for(U32 j = 0 ; j < otherKnobs.size();++j)
+        {
+            if(otherKnobs[j]->getDescription() == knobDesc) {
+                _imp->_masters[i].second = otherKnobs[j];
+                _imp->_masters[i].first = serializedMasters[i].first;
+                emit readOnlyChanged(true,j);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            Natron::errorDialog("Link slave/master", getDescription() + " failed to restore the following linkage: "
+                                + serializedMasters[i].second + ". Please submit a bug report.");
+
         }
     }
     
     ///bracket value changes
-    beginValueChange(Natron::PLUGIN_EDITED);
+    beginValueChange(Natron::OTHER_REASON);
     
     const std::string& extraData = serializationObj.getExtraData();
     if(!extraData.empty()){
@@ -414,7 +454,7 @@ void Knob::load(const KnobSerialization& serializationObj){
     
     const std::vector<Variant>& serializedValues = serializationObj.getValues();
     for(U32 i = 0 ; i < serializedValues.size();++i){
-        setValue(serializedValues[i],i,Natron::PLUGIN_EDITED,NULL);
+        setValue(serializedValues[i],i,Natron::OTHER_REASON,NULL);
     }
     
     
@@ -531,15 +571,9 @@ void Knob::cloneValue(const Knob& other){
     //so we need to copy with the good pointers
     const MastersMap& otherMasters = other.getMasters();
     for(U32 j = 0 ; j < otherMasters.size();++j){
-        if(otherMasters[j]){
-            const std::vector< boost::shared_ptr<Knob> >& holderKnobs = _imp->_holder->getKnobs();
-            for(U32 i = 0 ; i < holderKnobs.size();++i)
-            {
-                if(holderKnobs[i]->getDescription() == otherMasters[j]->getDescription()){
-                    _imp->_masters[j] = holderKnobs[i];
-                    break;
-                }
-            }
+        if(otherMasters[j].second) {
+                    _imp->_masters[j].second = otherMasters[j].second;
+                    _imp->_masters[j].first = otherMasters[j].first;
         }
     }
     
@@ -554,9 +588,17 @@ void Knob::turnOffNewLine(){
 void Knob::setSpacingBetweenItems(int spacing){
     _imp->_itemSpacing = spacing;
 }
-void Knob::setEnabled(bool b){
-    _imp->_enabled = b;
+void Knob::setEnabled(int dimension,bool b){
+    _imp->_enabled[dimension] = b;
     emit enabledChanged();
+}
+
+void Knob::setAllDimensionsEnabled(bool b) {
+    for (U32 i = 0; i < _imp->_enabled.size(); ++i) {
+        _imp->_enabled[i] = b;
+    }
+    emit enabledChanged();
+
 }
 
 void Knob::setSecret(bool b){
@@ -609,7 +651,7 @@ boost::shared_ptr<Knob> Knob::getParentKnob() const {return _imp->_parentKnob;}
 
 bool Knob::isSecret() const {return _imp->_secret;}
 
-bool Knob::isEnabled() const {return _imp->_enabled;}
+bool Knob::isEnabled(int dimension) const { assert(dimension < getDimension()); return _imp->_enabled[dimension];}
 
 void Knob::setInsignificant(bool b) {_imp->_isInsignificant = b;}
 
@@ -634,14 +676,14 @@ void Knob::setHintToolTip(const std::string& hint) {
 
 const std::string& Knob::getHintToolTip() const {return _imp->_tooltipHint;}
 
-bool Knob::slaveTo(int dimension,boost::shared_ptr<Knob> other){
+bool Knob::slaveTo(int dimension,boost::shared_ptr<Knob> other,int otherDimension){
     assert(dimension < (int)_imp->_masters.size());
-    assert(!other->isSlave(dimension));
-    if(_imp->_masters[dimension]){
+    assert(!other->isSlave(otherDimension));
+    if(_imp->_masters[dimension].second){
         return false;
     }
-    _imp->_masters[dimension] = other;
-    
+    _imp->_masters[dimension].second = other;
+    _imp->_masters[dimension].first = otherDimension;
     _imp->_holder->getApp()->triggerAutoSave();
     return true;
 }
@@ -651,23 +693,25 @@ void Knob::unSlave(int dimension){
     
     assert(isSlave(dimension));
     //copy the state before cloning
-    _imp->_values[dimension] =  _imp->_masters[dimension]->getValue(dimension);
-    _imp->_curves[dimension]->clone(*( _imp->_masters[dimension]->getCurve(dimension)));
+    _imp->_values[dimension] =  _imp->_masters[_imp->_masters[dimension].first].second->getValue(dimension);
+    _imp->_curves[dimension]->clone(*( _imp->_masters[_imp->_masters[dimension].first].second->getCurve(dimension)));
+    cloneExtraData(*_imp->_masters[dimension].second);
     
-    _imp->_masters[dimension].reset();
+    _imp->_masters[dimension].second.reset();
+    _imp->_masters[dimension].first = -1;
     _imp->_holder->getApp()->triggerAutoSave();
 }
 
 
-boost::shared_ptr<Knob> Knob::getMaster(int dimension) const {
+std::pair<int,boost::shared_ptr<Knob> > Knob::getMaster(int dimension) const {
     return _imp->_masters[dimension];
 }
 
 bool Knob::isSlave(int dimension) const {
-    return bool(_imp->_masters[dimension]);
+    return bool(_imp->_masters[dimension].second);
 }
 
-const std::vector<boost::shared_ptr<Knob> >& Knob::getMasters() const{
+const std::vector< std::pair<int,boost::shared_ptr<Knob> > >& Knob::getMasters() const{
     return _imp->_masters;
 }
 
@@ -703,28 +747,22 @@ void Knob::setDefaultValue(const Variant& v,int dimension) {
     _imp->_values[dimension] = v;
 }
 
-void Knob::resetToDefaultValues() {
+void Knob::resetToDefaultValue(int dimension) {
     
     if (typeName() == Button_Knob::typeNameStatic()) {
         return;
     }
-    
-    for (int i = 0; i < getDimension(); ++i) {
-        removeAnimation(i);
-    }
-    
-    for (int i = 0; i < getDimension(); ++i) {
-        setValue(_imp->_defaultValues[i], i,true);
-    }
+    removeAnimation(dimension);
+    setValue(_imp->_defaultValues[dimension], dimension,true);
 }
 
 
 bool Knob::getKeyFrameTime(int index,int dimension,double* time) const {
     
     ///if the knob is slaved to another knob, returns the other knob value
-    boost::shared_ptr<Knob> master = getMaster(dimension);
-    if (master) {
-        return master->getKeyFrameTime(index,dimension,time);
+    std::pair<int,boost::shared_ptr<Knob> > master = getMaster(dimension);
+    if (master.second) {
+        return master.second->getKeyFrameTime(index,master.first,time);
     }
     
     assert(dimension < getDimension());
@@ -755,9 +793,9 @@ bool Knob::getKeyFrameTime(int index,int dimension,double* time) const {
 bool Knob::getLastKeyFrameTime(int dimension,double* time) const {
     
     ///if the knob is slaved to another knob, returns the other knob value
-    boost::shared_ptr<Knob> master = getMaster(dimension);
-    if (master) {
-        return master->getLastKeyFrameTime(dimension,time);
+    std::pair<int,boost::shared_ptr<Knob> > master = getMaster(dimension);
+    if (master.second) {
+        return master.second->getLastKeyFrameTime(master.first,time);
     }
     
     assert(dimension < getDimension());
@@ -788,9 +826,9 @@ int Knob::getKeyFramesCount(int dimension) const {
 bool Knob::getNearestKeyFrameTime(int dimension,double time,double* nearestTime) const {
     
     ///if the knob is slaved to another knob, returns the other knob value
-    boost::shared_ptr<Knob> master = getMaster(dimension);
-    if (master) {
-        return master->getNearestKeyFrameTime(dimension, time, nearestTime);
+    std::pair<int,boost::shared_ptr<Knob> > master = getMaster(dimension);
+    if (master.second) {
+        return master.second->getNearestKeyFrameTime(master.first,time,nearestTime);
     }
     
     assert(dimension < getDimension());
@@ -840,9 +878,9 @@ bool Knob::getNearestKeyFrameTime(int dimension,double time,double* nearestTime)
 int Knob::getKeyFrameIndex(int dimension, double time) const {
     
     ///if the knob is slaved to another knob, returns the other knob value
-    boost::shared_ptr<Knob> master = getMaster(dimension);
-    if (master) {
-        return master->getKeyFrameIndex(dimension,time);
+    std::pair<int,boost::shared_ptr<Knob> > master = getMaster(dimension);
+    if (master.second) {
+        return master.second->getKeyFrameIndex(master.first,time);
     }
     
     assert(dimension < getDimension());
@@ -868,11 +906,10 @@ int Knob::getKeyFrameIndex(int dimension, double time) const {
 
 bool Knob::getKeyFrameValueByIndex(int dimension,int index,Variant* value) const {
     ///if the knob is slaved to another knob, returns the other knob value
-    boost::shared_ptr<Knob> master = getMaster(dimension);
-    if (master) {
-        return master->getKeyFrameValueByIndex(dimension,index,value);
+    std::pair<int,boost::shared_ptr<Knob> > master = getMaster(dimension);
+    if (master.second) {
+        return master.second->getKeyFrameValueByIndex(master.first,index,value);
     }
-
     
     assert(dimension < getDimension());
     if (!isAnimated(dimension)) {

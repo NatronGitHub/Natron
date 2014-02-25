@@ -198,8 +198,10 @@ DockablePanel::~DockablePanel(){
 }
 
 void DockablePanel::onRestoreDefaultsButtonClicked() {
-    for(std::map<boost::shared_ptr<Knob>,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it){
-        it->first->resetToDefaultValues();
+    for(std::map<boost::shared_ptr<Knob>,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it) {
+        for (int i = 0; i < it->first->getDimension(); ++i) {
+            it->first->resetToDefaultValue(i);
+        }
     }
 }
 

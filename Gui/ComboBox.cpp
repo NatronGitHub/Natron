@@ -33,6 +33,7 @@ ComboBox::ComboBox(QWidget* parent)
 #endif
 , pressed(false)
 , animation(0)
+, readOnly(false)
 {
     
     _mainLayout = new QHBoxLayout(this);
@@ -106,6 +107,7 @@ void ComboBox::createMenu(){
                 break;
             }
         }
+        _actions[i]->setEnabled(!readOnly);
         _menu->addAction(_actions[i]);
     }
     QAction* triggered = _menu->exec(this->mapToGlobal(QPoint(0,height())));
@@ -124,6 +126,18 @@ void ComboBox::createMenu(){
     style()->polish(this);
     
 }
+
+void ComboBox::setReadOnly(bool readOnly)
+{
+
+    this->readOnly = readOnly;
+  
+    style()->unpolish(this);
+    style()->polish(this);
+    repaint();
+}
+
+
 int ComboBox::count() const{
     return (int)_actions.size();
 }

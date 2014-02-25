@@ -48,11 +48,11 @@ public:
     
     void getIcon(Natron::PixmapEnum e,QPixmap* pix) const;
     
-    void setKnobClipBoard(const KnobSerialization& s,bool copyAnimation);
+    void setKnobClipBoard(const KnobSerialization& s,bool copyAnimation,int dimension);
     
     bool isClipBoardEmpty() const;
     
-    void getKnobClipBoard(KnobSerialization* k,bool* copyAnimation) const;
+    void getKnobClipBoard(KnobSerialization* k,bool* copyAnimation,int* dimension) const;
     
     void updateAllRecentFileMenus();
 

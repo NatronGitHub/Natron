@@ -48,6 +48,7 @@ struct KnobsClipBoard {
     KnobSerialization k; //< the serialized knob to copy
     bool isEmpty; //< is the clipboard empty
     bool copyAnimation; //< should we copy all the animation or not
+    int dimension;//< -1 if all dims, otherwise the dim index
 };
 
 struct GuiApplicationManagerPrivate {
@@ -376,9 +377,10 @@ void GuiApplicationManager::hideSplashScreen() {
 }
 
 
-void GuiApplicationManager::setKnobClipBoard(const KnobSerialization& s,bool copyAnimation) {
+void GuiApplicationManager::setKnobClipBoard(const KnobSerialization& s,bool copyAnimation,int dimension) {
     _imp->_knobsClipBoard->k = s;
     _imp->_knobsClipBoard->copyAnimation = copyAnimation;
+    _imp->_knobsClipBoard->dimension = dimension;
     _imp->_knobsClipBoard->isEmpty = false;
 }
 
@@ -386,9 +388,10 @@ bool GuiApplicationManager::isClipBoardEmpty() const{
     return  _imp->_knobsClipBoard->isEmpty;
 }
 
-void GuiApplicationManager::getKnobClipBoard(KnobSerialization* k,bool* copyAnimation) const{
+void GuiApplicationManager::getKnobClipBoard(KnobSerialization* k,bool* copyAnimation,int* dimension) const{
     *k = _imp->_knobsClipBoard->k;
     *copyAnimation = _imp->_knobsClipBoard->copyAnimation;
+    *dimension = _imp->_knobsClipBoard->dimension;
 }
 
 void GuiApplicationManager::updateAllRecentFileMenus() {

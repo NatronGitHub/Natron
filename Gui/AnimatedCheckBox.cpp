@@ -4,3 +4,24 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "AnimatedCheckBox.h"
+#include <QStyle>
+#include <QMouseEvent>
+void AnimatedCheckBox::setAnimation(int i)
+{
+    animation = i;
+    style()->unpolish(this);
+    style()->polish(this);
+}
+void AnimatedCheckBox::setReadOnly(bool readOnly) {
+    this->readOnly = readOnly;
+    style()->unpolish(this);
+    style()->polish(this);
+}
+
+void AnimatedCheckBox::mousePressEvent(QMouseEvent* e) {
+    if (readOnly && e->buttons().testFlag(Qt::LeftButton)) {
+        return;
+    } else {
+        QCheckBox::mousePressEvent(e);
+    }
+}

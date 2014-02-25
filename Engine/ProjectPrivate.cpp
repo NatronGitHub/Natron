@@ -102,7 +102,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     /* 3rd RESTORE NODES */
     const std::vector< boost::shared_ptr<NodeSerialization> >& serializedNodes = obj.getNodesSerialization();
     bool hasProjectAWriter = false;
-    /*first create all nodes and restore the knobs values*/
+    /*first create all nodes*/
     for (U32 i = 0; i <  serializedNodes.size() ; ++i){
 
         if (appPTR->isBackground() && serializedNodes[i]->getPluginID() == "Viewer") {
@@ -131,10 +131,21 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             throw std::invalid_argument(text.toStdString());
         }
         n->setName(serializedNodes[i]->getPluginLabel());
-        
-        const std::vector< boost::shared_ptr<Knob> >& nodeKnobs = n->getKnobs();
+    }
+    
+    ///now restore knob values
+    for (U32 i = 0; i <  serializedNodes.size() ; ++i) {
+        Natron::Node* thisNode = NULL;
+        for (U32 j = 0; j < currentNodes.size(); ++j) {
+            if (currentNodes[j]->getName() == serializedNodes[i]->getPluginLabel()) {
+                thisNode = currentNodes[j];
+                break;
+            }
+        }
+        assert(thisNode);
+        const std::vector< boost::shared_ptr<Knob> >& nodeKnobs = thisNode->getKnobs();
         const NodeSerialization::KnobValues& knobsValues = serializedNodes[i]->getKnobsValues();
-
+        
         ///for all knobs of the node
         for (U32 j = 0; j < nodeKnobs.size();++j) {
             
@@ -149,7 +160,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
                 }
             }
         }
-
+        
     }
 
     if(!hasProjectAWriter && appPTR->isBackground()){
@@ -173,6 +184,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
                 break;
             }
         }
+        assert(thisNode);
         for (std::map<int, std::string>::const_iterator input = inputs.begin(); input!=inputs.end(); ++input) {
             if(!project->getApp()->getProject()->connectNodes(input->first, input->second,thisNode)) {
                 std::string message = std::string("Failed to connect node ") + serializedNodes[i]->getPluginLabel() + " to " + input->second;

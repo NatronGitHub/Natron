@@ -17,6 +17,8 @@
 #include "Engine/Rect.h"
 #include "Engine/Variant.h"
 #include "Engine/Knob.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/KnobFile.h"
 
 class Curve;
 class KeyFrame;
@@ -42,9 +44,6 @@ struct CurvePrivate{
     KeyFrameSet keyFrames;
 
     Knob* owner;
-
-    CurveType curveType;
-    bool mustSetCurveType; //< if true the first call to addKeyFrame will set the curveType member
     
     double curveMin,curveMax;
     QMutex _lock; //< the plug-ins can call getValueAt at any moment and we must make sure the user is not playing around
@@ -53,12 +52,25 @@ struct CurvePrivate{
     CurvePrivate()
     : keyFrames()
     , owner(NULL)
-    , curveType(DOUBLE_CURVE)
-    , mustSetCurveType(true)
     , curveMin(INT_MIN)
     , curveMax(INT_MAX)
     , _lock(QMutex::Recursive)
     {}
+    
+    CurvePrivate::CurveType getCurveType() const {
+        assert(owner);
+        if (owner->typeName() == Int_Knob::typeNameStatic() ||
+             owner->typeName() == Choice_Knob::typeNameStatic()) {
+             return CurvePrivate::INT_CURVE;
+        } else if (owner->typeName() == String_Knob::typeNameStatic() ||
+                   owner->typeName() == File_Knob::typeNameStatic()) {
+            return CurvePrivate::STRING_CURVE;
+        } else if (owner->typeName() == Bool_Knob::typeNameStatic()) {
+            return CurvePrivate::BOOL_CURVE;
+        } else {
+            return CurvePrivate::DOUBLE_CURVE;
+        }
+    }
 };
 
 

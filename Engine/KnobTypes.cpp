@@ -16,6 +16,7 @@
 
 #include "Engine/Curve.h"
 #include "Engine/Hash64.h"
+#include "Engine/KnobFile.h"
 #include "Engine/StringAnimationManager.h"
 
 using namespace Natron;
@@ -215,6 +216,17 @@ const std::string& Int_Knob::typeName() const
 }
 
 
+bool Int_Knob::isTypeCompatible(const Knob& other) const {
+    if (other.typeName() == Double_Knob::typeNameStatic() ||
+        other.typeName() == Color_Knob::typeNameStatic() ||
+        other.typeName() == Int_Knob::typeNameStatic() ||
+        other.typeName() == Bool_Knob::typeNameStatic() ||
+        other.typeName() == Choice_Knob::typeNameStatic()) {
+        return true;
+    } else {
+        return false;
+    }
+}
 /******************************BOOL_KNOB**************************************/
 
 Bool_Knob::Bool_Knob(KnobHolder *holder, const std::string &description, int dimension):
@@ -238,7 +250,17 @@ const std::string& Bool_Knob::typeName() const
     return typeNameStatic();
 }
 
-
+bool Bool_Knob::isTypeCompatible(const Knob& other) const {
+    if (other.typeName() == Double_Knob::typeNameStatic() ||
+        other.typeName() == Color_Knob::typeNameStatic() ||
+        other.typeName() == Int_Knob::typeNameStatic() ||
+        other.typeName() == Bool_Knob::typeNameStatic() ||
+        other.typeName() == Choice_Knob::typeNameStatic()) {
+        return true;
+    } else {
+        return false;
+    }
+}
 /******************************DOUBLE_KNOB**************************************/
 
 
@@ -452,6 +474,17 @@ void Double_Knob::setDecimals(const std::vector<int> &decis)
     }
 }
 
+bool Double_Knob::isTypeCompatible(const Knob& other) const {
+    if (other.typeName() == Double_Knob::typeNameStatic() ||
+        other.typeName() == Color_Knob::typeNameStatic() ||
+        other.typeName() == Int_Knob::typeNameStatic() ||
+        other.typeName() == Bool_Knob::typeNameStatic() ||
+        other.typeName() == Choice_Knob::typeNameStatic()) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
 /******************************BUTTON_KNOB**************************************/
 
@@ -536,6 +569,17 @@ const std::string &Choice_Knob::getActiveEntryText() const
     return _entries[activeIndex];
 }
 
+bool Choice_Knob::isTypeCompatible(const Knob& other) const {
+    if (other.typeName() == Double_Knob::typeNameStatic() ||
+        other.typeName() == Color_Knob::typeNameStatic() ||
+        other.typeName() == Int_Knob::typeNameStatic() ||
+        other.typeName() == Bool_Knob::typeNameStatic() ||
+        other.typeName() == Choice_Knob::typeNameStatic()) {
+        return true;
+    } else {
+        return false;
+    }
+}
 /******************************TABLE_KNOB**************************************/
 //
 //Table_Knob::Table_Knob(KnobHolder *holder, const std::string &description, int dimension)
@@ -662,6 +706,18 @@ const std::string& Color_Knob::typeName() const
     return typeNameStatic();
 }
 
+
+bool Color_Knob::isTypeCompatible(const Knob& other) const {
+    if (other.typeName() == Double_Knob::typeNameStatic() ||
+        other.typeName() == Color_Knob::typeNameStatic() ||
+        other.typeName() == Int_Knob::typeNameStatic() ||
+        other.typeName() == Bool_Knob::typeNameStatic() ||
+        other.typeName() == Choice_Knob::typeNameStatic()) {
+        return true;
+    } else {
+        return false;
+    }
+}
 /******************************STRING_KNOB**************************************/
 
 String_Knob::String_Knob(KnobHolder *holder, const std::string &description, int dimension):
@@ -726,8 +782,13 @@ Variant String_Knob::getValueAtTime(double time, int dimension) const {
 }
 
 void String_Knob::cloneExtraData(const Knob& other) {
-    const String_Knob& o = dynamic_cast<const String_Knob&>(other);
-    _animation->clone(*(o._animation));
+    if (other.typeName() == String_Knob::typeNameStatic()) {
+        const String_Knob& o = dynamic_cast<const String_Knob&>(other);
+        _animation->clone(*(o._animation));
+    } else if(other.typeName() == File_Knob::typeNameStatic()) {
+        const File_Knob& o = dynamic_cast<const File_Knob&>(other);
+        _animation->clone(o.getAnimation());
+    }
 }
 
 
@@ -737,6 +798,25 @@ void String_Knob::loadExtraData(const QString& str) {
 
 QString String_Knob::saveExtraData() const {
     return _animation->save();
+}
+
+bool String_Knob::isTypeCompatible(const Knob& other) const {
+    if (other.typeName() == String_Knob::typeNameStatic() ||
+        other.typeName() == OutputFile_Knob::typeNameStatic() ||
+        other.typeName() == Path_Knob::typeNameStatic() ||
+        other.typeName() == File_Knob::typeNameStatic()) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void String_Knob::animationRemoved_virtual(int /*dimension*/) {
+    _animation->clearKeyFrames();
+}
+
+void String_Knob::keyframeRemoved_virtual(int /*dimension*/, double time) {
+    _animation->removeKeyFrame(time);
 }
 
 /******************************GROUP_KNOB**************************************/

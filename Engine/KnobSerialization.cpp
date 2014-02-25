@@ -14,6 +14,7 @@
 
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"
+#include "Engine/EffectInstance.h"
 KnobSerialization::KnobSerialization()
     : _hasAnimation(false)
     , _values()
@@ -35,10 +36,20 @@ void KnobSerialization::initialize(const Knob* knob) {
             }
     }
 
-    const std::vector<boost::shared_ptr<Knob> >& masters = knob->getMasters();
+    const std::vector<std::pair<int,boost::shared_ptr<Knob> > >& masters = knob->getMasters();
     for(U32 i = 0; i < masters.size();++i){
-        if(masters[i]){
-            _masters.push_back(masters[i]->getDescription());
+        if(masters[i].second) {
+            Natron::EffectInstance* effect= dynamic_cast<Natron::EffectInstance*>(masters[i].second->getHolder());
+            
+            ///Master/slaves only works for knobs that belong to an effect.
+            ///That means all the knobs used for the settings and the project should NEVER EVER
+            ///be slaved.
+            assert(effect);
+            
+            std::string knobName = effect->getName();
+            knobName += "_SPLIT_";
+            knobName += masters[i].second->getDescription();
+            _masters.push_back(std::make_pair(masters[i].first,knobName));
         }
     }
 

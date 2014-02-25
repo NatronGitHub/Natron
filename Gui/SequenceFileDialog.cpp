@@ -812,6 +812,7 @@ bool SequenceFileDialog::removeSequenceDigits(QString& file,int* frameNumber){
     return true;
 }
 void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
+    _nameMapping.clear();
     if(!sequenceModeEnabled()){
         return;
     }

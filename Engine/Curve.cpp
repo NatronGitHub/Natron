@@ -19,6 +19,7 @@
 #include "Engine/CurvePrivate.h"
 #include "Engine/Interpolation.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/KnobFile.h"
 
 namespace {
     struct KeyFrameCloner {
@@ -146,8 +147,6 @@ void Curve::clone(const Curve& other){
     QMutexLocker l(&_imp->_lock);
     const KeyFrameSet& otherKeys = other.getKeyFrames();
     std::transform(otherKeys.begin(), otherKeys.end(), std::inserter(_imp->keyFrames, _imp->keyFrames.begin()), KeyFrameCloner());
-    _imp->curveType = other._imp->curveType;
-    _imp->mustSetCurveType = false;
 }
 
 
@@ -168,21 +167,9 @@ bool Curve::addKeyFrame(KeyFrame key)
     
     QMutexLocker l(&_imp->_lock);
     
-    if (_imp->mustSetCurveType) {
-        if (_imp->owner->typeName() == Int_Knob::typeNameStatic() ||
-            _imp->owner->typeName() == Choice_Knob::typeNameStatic()) {
-            _imp->curveType = CurvePrivate::INT_CURVE;
-        } else if (_imp->owner->typeName() == String_Knob::typeNameStatic()) {
-            _imp->curveType = CurvePrivate::STRING_CURVE;
-        } else if (_imp->owner->typeName() == Bool_Knob::typeNameStatic()) {
-            _imp->curveType = CurvePrivate::BOOL_CURVE;
-        } else {
-            _imp->curveType = CurvePrivate::DOUBLE_CURVE;
-        }
-        _imp->mustSetCurveType = false;
-    }
+    CurvePrivate::CurveType type = _imp->getCurveType();
     
-    if (_imp->curveType == CurvePrivate::BOOL_CURVE || _imp->curveType == CurvePrivate::STRING_CURVE) {
+    if (type == CurvePrivate::BOOL_CURVE || type == CurvePrivate::STRING_CURVE) {
         key.setInterpolation(Natron::KEYFRAME_CONSTANT);
     }
     
@@ -384,7 +371,8 @@ double Curve::getValueAt(double t) const {
         v = clampValueToCurveYRange(v);
     }
 
-    switch (_imp->curveType) {
+    CurvePrivate::CurveType type = _imp->getCurveType();
+    switch (type) {
         case CurvePrivate::STRING_CURVE:
         case CurvePrivate::INT_CURVE:
             return std::floor(v + 0.5);
@@ -603,8 +591,9 @@ const KeyFrame& Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,int 
     KeyFrameSet::iterator it = keyframeAt(index);
     assert(it != _imp->keyFrames.end());
     
+    CurvePrivate::CurveType type = _imp->getCurveType();
     ///if the curve is a string_curve or bool_curve the interpolation is bound to be constant.
-    if ((_imp->curveType == CurvePrivate::STRING_CURVE || _imp->curveType == CurvePrivate::BOOL_CURVE)
+    if ((type == CurvePrivate::STRING_CURVE || type == CurvePrivate::BOOL_CURVE)
         && interp != Natron::KEYFRAME_CONSTANT) {
         return *it;
     }
@@ -796,13 +785,13 @@ KeyFrameSet::const_iterator Curve::end() const {
 }
 
 bool Curve::isYComponentMovable() const{
-    return _imp->curveType != CurvePrivate::STRING_CURVE;
+    return _imp->getCurveType() != CurvePrivate::STRING_CURVE;
 }
 
 bool Curve::areKeyFramesValuesClampedToIntegers() const{
-    return _imp->curveType == CurvePrivate::INT_CURVE;
+    return _imp->getCurveType() == CurvePrivate::INT_CURVE;
 }
 
 bool Curve::areKeyFramesValuesClampedToBooleans() const{
-    return _imp->curveType == CurvePrivate::BOOL_CURVE;
+    return _imp->getCurveType() == CurvePrivate::BOOL_CURVE;
 }

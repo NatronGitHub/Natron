@@ -38,6 +38,9 @@ class ComboBox : public QFrame
     
     Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
     
+    Q_PROPERTY( bool readOnly READ isReadOnly WRITE setReadOnly)
+
+    
     QHBoxLayout* _mainLayout;
     QLabel* _currentText;
     QLabel* _dropDownIcon;
@@ -53,6 +56,8 @@ class ComboBox : public QFrame
     MenuWithToolTips* _menu;
 
     int animation;
+    
+    bool readOnly;
 public:
     
     explicit ComboBox(QWidget* parent = 0);
@@ -119,6 +124,10 @@ public slots:
     
     int getAnimation() const { return animation; }
     
+    void setReadOnly(bool readOnly) ;
+    
+    bool isReadOnly() const { return readOnly; }
+    
 signals:
     
     void currentIndexChanged(int index);
@@ -126,6 +135,7 @@ signals:
     void currentIndexChanged(QString);
     
 private:
+    
     void paintEvent(QPaintEvent *);
     void mousePressEvent(QMouseEvent* e);
     void mouseReleaseEvent(QMouseEvent* e);

@@ -79,7 +79,9 @@ public:
     QString getRandomFrameName(int f, bool loadNearestIfNotFound) const;
 
 
-
+    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
+    
+    const StringAnimationManager& getAnimation() const { return *_animation; }
     
 signals:
     
@@ -87,9 +89,9 @@ signals:
     
 private:
     
-    virtual void onKeyFrameRemoved(int dimension, double time) OVERRIDE FINAL;
+    virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE FINAL;
     
-    virtual void onKeyframesRemoved(int dimension) OVERRIDE FINAL;
+    virtual void animationRemoved_virtual(int dimension) OVERRIDE FINAL;
     
     virtual bool canAnimate() const OVERRIDE FINAL;
     
@@ -152,6 +154,10 @@ public:
     void turnOffSequences() { _sequenceDialog = false; }
     
     bool isSequencesDialogEnabled() const { return _sequenceDialog; }
+    
+    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
+
+    
 signals:
     
     void openFile(bool);
@@ -190,6 +196,8 @@ public:
     
     bool isMultiPath() const;
     
+    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
+
 signals:
     
     void openFile();

@@ -457,6 +457,20 @@ CurveGui* CurveEditor::findCurve(KnobGui* knob,int dimension) const {
     return (CurveGui*)NULL;
 }
 
+void CurveEditor::hideCurve(KnobGui* knob,int dimension) {
+    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
+        it!=_nodes.end();++it){
+        NodeCurveEditorElement* elem = (*it)->findElement(knob,dimension);
+        if(elem){
+            elem->getCurve()->setVisible(false);
+            elem->getTreeItem()->setHidden(true);
+            checkIfHiddenRecursivly(_tree, elem->getTreeItem());
+            break;
+        }
+    }
+    _curveWidget->update();
+
+}
 
 void CurveEditor::hideCurves(KnobGui* knob){
     for(int i = 0 ; i < knob->getKnob()->getDimension();++i){
@@ -471,7 +485,31 @@ void CurveEditor::hideCurves(KnobGui* knob){
             }
         }
     }
-    _curveWidget->updateGL();
+    _curveWidget->update();
+}
+
+void CurveEditor::showCurve(KnobGui* knob,int dimension) {
+    for(std::list<NodeCurveEditorContext*>::const_iterator it = _nodes.begin();
+        it!=_nodes.end();++it){
+        NodeCurveEditorElement* elem = (*it)->findElement(knob,dimension);
+        if(elem){
+            if(elem->getCurve()->getInternalCurve()->isAnimated()){
+                elem->getCurve()->setVisible(true);
+                elem->getTreeItem()->setHidden(false);
+                if(elem->getTreeItem()->parent()){
+                    elem->getTreeItem()->parent()->setHidden(false);
+                    elem->getTreeItem()->parent()->setExpanded(true);
+                    if(elem->getTreeItem()->parent()->parent()){
+                        elem->getTreeItem()->parent()->parent()->setHidden(false);
+                        elem->getTreeItem()->parent()->parent()->setExpanded(true);
+                    }
+                }
+            }
+            break;
+        }
+    }
+    _curveWidget->update();
+
 }
 
 void CurveEditor::showCurves(KnobGui* knob){

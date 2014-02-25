@@ -337,7 +337,7 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
         knob->turnOffAnimation();
     }
     knob->setSecret(descriptor.getSecret());
-    knob->setEnabled(descriptor.getEnabled());
+    knob->setAllDimensionsEnabled(descriptor.getEnabled());
     knob->setHintToolTip(descriptor.getHint());
     if (!descriptor.getCanUndo()) {
        knob->turnOffUndoRedo();

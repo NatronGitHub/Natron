@@ -15,6 +15,7 @@
 #include <QtCore/QMutexLocker>
 
 #include "Engine/StringAnimationManager.h"
+#include "Engine/KnobTypes.h"
 #include "Global/QtCompat.h"
 
 using namespace Natron;
@@ -62,8 +63,13 @@ void File_Knob::variantFromInterpolatedValue(double interpolated,Variant* return
 }
 
 void File_Knob::cloneExtraData(const Knob& other) {
-    const File_Knob& o = dynamic_cast<const File_Knob&>(other);
-    _animation->clone(*(o._animation));
+    if (other.typeName() == String_Knob::typeNameStatic()) {
+        const String_Knob& o = dynamic_cast<const String_Knob&>(other);
+        _animation->clone(o.getAnimation());
+    } else if(other.typeName() == File_Knob::typeNameStatic()) {
+        const File_Knob& o = dynamic_cast<const File_Knob&>(other);
+        _animation->clone(o.getAnimation());
+    }
 }
 
 
@@ -171,12 +177,23 @@ void File_Knob::getFiles(QStringList* files) {
     }
 }
 
-void File_Knob::onKeyframesRemoved(int /*dimension*/) {
+void File_Knob::animationRemoved_virtual(int /*dimension*/) {
     _animation->clearKeyFrames();
 }
 
-void File_Knob::onKeyFrameRemoved(int /*dimension*/, double time) {
+void File_Knob::keyframeRemoved_virtual(int /*dimension*/, double time) {
     _animation->removeKeyFrame(time);
+}
+
+bool File_Knob::isTypeCompatible(const Knob& other) const {
+    if (other.typeName() == String_Knob::typeNameStatic() ||
+        other.typeName() == OutputFile_Knob::typeNameStatic() ||
+        other.typeName() == Path_Knob::typeNameStatic() ||
+        other.typeName() == File_Knob::typeNameStatic()) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 /***********************************OUTPUT_FILE_KNOB*****************************************/
@@ -213,6 +230,17 @@ const std::string& OutputFile_Knob::typeName() const
     return typeNameStatic();
 }
 
+bool OutputFile_Knob::isTypeCompatible(const Knob& other) const {
+    if (other.typeName() == String_Knob::typeNameStatic() ||
+        other.typeName() == OutputFile_Knob::typeNameStatic() ||
+        other.typeName() == Path_Knob::typeNameStatic() ||
+        other.typeName() == File_Knob::typeNameStatic()) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 /***********************************PATH_KNOB*****************************************/
 
 Path_Knob::Path_Knob(KnobHolder *holder, const std::string &description, int dimension)
@@ -244,3 +272,13 @@ bool Path_Knob::isMultiPath() const {
     return _isMultiPath;
 }
 
+bool Path_Knob::isTypeCompatible(const Knob& other) const {
+    if (other.typeName() == String_Knob::typeNameStatic() ||
+        other.typeName() == OutputFile_Knob::typeNameStatic() ||
+        other.typeName() == Path_Knob::typeNameStatic() ||
+        other.typeName() == File_Knob::typeNameStatic()) {
+        return true;
+    } else {
+        return false;
+    }
+}

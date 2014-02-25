@@ -1051,10 +1051,13 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
             }
         }
         
-        //now iterate over each different knobs and create as many undo/redo commands...
-        for (std::map<KnobGui*,std::vector<KeyMove> >::iterator it = knobsMap.begin(); it!=knobsMap.end(); ++it) {
-            it->first->pushUndoCommand(new MoveKeysCommand(_widget,it->second,dt,dv));
+        if (dt != 0 || dv != 0) {
+            //now iterate over each different knobs and create as many undo/redo commands...
+            for (std::map<KnobGui*,std::vector<KeyMove> >::iterator it = knobsMap.begin(); it!=knobsMap.end(); ++it) {
+                it->first->pushUndoCommand(new MoveKeysCommand(_widget,it->second,dt,dv));
+            }
         }
+        
     }
     
     

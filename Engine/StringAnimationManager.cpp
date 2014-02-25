@@ -168,6 +168,19 @@ void StringAnimationManager::clearKeyFrames() {
 
 void StringAnimationManager::stringFromInterpolatedIndex(double interpolated,QString* returnValue) const {
     int index = std::floor(interpolated + 0.5);
+    
+    if (_imp->keyframes.empty()) {
+        return;
+    }
+    
+    ///if the index is not in the range, just return the last
+    if (index >= (int)_imp->keyframes.size()) {
+        Keyframes::const_iterator it = _imp->keyframes.end();
+        --it;
+        *returnValue = it->value;
+        return;
+    }
+    
     int i = 0;
     for (Keyframes::const_iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it) {
         if (i == index) {
@@ -176,8 +189,6 @@ void StringAnimationManager::stringFromInterpolatedIndex(double interpolated,QSt
         }
         ++i;
     }
-    ///interpolated is wrong
-    assert(false);
 
 }
 

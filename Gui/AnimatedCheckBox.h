@@ -18,10 +18,13 @@ class AnimatedCheckBox : public QCheckBox
 
     Q_OBJECT
     Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
+    Q_PROPERTY(bool readOnly READ getReadOnly WRITE setReadOnly)
 
     int animation;
+    
+    bool readOnly;
 public:
-    AnimatedCheckBox(QWidget *parent = NULL): QCheckBox(parent), animation(0) {}
+    AnimatedCheckBox(QWidget *parent = NULL): QCheckBox(parent), animation(0) , readOnly(false) {}
 
     virtual ~AnimatedCheckBox() OVERRIDE {}
 
@@ -30,6 +33,15 @@ public:
     int getAnimation() const {
         return animation;
     }
+    
+    void setReadOnly(bool readOnly);
+    
+    bool getReadOnly() const { return readOnly; }
+    
+private:
+    
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    
 };
 
 #endif // NATRON_GUI_ANIMATEDCHECKBOX_H_

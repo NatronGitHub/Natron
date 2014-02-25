@@ -102,6 +102,8 @@ private:
     virtual void _show() OVERRIDE FINAL;
 
     virtual void setEnabled() OVERRIDE FINAL;
+    
+    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
     
@@ -145,6 +147,8 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
 
+    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
+    
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
@@ -192,6 +196,8 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
 
+    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
+    
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
@@ -230,6 +236,8 @@ private:
     virtual void _show() OVERRIDE FINAL;
 
     virtual void setEnabled() OVERRIDE FINAL;
+    
+    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL {(void)dimension; Q_UNUSED(variant);}
 
@@ -267,6 +275,8 @@ private:
     virtual void _show() OVERRIDE FINAL;
 
     virtual void setEnabled() OVERRIDE FINAL;
+    
+    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
@@ -368,6 +378,8 @@ private:
     virtual void _show() OVERRIDE FINAL;
 
     virtual void setEnabled() OVERRIDE FINAL {}
+    
+    virtual void setReadOnly(bool /*readOnly*/,int /*dimension*/) OVERRIDE FINAL {}
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL {(void)dimension; (void)variant;}
 
@@ -440,6 +452,8 @@ private:
     virtual void _show() OVERRIDE FINAL;
 
     virtual void setEnabled() OVERRIDE FINAL;
+    
+    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
@@ -478,10 +492,11 @@ private:
 class AnimatingTextEdit : public QTextEdit {
     Q_OBJECT
     Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
+    Q_PROPERTY( bool readOnlyNatron READ isReadOnlyNatron WRITE setReadOnlyNatron)
 
 public:
     
-    AnimatingTextEdit(QWidget* parent = 0) : QTextEdit(parent) , animation(0) {}
+    AnimatingTextEdit(QWidget* parent = 0) : QTextEdit(parent) , animation(0) , readOnlyNatron(false) , _hasChanged(false) {}
     
     virtual ~AnimatingTextEdit(){}
     
@@ -489,6 +504,9 @@ public:
     
     void setAnimation(int v) ;
     
+    bool isReadOnlyNatron() const { return readOnlyNatron; }
+    
+    void setReadOnlyNatron(bool ro);
 signals:
     
     void editingFinished();
@@ -499,6 +517,8 @@ private:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
     
     int animation;
+    bool readOnlyNatron; //< to bypass the readonly property of Qt that is bugged
+    bool _hasChanged;
 
 };
 
@@ -537,6 +557,8 @@ private:
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
     
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
+    
+    virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
 
 
 private:
@@ -582,6 +604,8 @@ private:
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
 
     virtual bool eventFilter(QObject *target, QEvent *event) OVERRIDE FINAL;
+    
+    virtual void setReadOnly(bool /*readOnly*/,int /*dimension*/) OVERRIDE FINAL {}
 
 private:
     bool _checked;
@@ -589,7 +613,7 @@ private:
     GroupBoxLabel *_button;
     QLabel *_descriptionLabel;
     std::vector< std::pair< KnobGui *, std::pair<int, int> > > _children;
-    std::vector< KnobGui* > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
+    std::vector< std::pair<KnobGui*,std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
                                                //enabled too
 };
 
@@ -627,6 +651,8 @@ private:
     virtual void setEnabled() OVERRIDE FINAL;
     
     virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
+    
+    virtual void setReadOnly(bool /*readOnly*/,int /*dimension*/) OVERRIDE FINAL {}
     
 private:
     // TODO: PIMPL

@@ -120,7 +120,7 @@ void Settings::initializeKnobs(){
     ocioTab->addKnob(_ocioConfigKnob);
     
     _customOcioConfigFile = Natron::createKnob<File_Knob>(this, "Custom OpenColorIO config file");
-    _customOcioConfigFile->setEnabled(false);
+    _customOcioConfigFile->setAllDimensionsEnabled(false);
     ocioTab->addKnob(_customOcioConfigFile);
     
     _viewersTab = Natron::createKnob<Tab_Knob>(this, "Viewers");
@@ -369,7 +369,7 @@ void Settings::restoreSettings(){
 }
 
 bool Settings::tryLoadOpenColorIOConfig() {
-    if (_customOcioConfigFile->isEnabled()) {
+    if (_customOcioConfigFile->isEnabled(0)) {
         ///try to load from the file
         QStringList files = _customOcioConfigFile->getValue<QStringList>();
         if (files.isEmpty()) {
@@ -452,9 +452,9 @@ void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/)
         }
     } else if(k == _ocioConfigKnob.get()) {
         if (_ocioConfigKnob->getActiveEntryText() == std::string(NATRON_CUSTOM_OCIO_CONFIG_NAME)) {
-            _customOcioConfigFile->setEnabled(true);
+            _customOcioConfigFile->setAllDimensionsEnabled(true);
         } else {
-            _customOcioConfigFile->setEnabled(false);
+            _customOcioConfigFile->setAllDimensionsEnabled(false);
         }
         tryLoadOpenColorIOConfig();
          

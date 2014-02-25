@@ -131,6 +131,7 @@ NodeGui::NodeGui(NodeGraph* dag,
         _settingsPanel = new NodeSettingsPanel(_graph->getGui(),this,dockContainer_,dockContainer_->parentWidget());
         QObject::connect(_settingsPanel,SIGNAL(nameChanged(QString)),this,SLOT(setName(QString)));
         dockContainer_->addWidget(_settingsPanel);
+        _graph->getGui()->putSettingsPanelFirst(_settingsPanel);
         if(_internalNode->isOpenFXNode()){
             OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
             ofxNode->effectInstance()->beginInstanceEditAction();

@@ -121,8 +121,7 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row)
         QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()));
         
         ///set the copy/link actions in the right click menu
-        box->setContextMenuPolicy(Qt::CustomContextMenu);
-        QObject::connect(box,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+        enableRightClickMenu(box,i);
         
         int min = displayMins[i];
         int max = displayMaxs[i];
@@ -143,8 +142,6 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row)
                     _slider->setToolTip(toolTip());
                 }
                 QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
-                _slider->setContextMenuPolicy(Qt::CustomContextMenu);
-                QObject::connect(_slider,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
 
                 
                 boxContainerLayout->addWidget(_slider);
@@ -252,9 +249,8 @@ void Int_KnobGui::_show()
 
 void Int_KnobGui::setEnabled()
 {
-    bool b = getKnob()->isEnabled();
-    _descriptionLabel->setEnabled(b);
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
+        bool b = getKnob()->isEnabled(i);
         _spinBoxes[i].first->setEnabled(b);
         _spinBoxes[i].first->setReadOnly(!b);
         if (_spinBoxes[i].second) {
@@ -262,9 +258,18 @@ void Int_KnobGui::setEnabled()
         }
     }
     if (_slider) {
-        _slider->setEnabled(b);
+        _slider->setEnabled(getKnob()->isEnabled(0));
     }
     
+}
+
+void Int_KnobGui::setReadOnly(bool readOnly,int dimension) {
+    
+    assert(dimension < (int)_spinBoxes.size());
+    _spinBoxes[dimension].first->setReadOnly(readOnly);
+    if (_slider && dimension == 0) {
+        _slider->setEnabled(!readOnly);
+    }
 }
 
 //==========================BOOL_KNOB_GUI======================================
@@ -285,12 +290,10 @@ void Bool_KnobGui::createWidget(QGridLayout *layout, int row)
     QObject::connect(_descriptionLabel, SIGNAL(clicked(bool)), this, SLOT(onCheckBoxStateChanged(bool)));
     
     ///set the copy/link actions in the right click menu
-    _checkBox->setContextMenuPolicy(Qt::CustomContextMenu);
-    QObject::connect(_checkBox,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
-    ///set the copy/link actions in the right click menu
-    _descriptionLabel->setContextMenuPolicy(Qt::CustomContextMenu);
-    QObject::connect(_descriptionLabel,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+    enableRightClickMenu(_checkBox,0);
+
     layout->addWidget(_checkBox, row, 1, Qt::AlignLeft);
+
 }
 
 Bool_KnobGui::~Bool_KnobGui()
@@ -340,17 +343,17 @@ void Bool_KnobGui::_show()
 
 void Bool_KnobGui::setEnabled()
 {
-    bool b = getKnob()->isEnabled();
+    bool b = getKnob()->isEnabled(0);
     _descriptionLabel->setEnabled(b);
     _checkBox->setEnabled(b);
 }
 
-void AnimatedCheckBox::setAnimation(int i)
-{
-    animation = i;
-    style()->unpolish(this);
-    style()->polish(this);
+void Bool_KnobGui::setReadOnly(bool readOnly,int /*dimension*/) {
+    _checkBox->setReadOnly(readOnly);
 }
+
+
+
 //=============================DOUBLE_KNOB_GUI===================================
 Double_KnobGui::Double_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container), _slider(0)
 {
@@ -415,8 +418,8 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row)
         QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()));
         
         ///set the copy/link actions in the right click menu
-        box->setContextMenuPolicy(Qt::CustomContextMenu);
-        QObject::connect(box,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+        enableRightClickMenu(box,i);
+
         
         double min = displayMins[i];
         double max = displayMaxs[i];
@@ -439,10 +442,6 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row)
                     _slider->setToolTip(toolTip());
                 }
                 QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
-                
-                ///set the copy/link actions in the right click menu
-                _slider->setContextMenuPolicy(Qt::CustomContextMenu);
-                QObject::connect(_slider,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
 
                 boxContainerLayout->addWidget(_slider);
             }
@@ -551,9 +550,8 @@ void Double_KnobGui::_show()
 }
 void Double_KnobGui::setEnabled()
 {
-    bool b = getKnob()->isEnabled();
-    _descriptionLabel->setEnabled(b);
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
+        bool b = getKnob()->isEnabled(i);
         _spinBoxes[i].first->setEnabled(b);
         _spinBoxes[i].first->setReadOnly(!b);
         if (_spinBoxes[i].second) {
@@ -561,12 +559,18 @@ void Double_KnobGui::setEnabled()
         }
     }
     if (_slider) {
-        _slider->setEnabled(b);
+        _slider->setEnabled(getKnob()->isEnabled(0));
     }
     
 }
 
-
+void Double_KnobGui::setReadOnly(bool readOnly,int dimension) {
+    assert(dimension < (int)_spinBoxes.size());
+    _spinBoxes[dimension].first->setReadOnly(readOnly);
+    if (_slider && dimension==0) {
+        _slider->setEnabled(!readOnly);
+    }
+}
 
 //=============================BUTTON_KNOB_GUI===================================
 void Button_KnobGui::createWidget(QGridLayout *layout, int row)
@@ -599,10 +603,13 @@ void Button_KnobGui::_show()
 }
 void Button_KnobGui::setEnabled()
 {
-    bool b = getKnob()->isEnabled();
+    bool b = getKnob()->isEnabled(0);
     _button->setEnabled(b);
 }
 
+void Button_KnobGui::setReadOnly(bool readOnly,int /*dimension*/) {
+    _button->setEnabled(!readOnly);
+}
 
 //=============================CHOICE_KNOB_GUI===================================
 Choice_KnobGui::Choice_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container)
@@ -634,10 +641,8 @@ void Choice_KnobGui::createWidget(QGridLayout *layout, int row)
     QObject::connect(_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
     
     ///set the copy/link actions in the right click menu
-    _comboBox->setContextMenuPolicy(Qt::CustomContextMenu);
-    QObject::connect(_comboBox,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+    enableRightClickMenu(_comboBox,0);
 
-    
     layout->addWidget(_comboBox, row, 1, Qt::AlignLeft);
 }
 
@@ -702,11 +707,16 @@ void Choice_KnobGui::_show()
 
 void Choice_KnobGui::setEnabled()
 {
-    bool b = getKnob()->isEnabled();
+    bool b = getKnob()->isEnabled(0);
     _descriptionLabel->setEnabled(b);
     _comboBox->setEnabled(b);
 }
 
+
+void Choice_KnobGui::setReadOnly(bool readOnly,int /*dimension*/)
+{
+    _comboBox->setReadOnly(readOnly);
+}
 //=============================TABLE_KNOB_GUI===================================
 
 //ComboBoxDelegate::ComboBoxDelegate(Table_KnobGui* tableKnob,QObject *parent)
@@ -1043,9 +1053,7 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
     _rBox->setIncrement(0.1);
     
     ///set the copy/link actions in the right click menu
-    _rBox->setContextMenuPolicy(Qt::CustomContextMenu);
-    QObject::connect(_rBox,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
-
+    enableRightClickMenu(_rBox,0);
     
     if(hasToolTip()) {
         _rBox->setToolTip(toolTip());
@@ -1063,10 +1071,8 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
         _gBox->setIncrement(0.1);
         
         ///set the copy/link actions in the right click menu
-        _gBox->setContextMenuPolicy(Qt::CustomContextMenu);
-        QObject::connect(_gBox,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+        enableRightClickMenu(_gBox,1);
 
-        
         if(hasToolTip()) {
             _gBox->setToolTip(toolTip());
         }
@@ -1082,8 +1088,7 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
         _bBox->setIncrement(0.1);
         
         ///set the copy/link actions in the right click menu
-        _bBox->setContextMenuPolicy(Qt::CustomContextMenu);
-        QObject::connect(_bBox,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+        enableRightClickMenu(_bBox,2);
 
         
         if(hasToolTip()) {
@@ -1102,8 +1107,7 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
         _aBox->setIncrement(0.1);
         
         ///set the copy/link actions in the right click menu
-        _aBox->setContextMenuPolicy(Qt::CustomContextMenu);
-        QObject::connect(_aBox,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+        enableRightClickMenu(_aBox,3);
 
         
         if(hasToolTip()) {
@@ -1144,16 +1148,19 @@ void Color_KnobGui::createWidget(QGridLayout *layout, int row)
 }
 void Color_KnobGui::setEnabled()
 {
-    bool b = getKnob()->isEnabled();
-    _rBox->setEnabled(b);
+    bool r = getKnob()->isEnabled(0);
+    
+    _rBox->setEnabled(r);
     if (_dimension >= 3) {
-        _gBox->setEnabled(b);
+        bool g = getKnob()->isEnabled(1);
+        bool b = getKnob()->isEnabled(2);
+        _gBox->setEnabled(g);
         _bBox->setEnabled(b);
     }
     if (_dimension >= 4) {
-        _aBox->setEnabled(b);
+        bool a = getKnob()->isEnabled(3);
+        _aBox->setEnabled(a);
     }
-    _colorDialogButton->setEnabled(b);
 }
 
 void Color_KnobGui::updateGUI(int dimension, const Variant &variant)
@@ -1265,16 +1272,27 @@ void Color_KnobGui::showColorDialog()
         realColor.setGreen(userColor.red());
         realColor.setBlue(userColor.red());
         realColor.setAlpha(255);
-        _rBox->setValue(realColor.redF());
+        
+        if (getKnob()->isEnabled(0)) {
+            _rBox->setValue(realColor.redF());
+        }
         
         if (_dimension >= 3) {
-            _gBox->setValue(userColor.greenF());
-            _bBox->setValue(userColor.blueF());
+            
+            if (getKnob()->isEnabled(1)) {
+                _gBox->setValue(userColor.greenF());
+            }
+            if (getKnob()->isEnabled(2)) {
+                _bBox->setValue(userColor.blueF());
+            }
             realColor.setGreen(userColor.green());
             realColor.setBlue(userColor.blue());
         }
         if (_dimension >= 4) {
-            _aBox->setValue(userColor.alphaF());
+            
+            if (getKnob()->isEnabled(3)) {
+                _aBox->setValue(userColor.alphaF());
+            }
             realColor.setGreen(userColor.green());
             realColor.setBlue(userColor.blue());
             realColor.setAlpha(userColor.alpha());
@@ -1432,6 +1450,22 @@ void Color_KnobGui::onPickingEnabled(bool enabled){
     
 }
 
+void Color_KnobGui::setReadOnly(bool readOnly,int dimension) {
+    if (dimension == 0 && _rBox) {
+        _rBox->setReadOnly(readOnly);
+    }
+    else if (dimension == 1 && _gBox) {
+        _gBox->setReadOnly(readOnly);
+    }
+    else if (dimension == 2 && _bBox) {
+        _bBox->setReadOnly(readOnly);
+    }
+    else if (dimension == 3 && _aBox) {
+        _aBox->setReadOnly(readOnly);
+    } else {
+        assert(false); //< dim invalid
+    }
+}
 //=============================STRING_KNOB_GUI===================================
 
 void AnimatingTextEdit::setAnimation(int v) {
@@ -1441,15 +1475,30 @@ void AnimatingTextEdit::setAnimation(int v) {
     repaint();
 }
 
+void AnimatingTextEdit::setReadOnlyNatron(bool ro) {
+    setReadOnly(ro);
+    readOnlyNatron = ro;
+    style()->unpolish(this);
+    style()->polish(this);
+    repaint();
+}
+
 void AnimatingTextEdit::focusOutEvent(QFocusEvent* e) {
-    emit editingFinished();
+    if (_hasChanged) {
+        _hasChanged = false;
+        emit editingFinished();
+    }
     QTextEdit::focusOutEvent(e);
 }
 
 void AnimatingTextEdit::keyPressEvent(QKeyEvent* e) {
     if (e->key() == Qt::Key_Return) {
-        emit editingFinished();
+        if (_hasChanged) {
+            _hasChanged = false;
+            emit editingFinished();
+        }
     }
+    _hasChanged = true;
     QTextEdit::keyPressEvent(e);
 }
 
@@ -1487,8 +1536,7 @@ void String_KnobGui::createWidget(QGridLayout *layout, int row)
         }
         
         ///set the copy/link actions in the right click menu
-        _lineEdit->setContextMenuPolicy(Qt::CustomContextMenu);
-        QObject::connect(_lineEdit,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+        enableRightClickMenu(_lineEdit,0);
 
         
     } else {
@@ -1503,8 +1551,7 @@ void String_KnobGui::createWidget(QGridLayout *layout, int row)
         }
         
         ///set the copy/link actions in the right click menu
-        _textEdit->setContextMenuPolicy(Qt::CustomContextMenu);
-        QObject::connect(_textEdit,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+        enableRightClickMenu(_textEdit,0);
 
     }
 }
@@ -1571,7 +1618,7 @@ void String_KnobGui::_show()
 }
 void String_KnobGui::setEnabled()
 {
-    bool b = getKnob()->isEnabled();
+    bool b = getKnob()->isEnabled(0);
     _descriptionLabel->setEnabled(b);
     if(_lineEdit) {
         _lineEdit->setEnabled(b);
@@ -1609,6 +1656,15 @@ void String_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLe
             break;
         default:
             break;
+    }
+}
+
+void String_KnobGui::setReadOnly(bool readOnly, int /*dimension*/) {
+    if (_textEdit) {
+        _textEdit->setReadOnlyNatron(readOnly);
+    } else {
+        assert(_lineEdit);
+        _lineEdit->setReadOnly(readOnly);
     }
 }
 
@@ -1739,17 +1795,24 @@ void Group_KnobGui::_show()
 
 void Group_KnobGui::setEnabled() {
     
-    if (getKnob()->isEnabled()) {
+    if (getKnob()->isEnabled(0)) {
         for (U32 i = 0; i < _childrenToEnable.size(); ++i) {
-            _childrenToEnable[i]->getKnob()->setEnabled(true);
+            for (U32 j = 0; j < _childrenToEnable[i].second.size(); ++j) {
+                _childrenToEnable[i].first->getKnob()->setEnabled(_childrenToEnable[i].second[j], true);
+            }
         }
     } else {
         _childrenToEnable.clear();
         for (U32 i = 0; i < _children.size(); ++i) {
-            if (_children[i].first->getKnob()->isEnabled()) {
-                _childrenToEnable.push_back(_children[i].first);
-                _children[i].first->getKnob()->setEnabled(false);
+            std::vector<int> dimensions;
+            for (int j = 0; j < _children[i].first->getKnob()->getDimension();++j) {
+                if (_children[i].first->getKnob()->isEnabled(j)) {
+                    _children[i].first->getKnob()->setEnabled(j, false);
+                    dimensions.push_back(j);
+                }
             }
+            _childrenToEnable.push_back(std::make_pair(_children[i].first, dimensions));
+
         }
     }
 }
@@ -1850,7 +1913,7 @@ void Parametric_KnobGui::_show() {
 }
 
 void Parametric_KnobGui::setEnabled() {
-    bool b = getKnob()->isEnabled();
+    bool b = getKnob()->isEnabled(0);
     _tree->setEnabled(b);
 }
 

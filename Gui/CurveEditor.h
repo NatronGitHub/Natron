@@ -137,7 +137,11 @@ public:
     
     void hideCurves(KnobGui* knob);
     
+    void hideCurve(KnobGui* knob,int dimension);
+    
     void showCurves(KnobGui* knob);
+    
+    void showCurve(KnobGui* knob,int dimension);
     
     CurveWidget* getCurveWidget() const WARN_UNUSED_RETURN;
     

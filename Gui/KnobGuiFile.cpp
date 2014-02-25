@@ -56,8 +56,7 @@ void File_KnobGui::createWidget(QGridLayout *layout, int row)
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     
     ///set the copy/link actions in the right click menu
-    _lineEdit->setContextMenuPolicy(Qt::CustomContextMenu);
-    QObject::connect(_lineEdit,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+    enableRightClickMenu(_lineEdit, 0);
 
     
     if(hasToolTip()) {
@@ -227,11 +226,15 @@ void File_KnobGui::_show()
 }
 
 void File_KnobGui::setEnabled() {
-    bool enabled = getKnob()->isEnabled();
+    bool enabled = getKnob()->isEnabled(0);
     _openFileButton->setEnabled(enabled);
     _descriptionLabel->setEnabled(enabled);
     _lineEdit->setEnabled(enabled);
 
+}
+void File_KnobGui::setReadOnly(bool readOnly,int /*dimension*/) {
+    _openFileButton->setEnabled(!readOnly);
+    _lineEdit->setReadOnly(readOnly);
 }
 
 //============================OUTPUT_FILE_KNOB_GUI====================================
@@ -267,8 +270,7 @@ void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row)
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     
     ///set the copy/link actions in the right click menu
-    _lineEdit->setContextMenuPolicy(Qt::CustomContextMenu);
-    QObject::connect(_lineEdit,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
+    enableRightClickMenu(_lineEdit, 0);
 
     
     _openFileButton = new Button(layout->parentWidget());
@@ -363,13 +365,17 @@ void OutputFile_KnobGui::_show()
 }
 
 void OutputFile_KnobGui::setEnabled() {
-    bool enabled = getKnob()->isEnabled();
+    bool enabled = getKnob()->isEnabled(0);
     _openFileButton->setEnabled(enabled);
     _descriptionLabel->setEnabled(enabled);
     _lineEdit->setEnabled(enabled);
     
 }
 
+void OutputFile_KnobGui::setReadOnly(bool readOnly,int /*dimension*/) {
+    _openFileButton->setEnabled(!readOnly);
+    _lineEdit->setReadOnly(readOnly);
+}
 //============================PATH_KNOB_GUI====================================
 Path_KnobGui::Path_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
 : KnobGui(knob, container)
@@ -402,9 +408,7 @@ void Path_KnobGui::createWidget(QGridLayout *layout, int row)
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     
     ///set the copy/link actions in the right click menu
-    _lineEdit->setContextMenuPolicy(Qt::CustomContextMenu);
-    QObject::connect(_lineEdit,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showRightClickMenu(QPoint)));
-
+    enableRightClickMenu(_lineEdit, 0);
     
     _openFileButton = new Button(layout->parentWidget());
     _openFileButton->setToolTip("Click to select a path to append to/replace this variable.");
@@ -500,10 +504,14 @@ void Path_KnobGui::onReturnPressed()
 
 
 void Path_KnobGui::setEnabled() {
-    bool enabled = getKnob()->isEnabled();
+    bool enabled = getKnob()->isEnabled(0);
     _openFileButton->setEnabled(enabled);
     _descriptionLabel->setEnabled(enabled);
     _lineEdit->setEnabled(enabled);
     
 }
 
+void Path_KnobGui::setReadOnly(bool readOnly,int /*dimension*/) {
+    _openFileButton->setEnabled(!readOnly);
+    _lineEdit->setReadOnly(readOnly);
+}

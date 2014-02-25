@@ -34,7 +34,7 @@ class KnobSerialization
     int _dimension;
     /* the keys for a specific dimension*/
     std::vector< boost::shared_ptr<Curve> > _curves;
-    std::vector< std::string > _masters;
+    std::vector< std::pair< int, std::string > > _masters;
     
     std::string _extraData;
 
@@ -69,7 +69,7 @@ public:
 
     const  std::vector< boost::shared_ptr<Curve> >& getCurves() const { return _curves; }
 
-    const std::vector< std::string > & getMasters() const { return _masters; }
+    const std::vector< std::pair<int,std::string> > & getMasters() const { return _masters; }
 
     const std::string& getExtraData() const { return _extraData; }
 };

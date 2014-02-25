@@ -252,7 +252,9 @@ public:
     
     void setSpacingBetweenItems(int spacing);
     
-    void setEnabled(bool b);
+    void setEnabled(int dimension,bool b);
+    
+    void setAllDimensionsEnabled(bool b);
     
     void setSecret(bool b);
     
@@ -271,7 +273,7 @@ public:
     
     bool isSecret() const ;
     
-    bool isEnabled() const;
+    bool isEnabled(int dimension) const;
     
     void setInsignificant(bool b);
     
@@ -294,7 +296,7 @@ public:
      * at the same dimension for the knob 'other'.
      * In case of success, this function returns true, otherwise false.
     **/
-    bool slaveTo(int dimension,boost::shared_ptr<Knob> other);
+    bool slaveTo(int dimension,boost::shared_ptr<Knob> other,int otherDimension);
 
 
     /**
@@ -307,7 +309,7 @@ public:
      * @brief Returns a valid pointer to a knob if the value at
      * the given dimension is slaved.
     **/
-    boost::shared_ptr<Knob> getMaster(int dimension) const;
+    std::pair<int,boost::shared_ptr<Knob> > getMaster(int dimension) const;
 
     /**
      * @brief Returns true if the value at the given dimension is slave to another parameter
@@ -315,7 +317,7 @@ public:
     bool isSlave(int dimension) const;
     
 
-    const std::vector<boost::shared_ptr<Knob> > &getMasters() const;
+    const std::vector<std::pair<int,boost::shared_ptr<Knob> > > &getMasters() const;
 
     /**
      * @brief Called by the GUI whenever the animation level changes (due to a time change
@@ -346,12 +348,12 @@ public:
     }
     
     /**
-     * @brief Restores the default value for all dimension and remove any animation.
+     * @brief Restores the default value
      **/
-    void resetToDefaultValues();
+    void resetToDefaultValue(int dimension);
     
     
-    
+    virtual bool isTypeCompatible(const Knob& other) const = 0;
 public slots:
     
   
@@ -392,6 +394,8 @@ signals:
     
     void updateSlaves(int dimension);
     
+    void readOnlyChanged(bool,int);
+    
 private:
     //private because it emits a signal
     ValueChangedReturnCode setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
@@ -417,12 +421,12 @@ private:
     /**
      * @brief Called when a keyframe is removed.
      **/
-    virtual void onKeyFrameRemoved(int /*dimension*/, double /*time*/) {}
+    virtual void keyframeRemoved_virtual(int /*dimension*/, double /*time*/) {}
     
     /**
      * @brief Called when all keyframes are removed
      **/
-    virtual void onKeyframesRemoved(int /*dimension*/) {}
+    virtual void animationRemoved_virtual(int /*dimension*/) {}
     
     /** @brief This function is called right after that the _value has changed
      * but before any signal notifying that it has changed. It can be useful

@@ -80,6 +80,8 @@ public:
     
     std::pair<int,int> getMinMaxForCurve(const Curve* curve) const;
     
+    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
+
 signals:
     
     void minMaxChanged(int mini, int maxi, int index = 0);
@@ -122,6 +124,8 @@ public:
     
     static const std::string& typeNameStatic();
     
+    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
+
 private:
     
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -189,6 +193,8 @@ public:
     
     static const std::string& typeNameStatic();
     
+    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
+
 signals:
     void minMaxChanged(double mini, double maxi, int index = 0);
     
@@ -233,6 +239,8 @@ public:
     
     bool isRenderButton() const { return _renderButton; }
     
+    virtual bool isTypeCompatible(const Knob& /*other*/) const { return false; }
+
 private:
     virtual bool canAnimate() const OVERRIDE FINAL;
     
@@ -274,6 +282,8 @@ public:
     
     static const std::string& typeNameStatic();
     
+    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
+
 signals:
     
     void populated();
@@ -350,6 +360,8 @@ public:
     
     static const std::string& typeNameStatic();
     
+    virtual bool isTypeCompatible(const Knob& /*other*/) const { return false; }
+
 private:
     virtual bool canAnimate() const OVERRIDE FINAL;
     
@@ -381,6 +393,8 @@ public:
     
     static const std::string& typeNameStatic();
     
+    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
+
 private:
     
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -442,6 +456,9 @@ public:
     
     virtual Variant getValueAtTime(double time, int dimension) const OVERRIDE FINAL;
     
+    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
+
+    const StringAnimationManager& getAnimation() const { return *_animation; }
 private:
     
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -457,6 +474,10 @@ private:
     virtual void loadExtraData(const QString& str) OVERRIDE FINAL;
     
     virtual QString saveExtraData() const OVERRIDE FINAL;
+    
+    virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE FINAL;
+    
+    virtual void animationRemoved_virtual(int dimension) OVERRIDE FINAL;
     
 private:
     static const std::string _typeNameStr;
@@ -488,6 +509,8 @@ public:
     
     static const std::string& typeNameStatic();
     
+    virtual bool isTypeCompatible(const Knob& /*other*/) const { return false; }
+
 private:
     
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -517,6 +540,8 @@ public:
     
     static const std::string& typeNameStatic();
     
+    virtual bool isTypeCompatible(const Knob& /*other*/) const { return false; }
+
 private:
     virtual bool canAnimate() const OVERRIDE FINAL;
     
@@ -587,6 +612,8 @@ public:
     
     static const std::string& typeNameStatic() WARN_UNUSED_RETURN;
     
+    virtual bool isTypeCompatible(const Knob& /*other*/) const { return false; }
+
 public slots:
     
     virtual void drawCustomBackground(){

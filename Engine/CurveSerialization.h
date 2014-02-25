@@ -37,7 +37,6 @@ void serialize(Archive & ar,CurvePrivate& c, const unsigned int version)
 {
     (void)version;
     ar & boost::serialization::make_nvp("KeyFrameSet",c.keyFrames);
-    ar & boost::serialization::make_nvp("CurveType",c.curveType);
 }
 
 

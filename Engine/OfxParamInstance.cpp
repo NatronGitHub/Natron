@@ -151,7 +151,7 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
 
 // callback which should set enabled state as appropriate
 void OfxPushButtonInstance::setEnabled(){
-    _knob->setEnabled(getEnabled());
+    _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
@@ -204,7 +204,7 @@ OfxStatus OfxIntegerInstance::set(OfxTime time, int v){
 
 // callback which should set enabled state as appropriate
 void OfxIntegerInstance::setEnabled(){
-    _knob->setEnabled(getEnabled());
+    _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
@@ -402,7 +402,7 @@ OfxStatus OfxDoubleInstance::integrate(OfxTime time1, OfxTime time2, double& v) 
 
 // callback which should set enabled state as appropriate
 void OfxDoubleInstance::setEnabled(){
-    _knob->setEnabled(getEnabled());
+    _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
@@ -489,7 +489,7 @@ OfxStatus OfxBooleanInstance::set(OfxTime /*time*/, bool b){
 
 // callback which should set enabled state as appropriate
 void OfxBooleanInstance::setEnabled(){
-    _knob->setEnabled(getEnabled());
+    _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
@@ -573,7 +573,7 @@ OfxStatus OfxChoiceInstance::set(OfxTime /*time*/, int v) {
 
 // callback which should set enabled state as appropriate
 void OfxChoiceInstance::setEnabled(){
-    _knob->setEnabled(getEnabled());
+    _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
@@ -692,7 +692,7 @@ OfxStatus OfxRGBAInstance::integrate(OfxTime time1, OfxTime time2, double&r ,dou
 
 // callback which should set enabled state as appropriate
 void OfxRGBAInstance::setEnabled(){
-    _knob->setEnabled(getEnabled());
+    _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
@@ -798,7 +798,7 @@ OfxStatus OfxRGBInstance::integrate(OfxTime time1, OfxTime time2, double&r ,doub
 
 // callback which should set enabled state as appropriate
 void OfxRGBInstance::setEnabled(){
-    _knob->setEnabled(getEnabled());
+    _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
@@ -954,7 +954,7 @@ OfxStatus OfxDouble2DInstance::integrate(OfxTime time1, OfxTime time2, double&x1
 
 // callback which should set enabled state as appropriate
 void OfxDouble2DInstance::setEnabled(){
-    _knob->setEnabled(getEnabled());
+    _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
@@ -1081,7 +1081,7 @@ OfxStatus OfxInteger2DInstance::set(OfxTime time, int x1, int x2) {
 
 // callback which should set enabled state as appropriate
 void OfxInteger2DInstance::setEnabled() {
-    _knob->setEnabled(getEnabled());
+    _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
@@ -1209,7 +1209,7 @@ OfxStatus OfxDouble3DInstance::integrate(OfxTime time1, OfxTime time2, double&x1
 
 // callback which should set enabled state as appropriate
 void OfxDouble3DInstance::setEnabled() {
-    _knob->setEnabled(getEnabled());
+    _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
@@ -1320,7 +1320,7 @@ OfxStatus OfxInteger3DInstance::set(OfxTime time, int x1, int x2, int x3) {
 
 // callback which should set enabled state as appropriate
 void OfxInteger3DInstance::setEnabled() {
-    _knob->setEnabled(getEnabled());
+    _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
@@ -1441,7 +1441,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
         
         _stringKnob = Natron::createKnob<String_Knob>(node, getParamLabel(this));
         if (mode == kOfxParamStringIsLabel) {
-            _stringKnob->setEnabled(false);
+            _stringKnob->setAllDimensionsEnabled(false);
         }
         if(mode == kOfxParamStringIsMultiLine) {
             _stringKnob->setAsMultiLine();
@@ -1559,16 +1559,16 @@ boost::shared_ptr<Knob> OfxStringInstance::getKnob() const{
 // callback which should set enabled state as appropriate
 void OfxStringInstance::setEnabled(){
     if(_fileKnob){
-        _fileKnob->setEnabled(getEnabled());
+        _fileKnob->setAllDimensionsEnabled(getEnabled());
     }
     if (_outputFileKnob) {
-        _outputFileKnob->setEnabled(getEnabled());
+        _outputFileKnob->setAllDimensionsEnabled(getEnabled());
     }
     if (_stringKnob) {
-        _stringKnob->setEnabled(getEnabled());
+        _stringKnob->setAllDimensionsEnabled(getEnabled());
     }
     if (_pathKnob) {
-        _pathKnob->setEnabled(getEnabled());
+        _pathKnob->setAllDimensionsEnabled(getEnabled());
     }
 }
 
@@ -1738,7 +1738,7 @@ boost::shared_ptr<Knob> OfxCustomInstance::getKnob() const {
 
 // callback which should set enabled state as appropriate
 void OfxCustomInstance::setEnabled() {
-    _knob->setEnabled(getEnabled());
+    _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
@@ -1836,7 +1836,7 @@ boost::shared_ptr<Knob> OfxParametricInstance::getKnob() const{
 
 // callback which should set enabled state as appropriate
 void OfxParametricInstance::setEnabled() {
-    _knob->setEnabled(getEnabled());
+    _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate

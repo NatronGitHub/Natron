@@ -28,7 +28,6 @@ class QGridLayout; //used by KnobGui
 class QVBoxLayout; //used by KnobGui
 class QHBoxLayout; //used by KnobGui
 class QMenu;
-class QComboBox;
 class QLabel;
 
 // Engine
@@ -37,6 +36,7 @@ class Variant; //used by KnobGui
 class KeyFrame;
 
 // Gui
+class ComboBox;
 class Button;
 class AnimationButton; //used by KnobGui
 class DockablePanel; //used by KnobGui
@@ -84,6 +84,8 @@ public:
     bool hasToolTip() const;
     
     Gui* getGui() const;
+    
+    void enableRightClickMenu(QWidget* widget,int dimension);
 
 public slots:
     /*Called when the value held by the knob is changed internally.
@@ -99,7 +101,9 @@ public slots:
 
     void showAnimationMenu();
     
-    void showRightClickMenu(const QPoint& pos);
+    void onRightClickClicked(const QPoint& pos);
+    
+    void showRightClickMenuForDimension(const QPoint& pos,int dimension);
     
     void setEnabledSlot();
     
@@ -111,7 +115,6 @@ public slots:
     
     void onMasterChange(int dimension);
     
-    /******Animations slots for all dimensions at once*****/
     
     void onSetKeyActionTriggered();
     
@@ -133,21 +136,29 @@ public slots:
     
     void onHorizontalInterpActionTriggered();
     
-    void onCopyValuesActionTriggered();
     
-    void onCopyAnimationActionTriggered();
+    void onCopyValuesActionTriggered();
+    void copyValues(int dimension);
     
     void onPasteValuesActionTriggered();
+    void pasteValues(int dimension);
+    
+    
+    void onCopyAnimationActionTriggered();
     
     void onPasteAnimationActionTriggered();
     
     void onLinkToActionTriggered();
+    void linkTo(int dimension);
     
     void onUnlinkActionTriggered();
+    void unlink(int dimension);
     
     void onResetDefaultValuesActionTriggered();
-    /******************************************************/
+    void resetDefault(int dimension);
 
+    
+    void onReadOnlyChanged(bool b,int d);
 signals:
     
     void knobUndoneChange();
@@ -187,6 +198,8 @@ private:
     virtual void _show() = 0;
 
     virtual void setEnabled() = 0;
+    
+    virtual void setReadOnly(bool readOnly,int dimension) = 0;
     
     /*Must create the GUI and insert it in the grid layout at the index "row".*/
     virtual void createWidget(QGridLayout* layout,int row) = 0;
@@ -236,7 +249,7 @@ public:
     
     virtual ~LinkToKnobDialog() OVERRIDE { _allKnobs.clear(); }
     
-    boost::shared_ptr<Knob> getSelectedKnobs() const;
+    std::pair<int ,boost::shared_ptr<Knob> > getSelectedKnobs() const;
 
 private:
     // FIXME: PIMPL
@@ -244,14 +257,14 @@ private:
     QHBoxLayout* _firstLineLayout;
     QWidget* _firstLine;
     QLabel* _selectKnobLabel;
-    QComboBox* _selectionCombo;
+    ComboBox* _selectionCombo;
 
     QWidget* _buttonsWidget;
     Button* _cancelButton;
     Button* _okButton;
     QHBoxLayout* _buttonsLayout;
 
-    std::map<QString,boost::shared_ptr<Knob> > _allKnobs;
+    std::map<QString,std::pair<int,boost::shared_ptr<Knob > > > _allKnobs;
 };
 
 #endif // NATRON_GUI_KNOBGUI_H_

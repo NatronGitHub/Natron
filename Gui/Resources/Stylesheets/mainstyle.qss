@@ -202,6 +202,14 @@ ComboBox[pressed="true"][animation="2"]{
 background-color: %7;
 border-radius : 5px;
 }
+ComboBox[pressed="false"][readOnly="true"]{
+background-color: %3;
+color : black;
+}
+ComboBox[pressed="true"][readOnly="true"]{
+background-color: %4;
+color : black;
+}
 TabWidget{background-color: %2;}
 
 NodeSettingsPanel{
@@ -254,10 +262,7 @@ color : %5
 QGraphicsView{
 background-color: %3;
 }
-QTextEdit{
-color: %5;
-background-color: %3;
-}
+
 QScrollArea{
 background-color: %2;
 }
@@ -307,6 +312,11 @@ padding: 2px 4px;
 QLineEdit:!enabled {
 color:black;
 }
+QLineEdit:read-only {
+color:black;
+background-color:%3;
+}
+
 QSplitter::handle:horizontal{
 background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 %3, stop:0.55 %2,stop:0.98 black, stop:1 black);
 border: 0px;
@@ -398,6 +408,10 @@ background-color: %6;
 LineEdit[animation="2"]{
 background-color: %7;
 }
+LineEdit:read-only{
+background-color: %3;
+color: black;
+}
 
 AnimatingTextEdit[animation="0"]{
 background-color: %3;
@@ -408,8 +422,18 @@ background-color: %6;
 AnimatingTextEdit[animation="2"]{
 background-color: %7;
 }
+AnimatingTextEdit[readOnlyNatron="true"]{
+background-color: %3;
+color:black;
+}
+QTextEdit{
+color: %5;
+background-color: %3;
+}
 
-
+QTextEdit:!enabled{
+color: black;
+}
 
 AnimatedCheckBox[animation="1"]::indicator:unchecked {
 image: url(:/Resources/Images/checkbox_animation1_unchecked.png);
@@ -434,4 +458,10 @@ image: url(:/Resources/Images/checkbox_animation2_checked_hovered.png);
 }
 AnimatedCheckBox[animation="2"]::indicator:unchecked:hover {
 image: url(:/Resources/Images/checkbox_animation2_unchecked_hovered.png);
+}
+AnimatedCheckBox[readOnly="true"]::indicator:checked{
+image: url(:/Resources/Images/checkbox_checked_readonly.png);
+}
+AnimatedCheckBox[readOnly="true"]::indicator:unchecked{
+image: url(:/Resources/Images/checkbox_unchecked_readonly.png);
 }
