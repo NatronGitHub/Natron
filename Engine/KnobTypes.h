@@ -428,6 +428,10 @@ public:
     
     bool isMultiLine() const { return _multiLine; }
     
+    void setAsLabel() { _isLabel = true; }
+
+    bool isLabel() const { return _isLabel; }
+
     void setAsCustom() { _isCustom = true; }
     
     bool isCustomKnob() const { return _isCustom; }
@@ -462,6 +466,7 @@ private:
     static const std::string _typeNameStr;
     
     bool _multiLine;
+    bool _isLabel;
     bool _isCustom;
     StringAnimationManager* _animation;
 

@@ -667,6 +667,7 @@ const std::string& Color_Knob::typeName() const
 String_Knob::String_Knob(KnobHolder *holder, const std::string &description, int dimension):
 Knob(holder, description, dimension)
 , _multiLine(false)
+, _isLabel(false)
 , _isCustom(false)
 , _animation(new StringAnimationManager(this))
 {

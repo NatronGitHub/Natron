@@ -1441,7 +1441,8 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
         
         _stringKnob = Natron::createKnob<String_Knob>(node, getParamLabel(this));
         if (mode == kOfxParamStringIsLabel) {
-            _stringKnob->setEnabled(false);
+            //_stringKnob->setEnabled(false);
+            _stringKnob->setAsLabel();
         }
         if(mode == kOfxParamStringIsMultiLine) {
             _stringKnob->setAsMultiLine();
