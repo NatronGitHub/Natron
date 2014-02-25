@@ -258,7 +258,7 @@ void Int_KnobGui::setEnabled()
         }
     }
     if (_slider) {
-        _slider->setEnabled(getKnob()->isEnabled(0));
+        _slider->setReadOnly(!getKnob()->isEnabled(0));
     }
     
 }
@@ -268,7 +268,7 @@ void Int_KnobGui::setReadOnly(bool readOnly,int dimension) {
     assert(dimension < (int)_spinBoxes.size());
     _spinBoxes[dimension].first->setReadOnly(readOnly);
     if (_slider && dimension == 0) {
-        _slider->setEnabled(!readOnly);
+        _slider->setReadOnly(readOnly);
     }
 }
 
@@ -559,7 +559,7 @@ void Double_KnobGui::setEnabled()
         }
     }
     if (_slider) {
-        _slider->setEnabled(getKnob()->isEnabled(0));
+        _slider->setReadOnly(!getKnob()->isEnabled(0));
     }
     
 }
@@ -568,7 +568,7 @@ void Double_KnobGui::setReadOnly(bool readOnly,int dimension) {
     assert(dimension < (int)_spinBoxes.size());
     _spinBoxes[dimension].first->setReadOnly(readOnly);
     if (_slider && dimension==0) {
-        _slider->setEnabled(!readOnly);
+        _slider->setReadOnly(readOnly);
     }
 }
 

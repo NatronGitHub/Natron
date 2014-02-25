@@ -49,6 +49,9 @@ public:
     
     double maximum() const {return _maximum;}
     
+    void setReadOnly(bool ro);
+    
+    bool isReadOnly() const { return _readOnly; }
     
 signals:
     
@@ -111,6 +114,7 @@ private:
     QColor _sliderColor;
     bool _initialized;
     bool _mustInitializeSliderPosition;
+    bool _readOnly;
 
 };
 

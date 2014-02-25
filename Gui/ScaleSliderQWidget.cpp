@@ -39,6 +39,7 @@ ScaleSliderQWidget::ScaleSliderQWidget(double bottom, double top, double initial
 , _sliderColor(97,83,30,255)
 , _initialized(false)
 , _mustInitializeSliderPosition(true)
+, _readOnly(false)
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 }
@@ -52,21 +53,28 @@ ScaleSliderQWidget::~ScaleSliderQWidget(){
 }
 
 void ScaleSliderQWidget::mousePressEvent(QMouseEvent *event){
-    QPoint newClick =  event->pos();
     
-    _zoomCtx.oldClick = newClick;
-    QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
-    
-    seekInternal(newClick_opengl.x());
+    if (!_readOnly) {
+        QPoint newClick =  event->pos();
+        
+        _zoomCtx.oldClick = newClick;
+        QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
+        
+        seekInternal(newClick_opengl.x());
+
+    }
     QWidget::mousePressEvent(event);
 }
 
 
 void ScaleSliderQWidget::mouseMoveEvent(QMouseEvent *event){
-    QPoint newClick =  event->pos();
-    QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
     
-    seekInternal(newClick_opengl.x());
+    if (!_readOnly) {
+        QPoint newClick =  event->pos();
+        QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
+        
+        seekInternal(newClick_opengl.x());
+    }
     
 }
 
@@ -216,7 +224,7 @@ void ScaleSliderQWidget::paintEvent(QPaintEvent* /*event*/) {
                     // draw it with a lower alpha
                     alphaText *= (tickSizePixel - sSizePixel)/(double)minTickSizeTextPixel;
                 }
-                QColor c = _textColor;
+                QColor c = _readOnly ? Qt::black : _textColor;
                 c.setAlphaF(alphaText);
                 p.setFont(*_font);
                 p.setPen(c);
@@ -243,4 +251,9 @@ void ScaleSliderQWidget::paintEvent(QPaintEvent* /*event*/) {
     p.drawLine(sliderTopRight.x(),sliderTopRight.y(),sliderTopRight.x(),sliderBottomLeft.y());
     p.drawLine(sliderTopRight.x(),sliderBottomLeft.y(),sliderBottomLeft.x(),sliderBottomLeft.y());
 
+}
+
+void ScaleSliderQWidget::setReadOnly(bool ro) {
+    _readOnly = ro;
+    update();
 }
