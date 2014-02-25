@@ -292,9 +292,9 @@ QRectF NodeGraph::visibleRect() {
     return mapToScene(viewport()->rect()).boundingRect();
 }
 
-NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Natron::Node *node){
+NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Natron::Node *node,bool requestedByLoad){
   
-    NodeGui* node_ui = new NodeGui(this,dockContainer,node,_root);
+    NodeGui* node_ui = new NodeGui(this,dockContainer,node,requestedByLoad,_root);
     moveNodesForIdealPosition(node_ui);
 
     _nodes.push_back(node_ui);
@@ -623,6 +623,9 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *){
         if(n->isActive() && n->contains(evpt) && n->getSettingPanel()){
             if(!n->isSettingsPanelVisible()){
                 n->setVisibleSettingsPanel(true);
+            }
+            if (!n->wasBeginEditCalled()) {
+                n->beginEditKnobs();
             }
             _gui->putSettingsPanelFirst(n->getSettingPanel());
             break;

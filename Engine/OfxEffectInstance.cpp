@@ -900,3 +900,7 @@ int OfxEffectInstance::minorVersion() const {
 bool OfxEffectInstance::supportsTiles() const {
     return effectInstance()->supportsTiles() && effectInstance()->getClip(kOfxImageEffectOutputClipName)->supportsTiles();
 }
+
+void OfxEffectInstance::beginEditKnobs() {
+    effectInstance()->beginInstanceEditAction();
+}

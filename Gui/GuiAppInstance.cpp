@@ -98,7 +98,7 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
 }
 
 void GuiAppInstance::createNodeGui(Natron::Node *node,bool loadRequest,bool openImageFileDialog) {
-    NodeGui* nodegui = _imp->_gui->createNodeGUI(node);
+    NodeGui* nodegui = _imp->_gui->createNodeGUI(node,loadRequest);
     assert(nodegui);
     _imp->_nodeMapping.insert(std::make_pair(node,nodegui));
     
@@ -108,6 +108,10 @@ void GuiAppInstance::createNodeGui(Natron::Node *node,bool loadRequest,bool open
     
     nodegui->initializeInputs();
     nodegui->initializeKnobs();
+    
+    if (!loadRequest) {
+        nodegui->beginEditKnobs();
+    }
     
     ///must be called after initializeKnobs as it populates the node's knobs in the curve editor;
     _imp->_gui->addNodeGuiToCurveEditor(nodegui);

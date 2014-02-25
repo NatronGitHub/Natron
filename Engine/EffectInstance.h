@@ -477,6 +477,11 @@ public:
      **/
     virtual void onMultipleInputsChanged() {}
     
+    /**
+     * @brief Called right away when the user first opens the settings panel of the node.
+     * This is called after each params had its default value set.
+     **/
+    virtual void beginEditKnobs() {}
 protected:
     
     /**
@@ -484,6 +489,8 @@ protected:
      * KnobFactory.
      **/
     virtual void initializeKnobs() OVERRIDE {};
+    
+   
     
     /**
      * @brief This function is provided for means to copy more data than just the knobs from the live instance

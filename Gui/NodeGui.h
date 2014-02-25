@@ -58,6 +58,7 @@ public:
     NodeGui(NodeGraph* dag,
             QVBoxLayout *dockContainer,
             Natron::Node *_internalNode,
+            bool requestedByLoad,
             QGraphicsItem *parent=0);
 
     ~NodeGui() OVERRIDE;
@@ -229,6 +230,9 @@ public slots:
     
     void onInputNRenderingFinished(int input);
     
+    void beginEditKnobs();
+    
+    bool wasBeginEditCalled() { return _wasBeginEditCalled; }
 signals:
     void nameChanged(QString);
     
@@ -278,6 +282,7 @@ private:
     timeval _lastInputNRenderStartedSlotCallTime;
     bool _wasRenderStartedSlotRun; //< true if we changed the color of the widget after a call to onRenderingStarted
   
+    bool _wasBeginEditCalled;
 };
 
 #endif // NATRON_GUI_NODEGUI_H_

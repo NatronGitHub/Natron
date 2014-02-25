@@ -536,6 +536,10 @@ void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
     }
 }
 
+void Knob::onMasterChanged(int dimension) {
+    evaluateValueChange(dimension, Natron::PLUGIN_EDITED);
+}
+
 void Knob::onTimeChanged(SequenceTime time){
     //setValue's calls compression is taken care of above.
     for (int i = 0; i < getDimension(); ++i) {

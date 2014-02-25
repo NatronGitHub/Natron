@@ -389,9 +389,9 @@ void Gui::closeEvent(QCloseEvent *e) {
 }
 
 
-NodeGui* Gui::createNodeGUI( Node* node){
+NodeGui* Gui::createNodeGUI( Node* node,bool requestedByLoad){
     assert(_imp->_nodeGraphArea);
-    NodeGui* nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node);
+    NodeGui* nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad);
     assert(nodeGui);
     return nodeGui;
 }

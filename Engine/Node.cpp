@@ -281,6 +281,10 @@ void Node::initializeKnobs(){
     emit knobsInitialized();
 }
 
+void Node::beginEditKnobs() {
+    _liveInstance->beginEditKnobs();
+}
+
 EffectInstance* Node::findOrCreateLiveInstanceClone(RenderTree* tree)
 {
     if (isOutputNode()) {

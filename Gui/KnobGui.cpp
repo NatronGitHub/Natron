@@ -769,7 +769,7 @@ void KnobGui::linkTo(int dimension) {
             updateGUI(dimension,_knob->getValue(otherKnob.first));
             checkAnimationLevel(otherKnob.first);
             emit keyFrameRemoved();
-            QObject::connect(otherKnob.second.get(), SIGNAL(updateSlaves(int)), this, SLOT(onMasterChange(int)));
+            QObject::connect(otherKnob.second.get(), SIGNAL(updateSlaves(int)), _knob.get(), SLOT(onMasterChanged(int)));
             
             setReadOnly(true, dimension);
         }
@@ -793,7 +793,7 @@ void KnobGui::unlink(int dimension) {
     updateGUI(dimension,_knob->getValue(dimension));
     checkAnimationLevel(dimension);
     emit keyFrameSet();
-    QObject::disconnect(other.second.get(), SIGNAL(updateSlaves(int)), this, SLOT(onMasterChange(int)));
+    QObject::disconnect(other.second.get(), SIGNAL(updateSlaves(int)), _knob.get(), SLOT(onMasterChanged(int)));
     setReadOnly(false,dimension);
 }
 
@@ -864,15 +864,8 @@ void KnobGui::onRestorationComplete() {
     for (int i = 0; i < _knob->getDimension(); ++i) {
         std::pair<int,boost::shared_ptr<Knob> > other = _knob->getMaster(i);
         if(other.second) {
-            QObject::connect(other.second.get(), SIGNAL(updateSlaves(int)), this, SLOT(onMasterChange(int)));
+            QObject::connect(other.second.get(), SIGNAL(updateSlaves(int)), _knob.get(), SLOT(onMasterChanged(int)));
         }
-    }
-}
-
-void KnobGui::onMasterChange(int dimension) {
-    if(_widgetCreated) {
-        updateGUI(dimension, _knob->getValue(dimension));
-        checkAnimationLevel(dimension);
     }
 }
 

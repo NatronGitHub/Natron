@@ -52,6 +52,7 @@ static const double pi=3.14159265358979323846264338327950288419717;
 NodeGui::NodeGui(NodeGraph* dag,
                  QVBoxLayout *dockContainer_,
                  Natron::Node *node_,
+                 bool requestedByLoad,
                  QGraphicsItem *parent)
 : QObject()
 , QGraphicsItem(parent)
@@ -74,6 +75,7 @@ NodeGui::NodeGui(NodeGraph* dag,
 , _lastRenderStartedSlotCallTime()
 , _lastInputNRenderStartedSlotCallTime()
 , _wasRenderStartedSlotRun(false)
+, _wasBeginEditCalled(false)
 {
     
     assert(node_);
@@ -131,7 +133,13 @@ NodeGui::NodeGui(NodeGraph* dag,
         _settingsPanel = new NodeSettingsPanel(_graph->getGui(),this,dockContainer_,dockContainer_->parentWidget());
         QObject::connect(_settingsPanel,SIGNAL(nameChanged(QString)),this,SLOT(setName(QString)));
         dockContainer_->addWidget(_settingsPanel);
-        _graph->getGui()->putSettingsPanelFirst(_settingsPanel);
+        
+        if (!requestedByLoad) {
+            _graph->getGui()->putSettingsPanelFirst(_settingsPanel);
+        } else {
+            setVisibleSettingsPanel(false);
+        }
+        
         if(_internalNode->isOpenFXNode()){
             OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
             ofxNode->effectInstance()->beginInstanceEditAction();
@@ -162,6 +170,11 @@ NodeGui::NodeGui(NodeGraph* dag,
     
     gettimeofday(&_lastRenderStartedSlotCallTime, 0);
     gettimeofday(&_lastInputNRenderStartedSlotCallTime, 0);
+}
+
+void NodeGui::beginEditKnobs() {
+    _wasBeginEditCalled = true;
+    _internalNode->beginEditKnobs();
 }
 
 void NodeGui::togglePreview(){

@@ -369,6 +369,8 @@ public slots:
 
     void triggerUpdateSlaves(int dimension) { emit updateSlaves(dimension); }
     
+    void onMasterChanged(int);
+    
 signals:
     
     ///emitted whenever setAnimationLevel is called. It is meant to notify

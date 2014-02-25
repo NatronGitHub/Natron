@@ -113,9 +113,6 @@ public slots:
     
     void onRestorationComplete();
     
-    void onMasterChange(int dimension);
-    
-    
     void onSetKeyActionTriggered();
     
     void onRemoveKeyActionTriggered();

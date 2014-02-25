@@ -160,6 +160,8 @@ public:
     virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE;
 
     virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE;
+    
+    virtual void beginEditKnobs() OVERRIDE;
 
     virtual Natron::Status render(SequenceTime time,RenderScale scale,
                                    const RectI& roi,int view,boost::shared_ptr<Natron::Image> output) OVERRIDE WARN_UNUSED_RETURN;

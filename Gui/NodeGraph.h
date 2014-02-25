@@ -79,7 +79,7 @@ public:
  
     void setPropertyBinPtr(QScrollArea* propertyBin){_propertyBin = propertyBin;}
     
-    NodeGui* createNodeGUI(QVBoxLayout *dockContainer,Natron::Node *node);
+    NodeGui* createNodeGUI(QVBoxLayout *dockContainer,Natron::Node *node,bool requestedByLoad);
     
     NodeGui* getSelectedNode() const {return _nodeSelected;}
     

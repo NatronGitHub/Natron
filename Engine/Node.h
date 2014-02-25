@@ -81,6 +81,11 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
+    void beginEditKnobs();
+    
+    /**
+     * @brief Forwarded to the live effect instance
+     **/
     const std::vector< boost::shared_ptr<Knob> >& getKnobs() const;
 
     /*Returns in viewers the list of all the viewers connected to this node*/

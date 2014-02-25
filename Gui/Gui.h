@@ -73,7 +73,7 @@ public:
     
     void createGui();
     
-    NodeGui* createNodeGUI(Natron::Node *node);
+    NodeGui* createNodeGUI(Natron::Node *node,bool requestedByLoad);
 
     void addNodeGuiToCurveEditor(NodeGui *node);
         
