@@ -11,7 +11,7 @@
 #include "Gui/KnobGuiFile.h"
 
 #include <QLabel> // in QtGui on Qt4, in QtWidgets on Qt5
-#include <QGridLayout> // in QtGui on Qt4, in QtWidgets on Qt5
+#include <QFormLayout> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QHBoxLayout> // in QtGui on Qt4, in QtWidgets on Qt5
 
 #include "Engine/Settings.h"
@@ -38,18 +38,12 @@ File_KnobGui::File_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *containe
 File_KnobGui::~File_KnobGui()
 {
     delete _lineEdit;
-    delete _descriptionLabel;
     delete _openFileButton;
 }
 
-void File_KnobGui::createWidget(QGridLayout *layout, int row)
+void File_KnobGui::createWidget(QHBoxLayout* layout)
 {
 
-    _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-    if(hasToolTip()) {
-        _descriptionLabel->setToolTip(toolTip());
-    }
-    layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
 
     _lineEdit = new LineEdit(layout->parentWidget());
     _lineEdit->setPlaceholderText("File path...");
@@ -80,7 +74,7 @@ void File_KnobGui::createWidget(QGridLayout *layout, int row)
     containerLayout->addWidget(_lineEdit);
     containerLayout->addWidget(_openFileButton);
 
-    layout->addWidget(container, row, 1);
+    layout->addWidget(container);
 }
 
 void File_KnobGui::onButtonClicked() {
@@ -214,21 +208,18 @@ void File_KnobGui::onReturnPressed()
 void File_KnobGui::_hide()
 {
     _openFileButton->hide();
-    _descriptionLabel->hide();
     _lineEdit->hide();
 }
 
 void File_KnobGui::_show()
 {
     _openFileButton->show();
-    _descriptionLabel->show();
     _lineEdit->show();
 }
 
 void File_KnobGui::setEnabled() {
     bool enabled = getKnob()->isEnabled(0);
     _openFileButton->setEnabled(enabled);
-    _descriptionLabel->setEnabled(enabled);
     _lineEdit->setEnabled(enabled);
 
 }
@@ -248,18 +239,13 @@ OutputFile_KnobGui::OutputFile_KnobGui(boost::shared_ptr<Knob> knob, DockablePan
 
 OutputFile_KnobGui::~OutputFile_KnobGui()
 {
-    delete _descriptionLabel;
     delete _lineEdit;
     delete _openFileButton;
 }
 
-void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row)
+void OutputFile_KnobGui::createWidget(QHBoxLayout* layout)
 {
-    _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-    if(hasToolTip()) {
-        _descriptionLabel->setToolTip(toolTip());
-    }
-    layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
+
 
     _lineEdit = new LineEdit(layout->parentWidget());
     QObject::connect(_lineEdit, SIGNAL(returnPressed()), this, SLOT(onReturnPressed()));
@@ -290,7 +276,7 @@ void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row)
     containerLayout->addWidget(_lineEdit);
     containerLayout->addWidget(_openFileButton);
 
-    layout->addWidget(container, row, 1);
+    layout->addWidget(container);
 }
 
 void OutputFile_KnobGui::onButtonClicked() {
@@ -353,21 +339,18 @@ void OutputFile_KnobGui::onReturnPressed()
 void OutputFile_KnobGui::_hide()
 {
     _openFileButton->hide();
-    _descriptionLabel->hide();
     _lineEdit->hide();
 }
 
 void OutputFile_KnobGui::_show()
 {
     _openFileButton->show();
-    _descriptionLabel->show();
     _lineEdit->show();
 }
 
 void OutputFile_KnobGui::setEnabled() {
     bool enabled = getKnob()->isEnabled(0);
     _openFileButton->setEnabled(enabled);
-    _descriptionLabel->setEnabled(enabled);
     _lineEdit->setEnabled(enabled);
     
 }
@@ -387,19 +370,13 @@ Path_KnobGui::Path_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *containe
 
 Path_KnobGui::~Path_KnobGui()
 {
-    delete _descriptionLabel;
     delete _lineEdit;
     delete _openFileButton;
 }
 
-void Path_KnobGui::createWidget(QGridLayout *layout, int row)
+void Path_KnobGui::createWidget(QHBoxLayout* layout)
 {
-    _descriptionLabel = new QLabel(QString(QString(getKnob()->getDescription().c_str()) + ":"), layout->parentWidget());
-    if(hasToolTip()) {
-        _descriptionLabel->setToolTip(toolTip());
-    }
-    layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
-    
+   
     _lineEdit = new LineEdit(layout->parentWidget());
     QObject::connect(_lineEdit, SIGNAL(returnPressed()), this, SLOT(onReturnPressed()));
     if(hasToolTip()) {
@@ -427,7 +404,7 @@ void Path_KnobGui::createWidget(QGridLayout *layout, int row)
     containerLayout->addWidget(_lineEdit);
     containerLayout->addWidget(_openFileButton);
     
-    layout->addWidget(container, row, 1);
+    layout->addWidget(container);
 }
 
 void Path_KnobGui::onButtonClicked() {
@@ -476,14 +453,12 @@ void Path_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 void Path_KnobGui::_hide()
 {
     _openFileButton->hide();
-    _descriptionLabel->hide();
     _lineEdit->hide();
 }
 
 void Path_KnobGui::_show()
 {
     _openFileButton->show();
-    _descriptionLabel->show();
     _lineEdit->show();
 }
 
@@ -506,7 +481,6 @@ void Path_KnobGui::onReturnPressed()
 void Path_KnobGui::setEnabled() {
     bool enabled = getKnob()->isEnabled(0);
     _openFileButton->setEnabled(enabled);
-    _descriptionLabel->setEnabled(enabled);
     _lineEdit->setEnabled(enabled);
     
 }

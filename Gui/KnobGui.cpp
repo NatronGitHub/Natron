@@ -19,6 +19,7 @@
 #include <QtCore/QString>
 #include <QHBoxLayout>
 #include <QPushButton>
+#include <QFormLayout>
 #include <QFileDialog>
 #include <QTextEdit>
 #include <QStyle> // in QtGui on Qt4, in QtWidgets on Qt5
@@ -79,6 +80,8 @@ KnobGui::KnobGui(boost::shared_ptr<Knob> knob,DockablePanel* container)
 , _animationMenu(NULL)
 , _animationButton(NULL)
 , _copyRightClickMenu(new QMenu(container))
+, _fieldLayout(NULL)
+, _row(-1)
 {
     QObject::connect(knob.get(),SIGNAL(valueChanged(int)),this,SLOT(onInternalValueChanged(int)));
     QObject::connect(knob.get(),SIGNAL(keyFrameSet(SequenceTime,int)),this,SLOT(onInternalKeySet(SequenceTime,int)));
@@ -114,10 +117,12 @@ void KnobGui::pushUndoCommand(QUndoCommand* cmd){
 }
 
 
-void KnobGui::createGUI(QGridLayout* layout,int row){
-    createWidget(layout, row);
+void KnobGui::createGUI(QHBoxLayout* layout,int row) {
+    _fieldLayout = layout;
+    _row = row;
+    createWidget(layout);
     if(_knob->isAnimationEnabled() && _knob->typeName() != File_Knob::typeNameStatic()){
-        createAnimationButton(layout,row);
+        createAnimationButton(layout);
     }
     _widgetCreated = true;
     const std::vector<Variant>& values = _knob->getValueForEachDimension();
@@ -126,15 +131,15 @@ void KnobGui::createGUI(QGridLayout* layout,int row){
         checkAnimationLevel(i);
     }
     setEnabled();
-    setSecret();
+
 }
 
-void KnobGui::createAnimationButton(QGridLayout* layout,int row) {
+void KnobGui::createAnimationButton(QHBoxLayout* layout) {
     _animationMenu = new QMenu(layout->parentWidget());
     _animationButton = new AnimationButton(this,"A",layout->parentWidget());
     _animationButton->setToolTip(Qt::convertFromPlainText("Animation menu", Qt::WhiteSpaceNormal));
     QObject::connect(_animationButton,SIGNAL(clicked()),this,SLOT(showAnimationMenu()));
-    layout->addWidget(_animationButton, row, 3,Qt::AlignLeft);
+    layout->addWidget(_animationButton);
     
     if (getKnob()->isSecret()) {
         _animationButton->hide();
@@ -489,6 +494,7 @@ void KnobGui::onRemoveKeyActionTriggered(){
                                           toRemove));
 }
 
+
 void KnobGui::hide(){
     _hide();
     if(_animationButton)
@@ -498,8 +504,14 @@ void KnobGui::hide(){
        getGui()->getCurveEditor()->hideCurves(this);
     }
     
-}
+    ///show the container widget + the label
+    _fieldLayout->parentWidget()->hide();
+    QFormLayout* layout = dynamic_cast<QFormLayout*>(_fieldLayout->parentWidget()->parentWidget()->layout());
+    QLayoutItem* label = layout->itemAt(_row, QFormLayout::LabelRole);
+    label->widget()->hide();
 
+    
+}
 void KnobGui::show(){
     _show();
     if(_animationButton)
@@ -508,6 +520,12 @@ void KnobGui::show(){
     if(_knob->getHolder()->getApp()){
         getGui()->getCurveEditor()->showCurves(this);
     }
+    
+    ///show the container widget + the label
+    _fieldLayout->parentWidget()->show();
+    QFormLayout* layout = dynamic_cast<QFormLayout*>(_fieldLayout->parentWidget()->parentWidget()->layout());
+    QLayoutItem* label = layout->itemAt(_row, QFormLayout::LabelRole);
+    label->widget()->show();
 }
 
 void KnobGui::setEnabledSlot(){

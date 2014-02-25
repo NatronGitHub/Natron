@@ -30,7 +30,6 @@ class KnobHolder;
 class NodeGui;
 class Gui;
 class QVBoxLayout;
-class QGridLayout;
 class QTabWidget;
 class Button;
 class QHBoxLayout;

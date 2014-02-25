@@ -22,8 +22,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/KnobGui.h"
 
 // Qt
-class QLabel;
-class QGridLayout;
+class QHBoxLayout;
 
 // Engine
 class Knob;
@@ -60,7 +59,7 @@ public slots:
     void open_file(bool);
 
 private:
-    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 
     virtual void _hide() OVERRIDE FINAL;
 
@@ -78,7 +77,6 @@ private:
     void updateLastOpened(const QString &str);
     
     LineEdit *_lineEdit;
-    QLabel *_descriptionLabel;
     Button *_openFileButton;
     QString _lastOpened;
 };
@@ -107,7 +105,7 @@ public slots:
     void open_file(bool);
     
 private:
-    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 
     virtual void _hide() OVERRIDE FINAL;
 
@@ -123,7 +121,6 @@ private:
 
 private:
     LineEdit *_lineEdit;
-    QLabel *_descriptionLabel;
     Button *_openFileButton;
     QString _lastOpened;
 };
@@ -153,7 +150,9 @@ public:
     void open_file();
     
 private:
-    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+    
+    
+    virtual void createWidget(QHBoxLayout *layout) OVERRIDE FINAL;
     
     virtual void _hide() OVERRIDE FINAL;
     
@@ -169,7 +168,6 @@ private:
     
 private:
     LineEdit *_lineEdit;
-    QLabel *_descriptionLabel;
     Button *_openFileButton;
     QString _lastOpened;
 };

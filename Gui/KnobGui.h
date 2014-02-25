@@ -24,7 +24,6 @@ CLANG_DIAG_ON(deprecated)
 
 // Qt
 class QUndoCommand; //used by KnobGui
-class QGridLayout; //used by KnobGui
 class QVBoxLayout; //used by KnobGui
 class QHBoxLayout; //used by KnobGui
 class QMenu;
@@ -67,7 +66,7 @@ public:
     
     int getSpacingBetweenItems() const { return _spacingBetweenItems; }
     
-    void createGUI(QGridLayout* layout,int row);
+    void createGUI(QHBoxLayout* layout,int row);
         
     void pushUndoCommand(QUndoCommand* cmd);
     
@@ -86,6 +85,8 @@ public:
     Gui* getGui() const;
     
     void enableRightClickMenu(QWidget* widget,int dimension);
+
+    virtual bool showDescriptionLabel() const { return true; }
 
 public slots:
     /*Called when the value held by the knob is changed internally.
@@ -181,6 +182,10 @@ signals:
      **/
     void keyInterpolationChanged();
     
+    ///emitted when the description label is clicked
+    void labelClicked(bool);
+    
+    
 protected:
     
     
@@ -198,8 +203,11 @@ private:
     
     virtual void setReadOnly(bool readOnly,int dimension) = 0;
     
-    /*Must create the GUI and insert it in the grid layout at the index "row".*/
-    virtual void createWidget(QGridLayout* layout,int row) = 0;
+    /**
+     * @brief Must fill the horizontal layout with all the widgets composing the knob.
+     **/
+    virtual void createWidget(QHBoxLayout* layout) = 0;
+    
     
    
     /*Called by the onInternalValueChanged slot. This should update
@@ -216,7 +224,7 @@ private:
     
     void createAnimationMenu();
     
-    void createAnimationButton(QGridLayout* layout,int row);
+    void createAnimationButton(QHBoxLayout* layout);
     
     /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
      signal/slot sequence can cause an infinite loop.*/
@@ -234,6 +242,8 @@ private:
     QMenu* _animationMenu;
     AnimationButton* _animationButton;
     QMenu* _copyRightClickMenu;
+    QHBoxLayout* _fieldLayout; //< the layout containing the widgets of the knob
+    int _row;
 };
 
 

@@ -16,6 +16,7 @@
 #include <QTabWidget>
 #include <QStyle>
 #include <QUndoStack>
+#include <QFormLayout>
 #include <QUndoCommand>
 #include <QToolTip>
 CLANG_DIAG_OFF(unused-private-field)
@@ -38,6 +39,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/LineEdit.h"
 #include "Gui/Button.h"
 #include "Gui/NodeGraph.h"
+#include "Gui/ClickableLabel.h"
 
 using std::make_pair;
 using namespace Natron;
@@ -267,32 +269,32 @@ void DockablePanel::initializeKnobs(){
     
     /////The following code addresses this feature that we don't want:
     ///// http://stackoverflow.com/questions/14033902/qt-qgridlayout-automatically-centers-moves-items-to-the-middle
-    for(std::map<QString,std::pair<QWidget*,int> >::const_iterator it = _tabs.begin();it!=_tabs.end();++it){
-        
-        QGridLayout* layout;
-        if (_useScrollAreasForTabs) {
-            layout = dynamic_cast<QGridLayout*>(
-                                                dynamic_cast<QScrollArea*>(it->second.first)->widget()->layout());
-        } else {
-            layout = dynamic_cast<QGridLayout*>(it->second.first->layout());
-        }
-        assert(layout);
-        if(layout->rowCount() > 0){
-            QLayoutItem* item = layout->itemAtPosition(layout->rowCount()-1,0);
-            QWidget* widget = 0;
-            if (item) {
-                widget = item->widget();
-            }
-            if (widget && widget->objectName() == "spacer") {
-                continue;
-            }else{
-                QWidget* spacer = new QWidget(layout->parentWidget());
-                spacer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Expanding);
-                spacer->setObjectName("spacer");
-                layout->addWidget(spacer,layout->rowCount(), 0);
-            }
-        }
-    }
+//    for(std::map<QString,std::pair<QWidget*,int> >::const_iterator it = _tabs.begin();it!=_tabs.end();++it){
+//        
+//        QFormLayout* layout;
+//        if (_useScrollAreasForTabs) {
+//            layout = dynamic_cast<QFormLayout*>(
+//                                                dynamic_cast<QScrollArea*>(it->second.first)->widget()->layout());
+//        } else {
+//            layout = dynamic_cast<QFormLayout*>(it->second.first->layout());
+//        }
+//        assert(layout);
+//        if(layout->rowCount() > 0){
+//            QLayoutItem* item = layout->itemAtPosition(layout->rowCount()-1,0);
+//            QWidget* widget = 0;
+//            if (item) {
+//                widget = item->widget();
+//            }
+//            if (widget && widget->objectName() == "spacer") {
+//                continue;
+//            }else{
+//                QWidget* spacer = new QWidget(layout->parentWidget());
+//                spacer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Expanding);
+//                spacer->setObjectName("spacer");
+//                layout->addWidget(spacer,layout->rowCount(), 0);
+//            }
+//        }
+//    }
 }
 
 
@@ -346,9 +348,8 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
             ///put your knobs into!
             assert(parentTab != _tabs.end());
         }
-        if(parentTab != _tabs.end()){
-            ++parentTab->second.second;
-        }
+        assert(parentTab != _tabs.end());
+        
         
         
         ///if the knob has specified that it didn't want to trigger a new line, decrement the current row
@@ -359,14 +360,33 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
         //                    --parentTab->second.second;
         //                }
         //
-        QGridLayout* layout;
+        QFormLayout* layout;
         if (_useScrollAreasForTabs) {
-            layout = dynamic_cast<QGridLayout*>(
+            layout = dynamic_cast<QFormLayout*>(
                                                 dynamic_cast<QScrollArea*>(parentTab->second.first)->widget()->layout());
         } else {
-            layout = dynamic_cast<QGridLayout*>(parentTab->second.first->layout());
+            layout = dynamic_cast<QFormLayout*>(parentTab->second.first->layout());
         }
-        ret->createGUI(layout,parentTab->second.second); //< the row index
+        assert(layout);
+        QWidget* fieldContainer = new QWidget(parentTab->second.first);
+        fieldContainer->setObjectName("fieldContainer");
+        QHBoxLayout* fieldLayout = new QHBoxLayout(fieldContainer);
+        fieldLayout->setContentsMargins(0,0,0,0);
+        ClickableLabel* label = new ClickableLabel("",parentTab->second.first);
+        if (ret->showDescriptionLabel()) {
+            label->setText(QString(QString(ret->getKnob()->getDescription().c_str()) + ":"));
+            QObject::connect(label, SIGNAL(clicked(bool)), ret, SIGNAL(labelClicked(bool)));
+        }
+        
+        ///fill the fieldLayout with the widgets
+        ret->createGUI(fieldLayout,parentTab->second.second);
+        ///increment the row count
+        ++parentTab->second.second;
+        layout->addRow(label, fieldContainer);
+        
+        ret->setSecret();
+        
+       
         
         /// if this knob is within a group, check that the group is visible, i.e. the toplevel group is unfolded
         if (parentKnob && parentKnob->typeName() == Group_Knob::typeNameStatic()) {
@@ -424,12 +444,15 @@ void DockablePanel::addTab(const QString& name){
         layoutContainer = newTab;
     }
     newTab->setObjectName(name);
-    QGridLayout *tabLayout = new QGridLayout(layoutContainer);
+    QFormLayout *tabLayout = new QFormLayout(layoutContainer);
+    tabLayout->setObjectName("formLayout");
     layoutContainer->setLayout(tabLayout);
     //tabLayout->setVerticalSpacing(2); // unfortunately, this leaves extra space when parameters are hidden
     tabLayout->setVerticalSpacing(0); // must be 0, or secret/hidden parameters will take extra space
     tabLayout->setContentsMargins(3, 0, 0, 0);
-    tabLayout->setHorizontalSpacing(5);
+    tabLayout->setHorizontalSpacing(3);
+    tabLayout->setLabelAlignment(Qt::AlignVCenter | Qt::AlignRight);
+    tabLayout->setFormAlignment(Qt::AlignLeft | Qt::AlignTop);
     _tabWidget->addTab(newTab,name);
     _tabs.insert(make_pair(name,make_pair(newTab,0)));
 }

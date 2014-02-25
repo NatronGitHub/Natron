@@ -33,7 +33,7 @@ CLANG_DIAG_ON(deprecated)
 // Qt
 class QString;
 class QFrame;
-class QGridLayout;
+class QHBoxLayout;
 class QTreeWidget;
 class QTreeWidgetItem;
 class QScrollArea;
@@ -91,7 +91,7 @@ public slots:
 
 private:
 
-    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 
     void setMaximum(int);
 
@@ -111,7 +111,6 @@ private:
 
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
-    QLabel *_descriptionLabel;
     ScaleSliderQWidget *_slider;
 
 };
@@ -139,7 +138,7 @@ public slots:
 
 private:
 
-    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 
     virtual void _hide() OVERRIDE FINAL;
 
@@ -155,7 +154,6 @@ private:
 private:
 
     AnimatedCheckBox *_checkBox;
-    ClickableLabel *_descriptionLabel;
 };
 
 
@@ -185,7 +183,7 @@ public slots:
 
 private:
 
-    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 
     void setMaximum(int);
     void setMinimum(int);
@@ -204,7 +202,6 @@ private:
 
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
-    QLabel *_descriptionLabel;
     ScaleSliderQWidget *_slider;
 };
 
@@ -222,6 +219,8 @@ public:
     Button_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container) {}
 
     virtual ~Button_KnobGui() OVERRIDE;
+    
+    virtual bool showDescriptionLabel() const { return false; }
 
 public slots:
 
@@ -229,7 +228,7 @@ public slots:
 
 private:
 
-    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 
     virtual void _hide() OVERRIDE FINAL;
 
@@ -268,7 +267,7 @@ public slots:
 
 private:
 
-    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 
     virtual void _hide() OVERRIDE FINAL;
 
@@ -284,7 +283,6 @@ private:
 
     std::vector<std::string> _entries;
     ComboBox *_comboBox;
-    QLabel *_descriptionLabel;
 };
 
 //================================
@@ -371,7 +369,7 @@ public:
 
 private:
 
-    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 
     virtual void _hide() OVERRIDE FINAL;
 
@@ -385,7 +383,6 @@ private:
 
 private:
     QFrame *_line;
-    QLabel *_descriptionLabel;
 };
 /******************************/
 
@@ -445,7 +442,7 @@ public slots:
 
 private:
 
-    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 
     virtual void _hide() OVERRIDE FINAL;
 
@@ -470,8 +467,6 @@ private:
 
     QWidget *colorContainer;
     QHBoxLayout *colorLayout;
-
-    QLabel *_descriptionLabel;
 
     QLabel *_rLabel;
     QLabel *_gLabel;
@@ -548,7 +543,7 @@ public slots:
     void onTextChanged();
 private:
 
-    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 
     virtual void _hide() OVERRIDE FINAL;
 
@@ -567,7 +562,6 @@ private:
     LineEdit *_lineEdit; //< if single line
     AnimatingTextEdit *_textEdit; //< if multiline
     QLabel *_label; //< if label
-    QLabel *_descriptionLabel;
 };
 
 /*****************************/
@@ -596,7 +590,7 @@ public slots:
     void setChecked(bool b);
 
 private:
-    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 
     virtual void _hide() OVERRIDE FINAL;
 
@@ -612,9 +606,7 @@ private:
 
 private:
     bool _checked;
-    QGridLayout *_layout;
     GroupBoxLabel *_button;
-    QLabel *_descriptionLabel;
     std::vector< std::pair< KnobGui *, std::pair<int, int> > > _children;
     std::vector< std::pair<KnobGui*,std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
                                                //enabled too
@@ -633,6 +625,8 @@ public:
     
     Parametric_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
     
+    virtual bool showDescriptionLabel() const { return false; }
+    
     virtual ~Parametric_KnobGui() OVERRIDE;
     
 public slots:
@@ -645,7 +639,7 @@ public slots:
     
 private:
     
-    virtual void createWidget(QGridLayout *layout, int row) OVERRIDE FINAL;
+    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     
     virtual void _hide() OVERRIDE FINAL;
     
