@@ -251,7 +251,7 @@ void Int_KnobGui::setEnabled()
 {
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         bool b = getKnob()->isEnabled(i);
-        _spinBoxes[i].first->setEnabled(b);
+        //_spinBoxes[i].first->setEnabled(b);
         _spinBoxes[i].first->setReadOnly(!b);
         if (_spinBoxes[i].second) {
             _spinBoxes[i].second->setEnabled(b);
@@ -552,7 +552,7 @@ void Double_KnobGui::setEnabled()
 {
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         bool b = getKnob()->isEnabled(i);
-        _spinBoxes[i].first->setEnabled(b);
+        //_spinBoxes[i].first->setEnabled(b);
         _spinBoxes[i].first->setReadOnly(!b);
         if (_spinBoxes[i].second) {
             _spinBoxes[i].second->setEnabled(b);
@@ -1150,16 +1150,20 @@ void Color_KnobGui::setEnabled()
 {
     bool r = getKnob()->isEnabled(0);
     
-    _rBox->setEnabled(r);
+    //_rBox->setEnabled(r);
+    _rBox->setReadOnly(!r);
     if (_dimension >= 3) {
         bool g = getKnob()->isEnabled(1);
         bool b = getKnob()->isEnabled(2);
-        _gBox->setEnabled(g);
-        _bBox->setEnabled(b);
+        //_gBox->setEnabled(g);
+        _gBox->setReadOnly(!g);
+        //_bBox->setEnabled(b);
+        _bBox->setReadOnly(!b);
     }
     if (_dimension >= 4) {
         bool a = getKnob()->isEnabled(3);
-        _aBox->setEnabled(a);
+        //_aBox->setEnabled(a);
+        _aBox->setReadOnly(!a);
 
     }
 }
@@ -1503,6 +1507,15 @@ void AnimatingTextEdit::keyPressEvent(QKeyEvent* e) {
     QTextEdit::keyPressEvent(e);
 }
 
+void AnimatingTextEdit::paintEvent(QPaintEvent* e) {
+    QPalette p = this->palette();
+    QColor c(200,200,200,255);
+    p.setColor( QPalette::Highlight, c );
+    //p.setColor( QPalette::HighlightedText, c );
+    this->setPalette( p );
+    QTextEdit::paintEvent(e);
+}
+
 String_KnobGui::String_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
 : KnobGui(knob, container)
 , _lineEdit(0)
@@ -1648,7 +1661,8 @@ void String_KnobGui::setEnabled()
     if (strKnob->isMultiLine()) {
         assert(_textEdit);
         //_textEdit->setEnabled(b);
-        _textEdit->setReadOnly(!b);
+        //_textEdit->setReadOnly(!b);
+        _textEdit->setReadOnlyNatron(!b);
     } else if (strKnob->isLabel()) {
         assert(_label);
         _label->setEnabled(b);

@@ -515,7 +515,9 @@ private:
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE;
     
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
-    
+
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE;
+
     int animation;
     bool readOnlyNatron; //< to bypass the readonly property of Qt that is bugged
     bool _hasChanged;
