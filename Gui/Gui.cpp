@@ -997,13 +997,14 @@ void Gui::loadStyleSheet(){
         QTextStream in(&qss);
         QString content(in.readAll());
         setStyleSheet(content
-                      .arg("rgb(243,149,0)")
-                      .arg("rgb(50,50,50)")
-                      .arg("rgb(71,71,71)")
-                      .arg("rgb(38,38,38)")
-                      .arg("rgb(200,200,200)")
-                      .arg("rgb(86,117,156)")
-                      .arg("rgb(21,97,248)"));
+                      .arg("rgb(243,149,0)") // selection-color
+                      .arg("rgb(50,50,50)") // medium background
+                      .arg("rgb(71,71,71)") // soft background
+                      .arg("rgb(38,38,38)") // strong background
+                      .arg("rgb(200,200,200)") // text colour
+                      .arg("rgb(86,117,156)") // interpolated value color
+                      .arg("rgb(21,97,248)") // keyframe value color
+                      .arg("rgb(0,0,0)")); // disabled editable text
     }
 }
 

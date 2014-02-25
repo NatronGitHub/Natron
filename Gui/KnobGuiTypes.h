@@ -564,6 +564,7 @@ private:
 private:
     LineEdit *_lineEdit; //< if single line
     AnimatingTextEdit *_textEdit; //< if multiline
+    QLabel *_label; //< if label
     QLabel *_descriptionLabel;
 };
 

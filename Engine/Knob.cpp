@@ -493,18 +493,18 @@ void Knob::evaluateAnimationChange(){
     assert(_imp->_holder->getApp());
     SequenceTime time = _imp->_holder->getApp()->getTimeLine()->currentFrame();
     
-    beginValueChange(Natron::PLUGIN_EDITED);
+    beginValueChange(Natron::USER_EDITED);
     bool hasEvaluatedOnce = false;
     for(int i = 0; i < getDimension();++i){
         boost::shared_ptr<Curve> curve = getCurve(i);
         if(curve && curve->isAnimated()){
             Variant v = getValueAtTime(time,i);
-            setValue(v,i,Natron::OTHER_REASON,NULL);
+            setValue(v,i,Natron::USER_EDITED,NULL);
             hasEvaluatedOnce = true;
         }
     }
     if(!hasEvaluatedOnce && !_imp->_holder->isClone()){
-        evaluateValueChange(0, Natron::OTHER_REASON);
+        evaluateValueChange(0, Natron::USER_EDITED);
     }
     
     endValueChange();

@@ -1,168 +1,170 @@
+/* -*- mode: css -*- */
 /*%1 = selection-color  %2 = medium background  %3 = soft background %4 = strong background %5 = text colour*/
-/*%6 = interpolated value color %7 = keyframe value color*/
+/*%6 = interpolated value color %7 = keyframe value color %8 = disabled editable text */
 /*You have to fill the arguments with  stylesheet-representable colours.*/
 
-QWidget{
-background-color: %2;
+QWidget {
+    background-color: %2;
 }
-QLabel{
-color: %5;
+
+QLabel {
+    color: %5;
 }
-QLabel#ComboBoxLabel,QLabel#ComboBoxDropDownLabel{
-background-color: %3;
+
+QLabel#ComboBoxLabel,QLabel#ComboBoxDropDownLabel {
+    background-color: %3;
 }
-NodeSettingsPanel[_selected="true"]{
-border:1px solid yellow;
-border-radius : 2px;
+
+NodeSettingsPanel[_selected="true"] {
+    border:1px solid yellow;
+    border-radius : 2px;
 }
-NodeSettingsPanel[_selected="false"]{
-border:1px solid black;
-border-radius : 2px;
+NodeSettingsPanel[_selected="false"] {
+    border:1px solid black;
+    border-radius : 2px;
 }
+
 QToolBar {
-color: %2;
-spacing: 3px; /* spacing between items in the tool bar */
-border: 0px solid black;
+    color: %2;
+    spacing: 3px; /* spacing between items in the tool bar */
+    border: 0px solid black;
 }
 /* QToolBar::handle {
 image: url(handle.png);
 }TODO*/
-QGroupBox{
-border: 1px solid black;
-border-radius : 4px;
-margin-top : 1px;
+
+QGroupBox {
+    border: 1px solid black;
+    border-radius : 4px;
+    margin-top : 1px;
 }
 QGroupBox::title {
-subcontrol-origin: margin;
-subcontrol-position: top left; /* position at the top center */
-padding: 0 3px;
+    subcontrol-origin: margin;
+    subcontrol-position: top left; /* position at the top center */
+    padding: 0 3px;
 
 }
 QGroupBox::indicator:unchecked {
-width :10px;
-height: 10px;
-image: url(:/Resources/Images/groupbox_folded.png);
+    width :10px;
+    height: 10px;
+    image: url(:/Resources/Images/groupbox_folded.png);
 }
 QGroupBox::indicator:checked {
-width :10px;
-height: 10px;
-image: url(:/Resources/Images/groupbox_unfolded.png);
+    width :10px;
+    height: 10px;
+    image: url(:/Resources/Images/groupbox_unfolded.png);
 }
+
 QScrollBar:vertical {
-border: 1px solid %1 ;
-background: %3;
-width: 15px;
-margin : 23px 0px 23px 0px;
+    border: 1px solid %1 ;
+    background: %3;
+    width: 15px;
+    margin : 23px 0px 23px 0px;
 }
 QScrollBar::handle:vertical {
-image: url(:/Resources/Images/scrollbarHandle_vertical.png);
-min-height: 20px;
+    image: url(:/Resources/Images/scrollbarHandle_vertical.png);
+    min-height: 20px;
 }
 QScrollBar::up-arrow:vertical {
-image : url(:/Resources/Images/scrollbarButton_up.png);
-width: 11px;
-height: 20px;
+    image : url(:/Resources/Images/scrollbarButton_up.png);
+    width: 11px;
+    height: 20px;
 }
 QScrollBar::down-arrow:vertical {
-image : url(:/Resources/Images/scrollbarButton_down.png);
-width: 11px;
-height: 20px;
+    image : url(:/Resources/Images/scrollbarButton_down.png);
+    width: 11px;
+    height: 20px;
 }
-QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-background: %2;
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: %2;
 }
 QScrollBar::add-line:vertical {
-border: 1px solid %1;
-background: %3;
-height: 20px;
-subcontrol-position: bottom;
-subcontrol-origin: margin;
+    border: 1px solid %1;
+    background: %3;
+    height: 20px;
+    subcontrol-position: bottom;
+    subcontrol-origin: margin;
 }
 
-   QScrollBar::sub-line:vertical {
-   border: 1px solid %1;
-   background: %3;
-   height: 20px;
-   subcontrol-position: top;
-   subcontrol-origin: margin;
-   }
+QScrollBar::sub-line:vertical {
+    border: 1px solid %1;
+    background: %3;
+    height: 20px;
+    subcontrol-position: top;
+    subcontrol-origin: margin;
+}
+QScrollBar:horizontal {
+    border: 1px solid %1 ;
+    background: %3;
+    height: 15px;
+    margin : 0px 23px 0px 23px;
+}
+QScrollBar::handle:horizontal {
+    image: url(:/Resources/Images/scrollbarHandle_horizontal.png);
+    min-width: 20px;
+}
+QScrollBar::left-arrow:horizontal {
+    image : url(:/Resources/Images/scrollbarButton_right.png);
+    width: 20px;
+    height: 11px;
+}
+QScrollBar::right-arrow:horizontal {
+    image : url(:/Resources/Images/scrollbarButton_left.png);
+    width: 20px;
+    height: 11px;
+}
+QScrollBar::add-page:horizontal,
+QScrollBar::sub-page:horizontal {
+    background: %2;
+				 }
+QScrollBar::add-line:horizontal {
+    border: 1px solid %1;
+    background: %3;
+    width: 20px;
+    subcontrol-position: left;
+    subcontrol-origin: margin;
+}
+
+QScrollBar::sub-line:horizontal {
+    border: 1px solid %1;
+    background: %3;
+    width: 20px;
+    subcontrol-position: right;
+    subcontrol-origin: margin;
+}
 
 
- QScrollBar:horizontal {
- border: 1px solid %1 ;
- background: %3;
- height: 15px;
- margin : 0px 23px 0px 23px;
- }
- QScrollBar::handle:horizontal {
- image: url(:/Resources/Images/scrollbarHandle_horizontal.png);
- min-width: 20px;
- }
- QScrollBar::left-arrow:horizontal {
- image : url(:/Resources/Images/scrollbarButton_right.png);
- width: 20px;
- height: 11px;
- }
- QScrollBar::right-arrow:horizontal {
- image : url(:/Resources/Images/scrollbarButton_left.png);
- width: 20px;
- height: 11px;
- }
- QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
- background: %2;
- }
- QScrollBar::add-line:horizontal {
- border: 1px solid %1;
- background: %3;
- width: 20px;
- subcontrol-position: left;
- subcontrol-origin: margin;
- }
+QTreeView,QListView,QHeaderView {
+    background-color: %3;
+    color: %5;
+    selection-background-color: %1;
+}
 
-   QScrollBar::sub-line:horizontal {
-   border: 1px solid %1;
-   background: %3;
-   width: 20px;
-   subcontrol-position: right;
-   subcontrol-origin: margin;
-   }
-
-
-
- QTreeView,QListView,QHeaderView{
- background-color: %3;
- color: %5;
- selection-background-color: %1;
- }
- QTreeWidget::item:selected{
+QTreeWidget::item:selected {
     background: %1;
- }
- QTreeWidget::branch:selected{
+}
+QTreeWidget::branch:selected {
     background: %1;
- }
-
+}
 QTreeWidget::branch:has-siblings:!adjoins-item {
-     border-image: url(:/Resources/Images/treeview_vline.png);
- }
-
- QTreeWidget::branch:has-siblings:adjoins-item {
-     border-image: url(:/Resources/Images/treeview_more.png);
- }
-
- QTreeWidget::branch:!has-children:!has-siblings:adjoins-item {
-     border-image: url(:/Resources/Images/treeview_end.png);
- }
-
- QTreeWidget::branch:has-children:!has-siblings:closed,
- QTreeWidget::branch:closed:has-children:has-siblings {
-         border-image: none;
-         image: url(:/Resources/Images/groupbox_folded.png);
- }
-
- QTreeWidget::branch:open:has-children:!has-siblings,
- QTreeWidget::branch:open:has-children:has-siblings  {
-         border-image: none;
-         image: url(:/Resources/Images/groupbox_unfolded.png);
+    border-image: url(:/Resources/Images/treeview_vline.png);
+}
+QTreeWidget::branch:has-siblings:adjoins-item {
+    border-image: url(:/Resources/Images/treeview_more.png);
+}
+QTreeWidget::branch:!has-children:!has-siblings:adjoins-item {
+    border-image: url(:/Resources/Images/treeview_end.png);
+}
+QTreeWidget::branch:has-children:!has-siblings:closed,
+QTreeWidget::branch:closed:has-children:has-siblings {
+    border-image: none;
+    image: url(:/Resources/Images/groupbox_folded.png);
+}
+QTreeWidget::branch:open:has-children:!has-siblings,
+QTreeWidget::branch:open:has-children:has-siblings  {
+    border-image: none;
+    image: url(:/Resources/Images/groupbox_unfolded.png);
  }
 
  QHeaderView:section{
@@ -230,197 +232,269 @@ QPushButton:hover
 {
 border: 1px solid gray;
 }
-QPushButton:focus {
-border: 2px solid %1;
 
+QHeaderView:section {
+    background-color: %2;
+    color: %5;
+    selection-background-color : %1;
+    selection-color: %1;
 }
-QToolButton{
-background-color: %3;
+
+QDialog {
+    background-color: %2;
 }
-QDialogButtonBox{
-background-color: %3;
+
+ComboBox[pressed="false"][animation="0"] {
+    background-color: %3;
+    border:1px solid black;
+    border-radius : 5px;
 }
-QMainWindow{
-background-color: %2;
+ComboBox[pressed="true"][animation="0"] {
+    background-color: %4;
+    border-radius : 5px;
 }
+ComboBox[pressed="false"][animation="1"] {
+    background-color: %6;
+    border:1px solid black;
+    border-radius : 5px;
+}
+ComboBox[pressed="true"][animation="1"] {
+    background-color: %6;
+    border-radius : 5px;
+}
+ComboBox[pressed="false"][animation="2"] {
+    background-color: %7;
+    border:1px solid black;
+    border-radius : 5px;
+}
+ComboBox[pressed="true"][animation="2"] {
+    background-color: %7;
+    border-radius : 5px;
+}
+
+TabWidget {background-color: %2;}
+
+NodeSettingsPanel {
+    background-color : %2;
+    color: %5;
+}
+
+QPushButton {
+    background-color: %3;
+    color: %5;
+    border: 0.5px solid black;
+    border-radius : 3px;
+    padding : 3px;
+}
+QPushButton:pressed {
+    background-color : %4;
+}
+QPushButton:hover {
+    border: 1px solid gray;
+}
+QPushButton:focus {
+    border: 2px solid %1;
+}
+
+QToolButton {
+    background-color: %3;
+}
+
+QDialogButtonBox {
+    background-color: %3;
+}
+
+QMainWindow {
+    background-color: %2;
+}
+
 QCheckBox::indicator:unchecked {
-image: url(:/Resources/Images/checkbox.png);
+    image: url(:/Resources/Images/checkbox.png);
 }
 QCheckBox::indicator:checked {
-image: url(:/Resources/Images/checkbox_checked.png);
+    image: url(:/Resources/Images/checkbox_checked.png);
 }
 QCheckBox::indicator:checked:hover {
-image: url(:/Resources/Images/checkbox_checked_hovered.png);
+    image: url(:/Resources/Images/checkbox_checked_hovered.png);
 }
 QCheckBox::indicator:unchecked:hover {
-image: url(:/Resources/Images/checkbox_hovered.png);
+    image: url(:/Resources/Images/checkbox_hovered.png);
 }
-QCheckBox{
-color : %5
-}
-
-QGraphicsView{
-background-color: %3;
+QCheckBox {
+    color : %5
 }
 
-QScrollArea{
-background-color: %2;
-}
-QGroupBox{
-color: %5;
-background-color: %2;
-border:0px;
-}
-QComboBox{
-color: %5;
-background-color: %3;
-selection-color: %1;
-selection-background-color: %3;
-}
-QComboBox QAbstractItemView{
-border-radius:0px;
-border:0px;
-selection-background-color: %3;
-background: %3;
-color: %5;
-}
-QDockWidget::title{
-background: %3;
-}
-QDockWidget{
-color: %5;
-}
-QTabWidget::pane{
-border:0px;
+QGraphicsView {
+    background-color: %3;
 }
 
-QLineEdit{
-border:1px solid;
-border-radius:1;
-padding:1px;
-background-color : %3;
+QScrollArea {
+    background-color: %2;
 }
-QLineEdit{
-color:%5;
+
+QGroupBox {
+    color: %5;
+    background-color: %2;
+    border:0px;
+}
+
+QComboBox {
+    color: %5;
+    background-color: %3;
+    selection-color: %1;
+    selection-background-color: %3;
+}
+QComboBox QAbstractItemView {
+    border-radius:0px;
+    border:0px;
+    selection-background-color: %3;
+    background: %3;
+    color: %5;
+}
+
+QDockWidget::title {
+    background: %3;
+}
+QDockWidget {
+    color: %5;
+}
+
+QTabWidget::pane {
+    border:0px;
+}
+
+QLineEdit {
+    border:1px solid;
+    border-radius:1;
+    padding:1px;
+    background-color : %3;
+}
+QLineEdit {
+    color:%5;
 }
 QLineEdit:focus {
-selection-color: %1;
-border: 2px groove %1;
-border-radius: 4px;
-padding: 2px 4px;
+    selection-color: %1;
+    border: 2px groove %1;
+    border-radius: 4px;
+    padding: 2px 4px;
 }
 QLineEdit:!enabled {
-color:black;
+    color:%8;
 }
 QLineEdit:read-only {
-color:black;
-background-color:%3;
+
+	background-color:%3;
+    color:%8;
+}
+QSplitter::handle:horizontal {
+    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 %3, stop:0.55 %2,stop:0.98 black, stop:1 black);
+    border: 0px;
+}
+QSplitter::handle:vertical {
+    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 %3, stop:0.55 %2, stop:0.98 black, stop:1 black);
+    border: 0px;
 }
 
-QSplitter::handle:horizontal{
-background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 %3, stop:0.55 %2,stop:0.98 black, stop:1 black);
-border: 0px;
+QSplitter::handle::horizontal {
+    width: 3px;
 }
-QSplitter::handle:vertical{
-background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 %3, stop:0.55 %2, stop:0.98 black, stop:1 black);
-border: 0px;
+QSplitter::handle::vertical {
+    height: 3px;
 }
 
-QSplitter::handle::horizontal{
-width: 3px;
-}
-QSplitter::handle::vertical{
-height: 3px;
-}
 QTabBar::tab {
-color: %5;
-background: %4;
-border: 1px solid ;
-border-bottom-color: %2;
-min-width: 8ex;
-padding: 0px;
-border-top-right-radius: 5px;
-border-top-left-radius: 5px;
+    color: %5;
+    background: %4;
+    border: 1px solid ;
+    border-bottom-color: %2;
+    min-width: 8ex;
+    padding: 0px;
+    border-top-right-radius: 5px;
+    border-top-left-radius: 5px;
 }
 QTabBar::tab:hover {
-background: %1;
+    background: %1;
 }
 QTabBar::tab:selected {
-background: %2;
-border-bottom-style:none;
+    background: %2;
+    border-bottom-style:none;
 }
 QTabBar::tab:!selected {
-margin-top: 3px; /* make non-selected tabs look smaller */
+    margin-top: 3px; /* make non-selected tabs look smaller */
 }
 /* make use of negative margins for overlapping tabs */
 QTabBar::tab:selected {
-/* expand/overlap to the left and right by 4px */
-margin-left: -3px;
-margin-right: -3px;
+    /* expand/overlap to the left and right by 4px */
+    margin-left: -3px;
+    margin-right: -3px;
 }
 QTabBar::tab:first:selected {
-margin-left: 0; /* the first selected tab has nothing to overlap with on the left */
+    margin-left: 0; /* the first selected tab has nothing to overlap with on the left */
 }
 QTabBar::tab:last:selected {
-margin-right: 0; /* the last selected tab has nothing to overlap with on the right */
+    margin-right: 0; /* the last selected tab has nothing to overlap with on the right */
 }
 QTabBar::tab:only-one {
-margin: 0; /* if there is only one tab, we don't want overlapping margins */
+    margin: 0; /* if there is only one tab, we don't want overlapping margins */
 }
-QTabBar::close-button{
-subcontrol-position:right;
-}
-QTabWidget::tab-bar {
-alignment: left;
-}
-QMenu {
-background-color: %2; /* sets background of the menu */
-border: 0px;
-margin: 0px;
-color : %5;
-}
-QMenu::item:selected { /* when user selects item using mouse or keyboard */
-background-color: %1;
-}
-QMenu::item:!enabled { /* when user selects item using mouse or keyboard */
-color : rgb(120,120,120);
-}
-QToolButton{
-background-color:%2;
-color: %5;
-}
-SpinBox[animation="0"]{
-background-color: %3;
-}
-SpinBox[animation="1"]{
-background-color: %6;
-}
-SpinBox[animation="2"]{
-background-color: %7;
+QTabBar::close-button {
+    subcontrol-position:right;
 }
 
-LineEdit[animation="0"]{
-background-color: %3;
+QTabWidget::tab-bar {
+    alignment: left;
 }
-LineEdit[animation="1"]{
-background-color: %6;
+
+QMenu {
+    background-color: %2; /* sets background of the menu */
+    border: 0px;
+    margin: 0px;
+    color : %5;
 }
-LineEdit[animation="2"]{
-background-color: %7;
+QMenu::item:selected { /* when user selects item using mouse or keyboard */
+    background-color: %1;
+}
+QMenu::item:!enabled { /* when user selects item using mouse or keyboard */
+    color : rgb(120,120,120);
+}
+
+QToolButton {
+    background-color:%2;
+    color: %5;
+}
+
+SpinBox[animation="0"] {
+    background-color: %3;
+}
+SpinBox[animation="1"] {
+    background-color: %6;
+}
+SpinBox[animation="2"] {
+    background-color: %7;
+}
+
+LineEdit[animation="0"] {
+    background-color: %3;
+}
+LineEdit[animation="1"] {
+    background-color: %6;
+}
+LineEdit[animation="2"] {
+    background-color: %7;
 }
 LineEdit:read-only{
 background-color: %3;
 color: black;
 }
 
-AnimatingTextEdit[animation="0"]{
-background-color: %3;
+AnimatingTextEdit[animation="0"] {
+    background-color: %3;
 }
-AnimatingTextEdit[animation="1"]{
-background-color: %6;
+AnimatingTextEdit[animation="1"] {
+    background-color: %6;
 }
-AnimatingTextEdit[animation="2"]{
-background-color: %7;
+AnimatingTextEdit[animation="2"] {
+    background-color: %7;
 }
 AnimatingTextEdit[readOnlyNatron="true"]{
 background-color: %3;
@@ -436,28 +510,28 @@ color: black;
 }
 
 AnimatedCheckBox[animation="1"]::indicator:unchecked {
-image: url(:/Resources/Images/checkbox_animation1_unchecked.png);
+    image: url(:/Resources/Images/checkbox_animation1_unchecked.png);
 }
 AnimatedCheckBox[animation="1"]::indicator:checked {
-image: url(:/Resources/Images/checkbox_animation1_checked.png);
+    image: url(:/Resources/Images/checkbox_animation1_checked.png);
 }
 AnimatedCheckBox[animation="1"]::indicator:checked:hover {
-image: url(:/Resources/Images/checkbox_animation1_checked_hovered.png);
+    image: url(:/Resources/Images/checkbox_animation1_checked_hovered.png);
 }
 AnimatedCheckBox[animation="1"]::indicator:unchecked:hover {
-image: url(:/Resources/Images/checkbox_animation1_unchecked_hovered.png);
+    image: url(:/Resources/Images/checkbox_animation1_unchecked_hovered.png);
 }
 AnimatedCheckBox[animation="2"]::indicator:unchecked {
-image: url(:/Resources/Images/checkbox_animation2_unchecked.png);
+    image: url(:/Resources/Images/checkbox_animation2_unchecked.png);
 }
 AnimatedCheckBox[animation="2"]::indicator:checked {
-image: url(:/Resources/Images/checkbox_animation2_checked.png);
+    image: url(:/Resources/Images/checkbox_animation2_checked.png);
 }
 AnimatedCheckBox[animation="2"]::indicator:checked:hover {
-image: url(:/Resources/Images/checkbox_animation2_checked_hovered.png);
+    image: url(:/Resources/Images/checkbox_animation2_checked_hovered.png);
 }
-AnimatedCheckBox[animation="2"]::indicator:unchecked:hover {
-image: url(:/Resources/Images/checkbox_animation2_unchecked_hovered.png);
+AnimatedCheckBox[animation="2"]::indicator:unchecked:hover{
+    image: url(:/Resources/Images/checkbox_animation2_unchecked_hovered.png);
 }
 AnimatedCheckBox[readOnly="true"]::indicator:checked{
 image: url(:/Resources/Images/checkbox_checked_readonly.png);

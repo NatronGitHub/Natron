@@ -327,19 +327,21 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
     }
     
     knob->setName(paramName);
-    if (!descriptor.getEvaluateOnChange()) {
-        knob->setInsignificant(true);
-    }
-    if (!descriptor.getIsPersistant()) {
-        knob->setPersistent(false);
-    }
+    knob->setInsignificant(!descriptor.getEvaluateOnChange());
+    knob->setPersistent(descriptor.getIsPersistant());
+    //FIXME: replace the following with
+    //knob->setCanAnimate(descriptor.getCanAnimate());
     if (!descriptor.getCanAnimate()) {
+#pragma message WARN("where is turnOnAnimation or setCanAnimate?")
         knob->turnOffAnimation();
     }
     knob->setSecret(descriptor.getSecret());
     knob->setAllDimensionsEnabled(descriptor.getEnabled());
     knob->setHintToolTip(descriptor.getHint());
+    //FIXME: replace the following with
+    //knob->setCanUndo(descriptor.getCanUndo());
     if (!descriptor.getCanUndo()) {
+#pragma message WARN("where is turnOnUndoRedo or setCanUndo?")
        knob->turnOffUndoRedo();
     }
     knob->setSpacingBetweenItems(descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));

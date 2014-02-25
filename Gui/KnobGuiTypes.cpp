@@ -1160,6 +1160,7 @@ void Color_KnobGui::setEnabled()
     if (_dimension >= 4) {
         bool a = getKnob()->isEnabled(3);
         _aBox->setEnabled(a);
+
     }
 }
 
@@ -1506,9 +1507,9 @@ String_KnobGui::String_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *cont
 : KnobGui(knob, container)
 , _lineEdit(0)
 , _textEdit(0)
+, _label(0)
 , _descriptionLabel(0)
 {
-    
 }
 
 void String_KnobGui::createWidget(QGridLayout *layout, int row)
@@ -1523,9 +1524,26 @@ void String_KnobGui::createWidget(QGridLayout *layout, int row)
     layout->addWidget(_descriptionLabel, row, 0, Qt::AlignRight);
     
 
-    if (!strKnob->isMultiLine()) {
+    if (strKnob->isMultiLine()) {
+        _textEdit = new AnimatingTextEdit(layout->parentWidget());
+        if (hasToolTip()) {
+            _textEdit->setToolTip(toolTip());
+        }
+        layout->addWidget(_textEdit, row, 1);
+        QObject::connect(_textEdit, SIGNAL(editingFinished()), this, SLOT(onTextChanged()));
+
+        ///set the copy/link actions in the right click menu
+        enableRightClickMenu(_textEdit,0);
+
+    } else if (strKnob->isLabel()) {
+        _label = new QLabel(layout->parentWidget());
+        if (hasToolTip()) {
+            _label->setToolTip(toolTip());
+        }
+        layout->addWidget(_label, row, 1);
+    } else {
         _lineEdit = new LineEdit(layout->parentWidget());
-        if(hasToolTip()) {
+        if (hasToolTip()) {
             _lineEdit->setToolTip(toolTip());
         }
         layout->addWidget(_lineEdit, row, 1);
@@ -1537,34 +1555,15 @@ void String_KnobGui::createWidget(QGridLayout *layout, int row)
         
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(_lineEdit,0);
-
-        
-    } else {
-        _textEdit = new AnimatingTextEdit(layout->parentWidget());
-        if(hasToolTip()) {
-            _textEdit->setToolTip(toolTip());
-        }
-        layout->addWidget(_textEdit, row, 1);
-        QObject::connect(_textEdit, SIGNAL(editingFinished()), this, SLOT(onTextChanged()));
-        if(strKnob->isCustomKnob()) {
-            _textEdit->setReadOnly(true);
-        }
-        
-        ///set the copy/link actions in the right click menu
-        enableRightClickMenu(_textEdit,0);
-
     }
 }
 
 String_KnobGui::~String_KnobGui()
 {
     delete _descriptionLabel;
-    if(_lineEdit){
-        delete _lineEdit;
-    }
-    if(_textEdit){
-        delete _textEdit;
-    }
+    delete _lineEdit;
+    delete _label;
+    delete _textEdit;
 }
 
 void String_KnobGui::onLineChanged()
@@ -1580,9 +1579,10 @@ void String_KnobGui::onTextChanged()
 
 void String_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 {
-    if (_lineEdit) {
-        _lineEdit->setText(variant.toString());
-    }else {
+    boost::shared_ptr<String_Knob> strKnob = boost::dynamic_pointer_cast<String_Knob>(getKnob());
+    assert(strKnob);
+
+    if (strKnob->isMultiLine()) {
         assert(_textEdit);
         QObject::disconnect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
         QTextCursor cursor = _textEdit->textCursor();
@@ -1593,65 +1593,109 @@ void String_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
         cursor.setPosition(pos);
         _textEdit->setTextCursor(cursor);
         QObject::connect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
+    } else if (strKnob->isLabel()) {
+        assert(_label);
+        QString txt = variant.toString();
+        _label->setText(txt);
+    } else {
+        assert(_lineEdit);
+        _lineEdit->setText(variant.toString());
     }
 }
 void String_KnobGui::_hide()
 {
+    boost::shared_ptr<String_Knob> strKnob = boost::dynamic_pointer_cast<String_Knob>(getKnob());
+    assert(strKnob);
+
     _descriptionLabel->hide();
-    if(_lineEdit){
-        _lineEdit->hide();
-    }else{
+    if (strKnob->isMultiLine()) {
         assert(_textEdit);
         _textEdit->hide();
+    } else if (strKnob->isLabel()) {
+        assert(_label);
+        _label->hide();
+    } else {
+        assert(_lineEdit);
+        _lineEdit->hide();
+
     }
 }
 
 void String_KnobGui::_show()
 {
+    boost::shared_ptr<String_Knob> strKnob = boost::dynamic_pointer_cast<String_Knob>(getKnob());
+    assert(strKnob);
+
     _descriptionLabel->show();
-    if(_lineEdit){
-        _lineEdit->show();
-    }else{
+    if (strKnob->isMultiLine()) {
         assert(_textEdit);
         _textEdit->show();
+    } else if (strKnob->isLabel()) {
+        assert(_label);
+        _label->show();
+    } else {
+        assert(_lineEdit);
+        _lineEdit->show();
     }
 }
 void String_KnobGui::setEnabled()
 {
     bool b = getKnob()->isEnabled(0);
-    _descriptionLabel->setEnabled(b);
-    if(_lineEdit) {
-        _lineEdit->setEnabled(b);
-    } else {
-        assert(_textEdit);
-        _textEdit->setEnabled(b);
-    }
-}
+    boost::shared_ptr<String_Knob> strKnob = boost::dynamic_pointer_cast<String_Knob>(getKnob());
+    assert(strKnob);
 
-void String_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevel level) {
+    _descriptionLabel->setEnabled(b);
+    if (strKnob->isMultiLine()) {
+        assert(_textEdit);
+        //_textEdit->setEnabled(b);
+        _textEdit->setReadOnly(!b);
+    } else if (strKnob->isLabel()) {
+        assert(_label);
+        _label->setEnabled(b);
+    } else {
+        assert(_lineEdit);
+        //_lineEdit->setEnabled(b);
+        _lineEdit->setReadOnly(!b);
+    }
+ }
+
+void String_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevel level)
+{
+    boost::shared_ptr<String_Knob> strKnob = boost::dynamic_pointer_cast<String_Knob>(getKnob());
+    assert(strKnob);
+
     switch (level) {
         case Natron::NO_ANIMATION:
-            if(_lineEdit){
-                _lineEdit->setAnimation(0);
-            }else{
+            if (strKnob->isMultiLine()) {
                 assert(_textEdit);
                 _textEdit->setAnimation(0);
+            } else if (strKnob->isLabel()) {
+                assert(_label);
+            } else {
+                assert(_lineEdit);
+                _lineEdit->setAnimation(0);
             }
             break;
         case Natron::INTERPOLATED_VALUE:
-            if(_lineEdit){
-                _lineEdit->setAnimation(1);
-            }else{
+            if (strKnob->isMultiLine()) {
                 assert(_textEdit);
                 _textEdit->setAnimation(1);
+            } else if (strKnob->isLabel()) {
+                assert(_label);
+            } else {
+                assert(_lineEdit);
+                _lineEdit->setAnimation(1);
             }
             break;
         case Natron::ON_KEYFRAME:
-            if(_lineEdit){
-                _lineEdit->setAnimation(2);
-            }else{
+            if (strKnob->isMultiLine()) {
                 assert(_textEdit);
                 _textEdit->setAnimation(2);
+            } else if (strKnob->isLabel()) {
+                assert(_label);
+            } else {
+                assert(_lineEdit);
+                _lineEdit->setAnimation(2);
             }
             break;
         default:
