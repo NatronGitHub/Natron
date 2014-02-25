@@ -586,7 +586,7 @@ void ViewerInstance::onExposureChanged(double exp){
     _exposure = exp;
     
     if((_uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_uiContext->supportsGLSL())
-       && input(activeInput()) != NULL) {
+       && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
         refreshAndContinueRender(false,false);
     } else {
         emit mustRedraw();

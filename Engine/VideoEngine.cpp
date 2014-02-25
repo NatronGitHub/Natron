@@ -185,8 +185,10 @@ bool VideoEngine::startEngine(bool singleThreaded) {
     _currentRunArgs = _lastRequestedRunArgs;
     
 
-    
-    
+    ///build the tree before getFrameRange!
+    if(_currentRunArgs._refreshTree)
+        refreshTree();/*refresh the tree*/
+
     if(!_tree.isOutputAViewer()){
         
         if (!singleThreaded && !appPTR->isBackground()) {
@@ -212,8 +214,6 @@ bool VideoEngine::startEngine(bool singleThreaded) {
     }
 
     
-    if(_currentRunArgs._refreshTree)
-        refreshTree();/*refresh the tree*/
     
     
     ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_tree.getOutput()); /*viewer might be NULL if the output is smthing else*/

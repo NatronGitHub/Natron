@@ -1736,7 +1736,7 @@ void ViewerGL::setClipToDisplayWindow(bool b) {
     _imp->clipToDisplayWindow = b;
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
-    if (viewer->getUiContext()) {
+    if (viewer->getUiContext() && !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject()) {
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
     }
 }
