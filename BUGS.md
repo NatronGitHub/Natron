@@ -6,6 +6,8 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
+- When unfolding GroupParam, all secret parameters are shown (see RunScriptOFX)
+
 - Natron must not call paramChanged on any parameter when loading a
   project. Parameters should just be *set* to their values, and thus
   they are not changed, since they had no value before.
