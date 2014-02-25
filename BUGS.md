@@ -8,6 +8,14 @@ Here is a list of know bugs, ordered by priority from high to low:
 
 - When unfolding GroupParam, all secret parameters are shown (see RunScriptOFX)
 
+- "label" String parameters should not be editable: "kOfxParamStringIsLabel - string behaves as a pseudo parameter and acts as a label on the interface in this case the string is not editable by the user"
+
+- disabled "value" parameters (integer, double, string, colors) should be selectable using the mouse or keybord traversal (e.g. Tab), and should be copiable (either using the keyboard shortcut, or using the popup menu)
+
+- disabled choiceparam and pushbuttonparam should be grayed out (text drawn in black instead of white)
+
+- disabled scaleslider should have its text drawn in black instead of white
+
 - Natron must not call paramChanged on any parameter when loading a
   project. Parameters should just be *set* to their values, and thus
   they are not changed, since they had no value before.
