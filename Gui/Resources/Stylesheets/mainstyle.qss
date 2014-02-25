@@ -11,9 +11,11 @@ QLabel {
     color: %5;
 }
 
+
 QLabel#ComboBoxLabel,QLabel#ComboBoxDropDownLabel {
     background-color: %3;
 }
+
 
 NodeSettingsPanel[_selected="true"] {
     border:1px solid yellow;
@@ -117,7 +119,7 @@ QScrollBar::right-arrow:horizontal {
 QScrollBar::add-page:horizontal,
 QScrollBar::sub-page:horizontal {
     background: %2;
-				 }
+}
 QScrollBar::add-line:horizontal {
     border: 1px solid %1;
     background: %3;
@@ -165,72 +167,75 @@ QTreeWidget::branch:open:has-children:!has-siblings,
 QTreeWidget::branch:open:has-children:has-siblings  {
     border-image: none;
     image: url(:/Resources/Images/groupbox_unfolded.png);
- }
-
- QHeaderView:section{
- background-color: %2;
- color: %5;
- selection-background-color : %1;
- selection-color: %1;
- }
-
-QDialog{
-background-color: %2;
 }
+
+QHeaderView:section{
+    background-color: %2;
+    color: %5;
+    selection-background-color : %1;
+    selection-color: %1;
+}
+
 ComboBox[pressed="false"][animation="0"]{
-background-color: %3;
-border:1px solid black;
-border-radius : 5px;
+    background-color: %3;
+    border:1px solid black;
+    border-radius : 5px;
 }
 ComboBox[pressed="true"][animation="0"]{
-background-color: %4;
-border-radius : 5px;
+    background-color: %4;
+    border-radius : 5px;
 }
 ComboBox[pressed="false"][animation="1"]{
-background-color: %6;
-border:1px solid black;
-border-radius : 5px;
+    background-color: %6;
+    border:1px solid black;
+    border-radius : 5px;
 }
 ComboBox[pressed="true"][animation="1"]{
-background-color: %6;
-border-radius : 5px;
+    background-color: %6;
+    border-radius : 5px;
 }
 ComboBox[pressed="false"][animation="2"]{
-background-color: %7;
-border:1px solid black;
-border-radius : 5px;
+    background-color: %7;
+    border:1px solid black;
+    border-radius : 5px;
 }
 ComboBox[pressed="true"][animation="2"]{
-background-color: %7;
-border-radius : 5px;
+    background-color: %7;
+    border-radius : 5px;
 }
 ComboBox[pressed="false"][readOnly="true"]{
-background-color: %3;
-color : black;
+    background-color: %3;
+    color: %8;
 }
 ComboBox[pressed="true"][readOnly="true"]{
-background-color: %4;
-color : black;
+    background-color: %4;
+    color: %8;
 }
+
 TabWidget{background-color: %2;}
 
 NodeSettingsPanel{
-background-color : %2;
-color: %5;
+    background-color : %2;
+    color: %5;
 }
 QPushButton{
-background-color: %3;
-color: %5;
-border: 0.5px solid black;
-border-radius : 3px;
-padding : 3px;
+    background-color: %3;
+    color: %5;
+    border: 0.5px solid black;
+    border-radius : 3px;
+    padding : 3px;
 }
 QPushButton:pressed{
-background-color : %4;
+    background-color : %4;
 }
-QPushButton:hover
-{
-border: 1px solid gray;
+QPushButton:hover {
+    border: 1px solid gray;
+}
+QPushButton:focus {
+    border: 2px solid %1;
+}
+QPushButton:!enabled {
+    color: %8;
 }
 
 QHeaderView:section {
@@ -244,57 +249,6 @@ QDialog {
     background-color: %2;
 }
 
-ComboBox[pressed="false"][animation="0"] {
-    background-color: %3;
-    border:1px solid black;
-    border-radius : 5px;
-}
-ComboBox[pressed="true"][animation="0"] {
-    background-color: %4;
-    border-radius : 5px;
-}
-ComboBox[pressed="false"][animation="1"] {
-    background-color: %6;
-    border:1px solid black;
-    border-radius : 5px;
-}
-ComboBox[pressed="true"][animation="1"] {
-    background-color: %6;
-    border-radius : 5px;
-}
-ComboBox[pressed="false"][animation="2"] {
-    background-color: %7;
-    border:1px solid black;
-    border-radius : 5px;
-}
-ComboBox[pressed="true"][animation="2"] {
-    background-color: %7;
-    border-radius : 5px;
-}
-
-TabWidget {background-color: %2;}
-
-NodeSettingsPanel {
-    background-color : %2;
-    color: %5;
-}
-
-QPushButton {
-    background-color: %3;
-    color: %5;
-    border: 0.5px solid black;
-    border-radius : 3px;
-    padding : 3px;
-}
-QPushButton:pressed {
-    background-color : %4;
-}
-QPushButton:hover {
-    border: 1px solid gray;
-}
-QPushButton:focus {
-    border: 2px solid %1;
-}
 
 QToolButton {
     background-color: %3;
@@ -382,10 +336,10 @@ QLineEdit:!enabled {
     color:%8;
 }
 QLineEdit:read-only {
-
-	background-color:%3;
+    background-color:%3;
     color:%8;
 }
+
 QSplitter::handle:horizontal {
     background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 %3, stop:0.55 %2,stop:0.98 black, stop:1 black);
     border: 0px;
@@ -482,10 +436,6 @@ LineEdit[animation="1"] {
 LineEdit[animation="2"] {
     background-color: %7;
 }
-LineEdit:read-only{
-background-color: %3;
-color: black;
-}
 
 AnimatingTextEdit[animation="0"] {
     background-color: %3;
@@ -497,16 +447,29 @@ AnimatingTextEdit[animation="2"] {
     background-color: %7;
 }
 AnimatingTextEdit[readOnlyNatron="true"]{
-background-color: %3;
-color:black;
+    background-color: %3;
+    color:%8;
 }
-QTextEdit{
-color: %5;
-background-color: %3;
+AnimatingTextEdit:read-only{
+    background-color: %3;
+    color:%8;
 }
 
+QTextEdit{
+    color: %5;
+    background-color: %3;
+}
 QTextEdit:!enabled{
-color: black;
+    color: %8;
+}
+QTextEdit:read-only{
+    color: %8;
+}
+QTextEdit:focus {
+    selection-color: %1;
+    border: 2px groove %1;
+    border-radius: 4px;
+    padding: 2px 4px;
 }
 
 AnimatedCheckBox[animation="1"]::indicator:unchecked {
@@ -534,8 +497,8 @@ AnimatedCheckBox[animation="2"]::indicator:unchecked:hover{
     image: url(:/Resources/Images/checkbox_animation2_unchecked_hovered.png);
 }
 AnimatedCheckBox[readOnly="true"]::indicator:checked{
-image: url(:/Resources/Images/checkbox_checked_readonly.png);
+    image: url(:/Resources/Images/checkbox_checked_readonly.png);
 }
 AnimatedCheckBox[readOnly="true"]::indicator:unchecked{
-image: url(:/Resources/Images/checkbox_unchecked_readonly.png);
+    image: url(:/Resources/Images/checkbox_unchecked_readonly.png);
 }
