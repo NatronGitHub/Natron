@@ -379,7 +379,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
         }
         
         ///fill the fieldLayout with the widgets
-        ret->createGUI(fieldLayout,parentTab->second.second);
+        ret->createGUI(layout,fieldContainer,label,fieldLayout,parentTab->second.second);
         ///increment the row count
         ++parentTab->second.second;
         layout->addRow(label, fieldContainer);
@@ -448,7 +448,7 @@ void DockablePanel::addTab(const QString& name){
     tabLayout->setObjectName("formLayout");
     layoutContainer->setLayout(tabLayout);
     //tabLayout->setVerticalSpacing(2); // unfortunately, this leaves extra space when parameters are hidden
-    tabLayout->setVerticalSpacing(0); // must be 0, or secret/hidden parameters will take extra space
+    tabLayout->setVerticalSpacing(3);
     tabLayout->setContentsMargins(3, 0, 0, 0);
     tabLayout->setHorizontalSpacing(3);
     tabLayout->setLabelAlignment(Qt::AlignVCenter | Qt::AlignRight);

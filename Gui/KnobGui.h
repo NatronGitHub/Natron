@@ -26,6 +26,7 @@ CLANG_DIAG_ON(deprecated)
 class QUndoCommand; //used by KnobGui
 class QVBoxLayout; //used by KnobGui
 class QHBoxLayout; //used by KnobGui
+class QFormLayout;
 class QMenu;
 class QLabel;
 
@@ -66,7 +67,7 @@ public:
     
     int getSpacingBetweenItems() const { return _spacingBetweenItems; }
     
-    void createGUI(QHBoxLayout* layout,int row);
+    void createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWidget* label,QHBoxLayout* layout,int row);
         
     void pushUndoCommand(QUndoCommand* cmd);
     
@@ -244,6 +245,10 @@ private:
     QMenu* _copyRightClickMenu;
     QHBoxLayout* _fieldLayout; //< the layout containing the widgets of the knob
     int _row;
+    
+    QFormLayout* _containerLayout;
+    QWidget* _field;
+    QWidget* _descriptionLabel;
 };
 
 

@@ -250,6 +250,8 @@ public:
 
     void turnOffNewLine();
     
+    bool isNewLineTurnedOff() const;
+    
     void setSpacingBetweenItems(int spacing);
     
     void setEnabled(int dimension,bool b);

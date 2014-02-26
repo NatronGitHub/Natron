@@ -589,6 +589,10 @@ void Knob::turnOffNewLine(){
     _imp->_newLine = false;
 }
 
+bool Knob::isNewLineTurnedOff() const {
+    return !_imp->_newLine;
+}
+
 void Knob::setSpacingBetweenItems(int spacing){
     _imp->_itemSpacing = spacing;
 }

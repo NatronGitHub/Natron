@@ -82,6 +82,9 @@ KnobGui::KnobGui(boost::shared_ptr<Knob> knob,DockablePanel* container)
 , _copyRightClickMenu(new QMenu(container))
 , _fieldLayout(NULL)
 , _row(-1)
+, _containerLayout(NULL)
+, _field(NULL)
+, _descriptionLabel(NULL)
 {
     QObject::connect(knob.get(),SIGNAL(valueChanged(int)),this,SLOT(onInternalValueChanged(int)));
     QObject::connect(knob.get(),SIGNAL(keyFrameSet(SequenceTime,int)),this,SLOT(onInternalKeySet(SequenceTime,int)));
@@ -117,9 +120,12 @@ void KnobGui::pushUndoCommand(QUndoCommand* cmd){
 }
 
 
-void KnobGui::createGUI(QHBoxLayout* layout,int row) {
+void KnobGui::createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWidget* label,QHBoxLayout* layout,int row) {
     _fieldLayout = layout;
     _row = row;
+    _containerLayout = containerLayout;
+    _field = fieldContainer;
+    _descriptionLabel = label;
     createWidget(layout);
     if(_knob->isAnimationEnabled() && _knob->typeName() != File_Knob::typeNameStatic()){
         createAnimationButton(layout);
@@ -504,12 +510,14 @@ void KnobGui::hide(){
        getGui()->getCurveEditor()->hideCurves(this);
     }
     
-    ///show the container widget + the label
-    _fieldLayout->parentWidget()->hide();
-    QFormLayout* layout = dynamic_cast<QFormLayout*>(_fieldLayout->parentWidget()->parentWidget()->layout());
-    QLayoutItem* label = layout->itemAt(_row, QFormLayout::LabelRole);
-    label->widget()->hide();
-
+    if (!_knob->isNewLineTurnedOff()) {
+        _containerLayout->removeWidget(_field);
+        _containerLayout->removeWidget(_descriptionLabel);
+        _field->setParent(0);
+        _descriptionLabel->setParent(0);
+        _field->hide();
+        _descriptionLabel->hide();
+    }
     
 }
 void KnobGui::show(){
@@ -521,11 +529,13 @@ void KnobGui::show(){
         getGui()->getCurveEditor()->showCurves(this);
     }
     
-    ///show the container widget + the label
-    _fieldLayout->parentWidget()->show();
-    QFormLayout* layout = dynamic_cast<QFormLayout*>(_fieldLayout->parentWidget()->parentWidget()->layout());
-    QLayoutItem* label = layout->itemAt(_row, QFormLayout::LabelRole);
-    label->widget()->show();
+    if (!_knob->isNewLineTurnedOff()) {
+        _containerLayout->insertRow(_row, _descriptionLabel, _field);
+        _field->setParent(_containerLayout->parentWidget());
+        _descriptionLabel->setParent(_containerLayout->parentWidget());
+        _field->show();
+        _descriptionLabel->show();
+    }
 }
 
 void KnobGui::setEnabledSlot(){
