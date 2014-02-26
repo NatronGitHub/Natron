@@ -1129,15 +1129,6 @@ QString SequenceFileDialog::getFilePath(const QString& str) {
 }
 
 
-
-bool SequenceFileDialog::checkIfContiguous(const std::vector<int>& v){
-    for(unsigned int i = 0 ; i < v.size() ;++i) {
-        if(i < v.size()-1 &&  v[i]+1 == v[i+1])
-            return true;
-    }
-    return false;
-}
-
 void SequenceFileDialog::previousFolder(){
     if(!_history.isEmpty() && _currentHistoryLocation > 0){
         --_currentHistoryLocation;

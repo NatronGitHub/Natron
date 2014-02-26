@@ -263,7 +263,7 @@ TEST(SequenceParsing,TestViews) {
     for (int i = 0; i < sequenceItemsCount; ++i) {
         for (int j = 0; j < 2; ++j) {
             QString viewName = j == 0 ? "left" : "right";
-            QFile file(dir.absoluteFilePath("test_" + QString::number(i) + viewName + ".unittest"));
+            QFile file(dir.absoluteFilePath("test_" + QString::number(i) + "."  + viewName + ".unittest"));
             std::cout << "Creating file: " << file.fileName().toStdString() << std::endl;
             filesCreated << file.fileName();
             file.open(QIODevice::WriteOnly | QIODevice::Text);
@@ -271,7 +271,7 @@ TEST(SequenceParsing,TestViews) {
     }
     
     File_Knob::FileSequence sequence;
-    File_Knob::filesListFromPattern(dir.absoluteFilePath("test_%01d%V.unittest"), &sequence);
+    File_Knob::filesListFromPattern(dir.absoluteFilePath("test_%01d.%V.unittest"), &sequence);
     EXPECT_TRUE((int)sequence.size() == sequenceItemsCount);
     for (File_Knob::FileSequence::iterator it = sequence.begin(); it!=sequence.end(); ++it) {
         EXPECT_TRUE(it->second.size() == 2);
@@ -286,14 +286,14 @@ TEST(SequenceParsing,TestViews) {
     for (int i = 0; i < sequenceItemsCount; ++i) {
         for (int j = 0; j < 2; ++j) {
             QString viewName = j == 0 ? "left" : "right";
-            QFile file(dir.absoluteFilePath("weird" + viewName + "test_" + QString::number(i)  + ".unittest"));
+            QFile file(dir.absoluteFilePath("weird." + viewName + ".test_" + QString::number(i)  + ".unittest"));
             std::cout << "Creating file: " << file.fileName().toStdString() << std::endl;
             filesCreated << file.fileName();
             file.open(QIODevice::WriteOnly | QIODevice::Text);
         }
     }
     sequence.clear();
-    File_Knob::filesListFromPattern(dir.absoluteFilePath("weird%Vtest_%01d.unittest"), &sequence);
+    File_Knob::filesListFromPattern(dir.absoluteFilePath("weird.%V.test_%01d.unittest"), &sequence);
     EXPECT_TRUE((int)sequence.size() == sequenceItemsCount);
     for (File_Knob::FileSequence::iterator it = sequence.begin(); it!=sequence.end(); ++it) {
         EXPECT_TRUE(it->second.size() == 2);
@@ -310,14 +310,14 @@ TEST(SequenceParsing,TestViews) {
     for (int i = 0; i < sequenceItemsCount; ++i) {
         for (int j = 0; j < 2; ++j) {
             QString viewName = j == 0 ? "l" : "r";
-            QFile file(dir.absoluteFilePath("test_" + QString::number(i) + viewName + ".unittest"));
+            QFile file(dir.absoluteFilePath("test_" + QString::number(i) + "." + viewName + ".unittest"));
             std::cout << "Creating file: " << file.fileName().toStdString() << std::endl;
             filesCreated << file.fileName();
             file.open(QIODevice::WriteOnly | QIODevice::Text);
         }
     }
     sequence.clear();
-    File_Knob::filesListFromPattern(dir.absoluteFilePath("test_%01d%v.unittest"), &sequence);
+    File_Knob::filesListFromPattern(dir.absoluteFilePath("test_%01d.%v.unittest"), &sequence);
     EXPECT_TRUE((int)sequence.size() == sequenceItemsCount);
     for (File_Knob::FileSequence::iterator it = sequence.begin(); it!=sequence.end(); ++it) {
         EXPECT_TRUE(it->second.size() == 2);

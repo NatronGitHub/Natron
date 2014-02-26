@@ -21,12 +21,96 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QMutex>
 #include <QtCore/QString>
+#include <boost/scoped_ptr.hpp>
 
 #include "Engine/Knob.h"
 
 #include "Global/Macros.h"
 
 class StringAnimationManager;
+
+/**
+ * @brief A small class representing an element of a file name.
+ * It can be either a text part, or a view part or a frame number part.
+ **/
+struct FileNameElement {
+    
+    enum Type { TEXT = 0 , SHORT_VIEW, LONG_VIEW , FRAME_NUMBER };
+    
+    FileNameElement(const QString& data,FileNameElement::Type type)
+    : data(data)
+    , type(type)
+    {}
+    
+    QString data;
+    Type type;
+};
+
+/**
+ * @brief A class representing the content of a filename. 
+ * Initialize it passing it a real filename and it will initialize the data structures
+ * depending on the filename content.
+ **/
+struct FileNameContentPrivate;
+class FileNameContent {
+    
+public:
+    
+    FileNameContent(const QString& absoluteFilename);
+    
+    ~FileNameContent();
+    
+    /**
+     * @brief Returns the file path, e.g: /Users/Lala/Pictures/ with the trailing separator.
+     **/
+    const QString& getPath() const;
+    
+    /**
+     * @brief Returns the filename without its path.
+     **/
+    const QString& fileName() const;
+    
+    /**
+     * @brief Returns the absolute filename as it was given in the constructor arguments.
+     **/
+    const QString& absoluteFileName() const;
+    
+    /**
+     * @brief Returns true if a single number was found in the filename.
+     **/
+    bool hasSingleNumber() const;
+    
+    /**
+     * @brief Returns true if the filename is composed only of digits.
+     **/
+    bool isFileNameComposedOnlyOfDigits() const;
+    
+    /**
+     * @brief Returns true if a single view indicator was found in the filename.
+     **/
+    bool hasSingleView() const;
+    
+    /**
+     * @brief Returns the file pattern found in the filename with hash characters style for frame number (i.e: ###)
+     * A few things about this pattern:
+     * - The file path is not prepended to the file name.
+     * - Each hash tag corresponding to a potential frame number will be indexed. For example,
+     * The following filename:
+     * my80sequence001.jpg would be transformed in my##1sequence###2.jpg.
+     * This is because there may be several numbers existing in the filename, and we have
+     * no clue given just this filename what actually corresponds to the frame number.
+     * - Each view tag will also be indexed in the same way that the hash tags are.
+     * For example, the following filename:
+     * my.left.sequence.r.10.jpg would result in my.%V1.sequence.%v2.#1.jpg
+     **/
+    const QString& getFilePattern() const;
+    
+private:
+    
+    boost::scoped_ptr<FileNameContentPrivate> _imp;
+    
+};
+
 /******************************FILE_KNOB**************************************/
 
 class File_Knob : public Knob

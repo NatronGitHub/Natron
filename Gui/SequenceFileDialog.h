@@ -379,9 +379,7 @@ public:
     static bool removeSequenceDigits(QString& file,int* frameNumber);
     
     static QString getFilePath(const QString& str);
-        
-    static bool checkIfContiguous(const std::vector<int>& v);
-    
+            
     QStringList selectedFiles();
     
     /*Returns the pattern of the sequence, e.g:

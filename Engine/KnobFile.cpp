@@ -503,7 +503,7 @@ static bool matchesPattern(const QString& filename,const QStringList& commonPart
                 
                 if (mid.startsWith("l",Qt::CaseInsensitive) && !startsWithLeft
                     && !previousChar.isNull() && !previousChar.isLetter() //< 'l' letter in the middle of filename is never going to be parsed
-                    && !nextChar.isNull() && !nextChar.isLetter()) {    // correctly. Restrict it to things like ".l." or "_l."
+                    && ((!nextChar.isNull() && !nextChar.isLetter()) || nextChar.isNull())) { // correctly. Restrict it to things like ".l."
                     
                     ///don't be so harsh with just short views name because the letter
                     /// 'l' or 'r' might be found somewhere else in the filename, so if theres
@@ -521,7 +521,7 @@ static bool matchesPattern(const QString& filename,const QStringList& commonPart
                     ++i;
                 } else if (mid.startsWith("r",Qt::CaseInsensitive) && !startsWithRight
                            && !previousChar.isNull() && !previousChar.isLetter()//< same as for 'l' letter
-                           && !nextChar.isNull() && !nextChar.isLetter()) {
+                           && ((!nextChar.isNull() && !nextChar.isLetter()) || nextChar.isNull())) {
                     ///don't be so harsh with just short views name because the letter
                     /// 'l' or 'r' might be found somewhere else in the filename, so if theres
                     ///no variable expected here just continue
@@ -554,7 +554,7 @@ static bool matchesPattern(const QString& filename,const QStringList& commonPart
                     *viewNumber = viewNo;
 
                     i += 4;
-                } else if (startsWithRight) {
+                } else if (startsWithRight  && !previousChar.isNull() && !previousChar.isLetter()) { //< same as for 'l' letter
                     
                     int viewNo;
                     
@@ -571,7 +571,7 @@ static bool matchesPattern(const QString& filename,const QStringList& commonPart
                     wasViewNumberSet = true;
                     *viewNumber = viewNo;
                     i += 5;
-                } else if(startsWithView) {
+                } else if(startsWithView && !previousChar.isNull() && !previousChar.isLetter()) {
                     ///extract the view number
                     variable.push_back("view");
                     QString viewNumberStr;
@@ -883,3 +883,258 @@ bool Path_Knob::isTypeCompatible(const Knob& other) const {
         return false;
     }
 }
+
+
+////////////////////FileNameContent//////////////////////////
+
+struct FileNameContentPrivate {
+    ///Ordered from left to right, these are the elements composing the filename without its path
+    std::vector<FileNameElement> orderedElements;
+    QString absoluteFileName;
+    QString filePath; //< the filepath
+    QString filename; //< the filename without path
+    QString extension; //< the file extension
+    bool hasSingleNumber;
+    bool hasSingleView;
+    QString generatedPattern;
+    
+    FileNameContentPrivate()
+    : orderedElements()
+    , absoluteFileName()
+    , filePath()
+    , filename()
+    , extension()
+    , hasSingleNumber(false)
+    , hasSingleView(false)
+    , generatedPattern()
+    {
+    }
+    
+    void parse(const QString& absoluteFileName);
+};
+
+
+FileNameContent::FileNameContent(const QString& absoluteFilename)
+: _imp(new FileNameContentPrivate())
+{
+    _imp->parse(absoluteFilename);
+}
+
+FileNameContent::~FileNameContent() {
+    
+}
+
+void FileNameContentPrivate::parse(const QString& absoluteFileName) {
+    this->absoluteFileName = absoluteFileName;
+    filename = absoluteFileName;
+    filePath = File_Knob::removePath(filename);
+    
+    int i = 0;
+    QString lastNumberStr;
+    QString lastTextPart;
+    while (i < filename.size()) {
+        const QChar& c = filename.at(i);
+        if (c.isDigit()) {
+            lastNumberStr.push_back(c);
+            ++i;
+            
+            if (!lastTextPart.isEmpty()) {
+                orderedElements.push_back(FileNameElement(lastTextPart,FileNameElement::TEXT));
+                lastTextPart.clear();
+            }
+            
+        } else {
+            if (!lastNumberStr.isEmpty()) {
+                orderedElements.push_back(FileNameElement(lastNumberStr,FileNameElement::FRAME_NUMBER));
+                if (!hasSingleNumber) {
+                    hasSingleNumber = true;
+                } else {
+                    hasSingleNumber = false;
+                }
+                lastNumberStr.clear();
+            }
+            QString mid = filename.mid(i);
+            
+            bool startsWithLeft = mid.startsWith("left");
+            bool startsWithRight = mid.startsWith("right");
+            bool startsWithView = mid.startsWith("view");
+            QChar previous;
+            if (i > 0) {
+                previous = filename.at(i-1);
+            }
+            QChar next;
+            if (i < filename.size() -1) {
+                next = filename.at(i+1);
+            }
+            
+            if (mid.startsWith(QChar('l'),Qt::CaseInsensitive) && !startsWithLeft
+                && !previous.isNull() && !previous.isLetterOrNumber() && ((!next.isNull() && !next.isLetterOrNumber()) || next.isNull())) {
+                //we hit a short left view name
+                orderedElements.push_back(FileNameElement("l",FileNameElement::SHORT_VIEW));
+                if (!hasSingleView) {
+                    hasSingleView = true;
+                } else {
+                    hasSingleView = false;
+                }
+                ++i;
+            } else if (mid.startsWith(QChar('r'),Qt::CaseInsensitive) && !startsWithRight
+                 && !previous.isNull() && !previous.isLetterOrNumber() && ((!next.isNull() && !next.isLetterOrNumber()) || next.isNull())) {
+                //we hit a short right view name
+                orderedElements.push_back(FileNameElement("r",FileNameElement::SHORT_VIEW));
+                if (!hasSingleView) {
+                    hasSingleView = true;
+                } else {
+                    hasSingleView = false;
+                }
+                ++i;
+            } else if(startsWithLeft && !previous.isNull() && !previous.isLetterOrNumber() ) {
+                orderedElements.push_back(FileNameElement("left",FileNameElement::LONG_VIEW));
+                if (!hasSingleView) {
+                    hasSingleView = true;
+                } else {
+                    hasSingleView = false;
+                }
+                i += 4;
+            } else if(startsWithRight && !previous.isNull() && !previous.isLetterOrNumber() ) {
+                orderedElements.push_back(FileNameElement("right",FileNameElement::LONG_VIEW));
+                if (!hasSingleView) {
+                    hasSingleView = true;
+                } else {
+                    hasSingleView = false;
+                }
+                i += 5;
+            } else if(startsWithView) {
+                int j = 4;
+                QString viewNumberStr;
+                while (j < mid.size() && mid.at(j).isDigit()) {
+                    viewNumberStr.append(mid.at(j));
+                    ++j;
+                }
+                orderedElements.push_back(FileNameElement(viewNumberStr,FileNameElement::LONG_VIEW));
+                if (!hasSingleView) {
+                    hasSingleView = true;
+                } else {
+                    hasSingleView = false;
+                }
+                i += (4 + viewNumberStr.size()); // view + number
+            } else {
+                ++i;
+            }
+
+            
+        }
+    }
+    
+    if (!lastNumberStr.isEmpty()) {
+        orderedElements.push_back(FileNameElement(lastNumberStr,FileNameElement::FRAME_NUMBER));
+        if (!hasSingleNumber) {
+            hasSingleNumber = true;
+        } else {
+            hasSingleNumber = false;
+        }
+        lastNumberStr.clear();
+    }
+    if (!lastTextPart.isEmpty()) {
+        orderedElements.push_back(FileNameElement(lastTextPart,FileNameElement::TEXT));
+        lastTextPart.clear();
+    }
+    
+    
+    int lastDotPos = filename.lastIndexOf('.');
+    if (lastDotPos != -1) {
+        int j = filename.size() - 1;
+        while (j > 0 && filename.at(j) != QChar('.')) {
+            extension.prepend(filename.at(j));
+            --j;
+        }
+    }
+    
+    ///now build the generated pattern with the ordered elements.
+    int numberIndex = 0;
+    int viewIndex = 0;
+    for (U32 j = 0; j < orderedElements.size(); ++j) {
+        const FileNameElement& e = orderedElements[j];
+        switch (e.type) {
+            case FileNameElement::TEXT:
+                generatedPattern.append(e.data);
+                break;
+            case FileNameElement::SHORT_VIEW:
+                generatedPattern.append("%v" + QString::number(viewIndex));
+                ++viewIndex;
+                break;
+            case FileNameElement::LONG_VIEW:
+                generatedPattern.append("%V" + QString::number(viewIndex));
+                ++viewIndex;
+                break;
+            case FileNameElement::FRAME_NUMBER:
+            {
+                QString hashStr;
+                int c = 0;
+                while (c < e.data.size() && e.data.at(c) == QChar('0')) {
+                    hashStr.push_back('#');
+                    ++c;
+                }
+                ++numberIndex;
+                generatedPattern.append(hashStr + QString::number(numberIndex));
+            } break;
+            default:
+                break;
+        }
+    }
+    
+}
+
+/**
+ * @brief Returns the file path, e.g: /Users/Lala/Pictures/ with the trailing separator.
+ **/
+const QString& FileNameContent::getPath() const {
+    return _imp->filePath;
+}
+
+/**
+ * @brief Returns the filename without its path.
+ **/
+const QString& FileNameContent::fileName() const {
+    return _imp->filename;
+}
+
+/**
+ * @brief Returns the absolute filename as it was given in the constructor arguments.
+ **/
+const QString& FileNameContent::absoluteFileName() const {
+    return _imp->absoluteFileName;
+}
+
+/**
+ * @brief Returns true if a single number was found in the filename.
+ **/
+bool FileNameContent::hasSingleNumber() const {
+    return _imp->hasSingleNumber;
+}
+
+/**
+ * @brief Returns true if the filename is composed only of digits.
+ **/
+bool FileNameContent::isFileNameComposedOnlyOfDigits() const {
+    if ((_imp->orderedElements.size() == 1 || _imp->orderedElements.size() == 2)
+        && _imp->orderedElements[0].type == FileNameElement::FRAME_NUMBER) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/**
+ * @brief Returns true if a single view indicator was found in the filename.
+ **/
+bool FileNameContent::hasSingleView() const {
+    return _imp->hasSingleView;
+}
+
+/**
+ * @brief Returns the file pattern found in the filename with hash characters style for frame number (i.e: ###)
+ **/
+const QString& FileNameContent::getFilePattern() const {
+    return _imp->generatedPattern;
+}
+
