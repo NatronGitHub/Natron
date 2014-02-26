@@ -58,7 +58,11 @@ public:
     
     FileNameContent(const QString& absoluteFilename);
     
+    FileNameContent(const FileNameContent& other);
+    
     ~FileNameContent();
+    
+    void operator=(const FileNameContent& other);
     
     /**
      * @brief Returns the file path, e.g: /Users/Lala/Pictures/ with the trailing separator.
@@ -104,6 +108,26 @@ public:
      * my.left.sequence.r.10.jpg would result in my.%V1.sequence.%v2.#1.jpg
      **/
     const QString& getFilePattern() const;
+    
+    /**
+     * @brief If the filename is composed of several numbers (e.g: file08_001.png), 
+     * this functions returns the number at index as a string that will be stored in numberString.
+     * If Index is greater than the number of numbers in the filename or if this filename doesn't
+     * contain any number, this function returns false.
+     **/
+    bool getNumberByIndex(int index,QString* numberString) const;
+    
+    /**
+     * @brief Given the pattern of this file, it tries to match the other file name to this
+     * pattern.
+     * @param numberIndexToVary [out] In case the pattern contains several numbers (@see getNumberByIndex)
+     * this value will be fed the appropriate number index that should be used for frame number.
+     * For example, if this filename is myfile001_000.jpg and the other file is myfile001_001.jpg
+     * numberIndexToVary would be 1 as the frame number string indentied in that case is the last number.
+     * @returns True if it identified 'other' as belonging to the same sequence, false otherwise.
+     * Note that this function will return false if this and other are exactly the same.
+     **/
+    bool matchesPattern(const FileNameContent& other,int* numberIndexToVary);
     
 private:
     

@@ -920,8 +920,25 @@ FileNameContent::FileNameContent(const QString& absoluteFilename)
     _imp->parse(absoluteFilename);
 }
 
+FileNameContent::FileNameContent(const FileNameContent& other)
+: _imp(new FileNameContentPrivate())
+{
+    *this = other;
+}
+
 FileNameContent::~FileNameContent() {
     
+}
+
+void FileNameContent::operator=(const FileNameContent& other) {
+    _imp->orderedElements = other._imp->orderedElements;
+    _imp->absoluteFileName = other._imp->absoluteFileName;
+    _imp->filename = other._imp->filename;
+    _imp->filePath = other._imp->filePath;
+    _imp->extension = other._imp->extension;
+    _imp->hasSingleNumber = other._imp->hasSingleNumber;
+    _imp->hasSingleView = other._imp->hasSingleView;
+    _imp->generatedPattern = other._imp->generatedPattern;
 }
 
 void FileNameContentPrivate::parse(const QString& absoluteFileName) {
@@ -1018,6 +1035,7 @@ void FileNameContentPrivate::parse(const QString& absoluteFileName) {
                 }
                 i += (4 + viewNumberStr.size()); // view + number
             } else {
+                lastTextPart.push_back(c);
                 ++i;
             }
 
@@ -1070,12 +1088,12 @@ void FileNameContentPrivate::parse(const QString& absoluteFileName) {
             {
                 QString hashStr;
                 int c = 0;
-                while (c < e.data.size() && e.data.at(c) == QChar('0')) {
+                while (c < e.data.size()) {
                     hashStr.push_back('#');
                     ++c;
                 }
-                ++numberIndex;
                 generatedPattern.append(hashStr + QString::number(numberIndex));
+                ++numberIndex;
             } break;
             default:
                 break;
@@ -1138,3 +1156,99 @@ const QString& FileNameContent::getFilePattern() const {
     return _imp->generatedPattern;
 }
 
+/**
+ * @brief If the filename is composed of several numbers (e.g: file08_001.png),
+ * this functions returns the number at index as a string that will be stored in numberString.
+ * If Index is greater than the number of numbers in the filename or if this filename doesn't
+ * contain any number, this function returns false.
+ **/
+bool FileNameContent::getNumberByIndex(int index,QString* numberString) const {
+    
+    int numbersElementsIndex = 0;
+    for (U32 i = 0; i < _imp->orderedElements.size(); ++i) {
+        if (_imp->orderedElements[i].type == FileNameElement::FRAME_NUMBER) {
+            if (numbersElementsIndex == index) {
+                *numberString = _imp->orderedElements[i].data;
+                return true;
+            }
+            ++numbersElementsIndex;
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief Given the pattern of this file, it tries to match the other file name to this
+ * pattern.
+ * @param numberIndexToVary [out] In case the pattern contains several numbers (@see getNumberByIndex)
+ * this value will be fed the appropriate number index that should be used for frame number.
+ * For example, if this filename is myfile001_000.jpg and the other file is myfile001_001.jpg
+ * numberIndexToVary would be 1 as the frame number string indentied in that case is the last number.
+ * @returns True if it identified 'other' as belonging to the same sequence, false otherwise.
+ **/
+bool FileNameContent::matchesPattern(const FileNameContent& other,int* numberIndexToVary) {
+    const std::vector<FileNameElement>& otherElements = other._imp->orderedElements;
+    if (otherElements.size() != _imp->orderedElements.size()) {
+        return false;
+    }
+    
+    ///potential frame numbers are pairs of strings from this filename and the same
+    ///string in the other filename.
+    ///Same numbers are not inserted in this vector.
+    std::vector< std::pair< int, std::pair<QString,QString> > > potentialFrameNumbers;
+    int numbersCount = 0;
+    for (U32 i = 0; i < _imp->orderedElements.size(); ++i) {
+        if (_imp->orderedElements[i].type != otherElements[i].type) {
+            return false;
+        }
+        if (_imp->orderedElements[i].type == FileNameElement::FRAME_NUMBER) {
+            if (_imp->orderedElements[i].data != otherElements[i].data) {
+                ///if one frame number string is longer than the other, make sure it is because the represented number
+                ///is bigger and not because there's extra padding
+                /// For example 10000 couldve been produced with ## only and is valid, and 01 would also produce be ##.
+                /// On the other hand 010000 could never have been produced with ## hence it is not valid.
+                
+                QString longest = _imp->orderedElements[i].data.size() > otherElements[i].data.size() ?
+                _imp->orderedElements[i].data : otherElements[i].data;
+                int k = 0;
+                bool notValid = false;
+                while (k < longest.size() && k < std::abs(_imp->orderedElements[i].data.size() - otherElements[i].data.size())) {
+                    if (longest.at(k) == QChar('0')) {
+                        notValid = true;
+                        break;
+                    }
+                    ++k;
+                }
+                if (!notValid) {
+                    potentialFrameNumbers.push_back(std::make_pair(numbersCount,
+                                                                   std::make_pair(_imp->orderedElements[i].data, otherElements[i].data)));
+                }
+                
+            }
+            ++numbersCount;
+        }
+    }
+    ///strings are identical
+    if (potentialFrameNumbers.empty()) {
+        return false;
+    }
+
+    ///find out in the potentialFrameNumbers what is the minimum with pairs and pick it up
+    /// for example if 1 pair is : < 0001, 802398 > and the other pair is < 01 , 10 > we pick
+    /// the second one.
+    int minIndex = -1;
+    int minimum = INT_MAX;
+    for (U32 i = 0; i < potentialFrameNumbers.size(); ++i) {
+        int thisNumber = potentialFrameNumbers[i].second.first.toInt();
+        int otherNumber = potentialFrameNumbers[i].second.second.toInt();
+        int diff = std::abs(thisNumber - otherNumber);
+        if (diff < minimum) {
+            minimum = diff;
+            minIndex = i;
+        }
+    }
+    
+    *numberIndexToVary = potentialFrameNumbers[minIndex].first;
+    return true;
+    
+}

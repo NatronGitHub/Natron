@@ -434,3 +434,38 @@ TEST(SequenceParsing,OutputSequence) {
     
     
 }
+
+
+TEST(FileNameContent,GeneralTest) {
+    QString file1("/Users/Test/mysequence001.jpg");
+    
+    ///first off test-out the API of FileNameContent, see if it is working
+    ///correctly for base functionnality
+    FileNameContent file1Content(file1);
+    ASSERT_TRUE(file1Content.fileName() == "mysequence001.jpg");
+    ASSERT_TRUE(file1Content.getPath() == "/Users/Test/");
+    ASSERT_TRUE(file1Content.absoluteFileName() == file1);
+    
+    ASSERT_TRUE(file1Content.hasSingleNumber());
+    ASSERT_FALSE(file1Content.isFileNameComposedOnlyOfDigits());
+    ASSERT_FALSE(file1Content.hasSingleView());
+    ASSERT_TRUE(file1Content.getFilePattern() == "mysequence###0.jpg");
+    QString numberStr;
+    ASSERT_TRUE(file1Content.getNumberByIndex(0, &numberStr));
+    ASSERT_TRUE(numberStr == "001");
+    ASSERT_TRUE(numberStr.toInt() == 1);
+    
+    ///now attempt to match it to a second filename
+    QString file2("/Users/Test/mysequence002.jpg");
+    FileNameContent file2Content(file2);
+    int frameNumberIndex;
+    ASSERT_TRUE(file1Content.matchesPattern(file2Content, &frameNumberIndex));
+    ASSERT_TRUE(frameNumberIndex == 0);
+    
+    ///attempt to match it to a wrong second filename
+    file2 = "/Users/Test/mysequence01.jpg";
+    file2Content = FileNameContent(file2);
+    ASSERT_FALSE(file1Content.matchesPattern(file2Content, &frameNumberIndex));
+
+    
+}
