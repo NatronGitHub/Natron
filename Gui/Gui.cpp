@@ -1263,7 +1263,7 @@ void Gui::openProject(){
     if (selectedFiles.size() > 0) {
         //clearing current graph
         QString file = selectedFiles.at(0);
-        QString name = SequenceFileDialog::removePath(file);
+        QString name = File_Knob::removePath(file);
         QString path = file.left(file.indexOf(name));
         
         ///if the current graph has no value, just load the project in the same window
@@ -1316,7 +1316,7 @@ bool Gui::saveProjectAs(){
         if (outFile.indexOf("." NATRON_PROJECT_FILE_EXT) == -1) {
             outFile.append("." NATRON_PROJECT_FILE_EXT);
         }
-        QString file = SequenceFileDialog::removePath(outFile);
+        QString file = File_Knob::removePath(outFile);
         QString path = outFile.left(outFile.indexOf(file));
         _imp->_appInstance->getProject()->saveProject(path,file,false);
         

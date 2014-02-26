@@ -63,6 +63,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiApplicationManager.h"
 #include "Global/MemoryInfo.h"
 
+#include "Engine/KnobFile.h"
+
 ///the maximum number of non existing frame before Natron gives up trying to figure out a sequence layout.
 #define NATRON_DIALOG_MAX_SEQUENCES_HOLE 1000
 
@@ -97,7 +99,9 @@ namespace {
     struct NameMappingCompareFirstNoPath {
         NameMappingCompareFirstNoPath(const QString &val) : val_(val) {}
         bool operator()(const SequenceFileDialog::NameMappingElement& elem) const {
-            return val_ == SequenceFileDialog::removePath(elem.first);
+            QString unpathed = elem.first;
+            File_Knob::removePath(unpathed);
+            return val_ == unpathed;
         }
     private:
         QString val_;
@@ -510,7 +514,8 @@ void SequenceFileDialog::setFileExtensionOnLineEdit(const QString& ext){
     }
     if (sequenceModeEnabled()) {
         //find out if there's already a # character
-        QString unpathed = removePath(str);
+        QString unpathed = str;
+        File_Knob::removePath(unpathed);
         pos = unpathed.indexOf(QChar('#'));
         if(pos == -1){
             str.append("#");
@@ -639,8 +644,8 @@ void SequenceFileDialog::setDirectory(const QString &directory){
     } else {
         ///find out if there's already a filename typed by the user
         ///and append it to the new path
-        QString existingText = _selectionLineEdit->text();
-        QString unpathed = SequenceFileDialog::removePath(existingText);
+        QString unpathed = _selectionLineEdit->text();
+        File_Knob::removePath(unpathed);
         _selectionLineEdit->setText(newDirectory + unpathed);
     }
     
@@ -763,7 +768,8 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
     
     ///for filenames which consist only of digits (e.g: 7239290309283.jpg) , just
     /// take the frameNumber as the filepath otherwise it would mess with the sequences detection.
-    QString filenameUnPathed = SequenceFileDialog::removePath(pathCpy);
+    QString filenameUnPathed = pathCpy;
+    File_Knob::removePath(filenameUnPathed);
     if (filenameUnPathed.isEmpty()) {
         pathCpy = QString::number(frameNumber);
     }
@@ -1037,7 +1043,8 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
         if (option.state & QStyle::State_Selected){
             painter->fillRect(geom, option.palette.highlight());
         }
-        QString nameToPaint = SequenceFileDialog::removePath(found_item.second);
+        QString nameToPaint = found_item.second;
+        File_Knob::removePath(nameToPaint);
         int totalSize = geom.width();
         int iconWidth = option.decorationSize.width();
         int textSize = totalSize - iconWidth;
@@ -1121,35 +1128,7 @@ QString SequenceFileDialog::getFilePath(const QString& str) {
     }
 }
 
-QString SequenceFileDialog::removePath(const QString& str){
-    int i = str.lastIndexOf(".");
-    if(i!=-1){
-        //if the file has an extension
-        --i;
-        while(i >=0 && str.at(i) != QChar('/') && str.at(i) != QChar('\\')){
-            --i;
-        }
-        ++i;
-        std::string stdStr = str.toStdString();
-        if(str.isEmpty()){
-            return "";
-        }
-        return stdStr.substr(i).c_str();
-    }else{
-        i = str.lastIndexOf(QChar('/'));
-        if(i == -1){
-            //try out \\ char
-            i = str.lastIndexOf(QChar('\\'));
-        }
-        if(i == -1){
-            return str;
-        }else{
-            ++i;
-            std::string stdStr = str.toStdString();
-            return stdStr.substr(i).c_str();
-        }
-    }
-}
+
 
 bool SequenceFileDialog::checkIfContiguous(const std::vector<int>& v){
     for(unsigned int i = 0 ; i < v.size() ;++i) {
@@ -1330,7 +1309,8 @@ void SequenceFileDialog::openSelectedFiles(){
                 QString pattern = getSequencePatternFromLineEdit();
                 if(!pattern.isEmpty())
                     str = pattern;
-                QString unpathed = removePath(str);
+                QString unpathed = str;
+                File_Knob::removePath(unpathed);
                 int pos;
                 if(sequenceModeEnabled()){
                     pos = unpathed.indexOf("#");
@@ -1367,7 +1347,8 @@ void SequenceFileDialog::openSelectedFiles(){
                         text.append(" already exists.\n Would you like to replace it ?");
                     }else{
                         text = "The sequence ";
-                        text.append(removePath(str));
+                        QString unpathed = File_Knob::removePath(str);
+                        text.append(unpathed);
                         text.append(" already exists.\n Would you like to replace it ?");
                     }
                     QMessageBox::StandardButton ret = QMessageBox::question(this, "Existing file", text,
@@ -1663,7 +1644,8 @@ QString SequenceFileDialog::getSequencePatternFromLineEdit(){
 }
 QStringList SequenceFileDialog::filesListFromPattern(const QString& pattern){
     QStringList ret;
-    QString unpathed = removePath(pattern);
+    QString unpathed = pattern;
+    File_Knob::removePath(unpathed);
     
     QString patternExtension;
     int lastDotPos = unpathed.lastIndexOf('.');

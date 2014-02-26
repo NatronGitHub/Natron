@@ -19,6 +19,7 @@
 
 using namespace Natron;
 
+
 BaseTest::BaseTest()
     : testing::Test()
     , _genericTestPluginID()
@@ -68,6 +69,9 @@ void BaseTest::SetUp()
 {
     AppManager* manager = new AppManager();
     manager->load(0,NULL);
+    
+    //////WARNING: This test disables multi-threading! if it fails it will never re-enable it
+    ////// hence the next time you launch the application multi-threading will be DISABLED.
     manager->setMultiThreadEnabled(false);
     _app = manager->getTopLevelInstance();
     
@@ -77,6 +81,7 @@ void BaseTest::SetUp()
 void BaseTest::TearDown()
 {
     _app = 0;
+    appPTR->setMultiThreadEnabled(true);
     delete appPTR;
 }
 

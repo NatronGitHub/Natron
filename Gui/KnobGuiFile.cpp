@@ -169,9 +169,8 @@ void File_KnobGui::open_file(bool openSequence)
 
 void File_KnobGui::updateLastOpened(const QString &str)
 {
-    QString withoutPath = SequenceFileDialog::removePath(str);
-    int pos = str.indexOf(withoutPath);
-    _lastOpened = str.left(pos);
+    QString unpathed = str;
+    _lastOpened = File_Knob::removePath(unpathed);
     getGui()->updateLastSequenceOpenedPath(_lastOpened);
 
 }
@@ -307,7 +306,7 @@ void OutputFile_KnobGui::open_file(bool openSequence)
     if (dialog.exec()) {
         QString oldPattern = _lineEdit->text();
         QString newPattern = dialog.filesToSave();
-        updateLastOpened(SequenceFileDialog::removePath(oldPattern));
+        updateLastOpened(File_Knob::removePath(oldPattern));
         
         pushValueChangedCommand(Variant(newPattern));
     }
@@ -315,9 +314,8 @@ void OutputFile_KnobGui::open_file(bool openSequence)
 
 void OutputFile_KnobGui::updateLastOpened(const QString &str)
 {
-    QString withoutPath = SequenceFileDialog::removePath(str);
-    int pos = str.indexOf(withoutPath);
-    _lastOpened = str.left(pos);
+    QString withoutPath = str;
+    _lastOpened = File_Knob::removePath(withoutPath);
     getGui()->updateLastSequenceSavedPath(_lastOpened);
 
 }
@@ -439,9 +437,8 @@ void Path_KnobGui::open_file()
 
 void Path_KnobGui::updateLastOpened(const QString &str)
 {
-    QString withoutPath = SequenceFileDialog::removePath(str);
-    int pos = str.indexOf(withoutPath);
-    _lastOpened = str.left(pos);
+    QString withoutPath = str;
+    _lastOpened = File_Knob::removePath(withoutPath);
 }
 
 void Path_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)

@@ -920,7 +920,7 @@ bool Knob::getKeyFrameValueByIndex(int dimension,int index,Variant* value) const
     }
     
     assert(dimension < getDimension());
-    if (!isAnimated(dimension)) {
+    if (!getKeyFramesCount(dimension)) {
         return false;
     }
     

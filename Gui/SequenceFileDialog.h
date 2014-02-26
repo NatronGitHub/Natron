@@ -379,9 +379,7 @@ public:
     static bool removeSequenceDigits(QString& file,int* frameNumber);
     
     static QString getFilePath(const QString& str);
-    
-    static QString removePath(const QString& str);
-    
+        
     static bool checkIfContiguous(const std::vector<int>& v);
     
     QStringList selectedFiles();

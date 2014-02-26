@@ -89,7 +89,11 @@ void File_Knob::setFiles(const QStringList& files) {
 }
 
 void File_Knob::setFiles(const std::map<int, QString>& fileSequence) {
+    
+    removeAnimation(0);
+    
     if (fileSequence.empty()) {
+        setValue<QString>("");
         return;
     }
     beginValueChange(Natron::PLUGIN_EDITED);
