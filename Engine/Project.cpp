@@ -393,7 +393,7 @@ void Project::initializeKnobs(){
     _imp->formatKnob->populate(entries);
     _imp->formatKnob->turnOffAnimation();
     _imp->addFormatKnob = Natron::createKnob<Button_Knob>(this,"New format...");
-
+    _imp->addFormatKnob->turnOffNewLine();
 
     _imp->viewsCount = Natron::createKnob<Int_Knob>(this,"Number of views");
     _imp->viewsCount->turnOffAnimation();

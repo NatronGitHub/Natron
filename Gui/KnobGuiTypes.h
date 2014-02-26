@@ -533,6 +533,7 @@ public:
 
     virtual ~String_KnobGui() OVERRIDE;
 
+    virtual bool showDescriptionLabel() const OVERRIDE FINAL;
     
 public slots:
     

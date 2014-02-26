@@ -510,15 +510,14 @@ void KnobGui::hide(){
        getGui()->getCurveEditor()->hideCurves(this);
     }
     
-    if (!_knob->isNewLineTurnedOff()) {
+    if (!_knob->isNewLineTurnedOff() && _field->objectName() != "multi-line") {
         _containerLayout->removeWidget(_field);
         _containerLayout->removeWidget(_descriptionLabel);
         _field->setParent(0);
         _descriptionLabel->setParent(0);
         _field->hide();
-        _descriptionLabel->hide();
     }
-    
+    _descriptionLabel->hide();
 }
 void KnobGui::show(){
     _show();
@@ -529,13 +528,14 @@ void KnobGui::show(){
         getGui()->getCurveEditor()->showCurves(this);
     }
     
-    if (!_knob->isNewLineTurnedOff()) {
+    if (!_knob->isNewLineTurnedOff() && _field->objectName() != "multi-line") {
         _containerLayout->insertRow(_row, _descriptionLabel, _field);
         _field->setParent(_containerLayout->parentWidget());
         _descriptionLabel->setParent(_containerLayout->parentWidget());
         _field->show();
-        _descriptionLabel->show();
-    }
+    } 
+    _descriptionLabel->show();
+
 }
 
 void KnobGui::setEnabledSlot(){

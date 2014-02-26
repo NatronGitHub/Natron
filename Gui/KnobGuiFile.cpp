@@ -46,6 +46,7 @@ void File_KnobGui::createWidget(QHBoxLayout* layout)
 
 
     _lineEdit = new LineEdit(layout->parentWidget());
+    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     _lineEdit->setPlaceholderText("File path...");
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     

@@ -88,8 +88,8 @@ void Int_KnobGui::createWidget(QHBoxLayout* layout)
     QWidget *container = new QWidget(layout->parentWidget());
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
     container->setLayout(containerLayout);
+    containerLayout->setSpacing(3);
     containerLayout->setContentsMargins(0, 0, 0, 0);
-    
     boost::shared_ptr<Int_Knob> intKnob = boost::dynamic_pointer_cast<Int_Knob>(getKnob());
     assert(intKnob);
     
@@ -102,10 +102,10 @@ void Int_KnobGui::createWidget(QHBoxLayout* layout)
     for (int i = 0; i < dim; ++i) {
         QWidget *boxContainer = new QWidget(layout->parentWidget());
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
-        boxContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        //boxContainer->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
-        boxContainerLayout->setSpacing(1);
+        boxContainerLayout->setSpacing(3);
         QLabel *subDesc = 0;
         if (dim != 1) {
             subDesc = new QLabel(QString(getKnob()->getDimensionName(i).c_str())+':', boxContainer);
@@ -370,7 +370,7 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
     container->setLayout(containerLayout);
     containerLayout->setContentsMargins(0, 0, 0, 0);
-    
+    containerLayout->setSpacing(3);
     boost::shared_ptr<Double_Knob> dbl_knob = boost::dynamic_pointer_cast<Double_Knob>(getKnob());
     assert(dbl_knob);
     int dim = getKnob()->getDimension();
@@ -386,10 +386,9 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
     for (int i = 0; i < dim; ++i) {
         QWidget *boxContainer = new QWidget(layout->parentWidget());
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
-        boxContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
-        boxContainerLayout->setSpacing(1);
+        boxContainerLayout->setSpacing(3);
         QLabel *subDesc = 0;
         if (dim != 1) {
             subDesc = new QLabel(QString(getKnob()->getDimensionName(i).c_str())+':', boxContainer);
@@ -1669,6 +1668,15 @@ void String_KnobGui::setReadOnly(bool readOnly, int /*dimension*/) {
     }
 }
 
+bool String_KnobGui::showDescriptionLabel() const {
+    boost::shared_ptr<String_Knob> strKnob = boost::dynamic_pointer_cast<String_Knob>(getKnob());
+    assert(strKnob);
+    if (strKnob->isLabel()) {
+        return false;
+    } else {
+        return true;
+    }
+}
 //=============================GROUP_KNOB_GUI===================================
 GroupBoxLabel::GroupBoxLabel(QWidget *parent):
 QLabel(parent),

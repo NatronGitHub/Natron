@@ -354,12 +354,12 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
         
         ///if the knob has specified that it didn't want to trigger a new line, decrement the current row
         /// index of the tab
-        ///FIXME: this is bugged because we don't tell to the createGui() function that it is going to need
-        ///to put its widgets on the right of others, so it is going to corrupt the layout. Commenting for now.
-        //                if(!gui->triggerNewLine() && i!=0){
-        //                    --parentTab->second.second;
-        //                }
-        //
+        
+        if (ret->getKnob()->isNewLineTurnedOff()) {
+            --parentTab->second.second;
+        }
+        
+        ///retrieve the form layout
         QFormLayout* layout;
         if (_useScrollAreasForTabs) {
             layout = dynamic_cast<QFormLayout*>(
@@ -368,25 +368,54 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
             layout = dynamic_cast<QFormLayout*>(parentTab->second.first->layout());
         }
         assert(layout);
-        QWidget* fieldContainer = new QWidget(parentTab->second.first);
-        fieldContainer->setObjectName("fieldContainer");
-        QHBoxLayout* fieldLayout = new QHBoxLayout(fieldContainer);
-        fieldLayout->setContentsMargins(0,0,0,0);
+        
+        QWidget* fieldContainer = 0;
+        QHBoxLayout* fieldLayout = 0;
+        if (!ret->getKnob()->isNewLineTurnedOff()) {
+            ///if new line is not turned off, create a new line
+            fieldContainer = new QWidget(parentTab->second.first);
+            fieldLayout = new QHBoxLayout(fieldContainer);
+            fieldLayout->setContentsMargins(3,0,0,0);
+            fieldContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        } else {
+            ///otherwise re-use the last row's widget and layout
+            QLayoutItem* fieldContainerItem = layout->itemAt(parentTab->second.second, QFormLayout::FieldRole);
+            assert(fieldContainerItem);
+            fieldContainer = fieldContainerItem->widget();
+            fieldLayout = dynamic_cast<QHBoxLayout*>(fieldContainer->layout());
+            
+            ///the knobs use this value to know whether we should remove the row or not
+            fieldContainer->setObjectName("multi-line");
+            
+        }
+        assert(fieldContainer);
+        assert(fieldLayout);
+        
         ClickableLabel* label = new ClickableLabel("",parentTab->second.first);
+        
         if (ret->showDescriptionLabel()) {
             label->setText(QString(QString(ret->getKnob()->getDescription().c_str()) + ":"));
             QObject::connect(label, SIGNAL(clicked(bool)), ret, SIGNAL(labelClicked(bool)));
         }
+   
+        
+        ///if new line is turned off add the label before any other widget horizontally
+        if (ret->getKnob()->isNewLineTurnedOff()) {
+            fieldLayout->addWidget(label);
+        }
         
         ///fill the fieldLayout with the widgets
         ret->createGUI(layout,fieldContainer,label,fieldLayout,parentTab->second.second);
+        
         ///increment the row count
         ++parentTab->second.second;
-        layout->addRow(label, fieldContainer);
+        
+        if (!ret->getKnob()->isNewLineTurnedOff()) {
+            layout->addRow(label, fieldContainer);
+        }
         
         ret->setSecret();
         
-       
         
         /// if this knob is within a group, check that the group is visible, i.e. the toplevel group is unfolded
         if (parentKnob && parentKnob->typeName() == Group_Knob::typeNameStatic()) {
@@ -453,6 +482,7 @@ void DockablePanel::addTab(const QString& name){
     tabLayout->setHorizontalSpacing(3);
     tabLayout->setLabelAlignment(Qt::AlignVCenter | Qt::AlignRight);
     tabLayout->setFormAlignment(Qt::AlignLeft | Qt::AlignTop);
+    tabLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
     _tabWidget->addTab(newTab,name);
     _tabs.insert(make_pair(name,make_pair(newTab,0)));
 }
