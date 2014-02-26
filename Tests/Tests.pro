@@ -96,7 +96,8 @@ SOURCES += \
     BaseTest.cpp \
     Hash64_Test.cpp \
     Image_Test.cpp \
-    Lut_Test.cpp
+    Lut_Test.cpp \
+    File_Knob_Test.cpp
 
 HEADERS += \
     BaseTest.h

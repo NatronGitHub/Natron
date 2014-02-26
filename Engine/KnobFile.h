@@ -13,6 +13,7 @@
 #define NATRON_ENGINE_KNOBFILE_H_
 
 #include <vector>
+#include <map>
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -82,6 +83,54 @@ public:
     virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
     
     const StringAnimationManager& getAnimation() const { return *_animation; }
+    
+    /**
+     * @brief Removes from str any path it may have and returns the path.
+     * The file doesn't have to necessarily exist on the disk.
+     * For example: /Users/Lala/Pictures/mySequence001.jpg would transform 'filename' in
+     * mySequence001.jpg and would return /Users/Lala/Pictures/
+     **/
+    static QString removePath(QString& filename);
+    
+    
+    ///map: < time, map < view_index, file name > >
+    ///Explanation: for each frame number, there may be multiple views, each mapped to a filename.
+    ///If there'are 2 views, index 0 is considered to be the left view and index 1 is considered to be the right view.
+    ///If there'are multiple views, the index is corresponding to the view
+    typedef std::map<int,std::map<int,QString> > FileSequence;
+    
+    /**
+     * @brief Given a pattern string, returns a string list with all the file names
+     * that matches the mattern.
+     * The rules of the pattern are:
+     *
+     * 1) Hashes character ('#') are counted as one digit. One digit account for extra
+     * 0 padding that may exist prepending the actual number. Therefore
+     * /Users/Lala/Pictures/mySequence###.jpg will accept the following filenames:
+     * /Users/Lala/Pictures/mySequence001.jpg
+     * /Users/Lala/Pictures/mySequence100.jpg
+     * /Users/Lala/Pictures/mySequence1000.jpg
+     * But not /Users/Lala/Pictures/mySequence01.jpg because it has less digits than the hashes characters specified.
+     * Neither /Users/Lala/Pictures/mySequence01000.jpg because it has extra padding and more digits than hashes characters specified.
+     *
+     * 2) The same as hashes characters can be achieved by specifying the option %0<paddingCharactersCount>d
+     * Ex: /Users/Lala/Pictures/mySequence###.jpg can be achieved the same way with /Users/Lala/Pictures/mySequence%03d.jpg
+     *
+     * 3) %v will be replaced automatically by 'l' or 'r' to search for a matching filename.
+     *  For example /Users/Lala/Pictures/mySequence###_%v.jpg would accept:
+     * /Users/Lala/Pictures/mySequence001_l.jpg and /Users/Lala/Pictures/mySequence001_r.jpg
+     * Note that %v in the middle of the filename can only be used with a non letter character separating
+     * it from the rest of the filename. Without this restriction it makes it very difficult to find
+     * matching files. Note that %v with multi-view expends for view2 , view3 etc.. and not v2, v3 ...
+     *
+     * %V would achieve exactly the same but would be replaced by 'left' or 'right' instead.
+     * For multi-view it would expend to 'view2','view3', etc...
+     *
+     * @returns True if it could extract a valid sequence from the pattern (even with 1 filename in it). False if the pattern
+     * is not valid.
+     **/
+    static bool filesListFromPattern(const QString& pattern,File_Knob::FileSequence* sequence);
+    
     
 signals:
     
@@ -157,7 +206,12 @@ public:
     
     virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
 
-    
+    /**
+     * @brief Generates a filename out of a pattern
+     * @see File_Knob::filesListFromPattern
+     **/
+    static QString generateFileNameFromPattern(const QString& pattern,int frameNumber,int viewNumber);
+
 signals:
     
     void openFile(bool);
