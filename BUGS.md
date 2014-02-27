@@ -59,6 +59,8 @@ Missing and wanted features
 
 Here is a list of non-blocking bugs / wanted features:
 
+- the nodegraph should have a "f" shortcut to recenter the graph, and scrollbars (or a birds eye view) when the graph is too large.
+
 - Knobs are missing a "reset default value" feature
 
 - Separate the link and copy/paste functionalities from the animation menu
