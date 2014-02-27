@@ -152,13 +152,13 @@ namespace Natron {
         
         std::list<RectI> minimalNonMarkedRects(const RectI& roi) const;
         
+        RectI minimalNonMarkedBbox(const RectI& roi) const;
+
         void markForRendered(const RectI& roi);
 
         const char* getBitmap() const { return _map.get(); }
 
     private:
-        RectI minimalNonMarkedBbox(const RectI& roi) const;
-
         RectI _rod;
         boost::scoped_array<char> _map;
     };
@@ -235,6 +235,11 @@ namespace Natron {
             return _bitmap.minimalNonMarkedRects(regionOfInterest);
         }
         
+        RectI getMinimalRect(const RectI& regionOfInterest) const{
+            QMutexLocker locker(&_lock);
+            return _bitmap.minimalNonMarkedBbox(regionOfInterest);
+        }
+
         void markForRendered(const RectI& roi){
             QMutexLocker locker(&_lock);
             _bitmap.markForRendered(roi);

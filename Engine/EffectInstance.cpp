@@ -355,9 +355,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
     }
 #endif
 
-    for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
+    for (std::list<RectI>::iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
         
-        const RectI& rectToRender = *it;
+        RectI& rectToRender = *it;
         
 #ifdef NATRON_LOG
         Natron::Log::print(QString("Rect left to render in the image... xmin= "+
@@ -419,12 +419,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                 getApp()->getProject()->unlock();
             }
         }
-        
         switch (safety) {
             case FULLY_SAFE_FRAME: // the plugin will perform any per frame SMP threading
             {
                 // we can split the frame in tiles and do per frame SMP threading (see kOfxImageEffectPluginPropHostFrameThreading)
                 std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(rectToRender, QThread::idealThreadCount());
+                // the bitmap is checked again at the beginning of EffectInstance::tiledRenderingFunctor()
                 QFuture<Natron::Status> ret = QtConcurrent::mapped(splitRects,
                                                                    boost::bind(&EffectInstance::tiledRenderingFunctor,this,args,_1,image));
                 ret.waitForFinished();
@@ -436,14 +436,33 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
             } break;
 
             case INSTANCE_SAFE: // indicating that any instance can have a single 'render' call at any one time,
+            {
+#pragma message WARN("INSTANCE_SAFE means that there is only one render per INSTANCE!!! take a per-instance lock here")
+                // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
+                rectToRender = image->getMinimalRect(rectToRender);
+                if (!rectToRender.isNull()) {
+                    Natron::Status st = render(time, scale, rectToRender,view, image);
+                    if(st != Natron::StatOK){
+                        throw std::runtime_error("rendering failed");
+                    }
+                    if(!aborted()){
+                        image->markForRendered(rectToRender);
+                    }
+                }
+            } break;
             case FULLY_SAFE:    // indicating that any instance of a plugin can have multiple renders running simultaneously
             {
-                Natron::Status st = render(time, scale, rectToRender,view, image);
-                if(st != Natron::StatOK){
-                    throw std::runtime_error("rendering failed");
-                }
-                if(!aborted()){
-                    image->markForRendered(rectToRender);
+#pragma message WARN("FULLY_SAFE means that there is only one render per FRAME for a given instance!!! take a per-frame lock here (the map of per-frame locks belongs to an instance)")
+                // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
+                rectToRender = image->getMinimalRect(rectToRender);
+                if (!rectToRender.isNull()) {
+                    Natron::Status st = render(time, scale, rectToRender,view, image);
+                    if(st != Natron::StatOK){
+                        throw std::runtime_error("rendering failed");
+                    }
+                    if(!aborted()){
+                        image->markForRendered(rectToRender);
+                    }
                 }
             } break;
 
@@ -454,13 +473,17 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                 QMutex* pluginLock = appPTR->getMutexForPlugin(pluginID().c_str());
                 assert(pluginLock);
                 pluginLock->lock();
-                Natron::Status st = render(time, scale, rectToRender,view, image);
-                pluginLock->unlock();
-                if(st != Natron::StatOK){
-                    throw std::runtime_error("rendering failed");
-                }
-                if(!aborted()){
-                    image->markForRendered(rectToRender);
+                // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
+                rectToRender = image->getMinimalRect(rectToRender);
+                if (!rectToRender.isNull()) {
+                    Natron::Status st = render(time, scale, rectToRender,view, image);
+                    pluginLock->unlock();
+                    if(st != Natron::StatOK){
+                        throw std::runtime_error("rendering failed");
+                    }
+                    if(!aborted()){
+                        image->markForRendered(rectToRender);
+                    }
                 }
             } break;
         }
@@ -492,12 +515,16 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
                                  boost::shared_ptr<Natron::Image> output)
 {
     _imp->renderArgs.setLocalData(args);
-    Natron::Status st = render(args._time, args._scale, roi,args._view, output);
-    if(st != StatOK){
-        return st;
-    }
-    if(!aborted()){
-        output->markForRendered(roi);
+    // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
+    RectI rectToRender = output->getMinimalRect(roi);
+    if (!rectToRender.isNull()) {
+        Natron::Status st = render(args._time, args._scale, rectToRender, args._view, output);
+        if(st != StatOK){
+            return st;
+        }
+        if(!aborted()){
+            output->markForRendered(roi);
+        }
     }
     return StatOK;
 }
