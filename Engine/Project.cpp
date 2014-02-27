@@ -91,23 +91,23 @@ void Project::loadProjectInternal(const QString& path,const QString& name) {
         throw std::invalid_argument(QString(filePath + " : no such file.").toStdString());
     }
     std::ifstream ifile;
-    try{
+    try {
         ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         ifile.open(filePath.toStdString().c_str(),std::ifstream::in);
-    }catch(const std::ifstream::failure& e){
-        throw std::runtime_error(std::string(std::string("Exception opening ")+ e.what() + filePath.toStdString()));
+    } catch(const std::ifstream::failure& e) {
+        throw std::runtime_error(std::string("Exception occured when opening file ") + filePath.toStdString() + ": " + e.what());
     }
-    try{
+    try {
         boost::archive::xml_iarchive iArchive(ifile);
         bool bgProject;
         iArchive >> boost::serialization::make_nvp("Background_project",bgProject);
         ProjectSerialization projectSerializationObj;
         iArchive >> boost::serialization::make_nvp("Project",projectSerializationObj);
         load(projectSerializationObj);
-        if(!bgProject){
+        if(!bgProject) {
             getApp()->loadProjectGui(iArchive);
         }
-    }catch(const boost::archive::archive_exception& e){
+    } catch(const boost::archive::archive_exception& e) {
         throw std::runtime_error(std::string("Serialization error: ") + std::string(e.what()));
     }
     ifile.close();
@@ -225,7 +225,7 @@ void Project::saveProjectInternal(const QString& path,const QString& name,bool a
 		ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 		ofile.open(filePath.toStdString().c_str(),std::ofstream::out);
 	} catch (const std::ofstream::failure& e) {
-		throw std::runtime_error(std::string(std::string("Exception opening ")+ e.what() + filePath.toStdString()));
+		throw std::runtime_error(std::string("Exception occured when opening file ") + filePath.toStdString() + ": " + e.what());
 	}
     if (!ofile.good()) {
         qDebug() << "Failed to open file " << filePath.toStdString().c_str();
