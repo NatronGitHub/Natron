@@ -238,6 +238,7 @@ void KnobGui::createAnimationMenu(){
     
     bool isSlave = false;
     bool hasAnimation = false;
+    bool isEnabled = true;
     for (int i = 0; i < getKnob()->getDimension(); ++i) {
         if (getKnob()->isSlave(i)) {
             isSlave = true;
@@ -248,23 +249,32 @@ void KnobGui::createAnimationMenu(){
         if (isSlave && hasAnimation) {
             break;
         }
+        if (!getKnob()->isEnabled(i)) {
+            isEnabled = false;
+        }
     }
     
     if(!isSlave) {
-        if(!isOnKeyFrame){
+        if (!isOnKeyFrame) {
             QAction* setKeyAction = new QAction(tr("Set Key"),_animationMenu);
             QObject::connect(setKeyAction,SIGNAL(triggered()),this,SLOT(onSetKeyActionTriggered()));
             _animationMenu->addAction(setKeyAction);
-        }else{
+            if (!isEnabled) {
+                setKeyAction->setEnabled(false);
+            }
+        } else {
             QAction* removeKeyAction = new QAction(tr("Remove Key"),_animationMenu);
             QObject::connect(removeKeyAction,SIGNAL(triggered()),this,SLOT(onRemoveKeyActionTriggered()));
             _animationMenu->addAction(removeKeyAction);
+            if (!isEnabled) {
+                removeKeyAction->setEnabled(false);
+            }
         }
         
         QAction* removeAnyAnimationAction = new QAction(tr("Remove animation"),_animationMenu);
         QObject::connect(removeAnyAnimationAction,SIGNAL(triggered()),this,SLOT(onRemoveAnyAnimationActionTriggered()));
         _animationMenu->addAction(removeAnyAnimationAction);
-        if (!hasAnimation) {
+        if (!hasAnimation || !isEnabled) {
             removeAnyAnimationAction->setEnabled(false);
         }
         
@@ -281,6 +291,9 @@ void KnobGui::createAnimationMenu(){
         QMenu* interpolationMenu = new QMenu(_animationMenu);
         interpolationMenu->setTitle("Interpolation");
         _animationMenu->addAction(interpolationMenu->menuAction());
+        if (!isEnabled) {
+            interpolationMenu->menuAction()->setEnabled(false);
+        }
         
         QAction* constantInterpAction = new QAction(tr("Constant"),interpolationMenu);
         QObject::connect(constantInterpAction,SIGNAL(triggered()),this,SLOT(onConstantInterpActionTriggered()));
@@ -311,6 +324,9 @@ void KnobGui::createAnimationMenu(){
     QAction* copyAnimationAction = new QAction(tr("Copy animation"),_animationMenu);
     QObject::connect(copyAnimationAction,SIGNAL(triggered()),this,SLOT(onCopyAnimationActionTriggered()));
     _animationMenu->addAction(copyAnimationAction);
+    if (!hasAnimation) {
+        copyAnimationAction->setEnabled(false);
+    }
     
     if(!isSlave) {
         
