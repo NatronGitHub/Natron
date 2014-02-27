@@ -541,8 +541,6 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         }
         dst->refreshEdges();
         scene()->update();
-        appPTR->clearPlaybackCache();
-        _gui->getApp()->checkViewersConnection();
     }else if(state == NODE_DRAGGING){
         if(_nodeSelected) {
             _undoStack->setActive();
