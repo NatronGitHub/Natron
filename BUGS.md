@@ -6,7 +6,7 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
-- in the node graph, when clicking on the input of an *unconnected* node, moving it, and releasing it without connecting it, it triggers a render in the viewer.
+- in the node graph, when clicking on the input of an *unconnected* node, moving it, and releasing it without connecting it, it triggers a render in the viewer. If the node is connected to other nodes upstream, but there are no connected nodes downstream, it also triggers a render (whereas nothing changed on the rendering path).
 
 - in the savedialog, when I select a single file without a number in the filename, "File" should be selected automatically instead of sequence
 
