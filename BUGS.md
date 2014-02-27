@@ -6,6 +6,14 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
+- in the node graph, when clicking on the input of an *unconnected* node, moving it, and releasing it without connecting it, it triggers a render in the viewer.
+
+- in the savedialog, when I select a single file without a number in the filename, "File" should be selected automatically instead of sequence
+
+- in the savedialog, when I select a file of a given extension, the dialog should not set another extension (the combobox should simply be replaced by a filter  or a list of supported formats)
+
+- in the properties panel, all parameters should be expanding horizontally
+
 - disabled choiceparam should be grayed out (text drawn in black instead of white)
 
 - gParamSuite->paramGetNumKeys should *never* throw an exception, but
