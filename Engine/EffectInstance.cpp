@@ -437,7 +437,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
 
             case INSTANCE_SAFE: // indicating that any instance can have a single 'render' call at any one time,
             {
-#pragma message WARN("INSTANCE_SAFE means that there is only one render per INSTANCE!!! take a per-instance lock here")
+#pragma message WARN("INSTANCE_SAFE means that there is only one render per INSTANCE!!! take a per-instance lock here, and read NOTE below")
+                // NOTE: the per-instance lock should probably be shared between
+                // all clones of the same instance, because an InstanceSafe plugin may assume it is the sole owner of the output image,
+                // and read-write on it.
+                // It is probably safer to assume that several clones may write to the same output image only in the FULLY_SAFE case.
+
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
                 rectToRender = image->getMinimalRect(rectToRender);
                 if (!rectToRender.isNull()) {
