@@ -70,6 +70,7 @@ SOURCES += \
     ProjectPrivate.cpp \
     ProjectSerialization.cpp \
     Row.cpp \
+    SequenceParsing.cpp \
     Settings.cpp \
     StandardPaths.cpp \
     StringAnimationManager.cpp \
@@ -123,6 +124,7 @@ HEADERS += \
     ProjectPrivate.h \
     ProjectSerialization.h \
     Row.h \
+    SequenceParsing.h \
     Settings.h \
     Singleton.h \
     StandardPaths.h \

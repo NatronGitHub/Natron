@@ -389,11 +389,11 @@ void Project::initializeKnobs(){
         entries.push_back(formatStr.toStdString());
         _imp->availableFormats.push_back(*f);
     }
+    _imp->formatKnob->turnOffNewLine();
 
     _imp->formatKnob->populate(entries);
     _imp->formatKnob->turnOffAnimation();
     _imp->addFormatKnob = Natron::createKnob<Button_Knob>(this,"New format...");
-    _imp->addFormatKnob->turnOffNewLine();
 
     _imp->viewsCount = Natron::createKnob<Int_Knob>(this,"Number of views");
     _imp->viewsCount->turnOffAnimation();
@@ -441,18 +441,21 @@ void Project::initNodeCountersAndSetName(Node* n) {
     _imp->currentNodes.push_back(n);
 }
 
-void Project::clearNodes(){
-    QMutexLocker l(&_imp->projectLock);
-
-    for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
-        _imp->currentNodes[i]->quitAnyProcessing();
+void Project::clearNodes() {
+    std::vector<Natron::Node*> nodesToDelete;
+    {
+        QMutexLocker l(&_imp->projectLock);
+        nodesToDelete = _imp->currentNodes;
+        _imp->currentNodes.clear();
+    }
+    for (U32 i = 0; i < nodesToDelete.size(); ++i) {
+        nodesToDelete[i]->quitAnyProcessing();
     }
     
     
-    for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
-        delete _imp->currentNodes[i];
+    for (U32 i = 0; i < nodesToDelete.size(); ++i) {
+        delete nodesToDelete[i];
     }
-    _imp->currentNodes.clear();
     
     emit nodesCleared();
 }
@@ -862,12 +865,15 @@ QString Project::autoSavesDir() {
     return Natron::StandardPaths::writableLocation(Natron::StandardPaths::DataLocation) + QDir::separator() + "Autosaves";
 }
 
-void Project::reset(){
-    _imp->autoSetProjectFormat = true;
-    _imp->hasProjectBeenSavedByUser = false;
-    _imp->projectName = NATRON_PROJECT_UNTITLED;
-    _imp->projectPath.clear();
-    emit projectNameChanged(_imp->projectName);
+void Project::reset() {
+    {
+        QMutexLocker l(&_imp->projectLock);
+        _imp->autoSetProjectFormat = true;
+        _imp->hasProjectBeenSavedByUser = false;
+        _imp->projectName = NATRON_PROJECT_UNTITLED;
+        _imp->projectPath.clear();
+    }
+    emit projectNameChanged(NATRON_PROJECT_UNTITLED);
     clearNodes();
 }
 

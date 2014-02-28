@@ -49,6 +49,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
 #include "Engine/KnobSerialization.h"
+#include "Engine/Project.h"
 
 #include "Gui/AnimationButton.h"
 #include "Gui/DockablePanel.h"
@@ -85,6 +86,7 @@ KnobGui::KnobGui(boost::shared_ptr<Knob> knob,DockablePanel* container)
 , _containerLayout(NULL)
 , _field(NULL)
 , _descriptionLabel(NULL)
+, _isOnNewLine(false)
 {
     QObject::connect(knob.get(),SIGNAL(valueChanged(int)),this,SLOT(onInternalValueChanged(int)));
     QObject::connect(knob.get(),SIGNAL(keyFrameSet(SequenceTime,int)),this,SLOT(onInternalKeySet(SequenceTime,int)));
@@ -120,12 +122,13 @@ void KnobGui::pushUndoCommand(QUndoCommand* cmd){
 }
 
 
-void KnobGui::createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWidget* label,QHBoxLayout* layout,int row) {
+void KnobGui::createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWidget* label,QHBoxLayout* layout,int row,bool isOnNewLine) {
     _fieldLayout = layout;
     _row = row;
     _containerLayout = containerLayout;
     _field = fieldContainer;
     _descriptionLabel = label;
+    _isOnNewLine = isOnNewLine;
     createWidget(layout);
     if(_knob->isAnimationEnabled() && _knob->typeName() != File_Knob::typeNameStatic()){
         createAnimationButton(layout);
@@ -186,7 +189,6 @@ void KnobGui::showRightClickMenuForDimension(const QPoint&,int dimension) {
     copyValuesAction->setData(QVariant(dimension));
     QObject::connect(copyValuesAction,SIGNAL(triggered()),this,SLOT(onCopyValuesActionTriggered()));
     _copyRightClickMenu->addAction(copyValuesAction);
-    copyValuesAction->setEnabled(false);
 
     if(!isSlave) {
         
@@ -220,6 +222,42 @@ void KnobGui::showRightClickMenuForDimension(const QPoint&,int dimension) {
         unlinkAction->setData(QVariant(dimension));
         QObject::connect(unlinkAction,SIGNAL(triggered()),this,SLOT(onUnlinkActionTriggered()));
         _copyRightClickMenu->addAction(unlinkAction);
+        
+        
+        ///a stub action just to indicate what is the master knob.
+        QAction* masterNameAction = new QAction("",_copyRightClickMenu);
+        std::pair<int,boost::shared_ptr<Knob> > master = getKnob()->getMaster(dimension);
+        assert(master.second);
+        
+        ///find-out to which node that master knob belongs to
+        std::string nodeName("Linked to: ");
+        
+        assert(getKnob()->getHolder()->getApp());
+        const std::vector<Natron::Node*> allNodes = getKnob()->getHolder()->getApp()->getProject()->getCurrentNodes();
+        for (U32 i = 0; i < allNodes.size(); ++i) {
+            const std::vector< boost::shared_ptr<Knob> >& knobs = allNodes[i]->getKnobs();
+            bool shouldStop = false;
+            for (U32 j = 0; j < knobs.size(); ++j) {
+                if (knobs[j].get() == master.second.get()) {
+                    nodeName.append(allNodes[i]->getName());
+                    shouldStop = true;
+                    break;
+                }
+            }
+            if (shouldStop) {
+                break;
+            }
+        }
+        nodeName.append(".");
+        nodeName.append(master.second->getDescription());
+        if (master.second->getDimension() > 1) {
+            nodeName.append(".");
+            nodeName.append(master.second->getDimensionName(master.first));
+        }
+        masterNameAction->setText(nodeName.c_str());
+        masterNameAction->setEnabled(false);
+        _copyRightClickMenu->addAction(masterNameAction);
+
     }
 
     _copyRightClickMenu->exec(QCursor::pos());
@@ -282,11 +320,16 @@ void KnobGui::createAnimationMenu(){
         
         
     }
-    QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"),_animationMenu);
-    QObject::connect(showInCurveEditorAction,SIGNAL(triggered()),this,SLOT(onShowInCurveEditorActionTriggered()));
-    _animationMenu->addAction(showInCurveEditorAction);
+    
     
     if(!isSlave) {
+        
+        QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"),_animationMenu);
+        QObject::connect(showInCurveEditorAction,SIGNAL(triggered()),this,SLOT(onShowInCurveEditorActionTriggered()));
+        _animationMenu->addAction(showInCurveEditorAction);
+        if (!hasAnimation || !isEnabled) {
+            showInCurveEditorAction->setEnabled(false);
+        }
         
         QMenu* interpolationMenu = new QMenu(_animationMenu);
         interpolationMenu->setTitle("Interpolation");
@@ -352,7 +395,7 @@ void KnobGui::setSecret() {
     bool showit = !_knob->isSecret();
     boost::shared_ptr<Knob> parentKnob = _knob->getParentKnob();
     while (showit && parentKnob && parentKnob->typeName() == "Group") {
-        Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(_container->findKnobGuiOrCreate(parentKnob));
+        Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(_container->findKnobGuiOrCreate(parentKnob,true));
         assert(parentGui);
         // check for secretness and visibility of the group
         if (parentKnob->isSecret() || !parentGui->isChecked()) {
@@ -526,14 +569,18 @@ void KnobGui::hide(){
        getGui()->getCurveEditor()->hideCurves(this);
     }
     
-    if (!_knob->isNewLineTurnedOff() && _field->objectName() != "multi-line") {
+    if (_isOnNewLine && _field->objectName() != "multi-line") {
         _containerLayout->removeWidget(_field);
-        _containerLayout->removeWidget(_descriptionLabel);
+        if (_descriptionLabel) {
+            _containerLayout->removeWidget(_descriptionLabel);
+            _descriptionLabel->setParent(0);
+        }
         _field->setParent(0);
-        _descriptionLabel->setParent(0);
         _field->hide();
     }
-    _descriptionLabel->hide();
+    if (_descriptionLabel) {
+        _descriptionLabel->hide();
+    }
 }
 void KnobGui::show(){
     _show();
@@ -544,13 +591,17 @@ void KnobGui::show(){
         getGui()->getCurveEditor()->showCurves(this);
     }
     
-    if (!_knob->isNewLineTurnedOff() && _field->objectName() != "multi-line") {
+    if (_isOnNewLine && _field->objectName() != "multi-line") {
         _containerLayout->insertRow(_row, _descriptionLabel, _field);
         _field->setParent(_containerLayout->parentWidget());
-        _descriptionLabel->setParent(_containerLayout->parentWidget());
+        if (_descriptionLabel) {
+            _descriptionLabel->setParent(_containerLayout->parentWidget());
+        }
         _field->show();
-    } 
-    _descriptionLabel->show();
+    }
+    if (_descriptionLabel) {
+        _descriptionLabel->show();
+    }
 
 }
 

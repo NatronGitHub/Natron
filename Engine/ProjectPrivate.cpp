@@ -142,7 +142,11 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
                 break;
             }
         }
-        assert(thisNode);
+        if (!thisNode) {
+            ///the node is probably a viewer
+            qDebug() << "ignoring " << serializedNodes[i]->getPluginLabel().c_str();
+            continue;
+        }
         const std::vector< boost::shared_ptr<Knob> >& nodeKnobs = thisNode->getKnobs();
         const NodeSerialization::KnobValues& knobsValues = serializedNodes[i]->getKnobsValues();
         

@@ -1490,6 +1490,8 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
         }
         layout->addWidget(_textEdit);
         QObject::connect(_textEdit, SIGNAL(editingFinished()), this, SLOT(onTextChanged()));
+        layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        _textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(_textEdit,0);
@@ -1505,6 +1507,9 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
         if (hasToolTip()) {
             _lineEdit->setToolTip(toolTip());
         }
+        layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
         layout->addWidget(_lineEdit);
         QObject::connect(_lineEdit, SIGNAL(editingFinished()), this, SLOT(onLineChanged()));
         

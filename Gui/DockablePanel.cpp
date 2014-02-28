@@ -239,9 +239,15 @@ void DockablePanel::initializeKnobs(){
     
     
     
-    for(U32 i = 0 ; i < knobsMap.size(); ++i){
+    for(U32 i = 0 ; i < knobsMap.size(); ++i) {
         
-        if(knobsMap[i].first->typeName() == Tab_Knob::typeNameStatic()){
+        bool makeNewLine = true;
+        if (knobsMap[i].first->typeName() != Group_Knob::typeNameStatic()) {
+            if (i > 0 && knobsMap[i-1].first->isNewLineTurnedOff()) {
+                makeNewLine = false;
+            }
+        }
+        if (knobsMap[i].first->typeName() == Tab_Knob::typeNameStatic()) {
             
             ///if the knob is a tab, look-up the tab widget to check whether the tab already exists or not
             bool found = false;
@@ -256,49 +262,27 @@ void DockablePanel::initializeKnobs(){
                 ///if it doesn't exist, create it
                 addTab(tabName);
             }
-        }else{
-            findKnobGuiOrCreate(knobsMap[i].first);
+        } else {
+            findKnobGuiOrCreate(knobsMap[i].first,makeNewLine);
         }
 
         ///create all children if any
         for (U32 j = 0; j < knobsMap[i].second.size(); ++j) {
-            findKnobGuiOrCreate(knobsMap[i].second[j]);
+            makeNewLine = true;
+            if (knobsMap[i].second[j]->typeName() != Group_Knob::typeNameStatic()) {
+                if (j > 0 && knobsMap[i].second[j]->isNewLineTurnedOff()) {
+                    makeNewLine = false;
+                }
+            }
+
+            findKnobGuiOrCreate(knobsMap[i].second[j],makeNewLine);
         }
         
     }
-    
-    /////The following code addresses this feature that we don't want:
-    ///// http://stackoverflow.com/questions/14033902/qt-qgridlayout-automatically-centers-moves-items-to-the-middle
-//    for(std::map<QString,std::pair<QWidget*,int> >::const_iterator it = _tabs.begin();it!=_tabs.end();++it){
-//        
-//        QFormLayout* layout;
-//        if (_useScrollAreasForTabs) {
-//            layout = dynamic_cast<QFormLayout*>(
-//                                                dynamic_cast<QScrollArea*>(it->second.first)->widget()->layout());
-//        } else {
-//            layout = dynamic_cast<QFormLayout*>(it->second.first->layout());
-//        }
-//        assert(layout);
-//        if(layout->rowCount() > 0){
-//            QLayoutItem* item = layout->itemAtPosition(layout->rowCount()-1,0);
-//            QWidget* widget = 0;
-//            if (item) {
-//                widget = item->widget();
-//            }
-//            if (widget && widget->objectName() == "spacer") {
-//                continue;
-//            }else{
-//                QWidget* spacer = new QWidget(layout->parentWidget());
-//                spacer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Expanding);
-//                spacer->setObjectName("spacer");
-//                layout->addWidget(spacer,layout->rowCount(), 0);
-//            }
-//        }
-//    }
 }
 
 
-KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
+KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool makeNewLine) {
     assert(knob);
     for (std::map<boost::shared_ptr<Knob>,KnobGui*>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
         if(it->first == knob){
@@ -333,7 +317,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
         ///if the parent is a tab find it
         if(parentKnob && parentKnob->typeName() == Tab_Knob::typeNameStatic()){
             //make sure the tab has been created;
-            (void)findKnobGuiOrCreate(parentKnob);
+            (void)findKnobGuiOrCreate(parentKnob,true);
             std::map<QString,std::pair<QWidget*,int> >::iterator it = _tabs.find(parentKnob->getDescription().c_str());
             
             ///if it crashes there's serious problem because findKnobGuiOrCreate(parentKnob) should have registered
@@ -355,7 +339,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
         ///if the knob has specified that it didn't want to trigger a new line, decrement the current row
         /// index of the tab
         
-        if (ret->getKnob()->isNewLineTurnedOff()) {
+        if (!makeNewLine) {
             --parentTab->second.second;
         }
         
@@ -371,7 +355,8 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
         
         QWidget* fieldContainer = 0;
         QHBoxLayout* fieldLayout = 0;
-        if (!ret->getKnob()->isNewLineTurnedOff()) {
+
+        if (makeNewLine) {
             ///if new line is not turned off, create a new line
             fieldContainer = new QWidget(parentTab->second.first);
             fieldLayout = new QHBoxLayout(fieldContainer);
@@ -391,26 +376,23 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
         assert(fieldContainer);
         assert(fieldLayout);
         
-        ClickableLabel* label = new ClickableLabel("",parentTab->second.first);
+        ClickableLabel* label = NULL;
+        if (makeNewLine) {
+            label = new ClickableLabel("",parentTab->second.first);
+        }
         
-        if (ret->showDescriptionLabel()) {
+        if (ret->showDescriptionLabel() && label) {
             label->setText(QString(QString(ret->getKnob()->getDescription().c_str()) + ":"));
             QObject::connect(label, SIGNAL(clicked(bool)), ret, SIGNAL(labelClicked(bool)));
         }
-   
-        
-        ///if new line is turned off add the label before any other widget horizontally
-        if (ret->getKnob()->isNewLineTurnedOff()) {
-            fieldLayout->addWidget(label);
-        }
         
         ///fill the fieldLayout with the widgets
-        ret->createGUI(layout,fieldContainer,label,fieldLayout,parentTab->second.second);
+        ret->createGUI(layout,fieldContainer,label,fieldLayout,parentTab->second.second,makeNewLine);
         
         ///increment the row count
         ++parentTab->second.second;
         
-        if (!ret->getKnob()->isNewLineTurnedOff()) {
+        if (makeNewLine) {
             layout->addRow(label, fieldContainer);
         }
         
@@ -420,7 +402,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
         /// if this knob is within a group, check that the group is visible, i.e. the toplevel group is unfolded
         if (parentKnob && parentKnob->typeName() == Group_Knob::typeNameStatic()) {
             
-            Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
+            Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob,true));
             assert(parentGui);
             
             
@@ -441,7 +423,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob) {
                 // prepare for next loop iteration
                 parentKnob = parentKnob->getParentKnob();
                 if (parentKnob) {
-                    parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
+                    parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob,true));
                 }
             }
             if (showit) {

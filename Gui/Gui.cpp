@@ -64,6 +64,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Plugin.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
+#include "Engine/SequenceParsing.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/Lut.h"
 #include "Engine/Image.h"
@@ -1252,10 +1253,10 @@ void GuiPrivate::setUndoRedoActions(QAction* undoAction,QAction* redoAction){
     menuEdit->addAction(undoAction);
     menuEdit->addAction(redoAction);
 }
-void Gui::newProject(){
+void Gui::newProject() {
     appPTR->newAppInstance();
 }
-void Gui::openProject(){
+void Gui::openProject() {
     std::vector<std::string> filters;
     filters.push_back(NATRON_PROJECT_FILE_EXT);
     QStringList selectedFiles =  popOpenFileDialog(false, filters, _imp->_lastLoadProjectOpenedDir.toStdString());
@@ -1263,15 +1264,14 @@ void Gui::openProject(){
     if (selectedFiles.size() > 0) {
         //clearing current graph
         QString file = selectedFiles.at(0);
-        QString name = File_Knob::removePath(file);
-        QString path = file.left(file.indexOf(name));
+        QString path = SequenceParsing::removePath(file);
         
         ///if the current graph has no value, just load the project in the same window
         if (_imp->_appInstance->getProject()->isGraphWorthLess()) {
-            _imp->_appInstance->getProject()->loadProject(path, name);
+            _imp->_appInstance->getProject()->loadProject(path, file);
         } else {
             AppInstance* newApp = appPTR->newAppInstance();
-            newApp->getProject()->loadProject(path, name);
+            newApp->getProject()->loadProject(path, file);
         }
         
         QSettings settings;
@@ -1316,11 +1316,10 @@ bool Gui::saveProjectAs(){
         if (outFile.indexOf("." NATRON_PROJECT_FILE_EXT) == -1) {
             outFile.append("." NATRON_PROJECT_FILE_EXT);
         }
-        QString file = File_Knob::removePath(outFile);
-        QString path = outFile.left(outFile.indexOf(file));
-        _imp->_appInstance->getProject()->saveProject(path,file,false);
+        QString path = SequenceParsing::removePath(outFile);
+        _imp->_appInstance->getProject()->saveProject(path,outFile,false);
         
-        QString filePath = path + file;
+        QString filePath = path + outFile;
         QSettings settings;
         QStringList recentFiles = settings.value("recentFileList").toStringList();
         recentFiles.removeAll(filePath);

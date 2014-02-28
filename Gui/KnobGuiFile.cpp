@@ -13,9 +13,11 @@
 #include <QLabel> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QFormLayout> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QHBoxLayout> // in QtGui on Qt4, in QtWidgets on Qt5
+#include <QDebug>
 
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
+#include "Engine/SequenceParsing.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Button.h"
@@ -32,6 +34,7 @@ File_KnobGui::File_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *containe
 {
     boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knob);
     assert(fk);
+    QObject::connect(fk.get(), SIGNAL(patternChanged(QString)), this, SLOT(onPatternChanged(QString)));
     QObject::connect(fk.get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)));
 }
 
@@ -87,14 +90,14 @@ void File_KnobGui::onButtonClicked() {
 class File_Knob_UndoCommand : public QUndoCommand {
     
     File_KnobGui* _knob;
-    QStringList _oldFiles;
-    QStringList _newFiles;
+    SequenceParsing::SequenceFromFiles _oldFiles;
+    SequenceParsing::SequenceFromFiles _newFiles;
     
 public:
     
     File_Knob_UndoCommand(File_KnobGui *knob,
-                          const QStringList& oldFiles,
-                          const QStringList& newFiles,
+                          const SequenceParsing::SequenceFromFiles& oldFiles,
+                          const SequenceParsing::SequenceFromFiles& newFiles,
                           QUndoCommand *parent = 0)
     : QUndoCommand(parent)
     , _knob(knob)
@@ -108,22 +111,12 @@ private:
     
     virtual void undo() OVERRIDE FINAL {
         boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(_knob->getKnob());
-        fk->setFiles(_oldFiles);
-        QString value;
-        if (_oldFiles.size() > 0) {
-            value = _oldFiles.at(0);
-        }
-        _knob->updateGUI(0, Variant(value));
+        fk->setFilesNoEmit(_oldFiles);
     }
     
     virtual void redo() OVERRIDE FINAL {
         boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(_knob->getKnob());
-        fk->setFiles(_newFiles);
-        QString value;
-        if (_newFiles.size() > 0) {
-            value = _newFiles.at(0);
-        }
-        _knob->updateGUI(0, Variant(value));
+        fk->setFilesNoEmit(_newFiles);
     }
     
 };
@@ -144,64 +137,60 @@ void File_KnobGui::open_file(bool openSequence)
             filters.push_back(it->first);
         }
     }
-    QStringList files;
-    
+    SequenceParsing::SequenceFromFiles currentFiles(false);
+    fk->getFiles(&currentFiles);
     QString pathWhereToOpen;
-    QStringList currentFiles = fk->getValue<QStringList>();
-    if (currentFiles.isEmpty()) {
+    if (currentFiles.empty()) {
         pathWhereToOpen = _lastOpened;
     } else {
-        QString first = currentFiles.at(0);
-        pathWhereToOpen = SequenceFileDialog::getFilePath(first);
+        pathWhereToOpen = currentFiles.getPath();
     }
     
     SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, openSequence, SequenceFileDialog::OPEN_DIALOG, pathWhereToOpen.toStdString());
+    SequenceParsing::SequenceFromFiles selectedFiles(false);
     if (dialog.exec()) {
-        files = dialog.selectedFiles();
+        selectedFiles = dialog.getSelectedFilesAsSequence();
     }
-    if (!files.isEmpty()) {
-        updateLastOpened(files.at(0));
-        QStringList oldFiles;
-        fk->getFiles(&oldFiles);
-        pushUndoCommand(new File_Knob_UndoCommand(this,oldFiles,files));
-    }
+    updateLastOpened(selectedFiles.getPath());
+    pushUndoCommand(new File_Knob_UndoCommand(this,currentFiles,selectedFiles));
 }
 
 void File_KnobGui::updateLastOpened(const QString &str)
 {
     QString unpathed = str;
-    _lastOpened = File_Knob::removePath(unpathed);
+    _lastOpened = SequenceParsing::removePath(unpathed);
     getGui()->updateLastSequenceOpenedPath(_lastOpened);
 
 }
 
-void File_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
+void File_KnobGui::onPatternChanged(const QString& pattern) {
+    _pattern = pattern;
+}
+
+void File_KnobGui::updateGUI(int /*dimension*/, const Variant &/*variant*/)
 {
-    QString file = variant.toString();
-    if (getKnob()->isAnimationEnabled() && getKnob()->getKeyFramesCount(0) > 1) {
-        file = SequenceFileDialog::patternFromFilesList(file);
-        _lineEdit->setText(file);
-    } else {
-        _lineEdit->setText(file);
-    }
+    _lineEdit->setText(_pattern);
 }
 
 void File_KnobGui::onReturnPressed()
 {
     QString str = _lineEdit->text();
-    if (str.isEmpty()) {
-        return;
+    _pattern = str;
+    SequenceParsing::SequenceFromPattern sequence;
+    SequenceParsing::filesListFromPattern(str, &sequence);
+    ///Even though the user might have passed to the file knob a view variable (%v or %V)
+    ///we just keep the files corresponding to the view 0 because the file knob doesn't support multiviews.
+    QStringList newList = SequenceParsing::sequenceFromPatternToFilesList(sequence,0);
+    SequenceParsing::SequenceFromFiles sequenceFromFiles(false);
+    for (int i = 0; i < newList.size(); ++i) {
+        sequenceFromFiles.tryInsertFile(SequenceParsing::FileNameContent(newList.at(i)));
     }
-    QStringList newList = SequenceFileDialog::filesListFromPattern(str);
-    if (newList.isEmpty()) {
-        return;
-    }
-    
-    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
 
-    QStringList oldFiles;
+    
+    SequenceParsing::SequenceFromFiles oldFiles(false);
+    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
     fk->getFiles(&oldFiles);
-    pushUndoCommand(new File_Knob_UndoCommand(this,oldFiles,newList));
+    pushUndoCommand(new File_Knob_UndoCommand(this,oldFiles,sequenceFromFiles));
 }
 
 
@@ -248,6 +237,7 @@ void OutputFile_KnobGui::createWidget(QHBoxLayout* layout)
 
 
     _lineEdit = new LineEdit(layout->parentWidget());
+    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     QObject::connect(_lineEdit, SIGNAL(returnPressed()), this, SLOT(onReturnPressed()));
     _lineEdit->setPlaceholderText(QString("File path..."));
     if(hasToolTip()) {
@@ -306,7 +296,7 @@ void OutputFile_KnobGui::open_file(bool openSequence)
     if (dialog.exec()) {
         QString oldPattern = _lineEdit->text();
         QString newPattern = dialog.filesToSave();
-        updateLastOpened(File_Knob::removePath(oldPattern));
+        updateLastOpened(SequenceParsing::removePath(oldPattern));
         
         pushValueChangedCommand(Variant(newPattern));
     }
@@ -315,7 +305,7 @@ void OutputFile_KnobGui::open_file(bool openSequence)
 void OutputFile_KnobGui::updateLastOpened(const QString &str)
 {
     QString withoutPath = str;
-    _lastOpened = File_Knob::removePath(withoutPath);
+    _lastOpened = SequenceParsing::removePath(withoutPath);
     getGui()->updateLastSequenceSavedPath(_lastOpened);
 
 }
@@ -377,6 +367,7 @@ void Path_KnobGui::createWidget(QHBoxLayout* layout)
 {
    
     _lineEdit = new LineEdit(layout->parentWidget());
+    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     QObject::connect(_lineEdit, SIGNAL(returnPressed()), this, SLOT(onReturnPressed()));
     if(hasToolTip()) {
         _lineEdit->setToolTip(toolTip());
@@ -438,7 +429,7 @@ void Path_KnobGui::open_file()
 void Path_KnobGui::updateLastOpened(const QString &str)
 {
     QString withoutPath = str;
-    _lastOpened = File_Knob::removePath(withoutPath);
+    _lastOpened = SequenceParsing::removePath(withoutPath);
 }
 
 void Path_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)

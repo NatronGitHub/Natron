@@ -185,7 +185,7 @@ Variant Knob::getValueAtTime(double time,int dimension) const{
     }
     
     boost::shared_ptr<Curve> curve  = _imp->_curves[dimension];
-    if (curve->isAnimated()) {
+    if (curve->keyFramesCount() > 0) {
         Variant ret;
         variantFromInterpolatedValue(curve->getValueAt(time), &ret);
         return ret;
@@ -426,7 +426,7 @@ void Knob::load(const KnobSerialization& serializationObj){
             if(otherKnobs[j]->getDescription() == knobDesc) {
                 _imp->_masters[i].second = otherKnobs[j];
                 _imp->_masters[i].first = serializedMasters[i].first;
-                emit readOnlyChanged(true,j);
+                emit readOnlyChanged(true,_imp->_masters[i].first);
                 found = true;
                 break;
             }

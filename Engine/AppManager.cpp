@@ -185,8 +185,6 @@ AppManager::~AppManager(){
     
     assert(_imp->_appInstances.empty());
     
-    _imp->_settings->saveSettings();
-    
     for(U32 i = 0; i < _imp->_plugins.size();++i){
         delete _imp->_plugins[i];
     }

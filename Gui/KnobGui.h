@@ -67,7 +67,7 @@ public:
     
     int getSpacingBetweenItems() const { return _spacingBetweenItems; }
     
-    void createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWidget* label,QHBoxLayout* layout,int row);
+    void createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWidget* label,QHBoxLayout* layout,int row,bool isOnNewLine);
         
     void pushUndoCommand(QUndoCommand* cmd);
     
@@ -249,6 +249,7 @@ private:
     QFormLayout* _containerLayout;
     QWidget* _field;
     QWidget* _descriptionLabel;
+    bool _isOnNewLine;
 };
 
 

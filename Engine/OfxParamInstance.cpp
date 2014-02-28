@@ -1451,7 +1451,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
     std::string defaultVal = properties.getStringProperty(kOfxParamPropDefault).c_str();
     if (!defaultVal.empty()) {
         if (_fileKnob) {
-            _fileKnob->setDefaultValue<QStringList>(QStringList(defaultVal.c_str()));
+            _fileKnob->setDefaultValue<QString>(QString(defaultVal.c_str()));
         } else if (_outputFileKnob) {
             _outputFileKnob->setDefaultValue<QString>(QString(defaultVal.c_str()));
         } else if (_stringKnob) {
@@ -1469,7 +1469,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
         QString fileName =  _fileKnob->getRandomFrameName(currentFrame,true);
         str = fileName.toStdString();
     }else if(_outputFileKnob){
-        str = _outputFileKnob->getValue<QString>().toStdString();
+        str = _outputFileKnob->generateFileNameAtTime(currentFrame).toStdString();
     }else if(_stringKnob){
         str = _stringKnob->getValueAtTime(currentFrame,0).toString().toStdString();
     }else if(_pathKnob){
@@ -1483,7 +1483,7 @@ OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
     if(_fileKnob){
         str = _fileKnob->getRandomFrameName(time,true).toStdString();
     }else if(_outputFileKnob){
-        str = _outputFileKnob->getValue<QString>().toStdString();
+        str = _outputFileKnob->generateFileNameAtTime(time).toStdString();
     }else if(_stringKnob){
         str = _stringKnob->getValueAtTime(std::floor(time + 0.5), 0).toString().toStdString();
     }else if(_pathKnob){
@@ -1599,9 +1599,10 @@ OfxStatus OfxStringInstance::getNumKeys(unsigned int &nKeys) const {
     boost::shared_ptr<Knob> knob;
     if(_stringKnob){
         knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+    } else if (_fileKnob) {
+        knob = boost::dynamic_pointer_cast<Knob>(_fileKnob);
     } else {
-#pragma message WARN("getNumKeys() should not return kOfxStatErrUnsupported!!! why not return nKeys=0???")
-        return kOfxStatErrUnsupported;
+        return nKeys = 0;
     }
     return OfxKeyFrame::getNumKeys(knob, nKeys);
 }
@@ -1609,9 +1610,10 @@ OfxStatus OfxStringInstance::getKeyTime(int nth, OfxTime& time) const {
     boost::shared_ptr<Knob> knob;
     if(_stringKnob){
         knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+    } else if (_fileKnob) {
+        knob = boost::dynamic_pointer_cast<Knob>(_fileKnob);
     } else {
-#pragma message WARN("getKeyTime() should not return kOfxStatErrUnsupported!!!")
-        return kOfxStatErrUnsupported;
+        return kOfxStatErrBadIndex;
     }
     return OfxKeyFrame::getKeyTime(knob, nth, time);
 }
@@ -1619,9 +1621,10 @@ OfxStatus OfxStringInstance::getKeyIndex(OfxTime time, int direction, int & inde
     boost::shared_ptr<Knob> knob;
     if(_stringKnob){
         knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+    } else if (_fileKnob) {
+        knob = boost::dynamic_pointer_cast<Knob>(_fileKnob);
     } else {
-#pragma message WARN("getKeyIndex() should not return kOfxStatErrUnsupported!!!")
-        return kOfxStatErrUnsupported;
+        return kOfxStatFailed;
     }
     return OfxKeyFrame::getKeyIndex(knob, time, direction, index);
 }
@@ -1629,9 +1632,10 @@ OfxStatus OfxStringInstance::deleteKey(OfxTime time) {
     boost::shared_ptr<Knob> knob;
     if(_stringKnob){
         knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+    } else if (_fileKnob) {
+        knob = boost::dynamic_pointer_cast<Knob>(_fileKnob);
     } else {
-#pragma message WARN("deleteKey() should not return kOfxStatErrUnsupported!!!")
-        return kOfxStatErrUnsupported;
+        return kOfxStatErrBadIndex;
     }
     return OfxKeyFrame::deleteKey(knob, time);
 }
@@ -1639,9 +1643,10 @@ OfxStatus OfxStringInstance::deleteAllKeys(){
     boost::shared_ptr<Knob> knob;
     if(_stringKnob){
         knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+    } else if (_fileKnob) {
+        knob = boost::dynamic_pointer_cast<Knob>(_fileKnob);
     } else {
-#pragma message WARN("deleteAllKeys() should not return kOfxStatErrUnsupported!!!")
-        return kOfxStatErrUnsupported;
+        return kOfxStatOK;
     }
     return OfxKeyFrame::deleteAllKeys(knob);
 }

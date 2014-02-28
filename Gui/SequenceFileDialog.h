@@ -55,7 +55,9 @@ class QSplitter;
 class QAction;
 class SequenceFileDialog;
 class SequenceItemDelegate;
-
+namespace SequenceParsing {
+class SequenceFromFiles;
+}
 /**
  * @brief The UrlModel class is the model used by the favorite view in the file dialog. It serves as a connexion between
  *the file system and some urls.
@@ -161,7 +163,7 @@ private:
 /**
  * @brief The SequenceDialogView class is the view of the filesystem within the dialog.
  */
-class SequenceDialogView: public QTreeView{
+class SequenceDialogView: public QTreeView {
     SequenceFileDialog* _fd;
 public:
     explicit SequenceDialogView(SequenceFileDialog* fd);
@@ -183,99 +185,6 @@ public:
 
 };
 
-class FileSequence{
-    
-public:
-    
-    class FrameIndexes{
-    public:
-        FrameIndexes(){}
-        
-        ~FrameIndexes(){}
-        
-        bool isEmpty() const {return _frames.empty();}
-        
-        int firstFrame() const { return _frames.empty() ? INT_MIN : *_frames.begin(); }
-        
-        int lastFrame() const {
-            if(_frames.empty()){
-                return INT_MAX;
-            }else{
-                 std::set<int>::iterator it = _frames.end();
-                 --it;
-                 return *it;
-            }
-        }
-        
-        int size() const {return _frames.size();}
-        
-        /*frame index is a frame index as read in the file name.*/
-        bool isInSequence(int frameIndex) const {
-            return _frames.find(frameIndex) != _frames.end();
-        }
-        
-        /*frame index is a frame index as read in the file name.*/
-        bool addToSequence(int frameIndex) { return _frames.insert(frameIndex).second; }
-        
-        
-    private:
-        
-        std::set<int> _frames;
-
-    };
-    
-    
-    FileSequence(const std::string& filetype):
-     _fileType(filetype)
-    ,_totalSize(0)
-    ,_lock()
-    {}
-
-    FileSequence(const FileSequence& other):
-        _fileType(other._fileType)
-      , _frameIndexes(other._frameIndexes)
-      , _totalSize(other._totalSize)
-      , _lock()
-    {
-    }
-
-    ~FileSequence(){}
-    
-    /*Returns true if the frameIndex didn't exist when adding it*/
-    void addToSequence(int frameIndex,const QString& path);
-    
-    bool isInSequence(int frameIndex) const { QMutexLocker locker(&_lock); return _frameIndexes.isInSequence(frameIndex); }
-
-    int size() const { return _frameIndexes.size(); }
-
-    int firstFrame() const { return _frameIndexes.firstFrame(); }
-
-    int lastFrame() const { return _frameIndexes.lastFrame(); }
-
-    int isEmpty() const { return _frameIndexes.isEmpty(); }
-
-    const std::string& getFileType() const { return _fileType; }
-
-    qint64 getTotalSize() const { return _totalSize; }
-    
-    void lock() const { _lock.lock(); }
-
-    void unlock() const { assert(!_lock.tryLock()); _lock.unlock(); }
-
- private:
-
-    std::string _fileType;
-    FrameIndexes _frameIndexes;
-    qint64 _totalSize;
-    mutable QMutex _lock;
-};
-
-namespace Natron{
-    typedef std::multimap<std::string, boost::shared_ptr<FileSequence> > FrameSequences;
-    typedef FrameSequences::iterator SequenceIterator;
-    typedef FrameSequences::const_iterator ConstSequenceIterator;
-
-}
 
 /**
  * @brief The SequenceDialogProxyModel class is a proxy that filters image sequences from the QFileSystemModel
@@ -285,7 +194,7 @@ class SequenceDialogProxyModel: public QSortFilterProxyModel{
      *Several sequences can have a same name but a different file extension within a same directory.
      */
     mutable QMutex _frameSequencesMutex; // protects _frameSequences
-    mutable Natron::FrameSequences _frameSequences;
+    mutable std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > _frameSequences;
     SequenceFileDialog* _fd;
     QString _filter;
 
@@ -296,27 +205,22 @@ public:
     virtual ~SequenceDialogProxyModel(){
         clear();
     }
+    
+    QString getUserFriendlyFileSequencePatternForFile(const QString& filename,quint64* sequenceSize) const;
+    
+    QStringList getSequenceFilesForFile(const QString& file) const;
+    
+    void getSequenceFromFilesForFole(const QString& file,SequenceParsing::SequenceFromFiles* sequence) const;
 
     void clear(){_frameSequences.clear();}
     
     
-    const Natron::FrameSequences& getFrameSequence() const{return _frameSequences;}
-    
-    
     inline void setFilter(QString filter){ _filter = filter;}
-
-    /**@brief Returns in path the name of the file with the extension truncated and
-     *the frame number truncated.
-     *It returns in framenumber the number of the frame, or -1 if it had no frame number
-     *and in extension the name of file type
-     * e.g: for /Users/Bla/Pictures/toto15.jpg it would return
-     * path = /Users/Bla/Pictures/toto , frameNumber = 15 and extension = jpg
-     **/
-    static void parseFilename(QString &path, int* frameNumber, QString &extension);
-
     
 private:
+    
     virtual bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const;
+    
 private:
        /*
     *Check if the path is accepted by the filter installed by the user
@@ -365,41 +269,31 @@ public:
 
     virtual ~SequenceFileDialog();
     
+    ///set the view to show this model index which is a directory
     void setRootIndex(const QModelIndex& index);
-
-    boost::shared_ptr<FileSequence> frameRangesForSequence(const std::string& sequenceName, const std::string& extension) const;
     
+    ///Returns true if ext belongs to the user filters
     bool isASupportedFileExtension(const std::string& ext) const;
     
-    /**
-     * @brief Tries to remove the digits prepending the file extension if the file is part of
-     * a sequence. The digits MUST absolutely be placed before the last '.' of the file name.
-     * If no such digits could be found, this function returns false.
-     **/
-    static bool removeSequenceDigits(QString& file,int* frameNumber);
-    
+    ///Returns the same as SequenceParsing::removePath excepts that str is left untouched.
     static QString getFilePath(const QString& str);
-            
+    
+    ///Returns the selected sequence.
+    ///Works only in OPEN_DIALOG mode.
     QStringList selectedFiles();
     
-    /*Returns the pattern of the sequence, e.g:
-     mySequence#.jpg*/
-    QString getSequencePatternFromLineEdit();
+    ///Same as selectedFiles() but more convenient when the dialog is in sequence mode.
+    SequenceParsing::SequenceFromFiles getSelectedFilesAsSequence();
     
-    static QStringList filesListFromPattern(const QString& pattern);
-    
-    /*files must have the same extension and a digit placed before the . character prepending the extension*/
-    static QString patternFromFilesList(const QString& file);
-    
+    ///Returns  the content of the selection line edit.
+    ///Works only in SAVE_DIALOG mode.
     QString filesToSave();
     
+    ///Returns the current directory of the dialog.
+    ///This can be used for a DIR_DIALOG to retrieve the value selected by the user.
     QDir currentDirectory() const;
 
     void addFavorite(const QString& name,const QString& path);
-
-    QByteArray saveState() const;
-
-    bool restoreState(const QByteArray& state);
 
     bool sequenceModeEnabled() const;
 
@@ -458,41 +352,90 @@ public:
     static void appendFilesFromDirRecursively(QDir* currentDir,QStringList* files);
 public slots:
 
+    ///same as setDirectory but with a QModelIndex
     void enterDirectory(const QModelIndex& index);
 
+    ///enters a directory and display its content in the file view.
     void setDirectory(const QString &currentDirectory);
+    
+    ///same as setDirectory but with an url
+    void seekUrl(const QUrl& url);
+    
+    ///same as setDirectory but for the look-in combobox
+    void goToDirectory(const QString&);
+
+    
+    ///slot called when a directory has been fully loaded, it will refresh the view with good names.
     void updateView(const QString& currentDirectory);
     
+    
+    ////////
+    ///////// Buttons slots
     void previousFolder();
     void nextFolder();
     void parentFolder();
     void goHome();
     void createDir();
     void addFavorite();
+    //////////////////////////
+    
+    ///Slot called when the user pressed the "Open" or "Save" button.
     void openSelectedFiles();
+    
+    ///Slot called when the user pressed the "Open" button in DIR_DIALOG mode
     void selectDirectory();
+    
+    ///Cancel button slot
     void cancelSlot();
+    
+    ///Double click on a directory or file. It will select the files if clicked
+    ///on a file, or open the directory otherwise.
     void doubleClickOpen(const QModelIndex& index);
-    void seekUrl(const QUrl& url);
+    
+    ///slot called when the user selection changed
     void selectionChanged();
+    
+    ///slot called when the sequence mode has changed
     void enableSequenceMode(bool);
+    
+    ///combobox slot, it calls enableSequenceMode
     void sequenceComboBoxSlot(int index);
+    
+    ///slot called when the filter  is clicked
     void showFilterMenu();
+    
+    ///apply a filter
+    ///and refreshes the current directory.
     void defaultFiltersSlot();
     void dotStarFilterSlot();
     void starSlashFilterSlot();
     void emptyFilterSlot();
     void applyFilter(QString filter);
+    
+    ///show hidden files slot
     void showHidden();
+    
+    ///right click menu
     void showContextMenu(const QPoint &position);
+    
+    ///updates the history and up/previous buttons
     void pathChanged(const QString &newPath);
+    
+    ///when the user types, this function tries to automatically select  corresponding
     void autoCompleteFileName(const QString&);
+    
+    ///if it is a SAVE_DIALOG then it will append the file extension to what the user typed in
+    ///when editing is finished.
     void onSelectionLineEditing(const QString&);
-    void goToDirectory(const QString&);
+    
+    ///slot called when the file extension combobox changed
     void onFileExtensionComboChanged(int index);
+    
+    ///called by onFileExtensionComboChanged 
     void setFileExtensionOnLineEdit(const QString&);
 
 private:
+    
     virtual void keyPressEvent(QKeyEvent *e) OVERRIDE FINAL;
 
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
@@ -506,6 +449,9 @@ private:
     
     QString generateStringFromFilters();
     
+    QByteArray saveState() const;
+    
+    bool restoreState(const QByteArray& state);
 
 private:
     // FIXME: PIMPL
