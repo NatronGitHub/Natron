@@ -89,10 +89,13 @@ public:
     
     const StringAnimationManager& getAnimation() const { return *_animation; }
 
+    const QString& getPattern() const { return _pattern; }
     
+    ///called by the gui
+    void setPattern(const QString& pattern) { _pattern = pattern; }
+
 signals:
     
-    void patternChanged(QString);
     void openFile(bool);
     
 private:
@@ -119,7 +122,6 @@ private:
     
     virtual QString saveExtraData() const OVERRIDE FINAL;
 
-
     int frameCount() const;
     
     /**
@@ -133,6 +135,7 @@ private:
     static const std::string _typeNameStr;
     StringAnimationManager* _animation;
     int _isInputImage;
+    QString _pattern;
 };
 
 /******************************OUTPUT_FILE_KNOB**************************************/

@@ -441,15 +441,17 @@ void Knob::load(const KnobSerialization& serializationObj){
     ///bracket value changes
     beginValueChange(Natron::OTHER_REASON);
     
-    const std::string& extraData = serializationObj.getExtraData();
-    if(!extraData.empty()){
-        loadExtraData(extraData.c_str());
-    }
+   
     
     const std::vector< boost::shared_ptr<Curve> >& serializedCurves = serializationObj.getCurves();
     for(U32 i = 0 ; i< serializedCurves.size();++i){
         assert(serializedCurves[i]);
         _imp->_curves[i]->clone(*serializedCurves[i]);
+    }
+    
+    const std::string& extraData = serializationObj.getExtraData();
+    if(!extraData.empty()){
+        loadExtraData(extraData.c_str());
     }
     
     const std::vector<Variant>& serializedValues = serializationObj.getValues();

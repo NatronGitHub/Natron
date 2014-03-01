@@ -77,6 +77,9 @@ void File_Knob::cloneExtraData(const Knob& other) {
 
 void File_Knob::loadExtraData(const QString& str) {
     _animation->load(str);
+    SequenceParsing::SequenceFromFiles sequence(false);
+    getFiles(&sequence);
+    _pattern = sequence.generateValidSequencePattern();
 }
 
 QString File_Knob::saveExtraData() const {
@@ -118,9 +121,7 @@ void File_Knob::setFiles(const SequenceParsing::SequenceFromFiles& fileSequence)
     
     beginValueChange(Natron::PLUGIN_EDITED);
     setFilesInternal(fileSequence);
-    QString pattern = fileSequence.generateValidSequencePattern();
-    ///notify the gui that the pattern changed so it can show it.
-    emit patternChanged(pattern);
+    _pattern = fileSequence.generateValidSequencePattern();
     
     ///necessary for the changedParam call!
     setValue(Variant(""),0,true);
@@ -130,6 +131,7 @@ void File_Knob::setFiles(const SequenceParsing::SequenceFromFiles& fileSequence)
 void File_Knob::setFilesNoEmit(const SequenceParsing::SequenceFromFiles& fileSequence) {
     beginValueChange(Natron::PLUGIN_EDITED);
     setFilesInternal(fileSequence);
+    setValue(Variant(""),0,true);
     endValueChange();
 }
 
@@ -171,7 +173,11 @@ QString File_Knob::getRandomFrameName(int f, bool loadNearestIfNotFound) const
                 return "";
             }
         }
-        return getValueAtTime(f, 0).toString();
+        if (getKeyFramesCount(0) == 0) {
+            return "";
+        } else {
+            return getValueAtTime(f, 0).toString();
+        }
     }
 }
 

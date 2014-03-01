@@ -52,8 +52,6 @@ public:
 
 public slots:
 
-    void onPatternChanged(const QString& pattern);
-
     void onReturnPressed();
     
     void onButtonClicked();
@@ -81,7 +79,6 @@ private:
     LineEdit *_lineEdit;
     Button *_openFileButton;
     QString _lastOpened;
-    QString _pattern;
 };
 
 

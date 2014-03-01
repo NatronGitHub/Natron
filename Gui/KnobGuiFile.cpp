@@ -34,7 +34,6 @@ File_KnobGui::File_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *containe
 {
     boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knob);
     assert(fk);
-    QObject::connect(fk.get(), SIGNAL(patternChanged(QString)), this, SLOT(onPatternChanged(QString)));
     QObject::connect(fk.get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)));
 }
 
@@ -163,19 +162,15 @@ void File_KnobGui::updateLastOpened(const QString &str)
 
 }
 
-void File_KnobGui::onPatternChanged(const QString& pattern) {
-    _pattern = pattern;
-}
-
 void File_KnobGui::updateGUI(int /*dimension*/, const Variant &/*variant*/)
 {
-    _lineEdit->setText(_pattern);
+    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
+    _lineEdit->setText(fk->getPattern());
 }
 
 void File_KnobGui::onReturnPressed()
 {
     QString str = _lineEdit->text();
-    _pattern = str;
     SequenceParsing::SequenceFromPattern sequence;
     SequenceParsing::filesListFromPattern(str, &sequence);
     ///Even though the user might have passed to the file knob a view variable (%v or %V)
@@ -190,6 +185,7 @@ void File_KnobGui::onReturnPressed()
     SequenceParsing::SequenceFromFiles oldFiles(false);
     boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
     fk->getFiles(&oldFiles);
+    fk->setPattern(str);
     pushUndoCommand(new File_Knob_UndoCommand(this,oldFiles,sequenceFromFiles));
 }
 
