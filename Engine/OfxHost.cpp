@@ -519,6 +519,7 @@ struct Thread_Group {
 
 static Thread_Group tg = Thread_Group();
 
+#pragma message WARN("why this wrapper???")
 void OfxWrappedFunctor(OfxThreadFunctionV1 func,int i,unsigned int nThreads,void* customArgs){
     func(i,nThreads,customArgs);
     
@@ -543,13 +544,19 @@ void OfxWrappedFunctor(OfxThreadFunctionV1 func,int i,unsigned int nThreads,void
 }
 
 
-
+// Function to spawn SMP threads
+//  This function will spawn nThreads separate threads of computation (typically one per CPU) to allow something to perform symmetric multi processing. Each thread will call 'func' passing in the index of the thread and the number of threads actually launched.
+// multiThread will not return until all the spawned threads have returned. It is up to the host how it waits for all the threads to return (busy wait, blocking, whatever).
+// nThreads can be more than the value returned by multiThreadNumCPUs, however the threads will be limitted to the number of CPUs returned by multiThreadNumCPUs.
+// This function cannot be called recursively.
+// http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThread
+#pragma message
 OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nThreads, void *customArg) {
     if (!func) {
         return kOfxStatFailed;
     }
 
-    U32 maxConcurrentThread;
+    unsigned int maxConcurrentThread;
     OfxStatus st = multiThreadNumCPUS(&maxConcurrentThread);
     if (st != kOfxStatOK) {
         return st;
@@ -571,7 +578,7 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
         tg.threads.push_back(t);
         
     }
-    
+#pragma message WARN("why not simply use .join() on each thread?")
     {
         boost::mutex::scoped_lock lock(tg.lock);
         while (tg.threads.size() > 0) {
@@ -593,7 +600,11 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
     return kOfxStatOK;
 }
 
-OfxStatus Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const {
+// Function which indicates the number of CPUs available for SMP processing
+//  This value may be less than the actual number of CPUs on a machine, as the host may reserve other CPUs for itself.
+// http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThreadNumCPUs
+OfxStatus Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
+{
     if (!nCPUs) {
         return kOfxStatFailed;
     }
@@ -601,10 +612,16 @@ OfxStatus Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const {
     return kOfxStatOK;
 }
 
-OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const {
+// Function which indicates the index of the current thread
+//  This function returns the thread index, which is the same as the threadIndex argument passed to the OfxThreadFunctionV1.
+// If there are no threads currently spawned, then this function will set threadIndex to 0
+// http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThreadIndex
+OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
+{
     if (!threadIndex)
         return kOfxStatFailed;
-    U32 i = 0;
+    unsigned int i = 0;
+#pragma message WARN("BUG: this is NOT the thread index that was passed to the OfxThreadFunctionV1! the threads may rely HEAVILY on this")
     boost::mutex::scoped_lock lock(tg.lock);
     for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
         if((*it)->get_id() == boost::this_thread::get_id()){
@@ -617,6 +634,8 @@ OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const {
     return kOfxStatOK;
 }
 
+// Function to enquire if the calling thread was spawned by multiThread
+// http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThreadIsSpawnedThread
 int Natron::OfxHost::multiThreadIsSpawnedThread() const {
     boost::mutex::scoped_lock lock(tg.lock);
     for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
@@ -627,6 +646,9 @@ int Natron::OfxHost::multiThreadIsSpawnedThread() const {
     return false;
 }
 
+// Create a mutex
+//  Creates a new mutex with lockCount locks on the mutex initially set.
+// http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_mutexCreate
 OfxStatus Natron::OfxHost::mutexCreate(OfxMutexHandle *mutex, int lockCount) {
     if (!mutex) {
         return kOfxStatFailed;
@@ -651,6 +673,9 @@ OfxStatus Natron::OfxHost::mutexCreate(OfxMutexHandle *mutex, int lockCount) {
     }
 }
 
+// Destroy a mutex
+//  Destroys a mutex intially created by mutexCreate.
+// http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_mutexDestroy
 OfxStatus Natron::OfxHost::mutexDestroy(const OfxMutexHandle mutex) {
     if (mutex == 0) {
         return kOfxStatErrBadHandle;
@@ -671,6 +696,10 @@ OfxStatus Natron::OfxHost::mutexDestroy(const OfxMutexHandle mutex) {
     }
 }
 
+// Blocking lock on the mutex
+//  This trys to lock a mutex and blocks the thread it is in until the lock suceeds.
+// A sucessful lock causes the mutex's lock count to be increased by one and to block any other calls to lock the mutex until it is unlocked.
+// http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_mutexLock
 OfxStatus Natron::OfxHost::mutexLock(const OfxMutexHandle mutex) {
     if (mutex == 0) {
         return kOfxStatErrBadHandle;
@@ -691,6 +720,9 @@ OfxStatus Natron::OfxHost::mutexLock(const OfxMutexHandle mutex) {
     }
 }
 
+// Unlock the mutex
+//  This unlocks a mutex. Unlocking a mutex decreases its lock count by one.
+// http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_mutexUnLock
 OfxStatus Natron::OfxHost::mutexUnLock(const OfxMutexHandle mutex) {
     if (mutex == 0) {
         return kOfxStatErrBadHandle;
@@ -711,6 +743,10 @@ OfxStatus Natron::OfxHost::mutexUnLock(const OfxMutexHandle mutex) {
     }
 }
 
+// Non blocking attempt to lock the mutex
+//  This attempts to lock a mutex, if it cannot, it returns and says so, rather than blocking.
+// A sucessful lock causes the mutex's lock count to be increased by one, if the lock did not suceed, the call returns immediately and the lock count remains unchanged.
+// http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_mutexTryLock
 OfxStatus Natron::OfxHost::mutexTryLock(const OfxMutexHandle mutex) {
     if (mutex == 0) {
         return kOfxStatErrBadHandle;
