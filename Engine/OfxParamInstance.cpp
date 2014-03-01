@@ -1464,7 +1464,12 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
 
 OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
-    int currentFrame = (int)_node->effectInstance()->timeLineGetTime();
+    int currentFrame;
+    if (!_node->isWriter()) {
+        currentFrame = (int)_node->effectInstance()->timeLineGetTime();
+    } else {
+        currentFrame = dynamic_cast<Natron::OutputEffectInstance*>(_node)->getCurrentFrame();
+    }
     if(_fileKnob){
         QString fileName =  _fileKnob->getRandomFrameName(currentFrame,true);
         str = fileName.toStdString();
