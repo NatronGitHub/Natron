@@ -22,7 +22,12 @@
 #include <QtCore/QDebug>
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
+#ifdef MRKEPZIE
 #include <boost/thread.hpp>
+#else
+#include <QtCore/QThread>
+#include <QtCore/QThreadStorage>
+#endif
 #endif
 
 //ofx
@@ -485,8 +490,8 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
 
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
-#pragma message WARN("Natron being compiled with OFX_SUPPORTS_MULTITHREAD defined, some plug-ins might crash.")
 #ifdef MRKEPZIE
+#pragma message WARN("Natron being compiled with OFX_SUPPORTS_MULTITHREAD defined, some plug-ins might crash.")
 namespace {
 struct Thread_Group {
     typedef std::list<boost::thread*> ThreadsList;
@@ -550,6 +555,10 @@ void OfxWrappedFunctor(OfxThreadFunctionV1 func,int i,unsigned int nThreads,void
 #endif
 }
 #else
+
+static QThreadStorage<unsigned int> gThreadIndex;
+
+namespace {
 class OfxThread : public QThread
 {
 public:
@@ -563,20 +572,20 @@ public:
     , _customArg(customArg)
     {}
 
-    void run() Q_DECL_OVERRIDE {
+    void run() OVERRIDE {
         assert(!gThreadIndex.hasLocalData());
         gThreadIndex.localData() = _threadIndex;
         _func(_threadIndex, _threadMax, _customArg);
     }
 
 private:
-    OfxThreadFunctionV1 _func;
+    OfxThreadFunctionV1 *_func;
     unsigned int _threadIndex;
     unsigned int _threadMax;
     void *_customArg;
+};
 }
 
-static QThreadStorage<unsigned int> gThreadIndex;
 #endif // MRKEPZIE
 
 
@@ -586,7 +595,6 @@ static QThreadStorage<unsigned int> gThreadIndex;
 // nThreads can be more than the value returned by multiThreadNumCPUs, however the threads will be limitted to the number of CPUs returned by multiThreadNumCPUs.
 // This function cannot be called recursively.
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThread
-#pragma message
 OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nThreads, void *customArg)
 {
     if (!func) {
@@ -643,10 +651,10 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
 #else // !MRKEPZIE
     QVector<OfxThread*> threads(nThreads);
     for (unsigned int i = 0; i < nThreads; ++i) {
-        threads[i] = new OfxThread(OfxWrappedFunctor, func, i, nThreads,customArg);
+        threads[i] = new OfxThread(func, i, nThreads,customArg);
     }
-   for (int i = 0; i < nThreads; ++i) {
-        threads[i]->join();
+   for (unsigned int i = 0; i < nThreads; ++i) {
+        threads[i]->wait();
     }
 #endif
 
@@ -665,7 +673,7 @@ OfxStatus Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
 #ifdef MRKEPZIE
     *nCPUs = boost::thread::hardware_concurrency();
 #else
-    *nCPUS = QThread::idealThreadCount();
+    *nCPUs = QThread::idealThreadCount();
 #endif
     return kOfxStatOK;
 }
@@ -711,7 +719,7 @@ int Natron::OfxHost::multiThreadIsSpawnedThread() const
     }
     return false;
 #else
-    return (bool)gThreadIndex.get();
+    return gThreadIndex.hasLocalData();
 #endif
 }
 
