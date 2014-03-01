@@ -391,7 +391,9 @@ void OfxEffectInstance::onInputChanged(int inputNo) {
     double time = effect_->getFrameRecursive();
     RenderScale s;
     s.x = s.y = 1.;
+    effect_->beginInstanceChangedAction(kOfxChangeUserEdited);
     effect_->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
+    effect_->endInstanceChangedAction(kOfxChangeUserEdited);
     
 }
 
@@ -446,19 +448,46 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
         return ret;
     }
     OfxStatus stat = effect_->getRegionOfInterestAction((OfxTime)time, scale, rectToOfxRect2D(renderWindow), inputRois);
-    if(stat != kOfxStatOK && stat != kOfxStatReplyDefault)
-        return ret;
-    for(std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin();it!= inputRois.end();++it){
-        EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
-        if(inputNode && inputNode != this){
-            RectI inputRoi;
-            ofxRectDToRectI(it->second, &inputRoi);
-            ret.insert(std::make_pair(inputNode,inputRoi));
+    if(stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
+        Natron::errorDialog(getName(), "Failed to specify the region of interest from inputs.");
+    } else if (stat == kOfxStatOK) {
+        for(std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin();it!= inputRois.end();++it){
+            EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
+            if (inputNode && inputNode != this) {
+                RectI inputRoi;
+                ofxRectDToRectI(it->second, &inputRoi);
+                ret.insert(std::make_pair(inputNode,inputRoi));
+            }
         }
+    } else if (stat == kOfxStatReplyDefault) {
+        return Natron::EffectInstance::getRegionOfInterest(time, scale, renderWindow);
     }
     return ret;
 }
 
+Natron::EffectInstance::FramesNeededMap OfxEffectInstance::getFramesNeeded(SequenceTime time) {
+    EffectInstance::FramesNeededMap ret;
+    if(!_initialized){
+        return ret;
+    }
+    OFX::Host::ImageEffect::RangeMap inputRanges;
+    assert(effect_);
+    
+    OfxStatus stat = effect_->getFrameNeededAction((OfxTime)time, inputRanges);
+    if(stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
+        Natron::errorDialog(getName(), "Failed to specify the frame ranges needed from inputs.");
+    } else if (stat == kOfxStatOK) {
+        for (OFX::Host::ImageEffect::RangeMap::iterator it = inputRanges.begin(); it!=inputRanges.end(); ++it) {
+            EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
+            if (inputNode && inputNode != this) {
+                ret.insert(std::make_pair(inputNode,it->second));
+            }
+        }
+    } else if(stat == kOfxStatReplyDefault) {
+        return Natron::EffectInstance::getFramesNeeded(time);
+    }
+    return ret;
+}
 
 void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
     if(!_initialized){

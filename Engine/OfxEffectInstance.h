@@ -128,6 +128,8 @@ public:
     virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     virtual Natron::EffectInstance::RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) OVERRIDE WARN_UNUSED_RETURN;
+    
+    virtual Natron::EffectInstance::FramesNeededMap getFramesNeeded(SequenceTime time) WARN_UNUSED_RETURN;
 
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
 

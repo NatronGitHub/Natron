@@ -240,6 +240,19 @@ EffectInstance::RoIMap EffectInstance::getRegionOfInterest(SequenceTime /*time*/
     return ret;
 }
 
+EffectInstance::FramesNeededMap EffectInstance::getFramesNeeded(SequenceTime time) {
+    EffectInstance::FramesNeededMap ret;
+    RangeD defaultRange;
+    defaultRange.min = defaultRange.max = time;
+    std::vector<RangeD> ranges;
+    ranges.push_back(defaultRange);
+    for(Inputs::const_iterator it = _imp->inputs.begin() ; it != _imp->inputs.end() ; ++it) {
+        if (*it) {
+            ret.insert(std::make_pair(*it, ranges));
+        }
+    }
+    return ret;
+}
 
 void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last)
 {
@@ -375,25 +388,34 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         _imp->renderArgs.setLocalData(args);
 
         RoIMap inputsRoi = getRegionOfInterest(time, scale, rectToRender);
+        FramesNeededMap framesNeeeded = getFramesNeeded(time);
+        
+        assert(inputsRoi.size() == framesNeeeded.size());
+        
         std::list<boost::shared_ptr<const Natron::Image> > inputImages;
+        
         /*we render each input first and store away their image in the inputImages list
          in order to maintain a shared_ptr use_count > 1 so the cache doesn't attempt
          to remove them.*/
-        for (RoIMap::const_iterator it2 = inputsRoi.begin(); it2!= inputsRoi.end(); ++it2) {
-
+        for (FramesNeededMap::iterator it2 = framesNeeeded.begin(); it2 != framesNeeeded.end(); ++it2) {
+            RoIMap::iterator foundInputRoI = inputsRoi.find(it2->first);
+            assert(foundInputRoI != inputsRoi.end());
+            
             ///notify the node that we're going to render something with the input
             int inputNb = getInputNumber(it2->first);
             assert(inputNb != -1); //< see getInputNumber
-
             _node->notifyInputNIsRendering(inputNb);
 
-            boost::shared_ptr<const Natron::Image> inputImg = it2->first->renderRoI(time, scale,view, it2->second,byPassCache);
-            if (inputImg) {
-                inputImages.push_back(inputImg);
+            for (U32 range = 0; range < it2->second.size(); ++range) {
+                for (U32 f = it2->second[range].min; f < it2->second[range].max; ++f) {
+                    boost::shared_ptr<Natron::Image> inputImg = it2->first->renderRoI(f, scale,view, foundInputRoI->second,byPassCache);
+                    if (inputImg) {
+                        inputImages.push_back(inputImg);
+                    }
+                }
             }
-
             _node->notifyInputNIsFinishedRendering(inputNb);
-
+            
             if (aborted()) {
                 //if render was aborted, remove the frame from the cache as it contains only garbage
                 appPTR->removeFromNodeCache(image);
@@ -401,7 +423,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                 return image;
             }
         }
-
+        
         ///notify the node we're starting a render
         _node->notifyRenderingStarted();
 
