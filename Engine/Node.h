@@ -396,7 +396,19 @@ public:
     ///called by EffectInstance
     void unregisterPluginMemory(size_t nBytes);
 
+    //see INSTANCE_SAFE in EffectInstance::renderRoI
+    //only 1 clone can render at any time
+    void lockRenderInstancesSharedMutex();
     
+    //see INSTANCE_SAFE in EffectInstance::renderRoI
+    //only 1 clone can render at any time
+    void unlockRenderInstancesSharedMutex();
+    
+    ///see FULLY_SAFE in EffectInstance::renderRoI
+    void lockMutexForFrame(int time);
+    
+    ///see FULLY_SAFE in EffectInstance::renderRoI
+    void unlockMutexForFrame(int time);
     
 public slots:
     

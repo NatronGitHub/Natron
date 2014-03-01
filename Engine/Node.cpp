@@ -102,6 +102,9 @@ struct Node::Implementation {
         , mustQuitProcessingCond()
         , isUsingInputs(false)
         , isUsingInputsCond()
+        , renderInstancesSharedMutex()
+        , perFrameMutexesLock()
+        , renderInstancesFullySafePerFrameMutexes()
     {
     }
 
@@ -137,6 +140,13 @@ struct Node::Implementation {
     
     bool isUsingInputs; //< set when a render tree is actively using the connections informations
     QWaitCondition isUsingInputsCond;
+    
+    QMutex renderInstancesSharedMutex; //< see INSTANCE_SAFE in EffectInstance::renderRoI
+                                       //only 1 clone can render at any time
+    
+    QMutex perFrameMutexesLock; //< protects renderInstancesFullySafePerFrameMutexes
+    std::map<int,QMutex*> renderInstancesFullySafePerFrameMutexes; //< see FULLY_SAFE in EffectInstance::renderRoI
+                                                                   //only 1 render per frame
 };
 
 Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
@@ -1048,6 +1058,38 @@ void Node::waitForRenderTreesToBeDone() {
     while (_imp->isUsingInputs) {
         _imp->isUsingInputsCond.wait(&isUsingInputsMutex);
     }
+}
+
+void Node::lockRenderInstancesSharedMutex() {
+    _imp->renderInstancesSharedMutex.lock();
+}
+
+void Node::unlockRenderInstancesSharedMutex() {
+    assert(!_imp->renderInstancesSharedMutex.tryLock());
+    _imp->renderInstancesSharedMutex.unlock();
+}
+
+void Node::lockMutexForFrame(int time) {
+    QMutex* lock = 0;
+    {
+        QMutexLocker l(&_imp->perFrameMutexesLock);
+        std::map<int, QMutex*>::iterator found = _imp->renderInstancesFullySafePerFrameMutexes.find(time);
+        if (found != _imp->renderInstancesFullySafePerFrameMutexes.end()) {
+            lock = found->second;
+        } else {
+            lock = new QMutex;
+            _imp->renderInstancesFullySafePerFrameMutexes.insert(std::make_pair(time, lock));
+        }
+    }
+    lock->lock();
+}
+
+void Node::unlockMutexForFrame(int time) {
+    QMutexLocker l(&_imp->perFrameMutexesLock);
+    std::map<int, QMutex*>::iterator found = _imp->renderInstancesFullySafePerFrameMutexes.find(time);
+    assert(found != _imp->renderInstancesFullySafePerFrameMutexes.end());
+    assert(!found->second->tryLock());
+    found->second->unlock();
 }
 
 InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin,const std::string& name)
