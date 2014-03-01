@@ -488,7 +488,7 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
 #pragma message WARN("Natron being compiled with OFX_SUPPORTS_MULTITHREAD defined, some plug-ins might crash.")
 namespace {
 struct Thread_Group {
-    typedef std::list<boost::thread*> ThreadsList;
+    typedef std::map<int,boost::thread*> ThreadsList;
     ThreadsList threads;
     ThreadsList finishedThreads;
     boost::mutex lock;
@@ -519,38 +519,12 @@ struct Thread_Group {
 
 static Thread_Group tg = Thread_Group();
 
-#pragma message WARN("why this wrapper???")
-void OfxWrappedFunctor(OfxThreadFunctionV1 func,int i,unsigned int nThreads,void* customArgs){
-    func(i,nThreads,customArgs);
-    
-    boost::mutex::scoped_lock lock(tg.lock);
-    
-    ///remove this thread from the thread group
-    Thread_Group::ThreadsList::iterator found = tg.threads.end();
-    for(Thread_Group::ThreadsList::iterator it = tg.threads.begin();it!= tg.threads.end();++it){
-        if((*it)->get_id() == boost::this_thread::get_id()){
-            found = it;
-            break;
-        }
-    }
-    
-    //it shouldn't have been removed...
-    assert(found != tg.threads.end());
-    tg.finishedThreads.push_back(*found);
-    tg.threads.erase(found);
-    
-    tg.cond.notify_all();
-    
-}
-
-
 // Function to spawn SMP threads
 //  This function will spawn nThreads separate threads of computation (typically one per CPU) to allow something to perform symmetric multi processing. Each thread will call 'func' passing in the index of the thread and the number of threads actually launched.
 // multiThread will not return until all the spawned threads have returned. It is up to the host how it waits for all the threads to return (busy wait, blocking, whatever).
 // nThreads can be more than the value returned by multiThreadNumCPUs, however the threads will be limitted to the number of CPUs returned by multiThreadNumCPUs.
 // This function cannot be called recursively.
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThread
-#pragma message
 OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nThreads, void *customArg) {
     if (!func) {
         return kOfxStatFailed;
@@ -572,31 +546,23 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
             tg.cond.wait(lock);
         }
         
-        boost::thread* t = new boost::thread(OfxWrappedFunctor,func,i,nThreads,customArg);
-        
+        boost::thread* t = new boost::thread(func,i,nThreads,customArg);
         ///register the thread
-        tg.threads.push_back(t);
+        tg.threads.insert(std::make_pair(i,t));
         
     }
-#pragma message WARN("why not simply use .join() on each thread?")
+    
+    for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
+        it->second->join();
+    }
     {
         boost::mutex::scoped_lock lock(tg.lock);
-        while (tg.threads.size() > 0) {
-            tg.cond.wait(lock);
+        for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
+            delete it->second;
         }
+        tg.threads.clear();
+
     }
-    
-    ///all functors must have returned and erase the thread from the list.
-    assert(tg.threads.empty());
-    
-    boost::mutex::scoped_lock lock(tg.lock);
-    for (Thread_Group::ThreadsList::iterator it = tg.finishedThreads.begin(); it!= tg.finishedThreads.end(); ++it) {
-        (*it)->join();
-        delete (*it);
-    }
-    
-    tg.finishedThreads.clear();
-    
     return kOfxStatOK;
 }
 
@@ -621,11 +587,10 @@ OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
     if (!threadIndex)
         return kOfxStatFailed;
     unsigned int i = 0;
-#pragma message WARN("BUG: this is NOT the thread index that was passed to the OfxThreadFunctionV1! the threads may rely HEAVILY on this")
     boost::mutex::scoped_lock lock(tg.lock);
     for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
-        if((*it)->get_id() == boost::this_thread::get_id()){
-            *threadIndex = i;
+        if(it->second->get_id() == boost::this_thread::get_id()){
+            *threadIndex = it->first;
             return kOfxStatOK;
         }
         ++i;
@@ -639,7 +604,7 @@ OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
 int Natron::OfxHost::multiThreadIsSpawnedThread() const {
     boost::mutex::scoped_lock lock(tg.lock);
     for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
-        if((*it)->get_id() == boost::this_thread::get_id()){
+        if(it->second->get_id() == boost::this_thread::get_id()){
             return true;
         }
     }
