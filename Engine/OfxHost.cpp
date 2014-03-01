@@ -19,6 +19,7 @@
 #include <QtCore/QDir>
 #include <QtCore/QMutex>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDebug>
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
 #include <boost/thread.hpp>
@@ -484,7 +485,7 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
 
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
-#pragma message WARN("Natron begin compiled with OFX_SUPPORTS_MULTITHREAD defined, some plug-ins might crash.")
+#pragma message WARN("Natron being compiled with OFX_SUPPORTS_MULTITHREAD defined, some plug-ins might crash.")
 namespace {
 struct Thread_Group {
     typedef std::list<boost::thread*> ThreadsList;
