@@ -45,6 +45,9 @@ public:
     typedef std::vector<EffectInstance*> Inputs;
     
     typedef std::map<EffectInstance*,RectI> RoIMap;
+    
+    typedef std::map<EffectInstance*, std::vector<RangeD> > FramesNeededMap;
+    
 public:
     
     enum CachePolicy { ALWAYS_CACHE = 0 , NEVER_CACHE };
@@ -286,6 +289,12 @@ public:
      * By default, it returns renderWindow for each input.
      **/
     virtual RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) WARN_UNUSED_RETURN;
+    
+    /**
+     * @brief Can be derived to indicate for each input node what is the frame range(s) (which can be discontinuous)
+     * that this effects need in order to render the frame at the given time.
+     **/
+    virtual FramesNeededMap getFramesNeeded(SequenceTime time) WARN_UNUSED_RETURN;
 
     /**
      * @brief Can be derived to get the frame range wherein the plugin is capable of producing frames.

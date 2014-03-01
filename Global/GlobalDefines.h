@@ -48,6 +48,8 @@ typedef OfxPointD RenderScale;
 
 typedef OfxRGBAColourF RGBAColourF;
 
+typedef OfxRangeD RangeD;
+
 ///these are used between process to communicate via the pipes
 #define kRenderingStartedLong "Rendering started"
 #define kRenderingStartedShort "-b"
