@@ -491,6 +491,8 @@ public:
      * This is called after each params had its default value set.
      **/
     virtual void beginEditKnobs() {}
+    
+    virtual std::vector<std::string> supportedFileFormats() const { return std::vector<std::string>(); }
 protected:
     
     /**

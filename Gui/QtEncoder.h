@@ -40,7 +40,9 @@ public:
     
     virtual bool isWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
     
-    static void supportedFileFormats(std::vector<std::string>* formats);
+    static void supportedFileFormats_static(std::vector<std::string>* formats);
+    
+    virtual std::vector<std::string> supportedFileFormats() const OVERRIDE FINAL;
     
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE {return false;}
     

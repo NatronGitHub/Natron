@@ -236,13 +236,18 @@ void QtReader::getFrameRange(SequenceTime *first,SequenceTime *last){
 }
 
 
-void QtReader::supportedFileFormats(std::vector<std::string>* formats) {
+void QtReader::supportedFileFormats_static(std::vector<std::string>* formats) {
     const QList<QByteArray>& supported = QImageReader::supportedImageFormats();
     for (int i = 0; i < supported.size(); ++i) {
         formats->push_back(supported.at(i).data());
     }
 };
 
+std::vector<std::string> QtReader::supportedFileFormats() const  {
+    std::vector<std::string> ret;
+    QtReader::supportedFileFormats_static(&ret);
+    return ret;
+}
 
 SequenceTime QtReader::getSequenceTime(SequenceTime t)
 {

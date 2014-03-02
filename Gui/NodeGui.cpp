@@ -516,7 +516,7 @@ Edge* NodeGui::hasEdgeNearbyPoint(const QPointF& pt){
     return NULL;
 }
 
-void NodeGui::activate(){
+void NodeGui::activate() {
     show();
     setActive(true);
     _graph->restoreFromTrash(this);
@@ -544,10 +544,13 @@ void NodeGui::activate(){
         OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
         ofxNode->effectInstance()->beginInstanceEditAction();
     }
-    
+
+    getNode()->getApp()->triggerAutoSave();
+    getNode()->getApp()->checkViewersConnection();
+
 }
 
-void NodeGui::deactivate(){
+void NodeGui::deactivate() {
     hide();
     setActive(false);
     _graph->moveToTrash(this);
@@ -571,6 +574,9 @@ void NodeGui::deactivate(){
         OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
         ofxNode->effectInstance()->endInstanceEditAction();
     }
+    
+    getNode()->getApp()->triggerAutoSave();
+    getNode()->getApp()->checkViewersConnection();
 }
 
 void NodeGui::initializeKnobs(){

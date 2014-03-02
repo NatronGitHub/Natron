@@ -18,6 +18,7 @@
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
 #include "Engine/SequenceParsing.h"
+#include "Engine/EffectInstance.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Button.h"
@@ -130,10 +131,9 @@ void File_KnobGui::open_file(bool openSequence)
     if (!fk->isInputImageFile()) {
         filters.push_back("*");
     } else {
-        std::map<std::string,std::string> readersForFormat;
-        appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-        for (std::map<std::string,std::string>::const_iterator it = readersForFormat.begin(); it!=readersForFormat.end(); ++it) {
-            filters.push_back(it->first);
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(getKnob()->getHolder());
+        if (effect) {
+            filters = effect->supportedFileFormats();
         }
     }
     SequenceParsing::SequenceFromFiles currentFiles(false);
@@ -280,12 +280,10 @@ void OutputFile_KnobGui::open_file(bool openSequence)
     if (!fk->isOutputImageFile()) {
         filters.push_back("*");
     } else {
-        std::map<std::string,std::string> writersForFormat;
-        appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
-        for (std::map<std::string,std::string>::const_iterator it = writersForFormat.begin(); it!=writersForFormat.end(); ++it) {
-            filters.push_back(it->first);
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(getKnob()->getHolder());
+        if (effect) {
+            filters = effect->supportedFileFormats();
         }
-
     }
     
     SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, openSequence, SequenceFileDialog::SAVE_DIALOG, _lastOpened.toStdString());

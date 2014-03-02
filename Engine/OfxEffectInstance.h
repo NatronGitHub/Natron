@@ -180,6 +180,8 @@ public:
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
     
     virtual void onMultipleInputsChanged() OVERRIDE FINAL;
+    
+    virtual std::vector<std::string> supportedFileFormats() const OVERRIDE FINAL;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
     

@@ -52,8 +52,7 @@ std::string QtWriter::description() const {
 
 
 /*Should return the list of file types supported by the encoder: "png","jpg", etc..*/
-void QtWriter::supportedFileFormats(std::vector<std::string>* formats) {
-    std::vector<std::string> out;
+void QtWriter::supportedFileFormats_static(std::vector<std::string>* formats) {
     // Qt Image reader should be the last solution (it cannot read 16-bits ppm or png)
     const QList<QByteArray>& supported = QImageWriter::supportedImageFormats();
     // Qt 4 supports: BMP, JPG, JPEG, PNG, PBM, PGM, PPM, TIFF, XBM, XPM
@@ -61,6 +60,12 @@ void QtWriter::supportedFileFormats(std::vector<std::string>* formats) {
     for (int i = 0; i < supported.count(); ++i) {
         formats->push_back(std::string(supported.at(i).toLower().data()));
     }
+}
+
+std::vector<std::string> QtWriter::supportedFileFormats() const {
+    std::vector<std::string> ret;
+    supportedFileFormats_static(&ret);
+    return ret;
 }
 
 void QtWriter::getFrameRange(SequenceTime *first,SequenceTime *last){

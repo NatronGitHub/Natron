@@ -6,40 +6,18 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
-- in the node graph, when clicking on the input of an *unconnected* node, moving it, and releasing it without connecting it, it triggers a render in the viewer. If the node is connected to other nodes upstream, but there are no connected nodes downstream, it also triggers a render (whereas nothing changed on the rendering path).
-
-- when I add a writer node to the graph (e.g. WritePFM), the save dialog should only have the formats supported by this writer (e.g. pfm)
-
-- in the savedialog, when I select a single file without a number in the filename, "File" should be selected automatically instead of sequence
-
-- in the savedialog, when I select a file of a given extension, the dialog should not set another extension (the combobox should simply be replaced by a filter  or a list of supported formats)
-
 - in the properties panel, all parameters should be expanding horizontally
 
 - disabled choiceparam should be grayed out (text drawn in black instead of white)
 
-- gParamSuite->paramGetNumKeys should *never* throw an exception, but
-  should return 0 keys by default.
-
 - setEvaluateOnChange() seems to have no effect when called from
   Instance::beginInstanceEditAction()
   
-- non-animated parameters should be master/slave-able too
-
 - Natron never sets kOfxParamPropIsAnimating. It should be set by the host for every parameter which is animated, including "File_Knob" when it represents a sequence. -> this is done in OfxParamInstance, except for File_Knobs
-
-- file knobs should be master/slave-able too. A string/inputfile/outputfile should be slaveable to any string/inputfile/outputfile parameter (all these types are compatible). For example, a reader could follow a writer in the graph and should re-read the file that was written just above. This is necessary for external script nodes.
 
 - black borders around the viewer when zooming out and multithreading is disabled
 
-- RenderROI is called when disabling the viewer ROI, is it normal?
-
 - Check why TuttleOFX's generators (e.g. ColorBars) have this strange behaviour when changing the "channel" parameter
-
-- File Dialog: in plugins with a list of supported formats, only these formats should appear in the default filter (reader)
-  or the pulldown menu (write)
-
-- File Dialog: in a writer that supports a given format (e.g. pfm), selecting a file with this extension doesn't change the "File type" pulldown (whereas changing the filename in the text entry does)
 
 - File dialog: the file list should be a few pixels wider, so that the horizontal scrollbar does not appear.
 

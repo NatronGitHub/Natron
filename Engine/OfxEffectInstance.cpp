@@ -25,6 +25,9 @@
 #include <ofxhImageEffectAPI.h>
 #include <ofxhHost.h>
 
+#include <tuttle/ofxReadWrite.h>
+
+
 #include "Engine/AppManager.h"
 #include "Engine/OfxParamInstance.h"
 #include "Engine/Row.h"
@@ -399,6 +402,17 @@ void OfxEffectInstance::onInputChanged(int inputNo) {
 
 void OfxEffectInstance::onMultipleInputsChanged() {
     effect_->runGetClipPrefsConditionally();
+}
+
+std::vector<std::string> OfxEffectInstance::supportedFileFormats() const {
+
+    int formatsCount = effect_->getDescriptor().getProps().getDimension(kTuttleOfxImageEffectPropSupportedExtensions);
+    std::vector<std::string> formats(formatsCount);
+    for (int k = 0; k < formatsCount; ++k) {
+        formats[k] = effect_->getDescriptor().getProps().getStringProperty(kTuttleOfxImageEffectPropSupportedExtensions,k);
+        std::transform(formats[k].begin(), formats[k].end(), formats[k].begin(), ::tolower);
+    }
+    return formats;
 }
 
 Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod){

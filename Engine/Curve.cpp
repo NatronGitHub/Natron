@@ -144,7 +144,6 @@ bool Curve::areKeyFramesTimeClampedToIntegers() const{
 
 void Curve::clone(const Curve& other){
     clearKeyFrames();
-    QMutexLocker l(&_imp->_lock);
     const KeyFrameSet& otherKeys = other.getKeyFrames();
     std::transform(otherKeys.begin(), otherKeys.end(), std::inserter(_imp->keyFrames, _imp->keyFrames.begin()), KeyFrameCloner());
 }

@@ -86,6 +86,7 @@ QString File_Knob::saveExtraData() const {
     return _animation->save();
 }
 
+
 void File_Knob::setFiles(const QStringList& files) {
 
     SequenceParsing::SequenceFromFiles sequence(false);
@@ -124,14 +125,14 @@ void File_Knob::setFiles(const SequenceParsing::SequenceFromFiles& fileSequence)
     _pattern = fileSequence.generateValidSequencePattern();
     
     ///necessary for the changedParam call!
-    setValue(Variant(""),0,true);
+    setValue(Variant(_pattern),0,true);
     endValueChange();
 }
 
 void File_Knob::setFilesNoEmit(const SequenceParsing::SequenceFromFiles& fileSequence) {
     beginValueChange(Natron::PLUGIN_EDITED);
     setFilesInternal(fileSequence);
-    setValue(Variant(""),0,true);
+    setValue(Variant(_pattern),0,true);
     endValueChange();
 }
 

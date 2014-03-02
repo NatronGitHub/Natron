@@ -1211,6 +1211,19 @@ void SequenceFileDialog::openSelectedFiles(){
                     QDialog::accept();
                 }
             } else {
+                
+                ///check if str contains already the selected file extension, otherwise append it
+                {
+                    int lastSepPos = str.lastIndexOf(QDir::separator());
+                    int lastDotPos = str.lastIndexOf('.');
+                    if (lastDotPos < lastSepPos) {
+                        str.append("." + _fileExtensionCombo->getCurrentIndexText());
+                        _selectionLineEdit->blockSignals(true);
+                        _selectionLineEdit->setText(str);
+                        _selectionLineEdit->blockSignals(false);
+                    }
+                }
+                
                 SequenceParsing::SequenceFromPattern sequence;
                 SequenceParsing::filesListFromPattern(str, &sequence);
                 if (sequence.size() > 0) {

@@ -429,8 +429,7 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
         plugins->push_back(plugin);
         addPluginToolButtons(grouping,reader->pluginID().c_str(),reader->pluginLabel().c_str(), "","");
         
-        std::vector<std::string> extensions;
-        reader->supportedFileFormats(&extensions);
+        std::vector<std::string> extensions = reader->supportedFileFormats();
         for(U32 k = 0; k < extensions.size();++k){
             std::map<std::string,std::vector<std::string> >::iterator it;
             it = readersMap->find(extensions[k]);
@@ -460,8 +459,7 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
         plugins->push_back(plugin);
         addPluginToolButtons(grouping,writer->pluginID().c_str(),writer->pluginLabel().c_str(), "","");
         
-        std::vector<std::string> extensions;
-        writer->supportedFileFormats(&extensions);
+        std::vector<std::string> extensions = writer->supportedFileFormats();
         for(U32 k = 0; k < extensions.size();++k){
             std::map<std::string,std::vector<std::string> >::iterator it;
             it = writersMap->find(extensions[k]);

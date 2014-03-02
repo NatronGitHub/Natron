@@ -226,7 +226,7 @@ bool VideoEngine::startEngine(bool singleThreaded) {
         }
     }
 
-    if(!hasInput){
+    if (!hasInput) {
         if(viewer)
             viewer->disconnectViewer();
         return false;

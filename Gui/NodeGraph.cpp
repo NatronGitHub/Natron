@@ -513,7 +513,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
     EVENT_STATE state = _evtState;
     _evtState = DEFAULT;
 
-    if(state == ARROW_DRAGGING){
+    if (state == ARROW_DRAGGING) {
         bool foundSrc=false;
         NodeGui* dst = _arrowSelected->getDest();
         for(U32 i = 0; i<_nodes.size() ;++i){
@@ -524,8 +524,8 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
             if(n->isActive() && n->isNearby(evpt) &&
                     (n->getNode()->getName()!=_arrowSelected->getDest()->getNode()->getName())){
                 ///can't connect to a viewer
-                if(n->getNode()->isOutputNode()){
-                    //     break;
+                if(n->getNode()->pluginID() == "Viewer"){
+                    break;
                 }
                 _undoStack->setActive();
                 _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),n));
@@ -534,14 +534,14 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                 break;
             }
         }
-        if(!foundSrc){
+        if (!foundSrc) {
             _undoStack->setActive();
             _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),NULL));
             scene()->update();
         }
         dst->refreshEdges();
         scene()->update();
-    }else if(state == NODE_DRAGGING){
+    } else if(state == NODE_DRAGGING) {
         if(_nodeSelected) {
             _undoStack->setActive();
             _undoStack->push(new MoveCommand(_nodeSelected,_lastNodeDragStartPoint));
@@ -742,6 +742,7 @@ void NodeGraph::wheelEvent(QWheelEvent *event){
 void NodeGraph::deleteSelectedNode(){
     if(_nodeSelected){
         _undoStack->setActive();
+        _nodeSelected->setSelected(false);
         _undoStack->push(new RemoveCommand(this,_nodeSelected));
         _nodeSelected = 0;
     }
@@ -949,7 +950,7 @@ RemoveCommand::RemoveCommand(NodeGraph* graph,NodeGui *node,QUndoCommand *parent
     _node(node),_graph(graph){
     
 }
-void RemoveCommand::undo(){
+void RemoveCommand::undo() {
     _node->getNode()->activate();
     
     _graph->scene()->update();
@@ -959,7 +960,7 @@ void RemoveCommand::undo(){
     
     
 }
-void RemoveCommand::redo(){
+void RemoveCommand::redo() {
     _inputs = _node->getNode()->getInputs();
     _outputs = _node->getNode()->getOutputs();
     
@@ -1009,7 +1010,7 @@ void ConnectCommand::redo(){
     NodeGui* dst = _edge->getDest();
     
     InspectorNode* inspector = dynamic_cast<InspectorNode*>(dst->getNode());
-    if(inspector){
+    if (inspector) {
         if(!_newSrc){
             inspector->disconnectInput(_edge->getInputNumber());
         }else{
@@ -1040,7 +1041,7 @@ void ConnectCommand::redo(){
     assert(dst);
     dst->refreshEdges();
     
-    if(_newSrc){
+    if (_newSrc) {
         setText(QObject::tr("Connect %1 to %2")
                 .arg(_edge->getDest()->getNode()->getName().c_str()).arg(_newSrc->getNode()->getName().c_str()));
         std::list<ViewerInstance*> viewers;
@@ -1049,9 +1050,12 @@ void ConnectCommand::redo(){
             (*it)->updateTreeAndRender();
         }
 
-    }else{
+    } else {
         setText(QObject::tr("Disconnect %1")
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
+        if (_edge->getDest()->getNode()->pluginID() == "Viewer") {
+            dynamic_cast<ViewerInstance*>(_edge->getDest()->getNode()->getLiveInstance())->disconnectViewer();
+        }
     }
     _graph->getGui()->getApp()->triggerAutoSave();
     

@@ -129,12 +129,6 @@ Natron::Node* AppInstance::createNode(const QString& name,int majorVersion,int m
         return NULL;
     }
     
-    
-    QObject::connect(node,SIGNAL(deactivated()),this,SLOT(checkViewersConnection()));
-    QObject::connect(node, SIGNAL(deactivated()), this, SLOT(triggerAutoSave()));
-    QObject::connect(node,SIGNAL(activated()),this,SLOT(checkViewersConnection()));
-    QObject::connect(node, SIGNAL(activated()), this, SLOT(triggerAutoSave()));
-    
     node->initializeKnobs();
     node->initializeInputs();
 

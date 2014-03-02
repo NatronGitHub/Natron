@@ -121,6 +121,8 @@ private:
     virtual void loadExtraData(const QString& str) OVERRIDE FINAL;
     
     virtual QString saveExtraData() const OVERRIDE FINAL;
+    
+    //virtual void appendExtraDataToHash(std::vector<U64>* hash) const OVERRIDE FINAL;
 
     int frameCount() const;
     

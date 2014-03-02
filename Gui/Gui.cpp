@@ -1069,10 +1069,10 @@ void Gui::unregisterTab(QWidget* tab) {
 void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData){
     assert(tab);
     tab->hide();
-    std::list<ViewerTab*>::iterator it = std::find(_imp->_viewerTabs.begin(), _imp->_viewerTabs.end(), tab);
-    if (it != _imp->_viewerTabs.end()) {
-        _imp->_viewerTabs.erase(it);
-    }
+//    std::list<ViewerTab*>::iterator it = std::find(_imp->_viewerTabs.begin(), _imp->_viewerTabs.end(), tab);
+//    if (it != _imp->_viewerTabs.end()) {
+//        _imp->_viewerTabs.erase(it);
+//    }
     
     unregisterTab(tab);
     

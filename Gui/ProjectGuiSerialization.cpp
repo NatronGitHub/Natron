@@ -38,8 +38,9 @@ CLANG_DIAG_ON(deprecated)
          
          if (activeNodes[i]->getNode()->pluginID() == "Viewer") {
              ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(activeNodes[i]->getNode()->getLiveInstance());
-             ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
              assert(viewer);
+             ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
+             assert(tab);
              ViewerData viewerData;
              viewerData.aspectRatio = 1.;
              tab->getViewer()->getProjection(viewerData.left, viewerData.bottom, viewerData.zoomFactor);

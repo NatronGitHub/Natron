@@ -39,11 +39,14 @@ public:
         return new QtReader(n);
     }
     
-    static void supportedFileFormats(std::vector<std::string>* formats);
     
     QtReader(Natron::Node* node);
     
     virtual ~QtReader();
+    
+    static void supportedFileFormats_static(std::vector<std::string>* formats);
+    
+    virtual std::vector<std::string> supportedFileFormats() const OVERRIDE FINAL;
   
     virtual bool makePreviewByDefault() const OVERRIDE {return true;}
     

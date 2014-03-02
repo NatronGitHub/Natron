@@ -208,9 +208,11 @@ Knob::ValueChangedReturnCode Knob::setValue(const Variant& v, int dimension, Nat
     ///gui to be unsynchronized with what lies internally.
     if (!isSlave(dimension)) {
         
-        QMutexLocker l(&_imp->_valueMutex);
-        _imp->_values[dimension] = v;
-
+        {
+            QMutexLocker l(&_imp->_valueMutex);
+            _imp->_values[dimension] = v;
+        }
+        
         ///Add automatically a new keyframe
         if(getAnimationLevel(dimension) != Natron::NO_ANIMATION && //< if the knob is animated
            _imp->_holder->getApp() && //< the app pointer is not NULL
