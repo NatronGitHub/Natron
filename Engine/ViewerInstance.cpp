@@ -633,7 +633,9 @@ void ViewerInstance::onViewerCacheFrameAdded(){
 
 void ViewerInstance::setDisplayChannels(DisplayChannels channels) {
     _channels = channels;
-    refreshAndContinueRender(false,false);
+    if (!getApp()->getProject()->isLoadingProject()) {
+        refreshAndContinueRender(false,false);
+    }
 }
 
 void ViewerInstance::disconnectViewer()

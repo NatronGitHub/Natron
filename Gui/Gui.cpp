@@ -1069,14 +1069,17 @@ void Gui::unregisterTab(QWidget* tab) {
 void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData){
     assert(tab);
     tab->hide();
-//    std::list<ViewerTab*>::iterator it = std::find(_imp->_viewerTabs.begin(), _imp->_viewerTabs.end(), tab);
-//    if (it != _imp->_viewerTabs.end()) {
-//        _imp->_viewerTabs.erase(it);
-//    }
     
     unregisterTab(tab);
     
     if(deleteData){
+        
+        std::list<ViewerTab*>::iterator it = std::find(_imp->_viewerTabs.begin(), _imp->_viewerTabs.end(), tab);
+        if (it != _imp->_viewerTabs.end()) {
+            _imp->_viewerTabs.erase(it);
+        }
+
+        
         if (!initiatedFromNode) {
             assert(_imp->_nodeGraphArea);
             tab->getInternalNode()->getNode()->deactivate();
@@ -1087,6 +1090,7 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
                 container->removeTab(tab);
             delete tab;
         }
+
     } else {
         TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
         if(container)
