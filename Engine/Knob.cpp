@@ -640,7 +640,7 @@ void Knob::appendHashVectorToHash(Hash64* hash) const {
 
 bool Knob::hasAnimation() const {
     for (int i = 0; i < getDimension(); ++i) {
-        if (isAnimated(i)) {
+        if (getKeyFramesCount(i) > 0) {
             return true;
         }
     }

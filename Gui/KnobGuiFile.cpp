@@ -19,6 +19,7 @@
 #include "Engine/KnobFile.h"
 #include "Engine/SequenceParsing.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/Project.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Button.h"
@@ -26,6 +27,8 @@
 #include "Gui/LineEdit.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/Gui.h"
+#include "Gui/GuiAppInstance.h"
+
 
 using namespace Natron;
 
@@ -112,11 +115,13 @@ private:
     virtual void undo() OVERRIDE FINAL {
         boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(_knob->getKnob());
         fk->setFilesNoEmit(_oldFiles);
+        fk->getHolder()->getApp()->getProject()->triggerAutoSave();
     }
     
     virtual void redo() OVERRIDE FINAL {
         boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(_knob->getKnob());
         fk->setFilesNoEmit(_newFiles);
+        fk->getHolder()->getApp()->getProject()->triggerAutoSave();
     }
     
 };

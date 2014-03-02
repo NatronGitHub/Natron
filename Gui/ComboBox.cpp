@@ -73,6 +73,7 @@ void ComboBox::paintEvent(QPaintEvent *e)
 //    QPainter p(this);
 //    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
     QFrame::paintEvent(e);
+
 }
 
 void ComboBox::mousePressEvent(QMouseEvent* e){
