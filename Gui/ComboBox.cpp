@@ -45,7 +45,7 @@ ComboBox::ComboBox(QWidget* parent)
     setFrameShape(QFrame::Box);
     
     _currentText = new QLabel(this);
-    _currentText->setObjectName("ComboBoxLabel");
+    _currentText->setObjectName("ComboBoxLabel"); 
     setCurrentIndex(-1);
     _currentText->setMinimumWidth(10);
     _mainLayout->addWidget(_currentText);

@@ -203,11 +203,11 @@ ComboBox[pressed="true"][animation="2"]{
     background-color: %7;
     border-radius : 5px;
 }
-ComboBox[pressed="false"][readOnly="true"]{
+ComboBox[readOnly="true"][pressed="false"]{
     background-color: %3;
     color: %8;
 }
-ComboBox[pressed="true"][readOnly="true"]{
+ComboBox[readOnly="true"][pressed="true"]{
     background-color: %4;
     color: %8;
 }
