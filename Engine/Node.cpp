@@ -145,7 +145,7 @@ struct Node::Implementation {
                                        //only 1 clone can render at any time
     
     QMutex perFrameMutexesLock; //< protects renderInstancesFullySafePerFrameMutexes
-    std::map<int,QMutex*> renderInstancesFullySafePerFrameMutexes; //< see FULLY_SAFE in EffectInstance::renderRoI
+    std::map<int,QMutex> renderInstancesFullySafePerFrameMutexes; //< see FULLY_SAFE in EffectInstance::renderRoI
                                                                    //only 1 render per frame
 };
 
@@ -1060,36 +1060,18 @@ void Node::waitForRenderTreesToBeDone() {
     }
 }
 
-void Node::lockRenderInstancesSharedMutex() {
-    _imp->renderInstancesSharedMutex.lock();
+QMutex& Node::getRenderInstancesSharedMutex()
+{
+    return _imp->renderInstancesSharedMutex;
 }
 
-void Node::unlockRenderInstancesSharedMutex() {
-    assert(!_imp->renderInstancesSharedMutex.tryLock());
-    _imp->renderInstancesSharedMutex.unlock();
-}
-
-void Node::lockMutexForFrame(int time) {
-    QMutex* lock = 0;
-    {
-        QMutexLocker l(&_imp->perFrameMutexesLock);
-        std::map<int, QMutex*>::iterator found = _imp->renderInstancesFullySafePerFrameMutexes.find(time);
-        if (found != _imp->renderInstancesFullySafePerFrameMutexes.end()) {
-            lock = found->second;
-        } else {
-            lock = new QMutex;
-            _imp->renderInstancesFullySafePerFrameMutexes.insert(std::make_pair(time, lock));
-        }
-    }
-    lock->lock();
-}
-
-void Node::unlockMutexForFrame(int time) {
+QMutex& Node::getFrameMutex(int time) {
     QMutexLocker l(&_imp->perFrameMutexesLock);
-    std::map<int, QMutex*>::iterator found = _imp->renderInstancesFullySafePerFrameMutexes.find(time);
-    assert(found != _imp->renderInstancesFullySafePerFrameMutexes.end());
-    assert(!found->second->tryLock());
-    found->second->unlock();
+    // operator [] returns the element if it exists,
+    // and creates the element if it does not exist,
+    // just what we want!
+    // see http://www.cplusplus.com/reference/map/map/operator%5B%5D/
+    return _imp->renderInstancesFullySafePerFrameMutexes[time];
 }
 
 void Node::refreshPreviewsRecursively() {

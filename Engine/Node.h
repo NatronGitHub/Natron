@@ -398,17 +398,10 @@ public:
 
     //see INSTANCE_SAFE in EffectInstance::renderRoI
     //only 1 clone can render at any time
-    void lockRenderInstancesSharedMutex();
-    
-    //see INSTANCE_SAFE in EffectInstance::renderRoI
-    //only 1 clone can render at any time
-    void unlockRenderInstancesSharedMutex();
+    QMutex& getRenderInstancesSharedMutex();
     
     ///see FULLY_SAFE in EffectInstance::renderRoI
-    void lockMutexForFrame(int time);
-    
-    ///see FULLY_SAFE in EffectInstance::renderRoI
-    void unlockMutexForFrame(int time);
+    QMutex& getFrameMutex(int time);
     
     void refreshPreviewsRecursively();
     

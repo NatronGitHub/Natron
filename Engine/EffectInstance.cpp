@@ -464,66 +464,56 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                 // and read-write on it.
                 // It is probably safer to assume that several clones may write to the same output image only in the FULLY_SAFE case.
                 
-                getNode()->lockRenderInstancesSharedMutex();
+                QMutexLocker l(&getNode()->getRenderInstancesSharedMutex());
                 
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
                 rectToRender = image->getMinimalRect(rectToRender);
                 if (!rectToRender.isNull()) {
                     Natron::Status st = render(time, scale, rectToRender,view, image);
-                    if(st != Natron::StatOK){
-                        getNode()->unlockRenderInstancesSharedMutex();
+                    if (st != Natron::StatOK) {
                         throw std::runtime_error("rendering failed");
                     }
-                    if(!aborted()){
+                    if (!aborted()) {
                         image->markForRendered(rectToRender);
                     }
                 }
-                getNode()->unlockRenderInstancesSharedMutex();
             } break;
             case FULLY_SAFE:    // indicating that any instance of a plugin can have multiple renders running simultaneously
             {
                 ///FULLY_SAFE means that there is only one render per FRAME for a given instance take a per-frame lock here (the map of per-frame
                 ///locks belongs to an instance)
                 
-                getNode()->lockMutexForFrame(time);
+                QMutexLocker l(&getNode()->getFrameMutex(time));
                 
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
                 rectToRender = image->getMinimalRect(rectToRender);
                 if (!rectToRender.isNull()) {
                     Natron::Status st = render(time, scale, rectToRender,view, image);
-                    if(st != Natron::StatOK){
-                        
-                        getNode()->unlockMutexForFrame(time);
-                        
+                    if (st != Natron::StatOK) {
                         throw std::runtime_error("rendering failed");
                     }
-                    if(!aborted()){
+                    if (!aborted()) {
                         image->markForRendered(rectToRender);
                     }
                 }
-                getNode()->unlockMutexForFrame(time);
             } break;
 
 
             case UNSAFE: // indicating that only a single 'render' call can be made at any time amoung all instances
             default:
             {
-                QMutex* pluginLock = appPTR->getMutexForPlugin(pluginID().c_str());
-                assert(pluginLock);
-                pluginLock->lock();
+                QMutexLocker lock(appPTR->getMutexForPlugin(pluginID().c_str()));
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
                 rectToRender = image->getMinimalRect(rectToRender);
                 if (!rectToRender.isNull()) {
                     Natron::Status st = render(time, scale, rectToRender,view, image);
                     if(st != Natron::StatOK){
-                        pluginLock->unlock();
                         throw std::runtime_error("rendering failed");
                     }
                     if(!aborted()){
                         image->markForRendered(rectToRender);
                     }
                 }
-                pluginLock->unlock();
             } break;
         }
 
