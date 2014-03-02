@@ -212,56 +212,55 @@ void KnobGui::showRightClickMenuForDimension(const QPoint&,int dimension) {
         resetDefaultAction->setEnabled(false);
     }
     
-    if (getKnob()->isPersistent()) {
-        if(!isSlave && enabled) {
-            QAction* linkToAction = new QAction(tr("Link to"),_copyRightClickMenu);
-            linkToAction->setData(QVariant(dimension));
-            QObject::connect(linkToAction,SIGNAL(triggered()),this,SLOT(onLinkToActionTriggered()));
-            _copyRightClickMenu->addAction(linkToAction);
-        } else if(isSlave) {
-            QAction* unlinkAction = new QAction(tr("Unlink"),_copyRightClickMenu);
-            unlinkAction->setData(QVariant(dimension));
-            QObject::connect(unlinkAction,SIGNAL(triggered()),this,SLOT(onUnlinkActionTriggered()));
-            _copyRightClickMenu->addAction(unlinkAction);
-            
-            
-            ///a stub action just to indicate what is the master knob.
-            QAction* masterNameAction = new QAction("",_copyRightClickMenu);
-            std::pair<int,boost::shared_ptr<Knob> > master = getKnob()->getMaster(dimension);
-            assert(master.second);
-            
-            ///find-out to which node that master knob belongs to
-            std::string nodeName("Linked to: ");
-            
-            assert(getKnob()->getHolder()->getApp());
-            const std::vector<Natron::Node*> allNodes = getKnob()->getHolder()->getApp()->getProject()->getCurrentNodes();
-            for (U32 i = 0; i < allNodes.size(); ++i) {
-                const std::vector< boost::shared_ptr<Knob> >& knobs = allNodes[i]->getKnobs();
-                bool shouldStop = false;
-                for (U32 j = 0; j < knobs.size(); ++j) {
-                    if (knobs[j].get() == master.second.get()) {
-                        nodeName.append(allNodes[i]->getName());
-                        shouldStop = true;
-                        break;
-                    }
-                }
-                if (shouldStop) {
+    if(!isSlave && enabled) {
+        QAction* linkToAction = new QAction(tr("Link to"),_copyRightClickMenu);
+        linkToAction->setData(QVariant(dimension));
+        QObject::connect(linkToAction,SIGNAL(triggered()),this,SLOT(onLinkToActionTriggered()));
+        _copyRightClickMenu->addAction(linkToAction);
+    } else if(isSlave) {
+        QAction* unlinkAction = new QAction(tr("Unlink"),_copyRightClickMenu);
+        unlinkAction->setData(QVariant(dimension));
+        QObject::connect(unlinkAction,SIGNAL(triggered()),this,SLOT(onUnlinkActionTriggered()));
+        _copyRightClickMenu->addAction(unlinkAction);
+        
+        
+        ///a stub action just to indicate what is the master knob.
+        QAction* masterNameAction = new QAction("",_copyRightClickMenu);
+        std::pair<int,boost::shared_ptr<Knob> > master = getKnob()->getMaster(dimension);
+        assert(master.second);
+        
+        ///find-out to which node that master knob belongs to
+        std::string nodeName("Linked to: ");
+        
+        assert(getKnob()->getHolder()->getApp());
+        const std::vector<Natron::Node*> allNodes = getKnob()->getHolder()->getApp()->getProject()->getCurrentNodes();
+        for (U32 i = 0; i < allNodes.size(); ++i) {
+            const std::vector< boost::shared_ptr<Knob> >& knobs = allNodes[i]->getKnobs();
+            bool shouldStop = false;
+            for (U32 j = 0; j < knobs.size(); ++j) {
+                if (knobs[j].get() == master.second.get()) {
+                    nodeName.append(allNodes[i]->getName());
+                    shouldStop = true;
                     break;
                 }
             }
-            nodeName.append(".");
-            nodeName.append(master.second->getDescription());
-            if (master.second->getDimension() > 1) {
-                nodeName.append(".");
-                nodeName.append(master.second->getDimensionName(master.first));
+            if (shouldStop) {
+                break;
             }
-            masterNameAction->setText(nodeName.c_str());
-            masterNameAction->setEnabled(false);
-            _copyRightClickMenu->addAction(masterNameAction);
-            
         }
-
+        nodeName.append(".");
+        nodeName.append(master.second->getDescription());
+        if (master.second->getDimension() > 1) {
+            nodeName.append(".");
+            nodeName.append(master.second->getDimensionName(master.first));
+        }
+        masterNameAction->setText(nodeName.c_str());
+        masterNameAction->setEnabled(false);
+        _copyRightClickMenu->addAction(masterNameAction);
+        
     }
+    
+    
     
     _copyRightClickMenu->exec(QCursor::pos());
 
