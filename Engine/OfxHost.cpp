@@ -598,7 +598,6 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
         return kOfxStatFailed;
     }
 #if !defined(MRKEPZIE)
-    assert(!gThreadIndex.hasLocalData() || gThreadIndex.localData() > 0);
     // check that this thread does not already have an ID
     if (gThreadIndex.hasLocalData()) {
         return kOfxStatErrExists;
@@ -693,7 +692,6 @@ OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
     *threadIndex = 0;
     return kOfxStatOK;
 #else
-    assert(!gThreadIndex.hasLocalData() || gThreadIndex.localData() > 0);
     *threadIndex = gThreadIndex.hasLocalData() ? gThreadIndex.localData() : 0;
 
     return kOfxStatOK;
@@ -713,7 +711,6 @@ int Natron::OfxHost::multiThreadIsSpawnedThread() const
     }
     return false;
 #else
-    assert(!gThreadIndex.hasLocalData() || gThreadIndex.localData() > 0);
     return gThreadIndex.hasLocalData();
 #endif
 }
