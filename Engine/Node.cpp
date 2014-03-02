@@ -145,7 +145,7 @@ struct Node::Implementation {
                                        //only 1 clone can render at any time
     
     QMutex perFrameMutexesLock; //< protects renderInstancesFullySafePerFrameMutexes
-    std::map<int,QMutex> renderInstancesFullySafePerFrameMutexes; //< see FULLY_SAFE in EffectInstance::renderRoI
+    std::map<int,boost::shared_ptr<QMutex> > renderInstancesFullySafePerFrameMutexes; //< see FULLY_SAFE in EffectInstance::renderRoI
                                                                    //only 1 render per frame
 };
 
@@ -1065,13 +1065,18 @@ QMutex& Node::getRenderInstancesSharedMutex()
     return _imp->renderInstancesSharedMutex;
 }
 
-QMutex& Node::getFrameMutex(int time) {
+QMutex& Node::getFrameMutex(int time)
+{
     QMutexLocker l(&_imp->perFrameMutexesLock);
-    // operator [] returns the element if it exists,
-    // and creates the element if it does not exist,
-    // just what we want!
-    // see http://www.cplusplus.com/reference/map/map/operator%5B%5D/
-    return _imp->renderInstancesFullySafePerFrameMutexes[time];
+    std::map<int,boost::shared_ptr<QMutex> >::const_iterator it = _imp->renderInstancesFullySafePerFrameMutexes.find(time);
+    if (it != _imp->renderInstancesFullySafePerFrameMutexes.end()) {
+        // found the mutex, return it
+        return *(it->second);
+    }
+    // create new map entry containing the mutex for this frame
+    shared_ptr<QMutex> m(new QMutex);
+    _imp->renderInstancesFullySafePerFrameMutexes.insert(std::make_pair(time,m));
+    return *m;
 }
 
 void Node::refreshPreviewsRecursively() {
