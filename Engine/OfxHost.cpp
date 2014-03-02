@@ -525,14 +525,10 @@ struct Thread_Group {
 static Thread_Group tg = Thread_Group();
 
 
-void OfxWrappedFunctor(OfxThreadFunctionV1 func,int i,unsigned int nThreads,void* customArgs)
+void OfxWrappedFunctor(OfxThreadFunctionV1 func, int i, unsigned int nThreads, void* customArgs)
 {
-#if !defined MRKEPZIE
-    assert(!gThreadIndex.hasLocalData());
-    gThreadIndex.localData() = i;
-#endif
+    assert(i > 0);
     func(i,nThreads,customArgs);
-#ifdef MRKEPZIE
     boost::mutex::scoped_lock lock(tg.lock);
     
     ///remove this thread from the thread group
@@ -550,9 +546,9 @@ void OfxWrappedFunctor(OfxThreadFunctionV1 func,int i,unsigned int nThreads,void
     tg.threads.erase(found);
     
     tg.cond.notify_all();
-#endif
 }
-#else
+
+#else // !MRKEPZIE
 
 static QThreadStorage<unsigned int> gThreadIndex;
 
@@ -572,6 +568,7 @@ public:
 
     void run() OVERRIDE {
         assert(!gThreadIndex.hasLocalData());
+        assert(_threadIndex > 0);
         gThreadIndex.localData() = _threadIndex;
         _func(_threadIndex, _threadMax, _customArg);
     }
@@ -584,7 +581,7 @@ private:
 };
 }
 
-#endif // MRKEPZIE
+#endif // !MRKEPZIE
 
 
 // Function to spawn SMP threads
@@ -592,6 +589,7 @@ private:
 // multiThread will not return until all the spawned threads have returned. It is up to the host how it waits for all the threads to return (busy wait, blocking, whatever).
 // nThreads can be more than the value returned by multiThreadNumCPUs, however the threads will be limitted to the number of CPUs returned by multiThreadNumCPUs.
 // This function cannot be called recursively.
+// Note that the thread indexes start from 1, since 0 means that it's not a spawned thread.
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThread
 
 OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nThreads, void *customArg)
@@ -600,6 +598,7 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
         return kOfxStatFailed;
     }
 #if !defined(MRKEPZIE)
+    assert(!gThreadIndex.hasLocalData() || gThreadIndex.localData() > 0);
     // check that this thread does not already have an ID
     if (gThreadIndex.hasLocalData()) {
         return kOfxStatErrExists;
@@ -625,7 +624,7 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
         
         boost::thread* t = new boost::thread(func,i,nThreads,customArg);
         ///register the thread
-        tg.threads.insert(std::make_pair(i,t));
+        tg.threads.insert(std::make_pair(i+1,t));
         
     }
     
@@ -644,10 +643,10 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
 #else // !MRKEPZIE
     QVector<OfxThread*> threads(nThreads);
     for (unsigned int i = 0; i < nThreads; ++i) {
-        threads[i] = new OfxThread(func, i, nThreads,customArg);
+        threads[i] = new OfxThread(func, i+1, nThreads,customArg);
         threads[i]->start();
     }
-   for (unsigned int i = 0; i < nThreads; ++i) {
+    for (unsigned int i = 0; i < nThreads; ++i) {
         threads[i]->wait();
     }
 #endif
@@ -675,6 +674,7 @@ OfxStatus Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
 //  This function returns the thread index, which is the same as the threadIndex argument passed to the OfxThreadFunctionV1.
 // If there are no threads currently spawned, then this function will set threadIndex to 0
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThreadIndex
+// Note that the thread indexes start from 1, since 0 means that it's not a spawned thread.
 OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
 {
     if (!threadIndex)
@@ -692,6 +692,7 @@ OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
     *threadIndex = 0;
     return kOfxStatOK;
 #else
+    assert(!gThreadIndex.hasLocalData() || gThreadIndex.localData() > 0);
     *threadIndex = gThreadIndex.hasLocalData() ? gThreadIndex.localData() : 0;
 
     return kOfxStatOK;
@@ -711,6 +712,7 @@ int Natron::OfxHost::multiThreadIsSpawnedThread() const
     }
     return false;
 #else
+    assert(!gThreadIndex.hasLocalData() || gThreadIndex.localData() > 0);
     return gThreadIndex.hasLocalData();
 #endif
 }
