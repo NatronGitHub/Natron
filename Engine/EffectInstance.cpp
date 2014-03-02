@@ -515,14 +515,15 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                 rectToRender = image->getMinimalRect(rectToRender);
                 if (!rectToRender.isNull()) {
                     Natron::Status st = render(time, scale, rectToRender,view, image);
-                    pluginLock->unlock();
                     if(st != Natron::StatOK){
+                        pluginLock->unlock();
                         throw std::runtime_error("rendering failed");
                     }
                     if(!aborted()){
                         image->markForRendered(rectToRender);
                     }
                 }
+                pluginLock->unlock();
             } break;
         }
 
