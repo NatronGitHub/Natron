@@ -1092,6 +1092,17 @@ void Node::unlockMutexForFrame(int time) {
     found->second->unlock();
 }
 
+void Node::refreshPreviewsRecursively() {
+    if (isPreviewEnabled()) {
+        refreshPreviewImage(getApp()->getTimeLine()->currentFrame());
+    }
+    for (OutputMap::iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it) {
+        if (it->second) {
+            it->second->refreshPreviewsRecursively();
+        }
+    }
+}
+
 InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin,const std::string& name)
     : Node(app,plugin,name)
     , _inputsCount(1)

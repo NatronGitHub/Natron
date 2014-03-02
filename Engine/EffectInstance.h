@@ -536,6 +536,7 @@ private:
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.
      **/
     int getInputNumber(Natron::EffectInstance* inputEffect) const;
+    
 };
 
 /**

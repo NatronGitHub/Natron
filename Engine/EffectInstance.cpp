@@ -630,6 +630,8 @@ void EffectInstance::evaluate(Knob* knob,bool isSignificant){
         }
     }
     
+    getNode()->refreshPreviewsRecursively();
+    
 }
 
 

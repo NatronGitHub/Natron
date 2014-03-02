@@ -410,6 +410,8 @@ public:
     ///see FULLY_SAFE in EffectInstance::renderRoI
     void unlockMutexForFrame(int time);
     
+    void refreshPreviewsRecursively();
+    
 public slots:
     
     void onGUINameChanged(const QString& str);
