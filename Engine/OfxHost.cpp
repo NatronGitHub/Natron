@@ -568,7 +568,7 @@ public:
 
     void run() OVERRIDE {
         assert(!gThreadIndex.hasLocalData());
-        assert(_threadIndex > 0);
+        assert(_threadIndex < _threadMax);
         gThreadIndex.localData() = _threadIndex;
         _func(_threadIndex, _threadMax, _customArg);
     }
@@ -589,7 +589,7 @@ private:
 // multiThread will not return until all the spawned threads have returned. It is up to the host how it waits for all the threads to return (busy wait, blocking, whatever).
 // nThreads can be more than the value returned by multiThreadNumCPUs, however the threads will be limitted to the number of CPUs returned by multiThreadNumCPUs.
 // This function cannot be called recursively.
-// Note that the thread indexes start from 1, since 0 means that it's not a spawned thread.
+// Note that the thread indexes are from 0 to nThreads-1.
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThread
 
 OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nThreads, void *customArg)
@@ -624,7 +624,7 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
         
         boost::thread* t = new boost::thread(func,i,nThreads,customArg);
         ///register the thread
-        tg.threads.insert(std::make_pair(i+1,t));
+        tg.threads.insert(std::make_pair(i,t));
         
     }
     
@@ -643,7 +643,7 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
 #else // !MRKEPZIE
     QVector<OfxThread*> threads(nThreads);
     for (unsigned int i = 0; i < nThreads; ++i) {
-        threads[i] = new OfxThread(func, i+1, nThreads,customArg);
+        threads[i] = new OfxThread(func, i, nThreads,customArg);
         threads[i]->start();
     }
     for (unsigned int i = 0; i < nThreads; ++i) {
@@ -674,7 +674,8 @@ OfxStatus Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
 //  This function returns the thread index, which is the same as the threadIndex argument passed to the OfxThreadFunctionV1.
 // If there are no threads currently spawned, then this function will set threadIndex to 0
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThreadIndex
-// Note that the thread indexes start from 1, since 0 means that it's not a spawned thread.
+// Note that the thread indexes are from 0 to nThreads-1, so a return value of 0 does not mean that it's not a spawned thread
+// (use multiThreadIsSpawnedThread() to check if it's a spawned thread)
 OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
 {
     if (!threadIndex)
