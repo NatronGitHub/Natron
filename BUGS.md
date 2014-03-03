@@ -13,8 +13,6 @@ Here is a list of know bugs, ordered by priority from high to low:
 - setEvaluateOnChange() seems to have no effect when called from
   Instance::beginInstanceEditAction()
   
-- Natron never sets kOfxParamPropIsAnimating. It should be set by the host for every parameter which is animated, including "File_Knob" when it represents a sequence. -> this is done in OfxParamInstance, except for File_Knobs
-
 - black borders around the viewer when zooming out and multithreading is disabled
 
 - Check why TuttleOFX's generators (e.g. ColorBars) have this strange behaviour when changing the "channel" parameter
@@ -28,9 +26,6 @@ Here is a list of know bugs, ordered by priority from high to low:
   Refs:
   http://qt-project.org/doc/qt-4.8/qwidget.html#setTabOrder
   http://qt-project.org/doc/qt-4.8/focus.html
-
-- On Linux the property dock's scrollbar is broken and doesn't allow the user to span through
-the whole content of the widget.
 
 - On Ubuntu 13.10 with Qt5, Natron is non-functional (transparent widgets, extra windows...)
 
