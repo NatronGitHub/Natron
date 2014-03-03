@@ -633,8 +633,7 @@ void Node::activate()
         }
 
         ///and connect the output to this node
-        bool ok = it->first->connectInput(this, it->second.first);
-        assert(ok);
+        it->first->connectInput(this, it->second.first);
     }
     
     emit activated();

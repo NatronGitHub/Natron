@@ -118,7 +118,9 @@ public:
 private:
     Edge* _edge;
     NodeGui *_oldSrc,*_newSrc;
+    NodeGui *_dst;
     NodeGraph* _graph;
+    int _inputNb;
 };
 
 
@@ -983,6 +985,26 @@ void RemoveCommand::redo() {
     
     _node->getNode()->deactivate();
     
+    for (std::multimap<int,Natron::Node*>::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
+        if (it->second) {
+            InspectorNode* inspector = dynamic_cast<InspectorNode*>(it->second);
+            ///if the node is an inspector, when disconnecting the active input just activate another input instead
+            if (inspector) {
+                const Natron::Node::InputMap& inputs = inspector->getInputs();
+                int i = 0;
+                ///set as active input the first non null input
+                for (Natron::Node::InputMap::const_iterator it = inputs.begin(); it != inputs.end() ;++it) {
+                    if (it->second) {
+                        inspector->setActiveInputAndRefresh(i);
+                        break;
+                    }
+                    ++i;
+                }
+            }
+
+        }
+    }
+    
     _graph->scene()->update();
     setText(QObject::tr("Remove %1")
             .arg(_node->getNode()->getName().c_str()));
@@ -994,18 +1016,46 @@ ConnectCommand::ConnectCommand(NodeGraph* graph,Edge* edge,NodeGui *oldSrc,NodeG
     _edge(edge),
     _oldSrc(oldSrc),
     _newSrc(newSrc),
-    _graph(graph){
+    _dst(edge->getDest()),
+    _graph(graph),
+    _inputNb(edge->getInputNumber())
+{
     
 }
 
-void ConnectCommand::undo(){
-    _edge->setSource(_oldSrc);
+void ConnectCommand::undo() {
+    InspectorNode* inspector = dynamic_cast<InspectorNode*>(_dst->getNode());
+    
+    if (inspector) {
+        ///if the node is an inspector, the redo() action might have disconnect the dst and src nodes
+        ///hence the _edge ptr might have been invalidated, recreate it
+        NodeGui::InputEdgesMap::const_iterator it = _dst->getInputsArrows().find(_inputNb);
+        while (it == _dst->getInputsArrows().end()) {
+            inspector->addEmptyInput();
+            it = _dst->getInputsArrows().find(_inputNb);
+        }
+        _edge = it->second;
+    }
     
     if(_oldSrc){
         _graph->getGui()->getApp()->getProject()->connectNodes(_edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode());
     }
     if(_newSrc){
         _graph->getGui()->getApp()->getProject()->disconnectNodes(_newSrc->getNode(), _edge->getDest()->getNode());
+        
+        ///if the node is an inspector, when disconnecting the active input just activate another input instead
+        if (inspector) {
+            const Natron::Node::InputMap& inputs = inspector->getInputs();
+            int i = 0;
+            ///set as active input the first non null input
+            for (Natron::Node::InputMap::const_iterator it = inputs.begin(); it != inputs.end() ;++it) {
+                if (it->second) {
+                    inspector->setActiveInputAndRefresh(i);
+                    break;
+                }
+                ++i;
+            }
+        }
     }
     
     if(_oldSrc){
@@ -1024,16 +1074,15 @@ void ConnectCommand::undo(){
     }    
 }
 void ConnectCommand::redo() {
-    NodeGui* dst = _edge->getDest();
     
-    InspectorNode* inspector = dynamic_cast<InspectorNode*>(dst->getNode());
-    int edgeInputNumber = _edge->getInputNumber();
+    InspectorNode* inspector = dynamic_cast<InspectorNode*>(_dst->getNode());
+    _inputNb = _edge->getInputNumber();
     if (inspector) {
         ///if the node is an inspector we have to do things differently
         
         if (!_newSrc) {
             ///we want to connect to nothing, hence disconnect
-            inspector->disconnectInput(edgeInputNumber);
+            _graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode(),inspector);
         } else {
             ///disconnect any connection already existing with the _oldSrc
             if (_oldSrc) {
@@ -1044,42 +1093,38 @@ void ConnectCommand::redo() {
             
             
             ///after disconnect calls the _edge pointer might be invalid since the edges might have been destroyed.
-            NodeGui::InputEdgesMap::const_iterator it = dst->getInputsArrows().find(edgeInputNumber);
-            while (it == dst->getInputsArrows().end()) {
+            NodeGui::InputEdgesMap::const_iterator it = _dst->getInputsArrows().find(_inputNb);
+            while (it == _dst->getInputsArrows().end()) {
                 inspector->addEmptyInput();
-                it = dst->getInputsArrows().find(edgeInputNumber);
+                it = _dst->getInputsArrows().find(_inputNb);
             }
             _edge = it->second;
             
             ///and connect the inspector to the _newSrc
-            _graph->getGui()->getApp()->getProject()->connectNodes(edgeInputNumber, _newSrc->getNode(), inspector);
-//            if (inspector->connectInput(_newSrc->getNode(), _edge->getInputNumber(),false)) {
-//                _edge->setSource(_newSrc);
-//                _newSrc->getNode()->connectOutput(inspector);
-//                
-//            }
+            _graph->getGui()->getApp()->getProject()->connectNodes(_inputNb, _newSrc->getNode(), inspector);
+
         }
        
     } else {
         _edge->setSource(_newSrc);
-        if(_oldSrc){
-            if(!_graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode(), dst->getNode())){
+        if (_oldSrc) {
+            if(!_graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode(), _dst->getNode())){
                 cout << "Failed to disconnect (input) " << _oldSrc->getNode()->getName()
-                     << " to (output) " << dst->getNode()->getName() << endl;
+                     << " to (output) " << _dst->getNode()->getName() << endl;
             }
         }
-        if(_newSrc){
-            if(!_graph->getGui()->getApp()->getProject()->connectNodes(edgeInputNumber, _newSrc->getNode(), dst->getNode())){
+        if (_newSrc) {
+            if(!_graph->getGui()->getApp()->getProject()->connectNodes(_inputNb, _newSrc->getNode(), _dst->getNode())){
                 cout << "Failed to connect (input) " << _newSrc->getNode()->getName()
-                     << " to (output) " << dst->getNode()->getName() << endl;
+                     << " to (output) " << _dst->getNode()->getName() << endl;
 
             }
         }
         
     }
 
-    assert(dst);
-    dst->refreshEdges();
+    assert(_dst);
+    _dst->refreshEdges();
     
     if (_newSrc) {
         setText(QObject::tr("Connect %1 to %2")
