@@ -8,10 +8,14 @@
 *
 */
 
+#include <csignal>
+
 #include <QApplication>
 
 #include "Gui/GuiApplicationManager.h"
 
+void setShutDownSignal(int signalId);
+void handleShutDownSignal(int signalId);
 
 int main(int argc, char *argv[])
 {	
@@ -20,6 +24,9 @@ int main(int argc, char *argv[])
     QString projectName,mainProcessServerName;
     QStringList writers;
     AppManager::parseCmdLineArgs(argc,argv,&isBackground,projectName,writers,mainProcessServerName);
+    setShutDownSignal(SIGINT);   // shut down on ctrl-c
+    setShutDownSignal(SIGTERM);   // shut down on killall
+
     if (isBackground) {
         QCoreApplication app(argc,argv);
         AppManager* manager = new AppManager;
@@ -46,3 +53,20 @@ int main(int argc, char *argv[])
 
 }
 
+void setShutDownSignal( int signalId )
+{
+    struct sigaction sa;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_handler = handleShutDownSignal;
+    if (sigaction(signalId, &sa, NULL) == -1) {
+        perror("setting up termination signal");
+        exit(1);
+    }
+}
+
+
+void handleShutDownSignal( int /*signalId*/ )
+{
+    QCoreApplication::exit(0);
+}

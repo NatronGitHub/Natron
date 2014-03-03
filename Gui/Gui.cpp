@@ -347,7 +347,8 @@ Gui::~Gui()
     }
 }
 
-bool Gui::exit(){
+bool Gui::exitGui()
+{
     int ret = saveWarning();
     if (ret == 0) {
         if (!saveProject()) {
@@ -357,6 +358,12 @@ bool Gui::exit(){
         return false;
     }
     _imp->saveGuiGeometry();
+    return exit();
+}
+
+#pragma message WARN("same thing should be done in the non-Gui app, and should be connected to aboutToQuit() also")
+bool Gui::exit()
+{
     assert(_imp->_appInstance);
 	int appId = _imp->_appInstance->getAppID();
     bool rVal = false;
@@ -832,7 +839,7 @@ void Gui::setupUi()
     
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
     QObject::connect(_imp->actionClearNodeCache, SIGNAL(triggered()),_imp->_appInstance,SLOT(clearOpenFXPluginsCaches()));
-    QObject::connect(_imp->actionExit,SIGNAL(triggered()),this,SLOT(exit()));
+    QObject::connect(_imp->actionExit,SIGNAL(triggered()),this,SLOT(exitGui()));
     QObject::connect(_imp->actionProject_settings,SIGNAL(triggered()),this,SLOT(setVisibleProjectSettingsPanel()));
     
     QObject::connect(_imp->actionConnectInput1, SIGNAL(triggered()),this,SLOT(connectInput1()));

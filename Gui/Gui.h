@@ -246,8 +246,9 @@ signals:
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);
 
 public slots:
-    
-    bool exit();
+
+    bool exitGui(); //< exit, asking questions to the user
+    bool exit(); //< exit right away, without any user interaction
     void toggleFullScreen();
     void closeEvent(QCloseEvent *e);
     void newProject();
