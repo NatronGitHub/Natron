@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
 
 void setShutDownSignal( int signalId )
 {
+#ifdef __NATRON_UNIX__
     struct sigaction sa;
     sa.sa_flags = 0;
     sigemptyset(&sa.sa_mask);
@@ -64,6 +65,7 @@ void setShutDownSignal( int signalId )
         perror("setting up termination signal");
         exit(1);
     }
+#endif
 }
 
 
