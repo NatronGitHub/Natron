@@ -237,22 +237,6 @@ bool VideoEngine::startEngine(bool singleThreaded) {
         _working = true;
     }
 
-    /*beginRenderAction for all openFX nodes*/
-    for (RenderTree::TreeIterator it = _tree.begin(); it!=_tree.end(); ++it) {
-        OfxEffectInstance* n = dynamic_cast<OfxEffectInstance*>(it->second);
-        if(n) {
-            OfxPointD renderScale;
-            renderScale.x = renderScale.y = 1.0;
-            assert(n->effectInstance());
-            OfxStatus stat;
-            stat = n->effectInstance()->beginRenderAction(_timeline->leftBound(),_timeline->rightBound(), //frame range
-                                                          1, // frame step
-                                                          true, //is interactive
-                                                          renderScale); //scale
-            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-            
-        }
-    }
     
     if(!_currentRunArgs._sameFrame){
         emit engineStarted(_currentRunArgs._forward,_currentRunArgs._frameRequestsCount);
@@ -314,19 +298,6 @@ bool VideoEngine::stopEngine() {
 
     }
     
-    
-    /*endRenderAction for all openFX nodes*/
-    for (RenderTree::TreeIterator it = _tree.begin(); it!=_tree.end(); ++it) {
-        OfxEffectInstance* n = dynamic_cast<OfxEffectInstance*>(it->second);
-        if(n){
-            OfxPointD renderScale;
-            renderScale.x = renderScale.y = 1.0;
-            assert(n->effectInstance());
-            OfxStatus stat;
-            stat = n->effectInstance()->endRenderAction(_timeline->leftBound(),_timeline->rightBound(), 1, true, renderScale);
-            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-        }
-    }
     
     if(appPTR->isBackground()){
         dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput())->notifyRenderFinished();

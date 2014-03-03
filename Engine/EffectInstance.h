@@ -493,6 +493,12 @@ public:
     virtual void beginEditKnobs() {}
     
     virtual std::vector<std::string> supportedFileFormats() const { return std::vector<std::string>(); }
+    
+    virtual void beginSequenceRender(SequenceTime /*first*/,SequenceTime /*last*/,
+                                     SequenceTime /*step*/,bool /*interactive*/,RenderScale /*scale*/) {}
+    
+    virtual void endSequenceRender(SequenceTime /*first*/,SequenceTime /*last*/,
+                                   SequenceTime /*step*/,bool /*interactive*/,RenderScale /*scale*/) {}
 protected:
     
     /**

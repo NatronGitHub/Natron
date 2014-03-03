@@ -182,6 +182,12 @@ public:
     virtual void onMultipleInputsChanged() OVERRIDE FINAL;
     
     virtual std::vector<std::string> supportedFileFormats() const OVERRIDE FINAL;
+    
+    virtual void beginSequenceRender(SequenceTime first,SequenceTime last,
+                                     SequenceTime step,bool interactive,RenderScale scale) OVERRIDE FINAL;
+    
+    virtual void endSequenceRender(SequenceTime first,SequenceTime last,
+                                     SequenceTime step,bool interactive,RenderScale scale) OVERRIDE FINAL;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
     

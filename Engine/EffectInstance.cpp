@@ -46,6 +46,8 @@ struct EffectInstance::Implementation {
     , renderArgs()
     , previewEnabled(false)
     , markedByTopologicalSort(false)
+    , beginEndRenderMutex()
+    , beginEndRenderCount(0)
     {
     }
 
@@ -58,6 +60,8 @@ struct EffectInstance::Implementation {
     QThreadStorage<RenderArgs> renderArgs;
     bool previewEnabled;
     bool markedByTopologicalSort;
+    QMutex beginEndRenderMutex;
+    int beginEndRenderCount;
 };
 
 struct EffectInstance::RenderArgs {
@@ -426,7 +430,19 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         
         ///notify the node we're starting a render
         _node->notifyRenderingStarted();
-
+        
+        bool callBegin = false;
+        {
+            QMutexLocker locker(&_imp->beginEndRenderMutex);
+            if (_imp->beginEndRenderCount == 0) {
+                callBegin = true;
+            }
+            ++_imp->beginEndRenderCount;
+        }
+        if (callBegin) {
+            beginSequenceRender(time, time, 1, false, scale);
+        }
+        
         /*depending on the thread-safety of the plug-in we render with a different
          amount of threads*/
         EffectInstance::RenderSafety safety = renderThreadSafety();
@@ -450,6 +466,20 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                 QFuture<Natron::Status> ret = QtConcurrent::mapped(splitRects,
                                                                    boost::bind(&EffectInstance::tiledRenderingFunctor,this,args,_1,image));
                 ret.waitForFinished();
+                
+                bool callEndRender = false;
+                {
+                    QMutexLocker locker(&_imp->beginEndRenderMutex);
+                    --_imp->beginEndRenderCount;
+                    assert(_imp->beginEndRenderCount >= 0);
+                    if (_imp->beginEndRenderCount == 0) {
+                        callEndRender = true;
+                    }
+                }
+                if (callEndRender) {
+                    endSequenceRender(time, time, time, false, scale);
+                }
+            
                 for (QFuture<Natron::Status>::const_iterator it2 = ret.begin(); it2!=ret.end(); ++it2) {
                     if ((*it2) == Natron::StatFailed) {
                         throw std::runtime_error("rendering failed");
@@ -470,6 +500,20 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                 rectToRender = image->getMinimalRect(rectToRender);
                 if (!rectToRender.isNull()) {
                     Natron::Status st = render(time, scale, rectToRender,view, image);
+                    
+                    bool callEndRender = false;
+                    {
+                        QMutexLocker locker(&_imp->beginEndRenderMutex);
+                        --_imp->beginEndRenderCount;
+                        assert(_imp->beginEndRenderCount >= 0);
+                        if (_imp->beginEndRenderCount == 0) {
+                            callEndRender = true;
+                        }
+                    }
+                    if (callEndRender) {
+                        endSequenceRender(time, time, time, false, scale);
+                    }
+                    
                     if (st != Natron::StatOK) {
                         throw std::runtime_error("rendering failed");
                     }
@@ -489,6 +533,20 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                 rectToRender = image->getMinimalRect(rectToRender);
                 if (!rectToRender.isNull()) {
                     Natron::Status st = render(time, scale, rectToRender,view, image);
+                    
+                    bool callEndRender = false;
+                    {
+                        QMutexLocker locker(&_imp->beginEndRenderMutex);
+                        --_imp->beginEndRenderCount;
+                        assert(_imp->beginEndRenderCount >= 0);
+                        if (_imp->beginEndRenderCount == 0) {
+                            callEndRender = true;
+                        }
+                    }
+                    if (callEndRender) {
+                        endSequenceRender(time, time, time, false, scale);
+                    }
+                    
                     if (st != Natron::StatOK) {
                         throw std::runtime_error("rendering failed");
                     }
@@ -507,6 +565,20 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                 rectToRender = image->getMinimalRect(rectToRender);
                 if (!rectToRender.isNull()) {
                     Natron::Status st = render(time, scale, rectToRender,view, image);
+                    
+                    bool callEndRender = false;
+                    {
+                        QMutexLocker locker(&_imp->beginEndRenderMutex);
+                        --_imp->beginEndRenderCount;
+                        assert(_imp->beginEndRenderCount >= 0);
+                        if (_imp->beginEndRenderCount == 0) {
+                            callEndRender = true;
+                        }
+                    }
+                    if (callEndRender) {
+                        endSequenceRender(time, time, time, false, scale);
+                    }
+                    
                     if(st != Natron::StatOK){
                         throw std::runtime_error("rendering failed");
                     }

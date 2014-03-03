@@ -948,3 +948,17 @@ bool OfxEffectInstance::supportsTiles() const {
 void OfxEffectInstance::beginEditKnobs() {
     effectInstance()->beginInstanceEditAction();
 }
+
+void OfxEffectInstance::beginSequenceRender(SequenceTime first,SequenceTime last,
+                         SequenceTime step,bool interactive,RenderScale scale) {
+    OfxStatus stat = effectInstance()->beginRenderAction(first, last, step, interactive, scale);
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+
+}
+
+void OfxEffectInstance::endSequenceRender(SequenceTime first,SequenceTime last,
+                               SequenceTime step,bool interactive,RenderScale scale) {
+    OfxStatus stat = effectInstance()->endRenderAction(first, last, step, interactive, scale);
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+
+}
