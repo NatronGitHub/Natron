@@ -392,7 +392,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         
         assert(inputsRoi.size() == framesNeeeded.size());
         
-        std::list<boost::shared_ptr<const Natron::Image> > inputImages;
+        std::list< boost::shared_ptr<Natron::Image> > inputImages;
         
         /*we render each input first and store away their image in the inputImages list
          in order to maintain a shared_ptr use_count > 1 so the cache doesn't attempt

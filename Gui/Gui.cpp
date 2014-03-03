@@ -741,7 +741,7 @@ void Gui::setupUi()
     _imp->_layoutPropertiesBin=new QVBoxLayout(_imp->_propertiesContainer);
     _imp->_layoutPropertiesBin->setSpacing(0);
     _imp->_layoutPropertiesBin->setContentsMargins(0, 0, 0, 0);
-    _imp->_propertiesContainer->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
+    _imp->_propertiesContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
     _imp->_propertiesContainer->setLayout(_imp->_layoutPropertiesBin);
     _imp->_propertiesScrollArea->setWidget(_imp->_propertiesContainer);
     _imp->_propertiesScrollArea->setWidgetResizable(true);
