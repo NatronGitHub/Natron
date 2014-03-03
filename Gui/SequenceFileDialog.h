@@ -170,10 +170,7 @@ public:
     
     void updateNameMapping(const std::vector<std::pair<QString,std::pair<qint64,QString> > >& nameMapping);
 
-    inline void expandColumnsToFullWidth(){
-        int size = width() - columnWidth(1) - columnWidth(2) - columnWidth(3);
-        setColumnWidth(0,size);
-    }
+    void expandColumnsToFullWidth(int w);
     
     void dropEvent(QDropEvent* event);
     
@@ -182,7 +179,8 @@ public:
     void dragMoveEvent(QDragMoveEvent* e);
     
     void dragLeaveEvent(QDragLeaveEvent* e);
-
+    
+    void resizeEvent(QResizeEvent* e);
 };
 
 

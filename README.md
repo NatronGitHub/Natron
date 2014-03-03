@@ -101,6 +101,12 @@ The main development branch is called
 ["workshop"](https://github.com/MrKepzie/Natron/tree/workshop).
 The master branch contains the last known stable version.
 
+Additionally each stable release supported has a branch on its own.
+For example the stable release of the v1.0. and all its bug fixes should go into that 
+branch.
+At some point,  version which are no longer supported will get removed from github's branches
+and only a release tag will be available to get the source code at that point.
+
 You can check out the easy tasks left to do [here](https://natron.inria.fr/easy-task-list/).
 
 Feel free to report bugs, discuss tasks, or pick up work there. If you want to make

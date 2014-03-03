@@ -901,9 +901,24 @@ void SequenceDialogView::dragLeaveEvent(QDragLeaveEvent* e){
     e->accept();
 }
 
+void SequenceDialogView::resizeEvent(QResizeEvent* e) {
+    expandColumnsToFullWidth(e->size().width());
+    repaint();
+    QTreeView::resizeEvent(e);
+}
+
+void SequenceDialogView::expandColumnsToFullWidth(int w ) {
+    setColumnWidth(0,w * 0.65);
+    setColumnWidth(1,w * 0.1);
+    setColumnWidth(2, w * 0.1);
+    setColumnWidth(3, w * 0.15);
+}
+
 void SequenceDialogView::updateNameMapping(const std::vector<std::pair<QString, std::pair<qint64, QString> > >& nameMapping){
     dynamic_cast<SequenceItemDelegate*>(itemDelegate())->setNameMapping(nameMapping);
-    expandColumnsToFullWidth();
+//    if (!nameMapping.empty()) {
+//        expandColumnsToFullWidth();
+//    }
 
 }
 
@@ -1285,8 +1300,6 @@ void SequenceFileDialog::keyPressEvent(QKeyEvent *e){
 }
 void SequenceFileDialog::resizeEvent(QResizeEvent* e){
     QDialog::resizeEvent(e);
-    _view->expandColumnsToFullWidth();
-    _view->repaint();
 }
 
 #ifdef Q_OS_UNIX

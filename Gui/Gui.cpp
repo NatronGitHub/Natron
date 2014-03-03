@@ -232,6 +232,9 @@ struct GuiPrivate {
     ///The "About" window.
     AboutWindow* _aboutWindow;
     
+    ///true when the destructor has been called
+    bool _isClosing;
+    
     GuiPrivate(GuiAppInstance* app,Gui* gui)
     : _gui(gui)
     , _isUserScrubbingTimeline(false)
@@ -304,6 +307,7 @@ struct GuiPrivate {
     , _projectGui(0)
     , _currentlyDraggedPanel(0)
     , _aboutWindow(0)
+    , _isClosing(false)
     {
         
     }
@@ -339,6 +343,7 @@ Gui::Gui(GuiAppInstance* app,QWidget* parent)
 
 Gui::~Gui()
 {
+    _imp->_isClosing = true;
     delete _imp->_projectGui;
     delete _imp->_undoStacksGroup;
     _imp->_viewerTabs.clear();
@@ -1995,4 +2000,8 @@ void Gui::onWriterRenderStarted(const QString& sequenceName,int firstFrame,int l
     QObject::connect(ve,SIGNAL(progressChanged(int)),dialog,SLOT(onCurrentFrameProgress(int)));
     QObject::connect(ve,SIGNAL(engineStopped()),dialog,SLOT(onProcessCanceled()));
     dialog->show();
+}
+
+bool Gui::isClosing() const {
+    return _imp->_isClosing;
 }

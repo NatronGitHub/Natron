@@ -827,6 +827,11 @@ void ViewerTab::showView(int /*view*/){
 
 
 void ViewerTab::drawOverlays() const{
+    if (_imp->_gui->isClosing()) {
+        return;
+    }
+
+    
     std::vector<Natron::Node*> nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -838,6 +843,11 @@ void ViewerTab::drawOverlays() const{
 }
 
 bool ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos){
+    
+    if (_imp->_gui->isClosing()) {
+        return false;
+    }
+    
     bool ret = false;
     std::vector<Natron::Node*> nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
@@ -852,6 +862,10 @@ bool ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& 
 }
 
 bool ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos){
+    
+    if (_imp->_gui->isClosing()) {
+        return false;
+    }
     bool ret = false;
     std::vector<Natron::Node*> nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
@@ -865,6 +879,11 @@ bool ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF
 }
 
 bool ViewerTab::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos){
+    
+    if (_imp->_gui->isClosing()) {
+        return false;
+    }
+    
     bool ret = false;
     std::vector<Natron::Node*> nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
@@ -878,6 +897,11 @@ bool ViewerTab::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& po
 }
 
 bool ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
+    
+    if (_imp->_gui->isClosing()) {
+        return false;
+    }
+    
     bool ret = false;
     std::vector<Natron::Node*> nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
@@ -891,6 +915,11 @@ bool ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
 }
 
 bool ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
+    
+    if (_imp->_gui->isClosing()) {
+        return false;
+    }
+    
     bool ret = false;
     std::vector<Natron::Node*> nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
@@ -905,6 +934,10 @@ bool ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
 }
 
 bool ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
+    
+    if (_imp->_gui->isClosing()) {
+        return false;
+    }
     bool ret = false;
     std::vector<Natron::Node*> nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
@@ -919,6 +952,10 @@ bool ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
 }
 
 bool ViewerTab::notifyOverlaysFocusGained(){
+    
+    if (_imp->_gui->isClosing()) {
+        return false;
+    }
     bool ret = false;
     std::vector<Natron::Node*> nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
@@ -934,6 +971,10 @@ bool ViewerTab::notifyOverlaysFocusGained(){
 }
 
 bool ViewerTab::notifyOverlaysFocusLost(){
+    
+    if (_imp->_gui->isClosing()) {
+        return false;
+    }
     bool ret = false;
     std::vector<Natron::Node*> nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);

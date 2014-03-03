@@ -17,8 +17,6 @@ Here is a list of know bugs, ordered by priority from high to low:
 
 - Check why TuttleOFX's generators (e.g. ColorBars) have this strange behaviour when changing the "channel" parameter
 
-- File dialog: the file list should be a few pixels wider, so that the horizontal scrollbar does not appear.
-
 - String_KnobGui: kOfxParamStringIsRichTextFormat  is not supported (it should use a QTextEdit and not convert the string to plain text)
 
 - Tab traversal is not set up properly, and sometimes couter-intuitive.
