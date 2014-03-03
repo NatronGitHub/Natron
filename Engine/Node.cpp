@@ -1251,6 +1251,9 @@ void InspectorNode::setActiveInputAndRefresh(int inputNb){
     InputMap::iterator it = _inputs.find(inputNb);
     if(it!=_inputs.end() && it->second!=NULL){
         _activeInput = inputNb;
+        if (isOutputNode()) {
+            dynamic_cast<Natron::OutputEffectInstance*>(getLiveInstance())->updateTreeAndRender();
+        }
     }
 }
 
