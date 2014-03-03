@@ -659,7 +659,7 @@ void SequenceFileDialog::setDirectory(const QString &directory){
         return;
     _requestedDir = newDirectory;
     QModelIndex root = _model->setRootPath(newDirectory); // < calls filterAcceptsRow
-    _createDirButton->setEnabled(_dialogMode == SAVE_DIALOG);
+    _createDirButton->setEnabled(_dialogMode != OPEN_DIALOG);
     if(newDirectory.at(newDirectory.size()-1) != QChar('/')){
         newDirectory.append("/");
     }
