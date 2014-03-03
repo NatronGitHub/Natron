@@ -1158,6 +1158,7 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
     if (found != _inputs.end()) {
         _inputs.erase(found);
         _inputs.insert(make_pair(inputNumber,input));
+        _activeInput = inputNumber;
         emit inputChanged(inputNumber);
         tryAddEmptyInput();
         _liveInstance->updateInputs(NULL);

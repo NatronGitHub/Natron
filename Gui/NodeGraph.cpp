@@ -679,29 +679,46 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
 }
 void NodeGraph::connectCurrentViewerToSelection(int inputNB){
     
+    ///get a pointer to the last user selected viewer
     InspectorNode* v = dynamic_cast<InspectorNode*>(_gui->getLastSelectedViewer()->getInternalNode()->getNode());
-    if(!v->isActivated()){
-        return;
-    }
-    if(!_nodeSelected){
-        v->setActiveInputAndRefresh(inputNB);
+    
+    ///if the node is no longer active (i.e: it was deleted by the user), don't do anything.
+    if (!v->isActivated()) {
         return;
     }
     
-    if (_nodeSelected->getNode()->isOutputNode()) {
-        return;
-    }
-    
+    ///get a ptr to the NodeGui
     NodeGui* gui = _gui->getApp()->getNodeGui(v);
-    if(gui){
-        NodeGui::InputEdgesMap::const_iterator it = gui->getInputsArrows().find(inputNB);
-        while(it == gui->getInputsArrows().end()){
-            v->addEmptyInput();
-            it = gui->getInputsArrows().find(inputNB);
-        }
-        _undoStack->setActive();
-        _undoStack->push(new ConnectCommand(this,it->second,it->second->getSource(),_nodeSelected));
+    assert(gui);
+    
+    ///if there's no selected node or the viewer is selected, then try refreshing that input nb if it is connected.
+    if (!_nodeSelected || _nodeSelected == gui) {
+        v->setActiveInputAndRefresh(inputNB);
+        gui->refreshEdges();
+        return;
     }
+    
+
+    ///if the selected node is a viewer, return, we can't connect a viewer to another viewer.
+    if (_nodeSelected->getNode()->pluginID() == "Viewer") {
+        return;
+    }
+    
+    
+    ///if the node doesn't have the input 'inputNb' created yet, populate enough input
+    ///so it can be created.
+    NodeGui::InputEdgesMap::const_iterator it = gui->getInputsArrows().find(inputNB);
+    while (it == gui->getInputsArrows().end()) {
+        v->addEmptyInput();
+        it = gui->getInputsArrows().find(inputNB);
+    }
+    
+    ///set the undostack the active one before connecting
+    _undoStack->setActive();
+    
+    ///and push a connect command to the selected node.
+    _undoStack->push(new ConnectCommand(this,it->second,it->second->getSource(),_nodeSelected));
+    
 }
 
 void NodeGraph::enterEvent(QEvent *event)
@@ -1006,21 +1023,44 @@ void ConnectCommand::undo(){
         (*it)->updateTreeAndRender();
     }    
 }
-void ConnectCommand::redo(){
+void ConnectCommand::redo() {
     NodeGui* dst = _edge->getDest();
     
     InspectorNode* inspector = dynamic_cast<InspectorNode*>(dst->getNode());
+    int edgeInputNumber = _edge->getInputNumber();
     if (inspector) {
-        if(!_newSrc){
-            inspector->disconnectInput(_edge->getInputNumber());
-        }else{
-            if(inspector->connectInput(_newSrc->getNode(), _edge->getInputNumber(),false)){
-                _edge->setSource(_newSrc);
-                _newSrc->getNode()->connectOutput(inspector);
-                
+        ///if the node is an inspector we have to do things differently
+        
+        if (!_newSrc) {
+            ///we want to connect to nothing, hence disconnect
+            inspector->disconnectInput(edgeInputNumber);
+        } else {
+            ///disconnect any connection already existing with the _oldSrc
+            if (_oldSrc) {
+                _graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode(),inspector);
             }
+            ///also disconnect any current connection between the inspector and the _newSrc
+            _graph->getGui()->getApp()->getProject()->disconnectNodes(_newSrc->getNode(),inspector);
+            
+            
+            ///after disconnect calls the _edge pointer might be invalid since the edges might have been destroyed.
+            NodeGui::InputEdgesMap::const_iterator it = dst->getInputsArrows().find(edgeInputNumber);
+            while (it == dst->getInputsArrows().end()) {
+                inspector->addEmptyInput();
+                it = dst->getInputsArrows().find(edgeInputNumber);
+            }
+            _edge = it->second;
+            
+            ///and connect the inspector to the _newSrc
+            _graph->getGui()->getApp()->getProject()->connectNodes(edgeInputNumber, _newSrc->getNode(), inspector);
+//            if (inspector->connectInput(_newSrc->getNode(), _edge->getInputNumber(),false)) {
+//                _edge->setSource(_newSrc);
+//                _newSrc->getNode()->connectOutput(inspector);
+//                
+//            }
         }
-    }else{
+       
+    } else {
         _edge->setSource(_newSrc);
         if(_oldSrc){
             if(!_graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode(), dst->getNode())){
@@ -1029,7 +1069,7 @@ void ConnectCommand::redo(){
             }
         }
         if(_newSrc){
-            if(!_graph->getGui()->getApp()->getProject()->connectNodes(_edge->getInputNumber(), _newSrc->getNode(), dst->getNode())){
+            if(!_graph->getGui()->getApp()->getProject()->connectNodes(edgeInputNumber, _newSrc->getNode(), dst->getNode())){
                 cout << "Failed to connect (input) " << _newSrc->getNode()->getName()
                      << " to (output) " << dst->getNode()->getName() << endl;
 

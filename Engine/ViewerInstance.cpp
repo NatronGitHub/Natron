@@ -455,7 +455,7 @@ void ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> 
             
             while(dstIndex < texRect.w && dstIndex >= 0) {
                 
-                if (srcIndex > ( texRect.x2 - texRect.x1)) {
+                if (srcIndex >= ( texRect.x2 - texRect.x1)) {
                     break;
                     //dst_pixels[dstIndex] = toBGRA(0,0,0,255);
                 } else {
