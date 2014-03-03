@@ -364,10 +364,12 @@ public slots:
     ///same as setDirectory but for the look-in combobox
     void goToDirectory(const QString&);
 
-    
-    ///slot called when a directory has been fully loaded, it will refresh the view with good names.
+    ///slot called when the selected directory changed, it updates the view with the (not yet fetched) directory.
+    ///Note that the directory will be refreshed once again when fetchSequencesAndRefreshView will be called.
     void updateView(const QString& currentDirectory);
     
+    ///slot called when a directory has been fully loaded, it will refresh the view with good names.
+    void fetchSequencesAndRefreshView(const QString& currentDirectory);
     
     ////////
     ///////// Buttons slots

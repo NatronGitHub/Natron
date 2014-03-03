@@ -171,7 +171,8 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     _proxy->setSourceModel(_model);
     _view->setModel(_proxy);
     _view->setItemDelegate(_itemDelegate);
-    QObject::connect(_model,SIGNAL(directoryLoaded(QString)),this,SLOT(updateView(QString)));
+    QObject::connect(_model,SIGNAL(directoryLoaded(QString)),this,SLOT(fetchSequencesAndRefreshView(QString)));
+    QObject::connect(_model,SIGNAL(rootPathChanged(QString)),this,SLOT(updateView(QString)));
     QObject::connect(_view, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(doubleClickOpen(QModelIndex)));
     
     /*creating GUI*/
@@ -658,7 +659,7 @@ void SequenceFileDialog::setDirectory(const QString &directory){
     if (!directory.isEmpty() && newDirectory.isEmpty())
         return;
     _requestedDir = newDirectory;
-    QModelIndex root = _model->setRootPath(newDirectory); // < calls filterAcceptsRow
+    _model->setRootPath(newDirectory); // < calls filterAcceptsRow
     _createDirButton->setEnabled(_dialogMode == SAVE_DIALOG);
     if(newDirectory.at(newDirectory.size()-1) != QChar('/')){
         newDirectory.append("/");
@@ -693,18 +694,21 @@ void SequenceFileDialog::updateView(const QString &directory){
     
     QModelIndex root = _model->index(directory);
     QModelIndex proxyIndex = mapFromSource(root); // < calls filterAcceptsRow
-    
+
+    /*update the view to show the newly loaded directory*/
+    setRootIndex(proxyIndex);
+    /*clearing selection*/
+    _view->selectionModel()->clear();
+}
+
+void SequenceFileDialog::fetchSequencesAndRefreshView(const QString& currentDirectory) {
+    QModelIndex root = _model->index(currentDirectory);
     /*update the name mapping to display on the view according to the new
      datas that have been fetched and filtered by the file system.
      Not that it runs in another thread and updates the name mapping on the
      view when the computations are done.*/
-    itemsToSequence(proxyIndex);
-   // QtConcurrent::run(this,&SequenceFileDialog::itemsToSequence,proxyIndex);
-    /*update the view to show the newly loaded directory*/
-    setRootIndex(proxyIndex);
-    _view->expandColumnsToFullWidth();
-    /*clearing selection*/
-    _view->selectionModel()->clear();
+    itemsToSequence(root);
+
 }
 
 bool SequenceFileDialog::sequenceModeEnabled() const{
@@ -829,13 +833,10 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
      *We just need to change its name to reflect the number
      *of elements in the sequence.
      */
-    // for(SequenceIterator it = _frameSequences.begin() ; it!= _frameSequences.end(); ++it) {
-    //     cout << it->first << " = " << it->second.second.size() << "x " << it->second.first << endl;
-    // }
-    for(int c = 0 ; c < _proxy->rowCount(parent) ; ++c) {
-        QModelIndex item = _proxy->index(c,0,parent);
+    for(int c = 0 ; c < _model->rowCount(parent) ; ++c) {
+        QModelIndex item = _model->index(c,0,parent);
         /*We skip directories*/
-        if(!item.isValid() || _model->isDir(_proxy->mapToSource(item))){
+        if(!item.isValid() || _model->isDir(item)){
             continue;
         }
         QString name = item.data(QFileSystemModel::FilePathRole).toString();
@@ -848,9 +849,11 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
                 _nameMapping.push_back(make_pair(name,make_pair(sequenceSize,mappedName)));
             }
         }
-        QReadLocker locker(&_nameMappingMutex);
-        _view->updateNameMapping(_nameMapping);
+
     }
+    QReadLocker locker(&_nameMappingMutex);
+    _view->updateNameMapping(_nameMapping);
+    _view->repaint();
 }
 void SequenceFileDialog::setRootIndex(const QModelIndex& index){
     _view->setRootIndex(index);
@@ -900,6 +903,8 @@ void SequenceDialogView::dragLeaveEvent(QDragLeaveEvent* e){
 
 void SequenceDialogView::updateNameMapping(const std::vector<std::pair<QString, std::pair<qint64, QString> > >& nameMapping){
     dynamic_cast<SequenceItemDelegate*>(itemDelegate())->setNameMapping(nameMapping);
+    expandColumnsToFullWidth();
+
 }
 
 
@@ -919,6 +924,7 @@ void SequenceItemDelegate::setNameMapping(const std::vector<std::pair<QString, s
             if(w > _maxW) _maxW = w;
         }
     }
+
 }
 
 
@@ -1524,7 +1530,7 @@ QModelIndex SequenceFileDialog::select(const QModelIndex& index){
     return ret;
 }
 
-void SequenceFileDialog::doubleClickOpen(const QModelIndex& index){
+void SequenceFileDialog::doubleClickOpen(const QModelIndex& /*index*/){
     QModelIndexList indexes = _view->selectionModel()->selectedRows();
     for (int i = 0; i < indexes.count(); ++i) {
         if (_model->isDir(mapToSource(indexes.at(i)))){
@@ -1534,7 +1540,6 @@ void SequenceFileDialog::doubleClickOpen(const QModelIndex& index){
     }
 
     openSelectedFiles();
-    enterDirectory(index);
 }
 void SequenceFileDialog::seekUrl(const QUrl& url){
     setDirectory(url.toLocalFile());
@@ -1813,14 +1818,15 @@ void FavoriteView::setModelAndUrls(QFileSystemModel *model, const std::vector<QU
     setItemDelegate(_itemDelegate);
     setModel(urlModel);
     setEditTriggers(QAbstractItemView::NoEditTriggers);
-    connect(selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)),
-            this, SLOT(clicked(QModelIndex)));
+
     setDragDropMode(QAbstractItemView::DragDrop);
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, SIGNAL(customContextMenuRequested(QPoint)),
             this, SLOT(showMenu(QPoint)));
     urlModel->setUrls(newUrls);
     setCurrentIndex(this->model()->index(0,0));
+    connect(selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)),
+            this, SLOT(clicked(QModelIndex)));
 
 }
 
