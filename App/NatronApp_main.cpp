@@ -9,6 +9,7 @@
 */
 
 #include <csignal>
+#include <cstdio>
 
 #include <QApplication>
 
