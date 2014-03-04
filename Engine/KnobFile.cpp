@@ -129,14 +129,6 @@ void File_Knob::setFiles(const SequenceParsing::SequenceFromFiles& fileSequence)
     endValueChange();
 }
 
-void File_Knob::setFilesNoEmit(const SequenceParsing::SequenceFromFiles& fileSequence) {
-    beginValueChange(Natron::PLUGIN_EDITED);
-    setFilesInternal(fileSequence);
-    _pattern = fileSequence.generateValidSequencePattern();
-    setValue(Variant(_pattern),0,true);
-    endValueChange();
-}
-
 int File_Knob::firstFrame() const
 {
     double time;

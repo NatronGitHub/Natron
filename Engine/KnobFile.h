@@ -58,8 +58,6 @@ public:
     ///Set the files and updates the pattern on gui
     void setFiles(const SequenceParsing::SequenceFromFiles& fileSequence);
     
-    ///Called by the gui: set the files but doesn't update the pattern.
-    void setFilesNoEmit(const SequenceParsing::SequenceFromFiles& fileSequence);
     
     void getFiles(SequenceParsing::SequenceFromFiles* files);
         
