@@ -24,7 +24,7 @@ before_install:
 
 # Ubuntu 12.04 precise doesn't have a pkg-config file (expat.pc)
 install:
-  - sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libboost-thread-dev libboost-system-dev libexpat1-dev gdb
+  - sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb
 # OpenFX
   - if [ "$CC" = "gcc" ]; then make $MAKEFLAGS -C libs/OpenFX/Examples BITS=64; fi
   - if [ "$CC" = "gcc" ]; then make $MAKEFLAGS -C libs/OpenFX/Support/Plugins BITS=64; fi
@@ -40,7 +40,7 @@ install:
   - if [ "$CC" = "gcc" ]; then env PKG_CONFIG_PATH=/opt/ocio/lib/pkgconfig make $MAKEFLAGS -C openfx-io BITS=64 OIIO_HOME=/opt/oiio; fi
   - if [ "$CC" = "gcc" ]; then mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO;  fi
 # config.pri
-  - 'echo ''boost: LIBS += -lboost_serialization -lboost_thread -lboost_system'' > config.pri'
+  - 'echo ''boost: LIBS += -lboost_serialization'' > config.pri'
   - 'echo ''expat: LIBS += -lexpat'' >> config.pri'
   - 'echo ''expat: PKGCONFIG -= expat'' >> config.pri'
 
