@@ -79,6 +79,9 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     
+    /// callback which should set evaluate on change
+    virtual void setEvaluateOnChange() OVERRIDE FINAL;
+    
     virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
 
 private:
@@ -107,12 +110,16 @@ public:
     
     virtual void setDisplayRange() OVERRIDE FINAL;
     
+    /// callback which should set evaluate on change
+    virtual void setEvaluateOnChange() OVERRIDE FINAL;
+    
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
     virtual OfxStatus getKeyTime(int nth, OfxTime& time) const OVERRIDE FINAL;
     virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
+    
     
     virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
 
@@ -144,6 +151,9 @@ public:
     virtual void setSecret() OVERRIDE FINAL;
     
     virtual void setDisplayRange() OVERRIDE FINAL;
+    
+    /// callback which should set evaluate on change
+    virtual void setEvaluateOnChange() OVERRIDE FINAL;
     
     
     ///keyframes support
@@ -187,6 +197,9 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     
+    /// callback which should set evaluate on change
+    virtual void setEvaluateOnChange() OVERRIDE FINAL;
+    
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
     virtual OfxStatus getKeyTime(int nth, OfxTime& time) const OVERRIDE FINAL;
@@ -225,6 +238,9 @@ public:
     // callback which should set option as appropriate
     virtual void setOption(int num) OVERRIDE FINAL;
     
+    /// callback which should set evaluate on change
+    virtual void setEvaluateOnChange() OVERRIDE FINAL;
+    
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
     virtual OfxStatus getKeyTime(int nth, OfxTime& time) const OVERRIDE FINAL;
@@ -261,6 +277,9 @@ public:
     
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
+    
+    /// callback which should set evaluate on change
+    virtual void setEvaluateOnChange() OVERRIDE FINAL;
     
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
@@ -302,6 +321,9 @@ public:
     
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
+    
+    /// callback which should set evaluate on change
+    virtual void setEvaluateOnChange() OVERRIDE FINAL;
     
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
@@ -345,6 +367,9 @@ public:
     
     virtual void setDisplayRange() OVERRIDE FINAL;
     
+    /// callback which should set evaluate on change
+    virtual void setEvaluateOnChange() OVERRIDE FINAL;
+    
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
     virtual OfxStatus getKeyTime(int nth, OfxTime& time) const OVERRIDE FINAL;
@@ -386,6 +411,9 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     
+    /// callback which should set evaluate on change
+    virtual void setEvaluateOnChange() OVERRIDE FINAL;
+    
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
     virtual OfxStatus getKeyTime(int nth, OfxTime& time) const OVERRIDE FINAL;
@@ -421,6 +449,9 @@ public:
 
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
+    
+    /// callback which should set evaluate on change
+    virtual void setEvaluateOnChange() OVERRIDE FINAL;
 
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
@@ -457,6 +488,9 @@ public:
 
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
+    
+    /// callback which should set evaluate on change
+    virtual void setEvaluateOnChange() OVERRIDE FINAL;
     
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
@@ -518,6 +552,9 @@ public:
     
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
+    
+    /// callback which should set evaluate on change
+    virtual void setEvaluateOnChange() OVERRIDE FINAL;
 
 
     /**
@@ -580,6 +617,9 @@ public:
 
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
+    
+    /// callback which should set evaluate on change
+    virtual void setEvaluateOnChange() OVERRIDE FINAL;
 
     virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
 
@@ -635,6 +675,9 @@ public:
     
     /// callback which should set
     virtual void setDisplayRange() OVERRIDE FINAL;
+    
+    /// callback which should set evaluate on change
+    virtual void setEvaluateOnChange() OVERRIDE FINAL;
     
     
     ///derived from CurveHolder
