@@ -52,6 +52,8 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , lastKnobChanged(NULL)
     , isLoadingProjectMutex()
     , isLoadingProject(false)
+    , isSavingProjectMutex()
+    , isSavingProject(false)
 
 {
 }

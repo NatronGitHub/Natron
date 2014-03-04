@@ -394,8 +394,6 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         RoIMap inputsRoi = getRegionOfInterest(time, scale, rectToRender);
         FramesNeededMap framesNeeeded = getFramesNeeded(time);
         
-        assert(inputsRoi.size() == framesNeeeded.size());
-        
         std::list< boost::shared_ptr<Natron::Image> > inputImages;
         
         /*we render each input first and store away their image in the inputImages list

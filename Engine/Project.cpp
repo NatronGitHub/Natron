@@ -151,6 +151,15 @@ void Project::saveProject(const QString& path,const QString& name,bool autoSave)
             return;
         }
     }
+    
+    {
+        QMutexLocker l(&_imp->isSavingProjectMutex);
+        if (_imp->isSavingProject) {
+            return;
+        } else {
+            _imp->isSavingProject = true;
+        }
+    }
 
     try {
         if (!autoSave) {
@@ -166,12 +175,18 @@ void Project::saveProject(const QString& path,const QString& name,bool autoSave)
             }
         }
     } catch (const std::exception& e) {
+        
         if(!autoSave) {
             Natron::errorDialog("Save", e.what());
         } else {
             qDebug() << "Save failure: " << e.what();
         }
     }
+    {
+        QMutexLocker l(&_imp->isSavingProjectMutex);
+        _imp->isSavingProject = false;
+    }
+    
 }
 
 void Project::saveProjectInternal(const QString& path,const QString& name,bool autoSave) {
@@ -271,6 +286,15 @@ void Project::triggerAutoSave() {
     if (appPTR->isBackground()) {
         return;
     }
+    
+    {
+        ///do not autosave simultaneously
+        QMutexLocker l(&_imp->isSavingProjectMutex);
+        if (_imp->isSavingProject) {
+            return;
+        }
+    }
+    
     QtConcurrent::run(this,&Project::autoSave);
 }
 

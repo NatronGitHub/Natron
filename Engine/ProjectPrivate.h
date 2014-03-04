@@ -98,6 +98,9 @@ struct ProjectPrivate {
     mutable QMutex isLoadingProjectMutex;
     bool isLoadingProject; //< true when the project is loading
     
+    mutable QMutex isSavingProjectMutex;
+    bool isSavingProject; //< true when the project is saving
+    
     ProjectPrivate(Natron::Project* project);
     
     void restoreFromSerialization(const ProjectSerialization& obj);

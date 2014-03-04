@@ -474,7 +474,12 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
             }
         }
     } else if (stat == kOfxStatReplyDefault) {
-        return Natron::EffectInstance::getRegionOfInterest(time, scale, renderWindow);
+        for (int i = 0; i < effectInstance()->getNClips(); ++i) {
+            EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(effectInstance()->getNthClip(i))->getAssociatedNode();
+            if (inputNode && inputNode != this) {
+                ret.insert(std::make_pair(inputNode, renderWindow));
+            }
+        }
     }
     return ret;
 }
