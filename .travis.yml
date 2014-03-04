@@ -26,9 +26,9 @@ before_install:
 install:
   - sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libboost-thread-dev libboost-system-dev libexpat1-dev gdb
 # OpenFX
-  - if [ "$CC" = "gcc" ]; then make $MAKEFLAGS -C libs/OpenFX/Examples BITS=64 clean all; fi
-  - if [ "$CC" = "gcc" ]; then make $MAKEFLAGS -C libs/OpenFX/Support/Plugins BITS=64 clean all; fi
-  - if [ "$CC" = "gcc" ]; then make $MAKEFLAGS -C libs/OpenFX/Support/PropTester BITS=64 clean all; fi
+  - if [ "$CC" = "gcc" ]; then make $MAKEFLAGS -C libs/OpenFX/Examples BITS=64; fi
+  - if [ "$CC" = "gcc" ]; then make $MAKEFLAGS -C libs/OpenFX/Support/Plugins BITS=64; fi
+  - if [ "$CC" = "gcc" ]; then make $MAKEFLAGS -C libs/OpenFX/Support/PropTester BITS=64; fi
   - if [ "$CC" = "gcc" ]; then rm -rf Tests/Plugins; mkdir -p Tests/Plugins/Examples Tests/Plugins/Support Tests/Plugins/IO; fi
   - if [ "$CC" = "gcc" ]; then mv libs/OpenFX/Examples/*/*-64-debug/*.ofx.bundle Tests/Plugins/Examples; fi
   - if [ "$CC" = "gcc" ]; then mv libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Tests/Plugins/Support;  fi
@@ -37,7 +37,7 @@ install:
   - if [ "$CC" = "gcc" ]; then sudo apt-get install libopenexr-dev libilmbase-dev; fi
   - if [ "$CC" = "gcc" ]; then sudo apt-get install libopenjpeg-dev libtiff-dev libjpeg-dev libpng-dev libboost-filesystem-dev libboost-regex-dev libboost-thread-dev libboost-system-dev libwebp-dev libfreetype6-dev libssl-dev; git clone -b "RB-1.2" git://github.com/OpenImageIO/oiio.git oiio; cd oiio; make $MAKEFLAGS USE_QT=0 USE_TBB=0 USE_PYTHON=0 USE_FIELD3D=0 USE_OPENJPEG=1 USE_OCIO=1 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=/opt/ocio INSTALLDIR=/opt/oiio dist_dir=. cmake; sudo make $MAKEFLAGS dist_dir=.; cd ..; fi
   - if [ "$CC" = "gcc" ]; then sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libavutil-dev; fi
-  - if [ "$CC" = "gcc" ]; then env PKG_CONFIG_PATH=/opt/ocio/lib/pkgconfig make $MAKEFLAGS -C openfx-io BITS=64 OIIO_HOME=/opt/oiio clean all; fi
+  - if [ "$CC" = "gcc" ]; then env PKG_CONFIG_PATH=/opt/ocio/lib/pkgconfig make $MAKEFLAGS -C openfx-io BITS=64 OIIO_HOME=/opt/oiio; fi
   - if [ "$CC" = "gcc" ]; then mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO;  fi
 # config.pri
   - 'echo ''boost: LIBS += -lboost_serialization -lboost_thread -lboost_system'' > config.pri'
