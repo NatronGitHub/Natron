@@ -455,7 +455,9 @@ void ViewerGL::drawRenderingVAO() {
 }
 
 #if 0
-void ViewerGL::checkFrameBufferCompleteness(const char where[],bool silent){
+void ViewerGL::checkFrameBufferCompleteness(const char where[],bool silent)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     GLenum error = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if( error == GL_FRAMEBUFFER_UNDEFINED)
         cout << where << ": Framebuffer undefined" << endl;
@@ -491,6 +493,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 : QGLWidget(parent,shareWidget)
 , _imp(new Implementation(parent, this))
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
@@ -510,8 +513,9 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 }
 
 
-ViewerGL::~ViewerGL(){
-    
+ViewerGL::~ViewerGL()
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     if(_imp->shaderRGB){
         _imp->shaderRGB->removeAllShaders();
         delete _imp->shaderRGB;
@@ -540,11 +544,13 @@ QSize ViewerGL::sizeHint() const
 
 const QFont& ViewerGL::textFont() const
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     return *_imp->textFont;
 }
 
 void ViewerGL::setTextFont(const QFont& f)
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     *_imp->textFont = f;
 }
 
@@ -554,6 +560,7 @@ void ViewerGL::setTextFont(const QFont& f)
  **/
 void ViewerGL::setDisplayingImage(bool d)
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->displayingImage = d;
     if (!_imp->displayingImage) {
         _imp->must_initBlackTex = true;
@@ -565,10 +572,13 @@ void ViewerGL::setDisplayingImage(bool d)
  **/
 bool ViewerGL::displayingImage() const
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     return _imp->displayingImage;
 }
 
-void ViewerGL::resizeGL(int width, int height){
+void ViewerGL::resizeGL(int width, int height)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     if(height == 0)// prevent division by 0
         height=1;
     float ap = getDisplayWindow().getPixelAspect();
@@ -590,8 +600,10 @@ void ViewerGL::resizeGL(int width, int height){
         updateGL();
     }
 }
+
 void ViewerGL::paintGL()
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     checkGLErrors();
     if (_imp->must_initBlackTex) {
         initBlackTex();
@@ -673,6 +685,7 @@ void ViewerGL::paintGL()
 
 void ViewerGL::clearColorBuffer(double r ,double g ,double b ,double a )
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
     glClearColor(r,g,b,a);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -680,6 +693,7 @@ void ViewerGL::clearColorBuffer(double r ,double g ,double b ,double a )
 
 void ViewerGL::toggleOverlays()
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->overlay = !_imp->overlay;
     updateGL();
 }
@@ -687,6 +701,7 @@ void ViewerGL::toggleOverlays()
 
 void ViewerGL::drawOverlay()
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
 
     const RectI& dispW = getDisplayWindow();
@@ -767,7 +782,9 @@ void ViewerGL::drawOverlay()
     checkGLErrors();
 }
 
-void ViewerGL::drawUserRoI() {
+void ViewerGL::drawUserRoI()
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     glColor4f(0.9, 0.9, 0.9, 1.);
     
     
@@ -899,12 +916,14 @@ void ViewerGL::drawUserRoI() {
  **/
 void ViewerGL::resetMousePos()
 {
-    _imp->zoomCtx.oldClick.setX(0);
+    assert(qApp && qApp->thread() == QThread::currentThread());
+   _imp->zoomCtx.oldClick.setX(0);
     _imp->zoomCtx.oldClick.setY(0);
 }
 
 void ViewerGL::drawPersistentMessage()
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
 
     QFontMetrics metrics(font());
@@ -964,6 +983,7 @@ void ViewerGL::drawPersistentMessage()
 
 void ViewerGL::initializeGL()
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
 	makeCurrent();
     initAndCheckGlExtensions();
     _imp->blackTex = new Texture;
@@ -1000,6 +1020,7 @@ void ViewerGL::initializeGL()
 
 GLuint ViewerGL::getPboID(int index)
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
 
     if(index >= (int)_imp->pboIds.size()){
@@ -1017,10 +1038,17 @@ GLuint ViewerGL::getPboID(int index)
  **/
 double ViewerGL::getZoomFactor() const
 {
+    // This is NOT running in the main thread. All the members accessed below should be protected against race conditions
+    //assert(qApp && qApp->thread() == QThread::currentThread());
+#pragma message WARN("race condition")
     return _imp->zoomCtx.zoomFactor;
 }
 
-RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD) {
+RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
+{
+    // This is NOT running in the main thread. All the members accessed below should be protected against race conditions
+    //assert(qApp && qApp->thread() == QThread::currentThread());
+#pragma message WARN("race condition")
     RectI ret;
     QPointF topLeft = toImgCoordinates_fast(0, 0);
     ret.x1 = std::floor(topLeft.x());
@@ -1036,7 +1064,9 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD) {
 
 
 
-int ViewerGL::isExtensionSupported(const char *extension){
+int ViewerGL::isExtensionSupported(const char *extension)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     const GLubyte *extensions = NULL;
     const GLubyte *start;
     GLubyte *where, *terminator;
@@ -1061,6 +1091,7 @@ int ViewerGL::isExtensionSupported(const char *extension){
 
 void ViewerGL::initAndCheckGlExtensions()
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
     GLenum err = glewInit();
     if (GLEW_OK != err) {
@@ -1095,6 +1126,7 @@ void ViewerGL::initAndCheckGlExtensions()
 
 void ViewerGL::activateShaderRGB()
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
 
     // we assume that:
@@ -1119,6 +1151,7 @@ void ViewerGL::activateShaderRGB()
 
 void ViewerGL::initShaderGLSL()
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
 
     if(!_imp->shaderLoaded && _imp->supportsGLSL){
@@ -1148,6 +1181,7 @@ void ViewerGL::initShaderGLSL()
 
 void ViewerGL::saveGLState()
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glMatrixMode(GL_PROJECTION);
@@ -1158,6 +1192,7 @@ void ViewerGL::saveGLState()
 
 void ViewerGL::restoreGLState()
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
@@ -1168,6 +1203,7 @@ void ViewerGL::restoreGLState()
 
 void ViewerGL::initBlackTex()
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
     //fitToFormat(getDisplayWindow());
     
@@ -1197,6 +1233,7 @@ void ViewerGL::initBlackTex()
 
 void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region,int pboIndex)
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
     QMutexLocker locker(&_imp->textureMutex);
 	(void)glGetError();
@@ -1236,6 +1273,7 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
  **/
 bool ViewerGL::supportsGLSL() const
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     return _imp->supportsGLSL;
 }
 
@@ -1245,7 +1283,9 @@ bool ViewerGL::supportsGLSL() const
 #define QMouseEventLocalPos(e) (e->localPos())
 #endif
 
-void ViewerGL::mousePressEvent(QMouseEvent *event){
+void ViewerGL::mousePressEvent(QMouseEvent *event)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     if(event->button() == Qt::RightButton){
         _imp->menu->exec(mapToGlobal(event->pos()));
         return;
@@ -1297,7 +1337,9 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
     
 }
 
-void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
+void ViewerGL::mouseReleaseEvent(QMouseEvent *event)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->ms = UNDEFINED;
     if(_imp->viewerTab->notifyOverlaysPenUp(QMouseEventLocalPos(event),
                                             toImgCoordinates_fast(event->x(), event->y()))){
@@ -1305,7 +1347,9 @@ void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
     }
 
 }
-void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
+void ViewerGL::mouseMoveEvent(QMouseEvent *event)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     QPointF pos = toImgCoordinates_fast(event->x(), event->y());
     const Format& dispW = getDisplayWindow();
     // if the mouse is inside the image, update the color picker
@@ -1484,7 +1528,9 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
 }
 
 
-void ViewerGL::updateColorPicker(int x,int y){
+void ViewerGL::updateColorPicker(int x,int y)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     if (!_imp->displayingImage) {
         _imp->infoViewer->hideColorAndMouseInfo();
         return;
@@ -1521,7 +1567,9 @@ void ViewerGL::updateColorPicker(int x,int y){
     }
 }
 
-void ViewerGL::wheelEvent(QWheelEvent *event) {
+void ViewerGL::wheelEvent(QWheelEvent *event)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     if (event->orientation() != Qt::Vertical) {
         return;
     }
@@ -1557,7 +1605,9 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     _imp->zoomOrPannedSinceLastFit = true;
 }
 
-void ViewerGL::zoomSlot(int v) {
+void ViewerGL::zoomSlot(int v)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     assert(v > 0);
     double newZoomFactor = v/100.;
     if(newZoomFactor < 0.01) {
@@ -1586,14 +1636,20 @@ void ViewerGL::zoomSlot(int v) {
     assert(0 < _imp->zoomCtx.zoomFactor && _imp->zoomCtx.zoomFactor <= 1024);
 }
 
-void ViewerGL::zoomSlot(QString str){
+void ViewerGL::zoomSlot(QString str)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     str.remove(QChar('%'));
     int v = str.toInt();
     assert(v > 0);
     zoomSlot(v);
 }
 
-QPointF ViewerGL::toImgCoordinates_fast(double x,double y){
+QPointF ViewerGL::toImgCoordinates_fast(double x,double y)
+{
+    // This is NOT running in the main thread. All the members accessed below should be protected against race conditions
+    //assert(qApp && qApp->thread() == QThread::currentThread());
+#pragma message WARN("race condition")
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _imp->zoomCtx.bottom;
@@ -1603,7 +1659,9 @@ QPointF ViewerGL::toImgCoordinates_fast(double x,double y){
     return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
 }
 
-QPointF ViewerGL::toWidgetCoordinates(double x, double y){
+QPointF ViewerGL::toWidgetCoordinates(double x, double y)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _imp->zoomCtx.bottom;
@@ -1613,7 +1671,9 @@ QPointF ViewerGL::toWidgetCoordinates(double x, double y){
     return QPoint(((x - left)/(right - left))*w,(y - top)/((bottom - top))*h);
 }
 
-void ViewerGL::fitImageToFormat(const Format& rod){
+void ViewerGL::fitImageToFormat(const Format& rod)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     double h = rod.height();
     double w = rod.width();
     assert(h > 0. && w > 0.);
@@ -1636,11 +1696,13 @@ void ViewerGL::fitImageToFormat(const Format& rod){
  **/
 const ImageInfo& ViewerGL::getCurrentViewerInfos() const
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     return _imp->currentViewerInfos;
 }
 
 ViewerTab* ViewerGL::getViewerTab() const
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     return _imp->viewerTab;
 }
 
@@ -1649,6 +1711,7 @@ ViewerTab* ViewerGL::getViewerTab() const
  **/
 void ViewerGL::turnOnOverlay()
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->overlay=true;
 }
 
@@ -1657,11 +1720,13 @@ void ViewerGL::turnOnOverlay()
  **/
 void ViewerGL::turnOffOverlay()
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->overlay=false;
 }
 
-void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
-
+void ViewerGL::setInfoViewer(InfoViewerWidget* i )
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->infoViewer = i;
     QObject::connect(this,SIGNAL(infoMousePosChanged()), _imp->infoViewer, SLOT(updateCoordMouse()));
     QObject::connect(this,SIGNAL(infoColorUnderMouseChanged()),_imp->infoViewer,SLOT(updateColor()));
@@ -1674,7 +1739,9 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
 
 
 
-void ViewerGL::disconnectViewer(){
+void ViewerGL::disconnectViewer()
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     if (displayingImage()) {
         setRegionOfDefinition(_imp->blankViewerInfos.getRoD());
         clearViewer();
@@ -1684,14 +1751,25 @@ void ViewerGL::disconnectViewer(){
 
 
 /*The dataWindow of the currentFrame(BBOX)*/
-const RectI& ViewerGL::getRoD() const {return _imp->currentViewerInfos.getRoD();}
+const RectI& ViewerGL::getRoD() const
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    return _imp->currentViewerInfos.getRoD();
+}
 
 /*The displayWindow of the currentFrame(Resolution)*/
-const Format& ViewerGL::getDisplayWindow() const {return _imp->currentViewerInfos.getDisplayWindow();}
+const Format& ViewerGL::getDisplayWindow() const
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    return _imp->currentViewerInfos.getDisplayWindow();
+}
 
 
-void ViewerGL::setRegionOfDefinition(const RectI& rod){
-
+void ViewerGL::setRegionOfDefinition(const RectI& rod)
+{
+    // This is NOT running in the main thread. All the members accessed below should be protected against race conditions
+    //assert(qApp && qApp->thread() == QThread::currentThread());
+#pragma message WARN("race condition")
     _imp->currentViewerInfos.setRoD(rod);
     emit infoDataWindowChanged();
     _imp->btmLeftBBOXoverlay.clear();
@@ -1708,7 +1786,9 @@ void ViewerGL::setRegionOfDefinition(const RectI& rod){
 }
 
 
-void ViewerGL::onProjectFormatChanged(const Format& format){
+void ViewerGL::onProjectFormatChanged(const Format& format)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->currentViewerInfos.setDisplayWindow(format);
     _imp->blankViewerInfos.setDisplayWindow(format);
     _imp->blankViewerInfos.setRoD(format);
@@ -1732,7 +1812,9 @@ void ViewerGL::onProjectFormatChanged(const Format& format){
     }
 }
 
-void ViewerGL::setClipToDisplayWindow(bool b) {
+void ViewerGL::setClipToDisplayWindow(bool b)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->clipToDisplayWindow = b;
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
@@ -1743,17 +1825,24 @@ void ViewerGL::setClipToDisplayWindow(bool b) {
 
 bool ViewerGL::isClippingImageToProjectWindow() const
 {
+    // This is NOT running in the main thread. All the members accessed below should be protected against race conditions
+    //assert(qApp && qApp->thread() == QThread::currentThread());
+#pragma message WARN("race condition")
     return _imp->clipToDisplayWindow;
 }
 
 /*display black in the viewer*/
-void ViewerGL::clearViewer(){
+void ViewerGL::clearViewer()
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     setDisplayingImage(false);
     updateGL();
 }
 
 /*overload of QT enter/leave/resize events*/
-void ViewerGL::focusInEvent(QFocusEvent *event){
+void ViewerGL::focusInEvent(QFocusEvent *event)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     if(_imp->viewerTab->notifyOverlaysFocusGained()){
         updateGL();
     }
@@ -1762,6 +1851,7 @@ void ViewerGL::focusInEvent(QFocusEvent *event){
 
 void ViewerGL::focusOutEvent(QFocusEvent *event)
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     if(_imp->viewerTab->notifyOverlaysFocusLost()){
         updateGL();
     }
@@ -1770,6 +1860,7 @@ void ViewerGL::focusOutEvent(QFocusEvent *event)
 
 void ViewerGL::enterEvent(QEvent *event)
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     updateColorPicker();
     setFocus();
     QGLWidget::enterEvent(event);
@@ -1777,16 +1868,20 @@ void ViewerGL::enterEvent(QEvent *event)
 
 void ViewerGL::leaveEvent(QEvent *event)
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->infoViewer->hideColorAndMouseInfo();
     QGLWidget::leaveEvent(event);
 }
 
-void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected field
+void ViewerGL::resizeEvent(QResizeEvent* event)
+{ // public to hack the protected field
+    assert(qApp && qApp->thread() == QThread::currentThread());
     QGLWidget::resizeEvent(event);
 }
 
-void ViewerGL::keyPressEvent(QKeyEvent* event){
-    
+void ViewerGL::keyPressEvent(QKeyEvent* event)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     if (event->key() == Qt::Key_O) {
         toggleOverlays();
     }
@@ -1804,14 +1899,20 @@ void ViewerGL::keyPressEvent(QKeyEvent* event){
 }
 
 
-void ViewerGL::keyReleaseEvent(QKeyEvent* event){
+void ViewerGL::keyReleaseEvent(QKeyEvent* event)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     if(_imp->viewerTab->notifyOverlaysKeyUp(event)){
         updateGL();
     }
 }
 
 
-OpenGLViewerI::BitDepth ViewerGL::getBitDepth() const {
+OpenGLViewerI::BitDepth ViewerGL::getBitDepth() const
+{
+    // This is NOT running in the main thread. All the members accessed below should be protected against race conditions
+    //assert(qApp && qApp->thread() == QThread::currentThread());
+#pragma message WARN("race condition")
     OpenGLViewerI::BitDepth e = (OpenGLViewerI::BitDepth)appPTR->getCurrentSettings()->getViewersBitDepth();
     if(!_imp->supportsGLSL){
         e = OpenGLViewerI::BYTE;
@@ -1821,7 +1922,9 @@ OpenGLViewerI::BitDepth ViewerGL::getBitDepth() const {
 
 
 
-void ViewerGL::populateMenu(){
+void ViewerGL::populateMenu()
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->menu->clear();
     QAction* displayOverlaysAction = new QAction("Display overlays",this);
     displayOverlaysAction->setCheckable(true);
@@ -1832,6 +1935,7 @@ void ViewerGL::populateMenu(){
 
 void ViewerGL::renderText( int x, int y, const QString &string,const QColor& color,const QFont& font)
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
 
     if (string.isEmpty()) {
@@ -1856,6 +1960,7 @@ void ViewerGL::renderText( int x, int y, const QString &string,const QColor& col
 
 void ViewerGL::setPersistentMessage(int type,const QString& message)
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->persistentMessageType = type;
     _imp->persistentMessage = message;
     _imp->displayPersistentMessage = true;
@@ -1864,6 +1969,7 @@ void ViewerGL::setPersistentMessage(int type,const QString& message)
 
 void ViewerGL::clearPersistentMessage()
 {
+    assert(qApp && qApp->thread() == QThread::currentThread());
     if (!_imp->displayPersistentMessage) {
         return;
     }
@@ -1871,20 +1977,26 @@ void ViewerGL::clearPersistentMessage()
     updateGL();
 }
 
-void ViewerGL::getProjection(double &left,double &bottom,double &zoomFactor) const {
+void ViewerGL::getProjection(double &left,double &bottom,double &zoomFactor) const
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     left = _imp->zoomCtx.left;
     bottom = _imp->zoomCtx.bottom;
     zoomFactor = _imp->zoomCtx.zoomFactor;
 }
 
-void ViewerGL::setProjection(double left,double bottom,double zoomFactor) {
+void ViewerGL::setProjection(double left,double bottom,double zoomFactor)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->zoomCtx.left = left;
     _imp->zoomCtx.bottom = bottom;
     _imp->zoomCtx.zoomFactor = zoomFactor;
     _imp->zoomOrPannedSinceLastFit = true;
 }
 
-void ViewerGL::setUserRoIEnabled(bool b) {
+void ViewerGL::setUserRoIEnabled(bool b)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->isUserRoIEnabled = b;
     if (_imp->displayingImage) {
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
@@ -1892,7 +2004,9 @@ void ViewerGL::setUserRoIEnabled(bool b) {
     update();
 }
 
-bool ViewerGL::isNearByUserRoITopEdge(const QPoint& mousePos) {
+bool ViewerGL::isNearByUserRoITopEdge(const QPoint& mousePos)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
     int length = std::min(_imp->userRoI.x2 - _imp->userRoI.x1 - 10,(int)(USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor) * 2);
     RectI r(_imp->userRoI.x1 + length / 2,
@@ -1902,7 +2016,9 @@ bool ViewerGL::isNearByUserRoITopEdge(const QPoint& mousePos) {
     return r.contains(openglPos.x(),openglPos.y());
 }
 
-bool ViewerGL::isNearByUserRoIRightEdge(const QPoint& mousePos)  {
+bool ViewerGL::isNearByUserRoIRightEdge(const QPoint& mousePos)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
     int length = std::min(_imp->userRoI.y2 - _imp->userRoI.y1 - 10,(int)(USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor) * 2);
 
@@ -1913,7 +2029,9 @@ bool ViewerGL::isNearByUserRoIRightEdge(const QPoint& mousePos)  {
     return r.contains(openglPos.x(),openglPos.y());
 }
 
-bool ViewerGL::isNearByUserRoILeftEdge(const QPoint& mousePos) {
+bool ViewerGL::isNearByUserRoILeftEdge(const QPoint& mousePos)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
     int length = std::min(_imp->userRoI.y2 - _imp->userRoI.y1 - 10,(int)(USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor) * 2);
 
@@ -1924,7 +2042,9 @@ bool ViewerGL::isNearByUserRoILeftEdge(const QPoint& mousePos) {
     return r.contains(openglPos.x(),openglPos.y());
 }
 
-bool ViewerGL::isNearByUserRoIBottomEdge(const QPoint& mousePos) {
+bool ViewerGL::isNearByUserRoIBottomEdge(const QPoint& mousePos)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
     int length = std::min(_imp->userRoI.x2 - _imp->userRoI.x1 - 10,(int)(USER_ROI_CLICK_TOLERANCE / _imp->zoomCtx.zoomFactor) * 2);
 
@@ -1935,7 +2055,9 @@ bool ViewerGL::isNearByUserRoIBottomEdge(const QPoint& mousePos) {
     return r.contains(openglPos.x(),openglPos.y());
 }
 
-bool ViewerGL::isNearByUserRoIMiddleHandle(const QPoint& mousePos) {
+bool ViewerGL::isNearByUserRoIMiddleHandle(const QPoint& mousePos)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
     RectI r((_imp->userRoI.x1 + _imp->userRoI.x2) / 2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
             (_imp->userRoI.y1 + _imp->userRoI.y2) / 2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
@@ -1944,7 +2066,9 @@ bool ViewerGL::isNearByUserRoIMiddleHandle(const QPoint& mousePos) {
     return r.contains(openglPos.x(),openglPos.y());
 }
 
-bool ViewerGL::isNearByUserRoITopLeft(const QPoint& mousePos) {
+bool ViewerGL::isNearByUserRoITopLeft(const QPoint& mousePos)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
     RectI r(_imp->userRoI.x1 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
             _imp->userRoI.y2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
@@ -1953,7 +2077,9 @@ bool ViewerGL::isNearByUserRoITopLeft(const QPoint& mousePos) {
     return r.contains(openglPos.x(),openglPos.y());
 }
 
-bool ViewerGL::isNearByUserRoITopRight(const QPoint& mousePos) {
+bool ViewerGL::isNearByUserRoITopRight(const QPoint& mousePos)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
     RectI r(_imp->userRoI.x2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
             _imp->userRoI.y2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
@@ -1962,7 +2088,9 @@ bool ViewerGL::isNearByUserRoITopRight(const QPoint& mousePos) {
     return r.contains(openglPos.x(),openglPos.y());
 }
 
-bool ViewerGL::isNearByUserRoIBottomRight(const QPoint& mousePos) {
+bool ViewerGL::isNearByUserRoIBottomRight(const QPoint& mousePos)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
     RectI r(_imp->userRoI.x2 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
             _imp->userRoI.y1 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
@@ -1971,7 +2099,9 @@ bool ViewerGL::isNearByUserRoIBottomRight(const QPoint& mousePos) {
     return r.contains(openglPos.x(),openglPos.y());
 }
 
-bool ViewerGL::isNearByUserRoIBottomLeft(const QPoint& mousePos) {
+bool ViewerGL::isNearByUserRoIBottomLeft(const QPoint& mousePos)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     QPointF openglPos = toImgCoordinates_fast(mousePos.x(), mousePos.y());
     RectI r(_imp->userRoI.x1 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
             _imp->userRoI.y1 - USER_ROI_CROSS_RADIUS / _imp->zoomCtx.zoomFactor,
@@ -1980,36 +2110,50 @@ bool ViewerGL::isNearByUserRoIBottomLeft(const QPoint& mousePos) {
     return r.contains(openglPos.x(),openglPos.y());
 }
 
-bool ViewerGL::isUserRegionOfInterestEnabled() const {
+bool ViewerGL::isUserRegionOfInterestEnabled() const
+{
+    // This is NOT running in the main thread. All the members accessed below should be protected against race conditions
+    //assert(qApp && qApp->thread() == QThread::currentThread());
+#pragma message WARN("race condition")
     return _imp->isUserRoIEnabled;
 }
 
-const RectI& ViewerGL::getUserRegionOfInterest() const {
+const RectI& ViewerGL::getUserRegionOfInterest() const
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     return _imp->userRoI;
 }
 
-void ViewerGL::setUserRoI(const RectI& r) {
+void ViewerGL::setUserRoI(const RectI& r)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->userRoI = r;
 }
 
 /**
 * @brief Swap the OpenGL buffers.
 **/
-void ViewerGL::swapOpenGLBuffers() {
+void ViewerGL::swapOpenGLBuffers()
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     swapBuffers();
 }
 
 /**
  * @brief Repaint
 **/
-void ViewerGL::redraw() {
+void ViewerGL::redraw()
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     update();
 }
 
 /**
 * @brief Returns the width and height of the viewport in window coordinates.
 **/
-void ViewerGL::getViewportSize(double &width, double &height) const {
+void ViewerGL::getViewportSize(double &width, double &height) const
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     width = this->width();
     height = this->height();
 }
@@ -2017,7 +2161,9 @@ void ViewerGL::getViewportSize(double &width, double &height) const {
 /**
 * @brief Returns the pixel scale of the viewport.
 **/
-void ViewerGL::getPixelScale(double& xScale, double& yScale) const  {
+void ViewerGL::getPixelScale(double& xScale, double& yScale) const
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     xScale = 1. / getZoomFactor();
     yScale = xScale;
 }
@@ -2025,17 +2171,23 @@ void ViewerGL::getPixelScale(double& xScale, double& yScale) const  {
 /**
 * @brief Returns the colour of the background (i.e: clear color) of the viewport.
 **/
-void ViewerGL::getBackgroundColour(double &r, double &g, double &b) const {
+void ViewerGL::getBackgroundColour(double &r, double &g, double &b) const
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     r = _imp->clearColor.redF();
     g = _imp->clearColor.greenF();
     b = _imp->clearColor.blueF();
 }
 
-void ViewerGL::makeOpenGLcontextCurrent() {
+void ViewerGL::makeOpenGLcontextCurrent()
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     makeCurrent();
 }
 
-void ViewerGL::onViewerNodeNameChanged(const QString& name) {
+void ViewerGL::onViewerNodeNameChanged(const QString& name)
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->viewerTab->getGui()->unregisterTab(_imp->viewerTab);
     TabWidget* parent = dynamic_cast<TabWidget*>(_imp->viewerTab->parentWidget());
     if ( parent ) {
@@ -2044,10 +2196,16 @@ void ViewerGL::onViewerNodeNameChanged(const QString& name) {
     _imp->viewerTab->getGui()->registerTab(_imp->viewerTab);
 }
 
-void ViewerGL::removeGUI() {
+void ViewerGL::removeGUI()
+{
+    assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->viewerTab->getGui()->removeViewerTab(_imp->viewerTab, true);
 }
 
-int ViewerGL::getCurrentView() const {
+int ViewerGL::getCurrentView() const
+{
+    // This is NOT running in the main thread. All the members accessed below should be protected against race conditions
+    //assert(qApp && qApp->thread() == QThread::currentThread());
+#pragma message WARN("race condition")
     return _imp->viewerTab->getCurrentView();
 }
