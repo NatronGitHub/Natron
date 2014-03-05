@@ -18,7 +18,6 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
-#include "Engine/Row.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/VideoEngine.h"
@@ -143,23 +142,50 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
     Natron::Log::print(QString("Time "+QString::number(time)).toStdString());
 #endif
 
-    double zoomFactor = _uiContext->getZoomFactor();
     
     if(aborted()){
         return StatFailed;
     }
     
+    double zoomFactor = _uiContext->getZoomFactor();
+
+#pragma message WARN("Make use of the render scale here")
+    RenderScale scale;
+    scale.x = scale.y = 1.;
+    
+    int viewsCount = getApp()->getProject()->getProjectViewsCount();
+    int view = viewsCount > 0 ? _uiContext->getCurrentView() : 0;
+
+    
+    ///instead of calling getRegionOfDefinition on the active input, check the image cache
+    ///to see whether the result of getRegionOfDefinition is already present. A cache lookup
+    ///might be much cheaper than a call to getRegionOfDefinition.
+    ///
+    ///Note that we can't yet use the texture cache because we would need the TextureRect identifyin
+    ///the texture in order to retrieve from the cache, but to make the TextureRect we need the RoD!
+    boost::shared_ptr<const ImageParams> cachedImgParams;
+    boost::shared_ptr<Image> inputImage;
+    bool isInputImgCached = false;
+    Natron::ImageKey inputImageKey = Natron::Image::makeKey(hash().value(), time, scale,view);
     RectI rod;
-    Status stat = getRegionOfDefinition(time, &rod);
-    if(stat == StatFailed){
-#ifdef NATRON_LOG
-        Natron::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());
-        Natron::Log::endFunction(getName(),"renderViewer");
-#endif
-        return stat;
+    
+    if (!_forceRender) {
+        isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
     }
     
-    
+    if (isInputImgCached) {
+        rod = cachedImgParams->getRoD();
+    } else {
+        Status stat = getRegionOfDefinition(time, &rod);
+        if(stat == StatFailed){
+#ifdef NATRON_LOG
+            Natron::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());
+            Natron::Log::endFunction(getName(),"renderViewer");
+#endif
+            return stat;
+        }
+        
+    }
     
     ifInfiniteclipRectToProjectDefault(&rod);
     if(fitToViewer){
@@ -214,10 +240,6 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
         _interThreadInfos._bytesCount *= sizeof(float);
     }
 
-    
-    int viewsCount = getApp()->getProject()->getProjectViewsCount();
-    int view = viewsCount > 0 ? _uiContext->getCurrentView() : 0;
-    
     FrameKey key(time,
                  hash().value(),
                  _exposure,
@@ -225,46 +247,45 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
                  (int)_uiContext->getBitDepth(),
                  _channels,
                  view,
-                 rod,
-                 dispW,
                  textureRect);
     
-    boost::shared_ptr<FrameEntry> cachedFrame;
-    bool isCached = false;
-    /*if we want to force a refresh, we by-pass the cache*/
-    bool byPassCache = false;
     
-
-
+    boost::shared_ptr<FrameEntry> cachedFrame;
+    boost::shared_ptr<const FrameParams> cachedFrameParams;
+    bool isCached = false;
+    
+    ///if we want to force a refresh, we by-pass the cache
+    bool byPassCache = false;
     {
         QMutexLocker forceRenderLocker(&_forceRenderMutex);
-        if(!_forceRender){
+        if (!_forceRender) {
+            
+            ///we never use the texture cache when the user RoI is enabled, otherwise we would have
+            ///zillions of textures in the cache, each a few pixels different.
             if (!_uiContext->isUserRegionOfInterestEnabled()) {
-                isCached = Natron::getTextureFromCache(key, &cachedFrame);
+                isCached = Natron::getTextureFromCache(key,&cachedFrameParams,&cachedFrame);
             }
-        }else{
+        } else {
             byPassCache = true;
             _forceRender = false;
         }
     }
     
     if (isCached) {
-                
+        
+        assert(cachedFrameParams);
         /*Found in viewer cache, we execute the cached engine and leave*/
         _interThreadInfos._ramBuffer = cachedFrame->data();
-        Format dispW = cachedFrame->getKey()._displayWindow;
-        getApp()->getProject()->setOrAddProjectFormat(dispW,true);
 #ifdef NATRON_LOG
         Natron::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
                                    QString::number(key.getHash())).toStdString());
         Natron::Log::endFunction(getName(),"renderViewer");
 #endif
     } else {
-    
         /*We didn't find it in the viewer cache, hence we render
          the frame*/
         
-        if(_mustFreeBuffer){
+        if (_mustFreeBuffer) {
             free(_buffer);
             _mustFreeBuffer = false;
         }
@@ -272,11 +293,19 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
         ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
         ///is very low, we better render again (and let the NodeCache do the work) rather than just
         ///overload the ViewerCache which may become slowe
-        if(byPassCache || _uiContext->isUserRegionOfInterestEnabled()){
+        if (byPassCache || _uiContext->isUserRegionOfInterestEnabled()) {
             assert(!cachedFrame);
             _buffer = (unsigned char*)malloc( _interThreadInfos._bytesCount);
             _mustFreeBuffer = true;
-        }else{
+        } else {
+            
+            cachedFrameParams = FrameEntry::makeParams(rod, key._bitDepth, textureRect.w, textureRect.h);
+            bool success = Natron::getTextureFromCacheOrCreate(key, cachedFrameParams, &cachedFrame);
+            ///note that unlike  getImageFromCacheOrCreate in EffectInstance::renderRoI, we
+            ///are sure that this time the image was not in the cache and we created it because this functino
+            ///is not multi-threaded.
+            assert(!success);
+            
             assert(cachedFrame);
             _buffer = cachedFrame->data();
         }
@@ -284,9 +313,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
         _interThreadInfos._ramBuffer = _buffer;
         
         {
-            /*for now we skip the render scale*/
-            RenderScale scale;
-            scale.x = scale.y = 1.;
+      
             
             RectI toRender = texRectClipped;
             if (_uiContext->isUserRegionOfInterestEnabled()) {
@@ -294,17 +321,37 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
                     return StatOK;
                 }
             }
-            EffectInstance::RoIMap inputsRoi = getRegionOfInterest(time, scale, toRender);
-            //inputsRoi only contains 1 element
-            EffectInstance::RoIMap::const_iterator it = inputsRoi.begin();
             
-            // Do not catch exceptions: if an exception occurs here it is probably fatal, since
-            // it comes from Natron itself. All exceptions from plugins are already caught
-            // by the HostSupport library.
+            EffectInstance* activeInputToRender = input(activeInput());
+            assert(activeInputToRender);
+            if (!activeInputToRender->supportsTiles()) {
+                toRender = rod;
+            }
+            
+            
             int inputIndex = activeInput();
             _node->notifyInputNIsRendering(inputIndex);
-            _lastRenderedImage = it->first->renderRoI(time, scale,view,it->second,byPassCache);
+            
+            // If an exception occurs here it is probably fatal, since
+            // it comes from Natron itself. All exceptions from plugins are already caught
+            // by the HostSupport library.
+            // We catch it  and rethrow it just to notify the rendering is done.
+            try {
+                if (isInputImgCached) {
+                    ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
+                    ///cache lookup things because we already did it ourselves.
+                    activeInputToRender->renderRoI(time, scale, view, toRender, cachedImgParams, inputImage);
+                    _lastRenderedImage = inputImage;
+                } else {
+                    _lastRenderedImage = activeInputToRender->renderRoI(time, scale,view,toRender,byPassCache);
+                }
+            } catch (const std::exception& e) {
+                _node->notifyInputNIsFinishedRendering(inputIndex);
+                throw e;
+            }
+            
             _node->notifyInputNIsFinishedRendering(inputIndex);
+
             
             if (!_lastRenderedImage) {
                 //if render was aborted, remove the frame from the cache as it contains only garbage

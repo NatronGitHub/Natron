@@ -20,7 +20,6 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxHost.h"
-#include "Engine/Row.h"
 #include "Engine/Knob.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/TimeLine.h"

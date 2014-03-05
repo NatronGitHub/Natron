@@ -15,6 +15,8 @@
 #include <map>
 #include <locale>
 
+#include <QDebug>
+
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
 

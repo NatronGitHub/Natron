@@ -10,6 +10,7 @@
 
 #include "Project.h"
 
+#include <fstream>
 #include <QtConcurrentRun>
 
 #include "Engine/AppManager.h"

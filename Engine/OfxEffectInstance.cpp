@@ -30,7 +30,6 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/OfxParamInstance.h"
-#include "Engine/Row.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxOverlayInteract.h"
@@ -497,9 +496,9 @@ Natron::EffectInstance::FramesNeededMap OfxEffectInstance::getFramesNeeded(Seque
         Natron::errorDialog(getName(), "Failed to specify the frame ranges needed from inputs.");
     } else if (stat == kOfxStatOK) {
         for (OFX::Host::ImageEffect::RangeMap::iterator it = inputRanges.begin(); it!=inputRanges.end(); ++it) {
-            EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
-            if (inputNode && inputNode != this) {
-                ret.insert(std::make_pair(inputNode,it->second));
+            int inputNb = dynamic_cast<OfxClipInstance*>(it->first)->getInputNb();
+            if (inputNb != -1) {
+                ret.insert(std::make_pair(inputNb,it->second));
             }
         }
     } else if(stat == kOfxStatReplyDefault) {

@@ -11,6 +11,60 @@
 
 #include "Image.h"
 
+#include <QDebug>
+
+#include "Engine/ImageParams.h"
+
+using namespace Natron;
+
+
+
+ImageKey::ImageKey()
+: KeyHelper<U64>()
+, _nodeHashKey(0)
+, _time(0)
+, _renderScale()
+, _view(0)
+, _pixelAspect(1)
+{}
+
+
+ImageKey::ImageKey(U64 nodeHashKey,
+         SequenceTime time,
+         RenderScale scale,
+         int view,
+         double pixelAspect)
+: KeyHelper<U64>()
+, _nodeHashKey(nodeHashKey)
+, _time(time)
+, _view(view)
+, _pixelAspect(pixelAspect)
+{ _renderScale = scale; }
+
+void ImageKey::fillHash(Hash64* hash) const {
+    hash->append(_nodeHashKey);
+    hash->append(_renderScale.x);
+    hash->append(_renderScale.y);
+    hash->append(_time);
+    hash->append(_view);
+    hash->append(_pixelAspect);
+}
+
+
+
+bool ImageKey::operator==(const ImageKey& other) const {
+    return _nodeHashKey == other._nodeHashKey &&
+    _renderScale.x == other._renderScale.x &&
+    _renderScale.y == other._renderScale.y &&
+    _time == other._time &&
+    _view == other._view &&
+    _pixelAspect == other._pixelAspect;
+    
+}
+
+
+
+
 RectI Natron::Bitmap::minimalNonMarkedBbox(const RectI& roi) const
 {
     /*if we rendered everything we just append
@@ -236,10 +290,44 @@ void Natron::Bitmap::markForRendered(const RectI& roi){
     }
 }
 
+
+Image::Image(const ImageKey& key,const NonKeyParams& params,bool restore,const std::string& path):
+CacheEntryHelper<float,ImageKey>(key,params,restore,path)
+, _components(dynamic_cast<const ImageParams&>(params).getComponents())
+,_bitmap(dynamic_cast<const ImageParams&>(params).getRoD())
+{
+}
+
+/*This constructor can be used to allocate a local Image. The deallocation should
+ then be handled by the user. Note that no view number is passed in parameter
+ as it is not needed.*/
+Image::Image(ImageComponents components,const RectI& regionOfDefinition,RenderScale scale,SequenceTime time)
+: CacheEntryHelper<float,ImageKey>(makeKey(0,time,scale,0),
+                                   ImageParams(0, regionOfDefinition, components,-1,0,std::map<int,std::vector<RangeD> >()),
+                                   false,"")
+, _components(components)
+, _bitmap(regionOfDefinition)
+{
+}
+
+ImageKey Image::makeKey(U64 nodeHashKey,
+                        SequenceTime time,
+                        RenderScale scale,
+                        int view){
+    return ImageKey(nodeHashKey,time,scale,view);
+}
+
+boost::shared_ptr<ImageParams> Image::makeParams(int cost,const RectI& rod,ImageComponents components,
+                                                 int inputNbIdentity,int inputTimeIdentity,
+                                                 const std::map<int, std::vector<RangeD> >& framesNeeded) {
+    return boost::shared_ptr<ImageParams>(new ImageParams(cost,rod,components,inputNbIdentity,inputTimeIdentity,framesNeeded));
+}
+
+
 void Natron::Image::copy(const Natron::Image& other){
     
     RectI intersection;
-    this->_params._rod.intersect(other._params._rod, &intersection);
+    getRoD().intersect(other.getRoD(), &intersection);
     
     if (intersection.isNull()) {
         return;
@@ -276,4 +364,16 @@ void Natron::Image::fill(const RectI& rect,float r,float g,float b,float a) {
             }
         }
     }
+}
+
+float* Image::pixelAt(int x,int y){
+    const RectI& rod = _bitmap.getRoD();
+    int compsCount = getElementsCountForComponents(getComponents());
+    return this->_data.writable() + (y-rod.bottom()) * compsCount * rod.width() + (x-rod.left()) * compsCount;
+}
+
+const float* Image::pixelAt(int x,int y) const {
+    const RectI& rod = _bitmap.getRoD();
+    int compsCount = getElementsCountForComponents(getComponents());
+    return this->_data.readable() + (y-rod.bottom()) * compsCount * rod.width() + (x-rod.left()) * compsCount;
 }

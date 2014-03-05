@@ -433,7 +433,7 @@ public:
         typename container_type::right_iterator it = _container.right.begin();
         while(it != _container.right.end()){
             for(typename std::list<V>::iterator it2 = it->first.begin();it2 != it->first.end();++it2){
-                if((*it2).use_count() == 1){
+                if(it2->_entry.use_count() == 1){
                     std::pair<key_type,V> ret = std::make_pair(it->second,*it2);
                     if(it->first.size() == 1){
                         _container.right.erase(it);
