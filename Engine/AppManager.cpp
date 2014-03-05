@@ -17,6 +17,7 @@
 #include <QCoreApplication>
 
 #include "Global/MemoryInfo.h"
+#include "Global/QtCompat.h" // for removeRecursively
 
 #include "Engine/AppInstance.h"
 #include "Engine/OfxHost.h"
@@ -31,6 +32,10 @@
 #include "Engine/FrameEntry.h"
 #include "Engine/Format.h"
 #include "Engine/Log.h"
+#include "Engine/Cache.h"
+
+BOOST_CLASS_EXPORT(Natron::FrameParams)
+BOOST_CLASS_EXPORT(Natron::ImageParams)
 
 using namespace Natron;
 
@@ -78,6 +83,14 @@ struct AppManagerPrivate {
     
     void loadBuiltinFormats();
     
+    
+    void saveCaches();
+    
+    void restoreCaches();
+    
+    bool checkForCacheDiskStructure(const QString& cachePath);
+    
+    void cleanUpCacheDiskStructure(const QString& cachePath);
 
 };
 
@@ -179,6 +192,7 @@ AppManager::AppManager()
 
 AppManager::~AppManager(){
     
+    
     AppInstance* mainInstance = getAppInstance(0);
     assert(mainInstance);
     delete mainInstance;
@@ -198,6 +212,8 @@ AppManager::~AppManager(){
     }
     
     _instance = 0;
+    
+    _imp->saveCaches();
 }
 
 void AppManager::initializeQApp(int argc,char* argv[]) const {
@@ -253,6 +269,7 @@ bool AppManager::loadInternal(const QString& projectFilename,const QStringList& 
     qDebug() << "ViewerCache disk size: " << printAsRAM(maxDiskCache);
 
 
+    _imp->restoreCaches();
     
     setLoadingStatus("Restoring user settings...");
 
@@ -774,34 +791,85 @@ void AppManager::setMultiThreadEnabled(bool enabled) {
     _imp->_settings->setMultiThreadingDisabled(!enabled);
 }
 
-bool AppManager::getImage(const Natron::ImageKey& key,boost::shared_ptr<Natron::Image>* returnValue) const {
+bool AppManager::getImage(const Natron::ImageKey& key,boost::shared_ptr<const Natron::ImageParams>* params,
+                          boost::shared_ptr<Natron::Image>* returnValue) const {
+    boost::shared_ptr<const NonKeyParams> paramsBase;
 #ifdef NATRON_LOG
     Log::beginFunction("AppManager","getImage");
-    bool ret = _imp->_nodeCache->get(key, returnValue);
+    bool ret = _imp->_nodeCache->get(key,&paramsBase,returnValue);
+    if(ret) {
+        *params = boost::dynamic_pointer_cast<const Natron::ImageParams>(paramsBase);
+        Log::print("Image found in cache!");
+    } else {
+        Log::print("Image not found in cache!");
+    }
+    Log::endFunction("AppManager","getImage");
+    return ret;
+#else
+    bool ret = _imp->_nodeCache->get(key,&paramsBase, returnValue);
+    if (ret) {
+        *params = boost::dynamic_pointer_cast<const Natron::ImageParams>(paramsBase);
+    }
+    return ret;
+#endif
+
+}
+
+bool AppManager::getImageOrCreate(const Natron::ImageKey& key,boost::shared_ptr<const Natron::ImageParams> params,
+                      boost::shared_ptr<Natron::Image>* returnValue) const {
+#ifdef NATRON_LOG
+    Log::beginFunction("AppManager","getImage");
+    bool ret = _imp->_nodeCache->getOrCreate(key,params,returnValue);
     if(ret) {
         Log::print("Image found in cache!");
     } else {
         Log::print("Image not found in cache!");
     }
     Log::endFunction("AppManager","getImage");
+    return ret;
 #else
-    return _imp->_nodeCache->get(key, returnValue);
+    return _imp->_nodeCache->getOrCreate(key,params,returnValue);
 #endif
-
 }
 
-bool AppManager::getTexture(const Natron::FrameKey& key,boost::shared_ptr<Natron::FrameEntry>* returnValue) const {
+bool AppManager::getTexture(const Natron::FrameKey& key,boost::shared_ptr<const Natron::FrameParams>* params,
+                            boost::shared_ptr<Natron::FrameEntry>* returnValue) const {
+    boost::shared_ptr<const NonKeyParams> paramsBase;
 #ifdef NATRON_LOG
     Log::beginFunction("AppManager","getTexture");
-    bool ret = _imp->_viewerCache->get(key, returnValue);
+    bool ret = _imp->_viewerCache->get(key,paramsBase, returnValue);
+    if(ret) {
+        *params = boost::dynamic_pointer_cast<const Natron::FrameParams>(paramsBase);
+        Log::print("Texture found in cache!");
+    } else {
+        Log::print("Texture not found in cache!");
+    }
+    Log::endFunction("AppManager","getTexture");
+    return ret;
+#else
+    bool ret =  _imp->_viewerCache->get(key, &paramsBase,returnValue);
+    if (ret) {
+        *params = boost::dynamic_pointer_cast<const Natron::FrameParams>(paramsBase);
+    }
+    return ret;
+
+#endif
+}
+
+bool AppManager::getTextureOrCreate(const Natron::FrameKey& key,boost::shared_ptr<const Natron::FrameParams> params,
+                            boost::shared_ptr<Natron::FrameEntry>* returnValue) const {
+#ifdef NATRON_LOG
+    Log::beginFunction("AppManager","getTexture");
+    bool ret = _imp->_viewerCache->getOrCreate(key,params, returnValue);
     if(ret) {
         Log::print("Texture found in cache!");
     } else {
         Log::print("Texture not found in cache!");
     }
     Log::endFunction("AppManager","getTexture");
+    return ret;
 #else
-    return _imp->_viewerCache->get(key, returnValue);
+    return _imp->_viewerCache->getOrCreate(key, params,returnValue);
 #endif
 }
 
@@ -845,6 +913,206 @@ void AppManager::registerEngineMetaTypes() const {
 #endif
 }
 
+void AppManagerPrivate::saveCaches() {
+    
+    
+    {
+        std::ofstream ofile;
+        ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        std::string cacheRestoreFilePath = _viewerCache->getRestoreFilePath();
+        try {
+            ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
+        } catch (const std::ofstream::failure& e) {
+            qDebug() << "Exception occured when opening file " <<  cacheRestoreFilePath.c_str() << ": " << e.what();
+            return;
+        }
+        
+        if(!ofile.good()) {
+            qDebug() << "Failed to save cache to " << cacheRestoreFilePath.c_str();
+            return;
+        }
+        
+        Natron::Cache<FrameEntry>::CacheTOC toc;
+        _viewerCache->save(&toc);
+        
+        try {
+            boost::archive::binary_oarchive oArchive(ofile);
+            oArchive << toc;
+            ofile.close();
+        } catch(const std::exception& e) {
+            qDebug() << "Failed to serialize the cache table of contents: " << e.what();
+        }
+    }
+
+    
+    {
+        std::ofstream ofile;
+        ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        std::string cacheRestoreFilePath = _nodeCache->getRestoreFilePath();
+        try {
+            ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
+        } catch (const std::ofstream::failure& e) {
+            qDebug() << "Exception occured when opening file " << cacheRestoreFilePath.c_str() << ": " << e.what();
+            return;
+        }
+        
+        if(!ofile.good()) {
+            qDebug() << "Failed to save cache to " << cacheRestoreFilePath.c_str();
+            return;
+        }
+        
+        Natron::Cache<Image>::CacheTOC toc;
+        _nodeCache->save(&toc);
+        
+        try {
+            boost::archive::binary_oarchive oArchive(ofile);
+            oArchive << toc;
+            ofile.close();
+        } catch(const std::exception& e) {
+            qDebug() << "Failed to serialize the cache table of contents: " << e.what();
+        }
+    }
+}
+
+void AppManagerPrivate::restoreCaches() {
+    
+    {
+        if (checkForCacheDiskStructure(_nodeCache->getCachePath())) {
+            std::ifstream ifile;
+            std::string settingsFilePath = _nodeCache->getRestoreFilePath();
+            try {
+                ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+                ifile.open(settingsFilePath.c_str(),std::ifstream::in);
+            } catch (const std::ifstream::failure& e) {
+                qDebug() << "Failed to open the cache restoration file: " << e.what();
+                return;
+            }
+            
+            if (!ifile.good()) {
+                qDebug() << "Failed to cache file for restoration: " <<  settingsFilePath.c_str();
+                return;
+            }
+            
+            Natron::Cache<Image>::CacheTOC tableOfContents;
+            try {
+                boost::archive::binary_iarchive iArchive(ifile);
+                iArchive >> tableOfContents;
+                ifile.close();
+            } catch(const std::exception & e) {
+                qDebug() << e.what();
+                return;
+            }
+            
+            QFile restoreFile(settingsFilePath.c_str());
+            restoreFile.remove();
+            
+            _nodeCache->restore(tableOfContents);
+        }
+    }
+    {
+        if (checkForCacheDiskStructure(_viewerCache->getCachePath())) {
+            std::ifstream ifile;
+            std::string settingsFilePath = _viewerCache->getRestoreFilePath();
+            try {
+                ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+                ifile.open(settingsFilePath.c_str(),std::ifstream::in);
+            } catch (const std::ifstream::failure& e) {
+                qDebug() << "Failed to open the cache restoration file: " << e.what();
+                return;
+            }
+            
+            if (!ifile.good()) {
+                qDebug() << "Failed to cache file for restoration: " <<  settingsFilePath.c_str();
+                return;
+            }
+            
+            Natron::Cache<FrameEntry>::CacheTOC tableOfContents;
+            try {
+                boost::archive::binary_iarchive iArchive(ifile);
+                iArchive >> tableOfContents;
+                ifile.close();
+            } catch(const std::exception & e) {
+                qDebug() << e.what();
+                return;
+            }
+            
+            QFile restoreFile(settingsFilePath.c_str());
+            restoreFile.remove();
+            
+            _viewerCache->restore(tableOfContents);
+        }
+    }
+}
+
+bool AppManagerPrivate::checkForCacheDiskStructure(const QString& cachePath) {
+    QString settingsFilePath(cachePath+QDir::separator()+"restoreFile." NATRON_CACHE_FILE_EXT);
+    if (!QFile::exists(settingsFilePath)) {
+        qDebug() << "Cache folder doesn't exist.";
+        cleanUpCacheDiskStructure(cachePath);
+        return false;
+    }
+    QDir directory(cachePath);
+    QStringList files = directory.entryList(QDir::AllDirs);
+    
+    
+    /*Now counting actual data files in the cache*/
+    /*check if there's 256 subfolders, otherwise reset cache.*/
+    int count = 0; // -1 because of the restoreFile
+    int subFolderCount = 0;
+    for (int i =0; i< files.size(); ++i) {
+        QString subFolder(cachePath);
+        subFolder.append(QDir::separator());
+        subFolder.append(files[i]);
+        if(subFolder.right(1) == QString(".") || subFolder.right(2) == QString("..")) continue;
+        QDir d(subFolder);
+        if (d.exists()) {
+            ++subFolderCount;
+            QStringList items = d.entryList();
+            for (int j = 0; j < items.size(); ++j) {
+                if(items[j] != QString(".") && items[j] != QString("..")) {
+                    ++count;
+                }
+            }
+        }
+    }
+    if (subFolderCount<256) {
+        qDebug()<< cachePath << " doesn't contain sub-folders indexed from 00 to FF. Reseting.";
+        cleanUpCacheDiskStructure(cachePath);
+        return false;
+    }
+    return true;
+}
+
+void AppManagerPrivate::cleanUpCacheDiskStructure(const QString& cachePath) {
+    /*re-create cache*/
+    
+#   if QT_VERSION < 0x050000
+    removeRecursively(cachePath);
+#   else
+    if (cachePath.exists()) {
+        cachePath.removeRecursively();
+    }
+#endif
+    QDir cacheFolder(cachePath);
+    cacheFolder.mkpath(".");
+    
+    QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
+    // if not 256 subdirs, we re-create the cache
+    if (etr.size() < 256) {
+        foreach(QString e, etr){
+            cacheFolder.rmdir(e);
+        }
+    }
+    for (U32 i = 0x00 ; i <= 0xF; ++i) {
+        for (U32 j = 0x00 ; j <= 0xF ; ++j) {
+            std::ostringstream oss;
+            oss << std::hex <<  i;
+            oss << std::hex << j ;
+            std::string str = oss.str();
+            cacheFolder.mkdir(str.c_str());
+        }
+    }
+}
 
 namespace Natron{
 

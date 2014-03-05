@@ -179,6 +179,13 @@ namespace Natron{
         INTERPOLATED_VALUE = 1,
         ON_KEYFRAME = 2
     };
+    
+    enum ImageComponents {
+        ImageComponentNone = 0,
+        ImageComponentAlpha,
+        ImageComponentRGB,
+        ImageComponentRGBA
+    };
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 

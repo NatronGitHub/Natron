@@ -15,6 +15,8 @@
 #include <QCoreApplication>
 #include <QThreadStorage>
 
+#include <boost/bind.hpp>
+
 #include "Engine/AppManager.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Node.h"
@@ -22,6 +24,7 @@
 #include "Engine/Log.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Image.h"
+#include "Engine/ImageParams.h"
 #include "Engine/KnobFile.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
@@ -179,6 +182,14 @@ Natron::EffectInstance* EffectInstance::input(int n) const{
     return NULL;
 }
 
+int EffectInstance::inputIndex(EffectInstance* input) const {
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i] == input) {
+            return i;
+        }
+    }
+    return -1;
+}
 
 std::string EffectInstance::inputLabel(int inputNb) const {
     std::string out;
@@ -250,10 +261,12 @@ EffectInstance::FramesNeededMap EffectInstance::getFramesNeeded(SequenceTime tim
     defaultRange.min = defaultRange.max = time;
     std::vector<RangeD> ranges;
     ranges.push_back(defaultRange);
+    int i = 0;
     for(Inputs::const_iterator it = _imp->inputs.begin() ; it != _imp->inputs.end() ; ++it) {
         if (*it) {
-            ret.insert(std::make_pair(*it, ranges));
+            ret.insert(std::make_pair(i, ranges));
         }
+        ++i;
     }
     return ret;
 }
@@ -295,83 +308,176 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                         " ymin= " + QString::number(renderWindow.bottom()) + " xmax= " + QString::number(renderWindow.right())
                         + " ymax= " + QString::number(renderWindow.top())).toStdString());
 #endif
-    /*first-off check whether the effect is identity, in which case we don't want
-    to cache anything or render anything for this effect.*/
-    SequenceTime inputTimeIdentity;
-    int inputNbIdentity;
-
-    bool identity = isIdentity(time,scale,renderWindow,view,&inputTimeIdentity,&inputNbIdentity);
-    if(identity){
-        return getImage(inputNbIdentity,inputTimeIdentity,scale,view);
-    }
-
-    /*look-up the cache for any existing image already rendered*/
+    
+    /// First-off look-up the cache and see if we can find the cached actions results and cached image.
+    boost::shared_ptr<const ImageParams> cachedImgParams;
     boost::shared_ptr<Image> image;
     bool isCached = false;
+    Natron::ImageKey key = Natron::Image::makeKey(_imp->hashValue.value(), time, scale,view);
     
-    int cost = 0;
-    /*should data be stored on a physical device ?*/
-    if(shouldRenderedDataBePersistent()){
-        cost = 1;
-    }
-    
-    /*before allocating it we must fill the RoD of the image we want to render*/
-    RectI rod;
-    if(getRegionOfDefinition(time, &rod) == StatFailed){
-        ///if getRoD fails, just return a NULL ptr
-        return boost::shared_ptr<Natron::Image>();
-    }
-    
-    /*add the window to the project's available formats if the effect is a reader*/
-    if (isReader()) {
-        Format frmt;
-        frmt.set(rod);
-        ///FIXME: what about the pixel aspect ratio ?
-        getApp()->getProject()->setOrAddProjectFormat(frmt);
-    }
-    
-#pragma message WARN("Specify image components here")
-    Natron::ImageKey key = Natron::Image::makeKey(cost,_imp->hashValue.value(), time, scale,view,Natron::ImageComponentRGBA,rod);
-    
-    if(getCachePolicy(time) == NEVER_CACHE){
+    ///The effect caching policy might forbid caching (Readers could use this when going out of the original frame range.)
+    if (getCachePolicy(time) == NEVER_CACHE) {
         byPassCache = true;
     }
-    if(!byPassCache){
-        isCached = Natron::getImageFromCache(key, &image);
+    
+    if (!byPassCache) {
+        isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
     }
-
-    /*if not cached, we store the freshly allocated image in this member*/
-    if(!isCached){
+    
+    
+    if (!isCached) {
         
-        /*allocate a new image*/
-        if(byPassCache){
-            assert(!image);
-            image.reset(new Natron::Image(Natron::ImageComponentRGBA,key._rod,scale,time));
+        ///first-off check whether the effect is identity, in which case we don't want
+        /// to cache anything or render anything for this effect.
+        SequenceTime inputTimeIdentity;
+        int inputNbIdentity;
+        RectI rod;
+        FramesNeededMap framesNeeded;
+        bool identity = isIdentity(time,scale,renderWindow,view,&inputTimeIdentity,&inputNbIdentity);
+        if (identity) {
+            ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
+            image = getImage(inputNbIdentity,inputTimeIdentity,scale,view);
+            
+            ///if we bypass the cache, don't cache the result of isIdentity
+            if (byPassCache) {
+                return image;
+            }
+        } else {
+            ///set it to -1 so the cache know its not an identity
+            inputNbIdentity = -1;
+            
+            ///before allocating it we must fill the RoD of the image we want to render
+            if(getRegionOfDefinition(time, &rod) == StatFailed){
+                ///if getRoD fails, just return a NULL ptr
+                return boost::shared_ptr<Natron::Image>();
+            }
+            
+            ///add the window to the project's available formats if the effect is a reader
+            if (isReader()) {
+                Format frmt;
+                frmt.set(rod);
+                ///FIXME: what about the pixel aspect ratio ?
+                getApp()->getProject()->setOrAddProjectFormat(frmt);
+            }
+            
+            framesNeeded = getFramesNeeded(time);
+          
         }
+        
+#pragma message WARN("Specify image components here")
+        ImageComponents components = Natron::ImageComponentRGBA;
+        
+        int cost = 0;
+        /*should data be stored on a physical device ?*/
+        if (shouldRenderedDataBePersistent()) {
+            cost = 1;
+        }
+        
+        if (identity) {
+            cost = -1;
+        }
+        
+        cachedImgParams = Natron::Image::makeParams(cost, rod,
+                                                    components,
+                                                    inputNbIdentity, inputTimeIdentity,
+                                                    framesNeeded);
+        
+        if (byPassCache) {
+            ///if we bypass the cache, allocate the image ourselves
+            assert(!image);
+            assert(!identity);
+            image.reset(new Natron::Image(components,rod,scale,time));
+            
+        } else {
+
+            ///even though we called getImage before and it returned false, it may now
+            ///return true if another thread created the image in the cache, so we can't
+            ///make any assumption on the return value of this function call.
+            ///
+            ///!!!Note that if isIdentity is true it will allocate an empty image object with 0 bytes of data.
+            appPTR->getImageOrCreate(key, cachedImgParams, &image);
+            assert(image);
+        }
+        assert(cachedImgParams);
+
     } else {
 #ifdef NATRON_LOG
         Natron::Log::print(QString("The image was found in the NodeCache with the following hash key: "+
-                                                     QString::number(key.getHash())).toStdString());
+                                   QString::number(key.getHash())).toStdString());
 #endif
+        assert(cachedImgParams);
+        assert(image);
+        ///if it was cached, first thing to check is to see if it is an identity
+        int inputNbIdentity = cachedImgParams->getInputNbIdentity();
+        if (inputNbIdentity != -1) {
+            SequenceTime inputTimeIdentity = cachedImgParams->getInputTimeIdentity();
+            return getImage(inputNbIdentity, inputTimeIdentity, scale, view);
+        }
+
     }
-    _node->addImageBeingRendered(image, time, view);
+
+    ///If we reach here, it can be either because the image is cached or not, either way
+    ///the image is NOT an identity, and it may have some content left to render.
+    bool success = renderRoIInternal(time, scale, view, renderWindow, cachedImgParams, image, byPassCache);
     
-    /*now that we have our image, we check what is left to render. If the list contains only
-     null rects then we already rendered it all*/
-    RectI intersection;
-    renderWindow.intersect(image->getRoD(), &intersection);
-    std::list<RectI> rectsToRender;
-    if (supportsTiles()) {
-        rectsToRender = image->getRestToRender(intersection);
-    } else {
-        rectsToRender.push_back(rod);
+    if(aborted() || !success){
+        //if render was aborted, remove the frame from the cache as it contains only garbage
+        appPTR->removeFromNodeCache(image);
     }
 #ifdef NATRON_LOG
-    if (rectsToRender.empty()) {
+    Natron::Log::endFunction(getName(),"renderRoI");
+#endif
+    if (!success) {
+        throw std::runtime_error("Rendering Failed");
+    }
+    
+    return image;
+}
+
+
+void EffectInstance::renderRoI(SequenceTime time,RenderScale scale,
+                               int view,const RectI& renderWindow,
+                               const boost::shared_ptr<const ImageParams>& cachedImgParams,
+                               const boost::shared_ptr<Image>& image,
+                               bool byPassCache) {
+    bool success = renderRoIInternal(time, scale, view, renderWindow, cachedImgParams, image, byPassCache);
+    if (!success) {
+        throw std::runtime_error("Rendering Failed");
+    }
+}
+
+bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
+                       int view,const RectI& renderWindow,
+                       const boost::shared_ptr<const ImageParams>& cachedImgParams,
+                       const boost::shared_ptr<Image>& image,
+                       bool byPassCache) {
+    _node->addImageBeingRendered(image, time, view);
+    
+    ///We check what is left to render.
+    
+    ///intersect the image render window to the actual image region of definition.
+    RectI intersection;
+    renderWindow.intersect(image->getRoD(), &intersection);
+    
+    /// If the list contains only null rects then we already rendered it all
+    std::list<RectI> rectsToRender = image->getRestToRender(intersection);
+    
+    ///if the effect doesn't support tiles and it has something left to render, just render the rod again
+    ///note that it should NEVER happen because if it doesn't support tiles in the first place, it would
+    ///have rendered the rod already.
+    if (!supportsTiles() && !rectsToRender.empty()) {
+        ///if the effect doesn't support tiles, just render the whole rod again even though
+        rectsToRender.push_back(cachedImgParams->getRoD());
+    }
+#ifdef NATRON_LOG
+    else if (rectsToRender.empty()) {
         Natron::Log::print(QString("Everything is already rendered in this image.").toStdString());
     }
 #endif
+    
+    bool renderSucceeded = true;
 
+    
     for (std::list<RectI>::iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
         
         RectI& rectToRender = *it;
@@ -390,39 +496,45 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         args._view = view;
         args._scale = scale;
         _imp->renderArgs.setLocalData(args);
-
+        
+        
+        ///the getRegionOfInterest call CANNOT be cached because it depends of the render window.
         RoIMap inputsRoi = getRegionOfInterest(time, scale, rectToRender);
-        FramesNeededMap framesNeeeded = getFramesNeeded(time);
+        
+        ///get the cached frames needed or the one we just computed earlier.
+        const FramesNeededMap& framesNeeeded = cachedImgParams->getFramesNeeded();
         
         std::list< boost::shared_ptr<Natron::Image> > inputImages;
         
+
         /*we render each input first and store away their image in the inputImages list
          in order to maintain a shared_ptr use_count > 1 so the cache doesn't attempt
          to remove them.*/
-        for (FramesNeededMap::iterator it2 = framesNeeeded.begin(); it2 != framesNeeeded.end(); ++it2) {
-            RoIMap::iterator foundInputRoI = inputsRoi.find(it2->first);
+        for (FramesNeededMap::const_iterator it2 = framesNeeeded.begin(); it2 != framesNeeeded.end(); ++it2) {
+            EffectInstance* inputEffect = input(it2->first);
+            assert(inputEffect);
+            RoIMap::iterator foundInputRoI = inputsRoi.find(inputEffect);
             assert(foundInputRoI != inputsRoi.end());
             
             ///notify the node that we're going to render something with the input
-            int inputNb = getInputNumber(it2->first);
-            assert(inputNb != -1); //< see getInputNumber
-            _node->notifyInputNIsRendering(inputNb);
-
+            assert(it2->first != -1); //< see getInputNumber
+            _node->notifyInputNIsRendering(it2->first);
+            
             for (U32 range = 0; range < it2->second.size(); ++range) {
                 for (U32 f = it2->second[range].min; f < it2->second[range].max; ++f) {
-                    boost::shared_ptr<Natron::Image> inputImg = it2->first->renderRoI(f, scale,view, foundInputRoI->second,byPassCache);
+                    boost::shared_ptr<Natron::Image> inputImg = inputEffect->renderRoI(f, scale,view, foundInputRoI->second,byPassCache);
                     if (inputImg) {
                         inputImages.push_back(inputImg);
                     }
                 }
             }
-            _node->notifyInputNIsFinishedRendering(inputNb);
+            _node->notifyInputNIsFinishedRendering(it2->first);
             
             if (aborted()) {
                 //if render was aborted, remove the frame from the cache as it contains only garbage
                 appPTR->removeFromNodeCache(image);
                 _node->removeImageBeingRendered(time, view);
-                return image;
+                return true;
             }
         }
         
@@ -455,6 +567,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                 getApp()->getProject()->unlock();
             }
         }
+        
         switch (safety) {
             case FULLY_SAFE_FRAME: // the plugin will perform any per frame SMP threading
             {
@@ -477,14 +590,15 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                 if (callEndRender) {
                     endSequenceRender(time, time, time, false, scale);
                 }
-            
+                
                 for (QFuture<Natron::Status>::const_iterator it2 = ret.begin(); it2!=ret.end(); ++it2) {
                     if ((*it2) == Natron::StatFailed) {
-                        throw std::runtime_error("rendering failed");
+                        renderSucceeded = false;
+                        break;
                     }
                 }
             } break;
-
+                
             case INSTANCE_SAFE: // indicating that any instance can have a single 'render' call at any one time,
             {
                 // NOTE: the per-instance lock should probably be shared between
@@ -513,7 +627,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                     }
                     
                     if (st != Natron::StatOK) {
-                        throw std::runtime_error("rendering failed");
+                        renderSucceeded = false;
                     }
                     if (!aborted()) {
                         image->markForRendered(rectToRender);
@@ -546,15 +660,15 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                     }
                     
                     if (st != Natron::StatOK) {
-                        throw std::runtime_error("rendering failed");
+                        renderSucceeded = false;
                     }
                     if (!aborted()) {
                         image->markForRendered(rectToRender);
                     }
                 }
             } break;
-
-
+                
+                
             case UNSAFE: // indicating that only a single 'render' call can be made at any time amoung all instances
             default:
             {
@@ -578,31 +692,29 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                     }
                     
                     if(st != Natron::StatOK){
-                        throw std::runtime_error("rendering failed");
+                        renderSucceeded = false;
                     }
-                    if(!aborted()){
+                    if (!aborted()) {
                         image->markForRendered(rectToRender);
                     }
                 }
             } break;
         }
-
+        
         ///notify the node we've finished rendering
         _node->notifyRenderingEnded();
+        
+        if (!renderSucceeded) {
+            break;
+        }
     }
     _node->removeImageBeingRendered(time, view);
-
+    
     //we released the input images and force the cache to clear exceeding entries
     appPTR->clearExceedingEntriesFromNodeCache();
+    
+    return renderSucceeded;
 
-    if(aborted()){
-        //if render was aborted, remove the frame from the cache as it contains only garbage
-        appPTR->removeFromNodeCache(image);
-    }
-#ifdef NATRON_LOG
-    Natron::Log::endFunction(getName(),"renderRoI");
-#endif
-    return image;
 }
 
 boost::shared_ptr<Natron::Image> EffectInstance::getImageBeingRendered(SequenceTime time,int view) const{

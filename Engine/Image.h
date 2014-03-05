@@ -13,13 +13,9 @@
 #define NATRON_ENGINE_IMAGE_H_
 
 #include <list>
+#include <map>
 
-#include "Global/Macros.h"
-CLANG_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/binary_iarchive.hpp>
-CLANG_DIAG_ON(unused-parameter)
-#include <boost/archive/binary_oarchive.hpp>
+#include "Global/GlobalDefines.h"
 #include <boost/scoped_array.hpp>
 
 CLANG_DIAG_OFF(deprecated)
@@ -27,117 +23,40 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QMutex>
 
-#include "Engine/Cache.h"
+#include "Engine/CacheEntry.h"
 #include "Engine/Rect.h"
 
 namespace Natron {
     
-    enum ImageComponents {
-        ImageComponentNone = 0,
-        ImageComponentAlpha,
-        ImageComponentRGB,
-        ImageComponentRGBA
-    };
+    class ImageParams;
     
     class ImageKey :  public KeyHelper<U64>
     {
-        
-        
     public:
         
-        ImageComponents _components;
         U64 _nodeHashKey;
         SequenceTime _time;
         RenderScale _renderScale;
-        RectI _rod;
         int _view;
         double _pixelAspect;
 
-        ImageKey()
-		: KeyHelper<U64>()
-        , _components(ImageComponentNone)
-        , _nodeHashKey(0)
-        , _time(0)
-        , _renderScale()
-        , _rod()
-        , _view(0)
-        , _pixelAspect(1)
-        {}
-
+        ImageKey();
         
-        ImageKey(int cost,
-                 U64 nodeHashKey,
+        ImageKey(U64 nodeHashKey,
                  SequenceTime time,
                  RenderScale scale,
                  int view,
-                 ImageComponents components,
-                 const RectI& regionOfDefinition,
-                 double pixelAspect = 1.)
-		: KeyHelper<U64>(cost,regionOfDefinition.area() * getElementsCountForComponents(components)) //< images are only RGBA for now hence the 4
-        , _components(components)
-        , _nodeHashKey(nodeHashKey)
-        , _time(time)
-        , _rod(regionOfDefinition)
-        , _view(view)
-        , _pixelAspect(pixelAspect)
-        { _renderScale = scale; }
+                 double pixelAspect = 1.);
         
-        void fillHash(Hash64* hash) const {
-            hash->append(_components);
-            hash->append(_nodeHashKey);
-            hash->append(_renderScale.x);
-            hash->append(_renderScale.y);
-            hash->append(_time);
-            hash->append(_view);
-            hash->append(_pixelAspect);
-        }
+        void fillHash(Hash64* hash) const;
         
-        static int getElementsCountForComponents(ImageComponents comp) {
-            switch (comp) {
-                case ImageComponentNone:
-                    return 0;
-                case ImageComponentAlpha:
-                    return 1;
-                case ImageComponentRGB:
-                    return 3;
-                case ImageComponentRGBA:
-                    return 4;
-                default:
-                    ///unsupported components
-                    assert(false);
-                    break;
-            }
-        }
         
-        bool operator==(const ImageKey& other) const {
-            return _components == other._components &&
-            _nodeHashKey == other._nodeHashKey &&
-            _renderScale.x == other._renderScale.x &&
-            _renderScale.y == other._renderScale.y &&
-            // _rod == other._rod && //< do not compare the rod (@see renderRoI)
-            _time == other._time &&
-            _view == other._view &&
-            _pixelAspect == other._pixelAspect;
-            
-        }
-        
-        friend class boost::serialization::access;
-        template<class Archive>
-        void serialize(Archive & ar, const unsigned int version)
-        {
-            (void)version;
-            ar & _rod;
-            ar & _components;
-            ar & _nodeHashKey;
-            ar & _renderScale.x;
-            ar & _renderScale.y;
-            ar & _time;
-            ar & _view;
-            ar & _pixelAspect;
-        }
+        bool operator==(const ImageKey& other) const;
+
     };
     
-    class Bitmap{
+    
+    class Bitmap {
     public:
         Bitmap(const RectI& rod)
         : _rod(rod)
@@ -169,60 +88,47 @@ namespace Natron {
     class Image  : public CacheEntryHelper<float,ImageKey>
     {
         
+        ImageComponents _components;
         Bitmap _bitmap;
         mutable QMutex _lock;
         
     public:
    
-        Image(const ImageKey& key,bool restore,const std::string& path):
-        CacheEntryHelper<float,ImageKey>(key,restore,path)
-        ,_bitmap(key._rod){
-        }
+        Image(const ImageKey& key,const NonKeyParams& params,bool restore,const std::string& path);
+        
         
         /*This constructor can be used to allocate a local Image. The deallocation should
          then be handled by the user. Note that no view number is passed in parameter
          as it is not needed.*/
-        Image(ImageComponents components,const RectI& regionOfDefinition,RenderScale scale,SequenceTime time)
-        : CacheEntryHelper<float,ImageKey>(makeKey(0,0,time,scale,0,components,regionOfDefinition),false,"")
-        , _bitmap(regionOfDefinition)
-        {
-        }
+        Image(ImageComponents components,const RectI& regionOfDefinition,RenderScale scale,SequenceTime time);
         
         virtual ~Image(){}
         
-        static ImageKey makeKey(int cost,
-                                U64 nodeHashKey,
+        static ImageKey makeKey(U64 nodeHashKey,
                                 SequenceTime time,
                                 RenderScale scale,
-                                int view,
-                                ImageComponents components,
-                                const RectI& regionOfDefinition){
-            return ImageKey(cost,nodeHashKey,time,scale,view,components,regionOfDefinition);
-        }
+                                int view);
+        
+        static boost::shared_ptr<ImageParams> makeParams(int cost,const RectI& rod,ImageComponents components,
+                                                         int inputNbIdentity,int inputTimeIdentity,
+                                                         const std::map<int, std::vector<RangeD> >& framesNeeded) ;
         
         const RectI& getRoD() const {return _bitmap.getRoD();}
         
-        RenderScale getRenderScale() const {return this->_params._renderScale;}
+        RenderScale getRenderScale() const {return this->_key._renderScale;}
         
-        SequenceTime getTime() const {return this->_params._time;}
+        SequenceTime getTime() const {return this->_key._time;}
         
-        ImageComponents getComponents() const {return this->_params._components;}
+        ImageComponents getComponents() const {return this->_components;}
         
-        void setPixelAspect(double pa) { this->_params._pixelAspect = pa; }
+        void setPixelAspect(double pa) { this->_key._pixelAspect = pa; }
         
-        double getPixelAspect() const { return this->_params._pixelAspect; }
+        double getPixelAspect() const { return this->_key._pixelAspect; }
         
-        float* pixelAt(int x,int y){
-            const RectI& rod = _bitmap.getRoD();
-            int compsCount = ImageKey::getElementsCountForComponents(getComponents());
-            return this->_data.writable() + (y-rod.bottom()) * compsCount * rod.width() + (x-rod.left()) * compsCount;
-        }
+        float* pixelAt(int x,int y);
         
-        const float* pixelAt(int x,int y) const {
-            const RectI& rod = _bitmap.getRoD();
-            int compsCount = ImageKey::getElementsCountForComponents(getComponents());
-            return this->_data.readable() + (y-rod.bottom()) * compsCount * rod.width() + (x-rod.left()) * compsCount;
-        }
+        const float* pixelAt(int x,int y) const;
+        
         /**
          * @brief Returns a list of portions of image that are not yet rendered within the 
          * region of interest given. This internally uses the bitmap to know what portion
@@ -279,4 +185,6 @@ namespace Natron {
     };    
     
 }//namespace Natron
+
+
 #endif // NATRON_ENGINE_IMAGE_H_

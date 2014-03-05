@@ -43,8 +43,11 @@ SOURCES += \
     Curve.cpp \
     CurveSerialization.cpp \
     EffectInstance.cpp \
+    FrameEntry.cpp \
+    FrameParamsSerialization.cpp \
     Hash64.cpp \
     Image.cpp \
+    ImageParamsSerialization.cpp \
     Knob.cpp \
     KnobSerialization.cpp \
     KnobFactory.cpp \
@@ -55,6 +58,8 @@ SOURCES += \
     Lut.cpp \
     MemoryFile.cpp \
     Node.cpp \
+    NonKeyParams.cpp \
+    NonKeyParamsSerialization.cpp \
     NodeSerialization.cpp \
     OfxClipInstance.cpp \
     OfxHost.cpp \
@@ -69,7 +74,6 @@ SOURCES += \
     Project.cpp \
     ProjectPrivate.cpp \
     ProjectSerialization.cpp \
-    Row.cpp \
     SequenceParsing.cpp \
     Settings.cpp \
     StandardPaths.cpp \
@@ -84,6 +88,7 @@ HEADERS += \
     AppManager.h \
     BlockingBackgroundRender.h \
     Cache.h \
+    CacheEntry.h \
     Curve.h \
     CurveSerialization.h \
     CurvePrivate.h \
@@ -92,9 +97,15 @@ HEADERS += \
     EffectInstance.h \
     Format.h \
     FrameEntry.h \
+    FrameEntrySerialization.h \
+    FrameParams.h \
+    FrameParamsSerialization.h \
     Hash64.h \
     ImageInfo.h \
     Image.h \
+    ImageSerialization.h \
+    ImageParams.h \
+    ImageParamsSerialization.h \
     Interpolation.h \
     Knob.h \
     KnobSerialization.h \
@@ -107,6 +118,8 @@ HEADERS += \
     Lut.h \
     MemoryFile.h \
     Node.h \
+    NonKeyParams.h \
+    NonKeyParamsSerialization.h \
     NodeSerialization.h \
     OfxClipInstance.h \
     OfxHost.h \
@@ -123,7 +136,6 @@ HEADERS += \
     Project.h \
     ProjectPrivate.h \
     ProjectSerialization.h \
-    Row.h \
     SequenceParsing.h \
     Settings.h \
     Singleton.h \
@@ -135,4 +147,5 @@ HEADERS += \
     Timer.h \
     Variant.h \
     VideoEngine.h \
-    ViewerInstance.h
+    ViewerInstance.h \
+

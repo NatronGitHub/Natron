@@ -14,155 +14,65 @@
 
 #include <QtCore/QObject>
 
+
 #include "Global/GlobalDefines.h"
 
-#include "Engine/Cache.h"
+#include "Engine/CacheEntry.h"
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
 #include "Engine/TextureRect.h"
-#include "Engine/TextureRectSerialization.h"
+
 
 class Hash64;
 
 namespace Natron{
     
+    class FrameParams;
     
-    class FrameKey : public KeyHelper<U64>{
+    class FrameKey : public KeyHelper<U64> {
     public:
         SequenceTime _time;
         U64 _treeVersion;
-        //double _zoomFactor;
         double _exposure;
         int _lut;
         int _bitDepth;
         int _channels;
         int _view;
-        RectI _dataWindow;//RoD
-        Format _displayWindow;
         TextureRect _textureRect; // texture rectangle definition (bounds in the original image + width and height)
         
         
-        FrameKey()
-		: KeyHelper<U64>()
-        , _time(0)
-        , _treeVersion(0)
-        // , _zoomFactor(0)
-        , _exposure(0)
-        , _lut(0)
-        , _bitDepth(0)
-        , _channels(0)
-        , _view(0)
-        , _dataWindow()
-        , _displayWindow()
-        , _textureRect()
-        {}
+        FrameKey();
         
         
-        FrameKey(SequenceTime time,U64 treeVersion/*,double zoomFactor*/,double exposure,
-                 int lut,int bitDepth,int channels,int view,
-                 const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect):
-        KeyHelper<U64>(1,bitDepth != 0 ?
-                       textureRect.w * textureRect.h  * 4 * 4
-                       : textureRect.w * textureRect.h   * 4 )
-        ,_time(time)
-        ,_treeVersion(treeVersion)
-        // ,_zoomFactor(zoomFactor)
-        ,_exposure(exposure)
-        ,_lut(lut)
-        ,_bitDepth(bitDepth)
-        ,_channels(channels)
-        ,_view(view)
-        ,_dataWindow(dataWindow)
-        ,_displayWindow(displayWindow)
-        ,_textureRect(textureRect)
-        {
-            
-        }
+        FrameKey(SequenceTime time,U64 treeVersion,double exposure,
+                 int lut,int bitDepth,int channels,int view,const TextureRect& textureRect);
         
-        void fillHash(Hash64* hash) const {
-            hash->append(_time);
-            hash->append(_treeVersion);
-            // hash->append(_zoomFactor);
-            hash->append(_exposure);
-            hash->append(_lut);
-            hash->append(_bitDepth);
-            hash->append(_channels);
-            hash->append(_view);
-            hash->append(_dataWindow.left());
-            hash->append(_dataWindow.right());
-            hash->append(_dataWindow.top());
-            hash->append(_dataWindow.bottom());
-            hash->append(_displayWindow.left());
-            hash->append(_displayWindow.right());
-            hash->append(_displayWindow.top());
-            hash->append(_displayWindow.bottom());
-            double ap = _displayWindow.getPixelAspect();
-            hash->append(ap);
-            hash->append(_textureRect.x1);
-            hash->append(_textureRect.y1);
-            hash->append(_textureRect.x2);
-            hash->append(_textureRect.y2);
-            hash->append(_textureRect.w);
-            hash->append(_textureRect.h);
-            hash->append(_textureRect.closestPo2);
-        }
+        void fillHash(Hash64* hash) const;
         
-        bool operator==(const FrameKey& other) const {
-            return  _time == other._time &&
-                    _treeVersion == other._treeVersion &&
-            //_zoomFactor == other._zoomFactor &&
-                    _exposure == other._exposure &&
-                    _lut == other._lut &&
-                    _bitDepth == other._bitDepth &&
-                    _channels == other._channels &&
-                    _view == other._view &&
-                    _dataWindow == other._dataWindow &&
-                    _displayWindow == other._displayWindow &&
-                    _textureRect == other._textureRect;
-        }
+        bool operator==(const FrameKey& other) const ;
     };
+  
 }
 
-namespace boost {
-    namespace serialization {
-        
-        template<class Archive>
-        void serialize(Archive & ar, Natron::FrameKey & f, const unsigned int version)
-        {
-            (void)version;
-            ar & f._time;
-            ar & f._treeVersion;
-            // ar & f._zoomFactor;
-            ar & f._exposure;
-            ar & f._lut;
-            ar & f._bitDepth;
-            ar & f._channels;
-            ar & f._view;
-            ar & f._dataWindow;
-            ar & f._displayWindow;
-            ar & f._textureRect;
-        }
-    }
-}
 
-namespace Natron{
+namespace Natron {
     class FrameEntry : public CacheEntryHelper<U8,FrameKey>
     {
         
     public:
         
-        FrameEntry(const FrameKey& params,bool restore,const std::string& path)
-        :CacheEntryHelper<U8,FrameKey>(params,restore,path)
+
+        
+        FrameEntry(const FrameKey& key,const NonKeyParams& params,bool restore,const std::string& path)
+        :CacheEntryHelper<U8,FrameKey>(key,params,restore,path)
         {
         }
       
         ~FrameEntry(){}
         
-        static FrameKey makeKey(SequenceTime time,U64 treeVersion/*,double zoomFactor*/,double exposure,
-                                int lut,int bitDepth,int channels,int view,
-                                const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect){
-            return FrameKey(time,treeVersion/*,zoomFactor*/,exposure,lut,bitDepth,channels,view,dataWindow,displayWindow,textureRect);
-        }
+        static FrameKey makeKey(SequenceTime time,U64 treeVersion,double exposure,
+                                int lut,int bitDepth,int channels,int view,const TextureRect& textureRect);
+        static boost::shared_ptr<const FrameParams> makeParams(const RectI rod,int bitDepth,int texW,int texH);
         
         U8* data() const {return _data.writable();}
         

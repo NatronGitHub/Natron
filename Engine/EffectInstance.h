@@ -33,7 +33,7 @@ namespace Natron{
 
 class Node;
 class Image;
-
+class ImageParams;
 /**
  * @brief This is the base class for visual effects.
  * A live instance is always living throughout the lifetime of a Node and other copies are
@@ -46,7 +46,7 @@ public:
     
     typedef std::map<EffectInstance*,RectI> RoIMap;
     
-    typedef std::map<EffectInstance*, std::vector<RangeD> > FramesNeededMap;
+    typedef std::map<int, std::vector<RangeD> > FramesNeededMap;
     
 public:
     
@@ -113,6 +113,10 @@ public:
      **/
     EffectInstance* input(int n) const WARN_UNUSED_RETURN;
     
+    /**
+     * @brief, Given an input effect, returns on what input index it is connected, -1 if it couldn't be found.
+     **/
+    int inputIndex(EffectInstance* input) const WARN_UNUSED_RETURN;
   
     /**
      * @brief Forwarded to the node holding the effect
@@ -203,6 +207,18 @@ public:
     boost::shared_ptr<Image> renderRoI(SequenceTime time,RenderScale scale,
                                                      int view,const RectI& renderWindow,
                                                      bool byPassCache = false) WARN_UNUSED_RETURN;
+    
+    /**
+     * @brief Same as renderRoI(SequenceTime,RenderScale,int,RectI,bool) but takes in parameter
+     * the outputImage where to render instead. This is used by the Viewer which already did
+     * a cache look-up for optimization purposes.
+     **/
+    void renderRoI(SequenceTime time,RenderScale scale,
+                   int view,const RectI& renderWindow,
+                   const boost::shared_ptr<const ImageParams>& cachedImgParams,
+                   const boost::shared_ptr<Image>& image,
+                   bool byPassCache = false);
+
 
     /**
      * @brief Returns a pointer to the image being rendered currently by renderRoI if any.
@@ -523,6 +539,15 @@ private:
     
     struct RenderArgs;
 
+    /**
+     * @brief The internal of renderRoI, mainly it calls render and handles the thread safety of the effect.
+     * @returns True if the render call succeeded, false otherwise.
+     **/
+    bool renderRoIInternal(SequenceTime time,RenderScale scale,
+                   int view,const RectI& renderWindow,
+                   const boost::shared_ptr<const ImageParams>& cachedImgParams,
+                   const boost::shared_ptr<Image>& image,
+                    bool byPassCache);
 
     /**
      * @brief Must be implemented to evaluate a value change
@@ -531,6 +556,8 @@ private:
      **/
     void evaluate(Knob* knob,bool isSignificant) OVERRIDE;
 
+    
+    
 
     
     

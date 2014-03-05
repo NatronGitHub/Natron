@@ -20,6 +20,7 @@
 #include "Engine/Settings.h"
 #include "Engine/ImageFetcher.h"
 #include "Engine/Image.h"
+#include "Engine/ImageParams.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Hash64.h"
 #include "Engine/AppInstance.h"
@@ -260,7 +261,7 @@ OFX::Host::ImageEffect::Image(clip)
     setIntProperty(kOfxImagePropRegionOfDefinition, rod.top(), 3);
     // row bytes
     setIntProperty(kOfxImagePropRowBytes, rod.width() *
-                   Natron::ImageKey::getElementsCountForComponents(internalImage->getComponents()) *
+                   Natron::getElementsCountForComponents(internalImage->getComponents()) *
                    sizeof(float));
     setStringProperty(kOfxImageEffectPropComponents, natronsComponentsToOfxComponents(internalImage->getComponents()));
     setStringProperty(kOfxImageEffectPropPixelDepth, clip.getPixelDepth());
