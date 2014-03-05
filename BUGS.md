@@ -6,6 +6,10 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
+- knob values should be set before calling CreateInstanceAction: http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxActionCreateInstance : Preconditions
+  "if the values are being loaded from an old setup, that load should have taken place before the create instance action is called."
+  (The same should be done when cloning an Instance.)
+
 - in the properties panel, all parameters should be expanding horizontally
 
 - disabled choiceparam should be grayed out (text drawn in black instead of white)
