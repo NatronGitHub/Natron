@@ -60,7 +60,7 @@ using namespace Natron;
 Natron::OfxHost::OfxHost()
 :_imageEffectPluginCache(new OFX::Host::ImageEffect::PluginCache(*this))
 {
-    _properties.setStringProperty(kOfxPropName,NATRON_APPLICATION_NAME "Host"); //"uk.co.thefoundry.nuke" //< use this to pass for nuke
+    _properties.setStringProperty(kOfxPropName,NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME); //"uk.co.thefoundry.nuke" //< use this to pass for nuke
     _properties.setStringProperty(kOfxPropLabel, NATRON_APPLICATION_NAME); // "nuke" //< use this to pass for nuke
     _properties.setIntProperty(kOfxPropAPIVersion, 1 , 0); //API v1.0
     _properties.setIntProperty(kOfxPropAPIVersion, 0 , 1);
