@@ -776,6 +776,10 @@ void EffectInstance::createKnobDynamically(){
 void EffectInstance::evaluate(Knob* knob,bool isSignificant){
     assert(_node);
     
+    if (getApp()->getProject()->isLoadingProject()) {
+        return;
+    }
+    
     /*if this is a writer (openfx or built-in writer)*/
     if (isWriter()) {
         /*if this is a button and it is a render button,we're safe to assume the plug-ins wants to start rendering.*/

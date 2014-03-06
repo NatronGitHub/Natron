@@ -30,7 +30,7 @@ using std::make_pair;
 
 
 namespace Natron{
-    
+
 
 Project::Project(AppInstance* appInstance)
     : KnobHolder(appInstance)
@@ -80,6 +80,9 @@ bool Project::loadProject(const QString& path,const QString& name){
         QMutexLocker l(&_imp->isLoadingProjectMutex);
         _imp->isLoadingProject = false;
     }
+    
+    refreshViewersAndPreviews();
+    
     return true;
 }
 
@@ -121,7 +124,9 @@ void Project::loadProjectInternal(const QString& path,const QString& name) {
     _imp->ageSinceLastSave = time;
     _imp->lastAutoSave = time;
     emit projectNameChanged(name);
+}
 
+void Project::refreshViewersAndPreviews() {
     /*Refresh all previews*/
     for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
         if (_imp->currentNodes[i]->isPreviewEnabled()) {
@@ -130,8 +135,7 @@ void Project::loadProjectInternal(const QString& path,const QString& name) {
     }
 
     /*Refresh all viewers as it was*/
-    if(!appPTR->isBackground()){
-        emit formatChanged(getProjectDefaultFormat());
+    if (!appPTR->isBackground()) {
         const std::vector<Node*>& nodes = getCurrentNodes();
         for (U32 i = 0; i < nodes.size(); ++i) {
             assert(nodes[i]);
@@ -142,7 +146,6 @@ void Project::loadProjectInternal(const QString& path,const QString& name) {
             }
         }
     }
-
 }
 
 void Project::saveProject(const QString& path,const QString& name,bool autoSave){
@@ -237,12 +240,12 @@ void Project::saveProjectInternal(const QString& path,const QString& name,bool a
         filePath = path+actualFileName;
     }
     std::ofstream ofile;
-	try {
-		ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-		ofile.open(filePath.toStdString().c_str(),std::ofstream::out);
-	} catch (const std::ofstream::failure& e) {
-		throw std::runtime_error(std::string("Exception occured when opening file ") + filePath.toStdString() + ": " + e.what());
-	}
+    try {
+        ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        ofile.open(filePath.toStdString().c_str(),std::ofstream::out);
+    } catch (const std::ofstream::failure& e) {
+        throw std::runtime_error(std::string("Exception occured when opening file ") + filePath.toStdString() + ": " + e.what());
+    }
     if (!ofile.good()) {
         qDebug() << "Failed to open file " << filePath.toStdString().c_str();
         throw std::runtime_error("Failed to open file " + filePath.toStdString());
@@ -388,7 +391,9 @@ bool Project::findAndTryLoadAutoSave() {
                 _imp->ageSinceLastSave = QDateTime();
 
                 emit projectNameChanged(_imp->projectName + " (*)");
-
+                
+                refreshViewersAndPreviews();
+                
                 return true;
             }
         }
@@ -674,13 +679,14 @@ void Project::onTimeChanged(SequenceTime time,int reason) {
 void Project::save(ProjectSerialization* serializationObject) const {
     serializationObject->initialize(this);
 }
-    
+
 void Project::load(const ProjectSerialization& obj){
     _imp->nodeCounters.clear();
     _imp->restoreFromSerialization(obj);
     emit formatChanged(getProjectDefaultFormat());
-}
     
+}
+
 void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller){
     QMutexLocker l(&_imp->beginEndMutex);
     
@@ -828,7 +834,7 @@ void Project::beginKnobsValuesChanged(Natron::ValueChangedReason /*reason*/){}
 void Project::endKnobsValuesChanged(Natron::ValueChangedReason /*reason*/) {}
 
 
-    
+
 ///this function is only called on the main thread
 void Project::onKnobValueChanged(Knob* knob,Natron::ValueChangedReason /*reason*/) {
     if (knob == _imp->viewsCount.get()) {
@@ -849,7 +855,7 @@ void Project::onKnobValueChanged(Knob* knob,Natron::ValueChangedReason /*reason*
         emit mustCreateFormat();
     } else if(knob == _imp->previewMode.get()) {
         emit autoPreviewChanged(_imp->previewMode->getValue<bool>());
-    } 
+    }
     
 }
 

@@ -104,7 +104,7 @@ struct ProjectPrivate {
     ProjectPrivate(Natron::Project* project);
     
     void restoreFromSerialization(const ProjectSerialization& obj);
-    
+        
 };
     
 

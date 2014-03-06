@@ -200,6 +200,8 @@ signals:
     
 private:
     
+    void refreshViewersAndPreviews();
+    
     /*Returns the index of the format*/
     int tryAddProjectFormat(const Format& f);
     

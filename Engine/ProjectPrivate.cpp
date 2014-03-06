@@ -167,5 +167,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     project->endProjectWideValueChanges(project);
 
 }
+    
+    
 
 } // namespace Natron
