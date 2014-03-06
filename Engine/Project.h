@@ -156,6 +156,8 @@ public:
     
     void initNodeCountersAndSetName(Node* n);
     
+    void addNodeToProject(Node* n);
+    
     void clearNodes();
     
     void incrementKnobsAge();

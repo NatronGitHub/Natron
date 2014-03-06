@@ -469,9 +469,12 @@ void Project::initNodeCountersAndSetName(Node* n) {
         _imp->nodeCounters.insert(make_pair(n->pluginID(), 1));
         n->setName(QString(QString(n->pluginLabel().c_str())+ "_" + QString::number(1)).toStdString());
     }
-    _imp->currentNodes.push_back(n);
 }
 
+void Project::addNodeToProject(Node* n) {
+    _imp->currentNodes.push_back(n);
+}
+    
 void Project::clearNodes() {
     std::vector<Natron::Node*> nodesToDelete;
     {
