@@ -710,8 +710,10 @@ void ViewerGL::drawOverlay()
 
     const RectI& dispW = getDisplayWindow();
     
-    
-    renderText(dispW.right(),dispW.bottom(), _imp->resolutionOverlay,_imp->textRenderingColor,*_imp->textFont);
+    {
+        QMutexLocker l(&_imp->currentViewerInfosLock);
+        renderText(dispW.right(),dispW.bottom(), _imp->resolutionOverlay,_imp->textRenderingColor,*_imp->textFont);
+    }
     
     QPoint topRight(dispW.right(),dispW.top());
     QPoint topLeft(dispW.left(),dispW.top());
@@ -742,8 +744,11 @@ void ViewerGL::drawOverlay()
     const RectI& dataW = getRoD();
     if(dispW != dataW){
         
-        renderText(dataW.right(), dataW.top(), _imp->topRightBBOXoverlay, _imp->rodOverlayColor,*_imp->textFont);
-        renderText(dataW.left(), dataW.bottom(), _imp->btmLeftBBOXoverlay, _imp->rodOverlayColor,*_imp->textFont);
+        {
+            QMutexLocker l(&_imp->currentViewerInfosLock);
+            renderText(dataW.right(), dataW.top(), _imp->topRightBBOXoverlay, _imp->rodOverlayColor,*_imp->textFont);
+            renderText(dataW.left(), dataW.bottom(), _imp->btmLeftBBOXoverlay, _imp->rodOverlayColor,*_imp->textFont);
+        }
         
         
         QPoint topRight2(dataW.right(), dataW.top());
@@ -775,7 +780,12 @@ void ViewerGL::drawOverlay()
         checkGLErrors();
     }
     
-    if (_imp->isUserRoIEnabled) {
+    bool userRoIEnabled = false;
+    {
+        QMutexLocker l(&_imp->userRoIMutex);
+        userRoIEnabled = _imp->isUserRoIEnabled;
+    }
+    if (userRoIEnabled) {
         drawUserRoI();
     }
     
@@ -791,6 +801,8 @@ void ViewerGL::drawUserRoI()
     assert(qApp && qApp->thread() == QThread::currentThread());
     glColor4f(0.9, 0.9, 0.9, 1.);
     
+    QMutexLocker l(&_imp->userRoIMutex);
+    QMutexLocker zoomLocker(&_imp->zoomCtx.zoomContextLock);
     
     ///base rect
     glBegin(GL_LINE_STRIP);
@@ -927,6 +939,8 @@ void ViewerGL::resetMousePos()
 
 void ViewerGL::drawPersistentMessage()
 {
+    ///persistent message is always read and written from the main thread.
+    
     assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
 
