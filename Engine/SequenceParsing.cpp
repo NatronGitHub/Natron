@@ -16,6 +16,7 @@
 #include <QDebug>
 #include <QStringList>
 #include <QFile>
+#include <QDir>
 
 #include "Global/GlobalDefines.h"
 #include "Global/QtCompat.h"

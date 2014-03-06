@@ -1087,14 +1087,14 @@ bool AppManagerPrivate::checkForCacheDiskStructure(const QString& cachePath) {
 void AppManagerPrivate::cleanUpCacheDiskStructure(const QString& cachePath) {
     /*re-create cache*/
     
+    QDir cacheFolder(cachePath);
 #   if QT_VERSION < 0x050000
     removeRecursively(cachePath);
 #   else
-    if (cachePath.exists()) {
-        cachePath.removeRecursively();
+    if (cacheFolder.exists()) {
+        cacheFolder.removeRecursively();
     }
 #endif
-    QDir cacheFolder(cachePath);
     cacheFolder.mkpath(".");
     
     QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
