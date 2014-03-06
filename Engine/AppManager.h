@@ -36,7 +36,7 @@ class AppInstance;
 class Format;
 class Settings;
 class KnobHolder;
-
+class NodeSerialization;
 namespace Natron {
     class Node;
     class EffectInstance;
@@ -102,7 +102,8 @@ public:
     
     virtual void hideSplashScreen() {}
     
-    Natron::EffectInstance* createOFXEffect(const std::string& pluginID,Natron::Node* node) const;
+    Natron::EffectInstance* createOFXEffect(const std::string& pluginID,Natron::Node* node,bool isClone,
+                                            const NodeSerialization* serialization ) const;
 
     void registerAppInstance(AppInstance* app);
 

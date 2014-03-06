@@ -207,6 +207,17 @@ bool File_Knob::isTypeCompatible(const Knob& other) const {
 }
 
 
+void File_Knob::appendValuesToHash(std::vector<U64>* hash) const {
+    const std::vector<Variant>& values = getValueForEachDimension();
+    for (U32 i = 0; i < values.size();++i) {
+        QString str = values[i].toString();
+        for (int j = 0; j < str.size(); ++j) {
+            hash->push_back(str.at(j).unicode());
+        }
+    }
+}
+
+
 /***********************************OUTPUT_FILE_KNOB*****************************************/
 
 OutputFile_Knob::OutputFile_Knob(KnobHolder *holder, const std::string &description, int dimension)
@@ -256,6 +267,16 @@ QString OutputFile_Knob::generateFileNameAtTime(SequenceTime time,int view) cons
     return SequenceParsing::generateFileNameFromPattern(getValue<QString>(), time, view);
 }
 
+void OutputFile_Knob::appendValuesToHash(std::vector<U64>* hash) const {
+    const std::vector<Variant>& values = getValueForEachDimension();
+    for (U32 i = 0; i < values.size();++i) {
+        QString str = values[i].toString();
+        for (int j = 0; j < str.size(); ++j) {
+            hash->push_back(str.at(j).unicode());
+        }
+    }
+}
+
 /***********************************PATH_KNOB*****************************************/
 
 Path_Knob::Path_Knob(KnobHolder *holder, const std::string &description, int dimension)
@@ -295,6 +316,16 @@ bool Path_Knob::isTypeCompatible(const Knob& other) const {
         return true;
     } else {
         return false;
+    }
+}
+
+void Path_Knob::appendValuesToHash(std::vector<U64>* hash) const {
+    const std::vector<Variant>& values = getValueForEachDimension();
+    for (U32 i = 0; i < values.size();++i) {
+        QString str = values[i].toString();
+        for (int j = 0; j < str.size(); ++j) {
+            hash->push_back(str.at(j).unicode());
+        }
     }
 }
 

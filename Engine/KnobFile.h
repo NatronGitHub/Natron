@@ -100,6 +100,8 @@ private:
     
     void setFilesInternal(const SequenceParsing::SequenceFromFiles& fileSequence);
     
+    virtual void appendValuesToHash(std::vector<U64>* hash) const OVERRIDE FINAL;
+    
     virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE FINAL;
     
     virtual void animationRemoved_virtual(int dimension) OVERRIDE FINAL;
@@ -177,6 +179,8 @@ signals:
     void openFile(bool);
     
 private:
+    
+    virtual void appendValuesToHash(std::vector<U64>* hash) const OVERRIDE FINAL;
 
     virtual bool canAnimate() const OVERRIDE FINAL;
 
@@ -217,6 +221,8 @@ signals:
     void openFile();
     
 private:
+    
+    virtual void appendValuesToHash(std::vector<U64>* hash) const OVERRIDE FINAL;
     
     virtual bool canAnimate() const OVERRIDE FINAL;
     

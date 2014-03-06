@@ -170,6 +170,8 @@ NodeGui::NodeGui(NodeGraph* dag,
     
     gettimeofday(&_lastRenderStartedSlotCallTime, 0);
     gettimeofday(&_lastInputNRenderStartedSlotCallTime, 0);
+    
+    onInternalNameChanged(_internalNode->getName().c_str());
 }
 
 void NodeGui::beginEditKnobs() {

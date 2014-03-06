@@ -44,4 +44,5 @@ void NodeSerialization::initialize(const Natron::Node* n){
         }
     }
     
+    _isNull = false;
 }

@@ -40,6 +40,7 @@
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/AppInstance.h"
+#include "Engine/NodeSerialization.h"
 
 using namespace Natron;
 using std::cout; using std::endl;
@@ -76,7 +77,7 @@ OfxEffectInstance::OfxEffectInstance(Natron::Node* node)
 }
 
 void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                                     const std::string& context){
+                                                     const std::string& context,const NodeSerialization* serialization){
     /*Replicate of the code in OFX::Host::ImageEffect::ImageEffectPlugin::createInstance.
      We need to pass more parameters to the constructor . That means we cannot
      create it in the virtual function newInstance. Thus we create it before
@@ -120,10 +121,26 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         assert(effect_->getPlugin()->getPluginHandle());
         assert(effect_->getPlugin()->getPluginHandle()->getOfxPlugin());
         assert(effect_->getPlugin()->getPluginHandle()->getOfxPlugin()->mainEntry);
+        
+        ///before calling the createInstanceAction
+        if (isClone()) {
+            cloneKnobs(*(getNode()->getLiveInstance()));
+            cloneExtras();
+        } else {
+            if (serialization && !serialization->isNull()) {
+                getNode()->loadKnobs(*serialization);
+            }
+        }
+        
         stat = effect_->createInstanceAction();
         if(stat != kOfxStatOK && stat != kOfxStatReplyDefault){
             throw std::runtime_error("Could not create effect instance for plugin");
         }
+        
+        if (isClone()) {
+            effectInstance()->syncPrivateDataAction();
+        }
+        
         if (!effect_->getClipPreferences()) {
            qDebug() << "The plugin failed in the getClipPreferencesAction.";
         }

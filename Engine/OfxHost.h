@@ -26,6 +26,7 @@ CLANG_DIAG_ON(deprecated)
 class AbstractOfxEffectInstance;
 class AppInstance;
 class QMutex;
+class NodeSerialization;
 namespace Natron {
 class Node;
 class Plugin;
@@ -105,7 +106,7 @@ public:
     virtual OfxStatus mutexTryLock(const OfxMutexHandle mutex) OVERRIDE;
 #endif
     
-    AbstractOfxEffectInstance* createOfxEffect(const std::string& name,Node* node);
+    AbstractOfxEffectInstance* createOfxEffect(const std::string& name,Node* node,bool isClone,const NodeSerialization* serialization );
     
     void addPathToLoadOFXPlugins(const std::string path);
 

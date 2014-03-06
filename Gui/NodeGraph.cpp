@@ -1365,7 +1365,7 @@ void NodeGraph::dropEvent(QDropEvent* event){
         if (found == readersForFormat.end()) {
             errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
         } else {
-            Natron::Node* n = getGui()->getApp()->createNode(found->second.c_str(),-1,-1,false,false);
+            Natron::Node* n = getGui()->getApp()->createNode(found->second.c_str(),-1,-1,false);
             const std::vector<boost::shared_ptr<Knob> >& knobs = n->getKnobs();
             for (U32 i = 0; i < knobs.size(); ++i) {
                 if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {

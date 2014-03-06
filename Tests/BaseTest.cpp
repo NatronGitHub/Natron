@@ -86,7 +86,7 @@ void BaseTest::TearDown()
 }
 
 Natron::Node* BaseTest::createNode(const QString& pluginID,int majorVersion,int minorVersion) {
-    Node* ret =  _app->createNode(pluginID,majorVersion,minorVersion,true,false);
+    Node* ret =  _app->createNode(pluginID,majorVersion,minorVersion,false);
     EXPECT_TRUE(ret != (Node*)NULL);
     return ret;
 }

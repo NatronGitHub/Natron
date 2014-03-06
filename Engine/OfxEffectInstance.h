@@ -30,6 +30,7 @@ CLANG_DIAG_ON(deprecated)
 class OfxClipInstance;
 class Button_Knob;
 class OverlaySupport;
+class NodeSerialization;
 namespace Natron {
 class Node;
 class OfxImageEffectInstance;
@@ -47,7 +48,7 @@ public:
     virtual ~AbstractOfxEffectInstance(){}
     
     virtual void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                              const std::string& context) = 0;
+                                              const std::string& context,const NodeSerialization* serialization) = 0;
     
     static QStringList getPluginGrouping(const std::string& pluginLabel,const std::string& grouping) WARN_UNUSED_RETURN;
     
@@ -79,7 +80,7 @@ public:
     virtual ~OfxEffectInstance();
     
     void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                      const std::string& context);
+                                      const std::string& context,const NodeSerialization* serialization) OVERRIDE FINAL;
     
     Natron::OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN { return effect_; }
     

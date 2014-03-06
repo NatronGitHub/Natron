@@ -440,6 +440,8 @@ private:
     **/
     virtual void processNewValue(){}
     
+    virtual void appendValuesToHash(std::vector<U64>* /*hash*/) const {}
+    
     /** @brief This function is called when a value is changed a the hash for this knob is recomputed.
      * It lets the derived class a chance to add any extra info that would be needed to differentiate 
      * 2 values from each other.

@@ -23,6 +23,7 @@
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/BlockingBackgroundRender.h"
+#include "Engine/NodeSerialization.h"
 
 using namespace Natron;
 
@@ -93,8 +94,8 @@ void AppInstance::load(const QString& projectName,const QStringList& writers)
     
 }
 
-
-Natron::Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVersion,bool requestedByLoad,bool openImageFileDialog) {
+Natron::Node* AppInstance::createNodeInternal(const QString& name,int majorVersion,int minorVersion,
+                                 bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization){
     Node* node = 0;
     LibraryBinary* pluginBinary = 0;
     try {
@@ -107,12 +108,14 @@ Natron::Node* AppInstance::createNode(const QString& name,int majorVersion,int m
         return node;
     }
     
+    if (name != "Viewer") { // for now only the viewer can be an inspector.
+        node = new Node(this,pluginBinary);
+    } else {
+        node = new InspectorNode(this,pluginBinary);
+    }
+    
     try{
-        if(name != "Viewer"){ // for now only the viewer can be an inspector.
-            node = new Node(this,pluginBinary,name.toStdString());
-        }else{
-            node = new InspectorNode(this,pluginBinary,name.toStdString());
-        }
+        node->load(name.toStdString(), serialization);
     } catch (const std::exception& e) {
         std::string title = std::string("Exception while creating node");
         std::string message = title + " " + name.toStdString() + ": " + e.what();
@@ -131,11 +134,21 @@ Natron::Node* AppInstance::createNode(const QString& name,int majorVersion,int m
     
     node->initializeKnobs();
     node->initializeInputs();
-
+    
     _imp->_currentProject->initNodeCountersAndSetName(node);
     
     createNodeGui(node,requestedByLoad,openImageFileDialog);
     return node;
+
+}
+
+Natron::Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVersion,bool openImageFileDialog) {
+    return createNodeInternal(name, majorVersion, minorVersion, false, openImageFileDialog, NodeSerialization());
+}
+
+Natron::Node* AppInstance::loadNode(const QString& name,int majorVersion,int minorVersion,const NodeSerialization& serialization) {
+    return createNodeInternal(name, majorVersion, minorVersion, true, false, serialization);
+
 }
 
 int AppInstance::getAppID() const { return _imp->_appID; }

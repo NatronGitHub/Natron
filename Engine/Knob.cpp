@@ -101,23 +101,13 @@ struct Knob::KnobPrivate {
         
     }
     
-    void updateHash(const std::vector<Variant>& value){
+    void updateHash(){
         {
             QMutexLocker l(&_hashMutex);
             _hashVector.clear();
             
             _publicInterface->appendExtraDataToHash(&_hashVector);
-            
-            for(U32 i = 0 ; i < value.size();++i){
-                QByteArray data;
-                QDataStream ds(&data,QIODevice::WriteOnly);
-                ds <<  value[i];
-                data = data.toBase64();
-                QString str(data);
-                for (int i = 0; i < str.size(); ++i) {
-                    _hashVector.push_back(str.at(i).unicode());
-                }
-            }
+            _publicInterface->appendValuesToHash(&_hashVector);
         }
         
         _holder->invalidateHash();
@@ -526,7 +516,7 @@ void Knob::endValueChange() {
 
 void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
     if (!_imp->_isInsignificant) {
-        _imp->updateHash(getValueForEachDimension());
+        _imp->updateHash();
     }
     processNewValue();
     if(reason != Natron::USER_EDITED && !_imp->_holder->isClone()){

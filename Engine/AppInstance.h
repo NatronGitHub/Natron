@@ -27,7 +27,7 @@ namespace boost {
     }
 }
 
-
+class NodeSerialization;
 class TimeLine;
 struct AppInstancePrivate;
 class ProcessHandler;
@@ -67,10 +67,10 @@ public:
      * If openImageFileDialog is true then if the node has a file knob indicating an image file it will automatically
      * prompt the user with a file dialog.
      **/
-    Natron::Node* createNode(const QString& name,int majorVersion = -1,int minorVersion = -1,
-                             bool requestedByLoad = false,bool openImageFileDialog = true);
+    Natron::Node* createNode(const QString& name,int majorVersion = -1,int minorVersion = -1,bool openImageFileDialog = true);
     
-    
+    ///Same as createNode but used when loading a project
+    Natron::Node* loadNode(const QString& name,int majorVersion,int minorVersion,const NodeSerialization& serialization);
 
     void getActiveNodes(std::vector<Natron::Node*> *activeNodes) const;
 
@@ -131,6 +131,9 @@ protected:
     virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer);
 
 private:
+    
+    Natron::Node* createNodeInternal(const QString& name,int majorVersion,int minorVersion,
+                                     bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization);
     
     boost::scoped_ptr<AppInstancePrivate> _imp;
     

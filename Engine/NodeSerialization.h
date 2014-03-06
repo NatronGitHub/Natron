@@ -36,7 +36,7 @@ public:
     
     typedef std::vector< boost::shared_ptr<KnobSerialization> > KnobValues;
     
-    NodeSerialization(){}
+    NodeSerialization() : _isNull(true) {}
     
     ~NodeSerialization(){ _knobsValues.clear(); _inputs.clear(); }
     
@@ -54,8 +54,11 @@ public:
     
     int getPluginMinorVersion() const { return _pluginMinorVersion; }
     
+    bool isNull() const { return _isNull; }
+    
 private:
     
+    bool _isNull;
     KnobValues _knobsValues;
     std::string _pluginLabel;
     std::string _pluginID;
@@ -67,7 +70,7 @@ private:
     
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
+    void save(Archive & ar, const unsigned int version) const
     {
         (void)version;
         ar & boost::serialization::make_nvp("Plugin_label",_pluginLabel);
@@ -79,6 +82,22 @@ private:
         
     }
     
+    friend class boost::serialization::access;
+    template<class Archive>
+    void load(Archive & ar, const unsigned int version)
+    {
+        (void)version;
+        ar & boost::serialization::make_nvp("Plugin_label",_pluginLabel);
+        ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
+        ar & boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
+        ar & boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);
+        ar & boost::serialization::make_nvp("Knobs_values_map", _knobsValues);
+        ar & boost::serialization::make_nvp("Inputs_map",_inputs);
+        _isNull = false;
+        
+    }
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
+
     
 };
 

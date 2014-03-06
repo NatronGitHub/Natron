@@ -1366,7 +1366,7 @@ void Gui::createReader(){
         if (found == readersForFormat.end()) {
             errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
         } else {
-            Node* n = _imp->_appInstance->createNode(found->second.c_str(),-1,-1,false,false);
+            Node* n = _imp->_appInstance->createNode(found->second.c_str(),-1,-1,false);
             
             if (!n) {
                 return;
@@ -1410,7 +1410,7 @@ void Gui::createWriter(){
         
         std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
         if(found != writersForFormat.end()){
-            Node* n = _imp->_appInstance->createNode(found->second.c_str(),-1,-1,false,false);
+            Node* n = _imp->_appInstance->createNode(found->second.c_str(),-1,-1,false);
             if (!n) {
                 return;
             }

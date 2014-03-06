@@ -148,28 +148,58 @@ struct Node::Implementation {
                                                                    //only 1 render per frame
 };
 
-Node::Node(AppInstance* app,LibraryBinary* plugin,const std::string& name)
+Node::Node(AppInstance* app,LibraryBinary* plugin)
     : QObject()
     , _inputs()
     , _liveInstance(NULL)
     , _imp(new Implementation(app,plugin))
 {
-    std::pair<bool,EffectBuilder> func = plugin->findFunction<EffectBuilder>("BuildEffect");
+    
+}
+
+void Node::load(const std::string& pluginID,const NodeSerialization& serialization) {
+    std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
     if (func.first) {
         _liveInstance         = func.second(this);
         _imp->previewInstance = func.second(this);
+        if (!serialization.isNull()) {
+            loadKnobs(serialization);
+        }
     } else { //ofx plugin
-        _liveInstance = appPTR->createOFXEffect(name,this);
-        _liveInstance->initializeOverlayInteract(); 
-        _imp->previewInstance = appPTR->createOFXEffect(name,this);
+        _liveInstance = appPTR->createOFXEffect(pluginID,this,false,&serialization);
+        _liveInstance->initializeOverlayInteract();
+        _imp->previewInstance = appPTR->createOFXEffect(pluginID,this,true,&serialization);
     }
     assert(_liveInstance);
     assert(_imp->previewInstance);
-
-    _imp->previewInstance->setClone();
+    
     _imp->previewInstance->initializeKnobsPublic();
     _imp->previewRenderTree = new RenderTree(_imp->previewInstance);
     _imp->renderInstances.insert(std::make_pair(_imp->previewRenderTree,_imp->previewInstance));
+    
+    if (!serialization.isNull()) {
+        setName(serialization.getPluginLabel());
+    }
+}
+
+void Node::loadKnobs(const NodeSerialization& serialization) {
+    const std::vector< boost::shared_ptr<Knob> >& nodeKnobs = getKnobs();
+    const NodeSerialization::KnobValues& knobsValues = serialization.getKnobsValues();
+    ///for all knobs of the node
+    for (U32 j = 0; j < nodeKnobs.size();++j) {
+        
+        ///try to find a serialized value for this knob
+        for (U32 k = 0; k < knobsValues.size(); ++k) {
+            if(knobsValues[k]->getLabel() == nodeKnobs[j]->getDescription()){
+                // don't load the value if the Knob is not persistant! (it is just the default value in this case)
+                if (nodeKnobs[j]->isPersistent()) {
+                    nodeKnobs[j]->load(*knobsValues[k]);
+                }
+                break;
+            }
+        }
+    }
+
 }
 
 bool Node::isRenderingPreview() const {
@@ -304,13 +334,14 @@ EffectInstance* Node::findOrCreateLiveInstanceClone(RenderTree* tree)
     std::map<RenderTree*,EffectInstance*>::const_iterator it = _imp->renderInstances.find(tree);
     if (it != _imp->renderInstances.end()) {
         ret =  it->second;
+        ret->clone();
     } else {
         ret = createLiveInstanceClone();
+        ///createLiveInstanceClone already cloned the effect
         _imp->renderInstances.insert(std::make_pair(tree, ret));
     }
     
     assert(ret);
-    ret->clone();
     //ret->updateInputs(tree);
     return ret;
 
@@ -324,10 +355,11 @@ EffectInstance*  Node::createLiveInstanceClone()
         assert(func.first);
         ret =  func.second(this);
     } else {
-        ret = appPTR->createOFXEffect(_liveInstance->pluginID(),this);
+        ret = appPTR->createOFXEffect(_liveInstance->pluginID(),this,true,NULL);
     }
     assert(ret);
-    ret->setClone();
+    
+    ///will do nothing for OpenFX plugins
     ret->initializeKnobsPublic();
     return ret;
 }
@@ -1088,8 +1120,8 @@ void Node::refreshPreviewsRecursively() {
     }
 }
 
-InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin,const std::string& name)
-    : Node(app,plugin,name)
+InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin)
+    : Node(app,plugin)
     , _inputsCount(1)
     , _activeInput(0)
 {}

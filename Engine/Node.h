@@ -54,9 +54,14 @@ public:
     typedef std::map<int,Node*> InputMap;
     typedef std::multimap<int,Node*> OutputMap;
 
-    Node(AppInstance* app,Natron::LibraryBinary* plugin,const std::string& name);
+    Node(AppInstance* app,Natron::LibraryBinary* plugin);
     
     virtual ~Node();
+    
+    void load(const std::string& pluginID,const NodeSerialization& serialization);
+    
+    ///called by load() and OfxEffectInstance, do not call this!
+    void loadKnobs(const NodeSerialization& serialization);
     
     /*Quit all processing done by all render instances of this node */
     void quitAnyProcessing();
@@ -509,7 +514,7 @@ class InspectorNode: public Natron::Node
     
 public:
     
-    InspectorNode(AppInstance* app,Natron::LibraryBinary* plugin,const std::string& name);
+    InspectorNode(AppInstance* app,Natron::LibraryBinary* plugin);
     
     virtual ~InspectorNode();
     

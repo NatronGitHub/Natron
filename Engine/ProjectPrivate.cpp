@@ -114,17 +114,10 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
         Natron::Node* n = 0;
         ///this code may throw an exception which will be caught above
-        n = project->getApp()->createNode(serializedNodes[i]->getPluginID().c_str()
+        n = project->getApp()->loadNode(serializedNodes[i]->getPluginID().c_str()
                                                         ,serializedNodes[i]->getPluginMajorVersion()
-                                                        ,serializedNodes[i]->getPluginMinorVersion(),true);
-        if(!n){
-            continue;
-        }
-        if(n->isOutputNode()){
-            hasProjectAWriter = true;
-        }
-
-        if(!n){
+                                                        ,serializedNodes[i]->getPluginMinorVersion(),*serializedNodes[i]);
+        if (!n) {
             project->clearNodes();
             QString text("Failed to restore the graph! \n The node ");
             text.append(serializedNodes[i]->getPluginID().c_str());
@@ -132,42 +125,12 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
                         "to exist in the currently loaded plug-ins.");
             throw std::invalid_argument(text.toStdString());
         }
-        n->setName(serializedNodes[i]->getPluginLabel());
+        if (n->isOutputNode()) {
+            hasProjectAWriter = true;
+        }
+
     }
-    
-    ///now restore knob values
-    for (U32 i = 0; i <  serializedNodes.size() ; ++i) {
-        Natron::Node* thisNode = NULL;
-        for (U32 j = 0; j < currentNodes.size(); ++j) {
-            if (currentNodes[j]->getName() == serializedNodes[i]->getPluginLabel()) {
-                thisNode = currentNodes[j];
-                break;
-            }
-        }
-        if (!thisNode) {
-            ///the node is probably a viewer
-            qDebug() << "ignoring " << serializedNodes[i]->getPluginLabel().c_str();
-            continue;
-        }
-        const std::vector< boost::shared_ptr<Knob> >& nodeKnobs = thisNode->getKnobs();
-        const NodeSerialization::KnobValues& knobsValues = serializedNodes[i]->getKnobsValues();
-        
-        ///for all knobs of the node
-        for (U32 j = 0; j < nodeKnobs.size();++j) {
-            
-            ///try to find a serialized value for this knob
-            for (U32 k = 0; k < knobsValues.size(); ++k) {
-                if(knobsValues[k]->getLabel() == nodeKnobs[j]->getDescription()){
-                    // don't load the value if the Knob is not persistant! (it is just the default value in this case)
-                    if (nodeKnobs[j]->isPersistent()) {
-                        nodeKnobs[j]->load(*knobsValues[k]);
-                    }
-                    break;
-                }
-            }
-        }
-        
-    }
+
 
     if(!hasProjectAWriter && appPTR->isBackground()){
         project->clearNodes();
