@@ -15,7 +15,6 @@
 #include <QDebug>
 
 #include "Engine/Curve.h"
-#include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
 #include "Engine/StringAnimationManager.h"
 
@@ -228,12 +227,7 @@ bool Int_Knob::isTypeCompatible(const Knob& other) const {
     }
 }
 
-void Int_Knob::appendValuesToHash(std::vector<U64>* hash) const {
-    const std::vector<Variant>& values = getValueForEachDimension();
-    for (U32 i = 0; i < values.size();++i) {
-        hash->push_back(values[i].toInt());
-    }
-}
+
 /******************************BOOL_KNOB**************************************/
 
 Bool_Knob::Bool_Knob(KnobHolder *holder, const std::string &description, int dimension):
@@ -269,12 +263,7 @@ bool Bool_Knob::isTypeCompatible(const Knob& other) const {
     }
 }
 
-void Bool_Knob::appendValuesToHash(std::vector<U64>* hash) const {
-    const std::vector<Variant>& values = getValueForEachDimension();
-    for (U32 i = 0; i < values.size();++i) {
-        hash->push_back(values[i].toBool());
-    }
-}
+
 /******************************DOUBLE_KNOB**************************************/
 
 
@@ -500,13 +489,6 @@ bool Double_Knob::isTypeCompatible(const Knob& other) const {
     }
 }
 
-void Double_Knob::appendValuesToHash(std::vector<U64>* hash) const {
-    const std::vector<Variant>& values = getValueForEachDimension();
-    for (U32 i = 0; i < values.size();++i) {
-        double v = values[i].toDouble();
-        hash->push_back(*reinterpret_cast<U64*>(&v));
-    }
-}
 
 /******************************BUTTON_KNOB**************************************/
 
@@ -603,12 +585,6 @@ bool Choice_Knob::isTypeCompatible(const Knob& other) const {
     }
 }
 
-void Choice_Knob::appendValuesToHash(std::vector<U64>* hash) const {
-    const std::vector<Variant>& values = getValueForEachDimension();
-    for (U32 i = 0; i < values.size();++i) {
-        hash->push_back(values[i].toInt());
-    }
-}
 /******************************TABLE_KNOB**************************************/
 //
 //Table_Knob::Table_Knob(KnobHolder *holder, const std::string &description, int dimension)
@@ -748,13 +724,7 @@ bool Color_Knob::isTypeCompatible(const Knob& other) const {
     }
 }
 
-void Color_Knob::appendValuesToHash(std::vector<U64>* hash) const {
-    const std::vector<Variant>& values = getValueForEachDimension();
-    for (U32 i = 0; i < values.size();++i) {
-        double v = values[i].toDouble();
-        hash->push_back(*reinterpret_cast<U64*>(&v));
-    }
-}
+
 /******************************STRING_KNOB**************************************/
 
 String_Knob::String_Knob(KnobHolder *holder, const std::string &description, int dimension):
@@ -857,15 +827,7 @@ void String_Knob::keyframeRemoved_virtual(int /*dimension*/, double time) {
     _animation->removeKeyFrame(time);
 }
 
-void String_Knob::appendValuesToHash(std::vector<U64>* hash) const {
-    const std::vector<Variant>& values = getValueForEachDimension();
-    for (U32 i = 0; i < values.size();++i) {
-        QString str = values[i].toString();
-        for (int j = 0; j < str.size(); ++j) {
-            hash->push_back(str.at(j).unicode());
-        }
-    }
-}
+
 
 /******************************GROUP_KNOB**************************************/
 
@@ -1107,21 +1069,7 @@ Natron::Status  Parametric_Knob::deleteAllControlPoints(int   dimension){
     return StatOK;
 }
 
-void Parametric_Knob::appendValuesToHash(std::vector<U64>* hash) const {
-    for (U32 i = 0; i < _curves.size(); ++i) {
-        const KeyFrameSet& set = _curves[i]->getKeyFrames();
-        for (KeyFrameSet::const_iterator it = set.begin(); it!=set.end(); ++it) {
-            double k = it->getTime();
-            double v = it->getValue();
-            double ld = it->getLeftDerivative();
-            double rd = it->getRightDerivative();
-            hash->push_back(Hash64::toU64(k));
-            hash->push_back(Hash64::toU64(v));
-            hash->push_back(Hash64::toU64(ld));
-            hash->push_back(Hash64::toU64(rd));
-        }
-    }
-}
+
 
 void Parametric_Knob::cloneExtraData(const Knob& other){
     assert(other.typeName() == typeNameStatic() && other.getDimension() == getDimension());

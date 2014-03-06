@@ -23,7 +23,6 @@ class KeyFrame;
 class KnobHolder;
 class AppInstance;
 class KnobSerialization;
-class Hash64;
 /******************************KNOB_BASE**************************************/
 
 class Knob : public QObject
@@ -230,10 +229,6 @@ public:
     bool isAnimationEnabled() const;
 
     const std::string& getDescription() const;
-    
-    const std::vector<U64>& getHashVector() const;
-    
-    void appendHashVectorToHash(Hash64* hash) const;
 
     KnobHolder* getHolder() const;
 
@@ -440,15 +435,6 @@ private:
     **/
     virtual void processNewValue(){}
     
-    virtual void appendValuesToHash(std::vector<U64>* /*hash*/) const {}
-    
-    /** @brief This function is called when a value is changed a the hash for this knob is recomputed.
-     * It lets the derived class a chance to add any extra info that would be needed to differentiate 
-     * 2 values from each other.
-    **/
-    virtual void appendExtraDataToHash(std::vector<U64>* /*hash*/) const {}
-    
-    
     /**
      * @brief Override to return the real value to store in a keyframe for the variant passed in parameter.
      * This function is almost only addressing the problem of animating strings. The string knob just returns
@@ -587,11 +573,6 @@ public:
      Knob class. Don't call this*/
     void removeKnob(Knob* k);
     
-
-    /**
-     * @brief Should be implemented by any deriving class that maintains
-     * a hash value based on the knobs.
-     **/
     void invalidateHash();
     
     

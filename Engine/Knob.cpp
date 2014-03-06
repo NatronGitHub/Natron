@@ -40,8 +40,6 @@ typedef std::vector< boost::shared_ptr<Curve> > CurvesMap;
 struct Knob::KnobPrivate {
     Knob* _publicInterface;
     KnobHolder*  _holder;
-    mutable QMutex _hashMutex; //< protects hashVector
-    std::vector<U64> _hashVector;
     std::string _description;//< the text label that will be displayed  on the GUI
     QString _name;//< the knob can have a name different than the label displayed on GUI.
                   //By default this is the same as _description but can be set by calling setName().
@@ -76,8 +74,6 @@ struct Knob::KnobPrivate {
     KnobPrivate(Knob* publicInterface,KnobHolder*  holder,int dimension,const std::string& description)
     : _publicInterface(publicInterface)
     , _holder(holder)
-    , _hashMutex()
-    , _hashVector()
     , _description(description)
     , _name(description.c_str())
     , _newLine(true)
@@ -99,18 +95,6 @@ struct Knob::KnobPrivate {
     , _valueMutex(QMutex::Recursive)
     {
         
-    }
-    
-    void updateHash(){
-        {
-            QMutexLocker l(&_hashMutex);
-            _hashVector.clear();
-            
-            _publicInterface->appendExtraDataToHash(&_hashVector);
-            _publicInterface->appendValuesToHash(&_hashVector);
-        }
-        
-        _holder->invalidateHash();
     }
     
 };
@@ -517,7 +501,7 @@ void Knob::endValueChange() {
 
 void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
     if (!_imp->_isInsignificant) {
-        _imp->updateHash();
+        _imp->_holder->invalidateHash();
     }
     processNewValue();
     if(reason != Natron::USER_EDITED && !_imp->_holder->isClone()){
@@ -552,10 +536,10 @@ void Knob::cloneValue(const Knob& other){
 
     assert(_imp->_name == other._imp->_name);
     
-    //thread-safe
-    _imp->_hashVector = other.getHashVector();
-    
-    _imp->_values = other._imp->_values;
+    {
+        QMutexLocker l(&_imp->_valueMutex);
+        _imp->_values = other._imp->_values;
+    }
     
     assert(_imp->_curves.size() == other._imp->_curves.size());
     
@@ -622,12 +606,6 @@ int Knob::determineHierarchySize() const{
 
 const std::string& Knob::getDescription() const { return _imp->_description; }
 
-void Knob::appendHashVectorToHash(Hash64* hash) const {
-    QMutexLocker l(&_imp->_hashMutex);
-    for(U32 i=0;i< _imp->_hashVector.size();++i) {
-        hash->append(_imp->_hashVector[i]);
-    }
-}
 
 bool Knob::hasAnimation() const {
     for (int i = 0; i < getDimension(); ++i) {
@@ -667,11 +645,6 @@ void Knob::turnOffUndoRedo() {_imp->_canUndo = false;}
 bool Knob::canBeUndone() const {return _imp->_canUndo;}
 
 bool Knob::isInsignificant() const {return _imp->_isInsignificant;}
-
-const std::vector<U64>& Knob::getHashVector() const {
-    QMutexLocker l(&_imp->_hashMutex);
-    return _imp->_hashVector;
-}
 
 void Knob::setHintToolTip(const std::string& hint) {
     _imp->_tooltipHint = hint;

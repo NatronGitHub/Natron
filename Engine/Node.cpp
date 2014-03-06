@@ -11,8 +11,9 @@
 
 #include "Node.h"
 
-#include <boost/bind.hpp>
+#include <limits>
 
+#include <boost/bind.hpp>
 
 #include "Engine/Hash64.h"
 #include "Engine/ChannelSet.h"
@@ -104,6 +105,8 @@ struct Node::Implementation {
         , renderInstancesSharedMutex()
         , perFrameMutexesLock()
         , renderInstancesFullySafePerFrameMutexes()
+        , knobsAge(0)
+        , knobsAgeMutex()
     {
     }
 
@@ -146,6 +149,9 @@ struct Node::Implementation {
     QMutex perFrameMutexesLock; //< protects renderInstancesFullySafePerFrameMutexes
     std::map<int,boost::shared_ptr<QMutex> > renderInstancesFullySafePerFrameMutexes; //< see FULLY_SAFE in EffectInstance::renderRoI
                                                                    //only 1 render per frame
+    
+    U64 knobsAge; //< the age of the knobs in this effect. It gets incremented every times the liveInstance has its evaluate() function called.
+    mutable QMutex knobsAgeMutex;
 };
 
 Node::Node(AppInstance* app,LibraryBinary* plugin)
@@ -179,6 +185,7 @@ void Node::load(const std::string& pluginID,const NodeSerialization& serializati
     
     if (!serialization.isNull()) {
         setName(serialization.getPluginLabel());
+        _imp->knobsAge =  serialization.getKnobsAge();
     }
 }
 
@@ -200,6 +207,28 @@ void Node::loadKnobs(const NodeSerialization& serialization) {
         }
     }
 
+}
+
+void Node::setKnobsAge(U64 newAge)  {
+    QMutexLocker l(&_imp->knobsAgeMutex);
+    _imp->knobsAge = newAge;
+}
+
+void Node::incrementKnobsAge() {
+    QMutexLocker l(&_imp->knobsAgeMutex);
+    ++_imp->knobsAge;
+    
+    ///if the age of an effect somehow reaches the maximum age (will never happen)
+    ///handle it by clearing the cache and resetting the age to 0.
+    if (_imp->knobsAge == std::numeric_limits<U64>::max()) {
+        appPTR->clearAllCaches();
+        _imp->knobsAge = 0;
+    }
+}
+
+U64 Node::getKnobsAge() const {
+    QMutexLocker l(&_imp->knobsAgeMutex);
+    return _imp->knobsAge;
 }
 
 bool Node::isRenderingPreview() const {

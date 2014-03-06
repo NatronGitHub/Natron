@@ -56,14 +56,17 @@ public:
     
     bool isNull() const { return _isNull; }
     
+    U64 getKnobsAge() const { return _knobsAge; }
 private:
     
     bool _isNull;
     KnobValues _knobsValues;
+    U64 _knobsAge;
     std::string _pluginLabel;
     std::string _pluginID;
     int _pluginMajorVersion;
     int _pluginMinorVersion;
+    
     
     std::map<int,std::string> _inputs;
 
@@ -79,6 +82,7 @@ private:
         ar & boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);
         ar & boost::serialization::make_nvp("Knobs_values_map", _knobsValues);
         ar & boost::serialization::make_nvp("Inputs_map",_inputs);
+        ar & boost::serialization::make_nvp("KnobsAge",_knobsAge);
         
     }
     
@@ -93,6 +97,7 @@ private:
         ar & boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);
         ar & boost::serialization::make_nvp("Knobs_values_map", _knobsValues);
         ar & boost::serialization::make_nvp("Inputs_map",_inputs);
+        ar & boost::serialization::make_nvp("KnobsAge",_knobsAge);
         _isNull = false;
         
     }

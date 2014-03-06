@@ -140,16 +140,22 @@ int EffectInstance::hashAge() const{
     return _imp->hashAge;
 }
 
+U64 EffectInstance::knobsAge() const {
+    return _node->getKnobsAge();
+}
+
+void EffectInstance::setKnobsAge(U64 age) {
+    _node->setKnobsAge(age);
+}
 
 U64 EffectInstance::computeHash(const std::vector<U64>& inputsHashs,int knobsAge){
     
     _imp->hashAge = knobsAge;
     
     _imp->hashValue.reset();
-    const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        knobs[i]->appendHashVectorToHash(&_imp->hashValue);
-    }
+    
+    _imp->hashValue.append(getNode()->getKnobsAge());
+    
     for (U32 i =0; i < inputsHashs.size(); ++i) {
         _imp->hashValue.append(inputsHashs[i]);
     }
@@ -803,6 +809,12 @@ void EffectInstance::evaluate(Knob* knob,bool isSignificant){
             }
         }
     }
+    
+    ///increments the knobs age following a change
+    if (knob->typeName() != Button_Knob::typeNameStatic()) {
+        _node->incrementKnobsAge();
+    }
+    
     std::list<ViewerInstance*> viewers;
     _node->hasViewersConnected(&viewers);
     bool fitToViewer = knob && knob->typeName() == File_Knob::typeNameStatic();

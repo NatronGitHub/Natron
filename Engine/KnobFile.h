@@ -100,8 +100,6 @@ private:
     
     void setFilesInternal(const SequenceParsing::SequenceFromFiles& fileSequence);
     
-    virtual void appendValuesToHash(std::vector<U64>* hash) const OVERRIDE FINAL;
-    
     virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE FINAL;
     
     virtual void animationRemoved_virtual(int dimension) OVERRIDE FINAL;
@@ -122,8 +120,6 @@ private:
     
     virtual QString saveExtraData() const OVERRIDE FINAL;
     
-    //virtual void appendExtraDataToHash(std::vector<U64>* hash) const OVERRIDE FINAL;
-
     int frameCount() const;
     
     /**
@@ -180,8 +176,6 @@ signals:
     
 private:
     
-    virtual void appendValuesToHash(std::vector<U64>* hash) const OVERRIDE FINAL;
-
     virtual bool canAnimate() const OVERRIDE FINAL;
 
     virtual const std::string& typeName() const OVERRIDE FINAL;
@@ -221,9 +215,7 @@ signals:
     void openFile();
     
 private:
-    
-    virtual void appendValuesToHash(std::vector<U64>* hash) const OVERRIDE FINAL;
-    
+        
     virtual bool canAnimate() const OVERRIDE FINAL;
     
     virtual const std::string& typeName() const OVERRIDE FINAL;

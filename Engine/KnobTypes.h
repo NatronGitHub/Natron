@@ -91,9 +91,7 @@ signals:
     void incrementChanged(int incr, int index = 0);
     
 private:
-    
-    virtual void appendValuesToHash(std::vector<U64>* hash) const OVERRIDE FINAL;
-    
+        
     virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
     
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -130,8 +128,6 @@ public:
     virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
 
 private:
-    
-    virtual void appendValuesToHash(std::vector<U64>* hash) const OVERRIDE FINAL;
     
     virtual bool canAnimate() const OVERRIDE FINAL;
     
@@ -210,8 +206,6 @@ signals:
     void decimalsChanged(int deci, int index = 0);
     
 private:
-    
-    virtual void appendValuesToHash(std::vector<U64>* hash) const OVERRIDE FINAL;
     
     virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
     
@@ -299,8 +293,6 @@ signals:
     void populated();
     
 private:
-    
-    virtual void appendValuesToHash(std::vector<U64>* hash) const OVERRIDE FINAL;
     
     virtual bool canAnimate() const OVERRIDE FINAL;
     
@@ -412,8 +404,6 @@ public:
 
 private:
     
-    virtual void appendValuesToHash(std::vector<U64>* hash) const OVERRIDE FINAL;
-    
     virtual bool canAnimate() const OVERRIDE FINAL;
     
     virtual const std::string& typeName() const OVERRIDE FINAL;
@@ -484,8 +474,6 @@ public:
 
     const StringAnimationManager& getAnimation() const { return *_animation; }
 private:
-    
-    virtual void appendValuesToHash(std::vector<U64>* hash) const OVERRIDE FINAL;
     
     virtual bool canAnimate() const OVERRIDE FINAL;
     
@@ -675,8 +663,6 @@ private:
     virtual bool canAnimate() const OVERRIDE FINAL;
     
     virtual const std::string& typeName() const OVERRIDE FINAL;
-    
-    virtual void appendValuesToHash(std::vector<U64>* hash) const OVERRIDE FINAL;
     
     virtual void cloneExtraData(const Knob& other) OVERRIDE FINAL;
     

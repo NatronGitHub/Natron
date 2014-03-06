@@ -10,6 +10,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/Curve.h"
 #include "Engine/Knob.h"
+#include "Engine/EffectInstance.h"
 
 #include "Gui/KnobGui.h"
 #include "Gui/Gui.h"
@@ -29,6 +30,12 @@ KnobUndoCommand::KnobUndoCommand(KnobGui *knob,  const std::vector<Variant> &old
 , _oldKeys(oldValue.size())
 , _merge(true)
 {
+    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(knob->getKnob()->getHolder());
+    if (effect) {
+        _oldAge = effect->knobsAge();
+    } else {
+        _oldAge = 0;
+    }
 }
 
 void KnobUndoCommand::undo()
@@ -52,6 +59,14 @@ void KnobUndoCommand::undo()
     }
     if(modifiedKeyFrame){
         _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();
+    }
+    
+    ///before calling endValueChange (which will trigger evaluate() and increment the knobs age), set the knobs age to the old age
+    ///it had before having this redo() made (minus 1), and then call evaluate on it which will make the knobs age equivalent to the age
+    /// as if nothing were done in the first place.
+    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_knob->getKnob()->getHolder());
+    if (effect) {
+        effect->setKnobsAge(_oldAge - 1);
     }
 
     _knob->getKnob()->endValueChange();

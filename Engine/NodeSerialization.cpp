@@ -29,6 +29,8 @@ void NodeSerialization::initialize(const Natron::Node* n){
         }
     }
     
+    _knobsAge = n->getKnobsAge();
+    
     _pluginLabel = n->getName();
     
     _pluginID = n->pluginID();

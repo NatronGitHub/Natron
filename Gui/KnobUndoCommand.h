@@ -9,13 +9,14 @@
 #include <map>
 #include <vector>
 
-#include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QUndoCommand>
 CLANG_DIAG_ON(deprecated)
 
 #include "Engine/Variant.h"
 #include "Engine/Curve.h"
+
 class KnobGui;
 
 //================================================================
@@ -45,6 +46,7 @@ private:
     std::vector<int> _valueChangedReturnCode;
     std::vector<KeyFrame> _newKeys;
     std::vector<KeyFrame>  _oldKeys;
+    U64 _oldAge;
     bool _merge;
 };
 

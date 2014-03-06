@@ -87,6 +87,10 @@ public:
     
     int hashAge() const WARN_UNUSED_RETURN;
     
+    U64 knobsAge() const WARN_UNUSED_RETURN;
+    
+    void setKnobsAge(U64 age);
+    
     const Inputs& getInputs() const WARN_UNUSED_RETURN;
     
     void setMarkedByTopologicalSort(bool marked) const;

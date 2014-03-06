@@ -410,6 +410,12 @@ public:
     
     void refreshPreviewsRecursively();
     
+    void setKnobsAge(U64 newAge) ;
+    
+    void incrementKnobsAge();
+    
+    U64 getKnobsAge() const;
+    
 public slots:
     
     void onGUINameChanged(const QString& str);
