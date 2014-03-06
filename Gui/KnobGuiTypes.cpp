@@ -1845,6 +1845,7 @@ void Parametric_KnobGui::createWidget(QHBoxLayout* layout) {
     
     QObject::connect(parametricKnob.get(), SIGNAL(curveChanged(int)), this, SLOT(onCurveChanged(int)));
     
+    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     QWidget* treeColumn = new QWidget(layout->parentWidget());
     QVBoxLayout* treeColumnLayout = new QVBoxLayout(treeColumn);
     treeColumnLayout->setContentsMargins(0, 0, 0, 0);
@@ -1866,6 +1867,7 @@ void Parametric_KnobGui::createWidget(QHBoxLayout* layout) {
     layout->addWidget(treeColumn);
     
     _curveWidget = new CurveWidget(boost::shared_ptr<TimeLine>(),layout->parentWidget());
+    _curveWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     if(hasToolTip()) {
         _curveWidget->setToolTip(toolTip());
     }

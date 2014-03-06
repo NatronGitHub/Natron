@@ -215,7 +215,7 @@ signals:
     void openFile();
     
 private:
-        
+    
     virtual bool canAnimate() const OVERRIDE FINAL;
     
     virtual const std::string& typeName() const OVERRIDE FINAL;

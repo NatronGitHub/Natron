@@ -1880,7 +1880,7 @@ OfxParametricInstance::OfxParametricInstance(OfxEffectInstance* node, OFX::Host:
         _knob->setCurveColor(i, color[i*3], color[i*3+1], color[i*3+2]);
     }
     
-    QObject::connect(_knob.get(),SIGNAL(mustInitializeOverlayInteract(CurveWidget*)),this,SLOT(initializeInteract(CurveWidget*)));
+    QObject::connect(_knob.get(),SIGNAL(mustInitializeOverlayInteract(OverlaySupport*)),this,SLOT(initializeInteract(OverlaySupport*)));
     QObject::connect(_knob.get(), SIGNAL(mustResetToDefault(QVector<int>)), this, SLOT(onResetToDefault(QVector<int>)));
     setDisplayRange();
 }
