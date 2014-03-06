@@ -1129,19 +1129,21 @@ void ConnectCommand::redo() {
     if (_newSrc) {
         setText(QObject::tr("Connect %1 to %2")
                 .arg(_edge->getDest()->getNode()->getName().c_str()).arg(_newSrc->getNode()->getName().c_str()));
-        std::list<ViewerInstance*> viewers;
-        _edge->getDest()->getNode()->hasViewersConnected(&viewers);
-        for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
-            (*it)->updateTreeAndRender();
-        }
+       
 
     } else {
         setText(QObject::tr("Disconnect %1")
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
-        if (_edge->getDest()->getNode()->pluginID() == "Viewer") {
-            dynamic_cast<ViewerInstance*>(_edge->getDest()->getNode()->getLiveInstance())->disconnectViewer();
-        }
     }
+    
+    ///if the node has no inputs, all the viewers attached to that node should get disconnected. This will be done
+    ///in VideoEngine::startEngine
+    std::list<ViewerInstance*> viewers;
+    _edge->getDest()->getNode()->hasViewersConnected(&viewers);
+    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
+        (*it)->updateTreeAndRender();
+    }
+    
     _graph->getGui()->getApp()->triggerAutoSave();
     
     
