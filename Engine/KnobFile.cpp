@@ -189,6 +189,7 @@ void File_Knob::getFiles(SequenceParsing::SequenceFromFiles* files) {
 
 void File_Knob::animationRemoved_virtual(int /*dimension*/) {
     _animation->clearKeyFrames();
+    _pattern.clear();
 }
 
 void File_Knob::keyframeRemoved_virtual(int /*dimension*/, double time) {
