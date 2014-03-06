@@ -561,29 +561,30 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
          to remove them.*/
         for (FramesNeededMap::const_iterator it2 = framesNeeeded.begin(); it2 != framesNeeeded.end(); ++it2) {
             EffectInstance* inputEffect = input(it2->first);
-            assert(inputEffect);
-            RoIMap::iterator foundInputRoI = inputsRoi.find(inputEffect);
-            assert(foundInputRoI != inputsRoi.end());
-            
-            ///notify the node that we're going to render something with the input
-            assert(it2->first != -1); //< see getInputNumber
-            _node->notifyInputNIsRendering(it2->first);
-            
-            for (U32 range = 0; range < it2->second.size(); ++range) {
-                for (U32 f = it2->second[range].min; f < it2->second[range].max; ++f) {
-                    boost::shared_ptr<Natron::Image> inputImg = inputEffect->renderRoI(f, scale,view, foundInputRoI->second,byPassCache);
-                    if (inputImg) {
-                        inputImages.push_back(inputImg);
+            if (inputEffect) {
+                RoIMap::iterator foundInputRoI = inputsRoi.find(inputEffect);
+                assert(foundInputRoI != inputsRoi.end());
+                
+                ///notify the node that we're going to render something with the input
+                assert(it2->first != -1); //< see getInputNumber
+                _node->notifyInputNIsRendering(it2->first);
+                
+                for (U32 range = 0; range < it2->second.size(); ++range) {
+                    for (U32 f = it2->second[range].min; f < it2->second[range].max; ++f) {
+                        boost::shared_ptr<Natron::Image> inputImg = inputEffect->renderRoI(f, scale,view, foundInputRoI->second,byPassCache);
+                        if (inputImg) {
+                            inputImages.push_back(inputImg);
+                        }
                     }
                 }
-            }
-            _node->notifyInputNIsFinishedRendering(it2->first);
-            
-            if (aborted()) {
-                //if render was aborted, remove the frame from the cache as it contains only garbage
-                appPTR->removeFromNodeCache(image);
-                _node->removeImageBeingRendered(time, view);
-                return true;
+                _node->notifyInputNIsFinishedRendering(it2->first);
+                
+                if (aborted()) {
+                    //if render was aborted, remove the frame from the cache as it contains only garbage
+                    appPTR->removeFromNodeCache(image);
+                    _node->removeImageBeingRendered(time, view);
+                    return true;
+                }
             }
         }
         
