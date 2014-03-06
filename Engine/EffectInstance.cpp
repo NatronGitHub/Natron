@@ -395,8 +395,17 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
             ///make any assumption on the return value of this function call.
             ///
             ///!!!Note that if isIdentity is true it will allocate an empty image object with 0 bytes of data.
-            appPTR->getImageOrCreate(key, cachedImgParams, &image);
-            assert(image);
+            boost::shared_ptr<Image> newImage;
+            appPTR->getImageOrCreate(key, cachedImgParams, &newImage);
+            assert(newImage);
+            
+            ///if the plugin is an identity we just inserted in the cache the identity params, we can now return.
+            if (identity) {
+                ///don't return the empty allocated image but the input effect image instead!
+                return image;
+            } else {
+                image = newImage;
+            }
         }
         assert(cachedImgParams);
 
