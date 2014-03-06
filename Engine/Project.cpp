@@ -428,6 +428,7 @@ void Project::initializeKnobs(){
     _imp->viewsCount = Natron::createKnob<Int_Knob>(this,"Number of views");
     _imp->viewsCount->turnOffAnimation();
     _imp->viewsCount->setMinimum(1);
+    _imp->viewsCount->setDisplayMinimum(1);
     _imp->viewsCount->setDefaultValue<int>(1);
     _imp->viewsCount->disableSlider();
     

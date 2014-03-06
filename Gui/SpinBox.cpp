@@ -113,7 +113,7 @@ void SpinBox::wheelEvent(QWheelEvent *e) {
     if(isEnabled() && !isReadOnly()){
         bool ok;
         double cur = text().toDouble(&ok);
-        clear();
+        double old = cur;
         double maxiD = 0.;
         double miniD = 0.;
         _currentDelta += e->delta();
@@ -134,8 +134,10 @@ void SpinBox::wheelEvent(QWheelEvent *e) {
                 break;
         }
         cur = std::max(miniD, std::min(cur,maxiD));
-        setValue(cur);
-        emit valueChanged(cur);
+        if (cur != old) {
+            setValue(cur);
+            emit valueChanged(cur);
+        }
     }
 }
 
@@ -158,7 +160,8 @@ void SpinBox::focusOutEvent(QFocusEvent * event){
 void SpinBox::keyPressEvent(QKeyEvent *e){
     if(isEnabled() && !isReadOnly()){
         bool ok;
-        double cur= text().toDouble(&ok);
+        double cur = text().toDouble(&ok);
+        double old = cur;
         double maxiD,miniD;
         switch (_type) {
             case INT_SPINBOX:
@@ -172,22 +175,24 @@ void SpinBox::keyPressEvent(QKeyEvent *e){
                 break;
         }
         if(e->key() == Qt::Key_Up){
-            clear();
 
             if(cur+_increment <= maxiD)
                 cur+=_increment;
             if(cur < miniD || cur > maxiD)
                 return;
-            setValue(cur);
-            emit valueChanged(cur);
+            if ( cur != old ) {
+                setValue(cur);
+                emit valueChanged(cur);
+            }
         }else if(e->key() == Qt::Key_Down){
-            clear();
             if(cur-_increment >= miniD)
                 cur-=_increment;
             if(cur < miniD || cur > maxiD)
                 return;
-            setValue(cur);
-            emit valueChanged(cur);
+            if ( cur != old ) {
+                setValue(cur);
+                emit valueChanged(cur);
+            }
         } else {
             _hasChangedSinceLastValidation = true;
             QLineEdit::keyPressEvent(e);
