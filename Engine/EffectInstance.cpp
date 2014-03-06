@@ -182,7 +182,7 @@ U64 EffectInstance::cloneKnobsAndComputeHashAndClearPersistentMessage(int knobsA
         }
         
         ///Also append the effect's label to distinguish 2 instances with the same parameters
-        ::Hash64_appendQString(&_imp->hashValue, QString(pluginLabel().c_str()));
+        ::Hash64_appendQString(&_imp->hashValue, QString(getName().c_str()));
         
         
         ///Also append the project's creation time in the hash because 2 projects openend concurrently

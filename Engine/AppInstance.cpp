@@ -134,9 +134,7 @@ Natron::Node* AppInstance::createNodeInternal(const QString& name,int majorVersi
     
     node->initializeKnobs();
     node->initializeInputs();
-    
-    _imp->_currentProject->initNodeCountersAndSetName(node);
-    
+        
     createNodeGui(node,requestedByLoad,openImageFileDialog);
     return node;
 
