@@ -158,6 +158,7 @@ Variant Knob::getValue(int dimension) const {
         return master.second->getValue(master.first);
     }
     
+    QMutexLocker l(&_imp->_valueMutex);
     return _imp->_values[dimension];
 }
 

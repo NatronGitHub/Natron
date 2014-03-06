@@ -74,7 +74,8 @@ struct ViewerTabPrivate {
     Button* _refreshButton;
     ComboBox* _viewerColorSpace;
     ComboBox* _viewsComboBox;
-    
+    int _currentViewIndex;
+    QMutex _currentViewMutex;
     /*Infos*/
     InfoViewerWidget* _infosWidget;
     
@@ -109,7 +110,8 @@ struct ViewerTabPrivate {
     ViewerInstance* _viewerNode;// < pointer to the internal node
 
     ViewerTabPrivate(Gui* gui,ViewerInstance* node)
-    : _gui(gui)
+    : _currentViewIndex(0)
+    , _gui(gui)
     , _viewerNode(node)
     {
         
@@ -577,7 +579,8 @@ void ViewerTab::setCurrentView(int view){
     _imp->_viewsComboBox->setCurrentIndex(view);
 }
 int ViewerTab::getCurrentView() const{
-    return _imp->_viewsComboBox->activeIndex();
+    QMutexLocker l(&_imp->_currentViewMutex);
+    return _imp->_currentViewIndex;
 }
 
 void ViewerTab::toggleLoopMode(bool b){
@@ -819,7 +822,9 @@ QSize ViewerTab::sizeHint() const{
 }
 
 
-void ViewerTab::showView(int /*view*/){
+void ViewerTab::showView(int view){
+    QMutexLocker l(&_imp->_currentViewMutex);
+    _imp->_currentViewIndex = view;
     abortRendering();
     bool isAutoPreview = _imp->_gui->getApp()->getProject()->isAutoPreviewEnabled();
     _imp->_viewerNode->refreshAndContinueRender(false,isAutoPreview);

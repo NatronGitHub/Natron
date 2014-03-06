@@ -153,6 +153,7 @@ struct ZoomContext{
     , zoomFactor(1.)
     {}
 
+    QMutex zoomContextLock;
     QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
     double bottom; /// the bottom edge of orthographic projection
     double left; /// the left edge of the orthographic projection
@@ -250,6 +251,7 @@ struct ViewerGL::Implementation {
 
     ViewerTab* viewerTab;/*!< Pointer to the viewer tab GUI*/
 
+    QMutex currentViewerInfosLock;
     ImageInfo currentViewerInfos;/*!< Pointer to the ViewerInfos  used for rendering*/
 
     ImageInfo blankViewerInfos;/*!< Pointer to the infos used when the viewer is disconnected.*/
@@ -279,6 +281,7 @@ struct ViewerGL::Implementation {
 
     QMenu* menu;
 
+    QMutex clipToDisplayWindowMutex;
     bool clipToDisplayWindow;
 
     QString persistentMessage;
@@ -289,6 +292,7 @@ struct ViewerGL::Implementation {
     
     Natron::TextRenderer textRenderer;
     
+    QMutex userRoIMutex;
     RectI userRoI;
     bool isUserRoISet;
     bool isUserRoIEnabled;
@@ -916,8 +920,8 @@ void ViewerGL::drawUserRoI()
  **/
 void ViewerGL::resetMousePos()
 {
-    assert(qApp && qApp->thread() == QThread::currentThread());
-   _imp->zoomCtx.oldClick.setX(0);
+    assert(!_imp->zoomCtx.zoomContextLock.tryLock());
+    _imp->zoomCtx.oldClick.setX(0);
     _imp->zoomCtx.oldClick.setY(0);
 }
 
@@ -1038,17 +1042,13 @@ GLuint ViewerGL::getPboID(int index)
  **/
 double ViewerGL::getZoomFactor() const
 {
-    // This is NOT running in the main thread. All the members accessed below should be protected against race conditions
-    //assert(qApp && qApp->thread() == QThread::currentThread());
-#pragma message WARN("race condition")
+    QMutexLocker l(&_imp->zoomCtx.zoomContextLock);
     return _imp->zoomCtx.zoomFactor;
 }
 
 RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
 {
-    // This is NOT running in the main thread. All the members accessed below should be protected against race conditions
-    //assert(qApp && qApp->thread() == QThread::currentThread());
-#pragma message WARN("race condition")
+    QMutexLocker l(&_imp->zoomCtx.zoomContextLock);
     RectI ret;
     QPointF topLeft = toImgCoordinates_fast(0, 0);
     ret.x1 = std::floor(topLeft.x());
@@ -1573,67 +1573,74 @@ void ViewerGL::wheelEvent(QWheelEvent *event)
     if (event->orientation() != Qt::Vertical) {
         return;
     }
-    const double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
-    double newZoomFactor = _imp->zoomCtx.zoomFactor * scaleFactor;
-    if (newZoomFactor <= 0.01) {
-        newZoomFactor = 0.01;
-    } else if (newZoomFactor > 1024.) {
-        newZoomFactor = 1024.;
-    }
-    QPointF zoomCenter = toImgCoordinates_fast(event->x(), event->y());
-    double zoomRatio =   _imp->zoomCtx.zoomFactor / newZoomFactor;
-    _imp->zoomCtx.left = zoomCenter.x() - (zoomCenter.x() - _imp->zoomCtx.left)*zoomRatio;
-    _imp->zoomCtx.bottom = zoomCenter.y() - (zoomCenter.y() - _imp->zoomCtx.bottom)*zoomRatio;
     
-    _imp->zoomCtx.zoomFactor = newZoomFactor;
-    if(_imp->displayingImage){
-        //appPTR->clearPlaybackCache();
+    {
+        QMutexLocker l(&_imp->zoomCtx.zoomContextLock);
+        const double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+        double newZoomFactor = _imp->zoomCtx.zoomFactor * scaleFactor;
+        if (newZoomFactor <= 0.01) {
+            newZoomFactor = 0.01;
+        } else if (newZoomFactor > 1024.) {
+            newZoomFactor = 1024.;
+        }
+        QPointF zoomCenter = toImgCoordinates_fast(event->x(), event->y());
+        double zoomRatio =   _imp->zoomCtx.zoomFactor / newZoomFactor;
+        _imp->zoomCtx.left = zoomCenter.x() - (zoomCenter.x() - _imp->zoomCtx.left)*zoomRatio;
+        _imp->zoomCtx.bottom = zoomCenter.y() - (zoomCenter.y() - _imp->zoomCtx.bottom)*zoomRatio;
+        
+        _imp->zoomCtx.zoomFactor = newZoomFactor;
+        
+        assert(0 < _imp->zoomCtx.zoomFactor && _imp->zoomCtx.zoomFactor <= 1024);
+        int zoomValue = (int)(100*_imp->zoomCtx.zoomFactor);
+        if (zoomValue == 0) {
+            zoomValue = 1; // sometimes, floor(100*0.01) makes 0
+        }
+        assert(zoomValue > 0);
+        emit zoomChanged(zoomValue);
+        
+        _imp->zoomOrPannedSinceLastFit = true;
+    }
+    if (_imp->displayingImage) {
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
     }
-    //else {
-        updateGL();
-    // }
+    updateGL();
     
-    assert(0 < _imp->zoomCtx.zoomFactor && _imp->zoomCtx.zoomFactor <= 1024);
-    int zoomValue = (int)(100*_imp->zoomCtx.zoomFactor);
-    if (zoomValue == 0) {
-        zoomValue = 1; // sometimes, floor(100*0.01) makes 0
-    }
-    assert(zoomValue > 0);
-    emit zoomChanged(zoomValue);
     
-    _imp->zoomOrPannedSinceLastFit = true;
 }
 
 void ViewerGL::zoomSlot(int v)
 {
     assert(qApp && qApp->thread() == QThread::currentThread());
-    assert(v > 0);
-    double newZoomFactor = v/100.;
-    if(newZoomFactor < 0.01) {
-        newZoomFactor = 0.01;
-    } else if (newZoomFactor > 1024.) {
-        newZoomFactor = 1024.;
+    
+    {
+        QMutexLocker l(&_imp->zoomCtx.zoomContextLock);
+        assert(v > 0);
+        double newZoomFactor = v/100.;
+        if(newZoomFactor < 0.01) {
+            newZoomFactor = 0.01;
+        } else if (newZoomFactor > 1024.) {
+            newZoomFactor = 1024.;
+        }
+        double zoomRatio =   _imp->zoomCtx.zoomFactor / newZoomFactor;
+        double w = (double)width();
+        double h = (double)height();
+        double bottom = _imp->zoomCtx.bottom;
+        double left = _imp->zoomCtx.left;
+        double top =  bottom +  h / (double)_imp->zoomCtx.zoomFactor;
+        double right = left +  w / (double)_imp->zoomCtx.zoomFactor;
+        
+        _imp->zoomCtx.left = (right + left)/2. - zoomRatio * (right - left)/2.;
+        _imp->zoomCtx.bottom = (top + bottom)/2. - zoomRatio * (top - bottom)/2.;
+        
+        _imp->zoomCtx.zoomFactor = newZoomFactor;
+        assert(0 < _imp->zoomCtx.zoomFactor && _imp->zoomCtx.zoomFactor <= 1024);
     }
-    double zoomRatio =   _imp->zoomCtx.zoomFactor / newZoomFactor;
-    double w = (double)width();
-    double h = (double)height();
-    double bottom = _imp->zoomCtx.bottom;
-    double left = _imp->zoomCtx.left;
-    double top =  bottom +  h / (double)_imp->zoomCtx.zoomFactor;
-    double right = left +  w / (double)_imp->zoomCtx.zoomFactor;
-    
-    _imp->zoomCtx.left = (right + left)/2. - zoomRatio * (right - left)/2.;
-    _imp->zoomCtx.bottom = (top + bottom)/2. - zoomRatio * (top - bottom)/2.;
-    
-    _imp->zoomCtx.zoomFactor = newZoomFactor;
     if(_imp->displayingImage){
         // appPTR->clearPlaybackCache();
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
     } else {
         updateGL();
     }
-    assert(0 < _imp->zoomCtx.zoomFactor && _imp->zoomCtx.zoomFactor <= 1024);
 }
 
 void ViewerGL::zoomSlot(QString str)
@@ -1645,11 +1652,14 @@ void ViewerGL::zoomSlot(QString str)
     zoomSlot(v);
 }
 
+///this should be locked externally when not used on the main thread
 QPointF ViewerGL::toImgCoordinates_fast(double x,double y)
 {
-    // This is NOT running in the main thread. All the members accessed below should be protected against race conditions
-    //assert(qApp && qApp->thread() == QThread::currentThread());
-#pragma message WARN("race condition")
+
+    assert(qApp &&
+           (qApp->thread() == QThread::currentThread() ||
+            (qApp->thread() != QThread::currentThread() && !_imp->zoomCtx.zoomContextLock.tryLock())));
+    
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _imp->zoomCtx.bottom;
@@ -1673,16 +1683,20 @@ QPointF ViewerGL::toWidgetCoordinates(double x, double y)
 
 void ViewerGL::fitImageToFormat(const Format& rod)
 {
-    assert(qApp && qApp->thread() == QThread::currentThread());
+
     double h = rod.height();
     double w = rod.width();
     assert(h > 0. && w > 0.);
     double zoomFactor = height()/h;
     zoomFactor = (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01);
     assert(zoomFactor>=0.01 && zoomFactor <= 1024);
+    
+    QMutexLocker l(&_imp->zoomCtx.zoomContextLock);
     if (_imp->zoomCtx.zoomFactor != zoomFactor) {
         _imp->zoomCtx.zoomFactor = zoomFactor;
+        l.unlock();
         emit zoomChanged(zoomFactor * 100);
+        l.relock();
     }
     resetMousePos();
     _imp->zoomCtx.left = w/2.f - (width()/(2.f*_imp->zoomCtx.zoomFactor));
@@ -1767,9 +1781,7 @@ const Format& ViewerGL::getDisplayWindow() const
 
 void ViewerGL::setRegionOfDefinition(const RectI& rod)
 {
-    // This is NOT running in the main thread. All the members accessed below should be protected against race conditions
-    //assert(qApp && qApp->thread() == QThread::currentThread());
-#pragma message WARN("race condition")
+    QMutexLocker l(&_imp->currentViewerInfosLock);
     _imp->currentViewerInfos.setRoD(rod);
     emit infoDataWindowChanged();
     _imp->btmLeftBBOXoverlay.clear();
@@ -1815,6 +1827,7 @@ void ViewerGL::onProjectFormatChanged(const Format& format)
 void ViewerGL::setClipToDisplayWindow(bool b)
 {
     assert(qApp && qApp->thread() == QThread::currentThread());
+    QMutexLocker l(&_imp->clipToDisplayWindowMutex);
     _imp->clipToDisplayWindow = b;
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
@@ -1825,9 +1838,7 @@ void ViewerGL::setClipToDisplayWindow(bool b)
 
 bool ViewerGL::isClippingImageToProjectWindow() const
 {
-    // This is NOT running in the main thread. All the members accessed below should be protected against race conditions
-    //assert(qApp && qApp->thread() == QThread::currentThread());
-#pragma message WARN("race condition")
+    QMutexLocker l(&_imp->clipToDisplayWindowMutex);
     return _imp->clipToDisplayWindow;
 }
 
@@ -1910,10 +1921,11 @@ void ViewerGL::keyReleaseEvent(QKeyEvent* event)
 
 OpenGLViewerI::BitDepth ViewerGL::getBitDepth() const
 {
-    // This is NOT running in the main thread. All the members accessed below should be protected against race conditions
-    //assert(qApp && qApp->thread() == QThread::currentThread());
-#pragma message WARN("race condition")
+    
+    ///the bitdepth value is locked by the knob holding that value itself.
     OpenGLViewerI::BitDepth e = (OpenGLViewerI::BitDepth)appPTR->getCurrentSettings()->getViewersBitDepth();
+    
+    ///supportsGLSL is set on the main thread only once on startup, it doesn't need to be protected.
     if(!_imp->supportsGLSL){
         e = OpenGLViewerI::BYTE;
     }
@@ -1979,7 +1991,7 @@ void ViewerGL::clearPersistentMessage()
 
 void ViewerGL::getProjection(double &left,double &bottom,double &zoomFactor) const
 {
-    assert(qApp && qApp->thread() == QThread::currentThread());
+    QMutexLocker l(&_imp->zoomCtx.zoomContextLock);
     left = _imp->zoomCtx.left;
     bottom = _imp->zoomCtx.bottom;
     zoomFactor = _imp->zoomCtx.zoomFactor;
@@ -1988,6 +2000,7 @@ void ViewerGL::getProjection(double &left,double &bottom,double &zoomFactor) con
 void ViewerGL::setProjection(double left,double bottom,double zoomFactor)
 {
     assert(qApp && qApp->thread() == QThread::currentThread());
+    QMutexLocker l(&_imp->zoomCtx.zoomContextLock);
     _imp->zoomCtx.left = left;
     _imp->zoomCtx.bottom = bottom;
     _imp->zoomCtx.zoomFactor = zoomFactor;
@@ -1997,6 +2010,7 @@ void ViewerGL::setProjection(double left,double bottom,double zoomFactor)
 void ViewerGL::setUserRoIEnabled(bool b)
 {
     assert(qApp && qApp->thread() == QThread::currentThread());
+    QMutexLocker(&_imp->userRoIMutex);
     _imp->isUserRoIEnabled = b;
     if (_imp->displayingImage) {
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
@@ -2112,21 +2126,19 @@ bool ViewerGL::isNearByUserRoIBottomLeft(const QPoint& mousePos)
 
 bool ViewerGL::isUserRegionOfInterestEnabled() const
 {
-    // This is NOT running in the main thread. All the members accessed below should be protected against race conditions
-    //assert(qApp && qApp->thread() == QThread::currentThread());
-#pragma message WARN("race condition")
+    QMutexLocker(&_imp->userRoIMutex);
     return _imp->isUserRoIEnabled;
 }
 
 const RectI& ViewerGL::getUserRegionOfInterest() const
 {
-    assert(qApp && qApp->thread() == QThread::currentThread());
+    QMutexLocker(&_imp->userRoIMutex);
     return _imp->userRoI;
 }
 
 void ViewerGL::setUserRoI(const RectI& r)
 {
-    assert(qApp && qApp->thread() == QThread::currentThread());
+    QMutexLocker(&_imp->userRoIMutex);
     _imp->userRoI = r;
 }
 
@@ -2204,8 +2216,6 @@ void ViewerGL::removeGUI()
 
 int ViewerGL::getCurrentView() const
 {
-    // This is NOT running in the main thread. All the members accessed below should be protected against race conditions
-    //assert(qApp && qApp->thread() == QThread::currentThread());
-#pragma message WARN("race condition")
+    ///protected in viewerTab
     return _imp->viewerTab->getCurrentView();
 }
