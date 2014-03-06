@@ -13,8 +13,6 @@
 #ifndef NATRON_ENGINE_INTERPOLATION_H_
 #define NATRON_ENGINE_INTERPOLATION_H_
 
-#include <cmath>
-#include <stdexcept>
 #include "Global/Enums.h"
 namespace Natron
 {
@@ -30,60 +28,13 @@ namespace Natron
  * Note that for CATMULL-ROM you must use the function interpolate_catmullRom
  * which will compute the derivatives for you.
  **/
-template <typename T>
-T interpolate(double tcur, const T vcur, //start control point
-              const T vcurDerivRight, //being the derivative dv/dt at tcur
-              const T vnextDerivLeft, //being the derivative dv/dt at tnext
-              double tnext, const T vnext, //end control point
-              double currentTime,
-              KeyframeType interp,
-              KeyframeType interpNext)
-{
-    const T P0 = vcur;
-    const T P3 = vnext;
-    // Hermite coefficients P0' and P3' are the derivatives with respect to x \in [0,1]
-    const T P0pr = vcurDerivRight*(tnext-tcur); // normalize for x \in [0,1]
-    const T P3pl = vnextDerivLeft*(tnext-tcur); // normalize for x \in [0,1]
-    assert((interp == KEYFRAME_NONE || currentTime >= tcur) && (interpNext == KEYFRAME_NONE || currentTime <= tnext));
-    // after the last / before the first keyframe, derivatives are wrt currentTime (i.e. non-normalized)
-    if (interp == KEYFRAME_NONE) {
-        tcur = tnext - 1.;
-    }
-    if (interpNext == KEYFRAME_NONE) {
-        tnext = tcur + 1;
-    }
-    const double t = (currentTime - tcur)/(tnext - tcur);
-    const double t2 = t * t;
-    const double t3 = t2 * t;
-    if (interpNext == KEYFRAME_NONE) {
-        assert(interp != KEYFRAME_NONE);
-        // t is normalized between 0 and 1, and P0pr is the derivative wrt currentTime
-        return P0 + t * P0pr;
-    }
-    
-    switch (interp) {
-    case KEYFRAME_LINEAR:
-    case KEYFRAME_HORIZONTAL:
-    case KEYFRAME_CATMULL_ROM:
-    case KEYFRAME_SMOOTH:
-    case KEYFRAME_CUBIC:
-    case KEYFRAME_FREE:
-    case KEYFRAME_BROKEN:
-        //i.e: hermite cubic spline interpolation
-        return ((2 * t3 - 3 * t2 + 1) * P0 +
-                (t3 - 2 * t2 + t) * P0pr +
-                (-2 * t3 + 3 * t2) * P3 +
-                (t3 - t2) * P3pl);
-    case KEYFRAME_NONE:
-        // t is normalized between 0 and 1, and P3pl is the derivative wrt currentTime
-        return P3 - (1. - t) * P3pl;
-    case KEYFRAME_CONSTANT:
-    default:
-        return t < tnext ? P0 : P3;
-
-    }
-}
-
+double interpolate(double tcur, const double vcur, //start control point
+                   const double vcurDerivRight, //being the derivative dv/dt at tcur
+                   const double vnextDerivLeft, //being the derivative dv/dt at tnext
+                   double tnext, const double vnext, //end control point
+                   double currentTime,
+                   KeyframeType interp,
+                   KeyframeType interpNext);
 
 /**
  * @brief This function will set the left and right derivative of 'cur', depending on the interpolation method 'interp' and the
@@ -164,167 +115,16 @@ solve({curvatureAtCurRight = curvatureAtCurLeft, derivativeAtCurRight = derivati
 map(C,%):
 
 */
-template <typename T>
 void autoComputeDerivatives(Natron::KeyframeType interpPrev,
-                         Natron::KeyframeType interp,
-                         Natron::KeyframeType interpNext,
-                         double tprev, const T vprev, // vprev = Q0
-                         double tcur, const T vcur, // vcur = Q3 = P0
-                         double tnext, const T vnext, // vnext = P3
-                         const T vprevDerivRight, // Q0'_r
-                         const T vnextDerivLeft, // P3'_l
-                         T *vcurDerivLeft, // Q3'_l
-                         T *vcurDerivRight)  // P0'_r
-{
-    const T Q0 = vprev;
-    const T Q3 = vcur;
-    const T P0 = vcur;
-    const T P3 = vnext;
-    // Hermite coefficients P0' and P3' are the derivatives with respect to x \in [0,1]
-    if (interpPrev == KEYFRAME_NONE) {
-        tprev = tcur - 1.;
-    }
-    if (interpNext == KEYFRAME_NONE) {
-        tnext = tcur + 1.;
-    }
-    const T Q0pr = vprevDerivRight*(tcur-tprev); // normalize for x \in [0,1]
-    const T P3pl = vnextDerivLeft*(tnext-tcur); // normalize for x \in [0,1]
-    T P0pr = T();
-    T Q3pl = T();
-
-    // if there are no keyframes before and after, the derivatives are zero
-    if (interpPrev == KEYFRAME_NONE && interpNext == KEYFRAME_NONE) {
-        *vcurDerivRight = 0.;
-        *vcurDerivLeft = 0.;
-    }
-
-    // If there is no next/previous keyframe, should there be a continuous derivative?
-    bool keyframe_none_same_derivative = false;
-
-    // if there is no next/previous keyframe, use LINEAR interpolation, and set keyframe_none_same_derivative
-    if (interpPrev == KEYFRAME_NONE || interpNext == KEYFRAME_NONE) {
-        // Do this before modifying interp (next line)
-        keyframe_none_same_derivative = (interp == KEYFRAME_CATMULL_ROM || interp == KEYFRAME_CUBIC);
-        interp = KEYFRAME_LINEAR;
-    }
-
-    switch (interp) {
-    case KEYFRAME_LINEAR:
-        /* Linear means the the 2nd derivative of the cubic curve at the point 'cur' is zero. */
-        if (interpNext == KEYFRAME_NONE) {
-            P0pr = 0.;
-        } else if (interpNext == KEYFRAME_LINEAR) {
-            P0pr = -P0 + P3;
-        } else {
-            P0pr = -0.3e1 / 0.2e1 * P0 + 0.3e1 / 0.2e1 * P3 - P3pl / 0.2e1;
-        }
-
-        if (interpPrev == KEYFRAME_NONE) {
-            Q3pl = 0.;
-        } else if (interpPrev == KEYFRAME_LINEAR) {
-            Q3pl = -Q0 + P0;
-        } else {
-            Q3pl = -0.3e1 / 0.2e1 * Q0 - Q0pr / 0.2e1 + 0.3e1 / 0.2e1 * P0;
-        }
-
-        if (keyframe_none_same_derivative) {
-            if (interpNext == KEYFRAME_NONE) {
-                P0pr = Q3pl/(tcur-tprev);
-            } else if (interpPrev == KEYFRAME_NONE) {
-                Q3pl = P0pr/(tnext-tcur);
-            }
-        }
-        break;
-
-    case KEYFRAME_CATMULL_ROM:
-        {
-            /* http://en.wikipedia.org/wiki/Cubic_Hermite_spline We use the formula given to compute the derivatives*/
-            T deriv = (vnext - vprev) / (tnext - tprev);
-            P0pr = deriv * (tnext - tcur);
-            Q3pl = deriv * (tcur - tprev);
-        }
-        break;
-
-    case KEYFRAME_SMOOTH:
-
-        // If vcur is outside of the range [vprev,vnext], then interpolation is horizontal
-        if ((vprev > vcur && vcur < vnext) || (vprev < vcur && vcur > vnext)) {
-            P0pr = 0.;
-            Q3pl = 0.;
-        } else {
-            // Catmull-Rom interpolatio, see above
-            /* http://en.wikipedia.org/wiki/Cubic_Hermite_spline We use the formula given to compute the derivatives*/
-            T deriv = (vnext - vprev) / (tnext - tprev);
-            P0pr = deriv * (tnext - tcur);
-            Q3pl = deriv * (tcur - tprev);
-
-            /*Now that we have the derivative by catmull-rom's formula, we compute the bezier
-              point on the left and on the right from the derivatives (i.e: P1 and Q2, Q being the segment before P)
-            */
-            T P1 = P0 + P0pr / 3.;
-            T Q2 = Q3 - Q3pl / 3.;
-
-            /*We clamp Q2 to Q0(aka vprev) and Q3(aka vcur)
-              and P1 to P0(aka vcur) and P3(aka vnext)*/
-            T prevMax = std::max(vprev, vcur);
-            T prevMin = std::min(vprev, vcur);
-            if (Q2 < prevMin || Q2 > prevMax) {
-                T Q2new = std::max(prevMin, std::min(Q2, prevMax));
-                P1 = P0 + (P1-P0) * (Q3-Q2new)/(Q3-Q2);
-                Q2 = Q2new;
-            }
-
-            T nextMax = std::max(vcur, vnext);
-            T nextMin = std::min(vcur, vnext);
-            if (P1 < nextMin || P1 > nextMax) {
-                T P1new = std::max(nextMin, std::min(P1, nextMax));
-                Q2 = Q3 - (Q3-Q2) * (P1new-P0)/(P1-P0);
-                P1 = P1new;
-            }
-
-            /*We recompute the derivatives from the new clamped control points*/
-
-            P0pr = 3. * (P1 - P0);
-            Q3pl = 3. * (Q3 - Q2);
-        }
-       break;
-
-    case KEYFRAME_HORIZONTAL:
-    case KEYFRAME_CONSTANT:
-        /*The values are the same than the keyframe they belong. */
-        P0pr = 0.;
-        Q3pl = 0.;
-        break;
-
-    case KEYFRAME_CUBIC:
-        /* Cubic means the the 2nd derivative of the cubic curve at the point 'cur' are equal. */
-        if (interpPrev == KEYFRAME_LINEAR && interpNext == KEYFRAME_LINEAR) {
-            P0pr = -(double)((Q0 * tnext - Q0 * tcur - P0 * tprev - P3 * tcur + P3 * tprev - P0 * tnext + 2 * P0 * tcur) / (tcur - tprev)) / 0.2e1;
-            Q3pl = (double)((Q0 * tnext - Q0 * tcur - P0 * tprev - P3 * tcur + P3 * tprev - P0 * tnext + 2 * P0 * tcur) / (-tnext + tcur)) / 0.2e1;
-        } else if (interpPrev == KEYFRAME_LINEAR) {
-            P0pr = -(double)((-6 * P0 * tprev - 6 * P3 * tcur + 6 * P3 * tprev + 2 * P3pl * tcur - 2 * P3pl * tprev + 3 * Q0 * tnext - 3 * Q0 * tcur - 3 * P0 * tnext + 9 * P0 * tcur) / (tcur - tprev)) / 0.7e1;
-            Q3pl = (double)((-6 * P0 * tprev - 6 * P3 * tcur + 6 * P3 * tprev + 2 * P3pl * tcur - 2 * P3pl * tprev + 3 * Q0 * tnext - 3 * Q0 * tcur - 3 * P0 * tnext + 9 * P0 * tcur) / (-tnext + tcur)) / 0.7e1;
-        } else if (interpNext == KEYFRAME_LINEAR) {
-            P0pr = -(double)((-3 * P0 * tprev - 3 * P3 * tcur + 3 * P3 * tprev + 6 * Q0 * tnext - 6 * Q0 * tcur + 2 * Q0pr * tnext - 2 * Q0pr * tcur - 6 * P0 * tnext + 9 * P0 * tcur) / (tcur - tprev)) / 0.7e1;
-            Q3pl = (double)((-3 * P0 * tprev - 3 * P3 * tcur + 3 * P3 * tprev + 6 * Q0 * tnext - 6 * Q0 * tcur + 2 * Q0pr * tnext - 2 * Q0pr * tcur - 6 * P0 * tnext + 9 * P0 * tcur) / (-tnext + tcur)) / 0.7e1;
-        } else {
-            P0pr = -(double)((6 * P0 * tcur - 3 * P0 * tprev - 3 * P3 * tcur + 3 * P3 * tprev + P3pl * tcur - P3pl * tprev + 3 * Q0 * tnext - 3 * Q0 * tcur + Q0pr * tnext - Q0pr * tcur - 3 * P0 * tnext) / (tcur - tprev)) / 0.4e1;
-
-            Q3pl = (double)((6 * P0 * tcur - 3 * P0 * tprev - 3 * P3 * tcur + 3 * P3 * tprev + P3pl * tcur - P3pl * tprev + 3 * Q0 * tnext - 3 * Q0 * tcur + Q0pr * tnext - Q0pr * tcur - 3 * P0 * tnext) / (-tnext + tcur)) / 0.4e1;
-
-        }
-        break;
-
-    case KEYFRAME_NONE:
-    case KEYFRAME_FREE:
-    case KEYFRAME_BROKEN:
-        throw std::runtime_error("Cannot compute derivatives at KEYFRAME_NONE, KEYFRAME_FREE or KEYFRAME_BROKEN");
-    }
-
-    *vcurDerivRight = P0pr/(tnext-tcur); // denormalize for t \in [tcur,tnext]
-    *vcurDerivLeft = Q3pl/(tcur-tprev); // denormalize for t \in [tprev,tcur]
-    assert(!boost::math::isnan(*vcurDerivRight) && !boost::math::isnan(*vcurDerivLeft));
-}
+                            Natron::KeyframeType interp,
+                            Natron::KeyframeType interpNext,
+                            double tprev, const double vprev, // vprev = Q0
+                            double tcur, const double vcur, // vcur = Q3 = P0
+                            double tnext, const double vnext, // vnext = P3
+                            const double vprevDerivRight, // Q0'_r
+                            const double vnextDerivLeft, // P3'_l
+                            double *vcurDerivLeft, // Q3'_l
+                            double *vcurDerivRight);  // P0'_r
 
 }
 

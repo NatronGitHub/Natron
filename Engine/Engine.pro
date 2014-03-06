@@ -48,6 +48,7 @@ SOURCES += \
     Hash64.cpp \
     Image.cpp \
     ImageParamsSerialization.cpp \
+    Interpolation.cpp \
     Knob.cpp \
     KnobSerialization.cpp \
     KnobFactory.cpp \

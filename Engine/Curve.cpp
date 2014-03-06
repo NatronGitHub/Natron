@@ -358,13 +358,13 @@ double Curve::getValueAt(double t) const {
         interpNext = upper->getInterpolation();
     }
 
-    double v = Natron::interpolate<double>(tcur,vcur,
-                                           vcurDerivRight,
-                                           vnextDerivLeft,
-                                           tnext,vnext,
-                                           t,
-                                           interp,
-                                           interpNext);
+    double v = Natron::interpolate(tcur,vcur,
+                                   vcurDerivRight,
+                                   vnextDerivLeft,
+                                   tnext,vnext,
+                                   t,
+                                   interp,
+                                   interpNext);
 
     if (_imp->owner) {
         v = clampValueToCurveYRange(v);
@@ -664,17 +664,17 @@ KeyFrameSet::iterator Curve::refreshDerivatives(Curve::CurveChangedReason reason
     assert(key->getInterpolation() != Natron::KEYFRAME_NONE &&
             key->getInterpolation() != Natron::KEYFRAME_BROKEN &&
             key->getInterpolation() != Natron::KEYFRAME_FREE);
-    Natron::autoComputeDerivatives<double>(prevType,
-                                        key->getInterpolation(),
-                                        nextType,
-                                        tprev, vprev,
-                                        tcur, vcur,
-                                        tnext, vnext,
-                                        vprevDerivRight,
-                                        vnextDerivLeft,
-                                        &vcurDerivLeft, &vcurDerivRight);
+    Natron::autoComputeDerivatives(prevType,
+                                   key->getInterpolation(),
+                                   nextType,
+                                   tprev, vprev,
+                                   tcur, vcur,
+                                   tnext, vnext,
+                                   vprevDerivRight,
+                                   vnextDerivLeft,
+                                   &vcurDerivLeft, &vcurDerivRight);
 
-    
+
     KeyFrame newKey(*key);
     newKey.setLeftDerivative(vcurDerivLeft);
     newKey.setRightDerivative(vcurDerivRight);
