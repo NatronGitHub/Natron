@@ -175,7 +175,15 @@ void File_KnobGui::updateGUI(int /*dimension*/, const Variant &/*variant*/)
 
 void File_KnobGui::onReturnPressed()
 {
+    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
+
     QString str = _lineEdit->text();
+    
+    ///don't do antyhing if the pattern is the same
+    if (str == fk->getPattern()) {
+        return;
+    }
+    
     SequenceParsing::SequenceFromPattern sequence;
     SequenceParsing::filesListFromPattern(str, &sequence);
     ///Even though the user might have passed to the file knob a view variable (%v or %V)
@@ -188,7 +196,6 @@ void File_KnobGui::onReturnPressed()
 
     
     SequenceParsing::SequenceFromFiles oldFiles(false);
-    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
     fk->getFiles(&oldFiles);
     fk->setPattern(str);
     pushUndoCommand(new File_Knob_UndoCommand(this,oldFiles,sequenceFromFiles));

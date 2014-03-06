@@ -125,6 +125,8 @@ public slots:
     
     void onRestoreDefaultsButtonClicked();
 
+    void onLineEditNameEditingFinished();
+    
 signals:
     
     /*emitted when the panel is clicked*/

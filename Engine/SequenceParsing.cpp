@@ -262,6 +262,10 @@ static bool checkVariable(const QString& variableToken,const QString& variable,i
 static bool matchesPattern(const QString& filename,const QStringList& commonPartsOrdered,
                            const std::vector<std::pair<QString,int> >& variablesOrdered,
                            int* frameNumber,int* viewNumber) {
+    
+    ///initialize the view number
+    *viewNumber = -1;
+    
     int lastPartPos = -1;
     for (int i = 0; i < commonPartsOrdered.size(); ++i) {
         int pos = filename.indexOf(commonPartsOrdered.at(i),lastPartPos == - 1 ? 0 : lastPartPos);
@@ -275,6 +279,8 @@ static bool matchesPattern(const QString& filename,const QStringList& commonPart
             return false;
         }
     }
+    
+    
 
     if (variablesOrdered.empty()) {
         return true;
@@ -298,8 +304,7 @@ static bool matchesPattern(const QString& filename,const QStringList& commonPart
     bool wasFrameNumberSet = false;
     bool wasViewNumberSet = false;
     int variableChecked = 0;
-    ///initialize the view number
-    *viewNumber = -1;
+ 
     ///the index in variablesOrdered to check
     int nextVariableIndex = 0;
 

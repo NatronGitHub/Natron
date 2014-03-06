@@ -750,24 +750,29 @@ void RenderTree::refreshTree(int knobsAge){
     clearGraph();
     fillGraph(_output);
 
-    std::vector<U64> inputsHash;
     for(TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
+        
+        ///reset back the marking
         it->second->setMarkedByTopologicalSort(false);
+        
+        ///update the clone's inputs
         it->second->updateInputs(this);
-        U64 ret = 0;
-        it->second->clone();
-        ret = it->second->computeHash(inputsHash,knobsAge);
-        inputsHash.push_back(ret);
+ 
+        ///release the lock we acquired in fillGraph
         it->first->setRenderTreeIsUsingInputs(false);
     }
+    
+    ///clone the knobs
+    _output->cloneKnobsAndComputeHashAndClearPersistentMessage(knobsAge);
 }
 
 
 void RenderTree::fillGraph(EffectInstance *effect){
     
-    /*call fillGraph recursivly on all the node's inputs*/
+    ///prevent the effect from using its inputs yet
     effect->getNode()->setRenderTreeIsUsingInputs(true);
     
+    /*call fillGraph recursivly on all the node's inputs*/
     const Node::InputMap& inputs = effect->getNode()->getInputs();
     for(Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
         if(it->second){
@@ -786,33 +791,11 @@ void RenderTree::fillGraph(EffectInstance *effect){
     }
 }
 
-U64 RenderTree::cloneKnobsAndcomputeTreeHash(EffectInstance* effect,const std::vector<U64>& inputsHashs,int knobsAge){
-    U64 ret = effect->hash().value();
-    if(!effect->isHashValid()){
-        effect->clone();
-        ret = effect->computeHash(inputsHashs,knobsAge);
-        //  std::cout << effect->getName() << ": " << ret << std::endl;
-    }
-    return ret;
-}
 void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(){
     _renderOutputFormat = _output->getApp()->getProject()->getProjectDefaultFormat();
     _projectViewsCount = _output->getApp()->getProject()->getProjectViewsCount();
-    
-    //    bool oldVersionValid = _treeVersionValid;
-    //    U64 oldVersion = 0;
-    //    if (oldVersionValid) {
-    //        oldVersion = _output->hash().value();
-    //    }
     int knobsAge = _output->getAppAge();
-    /*Computing the hash of the tree in topological ordering.
-     For each effect in the tree, the hash of its inputs is guaranteed to have
-     been computed.*/
-    std::vector<U64> inputsHash;
-    for (TreeIterator it = _sorted.begin(); it!=_sorted.end(); ++it) {
-        inputsHash.push_back(cloneKnobsAndcomputeTreeHash(it->second,inputsHash,knobsAge));
-        (*it).second->clearPersistentMessage();
-    }
+    getOutput()->cloneKnobsAndComputeHashAndClearPersistentMessage(knobsAge);
     _treeVersionValid = true;
 
 }

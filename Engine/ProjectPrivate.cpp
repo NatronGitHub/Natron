@@ -28,6 +28,8 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , projectName("Untitled." NATRON_PROJECT_FILE_EXT)
     , hasProjectBeenSavedByUser(false)
     , ageSinceLastSave(QDateTime::currentDateTime())
+    , lastAutoSave()
+    , projectCreationTime(ageSinceLastSave)
     , formatKnob()
     , availableFormats()
     , formatMutex()
@@ -62,7 +64,6 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
 void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
     project->beginProjectWideValueChanges(Natron::OTHER_REASON,project);
-
 
     /*1st OFF RESTORE THE PROJECT KNOBS*/
     
@@ -165,6 +166,8 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     }
     
     project->endProjectWideValueChanges(project);
+    
+    projectCreationTime = QDateTime::fromString(obj.getCreationDate().c_str());
 
 }
     

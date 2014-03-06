@@ -56,6 +56,7 @@ struct ProjectPrivate {
     bool hasProjectBeenSavedByUser; //< has this project ever been saved by the user?
     QDateTime ageSinceLastSave; //< the last time the user saved
     QDateTime lastAutoSave; //< the last time since autosave
+    QDateTime projectCreationTime; //< the project creation time
     
     boost::shared_ptr<Choice_Knob> formatKnob;
     std::vector<Format> availableFormats;

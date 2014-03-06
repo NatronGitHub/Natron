@@ -469,9 +469,12 @@ void Project::initNodeCountersAndSetName(Node* n) {
         _imp->nodeCounters.insert(make_pair(n->pluginID(), 1));
         n->setName(QString(QString(n->pluginLabel().c_str())+ "_" + QString::number(1)).toStdString());
     }
-    _imp->currentNodes.push_back(n);
 }
 
+void Project::addNodeToProject(Node* n) {
+    _imp->currentNodes.push_back(n);
+}
+    
 void Project::clearNodes() {
     std::vector<Natron::Node*> nodesToDelete;
     {
@@ -902,6 +905,7 @@ void Project::reset() {
         QMutexLocker l(&_imp->projectLock);
         _imp->autoSetProjectFormat = true;
         _imp->hasProjectBeenSavedByUser = false;
+        _imp->projectCreationTime = QDateTime::currentDateTime();
         _imp->projectName = NATRON_PROJECT_UNTITLED;
         _imp->projectPath.clear();
     }
@@ -1122,5 +1126,9 @@ bool Project::autoConnectNodes(Node* selected,Node* created) {
     return ret;
 
 }
-
+    
+QString Project::getProjectCreationTimeString() const {
+    return _imp->projectCreationTime.toString();
+}
+    
 } //namespace Natron
