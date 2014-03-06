@@ -902,6 +902,7 @@ void Project::reset() {
         QMutexLocker l(&_imp->projectLock);
         _imp->autoSetProjectFormat = true;
         _imp->hasProjectBeenSavedByUser = false;
+        _imp->projectCreationTime = QDateTime::currentDateTime();
         _imp->projectName = NATRON_PROJECT_UNTITLED;
         _imp->projectPath.clear();
     }
@@ -1122,5 +1123,9 @@ bool Project::autoConnectNodes(Node* selected,Node* created) {
     return ret;
 
 }
-
+    
+QString Project::getProjectCreationTimeString() const {
+    return _imp->projectCreationTime.toString();
+}
+    
 } //namespace Natron

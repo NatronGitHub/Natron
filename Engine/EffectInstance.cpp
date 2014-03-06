@@ -148,20 +148,54 @@ void EffectInstance::setKnobsAge(U64 age) {
     _node->setKnobsAge(age);
 }
 
-U64 EffectInstance::computeHash(const std::vector<U64>& inputsHashs,int knobsAge){
+
+U64 EffectInstance::cloneKnobsAndComputeHashAndClearPersistentMessage(int knobsAge) {
+   
+    ///if the effect is visited again, isHashValid will return true and the call is cheap
     
-    _imp->hashAge = knobsAge;
-    
-    _imp->hashValue.reset();
-    
-    _imp->hashValue.append(getNode()->getKnobsAge());
-    
-    for (U32 i =0; i < inputsHashs.size(); ++i) {
-        _imp->hashValue.append(inputsHashs[i]);
+    if (!isHashValid()) {
+        
+        std::vector<U64> inputHashs;
+        for (Inputs::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
+            if (*it) {
+                inputHashs.push_back((*it)->cloneKnobsAndComputeHashAndClearPersistentMessage(knobsAge));
+            }
+        }
+        
+        clearPersistentMessage();
+        
+        ///clone all the knobs
+        clone();
+        
+        ///set the hash age to be the global app age
+        _imp->hashAge = knobsAge;
+        
+        ///reset the hash value
+        _imp->hashValue.reset();
+        
+        ///append the effect's own age
+        _imp->hashValue.append(getNode()->getKnobsAge());
+
+        ///append all inputs hash
+        for (U32 i =0; i < inputHashs.size(); ++i) {
+            _imp->hashValue.append(inputHashs[i]);
+        }
+        
+        ///Also append the effect's label to distinguish 2 instances with the same parameters
+        ::Hash64_appendQString(&_imp->hashValue, QString(pluginLabel().c_str()));
+        
+        
+        ///Also append the project's creation time in the hash because 2 projects openend concurrently
+        ///could reproduce the same (especially simple graphs like Viewer-Reader)
+        ::Hash64_appendQString(&_imp->hashValue, getApp()->getProject()->getProjectCreationTimeString());
+
+        _imp->hashValue.computeHash();
+        
+        return _imp->hashValue.value();
+    } else {
+        return _imp->hashValue.value();
     }
-    ::Hash64_appendQString(&_imp->hashValue, pluginID().c_str());
-    _imp->hashValue.computeHash();
-    return _imp->hashValue.value();
+
 }
 
 const std::string& EffectInstance::getName() const{

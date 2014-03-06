@@ -180,6 +180,8 @@ public:
     
     void unlock() const;
     
+    QString getProjectCreationTimeString() const;
+    
 public slots:
 
     void onTimeChanged(SequenceTime time,int reason);

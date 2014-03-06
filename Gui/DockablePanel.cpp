@@ -155,7 +155,7 @@ DockablePanel::DockablePanel(Gui* gui
         if(headerMode != READ_ONLY_NAME){
             _nameLineEdit = new LineEdit(_headerWidget);
             _nameLineEdit->setText(initialName);
-            QObject::connect(_nameLineEdit,SIGNAL(textEdited(QString)),this,SIGNAL(nameChanged(QString)));
+            QObject::connect(_nameLineEdit,SIGNAL(editingFinished()),this,SLOT(onLineEditNameEditingFinished()));
             _headerLayout->addWidget(_nameLineEdit);
         }else{
             _nameLabel = new QLabel(initialName,_headerWidget);
@@ -210,6 +210,10 @@ void DockablePanel::onRestoreDefaultsButtonClicked() {
     if (effect) {
         effect->setKnobsAge(0);
     }
+}
+
+void DockablePanel::onLineEditNameEditingFinished() {
+    emit nameChanged(_nameLineEdit->text());
 }
 
 void DockablePanel::initializeKnobs(){

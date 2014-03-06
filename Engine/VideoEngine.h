@@ -24,7 +24,6 @@ CLANG_DIAG_ON(deprecated)
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 
-#include <QtCore/QRunnable> // for RowRunnable => to remove if class RowRunnable is moved to VideoEngine.cpp
 
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
@@ -160,11 +159,6 @@ private:
     /*clears out the structure*/
     void clearGraph();
     
-    
-    
-    U64 cloneKnobsAndcomputeTreeHash(Natron::EffectInstance* effect,const std::vector<U64>& inputsHashs,int knobsAge);
-    
-    
     Natron::EffectInstance* _output; /*!<the output of the Tree*/
     TreeContainer _sorted; /*!<the sorted Tree*/
     bool _isViewer; /*!< true if the outputNode is a viewer, it avoids many dynamic_casts*/
@@ -180,7 +174,7 @@ private:
  *@brief This is the engine that runs the playback. It handles all graph computations for the time range given by
  *the graph.
  **/
-class VideoEngine : public QThread{
+class VideoEngine : public QThread {
     
     Q_OBJECT
     
