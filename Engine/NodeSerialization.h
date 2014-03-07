@@ -86,7 +86,6 @@ private:
         
     }
     
-    friend class boost::serialization::access;
     template<class Archive>
     void load(Archive & ar, const unsigned int version)
     {

@@ -77,7 +77,7 @@ macx{
 
 !macx {
   # c++11 build fails on Snow Leopard 10.6 (see the macx section below)
-  CONFIG += c++11
+  #CONFIG += c++11
 }
 
 win32{
