@@ -31,7 +31,6 @@ viewer fullscreen will mess it up and make it unusable.
   http://qt-project.org/doc/qt-4.8/qwidget.html#setTabOrder
   http://qt-project.org/doc/qt-4.8/focus.html
 
-- On Ubuntu 13.10 with Qt5, Natron is non-functional (transparent widgets, extra windows...)
 
 Missing and wanted features
 ---------------------------
@@ -40,9 +39,7 @@ Here is a list of non-blocking bugs / wanted features:
 
 - the nodegraph should have a "f" shortcut to recenter the graph, and scrollbars (or a birds eye view) when the graph is too large.
 
-- Knobs are missing a "reset default value" feature
-
-- Separate the link and copy/paste functionalities from the animation menu
+- Change the Knob Variant based implementation to a templated implementation.
 
 - Progress suite is not implemented (GUI is blocked until the operation has ended)
 
