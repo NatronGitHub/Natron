@@ -32,8 +32,10 @@ signals:
 
 private:
     void mousePressEvent(QMouseEvent *) {
-        _toggled = !_toggled;
-        emit clicked(_toggled);
+        if (isEnabled()) {
+            _toggled = !_toggled;
+            emit clicked(_toggled);
+        }
     }
 
 private:

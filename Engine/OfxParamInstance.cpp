@@ -122,7 +122,7 @@ namespace OfxKeyFrame{
             }
             
         }
-        return kOfxStatErrValue;
+        return kOfxStatFailed;
     }
     OfxStatus deleteKey(boost::shared_ptr<Knob> knob,OfxTime time) {
         for(int i = 0; i < knob->getDimension();++i){

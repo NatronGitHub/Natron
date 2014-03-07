@@ -609,6 +609,9 @@ void KnobGui::show(){
 
 void KnobGui::setEnabledSlot(){
     setEnabled();
+    if (_descriptionLabel) {
+        _descriptionLabel->setEnabled(_knob->isEnabled(0));
+    }
     if(_knob->getHolder()->getApp()){
         for (int i = 0; i < _knob->getDimension(); ++i) {
             if(!_knob->isEnabled(i)){
