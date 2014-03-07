@@ -610,7 +610,7 @@ void SequenceFileDialog::selectionChanged() {
         QString lineEditText = _selectionLineEdit->text();
         SequenceParsing::FileNameContent content(lineEditText);
         if (_model->isDir(mappedIndex)) {
-            if (!!content.fileName().isEmpty()) {
+            if (!content.fileName().isEmpty()) {
                 QDir dir(itemText);
                 _selectionLineEdit->setText(dir.absoluteFilePath(content.fileName()));
                 
@@ -853,7 +853,7 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
     }
     QReadLocker locker(&_nameMappingMutex);
     _view->updateNameMapping(_nameMapping);
-    _view->repaint();
+    //_view->repaint();
 }
 void SequenceFileDialog::setRootIndex(const QModelIndex& index){
     _view->setRootIndex(index);
@@ -1235,7 +1235,10 @@ void SequenceFileDialog::openSelectedFiles(){
                 
                 ///check if str contains already the selected file extension, otherwise append it
                 {
-                    int lastSepPos = str.lastIndexOf(QDir::separator());
+                    int lastSepPos = str.lastIndexOf("/");
+					if (lastSepPos == -1) {
+						lastSepPos == str.lastIndexOf("//");
+					}
                     int lastDotPos = str.lastIndexOf('.');
                     if (lastDotPos < lastSepPos) {
                         str.append("." + _fileExtensionCombo->getCurrentIndexText());
@@ -1547,7 +1550,7 @@ void SequenceFileDialog::doubleClickOpen(const QModelIndex& /*index*/){
     QModelIndexList indexes = _view->selectionModel()->selectedRows();
     for (int i = 0; i < indexes.count(); ++i) {
         if (_model->isDir(mapToSource(indexes.at(i)))){
-            _selectionLineEdit->setText(indexes.at(i).data(QFileSystemModel::FilePathRole).toString()+QDir::separator());
+            _selectionLineEdit->setText(indexes.at(i).data(QFileSystemModel::FilePathRole).toString()+ "/");
             break;
         }
     }
