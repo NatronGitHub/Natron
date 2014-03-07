@@ -205,11 +205,6 @@ void DockablePanel::onRestoreDefaultsButtonClicked() {
             it->first->resetToDefaultValue(i);
         }
     }
-    ///also reset the age to 0
-    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_holder);
-    if (effect) {
-        effect->setKnobsAge(0);
-    }
 }
 
 void DockablePanel::onLineEditNameEditingFinished() {
