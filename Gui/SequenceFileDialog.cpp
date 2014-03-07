@@ -1237,7 +1237,7 @@ void SequenceFileDialog::openSelectedFiles(){
                 {
                     int lastSepPos = str.lastIndexOf("/");
 					if (lastSepPos == -1) {
-						lastSepPos == str.lastIndexOf("//");
+						lastSepPos = str.lastIndexOf("//");
 					}
                     int lastDotPos = str.lastIndexOf('.');
                     if (lastDotPos < lastSepPos) {
