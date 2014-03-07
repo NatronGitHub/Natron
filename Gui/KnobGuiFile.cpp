@@ -154,9 +154,10 @@ void File_KnobGui::open_file(bool openSequence)
     SequenceParsing::SequenceFromFiles selectedFiles(false);
     if (dialog.exec()) {
         selectedFiles = dialog.getSelectedFilesAsSequence();
+        updateLastOpened(selectedFiles.getPath());
+        pushUndoCommand(new File_Knob_UndoCommand(this,currentFiles,selectedFiles));
     }
-    updateLastOpened(selectedFiles.getPath());
-    pushUndoCommand(new File_Knob_UndoCommand(this,currentFiles,selectedFiles));
+    
 }
 
 void File_KnobGui::updateLastOpened(const QString &str)
@@ -167,10 +168,10 @@ void File_KnobGui::updateLastOpened(const QString &str)
 
 }
 
-void File_KnobGui::updateGUI(int /*dimension*/, const Variant &/*variant*/)
+void File_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
 {
-    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
-    _lineEdit->setText(fk->getPattern());
+    //    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
+    _lineEdit->setText(variant.toString());
 }
 
 void File_KnobGui::onReturnPressed()

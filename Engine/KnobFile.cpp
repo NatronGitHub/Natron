@@ -29,6 +29,7 @@ using std::pair;
 File_Knob::File_Knob(KnobHolder *holder, const std::string &description, int dimension)
 : Knob(holder, description, dimension)
 , _animation(new StringAnimationManager(this))
+, _isInputImage(false)
 {
 }
 
