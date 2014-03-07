@@ -1081,8 +1081,10 @@ void ConnectCommand::redo() {
         ///if the node is an inspector we have to do things differently
         
         if (!_newSrc) {
-            ///we want to connect to nothing, hence disconnect
-            _graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode(),inspector);
+            if (_oldSrc) {
+                ///we want to connect to nothing, hence disconnect
+                _graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode(),inspector);
+            }
         } else {
             ///disconnect any connection already existing with the _oldSrc
             if (_oldSrc) {
