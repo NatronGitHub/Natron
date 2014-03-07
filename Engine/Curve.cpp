@@ -384,6 +384,7 @@ double Curve::getValueAt(double t) const {
     }
 }
 
+#pragma message WARN("TODO: add Curve::deriveAt(t) and Curve::integrateFromTo(t1,t2), see Natron::derive and Natron::integrate")
 
 std::pair<double,double>  Curve::getCurveYRange() const
 {

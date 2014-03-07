@@ -36,6 +36,24 @@ double interpolate(double tcur, const double vcur, //start control point
                    KeyframeType interp,
                    KeyframeType interpNext);
 
+/// derive at currentTime. The derivative is with respect to currentTime
+double derive(double tcur, const double vcur, //start control point
+              const double vcurDerivRight, //being the derivative dv/dt at tcur
+              const double vnextDerivLeft, //being the derivative dv/dt at tnext
+              double tnext, const double vnext, //end control point
+              double currentTime,
+              KeyframeType interp,
+              KeyframeType interpNext);
+
+/// integrate from time1 to time2 - be careful that time1 and time2 have to be in the range [tcur,tnext]
+double integrate(double tcur, const double vcur, //start control point
+                 const double vcurDerivRight, //being the derivative dv/dt at tcur
+                 const double vnextDerivLeft, //being the derivative dv/dt at tnext
+                 double tnext, const double vnext, //end control point
+                 double time1, double time2,
+                 KeyframeType interp,
+                 KeyframeType interpNext);
+
 /**
  * @brief This function will set the left and right derivative of 'cur', depending on the interpolation method 'interp' and the
  * previous and next key frames.

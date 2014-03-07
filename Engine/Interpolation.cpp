@@ -15,6 +15,42 @@
 
 using namespace Natron;
 
+static void
+hermiteToCubicCoeffs(double P0, double P0pr, double P3pl, double P3, double *c0, double *c1, double *c2, double *c3)
+{
+    *c0 = P0;
+    *c1 = P0pr;
+    *c2 = 3 * (P3 - P0) - 2 * P0pr - P3pl;
+    *c3 = -2 * (P3 - P0) + P0pr + P3pl;
+}
+
+// evaluate at t
+static double
+cubicEval(double c0, double c1, double c2, double c3, double t)
+{
+    const double t2 = t * t;
+    const double t3 = t2 * t;
+    return c0 + c1*t + c2*t2 + c3*t3;
+}
+
+
+// integrate from 0 to t
+static double
+cubicIntegrate(double c0, double c1, double c2, double c3, double t)
+{
+    const double t2 = t * t;
+    const double t3 = t2 * t;
+    const double t4 = t3 * t;
+    return c0*t + c1*t2/2. + c2*t3/3 + c3*t4/4;
+}
+
+// derive at t
+static double
+cubicDerive(double /*c0*/, double c1, double c2, double c3, double t)
+{
+    const double t2 = t * t;
+    return c1 + 2*c2*t + 3*c3*t2;
+}
 
 /**
  * @brief Interpolates using the control points P0(t0,v0) , P3(t3,v3)
@@ -33,49 +69,130 @@ double Natron::interpolate(double tcur, const double vcur, //start control point
                            Natron::KeyframeType interp,
                            Natron::KeyframeType interpNext)
 {
-    const double P0 = vcur;
-    const double P3 = vnext;
+    double P0 = vcur;
+    double P3 = vnext;
     // Hermite coefficients P0' and P3' are the derivatives with respect to x \in [0,1]
-    const double P0pr = vcurDerivRight*(tnext-tcur); // normalize for x \in [0,1]
-    const double P3pl = vnextDerivLeft*(tnext-tcur); // normalize for x \in [0,1]
-    assert((interp == KEYFRAME_NONE || currentTime >= tcur) && (interpNext == KEYFRAME_NONE || currentTime <= tnext));
+    double P0pr = vcurDerivRight*(tnext-tcur); // normalize for x \in [0,1]
+    double P3pl = vnextDerivLeft*(tnext-tcur); // normalize for x \in [0,1]
+    // if the following is true, this makes the special case for KEYFRAME_CONSTANT at tnext useless, and we can always use a cubic - the strict "currentTime < tnext" is the key
+    assert(((interp == KEYFRAME_NONE) || (tcur <= currentTime)) && ((currentTime < tnext) || (interpNext == KEYFRAME_NONE)));
     // after the last / before the first keyframe, derivatives are wrt currentTime (i.e. non-normalized)
     if (interp == KEYFRAME_NONE) {
+        // virtual previous frame at t-1
+        P0 = P3 - P3pl;
+        P0pr = P3pl;
         tcur = tnext - 1.;
+    } else if (interp == KEYFRAME_CONSTANT) {
+        P0pr = 0.;
+        P3pl = 0.;
+        P3 = P0;
     }
     if (interpNext == KEYFRAME_NONE) {
+        // virtual next frame at t+1
+        P3pl = P0pr;
+        P3 = P0 + P0pr;
         tnext = tcur + 1;
     }
+    double c0, c1, c2, c3;
+    hermiteToCubicCoeffs(P0, P0pr, P3pl, P3, &c0, &c1, &c2, &c3);
+
     const double t = (currentTime - tcur)/(tnext - tcur);
-    const double t2 = t * t;
-    const double t3 = t2 * t;
+    double ret = cubicEval(c0, c1, c2, c3, t);
+
+    // cubicDerive: divide the result by (tnext-tcur)
+    // cubicIntegrate: multiply the result by (tnext-tcur)
+    return ret;
+}
+
+/// derive at currentTime. The derivative is with respect to currentTime
+double Natron::derive(double tcur, const double vcur, //start control point
+                           const double vcurDerivRight, //being the derivative dv/dt at tcur
+                           const double vnextDerivLeft, //being the derivative dv/dt at tnext
+                           double tnext, const double vnext, //end control point
+                           double currentTime,
+                           Natron::KeyframeType interp,
+                           Natron::KeyframeType interpNext)
+{
+    double P0 = vcur;
+    double P3 = vnext;
+    // Hermite coefficients P0' and P3' are the derivatives with respect to x \in [0,1]
+    double P0pr = vcurDerivRight*(tnext-tcur); // normalize for x \in [0,1]
+    double P3pl = vnextDerivLeft*(tnext-tcur); // normalize for x \in [0,1]
+    // if the following is true, this makes the special case for KEYFRAME_CONSTANT at tnext useless, and we can always use a cubic - the strict "currentTime < tnext" is the key
+    assert(((interp == KEYFRAME_NONE) || (tcur <= currentTime)) && ((currentTime < tnext) || (interpNext == KEYFRAME_NONE)));
+    // after the last / before the first keyframe, derivatives are wrt currentTime (i.e. non-normalized)
+    if (interp == KEYFRAME_NONE) {
+        // virtual previous frame at t-1
+        P0 = P3 - P3pl;
+        P0pr = P3pl;
+        tcur = tnext - 1.;
+    } else if (interp == KEYFRAME_CONSTANT) {
+        P0pr = 0.;
+        P3pl = 0.;
+        P3 = P0;
+    }
     if (interpNext == KEYFRAME_NONE) {
-        assert(interp != KEYFRAME_NONE);
-        // t is normalized between 0 and 1, and P0pr is the derivative wrt currentTime
-        return P0 + t * P0pr;
+        // virtual next frame at t+1
+        P3pl = P0pr;
+        P3 = P0 + P0pr;
+        tnext = tcur + 1;
     }
+    double c0, c1, c2, c3;
+    hermiteToCubicCoeffs(P0, P0pr, P3pl, P3, &c0, &c1, &c2, &c3);
 
-    switch (interp) {
-        case KEYFRAME_LINEAR:
-        case KEYFRAME_HORIZONTAL:
-        case KEYFRAME_CATMULL_ROM:
-        case KEYFRAME_SMOOTH:
-        case KEYFRAME_CUBIC:
-        case KEYFRAME_FREE:
-        case KEYFRAME_BROKEN:
-            //i.e: hermite cubic spline interpolation
-            return ((2 * t3 - 3 * t2 + 1) * P0 +
-                    (t3 - 2 * t2 + t) * P0pr +
-                    (-2 * t3 + 3 * t2) * P3 +
-                    (t3 - t2) * P3pl);
-        case KEYFRAME_NONE:
-            // t is normalized between 0 and 1, and P3pl is the derivative wrt currentTime
-            return P3 - (1. - t) * P3pl;
-        case KEYFRAME_CONSTANT:
-        default:
-            return t < tnext ? P0 : P3;
+    const double t = (currentTime - tcur)/(tnext - tcur);
+    double ret = cubicDerive(c0, c1, c2, c3, t);
 
+    // cubicDerive: divide the result by (tnext-tcur)
+    // cubicIntegrate: multiply the result by (tnext-tcur)
+    return ret / (tnext - tcur);
+}
+
+// integrate from time1 to time2
+double Natron::integrate(double tcur, const double vcur, //start control point
+                         const double vcurDerivRight, //being the derivative dv/dt at tcur
+                         const double vnextDerivLeft, //being the derivative dv/dt at tnext
+                         double tnext, const double vnext, //end control point
+                         double time1, double time2,
+                         Natron::KeyframeType interp,
+                         Natron::KeyframeType interpNext)
+{
+    double P0 = vcur;
+    double P3 = vnext;
+    // Hermite coefficients P0' and P3' are the derivatives with respect to x \in [0,1]
+    double P0pr = vcurDerivRight*(tnext-tcur); // normalize for x \in [0,1]
+    double P3pl = vnextDerivLeft*(tnext-tcur); // normalize for x \in [0,1]
+    // in the next expression, the correct test is t2 <= tnext (not <), in order to integrate from tcur to tnext
+    assert(((interp == KEYFRAME_NONE) || (tcur <= time1)) && (time1 <= time2) && ((time2 <= tnext) || (interpNext == KEYFRAME_NONE)));
+    // after the last / before the first keyframe, derivatives are wrt currentTime (i.e. non-normalized)
+    if (interp == KEYFRAME_NONE) {
+        // virtual previous frame at t-1
+        P0 = P3 - P3pl;
+        P0pr = P3pl;
+        tcur = tnext - 1.;
+    } else if (interp == KEYFRAME_CONSTANT) {
+        P0pr = 0.;
+        P3pl = 0.;
+        P3 = P0;
     }
+    if (interpNext == KEYFRAME_NONE) {
+        // virtual next frame at t+1
+        P3pl = P0pr;
+        P3 = P0 + P0pr;
+        tnext = tcur + 1;
+    }
+    double c0, c1, c2, c3;
+    hermiteToCubicCoeffs(P0, P0pr, P3pl, P3, &c0, &c1, &c2, &c3);
+
+    const double t2 = (time2 - tcur)/(tnext - tcur);
+    double ret = cubicIntegrate(c0, c1, c2, c3, t2);
+    if (time1 != tcur) {
+        const double t1 = (time1 - tcur)/(tnext - tcur);
+        ret -= cubicIntegrate(c0, c1, c2, c3, t1);
+    }
+    // cubicDerive: divide the result by (tnext-tcur)
+    // cubicIntegrate: multiply the result by (tnext-tcur)
+    return ret * (tnext - tcur);
 }
 
 
