@@ -315,7 +315,7 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
     
     QDir dir(QCoreApplication::applicationDirPath());
     dir.cdUp();
-    OFX::Host::PluginCache::getPluginCache()->addFileToPath(QString(dir.absolutePath()+ QDir::separator() + "Plugins").toStdString());
+    OFX::Host::PluginCache::getPluginCache()->addFileToPath(QString(dir.absolutePath()+  "/Plugins").toStdString());
     
     /// now read an old cache
     // The cache location depends on the OS.
