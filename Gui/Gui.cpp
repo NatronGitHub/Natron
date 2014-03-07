@@ -43,6 +43,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QMessageBox>
 #include <QImage>
 
+#include <boost/version.hpp>
+
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGraph.h"
@@ -232,6 +234,11 @@ struct GuiPrivate {
     ///The "About" window.
     AboutWindow* _aboutWindow;
     
+    QString _openGLVersion;
+    QString _glewVersion;
+    QString _qtVersion;
+    QString _boostVersion;
+    
     ///true when the destructor has been called
     bool _isClosing;
     
@@ -307,6 +314,10 @@ struct GuiPrivate {
     , _projectGui(0)
     , _currentlyDraggedPanel(0)
     , _aboutWindow(0)
+    , _openGLVersion()
+    , _glewVersion()
+    , _qtVersion()
+    , _boostVersion()
     , _isClosing(false)
     {
         
@@ -339,6 +350,9 @@ Gui::Gui(GuiAppInstance* app,QWidget* parent)
     QObject::connect(this,SIGNAL(doDialog(int,QString,QString,Natron::StandardButtons,int)),this,
                      SLOT(onDoDialog(int,QString,QString,Natron::StandardButtons,int)));
     QObject::connect(app,SIGNAL(pluginsPopulated()),this,SLOT(addToolButttonsToToolBar()));
+    
+    _imp->_qtVersion = QString(QT_VERSION_STR);
+    _imp->_boostVersion = QString(BOOST_LIB_VERSION);
 }
 
 Gui::~Gui()
@@ -784,7 +798,7 @@ void Gui::setupUi()
 
     setVisibleProjectSettingsPanel();
     
-    _imp->_aboutWindow = new AboutWindow(this);
+    _imp->_aboutWindow = new AboutWindow(this,this);
     _imp->_aboutWindow->hide();
     
     _imp->menubar->addAction(_imp->menuFile->menuAction());
@@ -2004,4 +2018,30 @@ void Gui::onWriterRenderStarted(const QString& sequenceName,int firstFrame,int l
 
 bool Gui::isClosing() const {
     return _imp->_isClosing;
+}
+
+void Gui::setGlewVersion(const QString& version) {
+    _imp->_glewVersion = version;
+    _imp->_aboutWindow->updateLibrariesVersions();
+}
+
+void Gui::setOpenGLVersion(const QString& version) {
+    _imp->_openGLVersion = version;
+    _imp->_aboutWindow->updateLibrariesVersions();
+}
+
+const QString& Gui::getGlewVersion() const {
+    return _imp->_glewVersion;
+}
+
+const QString& Gui::getOpenGLVersion() const {
+    return _imp->_openGLVersion;
+}
+
+const QString& Gui::getBoostVersion() const {
+    return _imp->_boostVersion;
+}
+
+const QString& Gui::getQtVersion() const {
+    return _imp->_qtVersion;
 }

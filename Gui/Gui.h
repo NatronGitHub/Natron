@@ -239,6 +239,19 @@ public:
     
     bool isClosing() const;
     
+    void setGlewVersion(const QString& version);
+    
+    void setOpenGLVersion(const QString & version);
+    
+    const QString& getGlewVersion() const;
+    
+    const QString& getOpenGLVersion() const;
+
+    const QString& getBoostVersion() const;
+
+    const QString& getQtVersion() const;
+
+    
     /*Useful function that saves on disk the image in png format.
      The name of the image will be the hash key of the image.*/
     static void debugImage(Natron::Image* image,const QString& filename = QString());

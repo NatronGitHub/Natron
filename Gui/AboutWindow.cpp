@@ -18,10 +18,13 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
+#include "Global/GitVersion.h"
 #include "Gui/Button.h"
+#include "Gui/Gui.h"
 
-AboutWindow::AboutWindow(QWidget* parent)
+AboutWindow::AboutWindow(Gui* gui,QWidget* parent)
 : QDialog(parent)
+, _gui(gui)
 {
     
     setWindowTitle("About " NATRON_APPLICATION_NAME);
@@ -49,7 +52,9 @@ AboutWindow::AboutWindow(QWidget* parent)
     
     _aboutText = new QTextBrowser(_tabWidget);
     _aboutText->setOpenExternalLinks(true);
-    QString aboutText = QString("<p>%1 version %2</p>"
+    QString aboutText = QString("<p>%1 version %2.</p>"
+                                "<p>This version was generated from the source code branch %5"
+                                " at commit %6.</p>"
                                 "<p>Copyright (C) 2013 the %1 developers.</p>"
                                 "<p>This is free software. You may redistribute copies of it "
                                 "under the terms of the <a href=\"http://www.mozilla.org/MPL/2.0/\">"
@@ -63,15 +68,21 @@ AboutWindow::AboutWindow(QWidget* parent)
                                 .arg(NATRON_APPLICATION_NAME)
                                 .arg(NATRON_VERSION_STRING)
                                 .arg("https://natron.inria.fr")
-                                .arg("https://groups.google.com/forum/?hl=en#!categories/natron-vfx/installation-troobleshooting-bugs");
+                                .arg("https://groups.google.com/forum/?hl=en#!categories/natron-vfx/installation-troobleshooting-bugs")
+                                .arg(GIT_BRANCH)
+                                .arg(GIT_COMMIT);
     _aboutText->setText(aboutText);
     _tabWidget->addTab(_aboutText, "About");
     
-//    _libsText = new QTextBrowser(_tabWidget);
-//    _libsText->setOpenExternalLinks(true);
-//    QString libsText = QString("");
-//    _libsText->setText(libsText);
-//    _tabWidget->addTab(_libsText, "Libraries");
+    _libsText = new QTextBrowser(_tabWidget);
+    _libsText->setOpenExternalLinks(true);
+    QString libsText = QString("<p> Qt %1 </p>"
+                               "<p> Boost %2 </p>"
+                               "<p> Glew %3 </p>"
+                               "<p> OpenGL %4 </p>")
+    .arg(gui->getQtVersion()).arg(gui->getBoostVersion()).arg(gui->getGlewVersion()).arg(gui->getOpenGLVersion());
+    _libsText->setText(libsText);
+    _tabWidget->addTab(_libsText, "Libraries");
     
     _teamText = new QTextBrowser(_tabWidget);
     _teamText->setOpenExternalLinks(false);
@@ -87,4 +98,16 @@ AboutWindow::AboutWindow(QWidget* parent)
     _licenseText->setText(QTextCodec::codecForName("UTF-8")->toUnicode(license.readAll()));
     _tabWidget->addTab(_licenseText, "License");
     
+}
+
+
+
+void AboutWindow::updateLibrariesVersions() {
+    QString libsText = QString("<p> Qt %1 </p>"
+                               "<p> Boost %2 </p>"
+                               "<p> Glew %3 </p>"
+                               "<p> OpenGL %4 </p>")
+    .arg(_gui->getQtVersion()).arg(_gui->getBoostVersion()).arg(_gui->getGlewVersion()).arg(_gui->getOpenGLVersion());
+    _libsText->setText(libsText);
+
 }

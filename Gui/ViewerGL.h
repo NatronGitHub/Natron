@@ -419,6 +419,10 @@ private:
      **/
     int isExtensionSupported(const char* extension);
     
+    QString getOpenGLVersionString() const;
+    
+    QString getGlewVersionString() const;
+    
     /**
      *@brief Initialises the black texture, drawn when the viewer is disconnected. It allows
      *the coordinate tracker on the GUI to still work even when the viewer is not connected.

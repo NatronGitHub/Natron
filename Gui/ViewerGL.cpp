@@ -1036,6 +1036,24 @@ void ViewerGL::initializeGL()
     checkGLErrors();
 }
 
+QString ViewerGL::getOpenGLVersionString() const {
+    const char* str = (const char*)glGetString(GL_VERSION);
+    QString ret;
+    if (str) {
+        ret.append(str);
+    }
+    return ret;
+}
+
+QString ViewerGL::getGlewVersionString() const {
+    const char* str = reinterpret_cast<const char *>(glewGetString(GLEW_VERSION));
+    QString ret;
+    if (str) {
+        ret.append(str);
+    }
+    return ret;
+}
+
 GLuint ViewerGL::getPboID(int index)
 {
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1128,6 +1146,10 @@ void ViewerGL::initAndCheckGlExtensions()
                              "The viewer may not be fully functionnal. "
                              "This software needs at least OpenGL 1.5 with NPOT textures, GLSL, VBO, PBO, vertex arrays. ");
     }
+    
+    _imp->viewerTab->getGui()->setOpenGLVersion(getOpenGLVersionString());
+    _imp->viewerTab->getGui()->setGlewVersion(getGlewVersionString());
+    
     if (!QGLShaderProgram::hasOpenGLShaderPrograms(context())) {
         // no need to pull out a dialog, it was already presented after the GLEW check above
 
