@@ -36,7 +36,7 @@ class ProjectSerialization{
     std::vector<Format> _availableFormats;
     std::vector< boost::shared_ptr<KnobSerialization> > _projectKnobs;
     SequenceTime _timelineLeft,_timelineRight,_timelineCurrent;
-    std::string _creationDate;
+    qint64 _creationDate;
     
 public:
     
@@ -58,7 +58,7 @@ public:
     
     const std::vector< boost::shared_ptr<NodeSerialization> >& getNodesSerialization() const { return _serializedNodes; }
     
-    const std::string& getCreationDate() const { return _creationDate; }
+    qint64 getCreationDate() const { return _creationDate; }
     
     friend class boost::serialization::access;
     template<class Archive>

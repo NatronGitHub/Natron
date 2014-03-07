@@ -187,7 +187,7 @@ U64 EffectInstance::cloneKnobsAndComputeHashAndClearPersistentMessage(int knobsA
         
         ///Also append the project's creation time in the hash because 2 projects openend concurrently
         ///could reproduce the same (especially simple graphs like Viewer-Reader)
-        ::Hash64_appendQString(&_imp->hashValue, getApp()->getProject()->getProjectCreationTimeString());
+        _imp->hashValue.append(getApp()->getProject()->getProjectCreationTime());
 
         _imp->hashValue.computeHash();
         

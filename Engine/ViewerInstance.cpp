@@ -325,7 +325,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
             EffectInstance* activeInputToRender = input(activeInput());
             assert(activeInputToRender);
             if (!activeInputToRender->supportsTiles()) {
-                toRender = rod;
+                toRender.intersect(rod, &toRender);
             }
             
             
@@ -421,6 +421,8 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
 void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,std::pair<int,int> yRange,
                                    const TextureRect& texRect,int closestPowerOf2) {
 
+    assert(texRect.y1 <= yRange.first && yRange.first <= yRange.second && yRange.second <= texRect.y2);
+    
     if(aborted()){
         return;
     }

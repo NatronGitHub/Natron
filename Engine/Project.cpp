@@ -1127,8 +1127,8 @@ bool Project::autoConnectNodes(Node* selected,Node* created) {
 
 }
     
-QString Project::getProjectCreationTimeString() const {
-    return _imp->projectCreationTime.toString();
+qint64 Project::getProjectCreationTime() const {
+    return _imp->projectCreationTime.toMSecsSinceEpoch();
 }
     
 } //namespace Natron

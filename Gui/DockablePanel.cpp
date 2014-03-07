@@ -31,6 +31,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/KnobTypes.h"
 #include "Engine/EffectInstance.h"
 
+#include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/NodeGui.h"
 #include "Gui/KnobGui.h"
@@ -208,6 +209,26 @@ void DockablePanel::onRestoreDefaultsButtonClicked() {
 }
 
 void DockablePanel::onLineEditNameEditingFinished() {
+    
+    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_holder);
+    if (effect) {
+        
+        ///if the node name hasn't changed return
+        if (effect->getName() == _nameLineEdit->text().toStdString()) {
+            return;
+        }
+        
+        std::vector<Natron::Node*> allNodes = _holder->getApp()->getProject()->getCurrentNodes();
+        for (U32 i = 0;  i < allNodes.size(); ++i) {
+            if (allNodes[i]->getName() == _nameLineEdit->text().toStdString()) {
+                _nameLineEdit->blockSignals(true);
+                Natron::errorDialog("Node name", "A node with the same name already exists in the project.");
+                _nameLineEdit->setText(effect->getName().c_str());
+                _nameLineEdit->blockSignals(false);
+                return;
+            }
+        }
+    }
     emit nameChanged(_nameLineEdit->text());
 }
 

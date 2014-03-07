@@ -182,7 +182,7 @@ public:
     
     void unlock() const;
     
-    QString getProjectCreationTimeString() const;
+    qint64 getProjectCreationTime() const;
     
 public slots:
 

@@ -45,5 +45,5 @@ void ProjectSerialization::initialize(const Natron::Project* project){
     _timelineRight = project->rightBound();
     _timelineCurrent = project->currentFrame();
     
-    _creationDate = project->getProjectCreationTimeString().toStdString();
+    _creationDate = project->getProjectCreationTime();
 }
