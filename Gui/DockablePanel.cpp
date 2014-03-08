@@ -442,7 +442,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool ma
             while (showit && parentKnob && parentKnob->typeName() == Group_Knob::typeNameStatic()) {
                 assert(parentGui);
                 // check for secretness and visibility of the group
-                if (parentKnob->isSecret() || !parentGui->isChecked()) {
+                if (parentKnob->getIsSecret() || !parentGui->isChecked()) {
                     showit = false; // one of the including groups is folder, so this item is hidden
                 }
                 // prepare for next loop iteration

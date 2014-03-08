@@ -75,7 +75,7 @@ void QtReader::initializeKnobs() {
     _fileKnob->setAsInputImage();
     
     _firstFrame =  Natron::createKnob<Int_Knob>(this, "First frame");
-    _firstFrame->turnOffAnimation();
+    _firstFrame->setAnimationEnabled(false);
     _firstFrame->setDefaultValue<int>(0);
     
     
@@ -87,11 +87,11 @@ void QtReader::initializeKnobs() {
     beforeOptions.push_back("black");
     beforeOptions.push_back("error");
     _before->populate(beforeOptions);
-    _before->turnOffAnimation();
+    _before->setAnimationEnabled(false);
     _before->setDefaultValue<int>(0);
     
     _lastFrame =  Natron::createKnob<Int_Knob>(this, "Last frame");
-    _lastFrame->turnOffAnimation();
+    _lastFrame->setAnimationEnabled(false);
     _lastFrame->setDefaultValue<int>(0);
     
     
@@ -103,7 +103,7 @@ void QtReader::initializeKnobs() {
     afterOptions.push_back("black");
     afterOptions.push_back("error");
     _after->populate(beforeOptions);
-    _after->turnOffAnimation();
+    _after->setAnimationEnabled(false);
     _after->setDefaultValue<int>(0);
     
     _missingFrameChoice = Natron::createKnob<Choice_Knob>(this, "On missing frame");
@@ -113,10 +113,10 @@ void QtReader::initializeKnobs() {
     missingFrameOptions.push_back("Black image");
     _missingFrameChoice->populate(missingFrameOptions);
     _missingFrameChoice->setDefaultValue<int>(0);
-    _missingFrameChoice->turnOffAnimation();
+    _missingFrameChoice->setAnimationEnabled(false);
     
     _frameMode = Natron::createKnob<Choice_Knob>(this, "Frame mode");
-    _frameMode->turnOffAnimation();
+    _frameMode->setAnimationEnabled(false);
     std::vector<std::string> frameModeOptions;
     frameModeOptions.push_back("Starting frame");
     frameModeOptions.push_back("Time offset");
@@ -124,11 +124,11 @@ void QtReader::initializeKnobs() {
     _frameMode->setDefaultValue<int>(0);
     
     _startingFrame = Natron::createKnob<Int_Knob>(this, "Starting frame");
-    _startingFrame->turnOffAnimation();
+    _startingFrame->setAnimationEnabled(false);
     _startingFrame->setDefaultValue<int>(0);
     
     _timeOffset = Natron::createKnob<Int_Knob>(this, "Time offset");
-    _timeOffset->turnOffAnimation();
+    _timeOffset->setAnimationEnabled(false);
     _timeOffset->setDefaultValue<int>(0);
     _timeOffset->setSecret(true);
     

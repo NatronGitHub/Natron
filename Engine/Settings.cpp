@@ -57,25 +57,25 @@ void Settings::initializeKnobs(){
     _generalTab = Natron::createKnob<Tab_Knob>(this, "General");
     
     _linearPickers = Natron::createKnob<Bool_Knob>(this, "Linear color pickers");
-    _linearPickers->turnOffAnimation();
+    _linearPickers->setAnimationEnabled(false);
     _linearPickers->setHintToolTip("When activated, all colors picked from the color parameters will be converted"
                                    " to linear before being fetched. Otherwise they will be in the same color-space "
                                    " as the viewer they were picked from.");
     _generalTab->addKnob(_linearPickers);
     
     _multiThreadedDisabled = Natron::createKnob<Bool_Knob>(this, "Disable multi-threading");
-    _multiThreadedDisabled->turnOffAnimation();
+    _multiThreadedDisabled->setAnimationEnabled(false);
     _multiThreadedDisabled->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will not spawn any thread to render.");
     _generalTab->addKnob(_multiThreadedDisabled);
     
     _renderInSeparateProcess = Natron::createKnob<Bool_Knob>(this, "Render in a separate process");
-    _renderInSeparateProcess->turnOffAnimation();
+    _renderInSeparateProcess->setAnimationEnabled(false);
     _renderInSeparateProcess->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will render (using the write nodes) in "
                                              "a separate process. Disabling it is most helpful for the dev team.");
     _generalTab->addKnob(_renderInSeparateProcess);
     
     _autoPreviewEnabledForNewProjects = Natron::createKnob<Bool_Knob>(this, "Auto-preview enabled by default for new projects");
-    _autoPreviewEnabledForNewProjects->turnOffAnimation();
+    _autoPreviewEnabledForNewProjects->setAnimationEnabled(false);
     _autoPreviewEnabledForNewProjects->setHintToolTip("If checked then when creating a new project, the Auto-preview option"
                                                       " will be enabled.");
     _generalTab->addKnob(_autoPreviewEnabledForNewProjects);
@@ -98,7 +98,7 @@ void Settings::initializeKnobs(){
     
     
     _ocioConfigKnob = Natron::createKnob<Choice_Knob>(this, "OpenColorIO config");
-    _ocioConfigKnob->turnOffAnimation();
+    _ocioConfigKnob->setAnimationEnabled(false);
     
     QString defaultOcioConfigsPath = getDefaultOcioConfigPath();
     QDir ocioConfigsDir(defaultOcioConfigsPath);
@@ -126,7 +126,7 @@ void Settings::initializeKnobs(){
     _viewersTab = Natron::createKnob<Tab_Knob>(this, "Viewers");
     
     _texturesMode = Natron::createKnob<Choice_Knob>(this, "Viewer textures bit depth");
-    _texturesMode->turnOffAnimation();
+    _texturesMode->setAnimationEnabled(false);
     std::vector<std::string> textureModes;
     std::vector<std::string> helpStringsTextureModes;
     textureModes.push_back("Byte");
@@ -153,13 +153,13 @@ void Settings::initializeKnobs(){
     _powerOf2Tiling->setMaximum(9);
     _powerOf2Tiling->setDisplayMaximum(9);
     
-    _powerOf2Tiling->turnOffAnimation();
+    _powerOf2Tiling->setAnimationEnabled(false);
     _viewersTab->addKnob(_powerOf2Tiling);
     
     _cachingTab = Natron::createKnob<Tab_Knob>(this, "Caching");
     
     _maxRAMPercent = Natron::createKnob<Int_Knob>(this, "Maximum system's RAM for caching");
-    _maxRAMPercent->turnOffAnimation();
+    _maxRAMPercent->setAnimationEnabled(false);
     _maxRAMPercent->setMinimum(0);
     _maxRAMPercent->setMaximum(100);
     std::string ramHint("This setting indicates the percentage of the system's total RAM "
@@ -171,7 +171,7 @@ void Settings::initializeKnobs(){
     _cachingTab->addKnob(_maxRAMPercent);
     
     _maxPlayBackPercent = Natron::createKnob<Int_Knob>(this, "Playback cache RAM percentage");
-    _maxPlayBackPercent->turnOffAnimation();
+    _maxPlayBackPercent->setAnimationEnabled(false);
     _maxPlayBackPercent->setMinimum(0);
     _maxPlayBackPercent->setMaximum(100);
     _maxPlayBackPercent->setHintToolTip("This setting indicates the percentage of the Maximum system's RAM for caching"
@@ -181,7 +181,7 @@ void Settings::initializeKnobs(){
     _cachingTab->addKnob(_maxPlayBackPercent);
     
     _maxDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum disk cache size");
-    _maxDiskCacheGB->turnOffAnimation();
+    _maxDiskCacheGB->setAnimationEnabled(false);
     _maxDiskCacheGB->setMinimum(0);
     _maxDiskCacheGB->setMaximum(100);
     _maxDiskCacheGB->setHintToolTip("The maximum disk space the caches can use. (in GB)");
@@ -526,7 +526,7 @@ void Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::v
     
     for (std::map<std::string,std::vector<std::string> >::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
-        k->turnOffAnimation();
+        k->setAnimationEnabled(false);
         k->populate(it->second);
         for (U32 i = 0; i < it->second.size(); ++i) {
             ///promote ReadOIIO !
@@ -543,7 +543,7 @@ void Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::v
 void Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector<std::string> >& rows){
     for (std::map<std::string,std::vector<std::string> >::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
-        k->turnOffAnimation();
+        k->setAnimationEnabled(false);
         k->populate(it->second);
         for (U32 i = 0; i < it->second.size(); ++i) {
             ///promote WriteOIIOOFX !

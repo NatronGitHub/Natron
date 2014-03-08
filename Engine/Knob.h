@@ -220,7 +220,7 @@ public:
 
     const std::vector< boost::shared_ptr<Curve>  >& getCurves() const;
 
-    void turnOffAnimation() ;
+    void setAnimationEnabled(bool val) ;
 
     /**
      * @brief Returns true if the animation is enabled for this knob. A return value of
@@ -268,21 +268,21 @@ public:
     
     int determineHierarchySize() const;
     
-    bool isSecret() const ;
+    bool getIsSecret() const ;
     
     bool isEnabled(int dimension) const;
     
-    void setInsignificant(bool b);
+    void setEvaluateOnChange(bool b);
     
-    bool isPersistent() const;
+    bool getIsPersistant() const;
 
-    void setPersistent(bool b);
+    void setIsPersistant(bool b);
 
-    void turnOffUndoRedo();
+    void setCanUndo(bool val);
     
-    bool canBeUndone() const;
+    bool getCanUndo() const;
     
-    bool isInsignificant() const;
+    bool getEvaluateOnChange() const;
     
     void setHintToolTip(const std::string& hint);
     

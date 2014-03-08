@@ -47,11 +47,11 @@ struct Knob::KnobPrivate {
     int _itemSpacing;
     
     boost::shared_ptr<Knob> _parentKnob;
-    bool _secret;
+    bool _IsSecret;
     std::vector<bool> _enabled;
-    bool _canUndo;
-    bool _isInsignificant; //< if true, a value change will never trigger an evaluation
-    bool _isPersistent;//will it be serialized?
+    bool _CanUndo;
+    bool _EvaluateOnChange; //< if true, a value change will never trigger an evaluation
+    bool _IsPersistant;//will it be serialized?
     std::string _tooltipHint;
     bool _isAnimationEnabled;
     
@@ -79,11 +79,11 @@ struct Knob::KnobPrivate {
     , _newLine(true)
     , _itemSpacing(0)
     , _parentKnob()
-    , _secret(false)
+    , _IsSecret(false)
     , _enabled(dimension)
-    , _canUndo(true)
-    , _isInsignificant(false)
-    , _isPersistent(true)
+    , _CanUndo(true)
+    , _EvaluateOnChange(false)
+    , _IsPersistant(true)
     , _tooltipHint()
     , _isAnimationEnabled(true)
     , _values(dimension)
@@ -359,7 +359,7 @@ int Knob::getDimension() const { return _imp->_dimension; }
 void Knob::load(const KnobSerialization& serializationObj){
     
     assert(_imp->_dimension == serializationObj.getDimension());
-    assert(isPersistent()); // a non-persistent Knob should never be loaded!
+    assert(getIsPersistant()); // a non-persistent Knob should never be loaded!
     
     ///restore masters
     const std::vector< std::pair<int,std::string> >& serializedMasters = serializationObj.getMasters();
@@ -444,7 +444,7 @@ void Knob::load(const KnobSerialization& serializationObj){
 
 void Knob::save(KnobSerialization* serializationObj) const
 {
-    assert(isPersistent()); // a non-persistent Knob should never be saved!
+    assert(getIsPersistant()); // a non-persistent Knob should never be saved!
     QMutexLocker l(&_imp->_valueMutex);
     serializationObj->initialize(this);
 }
@@ -500,7 +500,7 @@ void Knob::endValueChange() {
 
 
 void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
-    if (!_imp->_isInsignificant) {
+    if (!_imp->_EvaluateOnChange) {
         _imp->_holder->invalidateHash();
     }
     processNewValue();
@@ -509,7 +509,7 @@ void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
     }
     emit updateSlaves(dimension);
     
-    bool significant = reason == Natron::TIME_CHANGED ? false : !_imp->_isInsignificant;
+    bool significant = reason == Natron::TIME_CHANGED ? false : !_imp->_EvaluateOnChange;
     if(!_imp->_holder->isClone()){
         _imp->_holder->notifyProjectEvaluationRequested(reason, this, significant);
     }
@@ -589,7 +589,7 @@ void Knob::setAllDimensionsEnabled(bool b) {
 }
 
 void Knob::setSecret(bool b){
-    _imp->_secret = b;
+    _imp->_IsSecret = b;
     emit secretChanged();
 }
 
@@ -618,7 +618,7 @@ bool Knob::hasAnimation() const {
 
 KnobHolder*  Knob::getHolder() const { return _imp->_holder; }
 
-void Knob::turnOffAnimation() { _imp->_isAnimationEnabled = false; }
+void Knob::setAnimationEnabled(bool val) { _imp->_isAnimationEnabled = val; }
 
 bool Knob::isAnimationEnabled() const { return canAnimate() && _imp->_isAnimationEnabled; }
 
@@ -630,21 +630,21 @@ void Knob::setParentKnob(boost::shared_ptr<Knob> knob){ _imp->_parentKnob = knob
 
 boost::shared_ptr<Knob> Knob::getParentKnob() const {return _imp->_parentKnob;}
 
-bool Knob::isSecret() const {return _imp->_secret;}
+bool Knob::getIsSecret() const {return _imp->_IsSecret;}
 
 bool Knob::isEnabled(int dimension) const { assert(dimension < getDimension()); return _imp->_enabled[dimension];}
 
-void Knob::setInsignificant(bool b) {_imp->_isInsignificant = b;}
+void Knob::setEvaluateOnChange(bool b) {_imp->_EvaluateOnChange = b;}
 
-bool Knob::isPersistent() const { return _imp->_isPersistent; }
+bool Knob::getIsPersistant() const { return _imp->_IsPersistant; }
 
-void Knob::setPersistent(bool b) { _imp->_isPersistent = b; }
+void Knob::setIsPersistant(bool b) { _imp->_IsPersistant = b; }
 
-void Knob::turnOffUndoRedo() {_imp->_canUndo = false;}
+void Knob::setCanUndo(bool val) {_imp->_CanUndo = val;}
 
-bool Knob::canBeUndone() const {return _imp->_canUndo;}
+bool Knob::getCanUndo() const {return _imp->_CanUndo;}
 
-bool Knob::isInsignificant() const {return _imp->_isInsignificant;}
+bool Knob::getEvaluateOnChange() const {return _imp->_EvaluateOnChange;}
 
 void Knob::setHintToolTip(const std::string& hint) {
     _imp->_tooltipHint = hint;

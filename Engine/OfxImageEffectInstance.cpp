@@ -329,19 +329,14 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
     }
     
     knob->setName(paramName);
-    knob->setInsignificant(!descriptor.getEvaluateOnChange());
-    knob->setPersistent(descriptor.getIsPersistant());
+    knob->setEvaluateOnChange(descriptor.getEvaluateOnChange());
+    knob->setIsPersistant(descriptor.getIsPersistant());
     //FIXME: replace the following with
-    //knob->setCanAnimate(descriptor.getCanAnimate());
-    if (!descriptor.getCanAnimate()) {
-#pragma message WARN("where is turnOnAnimation or setCanAnimate?")
-        knob->turnOffAnimation();
-    }
+    knob->setAnimationEnabled(descriptor.getCanAnimate());
     knob->setSecret(descriptor.getSecret());
     knob->setAllDimensionsEnabled(descriptor.getEnabled());
     knob->setHintToolTip(descriptor.getHint());
-    //FIXME: replace the following with
-    //knob->setCanUndo(descriptor.getCanUndo());
+    knob->setCanUndo(descriptor.getCanUndo());
     if (!descriptor.getCanUndo()) {
 #pragma message WARN("where is turnOnUndoRedo or setCanUndo?")
        knob->turnOffUndoRedo();

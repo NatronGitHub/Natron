@@ -1750,7 +1750,7 @@ void Group_KnobGui::setChecked(bool b)
     for (U32 i = 0 ; i < _children.size() ; ++i) {
         if (!b) {
             _children[i].first->hide();
-        } else if (!_children[i].first->getKnob()->isSecret()) {
+        } else if (!_children[i].first->getKnob()->getIsSecret()) {
             _children[i].first->show();
         }
     }
@@ -1784,7 +1784,7 @@ void Group_KnobGui::_hide()
 
 void Group_KnobGui::_show()
 {
-    if (getKnob()->isSecret()) {
+    if (getKnob()->getIsSecret()) {
         return;
     }
     _button->show();

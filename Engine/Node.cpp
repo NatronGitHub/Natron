@@ -199,7 +199,7 @@ void Node::loadKnobs(const NodeSerialization& serialization) {
         for (U32 k = 0; k < knobsValues.size(); ++k) {
             if(knobsValues[k]->getLabel() == nodeKnobs[j]->getDescription()){
                 // don't load the value if the Knob is not persistant! (it is just the default value in this case)
-                if (nodeKnobs[j]->isPersistent()) {
+                if (nodeKnobs[j]->getIsPersistant()) {
                     nodeKnobs[j]->load(*knobsValues[k]);
                 }
                 break;

@@ -160,7 +160,7 @@ void OfxPushButtonInstance::setSecret() {
 }
 
 void OfxPushButtonInstance::setEvaluateOnChange() {
-    _knob->setInsignificant(!getEvaluateOnChange());
+    _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 boost::shared_ptr<Knob> OfxPushButtonInstance::getKnob() const {
@@ -217,7 +217,7 @@ void OfxIntegerInstance::setSecret() {
 }
 
 void OfxIntegerInstance::setEvaluateOnChange() {
-    _knob->setInsignificant(!getEvaluateOnChange());
+    _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 boost::shared_ptr<Knob> OfxIntegerInstance::getKnob() const{
@@ -419,7 +419,7 @@ void OfxDoubleInstance::setSecret() {
 }
 
 void OfxDoubleInstance::setEvaluateOnChange() {
-    _knob->setInsignificant(!getEvaluateOnChange());
+    _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 void OfxDoubleInstance::setDisplayRange(){
@@ -510,7 +510,7 @@ void OfxBooleanInstance::setSecret() {
 }
 
 void OfxBooleanInstance::setEvaluateOnChange() {
-    _knob->setInsignificant(!getEvaluateOnChange());
+    _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 boost::shared_ptr<Knob> OfxBooleanInstance::getKnob() const{
@@ -598,7 +598,7 @@ void OfxChoiceInstance::setSecret() {
 }
 
 void OfxChoiceInstance::setEvaluateOnChange() {
-    _knob->setInsignificant(!getEvaluateOnChange());
+    _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 
@@ -722,7 +722,7 @@ void OfxRGBAInstance::setSecret() {
 }
 
 void OfxRGBAInstance::setEvaluateOnChange() {
-    _knob->setInsignificant(!getEvaluateOnChange());
+    _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 
@@ -833,7 +833,7 @@ void OfxRGBInstance::setSecret() {
 }
 
 void OfxRGBInstance::setEvaluateOnChange() {
-    _knob->setInsignificant(!getEvaluateOnChange());
+    _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 
@@ -994,7 +994,7 @@ void OfxDouble2DInstance::setSecret() {
 }
 
 void OfxDouble2DInstance::setEvaluateOnChange() {
-    _knob->setInsignificant(!getEvaluateOnChange());
+    _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 void OfxDouble2DInstance::setDisplayRange() {
@@ -1125,7 +1125,7 @@ void OfxInteger2DInstance::setSecret() {
 }
 
 void OfxInteger2DInstance::setEvaluateOnChange() {
-    _knob->setInsignificant(!getEvaluateOnChange());
+    _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 
@@ -1258,7 +1258,7 @@ void OfxDouble3DInstance::setSecret() {
 }
 
 void OfxDouble3DInstance::setEvaluateOnChange() {
-    _knob->setInsignificant(!getEvaluateOnChange());
+    _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 boost::shared_ptr<Knob> OfxDouble3DInstance::getKnob() const {
@@ -1373,7 +1373,7 @@ void OfxInteger3DInstance::setSecret() {
 }
 
 void OfxInteger3DInstance::setEvaluateOnChange() {
-    _knob->setInsignificant(!getEvaluateOnChange());
+    _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 boost::shared_ptr<Knob> OfxInteger3DInstance::getKnob() const {
@@ -1470,7 +1470,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
                 _fileKnob->setAsInputImage();
             }
             if (!filePathSupportsImageSequences) {
-                _fileKnob->turnOffAnimation();
+                _fileKnob->setAnimationEnabled(false);
             }
         } else {
             _outputFileKnob = Natron::createKnob<OutputFile_Knob>(node, getParamLabel(this));
@@ -1478,7 +1478,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
                 _outputFileKnob->setAsOutputImageFile();
             }
             if (!filePathSupportsImageSequences) {
-                _outputFileKnob->turnOffAnimation();
+                _outputFileKnob->setAnimationEnabled(false);
             }
             
         }
@@ -1645,16 +1645,16 @@ void OfxStringInstance::setSecret(){
 
 void OfxStringInstance::setEvaluateOnChange() {
     if(_fileKnob){
-        _fileKnob->setInsignificant(!getEvaluateOnChange());
+        _fileKnob->setEvaluateOnChange(getEvaluateOnChange());
     }
     if (_outputFileKnob) {
-        _outputFileKnob->setInsignificant(!getEvaluateOnChange());
+        _outputFileKnob->setEvaluateOnChange(getEvaluateOnChange());
     }
     if (_stringKnob) {
-        _stringKnob->setInsignificant(!getEvaluateOnChange());
+        _stringKnob->setEvaluateOnChange(getEvaluateOnChange());
     }
     if (_pathKnob) {
-        _pathKnob->setInsignificant(!getEvaluateOnChange());
+        _pathKnob->setEvaluateOnChange(getEvaluateOnChange());
     }
 }
 
@@ -1826,7 +1826,7 @@ void OfxCustomInstance::setSecret() {
 }
 
 void OfxCustomInstance::setEvaluateOnChange() {
-    _knob->setInsignificant(!getEvaluateOnChange());
+    _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 OfxStatus OfxCustomInstance::getNumKeys(unsigned int &nKeys) const {
@@ -1928,7 +1928,7 @@ void OfxParametricInstance::setSecret() {
 }
 
 void OfxParametricInstance::setEvaluateOnChange() {
-    _knob->setInsignificant(!getEvaluateOnChange());
+    _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 /// callback which should update label

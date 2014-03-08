@@ -422,11 +422,11 @@ void Project::initializeKnobs(){
     _imp->formatKnob->turnOffNewLine();
 
     _imp->formatKnob->populate(entries);
-    _imp->formatKnob->turnOffAnimation();
+    _imp->formatKnob->setAnimationEnabled(false);
     _imp->addFormatKnob = Natron::createKnob<Button_Knob>(this,"New format...");
 
     _imp->viewsCount = Natron::createKnob<Int_Knob>(this,"Number of views");
-    _imp->viewsCount->turnOffAnimation();
+    _imp->viewsCount->setAnimationEnabled(false);
     _imp->viewsCount->setMinimum(1);
     _imp->viewsCount->setDisplayMinimum(1);
     _imp->viewsCount->setDefaultValue<int>(1);
@@ -436,7 +436,7 @@ void Project::initializeKnobs(){
     _imp->previewMode->setHintToolTip("When true, preview images on the node graph will be"
                                       "refreshed automatically. You can uncheck this option to improve performances."
                                       "Press P in the node graph to refresh the previews yourself.");
-    _imp->previewMode->turnOffAnimation();
+    _imp->previewMode->setAnimationEnabled(false);
     bool autoPreviewEnabled = appPTR->getCurrentSettings()->isAutoPreviewOnForNewProjects();
     _imp->previewMode->setDefaultValue<bool>(autoPreviewEnabled);
     

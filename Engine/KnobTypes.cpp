@@ -496,7 +496,7 @@ Button_Knob::Button_Knob(KnobHolder  *holder, const std::string &description, in
 Knob(holder, description, dimension)
 , _renderButton(false)
 {
-    setPersistent(false);
+    setIsPersistant(false);
 }
 
 bool Button_Knob::canAnimate() const

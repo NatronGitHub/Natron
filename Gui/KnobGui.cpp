@@ -114,7 +114,7 @@ const QUndoCommand* KnobGui::getLastUndoCommand() const{
 }
 
 void KnobGui::pushUndoCommand(QUndoCommand* cmd){
-    if(_knob->canBeUndone() && !_knob->isInsignificant()){
+    if(_knob->getCanUndo() && _knob->getEvaluateOnChange()){
         _container->pushUndoCommand(cmd);
     }else{
         cmd->redo();
@@ -150,7 +150,7 @@ void KnobGui::createAnimationButton(QHBoxLayout* layout) {
     QObject::connect(_animationButton,SIGNAL(clicked()),this,SLOT(showAnimationMenu()));
     layout->addWidget(_animationButton);
     
-    if (getKnob()->isSecret()) {
+    if (getKnob()->getIsSecret()) {
         _animationButton->hide();
     }
 }
@@ -177,7 +177,7 @@ void KnobGui::showRightClickMenuForDimension(const QPoint&,int dimension) {
     
     bool enabled = getKnob()->isEnabled(dimension);
     
-    if (getKnob()->isSecret()) {
+    if (getKnob()->getIsSecret()) {
         return;
     }
     
@@ -394,13 +394,13 @@ void KnobGui::setSecret() {
     // try TuttlePinning: fold all groups, then switch from perspective to affine to perspective.
     //  VISIBILITY is different from SECRETNESS. The code considers that both things are equivalent, which is wrong.
     // Of course, this check has to be *recursive* (in case the group is within a folded group)
-    bool showit = !_knob->isSecret();
+    bool showit = !_knob->getIsSecret();
     boost::shared_ptr<Knob> parentKnob = _knob->getParentKnob();
     while (showit && parentKnob && parentKnob->typeName() == "Group") {
         Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(_container->findKnobGuiOrCreate(parentKnob,true));
         assert(parentGui);
         // check for secretness and visibility of the group
-        if (parentKnob->isSecret() || !parentGui->isChecked()) {
+        if (parentKnob->getIsSecret() || !parentGui->isChecked()) {
             showit = false; // one of the including groups is folder, so this item is hidden
         }
         // prepare for next loop iteration
@@ -786,7 +786,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
         const std::vector< boost::shared_ptr<Knob> >& knobs = allActiveNodes[i]->getKnobs();
         
         for (U32 j = 0; j < knobs.size(); ++j) {
-            if(!knobs[j]->isSecret() && knobs[j] != from->getKnob()) {
+            if(!knobs[j]->getIsSecret() && knobs[j] != from->getKnob()) {
                 if (from->getKnob()->isTypeCompatible(*knobs[j])) {
                     for (int k = 0; k < knobs[j]->getDimension(); ++k) {
                         if (!knobs[j]->isSlave(k) && knobs[j]->isEnabled(k)) {

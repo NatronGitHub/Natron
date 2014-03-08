@@ -34,7 +34,7 @@ void ProjectSerialization::initialize(const Natron::Project* project){
     
     const std::vector< boost::shared_ptr<Knob> >& knobs = project->getKnobs();
     for(U32 i = 0; i < knobs.size();++i){
-        if(knobs[i]->isPersistent()){
+        if(knobs[i]->getIsPersistant()){
             boost::shared_ptr<KnobSerialization> newKnobSer(new KnobSerialization());
             knobs[i]->save(newKnobSer.get());
             _projectKnobs.push_back(newKnobSer);

@@ -96,14 +96,14 @@ void QtWriter::initializeKnobs(){
     }
     
     _premultKnob = Natron::createKnob<Bool_Knob>(this, "Premultiply by alpha");
-    _premultKnob->turnOffAnimation();
+    _premultKnob->setAnimationEnabled(false);
     _premultKnob->setDefaultValue<bool>(false);
     
     _fileKnob = Natron::createKnob<OutputFile_Knob>(this, "File");
     _fileKnob->setAsOutputImageFile();
     
     _frameRangeChoosal = Natron::createKnob<Choice_Knob>(this, "Frame range");
-    _frameRangeChoosal->turnOffAnimation();
+    _frameRangeChoosal->setAnimationEnabled(false);
     std::vector<std::string> frameRangeChoosalEntries;
     frameRangeChoosalEntries.push_back("Union of input ranges");
     frameRangeChoosalEntries.push_back("Timeline bounds");
@@ -112,11 +112,11 @@ void QtWriter::initializeKnobs(){
     _frameRangeChoosal->setDefaultValue<int>(1);
     
     _firstFrameKnob = Natron::createKnob<Int_Knob>(this, "First frame");
-    _firstFrameKnob->turnOffAnimation();
+    _firstFrameKnob->setAnimationEnabled(false);
     _firstFrameKnob->setSecret(true);
     
     _lastFrameKnob = Natron::createKnob<Int_Knob>(this, "Last frame");
-    _lastFrameKnob->turnOffAnimation();
+    _lastFrameKnob->setAnimationEnabled(false);
     _lastFrameKnob->setSecret(true);
     
     _renderKnob = Natron::createKnob<Button_Knob>(this, "Render");

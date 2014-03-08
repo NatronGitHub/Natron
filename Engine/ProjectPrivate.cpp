@@ -88,7 +88,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         ///try to find a serialized value for this knob
         for(U32 j = 0 ; j < projectSerializedValues.size();++j){
             if(projectSerializedValues[j]->getLabel() == projectKnobs[i]->getDescription()){
-                if (projectKnobs[i]->isPersistent()) {
+                if (projectKnobs[i]->getIsPersistant()) {
                     projectKnobs[i]->load(*projectSerializedValues[j]);
                 }
                 break;
