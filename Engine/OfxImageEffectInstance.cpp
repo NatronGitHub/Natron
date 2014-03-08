@@ -331,16 +331,11 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
     knob->setName(paramName);
     knob->setEvaluateOnChange(descriptor.getEvaluateOnChange());
     knob->setIsPersistant(descriptor.getIsPersistant());
-    //FIXME: replace the following with
     knob->setAnimationEnabled(descriptor.getCanAnimate());
     knob->setSecret(descriptor.getSecret());
     knob->setAllDimensionsEnabled(descriptor.getEnabled());
     knob->setHintToolTip(descriptor.getHint());
     knob->setCanUndo(descriptor.getCanUndo());
-    if (!descriptor.getCanUndo()) {
-#pragma message WARN("where is turnOnUndoRedo or setCanUndo?")
-       knob->turnOffUndoRedo();
-    }
     knob->setSpacingBetweenItems(descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     int layoutHint = descriptor.getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if (layoutHint == 1) {
