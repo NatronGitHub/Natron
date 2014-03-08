@@ -170,7 +170,10 @@ public:
     T getValueAtTime(double time,int dimension = 0) const WARN_UNUSED_RETURN {
         return getValueAtTime(time,dimension).value<T>();
     }
-    
+
+    // returns the derivative as a double
+    double getDerivativeAtTime(double time, int dimension = 0) const WARN_UNUSED_RETURN;
+
     /**
      * @brief Places in time the keyframe time at the given index.
      * If it exists the function returns true, false otherwise.

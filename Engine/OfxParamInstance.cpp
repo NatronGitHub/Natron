@@ -392,16 +392,15 @@ void OfxDoubleInstance::onProjectFormatChanged(const Format& /*f*/){
     setDisplayRange();
 }
 
-OfxStatus OfxDoubleInstance::derive(OfxTime /*time*/, double& v) {
-#pragma message WARN("TODO: Double, Double2D, Double3D, RGBA, RGB derive and integrate for animated params")
-    if (isAnimated()) {
-        return kOfxStatErrUnsupported;
-    }
-    v = 0;
+OfxStatus OfxDoubleInstance::derive(OfxTime time, double& v)
+{
+    v = _knob->getDerivativeAtTime(time);
     return kOfxStatOK;
 }
 
-OfxStatus OfxDoubleInstance::integrate(OfxTime time1, OfxTime time2, double& v) {
+OfxStatus OfxDoubleInstance::integrate(OfxTime time1, OfxTime time2, double& v)
+{
+#pragma message WARN("TODO: integrate")
     if (isAnimated()) {
         return kOfxStatErrUnsupported;
     }
@@ -693,15 +692,18 @@ OfxStatus OfxRGBAInstance::set(OfxTime time, double r ,double g,double b,double 
     return kOfxStatOK;
 }
 
-OfxStatus OfxRGBAInstance::derive(OfxTime /*time*/, double&r ,double& g, double& b, double& a) {
-    if (isAnimated()) {
-        return kOfxStatErrUnsupported;
-    }
-    r = g = b = a = 0;
+OfxStatus OfxRGBAInstance::derive(OfxTime time, double&r ,double& g, double& b, double& a)
+{
+    r = _knob->getDerivativeAtTime(time,0);
+    g = _knob->getDerivativeAtTime(time,1);
+    b = _knob->getDerivativeAtTime(time,2);
+    a = _knob->getDerivativeAtTime(time,3);
     return kOfxStatOK;
 }
 
-OfxStatus OfxRGBAInstance::integrate(OfxTime time1, OfxTime time2, double&r ,double& g, double& b, double& a) {
+OfxStatus OfxRGBAInstance::integrate(OfxTime time1, OfxTime time2, double&r ,double& g, double& b, double& a)
+{
+#pragma message WARN("TODO: integrate")
     if (isAnimated()) {
         return kOfxStatErrUnsupported;
     }
@@ -805,15 +807,17 @@ OfxStatus OfxRGBInstance::set(OfxTime time, double r,double g,double b){
     return kOfxStatOK;
 }
 
-OfxStatus OfxRGBInstance::derive(OfxTime /*time*/, double&r ,double& g, double& b) {
-    if (isAnimated()) {
-        return kOfxStatErrUnsupported;
-    }
-    r = g = b  = 0;
+OfxStatus OfxRGBInstance::derive(OfxTime time, double& r, double& g, double& b)
+{
+    r = _knob->getDerivativeAtTime(time,0);
+    g = _knob->getDerivativeAtTime(time,1);
+    b = _knob->getDerivativeAtTime(time,2);
     return kOfxStatOK;
 }
 
-OfxStatus OfxRGBInstance::integrate(OfxTime time1, OfxTime time2, double&r ,double& g, double& b) {
+OfxStatus OfxRGBInstance::integrate(OfxTime time1, OfxTime time2, double&r ,double& g, double& b)
+{
+#pragma message WARN("TODO: integrate")
     if (isAnimated()) {
         return kOfxStatErrUnsupported;
     }
@@ -967,15 +971,16 @@ OfxStatus OfxDouble2DInstance::set(OfxTime time,double x1,double x2){
 	return kOfxStatOK;
 }
 
-OfxStatus OfxDouble2DInstance::derive(OfxTime /*time*/, double&x1 ,double& x2) {
-    if (isAnimated()) {
-        return kOfxStatErrUnsupported;
-    }
-    x1 = x2 = 0;
+OfxStatus OfxDouble2DInstance::derive(OfxTime time, double&x1 ,double& x2)
+{
+    x1 = _knob->getDerivativeAtTime(time,0);
+    x2 = _knob->getDerivativeAtTime(time,1);
     return kOfxStatOK;
 }
 
-OfxStatus OfxDouble2DInstance::integrate(OfxTime time1, OfxTime time2, double&x1 ,double& x2) {
+OfxStatus OfxDouble2DInstance::integrate(OfxTime time1, OfxTime time2, double&x1 ,double& x2)
+{
+#pragma message WARN("TODO: integrate")
     if (isAnimated()) {
         return kOfxStatErrUnsupported;
     }
@@ -1216,29 +1221,33 @@ OfxStatus OfxDouble3DInstance::get(OfxTime time, double& x1, double& x2, double&
     return kOfxStatOK;
 }
 
-OfxStatus OfxDouble3DInstance::set(double x1,double x2,double x3){
+OfxStatus OfxDouble3DInstance::set(double x1,double x2,double x3)
+{
     _knob->setValue<double>(x1,0);
     _knob->setValue<double>(x2,1);
     _knob->setValue<double>(x3,2);
 	return kOfxStatOK;
 }
 
-OfxStatus OfxDouble3DInstance::set(OfxTime time, double x1, double x2, double x3) {
+OfxStatus OfxDouble3DInstance::set(OfxTime time, double x1, double x2, double x3)
+{
     _knob->setValueAtTime<double>(time,x1,0);
     _knob->setValueAtTime<double>(time,x2,1);
     _knob->setValueAtTime<double>(time,x3,2);
 	return kOfxStatOK;
 }
 
-OfxStatus OfxDouble3DInstance::derive(OfxTime /*time*/, double&x1 ,double& x2,double& x3) {
-    if (isAnimated()) {
-        return kOfxStatErrUnsupported;
-    }
-    x1 = x2 = x3 = 0;
+OfxStatus OfxDouble3DInstance::derive(OfxTime time, double& x1, double& x2, double& x3)
+{
+    x1 = _knob->getDerivativeAtTime(time,0);
+    x2 = _knob->getDerivativeAtTime(time,1);
+    x3 = _knob->getDerivativeAtTime(time,2);
     return kOfxStatOK;
 }
 
-OfxStatus OfxDouble3DInstance::integrate(OfxTime time1, OfxTime time2, double&x1 ,double& x2,double& x3) {
+OfxStatus OfxDouble3DInstance::integrate(OfxTime time1, OfxTime time2, double&x1 ,double& x2,double& x3)
+{
+#pragma message WARN("TODO: integrate")
     if (isAnimated()) {
         return kOfxStatErrUnsupported;
     }

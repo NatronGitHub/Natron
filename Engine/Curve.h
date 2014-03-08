@@ -177,6 +177,8 @@ public:
 
     double getValueAt(double t) const WARN_UNUSED_RETURN;
 
+    double getDerivativeAt(double t) const WARN_UNUSED_RETURN;
+
     const KeyFrameSet& getKeyFrames() const WARN_UNUSED_RETURN;
 
     void clearKeyFrames();

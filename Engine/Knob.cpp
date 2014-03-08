@@ -171,6 +171,27 @@ Variant Knob::getValueAtTime(double time,int dimension) const
     }
 }
 
+double Knob::getDerivativeAtTime(double time,int dimension) const
+{
+    if (dimension > (int)_imp->_curves.size()) {
+        throw std::invalid_argument("Knob::getDerivativeAtTime(): Dimension out of range");
+    }
+
+    ///if the knob is slaved to another knob, returns the other knob value
+    std::pair<int,boost::shared_ptr<Knob> > master = getMaster(dimension);
+    if (master.second) {
+        return master.second->getDerivativeAtTime(time,master.first);
+    }
+
+    boost::shared_ptr<Curve> curve  = _imp->_curves[dimension];
+    if (curve->getKeyFramesCount() > 0) {
+        return curve->getDerivativeAt(time);
+    } else {
+        /*if the knob as no keys at this dimension, the derivative is 0.*/
+        return 0.;
+    }
+}
+
 Knob::ValueChangedReturnCode Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason,KeyFrame* newKey)
 {
     if (0 > dimension || dimension > (int)_imp->_values.size()) {

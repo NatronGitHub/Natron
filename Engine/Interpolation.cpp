@@ -148,6 +148,54 @@ double Natron::derive(double tcur, const double vcur, //start control point
     return ret / (tnext - tcur);
 }
 
+/// interpolate and derive at currentTime. The derivative is with respect to currentTime
+void Natron::interpolate_and_derive(double tcur, const double vcur, //start control point
+                                    const double vcurDerivRight, //being the derivative dv/dt at tcur
+                                    const double vnextDerivLeft, //being the derivative dv/dt at tnext
+                                    double tnext, const double vnext, //end control point
+                                    double currentTime,
+                                    KeyframeType interp,
+                                    KeyframeType interpNext,
+                                    double *valueAt,
+                                    double *derivativeAt)
+{
+    assert(valueAt && derivativeAt);
+    double P0 = vcur;
+    double P3 = vnext;
+    // Hermite coefficients P0' and P3' are the derivatives with respect to x \in [0,1]
+    double P0pr = vcurDerivRight*(tnext-tcur); // normalize for x \in [0,1]
+    double P3pl = vnextDerivLeft*(tnext-tcur); // normalize for x \in [0,1]
+    // if the following is true, this makes the special case for KEYFRAME_CONSTANT at tnext useless, and we can always use a cubic - the strict "currentTime < tnext" is the key
+    assert(((interp == KEYFRAME_NONE) || (tcur <= currentTime)) && ((currentTime < tnext) || (interpNext == KEYFRAME_NONE)));
+    // after the last / before the first keyframe, derivatives are wrt currentTime (i.e. non-normalized)
+    if (interp == KEYFRAME_NONE) {
+        // virtual previous frame at t-1
+        P0 = P3 - P3pl;
+        P0pr = P3pl;
+        tcur = tnext - 1.;
+    } else if (interp == KEYFRAME_CONSTANT) {
+        P0pr = 0.;
+        P3pl = 0.;
+        P3 = P0;
+    }
+    if (interpNext == KEYFRAME_NONE) {
+        // virtual next frame at t+1
+        P3pl = P0pr;
+        P3 = P0 + P0pr;
+        tnext = tcur + 1;
+    }
+    double c0, c1, c2, c3;
+    hermiteToCubicCoeffs(P0, P0pr, P3pl, P3, &c0, &c1, &c2, &c3);
+
+    const double t = (currentTime - tcur)/(tnext - tcur);
+    *valueAt = cubicEval(c0, c1, c2, c3, t);
+    *derivativeAt = cubicDerive(c0, c1, c2, c3, t);
+
+    // cubicDerive: divide the result by (tnext-tcur)
+    // cubicIntegrate: multiply the result by (tnext-tcur)
+    *derivativeAt /= (tnext - tcur);
+}
+
 // integrate from time1 to time2
 double Natron::integrate(double tcur, const double vcur, //start control point
                          const double vcurDerivRight, //being the derivative dv/dt at tcur

@@ -386,7 +386,106 @@ double Curve::getValueAt(double t) const
     }
 }
 
-#pragma message WARN("TODO: add Curve::deriveAt(t) and Curve::integrateFromTo(t1,t2), see Natron::derive and Natron::integrate")
+double Curve::getDerivativeAt(double t) const
+{
+    QMutexLocker l(&_imp->_lock);
+
+    if (_imp->keyFrames.empty()) {
+        throw std::runtime_error("Curve has no control points!");
+    }
+    assert(_imp->getCurveType() == CurvePrivate::DOUBLE_CURVE); // only real-valued curves can be derived
+    
+    // even when there is only one keyframe, there may be tangents!
+    //if (_imp->keyFrames.size() == 1) {
+    //    //if there's only 1 keyframe, don't bother interpolating
+    //    return (*_imp->keyFrames.begin()).getValue();
+    //}
+    double tcur,tnext;
+    double vcurDerivRight ,vnextDerivLeft ,vcur ,vnext ;
+    Natron::KeyframeType interp ,interpNext;
+
+    //Replicate of std::set::lower_bound
+    //we can't use that function because KeyFrame's member holding the time is an int, whereas
+    //we're looking for a double which can be at any time, so we can't use the container's comparator.
+    KeyFrameSet::const_iterator upper = _imp->keyFrames.end();
+    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it!=_imp->keyFrames.end(); ++it) {
+        if ((*it).getTime() > t) {
+            upper = it;
+            break;
+        } else if ((*it).getTime() == t) {
+            //if the time is exactly the time of a keyframe, return its value
+            return (*it).getValue();
+        }
+    }
+
+    KeyFrameSet::const_iterator prev = upper;
+    --prev;
+
+    if (upper == _imp->keyFrames.begin()) {
+        //if all keys have a greater time (i.e: we search after the last keyframe)
+        tnext = upper->getTime();
+        vnext = upper->getValue();
+        vnextDerivLeft = upper->getLeftDerivative();
+        interpNext = upper->getInterpolation();
+        tcur = tnext - 1.;
+        vcur = vnext;
+        vcurDerivRight = 0.;
+        interp = Natron::KEYFRAME_NONE;
+
+    } else if (upper == _imp->keyFrames.end()) {
+        //if we found no key that has a greater time (i.e: we search before the 1st keyframe)
+        tcur = prev->getTime();
+        vcur = prev->getValue();
+        vcurDerivRight = prev->getRightDerivative();
+        interp = prev->getInterpolation();
+        tnext = tcur + 1.;
+        vnext = vcur;
+        vnextDerivLeft = 0.;
+        interpNext = Natron::KEYFRAME_NONE;
+    } else {
+        tcur = prev->getTime();
+        vcur = prev->getValue();
+        vcurDerivRight = prev->getRightDerivative();
+        interp = prev->getInterpolation();
+        tnext = upper->getTime();
+        vnext = upper->getValue();
+        vnextDerivLeft = upper->getLeftDerivative();
+        interpNext = upper->getInterpolation();
+    }
+
+    double d;
+
+    if (_imp->owner) {
+        double v;
+        Natron::interpolate_and_derive(tcur,vcur,
+                                       vcurDerivRight,
+                                       vnextDerivLeft,
+                                       tnext,vnext,
+                                       t,
+                                       interp,
+                                       interpNext,
+                                       &v,
+                                       &d);
+        std::pair<double,double> minmax = getCurveYRange();
+        if (v <= minmax.first || minmax.second <= v) {
+            // v is out of the range, the curve is clamped, derivative is 0
+            d = 0;
+        }
+    } else {
+        d = Natron::derive(tcur,vcur,
+                           vcurDerivRight,
+                           vnextDerivLeft,
+                           tnext,vnext,
+                           t,
+                           interp,
+                           interpNext);
+    }
+
+    return d;
+}
+
+// integrateFromTo is a bit more complicated to deal with clamping: the intersections of the curve with y=min and y=max have to be computed and used in the integral
+#pragma message WARN("TODO: add Curve::integrateFromTo(t1,t2), see Natron::integrate")
 
 std::pair<double,double>  Curve::getCurveYRange() const
 {
