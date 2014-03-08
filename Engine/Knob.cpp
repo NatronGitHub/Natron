@@ -147,9 +147,9 @@ Variant Knob::getValue(int dimension) const {
 }
 
 
-Variant Knob::getValueAtTime(double time,int dimension) const{
-    
-    if(dimension > (int)_imp->_curves.size()){
+Variant Knob::getValueAtTime(double time,int dimension) const
+{
+    if (dimension > (int)_imp->_curves.size()) {
         throw std::invalid_argument("Knob::getValueAtTime(): Dimension out of range");
     }
     
@@ -160,7 +160,7 @@ Variant Knob::getValueAtTime(double time,int dimension) const{
     }
     
     boost::shared_ptr<Curve> curve  = _imp->_curves[dimension];
-    if (curve->keyFramesCount() > 0) {
+    if (curve->getKeyFramesCount() > 0) {
         Variant ret;
         variantFromInterpolatedValue(curve->getValueAt(time), &ret);
         return ret;
@@ -519,11 +519,12 @@ void Knob::onMasterChanged(int dimension) {
     evaluateValueChange(dimension, Natron::PLUGIN_EDITED);
 }
 
-void Knob::onTimeChanged(SequenceTime time){
+void Knob::onTimeChanged(SequenceTime time)
+{
     //setValue's calls compression is taken care of above.
     for (int i = 0; i < getDimension(); ++i) {
         boost::shared_ptr<Curve> c = getCurve(i);
-        if(c->keyFramesCount() > 0) {
+        if (c->getKeyFramesCount() > 0) {
             Variant v = getValueAtTime(time,i);
             setValue(v,i,Natron::TIME_CHANGED,NULL);
         }
@@ -794,9 +795,10 @@ bool Knob::getFirstKeyFrameTime(int dimension,double* time) const {
     return getKeyFrameTime(0, dimension, time);
 }
 
-int Knob::getKeyFramesCount(int dimension) const {
+int Knob::getKeyFramesCount(int dimension) const
+{
     //get curve forwards it to the master
-    return getCurve(dimension)->keyFramesCount();
+    return getCurve(dimension)->getKeyFramesCount();
 }
 
 bool Knob::getNearestKeyFrameTime(int dimension,double time,double* nearestTime) const {
@@ -880,7 +882,8 @@ int Knob::getKeyFrameIndex(int dimension, double time) const {
 }
 
 
-bool Knob::getKeyFrameValueByIndex(int dimension,int index,Variant* value) const {
+bool Knob::getKeyFrameValueByIndex(int dimension,int index,Variant* value) const
+{
     ///if the knob is slaved to another knob, returns the other knob value
     std::pair<int,boost::shared_ptr<Knob> > master = getMaster(dimension);
     if (master.second) {
@@ -895,7 +898,7 @@ bool Knob::getKeyFrameValueByIndex(int dimension,int index,Variant* value) const
     boost::shared_ptr<Curve> curve = getCurve(dimension);
     assert(curve);
     
-    if (index >= curve->keyFramesCount()) {
+    if (index >= curve->getKeyFramesCount()) {
         return false;
     }
     

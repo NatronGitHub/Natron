@@ -169,7 +169,7 @@ public:
 
     void removeKeyFrameWithIndex(int index);
 
-    int keyFramesCount() const WARN_UNUSED_RETURN;
+    int getKeyFramesCount() const WARN_UNUSED_RETURN;
 
     double getMinimumTimeCovered() const WARN_UNUSED_RETURN;
 

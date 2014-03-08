@@ -294,17 +294,19 @@ void Curve::removeKeyFrame(double time) {
 }
 
 
-double Curve::getValueAt(double t) const {
-    
+double Curve::getValueAt(double t) const
+{
     QMutexLocker l(&_imp->_lock);
     
-    if(_imp->keyFrames.empty()){
+    if (_imp->keyFrames.empty()) {
         throw std::runtime_error("Curve has no control points!");
     }
-    if (_imp->keyFrames.size() == 1) {
-        //if there's only 1 keyframe, don't bother interpolating
-        return (*_imp->keyFrames.begin()).getValue();
-    }
+
+    // even when there is only one keyframe, there may be tangents!
+    //if (_imp->keyFrames.size() == 1) {
+    //    //if there's only 1 keyframe, don't bother interpolating
+    //    return (*_imp->keyFrames.begin()).getValue();
+    //}
     double tcur,tnext;
     double vcurDerivRight ,vnextDerivLeft ,vcur ,vnext ;
     Natron::KeyframeType interp ,interpNext;
@@ -313,11 +315,11 @@ double Curve::getValueAt(double t) const {
     //we can't use that function because KeyFrame's member holding the time is an int, whereas
     //we're looking for a double which can be at any time, so we can't use the container's comparator.
     KeyFrameSet::const_iterator upper = _imp->keyFrames.end();
-    for(KeyFrameSet::const_iterator it = _imp->keyFrames.begin();it!=_imp->keyFrames.end();++it){
-        if((*it).getTime() > t){
+    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it!=_imp->keyFrames.end(); ++it) {
+        if ((*it).getTime() > t) {
             upper = it;
             break;
-        }else if((*it).getTime() == t){
+        } else if ((*it).getTime() == t) {
             //if the time is exactly the time of a keyframe, return its value
             return (*it).getValue();
         }
@@ -425,7 +427,8 @@ double Curve::clampValueToCurveYRange(double v) const
 bool Curve::isAnimated() const
 {
     QMutexLocker l(&_imp->_lock);
-    return _imp->keyFrames.size() > 1;
+    // even when there is only one keyframe, there may be tangents!
+    return _imp->keyFrames.size() > 0;
 }
 
 void Curve::setParametricRange(double a,double b) {
@@ -440,7 +443,7 @@ std::pair<double,double> Curve::getParametricRange() const
     return std::make_pair(_imp->curveMin, _imp->curveMax);
 }
 
-int Curve::keyFramesCount() const
+int Curve::getKeyFramesCount() const
 {
     QMutexLocker l(&_imp->_lock);
     return (int)_imp->keyFrames.size();

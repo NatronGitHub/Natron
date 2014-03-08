@@ -453,11 +453,12 @@ void KnobGui::onRemoveAnyAnimationActionTriggered(){
     }
 }
 
-void KnobGui::setInterpolationForDimensions(const std::vector<int>& dimensions,Natron::KeyframeType interp){
-    for(U32 i = 0; i < dimensions.size();++i){
+void KnobGui::setInterpolationForDimensions(const std::vector<int>& dimensions,Natron::KeyframeType interp)
+{
+    for (U32 i = 0; i < dimensions.size();++i) {
         boost::shared_ptr<Curve> c = _knob->getCurve(dimensions[i]);
-        int kfCount = c->keyFramesCount();
-        for(int j = 0;j < kfCount;++j){
+        int kfCount = c->getKeyFramesCount();
+        for (int j = 0; j < kfCount; ++j) {
             c->setKeyFrameInterpolation(interp, j);
         }
     }
@@ -904,13 +905,14 @@ void KnobGui::onUnlinkActionTriggered() {
     }
 }
 
-void KnobGui::checkAnimationLevel(int dimension){
+void KnobGui::checkAnimationLevel(int dimension)
+{
     AnimationLevel level = Natron::NO_ANIMATION;
-    if(getKnob()->getHolder()->getApp()){
+    if (getKnob()->getHolder()->getApp()) {
         
         boost::shared_ptr<Curve> c = getKnob()->getCurve(dimension);
         SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-        if (c->keyFramesCount() >= 1) {
+        if (c->getKeyFramesCount() > 0) {
             const KeyFrameSet &keys = c->getKeyFrames();
             bool found = false;
             for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
@@ -919,9 +921,9 @@ void KnobGui::checkAnimationLevel(int dimension){
                     break;
                 }
             }
-            if(found){
+            if (found) {
                 level = Natron::ON_KEYFRAME;
-            }else{
+            } else {
                 level = Natron::INTERPOLATED_VALUE;
             }
         } else {

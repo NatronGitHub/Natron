@@ -1007,11 +1007,12 @@ Natron::Status Parametric_Knob::getValue(int dimension,double parametricPosition
     return Natron::StatOK;
 }
 
-Natron::Status Parametric_Knob::getNControlPoints(int dimension,int *returnValue){
-    if(dimension >= (int)_curves.size()){
+Natron::Status Parametric_Knob::getNControlPoints(int dimension,int *returnValue)
+{
+    if (dimension >= (int)_curves.size()) {
         return StatFailed;
     }
-    *returnValue =  _curves[dimension]->keyFramesCount();
+    *returnValue =  _curves[dimension]->getKeyFramesCount();
     return StatOK;
 }
 

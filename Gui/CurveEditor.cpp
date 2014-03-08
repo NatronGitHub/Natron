@@ -276,18 +276,20 @@ static void checkIfHiddenRecursivly(QTreeWidget* tree,QTreeWidgetItem* item){
 
 
 
-void NodeCurveEditorElement::checkVisibleState(){
-    if(!_curve)
+void NodeCurveEditorElement::checkVisibleState()
+{
+    if (!_curve) {
         return;
-    int i = _curve->getInternalCurve()->keyFramesCount();
-    if(i > 1 && !_knob->getKnob()->isSlave(_dimension)){
+    }
+    // even when there is only one keyframe, there may be tangents!
+    if (_curve->getInternalCurve()->getKeyFramesCount() > 0 && !_knob->getKnob()->isSlave(_dimension)) {
         //show the item
-        if(!_curveDisplayed){
+        if (!_curveDisplayed) {
             _curveDisplayed = true;
             _treeItem->setHidden(false);
             _treeItem->parent()->setHidden(false);
             _treeItem->parent()->setExpanded(true);
-            if(_treeItem->parent()->parent()){
+            if (_treeItem->parent()->parent()) {
                 _treeItem->parent()->parent()->setHidden(false);
                 _treeItem->parent()->parent()->setExpanded(true);
             }
@@ -299,42 +301,38 @@ void NodeCurveEditorElement::checkVisibleState(){
         bool wasEmpty = false;
         
         ///if there was no selection so far, select this item and its parents
-        if(selectedItems.empty()){
+        if (selectedItems.empty()) {
             _treeItem->setSelected(true);
-            if(_treeItem->parent()){
+            if (_treeItem->parent()) {
                 _treeItem->parent()->setSelected(true);
             }
-            if(_treeItem->parent()->parent()){
+            if (_treeItem->parent()->parent()) {
                 _treeItem->parent()->parent()->setSelected(true);
             }
             wasEmpty = true;
-        }else{
-            
+        } else {
             for (int i = 0; i < selectedItems.size(); ++i) {
-                if(selectedItems.at(i) == _treeItem->parent() ||
-                   selectedItems.at(i) == _treeItem->parent()->parent()){
+                if (selectedItems.at(i) == _treeItem->parent() ||
+                   selectedItems.at(i) == _treeItem->parent()->parent()) {
                     _treeItem->setSelected(true);
                 }
             }
         }
         
-        if(_treeItem->isSelected()){
+        if (_treeItem->isSelected()) {
             std::vector<CurveGui*> curves;
             _curveWidget->getVisibleCurves(&curves);
             curves.push_back(_curve);
             _curveWidget->showCurvesAndHideOthers(curves);
-            if(wasEmpty){
+            if (wasEmpty) {
                 _curveWidget->centerOn(curves);
             }
         }
-        
-
-        
-    }else{
+    } else {
         //hide the item
         //hiding is a bit more complex because we do not always hide the parent too,it also
         // depends on the item's siblings visibility
-        if(_curveDisplayed){
+        if (_curveDisplayed) {
             _curveDisplayed = false;
             _treeItem->setHidden(true);
             checkIfHiddenRecursivly(_treeWidget, _treeItem->parent());
@@ -356,15 +354,16 @@ NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree, CurveWidget* c
   ,_knob(knob)
   ,_dimension(dimension)
 {
-    if(knob){
+    if (knob) {
         QObject::connect(knob,SIGNAL(keyFrameSet()),this,SLOT(checkVisibleState()));
         QObject::connect(knob,SIGNAL(keyFrameRemoved()),this,SLOT(checkVisibleState()));
     }
-    if(curve){
-        if(curve->getInternalCurve()->keyFramesCount() > 1){
+    if (curve) {
+        // even when there is only one keyframe, there may be tangents!
+        if (curve->getInternalCurve()->getKeyFramesCount() > 0) {
             _curveDisplayed = true;
         }
-    }else{
+    } else {
         _dimension = -1; //set dimension to be meaningless
     }
 }

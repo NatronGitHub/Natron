@@ -97,8 +97,8 @@ CurveGui::CurveGui(const CurveWidget *curveWidget,
 , _knob(knob)
 , _dimension(dimension)
 {
-    
-    if(curve->keyFramesCount() > 1){
+    // even when there is only one keyframe, there may be tangents!
+    if (curve->getKeyFramesCount() > 0) {
         _visible = true;
     }
     

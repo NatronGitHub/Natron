@@ -1928,13 +1928,15 @@ void Parametric_KnobGui::updateGUI(int /*dimension*/, const Variant &/*variant*/
     _curveWidget->update();
 }
 
-void Parametric_KnobGui::onCurveChanged(int dimension){
+void Parametric_KnobGui::onCurveChanged(int dimension)
+{
     CurveGuis::iterator it = _curves.find(dimension);
     assert(it != _curves.end());
     
-    if(it->second.curve->getInternalCurve()->keyFramesCount() > 1 && it->second.treeItem->isSelected()){
+    // even when there is only one keyframe, there may be tangents!
+    if (it->second.curve->getInternalCurve()->getKeyFramesCount() > 0 && it->second.treeItem->isSelected()) {
         it->second.curve->setVisible(true);
-    }else{
+    } else {
         it->second.curve->setVisible(false);
     }
     _curveWidget->update();

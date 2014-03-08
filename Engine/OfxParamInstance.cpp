@@ -54,10 +54,11 @@ static std::string getParamLabel(OFX::Host::Param::Instance* param){
 /// in a generalized manner
 namespace OfxKeyFrame{
     
-    OfxStatus getNumKeys(boost::shared_ptr<Knob> knob,unsigned int &nKeys) {
+    OfxStatus getNumKeys(boost::shared_ptr<Knob> knob,unsigned int &nKeys)
+    {
         int sum = 0;
         for (int i = 0 ; i < knob->getDimension(); ++i) {
-            sum += knob->getCurve(i)->keyFramesCount();
+            sum += knob->getCurve(i)->getKeyFramesCount();
         }
         nKeys =  sum;
         return kOfxStatOK;
