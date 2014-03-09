@@ -310,54 +310,48 @@ double Curve::getValueAt(double t) const
     double tcur,tnext;
     double vcurDerivRight ,vnextDerivLeft ,vcur ,vnext ;
     Natron::KeyframeType interp ,interpNext;
-    
-    //Replicate of std::set::lower_bound
-    //we can't use that function because KeyFrame's member holding the time is an int, whereas
-    //we're looking for a double which can be at any time, so we can't use the container's comparator.
-    KeyFrameSet::const_iterator upper = _imp->keyFrames.end();
-    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it!=_imp->keyFrames.end(); ++it) {
-        if ((*it).getTime() > t) {
-            upper = it;
-            break;
-        } else if ((*it).getTime() == t) {
-            //if the time is exactly the time of a keyframe, return its value
-            return (*it).getValue();
-        }
-    }
 
-    KeyFrameSet::const_iterator prev = upper;
-    --prev;
-
-    if (upper == _imp->keyFrames.begin()) {
-        //if all keys have a greater time (i.e: we search after the last keyframe)
-        tnext = upper->getTime();
-        vnext = upper->getValue();
-        vnextDerivLeft = upper->getLeftDerivative();
-        interpNext = upper->getInterpolation();
+    KeyFrame k(t,0.);
+    // find the first keyframe with time greater than t
+    KeyFrameSet::const_iterator itup;
+    itup = _imp->keyFrames.upper_bound(k);
+    assert(itup == _imp->keyFrames.end() || t < itup->getTime());
+    if (itup == _imp->keyFrames.begin()) {
+        //if all keys have a greater time
+        tnext = itup->getTime();
+        vnext = itup->getValue();
+        vnextDerivLeft = itup->getLeftDerivative();
+        interpNext = itup->getInterpolation();
         tcur = tnext - 1.;
         vcur = vnext;
         vcurDerivRight = 0.;
         interp = Natron::KEYFRAME_NONE;
 
-    } else if (upper == _imp->keyFrames.end()) {
-        //if we found no key that has a greater time (i.e: we search before the 1st keyframe)
-        tcur = prev->getTime();
-        vcur = prev->getValue();
-        vcurDerivRight = prev->getRightDerivative();
-        interp = prev->getInterpolation();
+    } else if (itup == _imp->keyFrames.end()) {
+        //if we found no key that has a greater time
+        KeyFrameSet::const_reverse_iterator itlast = _imp->keyFrames.rbegin();
+        tcur = itlast->getTime();
+        vcur = itlast->getValue();
+        vcurDerivRight = itlast->getRightDerivative();
+        interp = itlast->getInterpolation();
         tnext = tcur + 1.;
         vnext = vcur;
         vnextDerivLeft = 0.;
         interpNext = Natron::KEYFRAME_NONE;
     } else {
-        tcur = prev->getTime();
-        vcur = prev->getValue();
-        vcurDerivRight = prev->getRightDerivative();
-        interp = prev->getInterpolation();
-        tnext = upper->getTime();
-        vnext = upper->getValue();
-        vnextDerivLeft = upper->getLeftDerivative();
-        interpNext = upper->getInterpolation();
+        // between two keyframes
+        // get the last keyframe with time <= t
+        KeyFrameSet::const_iterator itcur = itup;
+        --itcur;
+        assert(itcur->getTime() <= t);
+        tcur = itcur->getTime();
+        vcur = itcur->getValue();
+        vcurDerivRight = itcur->getRightDerivative();
+        interp = itcur->getInterpolation();
+        tnext = itup->getTime();
+        vnext = itup->getValue();
+        vnextDerivLeft = itup->getLeftDerivative();
+        interpNext = itup->getInterpolation();
     }
 
     double v = Natron::interpolate(tcur,vcur,
@@ -404,53 +398,48 @@ double Curve::getDerivativeAt(double t) const
     double vcurDerivRight ,vnextDerivLeft ,vcur ,vnext ;
     Natron::KeyframeType interp ,interpNext;
 
-    //Replicate of std::set::lower_bound
-    //we can't use that function because KeyFrame's member holding the time is an int, whereas
-    //we're looking for a double which can be at any time, so we can't use the container's comparator.
-    KeyFrameSet::const_iterator upper = _imp->keyFrames.end();
-    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it!=_imp->keyFrames.end(); ++it) {
-        if ((*it).getTime() > t) {
-            upper = it;
-            break;
-        } else if ((*it).getTime() == t) {
-            //if the time is exactly the time of a keyframe, return its value
-            return (*it).getValue();
-        }
-    }
-
-    KeyFrameSet::const_iterator prev = upper;
-    --prev;
-
-    if (upper == _imp->keyFrames.begin()) {
-        //if all keys have a greater time (i.e: we search after the last keyframe)
-        tnext = upper->getTime();
-        vnext = upper->getValue();
-        vnextDerivLeft = upper->getLeftDerivative();
-        interpNext = upper->getInterpolation();
+    KeyFrame k(t,0.);
+    // find the first keyframe with time greater than t
+    KeyFrameSet::const_iterator itup;
+    itup = _imp->keyFrames.upper_bound(k);
+    assert(itup == _imp->keyFrames.end() || t < itup->getTime());
+    if (itup == _imp->keyFrames.begin()) {
+        //if all keys have a greater time
+        tnext = itup->getTime();
+        vnext = itup->getValue();
+        vnextDerivLeft = itup->getLeftDerivative();
+        interpNext = itup->getInterpolation();
         tcur = tnext - 1.;
         vcur = vnext;
         vcurDerivRight = 0.;
         interp = Natron::KEYFRAME_NONE;
 
-    } else if (upper == _imp->keyFrames.end()) {
-        //if we found no key that has a greater time (i.e: we search before the 1st keyframe)
-        tcur = prev->getTime();
-        vcur = prev->getValue();
-        vcurDerivRight = prev->getRightDerivative();
-        interp = prev->getInterpolation();
+    } else if (itup == _imp->keyFrames.end()) {
+        //if we found no key that has a greater time
+        // get the last keyframe
+        KeyFrameSet::const_reverse_iterator itlast = _imp->keyFrames.rbegin();
+        tcur = itlast->getTime();
+        vcur = itlast->getValue();
+        vcurDerivRight = itlast->getRightDerivative();
+        interp = itlast->getInterpolation();
         tnext = tcur + 1.;
         vnext = vcur;
         vnextDerivLeft = 0.;
         interpNext = Natron::KEYFRAME_NONE;
     } else {
-        tcur = prev->getTime();
-        vcur = prev->getValue();
-        vcurDerivRight = prev->getRightDerivative();
-        interp = prev->getInterpolation();
-        tnext = upper->getTime();
-        vnext = upper->getValue();
-        vnextDerivLeft = upper->getLeftDerivative();
-        interpNext = upper->getInterpolation();
+        // between two keyframes
+        // get the last keyframe with time <= t
+        KeyFrameSet::const_iterator itcur = itup;
+        --itcur;
+        assert(itcur->getTime() <= t);
+        tcur = itcur->getTime();
+        vcur = itcur->getValue();
+        vcurDerivRight = itcur->getRightDerivative();
+        interp = itcur->getInterpolation();
+        tnext = itup->getTime();
+        vnext = itup->getValue();
+        vnextDerivLeft = itup->getLeftDerivative();
+        interpNext = itup->getInterpolation();
     }
 
     double d;
