@@ -504,7 +504,7 @@ statusUpdate(eFuncType status, const Sol& sol)
     switch(status) {
         case CLAMPMIN:
             assert(sol.type == SOLMIN);
-            assert(sol.deriv >= 0.);
+            assert(sol.deriv >= /*0*/ -EQN_EPS);
             if (sol.order % 2) {
                 // only odd solution orders may change the status
                 return CUBIC;
@@ -512,7 +512,7 @@ statusUpdate(eFuncType status, const Sol& sol)
             break;
         case CLAMPMAX:
             assert(sol.type == SOLMAX);
-            assert(sol.deriv <= 0.);
+            assert(sol.deriv <= /*0*/ EQN_EPS);
             if (sol.order % 2) {
                 // only odd solution orders may change the status
                 return CUBIC;
@@ -520,13 +520,13 @@ statusUpdate(eFuncType status, const Sol& sol)
             break;
         case CUBIC:
             if (sol.type == SOLMIN) {
-                assert(sol.deriv <= 0.);
+                assert(sol.deriv <= /*0*/ EQN_EPS);
                 if (sol.order % 2) {
                     // only odd solution orders may change the status
                     return CLAMPMIN;
                 }
             } else {
-                assert(sol.deriv >= 0.);
+                assert(sol.deriv >= /*0*/ -EQN_EPS);
                 if (sol.order % 2) {
                     // only odd solution orders may change the status
                     return CLAMPMAX;
@@ -621,11 +621,11 @@ double Natron::integrate_clamp(double tcur, const double vcur, //start control p
     eFuncType status;
     if (sols[0].type == SOLMAX) {
          // a non-constant cubic cannot remain within [vmin,vmax] at -infinity
-        assert(sols[0].deriv < 0.);
+        assert(sols[0].deriv < /*0*/ EQN_EPS);
         status = CLAMPMAX;
     } else {
         // a non-constant cubic cannot remain within [vmin,vmax] at -infinity
-        assert(sols[0].deriv > 0.);
+        assert(sols[0].deriv > /*0*/ -EQN_EPS);
         status = CLAMPMIN;
     }
 
