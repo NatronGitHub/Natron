@@ -117,10 +117,7 @@ public:
     Variant getValue(int dimension = 0) const WARN_UNUSED_RETURN;
 
     template <typename T>
-    T getValue(int dimension = 0) const WARN_UNUSED_RETURN {
-        return getValue(dimension).value<T>();
-    }
-
+    T getValue(int dimension = 0) const WARN_UNUSED_RETURN;
 
     void setValue(const Variant& value,int dimension,bool turnOffAutoKeying = false);
 
@@ -167,9 +164,7 @@ public:
     virtual Variant getValueAtTime(double time, int dimension) const WARN_UNUSED_RETURN;
 
     template<typename T>
-    T getValueAtTime(double time,int dimension = 0) const WARN_UNUSED_RETURN {
-        return getValueAtTime(time,dimension).value<T>();
-    }
+    T getValueAtTime(double time,int dimension = 0) const WARN_UNUSED_RETURN;
 
     // returns the derivative as a double
     double getDerivativeAtTime(double time, int dimension = 0) const WARN_UNUSED_RETURN;
@@ -494,10 +489,8 @@ public:
     void setClone() { _isClone = true; }
     
     template<typename K>
-    boost::shared_ptr<K> createKnob(const std::string &description, int dimension = 1) const WARN_UNUSED_RETURN {
-        return Natron::createKnob<K>(this, description,dimension);
-    }
-    
+    boost::shared_ptr<K> createKnob(const std::string &description, int dimension = 1) const WARN_UNUSED_RETURN;
+
     /**
      * @brief Clone each knob of "other" into this KnobHolder.
      * WARNING: other must have exactly the same number of knobs.
@@ -593,5 +586,22 @@ private:
 
    };
 
+template <typename T>
+T Knob::getValue(int dimension) const
+{
+    return getValue(dimension).value<T>();
+}
+
+template<typename T>
+T Knob::getValueAtTime(double time,int dimension) const
+{
+    return getValueAtTime(time,dimension).value<T>();
+}
+
+template<typename K>
+boost::shared_ptr<K> KnobHolder::createKnob(const std::string &description, int dimension) const
+{
+    return Natron::createKnob<K>(this, description,dimension);
+}
 
 #endif // NATRON_ENGINE_KNOB_H_
