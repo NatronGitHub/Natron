@@ -520,18 +520,19 @@ void Knob::endValueChange() {
 }
 
 
-void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason){
-    if (!_imp->_EvaluateOnChange) {
+void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason)
+{
+    if (_imp->_EvaluateOnChange) {
         _imp->_holder->invalidateHash();
     }
     processNewValue();
-    if(reason != Natron::USER_EDITED && !_imp->_holder->isClone()){
+    if ((reason != Natron::USER_EDITED) && !_imp->_holder->isClone()) {
         emit valueChanged(dimension);
     }
     emit updateSlaves(dimension);
     
-    bool significant = reason == Natron::TIME_CHANGED ? false : !_imp->_EvaluateOnChange;
-    if(!_imp->_holder->isClone()){
+    bool significant = (reason != Natron::TIME_CHANGED) && _imp->_EvaluateOnChange;
+    if (!_imp->_holder->isClone()) {
         _imp->_holder->notifyProjectEvaluationRequested(reason, this, significant);
     }
 }
