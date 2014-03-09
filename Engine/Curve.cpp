@@ -293,6 +293,8 @@ void Curve::removeKeyFrame(double time) {
     
 }
 
+/// compute interpolation parameters from keyframes and an iterator
+/// to the next keyframe (the first with time > t)
 static void
 interParams(const KeyFrameSet &keyFrames,
             double t,
@@ -309,6 +311,7 @@ interParams(const KeyFrameSet &keyFrames,
     assert(itup == keyFrames.end() || t < itup->getTime());
     if (itup == keyFrames.begin()) {
         //if all keys have a greater time
+        // get the first keyframe
         *tnext = itup->getTime();
         *vnext = itup->getValue();
         *vnextDerivLeft = itup->getLeftDerivative();
@@ -319,6 +322,7 @@ interParams(const KeyFrameSet &keyFrames,
         *interp = Natron::KEYFRAME_NONE;
     } else if (itup == keyFrames.end()) {
         //if we found no key that has a greater time
+        // get the last keyframe
         KeyFrameSet::const_reverse_iterator itlast = keyFrames.rbegin();
         *tcur = itlast->getTime();
         *vcur = itlast->getValue();
