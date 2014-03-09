@@ -463,8 +463,111 @@ double Curve::getDerivativeAt(double t) const
     return d;
 }
 
-// integrateFromTo is a bit more complicated to deal with clamping: the intersections of the curve with y=min and y=max have to be computed and used in the integral
-#pragma message WARN("TODO: add Curve::integrateFromTo(t1,t2), see Natron::integrate")
+double Curve::getIntegrateFromTo(double t1, double t2) const
+{
+    QMutexLocker l(&_imp->_lock);
+    bool opposite = false;
+
+    // the following assumes that t2 > t1. If it's not the case, swap them and return the opposite.
+    if (t1 > t2) {
+        opposite = true;
+        std::swap(t1,t2);
+    }
+
+    if (_imp->keyFrames.empty()) {
+        throw std::runtime_error("Curve has no control points!");
+    }
+    assert(_imp->getCurveType() == CurvePrivate::DOUBLE_CURVE); // only real-valued curves can be derived
+
+    // even when there is only one keyframe, there may be tangents!
+    //if (_imp->keyFrames.size() == 1) {
+    //    //if there's only 1 keyframe, don't bother interpolating
+    //    return (*_imp->keyFrames.begin()).getValue();
+    //}
+    double tcur,tnext;
+    double vcurDerivRight ,vnextDerivLeft ,vcur ,vnext ;
+    Natron::KeyframeType interp ,interpNext;
+
+    KeyFrame k(t1,0.);
+    // find the first keyframe with time strictly greater than t1
+    KeyFrameSet::const_iterator itup;
+    itup = _imp->keyFrames.upper_bound(k);
+    interParams(_imp->keyFrames,
+                t1,
+                itup,
+                &tcur,
+                &vcur,
+                &vcurDerivRight,
+                &interp,
+                &tnext,
+                &vnext,
+                &vnextDerivLeft,
+                &interpNext);
+
+    double sum = 0.;
+
+    // while there are still keyframes after the current time, add to the total sum and advance
+    while (itup != _imp->keyFrames.end() && itup->getTime() < t2) {
+        // add integral from t1 to itup->getTime() to sum
+        if (_imp->owner) {
+            std::pair<double,double> minmax = getCurveYRange();
+            sum += Natron::integrate_clamp(tcur,vcur,
+                                           vcurDerivRight,
+                                           vnextDerivLeft,
+                                           tnext,vnext,
+                                           t1, itup->getTime(),
+                                           minmax.first, minmax.second,
+                                           interp,
+                                           interpNext);
+        } else {
+            sum += Natron::integrate(tcur,vcur,
+                                     vcurDerivRight,
+                                     vnextDerivLeft,
+                                     tnext,vnext,
+                                     t1, itup->getTime(),
+                                     interp,
+                                     interpNext);
+        }
+        // advance
+        t1 = itup->getTime();
+        ++itup;
+        interParams(_imp->keyFrames,
+                    t1,
+                    itup,
+                    &tcur,
+                    &vcur,
+                    &vcurDerivRight,
+                    &interp,
+                    &tnext,
+                    &vnext,
+                    &vnextDerivLeft,
+                    &interpNext);
+    }
+
+    assert(itup == _imp->keyFrames.end() || t2 <= itup->getTime());
+    // add integral from t1 to t2 to sum
+    if (_imp->owner) {
+        std::pair<double,double> minmax = getCurveYRange();
+        sum += Natron::integrate_clamp(tcur,vcur,
+                                       vcurDerivRight,
+                                       vnextDerivLeft,
+                                       tnext,vnext,
+                                       t1, t2,
+                                       minmax.first, minmax.second,
+                                       interp,
+                                       interpNext);
+    } else {
+        sum += Natron::integrate(tcur,vcur,
+                                 vcurDerivRight,
+                                 vnextDerivLeft,
+                                 tnext,vnext,
+                                 t1, t2,
+                                 interp,
+                                 interpNext);
+    }
+
+    return opposite ? -sum : sum;
+}
 
 std::pair<double,double>  Curve::getCurveYRange() const
 {

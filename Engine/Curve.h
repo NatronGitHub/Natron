@@ -179,6 +179,8 @@ public:
 
     double getDerivativeAt(double t) const WARN_UNUSED_RETURN;
 
+    double getIntegrateFromTo(double t1, double t2) const WARN_UNUSED_RETURN;
+
     const KeyFrameSet& getKeyFrames() const WARN_UNUSED_RETURN;
 
     void clearKeyFrames();
