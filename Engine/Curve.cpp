@@ -293,6 +293,57 @@ void Curve::removeKeyFrame(double time) {
     
 }
 
+static void
+interParams(const KeyFrameSet &keyFrames,
+            double t,
+            const KeyFrameSet::const_iterator &itup,
+            double *tcur,
+            double *vcur,
+            double *vcurDerivRight,
+            Natron::KeyframeType *interp,
+            double *tnext,
+            double *vnext,
+            double *vnextDerivLeft,
+            Natron::KeyframeType *interpNext)
+{
+    assert(itup == keyFrames.end() || t < itup->getTime());
+    if (itup == keyFrames.begin()) {
+        //if all keys have a greater time
+        *tnext = itup->getTime();
+        *vnext = itup->getValue();
+        *vnextDerivLeft = itup->getLeftDerivative();
+        *interpNext = itup->getInterpolation();
+        *tcur = *tnext - 1.;
+        *vcur = *vnext;
+        *vcurDerivRight = 0.;
+        *interp = Natron::KEYFRAME_NONE;
+    } else if (itup == keyFrames.end()) {
+        //if we found no key that has a greater time
+        KeyFrameSet::const_reverse_iterator itlast = keyFrames.rbegin();
+        *tcur = itlast->getTime();
+        *vcur = itlast->getValue();
+        *vcurDerivRight = itlast->getRightDerivative();
+        *interp = itlast->getInterpolation();
+        *tnext = *tcur + 1.;
+        *vnext = *vcur;
+        *vnextDerivLeft = 0.;
+        *interpNext = Natron::KEYFRAME_NONE;
+    } else {
+        // between two keyframes
+        // get the last keyframe with time <= t
+        KeyFrameSet::const_iterator itcur = itup;
+        --itcur;
+        assert(itcur->getTime() <= t);
+        *tcur = itcur->getTime();
+        *vcur = itcur->getValue();
+        *vcurDerivRight = itcur->getRightDerivative();
+        *interp = itcur->getInterpolation();
+        *tnext = itup->getTime();
+        *vnext = itup->getValue();
+        *vnextDerivLeft = itup->getLeftDerivative();
+        *interpNext = itup->getInterpolation();
+    }
+}
 
 double Curve::getValueAt(double t) const
 {
@@ -315,44 +366,17 @@ double Curve::getValueAt(double t) const
     // find the first keyframe with time greater than t
     KeyFrameSet::const_iterator itup;
     itup = _imp->keyFrames.upper_bound(k);
-    assert(itup == _imp->keyFrames.end() || t < itup->getTime());
-    if (itup == _imp->keyFrames.begin()) {
-        //if all keys have a greater time
-        tnext = itup->getTime();
-        vnext = itup->getValue();
-        vnextDerivLeft = itup->getLeftDerivative();
-        interpNext = itup->getInterpolation();
-        tcur = tnext - 1.;
-        vcur = vnext;
-        vcurDerivRight = 0.;
-        interp = Natron::KEYFRAME_NONE;
-
-    } else if (itup == _imp->keyFrames.end()) {
-        //if we found no key that has a greater time
-        KeyFrameSet::const_reverse_iterator itlast = _imp->keyFrames.rbegin();
-        tcur = itlast->getTime();
-        vcur = itlast->getValue();
-        vcurDerivRight = itlast->getRightDerivative();
-        interp = itlast->getInterpolation();
-        tnext = tcur + 1.;
-        vnext = vcur;
-        vnextDerivLeft = 0.;
-        interpNext = Natron::KEYFRAME_NONE;
-    } else {
-        // between two keyframes
-        // get the last keyframe with time <= t
-        KeyFrameSet::const_iterator itcur = itup;
-        --itcur;
-        assert(itcur->getTime() <= t);
-        tcur = itcur->getTime();
-        vcur = itcur->getValue();
-        vcurDerivRight = itcur->getRightDerivative();
-        interp = itcur->getInterpolation();
-        tnext = itup->getTime();
-        vnext = itup->getValue();
-        vnextDerivLeft = itup->getLeftDerivative();
-        interpNext = itup->getInterpolation();
-    }
+    interParams(_imp->keyFrames,
+                t,
+                itup,
+                &tcur,
+                &vcur,
+                &vcurDerivRight,
+                &interp,
+                &tnext,
+                &vnext,
+                &vnextDerivLeft,
+                &interpNext);
 
     double v = Natron::interpolate(tcur,vcur,
                                    vcurDerivRight,
@@ -402,45 +426,17 @@ double Curve::getDerivativeAt(double t) const
     // find the first keyframe with time greater than t
     KeyFrameSet::const_iterator itup;
     itup = _imp->keyFrames.upper_bound(k);
-    assert(itup == _imp->keyFrames.end() || t < itup->getTime());
-    if (itup == _imp->keyFrames.begin()) {
-        //if all keys have a greater time
-        tnext = itup->getTime();
-        vnext = itup->getValue();
-        vnextDerivLeft = itup->getLeftDerivative();
-        interpNext = itup->getInterpolation();
-        tcur = tnext - 1.;
-        vcur = vnext;
-        vcurDerivRight = 0.;
-        interp = Natron::KEYFRAME_NONE;
-
-    } else if (itup == _imp->keyFrames.end()) {
-        //if we found no key that has a greater time
-        // get the last keyframe
-        KeyFrameSet::const_reverse_iterator itlast = _imp->keyFrames.rbegin();
-        tcur = itlast->getTime();
-        vcur = itlast->getValue();
-        vcurDerivRight = itlast->getRightDerivative();
-        interp = itlast->getInterpolation();
-        tnext = tcur + 1.;
-        vnext = vcur;
-        vnextDerivLeft = 0.;
-        interpNext = Natron::KEYFRAME_NONE;
-    } else {
-        // between two keyframes
-        // get the last keyframe with time <= t
-        KeyFrameSet::const_iterator itcur = itup;
-        --itcur;
-        assert(itcur->getTime() <= t);
-        tcur = itcur->getTime();
-        vcur = itcur->getValue();
-        vcurDerivRight = itcur->getRightDerivative();
-        interp = itcur->getInterpolation();
-        tnext = itup->getTime();
-        vnext = itup->getValue();
-        vnextDerivLeft = itup->getLeftDerivative();
-        interpNext = itup->getInterpolation();
-    }
+    interParams(_imp->keyFrames,
+                t,
+                itup,
+                &tcur,
+                &vcur,
+                &vcurDerivRight,
+                &interp,
+                &tnext,
+                &vnext,
+                &vnextDerivLeft,
+                &interpNext);
 
     double d;
 
