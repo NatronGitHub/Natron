@@ -149,13 +149,6 @@ int File_Knob::frameCount() const {
     return getKeyFramesCount(0);
 }
 
-int File_Knob::nearestFrame(int f) const
-{
-    double nearest;
-    getNearestKeyFrameTime(0, f, &nearest);
-    return (int)nearest;
-}
-
 QString File_Knob::getRandomFrameName(int f, bool loadNearestIfNotFound) const
 {
     if (!isAnimationEnabled()) {

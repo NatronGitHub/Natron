@@ -122,14 +122,6 @@ private:
     
     int frameCount() const;
     
-    /**
-     * @brief nearestFrame
-     * @return Returns the index of the nearest frame in the Range [ firstFrame() - lastFrame( ].
-     * @param f The index of the frame to modify.
-     */
-    int nearestFrame(int f) const;
-
-
     static const std::string _typeNameStr;
     StringAnimationManager* _animation;
     int _isInputImage;
