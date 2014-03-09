@@ -154,6 +154,26 @@ void autoComputeDerivatives(Natron::KeyframeType interpPrev,
                             double *vcurDerivLeft, // Q3'_l
                             double *vcurDerivRight);  // P0'_r
 
+
+/// solve linear equation c0 + c1*x = 0.
+/// @returns the number of solutions.
+/// solutions an and their order are put in s and o
+int solveLinear(double c0, double c1, double s[1], int o[1]);
+
+/// solve quadric c0 + c1*x + c2*x2 = 0.
+/// @returns the number of solutions.
+/// solutions an and their order are put in s and o
+int solveQuadric(double c0, double c1, double c2, double s[2], int o[2]);
+
+/// solve cubic c0 + c1*x + c2*x2 + c3*x3 = 0.
+/// @returns the number of solutions.
+/// solutions an and their order are put in s and o
+int solveCubic(double c0, double c1, double c2, double c3, double s[3], int o[3]);
+
+/// solve quartic c0 + c1*x + c2*x2 + c3*x3 +c4*x4 = 0.
+/// @returns the number of solutions.
+/// solutions an and their order are put in s and o
+int solveQuartic(double c0, double c1, double c2, double c3, double c4, double s[4], int o[4]);
 }
 
 

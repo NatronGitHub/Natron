@@ -52,6 +52,229 @@ cubicDerive(double /*c0*/, double c1, double c2, double c3, double t)
     return c1 + 2*c2*t + 3*c3*t2;
 }
 
+#define EQN_EPS 1e-9
+
+/********************************************************
+ *							*
+ * This function determines if a double is small enough	*
+ * to be zero. The purpose of the subroutine is to try	*
+ * to overcome precision problems in math routines.	*
+ *							*
+ ********************************************************/
+static int isZero(double x)
+{
+    return x > -EQN_EPS && x < EQN_EPS;
+}
+
+/// solve linear equation c0 + c1*x = 0.
+/// @returns the number of solutions.
+/// solutions an and their order are put in s and o
+int
+Natron::solveLinear(double c0, double c1, double s[1], int o[1])
+{
+    if (isZero(c1)) {
+        // it's a constant equation
+        // there may be an infinity of solutions (if b=0) , but we always return none
+        return 0; // no solution
+    } else {
+        const double a = c1;
+        const double b = c0;
+        // solve ax+b = 0
+        s[0] = -b/a;
+        o[0] = 1;
+        return 1;
+    }
+
+}
+
+/// solve quadric c0 + c1*x + c2*x2 = 0.
+/// @returns the number of solutions.
+/// solutions an and their order are put in s and o
+int
+Natron::solveQuadric(double c0, double c1, double c2, double s[2], int o[2])
+{
+    if (isZero(c2)) {
+        // it's at most a linear equation
+        return solveLinear(c0, c1, s, o);
+    }
+
+
+    // normal for: x^2 + px + q
+    double p = c1 / (2.0 * c2);
+    double q = c0 / c2;
+    double D = p * p - q;
+
+    if (isZero(D)) {
+        // one double root
+        s[0] = -p;
+        o[0] = 2;
+        return 1;
+    } else if (D < 0.0) {
+        // no real root
+        return 0;
+    } else {
+        // two real roots
+        double sqrt_D = std::sqrt(D);
+        s[0] = sqrt_D - p;
+        o[0] = 1;
+        s[1] = -sqrt_D - p;
+        o[1] = 1;
+        return 2;
+    }
+}
+
+/// solve cubic c0 + c1*x + c2*x2 + c3*x3 = 0.
+/// @returns the number of solutions.
+/// solutions an and their order are put in s and o
+int
+Natron::solveCubic(double c0, double c1, double c2, double c3, double s[3], int o[3])
+{
+    if (isZero(c3)) {
+        // it's at most a second-degree polynomial
+        return solveQuadric(c0, c1, c2, s, o);
+    }
+
+    // normalize the equation:x ^ 3 + Ax ^ 2 + Bx  + C = 0
+    double A = c2 / c3;
+    double B = c1 / c3;
+    double C = c0 / c3;
+
+    // substitute x = y - A / 3 to eliminate the quadric term: x^3 + px + q = 0
+
+    double sq_A = A * A;
+    double p = 1.0/3.0 * (-1.0/3.0 * sq_A + B);
+    double q = 1.0/2.0 * (2.0/27.0 * A *sq_A - 1.0/3.0 * A * B + C);
+
+    // use Cardano's formula
+
+    double cb_p = p * p * p;
+    double D = q * q + cb_p;
+
+    int num;
+    if (isZero(D)) {
+        if (isZero(q)) {
+            // one triple solution
+            s[0] = 0.;
+            o[0] = 3;
+            num = 1;
+        } else {
+            // one single and one double solution
+            double u = std::cbrt(-q);
+            s[0] = 2.0 * u;
+            o[0] = 1;
+            s[1] = -u;
+            o[1] = 2;
+            num = 2;
+        }
+    } else if (D < 0.0) {
+        // casus irreductibilis: three real solutions
+        double phi = 1.0/3.0 * std::acos(-q / std::sqrt(-cb_p));
+        double t = 2.0 * std::sqrt(-p);
+        s[0] = t * std::cos(phi);
+        o[0] = 1;
+        s[1] = -t * std::cos(phi + M_PI / 3.0);
+        o[1] = 1;
+        s[2] = -t * std::cos(phi - M_PI / 3.0);
+        o[2] = 1;
+        num = 3;
+    } else { // D > 0.0
+        // one real solution
+        double sqrt_D = std::sqrt(D);
+        double u = std::cbrt(sqrt_D + std::fabs(q));
+        if (q > 0.0) {
+            s[0] = -u + p / u ;
+        } else {
+            s[0] = u - p / u;
+        }
+        o[0] = 1;
+        num = 1;
+    }
+    // resubstitute
+    double sub = 1.0 / 3.0 * A;
+    for (int i = 0; i < num; ++i) {
+        s[i] -= sub;
+    }
+    return num;
+}
+
+
+/// solve quartic c0 + c1*x + c2*x2 + c3*x3 +c4*x4 = 0.
+/// @returns the number of solutions.
+/// solutions an and their order are put in s and o
+int
+Natron::solveQuartic(double c0, double c1, double c2, double c3, double c4, double s[4], int o[4])
+{
+    if (isZero(c4)) {
+        // it's at most a third-degree polynomial
+        return solveCubic(c0, c1, c2, c3, s, o);
+    }
+
+    // normalize the equation:x ^ 4 + Ax ^ 3 + Bx ^ 2 + Cx + D = 0
+
+    double A = c3 / c4;
+    double B = c2 / c4;
+    double C = c1 / c4;
+    double D = c0 / c4;
+
+    // subsitute x = y - A / 4 to eliminate the cubic term: x^4 + px^2 + qx + r = 0
+
+    double sq_A = A * A;
+    double p = -3.0 / 8.0 * sq_A + B;
+    double q = 1.0 / 8.0 * sq_A * A - 1.0 / 2.0 * A * B + C;
+    double r = -3.0 / 256.0 * sq_A * sq_A + 1.0 / 16.0 * sq_A * B - 1.0 / 4.0 * A * C + D;
+
+    int num;
+
+    if (isZero(r)) {
+        // no absolute term:y(y ^ 3 + py + q) = 0
+        num = solveCubic(q, p, 0., 1., s, o);
+        // if q = 0, this should be within the previously computed solutions,
+        // but we just add another solution with order 1
+        s[num] = 0.,
+        o[num] = 1;
+        ++num;
+    } else {
+        // solve the resolvent cubic...
+        num = solveCubic(1.0 / 2.0 * r * p - 1.0 / 8.0 * q * q, -r, -1.0 / 2.0 * p, -1, s, o);
+        assert(num == 1);
+
+        // ...and take the one real solution...
+        double z = s[0];
+
+        // ...to build two quadratic equations
+        double u = z * z - r;
+        double v = 2.0 * z - p;
+
+        if (isZero(u)) {
+            u = 0.0;
+        } else if (u > 0.0) {
+            u = sqrt(u);
+        } else {
+            return 0;
+        }
+
+        if (isZero(v)) {
+            v = 0;
+        } else if (v > 0.0) {
+            v = sqrt(v);
+        } else {
+            return 0;
+        }
+
+        num = solveQuadric(z-u, q < 0 ? -v : v, 1.0, s, o);
+        num += solveQuadric(z + u, q < 0 ? v : -v, 1.0, s + num, o + num);
+    }
+    
+    // resubstitute
+    double sub = 1.0 / 4 * A;
+    for (int i = 0; i < num; i++) {
+        s[i] -= sub;
+    }
+    
+    return num;
+    
+}
+
 /**
  * @brief Interpolates using the control points P0(t0,v0) , P3(t3,v3)
  * and the derivatives P1(t1,v1) (being the derivative at P0 with respect to
