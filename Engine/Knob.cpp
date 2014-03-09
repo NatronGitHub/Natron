@@ -192,6 +192,27 @@ double Knob::getDerivativeAtTime(double time,int dimension) const
     }
 }
 
+double Knob::getIntegrateFromTimeToTime(double time1, double time2, int dimension) const
+{
+    if (dimension > (int)_imp->_curves.size()) {
+        throw std::invalid_argument("Knob::getDerivativeAtTime(): Dimension out of range");
+    }
+
+    ///if the knob is slaved to another knob, returns the other knob value
+    std::pair<int,boost::shared_ptr<Knob> > master = getMaster(dimension);
+    if (master.second) {
+        return master.second->getIntegrateFromTimeToTime(time1, time2, master.first);
+    }
+
+    boost::shared_ptr<Curve> curve  = _imp->_curves[dimension];
+    if (curve->getKeyFramesCount() > 0) {
+        return curve->getIntegrateFromTo(time1, time2);
+    } else {
+        // if the knob as no keys at this dimension, the integral is trivial
+        return _imp->_values[dimension].toDouble() * (time2 - time1);
+    }
+}
+
 Knob::ValueChangedReturnCode Knob::setValue(const Variant& v, int dimension, Natron::ValueChangedReason reason,KeyFrame* newKey)
 {
     if (0 > dimension || dimension > (int)_imp->_values.size()) {

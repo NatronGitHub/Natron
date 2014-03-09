@@ -166,8 +166,11 @@ public:
     template<typename T>
     T getValueAtTime(double time,int dimension = 0) const WARN_UNUSED_RETURN;
 
-    // returns the derivative as a double
+    /// compute the derivative at time as a double
     double getDerivativeAtTime(double time, int dimension = 0) const WARN_UNUSED_RETURN;
+
+    /// compute the integral of dimension from time1 to time2 as a double
+    double getIntegrateFromTimeToTime(double time1, double time2, int dimension = 0) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Places in time the keyframe time at the given index.
