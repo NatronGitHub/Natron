@@ -119,39 +119,73 @@ MoveKeysCommand::MoveKeysCommand(CurveWidget* editor, const KeyMoveV &keys, doub
 void MoveKeysCommand::move(double dt,double dv, bool isundo){
     SelectedKeys newSelectedKeys;
     
+    
+
+    
     std::vector<int> newKeyIndexes;
     if(dt < 0){
         for(KeyMoveV::iterator it = _keys.begin();it!= _keys.end();++it){
             it->curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
-            double newX = it->key.getTime() + dt;
-            double newY = it->key.getValue() + dv;
-            int keyframeIndex = it->curve->getInternalCurve()->keyFrameIndex(isundo ? newX : it->key.getTime());
-            int newIndex;
-            it->curve->getInternalCurve()->setKeyFrameValueAndTime(
-                        isundo ? it->key.getTime() : newX,
-                        isundo ? it->key.getValue() : newY,
-                        keyframeIndex,&newIndex);
-            newKeyIndexes.push_back(newIndex);
-            //            newKeyTimes.push_back(isundo ? it->key.getTime() : newX);
+            
+            try {
+                std::pair<double,double> curveYRange =  it->curve->getInternalCurve()->getCurveYRange();
+                
+                double newX = it->key.getTime() + dt;
+                double newY = it->key.getValue() + dv;
+                
+                if (newY > curveYRange.second) {
+                    newY = it->key.getValue();
+                } else if (newY < curveYRange.second) {
+                    newY = it->key.getValue();
+                }
+                
+                int keyframeIndex = it->curve->getInternalCurve()->keyFrameIndex(isundo ? newX : it->key.getTime());
+                int newIndex;
+                it->curve->getInternalCurve()->setKeyFrameValueAndTime(
+                                                                       isundo ? it->key.getTime() : newX,
+                                                                       isundo ? it->key.getValue() : newY,
+                                                                       keyframeIndex,&newIndex);
+                newKeyIndexes.push_back(newIndex);
+                
+            } catch (const std::exception& e) {
+                std::cout << e.what() << std::endl;
+                return;
+            }
         }
-
+        
     }else{
 
         for(KeyMoveV::reverse_iterator it = _keys.rbegin();it!= _keys.rend();++it){
             it->curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
-            double newX = it->key.getTime() + dt;
-            double newY = it->key.getValue() + dv;
-            int keyframeIndex = it->curve->getInternalCurve()->keyFrameIndex(isundo ? newX : it->key.getTime());
-            int newIndex;
-            it->curve->getInternalCurve()->setKeyFrameValueAndTime(
-                        isundo ? it->key.getTime() : newX,
-                        isundo ? it->key.getValue() : newY,
-                        keyframeIndex,&newIndex);
-            newKeyIndexes.push_back(newIndex);
-            //   newKeyTimes.push_back(isundo ? it->key.getTime() : newX);
+            
+            try {
+                std::pair<double,double> curveYRange =  it->curve->getInternalCurve()->getCurveYRange();
+                
+                double newX = it->key.getTime() + dt;
+                double newY = it->key.getValue() + dv;
+                
+                if (newY > curveYRange.second) {
+                    newY = curveYRange.second;
+                } else if (newY < curveYRange.first) {
+                    newY = curveYRange.first;
+                }
+                
+                
+                int keyframeIndex = it->curve->getInternalCurve()->keyFrameIndex(isundo ? newX : it->key.getTime());
+                int newIndex;
+                it->curve->getInternalCurve()->setKeyFrameValueAndTime(
+                                                                       isundo ? it->key.getTime() : newX,
+                                                                       isundo ? it->key.getValue() : newY,
+                                                                       keyframeIndex,&newIndex);
+                newKeyIndexes.push_back(newIndex);
+                
+            } catch (const std::exception& e) {
+                std::cout << e.what() << std::endl;
+                return;
+            }
         }
     }
-
+    
 
     //copy back the modified keyframes to the selectd keys
     assert(newKeyIndexes.size() == _keys.size());

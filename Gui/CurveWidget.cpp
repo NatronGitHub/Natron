@@ -1014,20 +1014,6 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
         
         for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
             
-            try {
-                std::pair<double,double> curveYRange =  it->curve->getInternalCurve()->getCurveYRange();
-                double translatedValue = it->key.getValue() + dv;
-                
-                if (translatedValue < curveYRange.first) {
-                    dv += (curveYRange.first - translatedValue);
-                } else if( translatedValue > curveYRange.second) {
-                    dv -= (curveYRange.second - translatedValue);
-                }
-                
-            } catch (const std::exception& e) {
-                std::cout << e.what() << std::endl;
-                return;
-            }
             
             if (!it->curve->getInternalCurve()->isYComponentMovable()) {
                 dv = 0;
@@ -1040,7 +1026,7 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
             if (it->curve->getInternalCurve()->areKeyFramesValuesClampedToIntegers()) {
                 dv = std::floor(dv + 0.5);
             }
-            
+                        
             std::map<KnobGui*,std::vector<KeyMove> >::iterator foundKnob = knobsMap.find(it->curve->getKnob());
             if(foundKnob==knobsMap.end()){
                 std::vector<KeyMove> newVec;
