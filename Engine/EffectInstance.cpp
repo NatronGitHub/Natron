@@ -823,7 +823,8 @@ void EffectInstance::createKnobDynamically(){
     _node->createKnobDynamically();
 }
 
-void EffectInstance::evaluate(Knob* knob,bool isSignificant){
+void EffectInstance::evaluate(Knob* knob, bool isSignificant)
+{
     assert(_node);
     
     if (getApp()->getProject()->isLoadingProject()) {
@@ -833,10 +834,10 @@ void EffectInstance::evaluate(Knob* knob,bool isSignificant){
     /*if this is a writer (openfx or built-in writer)*/
     if (isWriter()) {
         /*if this is a button and it is a render button,we're safe to assume the plug-ins wants to start rendering.*/
-        if(knob && knob->typeName() == Button_Knob::typeNameStatic()){
+        if (knob && (knob->typeName() == Button_Knob::typeNameStatic())) {
             Button_Knob* button = dynamic_cast<Button_Knob*>(knob);
             assert(button);
-            if(button->isRenderButton()){
+            if (button->isRenderButton()) {
                 QStringList list;
                 list << getName().c_str();
                 getApp()->startWritersRendering(list);
@@ -846,24 +847,23 @@ void EffectInstance::evaluate(Knob* knob,bool isSignificant){
     }
     
     ///increments the knobs age following a change
-    if (knob->typeName() != Button_Knob::typeNameStatic()) {
+    if (knob && (knob->typeName() != Button_Knob::typeNameStatic())) {
         _node->incrementKnobsAge();
     }
     
     std::list<ViewerInstance*> viewers;
     _node->hasViewersConnected(&viewers);
-    bool fitToViewer = knob && knob->typeName() == File_Knob::typeNameStatic();
+    bool fitToViewer = knob && (knob->typeName() == File_Knob::typeNameStatic());
     bool forcePreview = getApp()->getProject()->isAutoPreviewEnabled();
-    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
-        if(isSignificant){
+    for (std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it) {
+        if (isSignificant) {
             (*it)->refreshAndContinueRender(fitToViewer,forcePreview);
-        }else{
+        } else {
             (*it)->redrawViewer();
         }
     }
     
     getNode()->refreshPreviewsRecursively();
-    
 }
 
 
