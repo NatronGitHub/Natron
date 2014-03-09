@@ -11,10 +11,19 @@
 #include <cassert>
 #include <cmath>
 #include <stdexcept>
-#include <boost/math/special_functions/fpclassify.hpp>
 #include <vector>
+#include <algorithm>
+#include <boost/math/special_functions/fpclassify.hpp>
+#include <boost/math/special_functions/cbrt.hpp>
 
 using namespace Natron;
+
+using boost::math::cbrt;
+using std::sqrt;
+using std::cos;
+using std::acos;
+using std::sqrt;
+using std::fabs;
 
 static void
 hermiteToCubicCoeffs(double P0, double P0pr, double P3pl, double P3, double *c0, double *c1, double *c2, double *c3)
@@ -115,7 +124,7 @@ Natron::solveQuadric(double c0, double c1, double c2, double s[2], int o[2])
         return 0;
     } else {
         // two real roots
-        double sqrt_D = std::sqrt(D);
+        double sqrt_D = sqrt(D);
         s[0] = sqrt_D - p;
         o[0] = 1;
         s[1] = -sqrt_D - p;
@@ -160,7 +169,7 @@ Natron::solveCubic(double c0, double c1, double c2, double c3, double s[3], int 
             num = 1;
         } else {
             // one single and one double solution
-            double u = std::cbrt(-q);
+            double u = cbrt(-q);
             s[0] = 2.0 * u;
             o[0] = 1;
             s[1] = -u;
@@ -169,19 +178,19 @@ Natron::solveCubic(double c0, double c1, double c2, double c3, double s[3], int 
         }
     } else if (D < 0.0) {
         // casus irreductibilis: three real solutions
-        double phi = 1.0/3.0 * std::acos(-q / std::sqrt(-cb_p));
-        double t = 2.0 * std::sqrt(-p);
-        s[0] = t * std::cos(phi);
+        double phi = 1.0/3.0 * acos(-q / sqrt(-cb_p));
+        double t = 2.0 * sqrt(-p);
+        s[0] = t * cos(phi);
         o[0] = 1;
-        s[1] = -t * std::cos(phi + M_PI / 3.0);
+        s[1] = -t * cos(phi + M_PI / 3.0);
         o[1] = 1;
-        s[2] = -t * std::cos(phi - M_PI / 3.0);
+        s[2] = -t * cos(phi - M_PI / 3.0);
         o[2] = 1;
         num = 3;
     } else { // D > 0.0
         // one real solution
-        double sqrt_D = std::sqrt(D);
-        double u = std::cbrt(sqrt_D + std::fabs(q));
+        double sqrt_D = sqrt(D);
+        double u = cbrt(sqrt_D + fabs(q));
         if (q > 0.0) {
             s[0] = -u + p / u ;
         } else {
