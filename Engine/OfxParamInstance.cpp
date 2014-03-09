@@ -400,11 +400,7 @@ OfxStatus OfxDoubleInstance::derive(OfxTime time, double& v)
 
 OfxStatus OfxDoubleInstance::integrate(OfxTime time1, OfxTime time2, double& v)
 {
-#pragma message WARN("TODO: integrate")
-    if (isAnimated()) {
-        return kOfxStatErrUnsupported;
-    }
-    v = _knob->getValue<double>() * (time2 - time1);
+    v = _knob->getIntegrateFromTimeToTime(time1, time2);
     return kOfxStatOK;
 }
 
@@ -703,14 +699,10 @@ OfxStatus OfxRGBAInstance::derive(OfxTime time, double&r ,double& g, double& b, 
 
 OfxStatus OfxRGBAInstance::integrate(OfxTime time1, OfxTime time2, double&r ,double& g, double& b, double& a)
 {
-#pragma message WARN("TODO: integrate")
-    if (isAnimated()) {
-        return kOfxStatErrUnsupported;
-    }
-    r = _knob->getValue<double>(0) * (time2 - time1);
-    g = _knob->getValue<double>(1) * (time2 - time1);
-    b = _knob->getValue<double>(2) * (time2 - time1);
-    a = _knob->getValue<double>(3) * (time2 - time1);
+    r = _knob->getIntegrateFromTimeToTime(time1, time2, 0);
+    g = _knob->getIntegrateFromTimeToTime(time1, time2, 1);
+    b = _knob->getIntegrateFromTimeToTime(time1, time2, 2);
+    a = _knob->getIntegrateFromTimeToTime(time1, time2, 3);
     return kOfxStatOK;
 }
 
@@ -817,13 +809,9 @@ OfxStatus OfxRGBInstance::derive(OfxTime time, double& r, double& g, double& b)
 
 OfxStatus OfxRGBInstance::integrate(OfxTime time1, OfxTime time2, double&r ,double& g, double& b)
 {
-#pragma message WARN("TODO: integrate")
-    if (isAnimated()) {
-        return kOfxStatErrUnsupported;
-    }
-    r = _knob->getValue<double>(0) * (time2 - time1);
-    g = _knob->getValue<double>(1) * (time2 - time1);
-    b = _knob->getValue<double>(2) * (time2 - time1);
+    r = _knob->getIntegrateFromTimeToTime(time1, time2, 0);
+    g = _knob->getIntegrateFromTimeToTime(time1, time2, 1);
+    b = _knob->getIntegrateFromTimeToTime(time1, time2, 2);
     return kOfxStatOK;
 }
 
@@ -980,12 +968,8 @@ OfxStatus OfxDouble2DInstance::derive(OfxTime time, double&x1 ,double& x2)
 
 OfxStatus OfxDouble2DInstance::integrate(OfxTime time1, OfxTime time2, double&x1 ,double& x2)
 {
-#pragma message WARN("TODO: integrate")
-    if (isAnimated()) {
-        return kOfxStatErrUnsupported;
-    }
-    x1 = _knob->getValue<double>(0) * (time2 - time1);
-    x2 = _knob->getValue<double>(1) * (time2 - time1);
+    x1 = _knob->getIntegrateFromTimeToTime(time1, time2, 0);
+    x2 = _knob->getIntegrateFromTimeToTime(time1, time2, 1);
     return kOfxStatOK;
 }
 
@@ -1247,13 +1231,9 @@ OfxStatus OfxDouble3DInstance::derive(OfxTime time, double& x1, double& x2, doub
 
 OfxStatus OfxDouble3DInstance::integrate(OfxTime time1, OfxTime time2, double&x1 ,double& x2,double& x3)
 {
-#pragma message WARN("TODO: integrate")
-    if (isAnimated()) {
-        return kOfxStatErrUnsupported;
-    }
-    x1 = _knob->getValue<double>(0) * (time2 - time1);
-    x2 = _knob->getValue<double>(1) * (time2 - time1);
-    x3 = _knob->getValue<double>(2) * (time2 - time1);
+    x1 = _knob->getIntegrateFromTimeToTime(time1, time2, 0);
+    x2 = _knob->getIntegrateFromTimeToTime(time1, time2, 1);
+    x3 = _knob->getIntegrateFromTimeToTime(time1, time2, 2);
     return kOfxStatOK;
 }
 
