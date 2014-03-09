@@ -456,21 +456,15 @@ double Curve::getDerivativeAt(double t) const
     double d;
 
     if (_imp->owner) {
-        double v;
-        Natron::interpolate_and_derive(tcur,vcur,
-                                       vcurDerivRight,
-                                       vnextDerivLeft,
-                                       tnext,vnext,
-                                       t,
-                                       interp,
-                                       interpNext,
-                                       &v,
-                                       &d);
         std::pair<double,double> minmax = getCurveYRange();
-        if (v <= minmax.first || minmax.second <= v) {
-            // v is out of the range, the curve is clamped, derivative is 0
-            d = 0;
-        }
+        d = Natron::derive_clamp(tcur,vcur,
+                                 vcurDerivRight,
+                                 vnextDerivLeft,
+                                 tnext,vnext,
+                                 t,
+                                 minmax.first, minmax.second,
+                                 interp,
+                                 interpNext);
     } else {
         d = Natron::derive(tcur,vcur,
                            vcurDerivRight,

@@ -45,16 +45,15 @@ double derive(double tcur, const double vcur, //start control point
               KeyframeType interp,
               KeyframeType interpNext) WARN_UNUSED_RETURN;
 
-/// interpolate and derive at currentTime. The derivative is with respect to currentTime
-void interpolate_and_derive(double tcur, const double vcur, //start control point
-                            const double vcurDerivRight, //being the derivative dv/dt at tcur
-                            const double vnextDerivLeft, //being the derivative dv/dt at tnext
-                            double tnext, const double vnext, //end control point
-                            double currentTime,
-                            KeyframeType interp,
-                            KeyframeType interpNext,
-                            double *valueAt,
-                            double *derivativeAt);
+/// derive at currentTime. The derivative is with respect to currentTime. The function is clamped between vmin an vmax.
+double derive_clamp(double tcur, const double vcur, //start control point
+                    const double vcurDerivRight, //being the derivative dv/dt at tcur
+                    const double vnextDerivLeft, //being the derivative dv/dt at tnext
+                    double tnext, const double vnext, //end control point
+                    double currentTime,
+                    double vmin, double vmax,
+                    KeyframeType interp,
+                    KeyframeType interpNext);
 
 /// integrate from time1 to time2 - be careful that time1 and time2 have to be in the range [tcur,tnext]
 double integrate(double tcur, const double vcur, //start control point
