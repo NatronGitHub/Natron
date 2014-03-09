@@ -718,21 +718,20 @@ void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,Kno
 
 }
 
-void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder* caller,Knob* k,bool isSignificant){
+void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder* caller,Knob* k,bool isSignificant)
+{
     QMutexLocker l(&_imp->beginEndMutex);
 
     ///This function may be called outside of a begin/end bracket call, in which case we call them ourselves.
     
-    bool wasBeginCalled = true;
+    bool mustEndBracket = false;
 
     ///if begin was not called for this caller, call it ourselves
     ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
-    if(found == _imp->holdersWhoseBeginWasCalled.end() || _imp->beginEndBracketsCount == 0){
-        
+    if (found == _imp->holdersWhoseBeginWasCalled.end() || _imp->beginEndBracketsCount == 0) {
         beginProjectWideValueChanges(reason,caller);
-        
         ///flag that we called begin
-        wasBeginCalled = false;
+        mustEndBracket = true;
     } else {
         ///THIS IS WRONG AND COMMENTED OUT : THIS LEADS TO INFINITE RECURSION.
         ///if we found a call made to begin already for this caller, adjust the reason to the reason of the
@@ -741,10 +740,8 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
     }
 
     ///if the evaluation is significant , set the flag isSignificantChange to true
-    if(!_imp->isSignificantChange && isSignificant){
-        _imp->isSignificantChange = true;
-    }
-    
+    _imp->isSignificantChange |= isSignificant;
+
     ///increase the count of evaluation requests
     ++_imp->evaluationsCount;
     
@@ -756,15 +753,14 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
     /// beginValueChange(OTHER_REASON)
     /// ...
     /// endValueChange()
-    if(reason != Natron::OTHER_REASON) {
+    if (reason != Natron::OTHER_REASON) {
         caller->onKnobValueChanged(k,reason);
     }
     
     ////if begin was not call prior to calling this function, call the end bracket oruselves
-    if(!wasBeginCalled){
+    if (mustEndBracket) {
         endProjectWideValueChanges(caller);
     }
-
 }
 
 void Project::endProjectWideValueChanges(KnobHolder* caller){
