@@ -53,7 +53,7 @@ double derive_clamp(double tcur, const double vcur, //start control point
                     double currentTime,
                     double vmin, double vmax,
                     KeyframeType interp,
-                    KeyframeType interpNext);
+                    KeyframeType interpNext) WARN_UNUSED_RETURN;
 
 /// integrate from time1 to time2 - be careful that time1 and time2 have to be in the range [tcur,tnext]
 double integrate(double tcur, const double vcur, //start control point
@@ -63,6 +63,16 @@ double integrate(double tcur, const double vcur, //start control point
                  double time1, double time2,
                  KeyframeType interp,
                  KeyframeType interpNext) WARN_UNUSED_RETURN;
+
+/// integrate from time1 to time2 - be careful that time1 and time2 have to be in the range [tcur,tnext]. The function is clamped between vmin an vmax.
+double integrate_clamp(double tcur, const double vcur, //start control point
+                       const double vcurDerivRight, //being the derivative dv/dt at tcur
+                       const double vnextDerivLeft, //being the derivative dv/dt at tnext
+                       double tnext, const double vnext, //end control point
+                       double time1, double time2,
+                       double vmin, double vmax,
+                       Natron::KeyframeType interp,
+                       Natron::KeyframeType interpNext) WARN_UNUSED_RETURN;
 
 /**
  * @brief This function will set the left and right derivative of 'cur', depending on the interpolation method 'interp' and the

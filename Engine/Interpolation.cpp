@@ -12,6 +12,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <boost/math/special_functions/fpclassify.hpp>
+#include <vector>
 
 using namespace Natron;
 
@@ -465,6 +466,202 @@ double Natron::integrate(double tcur, const double vcur, //start control point
     return ret * (tnext - tcur);
 }
 
+namespace {
+    enum eSolType { SOLMIN, SOLMAX };
+    enum eFuncType { CLAMPMIN, CLAMPMAX, CUBIC };
+
+    struct Sol {
+        Sol(eSolType _type, double _t, int _order, double _deriv) : type(_type), t(_t), order(_order), deriv(_deriv) {}
+        eSolType type;
+        double t;
+        int order;
+        double deriv;
+    };
+
+    struct Sol_less_than_t
+    {
+        inline bool operator() (const Sol& struct1, const Sol& struct2)
+        {
+            return (struct1.t < struct2.t);
+        }
+    };
+    
+}
+
+// comptute the function type after sol, from the function type before sol
+static eFuncType
+statusUpdate(eFuncType status, const Sol& sol)
+{
+    switch(status) {
+        case CLAMPMIN:
+            assert(sol.type == SOLMIN);
+            assert(sol.deriv >= 0.);
+            if (sol.order % 2) {
+                // only odd solution orders may change the status
+                return CUBIC;
+            }
+            break;
+        case CLAMPMAX:
+            assert(sol.type == SOLMAX);
+            assert(sol.deriv <= 0.);
+            if (sol.order % 2) {
+                // only odd solution orders may change the status
+                return CUBIC;
+            }
+            break;
+        case CUBIC:
+            if (sol.type == SOLMIN) {
+                assert(sol.deriv <= 0.);
+                if (sol.order % 2) {
+                    // only odd solution orders may change the status
+                    return CLAMPMIN;
+                }
+            } else {
+                assert(sol.deriv >= 0.);
+                if (sol.order % 2) {
+                    // only odd solution orders may change the status
+                    return CLAMPMAX;
+                }
+            }
+            break;
+    }
+    // status is unchanged
+    assert((sol.order % 2) == 0);
+    return status;
+}
+
+// integrate from time1 to time2 with clamping of the function values in [vmin,vmax]
+double Natron::integrate_clamp(double tcur, const double vcur, //start control point
+                               const double vcurDerivRight, //being the derivative dv/dt at tcur
+                               const double vnextDerivLeft, //being the derivative dv/dt at tnext
+                               double tnext, const double vnext, //end control point
+                               double time1, double time2,
+                               double vmin, double vmax,
+                               Natron::KeyframeType interp,
+                               Natron::KeyframeType interpNext)
+{
+    double P0 = vcur;
+    double P3 = vnext;
+    // Hermite coefficients P0' and P3' are the derivatives with respect to x \in [0,1]
+    double P0pr = vcurDerivRight*(tnext-tcur); // normalize for x \in [0,1]
+    double P3pl = vnextDerivLeft*(tnext-tcur); // normalize for x \in [0,1]
+    // in the next expression, the correct test is t2 <= tnext (not <), in order to integrate from tcur to tnext
+    assert(((interp == KEYFRAME_NONE) || (tcur <= time1)) && (time1 <= time2) && ((time2 <= tnext) || (interpNext == KEYFRAME_NONE)));
+    // after the last / before the first keyframe, derivatives are wrt currentTime (i.e. non-normalized)
+    if (interp == KEYFRAME_NONE) {
+        // virtual previous frame at t-1
+        P0 = P3 - P3pl;
+        P0pr = P3pl;
+        tcur = tnext - 1.;
+    } else if (interp == KEYFRAME_CONSTANT) {
+        P0pr = 0.;
+        P3pl = 0.;
+        P3 = P0;
+    }
+    if (interpNext == KEYFRAME_NONE) {
+        // virtual next frame at t+1
+        P3pl = P0pr;
+        P3 = P0 + P0pr;
+        tnext = tcur + 1;
+    }
+    double c0, c1, c2, c3;
+    hermiteToCubicCoeffs(P0, P0pr, P3pl, P3, &c0, &c1, &c2, &c3);
+
+    // solve cubic = vmax
+    double tmax[3];
+    int omax[3];
+    int nmax = solveCubic(c0-vmax, c1, c2, c3, tmax, omax);
+    // solve cubic = vmin
+    double tmin[3];
+    int omin[3];
+    int nmin = solveCubic(c0-vmin, c1, c2, c3, tmin, omin);
+
+    // now, find out on which intervals the function is constant/clamped, and on which intervals it is a cubic.
+    // ignore the solutions with an order of 2 (which means the tangent is horizontal and the polynomial doesn't change sign)
+    // algorithm: order the solutions, sort them wrt time. The cubic sections are where there are transitions bewteen min and max solutions.
+    std::vector<Sol> sols;
+    for (int i=0; i < nmax; ++i) {
+        sols.push_back(Sol(SOLMAX,tmax[i],omax[i],cubicDerive(c0, c1, c2, c3, tmax[i])));
+    }
+    for (int i=0; i < nmin; ++i) {
+        sols.push_back(Sol(SOLMIN,tmin[i],omin[i],cubicDerive(c0, c1, c2, c3, tmin[i])));
+    }
+
+    const double t2 = (time2 - tcur)/(tnext - tcur);
+    const double t1 = (time1 - tcur)/(tnext - tcur);
+
+    // special case: no solution
+    if (sols.empty()) {
+        // no solution.
+        // function never crosses vmin or vmax:
+        // - either it's entirely below vmin or above vmax
+        // - or it' constant
+        // Just evaluate at t1 to determine where it is.
+        double val = cubicEval(c0, c1, c2, c3, t1);
+        if (val < vmin) {
+            val = vmin;
+        } else if (val > vmax) {
+            val = vmax;
+        }
+        return val * (time2-time1);
+    }
+
+    // sort the solutions wrt time
+    std::sort(sols.begin(), sols.end(), Sol_less_than_t());
+    // find out the status before the first solution
+    eFuncType status;
+    if (sols[0].type == SOLMAX) {
+         // a non-constant cubic cannot remain within [vmin,vmax] at -infinity
+        assert(sols[0].deriv < 0.);
+        status = CLAMPMAX;
+    } else {
+        // a non-constant cubic cannot remain within [vmin,vmax] at -infinity
+        assert(sols[0].deriv > 0.);
+        status = CLAMPMIN;
+    }
+
+    // find out the status at t1
+    std::vector<Sol>::const_iterator it = sols.begin();
+    while (it != sols.end() && it->t <= t1) {
+        status = statusUpdate(status, *it);
+        ++it;
+    }
+    double t = t1;
+    double ret = 0.;
+    // it is now pointing to the first solution after t1, or end()
+    while (it != sols.end() && it->t < t2) {
+        // integrate from t to it->t
+        switch (status) {
+            case CLAMPMAX:
+                ret += (it->t - t) * vmax;
+                break;
+            case CLAMPMIN:
+                ret += (it->t - t) * vmin;
+                break;
+            case CUBIC:
+                ret += cubicIntegrate(c0, c1, c2, c3, it->t) - cubicIntegrate(c0, c1, c2, c3, t);
+                break;
+        }
+        status = statusUpdate(status, *it);
+        t = it->t;
+        ++it;
+    }
+    // integrate from t to t2
+    switch (status) {
+        case CLAMPMAX:
+            ret += (t2 - t) * vmax;
+            break;
+        case CLAMPMIN:
+            ret += (t2 - t) * vmin;
+            break;
+        case CUBIC:
+            ret += cubicIntegrate(c0, c1, c2, c3, t2) - cubicIntegrate(c0, c1, c2, c3, t);
+            break;
+    }
+
+    // cubicIntegrate: multiply the result by (tnext-tcur)
+    return ret * (tnext - tcur);
+}
 
 /**
  * @brief This function will set the left and right derivative of 'cur', depending on the interpolation method 'interp' and the
