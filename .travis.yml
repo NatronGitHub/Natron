@@ -6,7 +6,7 @@ compiler:
 
 # Travis CI has 1.5 cores per VM, take advantage of it
 env:
-  - CONFIG="coverage debug" MAKEFLAGS="-j 2"
+  - CONFIG="coverage debug" MAKEFLAGSPARALLEL="-j 2"
 
 # Natron requires boost >= 1.49 to compile in C++11 mode
 # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
@@ -33,9 +33,9 @@ install:
   - if [ "$CC" = "gcc" ]; then mv libs/OpenFX/Examples/*/*-64-debug/*.ofx.bundle Tests/Plugins/Examples; fi
   - if [ "$CC" = "gcc" ]; then mv libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Tests/Plugins/Support;  fi
 # OpenFX-IO
-  - if [ "$CC" = "gcc" ]; then sudo apt-get install cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost-dev; git clone -b "v1.0.8" https://github.com/imageworks/OpenColorIO.git ocio; cd ocio; mkdir _build; cd _build; cmake .. -DCMAKE_INSTALL_PREFIX=/opt/ocio -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_LCMS=ON -DUSE_EXTERNAL_TINYXML=ON -DUSE_EXTERNAL_YAML=ON -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_BUILD_TESTS=OFF -DOCIO_BUILD_PYGLUE=OFF; make $MAKEFLAGS && sudo make install; cd ../..; fi
+  - if [ "$CC" = "gcc" ]; then sudo apt-get install cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost-dev; git clone -b "v1.0.8" https://github.com/imageworks/OpenColorIO.git ocio; cd ocio; mkdir _build; cd _build; cmake .. -DCMAKE_INSTALL_PREFIX=/opt/ocio -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_LCMS=ON -DUSE_EXTERNAL_TINYXML=ON -DUSE_EXTERNAL_YAML=ON -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_BUILD_TESTS=OFF -DOCIO_BUILD_PYGLUE=OFF; make $MAKEFLAGSPARALLEL && sudo make install; cd ../..; fi
   - if [ "$CC" = "gcc" ]; then sudo apt-get install libopenexr-dev libilmbase-dev; fi
-  - if [ "$CC" = "gcc" ]; then sudo apt-get install libopenjpeg-dev libtiff-dev libjpeg-dev libpng-dev libboost-filesystem-dev libboost-regex-dev libboost-thread-dev libboost-system-dev libwebp-dev libfreetype6-dev libssl-dev; git clone -b "RB-1.2" git://github.com/OpenImageIO/oiio.git oiio; cd oiio; make $MAKEFLAGS USE_QT=0 USE_TBB=0 USE_PYTHON=0 USE_FIELD3D=0 USE_OPENJPEG=1 USE_OCIO=1 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=/opt/ocio INSTALLDIR=/opt/oiio dist_dir=. cmake; sudo make $MAKEFLAGS dist_dir=.; cd ..; fi
+  - if [ "$CC" = "gcc" ]; then sudo apt-get install libopenjpeg-dev libtiff-dev libjpeg-dev libpng-dev libboost-filesystem-dev libboost-regex-dev libboost-thread-dev libboost-system-dev libwebp-dev libfreetype6-dev libssl-dev; git clone -b "RB-1.2" git://github.com/OpenImageIO/oiio.git oiio; cd oiio; make $MAKEFLAGSPARALLEL USE_QT=0 USE_TBB=0 USE_PYTHON=0 USE_FIELD3D=0 USE_OPENJPEG=1 USE_OCIO=1 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=/opt/ocio INSTALLDIR=/opt/oiio dist_dir=. cmake; sudo make $MAKEFLAGSPARALLEL dist_dir=.; cd ..; fi
   - if [ "$CC" = "gcc" ]; then sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libavutil-dev; fi
   - if [ "$CC" = "gcc" ]; then env PKG_CONFIG_PATH=/opt/ocio/lib/pkgconfig make -C openfx-io BITS=64 OIIO_HOME=/opt/oiio; fi
   - if [ "$CC" = "gcc" ]; then mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO;  fi
@@ -46,7 +46,7 @@ install:
 
 script:
   - if [ "$CC" = "gcc" ]; then qmake CONFIG+="coverage debug"; else qmake -spec unsupported/linux-clang; fi
-  - make $MAKEFLAGS
+  - make $MAKEFLAGSPARALLEL
   - cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..
 
 after_success:
