@@ -165,7 +165,7 @@ public:
     ///existing key at this time.
     bool addKeyFrame(KeyFrame key);
 
-    void removeKeyFrame(double time);
+    void removeKeyFrameWithTime(double time);
 
     void removeKeyFrameWithIndex(int index);
 
@@ -239,6 +239,8 @@ public:
 
 private:
 
+    void removeKeyFrame(KeyFrameSet::const_iterator it);
+    
     const RectD& getBoundingBox() const WARN_UNUSED_RETURN;
 
     /**
