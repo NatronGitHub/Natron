@@ -1592,16 +1592,16 @@ void CurveWidget::onCurveChanged(){
     ///we cannot use std::transform here because a keyframe might have disappeared from a curve
     ///hence the number of keyframes selected would decrease
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it!=_imp->_selectedKeyFrames.end(); ++it) {
-        KeyFrameSet::iterator found = it->curve->getInternalCurve()->find(it->key.getTime());
-        SelectedKey newKey(*it);
-        if(found != it->curve->getInternalCurve()->end()){
-            if(found->getValue() != newKey.key.getValue()){
-                newKey.key = *found;
+        KeyFrame kf;
+        bool found = it->curve->getInternalCurve()->getKeyFrameWithTime(it->key.getTime(), &kf);
+        if (found) {
+            SelectedKey newKey(*it);
+            if(kf.getValue() != newKey.key.getValue()){
+                newKey.key = kf;
             }
             _imp->refreshKeyTangents(&newKey);
             copy.insert(newKey);
         }
-        
     }
     _imp->_selectedKeyFrames = copy;
     update();
