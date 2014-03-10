@@ -25,8 +25,6 @@ namespace Natron
  * t \in [t1,t2]) and P2(t2,v2) (being the derivative at P3 with respect to
  * t \in [t1,t2]) the value at 'currentTime' using the
  * interpolation method "interp".
- * Note that for CATMULL-ROM you must use the function interpolate_catmullRom
- * which will compute the derivatives for you.
  **/
 double interpolate(double tcur, const double vcur, //start control point
                    const double vcurDerivRight, //being the derivative dv/dt at tcur

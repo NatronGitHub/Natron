@@ -115,11 +115,55 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1, double* x2){
     assert(!keys.empty());
     double xminCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keys.begin()->getTime(),0).x();
     double xmaxCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keys.rbegin()->getTime(),0).x();
-    if(x1 < xminCurveWidgetCoord){
-        *x2 = xminCurveWidgetCoord;
-    }else if(x1 >= xmaxCurveWidgetCoord){
-        *x2 = _curveWidget->width() - 1;
-    }else {
+    std::pair<double,double> curveYRange;
+    try {
+        curveYRange = _internalCurve->getCurveYRange();
+    } catch (const std::exception& e) {
+        std::cout << e.what() << std::endl;
+        return std::make_pair(KeyFrame(0.,0.),false);
+    }
+    
+    if (x1 < xminCurveWidgetCoord) {
+         if (curveYRange.first == INT_MIN && curveYRange.second == INT_MAX) {
+            *x2 = xminCurveWidgetCoord;
+        } else {
+            ///the curve has a min/max, find out the slope of the curve so we know whether the curve intersects
+            ///the min axis, the max axis or nothing.
+            if (keys.size() == 1) {
+                ///if only 1 keyframe, the curve is horizontal
+                *x2 = xminCurveWidgetCoord;
+            } else {
+                ///find out the equation of the straight line going from the first keyframe and intersecting
+                ///the min axis, so we can get the coordinates of the point intersecting the min axis.
+                KeyFrameSet::const_iterator firstKf = keys.begin();
+                double b = firstKf->getValue() - firstKf->getLeftDerivative() * firstKf->getTime();
+                *x2 = _curveWidget->toWidgetCoordinates((curveYRange.first - b) / firstKf->getLeftDerivative(),0).x();
+                if (x1 >= *x2) {
+                    *x2 = xminCurveWidgetCoord;
+                }
+            }
+        }
+    } else if(x1 >= xmaxCurveWidgetCoord) {
+        if (curveYRange.first == INT_MIN && curveYRange.second == INT_MAX) {
+            *x2 = _curveWidget->width() - 1;
+        } else {
+            ///the curve has a min/max, find out the slope of the curve so we know whether the curve intersects
+            ///the min axis, the max axis or nothing.
+            if (keys.size() == 1) {
+                ///if only 1 keyframe, the curve is horizontal
+                *x2 = xminCurveWidgetCoord;
+            } else {
+                ///find out the equation of the straight line going from the first keyframe and intersecting
+                ///the min axis, so we can get the coordinates of the point intersecting the min axis.
+                KeyFrameSet::const_reverse_iterator lastKf = keys.rbegin();
+                double b = lastKf->getValue() - lastKf->getLeftDerivative() * lastKf->getTime();
+                *x2 = _curveWidget->toWidgetCoordinates((curveYRange.first - b) / lastKf->getLeftDerivative(),0).x();
+                if (x1 >= *x2) {
+                    *x2 = _curveWidget->width() - 1;
+                }
+            }
+        }
+    } else {
         //we're between 2 keyframes,get the upper and lower
         KeyFrameSet::const_iterator upper = keys.end();
         double upperWidgetCoord = x1;
