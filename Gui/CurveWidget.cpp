@@ -1347,12 +1347,14 @@ void CurveWidgetPrivate::refreshSelectionRectangle(double x,double y) {
     _widget->refreshSelectedKeysBbox();
 }
 
+#if 0 // dead code
 void CurveWidget::moveKeyFrame(CurveGui* curve,const KeyFrame& key,double dt,double dv){
     assert(curve);
     std::vector<KeyMove> moves;
     moves.push_back(KeyMove(curve,key));
     curve->getKnob()->pushUndoCommand(new MoveKeysCommand(this,moves,dt,dv));
 }
+#endif
 
 void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
     if (_selectedKeyFrames.empty()) {
@@ -2174,8 +2176,9 @@ void CurveWidget::addKeyFrame(CurveGui* curve,const KeyFrame& key){
     }
 }
 
+#if 0 // dead code
 void CurveWidget::removeKeyFrame(CurveGui* curve,const KeyFrame& key){
-    curve->getInternalCurve()->removeKeyFrame(key.getTime());
+    curve->getInternalCurve()->removeKeyFrameWithTime(key.getTime());
     if(!curve->getInternalCurve()->isAnimated()){
         curve->setVisibleAndRefresh(false);
     }
@@ -2184,6 +2187,7 @@ void CurveWidget::removeKeyFrame(CurveGui* curve,const KeyFrame& key){
         _imp->_selectedKeyFrames.erase(it);
     }
 }
+#endif
 
 void CurveWidget::keyPressEvent(QKeyEvent *event){
     if(event->key() == Qt::Key_Space){
