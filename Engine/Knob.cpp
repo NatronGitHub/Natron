@@ -1030,12 +1030,11 @@ bool Knob::getKeyFrameValueByIndex(int dimension,int index,Variant* value) const
     }
     
     KeyFrame kf;
-    bool wasFound =  curve->getKeyFrameByIndex(index,&kf);
-    if (!wasFound) {
-        return false;
+    bool found =  curve->getKeyFrameWithIndex(index, &kf);
+    if (found) {
+        variantFromInterpolatedValue(kf.getValue(),value);
     }
-    variantFromInterpolatedValue(kf.getValue(),value);
-    return true;
+    return found;
 }
 
 /***************************KNOB HOLDER******************************************/

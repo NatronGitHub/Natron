@@ -179,13 +179,13 @@ public:
     bool getKeyFrameTime(int index,int dimension,double* time) const WARN_UNUSED_RETURN;
     
     /**
-     * @brief Convenience function, does the same as getKeyFrameByIndex but returns the last
+     * @brief Convenience function, does the same as getKeyFrameWithIndex but returns the last
      * keyframe.
      **/
     bool getLastKeyFrameTime(int dimension,double* time) const WARN_UNUSED_RETURN;
     
     /**
-     * @brief Convenience function, does the same as getKeyFrameByIndex but returns the first
+     * @brief Convenience function, does the same as getKeyFrameWithIndex but returns the first
      * keyframe.
      **/
     bool getFirstKeyFrameTime(int dimension,double* time) const WARN_UNUSED_RETURN;
