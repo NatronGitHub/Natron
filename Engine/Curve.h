@@ -234,6 +234,9 @@ public:
 
     KeyFrameSet::const_iterator end() const WARN_UNUSED_RETURN;
 
+    /// set the curve Y range (used for testing, when the Curve his not owned by a Knob)
+    void setYRange(double yMin, double yMax);
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 
@@ -271,6 +274,10 @@ private:
     KeyFrameSet::iterator refreshDerivatives(CurveChangedReason reason, KeyFrameSet::iterator key);
 
     KeyFrameSet::iterator setKeyFrameValueAndTimeNoUpdate(double value,double time, KeyFrameSet::iterator k) WARN_UNUSED_RETURN;
+
+    bool hasYRange() const;
+
+    bool mustClamp() const;
 
 private:
     boost::scoped_ptr<CurvePrivate> _imp;

@@ -45,15 +45,20 @@ struct CurvePrivate{
 
     Knob* owner;
     
-    double curveMin,curveMax;
+    double xMin, xMax;
+    double yMin, yMax;
+    bool hasYRange;
     QMutex _lock; //< the plug-ins can call getValueAt at any moment and we must make sure the user is not playing around
     
     
     CurvePrivate()
     : keyFrames()
     , owner(NULL)
-    , curveMin(INT_MIN)
-    , curveMax(INT_MAX)
+    , xMin(INT_MIN)
+    , xMax(INT_MAX)
+    , yMin(INT_MIN)
+    , yMax(INT_MAX)
+    , hasYRange(false)
     , _lock(QMutex::Recursive)
     {}
     

@@ -76,27 +76,33 @@ void KeyFrame::operator=(const KeyFrame& o)
     _interpolation = o._interpolation;
 }
 
-KeyFrame::~KeyFrame(){}
+KeyFrame::~KeyFrame()
+{
+}
 
 
-void KeyFrame::setLeftDerivative(double v){
+void KeyFrame::setLeftDerivative(double v)
+{
     assert(!boost::math::isnan(v));
     _leftDerivative = v;
 }
 
 
-void KeyFrame::setRightDerivative(double v){
+void KeyFrame::setRightDerivative(double v)
+{
     assert(!boost::math::isnan(v));
     _rightDerivative = v;
 }
 
 
-void KeyFrame::setValue(double v){
+void KeyFrame::setValue(double v)
+{
     assert(!boost::math::isnan(v));
     _value = v;
 }
 
-void KeyFrame::setTime(double time){
+void KeyFrame::setTime(double time)
+{
      _time = time;
 }
 
@@ -198,7 +204,7 @@ std::pair<KeyFrameSet::iterator,bool> Curve::addKeyFrameNoUpdate(const KeyFrame&
         return std::make_pair(newKey.first,addedKey);
     } else {
         bool addedKey = true;
-        double paramEps = 1e-4 * std::abs(_imp->curveMax - _imp->curveMin);
+        double paramEps = 1e-4 * std::abs(_imp->xMax - _imp->xMin);
         for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it!= _imp->keyFrames.end(); ++it) {
             if (std::abs(it->getTime() - cp.getTime()) < paramEps) {
                 _imp->keyFrames.erase(it);
@@ -367,7 +373,7 @@ double Curve::getValueAt(double t) const
                                    interp,
                                    interpNext);
 
-    if (_imp->owner) {
+    if (mustClamp()) {
         v = clampValueToCurveYRange(v);
     }
 
@@ -421,7 +427,7 @@ double Curve::getDerivativeAt(double t) const
 
     double d;
 
-    if (_imp->owner) {
+    if (mustClamp()) {
         std::pair<double,double> minmax = getCurveYRange();
         d = Natron::derive_clamp(tcur,vcur,
                                  vcurDerivRight,
@@ -490,7 +496,7 @@ double Curve::getIntegrateFromTo(double t1, double t2) const
     // while there are still keyframes after the current time, add to the total sum and advance
     while (itup != _imp->keyFrames.end() && itup->getTime() < t2) {
         // add integral from t1 to itup->getTime() to sum
-        if (_imp->owner) {
+        if (mustClamp()) {
             std::pair<double,double> minmax = getCurveYRange();
             sum += Natron::integrate_clamp(tcur,vcur,
                                            vcurDerivRight,
@@ -527,7 +533,7 @@ double Curve::getIntegrateFromTo(double t1, double t2) const
 
     assert(itup == _imp->keyFrames.end() || t2 <= itup->getTime());
     // add integral from t1 to t2 to sum
-    if (_imp->owner) {
+    if (mustClamp()) {
         std::pair<double,double> minmax = getCurveYRange();
         sum += Natron::integrate_clamp(tcur,vcur,
                                        vcurDerivRight,
@@ -552,11 +558,10 @@ double Curve::getIntegrateFromTo(double t1, double t2) const
 
 std::pair<double,double>  Curve::getCurveYRange() const
 {
-    
-    assert(_imp->owner);
-    if (!_imp->owner) {
-        throw std::logic_error("Curve::getCurveYRange() called for a curve without owner");
+    if (!mustClamp()) {
+        throw std::logic_error("Curve::getCurveYRange() called for a curve without owner or Y range");
     }
+    if (_imp->owner) {
     if (_imp->owner->typeName() == Double_Knob::typeNameStatic()) {
         Double_Knob* dbKnob = dynamic_cast<Double_Knob*>(_imp->owner);
         assert(dbKnob);
@@ -566,16 +571,15 @@ std::pair<double,double>  Curve::getCurveYRange() const
         assert(intK);
         return intK->getMinMaxForCurve(this);
     } else {
-        return std::make_pair(INT_MIN, INT_MAX);
+        return std::make_pair((double)INT_MIN, (double)INT_MAX);
     }
+    }
+    assert(hasYRange());
+    return std::make_pair(_imp->yMin, _imp->yMax);
 }
 
 double Curve::clampValueToCurveYRange(double v) const
 {
-    assert(_imp->owner);
-    if (!_imp->owner) {
-        throw std::logic_error("Curve::clampValueToCurveYRange() called for a curve without owner");
-    }
     ////clamp to min/max if the owner of the curve is a Double or Int knob.
     std::pair<double,double> minmax = getCurveYRange();
 
@@ -597,14 +601,14 @@ bool Curve::isAnimated() const
 void Curve::setParametricRange(double a,double b)
 {
     QMutexLocker l(&_imp->_lock);
-    _imp->curveMin = a;
-    _imp->curveMax = b;
+    _imp->xMin = a;
+    _imp->xMax = b;
 }
 
 std::pair<double,double> Curve::getParametricRange() const
 {
     QMutexLocker l(&_imp->_lock);
-    return std::make_pair(_imp->curveMin, _imp->curveMax);
+    return std::make_pair(_imp->xMin, _imp->xMax);
 }
 
 int Curve::getKeyFramesCount() const
@@ -919,8 +923,8 @@ int Curve::keyFrameIndex(double time) const
     QMutexLocker l(&_imp->_lock);
     int i = 0;
     double paramEps;
-    if (_imp->curveMax != INT_MAX && _imp->curveMin != INT_MIN) {
-        paramEps = 1e-4 * std::abs(_imp->curveMax - _imp->curveMin);
+    if (_imp->xMax != INT_MAX && _imp->xMin != INT_MIN) {
+        paramEps = 1e-4 * std::abs(_imp->xMax - _imp->xMin);
     } else {
         paramEps = 1e-4;
     }
@@ -971,4 +975,21 @@ bool Curve::areKeyFramesValuesClampedToIntegers() const
 bool Curve::areKeyFramesValuesClampedToBooleans() const
 {
     return _imp->getCurveType() == CurvePrivate::BOOL_CURVE;
+}
+
+void Curve::setYRange(double yMin, double yMax)
+{
+    _imp->yMin = yMin;
+    _imp->yMax = yMax;
+    _imp->hasYRange = true;
+}
+
+bool Curve::hasYRange() const
+{
+    return _imp->hasYRange;
+}
+
+bool Curve::mustClamp() const
+{
+    return _imp->owner || hasYRange();
 }
