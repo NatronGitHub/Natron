@@ -313,7 +313,7 @@ void Knob::deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason r
     
     {
         QMutexLocker l(&_imp->_valueMutex);
-        _imp->_curves[dimension]->removeKeyFrame((double)time);
+        _imp->_curves[dimension]->removeKeyFrameWithTime((double)time);
     }
     
     //virtual portion
