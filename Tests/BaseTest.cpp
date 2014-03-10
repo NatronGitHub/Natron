@@ -87,7 +87,7 @@ void BaseTest::TearDown()
 
 Natron::Node* BaseTest::createNode(const QString& pluginID,int majorVersion,int minorVersion) {
     Node* ret =  _app->createNode(pluginID,majorVersion,minorVersion,false);
-    EXPECT_TRUE(ret != (Node*)NULL);
+    EXPECT_NE(ret,(Node*)NULL);
     return ret;
 }
 
@@ -96,7 +96,7 @@ void BaseTest::connectNodes(Natron::Node* input,Natron::Node* output,int inputNu
     if (expectedReturnValue) {
         ///check that the connections are internally all set as "expected"
         
-        EXPECT_TRUE(output->input(inputNumber) == NULL);
+        EXPECT_EQ(NULL,output->input(inputNumber));
         EXPECT_FALSE(output->isInputConnected(inputNumber));
     } else {
         
@@ -107,11 +107,11 @@ void BaseTest::connectNodes(Natron::Node* input,Natron::Node* output,int inputNu
     
     
     bool ret = _app->getProject()->connectNodes(inputNumber,input,output);
-    EXPECT_TRUE(expectedReturnValue == ret);
+    EXPECT_EQ(expectedReturnValue,ret);
     
     if (expectedReturnValue) {
         EXPECT_TRUE(input->hasOutputConnected());
-        EXPECT_TRUE(output->input(inputNumber) == input);
+        EXPECT_EQ(output->input(inputNumber),input);
         EXPECT_TRUE(output->isInputConnected(inputNumber));
     }
 }
@@ -144,14 +144,15 @@ void BaseTest::disconnectNodes(Natron::Node* input,Natron::Node* output,bool exp
             ++inputIndex;
         }
         
-        EXPECT_TRUE(foundInput && foundOutput);
-        EXPECT_TRUE(output->input(inputIndex) == input);
+        EXPECT_TRUE(foundInput);
+        EXPECT_TRUE(foundOutput);
+        EXPECT_EQ(output->input(inputIndex),input);
         EXPECT_TRUE(output->isInputConnected(inputIndex));
     }
     
     ///call disconnect
     bool ret = _app->getProject()->disconnectNodes(input,output);
-    EXPECT_TRUE(expectedReturnvalue == ret);
+    EXPECT_EQ(expectedReturnvalue,ret);
     
     if (expectedReturnvalue) {
         ///check that the disconnection went OK
@@ -177,8 +178,9 @@ void BaseTest::disconnectNodes(Natron::Node* input,Natron::Node* output,bool exp
             ++inputIndex;
         }
         
-        EXPECT_TRUE(!foundOutput && !foundInput);
-        EXPECT_TRUE(output->input(inputIndex) == NULL);
+        EXPECT_FALSE(foundOutput);
+        EXPECT_FALSE(foundInput);
+        EXPECT_EQ(NULL,output->input(inputIndex));
         EXPECT_FALSE(output->isInputConnected(inputIndex));
     }
 }
