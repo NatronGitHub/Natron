@@ -34,17 +34,11 @@ struct CurvePrivate{
                      // and times
     };
 
-    
-    struct KeyFrame_compare_time {
-        bool operator() (const boost::shared_ptr<KeyFrame>& lhs, const boost::shared_ptr<KeyFrame>& rhs) const {
-            return lhs->getTime() < rhs->getTime();
-        }
-    };
-
     KeyFrameSet keyFrames;
 
     Knob* owner;
-    
+    bool isParametric;
+    CurveType type;
     double xMin, xMax;
     double yMin, yMax;
     bool hasYRange;
@@ -54,6 +48,8 @@ struct CurvePrivate{
     CurvePrivate()
     : keyFrames()
     , owner(NULL)
+    , isParametric(false)
+    , type(DOUBLE_CURVE)
     , xMin(INT_MIN)
     , xMax(INT_MAX)
     , yMin(INT_MIN)
@@ -62,20 +58,6 @@ struct CurvePrivate{
     , _lock(QMutex::Recursive)
     {}
     
-    CurvePrivate::CurveType getCurveType() const {
-        assert(owner);
-        if (owner->typeName() == Int_Knob::typeNameStatic() ||
-             owner->typeName() == Choice_Knob::typeNameStatic()) {
-             return CurvePrivate::INT_CURVE;
-        } else if (owner->typeName() == String_Knob::typeNameStatic() ||
-                   owner->typeName() == File_Knob::typeNameStatic()) {
-            return CurvePrivate::STRING_CURVE;
-        } else if (owner->typeName() == Bool_Knob::typeNameStatic()) {
-            return CurvePrivate::BOOL_CURVE;
-        } else {
-            return CurvePrivate::DOUBLE_CURVE;
-        }
-    }
 };
 
 
