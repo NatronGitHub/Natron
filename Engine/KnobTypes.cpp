@@ -1163,7 +1163,8 @@ QString Parametric_Knob::saveExtraData() const {
     for (U32 i = 0; i < _curves.size(); ++i) {
         ret.append(kCurveTag);
         ret.append(QString::number(i));
-        for (KeyFrameSet::const_iterator it = _curves[i]->begin(); it!= _curves[i]->end(); ++it) {
+        KeyFrameSet kfs = _curves[i]->getKeyFrames();
+        for (KeyFrameSet::const_iterator it = kfs.begin(); it!= kfs.end(); ++it) {
             ret.append(kControlPointTag);
             ret.append(QString::number(it->getTime()));
             ret.append(kValueSeparator);
