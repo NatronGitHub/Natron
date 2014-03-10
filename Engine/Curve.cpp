@@ -622,17 +622,17 @@ std::pair<double,double>  Curve::getCurveYRange() const
         throw std::logic_error("Curve::getCurveYRange() called for a curve without owner or Y range");
     }
     if (_imp->owner) {
-    if (_imp->owner->typeName() == Double_Knob::typeNameStatic()) {
-        Double_Knob* dbKnob = dynamic_cast<Double_Knob*>(_imp->owner);
-        assert(dbKnob);
-        return dbKnob->getMinMaxForCurve(this);
-    } else if(_imp->owner->typeName() == Int_Knob::typeNameStatic()) {
-        Int_Knob* intK = dynamic_cast<Int_Knob*>(_imp->owner);
-        assert(intK);
-        return intK->getMinMaxForCurve(this);
-    } else {
-        return std::make_pair((double)INT_MIN, (double)INT_MAX);
-    }
+        if (_imp->owner->typeName() == Double_Knob::typeNameStatic()) {
+            Double_Knob* dbKnob = dynamic_cast<Double_Knob*>(_imp->owner);
+            assert(dbKnob);
+            return dbKnob->getMinMaxForCurve(this);
+        } else if(_imp->owner->typeName() == Int_Knob::typeNameStatic()) {
+            Int_Knob* intK = dynamic_cast<Int_Knob*>(_imp->owner);
+            assert(intK);
+            return intK->getMinMaxForCurve(this);
+        } else {
+            return std::make_pair((double)INT_MIN, (double)INT_MAX);
+        }
     }
     assert(hasYRange());
     return std::make_pair(_imp->yMin, _imp->yMax);
@@ -962,8 +962,9 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason, KeyFrameSet::iterato
             next = refreshDerivatives(DERIVATIVES_CHANGED,next);
         }
     }
-    
-    _imp->owner->evaluateAnimationChange();
+    if (_imp->owner) {
+        _imp->owner->evaluateAnimationChange();
+    }
 }
 
 KeyFrameSet::const_iterator Curve::find(double time) const
