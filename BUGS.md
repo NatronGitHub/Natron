@@ -6,22 +6,10 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
-- There are lots of race conditions in ViewerGL: the data structures are
-  accessed and modified from various threads.
-
 - curve editor bugs:
    - "show in curve editor" (in the A button) doesn't work after
    deleting an animation and setting a new first key
-   - moving a keyframe handle above the max value of a param (try with
-   the "gain" ofx pugin) pushes it towards infinity, and after that
-   it's impossible to edit the curve. the only slution is to deete the
-   animation
-   - when there are min/max values, "end" tangents (before first and
-   after last keyframe) can be edited correctly, and the animated
-   values are OK (linear, then clamped to [min,max], but the displayed
-   curve is wrong (it should be two straight lines when the value goes
-   outside of [min,max])
-   
+
 - Setting a project format with a pixel aspect ratio different of 1 and then setting the
 viewer fullscreen will mess it up and make it unusable.
 
@@ -33,8 +21,6 @@ viewer fullscreen will mess it up and make it unusable.
   Instance::beginInstanceEditAction()
   
 - black borders around the viewer when zooming out and multithreading is disabled
-
-- Check why TuttleOFX's generators (e.g. ColorBars) have this strange behaviour when changing the "channel" parameter
 
 - String_KnobGui: kOfxParamStringIsRichTextFormat  is not supported (it should use a QTextEdit and not convert the string to plain text)
 
