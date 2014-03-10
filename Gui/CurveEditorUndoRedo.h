@@ -83,10 +83,8 @@ struct KeyMove{
 
 typedef std::vector< KeyMove > KeyMoveV;
 
-class MoveKeysCommand : public QUndoCommand{
-
-
-
+class MoveKeysCommand : public QUndoCommand
+{
 public:
 
     MoveKeysCommand(CurveWidget* editor,const KeyMoveV& keys,double dt,double dv,QUndoCommand *parent = 0);

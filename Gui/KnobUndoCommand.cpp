@@ -44,11 +44,11 @@ void KnobUndoCommand::undo()
     bool modifiedKeyFrame = false;
     for (U32 i = 0 ; i < _oldValue.size();++i) {
         _knob->setValue(i,_oldValue[i],NULL);
-        if(_knob->getKnob()->getHolder()->getApp()){
-           if(_valueChangedReturnCode[i] == 1 ){ //the value change also added a keyframe
+        if (_knob->getKnob()->getHolder()->getApp()) {
+           if (_valueChangedReturnCode[i] == 1) { //the value change also added a keyframe
                _knob->removeKeyFrame(_newKeys[i].getTime(),i);
                modifiedKeyFrame = true;
-           }else if(_valueChangedReturnCode[i] == 2){
+           } else if (_valueChangedReturnCode[i] == 2) {
                //the value change moved a keyframe
                _knob->removeKeyFrame(_newKeys[i].getTime(),i);
                _knob->setKeyframe(_oldKeys[i].getTime(), i);
@@ -57,7 +57,7 @@ void KnobUndoCommand::undo()
         }
         
     }
-    if(modifiedKeyFrame){
+    if (modifiedKeyFrame) {
         _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();
     }
     
@@ -76,9 +76,8 @@ void KnobUndoCommand::undo()
 
 void KnobUndoCommand::redo()
 {
-    
     SequenceTime time = 0;
-    if(_knob->getKnob()->getHolder()->getApp()){
+    if (_knob->getKnob()->getHolder()->getApp()) {
         time = _knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     }
     
@@ -87,11 +86,9 @@ void KnobUndoCommand::redo()
     for (U32 i = 0; i < _newValue.size();++i) {
         boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(i);
         //find out if there's already an existing keyframe before calling setValue
-        KeyFrameSet::const_iterator foundKey = c->find(time);
-        if(foundKey != c->end()){
-            _oldKeys[i] = *foundKey;
-        }
-        
+        bool found = c->getKeyFrameWithTime(time, &_oldKeys[i]);
+        (void)found; // we don't care if it existed or not
+
         _valueChangedReturnCode[i] = _knob->setValue(i,_newValue[i],&_newKeys[i]);
         if(_valueChangedReturnCode[i] != Knob::NO_KEYFRAME_ADDED){
             modifiedKeyFrames = true;
@@ -103,7 +100,7 @@ void KnobUndoCommand::redo()
         }
     }
     
-    if(modifiedKeyFrames){
+    if (modifiedKeyFrames) {
         _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();
     }
     
