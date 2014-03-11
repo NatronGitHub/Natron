@@ -27,6 +27,11 @@
 #include "Gui/Texture.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/TextRenderer.h"
+
+// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
+CLANG_DIAG_OFF(deprecated-declarations)
+GCC_DIAG_OFF(deprecated-declarations)
+
 //////////////////////////////// HISTOGRAM TAB ////////////////////////////////
 
 struct HistogramTabPrivate
