@@ -128,45 +128,55 @@ Curve::Curve()
 }
 
 Curve::Curve(Knob *owner)
-    : _imp(new CurvePrivate)
+: _imp(new CurvePrivate)
 {
     assert(owner);
     _imp->owner = owner;
     //std::string typeName = _imp->owner->typeName(); // crashes because the Knob constructor is not finished at this point
     _imp->type = CurvePrivate::DOUBLE_CURVE;
-    // use RTTI to gues curve type
+    // use RTTI to guess curve type
     if (_imp->type == CurvePrivate::DOUBLE_CURVE) {
         try {
-            (void)dynamic_cast<Int_Knob*>(owner);
-            _imp->type = CurvePrivate::INT_CURVE;
+            Int_Knob* k = dynamic_cast<Int_Knob*>(owner);
+            if (k) {
+                _imp->type = CurvePrivate::INT_CURVE;
+            }
         } catch (const std::bad_cast& e) {
         }
     }
     if (_imp->type == CurvePrivate::DOUBLE_CURVE) {
         try {
-            (void)dynamic_cast<Choice_Knob*>(owner);
-            _imp->type = CurvePrivate::INT_CURVE;
+            Choice_Knob* k = dynamic_cast<Choice_Knob*>(owner);
+            if (k) {
+                _imp->type = CurvePrivate::INT_CURVE;
+            }
         } catch (const std::bad_cast& e) {
         }
     }
     if (_imp->type == CurvePrivate::DOUBLE_CURVE) {
         try {
-            (void)dynamic_cast<String_Knob*>(owner);
-            _imp->type = CurvePrivate::STRING_CURVE;
+            String_Knob* k = dynamic_cast<String_Knob*>(owner);
+            if (k) {
+                _imp->type = CurvePrivate::STRING_CURVE;
+            }
         } catch (const std::bad_cast& e) {
         }
     }
     if (_imp->type == CurvePrivate::DOUBLE_CURVE) {
         try {
-            (void)dynamic_cast<File_Knob*>(owner);
-            _imp->type = CurvePrivate::STRING_CURVE;
+            File_Knob* k = dynamic_cast<File_Knob*>(owner);
+            if (k) {
+                _imp->type = CurvePrivate::STRING_CURVE;
+            }
         } catch (const std::bad_cast& e) {
         }
     }
     if (_imp->type == CurvePrivate::DOUBLE_CURVE) {
         try {
-            (void)dynamic_cast<Bool_Knob*>(owner);
-            _imp->type = CurvePrivate::BOOL_CURVE;
+            Bool_Knob* k = dynamic_cast<Bool_Knob*>(owner);
+            if (k) {
+                _imp->type = CurvePrivate::BOOL_CURVE;
+            }
         } catch (const std::bad_cast& e) {
         }
     }
@@ -659,18 +669,16 @@ bool Curve::isAnimated() const
     return _imp->keyFrames.size() > 0;
 }
 
-void Curve::setParametricRange(double a,double b)
+void Curve::setXRange(double a,double b)
 {
     QMutexLocker l(&_imp->_lock);
-    assert(_imp->isParametric);
     _imp->xMin = a;
     _imp->xMax = b;
 }
 
-std::pair<double,double> Curve::getParametricRange() const
+std::pair<double,double> Curve::getXRange() const
 {
     QMutexLocker l(&_imp->_lock);
-    assert(_imp->isParametric);
     return std::make_pair(_imp->xMin, _imp->xMax);
 }
 

@@ -161,9 +161,9 @@ public:
     
     bool areKeyFramesValuesClampedToBooleans() const WARN_UNUSED_RETURN;
 
-    void setParametricRange(double a,double b);
+    void setXRange(double a,double b);
 
-    std::pair<double,double> getParametricRange() const WARN_UNUSED_RETURN;
+    std::pair<double,double> getXRange() const WARN_UNUSED_RETURN;
 
     ///returns true if a keyframe was successfully added, false if it just replaced an already
     ///existing key at this time.

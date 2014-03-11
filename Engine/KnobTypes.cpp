@@ -966,14 +966,14 @@ const std::string& Parametric_Knob::getCurveLabel(int dimension) const{
 
 void Parametric_Knob::setParametricRange(double min,double max){
     for (U32 i = 0; i < _curves.size(); ++i) {
-        _curves[i]->setParametricRange(min, max);
+        _curves[i]->setXRange(min, max);
     }
 }
 
 std::pair<double,double> Parametric_Knob::getParametricRange() const
 {
     assert(!_curves.empty());
-    return _curves.front()->getParametricRange();
+    return _curves.front()->getXRange();
 }
 
 std::string Parametric_Knob::getDimensionName(int dimension) const{
