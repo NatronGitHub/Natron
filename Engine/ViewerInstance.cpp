@@ -315,17 +315,10 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
         {
       
             
-            RectI toRender = texRectClipped;
-            if (_uiContext->isUserRegionOfInterestEnabled()) {
-                if(!toRender.intersect(_uiContext->getUserRegionOfInterest(), &toRender)) {
-                    return StatOK;
-                }
-            }
-            
             EffectInstance* activeInputToRender = input(activeInput());
             assert(activeInputToRender);
             if (!activeInputToRender->supportsTiles()) {
-                toRender.intersect(rod, &toRender);
+                texRectClipped.intersect(rod, &texRectClipped);
             }
             
             
@@ -340,10 +333,10 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
                 if (isInputImgCached) {
                     ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
                     ///cache lookup things because we already did it ourselves.
-                    activeInputToRender->renderRoI(time, scale, view, toRender, cachedImgParams, inputImage);
+                    activeInputToRender->renderRoI(time, scale, view, texRectClipped, cachedImgParams, inputImage);
                     _lastRenderedImage = inputImage;
                 } else {
-                    _lastRenderedImage = activeInputToRender->renderRoI(time, scale,view,toRender,byPassCache);
+                    _lastRenderedImage = activeInputToRender->renderRoI(time, scale,view,texRectClipped,byPassCache);
                 }
             } catch (const std::exception& e) {
                 _node->notifyInputNIsFinishedRendering(inputIndex);
@@ -368,16 +361,16 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
             }
             
             if (singleThreaded) {
-                renderFunctor(_lastRenderedImage, std::make_pair(toRender.y1,toRender.y2), textureRect, closestPowerOf2);
+                renderFunctor(_lastRenderedImage, std::make_pair(texRectClipped.y1,texRectClipped.y2), textureRect, closestPowerOf2);
             } else {
                 
-                int rowsPerThread = std::ceil((double)(toRender.x2 - toRender.x1) / (double)QThread::idealThreadCount());
+                int rowsPerThread = std::ceil((double)(texRectClipped.x2 - texRectClipped.x1) / (double)QThread::idealThreadCount());
                 // group of group of rows where first is image coordinate, second is texture coordinate
                 std::vector< std::pair<int, int> > splitRows;
-                int k = toRender.y1;
-                while (k < toRender.y2) {
+                int k = texRectClipped.y1;
+                while (k < texRectClipped.y2) {
                     int top = k + rowsPerThread;
-                    int realTop = top > toRender.y2 ? toRender.y2 : top;
+                    int realTop = top > texRectClipped.y2 ? texRectClipped.y2 : top;
                     splitRows.push_back(std::make_pair(k,realTop));
                     k += rowsPerThread;
                 }
@@ -733,4 +726,8 @@ bool ViewerInstance::supportsGLSL() const{
 
 void ViewerInstance::redrawViewer(){
     emit mustRedraw();
+}
+
+boost::shared_ptr<Natron::Image> ViewerInstance::getLastRenderedImage() const {
+    return _lastRenderedImage;
 }

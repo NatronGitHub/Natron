@@ -18,19 +18,22 @@
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-Texture::Texture(){
+Texture::Texture(U32 target,int minFilter,int magFilter)
+: _target(target)
+, _minFilter(minFilter)
+, _magFilter(magFilter)
+{
     glGenTextures(1, &_texID);
     
 }
 void Texture::fillOrAllocateTexture(const TextureRect& texRect ,DataType type){
     
     
-    glEnable(GL_TEXTURE_2D);
-    glActiveTexture (GL_TEXTURE0);
-    glBindTexture (GL_TEXTURE_2D, _texID);
+    glEnable(_target);
+    glBindTexture (_target, _texID);
     if(texRect == _textureRect && _type == type){
         if(_type == Texture::BYTE){
-            glTexSubImage2D(GL_TEXTURE_2D,
+            glTexSubImage2D(_target,
                             0,				// level
                             0, 0,				// xoffset, yoffset
                             w(), h(),
@@ -40,7 +43,7 @@ void Texture::fillOrAllocateTexture(const TextureRect& texRect ,DataType type){
             
             
         }else if(_type == Texture::FLOAT){
-            glTexSubImage2D(GL_TEXTURE_2D,
+            glTexSubImage2D(_target,
                             0,				// level
                             0, 0 ,				// xoffset, yoffset
                             w(), h(),
@@ -55,13 +58,13 @@ void Texture::fillOrAllocateTexture(const TextureRect& texRect ,DataType type){
         _type = type;
         glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
         
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri (_target, GL_TEXTURE_MIN_FILTER, _minFilter);
+        glTexParameteri (_target, GL_TEXTURE_MAG_FILTER, _magFilter);
         
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        glTexParameteri (_target, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        glTexParameteri (_target, GL_TEXTURE_WRAP_T, GL_CLAMP);
         if(type == BYTE){
-            glTexImage2D(GL_TEXTURE_2D,
+            glTexImage2D(_target,
                          0,			// level
                          GL_RGBA8, //internalFormat
                          w(), h(),
@@ -70,7 +73,7 @@ void Texture::fillOrAllocateTexture(const TextureRect& texRect ,DataType type){
                          GL_UNSIGNED_INT_8_8_8_8_REV,	// type
                          0);			// pixels
         }else if(type == FLOAT){
-            glTexImage2D (GL_TEXTURE_2D,
+            glTexImage2D (_target,
                           0,			// level
                           GL_RGBA32F_ARB, //internalFormat
                           w(), h(),
@@ -83,64 +86,7 @@ void Texture::fillOrAllocateTexture(const TextureRect& texRect ,DataType type){
         checkGLErrors();
     }
 }
-void Texture::updatePartOfTexture(const TextureRect& fullRegion,int zoomedY,DataType type){
-    glEnable(GL_TEXTURE_2D);
-    glActiveTexture (GL_TEXTURE0);
-    glBindTexture (GL_TEXTURE_2D, _texID);
-    if(fullRegion != _textureRect || _type == type){
-        _textureRect = fullRegion;
-        _type = type;
-        glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
-        
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-        if(type == BYTE){
-            glTexImage2D(GL_TEXTURE_2D,
-                         0,			// level
-                         GL_RGBA8, //internalFormat
-                         w(), h(),
-                         0,			// border
-                         GL_BGRA,		// format
-                         GL_UNSIGNED_INT_8_8_8_8_REV,	// type
-                         0);			// pixels
-        }else if(type == FLOAT){
-            glTexImage2D (GL_TEXTURE_2D,
-                          0,			// level
-                          GL_RGBA32F_ARB, //internalFormat
-                          w(), h(),
-                          0,			// border
-                          GL_RGBA,		// format
-                          GL_FLOAT,	// type
-                          0);			// pixels
-        }
 
-    }
-    
-    if(_type == Texture::BYTE){
-        glTexSubImage2D(GL_TEXTURE_2D,
-                        0,				// level
-                        0, 0,				// xoffset, yoffset
-                        w(), zoomedY+1,
-                        GL_BGRA,			// format
-                        GL_UNSIGNED_INT_8_8_8_8_REV,		// type
-                        0);
-        
-        
-    }else if(_type == Texture::FLOAT){
-        glTexSubImage2D(GL_TEXTURE_2D,
-                        0,				// level
-                        0, 0 ,				// xoffset, yoffset
-                        w(), zoomedY+1,
-                        GL_RGBA,			// format
-                        GL_FLOAT,		// type
-                        0);
-    }
-    checkGLErrors();
-    
-}
 
 Texture::~Texture(){
     glDeleteTextures(1, &_texID);

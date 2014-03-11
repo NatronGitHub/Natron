@@ -1004,8 +1004,8 @@ void ViewerGL::initializeGL()
     assert(qApp && qApp->thread() == QThread::currentThread());
 	makeCurrent();
     initAndCheckGlExtensions();
-    _imp->blackTex = new Texture;
-    _imp->defaultDisplayTexture = new Texture;
+    _imp->blackTex = new Texture(GL_TEXTURE_2D,GL_LINEAR,GL_NEAREST);
+    _imp->defaultDisplayTexture = new Texture(GL_TEXTURE_2D,GL_LINEAR,GL_NEAREST);
     
     
     // glGenVertexArrays(1, &_vaoId);
@@ -1080,16 +1080,27 @@ double ViewerGL::getZoomFactor() const
 
 RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
 {
-    QMutexLocker l(&_imp->zoomCtx.zoomContextLock);
+    
     RectI ret;
-    QPointF topLeft = toImgCoordinates_fast(0, 0);
-    ret.x1 = std::floor(topLeft.x());
-    ret.y2 = std::ceil(topLeft.y());
-    QPointF bottomRight = toImgCoordinates_fast(width()-1, height()-1);
-    ret.x2 = std::ceil(bottomRight.x());
-    ret.y1 = std::floor(bottomRight.y());
+    {
+        QMutexLocker l(&_imp->zoomCtx.zoomContextLock);
+        QPointF topLeft = toImgCoordinates_fast(0, 0);
+        ret.x1 = std::floor(topLeft.x());
+        ret.y2 = std::ceil(topLeft.y());
+        QPointF bottomRight = toImgCoordinates_fast(width()-1, height()-1);
+        ret.x2 = std::ceil(bottomRight.x());
+        ret.y1 = std::floor(bottomRight.y());
+    }
     if (!ret.intersect(imageRoD, &ret)) {
         ret.clear();
+    }
+    {
+        QMutexLocker l(&_imp->userRoIMutex);
+        if (_imp->isUserRoIEnabled) {
+            if (!ret.intersect(_imp->userRoI, &ret)) {
+                ret.clear();
+            }
+        }
     }
     return ret;
 }
@@ -1322,9 +1333,11 @@ bool ViewerGL::supportsGLSL() const
 void ViewerGL::mousePressEvent(QMouseEvent *event)
 {
     assert(qApp && qApp->thread() == QThread::currentThread());
-    if(event->button() == Qt::RightButton){
+    if (event->button() == Qt::RightButton) {
         _imp->menu->exec(mapToGlobal(event->pos()));
         return;
+    } else if (event->button() == Qt::LeftButton) {
+        _imp->viewerTab->getGui()->selectNode(_imp->viewerTab->getGui()->getApp()->getNodeGui(_imp->viewerTab->getInternalNode()->getNode()));
     }
     
     _imp->zoomCtx.oldClick = event->pos();

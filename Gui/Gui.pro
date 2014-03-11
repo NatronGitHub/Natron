@@ -52,6 +52,7 @@ SOURCES += \
     Gui.cpp \
     GuiApplicationManager.cpp \
     GuiAppInstance.cpp \
+    Histogram.cpp \
     InfoViewerWidget.cpp \
     KnobGui.cpp \
     KnobGuiFactory.cpp \
@@ -71,6 +72,7 @@ SOURCES += \
     RenderingProgressDialog.cpp \
     ScaleSliderQWidget.cpp \
     SequenceFileDialog.cpp \
+    Shaders.cpp \
     SpinBox.cpp \
     SplashScreen.cpp \
     TabWidget.cpp \
@@ -99,6 +101,7 @@ HEADERS += \
     Gui.h \
     GuiApplicationManager.h \
     GuiAppInstance.h \
+    Histogram.h \
     InfoViewerWidget.h \
     KnobGui.h \
     KnobGuiFactory.h \

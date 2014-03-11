@@ -25,7 +25,7 @@ public:
 public:
     
     
-    Texture();
+    Texture(U32 target,int minFilter,int magFilter);
     
     U32 getTexID() const {return _texID;}
     
@@ -37,21 +37,16 @@ public:
     
     /*allocates the texture*/
     void fillOrAllocateTexture(const TextureRect& texRect,DataType type);
-    
-    void updatePartOfTexture(const TextureRect& fullRegion,int zoomedY,DataType type);
-            
+                
     const TextureRect& getTextureRect() const {return _textureRect;}
    
-    
     virtual ~Texture();
-    
-private:
-    
-    /*private hack : we don't use this function here*/
-    virtual bool allocate(U64 ,const char* path = 0){(void)path;return true;}
 
 private:
+    
     U32 _texID;
+    U32 _target;
+    int _minFilter,_magFilter;
     TextureRect _textureRect;
     DataType _type;
 };
