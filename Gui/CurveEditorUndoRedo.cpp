@@ -121,23 +121,22 @@ moveKey(const KeyMove&k, double dt, double dv, bool isundo, std::vector<int>& ne
 {
     k.curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
 
-    std::pair<double,double> curveYRange =  k.curve->getInternalCurve()->getCurveYRange();
+    std::pair<double,double> curveYRange = k.curve->getInternalCurve()->getCurveYRange();
 
     double newX = k.key.getTime() + dt;
     double newY = k.key.getValue() + dv;
 
     if (newY > curveYRange.second) {
         newY = k.key.getValue();
-    } else if (newY < curveYRange.second) {
+    } else if (newY < curveYRange.first) {
         newY = k.key.getValue();
     }
 
     int keyframeIndex = k.curve->getInternalCurve()->keyFrameIndex(isundo ? newX : k.key.getTime());
     int newIndex;
-    k.curve->getInternalCurve()->setKeyFrameValueAndTime(
-                                                           isundo ? k.key.getTime() : newX,
-                                                           isundo ? k.key.getValue() : newY,
-                                                           keyframeIndex,&newIndex);
+    k.curve->getInternalCurve()->setKeyFrameValueAndTime(isundo ? k.key.getTime() : newX,
+                                                         isundo ? k.key.getValue() : newY,
+                                                         keyframeIndex, &newIndex);
     newKeyIndexes.push_back(newIndex);
 }
 
