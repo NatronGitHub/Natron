@@ -9,6 +9,11 @@ Here is a list of know bugs, ordered by priority from high to low:
 - curve editor bugs:
    - "show in curve editor" (in the A button) doesn't work after
    deleting an animation and setting a new first key
+   - when there are min/max values, "end" tangents (before first and
+   after last keyframe) can be edited correctly, and the animated
+   values are OK (linear, then clamped to [min,max], but the displayed
+   curve is wrong (it should be two straight lines when the value goes
+   outside of [min,max])
 
 - Setting a project format with a pixel aspect ratio different of 1 and then setting the
 viewer fullscreen will mess it up and make it unusable.
@@ -43,10 +48,6 @@ Here is a list of non-blocking bugs / wanted features:
 - Progress suite is not implemented (GUI is blocked until the operation has ended)
 
 - a log window with OFX and Natron log messages (see OfxImageEffectInstance::vmessage, OfxHost::vmessage)
-
-- derive and integrate are not implemented for animated Double,
-  Double2D, Double3D, RGBA, RGB parameters (derive returns 0,
-  integrate returns (t2-t1)*getValue())
 
 - The OFX keyframe interface is missing some unimplemented functions yet:
   - OfxParameterSuiteV1::paramEditBegin — Used to group any parameter changes for undo/redo purposes
