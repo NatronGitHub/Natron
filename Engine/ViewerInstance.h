@@ -189,8 +189,10 @@ public slots:
     void updateViewer();
 
     void onNodeNameChanged(const QString&);
-    
+
     void redrawViewer();
+
+    boost::shared_ptr<Natron::Image> getLastRenderedImage() const;
 
 signals:
 

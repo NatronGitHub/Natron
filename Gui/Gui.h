@@ -260,6 +260,9 @@ signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);
 
+    ///emitted when a viewer changes its name or is deleted/added
+    void viewersChanged();
+    
 public slots:
 
     bool exitGui(); //< exit, asking questions to the user
@@ -319,6 +322,8 @@ public slots:
     void openRecentFile();
     
     void onProjectNameChanged(const QString& name);
+    
+    void onNodeNameChanged(const QString& name);
     
 private:
 

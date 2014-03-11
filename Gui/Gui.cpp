@@ -60,6 +60,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/FromQtEnums.h"
 #include "Gui/RenderingProgressDialog.h"
+#include "Gui/NodeGui.h"
+#include "Gui/Histogram.h"
 
 #include "Engine/ViewerInstance.h"
 #include "Engine/Project.h"
@@ -188,6 +190,9 @@ struct GuiPrivate {
     ///The curve editor.
     CurveEditor *_curveEditor;
     
+    HistogramTab* _histogramTab;
+    
+    
     ///the left toolbar
     QToolBar* _toolBox;
     
@@ -297,6 +302,7 @@ struct GuiPrivate {
     , _graphScene(0)
     , _nodeGraphArea(0)
     , _curveEditor(0)
+    , _histogramTab(0)
     , _toolBox(0)
     , _propertiesScrollArea(0)
     , _propertiesContainer(0)
@@ -419,6 +425,7 @@ void Gui::closeEvent(QCloseEvent *e) {
 NodeGui* Gui::createNodeGUI( Node* node,bool requestedByLoad){
     assert(_imp->_nodeGraphArea);
     NodeGui* nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad);
+    QObject::connect(nodeGui,SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
     assert(nodeGui);
     return nodeGui;
 }
@@ -733,6 +740,11 @@ void Gui::setupUi()
     _imp->_curveEditor->setObjectName(kCurveEditorObjectName);
     _imp->_workshopPane->appendTab(_imp->_curveEditor);
     
+#if 0
+    _imp->_histogramTab = new HistogramTab(this);
+    _imp->_histogramTab->setObjectName("Histograms");
+    _imp->_workshopPane->appendTab(_imp->_histogramTab);
+#endif
     _imp->_workshopPane->makeCurrentTab(0);
     
     _imp->_viewerWorkshopSplitter->addWidget(_imp->_workshopPane);
@@ -1064,6 +1076,7 @@ ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
     ViewerTab* tab = new ViewerTab(this,viewer,_imp->_viewersPane);
     _imp->_viewerTabs.push_back(tab);
     where->appendTab(tab);
+    emit viewersChanged();
     return tab;
 }
 
@@ -1075,6 +1088,7 @@ void Gui::addViewerTab(ViewerTab* tab, TabWidget* where) {
         _imp->_viewerTabs.push_back(tab);
     }
     where->appendTab(tab);
+    emit viewersChanged();
     
 }
 
@@ -1122,6 +1136,8 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
         if(container)
             container->removeTab(tab);
     }
+    emit viewersChanged();
+
     
 }
 
@@ -2044,4 +2060,11 @@ const QString& Gui::getBoostVersion() const {
 
 const QString& Gui::getQtVersion() const {
     return _imp->_qtVersion;
+}
+
+void Gui::onNodeNameChanged(const QString& /*name*/) {
+    NodeGui* node = qobject_cast<NodeGui*>(sender());
+    if (node && node->getNode()->pluginID() == "Viewer") {
+        emit viewersChanged();
+    }
 }
