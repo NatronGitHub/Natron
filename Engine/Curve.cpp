@@ -49,12 +49,12 @@ KeyFrame::KeyFrame()
 {}
 
 
-KeyFrame::KeyFrame(double time, double initialValue)
+KeyFrame::KeyFrame(double time, double initialValue, double leftDerivative, double rightDerivative, Natron::KeyframeType interpolation)
     : _time(time)
     , _value(initialValue)
-    , _leftDerivative(0.)
-    , _rightDerivative(0.)
-    , _interpolation(Natron::KEYFRAME_SMOOTH)
+    , _leftDerivative(leftDerivative)
+    , _rightDerivative(rightDerivative)
+    , _interpolation(interpolation)
 {
 }
 
@@ -103,22 +103,41 @@ void KeyFrame::setValue(double v)
 
 void KeyFrame::setTime(double time)
 {
+    assert(!boost::math::isnan(time));
      _time = time;
 }
 
 
-void KeyFrame::setInterpolation(Natron::KeyframeType interp) { _interpolation = interp; }
+void KeyFrame::setInterpolation(Natron::KeyframeType interp)
+{
+    _interpolation = interp;
+}
 
-Natron::KeyframeType KeyFrame::getInterpolation() const { return _interpolation; }
+Natron::KeyframeType KeyFrame::getInterpolation() const
+{
+    return _interpolation;
+}
 
 
-double KeyFrame::getValue() const { return _value; }
+double KeyFrame::getValue() const
+{
+    return _value;
+}
 
-double KeyFrame::getTime() const { return _time; }
+double KeyFrame::getTime() const
+{
+    return _time;
+}
 
-double KeyFrame::getLeftDerivative() const { return _leftDerivative; }
+double KeyFrame::getLeftDerivative() const
+{
+    return _leftDerivative;
+}
 
-double KeyFrame::getRightDerivative() const { return _rightDerivative; }
+double KeyFrame::getRightDerivative() const
+{
+    return _rightDerivative;
+}
 
 /************************************CURVEPATH************************************/
 

@@ -59,7 +59,7 @@ TEST(Curve,Basic)
     EXPECT_EQ(10., c.getValueAt(-10.)); // before first keyframe
     EXPECT_EQ(20., c.getValueAt(10.)); // after last keyframe
     EXPECT_EQ(15., c.getValueAt(0.5)); // middle
-
+    EXPECT_EQ(0, )
     // derivative
     EXPECT_EQ(10., c.getDerivativeAt(0.));
     EXPECT_EQ(10., c.getDerivativeAt(0.5)); // middle
@@ -71,6 +71,12 @@ TEST(Curve,Basic)
     EXPECT_EQ(15., c.getIntegrateFromTo(0., 1.));
     EXPECT_EQ(200., c.getIntegrateFromTo(1., 11.));
     EXPECT_EQ(315., c.getIntegrateFromTo(-10., 11.));
+
+    KeyFrameSet ks = c.getKeyFrames();
+
+    c.clearKeyFrames();
+    // empty curve
+    EXPECT_FALSE(c.isAnimated());
 
     KeyFrame k2(1., 20.);
 

@@ -41,7 +41,7 @@ public:
 
     KeyFrame();
 
-    KeyFrame(double time, double initialValue);
+    KeyFrame(double time, double initialValue, double leftDerivative = 0., double rightDerivative = 0., Natron::KeyframeType interpolation = Natron::KEYFRAME_SMOOTH);
 
     KeyFrame(const KeyFrame& other);
 
