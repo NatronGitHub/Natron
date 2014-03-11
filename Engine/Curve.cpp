@@ -12,6 +12,7 @@
 #include "Curve.h"
 
 #include <algorithm>
+#include <stdexcept>
 #include <boost/math/special_functions/fpclassify.hpp>
 
 #include "Engine/AppManager.h"
@@ -75,27 +76,33 @@ void KeyFrame::operator=(const KeyFrame& o)
     _interpolation = o._interpolation;
 }
 
-KeyFrame::~KeyFrame(){}
+KeyFrame::~KeyFrame()
+{
+}
 
 
-void KeyFrame::setLeftDerivative(double v){
+void KeyFrame::setLeftDerivative(double v)
+{
     assert(!boost::math::isnan(v));
     _leftDerivative = v;
 }
 
 
-void KeyFrame::setRightDerivative(double v){
+void KeyFrame::setRightDerivative(double v)
+{
     assert(!boost::math::isnan(v));
     _rightDerivative = v;
 }
 
 
-void KeyFrame::setValue(double v){
+void KeyFrame::setValue(double v)
+{
     assert(!boost::math::isnan(v));
     _value = v;
 }
 
-void KeyFrame::setTime(double time){
+void KeyFrame::setTime(double time)
+{
      _time = time;
 }
 
@@ -118,44 +125,99 @@ double KeyFrame::getRightDerivative() const { return _rightDerivative; }
 Curve::Curve()
     : _imp(new CurvePrivate)
 {
-
 }
 
 Curve::Curve(Knob *owner)
-    : _imp(new CurvePrivate)
+: _imp(new CurvePrivate)
 {
-    
+    assert(owner);
     _imp->owner = owner;
-    
+    //std::string typeName = _imp->owner->typeName(); // crashes because the Knob constructor is not finished at this point
+    _imp->type = CurvePrivate::DOUBLE_CURVE;
+    // use RTTI to guess curve type
+    if (_imp->type == CurvePrivate::DOUBLE_CURVE) {
+        try {
+            Int_Knob* k = dynamic_cast<Int_Knob*>(owner);
+            if (k) {
+                _imp->type = CurvePrivate::INT_CURVE;
+            }
+        } catch (const std::bad_cast& e) {
+        }
+    }
+    if (_imp->type == CurvePrivate::DOUBLE_CURVE) {
+        try {
+            Choice_Knob* k = dynamic_cast<Choice_Knob*>(owner);
+            if (k) {
+                _imp->type = CurvePrivate::INT_CURVE;
+            }
+        } catch (const std::bad_cast& e) {
+        }
+    }
+    if (_imp->type == CurvePrivate::DOUBLE_CURVE) {
+        try {
+            String_Knob* k = dynamic_cast<String_Knob*>(owner);
+            if (k) {
+                _imp->type = CurvePrivate::STRING_CURVE;
+            }
+        } catch (const std::bad_cast& e) {
+        }
+    }
+    if (_imp->type == CurvePrivate::DOUBLE_CURVE) {
+        try {
+            File_Knob* k = dynamic_cast<File_Knob*>(owner);
+            if (k) {
+                _imp->type = CurvePrivate::STRING_CURVE;
+            }
+        } catch (const std::bad_cast& e) {
+        }
+    }
+    if (_imp->type == CurvePrivate::DOUBLE_CURVE) {
+        try {
+            Bool_Knob* k = dynamic_cast<Bool_Knob*>(owner);
+            if (k) {
+                _imp->type = CurvePrivate::BOOL_CURVE;
+            }
+        } catch (const std::bad_cast& e) {
+        }
+    }
 }
 
-Curve::~Curve(){ clearKeyFrames(); }
+Curve::~Curve()
+{
+    clearKeyFrames();
+}
 
-void Curve::clearKeyFrames(){
-    
+void Curve::clearKeyFrames()
+{
     QMutexLocker l(&_imp->_lock);
     _imp->keyFrames.clear();
 }
 
 
-bool Curve::areKeyFramesTimeClampedToIntegers() const{
-    return _imp->owner->typeName() != Parametric_Knob::typeNameStatic();
+bool Curve::areKeyFramesTimeClampedToIntegers() const
+{
+    QMutexLocker l(&_imp->_lock);
+    return !_imp->isParametric;
 }
 
-void Curve::clone(const Curve& other){
+void Curve::clone(const Curve& other)
+{
+    QMutexLocker l(&_imp->_lock);
     clearKeyFrames();
     const KeyFrameSet& otherKeys = other.getKeyFrames();
     std::transform(otherKeys.begin(), otherKeys.end(), std::inserter(_imp->keyFrames, _imp->keyFrames.begin()), KeyFrameCloner());
 }
 
 
-double Curve::getMinimumTimeCovered() const {
+double Curve::getMinimumTimeCovered() const
+{
     QMutexLocker l(&_imp->_lock);
     assert(!_imp->keyFrames.empty());
     return (*_imp->keyFrames.begin()).getTime();
 }
 
-double Curve::getMaximumTimeCovered() const {
+double Curve::getMaximumTimeCovered() const
+{
     QMutexLocker l(&_imp->_lock);
     assert(!_imp->keyFrames.empty());
     return (*_imp->keyFrames.rbegin()).getTime();
@@ -163,12 +225,9 @@ double Curve::getMaximumTimeCovered() const {
 
 bool Curve::addKeyFrame(KeyFrame key)
 {
-    
     QMutexLocker l(&_imp->_lock);
-    
-    CurvePrivate::CurveType type = _imp->getCurveType();
-    
-    if (type == CurvePrivate::BOOL_CURVE || type == CurvePrivate::STRING_CURVE) {
+
+    if (_imp->type == CurvePrivate::BOOL_CURVE || _imp->type == CurvePrivate::STRING_CURVE) {
         key.setInterpolation(Natron::KEYFRAME_CONSTANT);
     }
     
@@ -181,21 +240,21 @@ bool Curve::addKeyFrame(KeyFrame key)
 
 std::pair<KeyFrameSet::iterator,bool> Curve::addKeyFrameNoUpdate(const KeyFrame& cp)
 {
-    
-    if(areKeyFramesTimeClampedToIntegers()){
+    // PRIVATE - should not lock
+    if (areKeyFramesTimeClampedToIntegers()) {
         std::pair<KeyFrameSet::iterator,bool> newKey = _imp->keyFrames.insert(cp);
         // keyframe at this time exists, erase and insert again
         bool addedKey = true;
-        if(!newKey.second){
+        if (!newKey.second) {
             _imp->keyFrames.erase(newKey.first);
             newKey = _imp->keyFrames.insert(cp);
             assert(newKey.second);
             addedKey = false;
         }
         return std::make_pair(newKey.first,addedKey);
-    }else{
+    } else {
         bool addedKey = true;
-        double paramEps = 1e-4 * std::abs(_imp->curveMax - _imp->curveMin);
+        double paramEps = 1e-4 * std::abs(_imp->xMax - _imp->xMin);
         for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it!= _imp->keyFrames.end(); ++it) {
             if (std::abs(it->getTime() - cp.getTime()) < paramEps) {
                 _imp->keyFrames.erase(it);
@@ -209,88 +268,82 @@ std::pair<KeyFrameSet::iterator,bool> Curve::addKeyFrameNoUpdate(const KeyFrame&
     }
 }
 
-void Curve::removeKeyFrameWithIndex(int index) {
-    QMutexLocker l(&_imp->_lock);
-    int i = 0;
-    for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it!= _imp->keyFrames.end(); ++it) {
-        if(i == index){
-            KeyFrame prevKey;
-            bool mustRefreshPrev = false;
-            KeyFrame nextKey;
-            bool mustRefreshNext = false;
-            
-            if(it != _imp->keyFrames.begin()){
-                KeyFrameSet::iterator prev = it;
-                --prev;
-                prevKey = *prev;
-                mustRefreshPrev = prevKey.getInterpolation() != Natron::KEYFRAME_BROKEN &&
-                prevKey.getInterpolation() != Natron::KEYFRAME_FREE &&
-                prevKey.getInterpolation() != Natron::KEYFRAME_NONE;
-            }
-            KeyFrameSet::iterator next = it;
-            ++next;
-            if(next != _imp->keyFrames.end()){
-                nextKey = *next;
-                mustRefreshNext = nextKey.getInterpolation() != Natron::KEYFRAME_BROKEN &&
-                nextKey.getInterpolation() != Natron::KEYFRAME_FREE &&
-                nextKey.getInterpolation() != Natron::KEYFRAME_NONE;
-            }
-            
-            _imp->keyFrames.erase(it);
-            
-            
-            if(mustRefreshPrev){
-                refreshDerivatives(DERIVATIVES_CHANGED,find(prevKey.getTime()));
-            }
-            if(mustRefreshNext){
-                refreshDerivatives(DERIVATIVES_CHANGED,find(nextKey.getTime()));
-            }
-            break;
-        }
-        ++i;
-    }
-}
-
-void Curve::removeKeyFrame(double time) {
-    QMutexLocker l(&_imp->_lock);
-    KeyFrameSet::iterator it = find(time);
-    
-    if(it == _imp->keyFrames.end()){
-        return;
-    }
-    
+void Curve::removeKeyFrame(KeyFrameSet::const_iterator it)
+{
+    // PRIVATE - should not lock
     KeyFrame prevKey;
     bool mustRefreshPrev = false;
     KeyFrame nextKey;
     bool mustRefreshNext = false;
-    
-    if(it != _imp->keyFrames.begin()){
+
+    if (it != _imp->keyFrames.begin()) {
         KeyFrameSet::iterator prev = it;
         --prev;
         prevKey = *prev;
         mustRefreshPrev = prevKey.getInterpolation() != Natron::KEYFRAME_BROKEN &&
-                 prevKey.getInterpolation() != Natron::KEYFRAME_FREE &&
-                 prevKey.getInterpolation() != Natron::KEYFRAME_NONE;
+        prevKey.getInterpolation() != Natron::KEYFRAME_FREE &&
+        prevKey.getInterpolation() != Natron::KEYFRAME_NONE;
     }
     KeyFrameSet::iterator next = it;
     ++next;
-    if(next != _imp->keyFrames.end()){
+    if (next != _imp->keyFrames.end()) {
         nextKey = *next;
         mustRefreshNext = nextKey.getInterpolation() != Natron::KEYFRAME_BROKEN &&
-                nextKey.getInterpolation() != Natron::KEYFRAME_FREE &&
-                nextKey.getInterpolation() != Natron::KEYFRAME_NONE;
+        nextKey.getInterpolation() != Natron::KEYFRAME_FREE &&
+        nextKey.getInterpolation() != Natron::KEYFRAME_NONE;
     }
-    
+
     _imp->keyFrames.erase(it);
 
-    
-    if(mustRefreshPrev){
+    if (mustRefreshPrev) {
         refreshDerivatives(DERIVATIVES_CHANGED,find(prevKey.getTime()));
     }
-    if(mustRefreshNext){
+    if (mustRefreshNext) {
         refreshDerivatives(DERIVATIVES_CHANGED,find(nextKey.getTime()));
     }
-    
+}
+
+void Curve::removeKeyFrameWithIndex(int index)
+{
+    QMutexLocker l(&_imp->_lock);
+    removeKeyFrame(atIndex(index));
+}
+
+void Curve::removeKeyFrameWithTime(double time)
+{
+    QMutexLocker l(&_imp->_lock);
+    KeyFrameSet::iterator it = find(time);
+
+    if (it == _imp->keyFrames.end()) {
+        throw std::out_of_range("Curve::removeKeyFrameWithTime: non-existent keyframe");
+    }
+
+    removeKeyFrame(it);
+}
+
+bool Curve::getKeyFrameWithIndex(int index, KeyFrame* k) const
+{
+    assert(k);
+    QMutexLocker l(&_imp->_lock);
+    if (index >= (int)_imp->keyFrames.size()) {
+        return false;
+    }
+    *k = *atIndex(index);
+    return true;
+}
+
+bool Curve::getKeyFrameWithTime(double time, KeyFrame* k) const
+{
+    assert(k);
+    QMutexLocker l(&_imp->_lock);
+    KeyFrameSet::const_iterator it = find(time);
+
+    if (it == _imp->keyFrames.end()) {
+        return false;
+    }
+
+    *k = *it;
+    return true;
 }
 
 /// compute interpolation parameters from keyframes and an iterator
@@ -390,12 +443,11 @@ double Curve::getValueAt(double t) const
                                    interp,
                                    interpNext);
 
-    if (_imp->owner) {
+    if (mustClamp()) {
         v = clampValueToCurveYRange(v);
     }
 
-    CurvePrivate::CurveType type = _imp->getCurveType();
-    switch (type) {
+    switch (_imp->type) {
         case CurvePrivate::STRING_CURVE:
         case CurvePrivate::INT_CURVE:
             return std::floor(v + 0.5);
@@ -415,7 +467,7 @@ double Curve::getDerivativeAt(double t) const
     if (_imp->keyFrames.empty()) {
         throw std::runtime_error("Curve has no control points!");
     }
-    assert(_imp->getCurveType() == CurvePrivate::DOUBLE_CURVE); // only real-valued curves can be derived
+    assert(_imp->type == CurvePrivate::DOUBLE_CURVE); // only real-valued curves can be derived
     
     // even when there is only one keyframe, there may be tangents!
     //if (_imp->keyFrames.size() == 1) {
@@ -444,7 +496,7 @@ double Curve::getDerivativeAt(double t) const
 
     double d;
 
-    if (_imp->owner) {
+    if (mustClamp()) {
         std::pair<double,double> minmax = getCurveYRange();
         d = Natron::derive_clamp(tcur,vcur,
                                  vcurDerivRight,
@@ -481,7 +533,7 @@ double Curve::getIntegrateFromTo(double t1, double t2) const
     if (_imp->keyFrames.empty()) {
         throw std::runtime_error("Curve has no control points!");
     }
-    assert(_imp->getCurveType() == CurvePrivate::DOUBLE_CURVE); // only real-valued curves can be derived
+    assert(_imp->type == CurvePrivate::DOUBLE_CURVE); // only real-valued curves can be derived
 
     // even when there is only one keyframe, there may be tangents!
     //if (_imp->keyFrames.size() == 1) {
@@ -513,7 +565,7 @@ double Curve::getIntegrateFromTo(double t1, double t2) const
     // while there are still keyframes after the current time, add to the total sum and advance
     while (itup != _imp->keyFrames.end() && itup->getTime() < t2) {
         // add integral from t1 to itup->getTime() to sum
-        if (_imp->owner) {
+        if (mustClamp()) {
             std::pair<double,double> minmax = getCurveYRange();
             sum += Natron::integrate_clamp(tcur,vcur,
                                            vcurDerivRight,
@@ -550,7 +602,7 @@ double Curve::getIntegrateFromTo(double t1, double t2) const
 
     assert(itup == _imp->keyFrames.end() || t2 <= itup->getTime());
     // add integral from t1 to t2 to sum
-    if (_imp->owner) {
+    if (mustClamp()) {
         std::pair<double,double> minmax = getCurveYRange();
         sum += Natron::integrate_clamp(tcur,vcur,
                                        vcurDerivRight,
@@ -575,29 +627,30 @@ double Curve::getIntegrateFromTo(double t1, double t2) const
 
 std::pair<double,double>  Curve::getCurveYRange() const
 {
-    
-    assert(_imp->owner);
-    if (!_imp->owner)
-        throw std::logic_error("Curve::getCurveYRange() called for a curve without owner");
-    if(_imp->owner->typeName() == Double_Knob::typeNameStatic()) {
-        Double_Knob* dbKnob = dynamic_cast<Double_Knob*>(_imp->owner);
-        assert(dbKnob);
-        return dbKnob->getMinMaxForCurve(this);
-
-    }else if(_imp->owner->typeName() == Int_Knob::typeNameStatic()) {
-        Int_Knob* intK = dynamic_cast<Int_Knob*>(_imp->owner);
-        assert(intK);
-        return intK->getMinMaxForCurve(this);
-    } else {
-        return std::make_pair(INT_MIN, INT_MAX);
+    QMutexLocker l(&_imp->_lock);
+    if (!mustClamp()) {
+        throw std::logic_error("Curve::getCurveYRange() called for a curve without owner or Y range");
     }
+    if (_imp->owner) {
+        if (_imp->owner->typeName() == Double_Knob::typeNameStatic()) {
+            Double_Knob* dbKnob = dynamic_cast<Double_Knob*>(_imp->owner);
+            assert(dbKnob);
+            return dbKnob->getMinMaxForCurve(this);
+        } else if(_imp->owner->typeName() == Int_Knob::typeNameStatic()) {
+            Int_Knob* intK = dynamic_cast<Int_Knob*>(_imp->owner);
+            assert(intK);
+            return intK->getMinMaxForCurve(this);
+        } else {
+            return std::make_pair((double)INT_MIN, (double)INT_MAX);
+        }
+    }
+    assert(hasYRange());
+    return std::make_pair(_imp->yMin, _imp->yMax);
 }
 
 double Curve::clampValueToCurveYRange(double v) const
 {
-    assert(_imp->owner);
-    if (!_imp->owner)
-        throw std::logic_error("Curve::clampValueToCurveYRange() called for a curve without owner");
+    // PRIVATE - should not lock
     ////clamp to min/max if the owner of the curve is a Double or Int knob.
     std::pair<double,double> minmax = getCurveYRange();
 
@@ -616,16 +669,17 @@ bool Curve::isAnimated() const
     return _imp->keyFrames.size() > 0;
 }
 
-void Curve::setParametricRange(double a,double b) {
-    QMutexLocker l(&_imp->_lock);
-    _imp->curveMin = a;
-    _imp->curveMax = b;
-}
-
-std::pair<double,double> Curve::getParametricRange() const
+void Curve::setXRange(double a,double b)
 {
     QMutexLocker l(&_imp->_lock);
-    return std::make_pair(_imp->curveMin, _imp->curveMax);
+    _imp->xMin = a;
+    _imp->xMax = b;
+}
+
+std::pair<double,double> Curve::getXRange() const
+{
+    QMutexLocker l(&_imp->_lock);
+    return std::make_pair(_imp->xMin, _imp->xMax);
 }
 
 int Curve::getKeyFramesCount() const
@@ -640,7 +694,9 @@ const KeyFrameSet& Curve::getKeyFrames() const
     return _imp->keyFrames;
 }
 
-KeyFrameSet::iterator Curve::setKeyFrameValueAndTimeNoUpdate(double value,double time, KeyFrameSet::iterator k) {
+KeyFrameSet::iterator Curve::setKeyFrameValueAndTimeNoUpdate(double value,double time, KeyFrameSet::iterator k)
+{
+    // PRIVATE - should not lock
     KeyFrame newKey(*k);
     
     // nothing special has to be done, since the derivatives are with respect to t
@@ -651,10 +707,10 @@ KeyFrameSet::iterator Curve::setKeyFrameValueAndTimeNoUpdate(double value,double
 }
 
 
-const KeyFrame& Curve::setKeyFrameValue(double value,int index,int* newIndex) {
-    
-    QMutexLocker l(&_imp->_lock);
-    KeyFrameSet::iterator it = keyframeAt(index);
+const KeyFrame& Curve::setKeyFrameValue(double value,int index,int* newIndex)
+{
+    // PRIVATE - should not lock
+    KeyFrameSet::iterator it = atIndex(index);
     assert(it != _imp->keyFrames.end());
     
     KeyFrame newKey(*it);
@@ -672,13 +728,13 @@ const KeyFrame& Curve::setKeyFrameValue(double value,int index,int* newIndex) {
 
 
 
-const KeyFrame& Curve::setKeyFrameTime(double time,int index,int* newIndex) {
-    
-    QMutexLocker l(&_imp->_lock);
-    KeyFrameSet::iterator it = keyframeAt(index);
+const KeyFrame& Curve::setKeyFrameTime(double time,int index,int* newIndex)
+{
+    // PRIVATE - should not lock
+    KeyFrameSet::iterator it = atIndex(index);
     assert(it != _imp->keyFrames.end());
     
-    if(time != it->getTime()) {
+    if (time != it->getTime()) {
         it = setKeyFrameValueAndTimeNoUpdate(it->getValue(),time, it);
         evaluateCurveChanged(KEYFRAME_CHANGED,it);
     }
@@ -691,16 +747,16 @@ const KeyFrame& Curve::setKeyFrameTime(double time,int index,int* newIndex) {
 
 
 
-const KeyFrame& Curve::setKeyFrameValueAndTime(double time,double value,int index,int* newIndex) {
-    
+const KeyFrame& Curve::setKeyFrameValueAndTime(double time,double value,int index,int* newIndex)
+{
     QMutexLocker l(&_imp->_lock);
-    KeyFrameSet::iterator it = keyframeAt(index);
+    KeyFrameSet::iterator it = atIndex(index);
     assert(it != _imp->keyFrames.end());
     
     bool setTime = (time != it->getTime());
     bool setValue = (value != it->getValue());
     
-    if(setTime || setValue){
+    if (setTime || setValue) {
         it = setKeyFrameValueAndTimeNoUpdate(value,time, it);
         evaluateCurveChanged(KEYFRAME_CHANGED,it);
     }
@@ -713,13 +769,13 @@ const KeyFrame& Curve::setKeyFrameValueAndTime(double time,double value,int inde
 }
 
 
-const KeyFrame& Curve::setKeyFrameLeftDerivative(double value,int index,int* newIndex) {
-    
+const KeyFrame& Curve::setKeyFrameLeftDerivative(double value,int index,int* newIndex)
+{
     QMutexLocker l(&_imp->_lock);
-    KeyFrameSet::iterator it = keyframeAt(index);
+    KeyFrameSet::iterator it = atIndex(index);
     assert(it != _imp->keyFrames.end());
 
-    if(value != it->getLeftDerivative()) {
+    if (value != it->getLeftDerivative()) {
         KeyFrame newKey(*it);
         newKey.setLeftDerivative(value);
         it = addKeyFrameNoUpdate(newKey).first;
@@ -733,13 +789,13 @@ const KeyFrame& Curve::setKeyFrameLeftDerivative(double value,int index,int* new
 }
 
 
-const KeyFrame& Curve::setKeyFrameRightDerivative(double value,int index,int* newIndex) {
-    
+const KeyFrame& Curve::setKeyFrameRightDerivative(double value,int index,int* newIndex)
+{
     QMutexLocker l(&_imp->_lock);
-    KeyFrameSet::iterator it = keyframeAt(index);
+    KeyFrameSet::iterator it = atIndex(index);
     assert(it != _imp->keyFrames.end());
     
-    if(value != it->getRightDerivative()) {
+    if (value != it->getRightDerivative()) {
         KeyFrame newKey(*it);
         newKey.setRightDerivative(value);
         it = addKeyFrameNoUpdate(newKey).first;
@@ -753,13 +809,13 @@ const KeyFrame& Curve::setKeyFrameRightDerivative(double value,int index,int* ne
 }
 
 
-const KeyFrame& Curve::setKeyFrameDerivatives(double left, double right,int index,int* newIndex) {
-    
+const KeyFrame& Curve::setKeyFrameDerivatives(double left, double right,int index,int* newIndex)
+{
     QMutexLocker l(&_imp->_lock);
-    KeyFrameSet::iterator it = keyframeAt(index);
+    KeyFrameSet::iterator it = atIndex(index);
     assert(it != _imp->keyFrames.end());
     
-    if(left != it->getLeftDerivative() || right != it->getRightDerivative()) {
+    if (left != it->getLeftDerivative() || right != it->getRightDerivative()) {
         KeyFrame newKey(*it);
         newKey.setLeftDerivative(left);
         newKey.setRightDerivative(right);
@@ -773,21 +829,20 @@ const KeyFrame& Curve::setKeyFrameDerivatives(double left, double right,int inde
     return *it;
 }
 
-const KeyFrame& Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,int index,int* newIndex){
-    
+const KeyFrame& Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,int index,int* newIndex)
+{
     QMutexLocker l(&_imp->_lock);
-    KeyFrameSet::iterator it = keyframeAt(index);
+    KeyFrameSet::iterator it = atIndex(index);
     assert(it != _imp->keyFrames.end());
     
-    CurvePrivate::CurveType type = _imp->getCurveType();
     ///if the curve is a string_curve or bool_curve the interpolation is bound to be constant.
-    if ((type == CurvePrivate::STRING_CURVE || type == CurvePrivate::BOOL_CURVE)
+    if ((_imp->type == CurvePrivate::STRING_CURVE || _imp->type == CurvePrivate::BOOL_CURVE)
         && interp != Natron::KEYFRAME_CONSTANT) {
         return *it;
     }
 
     
-    if(interp != it->getInterpolation()) {
+    if (interp != it->getInterpolation()) {
         KeyFrame newKey(*it);
         newKey.setInterpolation(interp);
         it = addKeyFrameNoUpdate(newKey).first;
@@ -800,7 +855,9 @@ const KeyFrame& Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,int 
     return *it;
 }
 
-KeyFrameSet::iterator Curve::refreshDerivatives(Curve::CurveChangedReason reason, KeyFrameSet::iterator key){
+KeyFrameSet::iterator Curve::refreshDerivatives(Curve::CurveChangedReason reason, KeyFrameSet::iterator key)
+{
+    // PRIVATE - should not lock
     double tcur = key->getTime();
     double vcur = key->getValue();
     
@@ -820,8 +877,8 @@ KeyFrameSet::iterator Curve::refreshDerivatives(Curve::CurveChangedReason reason
         prevType = prev->getInterpolation();
         
         //if prev is the first keyframe, and not edited by the user then interpolate linearly
-        if(prev == _imp->keyFrames.begin() && prevType != Natron::KEYFRAME_FREE &&
-           prevType != Natron::KEYFRAME_BROKEN){
+        if (prev == _imp->keyFrames.begin() && prevType != Natron::KEYFRAME_FREE &&
+            prevType != Natron::KEYFRAME_BROKEN) {
             prevType = Natron::KEYFRAME_LINEAR;
         }
     }
@@ -842,8 +899,8 @@ KeyFrameSet::iterator Curve::refreshDerivatives(Curve::CurveChangedReason reason
         KeyFrameSet::const_iterator nextnext = next;
         ++nextnext;
         //if next is thelast keyframe, and not edited by the user then interpolate linearly
-        if(nextnext == _imp->keyFrames.end() && nextType != Natron::KEYFRAME_FREE &&
-           nextType != Natron::KEYFRAME_BROKEN){
+        if (nextnext == _imp->keyFrames.end() && nextType != Natron::KEYFRAME_FREE &&
+            nextType != Natron::KEYFRAME_BROKEN) {
             nextType = Natron::KEYFRAME_LINEAR;
         }
     }
@@ -871,14 +928,14 @@ KeyFrameSet::iterator Curve::refreshDerivatives(Curve::CurveChangedReason reason
     std::pair<KeyFrameSet::iterator,bool> newKeyIt = _imp->keyFrames.insert(newKey);
 
     // keyframe at this time exists, erase and insert again
-    if(!newKeyIt.second){
+    if (!newKeyIt.second) {
         _imp->keyFrames.erase(newKeyIt.first);
         newKeyIt = _imp->keyFrames.insert(newKey);
         assert(newKeyIt.second);
     }
     key = newKeyIt.first;
     
-    if(reason != DERIVATIVES_CHANGED){
+    if (reason != DERIVATIVES_CHANGED) {
         evaluateCurveChanged(DERIVATIVES_CHANGED,key);
     }
     return key;
@@ -886,16 +943,17 @@ KeyFrameSet::iterator Curve::refreshDerivatives(Curve::CurveChangedReason reason
 
 
 
-void Curve::evaluateCurveChanged(CurveChangedReason reason, KeyFrameSet::iterator key){
-
+void Curve::evaluateCurveChanged(CurveChangedReason reason, KeyFrameSet::iterator key)
+{
+    // PRIVATE - should not lock
     assert(key!=_imp->keyFrames.end());
 
-    if(key->getInterpolation()!= Natron::KEYFRAME_BROKEN && key->getInterpolation() != Natron::KEYFRAME_FREE
-       && reason != DERIVATIVES_CHANGED ){
+    if (key->getInterpolation()!= Natron::KEYFRAME_BROKEN && key->getInterpolation() != Natron::KEYFRAME_FREE
+        && reason != DERIVATIVES_CHANGED ) {
         key = refreshDerivatives(DERIVATIVES_CHANGED,key);
     }
     KeyFrameSet::iterator prev = key;
-    if(key != _imp->keyFrames.begin()){
+    if (key != _imp->keyFrames.begin()) {
         --prev;
         if(prev->getInterpolation()!= Natron::KEYFRAME_BROKEN &&
            prev->getInterpolation()!= Natron::KEYFRAME_FREE &&
@@ -905,81 +963,103 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason, KeyFrameSet::iterato
     }
     KeyFrameSet::iterator next = key;
     ++next;
-    if(next != _imp->keyFrames.end()){
+    if (next != _imp->keyFrames.end()) {
         if(next->getInterpolation()!= Natron::KEYFRAME_BROKEN &&
            next->getInterpolation()!= Natron::KEYFRAME_FREE &&
            next->getInterpolation()!= Natron::KEYFRAME_NONE){
             next = refreshDerivatives(DERIVATIVES_CHANGED,next);
         }
     }
-    
-    _imp->owner->evaluateAnimationChange();
+    if (_imp->owner) {
+        _imp->owner->evaluateAnimationChange();
+    }
 }
 
-KeyFrameSet::const_iterator Curve::find(double time) const {
+KeyFrameSet::const_iterator Curve::find(double time) const
+{
+    // PRIVATE - should not lock
     return std::find_if(_imp->keyFrames.begin(), _imp->keyFrames.end(), KeyFrameTimePredicate(time));
 }
 
-KeyFrameSet::const_iterator Curve::keyframeAt(int index) const {
-    int i = 0;
-    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it!=_imp->keyFrames.end(); ++it) {
-        if(i == index){
-            return it;
-        }
-        ++i;
+KeyFrameSet::const_iterator Curve::atIndex(int index) const
+{
+    // PRIVATE - should not lock
+    if (index >= (int)_imp->keyFrames.size()) {
+        throw std::out_of_range("Curve::removeKeyFrameWithIndex: non-existent keyframe");
     }
-    return _imp->keyFrames.end();
+
+    KeyFrameSet::iterator it = _imp->keyFrames.begin();
+    std::advance(it, index);
+    return it;
 }
 
-int Curve::keyFrameIndex(double time) const {
-    
+int Curve::keyFrameIndex(double time) const
+{
     QMutexLocker l(&_imp->_lock);
     int i = 0;
     double paramEps;
-    if (_imp->curveMax != INT_MAX && _imp->curveMin != INT_MIN) {
-        paramEps = 1e-4 * std::abs(_imp->curveMax - _imp->curveMin);
+    if (_imp->xMax != INT_MAX && _imp->xMin != INT_MIN) {
+        paramEps = 1e-4 * std::abs(_imp->xMax - _imp->xMin);
     } else {
         paramEps = 1e-4;
     }
-    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it!=_imp->keyFrames.end(); ++it) {
-        if(std::abs(it->getTime() - time) < paramEps){
+    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin();
+         it!=_imp->keyFrames.end() && (it->getTime() < time+paramEps);
+         ++it, ++i) {
+        if (std::abs(it->getTime() - time) < paramEps) {
             return i;
         }
-        ++i;
     }
-    throw std::runtime_error("There's no keyframe at such time");
+    throw std::out_of_range("Curve::keyFrameIndex: There's no keyframe at such time");
 
 }
 
-bool Curve::getKeyFrameByIndex(int index,KeyFrame* ret) const {
-    QMutexLocker l(&_imp->_lock);
-    int c = 0;
-    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it!=_imp->keyFrames.end(); ++it) {
-        if (c == index) {
-            *ret = *it;
-            return true;
-        }
-        ++c;
-    }
-    return false;
-}
-
-KeyFrameSet::const_iterator Curve::begin() const {
+KeyFrameSet::const_iterator Curve::begin() const
+{
+    // PRIVATE - should not lock
     return _imp->keyFrames.begin();
 }
 
-KeyFrameSet::const_iterator Curve::end() const {
+KeyFrameSet::const_iterator Curve::end() const
+{
+    // PRIVATE - should not lock
     return _imp->keyFrames.end();
 }
 
-bool Curve::isYComponentMovable() const{
-    return _imp->getCurveType() != CurvePrivate::STRING_CURVE;
+bool Curve::isYComponentMovable() const
+{
+    QMutexLocker l(&_imp->_lock);
+    return _imp->type != CurvePrivate::STRING_CURVE;
 }
 
-bool Curve::areKeyFramesValuesClampedToIntegers() const{
-    return _imp->getCurveType() == CurvePrivate::INT_CURVE;
+bool Curve::areKeyFramesValuesClampedToIntegers() const
+{
+    QMutexLocker l(&_imp->_lock);
+    return _imp->type == CurvePrivate::INT_CURVE;
 }
 
-bool Curve::areKeyFramesValuesClampedToBooleans() const{
-    return _imp->getCurveType() == CurvePrivate::BOOL_CURVE;
+bool Curve::areKeyFramesValuesClampedToBooleans() const
+{
+    QMutexLocker l(&_imp->_lock);
+    return _imp->type == CurvePrivate::BOOL_CURVE;
+}
+
+void Curve::setYRange(double yMin, double yMax)
+{
+    QMutexLocker l(&_imp->_lock);
+    _imp->yMin = yMin;
+    _imp->yMax = yMax;
+    _imp->hasYRange = true;
+}
+
+bool Curve::hasYRange() const
+{
+    // PRIVATE - should not lock
+    return _imp->hasYRange;
+}
+
+bool Curve::mustClamp() const
+{
+    // PRIVATE - should not lock
+    return _imp->owner || hasYRange();
 }

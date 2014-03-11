@@ -57,6 +57,10 @@ public:
         o._rightDerivative == _rightDerivative;
     }
 
+    bool operator!=(const KeyFrame& o) const {
+        return !(*this == o);
+    }
+
     double getValue() const;
     
     double getTime() const ;
@@ -157,17 +161,21 @@ public:
     
     bool areKeyFramesValuesClampedToBooleans() const WARN_UNUSED_RETURN;
 
-    void setParametricRange(double a,double b);
+    void setXRange(double a,double b);
 
-    std::pair<double,double> getParametricRange() const WARN_UNUSED_RETURN;
+    std::pair<double,double> getXRange() const WARN_UNUSED_RETURN;
 
     ///returns true if a keyframe was successfully added, false if it just replaced an already
     ///existing key at this time.
     bool addKeyFrame(KeyFrame key);
 
-    void removeKeyFrame(double time);
+    void removeKeyFrameWithTime(double time);
 
     void removeKeyFrameWithIndex(int index);
+
+    bool getKeyFrameWithTime(double time, KeyFrame* k) const WARN_UNUSED_RETURN;
+
+    bool getKeyFrameWithIndex(int index, KeyFrame* k) const WARN_UNUSED_RETURN;
 
     int getKeyFramesCount() const WARN_UNUSED_RETURN;
 
@@ -219,27 +227,26 @@ public:
     
     int keyFrameIndex(double time) const WARN_UNUSED_RETURN;
     
-    /**
-     * @brief Places in kf the keyframe at the given index.
-     * Returns true on success, false otherwise.
-     **/
-    bool getKeyFrameByIndex(int index,KeyFrame* kf) const WARN_UNUSED_RETURN;
-    
-    ///////The following functions are not thread-safe
-    KeyFrameSet::const_iterator find(double time) const WARN_UNUSED_RETURN;
-    
-    KeyFrameSet::const_iterator keyframeAt(int index) const WARN_UNUSED_RETURN;
-    
-    KeyFrameSet::const_iterator begin() const WARN_UNUSED_RETURN;
-
-    KeyFrameSet::const_iterator end() const WARN_UNUSED_RETURN;
+    /// set the curve Y range (used for testing, when the Curve his not owned by a Knob)
+    void setYRange(double yMin, double yMax);
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 
 private:
+    ///////The following functions are not thread-safe
+    KeyFrameSet::const_iterator find(double time) const WARN_UNUSED_RETURN;
 
-    const RectD& getBoundingBox() const WARN_UNUSED_RETURN;
+    KeyFrameSet::const_iterator atIndex(int index) const WARN_UNUSED_RETURN;
+
+    KeyFrameSet::const_iterator begin() const WARN_UNUSED_RETURN;
+
+    KeyFrameSet::const_iterator end() const WARN_UNUSED_RETURN;
+    
+
+    void removeKeyFrame(KeyFrameSet::const_iterator it);
+    
+    //const RectD& getBoundingBox() const WARN_UNUSED_RETURN;
 
     /**
      * @brief  Set the value of the keyframe positioned at index index and returns the new  keyframe.
@@ -269,6 +276,10 @@ private:
     KeyFrameSet::iterator refreshDerivatives(CurveChangedReason reason, KeyFrameSet::iterator key);
 
     KeyFrameSet::iterator setKeyFrameValueAndTimeNoUpdate(double value,double time, KeyFrameSet::iterator k) WARN_UNUSED_RETURN;
+
+    bool hasYRange() const;
+
+    bool mustClamp() const;
 
 private:
     boost::scoped_ptr<CurvePrivate> _imp;

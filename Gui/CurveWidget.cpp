@@ -1361,12 +1361,14 @@ void CurveWidgetPrivate::refreshSelectionRectangle(double x,double y) {
     _widget->refreshSelectedKeysBbox();
 }
 
+#if 0 // dead code
 void CurveWidget::moveKeyFrame(CurveGui* curve,const KeyFrame& key,double dt,double dv){
     assert(curve);
     std::vector<KeyMove> moves;
     moves.push_back(KeyMove(curve,key));
     curve->getKnob()->pushUndoCommand(new MoveKeysCommand(this,moves,dt,dv));
 }
+#endif
 
 void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
     if (_selectedKeyFrames.empty()) {
@@ -1410,11 +1412,11 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement() {
             
             double minimumTimeSpanBetween2Keys = 1.;
             if(!it->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers()){
-                std::pair<double,double> curveXRange = it->curve->getInternalCurve()->getParametricRange();
+                std::pair<double,double> curveXRange = it->curve->getInternalCurve()->getXRange();
                 minimumTimeSpanBetween2Keys = 1e-4 * std::abs(curveXRange.second - curveXRange.first) * 10;//< be safe
             }
             
-            std::pair<double,double> curveXRange = leftMostSelected->curve->getInternalCurve()->getParametricRange();
+            std::pair<double,double> curveXRange = leftMostSelected->curve->getInternalCurve()->getXRange();
             
             //now get leftMostSelected's previous key to determine the max left movement for this curve
             {
@@ -1604,16 +1606,16 @@ void CurveWidget::onCurveChanged(){
     ///we cannot use std::transform here because a keyframe might have disappeared from a curve
     ///hence the number of keyframes selected would decrease
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it!=_imp->_selectedKeyFrames.end(); ++it) {
-        KeyFrameSet::iterator found = it->curve->getInternalCurve()->find(it->key.getTime());
-        SelectedKey newKey(*it);
-        if(found != it->curve->getInternalCurve()->end()){
-            if(found->getValue() != newKey.key.getValue()){
-                newKey.key = *found;
+        KeyFrame kf;
+        bool found = it->curve->getInternalCurve()->getKeyFrameWithTime(it->key.getTime(), &kf);
+        if (found) {
+            SelectedKey newKey(*it);
+            if(kf.getValue() != newKey.key.getValue()){
+                newKey.key = kf;
             }
             _imp->refreshKeyTangents(&newKey);
             copy.insert(newKey);
         }
-        
     }
     _imp->_selectedKeyFrames = copy;
     update();
@@ -2187,8 +2189,9 @@ void CurveWidget::addKeyFrame(CurveGui* curve,const KeyFrame& key){
     }
 }
 
+#if 0 // dead code
 void CurveWidget::removeKeyFrame(CurveGui* curve,const KeyFrame& key){
-    curve->getInternalCurve()->removeKeyFrame(key.getTime());
+    curve->getInternalCurve()->removeKeyFrameWithTime(key.getTime());
     if(!curve->getInternalCurve()->isAnimated()){
         curve->setVisibleAndRefresh(false);
     }
@@ -2197,6 +2200,7 @@ void CurveWidget::removeKeyFrame(CurveGui* curve,const KeyFrame& key){
         _imp->_selectedKeyFrames.erase(it);
     }
 }
+#endif
 
 void CurveWidget::keyPressEvent(QKeyEvent *event){
     if(event->key() == Qt::Key_Space){

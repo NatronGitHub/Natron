@@ -35,16 +35,16 @@ TEST(SequenceParsing,TestHashCharacter) {
     }
     SequenceFromPattern sequence;
     filesListFromPattern(dir.absoluteFilePath("test_#.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == sequenceItemsCount);
+    EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("test_##.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == 0);
+    EXPECT_EQ(0,(int)sequence.size());
     
     ///test that a single file matching pattern would match a single file only.
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("test_0.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == 1);
+    EXPECT_EQ(1,(int)sequence.size());
     
     ///delete files
     for (int i = 0; i < sequenceItemsCount; ++i) {
@@ -62,7 +62,7 @@ TEST(SequenceParsing,TestHashCharacter) {
     
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("test_##.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == 1);
+    EXPECT_EQ(1,(int)sequence.size());
     
     ///delete files
     for (int i = 0; i < sequenceItemsCount; ++i) {
@@ -82,7 +82,7 @@ TEST(SequenceParsing,TestHashCharacter) {
     
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("test_##.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == 11);
+    EXPECT_EQ(11,(int)sequence.size());
     
     ///delete files
     for (int i = 0; i < sequenceItemsCount; ++i) {
@@ -108,11 +108,11 @@ TEST(SequenceParsing,TestHashCharacter) {
     
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("#test_##.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == 11);
+    EXPECT_EQ(11,(int)sequence.size());
     
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("##test_##.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == 1);
+    EXPECT_EQ(1,(int)sequence.size());
     
     ///delete files
     for (int i = 0; i < sequenceItemsCount; ++i) {
@@ -137,7 +137,7 @@ TEST(SequenceParsing,TestHashCharacter) {
     }
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("#test_##.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == 0);
+    EXPECT_EQ(0,(int)sequence.size());
     ///delete files
     for (int i = 0; i < sequenceItemsCount; ++i) {
         QString number = QString::number(i);
@@ -173,7 +173,7 @@ TEST(SequenceParsing,TestHashCharacter) {
     
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("#####.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == 3);
+    EXPECT_EQ(3,(int)sequence.size());
     
     for (int i = 0; i < fileNames.size(); ++i) {
         QFile::remove(fileNames[i]);
@@ -182,7 +182,7 @@ TEST(SequenceParsing,TestHashCharacter) {
     ///test with an empty pattern
     sequence.clear();
     filesListFromPattern("", &sequence);
-    EXPECT_TRUE((int)sequence.size() == 0);
+    EXPECT_EQ(0,(int)sequence.size());
 
 }
 
@@ -201,11 +201,11 @@ TEST(SequenceParsing,TestPrintfLikeSyntax) {
     }
     SequenceFromPattern sequence;
     filesListFromPattern(dir.absoluteFilePath("test_%01d.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == sequenceItemsCount);
+    EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("test_%02d.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == 0);
+    EXPECT_EQ(0,(int)sequence.size());
     
     ///delete files
     for (int i = 0; i < sequenceItemsCount; ++i) {
@@ -226,12 +226,12 @@ TEST(SequenceParsing,TestPrintfLikeSyntax) {
     }
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("test_%04d.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == sequenceItemsCount);
+    EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
 
     ///testing wrong pattern
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("%02dtest_%04d.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == 0);
+    EXPECT_EQ(0,(int)sequence.size());
     
     ///delete files
     for (int i = 0; i < sequenceItemsCount; ++i) {
@@ -261,17 +261,17 @@ TEST(SequenceParsing,TestPrintfLikeSyntax) {
     }
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("%02dtest_%04d.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == sequenceItemsCount);
+    EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     
     
     ///try mixing printf-like syntax with hashes characters (###)
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("##test_%04d.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == sequenceItemsCount);
+    EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("#test_%04d.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == 1);
+    EXPECT_EQ(1,(int)sequence.size());
     
     ///delete files
     for (int i = 0; i < sequenceItemsCount; ++i) {
@@ -314,9 +314,9 @@ TEST(SequenceParsing,TestViews) {
     
     SequenceFromPattern sequence;
     filesListFromPattern(dir.absoluteFilePath("test_%01d.%V.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == sequenceItemsCount);
+    EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     for (SequenceFromPattern::iterator it = sequence.begin(); it!=sequence.end(); ++it) {
-        EXPECT_TRUE(it->second.size() == 2);
+        EXPECT_EQ(2,(int)it->second.size());
     }
     
     for (int i = 0; i < filesCreated.size(); ++i) {
@@ -336,9 +336,9 @@ TEST(SequenceParsing,TestViews) {
     }
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("weird.%V.test_%01d.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == sequenceItemsCount);
+    EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     for (SequenceFromPattern::iterator it = sequence.begin(); it!=sequence.end(); ++it) {
-        EXPECT_TRUE(it->second.size() == 2);
+        EXPECT_EQ(2,(int)it->second.size());
     }
 
     
@@ -360,9 +360,9 @@ TEST(SequenceParsing,TestViews) {
     }
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("test_%01d.%v.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == sequenceItemsCount);
+    EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     for (SequenceFromPattern::iterator it = sequence.begin(); it!=sequence.end(); ++it) {
-        EXPECT_TRUE(it->second.size() == 2);
+        EXPECT_EQ(2,(int)it->second.size());
     }
     
     for (int i = 0; i < filesCreated.size(); ++i) {
@@ -383,7 +383,7 @@ TEST(SequenceParsing,TestViews) {
     }
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("weird%vtest_%01d.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == sequenceItemsCount);
+    EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
 
     for (int i = 0; i < filesCreated.size(); ++i) {
         QFile::remove(filesCreated.at(i));
@@ -403,9 +403,9 @@ TEST(SequenceParsing,TestViews) {
     }
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("weird.%v.test_%01d.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == sequenceItemsCount);
+    EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     for (SequenceFromPattern::iterator it = sequence.begin(); it!=sequence.end(); ++it) {
-        EXPECT_TRUE(it->second.size() == 2);
+        EXPECT_EQ(2,(int)it->second.size());
     }
     
     for (int i = 0; i < filesCreated.size(); ++i) {
@@ -446,9 +446,9 @@ TEST(SequenceParsing,TestViews) {
     }
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("weird.%v.test_%01d.unittest"), &sequence);
-    EXPECT_TRUE((int)sequence.size() == sequenceItemsCount);
+    EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     for (SequenceFromPattern::iterator it = sequence.begin(); it!=sequence.end(); ++it) {
-        EXPECT_TRUE(it->second.size() == 5);
+        EXPECT_EQ(5, (int)it->second.size());
     }
     
     for (int i = 0; i < filesCreated.size(); ++i) {
@@ -460,24 +460,24 @@ TEST(SequenceParsing,TestViews) {
 TEST(SequenceParsing,OutputSequence) {
     QString pattern = "weird.%v.test_%01d.unittest";
     QString filename = generateFileNameFromPattern(pattern, 120, 0);
-    EXPECT_TRUE(QString("weird.l.test_120.unittest") == filename);
-    
+    EXPECT_EQ(QString("weird.l.test_120.unittest"),filename);
+
     pattern = "####.jpg";
     filename = generateFileNameFromPattern(pattern, 120, 0);
-    EXPECT_TRUE(QString("0120.jpg") == filename);
-    
+    EXPECT_EQ(QString("0120.jpg"),filename);
+
     pattern = "###lalala%04d.jpg";
     filename = generateFileNameFromPattern(pattern, 120, 0);
-    EXPECT_TRUE(QString("120lalala0120.jpg") == filename);
-    
+    EXPECT_EQ(QString("120lalala0120.jpg"),filename);
+
     pattern = "####%V.jpg";
     filename = generateFileNameFromPattern(pattern, 120, 5);
-    EXPECT_TRUE(QString("0120view5.jpg") == filename);
-    
+    EXPECT_EQ(QString("0120view5.jpg"),filename);
+
     ///test with a non-pattern
     pattern = "mysequence10.png";
     filename = generateFileNameFromPattern(pattern, 120, 5);
-    EXPECT_TRUE(filename == pattern);
+    EXPECT_EQ(pattern,filename);
 }
 
 
@@ -518,11 +518,12 @@ TEST(SequenceFromFiles,SimpleTest) {
     ///test that a single file generates a pattern identical to the filename
     FileNameContent file1("/Users/Test/mysequence000.jpg");
     SequenceFromFiles sequence(file1,false);
-    EXPECT_TRUE(file1.absoluteFileName() == sequence.generateValidSequencePattern());
-    EXPECT_TRUE(file1.absoluteFileName() == sequence.generateUserFriendlySequencePattern());
-    EXPECT_TRUE(sequence.fileExtension() == "jpg");
+    EXPECT_EQ(file1.absoluteFileName(), sequence.generateValidSequencePattern());
+    EXPECT_EQ(file1.absoluteFileName(), sequence.generateUserFriendlySequencePattern());
+    EXPECT_EQ("jpg", sequence.fileExtension());
     EXPECT_TRUE(sequence.isSingleFile());
-    EXPECT_TRUE(sequence.getFirstFrame() == INT_MIN && sequence.getLastFrame() == INT_MAX);
+    EXPECT_EQ(INT_MIN, sequence.getFirstFrame());
+    EXPECT_EQ(INT_MAX, sequence.getLastFrame());
     EXPECT_TRUE(sequence.contains(file1.absoluteFileName()));
     
     ///now add valid files
@@ -540,9 +541,10 @@ TEST(SequenceFromFiles,SimpleTest) {
     }
     
     EXPECT_FALSE(sequence.isSingleFile());
-    EXPECT_TRUE(sequence.getFirstFrame() == 0 && sequence.getLastFrame() == 10);
-    EXPECT_TRUE((int)sequence.getFrameIndexes().size() == 11);
-    EXPECT_TRUE(sequence.generateValidSequencePattern() == "/Users/Test/mysequence###.jpg");
+    EXPECT_EQ(0, sequence.getFirstFrame());
+    EXPECT_EQ(10, sequence.getLastFrame());
+    EXPECT_EQ(11, (int)sequence.getFrameIndexes().size());
+    EXPECT_EQ("/Users/Test/mysequence###.jpg", sequence.generateValidSequencePattern());
 }
 
 TEST(SequenceFromFiles,ComplexTest) {
@@ -558,7 +560,7 @@ TEST(SequenceFromFiles,ComplexTest) {
             bool ok = sequence.tryInsertFile(FileNameContent("/Users/Test/00mysequence" + number + ".jpg"));
             EXPECT_TRUE(ok);
         }
-        EXPECT_TRUE(sequence.generateValidSequencePattern() == "/Users/Test/00mysequence###.jpg");
+        EXPECT_EQ("/Users/Test/00mysequence###.jpg", sequence.generateValidSequencePattern());
     }
     {
         FileNameContent file1("/Users/Test/00my000sequence000.jpg");
@@ -572,7 +574,7 @@ TEST(SequenceFromFiles,ComplexTest) {
             bool ok = sequence.tryInsertFile(FileNameContent("/Users/Test/00my"+ number + "sequence" + number + ".jpg"));
             EXPECT_TRUE(ok);
         }
-        EXPECT_TRUE(sequence.generateValidSequencePattern() == "/Users/Test/00my###sequence###.jpg");
+        EXPECT_EQ("/Users/Test/00my###sequence###.jpg", sequence.generateValidSequencePattern());
     }
     
     {
@@ -588,8 +590,8 @@ TEST(SequenceFromFiles,ComplexTest) {
             bool ok = sequence.tryInsertFile(FileNameContent("/Users/Test/00my"+ originalNumber + "sequence" + number + ".jpg"));
             EXPECT_TRUE(ok);
         }
-        EXPECT_TRUE(sequence.generateValidSequencePattern() == "/Users/Test/00my#sequence###.jpg");
-        EXPECT_FALSE(sequence.generateValidSequencePattern() == "/Users/Test/00my##sequence###.jpg");
+        EXPECT_EQ("/Users/Test/00my#sequence###.jpg", sequence.generateValidSequencePattern());
+        EXPECT_NE("/Users/Test/00my##sequence###.jpg", sequence.generateValidSequencePattern());
 
     }
     

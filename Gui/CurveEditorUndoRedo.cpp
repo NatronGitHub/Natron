@@ -116,118 +116,88 @@ MoveKeysCommand::MoveKeysCommand(CurveWidget* editor, const KeyMoveV &keys, doub
 {
 }
 
-void MoveKeysCommand::move(double dt,double dv, bool isundo){
+static void
+moveKey(const KeyMove&k, double dt, double dv, bool isundo, std::vector<int>& newKeyIndexes)
+{
+    k.curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
+
+    std::pair<double,double> curveYRange = k.curve->getInternalCurve()->getCurveYRange();
+
+    double newX = k.key.getTime() + dt;
+    double newY = k.key.getValue() + dv;
+
+    if (newY > curveYRange.second) {
+        newY = k.key.getValue();
+    } else if (newY < curveYRange.first) {
+        newY = k.key.getValue();
+    }
+
+    int keyframeIndex = k.curve->getInternalCurve()->keyFrameIndex(isundo ? newX : k.key.getTime());
+    int newIndex;
+    k.curve->getInternalCurve()->setKeyFrameValueAndTime(isundo ? k.key.getTime() : newX,
+                                                         isundo ? k.key.getValue() : newY,
+                                                         keyframeIndex, &newIndex);
+    newKeyIndexes.push_back(newIndex);
+}
+
+void MoveKeysCommand::move(double dt, double dv, bool isundo)
+{
     SelectedKeys newSelectedKeys;
-    
-    
-
-    
     std::vector<int> newKeyIndexes;
-    if(dt < 0){
-        for(KeyMoveV::iterator it = _keys.begin();it!= _keys.end();++it){
-            it->curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
-            
-            try {
-                std::pair<double,double> curveYRange =  it->curve->getInternalCurve()->getCurveYRange();
-                
-                double newX = it->key.getTime() + dt;
-                double newY = it->key.getValue() + dv;
-                
-                if (newY > curveYRange.second) {
-                    newY = it->key.getValue();
-                } else if (newY < curveYRange.second) {
-                    newY = it->key.getValue();
-                }
-                
-                int keyframeIndex = it->curve->getInternalCurve()->keyFrameIndex(isundo ? newX : it->key.getTime());
-                int newIndex;
-                it->curve->getInternalCurve()->setKeyFrameValueAndTime(
-                                                                       isundo ? it->key.getTime() : newX,
-                                                                       isundo ? it->key.getValue() : newY,
-                                                                       keyframeIndex,&newIndex);
-                newKeyIndexes.push_back(newIndex);
-                
-            } catch (const std::exception& e) {
-                std::cout << e.what() << std::endl;
-                return;
-            }
-        }
-        
-    }else{
 
-        for(KeyMoveV::reverse_iterator it = _keys.rbegin();it!= _keys.rend();++it){
-            it->curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
-            
-            try {
-                std::pair<double,double> curveYRange =  it->curve->getInternalCurve()->getCurveYRange();
-                
-                double newX = it->key.getTime() + dt;
-                double newY = it->key.getValue() + dv;
-                
-                if (newY > curveYRange.second) {
-                    newY = curveYRange.second;
-                } else if (newY < curveYRange.first) {
-                    newY = curveYRange.first;
-                }
-                
-                
-                int keyframeIndex = it->curve->getInternalCurve()->keyFrameIndex(isundo ? newX : it->key.getTime());
-                int newIndex;
-                it->curve->getInternalCurve()->setKeyFrameValueAndTime(
-                                                                       isundo ? it->key.getTime() : newX,
-                                                                       isundo ? it->key.getValue() : newY,
-                                                                       keyframeIndex,&newIndex);
-                newKeyIndexes.push_back(newIndex);
-                
-            } catch (const std::exception& e) {
-                std::cout << e.what() << std::endl;
-                return;
-            }
+    if(dt < 0) {
+        for (KeyMoveV::iterator it = _keys.begin(); it!= _keys.end(); ++it) {
+            moveKey(*it, dt, dv, isundo, newKeyIndexes);
+        }
+    } else {
+        for(KeyMoveV::reverse_iterator it = _keys.rbegin(); it!= _keys.rend(); ++it){
+            moveKey(*it, dt, dv, isundo, newKeyIndexes);
         }
     }
-    
 
     //copy back the modified keyframes to the selectd keys
     assert(newKeyIndexes.size() == _keys.size());
     int i = 0;
-    for(KeyMoveV::iterator it = _keys.begin();it!= _keys.end();++it){
-        
+    for (KeyMoveV::iterator it = _keys.begin(); it!= _keys.end(); ++it, ++i) {
         ///we must find the keyframe that has just been inserted into the curve
         const Curve& c = *(it->curve->getInternalCurve());
-        KeyFrameSet::const_iterator foundKey = c.keyframeAt(newKeyIndexes[i]);
-        assert(foundKey != c.end());
-        newSelectedKeys.insert(SelectedKey(it->curve,*foundKey));
+        KeyFrame foundKey;
+        bool found = c.getKeyFrameWithIndex(newKeyIndexes[i], &foundKey);
+        if (found) {
+            newSelectedKeys.insert(SelectedKey(it->curve, foundKey));
+        }
         it->curve->getKnob()->getKnob()->endValueChange();
-        ++i;
     }
-    if(!_keys.empty()){
+    if (!_keys.empty()) {
         _curveWidget->setSelectedKeys(newSelectedKeys);
     }
-
 }
 
-void MoveKeysCommand::undo(){
+void MoveKeysCommand::undo()
+{
     move(_dt,_dv,true);
     setText(QObject::tr("Move multiple keys"));
 }
 
-void MoveKeysCommand::redo(){
+void MoveKeysCommand::redo()
+{
     move(_dt,_dv,false);
     setText(QObject::tr("Move multiple keys"));
 
 }
 
-bool MoveKeysCommand::mergeWith(const QUndoCommand * command){
+bool MoveKeysCommand::mergeWith(const QUndoCommand * command)
+{
     const MoveKeysCommand* cmd = dynamic_cast<const MoveKeysCommand*>(command);
-    if(cmd && cmd->id() == id()){
+    if (cmd && cmd->id() == id()) {
         
         //both commands are placeholders to tell we should stop merging, we merge them into one
-        if(!_merge && !cmd->_merge){
+        if (!_merge && !cmd->_merge) {
             return true;
-        }else if(!_merge && cmd->_merge){
+        } else if (!_merge && cmd->_merge) {
             //the new cmd is not a placeholder, we break merging.
             return false;
-        }else if(!cmd->_merge){
+        } else if (!cmd->_merge) {
             _merge = false;
             //notify that we don't want to merge after this
         }
@@ -235,12 +205,15 @@ bool MoveKeysCommand::mergeWith(const QUndoCommand * command){
         _dt += cmd->_dt;
         _dv += cmd->_dv;
         return true;
-    }else{
+    } else {
         return false;
     }
 }
 
-int  MoveKeysCommand::id() const { return kCurveEditorMoveMultipleKeysCommandCompressionID; }
+int  MoveKeysCommand::id() const
+{
+    return kCurveEditorMoveMultipleKeysCommandCompressionID;
+}
 
 
 //////////////////////////////SET MULTIPLE KEYS INTERPOLATION COMMAND//////////////////////////////////////////////
@@ -252,17 +225,16 @@ SetKeysInterpolationCommand::SetKeysInterpolationCommand(CurveWidget* editor,con
 {
 }
 
-void SetKeysInterpolationCommand::setNewInterpolation(bool undo){
+void SetKeysInterpolationCommand::setNewInterpolation(bool undo)
+{
     SelectedKeys newSelectedKeys;
-    for(U32 i = 0; i < _oldInterp.size();++i){
+    for (U32 i = 0; i < _oldInterp.size();++i) {
         _oldInterp[i].curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
         int keyframeIndex = _oldInterp[i].curve->getInternalCurve()->keyFrameIndex(_oldInterp[i].key.getTime());
-        if(undo){
-        _oldInterp[i].key =  _oldInterp[i].curve->getInternalCurve()->setKeyFrameInterpolation(
-                                        _oldInterp[i].oldInterp, keyframeIndex);
-        }else{
-            _oldInterp[i].key = _oldInterp[i].curve->getInternalCurve()->setKeyFrameInterpolation(
-                                        _oldInterp[i].newInterp, keyframeIndex);
+        if (undo) {
+            _oldInterp[i].key =  _oldInterp[i].curve->getInternalCurve()->setKeyFrameInterpolation(_oldInterp[i].oldInterp, keyframeIndex);
+        } else {
+            _oldInterp[i].key = _oldInterp[i].curve->getInternalCurve()->setKeyFrameInterpolation(_oldInterp[i].newInterp, keyframeIndex);
         }
         newSelectedKeys.insert(SelectedKey(_oldInterp[i].curve,_oldInterp[i].key));
     }

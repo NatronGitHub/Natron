@@ -188,9 +188,9 @@ public:
 
     void addKeyFrame(CurveGui* curve, const KeyFrame& key);
 
-    void removeKeyFrame(CurveGui* curve,const KeyFrame& key);
+    //void removeKeyFrame(CurveGui* curve,const KeyFrame& key);
     
-    void moveKeyFrame(CurveGui* curve,const KeyFrame& key,double dt,double dv);
+    //void moveKeyFrame(CurveGui* curve,const KeyFrame& key,double dt,double dv);
         
     void setSelectedKeys(const SelectedKeys& keys);
     
