@@ -126,7 +126,7 @@ public:
     void setModelAndUrls(QFileSystemModel *model, const std::vector<QUrl> &newUrls);
     ~FavoriteView();
     
-    QSize sizeHint() const;
+    virtual QSize sizeHint() const OVERRIDE FINAL;
     
     void setUrls(const std::vector<QUrl> &list) { urlModel->setUrls(list); }
     void addUrls(const std::vector<QUrl> &list, int row) { urlModel->addUrls(list, row); }

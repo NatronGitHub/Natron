@@ -66,7 +66,7 @@ private:
     void seekInternal(double v);
     
     /**
-     *@brief See toImgCoordinates_fast in ViewerGL.h
+     *@brief See toZoomCoordinates in ViewerGL.h
      **/
     QPointF toScaleCoordinates(double x, double y);
     

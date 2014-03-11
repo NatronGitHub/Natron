@@ -42,8 +42,7 @@ CLANG_DIAG_ON(deprecated)
              ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
              assert(tab);
              ViewerData viewerData;
-             viewerData.aspectRatio = 1.;
-             tab->getViewer()->getProjection(viewerData.left, viewerData.bottom, viewerData.zoomFactor);
+             tab->getViewer()->getProjection(&viewerData.zoomLeft, &viewerData.zoomBottom, &viewerData.zoomFactor, &viewerData.zoomPAR);
              viewerData.userRoI = tab->getViewer()->getUserRegionOfInterest();
              viewerData.userRoIenabled = tab->getViewer()->isUserRegionOfInterestEnabled();
              viewerData.isClippedToProject = tab->isClippedToProject();
