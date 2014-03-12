@@ -1618,6 +1618,35 @@ void HistogramPrivate::drawScale()
  // OpenGL luminance formula:
  // L = r*.3086 + g*.6094 + b*0.0820
  */
+/* Maple code:
+ # compute magic colors:
+ # - they are red, green and blue
+ # - they all have the same luminance
+ # - their sum is white
+ #
+ # magic red, magic green, and magic blue are:
+ # R = [R_r, R_gb, R_gb]
+ # G = [G_rb, G_g, G_rb]
+ # B = [B_rg, B_rg, B_b]
+ #
+ # columns of M are coefficients of [R_r, R_gb, G_g, B_b, B_gb]
+ # G_rb is supposed to be zero (or there is an infinity of solutions)
+ # The lines mean:
+ # - the sum of all red components is 1
+ # - the sum of all green components is 1
+ # - the sum of all blue components is 1
+ # - the luminance of magic red is 1/3
+ # - the luminance of magic green is 1/3
+ # - the luminance of magic blue is 1/3
+
+ # OpenGL luminance coefficients
+ r:=0.3086;g:=0.6094;b:=0.0820;
+
+ with(LinearAlgebra):
+ M := Matrix([[1, 0, 0, 0, 1], [0, 1, 1, 0, 1], [0, 1, 0, 1, 0], [3*r, 3*(g+b), 0, 0, 0], [0, 0, 3*g, 0, 0], [0, 0, 0, 3*b, 3*(r+g)]]):
+ b := Vector([1,1,1,1,1,1]):
+ LinearSolve(M, b);
+*/
 #include <stdio.h>
 
 int
