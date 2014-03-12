@@ -564,18 +564,27 @@ public:
     OfxThread(OfxThreadFunctionV1 func,
               unsigned int threadIndex,
               unsigned int threadMax,
-              void *customArg)
+              void *customArg,
+              OfxStatus *stat)
     : _func(func)
     , _threadIndex(threadIndex)
     , _threadMax(threadMax)
     , _customArg(customArg)
+    , _stat(stat)
     {}
 
     void run() OVERRIDE {
         assert(!gThreadIndex.hasLocalData());
         assert(_threadIndex < _threadMax);
         gThreadIndex.localData() = _threadIndex;
-        _func(_threadIndex, _threadMax, _customArg);
+        assert(*_stat == kOfxStatFailed);
+        try {
+            _func(_threadIndex, _threadMax, _customArg);
+            *_stat = kOfxStatOK;
+        } catch (const std::bad_alloc& ba) {
+            *_stat = kOfxStatErrMemory;
+        } catch (...) {
+        }
     }
 
 private:
@@ -583,6 +592,7 @@ private:
     unsigned int _threadIndex;
     unsigned int _threadMax;
     void *_customArg;
+    OfxStatus *_stat;
 };
 }
 
@@ -646,12 +656,20 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
 
 #else // !MRKEPZIE
     QVector<OfxThread*> threads(nThreads);
+    QVector<OfxStatus> status(nThreads); // vector for the return status of each thread
+    status.fill(kOfxStatFailed); // by default, a thread fails
     for (unsigned int i = 0; i < nThreads; ++i) {
-        threads[i] = new OfxThread(func, i, nThreads,customArg);
+        threads[i] = new OfxThread(func, i, nThreads, customArg, &status[i]);
         threads[i]->start();
     }
     for (unsigned int i = 0; i < nThreads; ++i) {
         threads[i]->wait();
+    }
+    // check the return status of each thread, return the first error found
+    for (unsigned int i = 0; i < nThreads; ++i) {
+        if (status[i] != kOfxStatOK) {
+            return status[i];
+        }
     }
 #endif
     return kOfxStatOK;
