@@ -47,7 +47,6 @@ ComboBox::ComboBox(QWidget* parent)
     _currentText = new QLabel(this);
     _currentText->setObjectName("ComboBoxLabel"); 
     setCurrentIndex(-1);
-    _currentText->setMinimumWidth(10);
     _mainLayout->addWidget(_currentText);
     _currentText->setFixedHeight(fontMetrics().height() + 8);
 
@@ -62,6 +61,7 @@ ComboBox::ComboBox(QWidget* parent)
     _menu = new MenuWithToolTips(this);
     
     setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
+    
 }
 
 
@@ -217,6 +217,8 @@ int ComboBox::setCurrentText_internal(const QString& text) {
     str.append("  ");
     assert(_currentText);
     _currentText->setText(str);
+    QFontMetrics m = fontMetrics();
+    _currentText->setMinimumWidth(m.width(str));
     // if no action matches this text, set the index to a dirty value
     int index = -1;
     for (U32 i = 0; i < _actions.size(); ++i) {
@@ -276,7 +278,9 @@ bool ComboBox::setCurrentIndex_internal(int index) {
     str.prepend("  ");
     str.append("  ");
     _currentText->setText(str);
-    
+    QFontMetrics m = fontMetrics();
+    _currentText->setMinimumWidth(m.width(str));
+
     if (_currentIndex != index && index != -1) {
         _currentIndex = index;
         return true;
@@ -410,3 +414,4 @@ void ComboBox::setAnimation(int i){
     style()->polish(this);
     repaint();
 }
+

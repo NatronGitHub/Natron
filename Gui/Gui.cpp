@@ -190,7 +190,7 @@ struct GuiPrivate {
     ///The curve editor.
     CurveEditor *_curveEditor;
     
-    HistogramTab* _histogramTab;
+    Histogram* _histogramTab;
     
     
     ///the left toolbar
@@ -740,7 +740,7 @@ void Gui::setupUi()
     _imp->_curveEditor->setObjectName(kCurveEditorObjectName);
     _imp->_workshopPane->appendTab(_imp->_curveEditor);
     
-    _imp->_histogramTab = new HistogramTab(this);
+    _imp->_histogramTab = new Histogram(this);
     _imp->_histogramTab->setObjectName("Histogram");
     _imp->_workshopPane->appendTab(_imp->_histogramTab);
     _imp->_workshopPane->makeCurrentTab(0);

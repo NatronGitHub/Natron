@@ -612,9 +612,9 @@ public:
     
     void notifyRenderFinished();
 
-    void updateTreeAndRender(bool initViewer = false);
+    void updateTreeAndRender();
 
-    void refreshAndContinueRender(bool initViewer,bool forcePreview);
+    void refreshAndContinueRender(bool forcePreview);
 
     void ifInfiniteclipRectToProjectDefault(RectI* rod) const;
 

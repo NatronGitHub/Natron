@@ -39,12 +39,7 @@ public:
     /**
      * @brief Must center the image in the viewport so it fits entirely.
     **/
-    virtual void fitImageToFormat(const Format& format) = 0;
-
-    /**
-     * @brief Set the region of definition of the image to display.
-    **/
-    virtual void setRegionOfDefinition(const RectI& rod) = 0;
+    virtual void fitImageToFormat() = 0;
 
     /**
      * @brief Must return true if the portion of the image displayed is clipped to the project window.

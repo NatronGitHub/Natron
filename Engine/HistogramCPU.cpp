@@ -14,9 +14,8 @@
 struct HistogramRequest {
     int binsCount;
     int mode;
-    boost::shared_ptr<Natron::Image> leftImage;
-    boost::shared_ptr<Natron::Image> rightImage;
-    RectI leftRect,rightRect;
+    boost::shared_ptr<Natron::Image> image;
+    RectI rect;
     double vmin;
     double vmax;
     int smoothingKernelSize;
@@ -24,10 +23,8 @@ struct HistogramRequest {
     HistogramRequest()
     : binsCount(0)
     , mode(0)
-    , leftImage()
-    , rightImage()
-    , leftRect()
-    , rightRect()
+    , image()
+    , rect()
     , vmin(0)
     , vmax(0)
     , smoothingKernelSize(0)
@@ -37,19 +34,15 @@ struct HistogramRequest {
     
     HistogramRequest(int binsCount,
                      int mode,
-                     const boost::shared_ptr<Natron::Image>& leftImage,
-                     const boost::shared_ptr<Natron::Image>& rightImage,
-                     const RectI& leftRect,
-                     const RectI& rightRect,
+                     const boost::shared_ptr<Natron::Image>& image,
+                     const RectI& rect,
                      double vmin,
                      double vmax,
                      int smoothingKernelSize)
     : binsCount(binsCount)
     , mode(mode)
-    , leftImage(leftImage)
-    , rightImage(rightImage)
-    , leftRect(leftRect)
-    , rightRect(rightRect)
+    , image(image)
+    , rect(rect)
     , vmin(vmin)
     , vmax(vmax)
     , smoothingKernelSize(smoothingKernelSize)
@@ -58,9 +51,9 @@ struct HistogramRequest {
 };
 
 struct FinishedHistogram {
-    unsigned int* histogram1;
-    unsigned int* histogram2;
-    unsigned int* histogram3;
+    float* histogram1;
+    float* histogram2;
+    float* histogram3;
     int mode;
     int binsCount;
     int pixelsCount;
@@ -139,10 +132,8 @@ HistogramCPU::~HistogramCPU() {
 }
 
 void HistogramCPU::computeHistogram(int mode, //< corresponds to the enum Histogram::DisplayMode
-                                    const boost::shared_ptr<Natron::Image>& leftImage,
-                                    const boost::shared_ptr<Natron::Image>& rightImage,
-                                    const RectI& leftRect,
-                                    const RectI& rightRect,
+                                    const boost::shared_ptr<Natron::Image>& image,
+                                    const RectI& rect,
                                     int binsCount,
                                     double vmin,
                                     double vmax,
@@ -151,11 +142,13 @@ void HistogramCPU::computeHistogram(int mode, //< corresponds to the enum Histog
     
     /*Starting or waking-up the thread*/
     QMutexLocker quitLocker(&_imp->mustQuitMutex);
+    QMutexLocker locker(&_imp->requestMutex);
+    _imp->requests.push_back(HistogramRequest(binsCount,mode,image,rect,vmin,vmax,smoothingKernelSize));
     if (!isRunning() && !_imp->mustQuit) {
+        quitLocker.unlock();
         start(HighestPriority);
     } else {
-        QMutexLocker locker(&_imp->requestMutex);
-        _imp->requests.push_back(HistogramRequest(binsCount,mode,leftImage,rightImage,leftRect,rightRect,vmin,vmax,smoothingKernelSize));
+        quitLocker.unlock();
         _imp->requestCond.wakeOne();
     }
 
@@ -167,8 +160,9 @@ void HistogramCPU::quitAnyComputation() {
         _imp->mustQuit = true;
         
         ///post a fake request to wakeup the thread
-        computeHistogram(0, boost::shared_ptr<Natron::Image>(),boost::shared_ptr<Natron::Image>(),RectI(), RectI(), 0,0,0,0);
-        
+        l.unlock();
+        computeHistogram(0, boost::shared_ptr<Natron::Image>(), RectI(), 0,0,0,0);
+        l.relock();
         while (_imp->mustQuit) {
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
         }
@@ -181,9 +175,9 @@ bool HistogramCPU::hasProducedHistogram() const {
     return !_imp->produced.empty();
 }
 
-bool HistogramCPU::getMostRecentlyProducedHistogram(std::vector<unsigned int>* histogram1,
-                                      std::vector<unsigned int>* histogram2,
-                                      std::vector<unsigned int>* histogram3,
+bool HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
+                                      std::vector<float>* histogram2,
+                                      std::vector<float>* histogram3,
                                       unsigned int* binsCount,
                                       unsigned int* pixelsCount,
                                       int* mode,
@@ -245,21 +239,21 @@ bool HistogramCPU::getMostRecentlyProducedHistogram(std::vector<unsigned int>* h
 
 namespace  {
 
-static void computeHistogramStatic(const HistogramRequest& request,FinishedHistogram* ret,int histogramIndex,bool leftImage) {
+static void computeHistogramStatic(const HistogramRequest& request,FinishedHistogram* ret,int histogramIndex) {
     
     
-    unsigned int* histo = 0;
+    float* histo = 0;
     switch (histogramIndex) {
         case 1:
-            ret->histogram1 = (unsigned int*)calloc(request.binsCount,sizeof(unsigned int));
+            ret->histogram1 = (float*)calloc(request.binsCount,sizeof(float));
             histo = ret->histogram1;
             break;
         case 2:
-            ret->histogram2 = (unsigned int*)calloc(request.binsCount,sizeof(unsigned int));
+            ret->histogram2 = (float*)calloc(request.binsCount,sizeof(float));
             histo = ret->histogram2;
             break;
         case 3:
-            ret->histogram3 = (unsigned int*)calloc(request.binsCount,sizeof(unsigned int));
+            ret->histogram3 = (float*)calloc(request.binsCount,sizeof(float));
             histo = ret->histogram3;
             break;
         default:
@@ -277,12 +271,11 @@ static void computeHistogramStatic(const HistogramRequest& request,FinishedHisto
         mode = histogramIndex + 2;
     }
     
-    const RectI& rect = leftImage ? request.leftRect : request.rightRect;
-    ret->pixelsCount = rect.area();
+    ret->pixelsCount = request.rect.area();
     
-    for (int y = rect.bottom() ; y < rect.top(); ++y) {
-        for (int x = rect.left(); x < rect.right(); ++x) {
-            float *pix = leftImage ? request.leftImage->pixelAt(x, y) : request.rightImage->pixelAt(x, y);
+    for (int y = request.rect.bottom() ; y < request.rect.top(); ++y) {
+        for (int x = request.rect.left(); x < request.rect.right(); ++x) {
+            float *pix = request.image->pixelAt(x, y) ;
             float v;
             switch (mode) {
                 case 1: //< A
@@ -322,19 +315,21 @@ static void computeHistogramStatic(const HistogramRequest& request,FinishedHisto
         if (request.smoothingKernelSize == 3) {
             kernel[0] = 1;kernel[1] = 2;kernel[2] = 1;
         } else if (request.smoothingKernelSize == 5) {
-            kernel[0] = 1;kernel[1] = 4;kernel[2] = 6;kernel[2] = 4;kernel[2] = 1;
+            kernel[0] = 1;kernel[1] = 4;kernel[2] = 6;kernel[3] = 4;kernel[4] = 1;
         }
+        
+        std::vector<float> histogramCopy(request.binsCount);
+        std::copy(histo, histo + request.binsCount, histogramCopy.begin());
         
         int kernelHalfSize = std::floor(request.smoothingKernelSize / 2.);
         for (int i = kernelHalfSize; i < (request.binsCount - kernelHalfSize); ++i) {
-            unsigned int sum = 0;
-            int weights = 0;
+            float sum = 0;
+            float weights = 0;
             int kernelIndex = 0;
-            for (int j = i - kernelHalfSize; j <= i + kernelHalfSize; ++j) {
+            for (int j = i - kernelHalfSize; j <= i + kernelHalfSize; ++j,++kernelIndex) {
                 int w = kernel[kernelIndex];
-                sum += w * histo[j];
+                sum += w * histogramCopy[j];
                 weights += w;
-                ++kernelIndex;
             }
             sum /= weights;
             histo[i] = sum;
@@ -377,28 +372,19 @@ void HistogramCPU::run() {
         ret.vmin = request.vmin;
         ret.vmax = request.vmax;
         
-        if (request.mode == 0) {
-            assert((request.leftImage && !request.rightImage)  || (request.rightImage && !request.leftImage));
-        }
 
         switch (request.mode) {
             case 0: //< RGB
-                computeHistogramStatic(request, &ret, 1,request.leftImage);
-                computeHistogramStatic(request, &ret, 2,request.leftImage);
-                computeHistogramStatic(request, &ret, 3,request.leftImage);
+                computeHistogramStatic(request, &ret, 1);
+                computeHistogramStatic(request, &ret, 2);
+                computeHistogramStatic(request, &ret, 3);
                 break;
             case 1:
             case 2:
             case 3:
             case 4:
             case 5:
-                if (request.leftImage) {
-                    computeHistogramStatic(request,&ret,1,true);
-                    
-                }
-                if (request.rightImage) {
-                    computeHistogramStatic(request, &ret,2,false);
-                }
+                computeHistogramStatic(request,&ret,1);
                 break;
             default:
                 assert(false); //< unknown case.

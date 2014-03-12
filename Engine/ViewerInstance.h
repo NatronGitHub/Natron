@@ -103,6 +103,8 @@ private:
     
     boost::shared_ptr<Natron::Image> _lastRenderedImage;
     
+    mutable QMutex _autoContrastMutex;
+    bool _autoContrast;
 public:
     
     
@@ -128,7 +130,7 @@ public:
      * Otherwise it just calls renderRoi(...) on the active input and
      * and then render to the PBO.
      **/
-    Natron::Status renderViewer(SequenceTime time,bool fitToViewer,bool singleThreaded) WARN_UNUSED_RETURN;
+    Natron::Status renderViewer(SequenceTime time,bool singleThreaded) WARN_UNUSED_RETURN;
 
 
     /**
@@ -174,9 +176,13 @@ public:
     **/
     bool getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear) WARN_UNUSED_RETURN;
 
+    bool isAutoContrastEnabled() const;
+
 public slots:
 
     void onViewerCacheFrameAdded();
+
+    void onAutoContrastChanged(bool autoContrast);
 
     void onExposureChanged(double exp);
 
@@ -195,6 +201,8 @@ public slots:
     boost::shared_ptr<Natron::Image> getLastRenderedImage() const;
 
 signals:
+
+    void rodChanged(RectI);
 
     void mustRedraw();
     

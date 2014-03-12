@@ -56,6 +56,8 @@ Natron::OutputEffectInstance(node)
 ,_lut(sRGB)
 ,_channels(RGB)
 ,_lastRenderedImage()
+,_autoContrastMutex()
+,_autoContrast(false)
 {
     connectSlotsToViewerCache();
     connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
@@ -135,7 +137,7 @@ void ViewerInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
 }
 
 
-Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,bool singleThreaded)
+Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreaded)
 {
 #ifdef NATRON_LOG
     Natron::Log::beginFunction(getName(),"renderViewer");
@@ -212,11 +214,9 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
     }
     
     ifInfiniteclipRectToProjectDefault(&rod);
-    if(fitToViewer){
-        _uiContext->fitImageToFormat(Format(rod));
-        zoomFactor = _uiContext->getZoomFactor();
-    }
-    _uiContext->setRegionOfDefinition(rod);
+
+    emit rodChanged(rod);
+    
     Format dispW = getApp()->getProject()->getProjectDefaultFormat();
         
     if(!_uiContext->isClippingImageToProjectWindow()){
@@ -649,11 +649,21 @@ void ViewerInstance::onExposureChanged(double exp){
     
     if((_uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_uiContext->supportsGLSL())
        && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
-        refreshAndContinueRender(false,false);
+        refreshAndContinueRender(false);
     } else {
         emit mustRedraw();
     }
     
+}
+
+void ViewerInstance::onAutoContrastChanged(bool autoContrast) {
+    QMutexLocker l(&_autoContrastMutex);
+    _autoContrast = autoContrast;
+}
+
+bool ViewerInstance::isAutoContrastEnabled() const {
+    QMutexLocker l(&_autoContrastMutex);
+    return _autoContrast;
 }
 
 void ViewerInstance::onColorSpaceChanged(const QString& colorspaceName){
@@ -683,7 +693,7 @@ void ViewerInstance::onColorSpaceChanged(const QString& colorspaceName){
     
     if((_uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_uiContext->supportsGLSL())
        && input(activeInput()) != NULL){
-        refreshAndContinueRender(false,false);
+        refreshAndContinueRender(false);
     }else{
         emit mustRedraw();
     }
@@ -696,7 +706,7 @@ void ViewerInstance::onViewerCacheFrameAdded(){
 void ViewerInstance::setDisplayChannels(DisplayChannels channels) {
     _channels = channels;
     if (!getApp()->getProject()->isLoadingProject()) {
-        refreshAndContinueRender(false,false);
+        refreshAndContinueRender(false);
     }
 }
 

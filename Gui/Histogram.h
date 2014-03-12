@@ -16,61 +16,11 @@ CLANG_DIAG_ON(deprecated)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace Natron {
-    class Image;
-}
-
-
 class QString;
 class QColor;
 class QFont;
 
-class RectI;
 class Gui;
-/**
- * @class The GUI container for histograms.
- **/
-class Histogram;
-struct HistogramTabPrivate;
-class HistogramTab : public QWidget {
-    
-    Q_OBJECT
-    
-public:
-    
-    HistogramTab(Gui* gui);
-    
-    virtual ~HistogramTab();
-    
-    boost::shared_ptr<Natron::Image> getLeftHistogramImage(RectI* imagePortion) const;
-    
-    boost::shared_ptr<Natron::Image> getRightHistogramImage(RectI* imagePortion) const;
-    
-    void refreshCoordinatesLabel(double x,double y);
-    
-    void hideCoordinatesLabel();
-    
-    int getCurrentFilterSize() const;
-    
-    void updateCoordPickedForHistogram(Histogram* histo,double x,double y);
-    
-    void updateDescriptionLabelForHistogram(Histogram* histo,const QString& text);
-    
-public slots:
-    
-    void onFilterChanged(int);
-    
-    void populateViewersChoices();
-    
-    void makeHistogramsLayout(int);
-    
-    void onViewerImageChanged();
-    
-    void onFullImageCheckBoxChecked(bool checked);
-private:
-    
-    boost::scoped_ptr<HistogramTabPrivate> _imp;
-};
 
 /**
  * @class An histogram view in the histograms gui.
@@ -82,15 +32,6 @@ class Histogram : public QGLWidget
     
 public:
     
-    
-    
-    enum HistogramInterest {
-        NO_IMAGE = 0,
-        LEFT_IMAGE ,
-        RIGHT_IMAGE ,
-        LEFT_AND_RIGHT
-    };
-    
     enum DisplayMode {
         RGB = 0,
         A,
@@ -100,12 +41,10 @@ public:
         B
     };
     
-    Histogram(HistogramTab* parent, const QGLWidget* shareWidget = NULL);
+    Histogram(Gui* gui, const QGLWidget* shareWidget = NULL);
     
     virtual ~Histogram();
 
-    
-    void setDisplayModeAndInterest(DisplayMode mode,HistogramInterest interest);
     
     QPointF toHistogramCoordinates(double x,double y) const;
     
@@ -113,11 +52,9 @@ public:
     
     void centerOn(double xmin,double xmax,double ymin,double ymax);
     
-    void computeHistogramAndRefresh();
     
     void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const;
     
-    HistogramInterest getInterest() const;
     
 public slots:
     
@@ -125,7 +62,19 @@ public slots:
 
     void onCPUHistogramComputed();
     
+    void computeHistogramAndRefresh(bool forceEvenIfNotVisible = false);
+
+    void populateViewersChoices();
+    
 #endif
+    
+    void onDisplayModeChanged(QAction*);
+    
+    void onFilterChanged(QAction*);
+    
+    void onCurrentViewerChanged(QAction*);
+
+    void onViewerImageChanged();
     
 private:
     

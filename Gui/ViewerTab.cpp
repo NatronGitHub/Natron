@@ -21,6 +21,7 @@
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QAbstractItemView>
+#include <QCheckBox>
 #include <QCoreApplication>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -46,6 +47,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/FromQtEnums.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/ClickableLabel.h"
 
 using namespace Natron;
 
@@ -67,11 +69,13 @@ struct ViewerTabPrivate {
     Button* _centerViewerButton;
     Button* _clipToProjectFormatButton;
     Button* _enableViewerRoI;
+    Button* _refreshButton;
     
     /*2nd row*/
     SpinBox* _gainBox;
     ScaleSliderQWidget* _gainSlider;
-    Button* _refreshButton;
+    ClickableLabel* _autoConstrastLabel;
+    QCheckBox* _autoContrast;
     ComboBox* _viewerColorSpace;
     ComboBox* _viewsComboBox;
     int _currentViewIndex;
@@ -194,6 +198,11 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     _imp->_enableViewerRoI->setDown(false);
     _imp->_firstRowLayout->addWidget(_imp->_enableViewerRoI);
     
+    _imp->_refreshButton = new Button(_imp->_firstSettingsRow);
+    _imp->_refreshButton->setToolTip("Force a new render of the current frame."
+                                     "<p><b>Keyboard shortcut: U</b></p>");
+    _imp->_firstRowLayout->addWidget(_imp->_refreshButton);
+    
     _imp->_firstRowLayout->addStretch();
     
     /*2nd row of buttons*/
@@ -219,11 +228,11 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
                             "Multiplies the image by \nthis amount before display.");
     _imp->_secondRowLayout->addWidget(_imp->_gainSlider);
     
+    _imp->_autoConstrastLabel = new ClickableLabel("Auto-contrast:",_imp->_secondSettingsRow);
+    _imp->_secondRowLayout->addWidget(_imp->_autoConstrastLabel);
     
-    _imp->_refreshButton = new Button(_imp->_secondSettingsRow);
-    _imp->_refreshButton->setToolTip("Force a new render of the current frame."
-                               "<p><b>Keyboard shortcut: U</b></p>");
-    _imp->_secondRowLayout->addWidget(_imp->_refreshButton);
+    _imp->_autoContrast = new QCheckBox(_imp->_secondSettingsRow);
+    _imp->_secondRowLayout->addWidget(_imp->_autoContrast);
     
     _imp->_viewerColorSpace=new ComboBox(_imp->_secondSettingsRow);
     _imp->_viewerColorSpace->setToolTip("<p><b>Viewer color process: \n</b></p>"
@@ -542,7 +551,8 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     QObject::connect(_imp->_viewsComboBox,SIGNAL(currentIndexChanged(int)),this,SLOT(showView(int)));
     
     QObject::connect(_imp->_enableViewerRoI, SIGNAL(clicked(bool)), this, SLOT(onEnableViewerRoIButtonToggle(bool)));
-    
+    QObject::connect(_imp->_autoContrast,SIGNAL(clicked(bool)),_imp->_viewerNode,SLOT(onAutoContrastChanged(bool)));
+    QObject::connect(_imp->_autoConstrastLabel,SIGNAL(clicked(bool)),_imp->_viewerNode,SLOT(onAutoContrastChanged(bool)));
 }
 
 void ViewerTab::onEnableViewerRoIButtonToggle(bool b) {
@@ -680,11 +690,11 @@ void ViewerTab::onCurrentTimeSpinBoxChanged(double time){
 
 
 void ViewerTab::centerViewer(){
+    _imp->viewer->fitImageToFormat();
     if(_imp->viewer->displayingImage()){
-        _imp->_viewerNode->refreshAndContinueRender(true,false);
+        _imp->_viewerNode->refreshAndContinueRender(false);
         
     }else{
-        _imp->viewer->fitImageToFormat(_imp->viewer->getDisplayWindow());
         _imp->viewer->updateGL();
     }
 }
@@ -827,7 +837,7 @@ void ViewerTab::showView(int view){
     _imp->_currentViewIndex = view;
     abortRendering();
     bool isAutoPreview = _imp->_gui->getApp()->getProject()->isAutoPreviewEnabled();
-    _imp->_viewerNode->refreshAndContinueRender(false,isAutoPreview);
+    _imp->_viewerNode->refreshAndContinueRender(isAutoPreview);
 }
 
 
