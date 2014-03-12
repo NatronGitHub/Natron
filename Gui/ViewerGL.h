@@ -63,7 +63,7 @@ public:
     
     virtual ~ViewerGL() OVERRIDE;
     
-    QSize sizeHint() const;
+    virtual QSize sizeHint() const OVERRIDE FINAL;
     
     const QFont& textFont() const;
 
@@ -85,14 +85,16 @@ public:
     /**
      *@returns Returns a const reference to the dataWindow of the currentFrame(BBOX)
      **/
-    const RectI& getRoD() const ;
+    // MT-SAFE: don't return a reference
+    RectI getRoD() const ;
     
     virtual void setRegionOfDefinition(const RectI& rod) OVERRIDE FINAL;
     
     /**
      *@returns Returns a const reference to the displayWindow of the currentFrame(Resolution)
      **/
-    const Format& getDisplayWindow() const;
+    // MT-SAFE: don't return a reference
+    Format getDisplayWindow() const;
     
     
     void setClipToDisplayWindow(bool b);
@@ -137,36 +139,7 @@ public:
      * @brief Returns the rectangle of the image displayed by the viewer
      **/
     virtual RectI getImageRectangleDisplayed(const RectI& imageRoD) OVERRIDE FINAL;
-    
-    /**
-     *@brief Computes the viewport coordinates of the point passed in parameter.
-     *This function actually does the projection to retrieve the position;
-     *@param x[in] The x coordinate of the point in image coordinates.
-     *@param y[in] The y coordinates of the point in image coordinates.
-     *@returns Returns the viewport coordinates mapped equivalent of (x,y).
-     **/
-    QPointF toWidgetCoordinates(double x,double y);
-    
-    /**
-     *@brief Computes the image coordinates of the point passed in parameter.
-     *This function actually does the unprojection to retrieve the position.
-     *@param x[in] The x coordinate of the point in viewport coordinates.
-     *@param y[in] The y coordinates of the point in viewport coordinates.
-     *@returns Returns the image coordinates mapped equivalent of (x,y) as well as the depth.
-     **/
-    //QVector3D toImgCoordinates_slow(int x,int y);
-    
-    /**
-     *@brief Computes the image coordinates of the point passed in parameter.
-     *This is a fast in-line method much faster than toImgCoordinates_slow().
-     *This function actually does the unprojection to retrieve the position.
-     *@param x[in] The x coordinate of the point in viewport coordinates.
-     *@param y[in] The y coordinates of the point in viewport coordinates.
-     *@returns Returns the image coordinates mapped equivalent of (x,y).
-     **/
-    QPointF toImgCoordinates_fast(double x, double y);
-    
-    
+
     /**
      *@brief Set the pointer to the InfoViewerWidget. This is called once after creation
      *of the ViewerGL.
@@ -178,13 +151,6 @@ public:
      *the displayWindow  entirely in the viewer
      **/
     virtual void fitImageToFormat(const Format &rod) OVERRIDE FINAL;
-    
-    /**
-     *@returns Returns a pointer to the current viewer infos.
-     **/
-    const ImageInfo& getCurrentViewerInfos() const;
-    
-    ViewerTab* getViewerTab() const;
     
     /**
      *@brief Turns on the overlays on the viewer.
@@ -270,9 +236,9 @@ public:
     void renderText(int x, int y, const QString &string,const QColor& color,const QFont& font);
 
 
-    void getProjection(double &left,double &bottom,double &zoomFactor) const;
+    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomPAR) const;
     
-    void setProjection(double left,double bottom,double zoomFactor);
+    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomPAR);
     
     void setUserRoIEnabled(bool b);
     
@@ -450,28 +416,23 @@ private:
      **/
     void drawPersistentMessage();
 
-    /**
-     *@brief Resets the mouse position
-     **/
-    void resetMousePos();
+    bool isNearByUserRoITopEdge(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
     
-    bool isNearByUserRoITopEdge(const QPoint& mousePos);
+    bool isNearByUserRoIRightEdge(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
     
-    bool isNearByUserRoIRightEdge(const QPoint& mousePos);
+    bool isNearByUserRoILeftEdge(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
     
-    bool isNearByUserRoILeftEdge(const QPoint& mousePos);
+    bool isNearByUserRoIBottomEdge(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
     
-    bool isNearByUserRoIBottomEdge(const QPoint& mousePos);
+    bool isNearByUserRoIMiddleHandle(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
     
-    bool isNearByUserRoIMiddleHandle(const QPoint& mousePos);
+    bool isNearByUserRoITopLeft(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
     
-    bool isNearByUserRoITopLeft(const QPoint& mousePos);
+    bool isNearByUserRoITopRight(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
     
-    bool isNearByUserRoITopRight(const QPoint& mousePos);
+    bool isNearByUserRoIBottomRight(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
     
-    bool isNearByUserRoIBottomRight(const QPoint& mousePos);
-    
-    bool isNearByUserRoIBottomLeft(const QPoint& mousePos);
+    bool isNearByUserRoIBottomLeft(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
 
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details

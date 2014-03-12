@@ -59,7 +59,6 @@ TEST(Curve,Basic)
     EXPECT_EQ(10., c.getValueAt(-10.)); // before first keyframe
     EXPECT_EQ(20., c.getValueAt(10.)); // after last keyframe
     EXPECT_EQ(15., c.getValueAt(0.5)); // middle
-
     // derivative
     EXPECT_EQ(10., c.getDerivativeAt(0.));
     EXPECT_EQ(10., c.getDerivativeAt(0.5)); // middle
@@ -71,6 +70,31 @@ TEST(Curve,Basic)
     EXPECT_EQ(15., c.getIntegrateFromTo(0., 1.));
     EXPECT_EQ(200., c.getIntegrateFromTo(1., 11.));
     EXPECT_EQ(315., c.getIntegrateFromTo(-10., 11.));
+
+    KeyFrameSet ks = c.getKeyFrames();
+
+    c.clearKeyFrames();
+    // empty curve
+    EXPECT_FALSE(c.isAnimated());
+
+    // two keyframes, constant interpolation
+    EXPECT_TRUE(c.addKeyFrame(KeyFrame(0.,10.,0.,0.,Natron::KEYFRAME_CONSTANT))); // keyframe already exists, replacing it
+    EXPECT_TRUE(c.addKeyFrame(KeyFrame(1.,20.,0.,0.,Natron::KEYFRAME_CONSTANT)));
+    EXPECT_EQ(10., c.getValueAt(0.));
+    EXPECT_EQ(20., c.getValueAt(1.));
+    EXPECT_EQ(10., c.getValueAt(-10.)); // before first keyframe
+    EXPECT_EQ(20., c.getValueAt(10.)); // after last keyframe
+    EXPECT_EQ(10., c.getValueAt(0.5)); // middle
+    // derivative
+    EXPECT_EQ(0., c.getDerivativeAt(0.));
+    EXPECT_EQ(0., c.getDerivativeAt(0.5)); // middle
+    EXPECT_EQ(0., c.getDerivativeAt(0.99));
+    EXPECT_EQ(0., c.getDerivativeAt(1.)); // from last keyframe, it's constant
+    // integrate
+    EXPECT_EQ(100., c.getIntegrateFromTo(-10., 0.));
+    EXPECT_EQ(10., c.getIntegrateFromTo(0., 1.));
+    EXPECT_EQ(200., c.getIntegrateFromTo(1., 11.));
+    EXPECT_EQ(310., c.getIntegrateFromTo(-10., 11.));
 
     KeyFrame k2(1., 20.);
 

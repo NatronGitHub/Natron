@@ -27,7 +27,10 @@ CLANG_DIAG_ON(unused-parameter)
 class ProjectGui;
 
 struct ViewerData {
-    double left,bottom,zoomFactor,aspectRatio;
+    double zoomLeft;
+    double zoomBottom;
+    double zoomFactor;
+    double zoomPAR;
     bool userRoIenabled;
     RectI userRoI;
     bool isClippedToProject;
@@ -40,10 +43,10 @@ struct ViewerData {
     void serialize(Archive & ar,const unsigned int version)
     {
         (void)version;
-        ar & boost::serialization::make_nvp("Left",left);
-        ar & boost::serialization::make_nvp("Bottom",bottom);
-        ar & boost::serialization::make_nvp("ZoomFactor",zoomFactor);
-        ar & boost::serialization::make_nvp("AspectRatio",aspectRatio);
+        ar & boost::serialization::make_nvp("zoomLeft",zoomLeft);
+        ar & boost::serialization::make_nvp("zoomBottom",zoomBottom);
+        ar & boost::serialization::make_nvp("zoomFactor",zoomFactor);
+        ar & boost::serialization::make_nvp("zoomPAR",zoomPAR);
         ar & boost::serialization::make_nvp("UserRoIEnabled",userRoIenabled);
         ar & boost::serialization::make_nvp("UserRoI",userRoI);
         ar & boost::serialization::make_nvp("ClippedToProject",isClippedToProject);

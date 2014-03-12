@@ -66,7 +66,7 @@ class NodeGraph: public QGraphicsView , public boost::noncopyable{
         
         void setImage(const QImage& img);
         
-        virtual QSize sizeHint() const {return QSize(_w,_h);};
+        virtual QSize sizeHint() const OVERRIDE FINAL {return QSize(_w,_h);};
         
         virtual ~NodeGraphNavigator(){}
     };

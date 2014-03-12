@@ -294,7 +294,7 @@ private:
     void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const;
 
     /**
-     *@brief See toImgCoordinates_fast in ViewerGL.h
+     *@brief See toZoomCoordinates in ViewerGL.h
      **/
     QPointF toScaleCoordinates(double x, double y) const;
 

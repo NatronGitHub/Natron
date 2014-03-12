@@ -201,8 +201,8 @@ void AddFormatDialog::onCopyFromViewer(){
         if(nodes[i]->getName() == activeText.toStdString()){
             ViewerInstance* v = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             ViewerTab* tab = _gui->getViewerTabForInstance(v);
-            const RectI& f = tab->getViewer()->getCurrentViewerInfos().getRoD();
-            const Format& format = tab->getViewer()->getCurrentViewerInfos().getDisplayWindow();
+            RectI f = tab->getViewer()->getRoD();
+            Format format = tab->getViewer()->getDisplayWindow();
             _widthSpinBox->setValue(f.width());
             _heightSpinBox->setValue(f.height());
             _pixelAspectSpinBox->setValue(format.getPixelAspect());
@@ -303,7 +303,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
             if (found != viewersProjections.end()) {
                 ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(nGui->getNode()->getLiveInstance());
                 ViewerTab* tab = _gui->getApp()->getGui()->getViewerTabForInstance(viewer);
-                tab->getViewer()->setProjection(found->second.left, found->second.bottom, found->second.zoomFactor);
+                tab->getViewer()->setProjection(found->second.zoomLeft, found->second.zoomBottom, found->second.zoomFactor, found->second.zoomPAR);
                 tab->setChannels(found->second.channels);
                 tab->setColorSpace(found->second.colorSpace);
                 tab->setExposure(found->second.exposure);

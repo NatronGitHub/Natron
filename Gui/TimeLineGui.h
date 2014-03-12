@@ -64,7 +64,7 @@ public:
 
 
     /**
-     *@brief See toImgCoordinates_fast in ViewerGL.h
+     *@brief See toZoomCoordinates in ViewerGL.h
      **/
     QPointF toTimeLineCoordinates(double x, double y) const;
 
