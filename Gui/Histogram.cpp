@@ -266,7 +266,7 @@ void HistogramTab::populateViewersChoices() {
 void HistogramTab::onViewerImageChanged() {
     ViewerGL* viewer = qobject_cast<ViewerGL*>(sender());
     if (viewer) {
-        QString viewerName = viewer->getViewerTab()->getInternalNode()->getName().c_str();
+        QString viewerName = viewer->getInternalNode()->getName().c_str();
         ViewerTab* lastSelectedViewer = _imp->gui->getLastSelectedViewer();
         QString currentViewerName;
         if (lastSelectedViewer) {

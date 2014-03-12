@@ -2515,3 +2515,11 @@ int ViewerGL::getCurrentView() const
     ///protected in viewerTab (which is const)
     return _imp->viewerTab->getCurrentView();
 }
+
+ViewerInstance* ViewerGL::getInternalNode() const {
+    return _imp->viewerTab->getInternalNode();
+}
+
+ViewerTab* ViewerGL::getViewerTab() const {
+    return _imp->viewerTab;
+}

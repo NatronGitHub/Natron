@@ -235,7 +235,6 @@ public:
 
     void renderText(int x, int y, const QString &string,const QColor& color,const QFont& font);
 
-
     void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomPAR) const;
     
     void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomPAR);
@@ -272,6 +271,10 @@ public:
     * @brief Returns the colour of the background (i.e: clear color) of the viewport.
     **/
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL ;
+    
+    ViewerInstance* getInternalNode() const;
+    
+    ViewerTab* getViewerTab() const;
     
 signals:
     /**
