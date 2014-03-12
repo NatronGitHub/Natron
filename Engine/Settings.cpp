@@ -368,7 +368,9 @@ void Settings::restoreSettings(){
 
 }
 
-bool Settings::tryLoadOpenColorIOConfig() {
+bool Settings::tryLoadOpenColorIOConfig()
+{
+    QString configFile;
     if (_customOcioConfigFile->isEnabled(0)) {
         ///try to load from the file
         QStringList files = _customOcioConfigFile->getValue<QStringList>();
@@ -379,7 +381,7 @@ bool Settings::tryLoadOpenColorIOConfig() {
             Natron::errorDialog("OpenColorIO", files.at(0).toStdString() + ": No such file.");
             return false;
         }
-        qputenv("OCIO", files.at(0).toUtf8());
+        configFile = files.at(0);
     } else {
         ///try to load from the combobox
         QString activeEntryText(_ocioConfigKnob->getActiveEntryText().c_str());
@@ -402,11 +404,13 @@ bool Settings::tryLoadOpenColorIOConfig() {
                 Natron::errorDialog("OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + ": No such file or directory.");
                 return false;
             }
-            qputenv("OCIO",subDir.absoluteFilePath("config.ocio").toUtf8());
+            configFile = subDir.absoluteFilePath("config.ocio");
         } else {
-            qputenv("OCIO", defaultConfigsDir.absoluteFilePath(configFileName).toUtf8());
+            configFile = defaultConfigsDir.absoluteFilePath(configFileName);
         }
     }
+    qDebug() << "setting OCIO=" << configFile;
+    qputenv("OCIO", configFile.toUtf8());
     return true;
 }
 
