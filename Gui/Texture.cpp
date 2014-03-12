@@ -51,7 +51,7 @@ void Texture::fillOrAllocateTexture(const TextureRect& texRect ,DataType type){
                             GL_FLOAT,		// type
                             0);
         }
-        checkGLErrors();
+        glCheckError();
         
     }else{
         _textureRect = texRect;
@@ -83,7 +83,7 @@ void Texture::fillOrAllocateTexture(const TextureRect& texRect ,DataType type){
                           0);			// pixels
         }
         
-        checkGLErrors();
+        glCheckError();
     }
 }
 

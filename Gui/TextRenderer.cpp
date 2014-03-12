@@ -118,6 +118,7 @@ TextRendererPrivate::~TextRendererPrivate()
 void TextRendererPrivate::clearCache()
 {
     foreach(GLuint texture, _usedTextures) {
+        assert(glIsTexture(texture));
         glDeleteTextures(1, &texture);
     }
 }
@@ -126,6 +127,7 @@ void TextRendererPrivate::newTransparantTexture()
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
+    assert(glIsTexture(texture));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
@@ -178,9 +180,10 @@ CharBitmap *TextRendererPrivate::createCharacter(QChar c, const QColor &color)
     //fill the texture with the QImage
     image = QGLWidget::convertToGLFormat(image);
     glBindTexture(GL_TEXTURE_2D, texture);
+    assert(glIsTexture(texture));
     glTexSubImage2D(GL_TEXTURE_2D, 0, _xOffset, _yOffset, width, height, GL_RGBA,
                     GL_UNSIGNED_BYTE, image.bits());
-    checkGLErrors();
+    glCheckError();
 
 
     if (it == _bitmapsCache.end()) {
@@ -236,6 +239,7 @@ TextRenderer::~TextRenderer()
 
 void TextRenderer::renderText(float x, float y, const QString &text, const QColor &color, const QFont &font) const
 {
+    glCheckError();
     boost::shared_ptr<TextRendererPrivate> p;
     FontRenderers::iterator it = _imp->renderers.find(font);
     if (it != _imp->renderers.end()) {
@@ -253,7 +257,6 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     GLuint texture = 0;
     glTranslatef(x, y, 0);
-    checkGLErrors();
     for (int i = 0; i < text.length(); ++i) {
         CharBitmap *c = p->createCharacter(text[i], color);
         if (!c) {
@@ -261,9 +264,10 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
         }
         if (texture != c->texID) {
             texture = c->texID;
+            assert(glIsTexture(texture));
             glBindTexture(GL_TEXTURE_2D, texture);
         }
-        checkGLErrors();
+        glCheckError();
         glBegin(GL_QUADS);
         glTexCoord2f(c->xTexCoords[0], c->yTexCoords[0]);
         glVertex2f(0, 0);
@@ -274,15 +278,15 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
         glTexCoord2f(c->xTexCoords[0], c->yTexCoords[1]);
         glVertex2f(0, c->h);
         glEnd();
-        checkGLErrors();
+        glCheckErrorIgnoreOSXBug();
         glTranslatef(c->w, 0, 0);
-        checkGLErrors();
+        glCheckError();
 
     }
     glBindTexture(GL_TEXTURE_2D, 0);
     glPopMatrix();
     glPopAttrib();
-    checkGLErrors();
+    glCheckError();
     glColor4f(1., 1., 1., 1.);
 }
 
