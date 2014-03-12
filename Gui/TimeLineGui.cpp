@@ -145,8 +145,9 @@ void TimeLineGui::resizeGL(int width,int height){
     glViewport (0, 0, width , height);
 }
 
-void TimeLineGui::paintGL(){
-
+void TimeLineGui::paintGL()
+{
+    glCheckError();
     if(_imp->_firstPaint){
         _imp->_firstPaint = false;
         centerOn(DEFAULT_TIMELINE_LEFT_BOUND,DEFAULT_TIMELINE_RIGHT_BOUND);
@@ -175,13 +176,13 @@ void TimeLineGui::paintGL(){
     _imp->_zoomCtx.lastOrthoBottom = bottom;
     _imp->_zoomCtx.lastOrthoTop = top;
     glOrtho(left , right, bottom, top, -1, 1);
-    checkGLErrors();
 
     glMatrixMode (GL_MODELVIEW);
     glLoadIdentity();
 
     glClearColor(_imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF());
     glClear(GL_COLOR_BUFFER_BIT);
+    glCheckErrorIgnoreOSXBug();
 
     QPointF btmLeft = toTimeLineCoordinates(0,height()-1);
     QPointF topRight = toTimeLineCoordinates(width()-1, 0);
@@ -199,11 +200,8 @@ void TimeLineGui::paintGL(){
     glEnable(GL_SCISSOR_TEST);
     glClearColor(_imp->_backgroundColor.redF(),_imp->_backgroundColor.greenF(),_imp->_backgroundColor.blueF(),_imp->_backgroundColor.alphaF());
     glClear(GL_COLOR_BUFFER_BIT);
+    glCheckErrorIgnoreOSXBug();
     glDisable(GL_SCISSOR_TEST);
-
-
-    checkGLErrors();
-
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -219,6 +217,7 @@ void TimeLineGui::paintGL(){
     glVertex2f(btmLeft.x(), lineYpos);
     glVertex2f(topRight.x(), lineYpos);
     glEnd();
+    glCheckErrorIgnoreOSXBug();
 
     double tickBottom = toTimeLineCoordinates(0,height() -1 - fontM.height() ).y();
     double tickTop = toTimeLineCoordinates(0,height() -1 - fontM.height()  - TICK_HEIGHT).y();
@@ -257,6 +256,7 @@ void TimeLineGui::paintGL(){
         glVertex2f(value, tickBottom);
         glVertex2f(value, tickTop);
         glEnd();
+        glCheckErrorIgnoreOSXBug();
 
         if (tickSize > minTickSizeText) {
             const int tickSizePixel = rangePixel * tickSize/range;
@@ -272,11 +272,12 @@ void TimeLineGui::paintGL(){
                 }
                 QColor c = _imp->_ticksColor;
                 c.setAlpha(255*alphaText);
+                glCheckError();
                 renderText(value, btmLeft.y(), s, c, _imp->_font);
             }
         }
     }
-    checkGLErrors();
+    glCheckError();
 
     QPointF cursorBtm(_imp->_timeline->currentFrame(),lineYpos);
     QPointF cursorBtmWidgetCoord = toWidgetCoordinates(cursorBtm.x(),cursorBtm.y());
@@ -320,6 +321,7 @@ void TimeLineGui::paintGL(){
         glVertex2f(currentPosTopLeft.x(),currentPosTopLeft.y());
         glVertex2f(currentPosTopRight.x(),currentPosTopRight.y());
         glEnd();
+        glCheckError();
 
 
         QString mouseNumber(QString::number(std::floor(currentPosBtm.x())));
@@ -341,6 +343,7 @@ void TimeLineGui::paintGL(){
     glVertex2f(cursorTopLeft.x(),cursorTopLeft.y());
     glVertex2f(cursorTopRight.x(),cursorTopRight.y());
     glEnd();
+    glCheckErrorIgnoreOSXBug();
 
     if(_imp->_timeline->leftBound() != _imp->_timeline->currentFrame()){
         QString leftBoundStr(QString::number(_imp->_timeline->leftBound()));
@@ -355,6 +358,7 @@ void TimeLineGui::paintGL(){
     glVertex2f(leftBoundBtmRight.x(),leftBoundBtmRight.y());
     glVertex2f(leftBoundTop.x(),leftBoundTop.y());
     glEnd();
+    glCheckErrorIgnoreOSXBug();
 
     if(_imp->_timeline->rightBound() != _imp->_timeline->currentFrame()){
         QString rightBoundStr(QString::number(_imp->_timeline->rightBound()));
@@ -364,34 +368,37 @@ void TimeLineGui::paintGL(){
                    rightBoundStr, _imp->_boundsColor, _imp->_font);
     }
     glColor4f(_imp->_boundsColor.redF(),_imp->_boundsColor.greenF(),_imp->_boundsColor.blueF(),_imp->_boundsColor.alphaF());
+    glCheckError();
     glBegin(GL_POLYGON);
     glVertex2f(rightBoundBtm.x(),rightBoundBtm.y());
     glVertex2f(rightBoundBtmLeft.x(),rightBoundBtmLeft.y());
     glVertex2f(rightBoundTop.x(),rightBoundTop.y());
     glEnd();
+    glCheckErrorIgnoreOSXBug();
 
     glDisable(GL_POLYGON_SMOOTH);
-    checkGLErrors();
 
     //draw cached frames
     glColor4f(_imp->_cachedLineColor.redF(),_imp->_cachedLineColor.greenF(),_imp->_cachedLineColor.blueF(),_imp->_cachedLineColor.alphaF());
     glEnable(GL_LINE_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
-    checkGLErrors();
+    glCheckError();
     glLineWidth(2);
+    glCheckError();
     glBegin(GL_LINES);
     for(std::list<SequenceTime>::const_iterator i = _imp->_cached.begin();i!= _imp->_cached.end();++i) {
         glVertex2f(*i - 0.5,lineYpos);
         glVertex2f(*i + 0.5,lineYpos);
     }
     glEnd();
+    glCheckErrorIgnoreOSXBug();
     glDisable(GL_LINE_SMOOTH);
     glLineWidth(1.);
 
     glDisable(GL_BLEND);
     glColor4f(1.,1.,1.,1.);
     glPopAttrib();
-    checkGLErrors();
+    glCheckError();
 }
 
 
@@ -400,9 +407,11 @@ void TimeLineGui::renderText(double x,double y,const QString& text,const QColor&
 {
     assert(QGLContext::currentContext() == context());
 
+    glCheckError();
     if(text.isEmpty())
         return;
     glMatrixMode (GL_PROJECTION);
+    glCheckError();
     glLoadIdentity();
     double h = (double)height();
     double w = (double)width();
@@ -410,13 +419,14 @@ void TimeLineGui::renderText(double x,double y,const QString& text,const QColor&
     glOrtho(0,w,0,h,-1,1);
     glMatrixMode(GL_MODELVIEW);
     QPointF pos = toWidgetCoordinates(x, y);
+    glCheckError();
     _imp->_textRenderer.renderText(pos.x(),h-pos.y(),text,color,font);
-    checkGLErrors();
+    glCheckError();
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
     glOrtho(_imp->_zoomCtx.lastOrthoLeft,_imp->_zoomCtx.lastOrthoRight,_imp->_zoomCtx.lastOrthoBottom,_imp->_zoomCtx.lastOrthoTop,-1,1);
     glMatrixMode(GL_MODELVIEW);
-    checkGLErrors();
+    glCheckError();
 }
 
 

@@ -15,25 +15,37 @@
 #define QT_NO_OPENGL_ES_2
 
 #ifndef NATRON_DEBUG
-#define checkGLErrors() ((void)0)
-#define assert_checkGLErrors() ((void)0)
-#define checkGLFrameBuffer() ((void)0)
+#define glCheckErrorIgnoreOSXBug() ((void)0)
+#define glCheckError() ((void)0)
+#define glCheckErrorAssert() ((void)0)
+#define glCheckFramebufferError() ((void)0)
 #else
-#define checkGLErrors()                                                 \
+#define glCheckError()                                                  \
   {                                                                     \
     GLenum _glerror_ = glGetError();                                    \
     if(_glerror_ != GL_NO_ERROR) {                                      \
       std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl; \
     }                                                                   \
   }
-#define assert_checkGLErrors()                                          \
+#ifdef __APPLE__
+#define glCheckErrorIgnoreOSXBug()                                      \
+  {                                                                     \
+    GLenum _glerror_ = glGetError();                                    \
+    if(_glerror_ != GL_NO_ERROR && _glerror_ != GL_INVALID_FRAMEBUFFER_OPERATION) { \
+      std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl; \
+    }                                                                   \
+  }
+#else
+#define glCheckErrorIgnoreOSXBug() glCheckError()
+#endif
+#define glCheckErrorAssert()                                            \
   {                                                                     \
     GLenum _glerror_ = glGetError();                                    \
     if(_glerror_ != GL_NO_ERROR) {                                      \
       std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl; abort(); \
     }                                                                   \
   }
-#define checkGLFrameBuffer()                                            \
+#define glCheckFramebufferError()                                       \
   {                                                                     \
     GLenum error = glCheckFramebufferStatus(GL_FRAMEBUFFER);            \
     if (error != GL_FRAMEBUFFER_COMPLETE) {                             \
@@ -60,8 +72,8 @@
         std::cout << "an error occured determining the status of the framebuffer" <<  std::endl; \
       else                                                              \
         std::cout << "undefined framebuffer status (" << error << ")" << std::endl; \
-      checkGLErrors();                                                  \
-    }                                                                   \
+      glCheckError();                                                  \
+    }                                                                  \
   }
 #endif
 

@@ -552,6 +552,7 @@ void ViewerGL::drawRenderingVAO()
         texRight , texBottom   //15
     };
     
+    glCheckError();
     glEnable(GL_SCISSOR_TEST);
 
     
@@ -565,17 +566,17 @@ void ViewerGL::drawRenderingVAO()
     glClientActiveTexture(GL_TEXTURE0);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glTexCoordPointer(2, GL_FLOAT, 0 , 0);
-    
+
     glBindBuffer(GL_ARRAY_BUFFER,0);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _imp->iboTriangleStripId);
     glDrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0);
-    checkGLErrors();
-    
+    glCheckErrorIgnoreOSXBug();
+
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    checkGLErrors();
+    glCheckError();
     
     glDisable(GL_SCISSOR_TEST);
 }
@@ -612,7 +613,7 @@ void ViewerGL::checkFrameBufferCompleteness(const char where[],bool silent)
         cout << where << ": an error occured determining the status of the framebuffer" << endl;
     else
         cout << where << ": UNDEFINED FRAMEBUFFER STATUS" << endl;
-    checkGLErrors();
+    glCheckError();
 }
 #endif
 
@@ -664,7 +665,7 @@ ViewerGL::~ViewerGL()
     glDeleteBuffers(1, &_imp->vboVerticesId);
     glDeleteBuffers(1, &_imp->vboTexturesId);
     glDeleteBuffers(1, &_imp->iboTriangleStripId);
-    checkGLErrors();
+    glCheckError();
     delete _imp->textFont;
 }
 
@@ -725,7 +726,7 @@ void ViewerGL::resizeGL(int width, int height)
         QMutexLocker(&_imp->zoomCtxMutex);
         _imp->zoomCtx.setScreenSize(width, height);
     }
-    checkGLErrors();
+    glCheckError();
     _imp->ms = UNDEFINED;
     assert(_imp->viewerTab);
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
@@ -743,7 +744,7 @@ void ViewerGL::paintGL()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    checkGLErrors();
+    glCheckError();
     if (_imp->must_initBlackTex) {
         initBlackTex();
     }
@@ -765,7 +766,7 @@ void ViewerGL::paintGL()
     }
 
     glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
-    checkGLErrors();
+    glCheckError();
     
     glMatrixMode (GL_MODELVIEW);
     glLoadIdentity();
@@ -779,24 +780,24 @@ void ViewerGL::paintGL()
         if (_imp->supportsGLSL) {
             activateShaderRGB();
         }
-        checkGLErrors();
+        glCheckError();
     } else {
         glBindTexture(GL_TEXTURE_2D, _imp->blackTex->getTexID());
-        checkGLErrors();
+        glCheckError();
         if (_imp->supportsGLSL && !_imp->shaderBlack->bind()) {
             cout << qPrintable(_imp->shaderBlack->log()) << endl;
-            checkGLErrors();
+            glCheckError();
         }
         if(_imp->supportsGLSL) {
             _imp->shaderBlack->setUniformValue("Tex", 0);
         }
-        checkGLErrors();
-
+        glCheckError();
     }
 
     clearColorBuffer(_imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF());
+    glCheckErrorIgnoreOSXBug();
     drawRenderingVAO();
-    checkGLErrors();
+    glCheckError();
 
     if (_imp->displayingImage) {
         if (_imp->supportsGLSL) {
@@ -808,7 +809,7 @@ void ViewerGL::paintGL()
     }
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    checkGLErrors();
+    glCheckError();
     if (_imp->overlay) {
         drawOverlay();
     }
@@ -816,7 +817,7 @@ void ViewerGL::paintGL()
     if (_imp->displayPersistentMessage) {
         drawPersistentMessage();
     }
-    assert_checkGLErrors();
+    glCheckErrorAssert();
 }
 
 
@@ -844,6 +845,7 @@ void ViewerGL::drawOverlay()
     assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
 
+    glCheckError();
     RectI dispW = getDisplayWindow();
     
     renderText(dispW.right(),dispW.bottom(), _imp->currentViewerInfos_resolutionOverlay,_imp->textRenderingColor,*_imp->textFont);
@@ -873,8 +875,8 @@ void ViewerGL::drawOverlay()
     glVertex3f(btmRight.x(),btmRight.y(),1);
     
     glEnd();
-    checkGLErrors();
-    
+    glCheckErrorIgnoreOSXBug();
+
     RectI dataW = getRoD();
     if(dispW != dataW){
         
@@ -910,7 +912,7 @@ void ViewerGL::drawOverlay()
         glEnd();
         glDisable(GL_LINE_STIPPLE);
         glPopAttrib();
-        checkGLErrors();
+        glCheckError();
     }
     
     bool userRoIEnabled;
@@ -926,7 +928,7 @@ void ViewerGL::drawOverlay()
 
     //reseting color for next pass
     glColor4f(1., 1., 1., 1.);
-    checkGLErrors();
+    glCheckError();
 }
 
 void ViewerGL::drawUserRoI()
@@ -1104,7 +1106,7 @@ void ViewerGL::drawPersistentMessage()
         renderText(textPos.x(),textPos.y(), lines.at(j),_imp->textRenderingColor,*_imp->textFont);
         textPos.setY(textPos.y() - metrics.height()*2 * zoomScreenPixelHeight);
     }
-    checkGLErrors();
+    glCheckError();
     //reseting color for next pass
     glColor4f(1., 1., 1., 1.);
 }
@@ -1137,16 +1139,16 @@ void ViewerGL::initializeGL()
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 28*sizeof(GLubyte), triangleStrip, GL_STATIC_DRAW);
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    checkGLErrors();
+    glCheckError();
     
     
     if(_imp->supportsGLSL){
         initShaderGLSL();
-        checkGLErrors();
+        glCheckError();
     }
     
     initBlackTex();
-    checkGLErrors();
+    glCheckError();
 }
 
 QString ViewerGL::getOpenGLVersionString() const
@@ -1383,23 +1385,23 @@ void ViewerGL::initBlackTex()
     
     TextureRect texSize(0, 0, 2048, 1556,2048,1556,1);
     
-    assert_checkGLErrors();
+    glCheckErrorAssert();
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, getPboID(0));
-    checkGLErrors();
+    glCheckError();
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, texSize.x2 * texSize.y2 *sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
-    checkGLErrors();
+    glCheckError();
     U32* frameData = (U32*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-    checkGLErrors();
+    glCheckError();
     assert(frameData);
     for(int i = 0 ; i < texSize.x2 * texSize.y2 ; ++i) {
         frameData[i] = ViewerInstance::toBGRA(0, 0, 0, 255);
     }
     glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
-    checkGLErrors();
+    glCheckError();
     _imp->blackTex->fillOrAllocateTexture(texSize,Texture::BYTE);
     
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    checkGLErrors();
+    glCheckError();
     _imp->must_initBlackTex = false;
 }
 
@@ -1421,13 +1423,13 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, getPboID(pboIndex));
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
     GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-    checkGLErrors();
+    glCheckError();
     assert(ret);
     
     memcpy(ret, (void*)ramBuffer, bytesCount);
 
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-    checkGLErrors();
+    glCheckError();
     
     OpenGLViewerI::BitDepth bd = getBitDepth();
     if (bd == OpenGLViewerI::BYTE) {
@@ -1437,7 +1439,7 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
         _imp->defaultDisplayTexture->fillOrAllocateTexture(region,Texture::FLOAT);
     }
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,0);
-    checkGLErrors();
+    glCheckError();
     _imp->displayingImage = true;
     
     emit imageChanged();
@@ -2198,8 +2200,9 @@ void ViewerGL::renderText( int x, int y, const QString &string,const QColor& col
         QMutexLocker l(&_imp->zoomCtxMutex);
         pos = _imp->zoomCtx.toWidgetCoordinates(x, y);
     }
+    glCheckError();
     _imp->textRenderer.renderText(pos.x(),h-pos.y(),string,color,font);
-    checkGLErrors();
+    glCheckError();
     
     glMatrixMode (GL_PROJECTION);
     glPopMatrix(); // restore GL_PROJECTION

@@ -758,7 +758,7 @@ static int shaderChannelFromDisplayMode(Histogram::DisplayMode channel) {
 void HistogramPrivate::activateHistogramComputingShader(Histogram::DisplayMode channel){
     histogramComputingShader->bind();
     histogramComputingShader->setUniformValue("Tex",0);
-    checkGLErrors();
+    glCheckError();
     histogramComputingShader->setUniformValue("channel",shaderChannelFromDisplayMode(channel));
     glBindAttribLocation(histogramComputingShader->programId(),0,"TexCoord");
 }
@@ -880,7 +880,7 @@ void HistogramPrivate::computeHistogram(Histogram::DisplayMode channel) {
     histogramMaximumShader->release();
     stopRenderingTo();
     glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
-    checkGLErrors();
+    glCheckError();
 }
 void HistogramPrivate::renderHistogram(Histogram::DisplayMode channel) {
     
@@ -921,7 +921,7 @@ void HistogramPrivate::renderHistogram(Histogram::DisplayMode channel) {
     glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
     glBindVertexArray(0);
     stopRenderingTo();
-    checkGLErrors();
+    glCheckError();
 }
 
 #endif
@@ -955,7 +955,7 @@ void Histogram::paintGL() {
     _imp->zoomCtx._lastOrthoBottom = bottom;
     _imp->zoomCtx._lastOrthoTop = top;
     glOrtho(left , right, bottom, top, -1, 1);
-    checkGLErrors();
+    glCheckError();
     
     glMatrixMode (GL_MODELVIEW);
     glLoadIdentity();
@@ -1366,6 +1366,35 @@ void HistogramPrivate::drawPicker() {
  // OpenGL luminance formula:
  // L = r*.3086 + g*.6094 + b*0.0820
  */
+/* Maple code:
+ # compute magic colors:
+ # - they are red, green and blue
+ # - they all have the same luminance
+ # - their sum is white
+ #
+ # magic red, magic green, and magic blue are:
+ # R = [R_r, R_gb, R_gb]
+ # G = [G_rb, G_g, G_rb]
+ # B = [B_rg, B_rg, B_b]
+ #
+ # columns of M are coefficients of [R_r, R_gb, G_g, B_b, B_gb]
+ # G_rb is supposed to be zero (or there is an infinity of solutions)
+ # The lines mean:
+ # - the sum of all red components is 1
+ # - the sum of all green components is 1
+ # - the sum of all blue components is 1
+ # - the luminance of magic red is 1/3
+ # - the luminance of magic green is 1/3
+ # - the luminance of magic blue is 1/3
+
+ # OpenGL luminance coefficients
+ r:=0.3086;g:=0.6094;b:=0.0820;
+
+ with(LinearAlgebra):
+ M := Matrix([[1, 0, 0, 0, 1], [0, 1, 1, 0, 1], [0, 1, 0, 1, 0], [3*r, 3*(g+b), 0, 0, 0], [0, 0, 3*g, 0, 0], [0, 0, 0, 3*b, 3*(r+g)]]):
+ b := Vector([1,1,1,1,1,1]):
+ LinearSolve(M, b);
+*/
 #include <stdio.h>
 
 int
@@ -1506,8 +1535,9 @@ void Histogram::renderText(double x,double y,const QString& text,const QColor& c
     glOrtho(0,w,0,h,-1,1);
     glMatrixMode(GL_MODELVIEW);
     QPointF pos = toWidgetCoordinates(x, y);
+    glCheckError();
     _imp->textRenderer.renderText(pos.x(),h-pos.y(),text,color,font);
-    checkGLErrors();
+    glCheckError();
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
     glOrtho(_imp->zoomCtx._lastOrthoLeft,_imp->zoomCtx._lastOrthoRight,_imp->zoomCtx._lastOrthoBottom,_imp->zoomCtx._lastOrthoTop,-1,1);

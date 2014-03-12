@@ -338,7 +338,7 @@ void CurveGui::drawCurve(int curveIndex,int curvesCount){
                 QFontMetrics m(_curveWidget->getFont());
                 yWidgetCoord += (m.height() + 4);
                 glColor4f(1., 1., 1., 1.);
-                checkGLFrameBuffer();
+                glCheckFramebufferError();
                 _curveWidget->renderText(x, _curveWidget->toScaleCoordinates(0, yWidgetCoord).y(),
                                          coordStr, QColor(240,240,240), _curveWidget->getFont());
                 
@@ -359,7 +359,7 @@ void CurveGui::drawCurve(int curveIndex,int curvesCount){
     glPointSize(1.f);
     //reset back the color
     glColor4f(1.f, 1.f, 1.f, 1.f);
-    checkGLErrors();
+    glCheckError();
     
     
 }
@@ -670,7 +670,7 @@ void CurveWidgetPrivate::drawSelectionRectangle() {
     
     
     glDisable(GL_LINE_SMOOTH);
-    checkGLErrors();
+    glCheckError();
     
     glLineWidth(1.);
     glPopAttrib();
@@ -903,7 +903,7 @@ void CurveWidgetPrivate::drawSelectedKeyFramesBbox() {
     glEnd();
     
     glDisable(GL_LINE_SMOOTH);
-    checkGLErrors();
+    glCheckError();
     
     glLineWidth(1.);
     glPopAttrib();
@@ -1738,7 +1738,7 @@ void CurveWidget::paintGL()
     _imp->_zoomCtx._lastOrthoBottom = bottom;
     _imp->_zoomCtx._lastOrthoTop = top;
     glOrtho(left , right, bottom, top, -1, 1);
-    checkGLErrors();
+    glCheckError();
     
     glMatrixMode (GL_MODELVIEW);
     glLoadIdentity();
@@ -1782,8 +1782,9 @@ void CurveWidget::renderText(double x,double y,const QString& text,const QColor&
     glOrtho(0,w,0,h,-1,1);
     glMatrixMode(GL_MODELVIEW);
     QPointF pos = toWidgetCoordinates(x, y);
+    glCheckError();
     _imp->_textRenderer.renderText(pos.x(),h-pos.y(),text,color,font);
-    checkGLErrors();
+    glCheckError();
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
     glOrtho(_imp->_zoomCtx._lastOrthoLeft,_imp->_zoomCtx._lastOrthoRight,_imp->_zoomCtx._lastOrthoBottom,_imp->_zoomCtx._lastOrthoTop,-1,1);
