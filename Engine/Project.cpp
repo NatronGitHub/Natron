@@ -142,7 +142,7 @@ void Project::refreshViewersAndPreviews() {
             if (nodes[i]->pluginID() == "Viewer") {
                 ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
                 assert(n);
-                n->getVideoEngine()->render(1, true,true,false,true,false,true);
+                n->getVideoEngine()->render(1, true,true,true,false,true);
             }
         }
     }

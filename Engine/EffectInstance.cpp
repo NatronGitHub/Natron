@@ -831,12 +831,13 @@ void EffectInstance::evaluate(Knob* knob, bool isSignificant)
         return;
     }
     
+    
+    Button_Knob* button = dynamic_cast<Button_Knob*>(knob);
+
     /*if this is a writer (openfx or built-in writer)*/
     if (isWriter()) {
         /*if this is a button and it is a render button,we're safe to assume the plug-ins wants to start rendering.*/
-        if (knob && (knob->typeName() == Button_Knob::typeNameStatic())) {
-            Button_Knob* button = dynamic_cast<Button_Knob*>(knob);
-            assert(button);
+        if (button) {
             if (button->isRenderButton()) {
                 QStringList list;
                 list << getName().c_str();
@@ -847,17 +848,16 @@ void EffectInstance::evaluate(Knob* knob, bool isSignificant)
     }
     
     ///increments the knobs age following a change
-    if (knob && (knob->typeName() != Button_Knob::typeNameStatic())) {
+    if (button) {
         _node->incrementKnobsAge();
     }
     
     std::list<ViewerInstance*> viewers;
     _node->hasViewersConnected(&viewers);
-    bool fitToViewer = knob && (knob->typeName() == File_Knob::typeNameStatic());
     bool forcePreview = getApp()->getProject()->isAutoPreviewEnabled();
     for (std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it) {
         if (isSignificant) {
-            (*it)->refreshAndContinueRender(fitToViewer,forcePreview);
+            (*it)->refreshAndContinueRender(forcePreview);
         } else {
             (*it)->redrawViewer();
         }
@@ -1034,11 +1034,11 @@ OutputEffectInstance::~OutputEffectInstance(){
     }
 }
 
-void OutputEffectInstance::updateTreeAndRender(bool initViewer){
-    _videoEngine->updateTreeAndContinueRender(initViewer);
+void OutputEffectInstance::updateTreeAndRender(){
+    _videoEngine->updateTreeAndContinueRender();
 }
-void OutputEffectInstance::refreshAndContinueRender(bool initViewer,bool forcePreview){
-    _videoEngine->refreshAndContinueRender(initViewer,forcePreview);
+void OutputEffectInstance::refreshAndContinueRender(bool forcePreview){
+    _videoEngine->refreshAndContinueRender(forcePreview);
 }
 
 void OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{

@@ -386,17 +386,15 @@ struct ViewerGL::Implementation {
 
     bool isUserRoISet;
     QPoint lastMousePosition;
-
-    //////////////////////////////////////////////////////////
-    // The following are accessed from various threads
-
+    
     /////// currentViewerInfos
     ImageInfo currentViewerInfos;/*!< Pointer to the ViewerInfos  used for rendering*/
     QString currentViewerInfos_btmLeftBBOXoverlay;/*!< The string holding the bottom left corner coordinates of the dataWindow*/
     QString currentViewerInfos_topRightBBOXoverlay;/*!< The string holding the top right corner coordinates of the dataWindow*/
     QString currentViewerInfos_resolutionOverlay;/*!< The string holding the resolution overlay, e.g: "1920x1080"*/
-    QMutex currentViewerInfosMutex;
 
+    //////////////////////////////////////////////////////////
+    // The following are accessed from various threads
     QMutex userRoIMutex;
     bool userRoIEnabled;
     RectI userRoI;
@@ -640,6 +638,8 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
     _imp->blankViewerInfos.setDisplayWindow(projectFormat);
     setRegionOfDefinition(_imp->blankViewerInfos.getRoD());
     onProjectFormatChanged(projectFormat);
+    
+    QObject::connect(getInternalNode(), SIGNAL(rodChanged(RectI)), this, SLOT(setRegionOfDefinition(RectI)));
 
 }
 
@@ -731,11 +731,11 @@ void ViewerGL::resizeGL(int width, int height)
     assert(_imp->viewerTab);
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
-    if (!_imp->displayingImage && !_imp->zoomOrPannedSinceLastFit) {
-        fitImageToFormat(getDisplayWindow());
+    if (!_imp->zoomOrPannedSinceLastFit) {
+        fitImageToFormat();
     }
     if (viewer->getUiContext() && !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject()) {
-        viewer->refreshAndContinueRender(!_imp->zoomOrPannedSinceLastFit,false);
+        viewer->refreshAndContinueRender(false);
         updateGL();
     }
 }
@@ -848,10 +848,8 @@ void ViewerGL::drawOverlay()
     glCheckError();
     RectI dispW = getDisplayWindow();
     
-    {
-        QMutexLocker l(&_imp->currentViewerInfosMutex);
-        renderText(dispW.right(),dispW.bottom(), _imp->currentViewerInfos_resolutionOverlay,_imp->textRenderingColor,*_imp->textFont);
-    }
+    renderText(dispW.right(),dispW.bottom(), _imp->currentViewerInfos_resolutionOverlay,_imp->textRenderingColor,*_imp->textFont);
+
     
     QPoint topRight(dispW.right(),dispW.top());
     QPoint topLeft(dispW.left(),dispW.top());
@@ -882,11 +880,10 @@ void ViewerGL::drawOverlay()
     RectI dataW = getRoD();
     if(dispW != dataW){
         
-        {
-            QMutexLocker l(&_imp->currentViewerInfosMutex);
-            renderText(dataW.right(), dataW.top(), _imp->currentViewerInfos_topRightBBOXoverlay, _imp->rodOverlayColor,*_imp->textFont);
-            renderText(dataW.left(), dataW.bottom(), _imp->currentViewerInfos_btmLeftBBOXoverlay, _imp->rodOverlayColor,*_imp->textFont);
-        }
+        
+        renderText(dataW.right(), dataW.top(), _imp->currentViewerInfos_topRightBBOXoverlay, _imp->rodOverlayColor,*_imp->textFont);
+        renderText(dataW.left(), dataW.bottom(), _imp->currentViewerInfos_btmLeftBBOXoverlay, _imp->rodOverlayColor,*_imp->textFont);
+        
         
         
         QPoint topRight2(dataW.right(), dataW.top());
@@ -1385,7 +1382,6 @@ void ViewerGL::initBlackTex()
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
-    //fitToFormat(getDisplayWindow());
     
     TextureRect texSize(0, 0, 2048, 1556,2048,1556,1);
     
@@ -1643,7 +1639,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
             }
             _imp->oldClick = newClick;
             if(_imp->displayingImage){
-                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
             }
             //  else {
             updateGL();
@@ -1657,7 +1653,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
                 _imp->userRoI.y1 -= dySinceLastMove;
                 l.unlock();
                 if(_imp->displayingImage){
-                    _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                    _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
                 }
                 updateGL();
             }
@@ -1668,7 +1664,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
                 _imp->userRoI.x1 -= dxSinceLastMove;
                 l.unlock();
                 if(_imp->displayingImage){
-                    _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                    _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
                 }
                 updateGL();
             }
@@ -1679,7 +1675,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
                 _imp->userRoI.x2 -= dxSinceLastMove;
                 l.unlock();
                 if(_imp->displayingImage){
-                    _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                    _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
                 }
                 updateGL();
             }
@@ -1690,7 +1686,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
                 _imp->userRoI.y2 -= dySinceLastMove;
                 l.unlock();
                 if(_imp->displayingImage){
-                    _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                    _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
                 }
                 updateGL();
             }
@@ -1701,7 +1697,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
                 _imp->userRoI.move(-dxSinceLastMove,-dySinceLastMove);
             }
             if(_imp->displayingImage){
-                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
             }
             updateGL();
         } break;
@@ -1715,7 +1711,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
             }
             l.unlock();
             if(_imp->displayingImage){
-                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
             }
             updateGL();
         } break;
@@ -1729,7 +1725,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
             }
             l.unlock();
             if(_imp->displayingImage){
-                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
             }
             updateGL();        } break;
         case DRAGGING_ROI_BOTTOM_RIGHT: {
@@ -1742,7 +1738,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
             }
             l.unlock();
             if(_imp->displayingImage){
-                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
             }
             updateGL();        } break;
         case DRAGGING_ROI_BOTTOM_LEFT: {
@@ -1754,7 +1750,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
             }
             _imp->userRoIMutex.unlock();
             if(_imp->displayingImage){
-                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+                _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
             }
             updateGL();
         } break;
@@ -1854,7 +1850,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event)
     _imp->zoomOrPannedSinceLastFit = true;
 
     if (_imp->displayingImage) {
-        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
     }
     updateGL();
     
@@ -1883,7 +1879,7 @@ void ViewerGL::zoomSlot(int v)
 
     if(_imp->displayingImage){
         // appPTR->clearPlaybackCache();
-        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
     } else {
         updateGL();
     }
@@ -1901,14 +1897,19 @@ void ViewerGL::zoomSlot(QString str)
 
 
 
-void ViewerGL::fitImageToFormat(const Format& rod)
+void ViewerGL::fitImageToFormat()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    double h = rod.height();
-    double w = rod.width();
+    double w,h,zoomPAR;
+    
+    const Format& format = _imp->currentViewerInfos.getDisplayWindow();
+    h = format.height();
+    w = format.width();
+    zoomPAR = format.getPixelAspect();
+    
     assert(h > 0. && w > 0.);
-
+    
     double old_zoomFactor;
     double zoomFactor;
     {
@@ -1917,7 +1918,6 @@ void ViewerGL::fitImageToFormat(const Format& rod)
         // leave 5% of margin around
         zoomFactor = 0.95 * std::min(_imp->zoomCtx.screenWidth()/w, _imp->zoomCtx.screenHeight()/h);
         zoomFactor = std::max(0.01, std::min(zoomFactor, 1024.));
-        double zoomPAR = rod.getPixelAspect();
         double zoomLeft = w/2.f - (_imp->zoomCtx.screenWidth()/(2.*zoomFactor));
         double zoomBottom = h/2.f - (_imp->zoomCtx.screenHeight()/(2.*zoomFactor)) * zoomPAR;
         _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomPAR);
@@ -1981,7 +1981,6 @@ RectI ViewerGL::getRoD() const
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    QMutexLocker l(&_imp->currentViewerInfosMutex);
     return _imp->currentViewerInfos.getRoD();
 }
 
@@ -1990,19 +1989,16 @@ Format ViewerGL::getDisplayWindow() const
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    QMutexLocker l(&_imp->currentViewerInfosMutex);
     return _imp->currentViewerInfos.getDisplayWindow();
 }
 
 
 void ViewerGL::setRegionOfDefinition(const RectI& rod)
 {
-    // MT-SAFE
-    QMutexLocker l(&_imp->currentViewerInfosMutex);
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->currentViewerInfos.setRoD(rod);
-    l.unlock();
     emit infoDataWindowChanged();
-    l.relock();
     _imp->currentViewerInfos_btmLeftBBOXoverlay.clear();
     _imp->currentViewerInfos_btmLeftBBOXoverlay.append(QString::number(rod.left()));
     _imp->currentViewerInfos_btmLeftBBOXoverlay.append(",");
@@ -2021,21 +2017,20 @@ void ViewerGL::onProjectFormatChanged(const Format& format)
     _imp->blankViewerInfos.setDisplayWindow(format);
     _imp->blankViewerInfos.setRoD(format);
     emit infoResolutionChanged();
-    {
-        QMutexLocker l(&_imp->currentViewerInfosMutex);
-        _imp->currentViewerInfos.setDisplayWindow(format);
-        _imp->currentViewerInfos_resolutionOverlay.clear();
-        _imp->currentViewerInfos_resolutionOverlay.append(QString::number(format.width()));
-        _imp->currentViewerInfos_resolutionOverlay.append("x");
-        _imp->currentViewerInfos_resolutionOverlay.append(QString::number(format.height()));
-    }
+    
+    _imp->currentViewerInfos.setDisplayWindow(format);
+    _imp->currentViewerInfos_resolutionOverlay.clear();
+    _imp->currentViewerInfos_resolutionOverlay.append(QString::number(format.width()));
+    _imp->currentViewerInfos_resolutionOverlay.append("x");
+    _imp->currentViewerInfos_resolutionOverlay.append(QString::number(format.height()));
+    
     
     if (!_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject()) {
-        fitImageToFormat(format);
+        fitImageToFormat();
     }
     
     if(_imp->displayingImage) {
-        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
     }
 
     if (!_imp->isUserRoISet) {
@@ -2058,7 +2053,7 @@ void ViewerGL::setClipToDisplayWindow(bool b)
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
     if (viewer->getUiContext() && !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject()) {
-        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
     }
 }
 
@@ -2264,7 +2259,7 @@ void ViewerGL::setUserRoIEnabled(bool b)
         _imp->userRoIEnabled = b;
     }
     if (_imp->displayingImage) {
-        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
+        _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
     }
     update();
 }

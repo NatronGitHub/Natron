@@ -290,7 +290,6 @@ public:
     void render(int frameCount,
                 bool seekTimeline,
                 bool refreshTree,
-                bool fitFrameToViewer = false,
                 bool forward = true,
                 bool sameFrame = false,
                 bool forcePreview = false);
@@ -305,7 +304,7 @@ public:
      *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
      *serve to render the frames.
      **/
-    void refreshAndContinueRender(bool initViewer,bool forcePreview);
+    void refreshAndContinueRender(bool forcePreview);
     
     /**
      *@brief This function internally calls render(). If the playback is running, then it will resume the playback
@@ -315,7 +314,7 @@ public:
      *a change has been made (potentially) to the Tree.
      *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
      **/
-    void updateTreeAndContinueRender(bool initViewer);
+    void updateTreeAndContinueRender();
 
     
     /**
@@ -385,7 +384,6 @@ private:
         RunArgs():
         _zoomFactor(1.f),
         _sameFrame(false),
-        _fitToViewer(false),
         _recursiveCall(false),
         _forward(true),
         _refreshTree(false),
@@ -397,7 +395,6 @@ private:
 
         float _zoomFactor;
         bool _sameFrame;/*!< on if we want the subsequent render call to be on the same frame(zoom)*/
-        bool _fitToViewer;
         bool _recursiveCall;
         bool _forward;/*!< forwards/backwards video engine*/
         bool _refreshTree;

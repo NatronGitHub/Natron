@@ -28,10 +28,8 @@ public:
     virtual ~HistogramCPU();
     
     void computeHistogram(int mode, //< corresponds to the enum Histogram::DisplayMode
-                          const boost::shared_ptr<Natron::Image>& leftImage,
-                          const boost::shared_ptr<Natron::Image>& rightImage,
-                          const RectI& leftRect,
-                          const RectI& rightRect,
+                          const boost::shared_ptr<Natron::Image>& image,
+                          const RectI& rect,
                           int binsCount,
                           double vmin,
                           double vmax,
@@ -47,9 +45,9 @@ public:
     ///to the histogramProduced signal.
     ///
     ///This function returns in histogram1 the first histogram of the produced histogram
-    bool getMostRecentlyProducedHistogram(std::vector<unsigned int>* histogram1,
-                                          std::vector<unsigned int>* histogram2,
-                                          std::vector<unsigned int>* histogram3,
+    bool getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
+                                          std::vector<float>* histogram2,
+                                          std::vector<float>* histogram3,
                                           unsigned int* binsCount,
                                           unsigned int* pixelsCount,
                                           int* mode,

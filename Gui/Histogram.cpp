@@ -15,6 +15,8 @@
 #include <QMouseEvent>
 #include <QDebug>
 #include <QCoreApplication>
+#include <QMenu>
+#include <QActionGroup>
 
 #include "Engine/Image.h"
 #include "Engine/ViewerInstance.h"
@@ -33,565 +35,6 @@
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
-
-//////////////////////////////// HISTOGRAM TAB ////////////////////////////////
-
-struct HistogramContainer {
-    Histogram* histogram;
-    QWidget* container;
-    QVBoxLayout* layout;
-    
-    QWidget* labelsContainer;
-    QHBoxLayout* labelsLayout;
-    QLabel* pickerLabel;
-    QLabel* descriptionLabel;
-    
-    HistogramContainer(HistogramTab* tab,QWidget* parent)
-    : histogram(0)
-    , container(0)
-    , layout(0)
-    , pickerLabel(0)
-    , descriptionLabel(0)
-    {
-        container = new QWidget(parent);
-        layout = new QVBoxLayout(container);
-        layout->setContentsMargins(0, 0, 0, 0);
-        layout->setSpacing(0);
-        
-        histogram = new Histogram(tab);
-        layout->addWidget(histogram);
-        
-        labelsContainer = new QWidget(parent);
-        labelsLayout = new QHBoxLayout(labelsContainer);
-        labelsLayout->setContentsMargins(0, 0, 0, 0);
-        labelsLayout->setSpacing(0);
-        
-        descriptionLabel = new QLabel(labelsContainer);
-        labelsLayout->addWidget(descriptionLabel);
-        
-        pickerLabel = new QLabel(labelsContainer);
-        labelsLayout->addWidget(pickerLabel);
-        
-        layout->addWidget(labelsContainer);
-    }
-};
-
-struct HistogramTabPrivate
-{
-    
-    Gui* gui; //< ptr to the gui
-    
-    QVBoxLayout* mainLayout;
-    
-    ///////// OPTIONS
-    QWidget* optionsHeader;
-    QHBoxLayout* optionsHeaderLayout;
-    
-    QLabel* leftHistogramSelectionLabel;
-    ComboBox* leftHistogramSelection;
-    
-    QLabel* rightHistogramSelectionLabel;
-    ComboBox* rightHistogramSelection;
-    
-    QLabel* modeLabel;
-    ComboBox* modeSelection;
-    
-    QLabel* layoutLabel;
-    ComboBox* layoutSelection;
-    
-    QCheckBox* fullImage;
-    ClickableLabel* fullImageLabel;
-    
-    QWidget* headerSecondLine;
-    QHBoxLayout* headerSecondLineLayout;
-    QLabel* coordLabel;
-    
-    QLabel* filterLabel;
-    ComboBox* filterSelection;
-    
-    ////////// HISTOGRAMS
-    HistogramContainer* histogram1;
-    HistogramContainer* histogram2;
-    HistogramContainer* histogram3;
-    QSplitter* splitter1_2;
-    QSplitter* splitter2_3;
-    
-    HistogramTabPrivate(Gui* parent)
-    : gui(parent)
-    , mainLayout(NULL)
-    , optionsHeader(NULL)
-    , optionsHeaderLayout(NULL)
-    , leftHistogramSelectionLabel(NULL)
-    , leftHistogramSelection(NULL)
-    , rightHistogramSelectionLabel(NULL)
-    , rightHistogramSelection(NULL)
-    , modeLabel(NULL)
-    , modeSelection(NULL)
-    , layoutLabel(NULL)
-    , layoutSelection(NULL)
-    , fullImage(NULL)
-    , fullImageLabel(NULL)
-    , headerSecondLine(NULL)
-    , headerSecondLineLayout(NULL)
-    , coordLabel(NULL)
-    , filterLabel(NULL)
-    , filterSelection(NULL)
-    , histogram1(NULL)
-    , histogram2(NULL)
-    , histogram3(NULL)
-    , splitter1_2(NULL)
-    , splitter2_3(NULL)
-    {
-        
-    }
-
-    boost::shared_ptr<Natron::Image> getHistogramImageInternal(bool left,RectI* imagePortion) const;
-};
-
-HistogramTab::HistogramTab(Gui* gui)
-: QWidget(gui)
-, _imp(new HistogramTabPrivate(gui))
-{
-    _imp->mainLayout = new QVBoxLayout(this);
-    _imp->mainLayout->setContentsMargins(0,0,0,0);
-    _imp->mainLayout->setSpacing(0);
-    setLayout(_imp->mainLayout);
-    
-    _imp->optionsHeader = new QWidget(this);
-    _imp->optionsHeaderLayout = new QHBoxLayout(_imp->optionsHeader);
-    _imp->optionsHeaderLayout->setContentsMargins(0, 0, 0, 0);
-    
-    _imp->leftHistogramSelectionLabel = new QLabel(tr("Left Histogram:"),_imp->optionsHeader);
-    _imp->optionsHeaderLayout->addWidget(_imp->leftHistogramSelectionLabel);
-    
-    
-    _imp->leftHistogramSelection = new ComboBox(_imp->optionsHeader);
-    QObject::connect(_imp->leftHistogramSelection, SIGNAL(currentIndexChanged(int)), this, SLOT(makeHistogramsLayout(int)));
-    _imp->optionsHeaderLayout->QLayout::addWidget(_imp->leftHistogramSelection);
-    
-    _imp->optionsHeaderLayout->addStretch();
-    
-    _imp->rightHistogramSelectionLabel = new QLabel(tr("Right Histogram:"),_imp->optionsHeader);
-    _imp->optionsHeaderLayout->addWidget(_imp->rightHistogramSelectionLabel);
-    
-    _imp->rightHistogramSelection = new ComboBox(_imp->optionsHeader);
-    QObject::connect(_imp->rightHistogramSelection, SIGNAL(currentIndexChanged(int)), this, SLOT(makeHistogramsLayout(int)));
-    _imp->optionsHeaderLayout->QLayout::addWidget(_imp->rightHistogramSelection);
-    
-    QObject::connect(_imp->gui, SIGNAL(viewersChanged()), this, SLOT(populateViewersChoices()));
-    populateViewersChoices();
-    _imp->leftHistogramSelection->blockSignals(true);
-    _imp->leftHistogramSelection->setCurrentIndex(1);
-    _imp->leftHistogramSelection->blockSignals(false);
-    
-    _imp->optionsHeaderLayout->addStretch();
-
-    _imp->modeLabel = new QLabel(tr("Mode:"),_imp->optionsHeader);
-    _imp->optionsHeaderLayout->addWidget(_imp->modeLabel);
-    
-    _imp->modeSelection = new ComboBox(_imp->optionsHeader);
-    _imp->modeSelection->addItem("RGB");
-    _imp->modeSelection->addItem("A");
-    _imp->modeSelection->addItem("Y");
-    _imp->modeSelection->addItem("R");
-    _imp->modeSelection->addItem("G");
-    _imp->modeSelection->addItem("B");
-    QObject::connect(_imp->modeSelection, SIGNAL(currentIndexChanged(int)), this, SLOT(makeHistogramsLayout(int)));
-    _imp->optionsHeaderLayout->QLayout::addWidget(_imp->modeSelection);
-    
-    _imp->optionsHeaderLayout->addStretch();
-    
-    _imp->layoutLabel = new QLabel(tr("Layout:"),_imp->optionsHeader);
-    _imp->optionsHeaderLayout->QLayout::addWidget(_imp->layoutLabel);
-    
-    _imp->layoutSelection = new ComboBox(_imp->optionsHeader);
-    _imp->layoutSelection->addItem("Split",QIcon(),QKeySequence(),"Splits the left and right Viewer histograms side by side.");
-    _imp->layoutSelection->addItem("Anaglyph",QIcon(),QKeySequence(),"Left Viewer histogram will be in red and right Viewer "
-                                   "histogram in Cyan.");
-    QObject::connect(_imp->layoutSelection, SIGNAL(currentIndexChanged(int)), this, SLOT(makeHistogramsLayout(int)));
-    _imp->optionsHeaderLayout->QLayout::addWidget(_imp->layoutSelection);
-
-    _imp->optionsHeaderLayout->addStretch();
-    
-    _imp->fullImageLabel = new ClickableLabel(tr("Full image:"),_imp->optionsHeader);
-    _imp->fullImageLabel->setToolTip("When true, the full image of the targeted viewer \n"
-                                     "is used to fill the histogram. When false, only the \n"
-                                     "visible portion of the viewer will be taken into account.\n "
-                                     "(This is affected by the viewer's region of interest.)");
-    _imp->optionsHeaderLayout->addWidget(_imp->fullImageLabel);
-    _imp->fullImage = new QCheckBox(_imp->optionsHeader);
-    QObject::connect(_imp->fullImage, SIGNAL(clicked(bool)), _imp->fullImage, SLOT(setChecked(bool)));
-    QObject::connect(_imp->fullImage, SIGNAL(clicked(bool)), this, SLOT(onFullImageCheckBoxChecked(bool)));
-    _imp->fullImage->setChecked(false);
-    _imp->optionsHeaderLayout->QLayout::addWidget(_imp->fullImage);
-    
-    _imp->mainLayout->addWidget(_imp->optionsHeader);
-
-    
-    _imp->headerSecondLine = new QWidget(this);
-    _imp->headerSecondLineLayout = new QHBoxLayout(_imp->headerSecondLine);
-    _imp->headerSecondLineLayout->setContentsMargins(0, 0, 0, 0);
-    
-    
-    _imp->filterLabel = new QLabel(tr("Filter:"),_imp->headerSecondLine);
-    _imp->headerSecondLineLayout->QLayout::addWidget(_imp->filterLabel);
-    
-    _imp->filterSelection = new ComboBox(_imp->headerSecondLine);
-    _imp->headerSecondLineLayout->addWidget(_imp->filterSelection);
-    _imp->filterSelection->setToolTip("The filter applied to the histogram.");
-    _imp->filterSelection->addItem(tr("No smoothing"));
-    _imp->filterSelection->addItem(tr("Size 3"));
-    _imp->filterSelection->addItem(tr("Size 5"));
-    QObject::connect(_imp->filterSelection, SIGNAL(currentIndexChanged(int)), this, SLOT(onFilterChanged(int)));
-    
-    _imp->headerSecondLineLayout->addStretch();
-    
-    _imp->coordLabel = new QLabel("",_imp->optionsHeader);
-    _imp->headerSecondLineLayout->addWidget(_imp->coordLabel);
-    
-    _imp->mainLayout->addWidget(_imp->headerSecondLine);
-    
-    _imp->splitter1_2 = new QSplitter(Qt::Horizontal,this);
-    _imp->splitter2_3 = new QSplitter(Qt::Horizontal,this);
-    
-    _imp->histogram1 = new HistogramContainer(this,this);
-    _imp->histogram2 = new HistogramContainer(this,this);
-    _imp->histogram3 = new HistogramContainer(this,this);
-    
-    makeHistogramsLayout(0);
-}
-
-HistogramTab::~HistogramTab() {
-    
-}
-
-void HistogramTab::onFilterChanged(int) {
-    _imp->histogram1->histogram->computeHistogramAndRefresh();
-    _imp->histogram2->histogram->computeHistogramAndRefresh();
-    _imp->histogram3->histogram->computeHistogramAndRefresh();
-}
-
-int HistogramTab::getCurrentFilterSize() const {
-    int index = _imp->filterSelection->activeIndex();
-    switch (index) {
-        case 0:
-            return 0;
-        case 1:
-            return 3;
-        case 2:
-            return 5;
-        default:
-            assert(false);
-            break;
-    }
-}
-
-void HistogramTab::refreshCoordinatesLabel(double x,double y) {
-  
-    QString txt = QString("x=%1 y=%2").arg(x,0,'f',5).arg(y,0,'f',5);
-    _imp->coordLabel->setText(txt);
-    if (!_imp->coordLabel->isVisible()) {
-        _imp->coordLabel->show();
-    }
-}
-
-void HistogramTab::updateCoordPickedForHistogram(Histogram* histo,double x,double y) {
-    QLabel* label;
-    if (histo == _imp->histogram1->histogram) {
-        label = _imp->histogram1->pickerLabel;
-    } else if(histo == _imp->histogram2->histogram) {
-        label = _imp->histogram2->pickerLabel;
-    } else if(histo == _imp->histogram3->histogram) {
-        label = _imp->histogram3->pickerLabel;
-    } else {
-        assert(false);
-    }
-    
-    QString txt = QString("x=%1 y=%2").arg(x,0,'f',5).arg(y,0,'f',5);
-    label->setText(txt);
-}
-
-void HistogramTab::updateDescriptionLabelForHistogram(Histogram* histo,const QString& text) {
-    QLabel* label;
-    if (histo == _imp->histogram1->histogram) {
-        label = _imp->histogram1->descriptionLabel;
-    } else if(histo == _imp->histogram2->histogram) {
-        label = _imp->histogram2->descriptionLabel;
-    } else if(histo == _imp->histogram3->histogram) {
-        label = _imp->histogram3->descriptionLabel;
-    } else {
-        assert(false);
-    }
-    label->setText(text);
-}
-
-void HistogramTab::hideCoordinatesLabel() {
-    _imp->coordLabel->hide();
-}
-
-void HistogramTab::onFullImageCheckBoxChecked(bool /*checked*/) {
-    _imp->histogram1->histogram->computeHistogramAndRefresh();
-    _imp->histogram2->histogram->computeHistogramAndRefresh();
-    _imp->histogram3->histogram->computeHistogramAndRefresh();
-}
-
-void HistogramTab::populateViewersChoices() {
-    
-    int leftCurrentChoice = _imp->leftHistogramSelection->activeIndex();
-    int rightCurrentChoice = _imp->rightHistogramSelection->activeIndex();
-    
-    _imp->leftHistogramSelection->clear();
-    _imp->rightHistogramSelection->clear();
-    
-    _imp->leftHistogramSelection->addItem("-");
-    _imp->leftHistogramSelection->addItem("Current Viewer");
-    
-    _imp->rightHistogramSelection->addItem("-");
-    _imp->rightHistogramSelection->addItem("Current Viewer");
-    
-    const std::list<ViewerTab*>& viewerTabs = _imp->gui->getViewersList();
-    for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
-        _imp->leftHistogramSelection->addItem((*it)->getInternalNode()->getName().c_str());
-        _imp->rightHistogramSelection->addItem((*it)->getInternalNode()->getName().c_str());
-    }
-    
-    ///block the signals so only 1 combobox emits a current index changed, otherwise the
-    ///receiving slot would be called twice.
-    _imp->leftHistogramSelection->blockSignals(true);
-    if (leftCurrentChoice < _imp->leftHistogramSelection->count()) {
-        _imp->leftHistogramSelection->setCurrentIndex(leftCurrentChoice);
-    } else {
-        _imp->leftHistogramSelection->setCurrentIndex(1);
-    }
-    _imp->leftHistogramSelection->blockSignals(false);
-    
-    if (rightCurrentChoice < _imp->rightHistogramSelection->count()) {
-        _imp->rightHistogramSelection->setCurrentIndex(rightCurrentChoice);
-    } else {
-        _imp->rightHistogramSelection->setCurrentIndex(0);
-    }
-
-}
-
-void HistogramTab::onViewerImageChanged() {
-    ViewerGL* viewer = qobject_cast<ViewerGL*>(sender());
-    if (viewer) {
-        QString viewerName = viewer->getInternalNode()->getName().c_str();
-        ViewerTab* lastSelectedViewer = _imp->gui->getLastSelectedViewer();
-        QString currentViewerName;
-        if (lastSelectedViewer) {
-            currentViewerName = lastSelectedViewer->getInternalNode()->getName().c_str();
-        }
-        
-        bool refreshLeft = (_imp->leftHistogramSelection->activeIndex() == 1 && lastSelectedViewer == viewer->getViewerTab())
-        || (_imp->leftHistogramSelection->activeIndex() > 1 && _imp->leftHistogramSelection->getCurrentIndexText() == viewerName);
-        
-        bool refreshRight = (_imp->rightHistogramSelection->activeIndex() == 1 && lastSelectedViewer == viewer->getViewerTab())
-        || (_imp->rightHistogramSelection->activeIndex() > 1 && _imp->rightHistogramSelection->getCurrentIndexText() == viewerName);
-        
-        if (refreshLeft) {
-            if (_imp->histogram1->histogram->isVisible() && (_imp->histogram1->histogram->getInterest() == Histogram::LEFT_AND_RIGHT ||
-                _imp->histogram1->histogram->getInterest() == Histogram::LEFT_IMAGE)) {
-                _imp->histogram1->histogram->computeHistogramAndRefresh();
-            }
-            if (_imp->histogram2->histogram->isVisible() && (_imp->histogram2->histogram->getInterest() == Histogram::LEFT_AND_RIGHT ||
-                                                  _imp->histogram2->histogram->getInterest() == Histogram::LEFT_IMAGE)) {
-                _imp->histogram2->histogram->computeHistogramAndRefresh();
-            }
-            if (_imp->histogram3->histogram->isVisible() && (_imp->histogram3->histogram->getInterest() == Histogram::LEFT_AND_RIGHT ||
-                                                  _imp->histogram3->histogram->getInterest() == Histogram::LEFT_IMAGE)) {
-                _imp->histogram3->histogram->computeHistogramAndRefresh();
-            }
-        }
-        
-        if (refreshRight) {
-            if (_imp->histogram1->histogram->isVisible() && (_imp->histogram1->histogram->getInterest() == Histogram::LEFT_AND_RIGHT ||
-                                                  _imp->histogram1->histogram->getInterest() == Histogram::RIGHT_IMAGE)) {
-                _imp->histogram1->histogram->computeHistogramAndRefresh();
-            }
-            if (_imp->histogram2->histogram->isVisible() && (_imp->histogram2->histogram->getInterest() == Histogram::LEFT_AND_RIGHT ||
-                                                  _imp->histogram2->histogram->getInterest() == Histogram::RIGHT_IMAGE)) {
-                _imp->histogram2->histogram->computeHistogramAndRefresh();
-            }
-            if (_imp->histogram3->histogram->isVisible() && (_imp->histogram3->histogram->getInterest() == Histogram::LEFT_AND_RIGHT ||
-                                                  _imp->histogram3->histogram->getInterest() == Histogram::RIGHT_IMAGE)) {
-                _imp->histogram3->histogram->computeHistogramAndRefresh();
-            }
-        }
-    }
-}
-
-void HistogramTab::makeHistogramsLayout(int) {
-    ///remove the splitters from the layout and hide them
-    
-    _imp->histogram1->container->hide();
-    _imp->histogram2->container->hide();
-    _imp->histogram3->container->hide();
-
-    _imp->mainLayout->removeWidget(_imp->splitter1_2);
-    _imp->splitter1_2->hide();
-    _imp->mainLayout->removeWidget(_imp->splitter2_3);
-    _imp->splitter2_3->hide();
-
-    int mode = _imp->modeSelection->activeIndex();
-    int layout = _imp->layoutSelection->activeIndex();
-    
-    if (layout == 0) { //< Split mode
-        
-        
-        if (_imp->leftHistogramSelection->activeIndex() != 0) {
-            _imp->histogram1->container->show();
-            _imp->splitter1_2->addWidget(_imp->histogram1->container);
-        }
-        
-        if (_imp->rightHistogramSelection->activeIndex() != 0) {
-            _imp->histogram2->container->show();
-            _imp->splitter1_2->addWidget(_imp->histogram2->container);
-        }
-        
-        _imp->mainLayout->addWidget(_imp->splitter1_2);
-        _imp->splitter1_2->show();
-
-        if (mode == 0) { //< RGB
-            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::RGB,Histogram::LEFT_IMAGE);
-            _imp->histogram2->histogram->setDisplayModeAndInterest(Histogram::RGB,Histogram::RIGHT_IMAGE);
-        } else if (mode == 1) { //< A
-            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::A,Histogram::LEFT_IMAGE);
-            _imp->histogram2->histogram->setDisplayModeAndInterest(Histogram::A,Histogram::RIGHT_IMAGE);
-        } else if (mode == 2) { //< Y
-            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::Y,Histogram::LEFT_IMAGE);
-            _imp->histogram2->histogram->setDisplayModeAndInterest(Histogram::Y,Histogram::RIGHT_IMAGE);
-        } else if (mode == 3) { //< R
-            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::R,Histogram::LEFT_IMAGE);
-            _imp->histogram2->histogram->setDisplayModeAndInterest(Histogram::R,Histogram::RIGHT_IMAGE);
-        } else if (mode == 4) { //< G
-            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::G,Histogram::LEFT_IMAGE);
-            _imp->histogram2->histogram->setDisplayModeAndInterest(Histogram::G,Histogram::RIGHT_IMAGE);
-        } else if (mode == 5) { //< B
-            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::B,Histogram::LEFT_IMAGE);
-            _imp->histogram2->histogram->setDisplayModeAndInterest(Histogram::B,Histogram::RIGHT_IMAGE);
-        } else {
-            assert(false);
-        }
-        
-    } else if (layout ==1) { // anaglyph mode
-        bool useOnlyFirstHisto = false;
-        Histogram::HistogramInterest interest;
-        bool useLeft = _imp->leftHistogramSelection->activeIndex() != 0;
-        bool useRight = _imp->rightHistogramSelection->activeIndex() != 0;
-        if (useLeft && useRight) {
-            interest = Histogram::LEFT_AND_RIGHT;
-        } else if (useLeft && !useRight) {
-            interest = Histogram::LEFT_IMAGE;
-        } else if (!useLeft && useRight) {
-            interest = Histogram::RIGHT_IMAGE;
-        } else {
-            interest = Histogram::NO_IMAGE;
-        }
-        if (mode == 0) { //< RGB
-            _imp->splitter1_2->addWidget(_imp->histogram1->container);
-            _imp->splitter1_2->addWidget(_imp->histogram2->container);
-            _imp->splitter2_3->addWidget(_imp->splitter1_2);
-            _imp->splitter2_3->addWidget(_imp->histogram3->container);
-            _imp->mainLayout->addWidget(_imp->splitter2_3);
-            _imp->splitter1_2->show();
-            _imp->splitter2_3->show();
-            _imp->histogram1->container->show();
-            _imp->histogram2->container->show();
-            _imp->histogram3->container->show();
-            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::R,interest);
-            _imp->histogram2->histogram->setDisplayModeAndInterest(Histogram::G,interest);
-            _imp->histogram3->histogram->setDisplayModeAndInterest(Histogram::B,interest);
-        } else if (mode == 1) { //< A
-            useOnlyFirstHisto = true;
-            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::A,interest);
-        } else if (mode == 2) { //< Y
-            useOnlyFirstHisto = true;
-            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::Y,interest);
-        } else if (mode == 3) { //< R
-            useOnlyFirstHisto = true;
-            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::R,interest);
-        } else if (mode == 4) { //< G
-            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::G,interest);
-            useOnlyFirstHisto = true;
-        } else if (mode == 5) { //< B
-            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::B,interest);
-            useOnlyFirstHisto = true;
-        } else {
-            assert(false);
-        }
-        if (useOnlyFirstHisto) {
-            _imp->histogram1->container->show();
-            _imp->splitter1_2->addWidget(_imp->histogram1->container);
-            _imp->splitter1_2->show();
-            _imp->mainLayout->addWidget(_imp->splitter1_2);
-        }
-    } else {
-        assert(false);
-    }
-}
-
-boost::shared_ptr<Natron::Image> HistogramTabPrivate::getHistogramImageInternal(bool left,RectI* imagePortion) const {
-    bool useImageRoD = fullImage->isChecked();
-    
-    int index;
-    std::string viewerName ;
-    if (left) {
-        index = leftHistogramSelection->activeIndex();
-        viewerName = leftHistogramSelection->getCurrentIndexText().toStdString();
-    } else {
-        index = rightHistogramSelection->activeIndex();
-        viewerName = rightHistogramSelection->getCurrentIndexText().toStdString();
-    }
-    
-    if (index == 0) {
-        //no viewer selected
-        imagePortion->clear();
-        return boost::shared_ptr<Natron::Image>();
-    } else if (index == 1) {
-        //current viewer
-        ViewerTab* lastSelectedViewer = gui->getLastSelectedViewer();
-        boost::shared_ptr<Natron::Image> ret;
-        if (lastSelectedViewer) {
-            ret = lastSelectedViewer->getInternalNode()->getLastRenderedImage();
-        }
-        if (!useImageRoD) {
-            if (lastSelectedViewer) {
-                *imagePortion = lastSelectedViewer->getViewer()->getImageRectangleDisplayed(ret->getRoD());
-            }
-        } else {
-            *imagePortion = ret->getRoD();
-        }
-        return ret;
-    } else {
-        boost::shared_ptr<Natron::Image> ret;
-        const std::list<ViewerTab*>& viewerTabs = gui->getViewersList();
-        for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
-            if ((*it)->getInternalNode()->getName() == viewerName) {
-                ret = (*it)->getInternalNode()->getLastRenderedImage();
-                if (!useImageRoD) {
-                    *imagePortion = (*it)->getViewer()->getImageRectangleDisplayed(ret->getRoD());
-                } else {
-                    *imagePortion = ret->getRoD();
-                }
-                return ret;
-            }
-        }
-        return ret;
-    }
-
-}
-
-boost::shared_ptr<Natron::Image> HistogramTab::getLeftHistogramImage(RectI* imagePortion) const {
-    return _imp->getHistogramImageInternal(true, imagePortion);
-}
-
-boost::shared_ptr<Natron::Image> HistogramTab::getRightHistogramImage(RectI* imagePortion) const {
-    return _imp->getHistogramImageInternal(false, imagePortion);
-}
-
-//////////////////////////////// HISTOGRAM ////////////////////////////////
-
 
 namespace { // protext local classes in anonymous namespace
     
@@ -625,10 +68,26 @@ struct HistogramPrivate
 {
     
     
-    HistogramTab* uiContext;
+    Gui* gui; //< ptr to the gui
+    
+    QVBoxLayout* mainLayout;
+    
+    ///////// OPTIONS
+    QMenu* rightClickMenu;
+    
+    QMenu* histogramSelectionMenu;
+    QActionGroup* histogramSelectionGroup;
+    
+    QActionGroup* modeActions;
+    QMenu* modeMenu;
+    
+    QAction* fullImage;
+    
+    QActionGroup* filterActions;
+    QMenu* filterMenu;
+    
     Histogram* widget;
     Histogram::DisplayMode mode;
-    Histogram::HistogramInterest interest;
     ZoomContext zoomCtx;
     bool supportsGLSL;
     bool hasOpenGLVAOSupport;
@@ -640,6 +99,11 @@ struct HistogramPrivate
     QFont _font;
     Natron::TextRenderer textRenderer;
     
+    bool drawCoordinates;
+    QString xCoordinateStr;
+    QString rValueStr,gValueStr,bValueStr;
+    
+    int filterSize;
     
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
     
@@ -706,19 +170,25 @@ struct HistogramPrivate
     HistogramCPU histogramThread;
     
     ///up to 3 histograms (in the RGB) case. FOr all other cases just histogram1 is used.
-    std::vector<unsigned int> histogram1;
-    std::vector<unsigned int> histogram2;
-    std::vector<unsigned int> histogram3;
+    std::vector<float> histogram1;
+    std::vector<float> histogram2;
+    std::vector<float> histogram3;
     unsigned int pixelsCount;
     double vmin,vmax; //< the x range of the histogram
     unsigned int binsCount;
     
 #endif
-    HistogramPrivate(HistogramTab* parent,Histogram* widget)
-    : uiContext(parent)
+    HistogramPrivate(Gui* parent,Histogram* widget)
+    : gui(parent)
+    , mainLayout(NULL)
+    , rightClickMenu(NULL)
+    , histogramSelectionMenu(NULL)
+    , histogramSelectionGroup(NULL)
+    , modeMenu(NULL)
+    , fullImage(NULL)
+    , filterMenu(NULL)
     , widget(widget)
     , mode(Histogram::RGB)
-    , interest(Histogram::LEFT_AND_RIGHT)
     , zoomCtx()
     , supportsGLSL(true)
     , hasOpenGLVAOSupport(true)
@@ -728,6 +198,12 @@ struct HistogramPrivate
     , _scaleColor(67,123,52,255)
     , _font(NATRON_FONT, NATRON_FONT_SIZE_10)
     , textRenderer()
+    , drawCoordinates(false)
+    , xCoordinateStr()
+    , rValueStr()
+    , gValueStr()
+    , bValueStr()
+    , filterSize(0)
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
     , histogramComputingShader()
     , histogramMaximumShader()
@@ -745,7 +221,17 @@ struct HistogramPrivate
     {
     }
     
+    
+    boost::shared_ptr<Natron::Image> getHistogramImage(RectI* imagePortion) const;
+
+    
+    void showMenu(const QPoint& globalPos);
+        
     void drawScale();
+    
+    void drawPicker();
+    
+    void updatePicker(double x);
     
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
     
@@ -763,15 +249,107 @@ struct HistogramPrivate
 #endif
 };
 
-Histogram::Histogram(HistogramTab* parent, const QGLWidget* shareWidget)
-: QGLWidget(parent,shareWidget)
-, _imp(new HistogramPrivate(parent,this))
+Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
+: QGLWidget(gui,shareWidget)
+, _imp(new HistogramPrivate(gui,this))
 {
     setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Expanding);
     setMouseTracking(true);
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
     QObject::connect(&_imp->histogramThread, SIGNAL(histogramProduced()), this, SLOT(onCPUHistogramComputed()));
 #endif
+    
+    
+    _imp->rightClickMenu = new QMenu(this);
+    
+    _imp->histogramSelectionMenu = new QMenu("Viewer target",_imp->rightClickMenu);
+    _imp->rightClickMenu->addAction(_imp->histogramSelectionMenu->menuAction());
+    
+    _imp->histogramSelectionGroup = new QActionGroup(_imp->histogramSelectionMenu);
+    
+    _imp->modeMenu = new QMenu("Display mode",_imp->rightClickMenu);
+    _imp->rightClickMenu->addAction(_imp->modeMenu->menuAction());
+    
+    _imp->fullImage = new QAction(_imp->rightClickMenu);
+    _imp->fullImage->setText("Full image");
+    _imp->fullImage->setCheckable(true);
+    _imp->fullImage->setChecked(false);
+    QObject::connect(_imp->fullImage, SIGNAL(triggered()), this, SLOT(computeHistogramAndRefresh()));
+    _imp->rightClickMenu->addAction(_imp->fullImage);
+    
+    _imp->filterMenu = new QMenu("Filter",_imp->rightClickMenu);
+    _imp->rightClickMenu->addAction(_imp->filterMenu->menuAction());
+    
+    _imp->modeActions = new QActionGroup(_imp->modeMenu);
+    QAction* rgbAction = new QAction(_imp->modeMenu);
+    rgbAction->setText(QString("RGB"));
+    rgbAction->setData(0);
+    _imp->modeActions->addAction(rgbAction);
+    
+    QAction* aAction = new QAction(_imp->modeMenu);
+    aAction->setText(QString("A"));
+    aAction->setData(1);
+    _imp->modeActions->addAction(aAction);
+    
+    QAction* yAction = new QAction(_imp->modeMenu);
+    yAction->setText(QString("Y"));
+    yAction->setData(2);
+    _imp->modeActions->addAction(yAction);
+    
+    QAction* rAction = new QAction(_imp->modeMenu);
+    rAction->setText(QString("R"));
+    rAction->setData(3);
+    _imp->modeActions->addAction(rAction);
+    
+    QAction* gAction = new QAction(_imp->modeMenu);
+    gAction->setText(QString("G"));
+    gAction->setData(4);
+    _imp->modeActions->addAction(gAction);
+    
+    QAction* bAction = new QAction(_imp->modeMenu);
+    bAction->setText(QString("B"));
+    bAction->setData(5);
+    _imp->modeActions->addAction(bAction);
+    QList<QAction*> actions = _imp->modeActions->actions();
+    for (int i = 0; i < actions.size();++i) {
+        _imp->modeMenu->addAction(actions.at(i));
+    }
+    
+    QObject::connect(_imp->modeActions,SIGNAL(triggered(QAction*)),this,SLOT(onDisplayModeChanged(QAction*)));
+    
+    
+    
+    _imp->filterActions = new QActionGroup(_imp->filterMenu);
+    QAction* noSmoothAction = new QAction(_imp->filterActions);
+    noSmoothAction->setText("No smoothing");
+    noSmoothAction->setData(0);
+    noSmoothAction->setCheckable(true);
+    noSmoothAction->setChecked(true);
+    _imp->filterActions->addAction(noSmoothAction);
+    
+    QAction* size3Action = new QAction(_imp->filterActions);
+    size3Action->setText("Size 3");
+    size3Action->setData(3);
+    size3Action->setCheckable(true);
+    size3Action->setChecked(false);
+    _imp->filterActions->addAction(size3Action);
+    
+    QAction* size5Action = new QAction(_imp->filterActions);
+    size5Action->setText("Size 5");
+    size5Action->setData(5);
+    size5Action->setCheckable(true);
+    size5Action->setChecked(false);
+    _imp->filterActions->addAction(size5Action);
+    
+    actions = _imp->filterActions->actions();
+    for (int i = 0; i < actions.size();++i) {
+        _imp->filterMenu->addAction(actions.at(i));
+    }
+    
+    QObject::connect(_imp->filterActions, SIGNAL(triggered(QAction*)), this, SLOT(onFilterChanged(QAction*)));
+    
+    QObject::connect(_imp->gui, SIGNAL(viewersChanged()), this, SLOT(populateViewersChoices()));
+  
 }
 
 Histogram::~Histogram() {
@@ -794,61 +372,163 @@ Histogram::~Histogram() {
 #endif
 }
 
+
+boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imagePortion) const {
+    bool useImageRoD = fullImage->isChecked();
+    
+    int index = 0;
+    std::string viewerName ;
+    QAction* selectedHistAction = histogramSelectionGroup->checkedAction();
+    if (selectedHistAction) {
+        index = selectedHistAction->data().toInt();
+        viewerName = selectedHistAction->text().toStdString();
+    }
+    
+    if (index == 0) {
+        //no viewer selected
+        imagePortion->clear();
+        return boost::shared_ptr<Natron::Image>();
+    } else if (index == 1) {
+        //current viewer
+        ViewerTab* lastSelectedViewer = gui->getLastSelectedViewer();
+        boost::shared_ptr<Natron::Image> ret;
+        if (lastSelectedViewer) {
+            ret = lastSelectedViewer->getInternalNode()->getLastRenderedImage();
+        }
+        if (ret) {
+            if (!useImageRoD) {
+                if (lastSelectedViewer) {
+                    *imagePortion = lastSelectedViewer->getViewer()->getImageRectangleDisplayed(ret->getRoD());
+                }
+            } else {
+                *imagePortion = ret->getRoD();
+            }
+        }
+        return ret;
+    } else {
+        boost::shared_ptr<Natron::Image> ret;
+        const std::list<ViewerTab*>& viewerTabs = gui->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
+            if ((*it)->getInternalNode()->getName() == viewerName) {
+                ret = (*it)->getInternalNode()->getLastRenderedImage();
+                if (!useImageRoD) {
+                    *imagePortion = (*it)->getViewer()->getImageRectangleDisplayed(ret->getRoD());
+                } else {
+                    *imagePortion = ret->getRoD();
+                }
+                return ret;
+            }
+        }
+        return ret;
+    }
+    
+}
+
+void HistogramPrivate::showMenu(const QPoint& globalPos) {
+    rightClickMenu->exec(globalPos);
+}
+
+void Histogram::populateViewersChoices() {
+    
+    QString currentSelection;
+    if (_imp->histogramSelectionGroup) {
+        QAction* checkedAction = _imp->histogramSelectionGroup->checkedAction();
+        if (checkedAction) {
+            currentSelection = checkedAction->text();
+        }
+        delete _imp->histogramSelectionGroup;
+        _imp->histogramSelectionGroup = new QActionGroup(_imp->histogramSelectionMenu);
+    }
+    
+    _imp->histogramSelectionMenu->clear();
+    
+    QAction* noneAction = new QAction(_imp->histogramSelectionGroup);
+    noneAction->setText("-");
+    noneAction->setData(0);
+    noneAction->setCheckable(true);
+    noneAction->setChecked(false);
+    _imp->histogramSelectionGroup->addAction(noneAction);
+    _imp->histogramSelectionMenu->addAction(noneAction);
+    
+    QAction* currentAction = new QAction(_imp->histogramSelectionGroup);
+    currentAction->setText("Current Viewer");
+    currentAction->setData(1);
+    currentAction->setCheckable(true);
+    currentAction->setChecked(false);
+    _imp->histogramSelectionGroup->addAction(currentAction);
+    _imp->histogramSelectionMenu->addAction(currentAction);
+    
+    
+    const std::list<ViewerTab*>& viewerTabs = _imp->gui->getViewersList();
+    int c = 2;
+    for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
+        QAction* ac = new QAction(_imp->histogramSelectionGroup);
+        ac->setText((*it)->getInternalNode()->getName().c_str());
+        ac->setCheckable(true);
+        ac->setChecked(false);
+        ac->setData(c);
+        _imp->histogramSelectionGroup->addAction(ac);
+        _imp->histogramSelectionMenu->addAction(ac);
+        ++c;
+    }
+    
+    _imp->histogramSelectionGroup->blockSignals(true);
+    if (!currentSelection.isEmpty()) {
+        QList<QAction*> actions = _imp->histogramSelectionGroup->actions();
+        for (int i = 0; i < actions.size(); ++i) {
+            if (actions.at(i)->text() == currentSelection) {
+                actions.at(i)->setChecked(true);
+            }
+        }
+    } else {
+        currentAction->setChecked(true);
+    }
+    _imp->histogramSelectionGroup->blockSignals(false);
+    
+}
+
+void Histogram::onCurrentViewerChanged(QAction*){
+    computeHistogramAndRefresh();
+}
+
+void Histogram::onViewerImageChanged() {
+    ViewerGL* viewer = qobject_cast<ViewerGL*>(sender());
+    if (viewer) {
+        QString viewerName = viewer->getInternalNode()->getName().c_str();
+        ViewerTab* lastSelectedViewer = _imp->gui->getLastSelectedViewer();
+        QString currentViewerName;
+        if (lastSelectedViewer) {
+            currentViewerName = lastSelectedViewer->getInternalNode()->getName().c_str();
+        }
+        
+        QAction* selectedHistAction = _imp->histogramSelectionGroup->checkedAction();
+        if (selectedHistAction) {
+            int actionIndex = selectedHistAction->data().toInt();
+            
+            if ((actionIndex == 1 && lastSelectedViewer == viewer->getViewerTab())
+                || (actionIndex > 1 && selectedHistAction->text() == viewerName)) {
+                    computeHistogramAndRefresh();
+                }
+        
+        }
+    }
+}
+
+
 QSize Histogram::sizeHint() const {
     return QSize(500,1000);
 }
 
-void Histogram::setDisplayModeAndInterest(DisplayMode mode,HistogramInterest interest) {
-    _imp->mode = mode;
-    _imp->interest = interest;
-    QString txt;
-    switch (mode) {
-        case RGB:
-            txt.append("RGB");
-            break;
-        case Y:
-            txt.append("Y");
-            break;
-        case A:
-            txt.append("A");
-            break;
-        case R:
-            txt.append("R");
-            break;
-        case G:
-            txt.append("G");
-            break;
-        case B:
-            txt.append("B");
-            break;
-        default:
-            break;
-    }
-    
-    txt.append(": ");
-    switch (interest) {
-        case LEFT_AND_RIGHT:
-            txt.append("<font color=\"##FF0000\">Left</font> / <font color=\"##00FFFF\">Right</font>");
-            break;
-        case LEFT_IMAGE:
-            txt.append("Left");
-            break;
-        case RIGHT_IMAGE:
-            txt.append("Right");
-            break;
-        case NO_IMAGE:
-            txt.append("None");
-            break;
-        default:
-            break;
-    }
-    
-    _imp->uiContext->updateDescriptionLabelForHistogram(this, txt);
+
+void Histogram::onFilterChanged(QAction* action) {
+    _imp->filterSize = action->data().toInt();
     computeHistogramAndRefresh();
 }
 
-Histogram::HistogramInterest Histogram::getInterest() const {
-    return _imp->interest;
+
+void Histogram::onDisplayModeChanged(QAction* action) {
+    _imp->mode = (Histogram::DisplayMode)action->data().toInt();
+    computeHistogramAndRefresh();
 }
 
 
@@ -1248,10 +928,6 @@ void HistogramPrivate::renderHistogram(Histogram::DisplayMode channel) {
 
 void Histogram::paintGL() {
     
-    if (!isVisible()) {
-        return;
-    }
-    
     double w = (double)width();
     double h = (double)height();
     
@@ -1293,7 +969,9 @@ void Histogram::paintGL() {
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
     _imp->drawHistogramCPU();
 #endif
-    
+    if (_imp->drawCoordinates) {
+        _imp->drawPicker();
+    }
 }
 
 void Histogram::resizeGL(int w, int h) {
@@ -1349,9 +1027,8 @@ void Histogram::mousePressEvent(QMouseEvent* event) {
     if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
         _imp->state = DRAGGING_VIEW;
         _imp->zoomCtx._oldClick = event->pos();
-    } else if (event->button() == Qt::LeftButton) {
-        QPointF newClick_opengl = toHistogramCoordinates(event->x(),event->y());
-        _imp->uiContext->updateCoordPickedForHistogram(this,newClick_opengl.x(),newClick_opengl.y());
+    } else if (event->button() == Qt::RightButton) {
+        _imp->showMenu(event->globalPos());
     }
     
 }
@@ -1364,7 +1041,9 @@ void Histogram::mouseMoveEvent(QMouseEvent* event) {
     
 
     _imp->zoomCtx._oldClick = event->pos();
-
+    _imp->drawCoordinates = true;
+    _imp->updatePicker(newClick_opengl.x());
+    
     switch (_imp->state) {
         case DRAGGING_VIEW:
             _imp->zoomCtx.bottom += (oldClick_opengl.y() - newClick_opengl.y());
@@ -1373,10 +1052,46 @@ void Histogram::mouseMoveEvent(QMouseEvent* event) {
             computeHistogramAndRefresh();
             break;
         case NONE:
+            update();
             break;
     }
-    _imp->uiContext->refreshCoordinatesLabel(newClick_opengl.x(), newClick_opengl.y());
+    
+    
+}
 
+void HistogramPrivate::updatePicker(double x) {
+    xCoordinateStr = QString("x=") + QString::number(x,'f',6);
+    double binSize = (vmax - vmin) / binsCount;
+    int index = (int)((x - vmin) / binSize);
+    rValueStr.clear();
+    gValueStr.clear();
+    bValueStr.clear();
+    if (mode == Histogram::RGB) {
+        
+        float r = histogram1.empty() ? 0 :  histogram1[index];
+        float g = histogram2.empty() ? 0 :  histogram2[index];
+        float b = histogram3.empty() ? 0 :  histogram3[index];
+        rValueStr = QString("r=") + QString::number(r);
+        gValueStr = QString("g=") + QString::number(g);
+        bValueStr = QString("b=") + QString::number(b);
+    } else if (mode == Histogram::Y) {
+        float y = histogram1[index];
+        rValueStr = QString("y=") + QString::number(y);
+    } else if (mode == Histogram::A) {
+        float a = histogram1[index];
+        rValueStr = QString("a=") + QString::number(a);
+    } else if (mode == Histogram::R) {
+        float r = histogram1[index];
+        rValueStr = QString("r=") + QString::number(r);
+    } else if (mode == Histogram::G) {
+        float g = histogram1[index];
+        gValueStr = QString("g=") + QString::number(g);
+    } else if (mode == Histogram::B) {
+        float b = histogram1[index];
+        bValueStr = QString("b=") + QString::number(b);
+    } else {
+        assert(false);
+    }
 }
 
 void Histogram::mouseReleaseEvent(QMouseEvent* /*event*/) {
@@ -1464,18 +1179,18 @@ void Histogram::enterEvent(QEvent* e) {
 }
 
 void Histogram::leaveEvent(QEvent* e) {
-    _imp->uiContext->hideCoordinatesLabel();
+    _imp->drawCoordinates = false;
     QGLWidget::leaveEvent(e);
 }
 
 void Histogram::showEvent(QShowEvent* e) {
-    computeHistogramAndRefresh();
     QGLWidget::showEvent(e);
+    computeHistogramAndRefresh(true);
 }
 
-void Histogram::computeHistogramAndRefresh() {
+void Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible) {
     
-    if (!isVisible()) {
+    if (!isVisible() && !forceEvenIfNotVisible) {
         return;
     }
     
@@ -1486,18 +1201,10 @@ void Histogram::computeHistogramAndRefresh() {
     
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
 
-    RectI leftRect,rightRect;
-    boost::shared_ptr<Natron::Image> leftImage;
-    if (_imp->interest == Histogram::LEFT_IMAGE || _imp->interest == Histogram::LEFT_AND_RIGHT) {
-        leftImage = _imp->uiContext->getLeftHistogramImage(&leftRect);
-    }
-    boost::shared_ptr<Natron::Image> rightImage;
-    if (_imp->interest == Histogram::RIGHT_IMAGE || _imp->interest == Histogram::LEFT_AND_RIGHT) {
-        rightImage = _imp->uiContext->getRightHistogramImage(&rightRect);
-    }
+    RectI rect;
+    boost::shared_ptr<Natron::Image> image = _imp->getHistogramImage(&rect);
 
-    _imp->histogramThread.computeHistogram(_imp->mode, leftImage, rightImage, leftRect,rightRect, width(),vmin,vmax,
-                                           _imp->uiContext->getCurrentFilterSize());
+    _imp->histogramThread.computeHistogram(_imp->mode, image, rect, width(),vmin,vmax,_imp->filterSize);
     
 #endif
     
@@ -1609,6 +1316,47 @@ void HistogramPrivate::drawScale()
     
 }
 
+void HistogramPrivate::drawPicker() {
+    QFontMetrics m(_font);
+    int strWidth = std::max(std::max(std::max(m.width(rValueStr),m.width(gValueStr)),m.width(bValueStr)),m.width(xCoordinateStr));
+    
+    QPointF xPos = widget->toHistogramCoordinates(widget->width() - strWidth - 10 ,m.height() + 10);
+    QPointF rPos = widget->toHistogramCoordinates(widget->width() - strWidth - 10 ,2 * m.height() + 15);
+    QPointF gPos = widget->toHistogramCoordinates(widget->width() - strWidth - 10 ,3 * m.height() + 20);
+    QPointF bPos = widget->toHistogramCoordinates(widget->width() - strWidth - 10 ,4 * m.height() + 25);
+    
+    QColor xColor(200,200,200);
+    QColor rColor,gColor,bColor;
+    
+    switch (mode) {
+        case Histogram::RGB:
+            rColor.setRedF(0.711519527404004);
+            rColor.setGreenF(0.164533420851110);
+            rColor.setBlueF(0.164533420851110);
+            break;
+        case Histogram::Y:
+        case Histogram::A:
+        case Histogram::R:
+        case Histogram::G:
+        case Histogram::B:
+        default:
+            rColor = xColor;
+            break;
+    }
+    
+    gColor.setRedF(0);
+    gColor.setGreenF(0.546986106552894);
+    gColor.setBlueF(0);
+    
+    bColor.setRedF(0.288480472595996);
+    bColor.setGreenF(0.288480472595996);
+    bColor.setBlueF(0.8354665791488900);
+    
+    widget->renderText(xPos.x(), xPos.y(), xCoordinateStr,xColor , _font);
+    widget->renderText(rPos.x(), rPos.y(), rValueStr, rColor, _font);
+    widget->renderText(gPos.x(), gPos.y(), gValueStr, gColor, _font);
+    widget->renderText(bPos.x(), bPos.y(), bValueStr, bColor, _font);
+}
 #if 0
 /*
  // compute magic colors, by F. Devernay
@@ -1730,64 +1478,40 @@ void HistogramPrivate::drawHistogramCPU()
             glVertex2d(binMinX, 0);
             glVertex2d(binMinX,  bTotNormalized);
         } else {
-            if (interest == Histogram::LEFT_AND_RIGHT) {
-                if (histogram1.empty() || histogram2.empty()) {
-                    break;
-                }
-                
-                double vLeftTotNormalized = (double)histogram1[i] / (double)pixelsCount;
-                double vRightTotNormalized = (double)histogram2[i] / (double)pixelsCount;
-
-                glColor3f(1, 0, 0);
-                glVertex2f(binMinX, 0);
-                glVertex2f(binMinX,  vLeftTotNormalized);
-                
-                
-                glColor3f(0, 1, 1);
-                glVertex2f(binMinX, 0);
-                glVertex2f(binMinX,  vRightTotNormalized);
-            } else {
-                if ((interest == Histogram::LEFT_IMAGE && histogram1.empty()) ||
-                    (interest == Histogram::RIGHT_IMAGE && histogram2.empty())) {
-                    break;
-                }
-                
-                double vTotNormalized;
-                
-                if (interest == Histogram::LEFT_IMAGE) {
-                    vTotNormalized = (double)histogram1[i] / (double)pixelsCount;
-                } else {
-                    vTotNormalized = (double)histogram2[i] / (double)pixelsCount;
-                }
-                // all the following colors have the same luminance (~0.4)
-                switch (mode) {
-                    case Histogram::R:
-                        //glColor3f(1, 0, 0);
-                        glColor3f(0.851643,0.196936,0.196936);
-                        break;
-                    case Histogram::G:
-                        //glColor3f(0, 1, 0);
-                        glColor3f(0,0.654707,0);
-                        break;
-                    case Histogram::B:
-                        //glColor3f(0, 0, 1);
-                        glColor3f(0.345293,0.345293,1);
-                        break;
-                    case Histogram::A:
-                        //glColor3f(1, 1, 1);
-                        glColor3f(0.398979,0.398979,0.398979);
-                        break;
-                    case Histogram::Y:
-                        //glColor3f(0.7, 0.7, 0.7);
-                        glColor3f(0.398979,0.398979,0.398979);
-                        break;
-                    default:
-                        assert(false);
-                        break;
-                }
-                glVertex2f(binMinX, 0);
-                glVertex2f(binMinX,  vTotNormalized);
+            if (histogram1.empty()) {
+                break;
             }
+            
+            double vTotNormalized = (double)histogram1[i] / (double)pixelsCount;
+
+            // all the following colors have the same luminance (~0.4)
+            switch (mode) {
+                case Histogram::R:
+                    //glColor3f(1, 0, 0);
+                    glColor3f(0.851643,0.196936,0.196936);
+                    break;
+                case Histogram::G:
+                    //glColor3f(0, 1, 0);
+                    glColor3f(0,0.654707,0);
+                    break;
+                case Histogram::B:
+                    //glColor3f(0, 0, 1);
+                    glColor3f(0.345293,0.345293,1);
+                    break;
+                case Histogram::A:
+                    //glColor3f(1, 1, 1);
+                    glColor3f(0.398979,0.398979,0.398979);
+                    break;
+                case Histogram::Y:
+                    //glColor3f(0.7, 0.7, 0.7);
+                    glColor3f(0.398979,0.398979,0.398979);
+                    break;
+                default:
+                    assert(false);
+                    break;
+            }
+            glVertex2f(binMinX, 0);
+            glVertex2f(binMinX,  vTotNormalized);
         }
     }
     glEnd(); // GL_LINES

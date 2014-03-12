@@ -135,7 +135,7 @@ signals:
     void currentIndexChanged(QString);
     
 private:
-    
+        
     void paintEvent(QPaintEvent *);
     void mousePressEvent(QMouseEvent* e);
     void mouseReleaseEvent(QMouseEvent* e);

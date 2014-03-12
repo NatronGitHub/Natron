@@ -88,7 +88,6 @@ public:
     // MT-SAFE: don't return a reference
     RectI getRoD() const ;
     
-    virtual void setRegionOfDefinition(const RectI& rod) OVERRIDE FINAL;
     
     /**
      *@returns Returns a const reference to the displayWindow of the currentFrame(Resolution)
@@ -150,7 +149,7 @@ public:
      *@brief Handy function that zoom automatically the viewer so it fit
      *the displayWindow  entirely in the viewer
      **/
-    virtual void fitImageToFormat(const Format &rod) OVERRIDE FINAL;
+    virtual void fitImageToFormat() OVERRIDE FINAL;
     
     /**
      *@brief Turns on the overlays on the viewer.
@@ -213,6 +212,7 @@ public:
      **/
     void zoomSlot(QString);
     
+    void setRegionOfDefinition(const RectI& rod);
     
     virtual void updateColorPicker(int x = INT_MAX,int y = INT_MAX) OVERRIDE FINAL;
     
