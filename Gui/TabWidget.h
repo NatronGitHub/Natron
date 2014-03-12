@@ -198,6 +198,8 @@ public slots:
     
     void moveCurveEditorHere();
     
+    void newHistogramHere();
+    
     void movePropertiesBinHere();
     
     void splitHorizontally();

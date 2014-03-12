@@ -181,6 +181,10 @@ struct GuiPrivate {
     ///a list of ptrs to all the viewer tabs.
     std::list<ViewerTab*> _viewerTabs;
     
+    ///a list of ptrs to all histograms
+    std::list<Histogram*> _histograms;
+    int _nextHistogramIndex; //< for giving a unique name to histogram tabs
+    
     ///The scene managing elements of the node graph.
     QGraphicsScene* _graphScene;
     
@@ -189,9 +193,6 @@ struct GuiPrivate {
     
     ///The curve editor.
     CurveEditor *_curveEditor;
-    
-    Histogram* _histogramTab;
-    
     
     ///the left toolbar
     QToolBar* _toolBox;
@@ -299,10 +300,12 @@ struct GuiPrivate {
     , _propertiesPane(0)
     , _middleRightSplitter(0)
     , _leftRightSplitter(0)
+    , _viewerTabs()
+    , _histograms()
+    , _nextHistogramIndex(1)
     , _graphScene(0)
     , _nodeGraphArea(0)
     , _curveEditor(0)
-    , _histogramTab(0)
     , _toolBox(0)
     , _propertiesScrollArea(0)
     , _propertiesContainer(0)
@@ -739,10 +742,7 @@ void Gui::setupUi()
 
     _imp->_curveEditor->setObjectName(kCurveEditorObjectName);
     _imp->_workshopPane->appendTab(_imp->_curveEditor);
-    
-    _imp->_histogramTab = new Histogram(this);
-    _imp->_histogramTab->setObjectName("Histogram");
-    _imp->_workshopPane->appendTab(_imp->_histogramTab);
+
     _imp->_workshopPane->makeCurrentTab(0);
     
     _imp->_viewerWorkshopSplitter->addWidget(_imp->_workshopPane);
@@ -1072,11 +1072,21 @@ void Gui::minimize(){
 
 ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
     ViewerTab* tab = new ViewerTab(this,viewer,_imp->_viewersPane);
-    QObject::connect(tab->getViewer(),SIGNAL(imageChanged()),_imp->_histogramTab,SLOT(onViewerImageChanged()));
+    QObject::connect(tab->getViewer(),SIGNAL(imageChanged()),this,SLOT(onViewerImageChanged()));
     _imp->_viewerTabs.push_back(tab);
     where->appendTab(tab);
     emit viewersChanged();
     return tab;
+}
+
+void Gui::onViewerImageChanged() {
+    ///notify all histograms a viewer image changed
+    ViewerGL* viewer = qobject_cast<ViewerGL*>(sender());
+    if (viewer) {
+        for (std::list<Histogram*>::iterator it = _imp->_histograms.begin(); it != _imp->_histograms.end(); ++it) {
+            (*it)->onViewerImageChanged(viewer);
+        }
+    }
 }
 
 void Gui::addViewerTab(ViewerTab* tab, TabWidget* where) {
@@ -1105,39 +1115,50 @@ void Gui::unregisterTab(QWidget* tab) {
     }
 }
 
-void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData){
+void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData) {
     assert(tab);
-    tab->hide();
-    
-    unregisterTab(tab);
-    
-    if(deleteData){
-        
-        std::list<ViewerTab*>::iterator it = std::find(_imp->_viewerTabs.begin(), _imp->_viewerTabs.end(), tab);
-        if (it != _imp->_viewerTabs.end()) {
-            _imp->_viewerTabs.erase(it);
-        }
 
+    if (!initiatedFromNode) {
+        assert(_imp->_nodeGraphArea);
+        ///call the deleteNode which will call this function again when the node will be deactivated.
+        _imp->_nodeGraphArea->deleteNode(_imp->_appInstance->getNodeGui(tab->getInternalNode()->getNode()));
+    } else {
         
-        if (!initiatedFromNode) {
-            assert(_imp->_nodeGraphArea);
-            tab->getInternalNode()->getNode()->deactivate();
-        } else {
-            
-            TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
-            if(container)
-                container->removeTab(tab);
+        tab->hide();
+        
+       
+        TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
+        if(container) {
+            container->removeTab(tab);
+        }
+        
+        if (deleteData) {
+            std::list<ViewerTab*>::iterator it = std::find(_imp->_viewerTabs.begin(), _imp->_viewerTabs.end(), tab);
+            if (it != _imp->_viewerTabs.end()) {
+                _imp->_viewerTabs.erase(it);
+            }
             delete tab;
         }
-
-    } else {
-        TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
-        if(container)
-            container->removeTab(tab);
     }
+   
     emit viewersChanged();
 
     
+}
+
+Histogram* Gui::addNewHistogram() {
+    Histogram* h = new Histogram(this);
+    h->setObjectName("Histogram "+QString::number(_imp->_nextHistogramIndex));
+    ++_imp->_nextHistogramIndex;
+    _imp->_histograms.push_back(h);
+    return h;
+}
+
+void Gui::removeHistogram(Histogram* h) {
+    std::list<Histogram*>::iterator it = std::find(_imp->_histograms.begin(),_imp->_histograms.end(),h);
+    assert(it != _imp->_histograms.end());
+    delete *it;
+    _imp->_histograms.erase(it);
 }
 
 void Gui::removePane(TabWidget* pane){
@@ -1932,7 +1953,7 @@ void Gui::deactivateViewerTab(ViewerInstance* viewer) {
     OpenGLViewerI* viewport = viewer->getUiContext();
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin();it!=_imp->_viewerTabs.end();++it) {
         if ((*it)->getViewer() == viewport) {
-            removeViewerTab(*it, false,false);
+            removeViewerTab(*it, true,false);
             break;
         }
     }

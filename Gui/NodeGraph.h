@@ -113,6 +113,8 @@ public:
 
     bool areAllPreviewTurnedOff() const { return _previewsTurnedOff; }
     
+    void deleteNode(NodeGui* n);
+    
 public slots:
     
     void deleteSelectedNode();

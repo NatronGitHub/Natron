@@ -17,7 +17,8 @@
 #include <vector>
 #include <utility>
 
-#include "Global/Macros.h"
+
+#include "Global/GLobalDefines.h"
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
@@ -243,6 +244,7 @@ inline bool operator!=(const RectI& b1, const RectI& b2)
 }
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(RectI);
 
+Q_DECLARE_METATYPE(RectI)
 
 class RectD {
     double x1; // left
@@ -420,6 +422,8 @@ inline bool operator!=(const RectD& b1, const RectD& b2)
     b1.top() != b2.top();
 }
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(RectD);
+
+Q_DECLARE_METATYPE(RectD)
 
 
 #endif // NATRON_ENGINE_RECT_H_

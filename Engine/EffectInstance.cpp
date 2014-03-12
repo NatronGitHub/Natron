@@ -1069,7 +1069,11 @@ void OutputEffectInstance::renderFullSequence(BlockingBackgroundRender* renderCo
     _renderController = renderController;
     assert(pluginID() != "Viewer"); //< this function is not meant to be called for rendering on the viewer
     getVideoEngine()->refreshTree();
-    getVideoEngine()->render(-1,true,true,false,true,false);
+    getVideoEngine()->render(-1, //< frame count
+                             true, //< seek timeline
+                             true, //< refresh tree
+                             true, //< forward
+                             false); //< same frame
     
 }
 

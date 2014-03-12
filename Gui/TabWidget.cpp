@@ -38,6 +38,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/ViewerTab.h"
+#include "Gui/Histogram.h"
 #include "Engine/ViewerInstance.h"
 
 using namespace Natron;
@@ -172,8 +173,11 @@ bool TabWidget::destroyTab(QWidget* tab) {
     /*special care is taken if this is a viewer: we also
      need to delete the viewer node.*/
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
+    Histogram* isHisto = dynamic_cast<Histogram*>(tab);
     if (isViewer) {
-        _gui->removeViewerTab(isViewer,false);
+        _gui->removeViewerTab(isViewer,false,false);
+    } else if(isHisto) {
+        _gui->removeHistogram(isHisto);
     } else {
         tab->setVisible(false);
     }
@@ -213,6 +217,7 @@ void TabWidget::createMenu(){
     menu->addAction(closeAction);
     menu->addSeparator();
     menu->addAction(tr("New viewer"), this, SLOT(addNewViewer()));
+    menu->addAction(tr("New histogram"), this, SLOT(newHistogramHere()));
     menu->addAction(tr("Node graph here"), this, SLOT(moveNodeGraphHere()));
     menu->addAction(tr("Curve Editor here"), this, SLOT(moveCurveEditorHere()));
     menu->addAction(tr("Properties bin here"), this, SLOT(movePropertiesBinHere()));
@@ -327,6 +332,12 @@ void TabWidget::moveCurveEditorHere(){
     QWidget* what = dynamic_cast<QWidget*>(_gui->getCurveEditor());
     moveTab(what,this);
 }
+
+void TabWidget::newHistogramHere() {
+    Histogram* h = _gui->addNewHistogram();
+    appendTab(h);
+}
+
 /*Get the header name of the tab at index "index".*/
 QString TabWidget::getTabName(int index) const {
     if(index >= _tabBar->count()) return "";
@@ -552,7 +563,9 @@ QWidget*  TabWidget::removeTab(int index) {
     if (index < 0 || index >= (int)_tabs.size()) {
         return NULL;
     }
+
     QWidget* tab = _tabs[index];
+    _gui->unregisterTab(tab);
     _tabs.erase(_tabs.begin()+index);
     _tabBar->removeTab(index);
     if (_tabs.size() > 0) {

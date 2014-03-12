@@ -637,7 +637,6 @@ void ViewerTab::startPause(bool b){
         _imp->_viewerNode->getVideoEngine()->render(-1, /*frame count*/
                                               true,/*seek timeline ?*/
                                               true,/*rebuild tree?*/
-                                              false, /*fit to viewer ?*/
                                               true, /*forward ?*/
                                               false); /*same frame ?*/
     }
@@ -651,7 +650,6 @@ void ViewerTab::startBackward(bool b){
         _imp->_viewerNode->getVideoEngine()->render(-1, /*frame count*/
                                               true,/*seek timeline ?*/
                                               true,/*rebuild tree?*/
-                                              false,/*fit to viewer?*/
                                               false,/*forward?*/
                                               false);/*same frame ?*/
     }

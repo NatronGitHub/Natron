@@ -142,7 +142,12 @@ void Project::refreshViewersAndPreviews() {
             if (nodes[i]->pluginID() == "Viewer") {
                 ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
                 assert(n);
-                n->getVideoEngine()->render(1, true,true,true,false,true);
+                n->getVideoEngine()->render(1,//< frame count
+                                            true, //<seek timeline
+                                            true, //< refresh tree
+                                            true, //< forward
+                                            false, //< same frame
+                                            true); //< force preview
             }
         }
     }
@@ -681,7 +686,12 @@ void Project::onTimeChanged(SequenceTime time,int reason) {
     
     for(U32 i = 0; i < viewers.size();++i){
         if(viewers[i] != _imp->lastTimelineSeekCaller || reason == USER_SEEK){
-            viewers[i]->getVideoEngine()->render(1, false,false,false,true,false);
+            viewers[i]->getVideoEngine()->render(1, //< frame count
+                                                 false, //< seek timeline
+                                                 false, //<refresh tree
+                                                 true, //< forward
+                                                 false, // <same frame
+                                                 false); //< force preview
         }
     }
     _imp->lastTimelineSeekCaller = 0;

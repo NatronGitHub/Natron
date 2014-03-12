@@ -21,7 +21,7 @@ class QColor;
 class QFont;
 
 class Gui;
-
+class ViewerGL;
 /**
  * @class An histogram view in the histograms gui.
  **/
@@ -74,7 +74,7 @@ public slots:
     
     void onCurrentViewerChanged(QAction*);
 
-    void onViewerImageChanged();
+    void onViewerImageChanged(ViewerGL* viewer);
     
 private:
     

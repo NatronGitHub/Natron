@@ -48,6 +48,7 @@ class ViewerTab;
 class DockablePanel;
 class NodeGraph;
 class CurveEditor;
+class Histogram;
 
 //Natron engine
 class ViewerInstance;
@@ -98,7 +99,11 @@ public:
      associated GUI. It may also be called from the TabWidget
      that wants to close. The deleteData flag tells whether we actually want
      to destroy the tab/node or just hide them.*/
-    void removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData = true);
+    void removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData);
+    
+    Histogram* addNewHistogram();
+    
+    void removeHistogram(Histogram* h);
     
     void setNewViewerAnchor(TabWidget* where);
         
@@ -324,6 +329,8 @@ public slots:
     void onProjectNameChanged(const QString& name);
     
     void onNodeNameChanged(const QString& name);
+    
+    void onViewerImageChanged();
     
 private:
 

@@ -2503,7 +2503,7 @@ void ViewerGL::removeGUI()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    _imp->viewerTab->getGui()->removeViewerTab(_imp->viewerTab, true);
+    _imp->viewerTab->getGui()->removeViewerTab(_imp->viewerTab, true,true);
 }
 
 int ViewerGL::getCurrentView() const

@@ -767,6 +767,13 @@ void NodeGraph::deleteSelectedNode(){
     }
 }
 
+void NodeGraph::deleteNode(NodeGui* n) {
+    assert(n);
+    _undoStack->setActive();
+    n->setSelected(false);
+    _undoStack->push(new RemoveCommand(this,n));
+}
+
 
 void NodeGraph::removeNode(NodeGui* n) {
     assert(n);

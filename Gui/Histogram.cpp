@@ -349,7 +349,7 @@ Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
     QObject::connect(_imp->filterActions, SIGNAL(triggered(QAction*)), this, SLOT(onFilterChanged(QAction*)));
     
     QObject::connect(_imp->gui, SIGNAL(viewersChanged()), this, SLOT(populateViewersChoices()));
-  
+    populateViewersChoices();
 }
 
 Histogram::~Histogram() {
@@ -491,8 +491,8 @@ void Histogram::onCurrentViewerChanged(QAction*){
     computeHistogramAndRefresh();
 }
 
-void Histogram::onViewerImageChanged() {
-    ViewerGL* viewer = qobject_cast<ViewerGL*>(sender());
+void Histogram::onViewerImageChanged(ViewerGL* viewer) {
+
     if (viewer) {
         QString viewerName = viewer->getInternalNode()->getName().c_str();
         ViewerTab* lastSelectedViewer = _imp->gui->getLastSelectedViewer();

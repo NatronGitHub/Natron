@@ -909,6 +909,8 @@ void AppManager::registerEngineMetaTypes() const {
     qRegisterMetaType<Knob*>();
     qRegisterMetaType<Natron::Node*>();
     qRegisterMetaType<Natron::StandardButtons>();
+    qRegisterMetaType<RectI>();
+    qRegisterMetaType<RectD>();
 #if QT_VERSION < 0x050000
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
 #endif
