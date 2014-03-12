@@ -167,6 +167,8 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
     project->endProjectWideValueChanges(project);
     
+    nodeCounters = obj.getNodeCounters();
+    
     projectCreationTime = QDateTime::fromMSecsSinceEpoch(obj.getCreationDate());
 
 }

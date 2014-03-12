@@ -184,6 +184,8 @@ public:
     
     qint64 getProjectCreationTime() const;
     
+    void getNodeCounters(std::map<std::string,int>* counters) const;
+    
 public slots:
 
     void onTimeChanged(SequenceTime time,int reason);

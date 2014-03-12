@@ -46,6 +46,7 @@ SOURCES += \
     FrameEntry.cpp \
     FrameParamsSerialization.cpp \
     Hash64.cpp \
+    HistogramCPU.cpp \
     Image.cpp \
     ImageParamsSerialization.cpp \
     Interpolation.cpp \
@@ -102,6 +103,7 @@ HEADERS += \
     FrameParams.h \
     FrameParamsSerialization.h \
     Hash64.h \
+    HistogramCPU.h \
     ImageInfo.h \
     Image.h \
     ImageSerialization.h \
@@ -148,5 +150,5 @@ HEADERS += \
     Timer.h \
     Variant.h \
     VideoEngine.h \
-    ViewerInstance.h \
+    ViewerInstance.h
 

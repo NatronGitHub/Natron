@@ -45,13 +45,19 @@ public:
     
     boost::shared_ptr<Natron::Image> getRightHistogramImage(RectI* imagePortion) const;
     
+    void refreshCoordinatesLabel(double x,double y);
     
+    void hideCoordinatesLabel();
     
 public slots:
     
     void populateViewersChoices();
     
     void makeHistogramsLayout(int);
+    
+    void onViewerImageChanged();
+    
+    void onFullImageCheckBoxChecked(bool checked);
 private:
     
     boost::scoped_ptr<HistogramTabPrivate> _imp;
@@ -63,12 +69,15 @@ private:
 struct HistogramPrivate;
 class Histogram : public QGLWidget
 {
+    Q_OBJECT
+    
 public:
     
     
     
     enum HistogramInterest {
-        LEFT_IMAGE = 0,
+        NO_IMAGE = 0,
+        LEFT_IMAGE ,
         RIGHT_IMAGE ,
         LEFT_AND_RIGHT
     };
@@ -84,8 +93,10 @@ public:
     
     Histogram(HistogramTab* parent, const QGLWidget* shareWidget = NULL);
     
-    void setDisplayModeAndInterest(DisplayMode mode,HistogramInterest interest);
+    virtual ~Histogram();
+
     
+    void setDisplayModeAndInterest(DisplayMode mode,HistogramInterest interest);
     
     QPointF toHistogramCoordinates(double x,double y) const;
     
@@ -97,7 +108,15 @@ public:
     
     void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const;
     
-    virtual ~Histogram();
+    HistogramInterest getInterest() const;
+    
+public slots:
+    
+#ifndef NATRON_HISTOGRAM_USING_OPENGL
+
+    void onCPUHistogramComputed();
+    
+#endif
     
 private:
     
@@ -114,6 +133,12 @@ private:
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     
     virtual void wheelEvent(QWheelEvent *event) OVERRIDE FINAL;
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     
     virtual QSize sizeHint() const OVERRIDE FINAL;
     

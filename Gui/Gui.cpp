@@ -740,11 +740,9 @@ void Gui::setupUi()
     _imp->_curveEditor->setObjectName(kCurveEditorObjectName);
     _imp->_workshopPane->appendTab(_imp->_curveEditor);
     
-#if 0
     _imp->_histogramTab = new HistogramTab(this);
-    _imp->_histogramTab->setObjectName("Histograms");
+    _imp->_histogramTab->setObjectName("Histogram");
     _imp->_workshopPane->appendTab(_imp->_histogramTab);
-#endif
     _imp->_workshopPane->makeCurrentTab(0);
     
     _imp->_viewerWorkshopSplitter->addWidget(_imp->_workshopPane);
@@ -1074,6 +1072,7 @@ void Gui::minimize(){
 
 ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
     ViewerTab* tab = new ViewerTab(this,viewer,_imp->_viewersPane);
+    QObject::connect(tab->getViewer(),SIGNAL(imageChanged()),_imp->_histogramTab,SLOT(onViewerImageChanged()));
     _imp->_viewerTabs.push_back(tab);
     where->appendTab(tab);
     emit viewersChanged();

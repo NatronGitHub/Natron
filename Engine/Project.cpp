@@ -461,6 +461,7 @@ const Format& Project::getProjectDefaultFormat() const{
 ///only called on the main thread
 void Project::initNodeCountersAndSetName(Node* n) {
     assert(n);
+    QMutexLocker l(&_imp->nodesLock);
     std::map<std::string,int>::iterator it = _imp->nodeCounters.find(n->pluginID());
     if(it != _imp->nodeCounters.end()){
         it->second++;
@@ -470,15 +471,21 @@ void Project::initNodeCountersAndSetName(Node* n) {
         n->setName(QString(QString(n->pluginLabel().c_str())+ "_" + QString::number(1)).toStdString());
     }
 }
+    
+void Project::getNodeCounters(std::map<std::string,int>* counters) const {
+    QMutexLocker l(&_imp->nodesLock);
+    *counters = _imp->nodeCounters;
+}
 
 void Project::addNodeToProject(Node* n) {
+    QMutexLocker l(&_imp->nodesLock);
     _imp->currentNodes.push_back(n);
 }
     
 void Project::clearNodes() {
     std::vector<Natron::Node*> nodesToDelete;
     {
-        QMutexLocker l(&_imp->projectLock);
+        QMutexLocker l(&_imp->nodesLock);
         nodesToDelete = _imp->currentNodes;
         _imp->currentNodes.clear();
     }
@@ -571,7 +578,7 @@ int Project::getProjectViewsCount() const {
 }
 
 const std::vector<Node*> Project::getCurrentNodes() const {
-    QMutexLocker l(&_imp->projectLock);
+    QMutexLocker l(&_imp->nodesLock);
     return _imp->currentNodes;
 }
 

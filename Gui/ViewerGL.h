@@ -333,6 +333,10 @@ signals:
      **/
     void zoomChanged(int v);
     
+    /**
+     * @brief Emitted when the image texture changes.
+     **/
+    void imageChanged();
 
 private:
     /**

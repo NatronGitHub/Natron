@@ -156,6 +156,8 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
     int viewsCount = getApp()->getProject()->getProjectViewsCount();
     int view = viewsCount > 0 ? _uiContext->getCurrentView() : 0;
 
+    EffectInstance* activeInputToRender = input(activeInput());
+    assert(activeInputToRender);
     
     ///instead of calling getRegionOfDefinition on the active input, check the image cache
     ///to see whether the result of getRegionOfDefinition is already present. A cache lookup
@@ -166,15 +168,37 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
     boost::shared_ptr<const ImageParams> cachedImgParams;
     boost::shared_ptr<Image> inputImage;
     bool isInputImgCached = false;
-    Natron::ImageKey inputImageKey = Natron::Image::makeKey(hash().value(), time, scale,view);
+    Natron::ImageKey inputImageKey = Natron::Image::makeKey(activeInputToRender->hash().value(), time, scale,view);
     RectI rod;
-    
+    int inputIdentityNumber = -1;
+    SequenceTime inputIdentityTime;
     if (!_forceRender) {
         isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
+        if (isInputImgCached) {
+            inputIdentityNumber = cachedImgParams->getInputNbIdentity();
+            inputIdentityTime = cachedImgParams->getInputTimeIdentity();
+        }
+    }
+    
+    ////While the inputs are identity get the RoD of the first non identity input
+    while (!_forceRender && inputIdentityNumber != -1 && isInputImgCached) {
+        EffectInstance* recursiveInput = activeInputToRender->input(inputIdentityNumber);
+        if (recursiveInput) {
+            inputImageKey = Natron::Image::makeKey(recursiveInput->hash().value(), inputIdentityTime, scale,view);
+            isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
+            if (isInputImgCached) {
+                inputIdentityNumber = cachedImgParams->getInputNbIdentity();
+                inputIdentityTime = cachedImgParams->getInputTimeIdentity();
+            }
+
+        } else {
+            isInputImgCached = false;
+        }
     }
     
     if (isInputImgCached) {
         rod = cachedImgParams->getRoD();
+        _lastRenderedImage = inputImage;
     } else {
         Status stat = getRegionOfDefinition(time, &rod);
         if(stat == StatFailed){
@@ -314,9 +338,6 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
         
         {
       
-            
-            EffectInstance* activeInputToRender = input(activeInput());
-            assert(activeInputToRender);
             if (!activeInputToRender->supportsTiles()) {
                 texRectClipped.intersect(rod, &texRectClipped);
             }
@@ -334,7 +355,6 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer,b
                     ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
                     ///cache lookup things because we already did it ourselves.
                     activeInputToRender->renderRoI(time, scale, view, texRectClipped, cachedImgParams, inputImage);
-                    _lastRenderedImage = inputImage;
                 } else {
                     _lastRenderedImage = activeInputToRender->renderRoI(time, scale,view,texRectClipped,byPassCache);
                 }

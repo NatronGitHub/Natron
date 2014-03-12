@@ -14,9 +14,11 @@
 #include <QGLShaderProgram>
 #include <QMouseEvent>
 #include <QDebug>
+#include <QCoreApplication>
 
 #include "Engine/Image.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/HistogramCPU.h"
 
 #include "Gui/ticks.h"
 #include "Gui/Shaders.h"
@@ -55,6 +57,10 @@ struct HistogramTabPrivate
     QCheckBox* fullImage;
     ClickableLabel* fullImageLabel;
     
+    QWidget* headerSecondLine;
+    QHBoxLayout* headerSecondLineLayout;
+    QLabel* coordLabel;
+    
     ////////// HISTOGRAMS
     Histogram* histogram1;
     Histogram* histogram2;
@@ -77,6 +83,9 @@ struct HistogramTabPrivate
     , layoutSelection(NULL)
     , fullImage(NULL)
     , fullImageLabel(NULL)
+    , headerSecondLine(NULL)
+    , headerSecondLineLayout(NULL)
+    , coordLabel(NULL)
     , histogram1(NULL)
     , histogram2(NULL)
     , histogram3(NULL)
@@ -94,6 +103,8 @@ HistogramTab::HistogramTab(Gui* gui)
 , _imp(new HistogramTabPrivate(gui))
 {
     _imp->mainLayout = new QVBoxLayout(this);
+    _imp->mainLayout->setContentsMargins(0,0,0,0);
+    _imp->mainLayout->setSpacing(0);
     setLayout(_imp->mainLayout);
     
     _imp->optionsHeader = new QWidget(this);
@@ -105,6 +116,7 @@ HistogramTab::HistogramTab(Gui* gui)
     
     
     _imp->leftHistogramSelection = new ComboBox(_imp->optionsHeader);
+    QObject::connect(_imp->leftHistogramSelection, SIGNAL(currentIndexChanged(int)), this, SLOT(makeHistogramsLayout(int)));
     _imp->optionsHeaderLayout->QLayout::addWidget(_imp->leftHistogramSelection);
     
     _imp->optionsHeaderLayout->addStretch();
@@ -113,6 +125,7 @@ HistogramTab::HistogramTab(Gui* gui)
     _imp->optionsHeaderLayout->addWidget(_imp->rightHistogramSelectionLabel);
     
     _imp->rightHistogramSelection = new ComboBox(_imp->optionsHeader);
+    QObject::connect(_imp->rightHistogramSelection, SIGNAL(currentIndexChanged(int)), this, SLOT(makeHistogramsLayout(int)));
     _imp->optionsHeaderLayout->QLayout::addWidget(_imp->rightHistogramSelection);
     
     QObject::connect(_imp->gui, SIGNAL(viewersChanged()), this, SLOT(populateViewersChoices()));
@@ -133,6 +146,7 @@ HistogramTab::HistogramTab(Gui* gui)
     _imp->modeSelection->addItem("R");
     _imp->modeSelection->addItem("G");
     _imp->modeSelection->addItem("B");
+    QObject::connect(_imp->modeSelection, SIGNAL(currentIndexChanged(int)), this, SLOT(makeHistogramsLayout(int)));
     _imp->optionsHeaderLayout->QLayout::addWidget(_imp->modeSelection);
     
     _imp->optionsHeaderLayout->addStretch();
@@ -141,8 +155,9 @@ HistogramTab::HistogramTab(Gui* gui)
     _imp->optionsHeaderLayout->QLayout::addWidget(_imp->layoutLabel);
     
     _imp->layoutSelection = new ComboBox(_imp->optionsHeader);
-    _imp->layoutSelection->addItem("Split");
-    _imp->layoutSelection->addItem("Anaglyph");
+    _imp->layoutSelection->addItem("Split",QIcon(),QKeySequence(),"Splits the left and right Viewer histograms side by side.");
+    _imp->layoutSelection->addItem("Anaglyph",QIcon(),QKeySequence(),"Left Viewer histogram will be in red and right Viewer "
+                                   "histogram in Cyan.");
     QObject::connect(_imp->layoutSelection, SIGNAL(currentIndexChanged(int)), this, SLOT(makeHistogramsLayout(int)));
     _imp->optionsHeaderLayout->QLayout::addWidget(_imp->layoutSelection);
 
@@ -155,13 +170,25 @@ HistogramTab::HistogramTab(Gui* gui)
                                      "(This is affected by the viewer's region of interest.)");
     _imp->optionsHeaderLayout->addWidget(_imp->fullImageLabel);
     _imp->fullImage = new QCheckBox(_imp->optionsHeader);
+    QObject::connect(_imp->fullImage, SIGNAL(clicked(bool)), _imp->fullImage, SLOT(setChecked(bool)));
+    QObject::connect(_imp->fullImage, SIGNAL(clicked(bool)), this, SLOT(onFullImageCheckBoxChecked(bool)));
     _imp->fullImage->setChecked(false);
     _imp->optionsHeaderLayout->QLayout::addWidget(_imp->fullImage);
     
     _imp->mainLayout->addWidget(_imp->optionsHeader);
+
     
-    _imp->splitter1_2 = new QSplitter(this);
-    _imp->splitter2_3 = new QSplitter(this);
+    _imp->headerSecondLine = new QWidget(this);
+    _imp->headerSecondLineLayout = new QHBoxLayout(_imp->headerSecondLine);
+    _imp->headerSecondLineLayout->setContentsMargins(0, 0, 0, 0);
+    
+    _imp->coordLabel = new QLabel("",_imp->optionsHeader);
+    _imp->headerSecondLineLayout->addWidget(_imp->coordLabel);
+    
+    _imp->mainLayout->addWidget(_imp->headerSecondLine);
+    
+    _imp->splitter1_2 = new QSplitter(Qt::Horizontal,this);
+    _imp->splitter2_3 = new QSplitter(Qt::Horizontal,this);
     
     _imp->histogram1 = new Histogram(this);
     _imp->histogram2 = new Histogram(this);
@@ -172,6 +199,25 @@ HistogramTab::HistogramTab(Gui* gui)
 
 HistogramTab::~HistogramTab() {
     
+}
+
+void HistogramTab::refreshCoordinatesLabel(double x,double y) {
+  
+    QString txt = QString("x=%1 y=%2").arg(x,0,'f',5).arg(y,0,'f',5);
+    _imp->coordLabel->setText(txt);
+    if (!_imp->coordLabel->isVisible()) {
+        _imp->coordLabel->show();
+    }
+}
+
+void HistogramTab::hideCoordinatesLabel() {
+    _imp->coordLabel->hide();
+}
+
+void HistogramTab::onFullImageCheckBoxChecked(bool /*checked*/) {
+    _imp->histogram1->computeHistogramAndRefresh();
+    _imp->histogram2->computeHistogramAndRefresh();
+    _imp->histogram3->computeHistogramAndRefresh();
 }
 
 void HistogramTab::populateViewersChoices() {
@@ -212,6 +258,54 @@ void HistogramTab::populateViewersChoices() {
 
 }
 
+void HistogramTab::onViewerImageChanged() {
+    ViewerGL* viewer = qobject_cast<ViewerGL*>(sender());
+    if (viewer) {
+        QString viewerName = viewer->getViewerTab()->getInternalNode()->getName().c_str();
+        ViewerTab* lastSelectedViewer = _imp->gui->getLastSelectedViewer();
+        QString currentViewerName;
+        if (lastSelectedViewer) {
+            currentViewerName = lastSelectedViewer->getInternalNode()->getName().c_str();
+        }
+        
+        bool refreshLeft = (_imp->leftHistogramSelection->activeIndex() == 1 && lastSelectedViewer == viewer->getViewerTab())
+        || (_imp->leftHistogramSelection->activeIndex() > 1 && _imp->leftHistogramSelection->getCurrentIndexText() == viewerName);
+        
+        bool refreshRight = (_imp->rightHistogramSelection->activeIndex() == 1 && lastSelectedViewer == viewer->getViewerTab())
+        || (_imp->rightHistogramSelection->activeIndex() > 1 && _imp->rightHistogramSelection->getCurrentIndexText() == viewerName);
+        
+        if (refreshLeft) {
+            if (_imp->histogram1->isVisible() && (_imp->histogram1->getInterest() == Histogram::LEFT_AND_RIGHT ||
+                _imp->histogram1->getInterest() == Histogram::LEFT_IMAGE)) {
+                _imp->histogram1->computeHistogramAndRefresh();
+            }
+            if (_imp->histogram2->isVisible() && (_imp->histogram2->getInterest() == Histogram::LEFT_AND_RIGHT ||
+                                                  _imp->histogram2->getInterest() == Histogram::LEFT_IMAGE)) {
+                _imp->histogram2->computeHistogramAndRefresh();
+            }
+            if (_imp->histogram3->isVisible() && (_imp->histogram3->getInterest() == Histogram::LEFT_AND_RIGHT ||
+                                                  _imp->histogram3->getInterest() == Histogram::LEFT_IMAGE)) {
+                _imp->histogram3->computeHistogramAndRefresh();
+            }
+        }
+        
+        if (refreshRight) {
+            if (_imp->histogram1->isVisible() && (_imp->histogram1->getInterest() == Histogram::LEFT_AND_RIGHT ||
+                                                  _imp->histogram1->getInterest() == Histogram::RIGHT_IMAGE)) {
+                _imp->histogram1->computeHistogramAndRefresh();
+            }
+            if (_imp->histogram2->isVisible() && (_imp->histogram2->getInterest() == Histogram::LEFT_AND_RIGHT ||
+                                                  _imp->histogram2->getInterest() == Histogram::RIGHT_IMAGE)) {
+                _imp->histogram2->computeHistogramAndRefresh();
+            }
+            if (_imp->histogram3->isVisible() && (_imp->histogram3->getInterest() == Histogram::LEFT_AND_RIGHT ||
+                                                  _imp->histogram3->getInterest() == Histogram::RIGHT_IMAGE)) {
+                _imp->histogram3->computeHistogramAndRefresh();
+            }
+        }
+    }
+}
+
 void HistogramTab::makeHistogramsLayout(int) {
     ///remove the splitters from the layout and hide them
 
@@ -232,27 +326,7 @@ void HistogramTab::makeHistogramsLayout(int) {
     int layout = _imp->layoutSelection->activeIndex();
     
     if (layout == 0) { //< Split mode
-        if (mode == 0) { //< RGB
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::RGB,Histogram::LEFT_IMAGE);
-            _imp->histogram2->setDisplayModeAndInterest(Histogram::RGB,Histogram::RIGHT_IMAGE);
-        } else if (mode == 1) { //< A
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::A,Histogram::LEFT_IMAGE);
-            _imp->histogram2->setDisplayModeAndInterest(Histogram::A,Histogram::RIGHT_IMAGE);
-        } else if (mode == 2) { //< Y
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::Y,Histogram::LEFT_IMAGE);
-            _imp->histogram2->setDisplayModeAndInterest(Histogram::Y,Histogram::RIGHT_IMAGE);
-        } else if (mode == 1) { //< R
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::R,Histogram::LEFT_IMAGE);
-            _imp->histogram2->setDisplayModeAndInterest(Histogram::R,Histogram::RIGHT_IMAGE);
-        } else if (mode == 1) { //< G
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::G,Histogram::LEFT_IMAGE);
-            _imp->histogram2->setDisplayModeAndInterest(Histogram::G,Histogram::RIGHT_IMAGE);
-        } else if (mode == 1) { //< B
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::B,Histogram::LEFT_IMAGE);
-            _imp->histogram2->setDisplayModeAndInterest(Histogram::B,Histogram::RIGHT_IMAGE);
-        } else {
-            assert(false);
-        }
+        
         
         if (_imp->leftHistogramSelection->activeIndex() != 0) {
             _imp->histogram1->show();
@@ -266,36 +340,71 @@ void HistogramTab::makeHistogramsLayout(int) {
         
         _imp->mainLayout->addWidget(_imp->splitter1_2);
         _imp->splitter1_2->show();
+
+        if (mode == 0) { //< RGB
+            _imp->histogram1->setDisplayModeAndInterest(Histogram::RGB,Histogram::LEFT_IMAGE);
+            _imp->histogram2->setDisplayModeAndInterest(Histogram::RGB,Histogram::RIGHT_IMAGE);
+        } else if (mode == 1) { //< A
+            _imp->histogram1->setDisplayModeAndInterest(Histogram::A,Histogram::LEFT_IMAGE);
+            _imp->histogram2->setDisplayModeAndInterest(Histogram::A,Histogram::RIGHT_IMAGE);
+        } else if (mode == 2) { //< Y
+            _imp->histogram1->setDisplayModeAndInterest(Histogram::Y,Histogram::LEFT_IMAGE);
+            _imp->histogram2->setDisplayModeAndInterest(Histogram::Y,Histogram::RIGHT_IMAGE);
+        } else if (mode == 3) { //< R
+            _imp->histogram1->setDisplayModeAndInterest(Histogram::R,Histogram::LEFT_IMAGE);
+            _imp->histogram2->setDisplayModeAndInterest(Histogram::R,Histogram::RIGHT_IMAGE);
+        } else if (mode == 4) { //< G
+            _imp->histogram1->setDisplayModeAndInterest(Histogram::G,Histogram::LEFT_IMAGE);
+            _imp->histogram2->setDisplayModeAndInterest(Histogram::G,Histogram::RIGHT_IMAGE);
+        } else if (mode == 5) { //< B
+            _imp->histogram1->setDisplayModeAndInterest(Histogram::B,Histogram::LEFT_IMAGE);
+            _imp->histogram2->setDisplayModeAndInterest(Histogram::B,Histogram::RIGHT_IMAGE);
+        } else {
+            assert(false);
+        }
         
     } else if (layout ==1) { // anaglyph mode
         bool useOnlyFirstHisto = false;
+        Histogram::HistogramInterest interest;
+        bool useLeft = _imp->leftHistogramSelection->activeIndex() != 0;
+        bool useRight = _imp->rightHistogramSelection->activeIndex() != 0;
+        if (useLeft && useRight) {
+            interest = Histogram::LEFT_AND_RIGHT;
+        } else if (useLeft && !useRight) {
+            interest = Histogram::LEFT_IMAGE;
+        } else if (!useLeft && useRight) {
+            interest = Histogram::RIGHT_IMAGE;
+        } else {
+            interest = Histogram::NO_IMAGE;
+        }
         if (mode == 0) { //< RGB
             _imp->splitter1_2->addWidget(_imp->histogram1);
             _imp->splitter1_2->addWidget(_imp->histogram2);
             _imp->splitter2_3->addWidget(_imp->splitter1_2);
             _imp->splitter2_3->addWidget(_imp->histogram3);
             _imp->mainLayout->addWidget(_imp->splitter2_3);
+            _imp->splitter1_2->show();
             _imp->splitter2_3->show();
             _imp->histogram1->show();
             _imp->histogram2->show();
             _imp->histogram3->show();
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::R,Histogram::LEFT_AND_RIGHT);
-            _imp->histogram2->setDisplayModeAndInterest(Histogram::G,Histogram::LEFT_AND_RIGHT);
-            _imp->histogram3->setDisplayModeAndInterest(Histogram::B,Histogram::LEFT_AND_RIGHT);
+            _imp->histogram1->setDisplayModeAndInterest(Histogram::R,interest);
+            _imp->histogram2->setDisplayModeAndInterest(Histogram::G,interest);
+            _imp->histogram3->setDisplayModeAndInterest(Histogram::B,interest);
         } else if (mode == 1) { //< A
             useOnlyFirstHisto = true;
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::A,Histogram::LEFT_AND_RIGHT);
+            _imp->histogram1->setDisplayModeAndInterest(Histogram::A,interest);
         } else if (mode == 2) { //< Y
             useOnlyFirstHisto = true;
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::Y,Histogram::LEFT_AND_RIGHT);
-        } else if (mode == 1) { //< R
+            _imp->histogram1->setDisplayModeAndInterest(Histogram::Y,interest);
+        } else if (mode == 3) { //< R
             useOnlyFirstHisto = true;
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::R,Histogram::LEFT_AND_RIGHT);
-        } else if (mode == 1) { //< G
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::G,Histogram::LEFT_AND_RIGHT);
+            _imp->histogram1->setDisplayModeAndInterest(Histogram::R,interest);
+        } else if (mode == 4) { //< G
+            _imp->histogram1->setDisplayModeAndInterest(Histogram::G,interest);
             useOnlyFirstHisto = true;
-        } else if (mode == 1) { //< B
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::B,Histogram::LEFT_AND_RIGHT);
+        } else if (mode == 5) { //< B
+            _imp->histogram1->setDisplayModeAndInterest(Histogram::B,interest);
             useOnlyFirstHisto = true;
         } else {
             assert(false);
@@ -315,10 +424,13 @@ boost::shared_ptr<Natron::Image> HistogramTabPrivate::getHistogramImageInternal(
     bool useImageRoD = fullImage->isChecked();
     
     int index;
+    std::string viewerName ;
     if (left) {
         index = leftHistogramSelection->activeIndex();
+        viewerName = leftHistogramSelection->getCurrentIndexText().toStdString();
     } else {
         index = rightHistogramSelection->activeIndex();
+        viewerName = rightHistogramSelection->getCurrentIndexText().toStdString();
     }
     
     if (index == 0) {
@@ -342,7 +454,6 @@ boost::shared_ptr<Natron::Image> HistogramTabPrivate::getHistogramImageInternal(
         return ret;
     } else {
         boost::shared_ptr<Natron::Image> ret;
-        std::string viewerName = leftHistogramSelection->getCurrentIndexText().toStdString();
         const std::list<ViewerTab*>& viewerTabs = gui->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
             if ((*it)->getInternalNode()->getName() == viewerName) {
@@ -411,16 +522,20 @@ struct HistogramPrivate
     bool supportsGLSL;
     bool hasOpenGLVAOSupport;
     EventState state;
+    bool hasBeenModifiedSinceResize; //< true if the user panned or zoomed since the last resize
     
     QColor _baseAxisColor;
     QColor _scaleColor;
     QFont _font;
     Natron::TextRenderer textRenderer;
     
-    /*texture ID of the input images*/
-    boost::shared_ptr<Texture> leftImageTexture,rightImageTexture;
     
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
+    
+    /*texture ID of the input images*/
+    boost::shared_ptr<Texture> leftImageTexture,rightImageTexture;
+
+    
     /*The shader that computes the histogram:
      Takes in input the image, and writes to the 256x1 texture*/
     boost::shared_ptr<QGLShaderProgram> histogramComputingShader;
@@ -476,13 +591,17 @@ struct HistogramPrivate
     /*The fbo holding the histogram (256x1)*/
     GLuint fbohistogram;
 #else
+    
+    HistogramCPU histogramThread;
+    
     ///up to 3 histograms (in the RGB) case. FOr all other cases just histogram1 is used.
-    unsigned int* histogram1;
-    unsigned int* histogram2;
-    unsigned int* histogram3;
-    unsigned int maxi1,maxi2,maxi3;
+    std::vector<unsigned int> histogram1;
+    std::vector<unsigned int> histogram2;
+    std::vector<unsigned int> histogram3;
+    unsigned int pixelsCount;
     double vmin,vmax; //< the x range of the histogram
-    int binsCount;
+    unsigned int binsCount;
+    
 #endif
     HistogramPrivate(HistogramTab* parent,Histogram* widget)
     : uiContext(parent)
@@ -493,6 +612,7 @@ struct HistogramPrivate
     , supportsGLSL(true)
     , hasOpenGLVAOSupport(true)
     , state(NONE)
+    , hasBeenModifiedSinceResize(false)
     , _baseAxisColor(118,215,90,255)
     , _scaleColor(67,123,52,255)
     , _font(NATRON_FONT, NATRON_FONT_SIZE_10)
@@ -502,12 +622,11 @@ struct HistogramPrivate
     , histogramMaximumShader()
     , histogramRenderingShader()
 #else
-    , histogram1(NULL)
-    , histogram2(NULL)
-    , histogram3(NULL)
-    , maxi1(0)
-    , maxi2(0)
-    , maxi3(0)
+    , histogramThread()
+    , histogram1()
+    , histogram2()
+    , histogram3()
+    , pixelsCount(0)
     , vmin(0)
     , vmax(0)
     , binsCount(0)
@@ -529,10 +648,6 @@ struct HistogramPrivate
     void activateHistogramRenderingShader(Histogram::DisplayMode mode);
     
 #else
-    
-    void computeHistogramCPU(int histoNumber,Histogram::DisplayMode mode,
-                             const boost::shared_ptr<Natron::Image>& image,const RectI& rect);
-    
     void drawHistogramCPU();
 #endif
 };
@@ -542,6 +657,10 @@ Histogram::Histogram(HistogramTab* parent, const QGLWidget* shareWidget)
 , _imp(new HistogramPrivate(parent,this))
 {
     setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Expanding);
+    setMouseTracking(true);
+#ifndef NATRON_HISTOGRAM_USING_OPENGL
+    QObject::connect(&_imp->histogramThread, SIGNAL(histogramProduced()), this, SLOT(onCPUHistogramComputed()));
+#endif
 }
 
 Histogram::~Histogram() {
@@ -561,31 +680,21 @@ Histogram::~Histogram() {
     glDeleteBuffers(1,&_imp->vboID);
     glDeleteBuffers(1,&_imp->vboHistogramRendering);
     
-#else
-    
-    if (_imp->histogram1) {
-        free(_imp->histogram1);
-    }
-    
-    if (_imp->histogram2) {
-        free(_imp->histogram2);
-    }
-    
-    if (_imp->histogram3) {
-        free(_imp->histogram3);
-    }
-
 #endif
 }
 
 QSize Histogram::sizeHint() const {
-    return QSize(500,500);
+    return QSize(500,1000);
 }
 
 void Histogram::setDisplayModeAndInterest(DisplayMode mode,HistogramInterest interest) {
     _imp->mode = mode;
     _imp->interest = interest;
     computeHistogramAndRefresh();
+}
+
+Histogram::HistogramInterest Histogram::getInterest() const {
+    return _imp->interest;
 }
 
 
@@ -991,6 +1100,12 @@ void Histogram::paintGL() {
     
     double w = (double)width();
     double h = (double)height();
+    
+    ///don't bother painting an invisible widget, this may be caused to a splitter collapsed.
+    if (w <= 1 || h <= 1) {
+        return;
+    }
+    
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
     if(_imp->zoomCtx.zoomFactor <= 0){
@@ -1018,6 +1133,7 @@ void Histogram::paintGL() {
     glClearColor(0,0,0,1);
     glClear(GL_COLOR_BUFFER_BIT);
 
+    
     _imp->drawScale();
     
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
@@ -1030,6 +1146,9 @@ void Histogram::resizeGL(int w, int h) {
     if(h == 0)
         h = 1;
     glViewport (0, 0, w , h);
+    if (!_imp->hasBeenModifiedSinceResize) {
+        centerOn(0, 1, 0, 1);
+    }
 }
 
 QPointF Histogram::toHistogramCoordinates(double x,double y) const {
@@ -1067,7 +1186,7 @@ void Histogram::centerOn(double xmin,double xmax,double ymin,double ymax) {
         _imp->zoomCtx.left = (xmax + xmin) / 2. - ((w / h) * curveHeight / 2.);
     }
         
-    update();
+    computeHistogramAndRefresh();
 }
 
 void Histogram::mousePressEvent(QMouseEvent* event) {
@@ -1094,11 +1213,13 @@ void Histogram::mouseMoveEvent(QMouseEvent* event) {
         case DRAGGING_VIEW:
             _imp->zoomCtx.bottom += (oldClick_opengl.y() - newClick_opengl.y());
             _imp->zoomCtx.left += (oldClick_opengl.x() - newClick_opengl.x());
+            _imp->hasBeenModifiedSinceResize = true;
             computeHistogramAndRefresh();
             break;
         case NONE:
             break;
     }
+    _imp->uiContext->refreshCoordinatesLabel(newClick_opengl.x(), newClick_opengl.y());
 
 }
 
@@ -1112,26 +1233,80 @@ void Histogram::wheelEvent(QWheelEvent *event) {
         return;
     }
     
+    const double oldAspectRatio = _imp->zoomCtx.aspectRatio;
     const double oldZoomFactor = _imp->zoomCtx.zoomFactor;
+    double newAspectRatio = oldAspectRatio;
     double newZoomFactor = oldZoomFactor;
     const double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
     
-    // Wheel: zoom values and time, keep point under mouse
-    newZoomFactor *= scaleFactor;
-    if (newZoomFactor <= 0.0001) {
-        newZoomFactor = 0.0001;
-    } else if (newZoomFactor > 10000.) {
-        newZoomFactor = 10000.;
+    if (event->modifiers().testFlag(Qt::ControlModifier) && event->modifiers().testFlag(Qt::ShiftModifier)) {
+        // Alt + Shift + Wheel: zoom values only, keep point under mouse
+        newAspectRatio *= scaleFactor;
+        if (newAspectRatio <= 0.000001) {
+            newAspectRatio = 0.000001;
+        } else if (newAspectRatio > 1000000.) {
+            newAspectRatio = 1000000.;
+        }
+    } else if (event->modifiers().testFlag(Qt::ControlModifier)) {
+        // Alt + Wheel: zoom time only, keep point under mouse
+        newAspectRatio *= scaleFactor;
+        newZoomFactor *= scaleFactor;
+        if (newZoomFactor <= 0.000001) {
+            newAspectRatio *= 0.000001/newZoomFactor;
+            newZoomFactor = 0.000001;
+        } else if (newZoomFactor > 1000000.) {
+            newAspectRatio *= 1000000./newZoomFactor;
+            newZoomFactor = 1000000.;
+        }
+        if (newAspectRatio <= 0.000001) {
+            newZoomFactor *= 0.000001/newAspectRatio;
+            newAspectRatio = 0.000001;
+        } else if (newAspectRatio > 1000000.) {
+            newZoomFactor *= 1000000./newAspectRatio;
+            newAspectRatio = 1000000.;
+        }
+    } else {
+        // Wheel: zoom values and time, keep point under mouse
+        newZoomFactor *= scaleFactor;
+        if (newZoomFactor <= 0.000001) {
+            newZoomFactor = 0.000001;
+        } else if (newZoomFactor > 1000000.) {
+            newZoomFactor = 1000000.;
+        }
     }
     QPointF zoomCenter = toHistogramCoordinates(event->x(), event->y());
     double zoomRatio =  oldZoomFactor / newZoomFactor;
+    double aspectRatioRatio =  oldAspectRatio / newAspectRatio;
     _imp->zoomCtx.left = zoomCenter.x() - (zoomCenter.x() - _imp->zoomCtx.left)*zoomRatio ;
-    _imp->zoomCtx.bottom = zoomCenter.y() - (zoomCenter.y() - _imp->zoomCtx.bottom)*zoomRatio;
+    _imp->zoomCtx.bottom = zoomCenter.y() - (zoomCenter.y() - _imp->zoomCtx.bottom)*zoomRatio/aspectRatioRatio;
+    
+    _imp->zoomCtx.aspectRatio = newAspectRatio;
     _imp->zoomCtx.zoomFactor = newZoomFactor;
+    
+    _imp->hasBeenModifiedSinceResize = true;
     
     computeHistogramAndRefresh();
     
-    update();
+}
+
+void Histogram::keyPressEvent(QKeyEvent *e) {
+    if(e->key() == Qt::Key_Space){
+        QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
+        QCoreApplication::postEvent(parentWidget()->parentWidget(),ev);
+    } else if (e->key() == Qt::Key_F) {
+        _imp->hasBeenModifiedSinceResize = false;
+        centerOn(0, 1, 0, 1);
+    }
+}
+
+void Histogram::enterEvent(QEvent* e) {
+    setFocus();
+    QGLWidget::enterEvent(e);
+}
+
+void Histogram::leaveEvent(QEvent* e) {
+    _imp->uiContext->hideCoordinatesLabel();
+    QGLWidget::leaveEvent(e);
 }
 
 void Histogram::computeHistogramAndRefresh() {
@@ -1140,11 +1315,10 @@ void Histogram::computeHistogramAndRefresh() {
         return;
     }
     
-    _imp->binsCount = width();
     QPointF btmLeft = toHistogramCoordinates(0,height()-1);
     QPointF topRight = toHistogramCoordinates(width()-1, 0);
-    _imp->vmin = btmLeft.x();
-    _imp->vmax = topRight.x();
+    double vmin = btmLeft.x();
+    double vmax = topRight.x();
     
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
 
@@ -1155,132 +1329,30 @@ void Histogram::computeHistogramAndRefresh() {
     }
     boost::shared_ptr<Natron::Image> rightImage;
     if (_imp->interest == Histogram::RIGHT_IMAGE || _imp->interest == Histogram::LEFT_AND_RIGHT) {
-        rightImage = _imp->uiContext->getLeftHistogramImage(&rightRect);
+        rightImage = _imp->uiContext->getRightHistogramImage(&rightRect);
     }
 
-    
-    if (_imp->mode == Histogram::RGB) {
-        if (leftImage) {
-            _imp->computeHistogramCPU(0,Histogram::R,leftImage,leftRect);
-            _imp->computeHistogramCPU(1,Histogram::G,leftImage,leftRect);
-            _imp->computeHistogramCPU(2,Histogram::B,leftImage,leftRect);
-        } else if (rightImage) {
-            _imp->computeHistogramCPU(0,Histogram::R,rightImage,rightRect);
-            _imp->computeHistogramCPU(1,Histogram::G,rightImage,rightRect);
-            _imp->computeHistogramCPU(2,Histogram::B,rightImage,rightRect);
-        }
-       
-    } else {
-        if (leftImage) {
-            _imp->computeHistogramCPU(0,_imp->mode,leftImage,leftRect);
-           
-        }
-        if (rightImage) {
-            _imp->computeHistogramCPU(1,_imp->mode,rightImage,rightRect);
-            
-        }
-    }
+    _imp->histogramThread.computeHistogram(_imp->mode, leftImage, rightImage, leftRect,rightRect, width(),vmin,vmax);
     
 #endif
     
     update();
 }
 
-void HistogramPrivate::computeHistogramCPU(int histoNumber,Histogram::DisplayMode mode,const boost::shared_ptr<Natron::Image>& image,
-                                           const RectI& rect) {
-    assert(mode == Histogram::R ||
-           mode == Histogram::G ||
-           mode == Histogram::B ||
-           mode == Histogram::A ||
-           mode == Histogram::Y);
-    
-    maxi1 = 0;
-    maxi2 = 0;
-    maxi3 = 0;
-    
-    unsigned int* histo;
-    switch (histoNumber) {
-        case 0:
-            if (histogram1) {
-                free(histogram1);
-            }
-            histogram1 = (unsigned int*)malloc(sizeof(unsigned int) * binsCount);
-            histo = histogram1;
-            break;
-        case 1:
-            if (histogram2) {
-                free(histogram2);
-            }
-            histogram2 = (unsigned int*)malloc(sizeof(unsigned int) * binsCount);
-            histo = histogram2;
-            break;
-        case 2:
-            if (histogram3) {
-                free(histogram3);
-            }
-            histogram3 = (unsigned int*)malloc(sizeof(unsigned int) * binsCount);
-            histo = histogram3;
-            break;
-        default:
-            assert(false);
-            break;
-    }
-    
-    double binSize = (vmax - vmin) / binsCount;
-    
-    unsigned int maximum = INT_MIN;
-    for (int y = rect.bottom() ; y < rect.top(); ++y) {
-        for (int x = rect.left(); x < rect.right(); ++x) {
-            float *pix = image->pixelAt(x, y);
-            float v;
-            switch (mode) {
-                case Histogram::R:
-                    v = pix[0];
-                    break;
-                case Histogram::G:
-                    v = pix[1];
-                    break;
-                case Histogram::B:
-                    v = pix[2];
-                    break;
-                case Histogram::A:
-                    v = pix[3];
-                    break;
-                case Histogram::Y:
-                    v = 0.299 * pix[0] + 0.587 * pix[1] + 0.114 * pix[2];
-                    break;
-                default:
-                    assert(false);
-                    break;
-            }
-            if (v >= vmin && v <= vmax) {
-                int index = (int)((v - vmin) / binSize);
-                ++histo[index];
-                if (histo[index] > maximum) {
-                    maximum = histo[index];
-                }
-            }
-        }
-    }
-    switch (histoNumber) {
-        case 0:
-            maxi1 = maximum;
-            break;
-        case 1:
-            maxi2 = maximum;
-            break;
-        case 2:
-            maxi3 = maximum;
-            break;
-        default:
-            assert(false);
-            break;
-    }
-    
+#ifndef NATRON_HISTOGRAM_USING_OPENGL
 
+void Histogram::onCPUHistogramComputed() {
     
+    assert(qApp && qApp->thread() == QThread::currentThread());
     
+    int mode;
+    bool success = _imp->histogramThread.getMostRecentlyProducedHistogram(&_imp->histogram1, &_imp->histogram2, &_imp->histogram3, &_imp->binsCount, &_imp->pixelsCount, &mode,&_imp->vmin,&_imp->vmax);
+    assert(success);
+    update();
 }
+
+
+#endif
 
 void HistogramPrivate::drawScale()
 {
@@ -1379,77 +1451,64 @@ void HistogramPrivate::drawHistogramCPU() {
     glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
     
     
-    QPointF btmLeft = widget->toHistogramCoordinates(0,widget->height()-1);
-
     double binSize = (vmax - vmin) / binsCount;
     
-    
-    for (int i = 0; i < binsCount; ++i) {
-        double binMinX = i * binSize;
+    for (unsigned int i = 0; i < binsCount; ++i) {
+        double binMinX = vmin + i * binSize;
         if (mode == Histogram::RGB) {
-            if (!histogram1 || !histogram2 || !histogram3) {
+            if (histogram1.empty() || histogram2.empty() || histogram3.empty()) {
                 break;
             }
-            unsigned int realMax = std::max(std::max(maxi1, maxi2),maxi3);
-            float rTotNormalized = histogram1[i] / realMax;
-            float gTotNormalized = histogram2[i] / realMax;
-            float bTotNormalized = histogram3[i] / realMax;
+            double rTotNormalized = ((double)histogram1[i] / (double)pixelsCount) / binSize;
+            double gTotNormalized = ((double)histogram2[i] / (double)pixelsCount) / binSize;
+            double bTotNormalized = ((double)histogram3[i] / (double)pixelsCount) / binSize;
             
-            glColor3f(1, 0, 0);
-            glBegin(GL_POLYGON);
-            glVertex2f(binMinX, btmLeft.y());
-            glVertex2f(binMinX, rTotNormalized);
-            glVertex2f(binMinX + binSize, rTotNormalized);
-            glVertex2f(binMinX + binSize, btmLeft.y());
-            glEnd();
+            glBegin(GL_LINES);
+            glColor3d(1, 0, 0);
+            glVertex2d(binMinX, 0);
+            glVertex2d(binMinX,  rTotNormalized);
             
-            glColor3f(0, 1, 0);
-            glBegin(GL_POLYGON);
-            glVertex2f(binMinX, btmLeft.y());
-            glVertex2f(binMinX, gTotNormalized);
-            glVertex2f(binMinX + binSize, gTotNormalized);
-            glVertex2f(binMinX + binSize, btmLeft.y());
-            glEnd();
+            glColor3d(0, 1, 0);
+            glVertex2d(binMinX, 0);
+            glVertex2d(binMinX,  gTotNormalized);
             
-            glColor3f(0, 0, 1);
-            glBegin(GL_POLYGON);
-            glVertex2f(binMinX, btmLeft.y());
-            glVertex2f(binMinX, bTotNormalized);
-            glVertex2f(binMinX + binSize, bTotNormalized);
-            glVertex2f(binMinX + binSize, btmLeft.y());
-            glEnd();
+            glColor3d(0, 0, 1);
+            glVertex2d(binMinX, 0);
+            glVertex2d(binMinX,  bTotNormalized);
+            glEnd(); 
         } else {
             if (interest == Histogram::LEFT_AND_RIGHT) {
-                if (!histogram1 || !histogram2) {
+                if (histogram1.empty() || histogram2.empty()) {
                     break;
                 }
                 
-                unsigned int realMax = std::max(maxi1,maxi2);
-                float vLeftTotNormalized = histogram1[i] / realMax;
+                double vLeftTotNormalized = (double)histogram1[i] / (double)pixelsCount;
+                double vRightTotNormalized = (double)histogram2[i] / (double)pixelsCount;
+                glBegin(GL_LINES);
                 glColor3f(1, 0, 0);
-                glBegin(GL_POLYGON);
-                glVertex2f(binMinX, btmLeft.y());
-                glVertex2f(binMinX, vLeftTotNormalized);
-                glVertex2f(binMinX + binSize, vLeftTotNormalized);
-                glVertex2f(binMinX + binSize, btmLeft.y());
+                glVertex2f(binMinX, 0);
+                glVertex2f(binMinX,  vLeftTotNormalized);
+                
+                
+                glColor3f(0, 1, 1);
+                glVertex2f(binMinX, 0);
+                glVertex2f(binMinX,  vRightTotNormalized);
                 glEnd();
                 
-                float vRightTotNormalized = histogram2[i] / realMax;
-                glColor3f(0, 1, 1);
-                glBegin(GL_POLYGON);
-                glVertex2f(binMinX, btmLeft.y());
-                glVertex2f(binMinX, vRightTotNormalized);
-                glVertex2f(binMinX + binSize, vRightTotNormalized);
-                glVertex2f(binMinX + binSize, btmLeft.y());
-                glEnd();
-
+         
             } else {
-                if ((interest == Histogram::LEFT_IMAGE && !histogram1) ||
-                    (interest == Histogram::RIGHT_IMAGE && !histogram2)) {
+                if ((interest == Histogram::LEFT_IMAGE && histogram1.empty()) ||
+                    (interest == Histogram::RIGHT_IMAGE && histogram2.empty())) {
                     break;
                 }
                 
-                float vTotNormalized = histogram1[i] / maxi1;
+                double vTotNormalized;
+                
+                if (interest == Histogram::LEFT_IMAGE) {
+                    vTotNormalized = (double)histogram1[i] / (double)pixelsCount;
+                } else {
+                    vTotNormalized = (double)histogram2[i] / (double)pixelsCount;
+                }
                 switch (mode) {
                     case Histogram::R:
                         glColor3f(1, 0, 0);
@@ -1470,12 +1529,11 @@ void HistogramPrivate::drawHistogramCPU() {
                         assert(false);
                         break;
                 }
-                glBegin(GL_POLYGON);
-                glVertex2f(binMinX, btmLeft.y());
-                glVertex2f(binMinX, vTotNormalized);
-                glVertex2f(binMinX + binSize, vTotNormalized);
-                glVertex2f(binMinX + binSize, btmLeft.y());
+                glBegin(GL_LINES);
+                glVertex2f(binMinX, 0);
+                glVertex2f(binMinX,  vTotNormalized);
                 glEnd();
+
 
             }
         }

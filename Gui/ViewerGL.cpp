@@ -1313,6 +1313,8 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,0);
     checkGLErrors();
     _imp->displayingImage = true;
+    
+    emit imageChanged();
 }
 
 /**
@@ -1622,6 +1624,9 @@ void ViewerGL::wheelEvent(QWheelEvent *event)
     if (event->orientation() != Qt::Vertical) {
         return;
     }
+    
+    _imp->viewerTab->getGui()->selectNode(_imp->viewerTab->getGui()->getApp()->getNodeGui(_imp->viewerTab->getInternalNode()->getNode()));
+
     
     {
         QMutexLocker l(&_imp->zoomCtx.zoomContextLock);

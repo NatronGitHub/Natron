@@ -37,6 +37,7 @@ class ProjectSerialization{
     std::vector< boost::shared_ptr<KnobSerialization> > _projectKnobs;
     SequenceTime _timelineLeft,_timelineRight,_timelineCurrent;
     qint64 _creationDate;
+    std::map<std::string,int> _nodeCounters;
     
 public:
     
@@ -60,6 +61,8 @@ public:
     
     qint64 getCreationDate() const { return _creationDate; }
     
+    const std::map<std::string,int>& getNodeCounters() const { return _nodeCounters; }
+    
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
@@ -71,6 +74,7 @@ public:
         ar & boost::serialization::make_nvp("Timeline_current_time",_timelineCurrent);
         ar & boost::serialization::make_nvp("Timeline_left_bound",_timelineLeft);
         ar & boost::serialization::make_nvp("Timeline_right_bound",_timelineRight);
+        ar & boost::serialization::make_nvp("NodeCounters",_nodeCounters);
     }
     
 };

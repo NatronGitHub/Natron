@@ -40,6 +40,8 @@ void ProjectSerialization::initialize(const Natron::Project* project){
             _projectKnobs.push_back(newKnobSer);
         }
     }
+    
+    project->getNodeCounters(&_nodeCounters);
 
     _timelineLeft = project->leftBound();
     _timelineRight = project->rightBound();
