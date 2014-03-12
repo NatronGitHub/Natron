@@ -30,6 +30,7 @@ class Gui;
 /**
  * @class The GUI container for histograms.
  **/
+class Histogram;
 struct HistogramTabPrivate;
 class HistogramTab : public QWidget {
     
@@ -49,7 +50,15 @@ public:
     
     void hideCoordinatesLabel();
     
+    int getCurrentFilterSize() const;
+    
+    void updateCoordPickedForHistogram(Histogram* histo,double x,double y);
+    
+    void updateDescriptionLabelForHistogram(Histogram* histo,const QString& text);
+    
 public slots:
+    
+    void onFilterChanged(int);
     
     void populateViewersChoices();
     
@@ -139,6 +148,8 @@ private:
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
+    
+    virtual void showEvent(QShowEvent* e) OVERRIDE FINAL;
     
     virtual QSize sizeHint() const OVERRIDE FINAL;
     

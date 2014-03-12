@@ -19,6 +19,7 @@ struct HistogramRequest {
     RectI leftRect,rightRect;
     double vmin;
     double vmax;
+    int smoothingKernelSize;
     
     HistogramRequest()
     : binsCount(0)
@@ -29,6 +30,7 @@ struct HistogramRequest {
     , rightRect()
     , vmin(0)
     , vmax(0)
+    , smoothingKernelSize(0)
     {
         
     }
@@ -40,7 +42,8 @@ struct HistogramRequest {
                      const RectI& leftRect,
                      const RectI& rightRect,
                      double vmin,
-                     double vmax)
+                     double vmax,
+                     int smoothingKernelSize)
     : binsCount(binsCount)
     , mode(mode)
     , leftImage(leftImage)
@@ -49,6 +52,7 @@ struct HistogramRequest {
     , rightRect(rightRect)
     , vmin(vmin)
     , vmax(vmax)
+    , smoothingKernelSize(smoothingKernelSize)
     {
     }
 };
@@ -141,7 +145,8 @@ void HistogramCPU::computeHistogram(int mode, //< corresponds to the enum Histog
                                     const RectI& rightRect,
                                     int binsCount,
                                     double vmin,
-                                    double vmax) {
+                                    double vmax,
+                                    int smoothingKernelSize) {
     
     
     /*Starting or waking-up the thread*/
@@ -150,7 +155,7 @@ void HistogramCPU::computeHistogram(int mode, //< corresponds to the enum Histog
         start(HighestPriority);
     } else {
         QMutexLocker locker(&_imp->requestMutex);
-        _imp->requests.push_back(HistogramRequest(binsCount,mode,leftImage,rightImage,leftRect,rightRect,vmin,vmax));
+        _imp->requests.push_back(HistogramRequest(binsCount,mode,leftImage,rightImage,leftRect,rightRect,vmin,vmax,smoothingKernelSize));
         _imp->requestCond.wakeOne();
     }
 
@@ -162,7 +167,7 @@ void HistogramCPU::quitAnyComputation() {
         _imp->mustQuit = true;
         
         ///post a fake request to wakeup the thread
-        computeHistogram(0, boost::shared_ptr<Natron::Image>(),boost::shared_ptr<Natron::Image>(),RectI(), RectI(), 0,0,0);
+        computeHistogram(0, boost::shared_ptr<Natron::Image>(),boost::shared_ptr<Natron::Image>(),RectI(), RectI(), 0,0,0,0);
         
         while (_imp->mustQuit) {
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
@@ -306,7 +311,35 @@ static void computeHistogramStatic(const HistogramRequest& request,FinishedHisto
             }
         }
     }
- 
+    
+    ///Apply the filter if any
+    assert(request.smoothingKernelSize == 0 || request.smoothingKernelSize == 3 || request.smoothingKernelSize == 5);
+    
+    if (request.smoothingKernelSize > 0) {
+        
+        std::vector<int> kernel;
+        kernel.resize(request.smoothingKernelSize);
+        if (request.smoothingKernelSize == 3) {
+            kernel[0] = 1;kernel[1] = 2;kernel[2] = 1;
+        } else if (request.smoothingKernelSize == 5) {
+            kernel[0] = 1;kernel[1] = 4;kernel[2] = 6;kernel[2] = 4;kernel[2] = 1;
+        }
+        
+        int kernelHalfSize = std::floor(request.smoothingKernelSize / 2.);
+        for (int i = kernelHalfSize; i < (request.binsCount - kernelHalfSize); ++i) {
+            unsigned int sum = 0;
+            int weights = 0;
+            int kernelIndex = 0;
+            for (int j = i - kernelHalfSize; j <= i + kernelHalfSize; ++j) {
+                int w = kernel[kernelIndex];
+                sum += w * histo[j];
+                weights += w;
+                ++kernelIndex;
+            }
+            sum /= weights;
+            histo[i] = sum;
+        }
+    }
 }
 
 }

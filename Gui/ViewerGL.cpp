@@ -1998,7 +1998,9 @@ void ViewerGL::setRegionOfDefinition(const RectI& rod)
     // MT-SAFE
     QMutexLocker l(&_imp->currentViewerInfosMutex);
     _imp->currentViewerInfos.setRoD(rod);
+    l.unlock();
     emit infoDataWindowChanged();
+    l.relock();
     _imp->currentViewerInfos_btmLeftBBOXoverlay.clear();
     _imp->currentViewerInfos_btmLeftBBOXoverlay.append(QString::number(rod.left()));
     _imp->currentViewerInfos_btmLeftBBOXoverlay.append(",");

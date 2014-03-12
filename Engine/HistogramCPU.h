@@ -34,7 +34,8 @@ public:
                           const RectI& rightRect,
                           int binsCount,
                           double vmin,
-                          double vmax);
+                          double vmax,
+                          int smoothingKernelSize);
     
     ////Returns true if a new histogram fully computed is available
     bool hasProducedHistogram() const;

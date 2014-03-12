@@ -36,6 +36,46 @@ GCC_DIAG_OFF(deprecated-declarations)
 
 //////////////////////////////// HISTOGRAM TAB ////////////////////////////////
 
+struct HistogramContainer {
+    Histogram* histogram;
+    QWidget* container;
+    QVBoxLayout* layout;
+    
+    QWidget* labelsContainer;
+    QHBoxLayout* labelsLayout;
+    QLabel* pickerLabel;
+    QLabel* descriptionLabel;
+    
+    HistogramContainer(HistogramTab* tab,QWidget* parent)
+    : histogram(0)
+    , container(0)
+    , layout(0)
+    , pickerLabel(0)
+    , descriptionLabel(0)
+    {
+        container = new QWidget(parent);
+        layout = new QVBoxLayout(container);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->setSpacing(0);
+        
+        histogram = new Histogram(tab);
+        layout->addWidget(histogram);
+        
+        labelsContainer = new QWidget(parent);
+        labelsLayout = new QHBoxLayout(labelsContainer);
+        labelsLayout->setContentsMargins(0, 0, 0, 0);
+        labelsLayout->setSpacing(0);
+        
+        descriptionLabel = new QLabel(labelsContainer);
+        labelsLayout->addWidget(descriptionLabel);
+        
+        pickerLabel = new QLabel(labelsContainer);
+        labelsLayout->addWidget(pickerLabel);
+        
+        layout->addWidget(labelsContainer);
+    }
+};
+
 struct HistogramTabPrivate
 {
     
@@ -66,10 +106,13 @@ struct HistogramTabPrivate
     QHBoxLayout* headerSecondLineLayout;
     QLabel* coordLabel;
     
+    QLabel* filterLabel;
+    ComboBox* filterSelection;
+    
     ////////// HISTOGRAMS
-    Histogram* histogram1;
-    Histogram* histogram2;
-    Histogram* histogram3;
+    HistogramContainer* histogram1;
+    HistogramContainer* histogram2;
+    HistogramContainer* histogram3;
     QSplitter* splitter1_2;
     QSplitter* splitter2_3;
     
@@ -91,6 +134,8 @@ struct HistogramTabPrivate
     , headerSecondLine(NULL)
     , headerSecondLineLayout(NULL)
     , coordLabel(NULL)
+    , filterLabel(NULL)
+    , filterSelection(NULL)
     , histogram1(NULL)
     , histogram2(NULL)
     , histogram3(NULL)
@@ -187,6 +232,20 @@ HistogramTab::HistogramTab(Gui* gui)
     _imp->headerSecondLineLayout = new QHBoxLayout(_imp->headerSecondLine);
     _imp->headerSecondLineLayout->setContentsMargins(0, 0, 0, 0);
     
+    
+    _imp->filterLabel = new QLabel(tr("Filter:"),_imp->headerSecondLine);
+    _imp->headerSecondLineLayout->QLayout::addWidget(_imp->filterLabel);
+    
+    _imp->filterSelection = new ComboBox(_imp->headerSecondLine);
+    _imp->headerSecondLineLayout->addWidget(_imp->filterSelection);
+    _imp->filterSelection->setToolTip("The filter applied to the histogram.");
+    _imp->filterSelection->addItem(tr("No smoothing"));
+    _imp->filterSelection->addItem(tr("Size 3"));
+    _imp->filterSelection->addItem(tr("Size 5"));
+    QObject::connect(_imp->filterSelection, SIGNAL(currentIndexChanged(int)), this, SLOT(onFilterChanged(int)));
+    
+    _imp->headerSecondLineLayout->addStretch();
+    
     _imp->coordLabel = new QLabel("",_imp->optionsHeader);
     _imp->headerSecondLineLayout->addWidget(_imp->coordLabel);
     
@@ -195,15 +254,36 @@ HistogramTab::HistogramTab(Gui* gui)
     _imp->splitter1_2 = new QSplitter(Qt::Horizontal,this);
     _imp->splitter2_3 = new QSplitter(Qt::Horizontal,this);
     
-    _imp->histogram1 = new Histogram(this);
-    _imp->histogram2 = new Histogram(this);
-    _imp->histogram3 = new Histogram(this);
+    _imp->histogram1 = new HistogramContainer(this,this);
+    _imp->histogram2 = new HistogramContainer(this,this);
+    _imp->histogram3 = new HistogramContainer(this,this);
     
     makeHistogramsLayout(0);
 }
 
 HistogramTab::~HistogramTab() {
     
+}
+
+void HistogramTab::onFilterChanged(int) {
+    _imp->histogram1->histogram->computeHistogramAndRefresh();
+    _imp->histogram2->histogram->computeHistogramAndRefresh();
+    _imp->histogram3->histogram->computeHistogramAndRefresh();
+}
+
+int HistogramTab::getCurrentFilterSize() const {
+    int index = _imp->filterSelection->activeIndex();
+    switch (index) {
+        case 0:
+            return 0;
+        case 1:
+            return 3;
+        case 2:
+            return 5;
+        default:
+            assert(false);
+            break;
+    }
 }
 
 void HistogramTab::refreshCoordinatesLabel(double x,double y) {
@@ -215,14 +295,44 @@ void HistogramTab::refreshCoordinatesLabel(double x,double y) {
     }
 }
 
+void HistogramTab::updateCoordPickedForHistogram(Histogram* histo,double x,double y) {
+    QLabel* label;
+    if (histo == _imp->histogram1->histogram) {
+        label = _imp->histogram1->pickerLabel;
+    } else if(histo == _imp->histogram2->histogram) {
+        label = _imp->histogram2->pickerLabel;
+    } else if(histo == _imp->histogram3->histogram) {
+        label = _imp->histogram3->pickerLabel;
+    } else {
+        assert(false);
+    }
+    
+    QString txt = QString("x=%1 y=%2").arg(x,0,'f',5).arg(y,0,'f',5);
+    label->setText(txt);
+}
+
+void HistogramTab::updateDescriptionLabelForHistogram(Histogram* histo,const QString& text) {
+    QLabel* label;
+    if (histo == _imp->histogram1->histogram) {
+        label = _imp->histogram1->descriptionLabel;
+    } else if(histo == _imp->histogram2->histogram) {
+        label = _imp->histogram2->descriptionLabel;
+    } else if(histo == _imp->histogram3->histogram) {
+        label = _imp->histogram3->descriptionLabel;
+    } else {
+        assert(false);
+    }
+    label->setText(text);
+}
+
 void HistogramTab::hideCoordinatesLabel() {
     _imp->coordLabel->hide();
 }
 
 void HistogramTab::onFullImageCheckBoxChecked(bool /*checked*/) {
-    _imp->histogram1->computeHistogramAndRefresh();
-    _imp->histogram2->computeHistogramAndRefresh();
-    _imp->histogram3->computeHistogramAndRefresh();
+    _imp->histogram1->histogram->computeHistogramAndRefresh();
+    _imp->histogram2->histogram->computeHistogramAndRefresh();
+    _imp->histogram3->histogram->computeHistogramAndRefresh();
 }
 
 void HistogramTab::populateViewersChoices() {
@@ -280,32 +390,32 @@ void HistogramTab::onViewerImageChanged() {
         || (_imp->rightHistogramSelection->activeIndex() > 1 && _imp->rightHistogramSelection->getCurrentIndexText() == viewerName);
         
         if (refreshLeft) {
-            if (_imp->histogram1->isVisible() && (_imp->histogram1->getInterest() == Histogram::LEFT_AND_RIGHT ||
-                _imp->histogram1->getInterest() == Histogram::LEFT_IMAGE)) {
-                _imp->histogram1->computeHistogramAndRefresh();
+            if (_imp->histogram1->histogram->isVisible() && (_imp->histogram1->histogram->getInterest() == Histogram::LEFT_AND_RIGHT ||
+                _imp->histogram1->histogram->getInterest() == Histogram::LEFT_IMAGE)) {
+                _imp->histogram1->histogram->computeHistogramAndRefresh();
             }
-            if (_imp->histogram2->isVisible() && (_imp->histogram2->getInterest() == Histogram::LEFT_AND_RIGHT ||
-                                                  _imp->histogram2->getInterest() == Histogram::LEFT_IMAGE)) {
-                _imp->histogram2->computeHistogramAndRefresh();
+            if (_imp->histogram2->histogram->isVisible() && (_imp->histogram2->histogram->getInterest() == Histogram::LEFT_AND_RIGHT ||
+                                                  _imp->histogram2->histogram->getInterest() == Histogram::LEFT_IMAGE)) {
+                _imp->histogram2->histogram->computeHistogramAndRefresh();
             }
-            if (_imp->histogram3->isVisible() && (_imp->histogram3->getInterest() == Histogram::LEFT_AND_RIGHT ||
-                                                  _imp->histogram3->getInterest() == Histogram::LEFT_IMAGE)) {
-                _imp->histogram3->computeHistogramAndRefresh();
+            if (_imp->histogram3->histogram->isVisible() && (_imp->histogram3->histogram->getInterest() == Histogram::LEFT_AND_RIGHT ||
+                                                  _imp->histogram3->histogram->getInterest() == Histogram::LEFT_IMAGE)) {
+                _imp->histogram3->histogram->computeHistogramAndRefresh();
             }
         }
         
         if (refreshRight) {
-            if (_imp->histogram1->isVisible() && (_imp->histogram1->getInterest() == Histogram::LEFT_AND_RIGHT ||
-                                                  _imp->histogram1->getInterest() == Histogram::RIGHT_IMAGE)) {
-                _imp->histogram1->computeHistogramAndRefresh();
+            if (_imp->histogram1->histogram->isVisible() && (_imp->histogram1->histogram->getInterest() == Histogram::LEFT_AND_RIGHT ||
+                                                  _imp->histogram1->histogram->getInterest() == Histogram::RIGHT_IMAGE)) {
+                _imp->histogram1->histogram->computeHistogramAndRefresh();
             }
-            if (_imp->histogram2->isVisible() && (_imp->histogram2->getInterest() == Histogram::LEFT_AND_RIGHT ||
-                                                  _imp->histogram2->getInterest() == Histogram::RIGHT_IMAGE)) {
-                _imp->histogram2->computeHistogramAndRefresh();
+            if (_imp->histogram2->histogram->isVisible() && (_imp->histogram2->histogram->getInterest() == Histogram::LEFT_AND_RIGHT ||
+                                                  _imp->histogram2->histogram->getInterest() == Histogram::RIGHT_IMAGE)) {
+                _imp->histogram2->histogram->computeHistogramAndRefresh();
             }
-            if (_imp->histogram3->isVisible() && (_imp->histogram3->getInterest() == Histogram::LEFT_AND_RIGHT ||
-                                                  _imp->histogram3->getInterest() == Histogram::RIGHT_IMAGE)) {
-                _imp->histogram3->computeHistogramAndRefresh();
+            if (_imp->histogram3->histogram->isVisible() && (_imp->histogram3->histogram->getInterest() == Histogram::LEFT_AND_RIGHT ||
+                                                  _imp->histogram3->histogram->getInterest() == Histogram::RIGHT_IMAGE)) {
+                _imp->histogram3->histogram->computeHistogramAndRefresh();
             }
         }
     }
@@ -313,14 +423,10 @@ void HistogramTab::onViewerImageChanged() {
 
 void HistogramTab::makeHistogramsLayout(int) {
     ///remove the splitters from the layout and hide them
-
-    _imp->histogram1->setParent(NULL);
-    _imp->histogram2->setParent(NULL);
-    _imp->histogram3->setParent(NULL);
     
-    _imp->histogram1->hide();
-    _imp->histogram2->hide();
-    _imp->histogram3->hide();
+    _imp->histogram1->container->hide();
+    _imp->histogram2->container->hide();
+    _imp->histogram3->container->hide();
 
     _imp->mainLayout->removeWidget(_imp->splitter1_2);
     _imp->splitter1_2->hide();
@@ -334,36 +440,36 @@ void HistogramTab::makeHistogramsLayout(int) {
         
         
         if (_imp->leftHistogramSelection->activeIndex() != 0) {
-            _imp->histogram1->show();
-            _imp->splitter1_2->addWidget(_imp->histogram1);
+            _imp->histogram1->container->show();
+            _imp->splitter1_2->addWidget(_imp->histogram1->container);
         }
         
         if (_imp->rightHistogramSelection->activeIndex() != 0) {
-            _imp->histogram2->show();
-            _imp->splitter1_2->addWidget(_imp->histogram2);
+            _imp->histogram2->container->show();
+            _imp->splitter1_2->addWidget(_imp->histogram2->container);
         }
         
         _imp->mainLayout->addWidget(_imp->splitter1_2);
         _imp->splitter1_2->show();
 
         if (mode == 0) { //< RGB
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::RGB,Histogram::LEFT_IMAGE);
-            _imp->histogram2->setDisplayModeAndInterest(Histogram::RGB,Histogram::RIGHT_IMAGE);
+            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::RGB,Histogram::LEFT_IMAGE);
+            _imp->histogram2->histogram->setDisplayModeAndInterest(Histogram::RGB,Histogram::RIGHT_IMAGE);
         } else if (mode == 1) { //< A
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::A,Histogram::LEFT_IMAGE);
-            _imp->histogram2->setDisplayModeAndInterest(Histogram::A,Histogram::RIGHT_IMAGE);
+            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::A,Histogram::LEFT_IMAGE);
+            _imp->histogram2->histogram->setDisplayModeAndInterest(Histogram::A,Histogram::RIGHT_IMAGE);
         } else if (mode == 2) { //< Y
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::Y,Histogram::LEFT_IMAGE);
-            _imp->histogram2->setDisplayModeAndInterest(Histogram::Y,Histogram::RIGHT_IMAGE);
+            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::Y,Histogram::LEFT_IMAGE);
+            _imp->histogram2->histogram->setDisplayModeAndInterest(Histogram::Y,Histogram::RIGHT_IMAGE);
         } else if (mode == 3) { //< R
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::R,Histogram::LEFT_IMAGE);
-            _imp->histogram2->setDisplayModeAndInterest(Histogram::R,Histogram::RIGHT_IMAGE);
+            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::R,Histogram::LEFT_IMAGE);
+            _imp->histogram2->histogram->setDisplayModeAndInterest(Histogram::R,Histogram::RIGHT_IMAGE);
         } else if (mode == 4) { //< G
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::G,Histogram::LEFT_IMAGE);
-            _imp->histogram2->setDisplayModeAndInterest(Histogram::G,Histogram::RIGHT_IMAGE);
+            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::G,Histogram::LEFT_IMAGE);
+            _imp->histogram2->histogram->setDisplayModeAndInterest(Histogram::G,Histogram::RIGHT_IMAGE);
         } else if (mode == 5) { //< B
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::B,Histogram::LEFT_IMAGE);
-            _imp->histogram2->setDisplayModeAndInterest(Histogram::B,Histogram::RIGHT_IMAGE);
+            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::B,Histogram::LEFT_IMAGE);
+            _imp->histogram2->histogram->setDisplayModeAndInterest(Histogram::B,Histogram::RIGHT_IMAGE);
         } else {
             assert(false);
         }
@@ -383,40 +489,40 @@ void HistogramTab::makeHistogramsLayout(int) {
             interest = Histogram::NO_IMAGE;
         }
         if (mode == 0) { //< RGB
-            _imp->splitter1_2->addWidget(_imp->histogram1);
-            _imp->splitter1_2->addWidget(_imp->histogram2);
+            _imp->splitter1_2->addWidget(_imp->histogram1->container);
+            _imp->splitter1_2->addWidget(_imp->histogram2->container);
             _imp->splitter2_3->addWidget(_imp->splitter1_2);
-            _imp->splitter2_3->addWidget(_imp->histogram3);
+            _imp->splitter2_3->addWidget(_imp->histogram3->container);
             _imp->mainLayout->addWidget(_imp->splitter2_3);
             _imp->splitter1_2->show();
             _imp->splitter2_3->show();
-            _imp->histogram1->show();
-            _imp->histogram2->show();
-            _imp->histogram3->show();
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::R,interest);
-            _imp->histogram2->setDisplayModeAndInterest(Histogram::G,interest);
-            _imp->histogram3->setDisplayModeAndInterest(Histogram::B,interest);
+            _imp->histogram1->container->show();
+            _imp->histogram2->container->show();
+            _imp->histogram3->container->show();
+            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::R,interest);
+            _imp->histogram2->histogram->setDisplayModeAndInterest(Histogram::G,interest);
+            _imp->histogram3->histogram->setDisplayModeAndInterest(Histogram::B,interest);
         } else if (mode == 1) { //< A
             useOnlyFirstHisto = true;
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::A,interest);
+            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::A,interest);
         } else if (mode == 2) { //< Y
             useOnlyFirstHisto = true;
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::Y,interest);
+            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::Y,interest);
         } else if (mode == 3) { //< R
             useOnlyFirstHisto = true;
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::R,interest);
+            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::R,interest);
         } else if (mode == 4) { //< G
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::G,interest);
+            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::G,interest);
             useOnlyFirstHisto = true;
         } else if (mode == 5) { //< B
-            _imp->histogram1->setDisplayModeAndInterest(Histogram::B,interest);
+            _imp->histogram1->histogram->setDisplayModeAndInterest(Histogram::B,interest);
             useOnlyFirstHisto = true;
         } else {
             assert(false);
         }
         if (useOnlyFirstHisto) {
-            _imp->histogram1->show();
-            _imp->splitter1_2->addWidget(_imp->histogram1);
+            _imp->histogram1->container->show();
+            _imp->splitter1_2->addWidget(_imp->histogram1->container);
             _imp->splitter1_2->show();
             _imp->mainLayout->addWidget(_imp->splitter1_2);
         }
@@ -695,6 +801,49 @@ QSize Histogram::sizeHint() const {
 void Histogram::setDisplayModeAndInterest(DisplayMode mode,HistogramInterest interest) {
     _imp->mode = mode;
     _imp->interest = interest;
+    QString txt;
+    switch (mode) {
+        case RGB:
+            txt.append("RGB");
+            break;
+        case Y:
+            txt.append("Y");
+            break;
+        case A:
+            txt.append("A");
+            break;
+        case R:
+            txt.append("R");
+            break;
+        case G:
+            txt.append("G");
+            break;
+        case B:
+            txt.append("B");
+            break;
+        default:
+            break;
+    }
+    
+    txt.append(": ");
+    switch (interest) {
+        case LEFT_AND_RIGHT:
+            txt.append("<font color=\"##FF0000\">Left</font> / <font color=\"##00FFFF\">Right</font>");
+            break;
+        case LEFT_IMAGE:
+            txt.append("Left");
+            break;
+        case RIGHT_IMAGE:
+            txt.append("Right");
+            break;
+        case NO_IMAGE:
+            txt.append("None");
+            break;
+        default:
+            break;
+    }
+    
+    _imp->uiContext->updateDescriptionLabelForHistogram(this, txt);
     computeHistogramAndRefresh();
 }
 
@@ -1200,7 +1349,9 @@ void Histogram::mousePressEvent(QMouseEvent* event) {
     if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
         _imp->state = DRAGGING_VIEW;
         _imp->zoomCtx._oldClick = event->pos();
-        return;
+    } else if (event->button() == Qt::LeftButton) {
+        QPointF newClick_opengl = toHistogramCoordinates(event->x(),event->y());
+        _imp->uiContext->updateCoordPickedForHistogram(this,newClick_opengl.x(),newClick_opengl.y());
     }
     
 }
@@ -1300,6 +1451,9 @@ void Histogram::keyPressEvent(QKeyEvent *e) {
         QCoreApplication::postEvent(parentWidget()->parentWidget(),ev);
     } else if (e->key() == Qt::Key_F) {
         _imp->hasBeenModifiedSinceResize = false;
+        
+        //reset the pixel aspect to 1
+        _imp->zoomCtx.aspectRatio = 1.;
         centerOn(0, 1, 0, 1);
     }
 }
@@ -1312,6 +1466,11 @@ void Histogram::enterEvent(QEvent* e) {
 void Histogram::leaveEvent(QEvent* e) {
     _imp->uiContext->hideCoordinatesLabel();
     QGLWidget::leaveEvent(e);
+}
+
+void Histogram::showEvent(QShowEvent* e) {
+    computeHistogramAndRefresh();
+    QGLWidget::showEvent(e);
 }
 
 void Histogram::computeHistogramAndRefresh() {
@@ -1337,7 +1496,8 @@ void Histogram::computeHistogramAndRefresh() {
         rightImage = _imp->uiContext->getRightHistogramImage(&rightRect);
     }
 
-    _imp->histogramThread.computeHistogram(_imp->mode, leftImage, rightImage, leftRect,rightRect, width(),vmin,vmax);
+    _imp->histogramThread.computeHistogram(_imp->mode, leftImage, rightImage, leftRect,rightRect, width(),vmin,vmax,
+                                           _imp->uiContext->getCurrentFilterSize());
     
 #endif
     
