@@ -22,12 +22,8 @@
 #include <QtCore/QDebug>
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
-#ifdef MRKEPZIE
-#include <boost/thread.hpp>
-#else
 #include <QtCore/QThread>
 #include <QtCore/QThreadStorage>
-#endif
 #endif
 
 //ofx
@@ -495,65 +491,6 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
 
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
-#ifdef MRKEPZIE
-#pragma message WARN("Natron being compiled with OFX_SUPPORTS_MULTITHREAD defined, some plug-ins might crash.")
-namespace {
-struct Thread_Group {
-    typedef std::map<int,boost::thread*> ThreadsList;
-    ThreadsList threads;
-    boost::mutex lock;
-    
-    Thread_Group()
-    : threads()
-    , lock()
-    , cond()
-    {
-        
-    }
-    
-    Thread_Group(const Thread_Group& o)
-    : threads(o.threads)
-    , lock()
-    , cond()
-    {
-        
-    }
-    
-    
-    ~Thread_Group(){
-        
-    }
-};
-}
-
-#pragma WARN("do you really mean to have a global variable here?"
-static Thread_Group tg = Thread_Group();
-
-
-void OfxWrappedFunctor(OfxThreadFunctionV1 func, int i, unsigned int nThreads, void* customArgs)
-{
-    assert(i > 0);
-    func(i,nThreads,customArgs);
-    boost::mutex::scoped_lock lock(tg.lock);
-    
-    ///remove this thread from the thread group
-    Thread_Group::ThreadsList::iterator found = tg.threads.end();
-    for(Thread_Group::ThreadsList::iterator it = tg.threads.begin();it!= tg.threads.end();++it){
-        if((*it)->get_id() == boost::this_thread::get_id()){
-            found = it;
-            break;
-        }
-    }
-    
-    //it shouldn't have been removed...
-    assert(found != tg.threads.end());
-    tg.finishedThreads.push_back(*found);
-    tg.threads.erase(found);
-    
-    tg.cond.notify_all();
-}
-
-#else // !MRKEPZIE
 
 static QThreadStorage<unsigned int> gThreadIndex;
 
@@ -564,18 +501,27 @@ public:
     OfxThread(OfxThreadFunctionV1 func,
               unsigned int threadIndex,
               unsigned int threadMax,
-              void *customArg)
+              void *customArg,
+              OfxStatus *stat)
     : _func(func)
     , _threadIndex(threadIndex)
     , _threadMax(threadMax)
     , _customArg(customArg)
+    , _stat(stat)
     {}
 
     void run() OVERRIDE {
         assert(!gThreadIndex.hasLocalData());
         assert(_threadIndex < _threadMax);
         gThreadIndex.localData() = _threadIndex;
-        _func(_threadIndex, _threadMax, _customArg);
+        assert(*_stat == kOfxStatFailed);
+        try {
+            _func(_threadIndex, _threadMax, _customArg);
+            *_stat = kOfxStatOK;
+        } catch (const std::bad_alloc& ba) {
+            *_stat = kOfxStatErrMemory;
+        } catch (...) {
+        }
     }
 
 private:
@@ -583,10 +529,9 @@ private:
     unsigned int _threadIndex;
     unsigned int _threadMax;
     void *_customArg;
+    OfxStatus *_stat;
 };
 }
-
-#endif // !MRKEPZIE
 
 
 // Function to spawn SMP threads
@@ -602,12 +547,10 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
     if (!func) {
         return kOfxStatFailed;
     }
-#if !defined(MRKEPZIE)
     // check that this thread does not already have an ID
     if (gThreadIndex.hasLocalData()) {
         return kOfxStatErrExists;
     }
-#endif
 
     unsigned int maxConcurrentThread;
     OfxStatus st = multiThreadNumCPUS(&maxConcurrentThread);
@@ -615,45 +558,23 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
         return st;
     }
     
-#ifdef MRKEPZIE
-    for (U32 i = 0; i < nThreads; ++i) {
-        
-        ///if the threads count running is greater than the maxConcurrentThread,
-        ///wait for a thread to finish
-        boost::mutex::scoped_lock lock(tg.lock);
-        
-        while(tg.threads.size() > maxConcurrentThread){
-            tg.cond.wait(lock);
-        }
-        
-        boost::thread* t = new boost::thread(func,i,nThreads,customArg);
-        ///register the thread
-        tg.threads.insert(std::make_pair(i,t));
-        
-    }
-    
-    for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
-        it->second->join();
-    }
-    {
-        boost::mutex::scoped_lock lock(tg.lock);
-        for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
-            delete it->second;
-        }
-        tg.threads.clear();
-
-    }
-
-#else // !MRKEPZIE
     QVector<OfxThread*> threads(nThreads);
+    QVector<OfxStatus> status(nThreads); // vector for the return status of each thread
+    status.fill(kOfxStatFailed); // by default, a thread fails
     for (unsigned int i = 0; i < nThreads; ++i) {
-        threads[i] = new OfxThread(func, i, nThreads,customArg);
+        threads[i] = new OfxThread(func, i, nThreads, customArg, &status[i]);
         threads[i]->start();
     }
     for (unsigned int i = 0; i < nThreads; ++i) {
         threads[i]->wait();
     }
-#endif
+    // check the return status of each thread, return the first error found
+    for (unsigned int i = 0; i < nThreads; ++i) {
+        if (status[i] != kOfxStatOK) {
+            return status[i];
+        }
+    }
+
     return kOfxStatOK;
 }
 
@@ -666,11 +587,8 @@ OfxStatus Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
         return kOfxStatFailed;
     }
     // TODO: this should be a preference setting
-#ifdef MRKEPZIE
-    *nCPUs = boost::thread::hardware_concurrency();
-#else
     *nCPUs = QThread::idealThreadCount();
-#endif
+
     return kOfxStatOK;
 }
 
@@ -684,40 +602,16 @@ OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
 {
     if (!threadIndex)
         return kOfxStatFailed;
-#ifdef MRKEPZIE
-    unsigned int i = 0;
-    boost::mutex::scoped_lock lock(tg.lock);
-    for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
-        if(it->second->get_id() == boost::this_thread::get_id()){
-            *threadIndex = it->first;
-            return kOfxStatOK;
-        }
-        ++i;
-    }
-    *threadIndex = 0;
-    return kOfxStatOK;
-#else
     *threadIndex = gThreadIndex.hasLocalData() ? gThreadIndex.localData() : 0;
 
     return kOfxStatOK;
-#endif
 }
 
 // Function to enquire if the calling thread was spawned by multiThread
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThreadIsSpawnedThread
 int Natron::OfxHost::multiThreadIsSpawnedThread() const
 {
-#ifdef MRKEPZIE
-    boost::mutex::scoped_lock lock(tg.lock);
-    for (Thread_Group::ThreadsList::iterator it = tg.threads.begin(); it!= tg.threads.end(); ++it) {
-        if(it->second->get_id() == boost::this_thread::get_id()){
-            return true;
-        }
-    }
-    return false;
-#else
     return gThreadIndex.hasLocalData();
-#endif
 }
 
 // Create a mutex

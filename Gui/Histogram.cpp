@@ -1357,16 +1357,72 @@ void HistogramPrivate::drawPicker() {
     widget->renderText(gPos.x(), gPos.y(), gValueStr, gColor, _font);
     widget->renderText(bPos.x(), bPos.y(), bValueStr, bColor, _font);
 }
+#if 0
+/*
+ // compute magic colors, by F. Devernay
+ // - they are red, green and blue
+ // - they all have the same luminance
+ // - their sum is white
+ // OpenGL luminance formula:
+ // L = r*.3086 + g*.6094 + b*0.0820
+ */
+#include <stdio.h>
+
+int
+tochar(double d)
+{
+    return (int)(d*255 + 0.5);
+}
+
+int main(int argc, char**argv)
+{
+    const double Rr = 0.711519527404004;
+    const double Rgb = 0.164533420851110;
+    const double Gg = 0.546986106552894;
+    const double Grb = 0.;
+    const double Bb = 0.835466579148890;
+    const double Brg = 0.288480472595996;
+    const double R[3] = {Rr, Rgb, Rgb};
+    const double G[3] = {Grb, Gg, Grb};
+    const double B[3] = {Brg, Brg, Bb};
+    const double maxval = Bb;
+
+    printf("OpenGL colors, luminance = 1/3:\n");
+    printf("red=(%g,%g,%g) green=(%g,%g,%g) blue=(%g,%g,%g)\n",
+           (R[0]), (R[1]), (R[2]),
+           (G[0]), (G[1]), (G[2]),
+           (B[0]), (B[1]), (B[2]));
+    printf("OpenGL colors luminance=%g:\n", (1./3.)/maxval);
+    printf("red=(%g,%g,%g) green=(%g,%g,%g) blue=(%g,%g,%g)\n",
+           (R[0]/maxval), (R[1]/maxval), (R[2]/maxval),
+           (G[0]/maxval), (G[1]/maxval), (G[2]/maxval),
+           (B[0]/maxval), (B[1]/maxval), (B[2]/maxval));
+    printf("HTML colors, luminance=1/3:\n");
+    printf("red=#%02x%02x%02x green=#%02x%02x%02x blue=#%02x%02x%02x\n",
+           tochar(R[0]), tochar(R[1]), tochar(R[2]),
+           tochar(G[0]), tochar(G[1]), tochar(G[2]),
+           tochar(B[0]), tochar(B[1]), tochar(B[2]));
+    printf("HTML colors, luminance=%g:\n", (1./3.)/maxval);
+    printf("red=#%02x%02x%02x green=#%02x%02x%02x blue=#%02x%02x%02x\n",
+           tochar(R[0]/maxval), tochar(R[1]/maxval), tochar(R[2]/maxval),
+           tochar(G[0]/maxval), tochar(G[1]/maxval), tochar(G[2]/maxval),
+           tochar(B[0]/maxval), tochar(B[1]/maxval), tochar(B[2]/maxval));
+    
+}
+#endif
 
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
-void HistogramPrivate::drawHistogramCPU() {
+void HistogramPrivate::drawHistogramCPU()
+{
     glEnable(GL_BLEND);
     glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
     glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
     
-    
+    // see the code above to compute the magic colors
+
     double binSize = (vmax - vmin) / binsCount;
     
+    glBegin(GL_LINES);
     for (unsigned int i = 0; i < binsCount; ++i) {
         double binMinX = vmin + i * binSize;
         if (mode == Histogram::RGB) {
@@ -1376,58 +1432,61 @@ void HistogramPrivate::drawHistogramCPU() {
             double rTotNormalized = ((double)histogram1[i] / (double)pixelsCount) / binSize;
             double gTotNormalized = ((double)histogram2[i] / (double)pixelsCount) / binSize;
             double bTotNormalized = ((double)histogram3[i] / (double)pixelsCount) / binSize;
-            
-            glBegin(GL_LINES);
-            glColor3d(1, 0, 0);
+
+            // use three colors with equal luminance (0.33), so that the blue is visible and their sum is white
+            //glColor3d(1, 0, 0);
+            glColor3f(0.711519527404004, 0.164533420851110, 0.164533420851110);
             glVertex2d(binMinX, 0);
             glVertex2d(binMinX,  rTotNormalized);
             
-            glColor3d(0, 1, 0);
+            //glColor3d(0, 1, 0);
+            glColor3f(0., 0.546986106552894, 0.);
             glVertex2d(binMinX, 0);
             glVertex2d(binMinX,  gTotNormalized);
             
-            glColor3d(0, 0, 1);
+            //glColor3d(0, 0, 1);
+            glColor3f(0.288480472595996, 0.288480472595996, 0.835466579148890);
             glVertex2d(binMinX, 0);
             glVertex2d(binMinX,  bTotNormalized);
-            glEnd(); 
         } else {
             if (histogram1.empty()) {
                 break;
             }
             
-            double vTotNormalized;
-            
-            vTotNormalized = (double)histogram1[i] / (double)pixelsCount;
-            
+            double vTotNormalized = (double)histogram1[i] / (double)pixelsCount;
+
+            // all the following colors have the same luminance (~0.4)
             switch (mode) {
                 case Histogram::R:
-                    glColor3f(1, 0, 0);
+                    //glColor3f(1, 0, 0);
+                    glColor3f(0.851643,0.196936,0.196936);
                     break;
                 case Histogram::G:
-                    glColor3f(0, 1, 0);
+                    //glColor3f(0, 1, 0);
+                    glColor3f(0,0.654707,0);
                     break;
                 case Histogram::B:
-                    glColor3f(0, 0, 1);
+                    //glColor3f(0, 0, 1);
+                    glColor3f(0.345293,0.345293,1);
                     break;
                 case Histogram::A:
-                    glColor3f(1, 1, 1);
+                    //glColor3f(1, 1, 1);
+                    glColor3f(0.398979,0.398979,0.398979);
                     break;
                 case Histogram::Y:
-                    glColor3f(0.7, 0.7, 0.7);
+                    //glColor3f(0.7, 0.7, 0.7);
+                    glColor3f(0.398979,0.398979,0.398979);
                     break;
                 default:
                     assert(false);
                     break;
             }
-            glBegin(GL_LINES);
             glVertex2f(binMinX, 0);
             glVertex2f(binMinX,  vTotNormalized);
-            glEnd();
-            
-            
         }
     }
-    
+    glEnd(); // GL_LINES
+
     glDisable(GL_BLEND);
     glColor4f(1, 1, 1, 1);
 }

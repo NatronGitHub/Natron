@@ -141,7 +141,9 @@ void InfoViewerWidget::updateColor()
     float a = colorUnderMouse.w();
 
     QString values;
-    values = QString("<font color='red'>%1</font> <font color='green'>%2</font> <font color='blue'>%3</font> <font color=\"#DBE0E0\">%4</font>")
+    //values = QString("<font color='red'>%1</font> <font color='green'>%2</font> <font color='blue'>%3</font> <font color=\"#DBE0E0\">%4</font>")
+    // the following three colors have an equal luminance (=0.4), which makes the text easier to read.
+    values = QString("<font color='#d93232'>%1</font> <font color='#00a700'>%2</font> <font color='#5858ff'>%3</font> <font color=\"#DBE0E0\">%4</font>")
         .arg(r,0,'f',5)
         .arg(g,0,'f',5)
         .arg(b,0,'f',5)
