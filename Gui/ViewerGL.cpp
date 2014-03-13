@@ -773,6 +773,7 @@ void ViewerGL::paintGL()
     
     glEnable (GL_TEXTURE_2D);
     if(_imp->displayingImage) {
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, _imp->defaultDisplayTexture->getTexID());
         // debug (so the OpenGL debugger can make a breakpoint here)
         // GLfloat d;
@@ -1316,9 +1317,10 @@ void ViewerGL::activateShaderRGB()
     }
     
     _imp->shaderRGB->setUniformValue("Tex", 0);
-    _imp->shaderRGB->setUniformValue("expMult",  (GLfloat)_imp->viewerTab->getInternalNode()->getExposure());
+    _imp->shaderRGB->setUniformValue("expMult",  (GLfloat)getInternalNode()->getOffset());
+    _imp->shaderRGB->setUniformValue("offset", (GLfloat)getInternalNode()->getOffset());
     _imp->shaderRGB->setUniformValue("lut", (GLint)_imp->viewerTab->getInternalNode()->getLutType());
-    
+
     
 }
 

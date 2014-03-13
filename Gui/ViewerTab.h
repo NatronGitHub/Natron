@@ -131,6 +131,8 @@ public slots:
     void showView(int view);
     
     void onEnableViewerRoIButtonToggle(bool);
+    
+    void onInternalExposureChanged(double);
 
 
 private:

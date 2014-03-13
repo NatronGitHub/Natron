@@ -513,6 +513,7 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     QObject::connect(_imp->_gainSlider, SIGNAL(positionChanged(double)), _imp->_gainBox, SLOT(setValue(double)));
     QObject::connect(_imp->_gainSlider, SIGNAL(positionChanged(double)), _imp->_viewerNode, SLOT(onExposureChanged(double)));
     QObject::connect(_imp->_gainBox, SIGNAL(valueChanged(double)), _imp->_gainSlider, SLOT(seekScalePosition(double)));
+    QObject::connect(_imp->_viewerNode,SIGNAL(exposureChanged(double)),this,SLOT(onInternalExposureChanged(double)));
     QObject::connect(_imp->_currentFrameBox, SIGNAL(valueChanged(double)), this, SLOT(onCurrentTimeSpinBoxChanged(double)));
     
     VideoEngine* vengine = _imp->_viewerNode->getVideoEngine().get();
@@ -1059,3 +1060,7 @@ Gui* ViewerTab::getGui() const { return _imp->_gui; }
 
 void ViewerTab::enterEvent(QEvent*)  { setFocus(); }
 
+void ViewerTab::onInternalExposureChanged(double d) {
+    _imp->_gainSlider->seekScalePosition(d);
+    _imp->_gainBox->setValue(d);
+}

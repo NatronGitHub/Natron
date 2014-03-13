@@ -62,13 +62,24 @@ private:
     
     struct InterThreadInfos{
         InterThreadInfos():
-            _ramBuffer(NULL)
-          , _textureRect()
-          ,_bytesCount(0){}
+        _ramBuffer(NULL)
+        , _textureRect()
+        , _bytesCount(0)
+        , _autoContrast(false)
+        , _channels(ViewerInstance::RGB)
+        , _bitDepth(0)
+        , _exposure(0)
+        , _offset(0)
+        {}
         
         unsigned char* _ramBuffer;
         TextureRect _textureRect;
         size_t _bytesCount;
+        bool _autoContrast;
+        DisplayChannels _channels;
+        int _bitDepth; //< corresponds to OpenGLViewerI::BitDepth
+        double _exposure;
+        double _offset;
     };
     
     OpenGLViewerI* _uiContext;
@@ -90,21 +101,26 @@ private:
     unsigned char* _buffer;
     bool _mustFreeBuffer;
     
-    QMutex _renderArgsMutex; //< protects exposure,colorspace etc..
+    mutable QMutex _renderArgsMutex; //< protects exposure,colorspace etc..
     double _exposure ;/*!< Current exposure setting, all pixels are multiplied
                       by pow(2,expousre) before they appear on the screen.*/
+    double _offset; //< offset applied to all colours
     
     const Natron::Color::Lut* _colorSpace;/*!< The lut used to do the viewer colorspace conversion when we can't use shaders*/
-    // FIXME: why a float to really represent an enum????
     ViewerColorSpace _lut; /*!< a value coding the current color-space used to render.
                  0 = sRGB ,  1 = linear , 2 = Rec 709*/
     
+    mutable QMutex _channelsMutex;
     DisplayChannels _channels;
     
     boost::shared_ptr<Natron::Image> _lastRenderedImage;
     
     mutable QMutex _autoContrastMutex;
     bool _autoContrast;
+    
+    ///the vmin and vmax of the last image rendered, this is used for autocontrast
+    mutable QMutex _vMinMaxMutex;
+    double _vmin,_vmax;
 public:
     
     
@@ -152,11 +168,13 @@ public:
 
     int activeInput() const WARN_UNUSED_RETURN;
 
-    int getLutType() const WARN_UNUSED_RETURN {return _lut;}
+    int getLutType() const WARN_UNUSED_RETURN ;
 
-    double getExposure() const WARN_UNUSED_RETURN {return _exposure;}
+    double getExposure() const WARN_UNUSED_RETURN ;
 
-    const Natron::Color::Lut* getLut() const WARN_UNUSED_RETURN {return _colorSpace;}
+    double getOffset() const WARN_UNUSED_RETURN;
+
+    const Natron::Color::Lut* getLut() const WARN_UNUSED_RETURN;
 
     bool supportsGLSL() const WARN_UNUSED_RETURN;
 /**
@@ -218,6 +236,7 @@ signals:
  **/
     void doUpdateViewer();
 
+    void exposureChanged(double);
 
 private:
     /*******************************************
@@ -257,6 +276,7 @@ private:
     void renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,std::pair<int,int> yRange,
                        const TextureRect& texRect,int closestPowerOf2);
 
+    void findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,const RectI& rect);
 
     void scaleToTexture8bits(boost::shared_ptr<const Natron::Image> inputImage,std::pair<int,int> yRange,const TextureRect& texRect,
                              int closestPowerOf2,int rOffset,int gOffset,int bOffset,bool luminance);
