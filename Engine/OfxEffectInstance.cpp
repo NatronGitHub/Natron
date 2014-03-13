@@ -478,9 +478,11 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
         return ret;
     }
     OfxStatus stat = effect_->getRegionOfInterestAction((OfxTime)time, scale, rectToOfxRect2D(renderWindow), inputRois);
+    
     if(stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
         Natron::errorDialog(getName(), "Failed to specify the region of interest from inputs.");
-    } else if (stat == kOfxStatOK) {
+    }
+    if (stat != kOfxStatReplyDefault) {
         for(std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin();it!= inputRois.end();++it){
             EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
             if (inputNode && inputNode != this) {
@@ -531,9 +533,11 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
     OfxRangeD range;
     // getTimeDomain should only be called on the 'general', 'reader' or 'generator' contexts.
     //  see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectActionGetTimeDomain"
+    // Edit: Also add the 'writer' context as we need the getTimeDomain action to be able to find out the frame range to render.
     OfxStatus st = kOfxStatReplyDefault;
     if (effect_->getContext() == kOfxImageEffectContextGeneral ||
         effect_->getContext() == kOfxImageEffectContextReader ||
+        effect_->getContext() == kOfxImageEffectContextWriter ||
         effect_->getContext() == kOfxImageEffectContextGenerator) {
         st = effect_->getTimeDomainAction(range);
     }

@@ -1126,7 +1126,7 @@ void errorDialog(const std::string& title,const std::string& message){
     if(!appPTR->isBackground()){
         topLvlInstance->errorDialog(title,message);
     }else{
-        std::cout << "ERROR: " << message << std::endl;
+        std::cout << "ERROR: " << title << " :"<<  message << std::endl;
     }
 
 #ifdef NATRON_LOG
@@ -1143,7 +1143,7 @@ void warningDialog(const std::string& title,const std::string& message){
     if(!appPTR->isBackground()){
         topLvlInstance->warningDialog(title,message);
     }else{
-        std::cout << "WARNING: "<< message << std::endl;
+        std::cout << "WARNING: " << title << " :"<< message << std::endl;
     }
 #ifdef NATRON_LOG
     Log::beginFunction(title,"WARNING");
@@ -1159,7 +1159,7 @@ void informationDialog(const std::string& title,const std::string& message){
     if(!appPTR->isBackground()){
         topLvlInstance->informationDialog(title,message);
     }else{
-        std::cout << "INFO: "<< message << std::endl;
+        std::cout << "INFO: " << title << " :"<< message << std::endl;
     }
 #ifdef NATRON_LOG
     Log::beginFunction(title,"INFO");
@@ -1176,7 +1176,7 @@ Natron::StandardButton questionDialog(const std::string& title,const std::string
     if(!appPTR->isBackground()){
         return topLvlInstance->questionDialog(title,message,buttons,defaultButton);
     }else{
-        std::cout << "QUESTION ASKED: " << message << std::endl;
+        std::cout << "QUESTION ASKED: " << title << " :"<< message << std::endl;
         std::cout << NATRON_APPLICATION_NAME " answered yes." << std::endl;
         return Natron::Yes;
     }

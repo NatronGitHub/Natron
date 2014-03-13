@@ -165,6 +165,10 @@ void ScaleSliderQWidget::paintEvent(QPaintEvent* /*event*/) {
     QPointF btmLeft = toScaleCoordinates(0,height()-1);
     QPointF topRight = toScaleCoordinates(width()-1, 0);
     
+    if (btmLeft.x() == topRight.x()) {
+        return;
+    }
+    
     /*drawing X axis*/
     double lineYpos = height() -1 - fontM.height()  - TICK_HEIGHT/2;
     p.drawLine(0, lineYpos, width() - 1, lineYpos);
