@@ -877,7 +877,10 @@ bool ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& 
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        ret = effect->onOverlayPenDown(viewportPos, pos);
+        bool didSmthing = effect->onOverlayPenDown(viewportPos, pos);
+        if (didSmthing) {
+            ret = true;
+        }
     }
     return ret;
 }
@@ -894,7 +897,10 @@ bool ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        ret = effect->onOverlayPenMotion(viewportPos, pos);
+        bool didSmthing = effect->onOverlayPenMotion(viewportPos, pos);
+        if (didSmthing) {
+            ret = true;
+        }
     }
     return ret;
 }
@@ -912,7 +918,10 @@ bool ViewerTab::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& po
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        ret = effect->onOverlayPenUp(viewportPos, pos);
+        bool didSmthing = effect->onOverlayPenUp(viewportPos, pos);
+        if (didSmthing) {
+            ret = true;
+        }
     }
     return ret;
 }
@@ -930,7 +939,10 @@ bool ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        ret = effect->onOverlayKeyDown(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
+        bool didSmthing = effect->onOverlayKeyDown(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
+        if (didSmthing) {
+            ret = true;
+        }
     }
     return ret;
 }
@@ -949,7 +961,10 @@ bool ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        ret = effect->onOverlayKeyUp(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
+        bool didSmthing = effect->onOverlayKeyUp(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
+        if (didSmthing) {
+            ret = true;
+        }
     }
     return ret;
 }
@@ -967,7 +982,10 @@ bool ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        ret = effect->onOverlayKeyRepeat(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
+        bool didSmthing = effect->onOverlayKeyRepeat(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
+        if (didSmthing) {
+            ret = true;
+        }
     }
     return ret;
 }
@@ -985,7 +1003,10 @@ bool ViewerTab::notifyOverlaysFocusGained(){
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        ret = effect->onOverlayFocusGained();
+        bool didSmthing = effect->onOverlayFocusGained();
+        if (didSmthing) {
+            ret = true;
+        }
         
     }
     return ret;
@@ -1004,7 +1025,10 @@ bool ViewerTab::notifyOverlaysFocusLost(){
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        ret = effect->onOverlayFocusLost();
+        bool didSmthing = effect->onOverlayFocusLost();
+        if (didSmthing) {
+            ret = true;
+        }
     }
     return ret;
 }
