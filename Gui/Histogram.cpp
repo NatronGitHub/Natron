@@ -428,6 +428,7 @@ void HistogramPrivate::showMenu(const QPoint& globalPos) {
     rightClickMenu->exec(globalPos);
 }
 
+
 void Histogram::populateViewersChoices() {
     
     QString currentSelection;
@@ -1165,12 +1166,11 @@ void Histogram::wheelEvent(QWheelEvent *event) {
 }
 
 void Histogram::keyPressEvent(QKeyEvent *e) {
-    if(e->key() == Qt::Key_Space){
+    if (e->key() == Qt::Key_Space) {
         QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
-        QCoreApplication::postEvent(parentWidget()->parentWidget(),ev);
+        QCoreApplication::postEvent(parentWidget(),ev);
     } else if (e->key() == Qt::Key_F) {
         _imp->hasBeenModifiedSinceResize = false;
-        
         //reset the pixel aspect to 1
         _imp->zoomCtx.aspectRatio = 1.;
         centerOn(0, 1, 0, 1);
