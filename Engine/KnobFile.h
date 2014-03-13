@@ -120,6 +120,8 @@ private:
     
     virtual QString saveExtraData() const OVERRIDE FINAL;
     
+    virtual void processNewValue(Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    
     int frameCount() const;
     
     static const std::string _typeNameStr;

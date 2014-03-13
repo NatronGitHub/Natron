@@ -130,6 +130,13 @@ void File_Knob::setFiles(const SequenceParsing::SequenceFromFiles& fileSequence)
     endValueChange();
 }
 
+///called when a value changes, just update the pattern
+void File_Knob::processNewValue(Natron::ValueChangedReason reason) {
+    if (reason == Natron::PLUGIN_EDITED) {
+        _pattern = getValueForEachDimension()[0].toString();
+    }
+}
+
 int File_Knob::firstFrame() const
 {
     double time;

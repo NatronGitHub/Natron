@@ -27,7 +27,10 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGraph.h"
+#include "Gui/Histogram.h"
 
+#pragma message WARN("Race conditions here!!! projectGui->getGui()->getPanes() projectGui->getVisibleNodes()" \
+"projectGui->getGui()->getHistograms() are NOT thread-safe which means it could CRASH.")
  void ProjectGuiSerialization::initialize(const ProjectGui* projectGui){
      std::vector<NodeGui*> activeNodes = projectGui->getVisibleNodes();
      _serializedNodes.clear();
@@ -57,7 +60,7 @@ CLANG_DIAG_ON(deprecated)
      for (std::list<TabWidget*>::const_iterator it = tabWidgets.begin(); it!= tabWidgets.end(); ++it) {
          const QString& widgetName = (*it)->objectName();
          if(widgetName.isEmpty()){
-             std::cout << "Warning: attempting to save the layout of an unnamed TabWidget, discarding." << std::endl;
+             qDebug() << "Warning: attempting to save the layout of an unnamed TabWidget, discarding.";
              continue;
          }
          
@@ -110,6 +113,13 @@ CLANG_DIAG_ON(deprecated)
      }
      
      _arePreviewTurnedOffGlobally = projectGui->getGui()->getNodeGraph()->areAllPreviewTurnedOff();
+     
+     
+     ///save histograms
+     const std::list<Histogram*>& histograms = projectGui->getGui()->getHistograms();
+     for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
+         _histograms.push_back((*it)->objectName().toStdString());
+     }
      
 }
 

@@ -168,10 +168,10 @@ void File_KnobGui::updateLastOpened(const QString &str)
 
 }
 
-void File_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
+void File_KnobGui::updateGUI(int /*dimension*/, const Variant &/*variant*/)
 {
-    //    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
-    _lineEdit->setText(variant.toString());
+    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
+    _lineEdit->setText(fk->getPattern());
 }
 
 void File_KnobGui::onReturnPressed()

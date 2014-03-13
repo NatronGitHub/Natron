@@ -434,7 +434,7 @@ private:
      * e.g: The File_Knob parses the files list to create a mapping of
      * <time,file> .
     **/
-    virtual void processNewValue(){}
+    virtual void processNewValue(Natron::ValueChangedReason /*reason*/){}
     
     /**
      * @brief Override to return the real value to store in a keyframe for the variant passed in parameter.

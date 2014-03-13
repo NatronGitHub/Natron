@@ -105,6 +105,8 @@ public:
     
     void removeHistogram(Histogram* h);
     
+    const std::list<Histogram*>& getHistograms() const;
+    
     void setNewViewerAnchor(TabWidget* where);
         
     void maximize(TabWidget* what);
@@ -163,7 +165,7 @@ public:
     
 
     const std::list<QSplitter*>& getSplitters() const;
-
+    
     void removeSplitter(QSplitter* s);
     
     void registerSplitter(QSplitter* s); 

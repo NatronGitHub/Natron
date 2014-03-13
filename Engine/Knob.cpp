@@ -559,7 +559,7 @@ void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason)
     if (_imp->_EvaluateOnChange) {
         _imp->_holder->invalidateHash();
     }
-    processNewValue();
+    processNewValue(reason);
     if ((reason != Natron::USER_EDITED) && !_imp->_holder->isClone()) {
         emit valueChanged(dimension);
     }
@@ -841,6 +841,7 @@ void Knob::setDefaultValues(const std::vector<Variant>& values)
     assert(values.size() == _imp->_defaultValues.size());
     _imp->_defaultValues = values;
     _imp->_values = _imp->_defaultValues;
+    processNewValue(Natron::PLUGIN_EDITED);
 }
 
 void Knob::setDefaultValue(const Variant& v,int dimension)
@@ -848,6 +849,7 @@ void Knob::setDefaultValue(const Variant& v,int dimension)
     assert(dimension < getDimension());
     _imp->_defaultValues[dimension] = v;
     _imp->_values[dimension] = v;
+    processNewValue(Natron::PLUGIN_EDITED);
 }
 
 void Knob::resetToDefaultValue(int dimension)

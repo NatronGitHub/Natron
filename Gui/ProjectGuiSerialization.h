@@ -68,7 +68,6 @@ struct PaneLayout{
     std::vector<std::string> splitsNames;
     std::vector<std::string> tabs;
     
-    
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar,const unsigned int version)
@@ -94,6 +93,8 @@ class ProjectGuiSerialization {
     
     std::map<std::string, ViewerData > _viewersData;
     
+    std::vector<std::string> _histograms;
+
     bool _arePreviewTurnedOffGlobally;
     
     friend class boost::serialization::access;
@@ -106,6 +107,7 @@ class ProjectGuiSerialization {
         ar & boost::serialization::make_nvp("Splitters_states",_splittersStates);
         ar & boost::serialization::make_nvp("ViewersData",_viewersData);
         ar & boost::serialization::make_nvp("PreviewsTurnedOffGlobaly",_arePreviewTurnedOffGlobally);
+        ar & boost::serialization::make_nvp("Histograms",_histograms);
 
     }
     
@@ -126,6 +128,8 @@ public:
     const std::map<std::string, ViewerData >& getViewersProjections() const { return _viewersData; }
     
     bool arePreviewsTurnedOffGlobally() const { return _arePreviewTurnedOffGlobally; }
+    
+    const std::vector<std::string>& getHistograms() const { return _histograms; }
     
 private:
     

@@ -336,6 +336,8 @@ void TabWidget::moveCurveEditorHere(){
 void TabWidget::newHistogramHere() {
     Histogram* h = _gui->addNewHistogram();
     appendTab(h);
+    
+    _gui->getApp()->triggerAutoSave();
 }
 
 /*Get the header name of the tab at index "index".*/

@@ -40,6 +40,7 @@
 #include "Gui/ProjectGuiSerialization.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGraph.h"
+#include "Gui/Histogram.h"
 
 ProjectGui::ProjectGui(Gui* gui)
 : _gui(gui)
@@ -320,6 +321,17 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     for(U32 i = 0 ; i < nodesGui.size();++i){
         nodesGui[i]->refreshEdges();
     }
+    
+    ///restore the histograms
+    const std::vector<std::string>& histograms = obj.getHistograms();
+    for (U32 i = 0; i < histograms.size(); ++i) {
+        Histogram* h = _gui->addNewHistogram();
+        h->setObjectName(histograms[i].c_str());
+        //move it by default to the workshop pane, before restoring the layout anyway which
+        ///will relocate it correctly
+        _gui->getWorkshopPane()->appendTab(h);
+    }
+    
 
     ///now restore the gui layout
     

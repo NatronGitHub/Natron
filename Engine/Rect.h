@@ -18,7 +18,7 @@
 #include <utility>
 
 
-#include "Global/GLobalDefines.h"
+#include "Global/GlobalDefines.h"
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>

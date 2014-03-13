@@ -118,7 +118,11 @@ TextRendererPrivate::~TextRendererPrivate()
 void TextRendererPrivate::clearCache()
 {
     foreach(GLuint texture, _usedTextures) {
-        assert(glIsTexture(texture));
+        
+        //https://www.opengl.org/sdk/docs/man2/xhtml/glIsTexture.xml
+        //A name returned by glGenTextures, but not yet associated with a texture by calling glBindTexture, is not the name of a texture.
+        //Not sure if we should leave this assert here since  textures are not bound any longer at this point.
+        //        assert(glIsTexture(texture));
         glDeleteTextures(1, &texture);
     }
 }

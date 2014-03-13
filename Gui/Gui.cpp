@@ -1161,6 +1161,10 @@ void Gui::removeHistogram(Histogram* h) {
     _imp->_histograms.erase(it);
 }
 
+const std::list<Histogram*>& Gui::getHistograms() const {
+    return _imp->_histograms;
+}
+
 void Gui::removePane(TabWidget* pane){
     std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
     assert(found != _imp->_panes.end());
@@ -2003,7 +2007,6 @@ GuiAppInstance* Gui::getApp() const { return _imp->_appInstance; }
 const std::list<TabWidget*>& Gui::getPanes() const { return _imp->_panes; }
 
 const std::list<QSplitter*>& Gui::getSplitters() const { return _imp->_splitters; }
-
 
 void Gui::setUserScrubbingTimeline(bool b) { _imp->_isUserScrubbingTimeline = b; }
 
