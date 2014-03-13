@@ -35,7 +35,7 @@ namespace boost {
 }
 
 //QtGui
-class QSplitter;
+class Splitter;
 class QUndoStack;
 class QScrollArea;
 
@@ -107,6 +107,8 @@ public:
     
     const std::list<Histogram*>& getHistograms() const;
     
+    std::list<Histogram*> getHistograms_mt_safe() const;
+    
     void setNewViewerAnchor(TabWidget* where);
         
     void maximize(TabWidget* what);
@@ -151,6 +153,8 @@ public:
     
     const std::list<TabWidget*>& getPanes() const;
     
+    std::list<TabWidget*> getPanes_mt_safe() const;
+    
     void removePane(TabWidget* pane);
     
     void registerPane(TabWidget* pane);
@@ -164,11 +168,11 @@ public:
     QWidget* findExistingTab(const std::string& name) const;
     
 
-    const std::list<QSplitter*>& getSplitters() const;
+    std::list<Splitter*> getSplitters() const;
     
-    void removeSplitter(QSplitter* s);
+    void removeSplitter(Splitter* s);
     
-    void registerSplitter(QSplitter* s); 
+    void registerSplitter(Splitter* s);
 
     QStringList popOpenFileDialog(bool sequenceDialog,const std::vector<std::string>& initialfilters,const std::string& initialDir);
     
@@ -216,6 +220,8 @@ public:
     
     const std::list<ViewerTab*>& getViewersList() const;
     
+    std::list<ViewerTab*> getViewersList_mt_safe() const;
+    
     void activateViewerTab(ViewerInstance* viewer);
     
     void deactivateViewerTab(ViewerInstance* viewer);
@@ -223,6 +229,8 @@ public:
     ViewerTab* getViewerTabForInstance(ViewerInstance* node) const;
     
     const std::vector<NodeGui*>& getVisibleNodes() const;
+    
+    std::vector<NodeGui*> getVisibleNodes_mt_safe() const;
     
     void deselectAllNodes() const;
     

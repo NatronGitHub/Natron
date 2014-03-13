@@ -23,6 +23,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QDialog>
 #include <QLabel>
 #include <QUndoCommand>
+#include <QMutex>
 CLANG_DIAG_ON(deprecated)
 
 #ifndef Q_MOC_RUN
@@ -103,6 +104,8 @@ public:
     
     const std::vector<NodeGui*>& getAllActiveNodes() const;
     
+    std::vector<NodeGui*> getAllActiveNodes_mt_safe() const;
+    
     void moveToTrash(NodeGui* node);
     
     void restoreFromTrash(NodeGui* node);
@@ -111,7 +114,10 @@ public:
     
     void refreshAllEdges();
 
-    bool areAllPreviewTurnedOff() const { return _previewsTurnedOff; }
+    bool areAllPreviewTurnedOff() const {
+        QMutexLocker l(&_previewsTurnedOffMutex);
+        return _previewsTurnedOff;
+    }
     
     void deleteNode(NodeGui* n);
     
@@ -199,6 +205,7 @@ private:
     
     Edge* _arrowSelected;
     
+    mutable QMutex _nodesMutex;
     std::vector<NodeGui*> _nodes;
     
     std::vector<NodeGui*> _nodesTrash;
@@ -230,6 +237,7 @@ private:
     
     bool _refreshOverlays;
     
+    mutable QMutex _previewsTurnedOffMutex;
     bool _previewsTurnedOff;
 };
 

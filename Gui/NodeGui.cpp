@@ -166,7 +166,6 @@ NodeGui::NodeGui(NodeGraph* dag,
     
     _boundingBox->setBrush(*_defaultGradient);
     
-    populateMenu();
     
     gettimeofday(&_lastRenderStartedSlotCallTime, 0);
     gettimeofday(&_lastInputNRenderStartedSlotCallTime, 0);
@@ -662,18 +661,19 @@ void NodeGui::paint(QPainter* /*painter*/,const QStyleOptionGraphicsItem* /*opti
     //nothing special
 }
 void NodeGui::showMenu(const QPoint& pos){
+    populateMenu();
     _menu->exec(pos);
 }
 
 void NodeGui::populateMenu(){
     _menu->clear();
-    QAction* togglePreviewAction = new QAction("Toggle preview image",this);
+    QAction* togglePreviewAction = new QAction("Toggle preview image",_menu);
     togglePreviewAction->setCheckable(true);
-    togglePreviewAction->setChecked(_internalNode->makePreviewByDefault());
+    togglePreviewAction->setChecked(_internalNode->isPreviewEnabled());
     QObject::connect(togglePreviewAction,SIGNAL(triggered()),this,SLOT(togglePreview()));
     _menu->addAction(togglePreviewAction);
     
-    QAction* deleteAction = new QAction("Delete",this);
+    QAction* deleteAction = new QAction("Delete",_menu);
     QObject::connect(deleteAction,SIGNAL(triggered()),_graph,SLOT(deleteSelectedNode()));
     _menu->addAction(deleteAction);
 
@@ -771,4 +771,14 @@ void NodeGui::moveAbovePositionRecursively(const QRectF& r) {
             }
         }
     }
+}
+
+QPointF NodeGui::getPos_mt_safe() const {
+    QMutexLocker l(&positionMutex);
+    return pos();
+}
+
+void NodeGui::setPos_mt_safe(const QPointF& pos) {
+    QMutexLocker l(&positionMutex);
+    setPos(pos);
 }

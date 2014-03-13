@@ -16,6 +16,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <QtCore/QRectF>
+#include <QtCore/QMutex>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QGraphicsItem>
@@ -175,6 +176,10 @@ public:
      **/
     void moveAbovePositionRecursively(const QRectF& r);
     
+    QPointF getPos_mt_safe() const;
+    
+    void setPos_mt_safe(const QPointF& pos);
+    
 public slots:
   
     void togglePreview();
@@ -283,6 +288,8 @@ private:
     bool _wasRenderStartedSlotRun; //< true if we changed the color of the widget after a call to onRenderingStarted
   
     bool _wasBeginEditCalled;
+    
+    mutable QMutex positionMutex;
 };
 
 #endif // NATRON_GUI_NODEGUI_H_

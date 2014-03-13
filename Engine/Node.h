@@ -218,6 +218,8 @@ public:
      * @brief The node unique name.
      **/
     const std::string& getName() const;
+    
+    std::string getName_mt_safe() const;
 
     void setName(const std::string& name);
 
@@ -325,7 +327,7 @@ public:
     void createKnobDynamically();
     
     /**
-     * @brief Returns true if the node is active for use in the graph editor.
+     * @brief Returns true if the node is active for use in the graph editor. MT-safe
      **/
     bool isActivated() const;
 
@@ -371,7 +373,7 @@ public:
     /**
      * @brief Fills the serializationObject with the current state of the Node.
      **/
-    void serialize(NodeSerialization* serializationObject) const;
+    void serialize(NodeSerialization* serializationObject);
     
     void purgeAllInstancesCaches();
     

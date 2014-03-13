@@ -28,10 +28,9 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/Histogram.h"
+#include "Gui/Splitter.h"
 
-#pragma message WARN("Race conditions here!!! projectGui->getGui()->getPanes() projectGui->getVisibleNodes()" \
-"projectGui->getGui()->getHistograms() are NOT thread-safe which means it could CRASH.")
- void ProjectGuiSerialization::initialize(const ProjectGui* projectGui){
+void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) { 
      std::vector<NodeGui*> activeNodes = projectGui->getVisibleNodes();
      _serializedNodes.clear();
      for (U32 i = 0; i < activeNodes.size(); ++i) {
@@ -53,13 +52,13 @@ CLANG_DIAG_ON(deprecated)
              viewerData.exposure = tab->getExposure();
              viewerData.colorSpace = tab->getColorSpace();
              viewerData.channels = tab->getChannelsString();
-             _viewersData.insert(std::make_pair(viewer->getName(),viewerData));
+             _viewersData.insert(std::make_pair(viewer->getNode()->getName_mt_safe(),viewerData));
          }
      }
      
-    const std::list<TabWidget*>& tabWidgets = projectGui->getGui()->getPanes();
+    std::list<TabWidget*> tabWidgets = projectGui->getGui()->getPanes_mt_safe();
      for (std::list<TabWidget*>::const_iterator it = tabWidgets.begin(); it!= tabWidgets.end(); ++it) {
-         const QString& widgetName = (*it)->objectName();
+         QString widgetName = (*it)->objectName_mt_safe();
          if(widgetName.isEmpty()){
              qDebug() << "Warning: attempting to save the layout of an unnamed TabWidget, discarding.";
              continue;
@@ -67,13 +66,13 @@ CLANG_DIAG_ON(deprecated)
          
          PaneLayout layout;
          layout.parentingCreated = false;
-         const std::map<TabWidget*,bool>& userSplits = (*it)->getUserSplits();
+         std::map<TabWidget*,bool> userSplits = (*it)->getUserSplits();
          for (std::map<TabWidget*,bool>::const_iterator split = userSplits.begin(); split!=userSplits.end(); ++split) {
              layout.splits.push_back(split->second);
          }
          layout.floating = (*it)->isFloating();
          if(layout.floating){
-             QPoint pos = (*it)->pos();
+             QPoint pos = (*it)->pos_mt_safe();
              layout.posx = pos.x();
              layout.posy = pos.y();
          }else{
@@ -82,17 +81,14 @@ CLANG_DIAG_ON(deprecated)
              layout.posy = -1;
          }
          
-         for (int i = 0; i < (*it)->count(); ++i) {
-             QWidget* tab = (*it)->tabAt(i);
-             assert(tab);
-             const QString& tabName = tab->objectName();
-             if(tabName.isEmpty()){
-                 std::cout << "Warning: attempting to save the position of an unnamed tab, discarding." << std::endl;
+         QStringList tabNames = (*it)->getTabNames();
+         for (int i = 0; i < tabNames.size(); ++i) {
+             if(tabNames[i].isEmpty()){
+                 qDebug() << "Warning: attempting to save the position of an unnamed tab, discarding.";
                  continue;
              }
-             layout.tabs.push_back(tabName.toStdString());
+             layout.tabs.push_back(tabNames[i].toStdString());
          }
-         
          _layout.insert(std::make_pair(widgetName.toStdString(),layout));
      }
      
@@ -104,12 +100,12 @@ CLANG_DIAG_ON(deprecated)
      }
      
      ///save application's splitters states
-     const std::list<QSplitter*>& splitters = projectGui->getGui()->getSplitters();
-     for (std::list<QSplitter*>::const_iterator it = splitters.begin(); it!= splitters.end(); ++it) {
+    std::list<Splitter*> splitters = projectGui->getGui()->getSplitters();
+     for (std::list<Splitter*>::const_iterator it = splitters.begin(); it!= splitters.end(); ++it) {
          QByteArray ba = (*it)->saveState();
          ba = ba.toBase64();
          QString str(ba);
-         _splittersStates.insert(std::make_pair((*it)->objectName().toStdString(),str.toStdString()));
+         _splittersStates.insert(std::make_pair((*it)->objectName_mt_safe().toStdString(),str.toStdString()));
 
      }
      
@@ -117,7 +113,7 @@ CLANG_DIAG_ON(deprecated)
      
      
      ///save histograms
-     const std::list<Histogram*>& histograms = projectGui->getGui()->getHistograms();
+    std::list<Histogram*> histograms = projectGui->getGui()->getHistograms_mt_safe();
      for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
          _histograms.push_back((*it)->objectName().toStdString());
      }

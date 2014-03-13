@@ -916,6 +916,11 @@ const Natron::Color::Lut* ViewerInstance::getLut() const {
     return _colorSpace;
 }
 
+ViewerInstance::DisplayChannels ViewerInstance::getChannels() const {
+    QMutexLocker l(&_channelsMutex);
+    return _channels;
+}
+
 double ViewerInstance::getOffset() const {
     QMutexLocker l(&_renderArgsMutex);
     return _offset;

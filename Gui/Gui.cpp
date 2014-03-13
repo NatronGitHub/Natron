@@ -34,7 +34,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QApplication>
 #include <QMenuBar>
 #include <QDesktopWidget>
-#include <QSplitter>
 #include <QToolBar>
 #include <QKeySequence>
 #include <QScrollArea>
@@ -62,6 +61,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/RenderingProgressDialog.h"
 #include "Gui/NodeGui.h"
 #include "Gui/Histogram.h"
+#include "Gui/Splitter.h"
 
 #include "Engine/ViewerInstance.h"
 #include "Engine/Project.h"
@@ -113,7 +113,8 @@ struct GuiPrivate {
     std::map<QUndoStack*,std::pair<QAction*,QAction*> > _undoStacksActions;
     
     ///all the splitters used to separate the "panes" of the application
-    std::list<QSplitter*> _splitters;
+    mutable QMutex _splittersMutex;
+    std::list<Splitter*> _splitters;
     
 
     ///all the menu actions
@@ -167,21 +168,23 @@ struct GuiPrivate {
     TabWidget* _workshopPane;
     
     ///The splitter separating the workshop pane of the viewers pane.
-    QSplitter* _viewerWorkshopSplitter;
+    Splitter* _viewerWorkshopSplitter;
     
     ///the initial pane where the properties are layed out.
     TabWidget* _propertiesPane;
     
     ///the splitter separating _viewerWorkshopSplitter and the properties pane.
-    QSplitter* _middleRightSplitter;
+    Splitter* _middleRightSplitter;
     
     ///the splitter separating _middleRightSplitter and the left toolbar
-    QSplitter* _leftRightSplitter;
+    Splitter* _leftRightSplitter;
 
     ///a list of ptrs to all the viewer tabs.
+    mutable QMutex _viewerTabsMutex;
     std::list<ViewerTab*> _viewerTabs;
     
     ///a list of ptrs to all histograms
+    mutable QMutex _histogramsMutex;
     std::list<Histogram*> _histograms;
     int _nextHistogramIndex; //< for giving a unique name to histogram tabs
     
@@ -223,6 +226,7 @@ struct GuiPrivate {
     
     
     ///all TabWidget's : used to know what to hide/show for fullscreen mode
+    mutable QMutex _panesMutex;
     std::list<TabWidget*> _panes;
     
     ///All the tabs used in the TabWidgets (used for d&d purpose)
@@ -300,7 +304,9 @@ struct GuiPrivate {
     , _propertiesPane(0)
     , _middleRightSplitter(0)
     , _leftRightSplitter(0)
+    , _viewerTabsMutex()
     , _viewerTabs()
+    , _histogramsMutex()
     , _histograms()
     , _nextHistogramIndex(1)
     , _graphScene(0)
@@ -417,7 +423,7 @@ void Gui::toggleFullScreen()
 
 void Gui::closeEvent(QCloseEvent *e) {
     assert(e);
-    if (!exit()) {
+    if (!exitGui()) {
         e->ignore();
         return;
     }
@@ -697,7 +703,7 @@ void Gui::setupUi()
     _imp->_mainLayout->setContentsMargins(0, 0, 0, 0);
     _imp->_centralWidget->setLayout(_imp->_mainLayout);
     
-    _imp->_leftRightSplitter = new QSplitter(_imp->_centralWidget);
+    _imp->_leftRightSplitter = new Splitter(_imp->_centralWidget);
     _imp->_leftRightSplitter->setObjectName("ToolBar_splitter");
     _imp->_splitters.push_back(_imp->_leftRightSplitter);
     _imp->_leftRightSplitter->setChildrenCollapsible(false);
@@ -711,7 +717,7 @@ void Gui::setupUi()
     
     _imp->_leftRightSplitter->addWidget(_imp->_toolBox);
     
-    _imp->_viewerWorkshopSplitter = new QSplitter(_imp->_centralWidget);
+    _imp->_viewerWorkshopSplitter = new Splitter(_imp->_centralWidget);
     _imp->_viewerWorkshopSplitter->setObjectName("Viewers_Workshop_splitter");
     _imp->_splitters.push_back(_imp->_viewerWorkshopSplitter);
     _imp->_viewerWorkshopSplitter->setContentsMargins(0, 0, 0, 0);
@@ -754,7 +760,7 @@ void Gui::setupUi()
     _imp->_viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
     
 
-    _imp->_middleRightSplitter = new QSplitter(_imp->_centralWidget);
+    _imp->_middleRightSplitter = new Splitter(_imp->_centralWidget);
     _imp->_middleRightSplitter->setObjectName("Center_PropertiesBin_splitter");
     _imp->_splitters.push_back(_imp->_middleRightSplitter);
     _imp->_middleRightSplitter->setChildrenCollapsible(false);
@@ -1049,6 +1055,8 @@ void Gui::maximize(TabWidget* what) {
     assert(what);
     if(what->isFloating())
         return;
+    
+    QMutexLocker l(&_imp->_panesMutex);
     for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
         
         //if the widget is not what we want to maximize and it is not floating , hide it
@@ -1064,6 +1072,7 @@ void Gui::maximize(TabWidget* what) {
 }
 
 void Gui::minimize(){
+    QMutexLocker l(&_imp->_panesMutex);
     for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
         (*it)->show();
     }
@@ -1073,7 +1082,10 @@ void Gui::minimize(){
 ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
     ViewerTab* tab = new ViewerTab(this,viewer,_imp->_viewersPane);
     QObject::connect(tab->getViewer(),SIGNAL(imageChanged()),this,SLOT(onViewerImageChanged()));
-    _imp->_viewerTabs.push_back(tab);
+    {
+        QMutexLocker l(&_imp->_viewerTabsMutex);
+        _imp->_viewerTabs.push_back(tab);
+    }
     where->appendTab(tab);
     emit viewersChanged();
     return tab;
@@ -1083,6 +1095,7 @@ void Gui::onViewerImageChanged() {
     ///notify all histograms a viewer image changed
     ViewerGL* viewer = qobject_cast<ViewerGL*>(sender());
     if (viewer) {
+        QMutexLocker l(&_imp->_histogramsMutex);
         for (std::list<Histogram*>::iterator it = _imp->_histograms.begin(); it != _imp->_histograms.end(); ++it) {
             (*it)->onViewerImageChanged(viewer);
         }
@@ -1092,9 +1105,12 @@ void Gui::onViewerImageChanged() {
 void Gui::addViewerTab(ViewerTab* tab, TabWidget* where) {
     assert(tab);
     assert(where);
-    std::list<ViewerTab*>::iterator it = std::find(_imp->_viewerTabs.begin(), _imp->_viewerTabs.end(), tab);
-    if (it == _imp->_viewerTabs.end()) {
-        _imp->_viewerTabs.push_back(tab);
+    {
+        QMutexLocker l(&_imp->_viewerTabsMutex);
+        std::list<ViewerTab*>::iterator it = std::find(_imp->_viewerTabs.begin(), _imp->_viewerTabs.end(), tab);
+        if (it == _imp->_viewerTabs.end()) {
+            _imp->_viewerTabs.push_back(tab);
+        }
     }
     where->appendTab(tab);
     emit viewersChanged();
@@ -1133,6 +1149,7 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
         }
         
         if (deleteData) {
+            QMutexLocker l(&_imp->_viewerTabsMutex);
             std::list<ViewerTab*>::iterator it = std::find(_imp->_viewerTabs.begin(), _imp->_viewerTabs.end(), tab);
             if (it != _imp->_viewerTabs.end()) {
                 _imp->_viewerTabs.erase(it);
@@ -1148,6 +1165,7 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
 
 Histogram* Gui::addNewHistogram() {
     Histogram* h = new Histogram(this);
+    QMutexLocker l(&_imp->_histogramsMutex);
     h->setObjectName("Histogram "+QString::number(_imp->_nextHistogramIndex));
     ++_imp->_nextHistogramIndex;
     _imp->_histograms.push_back(h);
@@ -1155,6 +1173,8 @@ Histogram* Gui::addNewHistogram() {
 }
 
 void Gui::removeHistogram(Histogram* h) {
+    
+    QMutexLocker l(&_imp->_histogramsMutex);
     std::list<Histogram*>::iterator it = std::find(_imp->_histograms.begin(),_imp->_histograms.end(),h);
     assert(it != _imp->_histograms.end());
     delete *it;
@@ -1162,31 +1182,41 @@ void Gui::removeHistogram(Histogram* h) {
 }
 
 const std::list<Histogram*>& Gui::getHistograms() const {
+    QMutexLocker l(&_imp->_histogramsMutex);
+    return _imp->_histograms;
+}
+
+std::list<Histogram*> Gui::getHistograms_mt_safe() const {
+    QMutexLocker l(&_imp->_histogramsMutex);
     return _imp->_histograms;
 }
 
 void Gui::removePane(TabWidget* pane){
+    QMutexLocker l(&_imp->_panesMutex);
     std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
     assert(found != _imp->_panes.end());
     _imp->_panes.erase(found);
 }
 
 void Gui::registerPane(TabWidget* pane){
+    QMutexLocker l(&_imp->_panesMutex);
     std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
     if(found == _imp->_panes.end()){
         _imp->_panes.push_back(pane);
     }
 }
 
-void Gui::registerSplitter(QSplitter* s){
-    std::list<QSplitter*>::iterator found = std::find(_imp->_splitters.begin(), _imp->_splitters.end(), s);
+void Gui::registerSplitter(Splitter* s) {
+    QMutexLocker l(&_imp->_splittersMutex);
+    std::list<Splitter*>::iterator found = std::find(_imp->_splitters.begin(), _imp->_splitters.end(), s);
     if(found == _imp->_splitters.end()){
         _imp->_splitters.push_back(s);
     }
 }
 
-void Gui::removeSplitter(QSplitter* s){
-    std::list<QSplitter*>::iterator found = std::find(_imp->_splitters.begin(), _imp->_splitters.end(), s);
+void Gui::removeSplitter(Splitter* s) {
+    QMutexLocker l(&_imp->_splittersMutex);
+    std::list<Splitter*>::iterator found = std::find(_imp->_splitters.begin(), _imp->_splitters.end(), s);
     if(found != _imp->_splitters.end()){
         _imp->_splitters.erase(found);
     }
@@ -1777,6 +1807,7 @@ void Gui::showView9(){
 }
 
 void Gui::setCurveEditorOnTop(){
+    QMutexLocker l(&_imp->_panesMutex);
     for(std::list<TabWidget*>::iterator it = _imp->_panes.begin();it!=_imp->_panes.end();++it){
         TabWidget* cur = (*it);
         assert(cur);
@@ -1926,12 +1957,14 @@ void Gui::removeColorPicker(boost::shared_ptr<Color_Knob> knob) {
 }
 
 void Gui::updateViewersViewsMenu(int viewsCount) {
+    QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin();it!=_imp->_viewerTabs.end();++it) {
         (*it)->updateViewsMenu(viewsCount);
     }
 }
 
 void Gui::setViewersCurrentView(int view) {
+    QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin();it!=_imp->_viewerTabs.end();++it) {
         (*it)->setCurrentView(view);
     }
@@ -1942,28 +1975,45 @@ const std::list<ViewerTab*>& Gui::getViewersList() const {
     return _imp->_viewerTabs;
 }
 
+std::list<ViewerTab*> Gui::getViewersList_mt_safe() const {
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+    return _imp->_viewerTabs;
+}
 
 void Gui::activateViewerTab(ViewerInstance* viewer) {
     OpenGLViewerI* viewport = viewer->getUiContext();
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin();it!=_imp->_viewerTabs.end();++it) {
-        if ((*it)->getViewer() == viewport) {
-            addViewerTab(*it, _imp->_viewersPane);
-            (*it)->show();
+    
+    {
+        QMutexLocker l(&_imp->_viewerTabsMutex);
+        for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin();it!=_imp->_viewerTabs.end();++it) {
+            if ((*it)->getViewer() == viewport) {
+                _imp->_viewersPane->appendTab(*it);
+                (*it)->show();
+            }
         }
     }
+    emit viewersChanged();
 }
 
 void Gui::deactivateViewerTab(ViewerInstance* viewer) {
     OpenGLViewerI* viewport = viewer->getUiContext();
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin();it!=_imp->_viewerTabs.end();++it) {
-        if ((*it)->getViewer() == viewport) {
-            removeViewerTab(*it, true,false);
-            break;
+    ViewerTab* v = 0;
+    {
+        QMutexLocker l(&_imp->_viewerTabsMutex);
+        for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin();it!=_imp->_viewerTabs.end();++it) {
+            if ((*it)->getViewer() == viewport) {
+                v = *it;
+                break;
+            }
         }
+    }
+    if (v) {
+        removeViewerTab(v, true,false);
     }
 }
 
 ViewerTab* Gui::getViewerTabForInstance(ViewerInstance* node) const {
+    QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin();it!=_imp->_viewerTabs.end();++it) {
         if ((*it)->getInternalNode() == node) {
             return *it;
@@ -1973,9 +2023,12 @@ ViewerTab* Gui::getViewerTabForInstance(ViewerInstance* node) const {
 }
 
 const std::vector<NodeGui*>& Gui::getVisibleNodes() const {
-    assert(_imp->_nodeGraphArea);
     return  _imp->_nodeGraphArea->getAllActiveNodes();
     
+}
+
+std::vector<NodeGui*> Gui::getVisibleNodes_mt_safe() const {
+    return _imp->_nodeGraphArea->getAllActiveNodes_mt_safe();
 }
 
 
@@ -2006,7 +2059,15 @@ GuiAppInstance* Gui::getApp() const { return _imp->_appInstance; }
 
 const std::list<TabWidget*>& Gui::getPanes() const { return _imp->_panes; }
 
-const std::list<QSplitter*>& Gui::getSplitters() const { return _imp->_splitters; }
+std::list<TabWidget*> Gui::getPanes_mt_safe() const {
+    QMutexLocker l(&_imp->_panesMutex);
+    return _imp->_panes;
+}
+
+std::list<Splitter*> Gui::getSplitters() const {
+    QMutexLocker l(&_imp->_splittersMutex);
+    return _imp->_splitters;
+}
 
 void Gui::setUserScrubbingTimeline(bool b) { _imp->_isUserScrubbingTimeline = b; }
 

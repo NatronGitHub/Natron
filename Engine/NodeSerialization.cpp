@@ -14,7 +14,10 @@
 #include "Engine/Knob.h"
 #include "Engine/Node.h"
 
-void NodeSerialization::initialize(const Natron::Node* n){
+void NodeSerialization::initialize(Natron::Node* n){
+    
+    
+    ///All this code is MT-safe
     
     _knobsValues.clear();
     _inputs.clear();
@@ -31,7 +34,7 @@ void NodeSerialization::initialize(const Natron::Node* n){
     
     _knobsAge = n->getKnobsAge();
     
-    _pluginLabel = n->getName();
+    _pluginLabel = n->getName_mt_safe();
     
     _pluginID = n->pluginID();
     
@@ -39,12 +42,13 @@ void NodeSerialization::initialize(const Natron::Node* n){
     
     _pluginMinorVersion = n->minorVersion();
     
+    n->setRenderTreeIsUsingInputs(true);
     const Natron::Node::InputMap& inputs = n->getInputs();
     for(Natron::Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
         if(it->second){
             _inputs.insert(std::make_pair(it->first, it->second->getName()));
         }
     }
-    
+    n->setRenderTreeIsUsingInputs(false);
     _isNull = false;
 }

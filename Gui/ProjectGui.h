@@ -74,7 +74,10 @@ public:
     
     void setPickersColor(const QColor& color);
     
-    const std::vector<NodeGui*> getVisibleNodes() const;
+    /**
+     * @brief Retur
+     **/
+    std::vector<NodeGui*> getVisibleNodes() const;
     
     const Gui* getGui() const { return _gui; }
     

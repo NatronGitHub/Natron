@@ -14,6 +14,7 @@
 
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"
+#include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
 KnobSerialization::KnobSerialization()
     : _hasAnimation(false)
@@ -25,9 +26,12 @@ KnobSerialization::KnobSerialization()
 }
 
 void KnobSerialization::initialize(const Knob* knob) {
+    
+    ///All this function is MT-safe
+    
     _hasAnimation = knob->hasAnimation();
     _label = knob->getDescription();
-    _values = knob->getValueForEachDimension();
+    _values = knob->getValueForEachDimension_mt_safe();
     _dimension = knob->getDimension();
     const std::vector<boost::shared_ptr<Curve> >& curves = knob->getCurves();
     for(U32 i = 0; i < curves.size();++i){
@@ -36,7 +40,7 @@ void KnobSerialization::initialize(const Knob* knob) {
             }
     }
 
-    const std::vector<std::pair<int,boost::shared_ptr<Knob> > >& masters = knob->getMasters();
+    std::vector<std::pair<int,boost::shared_ptr<Knob> > > masters = knob->getMasters_mt_safe();
     for(U32 i = 0; i < masters.size();++i){
         if(masters[i].second) {
             Natron::EffectInstance* effect= dynamic_cast<Natron::EffectInstance*>(masters[i].second->getHolder());
@@ -46,7 +50,7 @@ void KnobSerialization::initialize(const Knob* knob) {
             ///be slaved.
             assert(effect);
             
-            std::string knobName = effect->getName();
+            std::string knobName = effect->getNode()->getName_mt_safe();
             knobName += "_SPLIT_";
             knobName += masters[i].second->getDescription();
             _masters.push_back(std::make_pair(masters[i].first,knobName));

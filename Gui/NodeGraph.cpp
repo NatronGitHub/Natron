@@ -238,10 +238,12 @@ void NodeGraph::onProjectNodesCleared() {
     
     deselect();
     
+    QMutexLocker l(&_nodesMutex);
     for (U32 i = 0; i < _nodes.size(); ++i) {
         delete _nodes[i];
     }
     _nodes.clear();
+    
     for (U32 i = 0; i < _nodesTrash.size(); ++i) {
         delete _nodesTrash[i];
     }
@@ -298,9 +300,11 @@ NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Natron::Node *node
   
     NodeGui* node_ui = new NodeGui(this,dockContainer,node,requestedByLoad,_root);
     moveNodesForIdealPosition(node_ui);
-
-    _nodes.push_back(node_ui);
     
+    {
+        QMutexLocker l(&_nodesMutex);
+        _nodes.push_back(node_ui);
+    }
     QUndoStack* nodeStack = node_ui->getUndoStack();
     if(nodeStack){
         _gui->registerNewUndoStack(nodeStack);
@@ -462,17 +466,20 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
     
     NodeGui* selected = 0;
     Edge* selectedEdge = 0;
-    for(U32 i = 0;i < _nodes.size();++i){
-        NodeGui* n = _nodes[i];
-        QPointF evpt = n->mapFromScene(_lastScenePosClick);
-        if(n->isActive() && n->contains(evpt)){
-            selected = n;
-            break;
-        }else{
-            Edge* edge = n->hasEdgeNearbyPoint(_lastScenePosClick);
-            if(edge){
-                selectedEdge = edge;
+    {
+        QMutexLocker l(&_nodesMutex);
+        for(U32 i = 0;i < _nodes.size();++i){
+            NodeGui* n = _nodes[i];
+            QPointF evpt = n->mapFromScene(_lastScenePosClick);
+            if(n->isActive() && n->contains(evpt)){
+                selected = n;
                 break;
+            }else{
+                Edge* edge = n->hasEdgeNearbyPoint(_lastScenePosClick);
+                if(edge){
+                    selectedEdge = edge;
+                    break;
+                }
             }
         }
     }
@@ -504,6 +511,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
 }
 
 void NodeGraph::deselect(){
+    QMutexLocker l(&_nodesMutex);
     for(U32 i = 0 ; i < _nodes.size() ;++i) {
         NodeGui* n = _nodes[i];
         n->setSelected(false);
@@ -518,8 +526,11 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
     if (state == ARROW_DRAGGING) {
         bool foundSrc=false;
         NodeGui* dst = _arrowSelected->getDest();
-        for(U32 i = 0; i<_nodes.size() ;++i){
-            NodeGui* n=_nodes[i];
+        
+        std::vector<NodeGui*> nodes = getAllActiveNodes_mt_safe();
+        
+        for(U32 i = 0; i < nodes.size() ;++i) {
+            NodeGui* n = nodes[i];
             QPointF ep = mapToScene(event->pos());
             QPointF evpt = n->mapFromScene(ep);
             
@@ -531,7 +542,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                 }
                 _undoStack->setActive();
                 _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),n));
-                foundSrc=true;
+                foundSrc = true;
                 
                 break;
             }
@@ -583,21 +594,24 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
     }else{
         NodeGui* selected = 0;
         Edge* selectedEdge = 0;
-        for(U32 i = 0;i < _nodes.size();++i){
-            NodeGui* n = _nodes[i];
-            QPointF evpt = n->mapFromScene(newPos);
-            if(n->isActive() && n->contains(evpt)){
-                selected = n;
-                break;
-            }else{
-                Edge* edge = n->hasEdgeNearbyPoint(newPos);
-                if(edge){
-                    selectedEdge = edge;
+        
+        {
+            QMutexLocker l(&_nodesMutex);
+            for(U32 i = 0;i < _nodes.size();++i){
+                NodeGui* n = _nodes[i];
+                QPointF evpt = n->mapFromScene(newPos);
+                if(n->isActive() && n->contains(evpt)){
+                    selected = n;
                     break;
+                }else{
+                    Edge* edge = n->hasEdgeNearbyPoint(newPos);
+                    if(edge){
+                        selectedEdge = edge;
+                        break;
+                    }
                 }
             }
         }
-
         if(selected){
             setCursor(QCursor(Qt::OpenHandCursor));
         }else if(selectedEdge){
@@ -614,10 +628,11 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
 }
 
 
-void NodeGraph::mouseDoubleClickEvent(QMouseEvent *){
-    U32 i=0;
-    while(i<_nodes.size()){
-        NodeGui* n=_nodes[i];
+void NodeGraph::mouseDoubleClickEvent(QMouseEvent *) {
+    
+    std::vector<NodeGui*> nodes = getAllActiveNodes_mt_safe();
+    for (int i = 0; i < nodes.size() ; ++i) {
+        NodeGui* n = nodes[i];
         
         QPointF evpt = n->mapFromScene(_lastScenePosClick);
         if(n->isActive() && n->contains(evpt) && n->getSettingPanel()){
@@ -630,7 +645,6 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *){
             _gui->putSettingsPanelFirst(n->getSettingPanel());
             break;
         }
-        ++i;
     }
     
 }
@@ -671,7 +685,7 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         _gui->createReader();
     }else if(e->key() == Qt::Key_W){
         _gui->createWriter();
-    }else if(e->key() == Qt::Key_Backspace){
+    }else if(e->key() == Qt::Key_Backspace || e->key() == Qt::Key_Delete){
         /*delete current node.*/
         deleteSelectedNode();
 
@@ -779,6 +793,8 @@ void NodeGraph::removeNode(NodeGui* n) {
     assert(n);
     if(_nodeSelected == n)
         _nodeSelected = NULL;
+    
+    QMutexLocker l(&_nodesMutex);
     std::vector<NodeGui*>::iterator it = std::find(_nodes.begin(), _nodes.end(), n);
     if (it != _nodes.end()) {
         _nodes.erase(it);
@@ -793,8 +809,11 @@ void NodeGraph::selectNode(NodeGui* n) {
     assert(n);
     _nodeSelected = n;
     /*now remove previously selected node*/
-    for(U32 i = 0 ; i < _nodes.size() ;++i) {
-        _nodes[i]->setSelected(false);
+    {
+        QMutexLocker l(&_nodesMutex);
+        for(U32 i = 0 ; i < _nodes.size() ;++i) {
+            _nodes[i]->setSelected(false);
+        }
     }
     if(n->getNode()->pluginID() == "Viewer") {
         OpenGLViewerI* viewer = dynamic_cast<ViewerInstance*>(n->getNode()->getLiveInstance())->getUiContext();
@@ -828,6 +847,7 @@ void NodeGraph::updateNavigator(){
 }
 bool NodeGraph::areAllNodesVisible(){
     QRectF rect = visibleRect();
+    QMutexLocker l(&_nodesMutex);
     for (U32 i = 0; i < _nodes.size(); ++i) {
         //        QRectF itemSceneRect = _nodes[i]->mapRectFromScene(rect);
         //        if(!itemSceneRect.contains(_nodes[i]->boundingRect()))
@@ -886,11 +906,18 @@ void NodeGraph::NodeGraphNavigator::setImage(const QImage& img){
     setPixmap(pix);
 }
 
-const std::vector<NodeGui*>& NodeGraph::getAllActiveNodes() const{
+const std::vector<NodeGui*>& NodeGraph::getAllActiveNodes() const {
     return _nodes;
 }
+
+std::vector<NodeGui*> NodeGraph::getAllActiveNodes_mt_safe() const {
+    QMutexLocker l(&_nodesMutex);
+    return _nodes;
+}
+
 void NodeGraph::moveToTrash(NodeGui* node) {
     assert(node);
+    QMutexLocker l(&_nodesMutex);
     std::vector<NodeGui*>::iterator it = std::find(_nodes.begin(), _nodes.end(), node);
     if (it != _nodes.end()) {
         _nodesTrash.push_back(*it);
@@ -900,6 +927,7 @@ void NodeGraph::moveToTrash(NodeGui* node) {
 
 void NodeGraph::restoreFromTrash(NodeGui* node) {
     assert(node);
+    QMutexLocker l(&_nodesMutex);
     std::vector<NodeGui*>::iterator it = std::find(_nodesTrash.begin(), _nodesTrash.end(), node);
     if (it != _nodesTrash.end()) {
         _nodes.push_back(*it);
@@ -1232,7 +1260,8 @@ bool SmartInputDialog::eventFilter(QObject *obj, QEvent *e){
     }
     return false;
 }
-void NodeGraph::refreshAllEdges(){
+void NodeGraph::refreshAllEdges() {
+    QMutexLocker l(&_nodesMutex);
     for (U32 i=0; i < _nodes.size(); ++i) {
         _nodes[i]->refreshEdges();
     }
@@ -1264,6 +1293,7 @@ void NodeGraph::updateCacheSizeText(){
 }
 QRectF NodeGraph::calcNodesBoundingRect(){
     QRectF ret;
+    QMutexLocker l(&_nodesMutex);
     for (U32 i = 0; i < _nodes.size(); ++i) {
         ret = ret.united(_nodes[i]->boundingRectWithEdges());
     }
@@ -1415,14 +1445,22 @@ void NodeGraph::dragMoveEvent(QDragMoveEvent* e){
 }
 
 void NodeGraph::turnOffPreviewForAllNodes(){
-    _previewsTurnedOff = !_previewsTurnedOff;
-    if(_previewsTurnedOff){
+    bool pTurnedOff;
+    {
+        QMutexLocker l(&_previewsTurnedOffMutex);
+        _previewsTurnedOff = !_previewsTurnedOff;
+        pTurnedOff = _previewsTurnedOff;
+    }
+    
+    if(pTurnedOff){
+        QMutexLocker l(&_nodesMutex);
         for(U32 i = 0; i < _nodes.size() ; ++i){
             if(_nodes[i]->getNode()->isPreviewEnabled()){
                 _nodes[i]->togglePreview();
             }
         }
     }else{
+        QMutexLocker l(&_nodesMutex);
         for(U32 i = 0; i < _nodes.size() ; ++i){
             if(!_nodes[i]->getNode()->isPreviewEnabled() && _nodes[i]->getNode()->makePreviewByDefault()){
                 _nodes[i]->togglePreview();
@@ -1432,6 +1470,7 @@ void NodeGraph::turnOffPreviewForAllNodes(){
 }
 
 void NodeGraph::deleteNode(Natron::Node* n){
+    QMutexLocker l(&_nodesMutex);
     for (U32 i = 0; i < _nodes.size(); ++i) {
         if(_nodes[i]->getNode() == n){
             delete _nodes[i];
@@ -1439,7 +1478,6 @@ void NodeGraph::deleteNode(Natron::Node* n){
             return;
         }
     }
-    
     for (U32 i = 0; i < _nodesTrash.size(); ++i) {
         if(_nodesTrash[i]->getNode() == n){
             delete _nodesTrash[i];

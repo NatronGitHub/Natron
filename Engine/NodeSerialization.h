@@ -40,7 +40,7 @@ public:
     
     ~NodeSerialization(){ _knobsValues.clear(); _inputs.clear(); }
     
-    void initialize(const Natron::Node* n);
+    void initialize(Natron::Node* n);
     
     const KnobValues& getKnobsValues() const {return _knobsValues;}
     

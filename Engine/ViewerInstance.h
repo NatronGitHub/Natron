@@ -176,6 +176,8 @@ public:
 
     const Natron::Color::Lut* getLut() const WARN_UNUSED_RETURN;
 
+    DisplayChannels getChannels() const WARN_UNUSED_RETURN;
+
     bool supportsGLSL() const WARN_UNUSED_RETURN;
 /**
  *@brief Actually converting to ARGB... but it is called BGRA by

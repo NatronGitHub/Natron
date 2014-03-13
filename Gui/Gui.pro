@@ -75,6 +75,7 @@ SOURCES += \
     Shaders.cpp \
     SpinBox.cpp \
     SplashScreen.cpp \
+    Splitter.cpp \
     TabWidget.cpp \
     TextRenderer.cpp \
     Texture.cpp \
@@ -124,6 +125,7 @@ HEADERS += \
     Shaders.h \
     SpinBox.h \
     SplashScreen.h \
+    Splitter.h \
     TabWidget.h \
     TextRenderer.h \
     Texture.h \

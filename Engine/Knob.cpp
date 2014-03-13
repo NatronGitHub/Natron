@@ -65,6 +65,7 @@ struct Knob::KnobPrivate {
     
     ////curve links
     ///A slave link CANNOT be master at the same time (i.e: if _slaveLinks[i] != NULL  then _masterLinks[i] == NULL )
+    mutable QMutex _mastersMutex;
     MastersMap _masters; //from what knob is slaved each curve if any
     
     std::vector<Natron::AnimationLevel> _animationLevel;//< indicates for each dimension whether it is static/interpolated/onkeyframe
@@ -90,6 +91,7 @@ struct Knob::KnobPrivate {
     , _defaultValues(dimension)
     , _dimension(dimension)
     , _curves(dimension)
+    , _mastersMutex()
     , _masters(dimension)
     , _animationLevel(dimension)
     , _valueMutex(QMutex::Recursive)
@@ -405,6 +407,11 @@ const std::vector<Variant>& Knob::getValueForEachDimension() const
     return _imp->_values;
 }
 
+std::vector<Variant> Knob::getValueForEachDimension_mt_safe() const {
+    QMutexLocker l(&_imp->_valueMutex);
+    return _imp->_values;
+}
+
 int Knob::getDimension() const
 {
     return _imp->_dimension;
@@ -498,7 +505,6 @@ void Knob::load(const KnobSerialization& serializationObj)
 void Knob::save(KnobSerialization* serializationObj) const
 {
     assert(getIsPersistant()); // a non-persistent Knob should never be saved!
-    QMutexLocker l(&_imp->_valueMutex);
     serializationObj->initialize(this);
 }
 
@@ -613,14 +619,16 @@ void Knob::cloneValue(const Knob& other)
     
     //same for masters : the knobs are not refered to the same KnobHolder (i.e the same effect instance)
     //so we need to copy with the good pointers
-    const MastersMap& otherMasters = other.getMasters();
-    for (U32 j = 0 ; j < otherMasters.size();++j) {
-        if (otherMasters[j].second) {
-                    _imp->_masters[j].second = otherMasters[j].second;
-                    _imp->_masters[j].first = otherMasters[j].first;
+    {
+        QMutexLocker l(&_imp->_mastersMutex);
+        MastersMap otherMasters = other.getMasters_mt_safe();
+        for (U32 j = 0 ; j < otherMasters.size();++j) {
+            if (otherMasters[j].second) {
+                _imp->_masters[j].second = otherMasters[j].second;
+                _imp->_masters[j].first = otherMasters[j].first;
+            }
         }
     }
-
     cloneExtraData(other);
 }
 
@@ -777,11 +785,15 @@ bool Knob::slaveTo(int dimension,boost::shared_ptr<Knob> other,int otherDimensio
 {
     assert(dimension < (int)_imp->_masters.size());
     assert(!other->isSlave(otherDimension));
-    if (_imp->_masters[dimension].second) {
-        return false;
+    
+    {
+        QMutexLocker l(&_imp->_mastersMutex);
+        if (_imp->_masters[dimension].second) {
+            return false;
+        }
+        _imp->_masters[dimension].second = other;
+        _imp->_masters[dimension].first = otherDimension;
     }
-    _imp->_masters[dimension].second = other;
-    _imp->_masters[dimension].first = otherDimension;
     _imp->_holder->getApp()->triggerAutoSave();
     return true;
 }
@@ -791,12 +803,16 @@ void Knob::unSlave(int dimension)
 {
     assert(isSlave(dimension));
     //copy the state before cloning
-    _imp->_values[dimension] =  _imp->_masters[_imp->_masters[dimension].first].second->getValue(dimension);
-    _imp->_curves[dimension]->clone(*( _imp->_masters[_imp->_masters[dimension].first].second->getCurve(dimension)));
-    cloneExtraData(*_imp->_masters[dimension].second);
-    
-    _imp->_masters[dimension].second.reset();
-    _imp->_masters[dimension].first = -1;
+    {
+        QMutexLocker l1(&_imp->_valueMutex);
+        QMutexLocker l2(&_imp->_mastersMutex);
+        _imp->_values[dimension] =  _imp->_masters[_imp->_masters[dimension].first].second->getValue(dimension);
+        _imp->_curves[dimension]->clone(*( _imp->_masters[_imp->_masters[dimension].first].second->getCurve(dimension)));
+        cloneExtraData(*_imp->_masters[dimension].second);
+        
+        _imp->_masters[dimension].second.reset();
+        _imp->_masters[dimension].first = -1;
+    }
     _imp->_holder->getApp()->triggerAutoSave();
 }
 
@@ -808,11 +824,13 @@ std::pair<int,boost::shared_ptr<Knob> > Knob::getMaster(int dimension) const
 
 bool Knob::isSlave(int dimension) const
 {
+    QMutexLocker l(&_imp->_mastersMutex);
     return bool(_imp->_masters[dimension].second);
 }
 
-const std::vector< std::pair<int,boost::shared_ptr<Knob> > >& Knob::getMasters() const
+std::vector< std::pair<int,boost::shared_ptr<Knob> > > Knob::getMasters_mt_safe() const
 {
+    QMutexLocker l(&_imp->_mastersMutex);
     return _imp->_masters;
 }
 

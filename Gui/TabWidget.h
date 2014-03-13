@@ -19,6 +19,7 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QFrame>
 #include <QTabBar>
+#include <QMutex>
 CLANG_DIAG_ON(deprecated)
 
 #include "Global/Macros.h"
@@ -38,6 +39,7 @@ class QDragLeaveEvent;
 class TabWidget;
 class QPaintEvent;
 class Gui;
+
 
 
 /*This class represents a floating pane that embeds a widget*/
@@ -153,17 +155,34 @@ public:
     /*Removes from the TabWidget, but does not delete the widget.*/
     void removeTab(QWidget* widget);
     
-    int count() const {return _tabs.size();}
+    int count() const {
+        QMutexLocker l(&_tabWidgetStateMutex);
+        return _tabs.size();
+    }
     
-    QWidget* tabAt(int index) const {return _tabs[index];}
+    QWidget* tabAt(int index) const {
+        QMutexLocker l(&_tabWidgetStateMutex);
+        return _tabs[index];
+    }
     
-    bool isFloating() const {return _isFloating;}
+    QStringList getTabNames() const;
+    
+    bool isFloating() const {
+        QMutexLocker l(&_tabWidgetStateMutex);
+        return _isFloating;
+    }
     
     void destroyTabs();
     
-    QWidget* currentWidget() const {return _currentWidget;}
+    QWidget* currentWidget() const {
+        QMutexLocker l(&_tabWidgetStateMutex);
+        return _currentWidget;
+    }
     
-    const std::map<TabWidget*,bool> &getUserSplits() const {return _userSplits;}
+    std::map<TabWidget*,bool> getUserSplits() const {
+        QMutexLocker l(&_tabWidgetStateMutex);
+        return _userSplits;
+    }
     
     void removeSplit(TabWidget* tab);
     
@@ -184,6 +203,10 @@ public:
     void setDrawDropRect(bool draw);
     
     bool isWithinWidget(const QPoint& globalPos) const;
+    
+    void setObjectName_mt_safe(const QString& str);
+    
+    QString objectName_mt_safe() const;
     
 public slots:
     /*Makes current the tab at index "index". Passing an
@@ -220,7 +243,7 @@ public slots:
     
     void closeTab(int index);
     
-    
+    QPoint pos_mt_safe() const;
 private:
     
     virtual void dropEvent(QDropEvent* event);
@@ -232,6 +255,7 @@ private:
     bool destroyTab(QWidget* tab) WARN_UNUSED_RETURN;
 
 private:
+        
     // FIXME: PIMPL
     Gui* _gui;
 
@@ -257,7 +281,7 @@ private:
 
     bool _fullScreen;
     std::map<TabWidget*,bool> _userSplits;//< for each split, whether the user pressed split vertically (true) or horizontally (false)
-
+    mutable QMutex _tabWidgetStateMutex;
 
 };
 

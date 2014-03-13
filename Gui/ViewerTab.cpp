@@ -67,6 +67,7 @@ struct ViewerTabPrivate {
 	ComboBox* _viewerChannels;
     ComboBox* _zoomCombobox;
     Button* _centerViewerButton;
+    
     Button* _clipToProjectFormatButton;
     Button* _enableViewerRoI;
     Button* _refreshButton;
@@ -1034,11 +1035,24 @@ bool ViewerTab::notifyOverlaysFocusLost(){
 }
 
 bool ViewerTab::isClippedToProject() const {
-    return _imp->_clipToProjectFormatButton->isDown();
+    return _imp->viewer->isClippingImageToProjectWindow();
 }
 
 std::string ViewerTab::getColorSpace() const {
-    return _imp->_viewerColorSpace->getCurrentIndexText().toStdString();
+    ViewerInstance::ViewerColorSpace lut = (ViewerInstance::ViewerColorSpace)_imp->_viewerNode->getLutType();
+    switch (lut) {
+        case ViewerInstance::Linear:
+            return "Linear(None)";
+            break;
+        case ViewerInstance::sRGB:
+            return "sRGB";
+            break;
+        case ViewerInstance::Rec709:
+            return "Rec.709";
+            break;
+        default:
+            break;
+    }
 }
 
 void ViewerTab::setUserRoIEnabled(bool b) {
@@ -1046,7 +1060,7 @@ void ViewerTab::setUserRoIEnabled(bool b) {
 }
 
 bool ViewerTab::isAutoContrastEnabled() const {
-    return _imp->_autoContrast->isChecked();
+    return _imp->_viewerNode->isAutoContrastEnabled();
 }
 
 void ViewerTab::setAutoContrastEnabled(bool b) {
@@ -1078,11 +1092,28 @@ void ViewerTab::setExposure(double d) {
 }
 
 double ViewerTab::getExposure() const {
-    return _imp->_gainBox->value();
+    return _imp->_viewerNode->getExposure();
 }
 
 std::string ViewerTab::getChannelsString() const {
-    return _imp->_viewerChannels->getCurrentIndexText().toStdString();
+    ViewerInstance::DisplayChannels c = _imp->_viewerNode->getChannels();
+    switch (c) {
+        case ViewerInstance::RGB:
+            return "RGB";
+        case ViewerInstance::R:
+            return "R";
+        case ViewerInstance::G:
+            return "G";
+        case ViewerInstance::B:
+            return "B";
+        case ViewerInstance::A:
+            return "A";
+        case ViewerInstance::LUMINANCE:
+            return "Luminance";
+            break;
+        default:
+            return "";
+    }
 }
 
 void ViewerTab::setChannels(const std::string& channelsStr) {

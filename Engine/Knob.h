@@ -222,10 +222,14 @@ public:
     bool isAnimated(int dimension) const WARN_UNUSED_RETURN;
     
     /**
-     * @brief Returns true if at least 1 dimension is animated.
+     * @brief Returns true if at least 1 dimension is animated. MT-Safe
      **/
     bool hasAnimation() const WARN_UNUSED_RETURN;
 
+    /**
+     * @brief Returns a const ref to the curves held by this knob. This is MT-safe as they're
+     * never deleted (except on program exit).
+     **/
     const std::vector< boost::shared_ptr<Curve>  >& getCurves() const WARN_UNUSED_RETURN;
 
     void setAnimationEnabled(bool val) ;
@@ -236,6 +240,10 @@ public:
      **/
     bool isAnimationEnabled() const WARN_UNUSED_RETURN;
 
+    /**
+     * @brief Get the knob description, that is the label next to the knob on the user interface.
+     * This function is MT-safe as the description NEVER changes throughout the program.
+     **/
     const std::string& getDescription() const WARN_UNUSED_RETURN;
 
     KnobHolder* getHolder() const WARN_UNUSED_RETURN;
@@ -248,7 +256,12 @@ public:
     void cloneValue(const Knob& other);
 
     const std::vector<Variant>& getValueForEachDimension() const WARN_UNUSED_RETURN;
+    
+    std::vector<Variant> getValueForEachDimension_mt_safe() const WARN_UNUSED_RETURN;
 
+    /**
+     * @brief Get the knob dimension. MT-safe as it is static and never changes.
+     **/
     int getDimension() const WARN_UNUSED_RETURN;
 
     void turnOffNewLine();
@@ -282,6 +295,10 @@ public:
     
     void setEvaluateOnChange(bool b);
     
+    /**
+     * @brief Should the knob be saved in the project ? This is MT-safe
+     * because it never changes throughout the object's life-time.
+     **/
     bool getIsPersistant() const WARN_UNUSED_RETURN;
 
     void setIsPersistant(bool b);
@@ -322,7 +339,7 @@ public:
     bool isSlave(int dimension) const WARN_UNUSED_RETURN;
     
 
-    const std::vector<std::pair<int,boost::shared_ptr<Knob> > > &getMasters() const WARN_UNUSED_RETURN;
+    std::vector<std::pair<int,boost::shared_ptr<Knob> > > getMasters_mt_safe() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Called by the GUI whenever the animation level changes (due to a time change

@@ -87,8 +87,9 @@ struct Node::Implementation {
         , inputLabelsMap()
         , name()
         , deactivatedState()
+        , activatedMutex()
         , activated(true)
-        , nodeInstanceLock()
+        , imageBeingRenderedMutex()
         , imagesBeingRenderedNotEmpty()
         , imagesBeingRendered()
         , plugin(plugin_)
@@ -116,13 +117,15 @@ struct Node::Implementation {
     RenderTree* previewRenderTree;//< the render tree used to render the preview
     mutable QMutex previewMutex;
 
+    mutable QMutex nameMutex;
     std::map<int, std::string> inputLabelsMap; // inputs name
     std::string name; //node name set by the user
 
     DeactivatedState deactivatedState;
-
+    mutable QMutex activatedMutex;
     bool activated;
-    QMutex nodeInstanceLock;
+    
+    QMutex imageBeingRenderedMutex;
     QWaitCondition imagesBeingRenderedNotEmpty; //to avoid computing preview in parallel of the real rendering
 
 
@@ -241,7 +244,7 @@ void Node::quitAnyProcessing() {
         dynamic_cast<Natron::OutputEffectInstance*>(this->getLiveInstance())->getVideoEngine()->quitEngineThread();
     }
     {
-        QMutexLocker locker(&_imp->nodeInstanceLock);
+        QMutexLocker locker(&_imp->imageBeingRenderedMutex);
         _imp->imagesBeingRenderedNotEmpty.wakeAll();
         if (_imp->computingPreview) {
             QMutexLocker l(&_imp->mustQuitProcessingMutex);
@@ -324,9 +327,17 @@ const std::string& Node::getName() const
     return _imp->name;
 }
 
+std::string Node::getName_mt_safe() const {
+    QMutexLocker l(&_imp->nameMutex);
+    return _imp->name;
+}
+
 void Node::setName(const std::string& name)
 {
-    _imp->name = name;
+    {
+        QMutexLocker l(&_imp->nameMutex);
+        _imp->name = name;
+    }
     emit nameChanged(name.c_str());
 }
 
@@ -337,10 +348,13 @@ AppInstance* Node::getApp() const
 
 bool Node::isActivated() const
 {
+    QMutexLocker l(&_imp->activatedMutex);
     return _imp->activated;
 }
 
-void Node::onGUINameChanged(const QString& str){
+void Node::onGUINameChanged(const QString& str) {
+    
+    QMutexLocker l(&_imp->nameMutex);
     _imp->name = str.toStdString();
 }
 
@@ -613,6 +627,10 @@ int Node::inputIndex(Node* n) const {
  but no other node knows this node.*/
 void Node::deactivate()
 {
+    {
+        QMutexLocker l(&isUsingInputsMutex);
+        waitForRenderTreesToBeDone();
+    }
     
     //first tell the gui to clear any persistent message link to this node
     clearPersistentMessage();
@@ -667,12 +685,21 @@ void Node::deactivate()
     quitAnyProcessing();
     
     emit deactivated();
-    _imp->activated = false;
+    {
+        QMutexLocker l(&_imp->activatedMutex);
+        _imp->activated = false;
+    }
     
 }
 
 void Node::activate()
 {
+    
+    {
+        QMutexLocker l(&isUsingInputsMutex);
+        waitForRenderTreesToBeDone();
+    }
+    
     ///for all inputs, reconnect their output to this node
     for (InputConnectionsIterator it = _imp->deactivatedState.inputConnections.begin();
          it!= _imp->deactivatedState.inputConnections.end(); ++it) {
@@ -696,7 +723,10 @@ void Node::activate()
         it->first->connectInput(this, it->second.first);
     }
     
-    _imp->activated = true;
+    {
+        QMutexLocker l(&_imp->activatedMutex);
+        _imp->activated = true; //< flag it true before notifying the GUI because the gui rely on this flag (espcially the Viewer)
+    }
     emit activated();
 }
 
@@ -752,7 +782,7 @@ void Node::addImageBeingRendered(boost::shared_ptr<Image> image,SequenceTime tim
 {
     /*before rendering we add to the _imp->imagesBeingRendered member the image*/
     ImageBeingRenderedKey renderedImageKey(time,view);
-    QMutexLocker locker(&_imp->nodeInstanceLock);
+    QMutexLocker locker(&_imp->imageBeingRenderedMutex);
     _imp->imagesBeingRendered.insert(std::make_pair(renderedImageKey, image));
 }
 
@@ -760,7 +790,7 @@ void Node::removeImageBeingRendered(SequenceTime time,int view )
 {
     /*now that we rendered the image, remove it from the images being rendered*/
     
-    QMutexLocker locker(&_imp->nodeInstanceLock);
+    QMutexLocker locker(&_imp->imageBeingRenderedMutex);
     ImageBeingRenderedKey renderedImageKey(time,view);
     std::pair<ImagesMap::iterator,ImagesMap::iterator> it = _imp->imagesBeingRendered.equal_range(renderedImageKey);
     assert(it.first != it.second);
@@ -773,9 +803,9 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
 {
 
     {
-        QMutexLocker locker(&_imp->nodeInstanceLock);
+        QMutexLocker locker(&_imp->imageBeingRenderedMutex);
         while(!_imp->imagesBeingRendered.empty()){
-            _imp->imagesBeingRenderedNotEmpty.wait(&_imp->nodeInstanceLock);
+            _imp->imagesBeingRenderedNotEmpty.wait(&_imp->imageBeingRenderedMutex);
         }
     }
     {
@@ -1049,7 +1079,7 @@ void Node::clearPersistentMessage()
     }
 }
 
-void Node::serialize(NodeSerialization* serializationObject) const {
+void Node::serialize(NodeSerialization* serializationObject) {
     serializationObject->initialize(this);
 }
 

@@ -89,7 +89,11 @@ public:
      **/
     bool isLoadingProject() const;
     
-    const std::vector<Node*> getCurrentNodes() const;
+    /**
+     * @brief Constructs a vector with all the nodes in the project (even the ones the user
+     * has deleted but were kept in the undo/redo stack.) This is MT-safe.
+     **/
+    std::vector<Node*> getCurrentNodes() const;
     
     bool connectNodes(int inputNumber,const std::string& inputName,Natron::Node* output);
     
@@ -184,6 +188,9 @@ public:
     
     qint64 getProjectCreationTime() const;
     
+    /**
+     * @brief Copy the current node counters into the counters map. MT-safe
+     **/
     void getNodeCounters(std::map<std::string,int>* counters) const;
     
 public slots:

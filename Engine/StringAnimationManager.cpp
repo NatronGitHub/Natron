@@ -14,6 +14,7 @@
 
 #include <set>
 #include <cmath>
+#include <QMutex>
 
 #include "Engine/Knob.h"
 
@@ -34,12 +35,14 @@ typedef std::set<StringKeyFrame,KeyFrame_compare_time> Keyframes;
 struct StringAnimationManagerPrivate {
     StringAnimationManager::customParamInterpolationV1Entry_t customInterpolation;
     void* ofxParamHandle;
+    mutable QMutex keyframesMutex;
     Keyframes keyframes;
     const Knob* knob;
     
     StringAnimationManagerPrivate(const Knob* knob)
     : customInterpolation(NULL)
     , ofxParamHandle(NULL)
+    , keyframesMutex()
     , keyframes()
     , knob(knob)
     {
@@ -65,6 +68,8 @@ void StringAnimationManager::setCustomInterpolation(customParamInterpolationV1En
 }
 
 bool StringAnimationManager::customInterpolation(double time,QString* ret) const {
+    
+    QMutexLocker l(&_imp->keyframesMutex);
     assert(_imp->customInterpolation);
     ///if there's a single keyframe, return it
     
@@ -132,6 +137,7 @@ bool StringAnimationManager::customInterpolation(double time,QString* ret) const
     };
     OFX::Host::Property::Set outArgs(outArgsSpec);
     
+    l.unlock();
     _imp->customInterpolation(_imp->ofxParamHandle,inArgs.getHandle(),outArgs.getHandle());
     
     *ret = outArgs.getStringProperty(kOfxParamPropCustomValue,0).c_str();
@@ -142,6 +148,7 @@ void StringAnimationManager::insertKeyFrame(int time,const QString& v,double* in
     StringKeyFrame k;
     k.time = time;
     k.value = v;
+    QMutexLocker l(&_imp->keyframesMutex);
     std::pair<Keyframes::iterator,bool> ret = _imp->keyframes.insert(k);
     if(!ret.second){
         _imp->keyframes.erase(ret.first);
@@ -153,6 +160,7 @@ void StringAnimationManager::insertKeyFrame(int time,const QString& v,double* in
 }
 
 void StringAnimationManager::removeKeyFrame(int time) {
+    QMutexLocker l(&_imp->keyframesMutex);
     for (Keyframes::iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it) {
         if (it->time == time) {
             _imp->keyframes.erase(it);
@@ -163,12 +171,14 @@ void StringAnimationManager::removeKeyFrame(int time) {
 }
 
 void StringAnimationManager::clearKeyFrames() {
+    QMutexLocker l(&_imp->keyframesMutex);
     _imp->keyframes.clear();
 }
 
 void StringAnimationManager::stringFromInterpolatedIndex(double interpolated,QString* returnValue) const {
     int index = std::floor(interpolated + 0.5);
     
+    QMutexLocker l(&_imp->keyframesMutex);
     if (_imp->keyframes.empty()) {
         return;
     }
@@ -193,6 +203,7 @@ void StringAnimationManager::stringFromInterpolatedIndex(double interpolated,QSt
 }
 
 void StringAnimationManager::clone(const StringAnimationManager& other) {
+    QMutexLocker l(&_imp->keyframesMutex);
     _imp->keyframes = other._imp->keyframes;
 }
 
@@ -200,6 +211,7 @@ static const QString stringSeparatorTag = QString("__SEP__");
 static const QString keyframeSepTag = QString("__,__");
 
 void StringAnimationManager::load(const QString& str) {
+    QMutexLocker l(&_imp->keyframesMutex);
     if (str.isEmpty()) {
         return;
     }
@@ -237,6 +249,7 @@ void StringAnimationManager::load(const QString& str) {
 }
 
 QString StringAnimationManager::save() const {
+    QMutexLocker l(&_imp->keyframesMutex);
     if (_imp->keyframes.empty()) {
         return "";
     }

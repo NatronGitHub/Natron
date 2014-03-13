@@ -40,6 +40,7 @@
 #include "Gui/ProjectGuiSerialization.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGraph.h"
+#include "Gui/Splitter.h"
 #include "Gui/Histogram.h"
 
 ProjectGui::ProjectGui(Gui* gui)
@@ -348,10 +349,10 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     
     ///now restore the splitters
     const std::map<std::string,std::string>& splitters = obj.getSplittersStates();
-    const std::list<QSplitter*>& appSplitters = _gui->getApp()->getGui()->getSplitters();
+    std::list<Splitter*> appSplitters = _gui->getApp()->getGui()->getSplitters();
     for (std::map<std::string,std::string>::const_iterator it = splitters.begin();it!=splitters.end();++it) {
         //find the splitter by name
-        for (std::list<QSplitter*>::const_iterator it2 = appSplitters.begin(); it2!=appSplitters.end(); ++it2) {
+        for (std::list<Splitter*>::const_iterator it2 = appSplitters.begin(); it2!=appSplitters.end(); ++it2) {
             
             if ((*it2)->objectName().toStdString() == it->first) {
                 //found a matching splitter, restore its state
@@ -369,8 +370,8 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
    
 }
 
-const std::vector<NodeGui*> ProjectGui::getVisibleNodes() const {
-    return _gui->getVisibleNodes();
+std::vector<NodeGui*> ProjectGui::getVisibleNodes() const {
+    return _gui->getVisibleNodes_mt_safe();
 }
 
 

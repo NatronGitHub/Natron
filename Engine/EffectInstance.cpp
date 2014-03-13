@@ -61,6 +61,7 @@ struct EffectInstance::Implementation {
 
     Inputs inputs;//< all the inputs of the effect. Watch out, some might be NULL if they aren't connected
     QThreadStorage<RenderArgs> renderArgs;
+    mutable QMutex previewEnabledMutex;
     bool previewEnabled;
     bool markedByTopologicalSort;
     QMutex beginEndRenderMutex;
@@ -116,6 +117,7 @@ void EffectInstance::setAborted(bool b)
 
 bool EffectInstance::isPreviewEnabled() const
 {
+    QMutexLocker l(&_imp->previewEnabledMutex);
     return _imp->previewEnabled;
 }
 
@@ -876,6 +878,7 @@ void EffectInstance::abortRendering(){
 }
 
 void EffectInstance::togglePreview() {
+    QMutexLocker l(&_imp->previewEnabledMutex);
     _imp->previewEnabled = !_imp->previewEnabled;
 }
 

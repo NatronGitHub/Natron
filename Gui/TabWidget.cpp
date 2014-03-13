@@ -39,6 +39,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/CurveEditor.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Histogram.h"
+#include "Gui/Splitter.h"
 #include "Engine/ViewerInstance.h"
 
 using namespace Natron;
@@ -87,7 +88,8 @@ TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent
     _isFloating(false),
     _drawDropRect(false),
     _fullScreen(false),
-    _userSplits()
+    _userSplits(),
+    _tabWidgetStateMutex()
 {
     
     if(decorations!=NONE){
@@ -225,6 +227,7 @@ void TabWidget::createMenu(){
 }
 
 void TabWidget::closeFloatingPane(){
+    QMutexLocker l(&_tabWidgetStateMutex);
     if (!_isFloating) {
         return;
     }
@@ -233,6 +236,7 @@ void TabWidget::closeFloatingPane(){
 }
 
 void TabWidget::removeSplit(TabWidget* tab){
+    QMutexLocker l(&_tabWidgetStateMutex);
     std::map<TabWidget*,bool> ::iterator it = _userSplits.find(tab);
     assert(it!= _userSplits.end());
     _userSplits.erase(it);
@@ -246,7 +250,7 @@ void TabWidget::closePane(){
         return;
     }
     
-    QSplitter* container = dynamic_cast<QSplitter*>(parentWidget());
+    Splitter* container = dynamic_cast<Splitter*>(parentWidget());
     if(!container) {
         return;
     }
@@ -256,7 +260,7 @@ void TabWidget::closePane(){
     
     /*Only sub-panes are closable. That means the splitter owning them must also
      have a splitter as parent*/
-    QSplitter* mainContainer = dynamic_cast<QSplitter*>(container->parentWidget());
+    Splitter* mainContainer = dynamic_cast<Splitter*>(container->parentWidget());
     if(!mainContainer) {
         return;
     }
@@ -284,7 +288,7 @@ void TabWidget::closePane(){
     /*Removing the container from the mainContainer*/
     int subSplitterIndex = 0;
     for (int i = 0; i < mainContainer->count(); ++i) {
-        QSplitter* subSplitter = dynamic_cast<QSplitter*>(mainContainer->widget(i));
+        Splitter* subSplitter = dynamic_cast<Splitter*>(mainContainer->widget(i));
         if (subSplitter && subSplitter == container) {
             subSplitterIndex = i;
             container->setVisible(false);
@@ -305,6 +309,7 @@ void TabWidget::closePane(){
 }
 
 void TabWidget::floatPane(QPoint* position){
+    QMutexLocker l(&_tabWidgetStateMutex);
     _isFloating = true;
     
     FloatingWidget* floatingW = new FloatingWidget(_gui);
@@ -351,6 +356,7 @@ QString TabWidget::getTabName(QWidget* tab) const{
 }
 
 void TabWidget::setTabName(QWidget* tab,const QString& name) {
+    QMutexLocker l(&_tabWidgetStateMutex);
     tab->setObjectName(name);
     for (U32 i = 0; i < _tabs.size(); ++i) {
         if (_tabs[i] == tab) {
@@ -414,7 +420,8 @@ void TabWidget::movePropertiesBinHere(){
 
 void TabWidget::splitHorizontally(){
 
-    QSplitter* container = dynamic_cast<QSplitter*>(parentWidget());
+    QMutexLocker l(&_tabWidgetStateMutex);
+    Splitter* container = dynamic_cast<Splitter*>(parentWidget());
     if(!container){
         return;
     }
@@ -422,8 +429,8 @@ void TabWidget::splitHorizontally(){
     /*We need to know the position in the container layout of the old tab widget*/
     int oldIndex = container->indexOf(this);
     
-    QSplitter* newSplitter = new QSplitter(container);
-    newSplitter->setObjectName(container->objectName()+TabWidget::splitHorizontallyTag);
+    Splitter* newSplitter = new Splitter(container);
+    newSplitter->setObjectName_mt_safe(container->objectName()+TabWidget::splitHorizontallyTag);
     newSplitter->setContentsMargins(0, 0, 0, 0);
     newSplitter->setOrientation(Qt::Horizontal);
     setVisible(false);
@@ -434,7 +441,7 @@ void TabWidget::splitHorizontally(){
     
     /*Adding now a new tab*/
     TabWidget* newTab = new TabWidget(_gui,TabWidget::CLOSABLE,newSplitter);
-    newTab->setObjectName(objectName()+TabWidget::splitHorizontallyTag);
+    newTab->setObjectName_mt_safe(objectName()+TabWidget::splitHorizontallyTag);
     _gui->registerPane(newTab);
     newSplitter->addWidget(newTab);
     
@@ -445,21 +452,25 @@ void TabWidget::splitHorizontally(){
     
     /*Inserting back the new splitter at the original index*/
     container->insertWidget(oldIndex,newSplitter);
+    
+    
     _userSplits.insert(std::make_pair(newTab,false));
     
     _gui->getApp()->triggerAutoSave();
 }
 
 void TabWidget::splitVertically(){
-    // _gui->splitPaneVertically(this);
-    QSplitter* container = dynamic_cast<QSplitter*>(parentWidget());
+    
+    QMutexLocker l(&_tabWidgetStateMutex);
+
+    Splitter* container = dynamic_cast<Splitter*>(parentWidget());
     if(!container) return;
     
     /*We need to know the position in the container layout of the old tab widget*/
     int oldIndex = container->indexOf(this);
     
-    QSplitter* newSplitter = new QSplitter(container);
-    newSplitter->setObjectName(container->objectName()+TabWidget::splitVerticallyTag);
+    Splitter* newSplitter = new Splitter(container);
+    newSplitter->setObjectName_mt_safe(container->objectName()+TabWidget::splitVerticallyTag);
     newSplitter->setContentsMargins(0, 0, 0, 0);
     newSplitter->setOrientation(Qt::Vertical);
     setVisible(false);
@@ -471,7 +482,7 @@ void TabWidget::splitVertically(){
     
     /*Adding now a new tab*/
     TabWidget* newTab = new TabWidget(_gui,TabWidget::CLOSABLE,newSplitter);
-    newTab->setObjectName(objectName()+TabWidget::splitVerticallyTag);
+    newTab->setObjectName_mt_safe(objectName()+TabWidget::splitVerticallyTag);
     _gui->registerPane(newTab);
     newSplitter->addWidget(newTab);
     
@@ -482,64 +493,58 @@ void TabWidget::splitVertically(){
     /*Inserting back the new splitter at the original index*/
     container->insertWidget(oldIndex,newSplitter);
 
-    
     _userSplits.insert(std::make_pair(newTab,true));
     
     _gui->getApp()->triggerAutoSave();
 }
 
 
-bool TabWidget::appendTab(QWidget* widget){
-    QString title = widget->objectName();
-    if(_decorations!=NONE && title.isEmpty()) return false;
-    
-    /*registering this tab for drag&drop*/
-    _gui->registerTab(widget);
-    
-    _tabs.push_back(widget);
-    _tabBar->addTab(title);
-    if(_tabs.size() == 1){
-        for (int i =0; i < _mainLayout->count(); ++i) {
-            QSpacerItem* item = dynamic_cast<QSpacerItem*>(_mainLayout->itemAt(i));
-            if(item)
-                _mainLayout->removeItem(item);
-        }
-    }
-    makeCurrentTab(_tabs.size()-1);
-    _tabBar->setCurrentIndex(_tabs.size()-1);
-    _floatButton->setEnabled(true);
-    return true;
+bool TabWidget::appendTab(QWidget* widget) {
+   return appendTab(QIcon(),widget);
 }
 bool TabWidget::appendTab(const QIcon& icon,QWidget* widget){
-    QString title = widget->objectName();
-    if(_decorations!=NONE && title.isEmpty()) return false;
-    
-    /*registering this tab for drag&drop*/
-    _gui->registerTab(widget);
-    
-    _tabs.push_back(widget);
-    _tabBar->addTab(icon,title);
-    if(_tabs.size() == 1){
-        for (int i =0; i < _mainLayout->count(); ++i) {
-            QSpacerItem* item = dynamic_cast<QSpacerItem*>(_mainLayout->itemAt(i));
-            if(item)
-                _mainLayout->removeItem(item);
+    {
+        QMutexLocker l(&_tabWidgetStateMutex);
+        
+        QString title = widget->objectName();
+        if(_decorations!=NONE && title.isEmpty()) return false;
+        
+        /*registering this tab for drag&drop*/
+        _gui->registerTab(widget);
+        
+        _tabs.push_back(widget);
+        _tabBar->blockSignals(true);
+        _tabBar->addTab(icon,title);
+        _tabBar->blockSignals(false);
+        if(_tabs.size() == 1){
+            for (int i =0; i < _mainLayout->count(); ++i) {
+                QSpacerItem* item = dynamic_cast<QSpacerItem*>(_mainLayout->itemAt(i));
+                if(item)
+                    _mainLayout->removeItem(item);
+            }
         }
+        _floatButton->setEnabled(true);
+        
     }
     makeCurrentTab(_tabs.size()-1);
-    _tabBar->setCurrentIndex(_tabs.size()-1);
-    _floatButton->setEnabled(true);
+    
     return true;
 }
 
-void TabWidget::insertTab(int index,const QIcon& icon,QWidget* widget){
+
+
+void TabWidget::insertTab(int index,const QIcon& icon,QWidget* widget) {
+    
+    QMutexLocker l(&_tabWidgetStateMutex);
     QString title = widget->objectName();
     if ((U32)index < _tabs.size()) {
         /*registering this tab for drag&drop*/
         _gui->registerTab(widget);
         
         _tabs.insert(_tabs.begin()+index, widget);
+        _tabBar->blockSignals(true);
         _tabBar->insertTab(index,icon ,title);
+        _tabBar->blockSignals(false);
     }else{
         appendTab(widget);
     }
@@ -548,52 +553,59 @@ void TabWidget::insertTab(int index,const QIcon& icon,QWidget* widget){
 }
 
 void TabWidget::insertTab(int index,QWidget* widget){
-    QString title = widget->objectName();
-    if (index < (int)_tabs.size()) {
-        /*registering this tab for drag&drop*/
-        _gui->registerTab(widget);
-        
-        _tabs.insert(_tabs.begin()+index, widget);
-        _tabBar->insertTab(index,title);
-    }else{
-        appendTab(widget);
-    }
-    _floatButton->setEnabled(true);
+    insertTab(index, QIcon(), widget);
 }
 
 QWidget*  TabWidget::removeTab(int index) {
+    QMutexLocker l(&_tabWidgetStateMutex);
     if (index < 0 || index >= (int)_tabs.size()) {
         return NULL;
     }
-
     QWidget* tab = _tabs[index];
     _gui->unregisterTab(tab);
     _tabs.erase(_tabs.begin()+index);
+    _tabBar->blockSignals(true);
     _tabBar->removeTab(index);
+    _tabBar->blockSignals(false);
     if (_tabs.size() > 0) {
+        l.unlock();
         makeCurrentTab(0);
+        l.relock();
     } else {
+        
         _currentWidget = 0;
         _mainLayout->addStretch();
         if (_isFloating && !_gui->isDraggingPanel()) {
+            l.unlock();
             closeFloatingPane();
+            l.relock();
         }
     }
     return tab;
 }
 
 void TabWidget::removeTab(QWidget* widget){
-    for (U32 i = 0; i < _tabs.size(); ++i) {
-        if (_tabs[i] == widget) {
-            QWidget* tab = removeTab(i);
-            assert(tab == widget);
-            (void)tab;
-            break;
+    
+    int index = -1;
+    
+    {
+        QMutexLocker l(&_tabWidgetStateMutex);
+        for (U32 i = 0; i < _tabs.size(); ++i) {
+            if (_tabs[i] == widget) {
+                index = i;
+                break;
+            }
         }
+    }
+    if (index != -1) {
+        QWidget* tab = removeTab(index);
+        assert(tab == widget);
+        (void)tab;
     }
 }
 
 void TabWidget::makeCurrentTab(int index){
+    QMutexLocker l(&_tabWidgetStateMutex);
     if(index < 0 || index >= (int)_tabs.size()) {
         return;
     }
@@ -608,7 +620,9 @@ void TabWidget::makeCurrentTab(int index){
     _currentWidget = tab;
     _currentWidget->setVisible(true);
     _currentWidget->setParent(this);
+    _tabBar->blockSignals(true);
     _tabBar->setCurrentIndex(index);
+    _tabBar->blockSignals(false);
 
 }
 
@@ -913,3 +927,26 @@ void DragPixmap::paintEvent(QPaintEvent*)
     p.drawPixmap(0,0,_pixmap);
 }
 
+QPoint TabWidget::pos_mt_safe() const {
+    QMutexLocker l(&_tabWidgetStateMutex);
+    return pos();
+}
+
+QStringList TabWidget::getTabNames() const {
+    QMutexLocker l(&_tabWidgetStateMutex);
+    QStringList ret;
+    for (U32 i = 0; i < _tabs.size(); ++i) {
+        ret << _tabs[i]->objectName();
+    }
+    return ret;
+}
+
+void TabWidget::setObjectName_mt_safe(const QString& str) {
+    QMutexLocker l(&_tabWidgetStateMutex);
+    setObjectName(str);
+}
+
+QString TabWidget::objectName_mt_safe() const {
+    QMutexLocker l(&_tabWidgetStateMutex);
+    return objectName();
+}

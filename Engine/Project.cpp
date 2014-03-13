@@ -582,7 +582,7 @@ int Project::getProjectViewsCount() const {
     return _imp->viewsCount->getValue<int>();
 }
 
-const std::vector<Node*> Project::getCurrentNodes() const {
+std::vector<Node*> Project::getCurrentNodes() const {
     QMutexLocker l(&_imp->nodesLock);
     return _imp->currentNodes;
 }
@@ -1141,6 +1141,7 @@ bool Project::autoConnectNodes(Node* selected,Node* created) {
 }
     
 qint64 Project::getProjectCreationTime() const {
+    QMutexLocker l(&_imp->projectLock);
     return _imp->projectCreationTime.toMSecsSinceEpoch();
 }
     
