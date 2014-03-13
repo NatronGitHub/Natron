@@ -228,11 +228,16 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
                             "Multiplies the image by \nthis amount before display.");
     _imp->_secondRowLayout->addWidget(_imp->_gainSlider);
     
+    QString autoContrastToolTip("<p><b>Auto-contrast: \n</b></p>"
+                                "Automatically adjusts the gain and the offset applied \n"
+                                "to the colors of the visible image portion on the viewer.");
     _imp->_autoConstrastLabel = new ClickableLabel("Auto-contrast:",_imp->_secondSettingsRow);
+    _imp->_autoConstrastLabel->setToolTip(autoContrastToolTip);
     _imp->_secondRowLayout->addWidget(_imp->_autoConstrastLabel);
     
     _imp->_autoContrast = new QCheckBox(_imp->_secondSettingsRow);
     _imp->_autoContrast->setAttribute(Qt::WA_LayoutUsesWidgetRect);
+    _imp->_autoContrast->setToolTip(autoContrastToolTip);
     _imp->_secondRowLayout->addWidget(_imp->_autoContrast);
     
     _imp->_viewerColorSpace=new ComboBox(_imp->_secondSettingsRow);
@@ -553,8 +558,9 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     QObject::connect(_imp->_viewsComboBox,SIGNAL(currentIndexChanged(int)),this,SLOT(showView(int)));
     
     QObject::connect(_imp->_enableViewerRoI, SIGNAL(clicked(bool)), this, SLOT(onEnableViewerRoIButtonToggle(bool)));
-    QObject::connect(_imp->_autoContrast,SIGNAL(clicked(bool)),_imp->_viewerNode,SLOT(onAutoContrastChanged(bool)));
-    QObject::connect(_imp->_autoConstrastLabel,SIGNAL(clicked(bool)),_imp->_viewerNode,SLOT(onAutoContrastChanged(bool)));
+    QObject::connect(_imp->_autoContrast,SIGNAL(clicked(bool)),this,SLOT(onAutoContrastChanged(bool)));
+    QObject::connect(_imp->_autoConstrastLabel,SIGNAL(clicked(bool)),this,SLOT(onAutoContrastChanged(bool)));
+    QObject::connect(_imp->_autoConstrastLabel,SIGNAL(clicked(bool)),_imp->_autoContrast,SLOT(setChecked(bool)));
 }
 
 void ViewerTab::onEnableViewerRoIButtonToggle(bool b) {
@@ -1021,6 +1027,8 @@ bool ViewerTab::isAutoContrastEnabled() const {
 
 void ViewerTab::setAutoContrastEnabled(bool b) {
     _imp->_autoContrast->setChecked(b);
+    _imp->_gainSlider->setEnabled(!b);
+    _imp->_gainBox->setEnabled(!b);
     _imp->_viewerNode->onAutoContrastChanged(b);
 }
 
@@ -1073,4 +1081,10 @@ void ViewerTab::enterEvent(QEvent*)  { setFocus(); }
 void ViewerTab::onInternalExposureChanged(double d) {
     _imp->_gainSlider->seekScalePosition(d);
     _imp->_gainBox->setValue(d);
+}
+
+void ViewerTab::onAutoContrastChanged(bool b) {
+    _imp->_gainSlider->setEnabled(!b);
+    _imp->_gainBox->setEnabled(!b);
+    _imp->_viewerNode->onAutoContrastChanged(b);
 }
