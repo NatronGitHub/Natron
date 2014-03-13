@@ -1528,6 +1528,7 @@ void Histogram::renderText(double x,double y,const QString& text,const QColor& c
         return;
     
     glMatrixMode (GL_PROJECTION);
+    glPushMatrix(); // save GL_PROJECTION
     glLoadIdentity();
     double h = (double)height();
     double w = (double)width();
@@ -1540,7 +1541,7 @@ void Histogram::renderText(double x,double y,const QString& text,const QColor& c
     glCheckError();
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(_imp->zoomCtx._lastOrthoLeft,_imp->zoomCtx._lastOrthoRight,_imp->zoomCtx._lastOrthoBottom,_imp->zoomCtx._lastOrthoTop,-1,1);
+    glPopMatrix(); // restore GL_PROJECTION
     glMatrixMode(GL_MODELVIEW);
     
 }

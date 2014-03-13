@@ -1775,6 +1775,7 @@ void CurveWidget::renderText(double x,double y,const QString& text,const QColor&
         return;
     
     glMatrixMode (GL_PROJECTION);
+    glPushMatrix(); // save GL_PROJECTION
     glLoadIdentity();
     double h = (double)height();
     double w = (double)width();
@@ -1787,7 +1788,7 @@ void CurveWidget::renderText(double x,double y,const QString& text,const QColor&
     glCheckError();
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(_imp->_zoomCtx._lastOrthoLeft,_imp->_zoomCtx._lastOrthoRight,_imp->_zoomCtx._lastOrthoBottom,_imp->_zoomCtx._lastOrthoTop,-1,1);
+    glPopMatrix(); // restore GL_PROJECTION
     glMatrixMode(GL_MODELVIEW);
     
 }

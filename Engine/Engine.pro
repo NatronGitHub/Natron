@@ -94,7 +94,6 @@ HEADERS += \
     Curve.h \
     CurveSerialization.h \
     CurvePrivate.h \
-    Rect.h \
     ChannelSet.h \
     EffectInstance.h \
     Format.h \
@@ -139,6 +138,7 @@ HEADERS += \
     Project.h \
     ProjectPrivate.h \
     ProjectSerialization.h \
+    Rect.h \
     SequenceParsing.h \
     Settings.h \
     Singleton.h \

@@ -411,6 +411,7 @@ void TimeLineGui::renderText(double x,double y,const QString& text,const QColor&
     if(text.isEmpty())
         return;
     glMatrixMode (GL_PROJECTION);
+    glPushMatrix(); // save GL_PROJECTION
     glCheckError();
     glLoadIdentity();
     double h = (double)height();
@@ -424,7 +425,7 @@ void TimeLineGui::renderText(double x,double y,const QString& text,const QColor&
     glCheckError();
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(_imp->_zoomCtx.lastOrthoLeft,_imp->_zoomCtx.lastOrthoRight,_imp->_zoomCtx.lastOrthoBottom,_imp->_zoomCtx.lastOrthoTop,-1,1);
+    glPopMatrix(); // restore GL_PROJECTION
     glMatrixMode(GL_MODELVIEW);
     glCheckError();
 }

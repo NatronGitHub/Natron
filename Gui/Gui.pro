@@ -131,7 +131,8 @@ HEADERS += \
     TimeLineGui.h \
     ToolButton.h \
     ViewerGL.h \
-    ViewerTab.h
+    ViewerTab.h \
+    ZoomContext.h
 
 RESOURCES += \
     GuiResources.qrc
