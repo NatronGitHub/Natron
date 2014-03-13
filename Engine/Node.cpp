@@ -696,8 +696,8 @@ void Node::activate()
         it->first->connectInput(this, it->second.first);
     }
     
-    emit activated();
     _imp->activated = true;
+    emit activated();
 }
 
 

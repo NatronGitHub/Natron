@@ -895,6 +895,9 @@ void ViewerInstance::redrawViewer(){
 }
 
 boost::shared_ptr<Natron::Image> ViewerInstance::getLastRenderedImage() const {
+    if (!getNode()->isActivated()) {
+        return boost::shared_ptr<Natron::Image>();
+    }
     return _lastRenderedImage;
 }
 

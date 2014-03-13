@@ -462,14 +462,16 @@ void Histogram::populateViewersChoices() {
     const std::list<ViewerTab*>& viewerTabs = _imp->gui->getViewersList();
     int c = 2;
     for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
-        QAction* ac = new QAction(_imp->histogramSelectionGroup);
-        ac->setText((*it)->getInternalNode()->getName().c_str());
-        ac->setCheckable(true);
-        ac->setChecked(false);
-        ac->setData(c);
-        _imp->histogramSelectionGroup->addAction(ac);
-        _imp->histogramSelectionMenu->addAction(ac);
-        ++c;
+        if ((*it)->getInternalNode()->getNode()->isActivated()) {
+            QAction* ac = new QAction(_imp->histogramSelectionGroup);
+            ac->setText((*it)->getInternalNode()->getName().c_str());
+            ac->setCheckable(true);
+            ac->setChecked(false);
+            ac->setData(c);
+            _imp->histogramSelectionGroup->addAction(ac);
+            _imp->histogramSelectionMenu->addAction(ac);
+            ++c;
+        }
     }
     
     _imp->histogramSelectionGroup->blockSignals(true);
@@ -484,6 +486,8 @@ void Histogram::populateViewersChoices() {
         currentAction->setChecked(true);
     }
     _imp->histogramSelectionGroup->blockSignals(false);
+    
+    QObject::connect(_imp->histogramSelectionGroup,SIGNAL(triggered(QAction*)),this,SLOT(onCurrentViewerChanged(QAction*)));
     
 }
 
