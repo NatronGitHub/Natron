@@ -44,6 +44,13 @@ public:
     virtual ~Knob();
     
     /**
+     * @brief Do not call this. It is called right away after the constructor by the factory
+     * to initialize curves and values. This is separated from the constructor as we need RTTI
+     * for Curve.
+     **/
+    void populate();
+    
+    /**
      * @brief To be called if you want to remove the knob prematurely from the gui.
      **/
     void remove();

@@ -101,19 +101,22 @@ struct Knob::KnobPrivate {
 Knob::Knob(KnobHolder* holder,const std::string& description,int dimension)
 :_imp(new KnobPrivate(this,holder,dimension,description))
 {
-    for (int i = 0; i < dimension ; ++i) {
-        _imp->_enabled[i] = true;
-        _imp->_values[i] = Variant();
-        _imp->_defaultValues[i] = Variant();
-        _imp->_curves[i] = boost::shared_ptr<Curve>(new Curve(this));
-        _imp->_animationLevel[i] = Natron::NO_ANIMATION;
-    }
 }
 
 
 Knob::~Knob()
 {
     remove();
+}
+
+void Knob::populate() {
+    for (int i = 0; i < _imp->_dimension ; ++i) {
+        _imp->_enabled[i] = true;
+        _imp->_values[i] = Variant();
+        _imp->_defaultValues[i] = Variant();
+        _imp->_curves[i] = boost::shared_ptr<Curve>(new Curve(this));
+        _imp->_animationLevel[i] = Natron::NO_ANIMATION;
+    }
 }
 
 void Knob::remove()

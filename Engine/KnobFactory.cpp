@@ -109,11 +109,12 @@ boost::shared_ptr<Knob> KnobFactory::createKnob(const std::string &id,
         }
         KnobBuilder builder = (KnobBuilder)(builderFunc.second);
         boost::shared_ptr<Knob> knob(builder(holder, description, dimension));
-        if(holder){
-            holder->addKnob(knob);
-        }
         if (!knob) {
             boost::shared_ptr<Knob>();
+        }
+        knob->populate();
+        if(holder){
+            holder->addKnob(knob);
         }
         return knob;
     }
