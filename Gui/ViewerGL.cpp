@@ -884,6 +884,9 @@ void ViewerGL::drawPersistentMessage()
             str.append(_imp->persistentMessage.at(i));
             ++i;
         }
+        if (i < _imp->persistentMessage.size() && _imp->persistentMessage.at(i) == QChar(' ')) {
+            ++i;
+        }
         lines.append(str);
     }
     

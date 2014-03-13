@@ -268,6 +268,7 @@ static bool matchesPattern(const QString& filename,const QStringList& commonPart
     
     int lastPartPos = -1;
     for (int i = 0; i < commonPartsOrdered.size(); ++i) {
+#pragma message WARN("This line will match common parts that could be longer,e.g: marleen would match marleenBG ")
         int pos = filename.indexOf(commonPartsOrdered.at(i),lastPartPos == - 1 ? 0 : lastPartPos);
         ///couldn't find a common part
         if (pos == -1) {
@@ -279,9 +280,8 @@ static bool matchesPattern(const QString& filename,const QStringList& commonPart
             return false;
         }
     }
-    
-    
 
+    
     if (variablesOrdered.empty()) {
         return true;
     }
@@ -653,6 +653,16 @@ void FileNameContentPrivate::parse(const QString& absoluteFileName) {
     
 }
 
+QStringList FileNameContent::getAllTextElements() const {
+    QStringList ret;
+    for (U32 i = 0; i < _imp->orderedElements.size(); ++i) {
+        if (_imp->orderedElements[i].type == FileNameElement::TEXT) {
+            ret.push_back(_imp->orderedElements[i].data);
+        }
+    }
+    return ret;
+}
+    
 /**
  * @brief Returns the file path, e.g: /Users/Lala/Pictures/ with the trailing separator.
  **/

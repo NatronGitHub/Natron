@@ -42,6 +42,12 @@ public:
     void operator=(const FileNameContent& other);
     
     /**
+     * @brief Returns all the text parts that compose that file name.
+     * eg: for blabla5.tif it would return "blabla"  ".tif"
+     **/
+    QStringList getAllTextElements() const;
+    
+    /**
      * @brief Returns the file path, e.g: /Users/Lala/Pictures/ with the trailing separator.
      **/
     const QString& getPath() const;

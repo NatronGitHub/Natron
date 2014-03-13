@@ -195,6 +195,11 @@ void File_KnobGui::onReturnPressed()
         sequenceFromFiles.tryInsertFile(SequenceParsing::FileNameContent(newList.at(i)));
     }
 
+    ///even though the algorithm didnt recognize a file with the pattern given by the user, insert it to the sequence
+    ///so the knob displays something.
+    if (sequenceFromFiles.empty()) {
+        sequenceFromFiles.tryInsertFile(SequenceParsing::FileNameContent(str));
+    }
     
     SequenceParsing::SequenceFromFiles oldFiles(false);
     fk->getFiles(&oldFiles);
