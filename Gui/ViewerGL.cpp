@@ -771,6 +771,9 @@ void ViewerGL::paintGL()
     glMatrixMode (GL_MODELVIEW);
     glLoadIdentity();
     
+    clearColorBuffer(_imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF());
+    glCheckErrorIgnoreOSXBug();
+    
     glEnable (GL_TEXTURE_2D);
     if(_imp->displayingImage) {
         glActiveTexture(GL_TEXTURE0);
@@ -795,8 +798,6 @@ void ViewerGL::paintGL()
         glCheckError();
     }
 
-    clearColorBuffer(_imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF());
-    glCheckErrorIgnoreOSXBug();
     drawRenderingVAO();
     glCheckError();
 
@@ -1317,7 +1318,7 @@ void ViewerGL::activateShaderRGB()
     }
     
     _imp->shaderRGB->setUniformValue("Tex", 0);
-    _imp->shaderRGB->setUniformValue("expMult",  (GLfloat)getInternalNode()->getOffset());
+    _imp->shaderRGB->setUniformValue("expMult",  (GLfloat)getInternalNode()->getExposure());
     _imp->shaderRGB->setUniformValue("offset", (GLfloat)getInternalNode()->getOffset());
     _imp->shaderRGB->setUniformValue("lut", (GLint)_imp->viewerTab->getInternalNode()->getLutType());
 
