@@ -95,7 +95,11 @@ public:
     std::string getChannelsString() const;
     
     void setChannels(const std::string& channelsStr);
-
+    
+    bool isAutoContrastEnabled() const;
+    
+    void setAutoContrastEnabled(bool b);
+    
 public slots:
     
     void startPause(bool);

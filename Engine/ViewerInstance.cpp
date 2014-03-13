@@ -771,9 +771,10 @@ bool ViewerInstance::isInputOptional(int n) const{
     return n != activeInput();
 }
 void ViewerInstance::onExposureChanged(double exp){
-    QMutexLocker l(&_renderArgsMutex);
-    _exposure = exp;
-    
+    {
+        QMutexLocker l(&_renderArgsMutex);
+        _exposure = exp;
+    }
     if((_uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_uiContext->supportsGLSL())
        && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
         refreshAndContinueRender(false);
@@ -784,9 +785,11 @@ void ViewerInstance::onExposureChanged(double exp){
 }
 
 void ViewerInstance::onAutoContrastChanged(bool autoContrast) {
-    QMutexLocker l(&_autoContrastMutex);
-    _autoContrast = autoContrast;
-    if (input(activeInput()) != NULL){
+    {
+        QMutexLocker l(&_autoContrastMutex);
+        _autoContrast = autoContrast;
+    }
+    if (input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()){
         refreshAndContinueRender(false);
     }
 }

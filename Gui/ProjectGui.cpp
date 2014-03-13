@@ -309,6 +309,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
                 tab->setColorSpace(found->second.colorSpace);
                 tab->setExposure(found->second.exposure);
                 tab->setUserRoIEnabled(found->second.userRoIenabled);
+                tab->setAutoContrastEnabled(found->second.autoContrastEnabled);
                 tab->setUserRoI(found->second.userRoI);
                 tab->setClipToProject(found->second.isClippedToProject);
             }

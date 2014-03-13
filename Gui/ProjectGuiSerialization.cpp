@@ -49,6 +49,7 @@ CLANG_DIAG_ON(deprecated)
              viewerData.userRoI = tab->getViewer()->getUserRegionOfInterest();
              viewerData.userRoIenabled = tab->getViewer()->isUserRegionOfInterestEnabled();
              viewerData.isClippedToProject = tab->isClippedToProject();
+             viewerData.autoContrastEnabled = tab->isAutoContrastEnabled();
              viewerData.exposure = tab->getExposure();
              viewerData.colorSpace = tab->getColorSpace();
              viewerData.channels = tab->getChannelsString();

@@ -232,6 +232,7 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     _imp->_secondRowLayout->addWidget(_imp->_autoConstrastLabel);
     
     _imp->_autoContrast = new QCheckBox(_imp->_secondSettingsRow);
+    _imp->_autoContrast->setAttribute(Qt::WA_LayoutUsesWidgetRect);
     _imp->_secondRowLayout->addWidget(_imp->_autoContrast);
     
     _imp->_viewerColorSpace=new ComboBox(_imp->_secondSettingsRow);
@@ -1012,6 +1013,15 @@ std::string ViewerTab::getColorSpace() const {
 
 void ViewerTab::setUserRoIEnabled(bool b) {
     onEnableViewerRoIButtonToggle(b);
+}
+
+bool ViewerTab::isAutoContrastEnabled() const {
+    return _imp->_autoContrast->isChecked();
+}
+
+void ViewerTab::setAutoContrastEnabled(bool b) {
+    _imp->_autoContrast->setChecked(b);
+    _imp->_viewerNode->onAutoContrastChanged(b);
 }
 
 void ViewerTab::setUserRoI(const RectI& r) {
