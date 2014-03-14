@@ -450,9 +450,9 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI*
     rS.x = rS.y = 1.0;
     OfxRectD ofxRod;
     OfxStatus stat = effect_->getRegionOfDefinitionAction(time, rS, ofxRod);
-    if((stat!= kOfxStatOK && stat != kOfxStatReplyDefault) ||
-            (ofxRod.x1 ==  0. && ofxRod.x2 == 0. && ofxRod.y1 == 0. && ofxRod.y2 == 0.))
+    if (stat!= kOfxStatOK && stat != kOfxStatReplyDefault) {
         return StatFailed;
+    }
     ifInfiniteclipRectToProjectDefault(&ofxRod);
     ofxRectDToRectI(ofxRod,rod);
     return StatOK;
