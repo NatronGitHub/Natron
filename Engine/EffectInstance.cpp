@@ -396,7 +396,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                 ///if getRoD fails, just return a NULL ptr
                 return boost::shared_ptr<Natron::Image>();
             }
-            
+            // why should the rod be empty here?
+            assert(!rod.isNull());
+
             ///add the window to the project's available formats if the effect is a reader
             if (isReader()) {
                 Format frmt;
