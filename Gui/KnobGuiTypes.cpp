@@ -1746,12 +1746,15 @@ void Group_KnobGui::setChecked(bool b)
     }
     _checked = b;
     
-    
+    ///get the current index of the group knob in the layout, and reinsert
+    ///the children back with an offset relative to the group.
+    int realIndexInLayout = getActualIndexInLayout();
+
     for (U32 i = 0 ; i < _children.size() ; ++i) {
         if (!b) {
             _children[i].first->hide();
         } else if (!_children[i].first->getKnob()->getIsSecret()) {
-            _children[i].first->show();
+            _children[i].first->show(realIndexInLayout + i + 1);
         }
     }
 }

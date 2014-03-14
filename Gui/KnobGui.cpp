@@ -397,7 +397,7 @@ void KnobGui::setSecret() {
     bool showit = !_knob->getIsSecret();
     boost::shared_ptr<Knob> parentKnob = _knob->getParentKnob();
     while (showit && parentKnob && parentKnob->typeName() == "Group") {
-        Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(_container->findKnobGuiOrCreate(parentKnob,true));
+        Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(_container->findKnobGuiOrCreate(parentKnob,true,NULL));
         assert(parentGui);
         // check for secretness and visibility of the group
         if (parentKnob->getIsSecret() || !parentGui->isChecked()) {
@@ -572,7 +572,7 @@ void KnobGui::hide(){
        getGui()->getCurveEditor()->hideCurves(this);
     }
     
-    if (_isOnNewLine && _field->objectName() != "multi-line") {
+    if (_isOnNewLine) {
         _containerLayout->removeWidget(_field);
         if (_descriptionLabel) {
             _containerLayout->removeWidget(_descriptionLabel);
@@ -585,7 +585,7 @@ void KnobGui::hide(){
         _descriptionLabel->hide();
     }
 }
-void KnobGui::show(){
+void KnobGui::show(int index){
     _show();
     if(_animationButton)
         _animationButton->show();
@@ -594,8 +594,12 @@ void KnobGui::show(){
         getGui()->getCurveEditor()->showCurves(this);
     }
     
-    if (_isOnNewLine && _field->objectName() != "multi-line") {
-        _containerLayout->insertRow(_row, _descriptionLabel, _field);
+    if (_isOnNewLine) {
+        QLayoutItem* item = _containerLayout->itemAt(_row, QFormLayout::FieldRole);
+        if ((item && item->widget() != _field) || !item) {
+            int indexToUse = index != -1 ? index : _row;
+            _containerLayout->insertRow(indexToUse, _descriptionLabel, _field);
+        }
         _field->setParent(_containerLayout->parentWidget());
         if (_descriptionLabel) {
             _descriptionLabel->setParent(_containerLayout->parentWidget());
@@ -606,6 +610,16 @@ void KnobGui::show(){
         _descriptionLabel->show();
     }
 
+}
+
+int KnobGui::getActualIndexInLayout() const {
+    for (int i = 0; i < _containerLayout->rowCount(); ++i) {
+        QLayoutItem* item = _containerLayout->itemAt(i, QFormLayout::FieldRole);
+        if (item && item->widget() == _field) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 void KnobGui::setEnabledSlot(){
@@ -622,6 +636,10 @@ void KnobGui::setEnabledSlot(){
             }
         }
     }
+}
+
+QWidget* KnobGui::getFieldContainer() const {
+    return _field;
 }
 
 void KnobGui::onInternalValueChanged(int dimension) {

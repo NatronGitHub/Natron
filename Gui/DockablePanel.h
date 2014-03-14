@@ -88,7 +88,7 @@ public:
 
     /*Search an existing knob GUI in the map, otherwise creates
      the gui for the knob.*/
-    KnobGui* findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool makeNewLine);
+    KnobGui* findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool makeNewLine,QWidget* lastRowWidget);
     
     QUndoStack* getUndoStack() const { return _undoStack; }
     

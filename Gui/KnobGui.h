@@ -88,7 +88,11 @@ public:
     void enableRightClickMenu(QWidget* widget,int dimension);
 
     virtual bool showDescriptionLabel() const { return true; }
+    
+    QWidget* getFieldContainer() const;
 
+    int getActualIndexInLayout() const;
+ 
 public slots:
     /*Called when the value held by the knob is changed internally.
      This should in turn update the GUI but not emit the valueChanged()
@@ -111,7 +115,8 @@ public slots:
     
     void hide();
     
-    void show();
+    ///if index is != -1 then it will reinsert the knob at this index in the layout
+    void show(int index = -1);
     
     void onRestorationComplete();
     
@@ -158,6 +163,8 @@ public slots:
 
     
     void onReadOnlyChanged(bool b,int d);
+    
+
 signals:
     
     void knobUndoneChange();
@@ -186,7 +193,7 @@ signals:
     ///emitted when the description label is clicked
     void labelClicked(bool);
     
-    
+
 protected:
     
     
