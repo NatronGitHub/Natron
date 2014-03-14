@@ -33,7 +33,7 @@ void ProjectSerialization::initialize(const Natron::Project* project) {
         activeNodes[i]->serialize(state.get());
         _serializedNodes.push_back(state);
     }
-    _availableFormats = project->getProjectFormats();
+    project->getProjectFormats(&_availableFormats);
     
     const std::vector< boost::shared_ptr<Knob> >& knobs = project->getKnobs();
     for(U32 i = 0; i < knobs.size();++i){
