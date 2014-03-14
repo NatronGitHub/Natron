@@ -116,11 +116,19 @@ void Settings::initializeKnobs(){
     configs.push_back(NATRON_CUSTOM_OCIO_CONFIG_NAME);
     _ocioConfigKnob->populate(configs);
     _ocioConfigKnob->setValue<int>(defaultIndex);
+    _ocioConfigKnob->setHintToolTip("Select the OpenColorIO config you would like to use globally for all "
+                                    "operators that uses OpenColorIO. Note that changing it will set the OCIO "
+                                    "environment variable, hence any change to this parameter will be "
+                                    "taken into account on the next application launch. "
+                                    "When custom config is selected, you can use the custom OpenColorIO config file "
+                                    "setting to point to the config you would like to use.");
     
     ocioTab->addKnob(_ocioConfigKnob);
     
     _customOcioConfigFile = Natron::createKnob<File_Knob>(this, "Custom OpenColorIO config file");
     _customOcioConfigFile->setAllDimensionsEnabled(false);
+    _customOcioConfigFile->setHintToolTip("To use this, set the OpenColorIO config to custom config a point "
+                                          "to a custom OpenColorIO config file (.ocio).");
     ocioTab->addKnob(_customOcioConfigFile);
     
     _viewersTab = Natron::createKnob<Tab_Knob>(this, "Viewers");
