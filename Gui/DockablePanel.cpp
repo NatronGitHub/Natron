@@ -252,27 +252,35 @@ void DockablePanel::initializeKnobs(){
     std::vector< boost::shared_ptr<Knob> >  emptyVec;
     while(!knobsCpy.empty()){
         boost::shared_ptr<Knob>& k = *knobsCpy.begin();
-            if (k->typeName() == Tab_Knob::typeNameStatic()) {
+        boost::shared_ptr<Group_Knob> isGroup = boost::dynamic_pointer_cast<Group_Knob>(k);
+        boost::shared_ptr<Tab_Knob> isTab = boost::dynamic_pointer_cast<Tab_Knob>(k);
+        
+            if (isTab) {
                 knobsMap.push_back(std::make_pair(k, boost::dynamic_pointer_cast<Tab_Knob>(k)->getKnobs()));
-            }else if( k->typeName() == Group_Knob::typeNameStatic()){
+            } else if (isGroup) {
                 knobsMap.push_back(std::make_pair(k, boost::dynamic_pointer_cast<Group_Knob>(k)->getChildren()));
-            }else{
+            } else if (!k->getParentKnob()) {
                 knobsMap.push_back(std::make_pair(k,emptyVec));
             }
         knobsCpy.erase(knobsCpy.begin());
     }
     
     
-    
+    QWidget* lastRowWidget = 0;
     for(U32 i = 0 ; i < knobsMap.size(); ++i) {
         
         bool makeNewLine = true;
-        if (knobsMap[i].first->typeName() != Group_Knob::typeNameStatic()) {
+        
+        boost::shared_ptr<Group_Knob> isGroup = boost::dynamic_pointer_cast<Group_Knob>(knobsMap[i].first);
+        boost::shared_ptr<Tab_Knob> isTab = boost::dynamic_pointer_cast<Tab_Knob>(knobsMap[i].first);
+        
+        if (!isGroup) {
             if (i > 0 && knobsMap[i-1].first->isNewLineTurnedOff()) {
                 makeNewLine = false;
             }
         }
-        if (knobsMap[i].first->typeName() == Tab_Knob::typeNameStatic()) {
+        KnobGui* newGui = 0;
+        if (isTab) {
             
             ///if the knob is a tab, look-up the tab widget to check whether the tab already exists or not
             bool found = false;
@@ -288,26 +296,39 @@ void DockablePanel::initializeKnobs(){
                 addTab(tabName);
             }
         } else {
-            findKnobGuiOrCreate(knobsMap[i].first,makeNewLine);
+            newGui = findKnobGuiOrCreate(knobsMap[i].first,makeNewLine,lastRowWidget);
         }
+    
 
         ///create all children if any
+        ///childrens cannot be on the same row than their parent
+        lastRowWidget = 0;
         for (U32 j = 0; j < knobsMap[i].second.size(); ++j) {
             makeNewLine = true;
-            if (knobsMap[i].second[j]->typeName() != Group_Knob::typeNameStatic()) {
-                if (j > 0 && knobsMap[i].second[j]->isNewLineTurnedOff()) {
+            
+            boost::shared_ptr<Group_Knob> isChildGroup = boost::dynamic_pointer_cast<Group_Knob>(knobsMap[i].second[j]);
+            
+            if (!isChildGroup) {
+                if (j > 0 && knobsMap[i].second[j-1]->isNewLineTurnedOff()) {
                     makeNewLine = false;
                 }
             }
 
-            findKnobGuiOrCreate(knobsMap[i].second[j],makeNewLine);
+            KnobGui* child = findKnobGuiOrCreate(knobsMap[i].second[j],makeNewLine,lastRowWidget);
+            if (child) {
+                lastRowWidget = child->getFieldContainer();
+            }
         }
         
+        ///childrens cannot be on the same row than their parent
+        if (newGui) {
+            lastRowWidget = newGui->getFieldContainer();
+        }
     }
 }
 
 
-KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool makeNewLine) {
+KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool makeNewLine,QWidget* lastRowWidget) {
     assert(knob);
     for (std::map<boost::shared_ptr<Knob>,KnobGui*>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
         if(it->first == knob){
@@ -342,7 +363,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool ma
         ///if the parent is a tab find it
         if(parentKnob && parentKnob->typeName() == Tab_Knob::typeNameStatic()){
             //make sure the tab has been created;
-            (void)findKnobGuiOrCreate(parentKnob,true);
+            (void)findKnobGuiOrCreate(parentKnob,true,NULL);
             std::map<QString,std::pair<QWidget*,int> >::iterator it = _tabs.find(parentKnob->getDescription().c_str());
             
             ///if it crashes there's serious problem because findKnobGuiOrCreate(parentKnob) should have registered
@@ -389,13 +410,12 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool ma
             fieldContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         } else {
             ///otherwise re-use the last row's widget and layout
-            QLayoutItem* fieldContainerItem = layout->itemAt(parentTab->second.second, QFormLayout::FieldRole);
-            assert(fieldContainerItem);
-            fieldContainer = fieldContainerItem->widget();
+            assert(lastRowWidget);
+            fieldContainer = lastRowWidget;
             fieldLayout = dynamic_cast<QHBoxLayout*>(fieldContainer->layout());
             
             ///the knobs use this value to know whether we should remove the row or not
-            fieldContainer->setObjectName("multi-line");
+            //fieldContainer->setObjectName("multi-line");
             
         }
         assert(fieldContainer);
@@ -427,7 +447,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool ma
         /// if this knob is within a group, check that the group is visible, i.e. the toplevel group is unfolded
         if (parentKnob && parentKnob->typeName() == Group_Knob::typeNameStatic()) {
             
-            Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob,true));
+            Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob,true,NULL));
             assert(parentGui);
             
             
@@ -448,7 +468,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool ma
                 // prepare for next loop iteration
                 parentKnob = parentKnob->getParentKnob();
                 if (parentKnob) {
-                    parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob,true));
+                    parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob,true,NULL));
                 }
             }
             if (showit) {
