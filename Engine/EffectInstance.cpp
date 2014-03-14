@@ -204,8 +204,11 @@ const std::string& EffectInstance::getName() const{
     return _node->getName();
 }
 
-const Format& EffectInstance::getRenderFormat() const{
-    return _node->getRenderFormatForEffect(this);
+const Format& EffectInstance::getRenderFormat() const
+{
+    const Format& f = _node->getRenderFormatForEffect(this);
+    assert(!f.isNull());
+    return f;
 }
 
 int EffectInstance::getRenderViewsCount() const{
