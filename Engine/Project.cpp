@@ -462,7 +462,7 @@ Format Project::getProjectDefaultFormat() const
     QMutexLocker l(&_imp->formatMutex);
     int index = _imp->formatKnob->getActiveEntry();
     const Format& f = _imp->availableFormats[index];
-    assert(f.x1 != f.x2 && f.y1 != f.y2);
+    assert(!f.isNull());
     return f;
 }
 

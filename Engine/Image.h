@@ -62,6 +62,8 @@ namespace Natron {
         : _rod(rod)
         , _map(new char[rod.area()])
         {
+            // NOTE: before removing the following assert, please explain why an empty image may happen
+            assert(!rod.isNull());
             std::fill(_map.get(), _map.get()+rod.area(), 0); // is it necessary?
         }
         

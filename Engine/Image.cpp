@@ -308,6 +308,8 @@ Image::Image(ImageComponents components,const RectI& regionOfDefinition,RenderSc
 , _components(components)
 , _bitmap(regionOfDefinition)
 {
+    // NOTE: before removing the following assert, please explain why an empty image may happen
+    assert(!regionOfDefinition.isNull());
 }
 
 ImageKey Image::makeKey(U64 nodeHashKey,
@@ -324,8 +326,11 @@ boost::shared_ptr<ImageParams> Image::makeParams(int cost,const RectI& rod,Image
 }
 
 
-void Natron::Image::copy(const Natron::Image& other){
-    
+void Natron::Image::copy(const Natron::Image& other)
+{
+    // NOTE: before removing the following asserts, please explain why an empty image may happen
+    assert(!getRoD().isNull());
+    assert(!other.getRoD().isNull() != 0);
     RectI intersection;
     getRoD().intersect(other.getRoD(), &intersection);
     
