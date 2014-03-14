@@ -15,8 +15,9 @@ Here is a list of know bugs, ordered by priority from high to low:
    curve is wrong (it should be two straight lines when the value goes
    outside of [min,max])
 
-- Setting a project format with a pixel aspect ratio different of 1 and then setting the
-viewer fullscreen will mess it up and make it unusable.
+- messages (and persistent messages) should be associated with an instance, not with a viewer. The message should appear in the viewer if and only of the given instance is in the the viewer's parents.
+
+- Setting a project format with a pixel aspect ratio different of 1 and then setting the viewer fullscreen will mess it up and make it unusable. [fixed?]
 
 - in the properties panel, all parameters should be expanding horizontally
 

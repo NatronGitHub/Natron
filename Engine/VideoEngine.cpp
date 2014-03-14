@@ -788,8 +788,10 @@ void RenderTree::fillGraph(EffectInstance *effect){
     }
 }
 
-void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(){
+void RenderTree::refreshKnobsAndHashAndClearPersistentMessage()
+{
     _renderOutputFormat = _output->getApp()->getProject()->getProjectDefaultFormat();
+    assert(!_renderOutputFormat.isNull());
     _projectViewsCount = _output->getApp()->getProject()->getProjectViewsCount();
     int knobsAge = _output->getAppAge();
     getOutput()->cloneKnobsAndComputeHashAndClearPersistentMessage(knobsAge);

@@ -145,8 +145,13 @@ public:
     void debug() const;
     
     void refreshKnobsAndHashAndClearPersistentMessage();
-    
-    const Format& getRenderFormat() const {return _renderOutputFormat;}
+
+    /// FIXME: before removing the assert() (I know you are tempted) please explain (here: document!) if the format rectangle can be empty and in what situation(s)
+    const Format& getRenderFormat() const
+    {
+        assert(!_renderOutputFormat.isNull());
+        return _renderOutputFormat;
+    }
     
     int renderViewsCount() const {return _projectViewsCount;}
     

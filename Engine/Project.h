@@ -117,23 +117,23 @@ public:
      **/
     bool autoConnectNodes(Natron::Node* selected,Natron::Node* created);
     
-    const QString& getProjectName() const WARN_UNUSED_RETURN ;
+    QString getProjectName() const WARN_UNUSED_RETURN ;
     
-    const QString& getLastAutoSaveFilePath() const;
+    QString getLastAutoSaveFilePath() const;
     
-    const QString& getProjectPath() const WARN_UNUSED_RETURN;
+    QString getProjectPath() const WARN_UNUSED_RETURN;
     
     bool hasProjectBeenSavedByUser() const WARN_UNUSED_RETURN;
     
     bool isSaveUpToDate() const WARN_UNUSED_RETURN;
     
-    const QDateTime& projectAgeSinceLastSave() const WARN_UNUSED_RETURN ;
+    //QDateTime getProjectAgeSinceLastSave() const WARN_UNUSED_RETURN ;
     
-    const QDateTime& projectAgeSinceLastAutosave() const WARN_UNUSED_RETURN;
+    //QDateTime getProjectAgeSinceLastAutosave() const WARN_UNUSED_RETURN;
     
-    const Format& getProjectDefaultFormat() const WARN_UNUSED_RETURN ;
+    Format getProjectDefaultFormat() const WARN_UNUSED_RETURN ;
     
-    const std::vector<Format>& getProjectFormats() const;
+    void getProjectFormats(std::vector<Format> *formats) const;
     
     int getProjectViewsCount() const;
     

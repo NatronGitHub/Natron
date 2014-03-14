@@ -386,6 +386,8 @@ void ofxRectDToRectI(const OfxRectD& ofxrect,RectI* box){
 void OfxEffectInstance::ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const{
     /*If the rod is infinite clip it to the project's default*/
     const Format& projectDefault = getRenderFormat();
+    /// FIXME: before removing the assert() (I know you are tempted) please explain (here: document!) if the format rectangle can be empty and in what situation(s)
+    assert(!projectDefault.isNull());
     // BE CAREFUL:
     // std::numeric_limits<int>::infinity() does not exist (check std::numeric_limits<int>::has_infinity)
     if (rod->x1 == kOfxFlagInfiniteMin || rod->x1 == -std::numeric_limits<double>::infinity()) {
@@ -448,9 +450,9 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI*
     rS.x = rS.y = 1.0;
     OfxRectD ofxRod;
     OfxStatus stat = effect_->getRegionOfDefinitionAction(time, rS, ofxRod);
-    if((stat!= kOfxStatOK && stat != kOfxStatReplyDefault) ||
-            (ofxRod.x1 ==  0. && ofxRod.x2 == 0. && ofxRod.y1 == 0. && ofxRod.y2 == 0.))
+    if (stat!= kOfxStatOK && stat != kOfxStatReplyDefault) {
         return StatFailed;
+    }
     ifInfiniteclipRectToProjectDefault(&ofxRod);
     ofxRectDToRectI(ofxRod,rod);
     return StatOK;

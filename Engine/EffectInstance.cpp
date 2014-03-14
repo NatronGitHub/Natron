@@ -204,8 +204,11 @@ const std::string& EffectInstance::getName() const{
     return _node->getName();
 }
 
-const Format& EffectInstance::getRenderFormat() const{
-    return _node->getRenderFormatForEffect(this);
+const Format& EffectInstance::getRenderFormat() const
+{
+    const Format& f = _node->getRenderFormatForEffect(this);
+    assert(!f.isNull());
+    return f;
 }
 
 int EffectInstance::getRenderViewsCount() const{
@@ -393,7 +396,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                 ///if getRoD fails, just return a NULL ptr
                 return boost::shared_ptr<Natron::Image>();
             }
-            
+            // why should the rod be empty here?
+            assert(!rod.isNull());
+
             ///add the window to the project's available formats if the effect is a reader
             if (isReader()) {
                 Format frmt;

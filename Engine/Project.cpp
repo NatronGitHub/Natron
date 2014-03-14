@@ -456,11 +456,14 @@ void Project::evaluate(Knob* /*knob*/,bool isSignificant){
     }
 }
 
-
-const Format& Project::getProjectDefaultFormat() const{
+// don't return a reference to a mutex-protected object!
+Format Project::getProjectDefaultFormat() const
+{
     QMutexLocker l(&_imp->formatMutex);
     int index = _imp->formatKnob->getActiveEntry();
-    return _imp->availableFormats[index];
+    const Format& f = _imp->availableFormats[index];
+    assert(!f.isNull());
+    return f;
 }
 
 ///only called on the main thread
@@ -587,18 +590,18 @@ std::vector<Node*> Project::getCurrentNodes() const {
     return _imp->currentNodes;
 }
 
-const QString& Project::getProjectName() const {
+QString Project::getProjectName() const {
     QMutexLocker l(&_imp->projectLock);
     return _imp->projectName;
 }
 
 
-const QString& Project::getLastAutoSaveFilePath() const {
+QString Project::getLastAutoSaveFilePath() const {
     QMutexLocker l(&_imp->projectLock);
     return _imp->lastAutoSaveFilePath;
 }
 
-const QString& Project::getProjectPath() const {
+QString Project::getProjectPath() const {
     QMutexLocker l(&_imp->projectLock);
     return _imp->projectPath;
 }
@@ -609,16 +612,17 @@ bool Project::hasProjectBeenSavedByUser() const {
     return _imp->hasProjectBeenSavedByUser;
 }
 
-const QDateTime& Project::projectAgeSinceLastSave() const {
+#if 0 // dead code
+QDateTime Project::getProjectAgeSinceLastSave() const {
     QMutexLocker l(&_imp->projectLock);
     return _imp->ageSinceLastSave;
 }
 
-
-const QDateTime& Project::projectAgeSinceLastAutosave() const {
+QDateTime Project::getProjectAgeSinceLastAutosave() const {
     QMutexLocker l(&_imp->projectLock);
     return _imp->lastAutoSave;
 }
+#endif
 
 bool Project::isAutoPreviewEnabled() const {
     QMutexLocker l(&_imp->previewModeMutex);
@@ -632,10 +636,12 @@ void Project::toggleAutoPreview() {
 
 boost::shared_ptr<TimeLine> Project::getTimeLine() const  {return _imp->timeline;}
 
-
-const std::vector<Format>& Project::getProjectFormats() const {
+void
+Project::getProjectFormats(std::vector<Format> *formats) const
+{
+    assert(formats);
     QMutexLocker l(&_imp->formatMutex);
-    return _imp->availableFormats;
+    *formats = _imp->availableFormats;
 }
 
 void Project::incrementKnobsAge() {
