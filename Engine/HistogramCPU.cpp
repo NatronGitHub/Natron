@@ -116,16 +116,10 @@ HistogramCPU::~HistogramCPU() {
     {
         QMutexLocker l(&_imp->producedMutex);
         while (!_imp->produced.empty()) {
-            FinishedHistogram& h = *(_imp->produced.begin());
-            if (h.histogram1) {
-                free(h.histogram1);
-            }
-            if (h.histogram2) {
-                free(h.histogram2);
-            }
-            if (h.histogram3) {
-                free(h.histogram3);
-            }
+            FinishedHistogram& h = _imp->produced.front();
+            free(h.histogram1);
+            free(h.histogram2);
+            free(h.histogram3);
             _imp->produced.pop_front();
         }
     }
