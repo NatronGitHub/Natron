@@ -732,19 +732,19 @@ void Node::activate()
 
 
 
-const Format& Node::getRenderFormatForEffect(const EffectInstance* effect) const
+void Node::getRenderFormatForEffect(const EffectInstance* effect, Format *f) const
 {
-    if (effect == _liveInstance) {
-        return getApp()->getProject()->getProjectDefaultFormat();
-    } else {
+    assert(f);
+    if (effect != _liveInstance) {
         for (std::map<RenderTree*,EffectInstance*>::const_iterator it = _imp->renderInstances.begin();
              it!=_imp->renderInstances.end();++it) {
             if (it->second == effect) {
-                return it->first->getRenderFormat();
+                it->first->getRenderFormat(f);
+                return;
             }
         }
     }
-    return getApp()->getProject()->getProjectDefaultFormat();
+    getApp()->getProject()->getProjectDefaultFormat(f);
 }
 
 int Node::getRenderViewsCountForEffect( const EffectInstance* effect) const

@@ -457,13 +457,14 @@ void Project::evaluate(Knob* /*knob*/,bool isSignificant){
 }
 
 // don't return a reference to a mutex-protected object!
-Format Project::getProjectDefaultFormat() const
+void Project::getProjectDefaultFormat(Format *f) const
 {
+    assert(f);
     QMutexLocker l(&_imp->formatMutex);
     int index = _imp->formatKnob->getActiveEntry();
-    const Format& f = _imp->availableFormats[index];
-    assert(!f.isNull());
-    return f;
+    const Format& format = _imp->availableFormats[index];
+    assert(!format.isNull());
+    *f = format;
 }
 
 ///only called on the main thread
@@ -703,18 +704,23 @@ void Project::onTimeChanged(SequenceTime time,int reason) {
     _imp->lastTimelineSeekCaller = 0;
 
 }
-void Project::save(ProjectSerialization* serializationObject) const {
+
+void Project::save(ProjectSerialization* serializationObject) const
+{
     serializationObject->initialize(this);
 }
 
-void Project::load(const ProjectSerialization& obj){
+void Project::load(const ProjectSerialization& obj)
+{
     _imp->nodeCounters.clear();
     _imp->restoreFromSerialization(obj);
-    emit formatChanged(getProjectDefaultFormat());
-    
+    Format f;
+    getProjectDefaultFormat(&f);
+    emit formatChanged(f);
 }
 
-void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller){
+void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller)
+{
     QMutexLocker l(&_imp->beginEndMutex);
     
     ///increase the begin calls count

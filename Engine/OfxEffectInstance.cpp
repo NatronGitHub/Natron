@@ -385,7 +385,8 @@ void ofxRectDToRectI(const OfxRectD& ofxrect,RectI* box){
 
 void OfxEffectInstance::ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const{
     /*If the rod is infinite clip it to the project's default*/
-    const Format& projectDefault = getRenderFormat();
+    Format projectDefault;
+    getRenderFormat(&projectDefault);
     /// FIXME: before removing the assert() (I know you are tempted) please explain (here: document!) if the format rectangle can be empty and in what situation(s)
     assert(!projectDefault.isNull());
     // BE CAREFUL:

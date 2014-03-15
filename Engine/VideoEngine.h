@@ -147,10 +147,11 @@ public:
     void refreshKnobsAndHashAndClearPersistentMessage();
 
     /// FIXME: before removing the assert() (I know you are tempted) please explain (here: document!) if the format rectangle can be empty and in what situation(s)
-    const Format& getRenderFormat() const
+    void getRenderFormat(Format *f) const
     {
+        assert(f);
         assert(!_renderOutputFormat.isNull());
-        return _renderOutputFormat;
+        *f = _renderOutputFormat;
     }
     
     int renderViewsCount() const {return _projectViewsCount;}

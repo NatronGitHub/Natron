@@ -130,12 +130,12 @@ OfxStatus OfxImageEffectInstance::vmessage(const char* msgtype,
 // The size of a project is a sub set of the kOfxImageEffectPropProjectExtent. For example a
 // project may be a PAL SD project, but only be a letter-box within that. The project size is
 // the size of this sub window.
-void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const {
-
-    
-        const Format& f = _node->getRenderFormat();
-        xSize = f.width();
-        ySize = f.height();
+void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const
+{
+    Format f;
+    _node->getRenderFormat(&f);
+    xSize = f.width();
+    ySize = f.height();
 
 }
 
@@ -144,12 +144,12 @@ void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const 
 // of the project 'subwindow'. For example for a PAL SD project that is in letterbox form, the
 // project offset is the offset to the bottom left hand corner of the letter box. The project
 // offset is in canonical coordinates.
-void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) const {
-
-        const Format& f = _node->getRenderFormat();
-        xOffset = f.left();
-        yOffset = f.bottom();
-
+void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) const
+{
+    Format f;
+    _node->getRenderFormat(&f);
+    xOffset = f.left();
+    yOffset = f.bottom();
 }
 
 // The extent of the current project in canonical coordinates.
@@ -157,19 +157,21 @@ void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) 
 // for more infomation on the project extent. The extent is in canonical coordinates and only
 // returns the top right position, as the extent is always rooted at 0,0. For example a PAL SD
 // project would have an extent of 768, 576.
-void OfxImageEffectInstance::getProjectExtent(double& xSize, double& ySize) const {
-
-    
-        const Format& f = _node->getRenderFormat();
-        xSize = f.right();
-        ySize = f.top();
-
+void OfxImageEffectInstance::getProjectExtent(double& xSize, double& ySize) const
+{
+    Format f;
+    _node->getRenderFormat(&f);
+    xSize = f.right();
+    ySize = f.top();
 }
 
 // The pixel aspect ratio of the current project
-double OfxImageEffectInstance::getProjectPixelAspectRatio() const {
+double OfxImageEffectInstance::getProjectPixelAspectRatio() const
+{
     assert(_node);
-    return _node->getRenderFormat().getPixelAspect();
+    Format f;
+    _node->getRenderFormat(&f);
+    return f.getPixelAspect();
 }
 
 // The duration of the effect

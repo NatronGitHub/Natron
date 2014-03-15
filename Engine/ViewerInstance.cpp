@@ -222,7 +222,8 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreade
 
     emit rodChanged(rod);
     
-    Format dispW = getApp()->getProject()->getProjectDefaultFormat();
+    Format dispW;
+    getApp()->getProject()->getProjectDefaultFormat(&dispW);
         
     if(!_uiContext->isClippingImageToProjectWindow()){
         dispW.set(rod);

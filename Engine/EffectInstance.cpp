@@ -204,11 +204,10 @@ const std::string& EffectInstance::getName() const{
     return _node->getName();
 }
 
-const Format& EffectInstance::getRenderFormat() const
+void EffectInstance::getRenderFormat(Format *f) const
 {
-    const Format& f = _node->getRenderFormatForEffect(this);
-    assert(!f.isNull());
-    return f;
+    assert(f);
+    _node->getRenderFormatForEffect(this, f);
 }
 
 int EffectInstance::getRenderViewsCount() const{
@@ -270,7 +269,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
 Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod) {
     
     if (isWriter()) {
-        rod->set(getRenderFormat());
+        Format f;
+        getRenderFormat(&f);
+        rod->set(f);
         return StatReplyDefault;
     }
     
@@ -1054,7 +1055,8 @@ void OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
         return;
     }
     /*If the rod is infinite clip it to the project's default*/
-    const Format& projectDefault = getRenderFormat();
+    Format projectDefault;
+    getRenderFormat(&projectDefault);
     // BE CAREFUL:
     // std::numeric_limits<int>::infinity() does not exist (check std::numeric_limits<int>::has_infinity)
     // an int can not be equal to (or compared to) std::numeric_limits<double>::infinity()
