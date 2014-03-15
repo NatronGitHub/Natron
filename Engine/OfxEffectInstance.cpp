@@ -970,7 +970,11 @@ int OfxEffectInstance::minorVersion() const {
 }
 
 bool OfxEffectInstance::supportsTiles() const {
-    return effectInstance()->supportsTiles() && effectInstance()->getClip(kOfxImageEffectOutputClipName)->supportsTiles();
+    OFX::Host::ImageEffect::ClipInstance* outputClip =  effectInstance()->getClip(kOfxImageEffectOutputClipName);
+    if (!outputClip) {
+        return false;
+    }
+    return effectInstance()->supportsTiles() && outputClip->supportsTiles();
 }
 
 void OfxEffectInstance::beginEditKnobs() {

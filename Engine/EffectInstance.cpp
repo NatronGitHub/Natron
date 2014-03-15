@@ -492,18 +492,20 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         assert(cachedImgParams);
         assert(image);
         
-#ifdef NATRON_DEBUG
-        ///If the precomputed rod parameter was set, assert that it is the same than the image in cache.
-        if (preComputedRoD) {
-            assert(*preComputedRoD == cachedImgParams->getRoD());
-        }
-#endif
+
         ///if it was cached, first thing to check is to see if it is an identity
         int inputNbIdentity = cachedImgParams->getInputNbIdentity();
         if (inputNbIdentity != -1) {
             SequenceTime inputTimeIdentity = cachedImgParams->getInputTimeIdentity();
             return getImage(inputNbIdentity, inputTimeIdentity, scale, view);
         }
+        
+#ifdef NATRON_DEBUG
+        ///If the precomputed rod parameter was set, assert that it is the same than the image in cache.
+        if (inputNbIdentity != -1 && preComputedRoD) {
+            assert(*preComputedRoD == cachedImgParams->getRoD());
+        }
+#endif
 
     }
 
