@@ -204,11 +204,11 @@ const std::string& EffectInstance::getName() const{
     return _node->getName();
 }
 
-Format EffectInstance::getRenderFormat() const
+
+void EffectInstance::getRenderFormat(Format *f) const
 {
-    Format f = _node->getRenderFormatForEffect(this);
-    assert(!f.isNull());
-    return f;
+    assert(f);
+    _node->getRenderFormatForEffect(this, f);
 }
 
 int EffectInstance::getRenderViewsCount() const{
@@ -270,7 +270,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
 
 Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProjectFormat) {
     
-    Format frmt = getRenderFormat();
+    Format frmt;
+    getRenderFormat(&frmt);
     for(Inputs::const_iterator it = _imp->inputs.begin() ; it != _imp->inputs.end() ; ++it){
         if (*it) {
             RectI inputRod;
@@ -375,7 +376,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         if (isCached) {
             assert(cachedImgParams);
             if (cachedImgParams->isRodProjectFormat()) {
-                Format projectFormat = getRenderFormat();
+                Format projectFormat;
+                getRenderFormat(&projectFormat);
                 if (dynamic_cast<RectI&>(projectFormat) != cachedImgParams->getRoD()) {
                     isCached = false;
                     appPTR->removeFromNodeCache(image);
@@ -1071,10 +1073,11 @@ void OutputEffectInstance::refreshAndContinueRender(bool forcePreview){
 
 bool OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
     if(!getApp()->getProject()){
-        return;
+        return false;
     }
     /*If the rod is infinite clip it to the project's default*/
-    const Format& projectDefault = getRenderFormat();
+    Format projectDefault;
+    getRenderFormat(&projectDefault);
     // BE CAREFUL:
     // std::numeric_limits<int>::infinity() does not exist (check std::numeric_limits<int>::has_infinity)
     // an int can not be equal to (or compared to) std::numeric_limits<double>::infinity()

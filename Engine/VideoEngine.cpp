@@ -760,7 +760,7 @@ void RenderTree::refreshTree(int knobsAge){
         it->first->setRenderTreeIsUsingInputs(false);
     }
     
-    _renderOutputFormat = _output->getApp()->getProject()->getProjectDefaultFormat();
+    _output->getApp()->getProject()->getProjectDefaultFormat(&_renderOutputFormat);
     assert(!_renderOutputFormat.isNull());
     _projectViewsCount = _output->getApp()->getProject()->getProjectViewsCount();
 
@@ -795,7 +795,7 @@ void RenderTree::fillGraph(EffectInstance *effect){
 
 void RenderTree::refreshKnobsAndHashAndClearPersistentMessage()
 {
-    _renderOutputFormat = _output->getApp()->getProject()->getProjectDefaultFormat();
+    _output->getApp()->getProject()->getProjectDefaultFormat(&_renderOutputFormat);
     assert(!_renderOutputFormat.isNull());
     _projectViewsCount = _output->getApp()->getProject()->getProjectViewsCount();
     int knobsAge = _output->getAppAge();

@@ -105,7 +105,7 @@ public:
     /**
      * @brief Forwarded to the node's render format
      **/
-    Format getRenderFormat() const WARN_UNUSED_RETURN;
+    void getRenderFormat(Format *f) const;
     
     /**
      * @brief Forwarded to the node's render views count

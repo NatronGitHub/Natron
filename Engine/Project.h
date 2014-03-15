@@ -131,7 +131,7 @@ public:
     
     //QDateTime getProjectAgeSinceLastAutosave() const WARN_UNUSED_RETURN;
     
-    Format getProjectDefaultFormat() const WARN_UNUSED_RETURN ;
+    void getProjectDefaultFormat(Format *f) const;
     
     void getProjectFormats(std::vector<Format> *formats) const;
     

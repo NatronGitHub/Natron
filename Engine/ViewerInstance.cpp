@@ -160,7 +160,8 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreade
     RenderScale scale;
     scale.x = scale.y = 1.;
     
-    Format dispW = getRenderFormat();
+    Format dispW;
+    getRenderFormat(&dispW);
     int viewsCount = getRenderViewsCount();
     int view = viewsCount > 0 ? _uiContext->getCurrentView() : 0;
 
@@ -227,6 +228,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreade
     
 
     emit rodChanged(rod);
+
         
     if(!_uiContext->isClippingImageToProjectWindow()){
         dispW.set(rod);

@@ -263,46 +263,51 @@ void OfxIntegerInstance::setDisplayRange(){
 
 static void valueAccordingToType(bool toType,const std::string& doubleType,OfxEffectInstance* effect,
                                  double* inOut1stDim,double* inOutS2ndDim = NULL){
-    if(doubleType == kOfxParamDoubleTypePlain ||
+    if (doubleType == kOfxParamDoubleTypePlain ||
        doubleType == kOfxParamDoubleTypeAngle ||
        doubleType == kOfxParamDoubleTypeScale ||
        doubleType == kOfxParamDoubleTypeTime ||
-       doubleType == kOfxParamDoubleTypeAbsoluteTime){
+       doubleType == kOfxParamDoubleTypeAbsoluteTime) {
         //types not handled
         return;
-    }else if(doubleType == kOfxParamDoubleTypeX ||
+    } else if (doubleType == kOfxParamDoubleTypeX ||
              doubleType == kOfxParamDoubleTypeXAbsolute ||
              doubleType == kOfxParamDoubleTypeNormalisedX ||
-             doubleType == kOfxParamDoubleTypeNormalisedXAbsolute){ //< treat absolute as non-absolute...
+            doubleType == kOfxParamDoubleTypeNormalisedXAbsolute){ //< treat absolute as non-absolute...
         
-        Format projectFormat = effect->getApp()->getProject()->getProjectDefaultFormat();
+        Format projectFormat;
+        effect->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
         if(toType){
             *inOut1stDim *= (double)projectFormat.width();
-        }else{
+        } else {
             *inOut1stDim /= (double)projectFormat.width();
         }
         return;
-    }else if(doubleType == kOfxParamDoubleTypeY ||
+    } else if (doubleType == kOfxParamDoubleTypeY ||
              doubleType == kOfxParamDoubleTypeYAbsolute ||
              doubleType == kOfxParamDoubleTypeNormalisedY ||
              doubleType == kOfxParamDoubleTypeNormalisedYAbsolute){ //< treat absolute as non-absolute...
-        Format projectFormat = effect->getApp()->getProject()->getProjectDefaultFormat();
+        Format projectFormat;
+        effect->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
         if(toType){
+
             *inOut1stDim *= (double)projectFormat.height();
-        }else{
+        } else {
             *inOut1stDim /= (double)projectFormat.height();
         }
         return;
-    }else if(doubleType == kOfxParamDoubleTypeXY ||
+    } else if (doubleType == kOfxParamDoubleTypeXY ||
              doubleType == kOfxParamDoubleTypeXYAbsolute ||
              doubleType == kOfxParamDoubleTypeNormalisedXY ||
-             doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute){
+             doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) {
         assert(inOutS2ndDim);
-        Format projectFormat = effect->getApp()->getProject()->getProjectDefaultFormat();
+        Format projectFormat;
+        effect->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
         if(toType){
+
             *inOut1stDim *= (double)projectFormat.width();
             *inOutS2ndDim *= (double)projectFormat.height();
-        }else{
+        } else {
             *inOut1stDim /= (double)projectFormat.width();
             *inOutS2ndDim /= (double)projectFormat.height();
         }

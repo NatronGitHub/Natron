@@ -330,7 +330,7 @@ void Natron::Image::copy(const Natron::Image& other)
 {
     // NOTE: before removing the following asserts, please explain why an empty image may happen
     assert(!getRoD().isNull());
-    assert(!other.getRoD().isNull() != 0);
+    assert(!other.getRoD().isNull());
     RectI intersection;
     getRoD().intersect(other.getRoD(), &intersection);
     

@@ -631,7 +631,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
 void NodeGraph::mouseDoubleClickEvent(QMouseEvent *) {
     
     std::vector<NodeGui*> nodes = getAllActiveNodes_mt_safe();
-    for (int i = 0; i < nodes.size() ; ++i) {
+    for (size_t i = 0; i < nodes.size() ; ++i) {
         NodeGui* n = nodes[i];
         
         QPointF evpt = n->mapFromScene(_lastScenePosClick);
