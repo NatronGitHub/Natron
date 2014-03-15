@@ -403,7 +403,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
            
             ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
             image = getImage(inputNbIdentity,inputTimeIdentity,scale,view);
-            
+
             ///if we bypass the cache, don't cache the result of isIdentity
             if (byPassCache) {
                 return image;

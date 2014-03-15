@@ -187,10 +187,22 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreade
         if (isInputImgCached) {
             inputIdentityNumber = cachedImgParams->getInputNbIdentity();
             inputIdentityTime = cachedImgParams->getInputTimeIdentity();
-            
-            if (inputIdentityNumber != -1) {
-                inputImage = activeInputToRender->getImage(inputIdentityNumber, time, scale, view);
+        }
+    }
+    
+    ////While the inputs are identity get the RoD of the first non identity input
+    while (!_forceRender && inputIdentityNumber != -1 && isInputImgCached) {
+        EffectInstance* recursiveInput = activeInputToRender->input(inputIdentityNumber);
+        if (recursiveInput) {
+            inputImageKey = Natron::Image::makeKey(recursiveInput->hash().value(), inputIdentityTime, scale,view);
+            isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
+            if (isInputImgCached) {
+                inputIdentityNumber = cachedImgParams->getInputNbIdentity();
+                inputIdentityTime = cachedImgParams->getInputTimeIdentity();
             }
+            
+        } else {
+            isInputImgCached = false;
         }
     }
     
