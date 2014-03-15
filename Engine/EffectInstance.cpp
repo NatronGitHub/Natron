@@ -254,16 +254,18 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     ///just call renderRoI which will  do the cache look-up for us and render
     ///the image if it's missing from the cache.
     RectI roi;
+    RectI precomputedRoD;
     if (_imp->renderArgs.hasLocalData()) {
         roi = _imp->renderArgs.localData()._roi;//if the thread was spawned by us we take the last render args
     } else {
         bool isProjectFormat;
         Natron::Status stat = n->getRegionOfDefinition(time, &roi,&isProjectFormat);
+        precomputedRoD = roi;
         if(stat == Natron::StatFailed) {//we have no choice but compute the full region of definition
             return boost::shared_ptr<Natron::Image>();
         }
     }
-    boost::shared_ptr<Image > entry = n->renderRoI(time, scale, view,roi);
+    boost::shared_ptr<Image > entry = n->renderRoI(time, scale, view,roi, precomputedRoD.isNull() ? NULL : &precomputedRoD);
 
     return entry;
 }
@@ -345,7 +347,7 @@ void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last)
 
 boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,RenderScale scale,
                                                                  int view,const RectI& renderWindow,
-                                                                 bool byPassCache)
+                                                                 bool byPassCache,const RectI* preComputedRoD)
 {
 #ifdef NATRON_LOG
     Natron::Log::beginFunction(getName(),"renderRoI");
@@ -412,14 +414,19 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
             ///set it to -1 so the cache know its not an identity
             inputNbIdentity = -1;
             
-            ///before allocating it we must fill the RoD of the image we want to render
-            if(getRegionOfDefinition(time, &rod,&isProjectFormat) == StatFailed){
-                ///if getRoD fails, just return a NULL ptr
-                return boost::shared_ptr<Natron::Image>();
+            ///if the rod is already passed as parameter, just use it and don't call getRegionOfDefinition
+            if (preComputedRoD) {
+                rod = *preComputedRoD;
+            } else {
+                ///before allocating it we must fill the RoD of the image we want to render
+                if(getRegionOfDefinition(time, &rod,&isProjectFormat) == StatFailed){
+                    ///if getRoD fails, just return a NULL ptr
+                    return boost::shared_ptr<Natron::Image>();
+                }
             }
             // why should the rod be empty here?
             assert(!rod.isNull());
-
+            
             ///add the window to the project's available formats if the effect is a reader
             if (isReader()) {
                 Format frmt;
@@ -485,6 +492,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         assert(cachedImgParams);
         assert(image);
         
+#ifdef NATRON_DEBUG
+        ///If the precomputed rod parameter was set, assert that it is the same than the image in cache.
+        if (preComputedRoD) {
+            assert(*preComputedRoD == cachedImgParams->getRoD());
+        }
+#endif
         ///if it was cached, first thing to check is to see if it is an identity
         int inputNbIdentity = cachedImgParams->getInputNbIdentity();
         if (inputNbIdentity != -1) {

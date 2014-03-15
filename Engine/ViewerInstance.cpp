@@ -168,6 +168,13 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreade
     EffectInstance* activeInputToRender = input(activeInput());
     assert(activeInputToRender);
     
+    bool forceRender;
+    {
+        QMutexLocker forceRenderLocker(&_forceRenderMutex);
+        forceRender = _forceRender;
+        _forceRender = false;
+    }
+    
     ///instead of calling getRegionOfDefinition on the active input, check the image cache
     ///to see whether the result of getRegionOfDefinition is already present. A cache lookup
     ///might be much cheaper than a call to getRegionOfDefinition.
@@ -182,7 +189,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreade
     bool isRodProjectFormat = false;
     int inputIdentityNumber = -1;
     SequenceTime inputIdentityTime;
-    if (!_forceRender) {
+    if (!forceRender) {
         isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
         if (isInputImgCached) {
             inputIdentityNumber = cachedImgParams->getInputNbIdentity();
@@ -191,7 +198,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreade
     }
     
     ////While the inputs are identity get the RoD of the first non identity input
-    while (!_forceRender && inputIdentityNumber != -1 && isInputImgCached) {
+    while (!forceRender && inputIdentityNumber != -1 && isInputImgCached) {
         EffectInstance* recursiveInput = activeInputToRender->input(inputIdentityNumber);
         if (recursiveInput) {
             inputImageKey = Natron::Image::makeKey(recursiveInput->hash().value(), inputIdentityTime, scale,view);
@@ -320,8 +327,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreade
     ///if we want to force a refresh, we by-pass the cache
     bool byPassCache = false;
     {
-        QMutexLocker forceRenderLocker(&_forceRenderMutex);
-        if (!_forceRender) {
+        if (!forceRender) {
             
             ///we never use the texture cache when the user RoI is enabled, otherwise we would have
             ///zillions of textures in the cache, each a few pixels different.
@@ -330,7 +336,6 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreade
             }
         } else {
             byPassCache = true;
-            _forceRender = false;
         }
     }
     
@@ -395,7 +400,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreade
                     ///cache lookup things because we already did it ourselves.
                     activeInputToRender->renderRoI(time, scale, view, texRectClipped, cachedImgParams, inputImage);
                 } else {
-                    _lastRenderedImage = activeInputToRender->renderRoI(time, scale,view,texRectClipped,byPassCache);
+                    _lastRenderedImage = activeInputToRender->renderRoI(time, scale,view,texRectClipped,byPassCache,&rod);
                 }
             } catch (const std::exception& e) {
                 _node->notifyInputNIsFinishedRendering(inputIndex);

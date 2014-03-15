@@ -210,7 +210,7 @@ public:
      **/
     boost::shared_ptr<Image> renderRoI(SequenceTime time,RenderScale scale,
                                                      int view,const RectI& renderWindow,
-                                                     bool byPassCache = false) WARN_UNUSED_RETURN;
+                                                     bool byPassCache = false,const RectI* preComputedRoD = NULL) WARN_UNUSED_RETURN;
     
     /**
      * @brief Same as renderRoI(SequenceTime,RenderScale,int,RectI,bool) but takes in parameter

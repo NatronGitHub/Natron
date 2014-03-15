@@ -136,16 +136,22 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1, double* x2){
                 ///find out the equation of the straight line going from the first keyframe and intersecting
                 ///the min axis, so we can get the coordinates of the point intersecting the min axis.
                 KeyFrameSet::const_iterator firstKf = keys.begin();
-                double b = firstKf->getValue() - firstKf->getLeftDerivative() * firstKf->getTime();
-                *x2 = _curveWidget->toWidgetCoordinates((curveYRange.first - b) / firstKf->getLeftDerivative(),0).x();
-                if (x1 >= *x2 || *x2 > xminCurveWidgetCoord) {
+                
+                if (firstKf->getLeftDerivative() == 0) {
+                    *x2 = xminCurveWidgetCoord;
+                } else {
                     
-                    ///do the same wit hthe max axis
-                    *x2 = _curveWidget->toWidgetCoordinates((curveYRange.second - b) / firstKf->getLeftDerivative(),0).x();
-                    
+                    double b = firstKf->getValue() - firstKf->getLeftDerivative() * firstKf->getTime();
+                    *x2 = _curveWidget->toWidgetCoordinates((curveYRange.first - b) / firstKf->getLeftDerivative(),0).x();
                     if (x1 >= *x2 || *x2 > xminCurveWidgetCoord) {
-                        /// ok the curve doesn't intersect the min/max axis
-                        *x2 = xminCurveWidgetCoord;
+                        
+                        ///do the same wit hthe max axis
+                        *x2 = _curveWidget->toWidgetCoordinates((curveYRange.second - b) / firstKf->getLeftDerivative(),0).x();
+                        
+                        if (x1 >= *x2 || *x2 > xminCurveWidgetCoord) {
+                            /// ok the curve doesn't intersect the min/max axis
+                            *x2 = xminCurveWidgetCoord;
+                        }
                     }
                 }
             }
@@ -160,19 +166,25 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1, double* x2){
                 ///if only 1 keyframe, the curve is horizontal
                 *x2 = _curveWidget->width() - 1;
             } else {
-                ///find out the equation of the straight line going from the first keyframe and intersecting
+                ///find out the equation of the straight line going from the last keyframe and intersecting
                 ///the min axis, so we can get the coordinates of the point intersecting the min axis.
                 KeyFrameSet::const_reverse_iterator lastKf = keys.rbegin();
-                double b = lastKf->getValue() - lastKf->getRightDerivative() * lastKf->getTime();
-                *x2 = _curveWidget->toWidgetCoordinates((curveYRange.first - b) / lastKf->getRightDerivative(),0).x();
-                if (x1 >= *x2 || *x2 < xmaxCurveWidgetCoord) {
+                
+                if (lastKf->getRightDerivative() == 0) {
+                    *x2 = _curveWidget->width() - 1;
+                } else {
                     
-                    ///do the same wit hthe min axis
-                    *x2 = _curveWidget->toWidgetCoordinates((curveYRange.second - b) / lastKf->getRightDerivative(),0).x();
-                    
-                    if (x1 >= *x2  || *x2 < xmaxCurveWidgetCoord) {
-                        /// ok the curve doesn't intersect the min/max axis
-                        *x2 = _curveWidget->width() - 1;
+                    double b = lastKf->getValue() - lastKf->getRightDerivative() * lastKf->getTime();
+                    *x2 = _curveWidget->toWidgetCoordinates((curveYRange.first - b) / lastKf->getRightDerivative(),0).x();
+                    if (x1 >= *x2 || *x2 < xmaxCurveWidgetCoord) {
+                        
+                        ///do the same wit hthe min axis
+                        *x2 = _curveWidget->toWidgetCoordinates((curveYRange.second - b) / lastKf->getRightDerivative(),0).x();
+                        
+                        if (x1 >= *x2  || *x2 < xmaxCurveWidgetCoord) {
+                            /// ok the curve doesn't intersect the min/max axis
+                            *x2 = _curveWidget->width() - 1;
+                        }
                     }
                 }
             }
