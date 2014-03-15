@@ -1801,8 +1801,9 @@ void Group_KnobGui::_show()
 }
 
 void Group_KnobGui::setEnabled() {
-    
-    if (getKnob()->isEnabled(0)) {
+    bool enabled = getKnob()->isEnabled(0);
+    _button->setEnabled(enabled);
+    if (enabled) {
         for (U32 i = 0; i < _childrenToEnable.size(); ++i) {
             for (U32 j = 0; j < _childrenToEnable[i].second.size(); ++j) {
                 _childrenToEnable[i].first->getKnob()->setEnabled(_childrenToEnable[i].second[j], true);

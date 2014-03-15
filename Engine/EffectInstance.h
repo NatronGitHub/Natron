@@ -79,7 +79,7 @@ public:
      * @brief  Used once for each "render instance". It makes a full clone of the other instance.
      * This instance will be "read-only": modifying values will have no impact on the GUI.
      **/
-    U64 cloneKnobsAndComputeHashAndClearPersistentMessage(int knobsAge);
+    U64 cloneKnobsAndComputeHashAndClearPersistentMessage(int knobsAge,bool forceHashComputation);
     
     const Hash64& hash() const WARN_UNUSED_RETURN;
             
@@ -105,7 +105,7 @@ public:
     /**
      * @brief Forwarded to the node's render format
      **/
-    const Format& getRenderFormat() const WARN_UNUSED_RETURN;
+    Format getRenderFormat() const WARN_UNUSED_RETURN;
     
     /**
      * @brief Forwarded to the node's render views count
@@ -296,9 +296,10 @@ public:
      * @brief Can be derived to get the region that the plugin is capable of filling.
      * This is meaningful for plugins that generate images or transform images.
      * By default it returns in rod the union of all inputs RoD and StatReplyDefault is returned.
+     * @param isProjectFormat[out] If set to true, then rod is taken to be equal to the current project format.
      * In case of failure the plugin should return StatFailed.
      **/
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod) WARN_UNUSED_RETURN;
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProjectFormat) WARN_UNUSED_RETURN;
     
     
     /**
@@ -616,7 +617,7 @@ public:
 
     void refreshAndContinueRender(bool forcePreview);
 
-    void ifInfiniteclipRectToProjectDefault(RectI* rod) const;
+    bool ifInfiniteclipRectToProjectDefault(RectI* rod) const;
 
     /**
      * @brief Returns the frame number this effect is currently rendering.

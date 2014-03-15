@@ -303,7 +303,7 @@ CacheEntryHelper<float,ImageKey>(key,params,restore,path)
  as it is not needed.*/
 Image::Image(ImageComponents components,const RectI& regionOfDefinition,RenderScale scale,SequenceTime time)
 : CacheEntryHelper<float,ImageKey>(makeKey(0,time,scale,0),
-                                   ImageParams(0, regionOfDefinition, components,-1,0,std::map<int,std::vector<RangeD> >()),
+                                   ImageParams(0, regionOfDefinition, false ,components,-1,0,std::map<int,std::vector<RangeD> >()),
                                    false,"")
 , _components(components)
 , _bitmap(regionOfDefinition)
@@ -319,10 +319,10 @@ ImageKey Image::makeKey(U64 nodeHashKey,
     return ImageKey(nodeHashKey,time,scale,view);
 }
 
-boost::shared_ptr<ImageParams> Image::makeParams(int cost,const RectI& rod,ImageComponents components,
+boost::shared_ptr<ImageParams> Image::makeParams(int cost,const RectI& rod,bool isRoDProjectFormat,ImageComponents components,
                                                  int inputNbIdentity,int inputTimeIdentity,
                                                  const std::map<int, std::vector<RangeD> >& framesNeeded) {
-    return boost::shared_ptr<ImageParams>(new ImageParams(cost,rod,components,inputNbIdentity,inputTimeIdentity,framesNeeded));
+    return boost::shared_ptr<ImageParams>(new ImageParams(cost,rod,isRoDProjectFormat,components,inputNbIdentity,inputTimeIdentity,framesNeeded));
 }
 
 

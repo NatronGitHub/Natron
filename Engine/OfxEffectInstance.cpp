@@ -383,26 +383,31 @@ void ofxRectDToRectI(const OfxRectD& ofxrect,RectI* box){
     box->set_top(ymax);
 }
 
-void OfxEffectInstance::ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const{
+bool OfxEffectInstance::ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const{
     /*If the rod is infinite clip it to the project's default*/
-    const Format& projectDefault = getRenderFormat();
+    Format projectDefault = getRenderFormat();
     /// FIXME: before removing the assert() (I know you are tempted) please explain (here: document!) if the format rectangle can be empty and in what situation(s)
     assert(!projectDefault.isNull());
     // BE CAREFUL:
     // std::numeric_limits<int>::infinity() does not exist (check std::numeric_limits<int>::has_infinity)
+    bool isProjectFormat = false;
     if (rod->x1 == kOfxFlagInfiniteMin || rod->x1 == -std::numeric_limits<double>::infinity()) {
         rod->x1 = projectDefault.left();
+        isProjectFormat = true;
     }
     if (rod->y1 == kOfxFlagInfiniteMin || rod->y1 == -std::numeric_limits<double>::infinity()) {
         rod->y1 = projectDefault.bottom();
+        isProjectFormat = true;
     }
     if (rod->x2== kOfxFlagInfiniteMax || rod->x2 == std::numeric_limits<double>::infinity()) {
         rod->x2 = projectDefault.right();
+        isProjectFormat = true;
     }
     if (rod->y2 == kOfxFlagInfiniteMax || rod->y2  == std::numeric_limits<double>::infinity()) {
         rod->y2 = projectDefault.top();
+        isProjectFormat = true;
     }
-    
+    return isProjectFormat;
 }
 
 
@@ -433,18 +438,12 @@ std::vector<std::string> OfxEffectInstance::supportedFileFormats() const {
     return formats;
 }
 
-Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod){
+Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProjectFormat){
     if(!_initialized){
         return Natron::StatFailed;
     }
 
     assert(effect_);
-    
-//    
-//    if (isWriter()) {
-//        rod->set(getRenderFormat());
-//        return StatReplyDefault;
-//    }
     
     OfxPointD rS;
     rS.x = rS.y = 1.0;
@@ -453,7 +452,7 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI*
     if (stat!= kOfxStatOK && stat != kOfxStatReplyDefault) {
         return StatFailed;
     }
-    ifInfiniteclipRectToProjectDefault(&ofxRod);
+    *isProjectFormat = ifInfiniteclipRectToProjectDefault(&ofxRod);
     ofxRectDToRectI(ofxRod,rod);
     return StatOK;
     

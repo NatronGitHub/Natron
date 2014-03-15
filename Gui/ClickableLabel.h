@@ -26,18 +26,18 @@ public:
     void setClicked(bool b) {
         _toggled = b;
     }
+    
+    ///Updates the text as setText does but also keeps the current color info
+    void setText_overload(const QString& str);
 
 signals:
     void clicked(bool);
 
 private:
-    void mousePressEvent(QMouseEvent *) {
-        if (isEnabled()) {
-            _toggled = !_toggled;
-            emit clicked(_toggled);
-        }
-    }
-
+    virtual void mousePressEvent(QMouseEvent *) OVERRIDE FINAL;
+    
+    virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
+    
 private:
     bool _toggled;
 };

@@ -625,7 +625,8 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded){
         RenderScale scale;
         scale.x = scale.y = 1.;
         RectI rod;
-        stat = _tree.getOutput()->getRegionOfDefinition(time, &rod);
+        bool isProjectFormat;
+        stat = _tree.getOutput()->getRegionOfDefinition(time, &rod,&isProjectFormat);
         if(stat != StatFailed){
             int viewsCount = _tree.getOutput()->getApp()->getProject()->getProjectViewsCount();
             for(int i = 0; i < viewsCount;++i){
@@ -759,8 +760,12 @@ void RenderTree::refreshTree(int knobsAge){
         it->first->setRenderTreeIsUsingInputs(false);
     }
     
+    _renderOutputFormat = _output->getApp()->getProject()->getProjectDefaultFormat();
+    assert(!_renderOutputFormat.isNull());
+    _projectViewsCount = _output->getApp()->getProject()->getProjectViewsCount();
+
     ///clone the knobs
-    _output->cloneKnobsAndComputeHashAndClearPersistentMessage(knobsAge);
+    _output->cloneKnobsAndComputeHashAndClearPersistentMessage(knobsAge,true);
 }
 
 
@@ -794,7 +799,7 @@ void RenderTree::refreshKnobsAndHashAndClearPersistentMessage()
     assert(!_renderOutputFormat.isNull());
     _projectViewsCount = _output->getApp()->getProject()->getProjectViewsCount();
     int knobsAge = _output->getAppAge();
-    getOutput()->cloneKnobsAndComputeHashAndClearPersistentMessage(knobsAge);
+    getOutput()->cloneKnobsAndComputeHashAndClearPersistentMessage(knobsAge,false);
     _treeVersionValid = true;
 
 }

@@ -394,7 +394,7 @@ bool Gui::exitGui()
     _imp->saveGuiGeometry();
     return exit();
 }
-
+ 
 #pragma message WARN("same thing should be done in the non-Gui app, and should be connected to aboutToQuit() also")
 bool Gui::exit()
 {

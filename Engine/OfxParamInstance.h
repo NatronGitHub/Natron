@@ -519,6 +519,13 @@ public:
     virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
 
     virtual ~OfxGroupInstance(){}
+    
+    // callback which should set enabled state as appropriate
+    virtual void setEnabled() OVERRIDE FINAL;
+    
+    // callback which should set secret state as appropriate
+    virtual void setSecret() OVERRIDE FINAL;
+    
 
 private:
     boost::shared_ptr<Group_Knob> _groupKnob;

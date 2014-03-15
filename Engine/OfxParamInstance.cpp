@@ -275,7 +275,7 @@ static void valueAccordingToType(bool toType,const std::string& doubleType,OfxEf
              doubleType == kOfxParamDoubleTypeNormalisedX ||
              doubleType == kOfxParamDoubleTypeNormalisedXAbsolute){ //< treat absolute as non-absolute...
         
-        const Format& projectFormat = effect->getApp()->getProject()->getProjectDefaultFormat();
+        Format projectFormat = effect->getApp()->getProject()->getProjectDefaultFormat();
         if(toType){
             *inOut1stDim *= (double)projectFormat.width();
         }else{
@@ -286,7 +286,7 @@ static void valueAccordingToType(bool toType,const std::string& doubleType,OfxEf
              doubleType == kOfxParamDoubleTypeYAbsolute ||
              doubleType == kOfxParamDoubleTypeNormalisedY ||
              doubleType == kOfxParamDoubleTypeNormalisedYAbsolute){ //< treat absolute as non-absolute...
-        const Format& projectFormat = effect->getApp()->getProject()->getProjectDefaultFormat();
+        Format projectFormat = effect->getApp()->getProject()->getProjectDefaultFormat();
         if(toType){
             *inOut1stDim *= (double)projectFormat.height();
         }else{
@@ -298,7 +298,7 @@ static void valueAccordingToType(bool toType,const std::string& doubleType,OfxEf
              doubleType == kOfxParamDoubleTypeNormalisedXY ||
              doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute){
         assert(inOutS2ndDim);
-        const Format& projectFormat = effect->getApp()->getProject()->getProjectDefaultFormat();
+        Format projectFormat = effect->getApp()->getProject()->getProjectDefaultFormat();
         if(toType){
             *inOut1stDim *= (double)projectFormat.width();
             *inOutS2ndDim *= (double)projectFormat.height();
@@ -1430,6 +1430,16 @@ boost::shared_ptr<Knob> OfxGroupInstance::getKnob() const{
     }else{
         return _tabKnob;
     }
+}
+
+
+void OfxGroupInstance::setEnabled() {
+    _groupKnob->setAllDimensionsEnabled(getEnabled());
+}
+
+// callback which should set secret state as appropriate
+void OfxGroupInstance::setSecret() {
+    _groupKnob->setSecret(getSecret());
 }
 
 

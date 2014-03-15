@@ -139,7 +139,7 @@ void KnobGui::createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWi
         updateGUI(i,values[i]);
         checkAnimationLevel(i);
     }
-    setEnabled();
+    setEnabledSlot();
 
 }
 
@@ -888,7 +888,7 @@ void KnobGui::linkTo(int dimension) {
             emit keyFrameRemoved();
             QObject::connect(otherKnob.second.get(), SIGNAL(updateSlaves(int)), _knob.get(), SLOT(onMasterChanged(int)));
             
-            setReadOnly(true, dimension);
+            setReadOnly_(true, dimension);
             getKnob()->getHolder()->getApp()->triggerAutoSave();
         }
         
@@ -912,7 +912,7 @@ void KnobGui::unlink(int dimension) {
     checkAnimationLevel(dimension);
     emit keyFrameSet();
     QObject::disconnect(other.second.get(), SIGNAL(updateSlaves(int)), _knob.get(), SLOT(onMasterChanged(int)));
-    setReadOnly(false,dimension);
+    setReadOnly_(false,dimension);
     getKnob()->getHolder()->getApp()->triggerAutoSave();
 }
 
@@ -1002,5 +1002,19 @@ void KnobGui::resetDefault(int dimension) {
 }
 
 void KnobGui::onReadOnlyChanged(bool b,int d) {
-    setReadOnly(b,d);
+    setReadOnly_(b,d);
+}
+
+void KnobGui::setReadOnly_(bool readOnly,int dimension) {
+    
+    setReadOnly(readOnly, dimension);
+    
+    ///This code doesn't work since the knob dimensions are still enabled even if readonly
+//    bool hasDimensionEnabled = false;
+//    for (int i = 0; i < getKnob()->getDimension(); ++i) {
+//        if (getKnob()->isEnabled(i)) {
+//            hasDimensionEnabled = true;
+//        }
+//    }
+//    _descriptionLabel->setEnabled(hasDimensionEnabled);
 }

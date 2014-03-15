@@ -93,7 +93,8 @@ public:
     typedef std::vector<OFX::Host::ImageEffect::ClipDescriptor*> MappedInputV;
     MappedInputV inputClipsCopyWithoutOutput() const WARN_UNUSED_RETURN;
     
-    void ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const;
+    ///Returns true if the rod will be set to the project format
+    bool ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const;
 
     /********OVERRIDEN FROM EFFECT INSTANCE*************/
     virtual int majorVersion() const OVERRIDE  FINAL WARN_UNUSED_RETURN;
@@ -126,7 +127,7 @@ public:
 
     virtual bool isInputOptional(int inputNb) const OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProjectFormat) OVERRIDE WARN_UNUSED_RETURN;
 
     virtual Natron::EffectInstance::RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) OVERRIDE WARN_UNUSED_RETURN;
     

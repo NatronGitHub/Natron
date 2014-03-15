@@ -209,6 +209,9 @@ private:
 
     virtual void setEnabled() = 0;
     
+    ////calls setReadOnly and also set the label black
+    void setReadOnly_(bool readOnly,int dimension);
+    
     virtual void setReadOnly(bool readOnly,int dimension) = 0;
     
     /**

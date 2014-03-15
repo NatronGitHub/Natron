@@ -4,8 +4,7 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/NonKeyParams.h"
-#include "Engine/Rect.h"
-
+#include "Engine/Format.h"
 
 
 namespace Natron {
@@ -35,6 +34,7 @@ public:
     ImageParams()
     : NonKeyParams()
     , _rod()
+    , _isRoDProjectFormat(false)
     , _inputNbIdentity(-1)
     , _inputTimeIdentity(0)
     , _framesNeeded()
@@ -46,6 +46,7 @@ public:
     ImageParams(const ImageParams& other)
     : NonKeyParams(other)
     , _rod(other._rod)
+    , _isRoDProjectFormat(other._isRoDProjectFormat)
     , _inputNbIdentity(other._inputNbIdentity)
     , _inputTimeIdentity(other._inputTimeIdentity)
     , _framesNeeded(other._framesNeeded)
@@ -54,10 +55,11 @@ public:
         
     }
     
-    ImageParams(int cost,const RectI& rod,ImageComponents components,int inputNbIdentity,int inputTimeIdentity,
+    ImageParams(int cost,const RectI& rod,bool isRoDProjectFormat,ImageComponents components,int inputNbIdentity,int inputTimeIdentity,
                 const std::map<int, std::vector<RangeD> >& framesNeeded)
     : NonKeyParams(cost,rod.area() * getElementsCountForComponents(components))
     , _rod(rod)
+    , _isRoDProjectFormat(isRoDProjectFormat)
     , _inputNbIdentity(inputNbIdentity)
     , _inputTimeIdentity(inputTimeIdentity)
     , _framesNeeded(framesNeeded)
@@ -74,6 +76,8 @@ public:
     
     int getInputTimeIdentity() const { return _inputTimeIdentity; }
     
+    bool isRodProjectFormat() const { return _isRoDProjectFormat; }
+        
     const std::map<int, std::vector<RangeD> >& getFramesNeeded() const { return _framesNeeded; }
     
     ImageComponents getComponents() const { return _components; }
@@ -110,6 +114,12 @@ private:
     }
     
     RectI _rod;
+    
+    /// if true then when retrieving the associated image from cache
+    /// the caller should update the rod to the current project format.
+    /// This is because the project format might have changed since this image was cached.
+    bool _isRoDProjectFormat;
+    
     int _inputNbIdentity; // -1 if not an identity
     double _inputTimeIdentity;
     std::map<int, std::vector<RangeD> > _framesNeeded;

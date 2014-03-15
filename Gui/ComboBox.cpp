@@ -13,7 +13,6 @@
 #include <cassert>
 #include <algorithm>
 #include <QLayout>
-#include <QLabel>
 #include <QStyle>
 #include <QFont>
 #include <QFontMetrics>
@@ -24,6 +23,7 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/MenuWithToolTips.h"
+#include "Gui/ClickableLabel.h"
 
 using namespace Natron;
 
@@ -44,14 +44,14 @@ ComboBox::ComboBox(QWidget* parent)
     setLayout(_mainLayout);
     setFrameShape(QFrame::Box);
     
-    _currentText = new QLabel(this);
+    _currentText = new ClickableLabel("",this);
     _currentText->setObjectName("ComboBoxLabel"); 
     setCurrentIndex(-1);
     _mainLayout->addWidget(_currentText);
     _currentText->setFixedHeight(fontMetrics().height() + 8);
 
     
-    _dropDownIcon = new QLabel(this);
+    _dropDownIcon = new ClickableLabel("",this);
     _dropDownIcon->setObjectName("ComboBoxDropDownLabel");
     QPixmap pixC;
     appPTR->getIcon(NATRON_PIXMAP_COMBOBOX, &pixC);
@@ -134,7 +134,8 @@ void ComboBox::setReadOnly(bool readOnly)
 {
 
     this->readOnly = readOnly;
-  
+    _currentText->setEnabled(!readOnly);
+    _dropDownIcon->setEnabled(!readOnly);
     style()->unpolish(this);
     style()->polish(this);
     repaint();
@@ -216,7 +217,7 @@ int ComboBox::setCurrentText_internal(const QString& text) {
     str.prepend("  ");
     str.append("  ");
     assert(_currentText);
-    _currentText->setText(str);
+    _currentText->setText_overload(str);
     QFontMetrics m = fontMetrics();
     _currentText->setMinimumWidth(m.width(str));
     // if no action matches this text, set the index to a dirty value
@@ -277,7 +278,7 @@ bool ComboBox::setCurrentIndex_internal(int index) {
 #endif
     str.prepend("  ");
     str.append("  ");
-    _currentText->setText(str);
+    _currentText->setText_overload(str);
     QFontMetrics m = fontMetrics();
     _currentText->setMinimumWidth(m.width(str));
 

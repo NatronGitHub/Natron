@@ -732,7 +732,7 @@ void Node::activate()
 
 
 
-const Format& Node::getRenderFormatForEffect(const EffectInstance* effect) const
+Format Node::getRenderFormatForEffect(const EffectInstance* effect) const
 {
     if (effect == _liveInstance) {
         return getApp()->getProject()->getProjectDefaultFormat();
@@ -824,7 +824,8 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     
     RectI rod;
     _imp->previewRenderTree->refreshTree(knobsAge);
-    Natron::Status stat = _imp->previewInstance->getRegionOfDefinition(time, &rod);
+    bool isProjectFormat;
+    Natron::Status stat = _imp->previewInstance->getRegionOfDefinition(time, &rod,&isProjectFormat);
     if (stat == StatFailed) {
         _imp->computingPreview = false;
         _imp->computingPreviewCond.wakeOne();

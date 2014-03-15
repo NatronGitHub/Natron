@@ -259,7 +259,7 @@ public:
     void activate();
     
 
-    const Format& getRenderFormatForEffect(const Natron::EffectInstance* effect) const;
+    Format getRenderFormatForEffect(const Natron::EffectInstance* effect) const;
     
     int getRenderViewsCountForEffect(const Natron::EffectInstance* effect) const;
     

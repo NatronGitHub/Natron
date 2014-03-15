@@ -113,10 +113,10 @@ int ViewerInstance::activeInput() const{
     return dynamic_cast<InspectorNode*>(getNode())->activeInput();
 }
 
-Natron::Status ViewerInstance::getRegionOfDefinition(SequenceTime time,RectI* rod){
+Natron::Status ViewerInstance::getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProjectFormat){
     EffectInstance* n = input(activeInput());
     if(n){
-        return n->getRegionOfDefinition(time,rod);
+        return n->getRegionOfDefinition(time,rod,isProjectFormat);
     }else{
         return StatFailed;
     }
@@ -160,7 +160,8 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreade
     RenderScale scale;
     scale.x = scale.y = 1.;
     
-    int viewsCount = getApp()->getProject()->getProjectViewsCount();
+    Format dispW = getRenderFormat();
+    int viewsCount = getRenderViewsCount();
     int view = viewsCount > 0 ? _uiContext->getCurrentView() : 0;
 
     EffectInstance* activeInputToRender = input(activeInput());
@@ -177,6 +178,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreade
     bool isInputImgCached = false;
     Natron::ImageKey inputImageKey = Natron::Image::makeKey(activeInputToRender->hash().value(), time, scale,view);
     RectI rod;
+    bool isRodProjectFormat = false;
     int inputIdentityNumber = -1;
     SequenceTime inputIdentityTime;
     if (!_forceRender) {
@@ -184,30 +186,35 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreade
         if (isInputImgCached) {
             inputIdentityNumber = cachedImgParams->getInputNbIdentity();
             inputIdentityTime = cachedImgParams->getInputTimeIdentity();
-        }
-    }
-    
-    ////While the inputs are identity get the RoD of the first non identity input
-    while (!_forceRender && inputIdentityNumber != -1 && isInputImgCached) {
-        EffectInstance* recursiveInput = activeInputToRender->input(inputIdentityNumber);
-        if (recursiveInput) {
-            inputImageKey = Natron::Image::makeKey(recursiveInput->hash().value(), inputIdentityTime, scale,view);
-            isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
-            if (isInputImgCached) {
-                inputIdentityNumber = cachedImgParams->getInputNbIdentity();
-                inputIdentityTime = cachedImgParams->getInputTimeIdentity();
+            
+            if (inputIdentityNumber != -1) {
+                inputImage = activeInputToRender->getImage(inputIdentityNumber, time, scale, view);
             }
-
-        } else {
-            isInputImgCached = false;
         }
     }
     
     if (isInputImgCached) {
-        rod = cachedImgParams->getRoD();
+        
+        ////If the image was cached with a RoD dependent on the project format, but the project format changed,
+        ////just discard this entry.
+        //// We do this ONLY if the effect is not an identity, because otherwise the isRoDProjectFormat is meaningless
+        //// because we fetched an image upstream anyway.
+        if (inputIdentityNumber == -1 && cachedImgParams->isRodProjectFormat()) {
+            if (dynamic_cast<RectI&>(dispW) != cachedImgParams->getRoD()) {
+                isInputImgCached = false;
+                appPTR->removeFromNodeCache(inputImage);
+                inputImage.reset();
+                cachedImgParams.reset();
+            }
+        }
+    }
+    if (isInputImgCached) {
+        rod = inputImage->getRoD();
+        isRodProjectFormat = cachedImgParams->isRodProjectFormat();
         _lastRenderedImage = inputImage;
+
     } else {
-        Status stat = getRegionOfDefinition(time, &rod);
+        Status stat = getRegionOfDefinition(time, &rod,&isRodProjectFormat);
         if(stat == StatFailed){
 #ifdef NATRON_LOG
             Natron::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());
@@ -215,14 +222,11 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreade
 #endif
             return stat;
         }
-        
+        isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
     }
     
-    ifInfiniteclipRectToProjectDefault(&rod);
 
     emit rodChanged(rod);
-    
-    Format dispW = getApp()->getProject()->getProjectDefaultFormat();
         
     if(!_uiContext->isClippingImageToProjectWindow()){
         dispW.set(rod);

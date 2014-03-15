@@ -161,7 +161,8 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     RectI rod;
     EffectInstance* n = getAssociatedNode();
     if (n && n != _nodeInstance) {
-        Natron::Status st = n->getRegionOfDefinition(time,&rod);
+        bool isProjectFormat;
+        Natron::Status st = n->getRegionOfDefinition(time,&rod,&isProjectFormat);
         if (st == StatFailed) {
             //assert(!"cannot compute ROD");
             ret.x1 = kOfxFlagInfiniteMin;

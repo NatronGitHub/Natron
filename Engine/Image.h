@@ -111,7 +111,7 @@ namespace Natron {
                                 RenderScale scale,
                                 int view);
         
-        static boost::shared_ptr<ImageParams> makeParams(int cost,const RectI& rod,ImageComponents components,
+        static boost::shared_ptr<ImageParams> makeParams(int cost,const RectI& rod,bool isRoDProjectFormat,ImageComponents components,
                                                          int inputNbIdentity,int inputTimeIdentity,
                                                          const std::map<int, std::vector<RangeD> >& framesNeeded) ;
         

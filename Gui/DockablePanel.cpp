@@ -427,7 +427,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool ma
         }
         
         if (ret->showDescriptionLabel() && label) {
-            label->setText(QString(QString(ret->getKnob()->getDescription().c_str()) + ":"));
+            label->setText_overload(QString(QString(ret->getKnob()->getDescription().c_str()) + ":"));
             QObject::connect(label, SIGNAL(clicked(bool)), ret, SIGNAL(labelClicked(bool)));
         }
         

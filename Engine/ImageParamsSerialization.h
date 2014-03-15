@@ -32,6 +32,7 @@ void ImageParams::serialize(Archive & ar,const unsigned int /*version*/)
 {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Natron::NonKeyParams);
     ar & boost::serialization::make_nvp("Rod",_rod);
+    ar & boost::serialization::make_nvp("IsProjectFormat",_isRoDProjectFormat);
     ar & boost::serialization::make_nvp("InputNbIdentity",_inputNbIdentity);
     ar & boost::serialization::make_nvp("InputTimeIdentity",_inputTimeIdentity);
     ar & boost::serialization::make_nvp("FramesNeeded",_framesNeeded);

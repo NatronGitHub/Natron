@@ -151,16 +151,16 @@ void EffectInstance::setKnobsAge(U64 age) {
 }
 
 
-U64 EffectInstance::cloneKnobsAndComputeHashAndClearPersistentMessage(int knobsAge) {
+U64 EffectInstance::cloneKnobsAndComputeHashAndClearPersistentMessage(int knobsAge,bool forceHashComputation) {
    
     ///if the effect is visited again, isHashValid will return true and the call is cheap
     
-    if (!isHashValid()) {
+    if (!isHashValid() || forceHashComputation) {
         
         std::vector<U64> inputHashs;
         for (Inputs::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
             if (*it) {
-                inputHashs.push_back((*it)->cloneKnobsAndComputeHashAndClearPersistentMessage(knobsAge));
+                inputHashs.push_back((*it)->cloneKnobsAndComputeHashAndClearPersistentMessage(knobsAge,forceHashComputation));
             }
         }
         
@@ -204,9 +204,9 @@ const std::string& EffectInstance::getName() const{
     return _node->getName();
 }
 
-const Format& EffectInstance::getRenderFormat() const
+Format EffectInstance::getRenderFormat() const
 {
-    const Format& f = _node->getRenderFormatForEffect(this);
+    Format f = _node->getRenderFormatForEffect(this);
     assert(!f.isNull());
     return f;
 }
@@ -257,7 +257,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     if (_imp->renderArgs.hasLocalData()) {
         roi = _imp->renderArgs.localData()._roi;//if the thread was spawned by us we take the last render args
     } else {
-        Natron::Status stat = n->getRegionOfDefinition(time, &roi);
+        bool isProjectFormat;
+        Natron::Status stat = n->getRegionOfDefinition(time, &roi,&isProjectFormat);
         if(stat == Natron::StatFailed) {//we have no choice but compute the full region of definition
             return boost::shared_ptr<Natron::Image>();
         }
@@ -267,17 +268,13 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     return entry;
 }
 
-Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod) {
+Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProjectFormat) {
     
-    if (isWriter()) {
-        rod->set(getRenderFormat());
-        return StatReplyDefault;
-    }
-    
+    Format frmt = getRenderFormat();
     for(Inputs::const_iterator it = _imp->inputs.begin() ; it != _imp->inputs.end() ; ++it){
         if (*it) {
             RectI inputRod;
-            Status st = (*it)->getRegionOfDefinition(time, &inputRod);
+            Status st = (*it)->getRegionOfDefinition(time, &inputRod,isProjectFormat);
             if(st == StatFailed)
                 return st;
             if (it == _imp->inputs.begin()) {
@@ -286,6 +283,11 @@ Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,RectI* ro
                 rod->merge(inputRod);
             }
         }
+    }
+    if (rod->bottom() == frmt.bottom() && rod->top() == frmt.top() && rod->left() == frmt.left() && rod->right() == frmt.right()) {
+        *isProjectFormat = true;
+    } else {
+        *isProjectFormat = false;
     }
     return StatReplyDefault;
 }
@@ -367,6 +369,21 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
     
     if (!byPassCache) {
         isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
+        
+        ////If the image was cached with a RoD dependent on the project format, but the project format changed,
+        ////just discard this entry
+        if (isCached) {
+            assert(cachedImgParams);
+            if (cachedImgParams->isRodProjectFormat()) {
+                Format projectFormat = getRenderFormat();
+                if (dynamic_cast<RectI&>(projectFormat) != cachedImgParams->getRoD()) {
+                    isCached = false;
+                    appPTR->removeFromNodeCache(image);
+                    cachedImgParams.reset();
+                    image.reset();
+                }
+            }
+        }
     }
     
     
@@ -378,8 +395,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         int inputNbIdentity;
         RectI rod;
         FramesNeededMap framesNeeded;
+        bool isProjectFormat = false;
         bool identity = isIdentity(time,scale,renderWindow,view,&inputTimeIdentity,&inputNbIdentity);
         if (identity) {
+           
             ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
             image = getImage(inputNbIdentity,inputTimeIdentity,scale,view);
             
@@ -392,7 +411,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
             inputNbIdentity = -1;
             
             ///before allocating it we must fill the RoD of the image we want to render
-            if(getRegionOfDefinition(time, &rod) == StatFailed){
+            if(getRegionOfDefinition(time, &rod,&isProjectFormat) == StatFailed){
                 ///if getRoD fails, just return a NULL ptr
                 return boost::shared_ptr<Natron::Image>();
             }
@@ -424,7 +443,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
             cost = -1;
         }
         
-        cachedImgParams = Natron::Image::makeParams(cost, rod,
+        cachedImgParams = Natron::Image::makeParams(cost, rod,isProjectFormat,
                                                     components,
                                                     inputNbIdentity, inputTimeIdentity,
                                                     framesNeeded);
@@ -463,6 +482,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
 #endif
         assert(cachedImgParams);
         assert(image);
+        
         ///if it was cached, first thing to check is to see if it is an identity
         int inputNbIdentity = cachedImgParams->getInputNbIdentity();
         if (inputNbIdentity != -1) {
@@ -1049,7 +1069,7 @@ void OutputEffectInstance::refreshAndContinueRender(bool forcePreview){
     _videoEngine->refreshAndContinueRender(forcePreview);
 }
 
-void OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
+bool OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
     if(!getApp()->getProject()){
         return;
     }
@@ -1058,19 +1078,24 @@ void OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
     // BE CAREFUL:
     // std::numeric_limits<int>::infinity() does not exist (check std::numeric_limits<int>::has_infinity)
     // an int can not be equal to (or compared to) std::numeric_limits<double>::infinity()
+    bool isRodProjctFormat = false;
     if (rod->left() == kOfxFlagInfiniteMin || rod->left() == std::numeric_limits<int>::min()) {
         rod->set_left(projectDefault.left());
+        isRodProjctFormat = true;
     }
     if (rod->bottom() == kOfxFlagInfiniteMin || rod->bottom() == std::numeric_limits<int>::min()) {
         rod->set_bottom(projectDefault.bottom());
+        isRodProjctFormat = true;
     }
     if (rod->right() == kOfxFlagInfiniteMax || rod->right() == std::numeric_limits<int>::max()) {
         rod->set_right(projectDefault.right());
+        isRodProjctFormat = true;
     }
     if (rod->top() == kOfxFlagInfiniteMax || rod->top()  == std::numeric_limits<int>::max()) {
         rod->set_top(projectDefault.top());
+        isRodProjctFormat = true;
     }
-    
+    return isRodProjctFormat;
 }
 
 void OutputEffectInstance::renderFullSequence(BlockingBackgroundRender* renderController) {

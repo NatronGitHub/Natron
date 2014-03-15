@@ -32,7 +32,9 @@ public slots:
 
 private:
     virtual void mousePressEvent(QMouseEvent *) OVERRIDE FINAL {
-        emit checked(!_checked);
+        if (isEnabled()) {
+            emit checked(!_checked);
+        }
     }
 
 signals:

@@ -441,7 +441,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 
     
     _imp->blankViewerInfos.setChannels(Natron::Mask_RGBA);
-    const Format& projectFormat = parent->getGui()->getApp()->getProject()->getProjectDefaultFormat();
+    Format projectFormat = parent->getGui()->getApp()->getProject()->getProjectDefaultFormat();
     _imp->blankViewerInfos.setRoD(projectFormat);
     _imp->blankViewerInfos.setDisplayWindow(projectFormat);
     setRegionOfDefinition(_imp->blankViewerInfos.getRoD());

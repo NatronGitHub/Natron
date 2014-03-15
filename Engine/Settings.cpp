@@ -117,7 +117,7 @@ void Settings::initializeKnobs(){
     _ocioConfigKnob->populate(configs);
     _ocioConfigKnob->setValue<int>(defaultIndex);
     _ocioConfigKnob->setHintToolTip("Select the OpenColorIO config you would like to use globally for all "
-                                    "operators that uses OpenColorIO. Note that changing it will set the OCIO "
+                                    "operators that use OpenColorIO. Note that changing it will set the OCIO "
                                     "environment variable, hence any change to this parameter will be "
                                     "taken into account on the next application launch. "
                                     "When custom config is selected, you can use the custom OpenColorIO config file "

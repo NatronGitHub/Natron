@@ -23,7 +23,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Global/Macros.h"
 
 class QHBoxLayout;
-class QLabel;
+class ClickableLabel;
 class QMouseEvent;
 class QAction;
 
@@ -42,8 +42,8 @@ class ComboBox : public QFrame
 
     
     QHBoxLayout* _mainLayout;
-    QLabel* _currentText;
-    QLabel* _dropDownIcon;
+    ClickableLabel* _currentText;
+    ClickableLabel* _dropDownIcon;
     
     int _currentIndex;
     
