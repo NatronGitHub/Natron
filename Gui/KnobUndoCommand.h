@@ -46,7 +46,6 @@ private:
     std::vector<int> _valueChangedReturnCode;
     std::vector<KeyFrame> _newKeys;
     std::vector<KeyFrame>  _oldKeys;
-    U64 _oldAge;
     bool _merge;
 };
 
