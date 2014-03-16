@@ -268,7 +268,7 @@ OFX::Host::ImageEffect::Image(clip)
     setStringProperty(kOfxImageEffectPropPixelDepth, clip.getPixelDepth());
     setStringProperty(kOfxImageEffectPropPreMultiplication, clip.getPremult());
     setStringProperty(kOfxImagePropField, kOfxImageFieldNone);
-    setStringProperty(kOfxImagePropUniqueIdentifier,QString::number(internalImage->getHashKey()).toStdString());
+    setStringProperty(kOfxImagePropUniqueIdentifier,QString::number(internalImage->getHashKey(), 16).toStdString());
     setDoubleProperty(kOfxImagePropPixelAspectRatio, clip.getAspectRatio());
 }
 
