@@ -63,7 +63,7 @@ void File_KnobGui::createWidget(QHBoxLayout* layout)
     if(hasToolTip()) {
         _lineEdit->setToolTip(toolTip());
     }
-    QObject::connect(_lineEdit, SIGNAL(returnPressed()), this, SLOT(onReturnPressed()));
+    QObject::connect(_lineEdit, SIGNAL(editingFinished()), this, SLOT(onReturnPressed()));
 
     _openFileButton = new Button(layout->parentWidget());
 
@@ -252,7 +252,7 @@ void OutputFile_KnobGui::createWidget(QHBoxLayout* layout)
 
     _lineEdit = new LineEdit(layout->parentWidget());
     layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    QObject::connect(_lineEdit, SIGNAL(returnPressed()), this, SLOT(onReturnPressed()));
+    QObject::connect(_lineEdit, SIGNAL(editingFinished()), this, SLOT(onReturnPressed()));
     _lineEdit->setPlaceholderText(QString("File path..."));
     if(hasToolTip()) {
         _lineEdit->setToolTip(toolTip());
@@ -380,7 +380,7 @@ void Path_KnobGui::createWidget(QHBoxLayout* layout)
    
     _lineEdit = new LineEdit(layout->parentWidget());
     layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    QObject::connect(_lineEdit, SIGNAL(returnPressed()), this, SLOT(onReturnPressed()));
+    QObject::connect(_lineEdit, SIGNAL(editingFinished()), this, SLOT(onReturnPressed()));
     if(hasToolTip()) {
         _lineEdit->setToolTip(toolTip());
     }

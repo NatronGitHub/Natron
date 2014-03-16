@@ -49,6 +49,7 @@ private:
 
     void dragLeaveEvent(QDragLeaveEvent* e);
     
+    
     int animation;
 };
 

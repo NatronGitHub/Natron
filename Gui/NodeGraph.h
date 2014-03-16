@@ -84,8 +84,6 @@ public:
     
     NodeGui* getSelectedNode() const {return _nodeSelected;}
     
-    void removeNode(NodeGui* n);
-    
     void setSmartNodeCreationEnabled(bool enabled){smartNodeCreationEnabled=enabled;}
     
     void selectNode(NodeGui* n);
@@ -138,8 +136,6 @@ public slots:
     void toggleCacheInfos();
     
     void turnOffPreviewForAllNodes();
-    
-    void deleteNode(Natron::Node*);
     
     void toggleAutoPreview();
     

@@ -789,22 +789,6 @@ void NodeGraph::deleteNode(NodeGui* n) {
 }
 
 
-void NodeGraph::removeNode(NodeGui* n) {
-    assert(n);
-    if(_nodeSelected == n)
-        _nodeSelected = NULL;
-    
-    QMutexLocker l(&_nodesMutex);
-    std::vector<NodeGui*>::iterator it = std::find(_nodes.begin(), _nodes.end(), n);
-    if (it != _nodes.end()) {
-        _nodes.erase(it);
-    }
-    it = std::find(_nodesTrash.begin(), _nodesTrash.end(), n);
-    if (it != _nodesTrash.end()) {
-        _nodesTrash.erase(it);
-    }
-}
-
 void NodeGraph::selectNode(NodeGui* n) {
     assert(n);
     _nodeSelected = n;
@@ -1465,24 +1449,6 @@ void NodeGraph::turnOffPreviewForAllNodes(){
             if(!_nodes[i]->getNode()->isPreviewEnabled() && _nodes[i]->getNode()->makePreviewByDefault()){
                 _nodes[i]->togglePreview();
             }
-        }
-    }
-}
-
-void NodeGraph::deleteNode(Natron::Node* n){
-    QMutexLocker l(&_nodesMutex);
-    for (U32 i = 0; i < _nodes.size(); ++i) {
-        if(_nodes[i]->getNode() == n){
-            delete _nodes[i];
-            _nodes.erase(_nodes.begin()+i);
-            return;
-        }
-    }
-    for (U32 i = 0; i < _nodesTrash.size(); ++i) {
-        if(_nodesTrash[i]->getNode() == n){
-            delete _nodesTrash[i];
-            _nodesTrash.erase(_nodesTrash.begin()+i);
-            break;
         }
     }
 }

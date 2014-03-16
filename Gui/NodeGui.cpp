@@ -222,9 +222,6 @@ NodeGui::~NodeGui(){
     }
     delete _selectedGradient;
     delete _defaultGradient;
-    if (!_graph->getGui()->isClosing()) {
-        removeUndoStack();
-    }
     if (_settingsPanel) {
         _settingsPanel->setParent(NULL);
         delete _settingsPanel;
