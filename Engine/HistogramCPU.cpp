@@ -5,6 +5,8 @@
 
 
 #include "HistogramCPU.h"
+
+#include <algorithm>
 #include <QMutex>
 #include <QWaitCondition>
 
@@ -51,18 +53,18 @@ struct HistogramRequest {
 };
 
 struct FinishedHistogram {
-    float* histogram1;
-    float* histogram2;
-    float* histogram3;
+    std::vector<float> histogram1;
+    std::vector<float> histogram2;
+    std::vector<float> histogram3;
     int mode;
     int binsCount;
     int pixelsCount;
     double vmin,vmax;
     
     FinishedHistogram()
-    : histogram1(0)
-    , histogram2(0)
-    , histogram3(0)
+    : histogram1()
+    , histogram2()
+    , histogram3()
     , mode(0)
     , binsCount(0)
     , pixelsCount(0)
@@ -81,7 +83,7 @@ struct HistogramCPUPrivate
     std::list<HistogramRequest> requests;
     
     QMutex producedMutex;
-    std::list<FinishedHistogram> produced;
+    std::list<boost::shared_ptr<FinishedHistogram> > produced;
     
     QWaitCondition mustQuitCond;
     QMutex mustQuitMutex;
@@ -107,22 +109,9 @@ HistogramCPU::HistogramCPU()
 {
 }
 
-HistogramCPU::~HistogramCPU() {
+HistogramCPU::~HistogramCPU()
+{
     quitAnyComputation();
-    
- 
-    ///the thread is not running any longer.
-    ///clear the histogram produced left over.
-    {
-        QMutexLocker l(&_imp->producedMutex);
-        while (!_imp->produced.empty()) {
-            FinishedHistogram& h = _imp->produced.front();
-            free(h.histogram1);
-            free(h.histogram2);
-            free(h.histogram3);
-            _imp->produced.pop_front();
-        }
-    }
 }
 
 void HistogramCPU::computeHistogram(int mode, //< corresponds to the enum Histogram::DisplayMode
@@ -131,9 +120,8 @@ void HistogramCPU::computeHistogram(int mode, //< corresponds to the enum Histog
                                     int binsCount,
                                     double vmin,
                                     double vmax,
-                                    int smoothingKernelSize) {
-    
-    
+                                    int smoothingKernelSize)
+{
     /*Starting or waking-up the thread*/
     QMutexLocker quitLocker(&_imp->mustQuitMutex);
     QMutexLocker locker(&_imp->requestMutex);
@@ -148,7 +136,8 @@ void HistogramCPU::computeHistogram(int mode, //< corresponds to the enum Histog
 
 }
 
-void HistogramCPU::quitAnyComputation() {
+void HistogramCPU::quitAnyComputation()
+{
     if (isRunning()) {
         QMutexLocker l(&_imp->mustQuitMutex);
         _imp->mustQuit = true;
@@ -161,179 +150,171 @@ void HistogramCPU::quitAnyComputation() {
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
         }
     }
-    
 }
 
-bool HistogramCPU::hasProducedHistogram() const {
+bool
+HistogramCPU::hasProducedHistogram() const
+{
     QMutexLocker l(&_imp->producedMutex);
     return !_imp->produced.empty();
 }
 
-bool HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
-                                      std::vector<float>* histogram2,
-                                      std::vector<float>* histogram3,
-                                      unsigned int* binsCount,
-                                      unsigned int* pixelsCount,
-                                      int* mode,
-                                      double* vmin,double* vmax) {
-    
-    histogram1->clear();
-    histogram2->clear();
-    histogram3->clear();
-    
+bool
+HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
+                                               std::vector<float>* histogram2,
+                                               std::vector<float>* histogram3,
+                                               unsigned int* binsCount,
+                                               unsigned int* pixelsCount,
+                                               int* mode,
+                                               double* vmin,
+                                               double* vmax)
+{
+    assert(histogram1 && histogram2 && histogram3 && binsCount && pixelsCount && mode && vmin && vmax);
+
     QMutexLocker l(&_imp->producedMutex);
     if (_imp->produced.empty()) {
         return false;
     }
     
-    FinishedHistogram& h = *_imp->produced.begin();
-    *binsCount = h.binsCount;
-    *pixelsCount = h.pixelsCount;
-    *mode = h.mode;
-    *vmin = h.vmin;
-    *vmax = h.vmax;
-    
-    if (h.histogram1) {
-        histogram1->resize(*binsCount);
-    }
-    if (h.histogram2) {
-        histogram2->resize(*binsCount);
-    }
-    if (h.histogram3) {
-        histogram3->resize(*binsCount);
-    }
-    
-    for (unsigned int i = 0; i < *binsCount; ++i) {
-        if (h.histogram1) {
-            histogram1->at(i) = h.histogram1[i];
-        }
-        if (h.histogram2) {
-            histogram2->at(i) = h.histogram2[i];
-        }
-        if (h.histogram3) {
-            histogram3->at(i) = h.histogram3[i];
-        }
-    }
-    
-    if (h.histogram1) {
-        free(h.histogram1);
-    }
-    if (h.histogram2) {
-        free(h.histogram2);
-    }
-    if (h.histogram3) {
-        free(h.histogram3);
-    }
-    
-    
+#pragma message WARN("this is not the most recent! the most recent is back(), since we push_back() below")
+    boost::shared_ptr<FinishedHistogram> h = _imp->produced.front();
+
+    *histogram1 = h->histogram1;
+    *histogram2 = h->histogram2;
+    *histogram3 = h->histogram3;
+    *binsCount = h->binsCount;
+    *pixelsCount = h->pixelsCount;
+    *mode = h->mode;
+    *vmin = h->vmin;
+    *vmax = h->vmax;
     _imp->produced.pop_front();
-    
+
     return true;
 }
 
-namespace  {
+static inline float
+pix_red(float *pix)
+{
+    return pix[0];
+}
 
-static void computeHistogramStatic(const HistogramRequest& request,FinishedHistogram* ret,int histogramIndex) {
-    
-    
-    float* histo = 0;
+static inline float
+pix_green(float *pix)
+{
+    return pix[1];
+}
+
+static inline float
+pix_blue(float *pix)
+{
+    return pix[2];
+}
+
+static inline float
+pix_alpha(float *pix)
+{
+    return pix[3];
+}
+
+static inline float
+pix_lum(float *pix)
+{
+    return 0.299 * pix[0] + 0.587 * pix[1] + 0.114 * pix[2];
+}
+
+template <float pix_func(float*)>
+void
+computeHisto(const HistogramRequest& request, std::vector<float> *histo)
+{
+    assert(histo);
+    histo->resize(request.binsCount);
+    std::fill(histo->begin(), histo->end(), 0.f);
+
+    double binSize = (request.vmax - request.vmin) / request.binsCount;
+
+
+    for (int y = request.rect.bottom() ; y < request.rect.top(); ++y) {
+        for (int x = request.rect.left(); x < request.rect.right(); ++x) {
+            float *pix = request.image->pixelAt(x, y) ;
+            float v = pix_func(pix);
+            if (request.vmin <= v && v < request.vmax) {
+                int index = (int)((v - request.vmin) / binSize);
+                assert(0 <= index && index < (int)histo->size());
+                (*histo)[index] += 1.f;
+            }
+        }
+    }
+}
+
+
+static void
+computeHistogramStatic(const HistogramRequest& request, boost::shared_ptr<FinishedHistogram> ret, int histogramIndex)
+{
+    std::vector<float> *histo = 0;
     switch (histogramIndex) {
         case 1:
-            ret->histogram1 = (float*)calloc(request.binsCount,sizeof(float));
-            histo = ret->histogram1;
+            histo = &ret->histogram1;
             break;
         case 2:
-            ret->histogram2 = (float*)calloc(request.binsCount,sizeof(float));
-            histo = ret->histogram2;
+            histo = &ret->histogram2;
             break;
         case 3:
-            ret->histogram3 = (float*)calloc(request.binsCount,sizeof(float));
-            histo = ret->histogram3;
+            histo = &ret->histogram3;
             break;
         default:
             break;
     }
-    
-    double binSize = (request.vmax - request.vmin) / request.binsCount;
-    
+    assert(histo);
+
     /// keep the mode parameter in sync with Histogram::DisplayMode
-    
+
     int mode = request.mode;
-    
+
     ///if the mode is RGB, adjust the mode to either R,G or B depending on the histogram index
     if (mode == 0) {
         mode = histogramIndex + 2;
     }
-    
+
     ret->pixelsCount = request.rect.area();
-    
-    for (int y = request.rect.bottom() ; y < request.rect.top(); ++y) {
-        for (int x = request.rect.left(); x < request.rect.right(); ++x) {
-            float *pix = request.image->pixelAt(x, y) ;
-            float v;
-            switch (mode) {
-                case 1: //< A
-                    v = pix[3];
-                    break;
-                case 2: //<Y
-                    v = 0.299 * pix[0] + 0.587 * pix[1] + 0.114 * pix[2];
-                    break;
-                case 3: //< R
-                    v = pix[0];
-                    break;
-                case 4: //< G
-                    v = pix[1];
-                    break;
-                case 5: //< B
-                    v = pix[2];
-                    break;
-                    
-                default:
-                    assert(false);
-                    break;
-            }
-            if (v >= request.vmin && v <= request.vmax) {
-                int index = (int)((v - request.vmin) / binSize);
-                ++histo[index];
-            }
-        }
+
+    switch (mode) {
+        case 1: //< A
+            computeHisto<pix_alpha>(request, histo);
+            break;
+        case 2: //<Y
+            computeHisto<pix_lum>(request, histo);
+            break;
+        case 3: //< R
+            computeHisto<pix_red>(request, histo);
+            break;
+        case 4: //< G
+            computeHisto<pix_green>(request, histo);
+            break;
+        case 5: //< B
+            computeHisto<pix_blue>(request, histo);
+            break;
+
+        default:
+            assert(false);
+            break;
     }
-    
-    ///Apply the filter if any
-    assert(request.smoothingKernelSize == 0 || request.smoothingKernelSize == 3 || request.smoothingKernelSize == 5);
-    
-    if (request.smoothingKernelSize > 0) {
-        
-        std::vector<int> kernel;
-        kernel.resize(request.smoothingKernelSize);
-        if (request.smoothingKernelSize == 3) {
-            kernel[0] = 1;kernel[1] = 2;kernel[2] = 1;
-        } else if (request.smoothingKernelSize == 5) {
-            kernel[0] = 1;kernel[1] = 4;kernel[2] = 6;kernel[3] = 4;kernel[4] = 1;
-        }
-        
-        std::vector<float> histogramCopy(request.binsCount);
-        std::copy(histo, histo + request.binsCount, histogramCopy.begin());
-        
-        int kernelHalfSize = std::floor(request.smoothingKernelSize / 2.);
-        for (int i = kernelHalfSize; i < (request.binsCount - kernelHalfSize); ++i) {
-            float sum = 0;
-            float weights = 0;
-            int kernelIndex = 0;
-            for (int j = i - kernelHalfSize; j <= i + kernelHalfSize; ++j,++kernelIndex) {
-                int w = kernel[kernelIndex];
-                sum += w * histogramCopy[j];
-                weights += w;
-            }
-            sum /= weights;
-            histo[i] = sum;
+
+    ///Apply the binomial filter if any (the filter size has to be an odd number)
+    assert(request.smoothingKernelSize >= 0);
+    assert((request.smoothingKernelSize == 0) || (request.smoothingKernelSize & 1));
+
+    for (int k = request.smoothingKernelSize; k > 1; k -=2) {
+        const std::vector<float> histogramCopy = *histo;
+
+        for (int i = 1; i < ((int)histo->size() - 1); ++i) {
+            (*histo)[i] = (histogramCopy[i-1] + 2*histogramCopy[i] + histogramCopy[i+1]) / 4;
         }
     }
 }
 
-}
-
-void HistogramCPU::run() {
+void
+HistogramCPU::run()
+{
     for (;;) {
         HistogramRequest request;
         {
@@ -360,25 +341,25 @@ void HistogramCPU::run() {
         }
         
         
-        FinishedHistogram ret;
-        ret.binsCount = request.binsCount;
-        ret.mode = request.mode;
-        ret.vmin = request.vmin;
-        ret.vmax = request.vmax;
+        boost::shared_ptr<FinishedHistogram> ret(new FinishedHistogram);
+        ret->binsCount = request.binsCount;
+        ret->mode = request.mode;
+        ret->vmin = request.vmin;
+        ret->vmax = request.vmax;
         
 
         switch (request.mode) {
             case 0: //< RGB
-                computeHistogramStatic(request, &ret, 1);
-                computeHistogramStatic(request, &ret, 2);
-                computeHistogramStatic(request, &ret, 3);
+                computeHistogramStatic(request, ret, 1);
+                computeHistogramStatic(request, ret, 2);
+                computeHistogramStatic(request, ret, 3);
                 break;
             case 1:
             case 2:
             case 3:
             case 4:
             case 5:
-                computeHistogramStatic(request,&ret,1);
+                computeHistogramStatic(request, ret, 1);
                 break;
             default:
                 assert(false); //< unknown case.
