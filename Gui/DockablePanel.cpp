@@ -81,6 +81,7 @@ DockablePanel::DockablePanel(Gui* gui
 ,_tabs()
 ,_defaultTabName(defaultTab)
 ,_useScrollAreasForTabs(useScrollAreasForTabs)
+,_mode(headerMode)
 {
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setSpacing(0);
@@ -95,7 +96,7 @@ DockablePanel::DockablePanel(Gui* gui
         _headerWidget->setFrameShape(QFrame::Box);
         _headerLayout = new QHBoxLayout(_headerWidget);
         _headerLayout->setContentsMargins(0, 0, 0, 0);
-        _headerLayout->setSpacing(0);
+        _headerLayout->setSpacing(2);
         _headerWidget->setLayout(_headerLayout);
         
         
@@ -648,6 +649,22 @@ Gui* DockablePanel::getGui() const {
     return _gui;
 }
 
+void DockablePanel::insertHeaderWidget(int index,QWidget* widget) {
+    if (_mode != NO_HEADER) {
+        _headerLayout->insertWidget(index, widget);
+    }
+}
+
+void DockablePanel::appendHeaderWidget(QWidget* widget) {
+    if (_mode != NO_HEADER) {
+        _headerLayout->addWidget(widget);
+    }
+}
+
+QWidget* DockablePanel::getHeaderWidget() const {
+    return _headerWidget;
+}
+
 NodeSettingsPanel::NodeSettingsPanel(Gui* gui,NodeGui* NodeUi ,QVBoxLayout* container,QWidget *parent)
 :DockablePanel(gui,NodeUi->getNode()->getLiveInstance(),
                container,
@@ -659,7 +676,15 @@ NodeSettingsPanel::NodeSettingsPanel(Gui* gui,NodeGui* NodeUi ,QVBoxLayout* cont
                "Settings",
                parent)
 ,_nodeGUI(NodeUi)
-{}
+{
+    QPixmap pixC;
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixC);
+    _centerNodeButton = new Button(QIcon(pixC),"",getHeaderWidget());
+    _centerNodeButton->setToolTip("Centers the node graph on this node.");
+    _centerNodeButton->setFixedSize(15, 15);
+    QObject::connect(_centerNodeButton,SIGNAL(clicked()),this,SLOT(centerNode()));
+    insertHeaderWidget(0, _centerNodeButton);
+}
 
 NodeSettingsPanel::~NodeSettingsPanel(){
     _nodeGUI->removeSettingsPanel();
@@ -670,6 +695,10 @@ void NodeSettingsPanel::setSelected(bool s){
     _selected = s;
     style()->unpolish(this);
     style()->polish(this);
+}
+
+void NodeSettingsPanel::centerNode() {
+    _nodeGUI->centerGraphOnIt();
 }
 
 

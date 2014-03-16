@@ -238,6 +238,8 @@ public slots:
     void beginEditKnobs();
     
     bool wasBeginEditCalled() { return _wasBeginEditCalled; }
+    
+    void centerGraphOnIt();
 signals:
     void nameChanged(QString);
     

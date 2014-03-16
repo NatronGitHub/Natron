@@ -95,6 +95,12 @@ public:
     const QUndoCommand* getLastUndoCommand() const;
     
     Gui* getGui() const;
+    
+    void insertHeaderWidget(int index,QWidget* widget);
+    
+    void appendHeaderWidget(QWidget* widget);
+    
+    QWidget* getHeaderWidget() const;
 
 public slots:
     
@@ -200,6 +206,8 @@ private:
     QString _defaultTabName;
     
     bool _useScrollAreasForTabs;
+    
+    HeaderMode _mode;
 };
 
 class NodeSettingsPanel : public DockablePanel
@@ -212,6 +220,8 @@ class NodeSettingsPanel : public DockablePanel
     NodeGui* _nodeGUI;
     
     bool _selected;
+    
+    Button* _centerNodeButton;
 
 public:
 
@@ -222,6 +232,10 @@ public:
     void setSelected(bool s);
     
     bool isSelected() const {return _selected;}
+    
+public slots:
+    
+    void centerNode();
   
 };
 

@@ -784,3 +784,8 @@ void NodeGui::setPos_mt_safe(const QPointF& pos) {
     QMutexLocker l(&positionMutex);
     setPos(pos);
 }
+
+void NodeGui::centerGraphOnIt()
+{
+    _graph->centerOnNode(this);
+}

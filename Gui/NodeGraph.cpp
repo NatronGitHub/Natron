@@ -1486,3 +1486,8 @@ void NodeGraph::deleteNode(Natron::Node* n){
         }
     }
 }
+
+void NodeGraph::centerOnNode(NodeGui* n) {
+    _refreshOverlays = true;
+    centerOn(n);
+}

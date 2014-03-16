@@ -121,6 +121,8 @@ public:
     
     void deleteNode(NodeGui* n);
     
+    void centerOnNode(NodeGui* n);
+    
 public slots:
     
     void deleteSelectedNode();
