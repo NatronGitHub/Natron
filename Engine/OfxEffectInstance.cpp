@@ -664,9 +664,7 @@ EffectInstance::RenderSafety OfxEffectInstance::renderThreadSafety() const{
     return EffectInstance::UNSAFE;
 }
 
-bool OfxEffectInstance::makePreviewByDefault() const { return isGenerator() || isGeneratorAndFilter(); }
-
-
+bool OfxEffectInstance::makePreviewByDefault() const { return isGenerator();}
 
 const std::string& OfxEffectInstance::getShortLabel() const {
     return effectInstance()->getShortLabel();

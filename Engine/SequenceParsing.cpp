@@ -792,6 +792,8 @@ bool FileNameContent::matchesPattern(const FileNameContent& other,std::vector<in
                 
             }
             ++numbersCount;
+        } else if (_imp->orderedElements[i].type == FileNameElement::TEXT && _imp->orderedElements[i].data != otherElements[i].data) {
+            return false;
         }
     }
     ///strings are identical

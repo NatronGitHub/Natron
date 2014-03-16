@@ -819,6 +819,7 @@ void SequenceDialogProxyModel::getSequenceFromFilesForFole(const QString& file,S
     for (U32 i = 0; i < _frameSequences.size(); ++i) {
         if (_frameSequences[i]->contains(file)) {
             *sequence = *_frameSequences[i];
+            break;
         }
     }
 }
@@ -916,10 +917,6 @@ void SequenceDialogView::expandColumnsToFullWidth(int w ) {
 
 void SequenceDialogView::updateNameMapping(const std::vector<std::pair<QString, std::pair<qint64, QString> > >& nameMapping){
     dynamic_cast<SequenceItemDelegate*>(itemDelegate())->setNameMapping(nameMapping);
-//    if (!nameMapping.empty()) {
-//        expandColumnsToFullWidth();
-//    }
-
 }
 
 

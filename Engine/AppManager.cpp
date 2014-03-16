@@ -273,9 +273,6 @@ bool AppManager::loadInternal(const QString& projectFilename,const QStringList& 
 
 
     _imp->_settings->restoreSettings();
-
-    ///and save these restored settings in case some couldn't be found
-    _imp->_settings->saveSettings();
     
     /*loading all plugins*/
     loadAllPlugins();
