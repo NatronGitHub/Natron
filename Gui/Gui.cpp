@@ -399,9 +399,8 @@ bool Gui::exitGui()
 bool Gui::exit()
 {
     assert(_imp->_appInstance);
-	int appId = _imp->_appInstance->getAppID();
     bool rVal = false;
-    if (appId != 0) {
+    if (appPTR->getAppInstances().size() > 1) {
         delete _imp->_appInstance;
         delete this;
     } else {

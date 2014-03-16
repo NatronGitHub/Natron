@@ -132,7 +132,7 @@ protected:
 
 private:
     
-    Natron::Node* createNodeInternal(const QString& name,int majorVersion,int minorVersion,
+    Natron::Node* createNodeInternal(const QString& pluginID,int majorVersion,int minorVersion,
                                      bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization);
     
     boost::scoped_ptr<AppInstancePrivate> _imp;

@@ -94,12 +94,12 @@ void AppInstance::load(const QString& projectName,const QStringList& writers)
     
 }
 
-Natron::Node* AppInstance::createNodeInternal(const QString& name,int majorVersion,int minorVersion,
+Natron::Node* AppInstance::createNodeInternal(const QString& pluginID,int majorVersion,int minorVersion,
                                  bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization){
     Node* node = 0;
     LibraryBinary* pluginBinary = 0;
     try {
-        pluginBinary = appPTR->getPluginBinary(name,majorVersion,minorVersion);
+        pluginBinary = appPTR->getPluginBinary(pluginID,majorVersion,minorVersion);
     } catch (const std::exception& e) {
         Natron::errorDialog("Plugin error", std::string("Cannot load plugin executable") + ": " + e.what());
         return node;
@@ -108,24 +108,26 @@ Natron::Node* AppInstance::createNodeInternal(const QString& name,int majorVersi
         return node;
     }
     
-    if (name != "Viewer") { // for now only the viewer can be an inspector.
+    if (pluginID != "Viewer") { // for now only the viewer can be an inspector.
         node = new Node(this,pluginBinary);
     } else {
         node = new InspectorNode(this,pluginBinary);
     }
     
+    
+    
     try{
-        node->load(name.toStdString(), serialization);
+        node->load(pluginID.toStdString(), serialization);
     } catch (const std::exception& e) {
         std::string title = std::string("Exception while creating node");
-        std::string message = title + " " + name.toStdString() + ": " + e.what();
+        std::string message = title + " " + pluginID.toStdString() + ": " + e.what();
         qDebug() << message.c_str();
         errorDialog(title, message);
         delete node;
         return NULL;
     } catch (...) {
         std::string title = std::string("Exception while creating node");
-        std::string message = title + " " + name.toStdString();
+        std::string message = title + " " + pluginID.toStdString();
         qDebug() << message.c_str();
         errorDialog(title, message);
         delete node;

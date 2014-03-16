@@ -1070,6 +1070,9 @@ OutputEffectInstance::OutputEffectInstance(Node* node)
 , _writerCurrentFrame(0)
 , _writerFirstFrame(0)
 , _writerLastFrame(0)
+, _doingFullSequenceRender()
+, _outputEffectDataLock(new QMutex)
+, _renderController(0)
 {
 }
 
@@ -1077,6 +1080,7 @@ OutputEffectInstance::~OutputEffectInstance(){
     if(_videoEngine){
         _videoEngine->quitEngineThread();
     }
+    delete _outputEffectDataLock;
 }
 
 void OutputEffectInstance::updateTreeAndRender(){
@@ -1133,4 +1137,44 @@ void OutputEffectInstance::notifyRenderFinished() {
         _renderController->notifyFinished();
         _renderController = 0;
     }
+}
+
+int OutputEffectInstance::getCurrentFrame() const {
+    QMutexLocker l(_outputEffectDataLock);
+    return _writerCurrentFrame;
+}
+
+void OutputEffectInstance::setCurrentFrame(int f) {
+    QMutexLocker l(_outputEffectDataLock);
+    _writerCurrentFrame = f;
+}
+
+int OutputEffectInstance::getFirstFrame() const {
+    QMutexLocker l(_outputEffectDataLock);
+    return _writerFirstFrame;
+}
+
+void OutputEffectInstance::setFirstFrame(int f) {
+    QMutexLocker l(_outputEffectDataLock);
+    _writerFirstFrame = f;
+}
+
+int OutputEffectInstance::getLastFrame() const {
+    QMutexLocker l(_outputEffectDataLock);
+    return _writerLastFrame;
+}
+
+void OutputEffectInstance::setLastFrame(int f) {
+    QMutexLocker l(_outputEffectDataLock);
+    _writerLastFrame = f;
+}
+
+void OutputEffectInstance::setDoingFullSequenceRender(bool b) {
+    QMutexLocker l(_outputEffectDataLock);
+    _doingFullSequenceRender = b;
+}
+
+bool OutputEffectInstance::isDoingFullSequenceRender() const {
+    QMutexLocker l(_outputEffectDataLock);
+    return _doingFullSequenceRender;
 }

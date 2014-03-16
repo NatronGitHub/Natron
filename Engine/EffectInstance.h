@@ -593,6 +593,8 @@ class OutputEffectInstance : public Natron::EffectInstance {
                              It avoids snchronizing all viewers in the app to the render*/
     SequenceTime _writerFirstFrame;
     SequenceTime _writerLastFrame;
+    bool _doingFullSequenceRender;
+    mutable QMutex* _outputEffectDataLock;
     
     BlockingBackgroundRender* _renderController; //< pointer to a blocking renderer
 public:
@@ -624,19 +626,21 @@ public:
      * Note that this function can be used only for Writers or OpenFX writers,
      * it doesn't work with the Viewer.
      **/
-    int getCurrentFrame() const { return _writerCurrentFrame; }
+    int getCurrentFrame() const ;
     
-    void setCurrentFrame(int f) { _writerCurrentFrame = f; }
+    void setCurrentFrame(int f);
     
-    int getFirstFrame() const { return _writerFirstFrame; }
+    int getFirstFrame() const ;
     
-    void setFirstFrame(int f) {  _writerFirstFrame = f;}
+    void setFirstFrame(int f);
     
-    int getLastFrame() const { return _writerLastFrame; }
+    int getLastFrame() const;
     
-    void setLastFrame(int f) {  _writerLastFrame = f;}
+    void setLastFrame(int f) ;
 
+    void setDoingFullSequenceRender(bool b);
     
+    bool isDoingFullSequenceRender() const;
     
 };
 

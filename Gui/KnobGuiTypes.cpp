@@ -93,6 +93,10 @@ void Int_KnobGui::createWidget(QHBoxLayout* layout)
     boost::shared_ptr<Int_Knob> intKnob = boost::dynamic_pointer_cast<Int_Knob>(getKnob());
     assert(intKnob);
     
+    if (!isOnNewLine() || intKnob->isNewLineTurnedOff()) {
+        intKnob->disableSlider();
+    }
+    
     
     //  const std::vector<int> &maximums = intKnob->getMaximums();
     //    const std::vector<int> &minimums = intKnob->getMinimums();
@@ -373,6 +377,11 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
     containerLayout->setSpacing(3);
     boost::shared_ptr<Double_Knob> dbl_knob = boost::dynamic_pointer_cast<Double_Knob>(getKnob());
     assert(dbl_knob);
+    
+    if (!isOnNewLine() || dbl_knob->isNewLineTurnedOff()) {
+        dbl_knob->disableSlider();
+    }
+    
     int dim = getKnob()->getDimension();
     
     

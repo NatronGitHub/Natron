@@ -41,6 +41,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/Button.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/ClickableLabel.h"
+#include "Gui/Gui.h"
 
 using std::make_pair;
 using namespace Natron;
@@ -209,6 +210,10 @@ void DockablePanel::onRestoreDefaultsButtonClicked() {
 }
 
 void DockablePanel::onLineEditNameEditingFinished() {
+    
+    if (_gui->isClosing()) {
+        return;
+    }
     
     Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_holder);
     if (effect) {

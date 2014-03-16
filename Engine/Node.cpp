@@ -167,6 +167,12 @@ Node::Node(AppInstance* app,LibraryBinary* plugin)
 }
 
 void Node::load(const std::string& pluginID,const NodeSerialization& serialization) {
+    
+    if (!serialization.isNull()) {
+        setName(serialization.getPluginLabel());
+        _imp->knobsAge =  serialization.getKnobsAge();
+    }
+    
     std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
     if (func.first) {
         _liveInstance         = func.second(this);
@@ -186,10 +192,7 @@ void Node::load(const std::string& pluginID,const NodeSerialization& serializati
     _imp->previewRenderTree = new RenderTree(_imp->previewInstance);
     _imp->renderInstances.insert(std::make_pair(_imp->previewRenderTree,_imp->previewInstance));
     
-    if (!serialization.isNull()) {
-        setName(serialization.getPluginLabel());
-        _imp->knobsAge =  serialization.getKnobsAge();
-    }
+    
 }
 
 void Node::loadKnobs(const NodeSerialization& serialization) {

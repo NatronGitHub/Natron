@@ -192,11 +192,9 @@ AppManager::AppManager()
 
 AppManager::~AppManager(){
     
-    
-    AppInstance* mainInstance = getAppInstance(0);
-    assert(mainInstance);
+    assert(_imp->_appInstances.size() == 1);
+    AppInstance* mainInstance = _imp->_appInstances.begin()->second;
     delete mainInstance;
-    
     assert(_imp->_appInstances.empty());
     
     for(U32 i = 0; i < _imp->_plugins.size();++i){

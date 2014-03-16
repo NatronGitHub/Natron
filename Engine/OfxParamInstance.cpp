@@ -1518,10 +1518,11 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
 OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
     int currentFrame;
-    if (!_node->isWriter()) {
-        currentFrame = (int)_node->effectInstance()->timeLineGetTime();
+    Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_node);
+    if (_node->isWriter() && outputEffect->isDoingFullSequenceRender()) {
+        currentFrame = outputEffect->getCurrentFrame();
     } else {
-        currentFrame = dynamic_cast<Natron::OutputEffectInstance*>(_node)->getCurrentFrame();
+        currentFrame = (int)_node->effectInstance()->timeLineGetTime();
     }
     if(_fileKnob){
         QString fileName =  _fileKnob->getRandomFrameName(currentFrame,true);

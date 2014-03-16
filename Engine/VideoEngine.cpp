@@ -208,6 +208,7 @@ bool VideoEngine::startEngine(bool singleThreaded) {
         Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
         output->setFirstFrame(_firstFrame);
         output->setLastFrame(_lastFrame);
+        output->setDoingFullSequenceRender(true);
     }
 
     
@@ -295,9 +296,10 @@ bool VideoEngine::stopEngine() {
 
     }
     
-    
+    Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
+    outputEffect->setDoingFullSequenceRender(false);
     if(appPTR->isBackground()){
-        dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput())->notifyRenderFinished();
+        outputEffect->notifyRenderFinished();
         _mustQuit = false;
         _mustQuitCondition.wakeAll();
         _threadStarted = false;

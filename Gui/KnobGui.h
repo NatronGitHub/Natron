@@ -92,6 +92,8 @@ public:
     QWidget* getFieldContainer() const;
 
     int getActualIndexInLayout() const;
+    
+    bool isOnNewLine() const;
  
 public slots:
     /*Called when the value held by the knob is changed internally.

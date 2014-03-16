@@ -622,6 +622,10 @@ int KnobGui::getActualIndexInLayout() const {
     return -1;
 }
 
+bool KnobGui::isOnNewLine() const {
+    return _isOnNewLine;
+}
+
 void KnobGui::setEnabledSlot(){
     setEnabled();
     if (_descriptionLabel) {
