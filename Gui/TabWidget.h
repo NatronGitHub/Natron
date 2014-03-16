@@ -45,6 +45,8 @@ class Gui;
 /*This class represents a floating pane that embeds a widget*/
 class FloatingWidget : public QWidget{
     
+    Q_OBJECT
+    
 public:
     
     explicit FloatingWidget(QWidget* parent = 0);
@@ -56,7 +58,16 @@ public:
      for subsequent calls..*/
     void setWidget(const QSize& widgetSize,QWidget* w);
     
+    void removeWidget();
+    
+signals:
+    
+    void closed();
+    
 private:
+    
+    virtual void closeEvent(QCloseEvent* e) OVERRIDE;
+    
     QWidget* _embeddedWidget;
     QVBoxLayout* _layout;
 };

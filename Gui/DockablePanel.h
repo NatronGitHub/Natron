@@ -36,7 +36,7 @@ class QHBoxLayout;
 class QLabel;
 class QUndoStack;
 class QUndoCommand;
-
+class FloatingWidget;
 namespace Natron{
     class Project;
     class Node;
@@ -127,6 +127,7 @@ public slots:
 
     void onLineEditNameEditingFinished();
     
+    void floatPanel();
 signals:
     
     /*emitted when the panel is clicked*/
@@ -146,9 +147,6 @@ signals:
     
     /*emitted when the panel is maximized*/
     void maximized();
-    
-    /*emitted when the panel is closed.*/
-    void closed();
     
 private:
 
@@ -179,6 +177,7 @@ private:
 
     Button* _helpButton;
     Button* _minimize;
+    Button* _floatButton;
     Button* _cross;
 
     Button* _undoButton;
@@ -187,6 +186,9 @@ private:
 
     bool _minimized; /*!< true if the panel is minimized*/
     QUndoStack* _undoStack; /*!< undo/redo stack*/
+    
+    bool _floating; /*!< true if the panel is floating*/
+    FloatingWidget* _floatingWidget;
 
     /*a map storing for each knob a pointer to their GUI.*/
     std::map<boost::shared_ptr<Knob>,KnobGui*> _knobs;

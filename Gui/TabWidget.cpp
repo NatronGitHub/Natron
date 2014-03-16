@@ -68,11 +68,25 @@ void FloatingWidget::setWidget(const QSize& widgetSize,QWidget* w)
     assert(_layout);
     _layout->addWidget(w);
     w->setVisible(true);
+    w->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
     resize(widgetSize);
     show();
 }
 
+void FloatingWidget::removeWidget() {
+    if (!_embeddedWidget) {
+        return;
+    }
+    _layout->removeWidget(_embeddedWidget);
+    _embeddedWidget->setParent(NULL);
+    _embeddedWidget->setVisible(false);
+    hide();
+}
 
+void FloatingWidget::closeEvent(QCloseEvent* e) {
+    emit closed();
+    QWidget::closeEvent(e);
+}
 
 TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent):
     QFrame(parent),

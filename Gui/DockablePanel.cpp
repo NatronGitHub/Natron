@@ -42,6 +42,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/NodeGraph.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/Gui.h"
+#include "Gui/TabWidget.h"
 
 using std::make_pair;
 using namespace Natron;
@@ -66,12 +67,15 @@ DockablePanel::DockablePanel(Gui* gui
 ,_tabWidget(NULL)
 ,_helpButton(NULL)
 ,_minimize(NULL)
+,_floatButton(NULL)
 ,_cross(NULL)
 ,_undoButton(NULL)
 ,_redoButton(NULL)
 ,_restoreDefaultsButton(NULL)
 ,_minimized(false)
 ,_undoStack(new QUndoStack)
+,_floating(false)
+,_floatingWidget(NULL)
 ,_knobs()
 ,_holder(holder)
 ,_tabs()
@@ -110,13 +114,23 @@ DockablePanel::DockablePanel(Gui* gui
         
         QPixmap pixC;
         appPTR->getIcon(NATRON_PIXMAP_CLOSE_WIDGET,&pixC);
+        
+        QPixmap pixF;
+        appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET, &pixF);
+        
         _minimize=new Button(QIcon(pixM),"",_headerWidget);
         _minimize->setFixedSize(15,15);
         _minimize->setCheckable(true);
         QObject::connect(_minimize,SIGNAL(toggled(bool)),this,SLOT(minimizeOrMaximize(bool)));
+        
+        _floatButton = new Button(QIcon(pixF),"",_headerWidget);
+        _floatButton->setFixedSize(15, 15);
+        QObject::connect(_floatButton,SIGNAL(clicked()),this,SLOT(floatPanel()));
+        
+        
         _cross=new Button(QIcon(pixC),"",_headerWidget);
         _cross->setFixedSize(15,15);
-        QObject::connect(_cross,SIGNAL(clicked()),this,SLOT(close()));
+        QObject::connect(_cross,SIGNAL(clicked()),this,SLOT(closePanel()));
         
         
         QPixmap pixUndo ;
@@ -173,6 +187,7 @@ DockablePanel::DockablePanel(Gui* gui
         _headerLayout->addStretch();
         _headerLayout->addWidget(_helpButton);
         _headerLayout->addWidget(_minimize);
+        _headerLayout->addWidget(_floatButton);
         _headerLayout->addWidget(_cross);
         
         _mainLayout->addWidget(_headerWidget);
@@ -554,35 +569,18 @@ void DockablePanel::showHelp(){
     QToolTip::showText(QCursor::pos(), _helpButton->toolTip());
 }
 
-void DockablePanel::closePanel(){
-    
-    setVisible(false);
-    
-    std::vector<QWidget*> _panels;
-    for(int i =0 ; i < _container->count(); ++i) {
-        if (QWidget *myItem = dynamic_cast <QWidget*>(_container->itemAt(i))){
-            _panels.push_back(myItem);
-            _container->removeWidget(myItem);
-        }
+void DockablePanel::closePanel() {
+    if (_floating) {
+        floatPanel();
     }
-    for (U32 i =0 ; i < _panels.size(); ++i) {
-        _container->addWidget(_panels[i]);
-    }
-    
-    update();
-    emit closed();
+    close();
+
 }
 void DockablePanel::minimizeOrMaximize(bool toggled){
     _minimized=toggled;
     if(_minimized){
-        QPixmap pixM;
-        appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET,&pixM);
-        _minimize->setIcon(QIcon(pixM));
         emit minimized();
     }else{
-        QPixmap pixM;
-        appPTR->getIcon(NATRON_PIXMAP_MINIMIZE_WIDGET,&pixM);
-        _minimize->setIcon(QIcon(pixM));
         emit maximized();
     }
     _tabWidget->setVisible(!_minimized);
@@ -597,6 +595,24 @@ void DockablePanel::minimizeOrMaximize(bool toggled){
         _container->addWidget(_panels[i]);
     }
     update();
+}
+
+void DockablePanel::floatPanel() {
+    _floating = !_floating;
+    if (_floating) {
+        assert(!_floatingWidget);
+        _floatingWidget = new FloatingWidget(_gui);
+        QObject::connect(_floatingWidget,SIGNAL(closed()),this,SLOT(closePanel()));
+        _container->removeWidget(this);
+        _floatingWidget->setWidget(size(),this);
+    } else {
+        assert(_floatingWidget);
+        _floatingWidget->removeWidget();
+        setParent(_container->parentWidget());
+        _container->insertWidget(0, this);
+        delete _floatingWidget;
+        _floatingWidget = 0;
+    }
 }
 
 
