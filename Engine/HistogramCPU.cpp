@@ -192,34 +192,46 @@ HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
     return true;
 }
 
-static inline float
-pix_red(float *pix)
-{
-    return pix[0];
-}
+namespace {
+struct pix_red {
+    static float
+    val(float *pix)
+    {
+        return pix[0];
+    }
+};
 
-static inline float
-pix_green(float *pix)
-{
-    return pix[1];
-}
+struct pix_green {
+    static float
+    val(float *pix)
+    {
+        return pix[1];
+    }
+};
 
-static inline float
-pix_blue(float *pix)
-{
-    return pix[2];
-}
+struct pix_blue {
+    static float
+    val(float *pix)
+    {
+        return pix[2];
+    }
+};
 
-static inline float
-pix_alpha(float *pix)
-{
-    return pix[3];
-}
+struct pix_alpha {
+    static float
+    val(float *pix)
+    {
+        return pix[3];
+    }
+};
 
-static inline float
-pix_lum(float *pix)
-{
-    return 0.299 * pix[0] + 0.587 * pix[1] + 0.114 * pix[2];
+struct pix_lum {
+    static float
+    val(float *pix)
+    {
+        return 0.299 * pix[0] + 0.587 * pix[1] + 0.114 * pix[2];
+    }
+};
 }
 
 template <float pix_func(float*)>
@@ -279,19 +291,19 @@ computeHistogramStatic(const HistogramRequest& request, boost::shared_ptr<Finish
 
     switch (mode) {
         case 1: //< A
-            computeHisto<pix_alpha>(request, histo);
+            computeHisto<&pix_alpha::val>(request, histo);
             break;
         case 2: //<Y
-            computeHisto<pix_lum>(request, histo);
+            computeHisto<&pix_lum::val>(request, histo);
             break;
         case 3: //< R
-            computeHisto<pix_red>(request, histo);
+            computeHisto<&pix_red::val>(request, histo);
             break;
         case 4: //< G
-            computeHisto<pix_green>(request, histo);
+            computeHisto<&pix_green::val>(request, histo);
             break;
         case 5: //< B
-            computeHisto<pix_blue>(request, histo);
+            computeHisto<&pix_blue::val>(request, histo);
             break;
 
         default:
