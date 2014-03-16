@@ -359,59 +359,68 @@ namespace Natron {
 
         void clear() {
             clearInMemoryPortion();
-            QMutexLocker locker(&_lock);
-
-            for (CacheIterator it = _diskCache.begin(); it != _diskCache.end(); ++it) {
-                std::list<CachedValue>& values = getValueFromIterator(it);
-                for (typename std::list<CachedValue>::iterator it2 = values.begin(); it2!=values.end(); ++it2) {
-                    _diskCacheSize -= it2->_entry->size();
-                    it2->_entry->removeAnyBackingFile();
-                }
-            }
-            _diskCache.clear();
-
+            clearDiskPortion();
         }
 
+        /**
+         * @brief Clears all entries on disk that are not actively being used somewhere else in the application.
+         * Any entry being used by the application will be left in the cache.
+         **/
+        void clearDiskPortion() {
+            
+            QMutexLocker locker(&_lock);
+            
+            /// An entry which has a use_count greater than 1 is not removable:
+            /// The backing file must not be removed because it might be read/written to
+            /// at the same time. The best we can do is just let it here in the cache.
+
+            std::pair<hash_type,CachedValue> evictedFromDisk = _diskCache.evict();
+            //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
+            //we'll let the user of these entries purge the extra entries left in the cache later on
+            while (evictedFromDisk.second._entry) {
+                _diskCacheSize -= evictedFromDisk.second._entry->size();
+                evictedFromDisk.second._entry->removeAnyBackingFile();
+                evictedFromDisk = _diskCache.evict();
+            }
+        }
 
         void clearInMemoryPortion() {
             QMutexLocker locker(&_lock);
-            for (CacheIterator it = _memoryCache.begin(); it != _memoryCache.end(); ++it) {
-                std::list<CachedValue>& values = getValueFromIterator(it);
-                for (typename std::list<CachedValue>::iterator it2 = values.begin(); it2!=values.end(); ++it2) {
-                    _memoryCacheSize -= it2->_entry->size();
-                    
-                    ///move back the entry on disk if it can be store on disk
-                    if (it2->_entry->isStoredOnDisk()) {
-                        
-                        it2->_entry->deallocate();
-                        /*insert it back into the disk portion */
-                        
-                        /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
-                        while (_diskCacheSize + it2->_entry->size() >= _maximumCacheSize) {
-                            
-                            std::pair<hash_type,CachedValue> evictedFromDisk = _diskCache.evict();
-                            //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
-                            //we'll let the user of these entries purge the extra entries left in the cache later on
-                            if (!evictedFromDisk.second._entry) {
-                                break;
-                            }
-                            _diskCacheSize -= evictedFromDisk.second._entry->size();
-                        }
-                        
-                        /*update the disk cache size*/
-                        _diskCacheSize += it2->_entry->size();
-                        CacheIterator existingDiskCacheEntry = _diskCache(it2->_entry->getHashKey());
-                        /*if the entry doesn't exist on the disk cache,make a new list and insert it*/
-                        if(existingDiskCacheEntry == _diskCache.end()){
-                            _diskCache.insert(it2->_entry->getHashKey(),*it2);
-                        }
-                        
-                    }
-
-                }
+            std::pair<hash_type,CachedValue> evictedFromMemory = _memoryCache.evict();
+            while (evictedFromMemory.second._entry) {
+                _memoryCacheSize -= evictedFromMemory.second._entry->size();
                 
+                ///move back the entry on disk if it can be store on disk
+                if (evictedFromMemory.second._entry->isStoredOnDisk()) {
+                    
+                    evictedFromMemory.second._entry->deallocate();
+                    /*insert it back into the disk portion */
+                    
+                    /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
+                    while (_diskCacheSize + evictedFromMemory.second._entry->size() >= _maximumCacheSize) {
+                        
+                        std::pair<hash_type,CachedValue> evictedFromDisk = _diskCache.evict();
+                        //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
+                        //we'll let the user of these entries purge the extra entries left in the cache later on
+                        if (!evictedFromDisk.second._entry) {
+                            break;
+                        }
+                        _diskCacheSize -= evictedFromDisk.second._entry->size();
+                    }
+                    
+                    /*update the disk cache size*/
+                    _diskCacheSize += evictedFromMemory.second._entry->size();
+                    CacheIterator existingDiskCacheEntry = _diskCache(evictedFromMemory.second._entry->getHashKey());
+                    /*if the entry doesn't exist on the disk cache,make a new list and insert it*/
+                    if(existingDiskCacheEntry == _diskCache.end()){
+                        _diskCache.insert(evictedFromMemory.second._entry->getHashKey(),evictedFromMemory.second);
+                    }
+                    
+                }
+
+                evictedFromMemory = _memoryCache.evict();
             }
-            _memoryCache.clear();
+            
             if (_signalEmitter) {
                 _signalEmitter->emitSignalClearedInMemoryPortion();
             }
