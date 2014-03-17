@@ -11,6 +11,7 @@
 #include "GuiAppInstance.h"
 
 #include <QDir>
+#include <QMutex>
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
@@ -27,10 +28,13 @@ using namespace Natron;
 struct GuiAppInstancePrivate {
     Gui* _gui; //< ptr to the Gui interface
     std::map<Natron::Node*,NodeGui*> _nodeMapping; //< a mapping between all nodes and their respective gui. FIXME: it should go away.
-
+    std::list< boost::shared_ptr<ProcessHandler> > _activeBgProcesses;
+    QMutex _activeBgProcessesMutex;
     GuiAppInstancePrivate()
     : _gui(NULL)
     , _nodeMapping()
+    , _activeBgProcesses()
+    , _activeBgProcessesMutex()
     {
     }
 };
@@ -233,19 +237,35 @@ void GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* wr
 
     
     if (appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled()) {
-        ProcessHandler* newProcess = 0;
         try {
-            newProcess = new ProcessHandler(this,getProject()->getLastAutoSaveFilePath(),outputFileSequence,firstFrame,lastFrame ,writer); //< the process will delete itself
+            boost::shared_ptr<ProcessHandler> process(new ProcessHandler(this,
+                                                                         getProject()->getLastAutoSaveFilePath(),outputFileSequence,firstFrame,lastFrame ,writer));
+            QObject::connect(process.get(), SIGNAL(processFinished()), this, SLOT(onProcessFinished()));
+            {
+                QMutexLocker l(&_imp->_activeBgProcessesMutex);
+                _imp->_activeBgProcesses.push_back(process);
+            }
         } catch (const std::exception& e) {
             Natron::errorDialog(writer->getName(), std::string("Error while starting rendering") + ": " + e.what());
-            delete newProcess;
         } catch (...) {
             Natron::errorDialog(writer->getName(), std::string("Error while starting rendering"));
-            delete newProcess;
         }
     } else {
         writer->renderFullSequence(NULL);
         _imp->_gui->onWriterRenderStarted(outputFileSequence, firstFrame, lastFrame, writer);
+    }
+}
+
+void GuiAppInstance::onProcessFinished() {
+    ProcessHandler* proc = qobject_cast<ProcessHandler*>(sender());
+    if (proc) {
+        QMutexLocker l(&_imp->_activeBgProcessesMutex);
+        for (std::list< boost::shared_ptr<ProcessHandler> >::iterator it = _imp->_activeBgProcesses.begin(); it != _imp->_activeBgProcesses.end();++it) {
+            if ((*it).get() == proc) {
+                _imp->_activeBgProcesses.erase(it);
+                return;
+            }
+        }
     }
 }
 

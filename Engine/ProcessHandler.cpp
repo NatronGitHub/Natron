@@ -95,9 +95,7 @@ void ProcessHandler::onDataWrittenToSocket() {
         str = str.remove(kFrameRenderedStringShort);
         emit frameRendered(str.toInt());
     } else if (str.startsWith(kRenderingFinishedStringShort)) {
-//        if(_process->state() == QProcess::Running) {
-//            _process->waitForFinished();
-//        }
+        ///don't do anything
     } else if (str.startsWith(kProgressChangedStringShort)) {
         str = str.remove(kProgressChangedStringShort);
         emit frameProgress(str.toInt());
@@ -147,9 +145,6 @@ void ProcessHandler::onProcessCanceled(){
     } else {
         _bgProcessInputSocket->write((QString(kAbortRenderingStringShort) + '\n').toUtf8());
         _bgProcessInputSocket->flush();
-//        if(_process->state() == QProcess::Running) {
-//            _process->waitForFinished();
-//        }
     }
 }
 
@@ -162,23 +157,23 @@ void ProcessHandler::onProcessError(QProcess::ProcessError err){
 }
 
 void ProcessHandler::onProcessEnd(int exitCode,QProcess::ExitStatus stat){
-    if(stat == QProcess::CrashExit){
+    if (stat == QProcess::CrashExit) {
         Natron::errorDialog(_writer->getName(),"The render process exited after a crash");
         // _hasProcessBeenDeleted = true;
 
-    }else if(exitCode == 1){
+    } else if(exitCode == 1) {
         Natron::errorDialog(_writer->getName(), "The process ended with a return code of 1, this indicates an undetermined problem occured.");
-    }else{
+    } else {
         Natron::informationDialog(_writer->getName(),"Render finished!");
     }
-    emit processCanceled();
-    delete this;
+    emit processFinished();
 }
 
 
 ProcessInputChannel::ProcessInputChannel(const QString& mainProcessServerName)
 : QThread()
 , _mainProcessServerName(mainProcessServerName)
+, _backgroundOutputPipeMutex(new QMutex)
 , _backgroundOutputPipe(0)
 , _backgroundIPCServer(0)
 , _backgroundInputPipe(0)
@@ -202,6 +197,7 @@ ProcessInputChannel::~ProcessInputChannel() {
     }
     
     delete _backgroundIPCServer;
+    delete _backgroundOutputPipeMutex;
     delete _backgroundOutputPipe;
     delete _mustQuitCond;
     delete _mustQuitMutex;
@@ -209,8 +205,11 @@ ProcessInputChannel::~ProcessInputChannel() {
 }
 
 void ProcessInputChannel::writeToOutputChannel(const QString& message){
-    _backgroundOutputPipe->write((message+'\n').toUtf8());
-    _backgroundOutputPipe->flush();
+    {
+        QMutexLocker l(_backgroundOutputPipeMutex);
+        _backgroundOutputPipe->write((message+'\n').toUtf8());
+        _backgroundOutputPipe->flush();
+    }
 }
 
 void ProcessInputChannel::onNewConnectionPending() {

@@ -58,6 +58,8 @@ struct AppManagerPrivate {
     //if this app is background, see the ProcessInputChannel def
     bool _loaded; //< true when the first instance is completly loaded.
     QString _binaryPath; //< the path to the application's binary
+    mutable QMutex _wasAbortCalledMutex;
+    bool _wasAbortAnyProcessingCalled; // < has abortAnyProcessing() called at least once ?
 
     AppManagerPrivate()
         : _appType(AppManager::APP_BACKGROUND)
@@ -74,6 +76,7 @@ struct AppManagerPrivate {
         ,_backgroundIPC(0)
         ,_loaded(false)
         ,_binaryPath()
+        ,_wasAbortAnyProcessingCalled(false)
     {
         
     }
@@ -478,8 +481,17 @@ void AppManagerPrivate::initProcessInputChannel(const QString& mainProcessServer
     _backgroundIPC = new ProcessInputChannel(mainProcessServerName);
 }
 
+bool AppManager::hasAbortAnyProcessingBeenCalled() const {
+    QMutexLocker l(&_imp->_wasAbortCalledMutex);
+    return _imp->_wasAbortAnyProcessingCalled;
+}
 
 void AppManager::abortAnyProcessing() {
+    
+    {
+        QMutexLocker l(&_imp->_wasAbortCalledMutex);
+        _imp->_wasAbortAnyProcessingCalled = true;
+    }
     for (std::map<int,AppInstance*>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
         std::vector<Natron::Node*> nodes;
         it->second->getActiveNodes(&nodes);

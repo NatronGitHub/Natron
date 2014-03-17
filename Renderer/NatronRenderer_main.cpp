@@ -20,19 +20,13 @@ int main(int argc, char *argv[])
     QString projectName,mainProcessServerName;
     QStringList writers;
     AppManager::parseCmdLineArgs(argc,argv,&isBackground,projectName,writers,mainProcessServerName);
-    if (isBackground) {
-        AppManager manager;
-        if (!manager.load(argc,argv,projectName,writers,mainProcessServerName)) {
-            AppManager::printUsage();
-            return 1;
-        } else {
-            return 0;
-        }
-        return 0;
-    } else {
+    AppManager manager;
+    if (!manager.load(argc,argv,projectName,writers,mainProcessServerName)) {
         AppManager::printUsage();
         return 1;
+    } else {
+        return 0;
     }
-
+    return 0;
 }
 

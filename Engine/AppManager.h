@@ -183,6 +183,8 @@ public:
     bool writeToOutputPipe(const QString& longMessage,const QString& shortMessage);
 
     void abortAnyProcessing();
+    
+    bool hasAbortAnyProcessingBeenCalled() const;
 
     virtual void setLoadingStatus(const QString& str);
 

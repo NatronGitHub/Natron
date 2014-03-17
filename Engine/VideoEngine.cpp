@@ -529,7 +529,8 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
                 && _currentRunArgs._frameRequestsCount == -1
                 && _currentRunArgs._frameRequestIndex == 1)
                
-               || _currentRunArgs._frameRequestsCount == 0) // #3 the sequence ended and it was not an infinite run
+               || _currentRunArgs._frameRequestsCount == 0// #3 the sequence ended and it was not an infinite run
+               || (appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN && appPTR->hasAbortAnyProcessingBeenCalled()))
             {
                 locker.unlock();
                 return;

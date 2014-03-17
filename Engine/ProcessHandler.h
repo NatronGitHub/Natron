@@ -154,6 +154,8 @@ signals:
     void frameProgress(int);
     
     void processCanceled();
+    
+    void processFinished();
 };
 
 /**
@@ -218,6 +220,7 @@ private:
     void initialize();
     
     QString _mainProcessServerName;
+    QMutex* _backgroundOutputPipeMutex;
     QLocalSocket* _backgroundOutputPipe; //< if the process is background but managed by a gui process then this
                                          //pipe is used to output messages
     QLocalServer* _backgroundIPCServer;//< for a background app used to manage input IPC  with the gui app

@@ -69,6 +69,9 @@ public:
 public slots:
     
     void onProjectNodesCleared();
+    
+    void onProcessFinished();
+    
 private:
     
     virtual void createNodeGui(Natron::Node* node,bool loadRequest,bool openImageFileDialog) OVERRIDE FINAL;
