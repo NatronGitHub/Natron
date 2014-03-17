@@ -6,6 +6,8 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
+- TextRenderer should only store white character bitmaps! They can then be drawn in color using glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+
 - messages (and persistent messages) should be associated with an instance, not with a viewer. The message should appear in the viewer if and only of the given instance is in the the viewer's parents.
 
 - black borders around the viewer when zooming out and multithreading is disabled
