@@ -1363,14 +1363,15 @@ void HistogramPrivate::drawPicker()
     QPointF gPos = widget->toHistogramCoordinates(widget->width() - strWidth - 10 ,3 * m.height() + 20);
     QPointF bPos = widget->toHistogramCoordinates(widget->width() - strWidth - 10 ,4 * m.height() + 25);
     
-    QColor xColor(200,200,200);
-    QColor rColor,gColor,bColor;
-    
+    QColor xColor, rColor,gColor,bColor;
+
+    // Text-aware Magic colors (see recipe below):
+    // - they all have the same luminance
+    // - red, green and blue are complementary, but they sum up to more than 1
+    xColor.setRgbF(0.398979,0.398979,0.398979);
     switch (mode) {
         case Histogram::RGB:
-            rColor.setRedF(0.711519527404004);
-            rColor.setGreenF(0.164533420851110);
-            rColor.setBlueF(0.164533420851110);
+            rColor.setRgbF(0.851643,0.196936,0.196936);
             break;
         case Histogram::Y:
         case Histogram::A:
@@ -1382,13 +1383,9 @@ void HistogramPrivate::drawPicker()
             break;
     }
     
-    gColor.setRedF(0);
-    gColor.setGreenF(0.546986106552894);
-    gColor.setBlueF(0);
+    gColor.setRgbF(0,0.654707,0);
     
-    bColor.setRedF(0.288480472595996);
-    bColor.setGreenF(0.288480472595996);
-    bColor.setBlueF(0.8354665791488900);
+    bColor.setRgbF(0.345293,0.345293,1);
     
     widget->renderText(xPos.x(), xPos.y(), xCoordinateStr,xColor , _font);
     widget->renderText(rPos.x(), rPos.y(), rValueStr, rColor, _font);
