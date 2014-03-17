@@ -34,33 +34,13 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/Texture.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/TextRenderer.h"
+#include "Gui/ZoomContext.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
 namespace { // protext local classes in anonymous namespace
-    
-    // a data container with only a constructor, a destructor, and a few utility functions is really just a struct
-    // see ViewerGL.cpp for a full documentation of ZoomContext
-    struct ZoomContext {
-        
-        ZoomContext()
-        : bottom(0.)
-        , left(0.)
-        , zoomFactor(1.)
-        , aspectRatio(1.)
-        {}
-        
-        QPoint _oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
-        double bottom; /// the bottom edge of orthographic projection
-        double left; /// the left edge of the orthographic projection
-        double zoomFactor; /// the zoom factor applied to the current image
-        double aspectRatio;///
-        
-        double _lastOrthoLeft,_lastOrthoBottom,_lastOrthoRight,_lastOrthoTop; //< remembers the last values passed to the glOrtho call
-    };
-    
     enum EventState {
         DRAGGING_VIEW = 0,
         NONE = 1
@@ -69,118 +49,6 @@ namespace { // protext local classes in anonymous namespace
 
 struct HistogramPrivate
 {
-    
-    
-    Gui* gui; //< ptr to the gui
-    
-    QVBoxLayout* mainLayout;
-    
-    ///////// OPTIONS
-    QMenu* rightClickMenu;
-    
-    QMenu* histogramSelectionMenu;
-    QActionGroup* histogramSelectionGroup;
-    
-    QActionGroup* modeActions;
-    QMenu* modeMenu;
-    
-    QAction* fullImage;
-    
-    QActionGroup* filterActions;
-    QMenu* filterMenu;
-    
-    Histogram* widget;
-    Histogram::DisplayMode mode;
-    ZoomContext zoomCtx;
-    bool supportsGLSL;
-    bool hasOpenGLVAOSupport;
-    EventState state;
-    bool hasBeenModifiedSinceResize; //< true if the user panned or zoomed since the last resize
-    
-    QColor _baseAxisColor;
-    QColor _scaleColor;
-    QFont _font;
-    Natron::TextRenderer textRenderer;
-    
-    bool drawCoordinates;
-    QString xCoordinateStr;
-    QString rValueStr,gValueStr,bValueStr;
-    
-    int filterSize;
-    
-#ifdef NATRON_HISTOGRAM_USING_OPENGL
-    
-    /*texture ID of the input images*/
-    boost::shared_ptr<Texture> leftImageTexture,rightImageTexture;
-
-    
-    /*The shader that computes the histogram:
-     Takes in input the image, and writes to the 256x1 texture*/
-    boost::shared_ptr<QGLShaderProgram> histogramComputingShader;
-    
-    /*The shader that computes the maximum of the histogram.
-     Takes in input the reduction I and writes to the reduction I+1
-     the local maximas of the reduction I. Each pixel of the texture I+1
-     holds the maximum of 4 pixels in the texture I.*/
-    boost::shared_ptr<QGLShaderProgram> histogramMaximumShader;
-    
-    /*The shader that renders the histogram. Takes in input the
-     image and the histogram texture and produces the 256x256 image
-     of the histogram.*/
-    boost::shared_ptr<QGLShaderProgram> histogramRenderingShader;
-    
-    /*vbo ID, This vbo holds the texture coordinates to fetch
-     to compute the histogram. It changes when the
-     input image changes*/
-    GLuint vboID;
-    
-    /*the vao encapsulating the vbo*/
-    GLuint vaoID;
-    
-    /*The vbo used to render the histogram, it never changes*/
-    GLuint vboHistogramRendering;
-    
-    /*The texture holding the histogram (256x1)
-     */
-    GLuint histogramTexture[3];
-    
-    /*The textures holding the histogram reductions.
-     They're used to compute the maximum of the histogram (64x1)(16x1)(4x1);*/
-    
-    GLuint histogramReductionsTexture[3];
-    
-    /*The texture holding the maximum (1x1)*/
-    GLuint histogramMaximumTexture[3];
-    
-    /*Texture holding the image of the histogram, the result (256x256)
-     */
-    GLuint histogramRenderTexture[3];
-    
-    /*The FBO's associated to the reductions textures.
-     1 per texture as they all have a different size*/
-    GLuint fboReductions[3];
-    
-    /*The FBO holding the maximum texture*/
-    GLuint fboMaximum;
-    
-    /*The fbo holding the final rendered texture*/
-    GLuint fboRendering;
-    
-    /*The fbo holding the histogram (256x1)*/
-    GLuint fbohistogram;
-#else
-    
-    HistogramCPU histogramThread;
-    
-    ///up to 3 histograms (in the RGB) case. FOr all other cases just histogram1 is used.
-    std::vector<float> histogram1;
-    std::vector<float> histogram2;
-    std::vector<float> histogram3;
-    unsigned int pixelsCount;
-    double vmin,vmax; //< the x range of the histogram
-    unsigned int binsCount;
-    
-#endif
     HistogramPrivate(Gui* parent,Histogram* widget)
     : gui(parent)
     , mainLayout(NULL)
@@ -192,6 +60,7 @@ struct HistogramPrivate
     , filterMenu(NULL)
     , widget(widget)
     , mode(Histogram::RGB)
+    , oldClick()
     , zoomCtx()
     , supportsGLSL(true)
     , hasOpenGLVAOSupport(true)
@@ -250,12 +119,127 @@ struct HistogramPrivate
 #else
     void drawHistogramCPU();
 #endif
+
+    //////////////////////////////////
+    // data members
+
+    Gui* gui; //< ptr to the gui
+
+    QVBoxLayout* mainLayout;
+
+    ///////// OPTIONS
+    QMenu* rightClickMenu;
+
+    QMenu* histogramSelectionMenu;
+    QActionGroup* histogramSelectionGroup;
+
+    QActionGroup* modeActions;
+    QMenu* modeMenu;
+
+    QAction* fullImage;
+
+    QActionGroup* filterActions;
+    QMenu* filterMenu;
+
+    Histogram* widget;
+    Histogram::DisplayMode mode;
+    QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
+    ZoomContext zoomCtx;
+    bool supportsGLSL;
+    bool hasOpenGLVAOSupport;
+    EventState state;
+    bool hasBeenModifiedSinceResize; //< true if the user panned or zoomed since the last resize
+
+    QColor _baseAxisColor;
+    QColor _scaleColor;
+    QFont _font;
+    Natron::TextRenderer textRenderer;
+
+    bool drawCoordinates;
+    QString xCoordinateStr;
+    QString rValueStr,gValueStr,bValueStr;
+
+    int filterSize;
+
+#ifdef NATRON_HISTOGRAM_USING_OPENGL
+    /*texture ID of the input images*/
+    boost::shared_ptr<Texture> leftImageTexture,rightImageTexture;
+
+
+    /*The shader that computes the histogram:
+     Takes in input the image, and writes to the 256x1 texture*/
+    boost::shared_ptr<QGLShaderProgram> histogramComputingShader;
+
+    /*The shader that computes the maximum of the histogram.
+     Takes in input the reduction I and writes to the reduction I+1
+     the local maximas of the reduction I. Each pixel of the texture I+1
+     holds the maximum of 4 pixels in the texture I.*/
+    boost::shared_ptr<QGLShaderProgram> histogramMaximumShader;
+
+    /*The shader that renders the histogram. Takes in input the
+     image and the histogram texture and produces the 256x256 image
+     of the histogram.*/
+    boost::shared_ptr<QGLShaderProgram> histogramRenderingShader;
+
+    /*vbo ID, This vbo holds the texture coordinates to fetch
+     to compute the histogram. It changes when the
+     input image changes*/
+    GLuint vboID;
+
+    /*the vao encapsulating the vbo*/
+    GLuint vaoID;
+
+    /*The vbo used to render the histogram, it never changes*/
+    GLuint vboHistogramRendering;
+
+    /*The texture holding the histogram (256x1)
+     */
+    GLuint histogramTexture[3];
+
+    /*The textures holding the histogram reductions.
+     They're used to compute the maximum of the histogram (64x1)(16x1)(4x1);*/
+
+    GLuint histogramReductionsTexture[3];
+
+    /*The texture holding the maximum (1x1)*/
+    GLuint histogramMaximumTexture[3];
+
+    /*Texture holding the image of the histogram, the result (256x256)
+     */
+    GLuint histogramRenderTexture[3];
+
+    /*The FBO's associated to the reductions textures.
+     1 per texture as they all have a different size*/
+    GLuint fboReductions[3];
+
+    /*The FBO holding the maximum texture*/
+    GLuint fboMaximum;
+
+    /*The fbo holding the final rendered texture*/
+    GLuint fboRendering;
+
+    /*The fbo holding the histogram (256x1)*/
+    GLuint fbohistogram;
+#else // !NATRON_HISTOGRAM_USING_OPENGL
+    HistogramCPU histogramThread;
+
+    ///up to 3 histograms (in the RGB) case. FOr all other cases just histogram1 is used.
+    std::vector<float> histogram1;
+    std::vector<float> histogram2;
+    std::vector<float> histogram3;
+    unsigned int pixelsCount;
+    double vmin,vmax; //< the x range of the histogram
+    unsigned int binsCount;
+#endif // !NATRON_HISTOGRAM_USING_OPENGL
 };
 
 Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
 : QGLWidget(gui,shareWidget)
 , _imp(new HistogramPrivate(gui,this))
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Expanding);
     setMouseTracking(true);
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
@@ -280,7 +264,7 @@ Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
     QObject::connect(_imp->fullImage, SIGNAL(triggered()), this, SLOT(computeHistogramAndRefresh()));
     _imp->rightClickMenu->addAction(_imp->fullImage);
     
-    _imp->filterMenu = new QMenu("Filter",_imp->rightClickMenu);
+    _imp->filterMenu = new QMenu("Smoothing",_imp->rightClickMenu);
     _imp->rightClickMenu->addAction(_imp->filterMenu->menuAction());
     
     _imp->modeActions = new QActionGroup(_imp->modeMenu);
@@ -324,21 +308,21 @@ Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
     
     _imp->filterActions = new QActionGroup(_imp->filterMenu);
     QAction* noSmoothAction = new QAction(_imp->filterActions);
-    noSmoothAction->setText("No smoothing");
-    noSmoothAction->setData(0);
+    noSmoothAction->setText("Small");
+    noSmoothAction->setData(1);
     noSmoothAction->setCheckable(true);
     noSmoothAction->setChecked(true);
     _imp->filterActions->addAction(noSmoothAction);
     
     QAction* size3Action = new QAction(_imp->filterActions);
-    size3Action->setText("Size 3");
+    size3Action->setText("Medium");
     size3Action->setData(3);
     size3Action->setCheckable(true);
     size3Action->setChecked(false);
     _imp->filterActions->addAction(size3Action);
     
     QAction* size5Action = new QAction(_imp->filterActions);
-    size5Action->setText("Size 5");
+    size5Action->setText("High");
     size5Action->setData(5);
     size5Action->setCheckable(true);
     size5Action->setChecked(false);
@@ -357,6 +341,9 @@ Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
 
 Histogram::~Histogram()
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
     glDeleteTextures(3,&_imp->histogramTexture[0]);
     glDeleteTextures(3,&_imp->histogramReductionsTexture[0]);
@@ -378,6 +365,9 @@ Histogram::~Histogram()
 
 boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imagePortion) const
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     bool useImageRoD = fullImage->isChecked();
     
     int index = 0;
@@ -432,12 +422,18 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
 
 void HistogramPrivate::showMenu(const QPoint& globalPos)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     rightClickMenu->exec(globalPos);
 }
 
 
 void Histogram::populateViewersChoices()
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     QString currentSelection;
     assert(_imp->histogramSelectionGroup);
     QAction* checkedAction = _imp->histogramSelectionGroup->checkedAction();
@@ -500,11 +496,17 @@ void Histogram::populateViewersChoices()
 
 void Histogram::onCurrentViewerChanged(QAction*)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     computeHistogramAndRefresh();
 }
 
 void Histogram::onViewerImageChanged(ViewerGL* viewer)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     if (viewer) {
         QString viewerName = viewer->getInternalNode()->getName().c_str();
         ViewerTab* lastSelectedViewer = _imp->gui->getLastSelectedViewer();
@@ -529,12 +531,18 @@ void Histogram::onViewerImageChanged(ViewerGL* viewer)
 
 QSize Histogram::sizeHint() const
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     return QSize(500,1000);
 }
 
 
 void Histogram::onFilterChanged(QAction* action)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     _imp->filterSize = action->data().toInt();
     computeHistogramAndRefresh();
 }
@@ -542,6 +550,9 @@ void Histogram::onFilterChanged(QAction* action)
 
 void Histogram::onDisplayModeChanged(QAction* action)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     _imp->mode = (Histogram::DisplayMode)action->data().toInt();
     computeHistogramAndRefresh();
 }
@@ -549,7 +560,10 @@ void Histogram::onDisplayModeChanged(QAction* action)
 
 void Histogram::initializeGL()
 {
-    
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    assert(QGLContext::currentContext() == context());
+
     GLenum err = glewInit();
     if (GLEW_OK != err) {
         /* Problem: glewInit failed, something is seriously wrong. */
@@ -693,6 +707,10 @@ void Histogram::initializeGL()
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
 void HistogramPrivate::resizeComputingVBO(int w,int h)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    assert(QGLContext::currentContext() == context());
+
     glBindBuffer(GL_ARRAY_BUFFER,vboID);
     int vertexCount = w * h;
     glBufferData(GL_ARRAY_BUFFER,vertexCount*2*sizeof(float),NULL,GL_DYNAMIC_DRAW);
@@ -740,6 +758,7 @@ static void startRenderingTo(GLuint fboId,GLenum attachment,int w,int h)
     glPushMatrix();
     glLoadIdentity();
 }
+
 static void stopRenderingTo()
 {
     glPopAttrib();
@@ -777,6 +796,9 @@ static int shaderChannelFromDisplayMode(Histogram::DisplayMode channel)
 
 void HistogramPrivate::activateHistogramComputingShader(Histogram::DisplayMode channel)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     histogramComputingShader->bind();
     histogramComputingShader->setUniformValue("Tex",0);
     glCheckError();
@@ -786,6 +808,10 @@ void HistogramPrivate::activateHistogramComputingShader(Histogram::DisplayMode c
 
 void HistogramPrivate::activateHistogramRenderingShader(Histogram::DisplayMode channel)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    assert(QGLContext::currentContext() == context());
+
     histogramRenderingShader->bind();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_RECTANGLE_ARB,histogramTexture[channel]);
@@ -831,6 +857,10 @@ static GLenum colorAttachmentFromDisplayMode(Histogram::DisplayMode channel)
 
 void HistogramPrivate::computeHistogram(Histogram::DisplayMode channel)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    assert(QGLContext::currentContext() == context());
+
     GLenum attachment = colorAttachmentFromDisplayMode(channel);
     
     /*binding the VAO holding managing the VBO*/
@@ -908,6 +938,10 @@ void HistogramPrivate::computeHistogram(Histogram::DisplayMode channel)
 
 void HistogramPrivate::renderHistogram(Histogram::DisplayMode channel)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    assert(QGLContext::currentContext() == context());
+
     GLenum attachment = colorAttachmentFromDisplayMode(channel);
 
     
@@ -952,6 +986,11 @@ void HistogramPrivate::renderHistogram(Histogram::DisplayMode channel)
 
 void Histogram::paintGL()
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    assert(QGLContext::currentContext() == context());
+
+    glCheckError();
     double w = (double)width();
     double h = (double)height();
     
@@ -962,23 +1001,18 @@ void Histogram::paintGL()
     
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
-    if(_imp->zoomCtx.zoomFactor <= 0){
-        return;
-    }
-    double bottom = _imp->zoomCtx.bottom;
-    double left = _imp->zoomCtx.left;
-    double top = bottom +  h / (double)_imp->zoomCtx.zoomFactor * _imp->zoomCtx.aspectRatio ;
-    double right = left +  (w / (double)_imp->zoomCtx.zoomFactor);
-    if(left == right || top == bottom){
+    assert(_imp->zoomCtx.factor() > 0.);
+
+    double zoomLeft = _imp->zoomCtx.left();
+    double zoomRight = _imp->zoomCtx.right();
+    double zoomBottom = _imp->zoomCtx.bottom();
+    double zoomTop = _imp->zoomCtx.top();
+    if (zoomLeft == zoomRight || zoomTop == zoomBottom) {
         glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
         return;
     }
-    _imp->zoomCtx._lastOrthoLeft = left;
-    _imp->zoomCtx._lastOrthoRight = right;
-    _imp->zoomCtx._lastOrthoBottom = bottom;
-    _imp->zoomCtx._lastOrthoTop = top;
-    glOrtho(left , right, bottom, top, -1, 1);
+    glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
     glCheckError();
     
     glMatrixMode (GL_MODELVIEW);
@@ -986,6 +1020,7 @@ void Histogram::paintGL()
     
     glClearColor(0,0,0,1);
     glClear(GL_COLOR_BUFFER_BIT);
+    glCheckErrorIgnoreOSXBug();
 
     
     _imp->drawScale();
@@ -996,67 +1031,36 @@ void Histogram::paintGL()
     if (_imp->drawCoordinates) {
         _imp->drawPicker();
     }
+    glCheckError();
 }
 
-void Histogram::resizeGL(int w, int h)
+void Histogram::resizeGL(int width, int height)
 {
-    if (h == 0) {
-        h = 1;
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    assert(QGLContext::currentContext() == context());
+
+    if (height == 0) {// prevent division by 0
+        height = 1;
     }
-    glViewport (0, 0, w , h);
+    glViewport (0, 0, width, height);
+    _imp->zoomCtx.setScreenSize(width, height);
     if (!_imp->hasBeenModifiedSinceResize) {
-        centerOn(0, 1, 0, 1);
+        _imp->zoomCtx.fill(0., 1., 0., 10.);
+        computeHistogramAndRefresh();
     }
-}
-
-QPointF Histogram::toHistogramCoordinates(double x,double y) const
-{
-    double w = (double)width() ;
-    double h = (double)height();
-    double bottom = _imp->zoomCtx.bottom;
-    double left = _imp->zoomCtx.left;
-    double top =  bottom +  h / _imp->zoomCtx.zoomFactor * _imp->zoomCtx.aspectRatio ;
-    double right = left +  w / _imp->zoomCtx.zoomFactor;
-    return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
-}
-
-QPointF Histogram::toWidgetCoordinates(double x, double y) const
-{
-    double w = (double)width() ;
-    double h = (double)height();
-    double bottom = _imp->zoomCtx.bottom;
-    double left = _imp->zoomCtx.left;
-    double top =  bottom +  h / _imp->zoomCtx.zoomFactor * _imp->zoomCtx.aspectRatio ;
-    double right = left +  w / _imp->zoomCtx.zoomFactor;
-    return QPointF(((x - left)/(right - left))*w,((y - top)/(bottom - top))*h);
-}
-
-void Histogram::centerOn(double xmin,double xmax,double ymin,double ymax)
-{
-    double curveWidth = xmax - xmin;
-    double curveHeight = (ymax - ymin);
-    double w = width();
-    double h = height() * _imp->zoomCtx.aspectRatio ;
-    if (w / h < curveWidth / curveHeight) {
-        _imp->zoomCtx.left = xmin;
-        _imp->zoomCtx.zoomFactor = w / curveWidth;
-        _imp->zoomCtx.bottom = (ymax + ymin) / 2. - ((h / w) * curveWidth / 2.);
-    } else {
-        _imp->zoomCtx.bottom = ymin;
-        _imp->zoomCtx.zoomFactor = h / curveHeight;
-        _imp->zoomCtx.left = (xmax + xmin) / 2. - ((w / h) * curveHeight / 2.);
-    }
-        
-    computeHistogramAndRefresh();
 }
 
 void Histogram::mousePressEvent(QMouseEvent* event)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     ////
     // middle button: scroll view
     if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
         _imp->state = DRAGGING_VIEW;
-        _imp->zoomCtx._oldClick = event->pos();
+        _imp->oldClick = event->pos();
     } else if (event->button() == Qt::RightButton) {
         _imp->showMenu(event->globalPos());
     }
@@ -1065,22 +1069,27 @@ void Histogram::mousePressEvent(QMouseEvent* event)
 
 void Histogram::mouseMoveEvent(QMouseEvent* event)
 {
-    QPointF newClick_opengl = toHistogramCoordinates(event->x(),event->y());
-    QPointF oldClick_opengl = toHistogramCoordinates(_imp->zoomCtx._oldClick.x(),_imp->zoomCtx._oldClick.y());
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
+    QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates(event->x(),event->y());
+    QPointF oldClick_opengl = _imp->zoomCtx.toZoomCoordinates(_imp->oldClick.x(),_imp->oldClick.y());
     
 
-    _imp->zoomCtx._oldClick = event->pos();
+    _imp->oldClick = event->pos();
     _imp->drawCoordinates = true;
-    _imp->updatePicker(newClick_opengl.x());
-    
+
+    double dx = (oldClick_opengl.x() - newClick_opengl.x());
+    double dy = (oldClick_opengl.y() - newClick_opengl.y());
+
     switch (_imp->state) {
         case DRAGGING_VIEW:
-            _imp->zoomCtx.bottom += (oldClick_opengl.y() - newClick_opengl.y());
-            _imp->zoomCtx.left += (oldClick_opengl.x() - newClick_opengl.x());
+            _imp->zoomCtx.translate(dx, dy);
             _imp->hasBeenModifiedSinceResize = true;
             computeHistogramAndRefresh();
             break;
         case NONE:
+            _imp->updatePicker(newClick_opengl.x());
             update();
             break;
     }
@@ -1090,6 +1099,9 @@ void Histogram::mouseMoveEvent(QMouseEvent* event)
 
 void HistogramPrivate::updatePicker(double x)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     xCoordinateStr = QString("x=") + QString::number(x,'f',6);
     double binSize = (vmax - vmin) / binsCount;
     int index = (int)((x - vmin) / binSize);
@@ -1125,66 +1137,74 @@ void HistogramPrivate::updatePicker(double x)
 
 void Histogram::mouseReleaseEvent(QMouseEvent* /*event*/)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     _imp->state = NONE;
 }
 
 void Histogram::wheelEvent(QWheelEvent *event)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     // don't handle horizontal wheel (e.g. on trackpad or Might Mouse)
     if (event->orientation() != Qt::Vertical) {
         return;
     }
-    
-    const double oldAspectRatio = _imp->zoomCtx.aspectRatio;
-    const double oldZoomFactor = _imp->zoomCtx.zoomFactor;
-    double newAspectRatio = oldAspectRatio;
-    double newZoomFactor = oldZoomFactor;
-    const double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
-    
+    const double zoomFactor_min = 0.000001;
+    const double zoomFactor_max = 1000000.;
+    const double par_min = 0.000001;
+    const double par_max = 1000000.;
+
+    double zoomFactor;
+    double par;
+    double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+    QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates(event->x(), event->y());
+
     if (event->modifiers().testFlag(Qt::ControlModifier) && event->modifiers().testFlag(Qt::ShiftModifier)) {
         // Alt + Shift + Wheel: zoom values only, keep point under mouse
-        newAspectRatio *= scaleFactor;
-        if (newAspectRatio <= 0.000001) {
-            newAspectRatio = 0.000001;
-        } else if (newAspectRatio > 1000000.) {
-            newAspectRatio = 1000000.;
+        zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
+        if (zoomFactor <= zoomFactor_min) {
+            zoomFactor = zoomFactor_min;
+            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
+        } else if (zoomFactor > zoomFactor_max) {
+            zoomFactor = zoomFactor_max;
+            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
+        par = _imp->zoomCtx.par() / scaleFactor;
+        if (par <= par_min) {
+            par = par_min;
+            scaleFactor = par / _imp->zoomCtx.par();
+        } else if (par > par_max) {
+            par = par_max;
+            scaleFactor = par / _imp->zoomCtx.factor();
+        }
+        _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else if (event->modifiers().testFlag(Qt::ControlModifier)) {
         // Alt + Wheel: zoom time only, keep point under mouse
-        newAspectRatio *= scaleFactor;
-        newZoomFactor *= scaleFactor;
-        if (newZoomFactor <= 0.000001) {
-            newAspectRatio *= 0.000001/newZoomFactor;
-            newZoomFactor = 0.000001;
-        } else if (newZoomFactor > 1000000.) {
-            newAspectRatio *= 1000000./newZoomFactor;
-            newZoomFactor = 1000000.;
+        par = _imp->zoomCtx.par() * scaleFactor;
+        if (par <= par_min) {
+            par = par_min;
+            scaleFactor = par / _imp->zoomCtx.par();
+        } else if (par > par_max) {
+            par = par_max;
+            scaleFactor = par / _imp->zoomCtx.factor();
         }
-        if (newAspectRatio <= 0.000001) {
-            newZoomFactor *= 0.000001/newAspectRatio;
-            newAspectRatio = 0.000001;
-        } else if (newAspectRatio > 1000000.) {
-            newZoomFactor *= 1000000./newAspectRatio;
-            newAspectRatio = 1000000.;
-        }
+        _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else {
         // Wheel: zoom values and time, keep point under mouse
-        newZoomFactor *= scaleFactor;
-        if (newZoomFactor <= 0.000001) {
-            newZoomFactor = 0.000001;
-        } else if (newZoomFactor > 1000000.) {
-            newZoomFactor = 1000000.;
+        zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
+        if (zoomFactor <= zoomFactor_min) {
+            zoomFactor = zoomFactor_min;
+            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
+        } else if (zoomFactor > zoomFactor_max) {
+            zoomFactor = zoomFactor_max;
+            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
+        _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     }
-    QPointF zoomCenter = toHistogramCoordinates(event->x(), event->y());
-    double zoomRatio =  oldZoomFactor / newZoomFactor;
-    double aspectRatioRatio =  oldAspectRatio / newAspectRatio;
-    _imp->zoomCtx.left = zoomCenter.x() - (zoomCenter.x() - _imp->zoomCtx.left)*zoomRatio ;
-    _imp->zoomCtx.bottom = zoomCenter.y() - (zoomCenter.y() - _imp->zoomCtx.bottom)*zoomRatio/aspectRatioRatio;
-    
-    _imp->zoomCtx.aspectRatio = newAspectRatio;
-    _imp->zoomCtx.zoomFactor = newZoomFactor;
-    
+
     _imp->hasBeenModifiedSinceResize = true;
     
     computeHistogramAndRefresh();
@@ -1193,43 +1213,57 @@ void Histogram::wheelEvent(QWheelEvent *event)
 
 void Histogram::keyPressEvent(QKeyEvent *e)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     if (e->key() == Qt::Key_Space) {
         QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
         QCoreApplication::postEvent(parentWidget(),ev);
     } else if (e->key() == Qt::Key_F) {
         _imp->hasBeenModifiedSinceResize = false;
-        //reset the pixel aspect to 1
-        _imp->zoomCtx.aspectRatio = 1.;
-        centerOn(0, 1, 0, 1);
+        _imp->zoomCtx.fill(0., 1., 0., 10.);
+        computeHistogramAndRefresh();
     }
 }
 
 void Histogram::enterEvent(QEvent* e)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     setFocus();
     QGLWidget::enterEvent(e);
 }
 
 void Histogram::leaveEvent(QEvent* e)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     _imp->drawCoordinates = false;
     QGLWidget::leaveEvent(e);
 }
 
 void Histogram::showEvent(QShowEvent* e)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     QGLWidget::showEvent(e);
     computeHistogramAndRefresh(true);
 }
 
 void Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     if (!isVisible() && !forceEvenIfNotVisible) {
         return;
     }
     
-    QPointF btmLeft = toHistogramCoordinates(0,height()-1);
-    QPointF topRight = toHistogramCoordinates(width()-1, 0);
+    QPointF btmLeft = _imp->zoomCtx.toZoomCoordinates(0,height()-1);
+    QPointF topRight = _imp->zoomCtx.toZoomCoordinates(width()-1, 0);
     double vmin = btmLeft.x();
     double vmax = topRight.x();
     
@@ -1241,7 +1275,10 @@ void Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
     _imp->histogramThread.computeHistogram(_imp->mode, image, rect, width(),vmin,vmax,_imp->filterSize);
     
 #endif
-    
+
+    QPointF oldClick_opengl = _imp->zoomCtx.toZoomCoordinates(_imp->oldClick.x(),_imp->oldClick.y());
+    _imp->updatePicker(oldClick_opengl.x());
+
     update();
 }
 
@@ -1249,8 +1286,9 @@ void Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
 
 void Histogram::onCPUHistogramComputed()
 {
+    // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    
+
     int mode;
     bool success = _imp->histogramThread.getMostRecentlyProducedHistogram(&_imp->histogram1, &_imp->histogram2, &_imp->histogram3, &_imp->binsCount, &_imp->pixelsCount, &mode,&_imp->vmin,&_imp->vmax);
     assert(success);
@@ -1262,10 +1300,20 @@ void Histogram::onCPUHistogramComputed()
 
 void HistogramPrivate::drawScale()
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == widget->context());
-    
-    QPointF btmLeft = widget->toHistogramCoordinates(0,widget->height()-1);
-    QPointF topRight = widget->toHistogramCoordinates(widget->width()-1, 0);
+
+    {
+        GLenum _glerror_ = glGetError();
+        if(_glerror_ != GL_NO_ERROR) {
+            std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl;
+        }
+    }
+
+    glCheckError();
+    QPointF btmLeft = zoomCtx.toZoomCoordinates(0,widget->height()-1);
+    QPointF topRight = zoomCtx.toZoomCoordinates(widget->width()-1, 0);
     
     ///don't attempt to draw a scale on a widget with an invalid height
     if (widget->height() <= 1) {
@@ -1283,7 +1331,7 @@ void HistogramPrivate::drawScale()
     
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    
+
     for (int axis = 0; axis < 2; ++axis) {
         const double rangePixel = (axis == 0) ? widget->width() : widget->height(); // AXIS-SPECIFIC
         const double range_min = (axis == 0) ? btmLeft.x() : btmLeft.y(); // AXIS-SPECIFIC
@@ -1318,7 +1366,8 @@ void HistogramPrivate::drawScale()
                 glVertex2f(topRight.x(), value); // AXIS-SPECIFIC
             }
             glEnd();
-            
+            glCheckErrorIgnoreOSXBug();
+
             if (tickSize > minTickSizeText) {
                 const int tickSizePixel = rangePixel * tickSize/range;
                 const QString s = QString::number(value);
@@ -1333,6 +1382,7 @@ void HistogramPrivate::drawScale()
                     }
                     QColor c = _scaleColor;
                     c.setAlpha(255*alphaText);
+                    glCheckError();
                     if (axis == 0) {
                         widget->renderText(value, btmLeft.y(), s, c, _font); // AXIS-SPECIFIC
                     } else {
@@ -1347,27 +1397,33 @@ void HistogramPrivate::drawScale()
     glDisable(GL_BLEND);
     //reset back the color
     glColor4f(1., 1., 1., 1.);
-    
+    glCheckError();
 }
 
 void HistogramPrivate::drawPicker()
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    assert(QGLContext::currentContext() == widget->context());
+
+    glCheckError();
     QFontMetrics m(_font);
     int strWidth = std::max(std::max(std::max(m.width(rValueStr),m.width(gValueStr)),m.width(bValueStr)),m.width(xCoordinateStr));
     
-    QPointF xPos = widget->toHistogramCoordinates(widget->width() - strWidth - 10 ,m.height() + 10);
-    QPointF rPos = widget->toHistogramCoordinates(widget->width() - strWidth - 10 ,2 * m.height() + 15);
-    QPointF gPos = widget->toHistogramCoordinates(widget->width() - strWidth - 10 ,3 * m.height() + 20);
-    QPointF bPos = widget->toHistogramCoordinates(widget->width() - strWidth - 10 ,4 * m.height() + 25);
+    QPointF xPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10 ,m.height() + 10);
+    QPointF rPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10 ,2 * m.height() + 15);
+    QPointF gPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10 ,3 * m.height() + 20);
+    QPointF bPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10 ,4 * m.height() + 25);
     
-    QColor xColor(200,200,200);
-    QColor rColor,gColor,bColor;
-    
+    QColor xColor, rColor,gColor,bColor;
+
+    // Text-aware Magic colors (see recipe below):
+    // - they all have the same luminance
+    // - red, green and blue are complementary, but they sum up to more than 1
+    xColor.setRgbF(0.398979,0.398979,0.398979);
     switch (mode) {
         case Histogram::RGB:
-            rColor.setRedF(0.711519527404004);
-            rColor.setGreenF(0.164533420851110);
-            rColor.setBlueF(0.164533420851110);
+            rColor.setRgbF(0.851643,0.196936,0.196936);
             break;
         case Histogram::Y:
         case Histogram::A:
@@ -1379,19 +1435,18 @@ void HistogramPrivate::drawPicker()
             break;
     }
     
-    gColor.setRedF(0);
-    gColor.setGreenF(0.546986106552894);
-    gColor.setBlueF(0);
+    gColor.setRgbF(0,0.654707,0);
     
-    bColor.setRedF(0.288480472595996);
-    bColor.setGreenF(0.288480472595996);
-    bColor.setBlueF(0.8354665791488900);
+    bColor.setRgbF(0.345293,0.345293,1);
     
+    glCheckError();
     widget->renderText(xPos.x(), xPos.y(), xCoordinateStr,xColor , _font);
     widget->renderText(rPos.x(), rPos.y(), rValueStr, rColor, _font);
     widget->renderText(gPos.x(), gPos.y(), gValueStr, gColor, _font);
     widget->renderText(bPos.x(), bPos.y(), bValueStr, bColor, _font);
+    glCheckError();
 }
+
 #if 0
 /*
  // compute magic colors, by F. Devernay
@@ -1478,6 +1533,11 @@ int main(int argc, char**argv)
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
 void HistogramPrivate::drawHistogramCPU()
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    assert(QGLContext::currentContext() == widget->context());
+
+    glCheckError();
     glEnable(GL_BLEND);
     glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
     glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
@@ -1550,18 +1610,24 @@ void HistogramPrivate::drawHistogramCPU()
         }
     }
     glEnd(); // GL_LINES
+    glCheckErrorIgnoreOSXBug();
 
     glDisable(GL_BLEND);
     glColor4f(1, 1, 1, 1);
+    glCheckError();
 }
 #endif
+
 void Histogram::renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
-    
+
     if(text.isEmpty())
         return;
     
+    glCheckError();
     glMatrixMode (GL_PROJECTION);
     glPushMatrix(); // save GL_PROJECTION
     glLoadIdentity();
@@ -1570,7 +1636,7 @@ void Histogram::renderText(double x,double y,const QString& text,const QColor& c
     /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
     glOrtho(0,w,0,h,-1,1);
     glMatrixMode(GL_MODELVIEW);
-    QPointF pos = toWidgetCoordinates(x, y);
+    QPointF pos = _imp->zoomCtx.toWidgetCoordinates(x, y);
     glCheckError();
     _imp->textRenderer.renderText(pos.x(),h-pos.y(),text,color,font);
     glCheckError();
@@ -1578,5 +1644,5 @@ void Histogram::renderText(double x,double y,const QString& text,const QColor& c
     glLoadIdentity();
     glPopMatrix(); // restore GL_PROJECTION
     glMatrixMode(GL_MODELVIEW);
-    
+    glCheckError();
 }

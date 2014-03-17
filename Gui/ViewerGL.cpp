@@ -133,10 +133,10 @@ struct ViewerGL::Implementation {
     , textRenderer()
     , isUserRoISet(false)
     , lastMousePosition()
-    , currentViewerInfos() // protected by mutex
-    , currentViewerInfos_btmLeftBBOXoverlay() // protected by mutex
-    , currentViewerInfos_topRightBBOXoverlay() // protected by mutex
-    , currentViewerInfos_resolutionOverlay() // protected by mutex
+    , currentViewerInfos()
+    , currentViewerInfos_btmLeftBBOXoverlay()
+    , currentViewerInfos_topRightBBOXoverlay()
+    , currentViewerInfos_resolutionOverlay()
     , userRoIEnabled(false) // protected by mutex
     , userRoI() // protected by mutex
     , zoomCtx() // protected by mutex
@@ -1444,6 +1444,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
         oldPosition_opengl = _imp->zoomCtx.toZoomCoordinates(_imp->lastMousePosition.x(), _imp->lastMousePosition.y());
     }
 
+    double dx = (oldClick_opengl.x() - newClick_opengl.x());
     double dy = (oldClick_opengl.y() - newClick_opengl.y());
     double dxSinceLastMove = (oldPosition_opengl.x() - newClick_opengl.x());
     double dySinceLastMove = (oldPosition_opengl.y() - newClick_opengl.y());
@@ -1452,7 +1453,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
         case DRAGGING_IMAGE: {
             {
                 QMutexLocker l(&_imp->zoomCtxMutex);
-                _imp->zoomCtx.translate(oldClick_opengl.x() - newClick_opengl.x(), dy);
+                _imp->zoomCtx.translate(dx, dy);
             }
             _imp->oldClick = newClick;
             if(_imp->displayingImage){
@@ -1641,20 +1642,21 @@ void ViewerGL::wheelEvent(QWheelEvent *event)
     
     _imp->viewerTab->getGui()->selectNode(_imp->viewerTab->getGui()->getApp()->getNodeGui(_imp->viewerTab->getInternalNode()->getNode()));
 
-
+    const double zoomFactor_min = 0.01;
+    const double zoomFactor_max = 1024.;
     double zoomFactor;
     double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
+        QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates(event->x(), event->y());
         zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
-        if (zoomFactor <= 0.01) {
-            zoomFactor = 0.01;
+        if (zoomFactor <= zoomFactor_min) {
+            zoomFactor = zoomFactor_min;
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
-        } else if (zoomFactor > 1024.) {
-            zoomFactor = 1024.;
+        } else if (zoomFactor > zoomFactor_max) {
+            zoomFactor = zoomFactor_max;
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
-        QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates(event->x(), event->y());
         _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     }
     int zoomValue = (int)(100*zoomFactor);
@@ -1732,12 +1734,20 @@ void ViewerGL::fitImageToFormat()
     {
         QMutexLocker(&_imp->zoomCtxMutex);
         old_zoomFactor = _imp->zoomCtx.factor();
+#if 1
+        // set the PAR first
+        _imp->zoomCtx.setZoom(0., 0., 1., zoomPAR);
+        // leave 4% of margin around
+        _imp->zoomCtx.fit(-0.02*w, 1.02*w, -0.02*h, 1.02*h);
+        zoomFactor = _imp->zoomCtx.factor();
+#else
         // leave 5% of margin around
         zoomFactor = 0.95 * std::min(_imp->zoomCtx.screenWidth()/w, _imp->zoomCtx.screenHeight()/h);
         zoomFactor = std::max(0.01, std::min(zoomFactor, 1024.));
         double zoomLeft = w/2.f - (_imp->zoomCtx.screenWidth()/(2.*zoomFactor));
         double zoomBottom = h/2.f - (_imp->zoomCtx.screenHeight()/(2.*zoomFactor)) * zoomPAR;
         _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomPAR);
+#endif
     }
     _imp->oldClick = QPoint(); // reset mouse posn
 

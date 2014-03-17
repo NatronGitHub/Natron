@@ -160,9 +160,51 @@ public:
 
     void zoom(double centerX, double centerY, double scale)
     {
-        _zoomLeft = centerX - (centerX - _zoomLeft) / scale;
-        _zoomBottom = centerY - (centerY - _zoomBottom) / scale;
+        _zoomLeft = centerX - (centerX - left()) / scale;
+        _zoomBottom = centerY - (centerY - bottom()) / scale;
         _zoomFactor *= scale;
+    }
+
+    // only zoom the x axis: changes the PAR and the Left but not the zoomFactor or the bottom
+    void zoomx(double centerX, double /*centerY*/, double scale)
+    {
+        _zoomLeft = centerX - (centerX - left()) / scale;
+        _zoomPAR *= scale;
+    }
+
+    // only zoom the y axis: changes the PAR, the zoomFactor and the Bottom but not the Left
+    void zoomy(double /*centerX*/, double centerY, double scale)
+    {
+        _zoomBottom = centerY - (centerY - bottom()) / scale;
+        _zoomPAR /= scale;
+        _zoomFactor *= scale;
+    }
+
+    // fit the area (xmin-xmax,ymin-ymax) in the zoom window, without modifying the PAR
+    void fit(double xmin,double xmax,double ymin,double ymax)
+    {
+        double width = xmax - xmin;
+        double height = ymax - ymin;
+        if (screenWidth() / (screenHeight() * par()) < (width / height)) {
+            _zoomLeft = xmin;
+            _zoomFactor = screenWidth() / (width * par());
+            _zoomBottom = (ymax + ymin) / 2. - ((screenHeight() * par())/ screenWidth()) * width / 2.;
+        } else {
+            _zoomBottom = ymin;
+            _zoomFactor = screenHeight() / height;
+            _zoomLeft = (xmax + xmin) / 2. - (screenWidth() / (screenHeight() * par())) * height / 2.;
+        }
+    }
+
+    // fill the area (xmin-xmax,ymin-ymax) in the zoom window, modifying the PAR
+    void fill(double xmin,double xmax,double ymin,double ymax)
+    {
+        double width = xmax - xmin;
+        double height = ymax - ymin;
+        _zoomLeft = xmin;
+        _zoomBottom = ymin;
+        _zoomFactor = screenHeight() / height;
+        _zoomPAR = (screenWidth() * height) / (screenHeight() * width);
     }
 
     void setScreenSize(double screenWidth, double screenHeight)
@@ -179,7 +221,7 @@ public:
      *@param y[in] The y coordinates of the point in viewport coordinates.
      *@returns Returns the image coordinates mapped equivalent of (x,y).
      **/
-    QPointF toZoomCoordinates(double widgetX, double widgetY)
+    QPointF toZoomCoordinates(double widgetX, double widgetY) const
     {
         return QPointF((((right() - left())*widgetX)/screenWidth())+left(),
                        (((bottom() - top())*widgetY)/screenHeight())+top());
@@ -192,7 +234,7 @@ public:
      *@param y[in] The y coordinates of the point in image coordinates.
      *@returns Returns the viewport coordinates mapped equivalent of (x,y).
      **/
-    QPointF toWidgetCoordinates(double zoomX, double zoomY)
+    QPointF toWidgetCoordinates(double zoomX, double zoomY) const
     {
         return QPointF(((zoomX - left())/(right() - left()))*screenWidth(),
                       ((zoomY - top())/(bottom() - top()))*screenHeight());

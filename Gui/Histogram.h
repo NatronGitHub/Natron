@@ -44,17 +44,8 @@ public:
     Histogram(Gui* gui, const QGLWidget* shareWidget = NULL);
     
     virtual ~Histogram();
-
-    
-    QPointF toHistogramCoordinates(double x,double y) const;
-    
-    QPointF toWidgetCoordinates(double x, double y) const;
-    
-    void centerOn(double xmin,double xmax,double ymin,double ymax);
-    
     
     void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const;
-    
     
 public slots:
     
