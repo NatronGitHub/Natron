@@ -166,14 +166,14 @@ public:
     }
 
     // only zoom the x axis: changes the PAR and the Left but not the zoomFactor or the bottom
-    void zoomx(double centerX, double centerY, double scale)
+    void zoomx(double centerX, double /*centerY*/, double scale)
     {
         _zoomLeft = centerX - (centerX - left()) / scale;
         _zoomPAR *= scale;
     }
 
     // only zoom the y axis: changes the PAR, the zoomFactor and the Bottom but not the Left
-    void zoomy(double centerX, double centerY, double scale)
+    void zoomy(double /*centerX*/, double centerY, double scale)
     {
         _zoomBottom = centerY - (centerY - bottom()) / scale;
         _zoomPAR /= scale;
@@ -221,7 +221,7 @@ public:
      *@param y[in] The y coordinates of the point in viewport coordinates.
      *@returns Returns the image coordinates mapped equivalent of (x,y).
      **/
-    QPointF toZoomCoordinates(double widgetX, double widgetY)
+    QPointF toZoomCoordinates(double widgetX, double widgetY) const
     {
         return QPointF((((right() - left())*widgetX)/screenWidth())+left(),
                        (((bottom() - top())*widgetY)/screenHeight())+top());
@@ -234,7 +234,7 @@ public:
      *@param y[in] The y coordinates of the point in image coordinates.
      *@returns Returns the viewport coordinates mapped equivalent of (x,y).
      **/
-    QPointF toWidgetCoordinates(double zoomX, double zoomY)
+    QPointF toWidgetCoordinates(double zoomX, double zoomY) const
     {
         return QPointF(((zoomX - left())/(right() - left()))*screenWidth(),
                       ((zoomY - top())/(bottom() - top()))*screenHeight());

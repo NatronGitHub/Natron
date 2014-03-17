@@ -196,13 +196,11 @@ public:
     
     void refreshSelectedKeys();
     
-    double getPixelAspectRatio() const;
-    
     double getZoomFactor() const;
        
-    void getProjection(double& bottom,double &left,double &zoomFactor,double &aspectRatio) const;
+    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomPAR) const;
     
-    void setProjection(double bottom,double left,double zoomFactor,double aspectRatio);
+    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomPAR);
 
     /**
     * @brief Swap the OpenGL buffers.
@@ -296,7 +294,7 @@ private:
     /**
      *@brief See toZoomCoordinates in ViewerGL.h
      **/
-    QPointF toScaleCoordinates(double x, double y) const;
+    QPointF toZoomCoordinates(double x, double y) const;
 
     /**
      *@brief See toWidgetCoordinates in ViewerGL.h
