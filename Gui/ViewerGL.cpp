@@ -133,10 +133,10 @@ struct ViewerGL::Implementation {
     , textRenderer()
     , isUserRoISet(false)
     , lastMousePosition()
-    , currentViewerInfos() // protected by mutex
-    , currentViewerInfos_btmLeftBBOXoverlay() // protected by mutex
-    , currentViewerInfos_topRightBBOXoverlay() // protected by mutex
-    , currentViewerInfos_resolutionOverlay() // protected by mutex
+    , currentViewerInfos()
+    , currentViewerInfos_btmLeftBBOXoverlay()
+    , currentViewerInfos_topRightBBOXoverlay()
+    , currentViewerInfos_resolutionOverlay()
     , userRoIEnabled(false) // protected by mutex
     , userRoI() // protected by mutex
     , zoomCtx() // protected by mutex
