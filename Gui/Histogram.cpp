@@ -280,7 +280,7 @@ Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
     QObject::connect(_imp->fullImage, SIGNAL(triggered()), this, SLOT(computeHistogramAndRefresh()));
     _imp->rightClickMenu->addAction(_imp->fullImage);
     
-    _imp->filterMenu = new QMenu("Filter",_imp->rightClickMenu);
+    _imp->filterMenu = new QMenu("Smoothing",_imp->rightClickMenu);
     _imp->rightClickMenu->addAction(_imp->filterMenu->menuAction());
     
     _imp->modeActions = new QActionGroup(_imp->modeMenu);
@@ -324,21 +324,21 @@ Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
     
     _imp->filterActions = new QActionGroup(_imp->filterMenu);
     QAction* noSmoothAction = new QAction(_imp->filterActions);
-    noSmoothAction->setText("No smoothing");
-    noSmoothAction->setData(0);
+    noSmoothAction->setText("Small");
+    noSmoothAction->setData(1);
     noSmoothAction->setCheckable(true);
     noSmoothAction->setChecked(true);
     _imp->filterActions->addAction(noSmoothAction);
     
     QAction* size3Action = new QAction(_imp->filterActions);
-    size3Action->setText("Size 3");
+    size3Action->setText("Medium");
     size3Action->setData(3);
     size3Action->setCheckable(true);
     size3Action->setChecked(false);
     _imp->filterActions->addAction(size3Action);
     
     QAction* size5Action = new QAction(_imp->filterActions);
-    size5Action->setText("Size 5");
+    size5Action->setText("High");
     size5Action->setData(5);
     size5Action->setCheckable(true);
     size5Action->setChecked(false);
