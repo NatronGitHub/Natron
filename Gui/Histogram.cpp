@@ -34,33 +34,13 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/Texture.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/TextRenderer.h"
+#include "Gui/ZoomContext.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
 namespace { // protext local classes in anonymous namespace
-    
-    // a data container with only a constructor, a destructor, and a few utility functions is really just a struct
-    // see ViewerGL.cpp for a full documentation of ZoomContext
-    struct ZoomContext {
-        
-        ZoomContext()
-        : bottom(0.)
-        , left(0.)
-        , zoomFactor(1.)
-        , aspectRatio(1.)
-        {}
-        
-        QPoint _oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
-        double bottom; /// the bottom edge of orthographic projection
-        double left; /// the left edge of the orthographic projection
-        double zoomFactor; /// the zoom factor applied to the current image
-        double aspectRatio;///
-        
-        double _lastOrthoLeft,_lastOrthoBottom,_lastOrthoRight,_lastOrthoTop; //< remembers the last values passed to the glOrtho call
-    };
-    
     enum EventState {
         DRAGGING_VIEW = 0,
         NONE = 1
@@ -80,6 +60,7 @@ struct HistogramPrivate
     , filterMenu(NULL)
     , widget(widget)
     , mode(Histogram::RGB)
+    , oldClick()
     , zoomCtx()
     , supportsGLSL(true)
     , hasOpenGLVAOSupport(true)
@@ -162,6 +143,7 @@ struct HistogramPrivate
 
     Histogram* widget;
     Histogram::DisplayMode mode;
+    QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
     ZoomContext zoomCtx;
     bool supportsGLSL;
     bool hasOpenGLVAOSupport;
@@ -1019,23 +1001,18 @@ void Histogram::paintGL()
     
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
-    if(_imp->zoomCtx.zoomFactor <= 0){
-        return;
-    }
-    double bottom = _imp->zoomCtx.bottom;
-    double left = _imp->zoomCtx.left;
-    double top = bottom +  h / (double)_imp->zoomCtx.zoomFactor * _imp->zoomCtx.aspectRatio ;
-    double right = left +  (w / (double)_imp->zoomCtx.zoomFactor);
-    if(left == right || top == bottom){
+    assert(_imp->zoomCtx.factor() > 0.);
+
+    double zoomLeft = _imp->zoomCtx.left();
+    double zoomRight = _imp->zoomCtx.right();
+    double zoomBottom = _imp->zoomCtx.bottom();
+    double zoomTop = _imp->zoomCtx.top();
+    if (zoomLeft == zoomRight || zoomTop == zoomBottom) {
         glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
         return;
     }
-    _imp->zoomCtx._lastOrthoLeft = left;
-    _imp->zoomCtx._lastOrthoRight = right;
-    _imp->zoomCtx._lastOrthoBottom = bottom;
-    _imp->zoomCtx._lastOrthoTop = top;
-    glOrtho(left , right, bottom, top, -1, 1);
+    glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
     glCheckError();
     
     glMatrixMode (GL_MODELVIEW);
@@ -1057,69 +1034,21 @@ void Histogram::paintGL()
     glCheckError();
 }
 
-void Histogram::resizeGL(int w, int h)
+void Histogram::resizeGL(int width, int height)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
 
-    if (h == 0) {
-        h = 1;
+    if (height == 0) {// prevent division by 0
+        height = 1;
     }
-    glViewport (0, 0, w , h);
+    glViewport (0, 0, width, height);
+    _imp->zoomCtx.setScreenSize(width, height);
     if (!_imp->hasBeenModifiedSinceResize) {
-        centerOn(0, 1, 0, 1);
+        _imp->zoomCtx.fill(0., 1., 0., 10.);
+        computeHistogramAndRefresh();
     }
-}
-
-QPointF Histogram::toHistogramCoordinates(double x,double y) const
-{
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-
-    double w = (double)width() ;
-    double h = (double)height();
-    double bottom = _imp->zoomCtx.bottom;
-    double left = _imp->zoomCtx.left;
-    double top =  bottom +  h / _imp->zoomCtx.zoomFactor * _imp->zoomCtx.aspectRatio ;
-    double right = left +  w / _imp->zoomCtx.zoomFactor;
-    return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
-}
-
-QPointF Histogram::toWidgetCoordinates(double x, double y) const
-{
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-
-    double w = (double)width() ;
-    double h = (double)height();
-    double bottom = _imp->zoomCtx.bottom;
-    double left = _imp->zoomCtx.left;
-    double top =  bottom +  h / _imp->zoomCtx.zoomFactor * _imp->zoomCtx.aspectRatio ;
-    double right = left +  w / _imp->zoomCtx.zoomFactor;
-    return QPointF(((x - left)/(right - left))*w,((y - top)/(bottom - top))*h);
-}
-
-void Histogram::centerOn(double xmin,double xmax,double ymin,double ymax)
-{
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-
-    double curveWidth = xmax - xmin;
-    double curveHeight = (ymax - ymin);
-    double w = width();
-    double h = height() * _imp->zoomCtx.aspectRatio ;
-    if (w / h < curveWidth / curveHeight) {
-        _imp->zoomCtx.left = xmin;
-        _imp->zoomCtx.zoomFactor = w / curveWidth;
-        _imp->zoomCtx.bottom = (ymax + ymin) / 2. - ((h / w) * curveWidth / 2.);
-    } else {
-        _imp->zoomCtx.bottom = ymin;
-        _imp->zoomCtx.zoomFactor = h / curveHeight;
-        _imp->zoomCtx.left = (xmax + xmin) / 2. - ((w / h) * curveHeight / 2.);
-    }
-        
-    computeHistogramAndRefresh();
 }
 
 void Histogram::mousePressEvent(QMouseEvent* event)
@@ -1131,7 +1060,7 @@ void Histogram::mousePressEvent(QMouseEvent* event)
     // middle button: scroll view
     if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
         _imp->state = DRAGGING_VIEW;
-        _imp->zoomCtx._oldClick = event->pos();
+        _imp->oldClick = event->pos();
     } else if (event->button() == Qt::RightButton) {
         _imp->showMenu(event->globalPos());
     }
@@ -1143,17 +1072,19 @@ void Histogram::mouseMoveEvent(QMouseEvent* event)
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
-    QPointF newClick_opengl = toHistogramCoordinates(event->x(),event->y());
-    QPointF oldClick_opengl = toHistogramCoordinates(_imp->zoomCtx._oldClick.x(),_imp->zoomCtx._oldClick.y());
+    QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates(event->x(),event->y());
+    QPointF oldClick_opengl = _imp->zoomCtx.toZoomCoordinates(_imp->oldClick.x(),_imp->oldClick.y());
     
 
-    _imp->zoomCtx._oldClick = event->pos();
+    _imp->oldClick = event->pos();
     _imp->drawCoordinates = true;
+
+    double dx = (oldClick_opengl.x() - newClick_opengl.x());
+    double dy = (oldClick_opengl.y() - newClick_opengl.y());
 
     switch (_imp->state) {
         case DRAGGING_VIEW:
-            _imp->zoomCtx.bottom += (oldClick_opengl.y() - newClick_opengl.y());
-            _imp->zoomCtx.left += (oldClick_opengl.x() - newClick_opengl.x());
+            _imp->zoomCtx.translate(dx, dy);
             _imp->hasBeenModifiedSinceResize = true;
             computeHistogramAndRefresh();
             break;
@@ -1221,57 +1152,59 @@ void Histogram::wheelEvent(QWheelEvent *event)
     if (event->orientation() != Qt::Vertical) {
         return;
     }
-    
-    const double oldAspectRatio = _imp->zoomCtx.aspectRatio;
-    const double oldZoomFactor = _imp->zoomCtx.zoomFactor;
-    double newAspectRatio = oldAspectRatio;
-    double newZoomFactor = oldZoomFactor;
-    const double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
-    
+    const double zoomFactor_min = 0.000001;
+    const double zoomFactor_max = 1000000.;
+    const double par_min = 0.000001;
+    const double par_max = 1000000.;
+
+    double zoomFactor;
+    double par;
+    double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+    QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates(event->x(), event->y());
+
     if (event->modifiers().testFlag(Qt::ControlModifier) && event->modifiers().testFlag(Qt::ShiftModifier)) {
         // Alt + Shift + Wheel: zoom values only, keep point under mouse
-        newAspectRatio *= scaleFactor;
-        if (newAspectRatio <= 0.000001) {
-            newAspectRatio = 0.000001;
-        } else if (newAspectRatio > 1000000.) {
-            newAspectRatio = 1000000.;
+        zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
+        if (zoomFactor <= zoomFactor_min) {
+            zoomFactor = zoomFactor_min;
+            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
+        } else if (zoomFactor > zoomFactor_max) {
+            zoomFactor = zoomFactor_max;
+            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
+        par = _imp->zoomCtx.par() / scaleFactor;
+        if (par <= par_min) {
+            par = par_min;
+            scaleFactor = par / _imp->zoomCtx.par();
+        } else if (par > par_max) {
+            par = par_max;
+            scaleFactor = par / _imp->zoomCtx.factor();
+        }
+        _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else if (event->modifiers().testFlag(Qt::ControlModifier)) {
         // Alt + Wheel: zoom time only, keep point under mouse
-        newAspectRatio *= scaleFactor;
-        newZoomFactor *= scaleFactor;
-        if (newZoomFactor <= 0.000001) {
-            newAspectRatio *= 0.000001/newZoomFactor;
-            newZoomFactor = 0.000001;
-        } else if (newZoomFactor > 1000000.) {
-            newAspectRatio *= 1000000./newZoomFactor;
-            newZoomFactor = 1000000.;
+        par = _imp->zoomCtx.par() * scaleFactor;
+        if (par <= par_min) {
+            par = par_min;
+            scaleFactor = par / _imp->zoomCtx.par();
+        } else if (par > par_max) {
+            par = par_max;
+            scaleFactor = par / _imp->zoomCtx.factor();
         }
-        if (newAspectRatio <= 0.000001) {
-            newZoomFactor *= 0.000001/newAspectRatio;
-            newAspectRatio = 0.000001;
-        } else if (newAspectRatio > 1000000.) {
-            newZoomFactor *= 1000000./newAspectRatio;
-            newAspectRatio = 1000000.;
-        }
+        _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else {
         // Wheel: zoom values and time, keep point under mouse
-        newZoomFactor *= scaleFactor;
-        if (newZoomFactor <= 0.000001) {
-            newZoomFactor = 0.000001;
-        } else if (newZoomFactor > 1000000.) {
-            newZoomFactor = 1000000.;
+        zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
+        if (zoomFactor <= zoomFactor_min) {
+            zoomFactor = zoomFactor_min;
+            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
+        } else if (zoomFactor > zoomFactor_max) {
+            zoomFactor = zoomFactor_max;
+            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
+        _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     }
-    QPointF zoomCenter = toHistogramCoordinates(event->x(), event->y());
-    double zoomRatio =  oldZoomFactor / newZoomFactor;
-    double aspectRatioRatio =  oldAspectRatio / newAspectRatio;
-    _imp->zoomCtx.left = zoomCenter.x() - (zoomCenter.x() - _imp->zoomCtx.left)*zoomRatio ;
-    _imp->zoomCtx.bottom = zoomCenter.y() - (zoomCenter.y() - _imp->zoomCtx.bottom)*zoomRatio/aspectRatioRatio;
-    
-    _imp->zoomCtx.aspectRatio = newAspectRatio;
-    _imp->zoomCtx.zoomFactor = newZoomFactor;
-    
+
     _imp->hasBeenModifiedSinceResize = true;
     
     computeHistogramAndRefresh();
@@ -1288,9 +1221,8 @@ void Histogram::keyPressEvent(QKeyEvent *e)
         QCoreApplication::postEvent(parentWidget(),ev);
     } else if (e->key() == Qt::Key_F) {
         _imp->hasBeenModifiedSinceResize = false;
-        //reset the pixel aspect to 1
-        _imp->zoomCtx.aspectRatio = 1.;
-        centerOn(0, 1, 0, 1);
+        _imp->zoomCtx.fill(0., 1., 0., 10.);
+        computeHistogramAndRefresh();
     }
 }
 
@@ -1330,8 +1262,8 @@ void Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
         return;
     }
     
-    QPointF btmLeft = toHistogramCoordinates(0,height()-1);
-    QPointF topRight = toHistogramCoordinates(width()-1, 0);
+    QPointF btmLeft = _imp->zoomCtx.toZoomCoordinates(0,height()-1);
+    QPointF topRight = _imp->zoomCtx.toZoomCoordinates(width()-1, 0);
     double vmin = btmLeft.x();
     double vmax = topRight.x();
     
@@ -1344,7 +1276,7 @@ void Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
     
 #endif
 
-    QPointF oldClick_opengl = toHistogramCoordinates(_imp->zoomCtx._oldClick.x(),_imp->zoomCtx._oldClick.y());
+    QPointF oldClick_opengl = _imp->zoomCtx.toZoomCoordinates(_imp->oldClick.x(),_imp->oldClick.y());
     _imp->updatePicker(oldClick_opengl.x());
 
     update();
@@ -1380,8 +1312,8 @@ void HistogramPrivate::drawScale()
     }
 
     glCheckError();
-    QPointF btmLeft = widget->toHistogramCoordinates(0,widget->height()-1);
-    QPointF topRight = widget->toHistogramCoordinates(widget->width()-1, 0);
+    QPointF btmLeft = zoomCtx.toZoomCoordinates(0,widget->height()-1);
+    QPointF topRight = zoomCtx.toZoomCoordinates(widget->width()-1, 0);
     
     ///don't attempt to draw a scale on a widget with an invalid height
     if (widget->height() <= 1) {
@@ -1478,10 +1410,10 @@ void HistogramPrivate::drawPicker()
     QFontMetrics m(_font);
     int strWidth = std::max(std::max(std::max(m.width(rValueStr),m.width(gValueStr)),m.width(bValueStr)),m.width(xCoordinateStr));
     
-    QPointF xPos = widget->toHistogramCoordinates(widget->width() - strWidth - 10 ,m.height() + 10);
-    QPointF rPos = widget->toHistogramCoordinates(widget->width() - strWidth - 10 ,2 * m.height() + 15);
-    QPointF gPos = widget->toHistogramCoordinates(widget->width() - strWidth - 10 ,3 * m.height() + 20);
-    QPointF bPos = widget->toHistogramCoordinates(widget->width() - strWidth - 10 ,4 * m.height() + 25);
+    QPointF xPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10 ,m.height() + 10);
+    QPointF rPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10 ,2 * m.height() + 15);
+    QPointF gPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10 ,3 * m.height() + 20);
+    QPointF bPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10 ,4 * m.height() + 25);
     
     QColor xColor, rColor,gColor,bColor;
 
@@ -1704,7 +1636,7 @@ void Histogram::renderText(double x,double y,const QString& text,const QColor& c
     /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
     glOrtho(0,w,0,h,-1,1);
     glMatrixMode(GL_MODELVIEW);
-    QPointF pos = toWidgetCoordinates(x, y);
+    QPointF pos = _imp->zoomCtx.toWidgetCoordinates(x, y);
     glCheckError();
     _imp->textRenderer.renderText(pos.x(),h-pos.y(),text,color,font);
     glCheckError();
