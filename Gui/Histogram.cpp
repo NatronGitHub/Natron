@@ -1071,8 +1071,7 @@ void Histogram::mouseMoveEvent(QMouseEvent* event)
 
     _imp->zoomCtx._oldClick = event->pos();
     _imp->drawCoordinates = true;
-    _imp->updatePicker(newClick_opengl.x());
-    
+
     switch (_imp->state) {
         case DRAGGING_VIEW:
             _imp->zoomCtx.bottom += (oldClick_opengl.y() - newClick_opengl.y());
@@ -1081,6 +1080,7 @@ void Histogram::mouseMoveEvent(QMouseEvent* event)
             computeHistogramAndRefresh();
             break;
         case NONE:
+            _imp->updatePicker(newClick_opengl.x());
             update();
             break;
     }
@@ -1241,7 +1241,10 @@ void Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
     _imp->histogramThread.computeHistogram(_imp->mode, image, rect, width(),vmin,vmax,_imp->filterSize);
     
 #endif
-    
+
+    QPointF oldClick_opengl = toHistogramCoordinates(_imp->zoomCtx._oldClick.x(),_imp->zoomCtx._oldClick.y());
+    _imp->updatePicker(oldClick_opengl.x());
+
     update();
 }
 
