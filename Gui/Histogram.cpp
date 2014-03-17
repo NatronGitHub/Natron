@@ -952,6 +952,7 @@ void HistogramPrivate::renderHistogram(Histogram::DisplayMode channel)
 
 void Histogram::paintGL()
 {
+    glCheckError();
     double w = (double)width();
     double h = (double)height();
     
@@ -986,6 +987,7 @@ void Histogram::paintGL()
     
     glClearColor(0,0,0,1);
     glClear(GL_COLOR_BUFFER_BIT);
+    glCheckErrorIgnoreOSXBug();
 
     
     _imp->drawScale();
@@ -996,6 +998,7 @@ void Histogram::paintGL()
     if (_imp->drawCoordinates) {
         _imp->drawPicker();
     }
+    glCheckError();
 }
 
 void Histogram::resizeGL(int w, int h)
@@ -1266,7 +1269,14 @@ void Histogram::onCPUHistogramComputed()
 void HistogramPrivate::drawScale()
 {
     assert(QGLContext::currentContext() == widget->context());
-    
+    {
+        GLenum _glerror_ = glGetError();
+        if(_glerror_ != GL_NO_ERROR) {
+            std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl;
+        }
+    }
+
+    glCheckError();
     QPointF btmLeft = widget->toHistogramCoordinates(0,widget->height()-1);
     QPointF topRight = widget->toHistogramCoordinates(widget->width()-1, 0);
     
@@ -1286,7 +1296,7 @@ void HistogramPrivate::drawScale()
     
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    
+
     for (int axis = 0; axis < 2; ++axis) {
         const double rangePixel = (axis == 0) ? widget->width() : widget->height(); // AXIS-SPECIFIC
         const double range_min = (axis == 0) ? btmLeft.x() : btmLeft.y(); // AXIS-SPECIFIC
@@ -1321,7 +1331,8 @@ void HistogramPrivate::drawScale()
                 glVertex2f(topRight.x(), value); // AXIS-SPECIFIC
             }
             glEnd();
-            
+            glCheckErrorIgnoreOSXBug();
+
             if (tickSize > minTickSizeText) {
                 const int tickSizePixel = rangePixel * tickSize/range;
                 const QString s = QString::number(value);
@@ -1336,6 +1347,7 @@ void HistogramPrivate::drawScale()
                     }
                     QColor c = _scaleColor;
                     c.setAlpha(255*alphaText);
+                    glCheckError();
                     if (axis == 0) {
                         widget->renderText(value, btmLeft.y(), s, c, _font); // AXIS-SPECIFIC
                     } else {
@@ -1350,11 +1362,12 @@ void HistogramPrivate::drawScale()
     glDisable(GL_BLEND);
     //reset back the color
     glColor4f(1., 1., 1., 1.);
-    
+    glCheckError();
 }
 
 void HistogramPrivate::drawPicker()
 {
+    glCheckError();
     QFontMetrics m(_font);
     int strWidth = std::max(std::max(std::max(m.width(rValueStr),m.width(gValueStr)),m.width(bValueStr)),m.width(xCoordinateStr));
     
@@ -1387,11 +1400,14 @@ void HistogramPrivate::drawPicker()
     
     bColor.setRgbF(0.345293,0.345293,1);
     
+    glCheckError();
     widget->renderText(xPos.x(), xPos.y(), xCoordinateStr,xColor , _font);
     widget->renderText(rPos.x(), rPos.y(), rValueStr, rColor, _font);
     widget->renderText(gPos.x(), gPos.y(), gValueStr, gColor, _font);
     widget->renderText(bPos.x(), bPos.y(), bValueStr, bColor, _font);
+    glCheckError();
 }
+
 #if 0
 /*
  // compute magic colors, by F. Devernay
@@ -1478,6 +1494,7 @@ int main(int argc, char**argv)
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
 void HistogramPrivate::drawHistogramCPU()
 {
+    glCheckError();
     glEnable(GL_BLEND);
     glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
     glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
@@ -1550,11 +1567,14 @@ void HistogramPrivate::drawHistogramCPU()
         }
     }
     glEnd(); // GL_LINES
+    glCheckErrorIgnoreOSXBug();
 
     glDisable(GL_BLEND);
     glColor4f(1, 1, 1, 1);
+    glCheckError();
 }
 #endif
+
 void Histogram::renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const
 {
     assert(QGLContext::currentContext() == context());
@@ -1562,6 +1582,7 @@ void Histogram::renderText(double x,double y,const QString& text,const QColor& c
     if(text.isEmpty())
         return;
     
+    glCheckError();
     glMatrixMode (GL_PROJECTION);
     glPushMatrix(); // save GL_PROJECTION
     glLoadIdentity();
@@ -1578,5 +1599,5 @@ void Histogram::renderText(double x,double y,const QString& text,const QColor& c
     glLoadIdentity();
     glPopMatrix(); // restore GL_PROJECTION
     glMatrixMode(GL_MODELVIEW);
-    
+    glCheckError();
 }
