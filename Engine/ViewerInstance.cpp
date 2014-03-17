@@ -432,16 +432,14 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreade
                     
                     ///if vmax - vmin is greater than 1 the exposure will be really small and we won't see
                     ///anything in the image
-                    if ((_vmax - _vmin) > 1.) {
-                        _vmax = 1.;
-                        _vmin = 0.;
+                    if (_vmax == _vmin) {
+                        _vmin = _vmax - 1.;
                     }
                     _interThreadInfos._exposure = 1 / (_vmax - _vmin);
                     _interThreadInfos._offset =  - _vmin / ( _vmax - _vmin );
                     _exposure = _interThreadInfos._exposure;
                     _offset = _interThreadInfos._offset;
 
-                    emit exposureChanged(_interThreadInfos._exposure);
                 }
                 
                 renderFunctor(_lastRenderedImage, std::make_pair(texRectClipped.y1,texRectClipped.y2), textureRect, closestPowerOf2);
@@ -475,9 +473,9 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreade
                     _vmax = INT_MIN;
                     QtConcurrent::map(splitRects,boost::bind(&ViewerInstance::findAutoContrastVminVmax,this,_lastRenderedImage,_1))
                                       .waitForFinished();
-                    if ((_vmax - _vmin) > 1.) {
-                        _vmax = 1.;
-                        _vmin = 0.;
+                    
+                    if (_vmax == _vmin) {
+                        _vmin = _vmax - 1.;
                     }
                     _interThreadInfos._exposure = 1 / (_vmax - _vmin);
                     _interThreadInfos._offset =  - _vmin / ( _vmax - _vmin );
@@ -486,7 +484,6 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool singleThreade
                         _exposure = _interThreadInfos._exposure;
                         _offset = _interThreadInfos._offset;
                     }
-                    emit exposureChanged(_interThreadInfos._exposure);
                 }
                 
                 QtConcurrent::map(splitRows,
@@ -807,12 +804,12 @@ void ViewerInstance::onExposureChanged(double exp){
     
 }
 
-void ViewerInstance::onAutoContrastChanged(bool autoContrast) {
+void ViewerInstance::onAutoContrastChanged(bool autoContrast,bool refresh) {
     {
         QMutexLocker l(&_autoContrastMutex);
         _autoContrast = autoContrast;
     }
-    if (input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()){
+    if (refresh && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()){
         refreshAndContinueRender(false);
     }
 }
