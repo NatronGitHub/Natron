@@ -1517,7 +1517,7 @@ void HistogramPrivate::drawHistogramCPU()
                 break;
             }
             
-            double vTotNormalized = (double)histogram1[i] / (double)pixelsCount;
+            double vTotNormalized = (double)histogram1[i] / (double)pixelsCount / binSize;
 
             // all the following colors have the same luminance (~0.4)
             switch (mode) {
