@@ -8,7 +8,7 @@
  *
  */
 #include "BlockingBackgroundRender.h"
-
+#include <QDebug>
 #include "Engine/EffectInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Settings.h"
@@ -31,7 +31,8 @@ void BlockingBackgroundRender::blockingRender(){
     }
 }
 
-void BlockingBackgroundRender::notifyFinished(){
+void BlockingBackgroundRender::notifyFinished() {
+    qDebug() << "Blocking render finished.";
     appPTR->writeToOutputPipe(kRenderingFinishedStringLong,kRenderingFinishedStringShort);
     QMutexLocker locker(&_runningMutex);
     _running = false;

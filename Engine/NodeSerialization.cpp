@@ -50,5 +50,11 @@ void NodeSerialization::initialize(Natron::Node* n){
         }
     }
     n->setRenderTreeIsUsingInputs(false);
+    
+    Natron::Node* masterNode = n->getMasterNode();
+    if (masterNode) {
+        _masterNodeName = masterNode->getName_mt_safe();
+    }
+    
     _isNull = false;
 }

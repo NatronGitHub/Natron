@@ -43,7 +43,7 @@ GuiAppInstance::GuiAppInstance(int appID)
 }
 
 GuiAppInstance::~GuiAppInstance() {
-    
+    delete _imp->_gui;
 }
 
 void GuiAppInstance::load(const QString& projectName,const QStringList& /*writers*/) {

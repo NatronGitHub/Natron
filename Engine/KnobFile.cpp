@@ -133,7 +133,13 @@ void File_Knob::setFiles(const SequenceParsing::SequenceFromFiles& fileSequence)
 ///called when a value changes, just update the pattern
 void File_Knob::processNewValue(Natron::ValueChangedReason reason) {
     if (reason == Natron::PLUGIN_EDITED) {
-        _pattern = getValueForEachDimension()[0].toString();
+        if (isSlave(0)) {
+            std::pair<int,boost::shared_ptr<Knob> > master = getMaster(0);
+            assert(master.second);
+            _pattern = master.second->getValueForEachDimension()[master.first].toString();
+        } else {
+            _pattern = getValueForEachDimension()[0].toString();
+        }
     }
 }
 

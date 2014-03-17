@@ -57,6 +57,8 @@ public:
     bool isNull() const { return _isNull; }
     
     U64 getKnobsAge() const { return _knobsAge; }
+    
+    const std::string& getMasterNodeName() const { return _masterNodeName; }
 private:
     
     bool _isNull;
@@ -66,7 +68,7 @@ private:
     std::string _pluginID;
     int _pluginMajorVersion;
     int _pluginMinorVersion;
-    
+    std::string _masterNodeName;
     
     std::map<int,std::string> _inputs;
 
@@ -83,6 +85,7 @@ private:
         ar & boost::serialization::make_nvp("Knobs_values_map", _knobsValues);
         ar & boost::serialization::make_nvp("Inputs_map",_inputs);
         ar & boost::serialization::make_nvp("KnobsAge",_knobsAge);
+        ar & boost::serialization::make_nvp("MasterNode",_masterNodeName);
         
     }
     
@@ -97,6 +100,7 @@ private:
         ar & boost::serialization::make_nvp("Knobs_values_map", _knobsValues);
         ar & boost::serialization::make_nvp("Inputs_map",_inputs);
         ar & boost::serialization::make_nvp("KnobsAge",_knobsAge);
+        ar & boost::serialization::make_nvp("MasterNode",_masterNodeName);
         _isNull = false;
         
     }

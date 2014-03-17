@@ -102,6 +102,12 @@ public:
      * @brief Called on project loading.
     **/
     void load(const KnobSerialization& serializationObj);
+    
+    /**
+     * @brief This cannot be done in load since we need all nodes in the project to be loaded
+     * in order to do this.
+     **/
+    void restoreSlaveMasterState(const KnobSerialization& serializationObj);
 
     /**
      * @brief Called by load(const KnobSerialization*&) to deserialize your own extra data.
@@ -318,14 +324,19 @@ public:
      * at the same dimension for the knob 'other'.
      * In case of success, this function returns true, otherwise false.
     **/
-    bool slaveTo(int dimension,boost::shared_ptr<Knob> other,int otherDimension);
+    bool slaveTo(int dimension,const boost::shared_ptr<Knob>& other,int otherDimension);
 
+    ///Meant to be called by the GUI
+    void onKnobSlavedTo(int dimension,const boost::shared_ptr<Knob>&  other,int otherDimension);
 
     /**
      * @brief Unslave the value at the given dimension if it was previously
      * slaved to another knob using the slaveTo function.
     **/
     void unSlave(int dimension);
+    
+    ///Meant to be called  by the Gui
+    void onKnobUnSlaved(int dimension);
 
     /**
      * @brief Returns a valid pointer to a knob if the value at
@@ -420,7 +431,14 @@ signals:
     
     void readOnlyChanged(bool,int);
     
+    void knobSlaved(int,bool);
+    
 private:
+    
+    void unSlave(int dimension,Natron::ValueChangedReason reason);
+    
+    bool slaveTo(int dimension,const boost::shared_ptr<Knob>&  other,int otherDimension,Natron::ValueChangedReason reason);
+    
     //private because it emits a signal
     ValueChangedReturnCode setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
 
@@ -500,6 +518,8 @@ class KnobHolder {
     std::vector< boost::shared_ptr<Knob> > _knobs;
     bool _isClone;
     bool _knobsInitialized;
+    bool _isSlave;
+    
 public:
     
     /**
@@ -528,7 +548,7 @@ public:
 
     int getAppAge() const WARN_UNUSED_RETURN;
     
-    boost::shared_ptr<Knob> getKnobByDescription(const std::string& desc) const WARN_UNUSED_RETURN;
+    boost::shared_ptr<Knob> getKnobByName(const std::string& name) const WARN_UNUSED_RETURN;
     
     const std::vector< boost::shared_ptr<Knob> >& getKnobs() const WARN_UNUSED_RETURN { return _knobs; }
 
@@ -598,8 +618,23 @@ public:
     
     void invalidateHash();
     
-    
     void initializeKnobsPublic();
+    
+    bool isSlave() const ;
+    
+    ///Slave all the knobs of this holder to the other holder.
+    void slaveAllKnobs(KnobHolder* other);
+    
+    void unslaveAllKnobs();
+    
+protected:
+
+    /**
+     * @brief Called when the knobHolder is made slave or unslaved.
+     * @param master The master knobHolder. When isSlave is false, master
+     * will be set to NULL.
+     **/
+    virtual void onSlaveStateChanged(bool /*isSlave*/,KnobHolder* master) {}
     
 private:
 

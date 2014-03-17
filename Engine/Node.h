@@ -37,9 +37,9 @@ class ViewerInstance;
 class RenderTree;
 class Format;
 class NodeSerialization;
+class KnobHolder;
 namespace Natron{
 
-class Row;
 class Image;
 class EffectInstance;
 class LibraryBinary;
@@ -58,10 +58,14 @@ public:
     
     virtual ~Node();
     
-    void load(const std::string& pluginID,const NodeSerialization& serialization);
+    void load(const std::string& pluginID,const NodeSerialization& serialization,bool dontLoadName);
     
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization& serialization);
+    
+    ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
+    ///been loaded first.
+    void restoreKnobsLinks(const NodeSerialization& serialization);
     
     /*Quit all processing done by all render instances of this node */
     void quitAnyProcessing();
@@ -265,7 +269,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    boost::shared_ptr<Knob> getKnobByDescription(const std::string& desc) const;
+    boost::shared_ptr<Knob> getKnobByName(const std::string& name) const;
     
     /*@brief The derived class should query this to abort any long process
      in the engine function.*/
@@ -411,13 +415,18 @@ public:
     
     void refreshPreviewsRecursively();
     
-    void setKnobsAge(U64 newAge) ;
     
     void incrementKnobsAge();
     
     U64 getKnobsAge() const;
     
+    void onSlaveStateChanged(bool isSlave,KnobHolder* master);
+  
+    Natron::Node* getMasterNode() const;
+    
 public slots:
+    
+    void setKnobsAge(U64 newAge) ;
     
     void onGUINameChanged(const QString& str);
 
@@ -438,9 +447,13 @@ public slots:
     void notifyGuiChannelChanged(const Natron::ChannelSet& c) {
         emit channelsChanged(c);
     }
-   
+    
+    void onMasterNodeDeactivated();
+
     
 signals:
+    
+    void knobsAgeChanged(U64 age);
     
     void persistentMessageChanged(int,QString);
     
@@ -481,6 +494,9 @@ signals:
     void renderingEnded();
     
     void pluginMemoryUsageChanged(unsigned long long);
+    
+    void slavedStateChanged(bool b);
+    
     
 protected:
     

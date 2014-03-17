@@ -68,6 +68,9 @@ public:
      * @brief Fills the serializationObject with the current state of the NodeGui.
      **/
     void serialize(NodeGuiSerialization* serializationObject) const;
+    
+    
+    void copyFrom(const NodeGuiSerialization& obj);
 
     
     Natron::Node* getNode() const {return _internalNode;}
@@ -240,9 +243,15 @@ public slots:
     bool wasBeginEditCalled() { return _wasBeginEditCalled; }
     
     void centerGraphOnIt();
+    
+    void onSlaveStateChanged(bool b);
+    
+    void refreshSlaveMasterLinkPosition();
+    
 signals:
     void nameChanged(QString);
     
+    void positionChanged();
 private:
     
     void computePreviewImage(int time);
@@ -282,6 +291,7 @@ private:
     
     QGradient* _selectedGradient;
     QGradient* _defaultGradient;
+    QGradient* _clonedGradient;
     
     QMenu* _menu;
     
@@ -292,6 +302,9 @@ private:
     bool _wasBeginEditCalled;
     
     mutable QMutex positionMutex;
+    
+    QGraphicsLineItem* _slaveMasterLink;
+    NodeGui* _masterNodeGui;
 };
 
 #endif // NATRON_GUI_NODEGUI_H_

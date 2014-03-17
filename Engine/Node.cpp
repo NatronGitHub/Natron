@@ -108,6 +108,8 @@ struct Node::Implementation {
         , renderInstancesFullySafePerFrameMutexes()
         , knobsAge(0)
         , knobsAgeMutex()
+        , masterNodeMutex()
+        , masterNode(NULL)
     {
     }
 
@@ -155,6 +157,9 @@ struct Node::Implementation {
     
     U64 knobsAge; //< the age of the knobs in this effect. It gets incremented every times the liveInstance has its evaluate() function called.
     mutable QMutex knobsAgeMutex;
+    
+    mutable QMutex masterNodeMutex;
+    Node* masterNode;
 };
 
 Node::Node(AppInstance* app,LibraryBinary* plugin)
@@ -166,18 +171,18 @@ Node::Node(AppInstance* app,LibraryBinary* plugin)
     
 }
 
-void Node::load(const std::string& pluginID,const NodeSerialization& serialization) {
+void Node::load(const std::string& pluginID,const NodeSerialization& serialization,bool dontLoadName) {
     
-    if (!serialization.isNull()) {
+    if (!serialization.isNull() && !dontLoadName) {
         setName(serialization.getPluginLabel());
-        _imp->knobsAge =  serialization.getKnobsAge();
     }
     
     std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
     if (func.first) {
         _liveInstance         = func.second(this);
         _imp->previewInstance = func.second(this);
-        if (!serialization.isNull()) {
+        if (!serialization.isNull() && serialization.getPluginID() == pluginID &&
+            majorVersion() == serialization.getPluginMajorVersion() && minorVersion() == serialization.getPluginMinorVersion()) {
             loadKnobs(serialization);
         }
     } else { //ofx plugin
@@ -203,10 +208,28 @@ void Node::loadKnobs(const NodeSerialization& serialization) {
         
         ///try to find a serialized value for this knob
         for (U32 k = 0; k < knobsValues.size(); ++k) {
-            if(knobsValues[k]->getLabel() == nodeKnobs[j]->getDescription()){
+            if(knobsValues[k]->getLabel() == nodeKnobs[j]->getName()){
                 // don't load the value if the Knob is not persistant! (it is just the default value in this case)
                 if (nodeKnobs[j]->getIsPersistant()) {
                     nodeKnobs[j]->load(*knobsValues[k]);
+                }
+                break;
+            }
+        }
+    }
+    setKnobsAge(serialization.getKnobsAge());
+}
+
+void Node::restoreKnobsLinks(const NodeSerialization& serialization) {
+    const std::vector< boost::shared_ptr<Knob> >& nodeKnobs = getKnobs();
+    const NodeSerialization::KnobValues& knobsValues = serialization.getKnobsValues();
+    for (U32 j = 0; j < nodeKnobs.size();++j) {
+        ///try to find a serialized value for this knob
+        for (U32 k = 0; k < knobsValues.size(); ++k) {
+            if(knobsValues[k]->getLabel() == nodeKnobs[j]->getDescription()){
+                // don't load the value if the Knob is not persistant! (it is just the default value in this case)
+                if (nodeKnobs[j]->getIsPersistant()) {
+                    nodeKnobs[j]->restoreSlaveMasterState(*knobsValues[k]);
                 }
                 break;
             }
@@ -218,6 +241,7 @@ void Node::loadKnobs(const NodeSerialization& serialization) {
 void Node::setKnobsAge(U64 newAge)  {
     QMutexLocker l(&_imp->knobsAgeMutex);
     _imp->knobsAge = newAge;
+    emit knobsAgeChanged(_imp->knobsAge);
 }
 
 void Node::incrementKnobsAge() {
@@ -230,6 +254,7 @@ void Node::incrementKnobsAge() {
         appPTR->clearAllCaches();
         _imp->knobsAge = 0;
     }
+    emit knobsAgeChanged(_imp->knobsAge);
 }
 
 U64 Node::getKnobsAge() const {
@@ -764,9 +789,9 @@ int Node::getRenderViewsCountForEffect( const EffectInstance* effect) const
 }
 
 
-boost::shared_ptr<Knob> Node::getKnobByDescription(const std::string& desc) const
+boost::shared_ptr<Knob> Node::getKnobByName(const std::string& name) const
 {
-    return _liveInstance->getKnobByDescription(desc);
+    return _liveInstance->getKnobByName(name);
 }
 
 
@@ -1085,6 +1110,7 @@ void Node::serialize(NodeSerialization* serializationObject) {
     serializationObject->initialize(this);
 }
 
+
 void Node::purgeAllInstancesCaches(){
     for(std::map<RenderTree*,EffectInstance*>::iterator it = _imp->renderInstances.begin();
         it != _imp->renderInstances.end();++it){
@@ -1181,6 +1207,43 @@ void Node::refreshPreviewsRecursively() {
     }
 }
 
+
+void Node::onSlaveStateChanged(bool isSlave,KnobHolder* master) {
+   
+    if (isSlave) {
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(master);
+        assert(effect);
+        Natron::Node* masterNode = effect->getNode();
+        {
+            QMutexLocker l(&_imp->masterNodeMutex);
+            _imp->masterNode = masterNode;
+        }
+        QObject::connect(masterNode, SIGNAL(deactivated()), this, SLOT(onMasterNodeDeactivated()));
+        QObject::connect(masterNode, SIGNAL(knobsAgeChanged(U64)), this, SLOT(setKnobsAge(U64)));
+        QObject::connect(masterNode, SIGNAL(previewImageChanged(int)), this, SLOT(refreshPreviewImage(int)));
+    } else {
+        QObject::disconnect(_imp->masterNode, SIGNAL(deactivated()), this, SLOT(onMasterNodeDeactivated()));
+        QObject::disconnect(_imp->masterNode, SIGNAL(knobsAgeChanged(U64)), this, SLOT(setKnobsAge(U64)));
+        QObject::disconnect(_imp->masterNode, SIGNAL(previewImageChanged(int)), this, SLOT(refreshPreviewImage(int)));
+        {
+            QMutexLocker l(&_imp->masterNodeMutex);
+            _imp->masterNode = NULL;
+        }
+    }
+    
+    emit slavedStateChanged(isSlave);
+
+}
+
+void Node::onMasterNodeDeactivated() {
+    _liveInstance->unslaveAllKnobs();
+}
+
+Natron::Node* Node::getMasterNode() const {
+    QMutexLocker l(&_imp->masterNodeMutex);
+    return _imp->masterNode;
+}
+
 InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin)
     : Node(app,plugin)
     , _inputsCount(1)
@@ -1257,6 +1320,9 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
     }
     return false;
 }
+
+
+
 bool InspectorNode::tryAddEmptyInput() {
     
     ///if we already reached 10 inputs, just don't do anything

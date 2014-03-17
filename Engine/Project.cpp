@@ -1157,4 +1157,14 @@ qint64 Project::getProjectCreationTime() const {
     return _imp->projectCreationTime.toMSecsSinceEpoch();
 }
     
+Natron::Node* Project::getNodeByName(const std::string& name) const {
+    QMutexLocker l(&_imp->nodesLock);
+    for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
+        if (_imp->currentNodes[i]->isActivated() && _imp->currentNodes[i]->getName() == name) {
+            return _imp->currentNodes[i];
+        }
+    }
+    return NULL;
+}
+    
 } //namespace Natron

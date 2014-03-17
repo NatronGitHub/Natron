@@ -366,7 +366,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
     Natron::ImageKey key = Natron::Image::makeKey(_imp->hashValue.value(), time, scale,view);
     
     ///The effect caching policy might forbid caching (Readers could use this when going out of the original frame range.)
-    if (getCachePolicy(time) == NEVER_CACHE) {
+    if (getCachePolicy(time) == NEVER_CACHE || isWriter()) {
         byPassCache = true;
     }
     
@@ -1062,6 +1062,10 @@ void EffectInstance::registerPluginMemory(size_t nBytes) {
 
 void EffectInstance::unregisterPluginMemory(size_t nBytes) {
     _node->unregisterPluginMemory(nBytes);
+}
+
+void EffectInstance::onSlaveStateChanged(bool isSlave,KnobHolder* master) {
+    _node->onSlaveStateChanged(isSlave,master);
 }
 
 OutputEffectInstance::OutputEffectInstance(Node* node)

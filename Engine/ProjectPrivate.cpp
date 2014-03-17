@@ -117,7 +117,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         ///this code may throw an exception which will be caught above
         n = project->getApp()->loadNode(serializedNodes[i]->getPluginID().c_str()
                                                         ,serializedNodes[i]->getPluginMajorVersion()
-                                                        ,serializedNodes[i]->getPluginMinorVersion(),*serializedNodes[i]);
+                                                        ,serializedNodes[i]->getPluginMinorVersion(),*serializedNodes[i],false);
         if (!n) {
             project->clearNodes();
             QString text("Failed to restore the graph! \n The node ");
@@ -137,16 +137,16 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         project->clearNodes();
         throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
     }
-
+    
     /*now that we have all nodes, just connect them*/
-    for(U32 i = 0; i <  serializedNodes.size() ; ++i){
-
+    for(U32 i = 0; i <  serializedNodes.size() ; ++i) {
+        
         if(appPTR->isBackground() && serializedNodes[i]->getPluginID() == "Viewer"){
             //ignore viewers on background mode
             continue;
         }
 
-        const std::map<int, std::string>& inputs = serializedNodes[i]->getInputs();
+        
         Natron::Node* thisNode = NULL;
         for (U32 j = 0; j < currentNodes.size(); ++j) {
             if (currentNodes[j]->getName() == serializedNodes[i]->getPluginLabel()) {
@@ -155,6 +155,28 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             }
         }
         assert(thisNode);
+        
+        ///restore slave/master link if any
+        const std::string& masterNodeName = serializedNodes[i]->getMasterNodeName();
+        if (!masterNodeName.empty()) {
+            ///find such a node
+            Natron::Node* masterNode = NULL;
+            for (U32 j = 0; j < currentNodes.size(); ++j) {
+                if (currentNodes[j]->getName() == masterNodeName) {
+                    masterNode = currentNodes[j];
+                    break;
+                }
+            }
+            if (!masterNode) {
+                throw std::runtime_error("Cannot restore the link between " + serializedNodes[i]->getPluginLabel() + " and " +
+                                         masterNodeName);
+            }
+            thisNode->getLiveInstance()->slaveAllKnobs(masterNode->getLiveInstance());
+        } else {
+            thisNode->restoreKnobsLinks(*serializedNodes[i]);
+        }
+        
+        const std::map<int, std::string>& inputs = serializedNodes[i]->getInputs();
         for (std::map<int, std::string>::const_iterator input = inputs.begin(); input!=inputs.end(); ++input) {
             if(!project->getApp()->getProject()->connectNodes(input->first, input->second,thisNode)) {
                 std::string message = std::string("Failed to connect node ") + serializedNodes[i]->getPluginLabel() + " to " + input->second;

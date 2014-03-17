@@ -30,7 +30,7 @@ void KnobSerialization::initialize(const Knob* knob) {
     ///All this function is MT-safe
     
     _hasAnimation = knob->hasAnimation();
-    _label = knob->getDescription();
+    _label = knob->getName();
     _values = knob->getValueForEachDimension_mt_safe();
     _dimension = knob->getDimension();
     const std::vector<boost::shared_ptr<Curve> >& curves = knob->getCurves();
@@ -52,7 +52,7 @@ void KnobSerialization::initialize(const Knob* knob) {
             
             std::string knobName = effect->getNode()->getName_mt_safe();
             knobName += "_SPLIT_";
-            knobName += masters[i].second->getDescription();
+            knobName += masters[i].second->getName();
             _masters.push_back(std::make_pair(masters[i].first,knobName));
         }
     }

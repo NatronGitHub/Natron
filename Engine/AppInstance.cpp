@@ -95,7 +95,8 @@ void AppInstance::load(const QString& projectName,const QStringList& writers)
 }
 
 Natron::Node* AppInstance::createNodeInternal(const QString& pluginID,int majorVersion,int minorVersion,
-                                 bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization){
+                                 bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization,bool dontLoadName)
+{
     Node* node = 0;
     LibraryBinary* pluginBinary = 0;
     try {
@@ -117,7 +118,7 @@ Natron::Node* AppInstance::createNodeInternal(const QString& pluginID,int majorV
     
     
     try{
-        node->load(pluginID.toStdString(), serialization);
+        node->load(pluginID.toStdString(), serialization,dontLoadName);
     } catch (const std::exception& e) {
         std::string title = std::string("Exception while creating node");
         std::string message = title + " " + pluginID.toStdString() + ": " + e.what();
@@ -137,7 +138,7 @@ Natron::Node* AppInstance::createNodeInternal(const QString& pluginID,int majorV
     node->initializeKnobs();
     node->initializeInputs();
     
-    if (!requestedByLoad) {
+    if (!requestedByLoad || dontLoadName) {
         _imp->_currentProject->initNodeCountersAndSetName(node);
     }
     _imp->_currentProject->addNodeToProject(node);
@@ -148,11 +149,12 @@ Natron::Node* AppInstance::createNodeInternal(const QString& pluginID,int majorV
 }
 
 Natron::Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVersion,bool openImageFileDialog) {
-    return createNodeInternal(name, majorVersion, minorVersion, false, openImageFileDialog, NodeSerialization());
+    return createNodeInternal(name, majorVersion, minorVersion, false, openImageFileDialog, NodeSerialization(),false);
 }
 
-Natron::Node* AppInstance::loadNode(const QString& name,int majorVersion,int minorVersion,const NodeSerialization& serialization) {
-    return createNodeInternal(name, majorVersion, minorVersion, true, false, serialization);
+Natron::Node* AppInstance::loadNode(const QString& name,int majorVersion,int minorVersion,const NodeSerialization& serialization,
+                                    bool dontLoadName) {
+    return createNodeInternal(name, majorVersion, minorVersion, true, false, serialization,dontLoadName);
 
 }
 
@@ -298,10 +300,8 @@ void AppInstance::startWritersRendering(const QStringList& writers){
 
 void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer){
     
-    BlockingBackgroundRender* backgroundRender = new BlockingBackgroundRender(writer);
-    backgroundRender->blockingRender(); //< doesn't return before rendering is finished
-    delete backgroundRender;
-    
+    BlockingBackgroundRender backgroundRender(writer);
+    backgroundRender.blockingRender(); //< doesn't return before rendering is finished
 }
 
 
@@ -313,3 +313,6 @@ void AppInstance::clearOpenFXPluginsCaches(){
     }
 }
 
+void AppInstance::exit() {
+    appPTR->exit(this);
+}

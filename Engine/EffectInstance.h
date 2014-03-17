@@ -562,7 +562,7 @@ private:
     void evaluate(Knob* knob,bool isSignificant) OVERRIDE;
 
     
-    
+    virtual void onSlaveStateChanged(bool isSlave,KnobHolder* master) OVERRIDE FINAL;
 
     
     

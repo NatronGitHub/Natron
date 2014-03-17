@@ -72,6 +72,11 @@ struct Knob::KnobPrivate {
     
     mutable QMutex _valueMutex; //< protects the content of the knobs while it is serializing/deserializing
     
+    mutable QMutex _betweenBeginEndMutex;
+    int _betweenBeginEndCount; //< between begin/end value change count
+    Natron::ValueChangedReason _beginEndReason;
+    std::vector<int> _dimensionChanged; //< all the dimension changed during the begin end
+    
     KnobPrivate(Knob* publicInterface,KnobHolder*  holder,int dimension,const std::string& description)
     : _publicInterface(publicInterface)
     , _holder(holder)
@@ -95,6 +100,10 @@ struct Knob::KnobPrivate {
     , _masters(dimension)
     , _animationLevel(dimension)
     , _valueMutex(QMutex::Recursive)
+    , _betweenBeginEndMutex()
+    , _betweenBeginEndCount(0)
+    , _beginEndReason(Natron::OTHER_REASON)
+    , _dimensionChanged()
     {
     }
     
@@ -417,14 +426,10 @@ int Knob::getDimension() const
     return _imp->_dimension;
 }
 
-void Knob::load(const KnobSerialization& serializationObj)
-{
-    assert(_imp->_dimension == serializationObj.getDimension());
-    assert(getIsPersistant()); // a non-persistent Knob should never be loaded!
-    
+void Knob::restoreSlaveMasterState(const KnobSerialization& serializationObj) {
     ///restore masters
     const std::vector< std::pair<int,std::string> >& serializedMasters = serializationObj.getMasters();
-
+    
     for (U32 i = 0 ; i < serializedMasters.size();++i) {
         ///the serialized master string is as following: effectname.knobdescription
         
@@ -453,14 +458,14 @@ void Knob::load(const KnobSerialization& serializationObj)
             Natron::errorDialog("Link slave/master", getDescription() + " failed to restore the following linkage: "
                                 + serializedMasters[i].second + ". Please submit a bug report.");
             continue;
-
+            
         }
         
         ///now that we have the master node, find the corresponding knob
         const std::vector< boost::shared_ptr<Knob> >& otherKnobs = masterNode->getKnobs();
         bool found = false;
         for (U32 j = 0 ; j < otherKnobs.size();++j) {
-            if (otherKnobs[j]->getDescription() == knobDesc) {
+            if (otherKnobs[j]->getName() == knobDesc) {
                 _imp->_masters[i].second = otherKnobs[j];
                 _imp->_masters[i].first = serializedMasters[i].first;
                 emit readOnlyChanged(true,_imp->_masters[i].first);
@@ -471,11 +476,19 @@ void Knob::load(const KnobSerialization& serializationObj)
         if (!found) {
             Natron::errorDialog("Link slave/master", getDescription() + " failed to restore the following linkage: "
                                 + serializedMasters[i].second + ". Please submit a bug report.");
-
+            
         }
     }
     
-    ///bracket value changes
+
+}
+
+void Knob::load(const KnobSerialization& serializationObj)
+{
+    assert(_imp->_dimension == serializationObj.getDimension());
+    assert(getIsPersistant()); // a non-persistent Knob should never be loaded!
+    
+        ///bracket value changes
     beginValueChange(Natron::OTHER_REASON);
     
    
@@ -535,18 +548,18 @@ void Knob::evaluateAnimationChange()
     assert(_imp->_holder->getApp());
     SequenceTime time = _imp->_holder->getApp()->getTimeLine()->currentFrame();
     
-    beginValueChange(Natron::USER_EDITED);
+    beginValueChange(Natron::PLUGIN_EDITED);
     bool hasEvaluatedOnce = false;
     for (int i = 0; i < getDimension();++i) {
         boost::shared_ptr<Curve> curve = getCurve(i);
         if (curve && curve->isAnimated()) {
             Variant v = getValueAtTime(time,i);
-            setValue(v,i,Natron::USER_EDITED,NULL);
+            setValue(v,i,Natron::PLUGIN_EDITED,NULL);
             hasEvaluatedOnce = true;
         }
     }
     if (!hasEvaluatedOnce && !_imp->_holder->isClone()) {
-        evaluateValueChange(0, Natron::USER_EDITED);
+        evaluateValueChange(0, Natron::PLUGIN_EDITED);
     }
     
     endValueChange();
@@ -554,29 +567,72 @@ void Knob::evaluateAnimationChange()
 
 void Knob::beginValueChange(Natron::ValueChangedReason reason)
 {
+    {
+        QMutexLocker l(&_imp->_betweenBeginEndMutex);
+        _imp->_beginEndReason = reason;
+        ++_imp->_betweenBeginEndCount;
+    }
     _imp->_holder->notifyProjectBeginKnobsValuesChanged(reason);
 }
 
 void Knob::endValueChange()
 {
+    {
+        QMutexLocker l(&_imp->_betweenBeginEndMutex);
+        assert(_imp->_betweenBeginEndCount > 0);
+        --_imp->_betweenBeginEndCount;
+        
+        if (_imp->_betweenBeginEndCount == 0) {
+            
+            processNewValue(_imp->_beginEndReason);
+            if ((_imp->_beginEndReason != Natron::USER_EDITED) && !_imp->_holder->isClone()) {
+                for (U32 i = 0; i < _imp->_dimensionChanged.size(); ++i) {
+                    emit valueChanged(_imp->_dimensionChanged[i]);
+                }
+            }
+            for (U32 i = 0; i < _imp->_dimensionChanged.size(); ++i) {
+                emit updateSlaves(_imp->_dimensionChanged[i]);
+            }
+            _imp->_dimensionChanged.clear();
+        }
+    }
     _imp->_holder->notifyProjectEndKnobsValuesChanged();
 }
 
 
 void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason)
 {
+    ///Always increment the application's knobs age.
     if (_imp->_EvaluateOnChange) {
         _imp->_holder->invalidateHash();
     }
-    processNewValue(reason);
-    if ((reason != Natron::USER_EDITED) && !_imp->_holder->isClone()) {
-        emit valueChanged(dimension);
-    }
-    emit updateSlaves(dimension);
     
+    bool beginCalled = false;
+    {
+        QMutexLocker l(&_imp->_betweenBeginEndMutex);
+        if (_imp->_betweenBeginEndCount == 0) {
+            l.unlock();
+            beginValueChange(reason);
+            l.relock();
+            beginCalled = true;
+        }
+        
+        std::vector<int>::iterator foundDimensionChanged = std::find(_imp->_dimensionChanged.begin(),
+                                                                     _imp->_dimensionChanged.end(), dimension);
+        if (foundDimensionChanged == _imp->_dimensionChanged.end()) {
+            _imp->_dimensionChanged.push_back(dimension);
+        }
+        
+    }
+    
+    ///Basically just call onKnobChange on the plugin
     bool significant = (reason != Natron::TIME_CHANGED) && _imp->_EvaluateOnChange;
     if (!_imp->_holder->isClone()) {
         _imp->_holder->notifyProjectEvaluationRequested(reason, this, significant);
+    }
+    
+    if (beginCalled) {
+        endValueChange();
     }
 }
 
@@ -781,8 +837,11 @@ const std::string& Knob::getHintToolTip() const
     return _imp->_tooltipHint;
 }
 
-bool Knob::slaveTo(int dimension,boost::shared_ptr<Knob> other,int otherDimension)
-{
+void Knob::onKnobSlavedTo(int dimension,const boost::shared_ptr<Knob>&  other,int otherDimension) {
+    slaveTo(dimension, other, otherDimension,Natron::USER_EDITED);
+}
+
+bool Knob::slaveTo(int dimension,const boost::shared_ptr<Knob>& other,int otherDimension,Natron::ValueChangedReason reason) {
     assert(dimension < (int)_imp->_masters.size());
     assert(!other->isSlave(otherDimension));
     
@@ -795,12 +854,30 @@ bool Knob::slaveTo(int dimension,boost::shared_ptr<Knob> other,int otherDimensio
         _imp->_masters[dimension].first = otherDimension;
     }
     _imp->_holder->getApp()->triggerAutoSave();
+    QObject::connect(other.get(), SIGNAL(updateSlaves(int)), this, SLOT(onMasterChanged(int)));
+    emit valueChanged(dimension);
+    if (reason == Natron::PLUGIN_EDITED) {
+        emit knobSlaved(dimension,true);
+    }
     return true;
+
 }
 
+bool Knob::slaveTo(int dimension,const boost::shared_ptr<Knob>& other,int otherDimension)
+{
+    return slaveTo(dimension, other, otherDimension,Natron::PLUGIN_EDITED);
+}
+
+void Knob::onKnobUnSlaved(int dimension) {
+    unSlave(dimension,Natron::USER_EDITED);
+}
 
 void Knob::unSlave(int dimension)
 {
+    unSlave(dimension,Natron::PLUGIN_EDITED);
+}
+
+void Knob::unSlave(int dimension,Natron::ValueChangedReason reason) {
     assert(isSlave(dimension));
     //copy the state before cloning
     {
@@ -810,10 +887,14 @@ void Knob::unSlave(int dimension)
         _imp->_curves[dimension]->clone(*( _imp->_masters[_imp->_masters[dimension].first].second->getCurve(dimension)));
         cloneExtraData(*_imp->_masters[dimension].second);
         
+        QObject::disconnect(_imp->_masters[dimension].second.get(), SIGNAL(updateSlaves(int)), this, SLOT(onMasterChanged(int)));
         _imp->_masters[dimension].second.reset();
         _imp->_masters[dimension].first = -1;
     }
-    _imp->_holder->getApp()->triggerAutoSave();
+    emit valueChanged(dimension);
+    if (reason == Natron::PLUGIN_EDITED) {
+        emit knobSlaved(dimension, false);
+    }
 }
 
 
@@ -1067,6 +1148,7 @@ _app(appInstance)
 , _knobs()
 , _isClone(false)
 , _knobsInitialized(false)
+, _isSlave(false)
 {
 }
 
@@ -1161,13 +1243,56 @@ void KnobHolder::notifyProjectEvaluationRequested(Natron::ValueChangedReason rea
 
 
 
-boost::shared_ptr<Knob> KnobHolder::getKnobByDescription(const std::string& desc) const
+boost::shared_ptr<Knob> KnobHolder::getKnobByName(const std::string& name) const
 {
     const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size() ; ++i) {
-        if (knobs[i]->getDescription() == desc) {
+        if (knobs[i]->getName() == name) {
             return knobs[i];
         }
     }
     return boost::shared_ptr<Knob>();
+}
+
+void KnobHolder::slaveAllKnobs(KnobHolder* other) {
+    
+    if (_isSlave) {
+        return;
+    }
+    const std::vector<boost::shared_ptr<Knob> >& otherKnobs = other->getKnobs();
+    const std::vector<boost::shared_ptr<Knob> >& thisKnobs = getKnobs();
+    for (U32 i = 0; i < otherKnobs.size(); ++i) {
+        boost::shared_ptr<Knob> foundKnob;
+        for (U32 j = 0; j < thisKnobs.size(); ++j) {
+            if (thisKnobs[j]->getName() == otherKnobs[i]->getName()) {
+                foundKnob = thisKnobs[j];
+                break;
+            }
+        }
+        assert(foundKnob);
+        for (int j = 0; j < foundKnob->getDimension(); ++j) {
+            foundKnob->slaveTo(j, otherKnobs[i], j);
+        }
+    }
+    _isSlave = true;
+    onSlaveStateChanged(true,other);
+
+}
+
+bool KnobHolder::isSlave() const  {
+    return _isSlave;
+}
+
+void KnobHolder::unslaveAllKnobs() {
+    if (!_isSlave) {
+        return;
+    }
+    const std::vector<boost::shared_ptr<Knob> >& thisKnobs = getKnobs();
+    for (U32 i = 0; i < thisKnobs.size(); ++i) {
+        for (int j = 0; j < thisKnobs[j]->getDimension(); ++j) {
+            thisKnobs[i]->unSlave(j);
+        }
+    }
+    _isSlave = false;
+    onSlaveStateChanged(false,NULL);
 }

@@ -71,11 +71,15 @@ NodeGui::NodeGui(NodeGraph* dag,
 , _settingsPanel(0)
 , _selectedGradient(NULL)
 , _defaultGradient(NULL)
+, _clonedGradient(NULL)
 , _menu(new QMenu(dag))
 , _lastRenderStartedSlotCallTime()
 , _lastInputNRenderStartedSlotCallTime()
 , _wasRenderStartedSlotRun(false)
 , _wasBeginEditCalled(false)
+, positionMutex()
+, _slaveMasterLink(NULL)
+, _masterNodeGui(NULL)
 {
     
     assert(node_);
@@ -98,6 +102,7 @@ NodeGui::NodeGui(NodeGraph* dag,
     QObject::connect(_internalNode, SIGNAL(inputNIsRendering(int)), this, SLOT(onInputNRenderingStarted(int)));
     QObject::connect(_internalNode, SIGNAL(inputNIsFinishedRendering(int)), this, SLOT(onInputNRenderingFinished(int)));
 
+    QObject::connect(_internalNode, SIGNAL(slavedStateChanged(bool)), this, SLOT(onSlaveStateChanged(bool)));
 
     /*Disabled for now*/
     
@@ -163,6 +168,10 @@ NodeGui::NodeGui(NodeGraph* dag,
     _defaultGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
     _defaultGradient->setColorAt(0, QColor(224,224,224));
     _defaultGradient->setColorAt(1, QColor(142,142,142));
+    
+    _clonedGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
+    _clonedGradient->setColorAt(0, QColor(200,70,100));
+    _clonedGradient->setColorAt(1, QColor(120,120,120));
     
     _boundingBox->setBrush(*_defaultGradient);
     
@@ -275,6 +284,7 @@ void NodeGui::refreshPosition(double x,double y){
             it->second->doRefreshEdgesGUI();
         }
     }
+    emit positionChanged();
 }
 
 void NodeGui::changePosition(double dx,double dy) {
@@ -452,10 +462,14 @@ Edge* NodeGui::firstAvailableEdge(){
 
 void NodeGui::setSelected(bool b){
     _selected = b;
-    if(b){
+    if (b) {
         _boundingBox->setBrush(*_selectedGradient);
-    }else{
-        _boundingBox->setBrush(*_defaultGradient);
+    } else {
+        if (_slaveMasterLink) {
+            _boundingBox->setBrush(*_clonedGradient);
+        } else {
+            _boundingBox->setBrush(*_defaultGradient);
+        }
     }
     update();
     if(_settingsPanel){
@@ -544,6 +558,14 @@ void NodeGui::activate() {
         OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
         ofxNode->effectInstance()->beginInstanceEditAction();
     }
+    
+    if (_slaveMasterLink) {
+        if (!_internalNode->getMasterNode()) {
+            onSlaveStateChanged(false);
+        } else {
+            _slaveMasterLink->show();
+        }
+    }
 
     getNode()->getApp()->triggerAutoSave();
     getNode()->getApp()->checkViewersConnection();
@@ -561,6 +583,10 @@ void NodeGui::deactivate() {
         it->second->setSource(NULL);
     }
    
+    if (_slaveMasterLink) {
+        _slaveMasterLink->hide();
+    }
+    
     if(_internalNode->pluginID() != "Viewer"){
         if(isSettingsPanelVisible()){
             setVisibleSettingsPanel(false);
@@ -685,6 +711,13 @@ void NodeGui::serialize(NodeGuiSerialization* serializationObject) const{
     serializationObject->initialize(this);
 }
 
+void NodeGui::copyFrom(const NodeGuiSerialization& obj) {
+    setPos_mt_safe(QPointF(obj.getX(),obj.getY()));
+    if (_internalNode->isPreviewEnabled() != obj.isPreviewEnabled()) {
+        togglePreview();
+    }
+}
+
 QUndoStack* NodeGui::getUndoStack() const{
     if (_settingsPanel) {
         return _settingsPanel->getUndoStack();
@@ -785,4 +818,56 @@ void NodeGui::setPos_mt_safe(const QPointF& pos) {
 void NodeGui::centerGraphOnIt()
 {
     _graph->centerOnNode(this);
+}
+
+void NodeGui::onSlaveStateChanged(bool b) {
+    if (b) {
+        Natron::Node* masterNode = _internalNode->getMasterNode();
+        assert(masterNode);
+        NodeGui* masterNodeGui = _graph->getGui()->getApp()->getNodeGui(masterNode);
+        assert(masterNodeGui);
+        _masterNodeGui = masterNodeGui;
+        assert(!_slaveMasterLink);
+
+        QObject::connect(_masterNodeGui, SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
+        QObject::connect(this, SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
+        _slaveMasterLink = new QGraphicsLineItem(parentItem());
+        _slaveMasterLink->setZValue(-1);
+        QPen pen;
+        pen.setWidth(3);
+        pen.setBrush(QColor(200,100,100));
+        _slaveMasterLink->setPen(pen);
+        if (!isSelected()) {
+            _boundingBox->setBrush(*_clonedGradient);
+        }
+
+    } else {
+        QObject::disconnect(_masterNodeGui, SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
+        QObject::disconnect(this, SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
+
+        assert(_slaveMasterLink);
+        delete _slaveMasterLink;
+        _slaveMasterLink = 0;
+        _masterNodeGui = 0;
+        
+        if (!isSelected()) {
+            _boundingBox->setBrush(*_defaultGradient);
+        }
+    }
+    update();
+}
+
+void NodeGui::refreshSlaveMasterLinkPosition() {
+    if (!_masterNodeGui || !_slaveMasterLink) {
+        return;
+    }
+    
+    QRectF bboxThisNode = boundingRect();
+    QRectF bboxMasterNode = _masterNodeGui->boundingRect();
+
+    QPointF dst = _slaveMasterLink->mapFromItem(_masterNodeGui,QPointF(bboxMasterNode.x(),bboxMasterNode.y())
+                              + QPointF(bboxMasterNode.width() / 2., bboxMasterNode.height() / 2.));
+    QPointF src = _slaveMasterLink->mapFromItem(this,QPointF(bboxThisNode.x(),bboxThisNode.y())
+                              + QPointF(bboxThisNode.width() / 2., bboxThisNode.height() / 2.));
+    _slaveMasterLink->setLine(QLineF(src,dst));
 }

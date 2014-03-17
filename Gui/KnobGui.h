@@ -94,6 +94,9 @@ public:
     int getActualIndexInLayout() const;
     
     bool isOnNewLine() const;
+    
+    ////calls setReadOnly and also set the label black
+    void setReadOnly_(bool readOnly,int dimension);
  
 public slots:
     /*Called when the value held by the knob is changed internally.
@@ -166,6 +169,7 @@ public slots:
     
     void onReadOnlyChanged(bool b,int d);
     
+    void onKnobSlavedChanged(int dimension,bool b);
 
 signals:
     
@@ -211,8 +215,7 @@ private:
 
     virtual void setEnabled() = 0;
     
-    ////calls setReadOnly and also set the label black
-    void setReadOnly_(bool readOnly,int dimension);
+
     
     virtual void setReadOnly(bool readOnly,int dimension) = 0;
     

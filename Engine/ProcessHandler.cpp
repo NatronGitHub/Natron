@@ -95,9 +95,9 @@ void ProcessHandler::onDataWrittenToSocket() {
         str = str.remove(kFrameRenderedStringShort);
         emit frameRendered(str.toInt());
     } else if (str.startsWith(kRenderingFinishedStringShort)) {
-        if(_process->state() == QProcess::Running) {
-            _process->waitForFinished();
-        }
+//        if(_process->state() == QProcess::Running) {
+//            _process->waitForFinished();
+//        }
     } else if (str.startsWith(kProgressChangedStringShort)) {
         str = str.remove(kProgressChangedStringShort);
         emit frameProgress(str.toInt());
@@ -147,9 +147,9 @@ void ProcessHandler::onProcessCanceled(){
     } else {
         _bgProcessInputSocket->write((QString(kAbortRenderingStringShort) + '\n').toUtf8());
         _bgProcessInputSocket->flush();
-        if(_process->state() == QProcess::Running) {
-            _process->waitForFinished();
-        }
+//        if(_process->state() == QProcess::Running) {
+//            _process->waitForFinished();
+//        }
     }
 }
 

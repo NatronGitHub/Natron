@@ -193,6 +193,12 @@ public:
      **/
     void getNodeCounters(std::map<std::string,int>* counters) const;
     
+    /**
+     * @brief Returns a pointer to a node whose name is the same as the name given in parameter.
+     * If no such node could be found or the node is deactivated, NULL is returned.
+     **/
+    Natron::Node* getNodeByName(const std::string& name) const;
+    
 public slots:
 
     void onTimeChanged(SequenceTime time,int reason);

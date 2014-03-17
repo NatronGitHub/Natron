@@ -28,6 +28,7 @@ CLANG_DIAG_ON(deprecated)
 
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
+#include <boost/shared_ptr.hpp>
 #endif
 
 class QVBoxLayout;
@@ -47,8 +48,8 @@ class QMenu;
 class SmartInputDialog;
 class QDropEvent;
 class QDragEnterEvent;
-
-
+class NodeSerialization;
+class NodeGuiSerialization;
 namespace Natron{
     class Node;
 }
@@ -142,6 +143,19 @@ public slots:
     void forceRefreshAllPreviews();
 
     void onProjectNodesCleared();
+    
+    void copySelectedNode();
+    
+    void cutSelectedNode();
+    
+    void pasteNodeClipBoard();
+    
+    void duplicateSelectedNode();
+    
+    void cloneSelectedNode();
+    
+    void decloneSelectedNode();
+    
 private:
     
     /**
@@ -153,6 +167,7 @@ private:
      **/
     void moveNodesForIdealPosition(NodeGui* n);
     
+    void pasteNode(const NodeSerialization& internalSerialization,const NodeGuiSerialization& guiSerialization);
   
 
     virtual void enterEvent(QEvent *event) OVERRIDE FINAL;
@@ -186,6 +201,9 @@ private:
     void dragLeaveEvent(QDragLeaveEvent* e);
 
 private:
+    
+    
+    
     // FIXME: PIMPL
     QRectF calcNodesBoundingRect();
     
@@ -237,6 +255,23 @@ private:
     
     mutable QMutex _previewsTurnedOffMutex;
     bool _previewsTurnedOff;
+    
+    struct NodeClipBoard {
+        boost::shared_ptr<NodeSerialization> _internal;
+        boost::shared_ptr<NodeGuiSerialization> _gui;
+        
+        NodeClipBoard()
+        : _internal()
+        , _gui()
+        {
+        }
+        
+        bool isEmpty() const { return !_internal || !_gui; }
+    };
+    
+    NodeClipBoard _nodeClipBoard;
+    
+    
 };
 
 

@@ -41,6 +41,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/KnobFile.h"
 #include "Engine/Project.h"
 #include "Engine/Plugin.h"
+#include "Engine/NodeSerialization.h"
 
 #include "Gui/TabWidget.h"
 #include "Gui/Edge.h"
@@ -55,7 +56,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/TimeLineGui.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/GuiAppInstance.h"
-
+#include "Gui/NodeGuiSerialization.h"
 
 #define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
 
@@ -131,11 +132,11 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     _nodeSelected(0),
     _propertyBin(0),
     _refreshOverlays(true),
-    _previewsTurnedOff(false)
+    _previewsTurnedOff(false),
+    _nodeClipBoard()
 {
     setAcceptDrops(true);
     
-    QObject::connect(_gui->getApp(), SIGNAL(pluginsPopulated()), this, SLOT(populateMenu()));
     QObject::connect(_gui->getApp()->getProject().get(), SIGNAL(nodesCleared()), this, SLOT(onProjectNodesCleared()));
     
     setMouseTracking(true);
@@ -1214,8 +1215,6 @@ void SmartInputDialog::keyPressEvent(QKeyEvent *e){
             delete this;
             
             
-        }else{
-            
         }
     }else if(e->key()== Qt::Key_Escape){
         graph->setSmartNodeCreationEnabled(true);
@@ -1292,26 +1291,63 @@ void NodeGraph::toggleCacheInfos(){
 }
 void NodeGraph::populateMenu(){
     _menu->clear();
-    QAction* displayCacheInfoAction = new QAction("Display memory consumption",this);
+    
+    
+    QMenu* editMenu = new QMenu(tr("Edit"),_menu);
+    _menu->addAction(editMenu->menuAction());
+    
+    QAction* copyAction = new QAction(tr("Copy"),editMenu);
+    copyAction->setShortcut(QKeySequence::Copy);
+    QObject::connect(copyAction,SIGNAL(triggered()),this,SLOT(copySelectedNode()));
+    editMenu->addAction(copyAction);
+    
+    QAction* cutAction = new QAction(tr("Cut"),editMenu);
+    cutAction->setShortcut(QKeySequence::Cut);
+    QObject::connect(cutAction,SIGNAL(triggered()),this,SLOT(cutSelectedNode()));
+    editMenu->addAction(cutAction);
+    
+    
+    QAction* pasteAction = new QAction(tr("Paste"),editMenu);
+    pasteAction->setShortcut(QKeySequence::Paste);
+    pasteAction->setEnabled(!_nodeClipBoard.isEmpty());
+    QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(pasteNodeClipBoard()));
+    editMenu->addAction(pasteAction);
+    
+    QAction* duplicateAction = new QAction(tr("Duplicate"),editMenu);
+    duplicateAction->setShortcut(QKeySequence(Qt::ControlModifier + Qt::Key_C));
+    QObject::connect(duplicateAction,SIGNAL(triggered()),this,SLOT(duplicateSelectedNode()));
+    editMenu->addAction(duplicateAction);
+    
+    QAction* cloneAction = new QAction(tr("Clone"),editMenu);
+    cloneAction->setShortcut(QKeySequence(Qt::AltModifier + Qt::Key_K));
+    QObject::connect(cloneAction,SIGNAL(triggered()),this,SLOT(cloneSelectedNode()));
+    editMenu->addAction(cloneAction);
+    
+    QAction* decloneAction = new QAction(tr("Declone"),editMenu);
+    decloneAction->setShortcut(QKeySequence(Qt::AltModifier + Qt::ShiftModifier + Qt::Key_K));
+    QObject::connect(decloneAction,SIGNAL(triggered()),this,SLOT(decloneSelectedNode()));
+    editMenu->addAction(decloneAction);
+    
+    QAction* displayCacheInfoAction = new QAction(tr("Display memory consumption"),this);
     displayCacheInfoAction->setCheckable(true);
     displayCacheInfoAction->setChecked(true);
     QObject::connect(displayCacheInfoAction,SIGNAL(triggered()),this,SLOT(toggleCacheInfos()));
     _menu->addAction(displayCacheInfoAction);
     
-    QAction* turnOffPreviewAction = new QAction("Turn off all previews",this);
+    QAction* turnOffPreviewAction = new QAction(tr("Turn off all previews"),this);
     turnOffPreviewAction->setCheckable(true);
     turnOffPreviewAction->setChecked(false);
     QObject::connect(turnOffPreviewAction,SIGNAL(triggered()),this,SLOT(turnOffPreviewForAllNodes()));
     _menu->addAction(turnOffPreviewAction);
     
-    QAction* autoPreview = new QAction("Auto preview",this);
+    QAction* autoPreview = new QAction(tr("Auto preview"),this);
     autoPreview->setCheckable(true);
     autoPreview->setChecked(_gui->getApp()->getProject()->isAutoPreviewEnabled());
     QObject::connect(autoPreview,SIGNAL(triggered()),this,SLOT(toggleAutoPreview()));
     QObject::connect(_gui->getApp()->getProject().get(),SIGNAL(autoPreviewChanged(bool)),autoPreview,SLOT(setChecked(bool)));
     _menu->addAction(autoPreview);
     
-    QAction* forceRefreshPreviews = new QAction("Refresh previews",this);
+    QAction* forceRefreshPreviews = new QAction(tr("Refresh previews"),this);
     forceRefreshPreviews->setShortcut(QKeySequence(Qt::Key_P));
     QObject::connect(forceRefreshPreviews,SIGNAL(triggered()),this,SLOT(forceRefreshAllPreviews()));
     _menu->addAction(forceRefreshPreviews);
@@ -1338,7 +1374,8 @@ void NodeGraph::forceRefreshAllPreviews() {
     _gui->forceRefreshAllPreviews();
 }
 
-void NodeGraph::showMenu(const QPoint& pos){
+void NodeGraph::showMenu(const QPoint& pos) {
+    populateMenu();
     _menu->exec(pos);
 }
 
@@ -1456,4 +1493,131 @@ void NodeGraph::turnOffPreviewForAllNodes(){
 void NodeGraph::centerOnNode(NodeGui* n) {
     _refreshOverlays = true;
     centerOn(n);
+}
+
+
+void NodeGraph::copySelectedNode() {
+    if (!_nodeSelected) {
+        Natron::warningDialog("Copy", "You must select a node to copy first.");
+        return;
+    }
+    
+    _nodeClipBoard._internal.reset(new NodeSerialization);
+    _nodeSelected->getNode()->serialize(_nodeClipBoard._internal.get());
+    
+    _nodeClipBoard._gui.reset(new NodeGuiSerialization);
+    _nodeSelected->serialize(_nodeClipBoard._gui.get());
+}
+
+void NodeGraph::cutSelectedNode() {
+    if (!_nodeSelected) {
+        Natron::warningDialog("Cut", "You must select a node to cut first.");
+        return;
+    }
+    
+    _nodeClipBoard._internal.reset(new NodeSerialization);
+    _nodeSelected->getNode()->serialize(_nodeClipBoard._internal.get());
+    
+    _nodeClipBoard._gui.reset(new NodeGuiSerialization);
+    _nodeSelected->serialize(_nodeClipBoard._gui.get());
+
+    deleteSelectedNode();
+    
+}
+
+void NodeGraph::pasteNodeClipBoard() {
+    if (_nodeClipBoard.isEmpty()) {
+        return;
+    }
+    
+    pasteNode(*_nodeClipBoard._internal,*_nodeClipBoard._gui);
+}
+
+void NodeGraph::pasteNode(const NodeSerialization& internalSerialization,const NodeGuiSerialization& guiSerialization) {
+    Natron::Node* n = _gui->getApp()->loadNode(internalSerialization.getPluginID().c_str(),
+                                               internalSerialization.getPluginMajorVersion(),
+                                               internalSerialization.getPluginMinorVersion(),internalSerialization,true);
+    assert(n);
+    const std::string& masterNodeName = internalSerialization.getMasterNodeName();
+    if (masterNodeName.empty()) {
+        n->restoreKnobsLinks(internalSerialization);
+    } else {
+        Natron::Node* masterNode = _gui->getApp()->getProject()->getNodeByName(masterNodeName);
+        
+        ///the node could not exist any longer if the user deleted it in the meantime
+        if (masterNode) {
+            n->getLiveInstance()->slaveAllKnobs(masterNode->getLiveInstance());
+        }
+    }
+    NodeGui* gui = _gui->getApp()->getNodeGui(n);
+    assert(gui);
+    
+    gui->copyFrom(guiSerialization);
+    gui->setPos(gui->pos() + QPointF(50,0));
+    gui->forceComputePreview(_gui->getApp()->getProject()->currentFrame());
+    _gui->getApp()->getProject()->triggerAutoSave();
+    
+}
+
+void NodeGraph::duplicateSelectedNode() {
+    if (!_nodeSelected) {
+        Natron::warningDialog("Duplicate", "You must select a node to duplicate first.");
+        return;
+    }
+    NodeSerialization internalSerialization;
+    _nodeSelected->getNode()->serialize(&internalSerialization);
+    
+    NodeGuiSerialization guiSerialization;
+    _nodeSelected->serialize(&guiSerialization);
+    
+    pasteNode(internalSerialization, guiSerialization);
+}
+
+void NodeGraph::cloneSelectedNode() {
+    if (!_nodeSelected) {
+        Natron::warningDialog("Clone", "You must select a node to clone first.");
+        return;
+    }
+    if (_nodeSelected->getNode()->getLiveInstance()->isSlave()) {
+        Natron::warningDialog("Clone", "You cannot clone a node whose already a clone.");
+        return;
+    }
+    
+    NodeSerialization internalSerialization;
+    _nodeSelected->getNode()->serialize(&internalSerialization);
+    
+    NodeGuiSerialization guiSerialization;
+    _nodeSelected->serialize(&guiSerialization);
+    
+    Natron::Node* n = _gui->getApp()->loadNode(internalSerialization.getPluginID().c_str(),
+                                               internalSerialization.getPluginMajorVersion(),
+                                               internalSerialization.getPluginMinorVersion(),internalSerialization,true);
+    assert(n);
+    const std::string& masterNodeName = internalSerialization.getMasterNodeName();
+    
+    ///the master node cannot be a clone
+    assert(masterNodeName.empty());
+    
+    NodeGui* gui = _gui->getApp()->getNodeGui(n);
+    assert(gui);
+    
+    gui->copyFrom(guiSerialization);
+    QPointF newPos = gui->pos() + QPointF(50,0);
+    gui->refreshPosition(newPos.x(),newPos.y());
+    gui->forceComputePreview(_gui->getApp()->getProject()->currentFrame());
+
+    n->getLiveInstance()->slaveAllKnobs(_nodeSelected->getNode()->getLiveInstance());
+    
+    _gui->getApp()->getProject()->triggerAutoSave();
+    
+}
+
+void NodeGraph::decloneSelectedNode() {
+    if (!_nodeSelected) {
+        Natron::warningDialog("Declone", "You must select a node to declone first.");
+        return;
+    }
+    assert(_nodeSelected->getNode()->getLiveInstance()->isSlave());
+    _nodeSelected->getNode()->getLiveInstance()->unslaveAllKnobs();
+    _gui->getApp()->getProject()->triggerAutoSave();
 }

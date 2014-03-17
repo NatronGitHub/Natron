@@ -182,19 +182,45 @@ bool AppManager::parseCmdLineArgs(int argc,char* argv[],
 }
 
 AppManager::AppManager()
-    : QObject()
-    , _imp(new AppManagerPrivate())
+: QObject()
+, _imp(new AppManagerPrivate())
 {
     assert(!_instance);
     _instance = this;
+    
 }
 
+bool AppManager::load(int argc, char *argv[],const QString& projectFilename,const QStringList& writers,const QString& mainProcessServerName) {
+    
+    ///if the user didn't specify launch arguments (e.g unit testing)
+    ///find out the binary path
+    bool hadArgs = true;
+    if (!argv) {
+        QString binaryPath = QDir::currentPath();
+        argc = 1;
+        argv = new char*[1];
+        argv[0] = new char[binaryPath.size() + 1];
+        for (int i = 0; i < binaryPath.size(); ++i) {
+            argv[0][i] = binaryPath.at(i).unicode();
+        }
+        argv[0][binaryPath.size()] = '\0';
+        hadArgs = false;
+    }
+    initializeQApp(argc, argv);
+    
+    assert(argv);
+    if (!hadArgs) {
+        delete [] argv[0];
+        delete [] argv;
+    }
+    
+    ///the QCoreApplication must have been created so far.
+    assert(qApp);
+    return loadInternal(projectFilename,writers,mainProcessServerName);
+}
 
 AppManager::~AppManager(){
     
-    assert(_imp->_appInstances.size() == 1);
-    AppInstance* mainInstance = _imp->_appInstances.begin()->second;
-    delete mainInstance;
     assert(_imp->_appInstances.empty());
     
     for(U32 i = 0; i < _imp->_plugins.size();++i){
@@ -212,6 +238,10 @@ AppManager::~AppManager(){
     _instance = 0;
     
     _imp->saveCaches();
+    
+    assert(qApp);
+    delete qApp;
+
 }
 
 void AppManager::initializeQApp(int argc,char* argv[]) const {
@@ -302,58 +332,14 @@ bool AppManager::loadInternal(const QString& projectFilename,const QStringList& 
     if (!mainInstance) {
         return false;
     } else {
+        
+        ///In background project auto-run the rendering is finished at this point, just exit the instance
+        if (_imp->_appType == APP_BACKGROUND_AUTO_RUN && mainInstance) {
+            mainInstance->exit();
+        }
         return true;
     }
 }
-
-bool AppManager::load(int argc, char *argv[]) {
-    
-    
-    ///if the user didn't specify launch arguments (e.g unit testing)
-    ///find out the binary path
-    bool hadArgs = true;
-    if (!argv) {
-        QString binaryPath = QDir::currentPath();
-        argc = 1;
-        argv = new char*[1];
-        argv[0] = new char[binaryPath.size() + 1];
-        for (int i = 0; i < binaryPath.size(); ++i) {
-            argv[0][i] = binaryPath.at(i).unicode();
-        }
-        argv[0][binaryPath.size()] = '\0';
-        hadArgs = false;
-    }
-    initializeQApp(argc, argv);
-    
-    assert(argv);
-    if (!hadArgs) {
-        delete [] argv[0];
-        delete [] argv;
-    }
-
-    QString projectFilename,mainProcessServerName;
-    QStringList writers;
-    bool bg;
-    AppManager::parseCmdLineArgs(argc, argv,&bg ,projectFilename, writers, mainProcessServerName);
-
-    return loadInternal(projectFilename,writers,mainProcessServerName);
-
-}
-
-bool AppManager::load(const QString& projectFilename,const QStringList& writers,const QString& mainProcessServerName) {
-    ///cannot load a backround auto run app without a filename
-    if (projectFilename.isEmpty()) {
-        return false;
-    }
-    
-    ///the QCoreApplication must have been created so far.
-    assert(qApp);
-    return loadInternal(projectFilename,writers,mainProcessServerName);
-
-}
-
-
-
 
 AppInstance* AppManager::newAppInstance(const QString& projectName,const QStringList& writers){
     AppInstance* instance = makeNewInstance(_imp->_availableID);
@@ -712,6 +698,7 @@ QStringList AppManager::getNodeNameList() const{
     for (U32 i = 0; i < _imp->_plugins.size(); ++i) {
         ret.append(_imp->_plugins[i]->getPluginID());
     }
+    ret.sort();
     return ret;
 }
 
@@ -1112,6 +1099,19 @@ void AppManagerPrivate::cleanUpCacheDiskStructure(const QString& cachePath) {
     }
 }
 
+void AppManager::exit(AppInstance* instance) {
+    delete instance;
+    ///if we exited the last instance, exit the event loop, this will make
+    /// the exec() function return.
+    if (_imp->_appInstances.empty()) {
+        qApp->exit(0);
+    }
+}
+
+int AppManager::exec() {
+    return qApp->exec();
+}
+
 namespace Natron{
 
 void errorDialog(const std::string& title,const std::string& message){
@@ -1181,7 +1181,6 @@ Natron::StandardButton questionDialog(const std::string& title,const std::string
     Log::endFunction(title,"QUESTION");
 #endif
 }
-
 
 
 } //Namespace Natron

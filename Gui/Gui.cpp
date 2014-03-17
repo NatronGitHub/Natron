@@ -392,23 +392,14 @@ bool Gui::exitGui()
         return false;
     }
     _imp->saveGuiGeometry();
-    return exit();
+    exit();
 }
  
 #pragma message WARN("same thing should be done in the non-Gui app, and should be connected to aboutToQuit() also")
-bool Gui::exit()
+void Gui::exit()
 {
     assert(_imp->_appInstance);
-    bool rVal = false;
-    if (appPTR->getAppInstances().size() > 1) {
-        delete _imp->_appInstance;
-        delete this;
-    } else {
-        delete this;
-        delete appPTR;
-        rVal = true;
-    }
-    return rVal;
+    _imp->_appInstance->exit();
 }
 
 void Gui::toggleFullScreen()

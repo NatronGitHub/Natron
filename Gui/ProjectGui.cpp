@@ -322,6 +322,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     const std::vector<NodeGui*> nodesGui = getVisibleNodes();
     for(U32 i = 0 ; i < nodesGui.size();++i){
         nodesGui[i]->refreshEdges();
+        nodesGui[i]->refreshSlaveMasterLinkPosition();
     }
     
     ///restore the histograms

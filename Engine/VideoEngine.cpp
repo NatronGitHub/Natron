@@ -300,10 +300,6 @@ bool VideoEngine::stopEngine() {
     outputEffect->setDoingFullSequenceRender(false);
     if(appPTR->isBackground()){
         outputEffect->notifyRenderFinished();
-        _mustQuit = false;
-        _mustQuitCondition.wakeAll();
-        _threadStarted = false;
-        return true;
     }
 
 
@@ -330,6 +326,10 @@ void VideoEngine::run(){
             QMutexLocker locker(&_mustQuitMutex);
             if(_mustQuit) {
                 _mustQuit = false;
+                Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
+                if(appPTR->isBackground()){
+                    outputEffect->notifyRenderFinished();
+                }
                 _mustQuitCondition.wakeAll();
                 return;
             }
@@ -657,7 +657,7 @@ void VideoEngine::onProgressUpdate(int /*i*/){
 }
 
 
-void VideoEngine::abortRendering(bool blocking){
+void VideoEngine::abortRendering(bool blocking) {
     {
         if(!isWorking()){
             return;

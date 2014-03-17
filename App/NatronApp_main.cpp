@@ -29,27 +29,20 @@ int main(int argc, char *argv[])
     setShutDownSignal(SIGTERM);   // shut down on killall
 
     if (isBackground) {
-        QCoreApplication app(argc,argv);
-        AppManager* manager = new AppManager;
-        bool loaded = manager->load(projectName,writers,mainProcessServerName);
-        delete manager;
-
-        if (!loaded) {
+        AppManager manager;
+        if (!manager.load(argc,argv,projectName,writers,mainProcessServerName)) {
             AppManager::printUsage();
             return 1;
+        } else {
+            return 0;
         }
-        return 0;
     } else {
-        AppManager* manager = new GuiApplicationManager;
-
-        //load and create data structures
-        bool loaded = manager->load(argc,argv);
-        assert(loaded);
-
-
-        int ret =  qApp->exec();
-        delete qApp;
-        return ret;
+        GuiApplicationManager manager;
+        bool loaded = manager.load(argc,argv,projectName);
+        if (!loaded) {
+            return 1;
+        }
+        return manager.exec();
     }
 
 }

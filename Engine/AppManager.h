@@ -72,6 +72,21 @@ public:
 
     AppManager();
 
+    /**
+     * @brief This function initializes the QCoreApplication (or QApplication) object and the AppManager object (load plugins etc...)
+     * It must be called right away after the constructor. It cannot be put in the constructor as this function relies on RTTI infos.
+     * @param argc The number of arguments passed to the main function.
+     * @param argv An array of strings passed to the main function.
+     * @param projectFilename The project absolute filename that the application's main instance should try to load.
+     * @param writers A list of the writers the project should use to render. This is only meaningful for background applications.
+     * If empty all writers in the project will be rendered.
+     * @param mainProcessServerName The name of the main process named pipe so the background application can communicate with the
+     * main process.
+     **/
+    bool load(int argc, char *argv[],const QString& projectFilename = QString(),
+              const QStringList& writers = QStringList(),
+              const QString& mainProcessServerName = QString());
+
     virtual ~AppManager();
     
     static AppManager* instance() { return _instance; }
@@ -83,18 +98,6 @@ public:
     static void printBackGroundWelcomeMessage();
 
     static void printUsage();
-    
-    /**
-     * @brief This function initializes the QCoreApplication (or QApplication) object and the AppManager object (load plugins etc...)
-     * See the second load function.
-    **/
-    bool load(int argc, char *argv[]);
-
-    /**
-    * @brief Same as load(argc,argv) but assumes the QCoreApplication object has already been created.
-    * Attempting to call this function with an empty projectFilename will return false.
-    **/
-    bool load(const QString& projectFilename,const QStringList& writers,const QString& mainProcessServerName);
     
     bool isLoaded() const;
     
@@ -196,6 +199,17 @@ public:
                                  QStringList& writers,
                                  QString& mainProcessServerName);
 
+    /**
+     * @brief Called when the instance is exited
+     **/
+    void exit(AppInstance* instance);
+    
+    /**
+     * @brief Starts the event loop and doesn't return until
+     * exit() is called on all AppInstance's
+     **/
+    int exec();
+
 public slots:
 
     void clearPlaybackCache();
@@ -216,7 +230,6 @@ public slots:
                               const QString& /*pluginIconPath*/,
                                       const QString& /*groupIconPath*/) {}
     
-
 signals:
 
     void imageRemovedFromNodeCache(SequenceTime time);

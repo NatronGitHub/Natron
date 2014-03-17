@@ -70,7 +70,7 @@ public:
     Natron::Node* createNode(const QString& name,int majorVersion = -1,int minorVersion = -1,bool openImageFileDialog = true);
     
     ///Same as createNode but used when loading a project
-    Natron::Node* loadNode(const QString& name,int majorVersion,int minorVersion,const NodeSerialization& serialization);
+    Natron::Node* loadNode(const QString& name,int majorVersion,int minorVersion,const NodeSerialization& serialization,bool dontLoadName);
 
     void getActiveNodes(std::vector<Natron::Node*> *activeNodes) const;
 
@@ -107,6 +107,8 @@ public:
 
 public slots:
     
+    void exit();
+    
     /* The following methods are forwarded to the model */
     void checkViewersConnection();
     
@@ -133,7 +135,8 @@ protected:
 private:
     
     Natron::Node* createNodeInternal(const QString& pluginID,int majorVersion,int minorVersion,
-                                     bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization);
+                                     bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization,
+                                     bool dontLoadName);
     
     boost::scoped_ptr<AppInstancePrivate> _imp;
     

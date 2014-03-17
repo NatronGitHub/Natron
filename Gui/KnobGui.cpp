@@ -97,6 +97,7 @@ KnobGui::KnobGui(boost::shared_ptr<Knob> knob,DockablePanel* container)
     QObject::connect(knob.get(),SIGNAL(enabledChanged()),this,SLOT(setEnabledSlot()));
     QObject::connect(knob.get(), SIGNAL(restorationComplete()), this, SLOT(onRestorationComplete()));
     QObject::connect(knob.get(), SIGNAL(readOnlyChanged(bool,int)),this,SLOT(onReadOnlyChanged(bool,int)));
+    QObject::connect(knob.get(),SIGNAL(knobSlaved(int,bool)),this,SLOT(onKnobSlavedChanged(int,bool)));
 }
 
 KnobGui::~KnobGui(){
@@ -212,12 +213,12 @@ void KnobGui::showRightClickMenuForDimension(const QPoint&,int dimension) {
         resetDefaultAction->setEnabled(false);
     }
     
-    if(!isSlave && enabled) {
+    if(!isSlave && enabled && !getKnob()->getHolder()->isSlave()) {
         QAction* linkToAction = new QAction(tr("Link to"),_copyRightClickMenu);
         linkToAction->setData(QVariant(dimension));
         QObject::connect(linkToAction,SIGNAL(triggered()),this,SLOT(onLinkToActionTriggered()));
         _copyRightClickMenu->addAction(linkToAction);
-    } else if(isSlave) {
+    } else if(isSlave && !getKnob()->getHolder()->isSlave()) {
         QAction* unlinkAction = new QAction(tr("Unlink"),_copyRightClickMenu);
         unlinkAction->setData(QVariant(dimension));
         QObject::connect(unlinkAction,SIGNAL(triggered()),this,SLOT(onUnlinkActionTriggered()));
@@ -850,6 +851,16 @@ std::pair<int,boost::shared_ptr<Knob> > LinkToKnobDialog::getSelectedKnobs() con
     }
 }
 
+void KnobGui::onKnobSlavedChanged(int dimension,bool b) {
+    checkAnimationLevel(dimension);
+    if (b) {
+        emit keyFrameRemoved();
+    } else {
+        emit keyFrameSet();
+    }
+    setReadOnly_(b, dimension);
+}
+
 void KnobGui::linkTo(int dimension) {
     LinkToKnobDialog dialog(this,_copyRightClickMenu->parentWidget());
     
@@ -886,13 +897,8 @@ void KnobGui::linkTo(int dimension) {
                 return;
             }
             
-            _knob->slaveTo(dimension, otherKnob.second,otherKnob.first);
-            updateGUI(dimension,_knob->getValue(otherKnob.first));
-            checkAnimationLevel(otherKnob.first);
-            emit keyFrameRemoved();
-            QObject::connect(otherKnob.second.get(), SIGNAL(updateSlaves(int)), _knob.get(), SLOT(onMasterChanged(int)));
-            
-            setReadOnly_(true, dimension);
+            _knob->onKnobSlavedTo(dimension, otherKnob.second,otherKnob.first);
+            onKnobSlavedChanged(dimension, true);
             getKnob()->getHolder()->getApp()->triggerAutoSave();
         }
         
@@ -911,12 +917,8 @@ void KnobGui::onLinkToActionTriggered() {
 
 void KnobGui::unlink(int dimension) {
     std::pair<int,boost::shared_ptr<Knob> > other = _knob->getMaster(dimension);
-    _knob->unSlave(dimension);
-    updateGUI(dimension,_knob->getValue(dimension));
-    checkAnimationLevel(dimension);
-    emit keyFrameSet();
-    QObject::disconnect(other.second.get(), SIGNAL(updateSlaves(int)), _knob.get(), SLOT(onMasterChanged(int)));
-    setReadOnly_(false,dimension);
+    _knob->onKnobUnSlaved(dimension);
+    onKnobSlavedChanged(dimension, false);
     getKnob()->getHolder()->getApp()->triggerAutoSave();
 }
 
