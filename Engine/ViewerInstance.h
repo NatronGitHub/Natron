@@ -198,11 +198,12 @@ public:
 
     bool isAutoContrastEnabled() const;
 
+    void onAutoContrastChanged(bool autoContrast,bool refresh);
+
 public slots:
 
     void onViewerCacheFrameAdded();
 
-    void onAutoContrastChanged(bool autoContrast);
 
     void onExposureChanged(double exp);
 
@@ -237,8 +238,6 @@ signals:
  *@brief Signal emitted when the engine needs to inform the main thread that it should refresh the viewer
  **/
     void doUpdateViewer();
-
-    void exposureChanged(double);
 
 private:
     /*******************************************
