@@ -183,10 +183,17 @@ CharBitmap *TextRendererPrivate::createCharacter(QChar c, const QColor &color)
 
     //fill the texture with the QImage
     image = QGLWidget::convertToGLFormat(image);
+    glCheckError();
     glBindTexture(GL_TEXTURE_2D, texture);
     assert(glIsTexture(texture));
     glTexSubImage2D(GL_TEXTURE_2D, 0, _xOffset, _yOffset, width, height, GL_RGBA,
                     GL_UNSIGNED_BYTE, image.bits());
+    {
+        GLenum _glerror_ = glGetError();
+        if(_glerror_ != GL_NO_ERROR) {
+            std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl;
+        }
+    }
     glCheckError();
 
 
