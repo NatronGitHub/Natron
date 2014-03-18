@@ -71,7 +71,7 @@ TEST(Curve,Basic)
     EXPECT_EQ(200., c.getIntegrateFromTo(1., 11.));
     EXPECT_EQ(315., c.getIntegrateFromTo(-10., 11.));
 
-    KeyFrameSet ks = c.getKeyFrames();
+    KeyFrameSet ks = c.getKeyFrames_mt_safe();
 
     c.clearKeyFrames();
     // empty curve
