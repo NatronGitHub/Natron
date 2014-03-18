@@ -164,6 +164,19 @@ struct Node::Implementation {
     Node* masterNode;
 };
 
+/**
+ *@brief Actually converting to ARGB... but it is called BGRA by
+ the texture format GL_UNSIGNED_INT_8_8_8_8_REV
+ **/
+static unsigned int
+toBGRA(unsigned char r, unsigned char g, unsigned char b, unsigned char a) WARN_UNUSED_RETURN;
+
+unsigned int
+toBGRA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+{
+    return (a << 24) | (r << 16) | (g << 8) | b;
+}
+
 Node::Node(AppInstance* app,LibraryBinary* plugin)
     : QObject()
     , _inputs()
@@ -919,7 +932,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
             int r = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4]));
             int g = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4+1]));
             int b = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4+2]));
-            dst_pixels[j] = ViewerInstance::toBGRA(r, g, b, 255);
+            dst_pixels[j] = toBGRA(r, g, b, 255);
 
         }
     }
