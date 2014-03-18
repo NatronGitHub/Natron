@@ -544,9 +544,17 @@ private:
 
 OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nThreads, void *customArg)
 {
+   
+    
     if (!func) {
         return kOfxStatFailed;
     }
+    
+    if (appPTR->getCurrentSettings()->isMultiThreadingDisabled()) {
+        func(0,1,customArg);
+        return kOfxStatOK;
+    }
+    
     // check that this thread does not already have an ID
     if (gThreadIndex.hasLocalData()) {
         return kOfxStatErrExists;
@@ -586,8 +594,11 @@ OfxStatus Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
     if (!nCPUs) {
         return kOfxStatFailed;
     }
-    // TODO: this should be a preference setting
-    *nCPUs = QThread::idealThreadCount();
+    if (appPTR->getCurrentSettings()->isMultiThreadingDisabled()) {
+        *nCPUs = 1;
+    } else {
+        *nCPUs = QThread::idealThreadCount();
+    }
 
     return kOfxStatOK;
 }
@@ -602,6 +613,7 @@ OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
 {
     if (!threadIndex)
         return kOfxStatFailed;
+
     *threadIndex = gThreadIndex.hasLocalData() ? gThreadIndex.localData() : 0;
 
     return kOfxStatOK;
@@ -622,6 +634,7 @@ OfxStatus Natron::OfxHost::mutexCreate(OfxMutexHandle *mutex, int lockCount)
     if (!mutex) {
         return kOfxStatFailed;
     }
+    
     // suite functions should not throw
     try {
         QMutex* m = new QMutex(QMutex::Recursive);

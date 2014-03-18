@@ -1401,17 +1401,20 @@ int InspectorNode::disconnectInput(Node* input){
 }
 
 void InspectorNode::setActiveInputAndRefresh(int inputNb){
-   
-    QMutexLocker l(&isUsingInputsMutex);
-    waitForRenderTreesToBeDone();
+    bool refresh = false;
 
-
-    InputMap::iterator it = _inputs.find(inputNb);
-    if(it!=_inputs.end() && it->second!=NULL){
-        _activeInput = inputNb;
-        if (isOutputNode()) {
-            dynamic_cast<Natron::OutputEffectInstance*>(getLiveInstance())->updateTreeAndRender();
+    {
+        QMutexLocker l(&isUsingInputsMutex);
+        waitForRenderTreesToBeDone();
+        InputMap::iterator it = _inputs.find(inputNb);
+        if(it!=_inputs.end() && it->second!=NULL){
+            _activeInput = inputNb;
+            refresh = true;
+            
         }
+    }
+    if (refresh && isOutputNode()) {
+        dynamic_cast<Natron::OutputEffectInstance*>(getLiveInstance())->updateTreeAndRender();
     }
 }
 

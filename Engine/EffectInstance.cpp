@@ -33,7 +33,7 @@
 #include "Engine/BlockingBackgroundRender.h"
 #include "Engine/AppInstance.h"
 #include "Engine/ThreadStorage.h"
-
+#include "Engine/Settings.h"
 using namespace Natron;
 
 
@@ -657,10 +657,14 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
         ///as it would lead to a deadlock when the project is loading.
         ///Just fall back to Fully_safe
         if (safety == FULLY_SAFE_FRAME) {
-            if (!getApp()->getProject()->tryLock()) {
+            if (appPTR->getCurrentSettings()->isMultiThreadingDisabled()) {
                 safety = FULLY_SAFE;
             } else {
-                getApp()->getProject()->unlock();
+                if (!getApp()->getProject()->tryLock()) {
+                    safety = FULLY_SAFE;
+                } else {
+                    getApp()->getProject()->unlock();
+                }
             }
         }
         
