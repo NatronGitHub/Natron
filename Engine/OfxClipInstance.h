@@ -19,7 +19,6 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
-#include <QThreadStorage>
 #include <boost/shared_ptr.hpp>
 //ofx
 #include <ofxhImageEffect.h>
@@ -29,6 +28,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/ChannelSet.h"
 #include "Engine/Image.h"
+#include "Engine/ThreadStorage.h"
 
 class OfxImage;
 class OfxEffectInstance;
@@ -157,7 +157,7 @@ private:
     
     OfxEffectInstance* const _nodeInstance;
     Natron::OfxImageEffectInstance* const _effect;
-    QThreadStorage<int> _viewRendered; //< foreach render thread, what view is it rendering ?
+    Natron::ThreadStorage<int> _viewRendered; //< foreach render thread, what view is it rendering ?
 };
 
 class OfxImage : public OFX::Host::ImageEffect::Image

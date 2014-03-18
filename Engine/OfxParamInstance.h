@@ -20,7 +20,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QStringList>
 CLANG_DIAG_ON(deprecated)
 
-#include <QThreadStorage>
+#include "Engine/ThreadStorage.h"
 
 
 #include "Global/GlobalDefines.h"
@@ -594,7 +594,7 @@ private:
     boost::shared_ptr<OutputFile_Knob> _outputFileKnob;
     boost::shared_ptr<String_Knob> _stringKnob;
     boost::shared_ptr<Path_Knob> _pathKnob;
-    QThreadStorage<std::string> _localString;
+    Natron::ThreadStorage<std::string> _localString;
 };
 
 
@@ -656,7 +656,7 @@ private:
     OfxEffectInstance* _node;
     boost::shared_ptr<String_Knob> _knob;
     customParamInterpolationV1Entry_t _customParamInterpolationV1Entry;
-    QThreadStorage<std::string> _localString;
+    Natron::ThreadStorage<std::string> _localString;
 };
 
 

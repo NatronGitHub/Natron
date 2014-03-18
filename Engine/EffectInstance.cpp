@@ -13,7 +13,6 @@
 
 #include <QtConcurrentMap>
 #include <QCoreApplication>
-#include <QThreadStorage>
 
 #include <boost/bind.hpp>
 
@@ -33,12 +32,21 @@
 #include "Engine/Project.h"
 #include "Engine/BlockingBackgroundRender.h"
 #include "Engine/AppInstance.h"
+#include "Engine/ThreadStorage.h"
 
 using namespace Natron;
 
 
 class File_Knob;
 class OutputFile_Knob;
+
+
+struct EffectInstance::RenderArgs {
+    RectI _roi;
+    SequenceTime _time;
+    RenderScale _scale;
+    int _view;
+};
 
 struct EffectInstance::Implementation {
     Implementation()
@@ -60,19 +68,12 @@ struct EffectInstance::Implementation {
     //or a render instance (i.e a snapshot of the live instance at a given time)
 
     Inputs inputs;//< all the inputs of the effect. Watch out, some might be NULL if they aren't connected
-    QThreadStorage<RenderArgs> renderArgs;
+    ThreadStorage<RenderArgs> renderArgs;
     mutable QMutex previewEnabledMutex;
     bool previewEnabled;
     bool markedByTopologicalSort;
     QMutex beginEndRenderMutex;
     int beginEndRenderCount;
-};
-
-struct EffectInstance::RenderArgs {
-    RectI _roi;
-    SequenceTime _time;
-    RenderScale _scale;
-    int _view;
 };
 
 EffectInstance::EffectInstance(Node* node)

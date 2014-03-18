@@ -244,7 +244,6 @@ AppManager::~AppManager(){
     
     assert(qApp);
     delete qApp;
-
 }
 
 void AppManager::initializeQApp(int argc,char* argv[]) const {
