@@ -1873,7 +1873,7 @@ void CurveWidget::paintGL()
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
-
+    glCheckError();
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
     assert(0. < _imp->zoomCtx.factor());
@@ -1925,7 +1925,7 @@ void CurveWidget::renderText(double x,double y,const QString& text,const QColor&
     
     if(text.isEmpty())
         return;
-    
+    glCheckError();
     glMatrixMode (GL_PROJECTION);
     glPushMatrix(); // save GL_PROJECTION
     glLoadIdentity();

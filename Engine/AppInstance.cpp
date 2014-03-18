@@ -15,6 +15,7 @@
 
 #include <QDir>
 #include <QtConcurrentMap>
+#include <QThreadPool>
 
 #include <boost/bind.hpp>
 
@@ -59,6 +60,7 @@ AppInstance::AppInstance(int appID)
 AppInstance::~AppInstance(){
     
     appPTR->removeInstance(_imp->_appID);
+    QThreadPool::globalInstance()->waitForDone();
 }
 
 void AppInstance::load(const QString& projectName,const QStringList& writers)
