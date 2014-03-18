@@ -1301,6 +1301,7 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
     return true;
 }
 
+#pragma message WARN("dead code? please explain when this is called and what it does")
 bool
 ViewerInstance::supportsGLSL() const
 {
@@ -1310,6 +1311,7 @@ ViewerInstance::supportsGLSL() const
     return _imp->uiContext->supportsGLSL();
 }
 
+#pragma message WARN("dead code? please explain when this is called and what it does")
 void
 ViewerInstance::redrawViewer()
 {
@@ -1319,6 +1321,7 @@ ViewerInstance::redrawViewer()
     emit mustRedraw();
 }
 
+#pragma message WARN("dead code? please explain when this is called and what it does")
 boost::shared_ptr<Natron::Image>
 ViewerInstance::getLastRenderedImage() const
 {
@@ -1351,6 +1354,7 @@ ViewerInstance::getExposure() const
     return _imp->exposure;
 }
 
+#pragma message WARN("dead code? please explain when this is called and what it does")
 const Natron::Color::Lut*
 ViewerInstance::getLut() const
 {
@@ -1371,6 +1375,7 @@ ViewerInstance::getChannels() const
     return _imp->channels;
 }
 
+#pragma message WARN("dead code? please explain when this is called and what it does")
 double
 ViewerInstance::getOffset() const
 {
