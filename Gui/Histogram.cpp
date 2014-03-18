@@ -24,6 +24,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Image.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/HistogramCPU.h"
+#include "Engine/Node.h"
 
 #include "Gui/ticks.h"
 #include "Gui/Shaders.h"

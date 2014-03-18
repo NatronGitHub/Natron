@@ -12,14 +12,14 @@
 #ifndef NATRON_ENGINE_FRAMEENTRY_H_
 #define NATRON_ENGINE_FRAMEENTRY_H_
 
+#include <boost/shared_ptr.hpp>
+
 #include <QtCore/QObject>
 
-
+#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 #include "Engine/CacheEntry.h"
-#include "Engine/ChannelSet.h"
-#include "Engine/Format.h"
 #include "Engine/TextureRect.h"
 
 
@@ -29,8 +29,33 @@ namespace Natron{
     
     class FrameParams;
     
-    class FrameKey : public KeyHelper<U64> {
+    class FrameKey : public KeyHelper<U64>
+    {
+        friend class boost::serialization::access;
     public:
+        FrameKey();
+
+        FrameKey(SequenceTime time,
+                 U64 treeVersion,
+                 double exposure,
+                 int lut,
+                 int bitDepth,
+                 int channels,
+                 int view,
+                 const TextureRect& textureRect);
+        
+        void fillHash(Hash64* hash) const;
+        
+        bool operator==(const FrameKey& other) const ;
+
+        SequenceTime getTime() const WARN_UNUSED_RETURN { return _time; };
+
+        int getBitDepth() const WARN_UNUSED_RETURN { return _bitDepth; };
+
+    private:
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version);
+
         SequenceTime _time;
         U64 _treeVersion;
         double _exposure;
@@ -39,43 +64,40 @@ namespace Natron{
         int _channels;
         int _view;
         TextureRect _textureRect; // texture rectangle definition (bounds in the original image + width and height)
-        
-        
-        FrameKey();
-        
-        
-        FrameKey(SequenceTime time,U64 treeVersion,double exposure,
-                 int lut,int bitDepth,int channels,int view,const TextureRect& textureRect);
-        
-        void fillHash(Hash64* hash) const;
-        
-        bool operator==(const FrameKey& other) const ;
     };
-  
-}
 
-
-namespace Natron {
     class FrameEntry : public CacheEntryHelper<U8,FrameKey>
     {
-        
     public:
-        
-
-        
-        FrameEntry(const FrameKey& key,const NonKeyParams& params,bool restore,const std::string& path)
-        :CacheEntryHelper<U8,FrameKey>(key,params,restore,path)
+        FrameEntry(const FrameKey& key,
+                   const NonKeyParams& params,
+                   bool restore,
+                   const std::string& path)
+        : CacheEntryHelper<U8,FrameKey>(key,params,restore,path)
         {
         }
       
-        ~FrameEntry(){}
+        ~FrameEntry()
+        {
+        }
         
-        static FrameKey makeKey(SequenceTime time,U64 treeVersion,double exposure,
-                                int lut,int bitDepth,int channels,int view,const TextureRect& textureRect);
-        static boost::shared_ptr<const FrameParams> makeParams(const RectI rod,int bitDepth,int texW,int texH);
+        static FrameKey makeKey(SequenceTime time,
+                                U64 treeVersion,
+                                double exposure,
+                                int lut,
+                                int bitDepth,
+                                int channels,
+                                int view,
+                                const TextureRect& textureRect);
+        static boost::shared_ptr<const FrameParams> makeParams(const RectI rod,
+                                                               int bitDepth,
+                                                               int texW,
+                                                               int texH);
         
-        U8* data() const {return _data.writable();}
-        
+        U8* data() const
+        {
+            return _data.writable();
+        }
     };
     
     

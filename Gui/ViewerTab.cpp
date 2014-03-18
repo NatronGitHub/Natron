@@ -34,6 +34,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Settings.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Node.h"
 
 #include "Gui/ViewerGL.h"
 #include "Gui/InfoViewerWidget.h"

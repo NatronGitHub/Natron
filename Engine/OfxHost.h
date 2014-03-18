@@ -14,8 +14,8 @@
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QStringList>
-CLANG_DIAG_ON(deprecated)
 #include <QtCore/QObject>
+CLANG_DIAG_ON(deprecated)
 #include <QtCore/QString>
 
 #include <ofxhPluginCache.h>

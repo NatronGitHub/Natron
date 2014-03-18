@@ -42,6 +42,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Project.h"
 #include "Engine/Plugin.h"
 #include "Engine/NodeSerialization.h"
+#include "Engine/Node.h"
 
 #include "Gui/TabWidget.h"
 #include "Gui/Edge.h"

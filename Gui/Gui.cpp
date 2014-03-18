@@ -12,6 +12,7 @@
 
 #include <cassert>
 
+#include <QtCore/QTextStream>
 #include <QWaitCondition>
 #include <QMutex>
 #include <QTextDocument> // for Qt::convertFromPlainText
@@ -44,6 +45,18 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include <boost/version.hpp>
 
+#include "Engine/ViewerInstance.h"
+#include "Engine/Project.h"
+#include "Engine/Plugin.h"
+#include "Engine/Settings.h"
+#include "Engine/KnobFile.h"
+#include "Engine/SequenceParsing.h"
+#include "Engine/ProcessHandler.h"
+#include "Engine/Lut.h"
+#include "Engine/Image.h"
+#include "Engine/VideoEngine.h"
+#include "Engine/Node.h"
+
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGraph.h"
@@ -62,17 +75,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/NodeGui.h"
 #include "Gui/Histogram.h"
 #include "Gui/Splitter.h"
-
-#include "Engine/ViewerInstance.h"
-#include "Engine/Project.h"
-#include "Engine/Plugin.h"
-#include "Engine/Settings.h"
-#include "Engine/KnobFile.h"
-#include "Engine/SequenceParsing.h"
-#include "Engine/ProcessHandler.h"
-#include "Engine/Lut.h"
-#include "Engine/Image.h"
-#include "Engine/VideoEngine.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_IMAGE "Image"

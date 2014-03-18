@@ -119,8 +119,11 @@ typedef std::set<KeyFrame, KeyFrame_compare_time> KeyFrameSet;
 class Knob;
 struct CurvePrivate;
 class RectD;
-class Curve {
-    
+
+class Curve
+{
+    friend class boost::serialization::access;
+
     enum CurveChangedReason{
         DERIVATIVES_CHANGED = 0,
         KEYFRAME_CHANGED = 1
@@ -230,10 +233,10 @@ public:
     /// set the curve Y range (used for testing, when the Curve his not owned by a Knob)
     void setYRange(double yMin, double yMax);
 
+private:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 
-private:
     ///////The following functions are not thread-safe
     KeyFrameSet::const_iterator find(double time) const WARN_UNUSED_RETURN;
 

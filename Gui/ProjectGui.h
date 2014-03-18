@@ -12,7 +12,7 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
-#include <QObject>
+#include <QtCore/QObject>
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 

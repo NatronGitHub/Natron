@@ -16,8 +16,8 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+#include <QtCore/QObject>
 #include <QLabel>
-#include <QObject>
 #include <QStyledItemDelegate>
 #include <QTextEdit>
 CLANG_DIAG_ON(deprecated)

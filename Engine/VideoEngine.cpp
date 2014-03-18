@@ -35,6 +35,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
+#include "Engine/Node.h"
 
 
 #define NATRON_FPS_REFRESH_RATE 10

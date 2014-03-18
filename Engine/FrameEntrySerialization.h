@@ -16,23 +16,18 @@
 #include "Engine/FrameEntry.h"
 #include "Engine/TextureRectSerialization.h"
 
-namespace boost {
-    namespace serialization {
-        
-        template<class Archive>
-        void serialize(Archive & ar, Natron::FrameKey & f, const unsigned int version)
-        {
-            (void)version;
-            ar & boost::serialization::make_nvp("Time",f._time);
-            ar & boost::serialization::make_nvp("TreeVersion",f._treeVersion);
-            ar & boost::serialization::make_nvp("Exposure",f._exposure);
-            ar & boost::serialization::make_nvp("Lut",f._lut);
-            ar & boost::serialization::make_nvp("BitDepth",f._bitDepth);
-            ar & boost::serialization::make_nvp("Channels",f._channels);
-            ar & boost::serialization::make_nvp("View",f._view);
-            ar & boost::serialization::make_nvp("TextureRect",f._textureRect);
-        }
-    }
+template<class Archive>
+void Natron::FrameKey::serialize(Archive & ar, const unsigned int version)
+{
+    (void)version;
+    ar & boost::serialization::make_nvp("Time", _time);
+    ar & boost::serialization::make_nvp("TreeVersion", _treeVersion);
+    ar & boost::serialization::make_nvp("Exposure", _exposure);
+    ar & boost::serialization::make_nvp("Lut", _lut);
+    ar & boost::serialization::make_nvp("BitDepth", _bitDepth);
+    ar & boost::serialization::make_nvp("Channels", _channels);
+    ar & boost::serialization::make_nvp("View", _view);
+    ar & boost::serialization::make_nvp("TextureRect", _textureRect);
 }
 
 

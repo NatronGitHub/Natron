@@ -11,6 +11,7 @@
 
 #include "Settings.h"
 
+#include <QtCore/QDebug>
 #include <QDir>
 #include <QSettings>
 #include <QThreadPool>
