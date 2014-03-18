@@ -213,12 +213,12 @@ void KnobGui::showRightClickMenuForDimension(const QPoint&,int dimension) {
         resetDefaultAction->setEnabled(false);
     }
     
-    if(!isSlave && enabled && !getKnob()->getHolder()->isSlave()) {
+    if(!isSlave && enabled) {
         QAction* linkToAction = new QAction(tr("Link to"),_copyRightClickMenu);
         linkToAction->setData(QVariant(dimension));
         QObject::connect(linkToAction,SIGNAL(triggered()),this,SLOT(onLinkToActionTriggered()));
         _copyRightClickMenu->addAction(linkToAction);
-    } else if(isSlave && !getKnob()->getHolder()->isSlave()) {
+    } else if(isSlave) {
         QAction* unlinkAction = new QAction(tr("Unlink"),_copyRightClickMenu);
         unlinkAction->setData(QVariant(dimension));
         QObject::connect(unlinkAction,SIGNAL(triggered()),this,SLOT(onUnlinkActionTriggered()));

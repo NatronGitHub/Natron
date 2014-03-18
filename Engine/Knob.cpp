@@ -1225,7 +1225,9 @@ void KnobHolder::unslaveAllKnobs() {
     const std::vector<boost::shared_ptr<Knob> >& thisKnobs = getKnobs();
     for (U32 i = 0; i < thisKnobs.size(); ++i) {
         for (int j = 0; j < thisKnobs[i]->getDimension(); ++j) {
-            thisKnobs[i]->unSlave(j);
+            if (thisKnobs[i]->isSlave(j)) {
+                thisKnobs[i]->unSlave(j);
+            }
         }
     }
     _isSlave = false;
