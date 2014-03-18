@@ -1136,7 +1136,7 @@ void ViewerTab::enterEvent(QEvent*)  { setFocus(); }
 void ViewerTab::onAutoContrastChanged(bool b) {
     _imp->_gainSlider->setEnabled(!b);
     _imp->_gainBox->setEnabled(!b);
-    _imp->_viewerNode->onAutoContrastChanged(b,!b);
+    _imp->_viewerNode->onAutoContrastChanged(b,b);
     if (!b) {
         _imp->_viewerNode->onExposureChanged(_imp->_gainBox->value()) ;
     }

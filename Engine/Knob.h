@@ -634,7 +634,7 @@ protected:
      * @param master The master knobHolder. When isSlave is false, master
      * will be set to NULL.
      **/
-    virtual void onSlaveStateChanged(bool /*isSlave*/,KnobHolder* master) {}
+    virtual void onSlaveStateChanged(bool /*isSlave*/,KnobHolder* /*master*/) {}
     
 private:
 
