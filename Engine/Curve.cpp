@@ -199,6 +199,11 @@ Curve::Curve(Knob *owner)
         } catch (const std::bad_cast& e) {
         }
     }
+    
+    Parametric_Knob* parametric = dynamic_cast<Parametric_Knob*>(owner);
+    if (parametric) {
+        _imp->isParametric = true;
+    }
 }
 
 Curve::~Curve()
