@@ -560,6 +560,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
     ///have rendered the rod already.
     if (!supportsTiles() && !rectsToRender.empty()) {
         ///if the effect doesn't support tiles, just render the whole rod again even though
+        rectsToRender.clear();
         rectsToRender.push_back(cachedImgParams->getRoD());
     }
 #ifdef NATRON_LOG
