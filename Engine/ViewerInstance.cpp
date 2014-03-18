@@ -116,7 +116,7 @@ struct ViewerInstance::ViewerInstancePrivate {
     , usingOpenGL(false)
     , interThreadInfos()
     , buffer(NULL)
-    , mustFreeBuffer(false)
+    , bufferAllocated(0)
     , renderArgsMutex()
     , exposure(1.)
     , offset(0)
@@ -146,7 +146,7 @@ struct ViewerInstance::ViewerInstancePrivate {
 
     OpenGLViewerI* uiContext;
 
-    int pboIndex;
+    int pboIndex; // always accessed from the main thread
 
     int frameCount;
 
@@ -161,7 +161,7 @@ struct ViewerInstance::ViewerInstancePrivate {
     InterThreadInfos interThreadInfos;
 
     void* buffer;
-    bool mustFreeBuffer;
+    size_t bufferAllocated;
 
     mutable QMutex renderArgsMutex; //< protects exposure,colorspace etc..
     double exposure ;/*!< Current exposure setting, all pixels are multiplied
@@ -251,8 +251,9 @@ ViewerInstance::~ViewerInstance()
    if (_imp->uiContext) {
         _imp->uiContext->removeGUI();
     }
-    if (_imp->mustFreeBuffer) {
+    if (_imp->bufferAllocated) {
         free(_imp->buffer);
+        _imp->bufferAllocated = 0;
     }
 }
 
@@ -605,19 +606,21 @@ ViewerInstance::renderViewer(SequenceTime time,
         
         assert(cachedFrameParams);
         /*Found in viewer cache, we execute the cached engine and leave*/
+#pragma message WARN("how do you make sure cachedFrame->data() is not freed after this line?")
+        // how do you make sure cachedFrame->data() is not freed after this line?
         _imp->interThreadInfos.ramBuffer = cachedFrame->data();
 #ifdef NATRON_LOG
         Natron::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
                                    QString::number(key.getHash())).toStdString());
         Natron::Log::endFunction(getName(),"renderViewer");
 #endif
-    } else {
+    } else { // !isCached
         /*We didn't find it in the viewer cache, hence we render
          the frame*/
         
-        if (_imp->mustFreeBuffer) {
+        if (_imp->bufferAllocated) {
             free(_imp->buffer);
-            _imp->mustFreeBuffer = false;
+            _imp->bufferAllocated = 0;
         }
         
         ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
@@ -625,10 +628,17 @@ ViewerInstance::renderViewer(SequenceTime time,
         ///overload the ViewerCache which may become slowe
         if (byPassCache || _imp->uiContext->isUserRegionOfInterestEnabled() || _imp->interThreadInfos.autoContrast) {
             assert(!cachedFrame);
-            _imp->buffer = (unsigned char*)malloc( _imp->interThreadInfos.bytesCount);
-            _imp->mustFreeBuffer = true;
+            // don't reallocate if we need less memory (avoid fragmentation)
+            if (_imp->bufferAllocated < _imp->interThreadInfos.bytesCount) {
+                free(_imp->buffer);
+                _imp->bufferAllocated = _imp->interThreadInfos.bytesCount;
+                _imp->buffer = (unsigned char*)malloc(_imp->bufferAllocated);
+                if (!_imp->buffer) {
+                    _imp->bufferAllocated = 0;
+                    throw std::bad_alloc();
+                }
+            }
         } else {
-            
             cachedFrameParams = FrameEntry::makeParams(rod, key.getBitDepth(), textureRect.w, textureRect.h);
             bool success = Natron::getTextureFromCacheOrCreate(key, cachedFrameParams, &cachedFrame);
             ///note that unlike  getImageFromCacheOrCreate in EffectInstance::renderRoI, we
@@ -637,176 +647,178 @@ ViewerInstance::renderViewer(SequenceTime time,
             assert(!success);
             
             assert(cachedFrame);
+            if (_imp->bufferAllocated) {
+                free(_imp->buffer);
+                _imp->bufferAllocated = 0;
+            }
+#pragma message WARN("how do you make sure cachedFrame->data() is not freed after this line?")
+            // how do you make sure cachedFrame->data() is not freed after this line?
             _imp->buffer = cachedFrame->data();
         }
-        
+
         _imp->interThreadInfos.ramBuffer = (unsigned char*)_imp->buffer;
-        
-        {
-      
-            if (!activeInputToRender->supportsTiles()) {
-                texRectClipped.intersect(rod, &texRectClipped);
-            }
-            
-            
-            int inputIndex = activeInput();
-            _node->notifyInputNIsRendering(inputIndex);
-            
-            // If an exception occurs here it is probably fatal, since
-            // it comes from Natron itself. All exceptions from plugins are already caught
-            // by the HostSupport library.
-            // We catch it  and rethrow it just to notify the rendering is done.
-            try {
-                if (isInputImgCached) {
-                    ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
-                    ///cache lookup things because we already did it ourselves.
-                    activeInputToRender->renderRoI(time, scale, view, texRectClipped, cachedImgParams, inputImage);
-                } else {
-                    _imp->lastRenderedImage = activeInputToRender->renderRoI(time, scale,view,texRectClipped,byPassCache,&rod);
-                }
-            } catch (const std::exception& e) {
-                _node->notifyInputNIsFinishedRendering(inputIndex);
-                throw e;
-            }
-            
-            _node->notifyInputNIsFinishedRendering(inputIndex);
 
-            
-            if (!_imp->lastRenderedImage) {
-                //if render was aborted, remove the frame from the cache as it contains only garbage
-                appPTR->removeFromViewerCache(cachedFrame);
-                return StatFailed;
-            }
-            
-            //  Natron::debugImage(_lastRenderedImage.get(),"img.png");
-            
-            if(aborted()){
-                //if render was aborted, remove the frame from the cache as it contains only garbage
-                appPTR->removeFromViewerCache(cachedFrame);
-                return StatOK;
-            }
-            
-            if (singleThreaded) {
-                if (_imp->interThreadInfos.autoContrast) {
-                    double vmin, vmax;
-                    std::pair<double,double> vMinMax = findAutoContrastVminVmax(_imp->lastRenderedImage, _imp->interThreadInfos.channels, roi);
-                    vmin = vMinMax.first;
-                    vmax = vMinMax.second;
+        if (!activeInputToRender->supportsTiles()) {
+            texRectClipped.intersect(rod, &texRectClipped);
+        }
 
-                    ///if vmax - vmin is greater than 1 the exposure will be really small and we won't see
-                    ///anything in the image
-                    if (vmin == vmax) {
-                        vmin = vmax - 1.;
-                    }
-                    _imp->interThreadInfos.exposure = 1 / (vmax - vmin);
-                    _imp->interThreadInfos.offset =  - vmin / ( vmax - vmin);
-                    _imp->exposure = _imp->interThreadInfos.exposure; // ???
-                    _imp->offset = _imp->interThreadInfos.offset; // ???
 
-                }
-                
-                const RenderViewerArgs args(_imp->lastRenderedImage,
-                                            textureRect,
-                                            _imp->interThreadInfos.channels,
-                                            closestPowerOf2,
-                                            _imp->interThreadInfos.bitDepth,
-                                            _imp->exposure,
-                                            _imp->offset,
-                                            _imp->colorSpace);
+        int inputIndex = activeInput();
+        _node->notifyInputNIsRendering(inputIndex);
 
-                renderFunctor(std::make_pair(texRectClipped.y1,texRectClipped.y2),
-                              args,
-                              _imp->buffer);
+        // If an exception occurs here it is probably fatal, since
+        // it comes from Natron itself. All exceptions from plugins are already caught
+        // by the HostSupport library.
+        // We catch it  and rethrow it just to notify the rendering is done.
+        try {
+            if (isInputImgCached) {
+                ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
+                ///cache lookup things because we already did it ourselves.
+                activeInputToRender->renderRoI(time, scale, view, texRectClipped, cachedImgParams, inputImage);
             } else {
-                
-                int rowsPerThread = std::ceil((double)(texRectClipped.x2 - texRectClipped.x1) / (double)QThread::idealThreadCount());
-                // group of group of rows where first is image coordinate, second is texture coordinate
-                QList< std::pair<int, int> > splitRows;
-                int k = texRectClipped.y1;
-                while (k < texRectClipped.y2) {
+                _imp->lastRenderedImage = activeInputToRender->renderRoI(time, scale,view,texRectClipped,byPassCache,&rod);
+            }
+        } catch (const std::exception& e) {
+            _node->notifyInputNIsFinishedRendering(inputIndex);
+            throw e;
+        }
+
+        _node->notifyInputNIsFinishedRendering(inputIndex);
+
+
+        if (!_imp->lastRenderedImage) {
+            //if render was aborted, remove the frame from the cache as it contains only garbage
+            appPTR->removeFromViewerCache(cachedFrame);
+            return StatFailed;
+        }
+
+        //  Natron::debugImage(_lastRenderedImage.get(),"img.png");
+
+        if (aborted()) {
+            //if render was aborted, remove the frame from the cache as it contains only garbage
+            appPTR->removeFromViewerCache(cachedFrame);
+            return StatOK;
+        }
+
+        if (singleThreaded) {
+            if (_imp->interThreadInfos.autoContrast) {
+                double vmin, vmax;
+                std::pair<double,double> vMinMax = findAutoContrastVminVmax(_imp->lastRenderedImage, _imp->interThreadInfos.channels, roi);
+                vmin = vMinMax.first;
+                vmax = vMinMax.second;
+
+                ///if vmax - vmin is greater than 1 the exposure will be really small and we won't see
+                ///anything in the image
+                if (vmin == vmax) {
+                    vmin = vmax - 1.;
+                }
+                _imp->interThreadInfos.exposure = 1 / (vmax - vmin);
+                _imp->interThreadInfos.offset =  - vmin / ( vmax - vmin);
+                _imp->exposure = _imp->interThreadInfos.exposure; // ???
+                _imp->offset = _imp->interThreadInfos.offset; // ???
+
+            }
+
+            const RenderViewerArgs args(_imp->lastRenderedImage,
+                                        textureRect,
+                                        _imp->interThreadInfos.channels,
+                                        closestPowerOf2,
+                                        _imp->interThreadInfos.bitDepth,
+                                        _imp->exposure,
+                                        _imp->offset,
+                                        _imp->colorSpace);
+
+            renderFunctor(std::make_pair(texRectClipped.y1,texRectClipped.y2),
+                          args,
+                          _imp->buffer);
+        } else {
+
+            int rowsPerThread = std::ceil((double)(texRectClipped.x2 - texRectClipped.x1) / (double)QThread::idealThreadCount());
+            // group of group of rows where first is image coordinate, second is texture coordinate
+            QList< std::pair<int, int> > splitRows;
+            int k = texRectClipped.y1;
+            while (k < texRectClipped.y2) {
+                int top = k + rowsPerThread;
+                int realTop = top > texRectClipped.y2 ? texRectClipped.y2 : top;
+                splitRows.push_back(std::make_pair(k,realTop));
+                k += rowsPerThread;
+            }
+
+            ///if autocontrast is enabled, find out the vmin/vmax before rendering and mapping against new values
+            if (_imp->interThreadInfos.autoContrast) {
+
+                rowsPerThread = std::ceil((double)(roi.width()) / (double)QThread::idealThreadCount());
+                std::vector<RectI> splitRects;
+                k = roi.y1;
+                while (k < roi.y2) {
                     int top = k + rowsPerThread;
-                    int realTop = top > texRectClipped.y2 ? texRectClipped.y2 : top;
-                    splitRows.push_back(std::make_pair(k,realTop));
+                    int realTop = top > roi.top() ? roi.top() : top;
+                    splitRects.push_back(RectI(roi.left(), k, roi.right(), realTop));
                     k += rowsPerThread;
                 }
-                
-                ///if autocontrast is enabled, find out the vmin/vmax before rendering and mapping against new values
-                if (_imp->interThreadInfos.autoContrast) {
-                    
-                    rowsPerThread = std::ceil((double)(roi.width()) / (double)QThread::idealThreadCount());
-                    std::vector<RectI> splitRects;
-                    k = roi.y1;
-                    while (k < roi.y2) {
-                        int top = k + rowsPerThread;
-                        int realTop = top > roi.top() ? roi.top() : top;
-                        splitRects.push_back(RectI(roi.left(), k, roi.right(), realTop));
-                        k += rowsPerThread;
-                    }
 
-                    QFuture<std::pair<double,double> > future = QtConcurrent::mapped(splitRects,
-                                                                                     boost::bind(findAutoContrastVminVmax,
-                                                                                                 _imp->lastRenderedImage,
-                                                                                                 _imp->interThreadInfos.channels,
-                                                                                                 _1));
-                    future.waitForFinished();
-                    double vmin = std::numeric_limits<double>::infinity();
-                    double vmax = -std::numeric_limits<double>::infinity();
+                QFuture<std::pair<double,double> > future = QtConcurrent::mapped(splitRects,
+                                                                                 boost::bind(findAutoContrastVminVmax,
+                                                                                             _imp->lastRenderedImage,
+                                                                                             _imp->interThreadInfos.channels,
+                                                                                             _1));
+                future.waitForFinished();
+                double vmin = std::numeric_limits<double>::infinity();
+                double vmax = -std::numeric_limits<double>::infinity();
 
-                    std::pair<double,double> vMinMax;
-                    foreach (vMinMax, future.results()) {
-                        if (vMinMax.first < vmin) {
-                            vmin = vMinMax.first;
-                        }
-                        if (vMinMax.second > vmax) {
-                            vmax = vMinMax.second;
-                        }
+                std::pair<double,double> vMinMax;
+                foreach (vMinMax, future.results()) {
+                    if (vMinMax.first < vmin) {
+                        vmin = vMinMax.first;
                     }
-                    if (vmax == vmin) {
-                        vmin = vmax - 1.;
-                    }
-
-                    _imp->interThreadInfos.exposure = 1 / (vmax - vmin);
-                    _imp->interThreadInfos.offset =  -vmin / (vmax - vmin);
-                    {
-                        QMutexLocker l(&_imp->renderArgsMutex);
-                        _imp->exposure = _imp->interThreadInfos.exposure;
-                        _imp->offset = _imp->interThreadInfos.offset;
+                    if (vMinMax.second > vmax) {
+                        vmax = vMinMax.second;
                     }
                 }
+                if (vmax == vmin) {
+                    vmin = vmax - 1.;
+                }
 
-                const RenderViewerArgs args(_imp->lastRenderedImage,
-                                            textureRect,
-                                            _imp->interThreadInfos.channels,
-                                            closestPowerOf2,
-                                            _imp->interThreadInfos.bitDepth,
-                                            _imp->exposure,
-                                            _imp->offset,
-                                            _imp->colorSpace);
-
-                QtConcurrent::map(splitRows,
-                                  boost::bind(&renderFunctor,
-                                              _1,
-                                              args,
-                                              _imp->buffer)).waitForFinished();
-                
+                _imp->interThreadInfos.exposure = 1 / (vmax - vmin);
+                _imp->interThreadInfos.offset =  -vmin / (vmax - vmin);
+                {
+                    QMutexLocker l(&_imp->renderArgsMutex);
+                    _imp->exposure = _imp->interThreadInfos.exposure;
+                    _imp->offset = _imp->interThreadInfos.offset;
+                }
             }
+
+            const RenderViewerArgs args(_imp->lastRenderedImage,
+                                        textureRect,
+                                        _imp->interThreadInfos.channels,
+                                        closestPowerOf2,
+                                        _imp->interThreadInfos.bitDepth,
+                                        _imp->exposure,
+                                        _imp->offset,
+                                        _imp->colorSpace);
+
+            QtConcurrent::map(splitRows,
+                              boost::bind(&renderFunctor,
+                                          _1,
+                                          args,
+                                          _imp->buffer)).waitForFinished();
+
         }
-        if(aborted()){
+        if (aborted()) {
             //if render was aborted, remove the frame from the cache as it contains only garbage
             appPTR->removeFromViewerCache(cachedFrame);
             return StatOK;
         }
         //we released the input image and force the cache to clear exceeding entries
         appPTR->clearExceedingEntriesFromNodeCache();
-        
-    }
-    
+
+    } // !isCached
+
     if(getVideoEngine()->mustQuit()){
         return StatFailed;
     }
-    
-    if(!aborted()) {
-        
+
+    if (!aborted()) {
         if (singleThreaded) {
             updateViewer();
         } else {
@@ -1109,7 +1121,9 @@ ViewerInstance::updateViewer()
     QMutexLocker locker(&_imp->usingOpenGLMutex);
     _imp->uiContext->makeOpenGLcontextCurrent();
     if(!aborted()){
-        _imp->uiContext->transferBufferFromRAMtoGPU(_imp->interThreadInfos.ramBuffer,
+#pragma message WARN("how do you make sure _imp->interThreadInfos.ramBuffer is not freed during this operation?")
+        // how do you make sure _imp->interThreadInfos.ramBuffer is not freed during this operation?
+       _imp->uiContext->transferBufferFromRAMtoGPU(_imp->interThreadInfos.ramBuffer,
                                            _imp->interThreadInfos.bytesCount,
                                            _imp->interThreadInfos.textureRect,
                                            _imp->pboIndex);
