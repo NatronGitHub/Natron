@@ -204,11 +204,11 @@ public:
     /**
      * @brief Called when the instance is exited
      **/
-    void exit(AppInstance* instance);
+    void quit(AppInstance* instance);
     
     /**
      * @brief Starts the event loop and doesn't return until
-     * exit() is called on all AppInstance's
+     * quit() is called on all AppInstance's
      **/
     int exec();
 
