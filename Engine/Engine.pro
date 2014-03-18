@@ -146,9 +146,18 @@ HEADERS += \
     StringAnimationManager.h \
     TextureRect.h \
     TextureRectSerialization.h \
+    ThreadStorage.h \
     TimeLine.h \
     Timer.h \
     Variant.h \
     VideoEngine.h \
-    ViewerInstance.h
+    ViewerInstance.h \
+    ../Global/Enums.h \
+    ../Global/GitVersion.h \
+    ../Global/GLIncludes.h \
+    ../Global/GlobalDefines.h \
+    ../Global/KeySymbols.h \
+    ../Global/Macros.h \
+    ../Global/MemoryInfo.h \
+    ../Global/QtCompat.h
 
