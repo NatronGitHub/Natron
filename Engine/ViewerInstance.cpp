@@ -150,7 +150,7 @@ ViewerInstance::BuildEffect(Natron::Node* n)
 
 ViewerInstance::ViewerInstance(Node* node):
 Natron::OutputEffectInstance(node)
-, _imp()
+, _imp(new ViewerInstancePrivate)
 {
     connectSlotsToViewerCache();
     connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
