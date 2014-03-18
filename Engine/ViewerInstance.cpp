@@ -108,7 +108,6 @@ struct ViewerInstance::ViewerInstancePrivate {
     ViewerInstancePrivate()
     : uiContext(NULL)
     , pboIndex(0)
-    , frameCount(1)
     , forceRenderMutex()
     , forceRender(false)
     , usingOpenGLCond()
@@ -144,16 +143,15 @@ struct ViewerInstance::ViewerInstancePrivate {
     }
 
 
-    OpenGLViewerI* uiContext;
+    OpenGLViewerI* uiContext; // written in the main thread before VideoEngine thread creation, accessed from VideoEngine
 
     int pboIndex; // always accessed from the main thread
-
-    int frameCount;
 
     mutable QMutex forceRenderMutex;
     bool forceRender;/*!< true when we want to by-pass the cache*/
 
 
+#pragma message WARN("please explain usingOpenGL?")
     QWaitCondition usingOpenGLCond;
     mutable QMutex usingOpenGLMutex; //!< protects _usingOpenGL
     bool usingOpenGL;
@@ -163,7 +161,7 @@ struct ViewerInstance::ViewerInstancePrivate {
     void* buffer;
     size_t bufferAllocated;
 
-    mutable QMutex renderArgsMutex; //< protects exposure,colorspace etc..
+    mutable QMutex renderArgsMutex; //< protects exposure,colorspace etc.. ETC??????????????
     double exposure ;/*!< Current exposure setting, all pixels are multiplied
                        by pow(2,expousre) before they appear on the screen.*/
     double offset; //< offset applied to all colours
@@ -175,11 +173,13 @@ struct ViewerInstance::ViewerInstancePrivate {
     mutable QMutex channelsMutex;
     ViewerInstance::DisplayChannels channels;
 
+#pragma message WARN("please explain lastRenderedImage?")
     boost::shared_ptr<Natron::Image> lastRenderedImage;
 
     mutable QMutex autoContrastMutex;
     bool autoContrast;
 
+    // store the threadId of the VideoEngine thread - used for debugging purposes
     mutable QMutex threadIdMutex;
     QThread *threadIdVideoEngine;
 };
@@ -308,6 +308,8 @@ ViewerInstance::setUiContext(OpenGLViewerI* viewer)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
+    // VideoEngine must not be created (or there would be a race condition)
+    assert(!_imp->threadIdVideoEngine);
 
     _imp->uiContext = viewer;
 }
@@ -330,6 +332,8 @@ ViewerInstance::cloneExtras()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
+    // VideoEngine must not be created (or there would be a race condition)
+    assert(!_imp->threadIdVideoEngine);
 
     _imp->uiContext = dynamic_cast<ViewerInstance*>(getNode()->getLiveInstance())->getUiContext();
 }
