@@ -359,7 +359,6 @@ void Knob::removeAnimation(int dimension,Natron::ValueChangedReason reason)
         emit animationRemoved(dimension);
     }
     
-    _imp->_holder->getApp()->triggerAutoSave();
 }
 
 void Knob::setValue(const Variant& value,int dimension,bool turnOffAutoKeying)

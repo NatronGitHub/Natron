@@ -976,8 +976,12 @@ void AddCommand::undo(){
 }
 void AddCommand::redo(){
     if(_undoWasCalled){
+        ///activate will trigger an autosave
         _node->getNode()->activate();
+    } else {
+        _graph->getGui()->getApp()->triggerAutoSave();
     }
+    
     _graph->scene()->update();
     setText(QObject::tr("Add %1")
             .arg(_node->getNode()->getName().c_str()));
