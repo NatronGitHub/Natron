@@ -338,7 +338,7 @@ bool AppManager::loadInternal(const QString& projectFilename,const QStringList& 
         
         ///In background project auto-run the rendering is finished at this point, just exit the instance
         if (_imp->_appType == APP_BACKGROUND_AUTO_RUN && mainInstance) {
-            mainInstance->exit();
+            mainInstance->quit();
         }
         return true;
     }
@@ -1111,12 +1111,13 @@ void AppManagerPrivate::cleanUpCacheDiskStructure(const QString& cachePath) {
     }
 }
 
-void AppManager::exit(AppInstance* instance) {
+void AppManager::quit(AppInstance* instance)
+{
     delete instance;
     ///if we exited the last instance, exit the event loop, this will make
     /// the exec() function return.
     if (_imp->_appInstances.empty()) {
-        qApp->exit(0);
+        qApp->quit();
     }
 }
 

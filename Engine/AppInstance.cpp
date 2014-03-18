@@ -315,6 +315,6 @@ void AppInstance::clearOpenFXPluginsCaches(){
     }
 }
 
-void AppInstance::exit() {
-    appPTR->exit(this);
+void AppInstance::quit() {
+    appPTR->quit(this);
 }

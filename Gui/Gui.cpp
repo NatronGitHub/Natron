@@ -392,15 +392,15 @@ bool Gui::exitGui()
         return false;
     }
     _imp->saveGuiGeometry();
-    exit();
+    quit();
     return true;
 }
  
 #pragma message WARN("same thing should be done in the non-Gui app, and should be connected to aboutToQuit() also")
-void Gui::exit()
+void Gui::quit()
 {
     assert(_imp->_appInstance);
-    _imp->_appInstance->exit();
+    _imp->_appInstance->quit();
 }
 
 void Gui::toggleFullScreen()

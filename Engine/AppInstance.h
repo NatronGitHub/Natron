@@ -107,7 +107,7 @@ public:
 
 public slots:
     
-    void exit();
+    void quit();
     
     /* The following methods are forwarded to the model */
     void checkViewersConnection();
