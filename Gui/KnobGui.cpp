@@ -213,12 +213,12 @@ void KnobGui::showRightClickMenuForDimension(const QPoint&,int dimension) {
         resetDefaultAction->setEnabled(false);
     }
     
-    if(!isSlave && enabled && !getKnob()->getHolder()->isSlave()) {
+    if(!isSlave && enabled) {
         QAction* linkToAction = new QAction(tr("Link to"),_copyRightClickMenu);
         linkToAction->setData(QVariant(dimension));
         QObject::connect(linkToAction,SIGNAL(triggered()),this,SLOT(onLinkToActionTriggered()));
         _copyRightClickMenu->addAction(linkToAction);
-    } else if(isSlave && !getKnob()->getHolder()->isSlave()) {
+    } else if(isSlave) {
         QAction* unlinkAction = new QAction(tr("Unlink"),_copyRightClickMenu);
         unlinkAction->setData(QVariant(dimension));
         QObject::connect(unlinkAction,SIGNAL(triggered()),this,SLOT(onUnlinkActionTriggered()));
@@ -441,7 +441,7 @@ void KnobGui::onRemoveAnyAnimationActionTriggered(){
     std::vector<std::pair<CurveGui *, KeyFrame > > toRemove;
     for(int i = 0; i < _knob->getDimension();++i){
         CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
-        const KeyFrameSet& keys = curve->getInternalCurve()->getKeyFrames();
+        KeyFrameSet keys = curve->getInternalCurve()->getKeyFrames_mt_safe();
         for(KeyFrameSet::const_iterator it = keys.begin();it!=keys.end();++it){
             toRemove.push_back(std::make_pair(curve,*it));
         }
@@ -937,14 +937,8 @@ void KnobGui::checkAnimationLevel(int dimension)
         boost::shared_ptr<Curve> c = getKnob()->getCurve(dimension);
         SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
         if (c->getKeyFramesCount() > 0) {
-            const KeyFrameSet &keys = c->getKeyFrames();
-            bool found = false;
-            for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-                if (it->getTime() == time) {
-                    found = true;
-                    break;
-                }
-            }
+            KeyFrame kf;
+            bool found = c->getKeyFrameWithTime(time, &kf);;
             if (found) {
                 level = Natron::ON_KEYFRAME;
             } else {

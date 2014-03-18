@@ -18,6 +18,7 @@
 #include <string>
 #include <QtCore/QDir>
 #include <QtCore/QMutex>
+#include <QtCore/QThreadPool>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
 
@@ -550,7 +551,13 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
         return kOfxStatFailed;
     }
     
-    if (appPTR->getCurrentSettings()->isMultiThreadingDisabled()) {
+    unsigned int maxConcurrentThread;
+    OfxStatus st = multiThreadNumCPUS(&maxConcurrentThread);
+    if (st != kOfxStatOK) {
+        return st;
+    }
+    
+    if (appPTR->getCurrentSettings()->isMultiThreadingDisabled() || maxConcurrentThread == 1) {
         func(0,1,customArg);
         return kOfxStatOK;
     }
@@ -560,12 +567,6 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
         return kOfxStatErrExists;
     }
 
-    unsigned int maxConcurrentThread;
-    OfxStatus st = multiThreadNumCPUS(&maxConcurrentThread);
-    if (st != kOfxStatOK) {
-        return st;
-    }
-    
     QVector<OfxThread*> threads(nThreads);
     QVector<OfxStatus> status(nThreads); // vector for the return status of each thread
     status.fill(kOfxStatFailed); // by default, a thread fails
@@ -582,6 +583,9 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
             return status[i];
         }
     }
+    for (unsigned int i = 0; i < nThreads; ++i) {
+        delete threads[i];
+    }
 
     return kOfxStatOK;
 }
@@ -597,7 +601,11 @@ OfxStatus Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
     if (appPTR->getCurrentSettings()->isMultiThreadingDisabled()) {
         *nCPUs = 1;
     } else {
-        *nCPUs = QThread::idealThreadCount();
+        if (QThreadPool::globalInstance()->activeThreadCount() >= QThread::idealThreadCount()) {
+            *nCPUs = 1;
+        } else {
+            *nCPUs = QThread::idealThreadCount();
+        }
     }
 
     return kOfxStatOK;

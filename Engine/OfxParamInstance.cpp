@@ -72,12 +72,13 @@ namespace OfxKeyFrame{
         int dimension = 0;
         int indexSoFar = 0;
         while (dimension < knob->getDimension()) {
-            const KeyFrameSet& set = knob->getCurve(dimension)->getKeyFrames();
             ++dimension;
-            if (nth >= (int)(set.size() + indexSoFar)) {
-                indexSoFar += set.size();
+            int curveKeyFramesCount = knob->getKeyFramesCount(dimension);
+            if (nth >= (int)(curveKeyFramesCount + indexSoFar)) {
+                indexSoFar += curveKeyFramesCount;
                 continue;
             } else {
+                KeyFrameSet set = knob->getCurve(dimension)->getKeyFrames_mt_safe();
                 KeyFrameSet::const_iterator it = set.begin();
                 while (it != set.end()) {
                     if (indexSoFar == nth) {
@@ -95,7 +96,7 @@ namespace OfxKeyFrame{
     OfxStatus getKeyIndex(boost::shared_ptr<Knob> knob,OfxTime time, int direction, int& index) {
         int c = 0;
         for(int i = 0; i < knob->getDimension();++i){
-            const KeyFrameSet& set = knob->getCurve(i)->getKeyFrames();
+            KeyFrameSet set = knob->getCurve(i)->getKeyFrames_mt_safe();
             for (KeyFrameSet::const_iterator it = set.begin(); it!=set.end(); ++it) {
                 if(it->getTime() == time){
                     

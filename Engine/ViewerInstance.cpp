@@ -230,7 +230,7 @@ ViewerInstance::BuildEffect(Natron::Node* n)
 
 ViewerInstance::ViewerInstance(Node* node):
 Natron::OutputEffectInstance(node)
-, _imp(new ViewerInstance::ViewerInstancePrivate)
+, _imp(new ViewerInstancePrivate)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());

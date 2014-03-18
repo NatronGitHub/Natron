@@ -79,7 +79,7 @@ void BaseTest::SetUp()
 
 void BaseTest::TearDown()
 {
-    _app->exit();
+    _app->quit();
     _app = 0;
     appPTR->setMultiThreadEnabled(true);
     delete appPTR;

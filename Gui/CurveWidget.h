@@ -104,7 +104,7 @@ signals:
     
 private:
 
-    std::pair<KeyFrame,bool> nextPointForSegment(double x1,double* x2);
+    std::pair<KeyFrame,bool> nextPointForSegment(double x1,double* x2,const KeyFrameSet& keyframes);
 
     boost::shared_ptr<Curve> _internalCurve; ///ptr to the internal curve
     QString _name; /// the name of the curve
@@ -187,11 +187,7 @@ public:
     void getVisibleCurves(std::vector<CurveGui*>* curves) const;
 
     void addKeyFrame(CurveGui* curve, const KeyFrame& key);
-
-    //void removeKeyFrame(CurveGui* curve,const KeyFrame& key);
     
-    //void moveKeyFrame(CurveGui* curve,const KeyFrame& key,double dt,double dv);
-        
     void setSelectedKeys(const SelectedKeys& keys);
     
     void refreshSelectedKeys();
