@@ -248,6 +248,16 @@ public slots:
     
     void refreshSlaveMasterLinkPosition();
     
+    void copyNode();
+    
+    void cutNode();
+    
+    void cloneNode();
+    
+    void decloneNode();
+    
+    void duplicateNode();
+    
 signals:
     void nameChanged(QString);
     

@@ -463,7 +463,7 @@ void Gui::createGui(){
     QMouseEvent e(QEvent::MouseMove,QCursor::pos(),Qt::NoButton,Qt::NoButton,Qt::NoModifier);
     qApp->sendEvent(this, &e);
     
-    QObject::connect(QCoreApplication::instance(), SIGNAL(aboutToQuit()), this, SLOT(exit()));
+    QObject::connect(QCoreApplication::instance(), SIGNAL(aboutToQuit()), this, SLOT(quit()));
     
 }
 

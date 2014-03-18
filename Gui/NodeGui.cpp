@@ -692,6 +692,33 @@ void NodeGui::showMenu(const QPoint& pos){
 
 void NodeGui::populateMenu(){
     _menu->clear();
+    
+    QAction* copyAction = new QAction(tr("Copy"),_menu);
+    copyAction->setShortcut(QKeySequence::Copy);
+    QObject::connect(copyAction,SIGNAL(triggered()),this,SLOT(copyNode()));
+    _menu->addAction(copyAction);
+    
+    QAction* cutAction = new QAction(tr("Cut"),_menu);
+    cutAction->setShortcut(QKeySequence::Cut);
+    QObject::connect(cutAction,SIGNAL(triggered()),this,SLOT(cutNode()));
+    _menu->addAction(cutAction);
+    
+    QAction* duplicateAction = new QAction(tr("Duplicate"),_menu);
+    duplicateAction->setShortcut(QKeySequence(Qt::AltModifier + Qt::Key_C));
+    QObject::connect(duplicateAction,SIGNAL(triggered()),this,SLOT(duplicateNode()));
+    _menu->addAction(duplicateAction);
+    
+    QAction* cloneAction = new QAction(tr("Clone"),_menu);
+    cloneAction->setShortcut(QKeySequence(Qt::AltModifier + Qt::Key_K));
+    QObject::connect(cloneAction,SIGNAL(triggered()),this,SLOT(cloneNode()));
+    _menu->addAction(cloneAction);
+    
+    QAction* decloneAction = new QAction(tr("Declone"),_menu);
+    decloneAction->setShortcut(QKeySequence(Qt::AltModifier + Qt::ShiftModifier + Qt::Key_K));
+    QObject::connect(decloneAction,SIGNAL(triggered()),this,SLOT(decloneNode()));
+    decloneAction->setEnabled(_internalNode->getMasterNode() != NULL);
+    _menu->addAction(decloneAction);
+    
     QAction* togglePreviewAction = new QAction("Toggle preview image",_menu);
     togglePreviewAction->setCheckable(true);
     togglePreviewAction->setChecked(_internalNode->isPreviewEnabled());
@@ -870,4 +897,24 @@ void NodeGui::refreshSlaveMasterLinkPosition() {
     QPointF src = _slaveMasterLink->mapFromItem(this,QPointF(bboxThisNode.x(),bboxThisNode.y())
                               + QPointF(bboxThisNode.width() / 2., bboxThisNode.height() / 2.));
     _slaveMasterLink->setLine(QLineF(src,dst));
+}
+
+void NodeGui::copyNode() {
+    _graph->copyNode(this);
+}
+
+void NodeGui::cutNode() {
+    _graph->cutNode(this);
+}
+
+void NodeGui::cloneNode() {
+    _graph->cloneNode(this);
+}
+
+void NodeGui::decloneNode() {
+    _graph->decloneNode(this);
+}
+
+void NodeGui::duplicateNode() {
+    _graph->duplicateNode(this);
 }

@@ -122,6 +122,17 @@ public:
     
     void centerOnNode(NodeGui* n);
     
+    void copyNode(NodeGui* n);
+    
+    void cutNode(NodeGui* n);
+    
+    void duplicateNode(NodeGui* n);
+    
+    void cloneNode(NodeGui* n);
+    
+    void decloneNode(NodeGui* n);
+
+    
 public slots:
     
     void deleteSelectedNode();

@@ -897,7 +897,7 @@ bool Project::isLoadingProject() const {
 bool Project::isGraphWorthLess() const {
     bool worthLess = true;
     for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
-        if (!_imp->currentNodes[i]->isOutputNode()) {
+        if (!_imp->currentNodes[i]->isOutputNode() && _imp->currentNodes[i]->isActivated()) {
             worthLess = false;
             break;
         }

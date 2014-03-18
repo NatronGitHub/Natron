@@ -679,20 +679,34 @@ bool NodeGraph::event(QEvent* event){
 
 void NodeGraph::keyPressEvent(QKeyEvent *e){
     
-    if(e->key() == Qt::Key_Space){
+    if (e->key() == Qt::Key_Space) {
         QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
         QCoreApplication::postEvent(parentWidget(),ev);
-    }else if(e->key() == Qt::Key_R){
+    } else if (e->key() == Qt::Key_R) {
         _gui->createReader();
-    }else if(e->key() == Qt::Key_W){
+    } else if (e->key() == Qt::Key_W) {
         _gui->createWriter();
-    }else if(e->key() == Qt::Key_Backspace || e->key() == Qt::Key_Delete){
+    } else if (e->key() == Qt::Key_Backspace || e->key() == Qt::Key_Delete) {
         /*delete current node.*/
         deleteSelectedNode();
 
-    }else if(e->key() == Qt::Key_P){
+    } else if (e->key() == Qt::Key_P) {
         forceRefreshAllPreviews();
+    } else if (e->key() == Qt::Key_C && e->modifiers().testFlag(Qt::ControlModifier)) {
+        copySelectedNode();
+    } else if (e->key() == Qt::Key_V && e->modifiers().testFlag(Qt::ControlModifier)) {
+        pasteNodeClipBoard();
+    } else if (e->key() == Qt::Key_X && e->modifiers().testFlag(Qt::ControlModifier)) {
+        cutSelectedNode();
+    } else if (e->key() == Qt::Key_C && e->modifiers().testFlag(Qt::AltModifier)) {
+        duplicateSelectedNode();
+    } else if (e->key() == Qt::Key_K && e->modifiers().testFlag(Qt::AltModifier) && !e->modifiers().testFlag(Qt::ShiftModifier)) {
+        cloneSelectedNode();
+    } else if (e->key() == Qt::Key_K && e->modifiers().testFlag(Qt::AltModifier) && e->modifiers().testFlag(Qt::ShiftModifier)) {
+        decloneSelectedNode();
     }
+
+    
 }
 void NodeGraph::connectCurrentViewerToSelection(int inputNB){
     
@@ -1318,7 +1332,7 @@ void NodeGraph::populateMenu(){
     editMenu->addAction(pasteAction);
     
     QAction* duplicateAction = new QAction(tr("Duplicate"),editMenu);
-    duplicateAction->setShortcut(QKeySequence(Qt::ControlModifier + Qt::Key_C));
+    duplicateAction->setShortcut(QKeySequence(Qt::AltModifier + Qt::Key_C));
     QObject::connect(duplicateAction,SIGNAL(triggered()),this,SLOT(duplicateSelectedNode()));
     editMenu->addAction(duplicateAction);
     
@@ -1506,11 +1520,7 @@ void NodeGraph::copySelectedNode() {
         return;
     }
     
-    _nodeClipBoard._internal.reset(new NodeSerialization);
-    _nodeSelected->getNode()->serialize(_nodeClipBoard._internal.get());
-    
-    _nodeClipBoard._gui.reset(new NodeGuiSerialization);
-    _nodeSelected->serialize(_nodeClipBoard._gui.get());
+    copyNode(_nodeSelected);
 }
 
 void NodeGraph::cutSelectedNode() {
@@ -1519,13 +1529,7 @@ void NodeGraph::cutSelectedNode() {
         return;
     }
     
-    _nodeClipBoard._internal.reset(new NodeSerialization);
-    _nodeSelected->getNode()->serialize(_nodeClipBoard._internal.get());
-    
-    _nodeClipBoard._gui.reset(new NodeGuiSerialization);
-    _nodeSelected->serialize(_nodeClipBoard._gui.get());
-
-    deleteSelectedNode();
+    cutNode(_nodeSelected);
     
 }
 
@@ -1568,13 +1572,7 @@ void NodeGraph::duplicateSelectedNode() {
         Natron::warningDialog("Duplicate", "You must select a node to duplicate first.");
         return;
     }
-    NodeSerialization internalSerialization;
-    _nodeSelected->getNode()->serialize(&internalSerialization);
-    
-    NodeGuiSerialization guiSerialization;
-    _nodeSelected->serialize(&guiSerialization);
-    
-    pasteNode(internalSerialization, guiSerialization);
+    duplicateNode(_nodeSelected);
 }
 
 void NodeGraph::cloneSelectedNode() {
@@ -1582,38 +1580,7 @@ void NodeGraph::cloneSelectedNode() {
         Natron::warningDialog("Clone", "You must select a node to clone first.");
         return;
     }
-    if (_nodeSelected->getNode()->getLiveInstance()->isSlave()) {
-        Natron::warningDialog("Clone", "You cannot clone a node whose already a clone.");
-        return;
-    }
-    
-    NodeSerialization internalSerialization;
-    _nodeSelected->getNode()->serialize(&internalSerialization);
-    
-    NodeGuiSerialization guiSerialization;
-    _nodeSelected->serialize(&guiSerialization);
-    
-    Natron::Node* n = _gui->getApp()->loadNode(internalSerialization.getPluginID().c_str(),
-                                               internalSerialization.getPluginMajorVersion(),
-                                               internalSerialization.getPluginMinorVersion(),internalSerialization,true);
-    assert(n);
-    const std::string& masterNodeName = internalSerialization.getMasterNodeName();
-    
-    ///the master node cannot be a clone
-    assert(masterNodeName.empty());
-    
-    NodeGui* gui = _gui->getApp()->getNodeGui(n);
-    assert(gui);
-    
-    gui->copyFrom(guiSerialization);
-    QPointF newPos = gui->pos() + QPointF(50,0);
-    gui->refreshPosition(newPos.x(),newPos.y());
-    gui->forceComputePreview(_gui->getApp()->getProject()->currentFrame());
-
-    n->getLiveInstance()->slaveAllKnobs(_nodeSelected->getNode()->getLiveInstance());
-    
-    _gui->getApp()->getProject()->triggerAutoSave();
-    
+    cloneNode(_nodeSelected);
 }
 
 void NodeGraph::decloneSelectedNode() {
@@ -1621,7 +1588,72 @@ void NodeGraph::decloneSelectedNode() {
         Natron::warningDialog("Declone", "You must select a node to declone first.");
         return;
     }
-    assert(_nodeSelected->getNode()->getLiveInstance()->isSlave());
-    _nodeSelected->getNode()->getLiveInstance()->unslaveAllKnobs();
+    decloneNode(_nodeSelected);
+}
+
+void NodeGraph::copyNode(NodeGui* n) {
+    _nodeClipBoard._internal.reset(new NodeSerialization);
+    n->getNode()->serialize(_nodeClipBoard._internal.get());
+    
+    _nodeClipBoard._gui.reset(new NodeGuiSerialization);
+    n->serialize(_nodeClipBoard._gui.get());
+}
+
+void NodeGraph::cutNode(NodeGui* n) {
+    _nodeClipBoard._internal.reset(new NodeSerialization);
+    n->getNode()->serialize(_nodeClipBoard._internal.get());
+    
+    _nodeClipBoard._gui.reset(new NodeGuiSerialization);
+    n->serialize(_nodeClipBoard._gui.get());
+    deleteNode(n);
+}
+
+void NodeGraph::duplicateNode(NodeGui* n) {
+    NodeSerialization internalSerialization;
+    n->getNode()->serialize(&internalSerialization);
+    
+    NodeGuiSerialization guiSerialization;
+    n->serialize(&guiSerialization);
+    
+    pasteNode(internalSerialization, guiSerialization);
+}
+
+void NodeGraph::cloneNode(NodeGui* node) {
+    if (node->getNode()->getLiveInstance()->isSlave()) {
+        Natron::warningDialog("Clone", "You cannot clone a node whose already a clone.");
+        return;
+    }
+    
+    NodeSerialization internalSerialization;
+    node->getNode()->serialize(&internalSerialization);
+    
+    NodeGuiSerialization guiSerialization;
+    node->serialize(&guiSerialization);
+    
+    Natron::Node* clone = _gui->getApp()->loadNode(internalSerialization.getPluginID().c_str(),
+                                               internalSerialization.getPluginMajorVersion(),
+                                               internalSerialization.getPluginMinorVersion(),internalSerialization,true);
+    assert(clone);
+    const std::string& masterNodeName = internalSerialization.getMasterNodeName();
+    
+    ///the master node cannot be a clone
+    assert(masterNodeName.empty());
+    
+    NodeGui* cloneGui = _gui->getApp()->getNodeGui(clone);
+    assert(cloneGui);
+    
+    cloneGui->copyFrom(guiSerialization);
+    QPointF newPos = cloneGui->pos() + QPointF(50,0);
+    cloneGui->refreshPosition(newPos.x(),newPos.y());
+    cloneGui->forceComputePreview(_gui->getApp()->getProject()->currentFrame());
+    
+    clone->getLiveInstance()->slaveAllKnobs(node->getNode()->getLiveInstance());
+    
+    _gui->getApp()->getProject()->triggerAutoSave();
+}
+
+void NodeGraph::decloneNode(NodeGui* n) {
+    assert(n->getNode()->getLiveInstance()->isSlave());
+    n->getNode()->getLiveInstance()->unslaveAllKnobs();
     _gui->getApp()->getProject()->triggerAutoSave();
 }
