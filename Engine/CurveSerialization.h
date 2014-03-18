@@ -36,7 +36,7 @@ template<class Archive>
 void serialize(Archive & ar,CurvePrivate& c, const unsigned int version)
 {
     (void)version;
-    QMutexLocker l(&c._lock);
+    QReadLocker l(&c._lock);
     ar & boost::serialization::make_nvp("KeyFrameSet",c.keyFrames);
 }
 

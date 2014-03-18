@@ -12,7 +12,7 @@
 #ifndef NATRON_ENGINE_CURVE_H_
 #define NATRON_ENGINE_CURVE_H_
 
-
+#include <vector>
 #include <map>
 
 #include "Global/Macros.h"
@@ -172,11 +172,13 @@ public:
     void removeKeyFrameWithTime(double time);
 
     void removeKeyFrameWithIndex(int index);
+    
+    bool getNearestKeyFrameWithTime(double time,KeyFrame* k) const WARN_UNUSED_RETURN;
 
     bool getKeyFrameWithTime(double time, KeyFrame* k) const WARN_UNUSED_RETURN;
 
     bool getKeyFrameWithIndex(int index, KeyFrame* k) const WARN_UNUSED_RETURN;
-
+    
     int getKeyFramesCount() const WARN_UNUSED_RETURN;
 
     double getMinimumTimeCovered() const WARN_UNUSED_RETURN;
@@ -188,8 +190,8 @@ public:
     double getDerivativeAt(double t) const WARN_UNUSED_RETURN;
 
     double getIntegrateFromTo(double t1, double t2) const WARN_UNUSED_RETURN;
-
-    const KeyFrameSet& getKeyFrames() const WARN_UNUSED_RETURN;
+    
+    KeyFrameSet getKeyFrames_mt_safe() const WARN_UNUSED_RETURN;
 
     void clearKeyFrames();
 
@@ -197,31 +199,31 @@ public:
      * @brief Set the new value and time of the keyframe positioned at index index and returns the new  keyframe.
      * Also the index of the new keyframe is returned in newIndex.
      **/
-    const KeyFrame& setKeyFrameValueAndTime(double time,double value,int index,int* newIndex = NULL);
+    KeyFrame setKeyFrameValueAndTime(double time,double value,int index,int* newIndex = NULL);
 
     /**
      * @brief Set the left derivative  of the keyframe positioned at index index and returns the new  keyframe.
      * Also the index of the new keyframe is returned in newIndex.
      **/
-    const KeyFrame& setKeyFrameLeftDerivative(double value,int index,int* newIndex = NULL);
+    KeyFrame setKeyFrameLeftDerivative(double value,int index,int* newIndex = NULL);
     
     /**
      * @brief Set the right derivative  of the keyframe positioned at index index and returns the new keyframe.
      * Also the index of the new keyframe is returned in newIndex.
      **/
-    const KeyFrame& setKeyFrameRightDerivative(double value,int index,int* newIndex = NULL);
+    KeyFrame setKeyFrameRightDerivative(double value,int index,int* newIndex = NULL);
 
     /**
      * @brief Set the right and left derivatives  of the keyframe positioned at index index and returns the new  keyframe.
      * Also the index of the new keyframe is returned in newIndex.
      **/
-    const KeyFrame& setKeyFrameDerivatives(double left, double right,int index,int* newIndex = NULL) ;
+    KeyFrame setKeyFrameDerivatives(double left, double right,int index,int* newIndex = NULL) ;
     
     /**
      * @brief  Set the interpolation method of the keyframe positioned at index index and returns the new  keyframe.
      * Also the index of the new keyframe is returned in newIndex.
      **/
-    const KeyFrame& setKeyFrameInterpolation(Natron::KeyframeType interp,int index,int* newIndex = NULL);
+    KeyFrame setKeyFrameInterpolation(Natron::KeyframeType interp,int index,int* newIndex = NULL);
 
     std::pair<double,double> getCurveYRange() const WARN_UNUSED_RETURN;
     
@@ -229,6 +231,8 @@ public:
     
     /// set the curve Y range (used for testing, when the Curve his not owned by a Knob)
     void setYRange(double yMin, double yMax);
+    
+    void getKeyFramesWithinRect(double l,double b,double r,double t,std::vector<KeyFrame>* ret) const;
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
@@ -245,20 +249,6 @@ private:
     
 
     void removeKeyFrame(KeyFrameSet::const_iterator it);
-    
-    //const RectD& getBoundingBox() const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief  Set the value of the keyframe positioned at index index and returns the new  keyframe.
-     * Also the index of the new keyframe is returned in newIndex.
-     **/
-    const KeyFrame& setKeyFrameValue(double value,int index,int* newIndex = NULL) WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Set the new time of the keyframe positioned at index index and returns the new keyframe.
-     * Also the index of the new keyframe is returned in newIndex.
-     **/
-    const KeyFrame& setKeyFrameTime(double time,int index,int* newIndex = NULL) WARN_UNUSED_RETURN;
 
     double clampValueToCurveYRange(double v) const WARN_UNUSED_RETURN;
 

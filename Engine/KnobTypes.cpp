@@ -1023,18 +1023,14 @@ Natron::Status Parametric_Knob::getNthControlPoint(int dimension,
     if(dimension >= (int)_curves.size()){
         return StatFailed;
     }
-    const KeyFrameSet& set = _curves[dimension]->getKeyFrames();
-    int index = 0;
-    for (KeyFrameSet::const_iterator it = set.begin(); it!=set.end(); ++it) {
-        if(index == nthCtl){
-            *key = it->getTime();
-            *value = it->getValue();
-            return StatOK;
-        }
-        ++index;
+    KeyFrame kf;
+    bool ret = _curves[dimension]->getKeyFrameWithIndex(nthCtl, &kf);
+    if (!ret) {
+        return StatFailed;
     }
-    
-    return StatFailed;
+    *key = kf.getTime();
+    *value = kf.getValue();
+    return StatOK;
 }
 
 Natron::Status Parametric_Knob::setNthControlPoint(int   dimension,
@@ -1163,7 +1159,7 @@ QString Parametric_Knob::saveExtraData() const {
     for (U32 i = 0; i < _curves.size(); ++i) {
         ret.append(kCurveTag);
         ret.append(QString::number(i));
-        KeyFrameSet kfs = _curves[i]->getKeyFrames();
+        KeyFrameSet kfs = _curves[i]->getKeyFrames_mt_safe();
         for (KeyFrameSet::const_iterator it = kfs.begin(); it!= kfs.end(); ++it) {
             ret.append(kControlPointTag);
             ret.append(QString::number(it->getTime()));

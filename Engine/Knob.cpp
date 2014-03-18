@@ -12,6 +12,7 @@
 
 #include <QtCore/QDataStream>
 #include <QtCore/QByteArray>
+#include <QtCore/QReadWriteLock>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Node.h"
@@ -56,6 +57,7 @@ struct Knob::KnobPrivate {
     bool _isAnimationEnabled;
     
     /* A variant storing all the values in any dimension. <dimension,value>*/
+    mutable QReadWriteLock _valueMutex; //< protects _values
     std::vector<Variant> _values;
     std::vector<Variant> _defaultValues;
     
@@ -65,12 +67,11 @@ struct Knob::KnobPrivate {
     
     ////curve links
     ///A slave link CANNOT be master at the same time (i.e: if _slaveLinks[i] != NULL  then _masterLinks[i] == NULL )
-    mutable QMutex _mastersMutex;
+    mutable QReadWriteLock _mastersMutex; //< protects _masters
     MastersMap _masters; //from what knob is slaved each curve if any
     
     std::vector<Natron::AnimationLevel> _animationLevel;//< indicates for each dimension whether it is static/interpolated/onkeyframe
     
-    mutable QMutex _valueMutex; //< protects the content of the knobs while it is serializing/deserializing
     
     mutable QMutex _betweenBeginEndMutex;
     int _betweenBeginEndCount; //< between begin/end value change count
@@ -92,6 +93,7 @@ struct Knob::KnobPrivate {
     , _IsPersistant(true)
     , _tooltipHint()
     , _isAnimationEnabled(true)
+    , _valueMutex(QReadWriteLock::Recursive)
     , _values(dimension)
     , _defaultValues(dimension)
     , _dimension(dimension)
@@ -99,7 +101,6 @@ struct Knob::KnobPrivate {
     , _mastersMutex()
     , _masters(dimension)
     , _animationLevel(dimension)
-    , _valueMutex(QMutex::Recursive)
     , _betweenBeginEndMutex()
     , _betweenBeginEndCount(0)
     , _beginEndReason(Natron::OTHER_REASON)
@@ -154,7 +155,7 @@ Variant Knob::getValue(int dimension) const
         return master.second->getValue(master.first);
     }
     
-    QMutexLocker l(&_imp->_valueMutex);
+    QReadLocker l(&_imp->_valueMutex);
     return _imp->_values[dimension];
 }
 
@@ -179,6 +180,7 @@ Variant Knob::getValueAtTime(double time,int dimension) const
     } else {
         /*if the knob as no keys at this dimension, return the value
          at the requested dimension.*/
+        QReadLocker l(&_imp->_valueMutex);
         return _imp->_values[dimension];
     }
 }
@@ -238,7 +240,7 @@ Knob::ValueChangedReturnCode Knob::setValue(const Variant& v, int dimension, Nat
     if (!isSlave(dimension)) {
         
         {
-            QMutexLocker l(&_imp->_valueMutex);
+            QWriteLocker l(&_imp->_valueMutex);
             _imp->_values[dimension] = v;
         }
         
@@ -292,11 +294,7 @@ bool Knob::setValueAtTime(int time, const Variant& v, int dimension, Natron::Val
 
     *newKey = KeyFrame((double)time,keyFrameValue);
     
-    bool ret;
-    {
-        QMutexLocker l(&_imp->_valueMutex);
-        ret = curve->addKeyFrame(*newKey);
-    }
+    bool ret = curve->addKeyFrame(*newKey);
     if (reason == Natron::PLUGIN_EDITED) {
         setValue(v, dimension,Natron::OTHER_REASON,NULL);
     }
@@ -321,10 +319,7 @@ void Knob::deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason r
         return;
     }
     
-    {
-        QMutexLocker l(&_imp->_valueMutex);
-        _imp->_curves[dimension]->removeKeyFrameWithTime((double)time);
-    }
+    _imp->_curves[dimension]->removeKeyFrameWithTime((double)time);
     
     //virtual portion
     keyframeRemoved_virtual(dimension, time);
@@ -347,10 +342,7 @@ void Knob::removeAnimation(int dimension,Natron::ValueChangedReason reason)
         return;
     }
     
-    {
-        QMutexLocker l(&_imp->_valueMutex);
-        _imp->_curves[dimension]->clearKeyFrames();
-    }
+    _imp->_curves[dimension]->clearKeyFrames();
     
     //virtual portion
     animationRemoved_virtual(dimension);
@@ -416,7 +408,7 @@ const std::vector<Variant>& Knob::getValueForEachDimension() const
 }
 
 std::vector<Variant> Knob::getValueForEachDimension_mt_safe() const {
-    QMutexLocker l(&_imp->_valueMutex);
+    QReadLocker l(&_imp->_valueMutex);
     return _imp->_values;
 }
 
@@ -550,8 +542,7 @@ void Knob::evaluateAnimationChange()
     beginValueChange(Natron::PLUGIN_EDITED);
     bool hasEvaluatedOnce = false;
     for (int i = 0; i < getDimension();++i) {
-        boost::shared_ptr<Curve> curve = getCurve(i);
-        if (curve && curve->isAnimated()) {
+        if (isAnimated(i)) {
             Variant v = getValueAtTime(time,i);
             setValue(v,i,Natron::PLUGIN_EDITED,NULL);
             hasEvaluatedOnce = true;
@@ -659,7 +650,7 @@ void Knob::cloneValue(const Knob& other)
     assert(_imp->_name == other._imp->_name);
     
     {
-        QMutexLocker l(&_imp->_valueMutex);
+        QWriteLocker l(&_imp->_valueMutex);
         _imp->_values = other._imp->_values;
     }
     
@@ -675,7 +666,7 @@ void Knob::cloneValue(const Knob& other)
     //same for masters : the knobs are not refered to the same KnobHolder (i.e the same effect instance)
     //so we need to copy with the good pointers
     {
-        QMutexLocker l(&_imp->_mastersMutex);
+        QWriteLocker l(&_imp->_mastersMutex);
         MastersMap otherMasters = other.getMasters_mt_safe();
         for (U32 j = 0 ; j < otherMasters.size();++j) {
             if (otherMasters[j].second) {
@@ -845,14 +836,13 @@ bool Knob::slaveTo(int dimension,const boost::shared_ptr<Knob>& other,int otherD
     assert(!other->isSlave(otherDimension));
     
     {
-        QMutexLocker l(&_imp->_mastersMutex);
+        QWriteLocker l(&_imp->_mastersMutex);
         if (_imp->_masters[dimension].second) {
             return false;
         }
         _imp->_masters[dimension].second = other;
         _imp->_masters[dimension].first = otherDimension;
     }
-    _imp->_holder->getApp()->triggerAutoSave();
     QObject::connect(other.get(), SIGNAL(updateSlaves(int)), this, SLOT(onMasterChanged(int)));
     emit valueChanged(dimension);
     if (reason == Natron::PLUGIN_EDITED) {
@@ -880,10 +870,14 @@ void Knob::unSlave(int dimension,Natron::ValueChangedReason reason) {
     assert(isSlave(dimension));
     //copy the state before cloning
     {
-        QMutexLocker l1(&_imp->_valueMutex);
-        QMutexLocker l2(&_imp->_mastersMutex);
-        _imp->_values[dimension] =  _imp->_masters[_imp->_masters[dimension].first].second->getValue(dimension);
+        
+        QWriteLocker l2(&_imp->_mastersMutex);
+        {
+            QWriteLocker l1(&_imp->_valueMutex);
+            _imp->_values[dimension] =  _imp->_masters[_imp->_masters[dimension].first].second->getValue(dimension);
+        }
         _imp->_curves[dimension]->clone(*( _imp->_masters[_imp->_masters[dimension].first].second->getCurve(dimension)));
+        
         cloneExtraData(*_imp->_masters[dimension].second);
         
         QObject::disconnect(_imp->_masters[dimension].second.get(), SIGNAL(updateSlaves(int)), this, SLOT(onMasterChanged(int)));
@@ -899,18 +893,19 @@ void Knob::unSlave(int dimension,Natron::ValueChangedReason reason) {
 
 std::pair<int,boost::shared_ptr<Knob> > Knob::getMaster(int dimension) const
 {
+    QReadLocker l(&_imp->_mastersMutex);
     return _imp->_masters[dimension];
 }
 
 bool Knob::isSlave(int dimension) const
 {
-    QMutexLocker l(&_imp->_mastersMutex);
+    QReadLocker l(&_imp->_mastersMutex);
     return bool(_imp->_masters[dimension].second);
 }
 
 std::vector< std::pair<int,boost::shared_ptr<Knob> > > Knob::getMasters_mt_safe() const
 {
-    QMutexLocker l(&_imp->_mastersMutex);
+    QReadLocker l(&_imp->_mastersMutex);
     return _imp->_masters;
 }
 
@@ -977,22 +972,12 @@ bool Knob::getKeyFrameTime(int index,int dimension,double* time) const
     }
     boost::shared_ptr<Curve> curve = getCurve(dimension);
     assert(curve);
-    const KeyFrameSet& ks =  curve->getKeyFrames();
-    
-    if ((int)ks.size() <= index) {
-        return false;
+    KeyFrame kf;
+    bool ret = curve->getKeyFrameWithIndex(index, &kf);
+    if (ret) {
+        *time = kf.getTime();
     }
-    
-    int c = 0;
-    for (KeyFrameSet::const_iterator it = ks.begin(); it!=ks.end(); ++it) {
-        if (c == index) {
-            *time = (*it).getTime();
-            return true;
-        }
-        ++c;
-    }
-    
-    return false;
+    return ret;
 }
 
 
@@ -1011,12 +996,7 @@ bool Knob::getLastKeyFrameTime(int dimension,double* time) const
     
     boost::shared_ptr<Curve> curve = getCurve(dimension);
     assert(curve);
-    const KeyFrameSet& ks =  curve->getKeyFrames();
-    assert(!ks.empty());
-    
-    KeyFrameSet::const_iterator it = ks.end();
-    --it;
-    *time = (*it).getTime();
+    *time = curve->getMaximumTimeCovered();
     return true;
 }
 
@@ -1046,41 +1026,12 @@ bool Knob::getNearestKeyFrameTime(int dimension,double time,double* nearestTime)
     
     boost::shared_ptr<Curve> curve = getCurve(dimension);
     assert(curve);
-    const KeyFrameSet& ks =  curve->getKeyFrames();
-    assert(!ks.empty());
-
-    KeyFrameSet::const_iterator upper = ks.end();
-    for (KeyFrameSet::const_iterator it = ks.begin(); it!=ks.end(); ++it) {
-        if (it->getTime() > time) {
-            upper = it;
-            break;
-        } else if (it->getTime() == time) {
-            *nearestTime = time;
-            return true;
-        }
+    KeyFrame kf;
+    bool ret = curve->getNearestKeyFrameWithTime(time, &kf);
+    if (ret) {
+        *nearestTime = kf.getTime();
     }
-    
-    if (upper == ks.begin()) {
-        *nearestTime = upper->getTime();
-        return true;
-    }
-    
-    KeyFrameSet::const_iterator lower = upper;
-    --lower;
-    if (upper == ks.end()) {
-        *nearestTime = lower->getTime();
-        return true;
-    }
-    
-    assert(time - lower->getTime() > 0);
-    assert(upper->getTime() - time > 0);
-    
-    if ((upper->getTime() - time) < (time - lower->getTime())) {
-        *nearestTime = upper->getTime();
-    } else {
-        *nearestTime = lower->getTime();
-    }
-    return true;
+    return ret;
 }
 
 int Knob::getKeyFrameIndex(int dimension, double time) const
@@ -1098,17 +1049,7 @@ int Knob::getKeyFrameIndex(int dimension, double time) const
     
     boost::shared_ptr<Curve> curve = getCurve(dimension);
     assert(curve);
-    const KeyFrameSet& ks =  curve->getKeyFrames();
-    assert(!ks.empty());
-
-    int i = 0;
-    for (KeyFrameSet::const_iterator it = ks.begin(); it!=ks.end(); ++it) {
-        if (it->getTime() == time) {
-            return i;
-        }
-        ++i;
-    }
-    return -1;
+    return curve->keyFrameIndex(time);
 }
 
 
@@ -1127,11 +1068,6 @@ bool Knob::getKeyFrameValueByIndex(int dimension,int index,Variant* value) const
     
     boost::shared_ptr<Curve> curve = getCurve(dimension);
     assert(curve);
-    
-    if (index >= curve->getKeyFramesCount()) {
-        return false;
-    }
-    
     KeyFrame kf;
     bool found =  curve->getKeyFrameWithIndex(index, &kf);
     if (found) {

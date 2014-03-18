@@ -117,12 +117,10 @@ CurveGui::~CurveGui()
     assert(qApp && qApp->thread() == QThread::currentThread());
 }
 
-std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1, double* x2)
+std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1, double* x2,const KeyFrameSet& keys)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-
-    const KeyFrameSet& keys = _internalCurve->getKeyFrames();
     assert(!keys.empty());
     double xminCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keys.begin()->getTime(),0).x();
     double xmaxCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keys.rbegin()->getTime(),0).x();
@@ -255,6 +253,7 @@ void CurveGui::drawCurve(int curveIndex,int curvesCount)
     double x1 = 0;
     double x2;
     double w = _curveWidget->width();
+    KeyFrameSet keyframes = _internalCurve->getKeyFrames_mt_safe();
     std::pair<KeyFrame,bool> isX1AKey;
     while(x1 < (w -1)){
         double x,y;
@@ -267,7 +266,7 @@ void CurveGui::drawCurve(int curveIndex,int curvesCount)
         }
         vertices.push_back((float)x);
         vertices.push_back((float)y);
-        isX1AKey = nextPointForSegment(x1,&x2);
+        isX1AKey = nextPointForSegment(x1,&x2,keyframes);
         x1 = x2;
     }
     //also add the last point
@@ -314,7 +313,6 @@ void CurveGui::drawCurve(int curveIndex,int curvesCount)
     
     
     //draw keyframes
-    const KeyFrameSet& keyframes = _internalCurve->getKeyFrames();
     glPointSize(7.f);
     glEnable(GL_POINT_SMOOTH);
     
@@ -992,7 +990,7 @@ std::pair<CurveGui*,KeyFrame> CurveWidgetPrivate::isNearbyKeyFrame(const QPoint&
 
     for (Curves::const_iterator it = _curves.begin(); it!=_curves.end(); ++it) {
         if ((*it)->isVisible()) {
-            const KeyFrameSet& keyFrames = (*it)->getInternalCurve()->getKeyFrames();
+            KeyFrameSet keyFrames = (*it)->getInternalCurve()->getKeyFrames_mt_safe();
             for (KeyFrameSet::const_iterator it2 = keyFrames.begin(); it2 != keyFrames.end(); ++it2) {
                 QPointF keyFramewidgetPos = zoomCtx.toWidgetCoordinates(it2->getTime(), it2->getValue());
                 if ((std::abs(pt.y() - keyFramewidgetPos.y()) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
@@ -1101,13 +1099,10 @@ void CurveWidgetPrivate::keyFramesWithinRect(const QRectF& rect,std::vector< std
     double bottom = rect.topLeft().y();
     double top = rect.bottomRight().y();
     for (Curves::const_iterator it = _curves.begin(); it!=_curves.end(); ++it) {
-        const KeyFrameSet& keyframes = (*it)->getInternalCurve()->getKeyFrames();
-        for (KeyFrameSet::const_iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
-            double y = it2->getValue();
-            int x = it2->getTime() ;
-            if (x <= right && x >= left && y <= top && y >= bottom) {
-                keys->push_back(std::make_pair(*it,*it2));
-            }
+        std::vector<KeyFrame> keysInsideRect;
+        (*it)->getInternalCurve()->getKeyFramesWithinRect(left, bottom, right, top, &keysInsideRect);
+        for (U32 i = 0; i < keysInsideRect.size(); ++i) {
+            keys->push_back(std::make_pair(*it,keysInsideRect[i]));
         }
     }
 }
@@ -1209,7 +1204,7 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos)
     assert(existingKey != _selectedKeyFrames.end());
     
     SelectedKey& key = _selectedDerivative.second;
-    const KeyFrameSet& keys = key.curve->getInternalCurve()->getKeyFrames();
+    KeyFrameSet keys = key.curve->getInternalCurve()->getKeyFrames_mt_safe();
     
     
     KeyFrameSet::const_iterator cur = keys.find(key.key);
@@ -1321,7 +1316,7 @@ void CurveWidgetPrivate::refreshKeyTangents(SelectedKey* key)
     double x = key->key.getTime();
     double y = key->key.getValue();
     QPointF keyWidgetCoord = zoomCtx.toWidgetCoordinates(x,y);
-    const KeyFrameSet& keyframes = key->curve->getInternalCurve()->getKeyFrames();
+    KeyFrameSet keyframes = key->curve->getInternalCurve()->getKeyFrames_mt_safe();
     KeyFrameSet::const_iterator k = keyframes.find(key->key);
     
     //the key might have disappeared from the curve if the plugin deleted it.
@@ -1458,19 +1453,6 @@ void CurveWidgetPrivate::refreshSelectionRectangle(double x,double y)
     _widget->refreshSelectedKeysBbox();
 }
 
-#if 0 // dead code
-void CurveWidget::moveKeyFrame(CurveGui* curve,const KeyFrame& key,double dt,double dv)
-{
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-
-    assert(curve);
-    std::vector<KeyMove> moves;
-    moves.push_back(KeyMove(curve,key));
-    curve->getKnob()->pushUndoCommand(new MoveKeysCommand(this,moves,dt,dv));
-}
-#endif
-
 void CurveWidgetPrivate::updateSelectedKeysMaxMovement()
 {
     // always running in the main thread
@@ -1495,7 +1477,7 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement()
         } else {
             assert(it->curve);
             assert(it->curve->getInternalCurve());
-            const KeyFrameSet& ks = it->curve->getInternalCurve()->getKeyFrames();
+            KeyFrameSet ks = it->curve->getInternalCurve()->getKeyFrames_mt_safe();
             
             //find out in this set what is the first key selected
             SelectedKeys::const_iterator leftMostSelected = std::find_if(
@@ -1666,7 +1648,7 @@ void CurveWidget::removeCurve(CurveGui *curve)
     for(std::list<CurveGui* >::iterator it = _imp->_curves.begin();it!=_imp->_curves.end();++it){
         if((*it) == curve){
             //remove all its keyframes from selected keys
-            const KeyFrameSet& keyFrames = (*it)->getInternalCurve()->getKeyFrames();
+            KeyFrameSet keyFrames = (*it)->getInternalCurve()->getKeyFrames_mt_safe();
             for (KeyFrameSet::const_iterator it2 = keyFrames.begin(); it2 != keyFrames.end(); ++it2) {
                 SelectedKeys::iterator foundSelected = _imp->_selectedKeyFrames.find(SelectedKey(*it,*it2));
                 if(foundSelected != _imp->_selectedKeyFrames.end()){
@@ -1697,7 +1679,7 @@ void CurveWidget::centerOn(const std::vector<CurveGui*>& curves)
         double ymin = INT_MAX;
         double ymax = INT_MIN;
         //find out ymin,ymax
-        const KeyFrameSet& keys = c->getInternalCurve()->getKeyFrames();
+        KeyFrameSet keys = c->getInternalCurve()->getKeyFrames_mt_safe();
         for (KeyFrameSet::const_iterator it2 = keys.begin(); it2!=keys.end(); ++it2) {
             double value = it2->getValue();
             if(value < ymin)
@@ -2620,7 +2602,7 @@ void CurveWidget::selectAllKeyFrames()
     _imp->_selectedKeyFrames.clear();
     for (Curves::iterator it = _imp->_curves.begin() ; it != _imp->_curves.end() ; ++it) {
         if((*it)->isVisible()){
-            const KeyFrameSet& keys = (*it)->getInternalCurve()->getKeyFrames();
+            KeyFrameSet keys = (*it)->getInternalCurve()->getKeyFrames_mt_safe();
             for( KeyFrameSet::const_iterator it2 = keys.begin(); it2!=keys.end();++it2){
                 SelectedKey newSelected(*it,*it2);
                 _imp->refreshKeyTangents(&newSelected);

@@ -582,6 +582,9 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
             return status[i];
         }
     }
+    for (unsigned int i = 0; i < nThreads; ++i) {
+        delete threads[i];
+    }
 
     return kOfxStatOK;
 }
