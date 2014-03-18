@@ -1561,7 +1561,8 @@ void NodeGraph::pasteNode(const NodeSerialization& internalSerialization,const N
     assert(gui);
     
     gui->copyFrom(guiSerialization);
-    gui->setPos(gui->pos() + QPointF(50,0));
+    QPointF newPos = gui->pos() + QPointF(50,0);
+    gui->refreshPosition(newPos.x(), newPos.y());
     gui->forceComputePreview(_gui->getApp()->getProject()->currentFrame());
     _gui->getApp()->getProject()->triggerAutoSave();
     
