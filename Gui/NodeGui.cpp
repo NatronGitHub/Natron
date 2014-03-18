@@ -38,8 +38,7 @@
 #include "Engine/ChannelSet.h"
 #include "Engine/Timer.h"
 #include "Engine/Project.h"
-
-
+#include "Engine/Node.h"
 
 #define NATRON_STATE_INDICATOR_OFFSET 5
 

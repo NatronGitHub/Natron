@@ -13,6 +13,8 @@
 
 #include <limits>
 
+#include <QtCore/QDebug>
+
 #include <boost/bind.hpp>
 
 #include "Engine/Hash64.h"

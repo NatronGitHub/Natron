@@ -25,6 +25,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/VideoEngine.h"
+#include "Engine/Node.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"

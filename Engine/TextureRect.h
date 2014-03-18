@@ -11,6 +11,8 @@
 #ifndef NATRON_ENGINE_TEXTURERECT_H_
 #define NATRON_ENGINE_TEXTURERECT_H_
 
+#include "Engine/Rect.h"
+
 /** @class This class describes the rectangle (or portion) of an image that is contained
  *into a texture. x1,y1,x2,y2 are respectivly the image coordinates of the left,bottom,right,top
  *edges of the texture. w,h are the width and height of the texture. Note that x2 - x1 != w
@@ -52,6 +54,7 @@ public:
         return true;
     }
 };
+
 inline bool operator==(const TextureRect& first ,const TextureRect& second){
    return first.x1 == second.x1 &&
     first.y1 == second.y1 &&

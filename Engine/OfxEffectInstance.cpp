@@ -14,6 +14,8 @@
 #include <locale>
 #include <limits>
 #include <stdexcept>
+
+#include <QtCore/QDebug>
 #include <QByteArray>
 #include <QPointF>
 
@@ -41,6 +43,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/AppInstance.h"
 #include "Engine/NodeSerialization.h"
+#include "Engine/Node.h"
 
 using namespace Natron;
 using std::cout; using std::endl;

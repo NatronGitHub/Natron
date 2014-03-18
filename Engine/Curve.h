@@ -119,8 +119,11 @@ typedef std::set<KeyFrame, KeyFrame_compare_time> KeyFrameSet;
 class Knob;
 struct CurvePrivate;
 class RectD;
-class Curve {
-    
+
+class Curve
+{
+    friend class boost::serialization::access;
+
     enum CurveChangedReason{
         DERIVATIVES_CHANGED = 0,
         KEYFRAME_CHANGED = 1
@@ -234,10 +237,10 @@ public:
     
     void getKeyFramesWithinRect(double l,double b,double r,double t,std::vector<KeyFrame>* ret) const;
 
+private:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 
-private:
     ///////The following functions are not thread-safe
     KeyFrameSet::const_iterator find(double time) const WARN_UNUSED_RETURN;
 

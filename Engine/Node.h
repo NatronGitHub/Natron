@@ -19,8 +19,8 @@
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QMetaType>
+#include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
-#include <QObject>
 #include <QMutex>
 
 #include <boost/shared_ptr.hpp>

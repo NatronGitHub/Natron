@@ -18,6 +18,8 @@
 
 #include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h" // for removeRecursively
+#include "Global/GlobalDefines.h" // for removeRecursively
+#include "Global/Enums.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/OfxHost.h"
@@ -33,6 +35,10 @@
 #include "Engine/Format.h"
 #include "Engine/Log.h"
 #include "Engine/Cache.h"
+#include "Engine/ChannelSet.h"
+#include "Engine/Variant.h"
+#include "Engine/Knob.h"
+#include "Engine/Rect.h"
 
 BOOST_CLASS_EXPORT(Natron::FrameParams)
 BOOST_CLASS_EXPORT(Natron::ImageParams)
@@ -773,7 +779,7 @@ void AppManager::removeFromNodeCache(boost::shared_ptr<Natron::Image> image){
 void AppManager::removeFromViewerCache(boost::shared_ptr<Natron::FrameEntry> texture){
     _imp->_viewerCache->removeEntry(texture);
     if(texture) {
-        emit imageRemovedFromNodeCache(texture->getKey()._time);
+        emit imageRemovedFromNodeCache(texture->getKey().getTime());
     }
 }
 
