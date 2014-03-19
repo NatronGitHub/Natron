@@ -133,7 +133,7 @@ struct ViewerInstance::ViewerInstancePrivate {
 
     void assertVideoEngine()
     {
-#ifndef NDEBUG
+#ifdef NATRON_DEBUG
         QMutexLocker l(&threadIdMutex);
         if (threadIdVideoEngine == NULL) {
             threadIdVideoEngine = QThread::currentThread();
@@ -151,10 +151,12 @@ struct ViewerInstance::ViewerInstancePrivate {
     bool forceRender;/*!< true when we want to by-pass the cache*/
 
 
-#pragma message WARN("please explain usingOpenGL?")
     QWaitCondition usingOpenGLCond;
     mutable QMutex usingOpenGLMutex; //!< protects _usingOpenGL
-    bool usingOpenGL;
+    bool usingOpenGL; //<! This flag is true when the updateViewer() function is called. That function
+                      //is always called on the main thread, but the thread running renderViewer MUST
+                      //wait the entire time. This flag is here to make the renderViewer() thread wait
+                      //until the texture upload is finished by the main thread.
 
     InterThreadInfos interThreadInfos;
 
@@ -173,8 +175,7 @@ struct ViewerInstance::ViewerInstancePrivate {
     mutable QMutex channelsMutex;
     ViewerInstance::DisplayChannels channels;
 
-#pragma message WARN("please explain lastRenderedImage?")
-    boost::shared_ptr<Natron::Image> lastRenderedImage;
+    boost::shared_ptr<Natron::Image> lastRenderedImage; //< A ptr to the last returned image by renderRoI. @see getLastRenderedImage()
 
     mutable QMutex autoContrastMutex;
     bool autoContrast;
@@ -248,9 +249,6 @@ ViewerInstance::~ViewerInstance()
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
-   if (_imp->uiContext) {
-        _imp->uiContext->removeGUI();
-    }
     if (_imp->bufferAllocated) {
         free(_imp->buffer);
         _imp->bufferAllocated = 0;
@@ -267,10 +265,13 @@ ViewerInstance::getUiContext() const
 }
 
 
-#pragma message WARN("dead code? please explain when this is called and what it does")
+
 void
 ViewerInstance::forceFullComputationOnNextFrame()
 {
+    // this is called by the GUI when the user presses the "Refresh" button.
+    // It set the flag forceRender to true, meaning no cache will be used.
+    
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
@@ -290,7 +291,6 @@ ViewerInstance::connectSlotsToViewerCache()
     QObject::connect(emitter, SIGNAL(clearedInMemoryPortion()), this, SIGNAL(clearedViewerCache()));
 }
 
-#pragma message WARN("dead code? please explain when this is called and what it does")
 void
 ViewerInstance::disconnectSlotsToViewerCache()
 {
@@ -326,24 +326,12 @@ ViewerInstance::onNodeNameChanged(const QString& name)
     }
 }
 
-#pragma message WARN("dead code? please explain when this is called and what it does")
-void
-ViewerInstance::cloneExtras()
-{
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-    // VideoEngine must not be created (or there would be a race condition)
-    assert(!_imp->threadIdVideoEngine);
-
-    _imp->uiContext = dynamic_cast<ViewerInstance*>(getNode()->getLiveInstance())->getUiContext();
-}
 
 int
 ViewerInstance::activeInput() const
 {
-#pragma message WARN("should be MT-SAFE: called from main thread and VideoEngine thread")
-    // should be MT-SAFE: called from main thread and VideoEngine thread
-
+    
+    //    InspectorNode::activeInput()  is MT-safe
     return dynamic_cast<InspectorNode*>(getNode())->activeInput(); // not MT-SAFE!
 }
 
@@ -362,6 +350,7 @@ ViewerInstance::getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProje
     // always running in the VideoEngine thread
     _imp->assertVideoEngine();
 
+    ///Return the RoD of the active input
     EffectInstance* n = input(activeInput());
     if (n) {
         return n->getRegionOfDefinition(time,rod,isProjectFormat);
@@ -370,22 +359,6 @@ ViewerInstance::getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProje
     }
 }
 
-#pragma message WARN("dead code? please explain when this is called and what it does")
-EffectInstance::RoIMap
-ViewerInstance::getRegionOfInterest(SequenceTime /*time*/,
-                                    RenderScale /*scale*/,
-                                    const RectI& renderWindow)
-{
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-
-    RoIMap ret;
-    EffectInstance* n = input(activeInput());
-    if (n) {
-        ret.insert(std::make_pair(n, renderWindow));
-    }
-    return ret;
-}
 
 void
 ViewerInstance::getFrameRange(SequenceTime *first,
@@ -610,8 +583,12 @@ ViewerInstance::renderViewer(SequenceTime time,
         
         assert(cachedFrameParams);
         /*Found in viewer cache, we execute the cached engine and leave*/
-#pragma message WARN("how do you make sure cachedFrame->data() is not freed after this line?")
+
         // how do you make sure cachedFrame->data() is not freed after this line?
+        ///It is not freed as long as the cachedFrame shared_ptr has a used_count greater than 1.
+        ///Since it is used during the whole function scope it is guaranteed not to be freed before
+        ///The viewer is actually done with it.
+        /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
         _imp->interThreadInfos.ramBuffer = cachedFrame->data();
 #ifdef NATRON_LOG
         Natron::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
@@ -655,8 +632,11 @@ ViewerInstance::renderViewer(SequenceTime time,
                 free(_imp->buffer);
                 _imp->bufferAllocated = 0;
             }
-#pragma message WARN("how do you make sure cachedFrame->data() is not freed after this line?")
             // how do you make sure cachedFrame->data() is not freed after this line?
+            ///It is not freed as long as the cachedFrame shared_ptr has a used_count greater than 1.
+            ///Since it is used during the whole function scope it is guaranteed not to be freed before
+            ///The viewer is actually done with it.
+            /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
             _imp->buffer = cachedFrame->data();
         }
 
@@ -1105,7 +1085,6 @@ scaleToTexture32bits(std::pair<int,int> yRange,
 
 
 
-#pragma message WARN("dead code? please explain when this is called and what it does")
 void
 ViewerInstance::wakeUpAnySleepingThread()
 {
@@ -1125,8 +1104,12 @@ ViewerInstance::updateViewer()
     QMutexLocker locker(&_imp->usingOpenGLMutex);
     _imp->uiContext->makeOpenGLcontextCurrent();
     if(!aborted()){
-#pragma message WARN("how do you make sure _imp->interThreadInfos.ramBuffer is not freed during this operation?")
         // how do you make sure _imp->interThreadInfos.ramBuffer is not freed during this operation?
+        ///It is not freed as long as the cachedFrame shared_ptr in renderViewer has a used_count greater than 1.
+        ///Since updateViewer() is in the scope of cachedFrame it is guaranteed not to be freed before
+        ///the viewer is actually done with it.
+        /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
+
        _imp->uiContext->transferBufferFromRAMtoGPU(_imp->interThreadInfos.ramBuffer,
                                            _imp->interThreadInfos.bytesCount,
                                            _imp->interThreadInfos.textureRect,
@@ -1145,10 +1128,8 @@ ViewerInstance::updateViewer()
 bool
 ViewerInstance::isInputOptional(int n) const
 {
-#pragma message WARN("should be MT-SAFE: called from main thread and VideoEngine thread")
-    // should be MT-SAFE: called from main thread and VideoEngine thread
-
-    return n != activeInput(); // not MT-SAFE!
+    //activeInput() is MT-safe
+    return n != activeInput();
 }
 
 void
@@ -1188,9 +1169,8 @@ ViewerInstance::onAutoContrastChanged(bool autoContrast,bool refresh)
 bool
 ViewerInstance::isAutoContrastEnabled() const
 {
-#pragma message WARN("should be MT-SAFE: called from main thread and VideoEngine thread")
-    // should be MT-SAFE: called from main thread and VideoEngine thread
 
+    // MT-safe
     QMutexLocker l(&_imp->autoContrastMutex);
     return _imp->autoContrast;
 }
@@ -1305,17 +1285,18 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
     return true;
 }
 
-#pragma message WARN("dead code? please explain when this is called and what it does")
 bool
 ViewerInstance::supportsGLSL() const
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
+    ///This is a short-cut, this is primarily used when the user switch the
+    /// texture mode in the preferences menu. If the hardware doesn't support GLSL
+    /// it returns false, true otherwise. @see Settings::onKnobValueChanged
     return _imp->uiContext->supportsGLSL();
 }
 
-#pragma message WARN("dead code? please explain when this is called and what it does")
 void
 ViewerInstance::redrawViewer()
 {
@@ -1325,7 +1306,6 @@ ViewerInstance::redrawViewer()
     emit mustRedraw();
 }
 
-#pragma message WARN("dead code? please explain when this is called and what it does")
 boost::shared_ptr<Natron::Image>
 ViewerInstance::getLastRenderedImage() const
 {
@@ -1358,16 +1338,6 @@ ViewerInstance::getExposure() const
     return _imp->exposure;
 }
 
-#pragma message WARN("dead code? please explain when this is called and what it does")
-const Natron::Color::Lut*
-ViewerInstance::getLut() const
-{
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-
-    QMutexLocker l(&_imp->renderArgsMutex);
-    return _imp->colorSpace;
-}
 
 ViewerInstance::DisplayChannels
 ViewerInstance::getChannels() const
@@ -1379,7 +1349,6 @@ ViewerInstance::getChannels() const
     return _imp->channels;
 }
 
-#pragma message WARN("dead code? please explain when this is called and what it does")
 double
 ViewerInstance::getOffset() const
 {

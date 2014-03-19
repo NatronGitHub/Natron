@@ -534,6 +534,7 @@ class InspectorNode: public Natron::Node
 {
     int _inputsCount;
     int _activeInput;
+    QMutex _activeInputMutex;
     
 public:
     
@@ -557,7 +558,7 @@ public:
     
     void setActiveInputAndRefresh(int inputNb);
     
-    int activeInput() const {return _activeInput;}
+    int activeInput() const { QMutexLocker l(&_activeInputMutex); return _activeInput; }
 };
 
 #endif // NATRON_ENGINE_NODE_H_

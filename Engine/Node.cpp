@@ -1263,6 +1263,7 @@ InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin)
     : Node(app,plugin)
     , _inputsCount(1)
     , _activeInput(0)
+    , _activeInputMutex()
 {}
 
 
@@ -1327,7 +1328,11 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
     if (found != _inputs.end()) {
         _inputs.erase(found);
         _inputs.insert(make_pair(inputNumber,input));
-        _activeInput = inputNumber;
+        
+        {
+            QMutexLocker activeInputLocker(&_activeInputMutex);
+            _activeInput = inputNumber;
+        }
         emit inputChanged(inputNumber);
         tryAddEmptyInput();
         _liveInstance->updateInputs(NULL);
@@ -1364,8 +1369,11 @@ bool InspectorNode::tryAddEmptyInput() {
     }
     return false;
 }
-void InspectorNode::addEmptyInput(){
-    _activeInput = _inputsCount-1;
+void InspectorNode::addEmptyInput() {
+    {
+        QMutexLocker activeInputLocker(&_activeInputMutex);
+        _activeInput = _inputsCount-1;
+    }
     ++_inputsCount;
     initializeInputs();
 }
@@ -1400,7 +1408,10 @@ int InspectorNode::disconnectInput(int inputNumber){
     
     if(ret!=-1){
         removeEmptyInputs();
-        _activeInput = _inputs.size()-1;
+        {
+            QMutexLocker activeInputLocker(&_activeInputMutex);
+            _activeInput = _inputs.size()-1;
+        }
         initializeInputs();
     }
     return ret;
@@ -1422,8 +1433,11 @@ void InspectorNode::setActiveInputAndRefresh(int inputNb){
         QMutexLocker l(&isUsingInputsMutex);
         waitForRenderTreesToBeDone();
         InputMap::iterator it = _inputs.find(inputNb);
-        if(it!=_inputs.end() && it->second!=NULL){
-            _activeInput = inputNb;
+        if(it!=_inputs.end() && it->second!=NULL) {
+            {
+                QMutexLocker activeInputLocker(&_activeInputMutex);
+                _activeInput = inputNb;
+            }
             refresh = true;
             
         }

@@ -77,12 +77,28 @@ public:
      **/
     void forceFullComputationOnNextFrame();
 
+    /**
+     * @brief Activates the SLOT onViewerCacheFrameAdded() and the SIGNALS removedLRUCachedFrame() and  clearedViewerCache()
+     * by connecting them to the ViewerCache emitted signals. They in turn are used by the GUI to refresh the "cached line" on
+     * the timeline.
+     **/
     void connectSlotsToViewerCache();
 
+    /**
+     * @brief Deactivates the SLOT onViewerCacheFrameAdded() and the SIGNALS removedLRUCachedFrame() and  clearedViewerCache().
+     * This is used when the user has several main windows. Since the ViewerCache is global to the application, we don't want
+     * a main window (an AppInstance) draw some cached line because another instance is running some playback or rendering something.
+     **/
     void disconnectSlotsToViewerCache();
 
     void disconnectViewer();
 
+    /**
+     * @brief This is used by the VideoEngine::abortRendering() function. abortRendering() might be called from the
+     * main thread, i.e the OpenGL thread. However if the viewer is already uploading a texture to OpenGL (i.e: the
+     * wait condition usingOpenGL is true) then it will deadlock for sure. What we want to do here is just wake-up the
+     * thread (the render thread) waiting for the main-thread to be done with OpenGL.
+     **/
     void wakeUpAnySleepingThread();
 
     int activeInput() const WARN_UNUSED_RETURN;
@@ -91,12 +107,20 @@ public:
 
     double getExposure() const WARN_UNUSED_RETURN ;
 
+    /**
+     * @brief Called by the main-thread when it activates the shader to draw the image.
+     * This is used only when 32bits fp textures are used so it can pass to the shader
+     * actually rendering the good offset value.
+     **/
     double getOffset() const WARN_UNUSED_RETURN;
-
-    const Natron::Color::Lut* getLut() const WARN_UNUSED_RETURN;
 
     DisplayChannels getChannels() const WARN_UNUSED_RETURN;
 
+    /**
+     * @brief This is a short-cut, this is primarily used when the user switch the
+     * texture mode in the preferences menu. If the hardware doesn't support GLSL
+     * it returns false, true otherwise. @see Settings::onKnobValueChanged
+     **/
     bool supportsGLSL() const WARN_UNUSED_RETURN;
 
 
@@ -122,17 +146,24 @@ public slots:
     void onExposureChanged(double exp);
 
     void onColorSpaceChanged(const QString& colorspaceName);
-    /*
-     *@brief Slot called internally by the render() function when it wants to refresh the viewer if
-     *the output is a viewer.
-     *Do not call this yourself.
-     */
+    
+    /**
+     * @brief Slot called internally by the renderViewer() function when it wants to refresh the OpenGL viewer.
+     * Do not call this yourself.
+     **/
     void updateViewer();
 
     void onNodeNameChanged(const QString&);
 
+    /**
+     * @brief Emits the mustRedraw() signal so that the attached OpenGL viewer will call updateGL().
+     **/
     void redrawViewer();
 
+    /**
+     * @brief Called by the Histogram when it wants to refresh. It returns a pointer to the last
+     * rendered image by the viewer.
+     **/
     boost::shared_ptr<Natron::Image> getLastRenderedImage() const;
 
 signals:
@@ -175,9 +206,7 @@ private:
     virtual std::string description() const OVERRIDE FINAL {return "The Viewer node can display the output of a node graph.";}
     
     virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProjectFormat) OVERRIDE FINAL;
-    
-    virtual RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) OVERRIDE FINAL;
-    
+        
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE FINAL;
     
     virtual std::string inputLabel(int inputNb) const OVERRIDE FINAL {
@@ -186,7 +215,6 @@ private:
     virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE FINAL {return Natron::EffectInstance::FULLY_SAFE;}
     /*******************************************/
 
-    virtual void cloneExtras() OVERRIDE FINAL;
 
 private:
     struct ViewerInstancePrivate;
