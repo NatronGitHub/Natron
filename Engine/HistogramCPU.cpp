@@ -176,8 +176,7 @@ HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
         return false;
     }
     
-#pragma message WARN("this is not the most recent! the most recent is back(), since we push_back() below")
-    boost::shared_ptr<FinishedHistogram> h = _imp->produced.front();
+    boost::shared_ptr<FinishedHistogram> h = _imp->produced.back();
 
     *histogram1 = h->histogram1;
     *histogram2 = h->histogram2;
@@ -187,7 +186,7 @@ HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
     *mode = h->mode;
     *vmin = h->vmin;
     *vmax = h->vmax;
-    _imp->produced.pop_front();
+    _imp->produced.pop_back();
 
     return true;
 }

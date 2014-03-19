@@ -2126,7 +2126,7 @@ std::vector<QStringList> SequenceFileDialog::fileSequencesFromFilesList(const QS
     for (int i = 0; i < files.size(); ++i) {
         SequenceParsing::FileNameContent fileContent(files.at(i));
         
-        if (!supportedFileTypes.contains(fileContent.getExtension())) {
+        if (!supportedFileTypes.contains(fileContent.getExtension(),Qt::CaseInsensitive)) {
             continue;
         }
         
