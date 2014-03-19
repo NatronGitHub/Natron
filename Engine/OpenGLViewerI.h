@@ -15,7 +15,7 @@
 #include "Engine/OverlaySupport.h"
 #include "Engine/Rect.h"
 class Format;
-class TextureRect;
+struct TextureRect;
 class QString;
 class OpenGLViewerI : public OverlaySupport
 {

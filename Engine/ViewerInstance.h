@@ -25,7 +25,7 @@ class Lut;
 }
 }
 class OpenGLViewerI;
-class TextureRect;
+struct TextureRect;
 
 class ViewerInstance : public QObject, public Natron::OutputEffectInstance
 {

@@ -39,7 +39,7 @@ class AppInstance;
 class ViewerInstance;
 class ViewerTab;
 class ImageInfo;
-class TextureRect;
+struct TextureRect;
 class Format;
 
 /**
