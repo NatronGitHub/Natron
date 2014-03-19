@@ -88,9 +88,9 @@ public:
     
     void setColorSpace(const std::string& colorSpaceName);
     
-    void setExposure(double d);
+    void setGain(double d);
     
-    double getExposure() const;
+    double getGain() const;
     
     std::string getChannelsString() const;
     

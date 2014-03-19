@@ -517,9 +517,9 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     QObject::connect(_imp->_viewerColorSpace, SIGNAL(currentIndexChanged(QString)), _imp->_viewerNode,SLOT(onColorSpaceChanged(QString)));
     QObject::connect(_imp->_zoomCombobox, SIGNAL(currentIndexChanged(QString)),_imp->viewer, SLOT(zoomSlot(QString)));
     QObject::connect(_imp->viewer, SIGNAL(zoomChanged(int)), this, SLOT(updateZoomComboBox(int)));
-    QObject::connect(_imp->_gainBox, SIGNAL(valueChanged(double)), _imp->_viewerNode,SLOT(onExposureChanged(double)));
+    QObject::connect(_imp->_gainBox, SIGNAL(valueChanged(double)), _imp->_viewerNode,SLOT(onGainChanged(double)));
     QObject::connect(_imp->_gainSlider, SIGNAL(positionChanged(double)), _imp->_gainBox, SLOT(setValue(double)));
-    QObject::connect(_imp->_gainSlider, SIGNAL(positionChanged(double)), _imp->_viewerNode, SLOT(onExposureChanged(double)));
+    QObject::connect(_imp->_gainSlider, SIGNAL(positionChanged(double)), _imp->_viewerNode, SLOT(onGainChanged(double)));
     QObject::connect(_imp->_gainBox, SIGNAL(valueChanged(double)), _imp->_gainSlider, SLOT(seekScalePosition(double)));
     QObject::connect(_imp->_currentFrameBox, SIGNAL(valueChanged(double)), this, SLOT(onCurrentTimeSpinBoxChanged(double)));
     
@@ -1085,14 +1085,14 @@ void ViewerTab::setColorSpace(const std::string& colorSpaceName) {
     }
 }
 
-void ViewerTab::setExposure(double d) {
+void ViewerTab::setGain(double d) {
     _imp->_gainBox->setValue(d);
     _imp->_gainSlider->seekScalePosition(d);
-    _imp->_viewerNode->onExposureChanged(d);
+    _imp->_viewerNode->onGainChanged(d);
 }
 
-double ViewerTab::getExposure() const {
-    return _imp->_viewerNode->getExposure();
+double ViewerTab::getGain() const {
+    return _imp->_viewerNode->getGain();
 }
 
 std::string ViewerTab::getChannelsString() const {
@@ -1138,6 +1138,6 @@ void ViewerTab::onAutoContrastChanged(bool b) {
     _imp->_gainBox->setEnabled(!b);
     _imp->_viewerNode->onAutoContrastChanged(b,b);
     if (!b) {
-        _imp->_viewerNode->onExposureChanged(_imp->_gainBox->value()) ;
+        _imp->_viewerNode->onGainChanged(_imp->_gainBox->value()) ;
     }
 }

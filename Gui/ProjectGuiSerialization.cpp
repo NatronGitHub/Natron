@@ -50,7 +50,7 @@ void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) {
              viewerData.userRoIenabled = tab->getViewer()->isUserRegionOfInterestEnabled();
              viewerData.isClippedToProject = tab->isClippedToProject();
              viewerData.autoContrastEnabled = tab->isAutoContrastEnabled();
-             viewerData.exposure = tab->getExposure();
+             viewerData.gain = tab->getGain();
              viewerData.colorSpace = tab->getColorSpace();
              viewerData.channels = tab->getChannelsString();
              _viewersData.insert(std::make_pair(viewer->getNode()->getName_mt_safe(),viewerData));

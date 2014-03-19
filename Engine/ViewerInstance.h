@@ -25,7 +25,7 @@ class Lut;
 }
 }
 class OpenGLViewerI;
-class TextureRect;
+struct TextureRect;
 
 class ViewerInstance : public QObject, public Natron::OutputEffectInstance
 {
@@ -105,14 +105,7 @@ public:
 
     int getLutType() const WARN_UNUSED_RETURN ;
 
-    double getExposure() const WARN_UNUSED_RETURN ;
-
-    /**
-     * @brief Called by the main-thread when it activates the shader to draw the image.
-     * This is used only when 32bits fp textures are used so it can pass to the shader
-     * actually rendering the good offset value.
-     **/
-    double getOffset() const WARN_UNUSED_RETURN;
+    double getGain() const WARN_UNUSED_RETURN ;
 
     DisplayChannels getChannels() const WARN_UNUSED_RETURN;
 
@@ -143,7 +136,7 @@ public slots:
 
     void onViewerCacheFrameAdded();
 
-    void onExposureChanged(double exp);
+    void onGainChanged(double exp);
 
     void onColorSpaceChanged(const QString& colorspaceName);
     

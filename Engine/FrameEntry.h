@@ -37,7 +37,7 @@ namespace Natron{
 
         FrameKey(SequenceTime time,
                  U64 treeVersion,
-                 double exposure,
+                 double gain,
                  int lut,
                  int bitDepth,
                  int channels,
@@ -58,7 +58,7 @@ namespace Natron{
 
         SequenceTime _time;
         U64 _treeVersion;
-        double _exposure;
+        double _gain;
         int _lut;
         int _bitDepth;
         int _channels;
@@ -83,7 +83,7 @@ namespace Natron{
         
         static FrameKey makeKey(SequenceTime time,
                                 U64 treeVersion,
-                                double exposure,
+                                double gain,
                                 int lut,
                                 int bitDepth,
                                 int channels,

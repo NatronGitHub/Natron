@@ -15,7 +15,7 @@
 
 const char* fragRGB =
 "uniform sampler2D Tex;\n"
-"uniform float expMult;\n"
+"uniform float gain;\n"
 "uniform float offset;\n"
 "uniform int lut;\n"
 "\n"
@@ -43,7 +43,7 @@ const char* fragRGB =
 "       color_tmp.b = linear_to_rec709(color_tmp.b);"
 "\n"
 "   }\n"   // << END TO REC 709
-"   color_tmp.rgb = (color_tmp.rgb * expMult) + offset;\n"
+"   color_tmp.rgb = (color_tmp.rgb * gain) + offset;\n"
 "	gl_FragColor = color_tmp;\n"
 "}\n"
 ;
