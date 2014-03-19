@@ -143,24 +143,24 @@ struct ViewerInstance::ViewerInstancePrivate {
     bool forceRender;/*!< true when we want to by-pass the cache*/
 
 
-    QWaitCondition updateViewerCond;
-    mutable QMutex updateViewerMutex; //!< protects updateViewerRunning, updateViewerParams, updateViewerPboIndex
-    bool updateViewerRunning; //<! This flag is true when the updateViewer() function is called. That function
+    QWaitCondition     updateViewerCond;
+    mutable QMutex     updateViewerMutex; //!< protects updateViewerRunning, updateViewerParams, updateViewerPboIndex
+    bool               updateViewerRunning; //<! This flag is true when the updateViewer() function is called. That function
                       //is always called on the main thread, but the thread running renderViewer MUST
                       //wait the entire time. This flag is here to make the renderViewer() thread wait
                       //until the texture upload is finished by the main thread.
     UpdateViewerParams updateViewerParams; // parameters send from the VideoEngine thread to updateViewer() (which runs in the main thread)
-    int updateViewerPboIndex; // always accessed in the main thread: initialized in the constructor, then always accessed and modified by updateViewer()
+    int                updateViewerPboIndex; // always accessed in the main thread: initialized in the constructor, then always accessed and modified by updateViewer()
 
     void* buffer;
     size_t bufferAllocated;
 
-    mutable QMutex viewerParamsMutex; //< protects viewerParamsGain, viewerParamsLut, viewerParamsAutoContrast, viewerParamsChannels
-    double viewerParamsGain ;/*!< Current gain setting in the GUI. Not affected by autoContrast. */
-    ViewerInstance::ViewerColorSpace viewerParamsLut; /*!< a value coding the current color-space used to render.
+    mutable QMutex   viewerParamsMutex; //< protects viewerParamsGain, viewerParamsLut, viewerParamsAutoContrast, viewerParamsChannels
+    double           viewerParamsGain ;/*!< Current gain setting in the GUI. Not affected by autoContrast. */
+    ViewerColorSpace viewerParamsLut; /*!< a value coding the current color-space used to render.
                                            0 = sRGB ,  1 = linear , 2 = Rec 709*/
-    bool viewerParamsAutoContrast;
-    ViewerInstance::DisplayChannels viewerParamsChannels;
+    bool             viewerParamsAutoContrast;
+    DisplayChannels  viewerParamsChannels;
 
     boost::shared_ptr<Natron::Image> lastRenderedImage; //< A ptr to the last returned image by renderRoI. @see getLastRenderedImage()
 
