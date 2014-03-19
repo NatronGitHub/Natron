@@ -1144,7 +1144,7 @@ void ViewerGL::activateShaderRGB()
     }
     
     _imp->shaderRGB->setUniformValue("Tex", 0);
-    _imp->shaderRGB->setUniformValue("expMult",  (GLfloat)getInternalNode()->getExposure());
+    _imp->shaderRGB->setUniformValue("expMult",  (GLfloat)getInternalNode()->getGain());
     _imp->shaderRGB->setUniformValue("offset", (GLfloat)getInternalNode()->getOffset());
     _imp->shaderRGB->setUniformValue("lut", (GLint)_imp->viewerTab->getInternalNode()->getLutType());
 

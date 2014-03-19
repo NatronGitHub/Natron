@@ -56,7 +56,7 @@ namespace {
                    ViewerInstance::DisplayChannels channels_,
                    int closestPowerOf2_,
                    int bitDepth_,
-                   double exposure_,
+                   double gain_,
                    double offset_,
                    const Natron::Color::Lut* colorSpace_)
         : inputImage(inputImage_)
@@ -64,7 +64,7 @@ namespace {
         , channels(channels_)
         , closestPowerOf2(closestPowerOf2_)
         , bitDepth(bitDepth_)
-        , exposure(exposure_)
+        , gain(gain_)
         , offset(offset_)
         , colorSpace(colorSpace_)
         {
@@ -75,7 +75,7 @@ namespace {
         ViewerInstance::DisplayChannels channels;
         int closestPowerOf2;
         int bitDepth;
-        double exposure;
+        double gain;
         double offset;
         const Natron::Color::Lut* colorSpace;
     };
@@ -108,7 +108,7 @@ struct ViewerInstance::ViewerInstancePrivate {
     , buffer(NULL)
     , bufferAllocated(0)
     , renderArgsMutex()
-    , exposure(1.)
+    , gain(1.)
     , offset(0.)
     , colorSpace(Natron::Color::LutManager::sRGBLut())
     , lut(ViewerInstance::sRGB)
@@ -153,8 +153,8 @@ struct ViewerInstance::ViewerInstancePrivate {
     void* buffer;
     size_t bufferAllocated;
 
-    mutable QMutex renderArgsMutex; //< protects exposure,colorspace etc.. ETC??????????????
-    double exposure ;/*!< Current exposure setting, all pixels are multiplied
+    mutable QMutex renderArgsMutex; //< protects gain,colorspace etc.. ETC??????????????
+    double gain ;/*!< Current gain setting, all pixels are multiplied
                        by pow(2,expousre) before they appear on the screen.*/
     double offset; //< offset applied to all colours
 
@@ -528,10 +528,10 @@ ViewerInstance::renderViewer(SequenceTime time,
     ///make a copy of the auto contrast enabled state, so render threads only refer to that copy
     bool autoContrast = isAutoContrastEnabled();
 
-    double exposure, offset;
+    double gain, offset;
     {
         QMutexLocker expLocker(&_imp->renderArgsMutex);
-        exposure = _imp->exposure;
+        gain = _imp->gain;
         offset = _imp->offset;
     }
 
@@ -543,7 +543,7 @@ ViewerInstance::renderViewer(SequenceTime time,
     
     FrameKey key(time,
                  hash().value(),
-                 exposure,
+                 gain,
                  _imp->lut,
                  (int)bitDepth,
                  channels,
@@ -678,12 +678,12 @@ ViewerInstance::renderViewer(SequenceTime time,
                 vmin = vMinMax.first;
                 vmax = vMinMax.second;
 
-                ///if vmax - vmin is greater than 1 the exposure will be really small and we won't see
+                ///if vmax - vmin is greater than 1 the gain will be really small and we won't see
                 ///anything in the image
                 if (vmin == vmax) {
                     vmin = vmax - 1.;
                 }
-                exposure = 1 / (vmax - vmin);
+                gain = 1 / (vmax - vmin);
                 offset = -vmin / ( vmax - vmin);
             }
 
@@ -692,7 +692,7 @@ ViewerInstance::renderViewer(SequenceTime time,
                                         channels,
                                         closestPowerOf2,
                                         bitDepth,
-                                        exposure,
+                                        gain,
                                         offset,
                                         _imp->colorSpace);
 
@@ -747,7 +747,7 @@ ViewerInstance::renderViewer(SequenceTime time,
                     vmin = vmax - 1.;
                 }
 
-                exposure = 1 / (vmax - vmin);
+                gain = 1 / (vmax - vmin);
                 offset =  -vmin / (vmax - vmin);
             }
 
@@ -756,7 +756,7 @@ ViewerInstance::renderViewer(SequenceTime time,
                                         channels,
                                         closestPowerOf2,
                                         bitDepth,
-                                        exposure,
+                                        gain,
                                         offset,
                                         _imp->colorSpace);
 
@@ -961,9 +961,9 @@ scaleToTexture8bits(std::pair<int,int> yRange,
                     break;
                     //dst_pixels[dstIndex] = toBGRA(0,0,0,255);
                 } else {
-                    double r = src_pixels[srcIndex * 4 + rOffset] * args.exposure + args.offset;
-                    double g = src_pixels[srcIndex * 4 + gOffset] * args.exposure + args.offset;
-                    double b = src_pixels[srcIndex * 4 + bOffset] * args.exposure + args.offset;
+                    double r = src_pixels[srcIndex * 4 + rOffset] * args.gain + args.offset;
+                    double g = src_pixels[srcIndex * 4 + gOffset] * args.gain + args.offset;
+                    double b = src_pixels[srcIndex * 4 + bOffset] * args.gain + args.offset;
                     if (luminance) {
                         r = 0.299 * r + 0.587 * g + 0.114 * b;
                         g = r;
@@ -1129,14 +1129,14 @@ ViewerInstance::isInputOptional(int n) const
 }
 
 void
-ViewerInstance::onExposureChanged(double exp)
+ViewerInstance::onGainChanged(double exp)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
     {
         QMutexLocker l(&_imp->renderArgsMutex);
-        _imp->exposure = exp;
+        _imp->gain = exp;
     }
     if((_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_imp->uiContext->supportsGLSL())
        && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
@@ -1324,13 +1324,13 @@ ViewerInstance::getLutType() const
 }
 
 double
-ViewerInstance::getExposure() const
+ViewerInstance::getGain() const
 {
 #pragma message WARN("should be MT-SAFE: called from main thread and Serialization (pooled) thread")
     // should be MT-SAFE: called from main thread and Serialization (pooled) thread
 
     QMutexLocker l(&_imp->renderArgsMutex);
-    return _imp->exposure;
+    return _imp->gain;
 }
 
 

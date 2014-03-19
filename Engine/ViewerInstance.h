@@ -105,7 +105,7 @@ public:
 
     int getLutType() const WARN_UNUSED_RETURN ;
 
-    double getExposure() const WARN_UNUSED_RETURN ;
+    double getGain() const WARN_UNUSED_RETURN ;
 
     /**
      * @brief Called by the main-thread when it activates the shader to draw the image.
@@ -143,7 +143,7 @@ public slots:
 
     void onViewerCacheFrameAdded();
 
-    void onExposureChanged(double exp);
+    void onGainChanged(double exp);
 
     void onColorSpaceChanged(const QString& colorspaceName);
     

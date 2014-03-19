@@ -22,7 +22,7 @@ void Natron::FrameKey::serialize(Archive & ar, const unsigned int version)
     (void)version;
     ar & boost::serialization::make_nvp("Time", _time);
     ar & boost::serialization::make_nvp("TreeVersion", _treeVersion);
-    ar & boost::serialization::make_nvp("Exposure", _exposure);
+    ar & boost::serialization::make_nvp("Gain", _gain);
     ar & boost::serialization::make_nvp("Lut", _lut);
     ar & boost::serialization::make_nvp("BitDepth", _bitDepth);
     ar & boost::serialization::make_nvp("Channels", _channels);
