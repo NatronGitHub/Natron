@@ -534,7 +534,7 @@ class InspectorNode: public Natron::Node
 {
     int _inputsCount;
     int _activeInput;
-    QMutex _activeInputMutex;
+    mutable QMutex _activeInputMutex;
     
 public:
     
