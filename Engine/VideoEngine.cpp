@@ -392,6 +392,7 @@ void VideoEngine::runSameThread() {
 
         if (_mustQuit) {
             _mustQuit = false;
+            _doingARenderSingleThreaded = false;
             return;
         }
         iterateKernel(true);
@@ -400,6 +401,7 @@ void VideoEngine::runSameThread() {
 
         if (_mustQuit) {
             _mustQuit = false;
+            _doingARenderSingleThreaded = false;
             return;
         }
         stopEngine();

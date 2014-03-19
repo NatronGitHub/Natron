@@ -601,10 +601,16 @@ OfxStatus Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
     if (appPTR->getCurrentSettings()->isMultiThreadingDisabled()) {
         *nCPUs = 1;
     } else {
-        if (QThreadPool::globalInstance()->activeThreadCount() >= QThread::idealThreadCount()) {
+        int activeThreadsCount = QThreadPool::globalInstance()->activeThreadCount();
+        int idealThreadsCount = QThread::idealThreadCount();
+        if (activeThreadsCount >= idealThreadsCount) {
             *nCPUs = 1;
         } else {
-            *nCPUs = QThread::idealThreadCount();
+            if ((idealThreadsCount - activeThreadsCount) <= 0) {
+                *nCPUs = 1;
+            } else {
+                *nCPUs = idealThreadsCount - activeThreadsCount;
+            }
         }
     }
 
