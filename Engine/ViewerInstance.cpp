@@ -98,13 +98,13 @@ struct ViewerInstance::ViewerInstancePrivate {
 
     ViewerInstancePrivate()
     : uiContext(NULL)
-    , updateViewerPboIndex(0)
     , forceRenderMutex()
     , forceRender(false)
     , updateViewerRunningCond()
     , updateViewerRunningMutex()
     , updateViewerRunning(false)
     , updateViewerParams()
+    , updateViewerPboIndex(0)
     , buffer(NULL)
     , bufferAllocated(0)
     , renderArgsMutex()
@@ -783,7 +783,15 @@ ViewerInstance::renderViewer(SequenceTime time,
 
     if (!aborted()) {
         if (singleThreaded) {
+            {
+                QMutexLocker locker(&_imp->updateViewerRunningMutex);
+                _imp->updateViewerRunning = true;
+            }
             updateViewer();
+            {
+                QMutexLocker locker(&_imp->updateViewerRunningMutex);
+                assert(!_imp->updateViewerRunning);
+            }
         } else {
             QMutexLocker locker(&_imp->updateViewerRunningMutex);
             _imp->updateViewerRunning = true;
@@ -792,6 +800,7 @@ ViewerInstance::renderViewer(SequenceTime time,
             while (_imp->updateViewerRunning) {
                 _imp->updateViewerRunningCond.wait(&_imp->updateViewerRunningMutex);
             }
+            assert(!_imp->updateViewerRunning);
         }
     }
     // cachedFrame may be freed here, since updateViewer() has finished!
@@ -1076,6 +1085,7 @@ ViewerInstance::wakeUpAnySleepingThread()
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
+    QMutexLocker locker(&_imp->updateViewerRunningMutex);
     _imp->updateViewerRunning = false;
     _imp->updateViewerRunningCond.wakeAll();
 }
@@ -1087,15 +1097,15 @@ ViewerInstance::updateViewer()
     assert(qApp && qApp->thread() == QThread::currentThread());
 
     QMutexLocker locker(&_imp->updateViewerRunningMutex);
+    assert(_imp->updateViewerRunning);
     _imp->uiContext->makeOpenGLcontextCurrent();
     if(!aborted()){
         // how do you make sure _imp->updateViewerParams.ramBuffer is not freed during this operation?
-        ///It is not freed as long as the cachedFrame shared_ptr in renderViewer has a used_count greater than 1.
-#pragma message WARN("how do you make sure that: 'the cachedFrame shared_ptr in renderViewer has a used_count greater than 1.'?")
-        ///Since updateViewer() is in the scope of cachedFrame it is guaranteed not to be freed before
-        ///the viewer is actually done with it.
+        /// It is not freed as long as the cachedFrame shared_ptr in renderViewer has a used_count greater than 1.
+        /// i.e. until renderViewer exits.
+        /// Since updateViewer() is in the scope of cachedFrame, and renderViewer waits for the completion
+        /// of updateViewer(), it is guaranteed not to be freed before the viewer is actually done with it.
         /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-#pragma message WARN("how do you make sure _imp->updateViewerParams.ramBuffer is not modified??? no lock? how do you make sure it's always consistent with bytesCount and textureRect????")
        _imp->uiContext->transferBufferFromRAMtoGPU(_imp->updateViewerParams.ramBuffer,
                                            _imp->updateViewerParams.bytesCount,
                                            _imp->updateViewerParams.textureRect,
