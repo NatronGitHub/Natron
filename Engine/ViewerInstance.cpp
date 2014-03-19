@@ -599,11 +599,6 @@ ViewerInstance::renderViewer(SequenceTime time,
         /*We didn't find it in the viewer cache, hence we render
          the frame*/
         
-        if (_imp->bufferAllocated) {
-            free(_imp->buffer);
-            _imp->bufferAllocated = 0;
-        }
-        
         ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
         ///is very low, we better render again (and let the NodeCache do the work) rather than just
         ///overload the ViewerCache which may become slowe
@@ -611,7 +606,9 @@ ViewerInstance::renderViewer(SequenceTime time,
             assert(!cachedFrame);
             // don't reallocate if we need less memory (avoid fragmentation)
             if (_imp->bufferAllocated < _imp->interThreadInfos.bytesCount) {
-                free(_imp->buffer);
+                if (_imp->bufferAllocated > 0) {
+                    free(_imp->buffer);
+                }
                 _imp->bufferAllocated = _imp->interThreadInfos.bytesCount;
                 _imp->buffer = (unsigned char*)malloc(_imp->bufferAllocated);
                 if (!_imp->buffer) {
