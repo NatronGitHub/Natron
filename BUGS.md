@@ -8,6 +8,10 @@ Here is a list of know bugs, ordered by priority from high to low:
 
 - TextRenderer should only store white character bitmaps! They can then be drawn in color using glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
 
+- the multithread suite should use QtConcurrent::map() to launch threads in the thread pool, and avoid over-numerous threads: if several threads call getNumCPUs before launching threads, they will start more threads than the optimal value.
+
+- The thread count (see QThreadPool::maxThreadCount() ) should be settable in the preferences. A max thread count of 0 means to disable multithreading
+
 - messages (and persistent messages) should be associated with an instance, not with a viewer. The message should appear in the viewer if and only of the given instance is in the the viewer's parents.
 
 - black borders around the viewer when zooming out and multithreading is disabled
