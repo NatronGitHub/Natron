@@ -676,7 +676,7 @@ void VideoEngine::abortRendering(bool blocking) {
         for (RenderTree::TreeReverseIterator it = _tree.rbegin(); it != _tree.rend(); ++it) {
             it->second->setAborted(true);
         }
-        if(_tree.isOutputAViewer())
+        if(_tree.isOutputAViewer() && QThread::currentThread() != this)
             _tree.outputAsViewer()->wakeUpAnySleepingThread();
         
         ///also wake up the run() thread if it is waiting for getFrameRange
