@@ -53,12 +53,12 @@ namespace {
     struct RenderViewerArgs {
         RenderViewerArgs(boost::shared_ptr<const Natron::Image> inputImage_,
                          const TextureRect& texRect_,
-                   ViewerInstance::DisplayChannels channels_,
-                   int closestPowerOf2_,
-                   int bitDepth_,
-                   double gain_,
-                   double offset_,
-                   const Natron::Color::Lut* colorSpace_)
+                         ViewerInstance::DisplayChannels channels_,
+                         int closestPowerOf2_,
+                         int bitDepth_,
+                         double gain_,
+                         double offset_,
+                         const Natron::Color::Lut* colorSpace_)
         : inputImage(inputImage_)
         , texRect(texRect_)
         , channels(channels_)
@@ -86,11 +86,17 @@ namespace {
         : ramBuffer(NULL)
         , textureRect()
         , bytesCount(0)
+        , gain(1.)
+        , offset(0.)
+        , lut(ViewerInstance::sRGB)
         {}
 
         unsigned char* ramBuffer;
         TextureRect textureRect;
         size_t bytesCount;
+        double gain;
+        double offset;
+        ViewerInstance::ViewerColorSpace lut;
     };
 }
 
@@ -107,11 +113,9 @@ struct ViewerInstance::ViewerInstancePrivate {
     , updateViewerPboIndex(0)
     , buffer(NULL)
     , bufferAllocated(0)
-    , renderArgsMutex()
-    , gain(1.)
-    , offset(0.)
-    , colorSpace(Natron::Color::LutManager::sRGBLut())
-    , lut(ViewerInstance::sRGB)
+    , viewerParamsMutex()
+    , viewerParamsGain(1.)
+    , viewerParamsLut(ViewerInstance::sRGB)
     , channelsMutex()
     , channels(ViewerInstance::RGB)
     , lastRenderedImage()
@@ -153,14 +157,12 @@ struct ViewerInstance::ViewerInstancePrivate {
     void* buffer;
     size_t bufferAllocated;
 
-    mutable QMutex renderArgsMutex; //< protects gain,colorspace etc.. ETC??????????????
-    double gain ;/*!< Current gain setting, all pixels are multiplied
-                       by pow(2,expousre) before they appear on the screen.*/
-    double offset; //< offset applied to all colours
+    mutable QMutex viewerParamsMutex; //< protects viewerParamsGain,colorspace etc.. ETC??????????????
+    double viewerParamsGain ;/*!< Current gain setting.*/
+    ViewerInstance::ViewerColorSpace viewerParamsLut; /*!< a value coding the current color-space used to render.
+                                           0 = sRGB ,  1 = linear , 2 = Rec 709*/
 
-    const Natron::Color::Lut* colorSpace;/*!< The lut used to do the viewer colorspace conversion when we can't use shaders*/
-    ViewerInstance::ViewerColorSpace lut; /*!< a value coding the current color-space used to render.
-                            0 = sRGB ,  1 = linear , 2 = Rec 709*/
+    //const Natron::Color::Lut* colorSpace;/*!< The lut used to do the viewer colorspace conversion when we can't use shaders*/
 
     mutable QMutex channelsMutex;
     ViewerInstance::DisplayChannels channels;
@@ -209,6 +211,27 @@ toBGRA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
     return (a << 24) | (r << 16) | (g << 8) | b;
 }
 
+static const Natron::Color::Lut*
+lutFromColorspace(ViewerInstance::ViewerColorSpace cs) WARN_UNUSED_RETURN;
+
+static const Natron::Color::Lut*
+lutFromColorspace(ViewerInstance::ViewerColorSpace cs)
+{
+    const Natron::Color::Lut* lut;
+    switch (cs) {
+        case ViewerInstance::Linear:
+            return 0;
+        case ViewerInstance::sRGB:
+            lut = Natron::Color::LutManager::sRGBLut();
+            break;
+        case ViewerInstance::Rec709:
+            lut = Natron::Color::LutManager::Rec709Lut();
+            break;
+    }
+    lut->validate();
+    return lut;
+}
+
 
 Natron::EffectInstance*
 ViewerInstance::BuildEffect(Natron::Node* n)
@@ -231,7 +254,6 @@ Natron::OutputEffectInstance(node)
     if(node) {
         connect(node,SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
     }
-    _imp->colorSpace->validate();
 }
 
 ViewerInstance::~ViewerInstance()
@@ -528,12 +550,12 @@ ViewerInstance::renderViewer(SequenceTime time,
     ///make a copy of the auto contrast enabled state, so render threads only refer to that copy
     bool autoContrast = isAutoContrastEnabled();
 
-    double gain, offset;
     {
-        QMutexLocker expLocker(&_imp->renderArgsMutex);
-        gain = _imp->gain;
-        offset = _imp->offset;
+        QMutexLocker expLocker(&_imp->viewerParamsMutex);
+        _imp->updateViewerParams.gain = _imp->viewerParamsGain;
+        _imp->updateViewerParams.lut = _imp->viewerParamsLut;
     }
+    _imp->updateViewerParams.offset = 0.; // 0 except for autocontrast
 
     ViewerInstance::DisplayChannels channels;
     {
@@ -543,8 +565,8 @@ ViewerInstance::renderViewer(SequenceTime time,
     
     FrameKey key(time,
                  hash().value(),
-                 gain,
-                 _imp->lut,
+                 _imp->updateViewerParams.gain,
+                 _imp->updateViewerParams.lut,
                  (int)bitDepth,
                  channels,
                  view,
@@ -683,8 +705,8 @@ ViewerInstance::renderViewer(SequenceTime time,
                 if (vmin == vmax) {
                     vmin = vmax - 1.;
                 }
-                gain = 1 / (vmax - vmin);
-                offset = -vmin / ( vmax - vmin);
+                _imp->updateViewerParams.gain = 1 / (vmax - vmin);
+                _imp->updateViewerParams.offset = -vmin / ( vmax - vmin);
             }
 
             const RenderViewerArgs args(_imp->lastRenderedImage,
@@ -692,9 +714,9 @@ ViewerInstance::renderViewer(SequenceTime time,
                                         channels,
                                         closestPowerOf2,
                                         bitDepth,
-                                        gain,
-                                        offset,
-                                        _imp->colorSpace);
+                                        _imp->updateViewerParams.gain,
+                                        _imp->updateViewerParams.offset,
+                                        lutFromColorspace(_imp->updateViewerParams.lut));
 
             renderFunctor(std::make_pair(texRectClipped.y1,texRectClipped.y2),
                           args,
@@ -747,8 +769,8 @@ ViewerInstance::renderViewer(SequenceTime time,
                     vmin = vmax - 1.;
                 }
 
-                gain = 1 / (vmax - vmin);
-                offset =  -vmin / (vmax - vmin);
+                _imp->updateViewerParams.gain = 1 / (vmax - vmin);
+                _imp->updateViewerParams.offset =  -vmin / (vmax - vmin);
             }
 
             const RenderViewerArgs args(_imp->lastRenderedImage,
@@ -756,9 +778,9 @@ ViewerInstance::renderViewer(SequenceTime time,
                                         channels,
                                         closestPowerOf2,
                                         bitDepth,
-                                        gain,
-                                        offset,
-                                        _imp->colorSpace);
+                                        _imp->updateViewerParams.gain,
+                                        _imp->updateViewerParams.offset,
+                                        lutFromColorspace(_imp->updateViewerParams.lut));
 
             QtConcurrent::map(splitRows,
                               boost::bind(&renderFunctor,
@@ -819,7 +841,7 @@ renderFunctor(std::pair<int,int> yRange,
     assert(args.texRect.y1 <= yRange.first && yRange.first <= yRange.second && yRange.second <= args.texRect.y2);
     
     if (args.bitDepth == OpenGLViewerI::FLOAT || args.bitDepth == OpenGLViewerI::HALF_FLOAT) {
-        // image is stored as linear, the OpenGL shader with do gamma/sRGB/Rec709 decompression
+        // image is stored as linear, the OpenGL shader with do gamma/sRGB/Rec709 decompression, as well as gain and offset
         scaleToTexture32bits(yRange, args, (float*)buffer);
     }
     else{
@@ -1106,10 +1128,13 @@ ViewerInstance::updateViewer()
         /// Since updateViewer() is in the scope of cachedFrame, and renderViewer waits for the completion
         /// of updateViewer(), it is guaranteed not to be freed before the viewer is actually done with it.
         /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-       _imp->uiContext->transferBufferFromRAMtoGPU(_imp->updateViewerParams.ramBuffer,
-                                           _imp->updateViewerParams.bytesCount,
-                                           _imp->updateViewerParams.textureRect,
-                                           _imp->updateViewerPboIndex);
+        _imp->uiContext->transferBufferFromRAMtoGPU(_imp->updateViewerParams.ramBuffer,
+                                                    _imp->updateViewerParams.bytesCount,
+                                                    _imp->updateViewerParams.textureRect,
+                                                    _imp->updateViewerParams.gain,
+                                                    _imp->updateViewerParams.offset,
+                                                    _imp->updateViewerParams.lut,
+                                                    _imp->updateViewerPboIndex);
         _imp->updateViewerPboIndex = (_imp->updateViewerPboIndex+1)%2;
     }
     
@@ -1135,8 +1160,8 @@ ViewerInstance::onGainChanged(double exp)
     assert(qApp && qApp->thread() == QThread::currentThread());
 
     {
-        QMutexLocker l(&_imp->renderArgsMutex);
-        _imp->gain = exp;
+        QMutexLocker l(&_imp->viewerParamsMutex);
+        _imp->viewerParamsGain = exp;
     }
     if((_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_imp->uiContext->supportsGLSL())
        && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
@@ -1176,30 +1201,16 @@ ViewerInstance::onColorSpaceChanged(const QString& colorspaceName)
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
-    QMutexLocker l(&_imp->renderArgsMutex);
+    QMutexLocker l(&_imp->viewerParamsMutex);
     
     if (colorspaceName == "Linear(None)") {
-        if (_imp->lut != Linear) { // if it wasnt already this setting
-            _imp->colorSpace = 0;
-        }
-        _imp->lut = Linear;
+        _imp->viewerParamsLut = Linear;
     } else if (colorspaceName == "sRGB") {
-        if (_imp->lut != sRGB) { // if it wasnt already this setting
-            _imp->colorSpace = Natron::Color::LutManager::sRGBLut();
-        }
-        
-        _imp->lut = sRGB;
+        _imp->viewerParamsLut = sRGB;
     } else if (colorspaceName == "Rec.709") {
-        if (_imp->lut != Rec709) { // if it wasnt already this setting
-            _imp->colorSpace = Natron::Color::LutManager::Rec709Lut();
-        }
-        _imp->lut = Rec709;
+        _imp->viewerParamsLut = Rec709;
     }
-    
-    if (_imp->colorSpace) {
-        _imp->colorSpace->validate();
-    }
-    
+
     if ((_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_imp->uiContext->supportsGLSL())
        && input(activeInput()) != NULL) {
         refreshAndContinueRender(false);
@@ -1266,13 +1277,19 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
     *g = *(pix + 1);
     *b = *(pix + 2);
     *a = *(pix + 3);
-    if (!forceLinear && _imp->colorSpace) {
+    ViewerColorSpace lut;
+    {
+        QMutexLocker l(&_imp->viewerParamsMutex);
+        lut = _imp->viewerParamsLut;
+    }
+    const Natron::Color::Lut* colorSpace = lutFromColorspace(lut);
+    if (!forceLinear && colorSpace) {
         float from[3];
         from[0] = *r;
         from[1] = *g;
         from[2] = *b;
         float to[3];
-        _imp->colorSpace->to_float_planar(to, from, 3);
+        colorSpace->to_float_planar(to, from, 3);
         *r = to[0];
         *g = to[1];
         *b = to[2];
@@ -1316,40 +1333,27 @@ ViewerInstance::getLastRenderedImage() const
 int
 ViewerInstance::getLutType() const
 {
-#pragma message WARN("should be MT-SAFE: called from main thread and Serialization (pooled) thread")
-    // should be MT-SAFE: called from main thread and Serialization (pooled) thread
+    // MT-SAFE: called from main thread and Serialization (pooled) thread
 
-    QMutexLocker l(&_imp->renderArgsMutex);
-    return _imp->lut;
+    QMutexLocker l(&_imp->viewerParamsMutex);
+    return _imp->viewerParamsLut;
 }
 
 double
 ViewerInstance::getGain() const
 {
-#pragma message WARN("should be MT-SAFE: called from main thread and Serialization (pooled) thread")
-    // should be MT-SAFE: called from main thread and Serialization (pooled) thread
+    // MT-SAFE: called from main thread and Serialization (pooled) thread
 
-    QMutexLocker l(&_imp->renderArgsMutex);
-    return _imp->gain;
+    QMutexLocker l(&_imp->viewerParamsMutex);
+    return _imp->viewerParamsGain;
 }
 
 
 ViewerInstance::DisplayChannels
 ViewerInstance::getChannels() const
 {
-#pragma message WARN("should be MT-SAFE: called from main thread and Serialization (pooled) thread")
-    // should be MT-SAFE: called from main thread and Serialization (pooled) thread
+    // MT-SAFE: called from main thread and Serialization (pooled) thread
 
     QMutexLocker l(&_imp->channelsMutex);
     return _imp->channels;
-}
-
-double
-ViewerInstance::getOffset() const
-{
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-
-    QMutexLocker l(&_imp->renderArgsMutex);
-    return _imp->offset;
 }
