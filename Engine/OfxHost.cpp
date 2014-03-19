@@ -539,10 +539,20 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
     if (st != kOfxStatOK) {
         return st;
     }
-    
-    if (appPTR->getCurrentSettings()->isMultiThreadingDisabled() || maxConcurrentThread == 1) {
-        func(0,1,customArg);
-        return kOfxStatOK;
+
+    // from the documentation:
+    // "nThreads can be more than the value returned by multiThreadNumCPUs, however
+    // the threads will be limitted to the number of CPUs returned by multiThreadNumCPUs."
+
+    if (nThreads == 1 || appPTR->getCurrentSettings()->isMultiThreadingDisabled()) {
+        try {
+            for (unsigned int i = 0; i < nThreads; ++i) {
+                func(i, nThreads, customArg);
+            }
+            return kOfxStatOK;
+        } catch (...) {
+            return kOfxStatFailed;
+        }
     }
     
     // check that this thread does not already have an ID
@@ -555,12 +565,12 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
         threadIndexes[i] = i;
     }
     
-    ///set the maximum thread count
-    QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
+    /// DON'T set the maximum thread count, this is a global application setting, and see the documentation excerpt above
+    //QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
     QFuture<OfxStatus> future = QtConcurrent::mapped(threadIndexes, boost::bind(::threadFunctionWrapper,func, _1, nThreads, customArg));
     future.waitForFinished();
-    ///reset back to the original value the maximum thread count
-    QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
+    ///DON'T reset back to the original value the maximum thread count
+    //QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
     
     for (QFuture<OfxStatus>::const_iterator it = future.begin() ; it!= future.end(); ++it) {
         OfxStatus stat = *it;
