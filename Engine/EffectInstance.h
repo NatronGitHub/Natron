@@ -536,7 +536,7 @@ protected:
      **/
     virtual void cloneExtras(){}
     
-    Node* _node; //< the node holding this effect
+    Node* const _node; //< the node holding this effect
 
 private:
     struct Implementation;
