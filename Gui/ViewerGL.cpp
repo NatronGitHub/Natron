@@ -214,6 +214,18 @@ struct ViewerGL::Implementation {
     bool clipToDisplayWindow;
 };
 
+/**
+ *@brief Actually converting to ARGB... but it is called BGRA by
+ the texture format GL_UNSIGNED_INT_8_8_8_8_REV
+ **/
+static unsigned int
+toBGRA(unsigned char r, unsigned char g, unsigned char b, unsigned char a) WARN_UNUSED_RETURN;
+
+unsigned int
+toBGRA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+{
+    return (a << 24) | (r << 16) | (g << 8) | b;
+}
 
 //static const GLfloat renderingTextureCoordinates[32] = {
 //    0 , 1 , //0
@@ -1211,7 +1223,7 @@ void ViewerGL::initBlackTex()
     glCheckError();
     assert(frameData);
     for(int i = 0 ; i < texSize.x2 * texSize.y2 ; ++i) {
-        frameData[i] = ViewerInstance::toBGRA(0, 0, 0, 255);
+        frameData[i] = toBGRA(0, 0, 0, 255);
     }
     glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
     glCheckError();

@@ -14,12 +14,14 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
 
-#include <QtConcurrentMap>
 CLANG_DIAG_OFF(deprecated)
+#include <QtCore/QtGlobal>
+#include <QtCore/QtConcurrentMap>
 #include <QtCore/QFutureWatcher>
-CLANG_DIAG_ON(deprecated)
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
+#include <QtCore/QCoreApplication>
+CLANG_DIAG_ON(deprecated)
 
 #include "Engine/Node.h"
 #include "Engine/ImageInfo.h"
@@ -45,7 +47,38 @@ using namespace Natron;
 using std::make_pair;
 using boost::shared_ptr;
 
+
 namespace {
+
+    struct RenderViewerArgs {
+        RenderViewerArgs(boost::shared_ptr<const Natron::Image> inputImage_,
+                         const TextureRect& texRect_,
+                   ViewerInstance::DisplayChannels channels_,
+                   int closestPowerOf2_,
+                   int bitDepth_,
+                   double exposure_,
+                   double offset_,
+                   const Natron::Color::Lut* colorSpace_)
+        : inputImage(inputImage_)
+        , texRect(texRect_)
+        , channels(channels_)
+        , closestPowerOf2(closestPowerOf2_)
+        , bitDepth(bitDepth_)
+        , exposure(exposure_)
+        , offset(offset_)
+        , colorSpace(colorSpace_)
+        {
+        }
+
+        boost::shared_ptr<const Natron::Image> inputImage;
+        TextureRect texRect;
+        ViewerInstance::DisplayChannels channels;
+        int closestPowerOf2;
+        int bitDepth;
+        double exposure;
+        double offset;
+        const Natron::Color::Lut* colorSpace;
+    };
 
     struct InterThreadInfos{
         InterThreadInfos()
@@ -75,7 +108,6 @@ struct ViewerInstance::ViewerInstancePrivate {
     ViewerInstancePrivate()
     : uiContext(NULL)
     , pboIndex(0)
-    , frameCount(1)
     , forceRenderMutex()
     , forceRender(false)
     , usingOpenGLCond()
@@ -83,7 +115,7 @@ struct ViewerInstance::ViewerInstancePrivate {
     , usingOpenGL(false)
     , interThreadInfos()
     , buffer(NULL)
-    , mustFreeBuffer(false)
+    , bufferAllocated(0)
     , renderArgsMutex()
     , exposure(1.)
     , offset(0)
@@ -94,32 +126,42 @@ struct ViewerInstance::ViewerInstancePrivate {
     , lastRenderedImage()
     , autoContrastMutex()
     , autoContrast(false)
-    , vMinMaxMutex()
-    , vmin(0)
-    , vmax(0)
+    , threadIdMutex()
+    , threadIdVideoEngine(NULL)
     {
     }
 
-    OpenGLViewerI* uiContext;
+    void assertVideoEngine()
+    {
+#ifndef NDEBUG
+        QMutexLocker l(&threadIdMutex);
+        if (threadIdVideoEngine == NULL) {
+            threadIdVideoEngine = QThread::currentThread();
+        }
+        assert(QThread::currentThread() == threadIdVideoEngine);
+#endif
+    }
 
-    int pboIndex;
 
-    int frameCount;
+    OpenGLViewerI* uiContext; // written in the main thread before VideoEngine thread creation, accessed from VideoEngine
+
+    int pboIndex; // always accessed from the main thread
 
     mutable QMutex forceRenderMutex;
     bool forceRender;/*!< true when we want to by-pass the cache*/
 
 
+#pragma message WARN("please explain usingOpenGL?")
     QWaitCondition usingOpenGLCond;
     mutable QMutex usingOpenGLMutex; //!< protects _usingOpenGL
     bool usingOpenGL;
 
     InterThreadInfos interThreadInfos;
 
-    unsigned char* buffer;
-    bool mustFreeBuffer;
+    void* buffer;
+    size_t bufferAllocated;
 
-    mutable QMutex renderArgsMutex; //< protects exposure,colorspace etc..
+    mutable QMutex renderArgsMutex; //< protects exposure,colorspace etc.. ETC??????????????
     double exposure ;/*!< Current exposure setting, all pixels are multiplied
                        by pow(2,expousre) before they appear on the screen.*/
     double offset; //< offset applied to all colours
@@ -131,20 +173,58 @@ struct ViewerInstance::ViewerInstancePrivate {
     mutable QMutex channelsMutex;
     ViewerInstance::DisplayChannels channels;
 
+#pragma message WARN("please explain lastRenderedImage?")
     boost::shared_ptr<Natron::Image> lastRenderedImage;
 
     mutable QMutex autoContrastMutex;
     bool autoContrast;
 
-    ///the vmin and vmax of the last image rendered, this is used for autocontrast
-    mutable QMutex vMinMaxMutex;
-    double vmin;
-    double vmax;
+    // store the threadId of the VideoEngine thread - used for debugging purposes
+    mutable QMutex threadIdMutex;
+    QThread *threadIdVideoEngine;
 };
+
+
+static void
+scaleToTexture8bits(std::pair<int,int> yRange,
+                    const RenderViewerArgs& args,
+                    U32* output);
+
+static void
+scaleToTexture32bits(std::pair<int,int> yRange,
+                     const RenderViewerArgs& args,
+                     float *output);
+
+static std::pair<double, double>
+findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
+                         ViewerInstance::DisplayChannels channels,
+                         const RectI& rect);
+
+static void
+renderFunctor(std::pair<int,int> yRange,
+              const RenderViewerArgs& args,
+              void *buffer);
+
+/**
+ *@brief Actually converting to ARGB... but it is called BGRA by
+ the texture format GL_UNSIGNED_INT_8_8_8_8_REV
+ **/
+static unsigned int
+toBGRA(unsigned char r, unsigned char g, unsigned char b, unsigned char a) WARN_UNUSED_RETURN;
+
+unsigned int
+toBGRA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+{
+    return (a << 24) | (r << 16) | (g << 8) | b;
+}
+
 
 Natron::EffectInstance*
 ViewerInstance::BuildEffect(Natron::Node* n)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     return new ViewerInstance(n);
 }
 
@@ -152,6 +232,9 @@ ViewerInstance::ViewerInstance(Node* node):
 Natron::OutputEffectInstance(node)
 , _imp(new ViewerInstancePrivate)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     connectSlotsToViewerCache();
     connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
     if(node) {
@@ -162,23 +245,35 @@ Natron::OutputEffectInstance(node)
 
 ViewerInstance::~ViewerInstance()
 {
-    if (_imp->uiContext) {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
+   if (_imp->uiContext) {
         _imp->uiContext->removeGUI();
     }
-    if (_imp->mustFreeBuffer) {
+    if (_imp->bufferAllocated) {
         free(_imp->buffer);
+        _imp->bufferAllocated = 0;
     }
 }
 
 OpenGLViewerI*
 ViewerInstance::getUiContext() const
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     return _imp->uiContext;
 }
 
+
+#pragma message WARN("dead code? please explain when this is called and what it does")
 void
 ViewerInstance::forceFullComputationOnNextFrame()
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     QMutexLocker forceRenderLocker(&_imp->forceRenderMutex);
     _imp->forceRender = true;
 }
@@ -186,15 +281,22 @@ ViewerInstance::forceFullComputationOnNextFrame()
 void
 ViewerInstance::connectSlotsToViewerCache()
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     Natron::CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
     QObject::connect(emitter, SIGNAL(addedEntry()), this, SLOT(onViewerCacheFrameAdded()));
     QObject::connect(emitter, SIGNAL(removedLRUEntry()), this, SIGNAL(removedLRUCachedFrame()));
     QObject::connect(emitter, SIGNAL(clearedInMemoryPortion()), this, SIGNAL(clearedViewerCache()));
 }
 
+#pragma message WARN("dead code? please explain when this is called and what it does")
 void
 ViewerInstance::disconnectSlotsToViewerCache()
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     Natron::CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
     QObject::disconnect(emitter, SIGNAL(addedEntry()), this, SLOT(onViewerCacheFrameAdded()));
     QObject::disconnect(emitter, SIGNAL(removedLRUEntry()), this, SIGNAL(removedLRUCachedFrame()));
@@ -204,38 +306,62 @@ ViewerInstance::disconnectSlotsToViewerCache()
 void
 ViewerInstance::setUiContext(OpenGLViewerI* viewer)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    // VideoEngine must not be created (or there would be a race condition)
+    assert(!_imp->threadIdVideoEngine);
+
     _imp->uiContext = viewer;
 }
 
 void
 ViewerInstance::onNodeNameChanged(const QString& name)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     ///update the gui tab name
     if (_imp->uiContext) {
         _imp->uiContext->onViewerNodeNameChanged(name);
     }
 }
 
+#pragma message WARN("dead code? please explain when this is called and what it does")
 void
 ViewerInstance::cloneExtras()
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    // VideoEngine must not be created (or there would be a race condition)
+    assert(!_imp->threadIdVideoEngine);
+
     _imp->uiContext = dynamic_cast<ViewerInstance*>(getNode()->getLiveInstance())->getUiContext();
 }
 
-int ViewerInstance::activeInput() const
+int
+ViewerInstance::activeInput() const
 {
-    return dynamic_cast<InspectorNode*>(getNode())->activeInput();
+#pragma message WARN("should be MT-SAFE: called from main thread and VideoEngine thread")
+    // should be MT-SAFE: called from main thread and VideoEngine thread
+
+    return dynamic_cast<InspectorNode*>(getNode())->activeInput(); // not MT-SAFE!
 }
 
 int
 ViewerInstance::maximumInputs() const
 {
+    // always running in the VideoEngine thread
+    _imp->assertVideoEngine();
+
     return getNode()->maximumInputs();
 }
 
 Natron::Status
 ViewerInstance::getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProjectFormat)
 {
+    // always running in the VideoEngine thread
+    _imp->assertVideoEngine();
+
     EffectInstance* n = input(activeInput());
     if (n) {
         return n->getRegionOfDefinition(time,rod,isProjectFormat);
@@ -244,11 +370,15 @@ ViewerInstance::getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProje
     }
 }
 
+#pragma message WARN("dead code? please explain when this is called and what it does")
 EffectInstance::RoIMap
 ViewerInstance::getRegionOfInterest(SequenceTime /*time*/,
                                     RenderScale /*scale*/,
                                     const RectI& renderWindow)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     RoIMap ret;
     EffectInstance* n = input(activeInput());
     if (n) {
@@ -261,6 +391,9 @@ void
 ViewerInstance::getFrameRange(SequenceTime *first,
                               SequenceTime *last)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     SequenceTime inpFirst = 0,inpLast = 0;
     EffectInstance* n = input(activeInput());
     if (n) {
@@ -275,6 +408,9 @@ Natron::Status
 ViewerInstance::renderViewer(SequenceTime time,
                              bool singleThreaded)
 {
+    // always running in the VideoEngine thread
+    _imp->assertVideoEngine();
+
 #ifdef NATRON_LOG
     Natron::Log::beginFunction(getName(),"renderViewer");
     Natron::Log::print(QString("Time "+QString::number(time)).toStdString());
@@ -474,19 +610,21 @@ ViewerInstance::renderViewer(SequenceTime time,
         
         assert(cachedFrameParams);
         /*Found in viewer cache, we execute the cached engine and leave*/
+#pragma message WARN("how do you make sure cachedFrame->data() is not freed after this line?")
+        // how do you make sure cachedFrame->data() is not freed after this line?
         _imp->interThreadInfos.ramBuffer = cachedFrame->data();
 #ifdef NATRON_LOG
         Natron::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
                                    QString::number(key.getHash())).toStdString());
         Natron::Log::endFunction(getName(),"renderViewer");
 #endif
-    } else {
+    } else { // !isCached
         /*We didn't find it in the viewer cache, hence we render
          the frame*/
         
-        if (_imp->mustFreeBuffer) {
+        if (_imp->bufferAllocated) {
             free(_imp->buffer);
-            _imp->mustFreeBuffer = false;
+            _imp->bufferAllocated = 0;
         }
         
         ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
@@ -494,10 +632,17 @@ ViewerInstance::renderViewer(SequenceTime time,
         ///overload the ViewerCache which may become slowe
         if (byPassCache || _imp->uiContext->isUserRegionOfInterestEnabled() || _imp->interThreadInfos.autoContrast) {
             assert(!cachedFrame);
-            _imp->buffer = (unsigned char*)malloc( _imp->interThreadInfos.bytesCount);
-            _imp->mustFreeBuffer = true;
+            // don't reallocate if we need less memory (avoid fragmentation)
+            if (_imp->bufferAllocated < _imp->interThreadInfos.bytesCount) {
+                free(_imp->buffer);
+                _imp->bufferAllocated = _imp->interThreadInfos.bytesCount;
+                _imp->buffer = (unsigned char*)malloc(_imp->bufferAllocated);
+                if (!_imp->buffer) {
+                    _imp->bufferAllocated = 0;
+                    throw std::bad_alloc();
+                }
+            }
         } else {
-            
             cachedFrameParams = FrameEntry::makeParams(rod, key.getBitDepth(), textureRect.w, textureRect.h);
             bool success = Natron::getTextureFromCacheOrCreate(key, cachedFrameParams, &cachedFrame);
             ///note that unlike  getImageFromCacheOrCreate in EffectInstance::renderRoI, we
@@ -506,138 +651,178 @@ ViewerInstance::renderViewer(SequenceTime time,
             assert(!success);
             
             assert(cachedFrame);
+            if (_imp->bufferAllocated) {
+                free(_imp->buffer);
+                _imp->bufferAllocated = 0;
+            }
+#pragma message WARN("how do you make sure cachedFrame->data() is not freed after this line?")
+            // how do you make sure cachedFrame->data() is not freed after this line?
             _imp->buffer = cachedFrame->data();
         }
-        
-        _imp->interThreadInfos.ramBuffer = _imp->buffer;
-        
-        {
-      
-            if (!activeInputToRender->supportsTiles()) {
-                texRectClipped.intersect(rod, &texRectClipped);
-            }
-            
-            
-            int inputIndex = activeInput();
-            _node->notifyInputNIsRendering(inputIndex);
-            
-            // If an exception occurs here it is probably fatal, since
-            // it comes from Natron itself. All exceptions from plugins are already caught
-            // by the HostSupport library.
-            // We catch it  and rethrow it just to notify the rendering is done.
-            try {
-                if (isInputImgCached) {
-                    ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
-                    ///cache lookup things because we already did it ourselves.
-                    activeInputToRender->renderRoI(time, scale, view, texRectClipped, cachedImgParams, inputImage);
-                } else {
-                    _imp->lastRenderedImage = activeInputToRender->renderRoI(time, scale,view,texRectClipped,byPassCache,&rod);
-                }
-            } catch (const std::exception& e) {
-                _node->notifyInputNIsFinishedRendering(inputIndex);
-                throw e;
-            }
-            
-            _node->notifyInputNIsFinishedRendering(inputIndex);
 
-            
-            if (!_imp->lastRenderedImage) {
-                //if render was aborted, remove the frame from the cache as it contains only garbage
-                appPTR->removeFromViewerCache(cachedFrame);
-                return StatFailed;
-            }
-            
-            //  Natron::debugImage(_lastRenderedImage.get(),"img.png");
-            
-            if(aborted()){
-                //if render was aborted, remove the frame from the cache as it contains only garbage
-                appPTR->removeFromViewerCache(cachedFrame);
-                return StatOK;
-            }
-            
-            if (singleThreaded) {
-                if (_imp->interThreadInfos.autoContrast) {
-                    _imp->vmin = INT_MAX;
-                    _imp->vmax = INT_MIN;
-                    findAutoContrastVminVmax(_imp->lastRenderedImage,roi);
-                    
-                    ///if vmax - vmin is greater than 1 the exposure will be really small and we won't see
-                    ///anything in the image
-                    if (_imp->vmax == _imp->vmin) {
-                        _imp->vmin = _imp->vmax - 1.;
-                    }
-                    _imp->interThreadInfos.exposure = 1 / (_imp->vmax - _imp->vmin);
-                    _imp->interThreadInfos.offset =  - _imp->vmin / ( _imp->vmax - _imp->vmin );
-                    _imp->exposure = _imp->interThreadInfos.exposure;
-                    _imp->offset = _imp->interThreadInfos.offset;
+        _imp->interThreadInfos.ramBuffer = (unsigned char*)_imp->buffer;
 
-                }
-                
-                renderFunctor(_imp->lastRenderedImage, std::make_pair(texRectClipped.y1,texRectClipped.y2), textureRect, closestPowerOf2);
+        if (!activeInputToRender->supportsTiles()) {
+            texRectClipped.intersect(rod, &texRectClipped);
+        }
+
+
+        int inputIndex = activeInput();
+        _node->notifyInputNIsRendering(inputIndex);
+
+        // If an exception occurs here it is probably fatal, since
+        // it comes from Natron itself. All exceptions from plugins are already caught
+        // by the HostSupport library.
+        // We catch it  and rethrow it just to notify the rendering is done.
+        try {
+            if (isInputImgCached) {
+                ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
+                ///cache lookup things because we already did it ourselves.
+                activeInputToRender->renderRoI(time, scale, view, texRectClipped, cachedImgParams, inputImage);
             } else {
-                
-                int rowsPerThread = std::ceil((double)(texRectClipped.x2 - texRectClipped.x1) / (double)QThread::idealThreadCount());
-                // group of group of rows where first is image coordinate, second is texture coordinate
-                std::vector< std::pair<int, int> > splitRows;
-                int k = texRectClipped.y1;
-                while (k < texRectClipped.y2) {
+                _imp->lastRenderedImage = activeInputToRender->renderRoI(time, scale,view,texRectClipped,byPassCache,&rod);
+            }
+        } catch (const std::exception& e) {
+            _node->notifyInputNIsFinishedRendering(inputIndex);
+            throw e;
+        }
+
+        _node->notifyInputNIsFinishedRendering(inputIndex);
+
+
+        if (!_imp->lastRenderedImage) {
+            //if render was aborted, remove the frame from the cache as it contains only garbage
+            appPTR->removeFromViewerCache(cachedFrame);
+            return StatFailed;
+        }
+
+        //  Natron::debugImage(_lastRenderedImage.get(),"img.png");
+
+        if (aborted()) {
+            //if render was aborted, remove the frame from the cache as it contains only garbage
+            appPTR->removeFromViewerCache(cachedFrame);
+            return StatOK;
+        }
+
+        if (singleThreaded) {
+            if (_imp->interThreadInfos.autoContrast) {
+                double vmin, vmax;
+                std::pair<double,double> vMinMax = findAutoContrastVminVmax(_imp->lastRenderedImage, _imp->interThreadInfos.channels, roi);
+                vmin = vMinMax.first;
+                vmax = vMinMax.second;
+
+                ///if vmax - vmin is greater than 1 the exposure will be really small and we won't see
+                ///anything in the image
+                if (vmin == vmax) {
+                    vmin = vmax - 1.;
+                }
+                _imp->interThreadInfos.exposure = 1 / (vmax - vmin);
+                _imp->interThreadInfos.offset =  - vmin / ( vmax - vmin);
+                _imp->exposure = _imp->interThreadInfos.exposure; // ???
+                _imp->offset = _imp->interThreadInfos.offset; // ???
+
+            }
+
+            const RenderViewerArgs args(_imp->lastRenderedImage,
+                                        textureRect,
+                                        _imp->interThreadInfos.channels,
+                                        closestPowerOf2,
+                                        _imp->interThreadInfos.bitDepth,
+                                        _imp->exposure,
+                                        _imp->offset,
+                                        _imp->colorSpace);
+
+            renderFunctor(std::make_pair(texRectClipped.y1,texRectClipped.y2),
+                          args,
+                          _imp->buffer);
+        } else {
+
+            int rowsPerThread = std::ceil((double)(texRectClipped.x2 - texRectClipped.x1) / (double)QThread::idealThreadCount());
+            // group of group of rows where first is image coordinate, second is texture coordinate
+            QList< std::pair<int, int> > splitRows;
+            int k = texRectClipped.y1;
+            while (k < texRectClipped.y2) {
+                int top = k + rowsPerThread;
+                int realTop = top > texRectClipped.y2 ? texRectClipped.y2 : top;
+                splitRows.push_back(std::make_pair(k,realTop));
+                k += rowsPerThread;
+            }
+
+            ///if autocontrast is enabled, find out the vmin/vmax before rendering and mapping against new values
+            if (_imp->interThreadInfos.autoContrast) {
+
+                rowsPerThread = std::ceil((double)(roi.width()) / (double)QThread::idealThreadCount());
+                std::vector<RectI> splitRects;
+                k = roi.y1;
+                while (k < roi.y2) {
                     int top = k + rowsPerThread;
-                    int realTop = top > texRectClipped.y2 ? texRectClipped.y2 : top;
-                    splitRows.push_back(std::make_pair(k,realTop));
+                    int realTop = top > roi.top() ? roi.top() : top;
+                    splitRects.push_back(RectI(roi.left(), k, roi.right(), realTop));
                     k += rowsPerThread;
                 }
-                
-                ///if autocontrast is enabled, find out the vmin/vmax before rendering and mapping against new values
-                if (_imp->interThreadInfos.autoContrast) {
-                    
-                    rowsPerThread = std::ceil((double)(roi.width()) / (double)QThread::idealThreadCount());
-                    std::vector<RectI> splitRects;
-                    k = roi.y1;
-                    while (k < roi.y2) {
-                        int top = k + rowsPerThread;
-                        int realTop = top > roi.top() ? roi.top() : top;
-                        splitRects.push_back(RectI(roi.left(), k, roi.right(), realTop));
-                        k += rowsPerThread;
-                    }
 
-                    _imp->vmin = INT_MAX;
-                    _imp->vmax = INT_MIN;
-                    QtConcurrent::map(splitRects,boost::bind(&ViewerInstance::findAutoContrastVminVmax,this,_imp->lastRenderedImage,_1))
-                                      .waitForFinished();
-                    
-                    if (_imp->vmax == _imp->vmin) {
-                        _imp->vmin = _imp->vmax - 1.;
+                QFuture<std::pair<double,double> > future = QtConcurrent::mapped(splitRects,
+                                                                                 boost::bind(findAutoContrastVminVmax,
+                                                                                             _imp->lastRenderedImage,
+                                                                                             _imp->interThreadInfos.channels,
+                                                                                             _1));
+                future.waitForFinished();
+                double vmin = std::numeric_limits<double>::infinity();
+                double vmax = -std::numeric_limits<double>::infinity();
+
+                std::pair<double,double> vMinMax;
+                foreach (vMinMax, future.results()) {
+                    if (vMinMax.first < vmin) {
+                        vmin = vMinMax.first;
                     }
-                    _imp->interThreadInfos.exposure = 1 / (_imp->vmax - _imp->vmin);
-                    _imp->interThreadInfos.offset =  - _imp->vmin / ( _imp->vmax - _imp->vmin );
-                    {
-                        QMutexLocker l(&_imp->renderArgsMutex);
-                        _imp->exposure = _imp->interThreadInfos.exposure;
-                        _imp->offset = _imp->interThreadInfos.offset;
+                    if (vMinMax.second > vmax) {
+                        vmax = vMinMax.second;
                     }
                 }
-                
-                QtConcurrent::map(splitRows,
-                                  boost::bind(&ViewerInstance::renderFunctor,this,_imp->lastRenderedImage,_1,textureRect,closestPowerOf2)).waitForFinished();
-                
+                if (vmax == vmin) {
+                    vmin = vmax - 1.;
+                }
+
+                _imp->interThreadInfos.exposure = 1 / (vmax - vmin);
+                _imp->interThreadInfos.offset =  -vmin / (vmax - vmin);
+                {
+                    QMutexLocker l(&_imp->renderArgsMutex);
+                    _imp->exposure = _imp->interThreadInfos.exposure;
+                    _imp->offset = _imp->interThreadInfos.offset;
+                }
             }
+
+            const RenderViewerArgs args(_imp->lastRenderedImage,
+                                        textureRect,
+                                        _imp->interThreadInfos.channels,
+                                        closestPowerOf2,
+                                        _imp->interThreadInfos.bitDepth,
+                                        _imp->exposure,
+                                        _imp->offset,
+                                        _imp->colorSpace);
+
+            QtConcurrent::map(splitRows,
+                              boost::bind(&renderFunctor,
+                                          _1,
+                                          args,
+                                          _imp->buffer)).waitForFinished();
+
         }
-        if(aborted()){
+        if (aborted()) {
             //if render was aborted, remove the frame from the cache as it contains only garbage
             appPTR->removeFromViewerCache(cachedFrame);
             return StatOK;
         }
         //we released the input image and force the cache to clear exceeding entries
         appPTR->clearExceedingEntriesFromNodeCache();
-        
-    }
-    
+
+    } // !isCached
+
     if(getVideoEngine()->mustQuit()){
         return StatFailed;
     }
-    
-    if(!aborted()) {
-        
+
+    if (!aborted()) {
         if (singleThreaded) {
             updateViewer();
         } else {
@@ -653,65 +838,30 @@ ViewerInstance::renderViewer(SequenceTime time,
 }
 
 void
-ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,
-                              std::pair<int,int> yRange,
-                              const TextureRect& texRect,
-                              int closestPowerOf2)
+renderFunctor(std::pair<int,int> yRange,
+              const RenderViewerArgs& args,
+              void *buffer)
 {
-    assert(texRect.y1 <= yRange.first && yRange.first <= yRange.second && yRange.second <= texRect.y2);
+    assert(args.texRect.y1 <= yRange.first && yRange.first <= yRange.second && yRange.second <= args.texRect.y2);
     
-    if(aborted()){
-        return;
-    }
-    
-    int rOffset = 0,gOffset = 0,bOffset = 0;
-    bool luminance = false;
-    switch (_imp->interThreadInfos.channels) {
-        case RGB:
-            rOffset = 0;
-            gOffset = 1;
-            bOffset = 2;
-            break;
-        case LUMINANCE:
-            luminance = true;
-            break;
-        case R:
-            rOffset = 0;
-            gOffset = 0;
-            bOffset = 0;
-            break;
-        case G:
-            rOffset = 1;
-            gOffset = 1;
-            bOffset = 1;
-            break;
-        case B:
-            rOffset = 2;
-            gOffset = 2;
-            bOffset = 2;
-            break;
-        case A:
-            rOffset = 3;
-            gOffset = 3;
-            bOffset = 3;
-            break;
-    }
-    if (_imp->interThreadInfos.bitDepth == OpenGLViewerI::FLOAT || _imp->interThreadInfos.bitDepth == OpenGLViewerI::HALF_FLOAT) {
+    if (args.bitDepth == OpenGLViewerI::FLOAT || args.bitDepth == OpenGLViewerI::HALF_FLOAT) {
         // image is stored as linear, the OpenGL shader with do gamma/sRGB/Rec709 decompression
-        scaleToTexture32bits(inputImage,yRange,texRect,closestPowerOf2,rOffset,gOffset,bOffset,luminance);
+        scaleToTexture32bits(yRange, args, (float*)buffer);
     }
     else{
         // texture is stored as sRGB/Rec709 compressed 8-bit RGBA
-        scaleToTexture8bits(inputImage,yRange,texRect,closestPowerOf2,rOffset,gOffset,bOffset,luminance);
+        scaleToTexture8bits(yRange, args, (U32*)buffer);
     }
 
 }
 
-void
-ViewerInstance::findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
-                                         const RectI& rect)
+std::pair<double, double>
+findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
+                         ViewerInstance::DisplayChannels channels,
+                         const RectI& rect)
 {
-    double localVmin = INT_MAX,localVmax = INT_MIN;
+    double localVmin = std::numeric_limits<double>::infinity();
+    double localVmax = -std::numeric_limits<double>::infinity();
     for (int y = rect.bottom(); y < rect.top(); ++y) {
         const float* src_pixels = (const float*)inputImage->pixelAt(rect.left(),y);
         ///we fill the scan-line with all the pixels of the input image
@@ -722,28 +872,28 @@ ViewerInstance::findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> 
             double a = src_pixels[3];
             
             double mini,maxi;
-            switch (_imp->interThreadInfos.channels) {
-                case RGB:
+            switch (channels) {
+                case ViewerInstance::RGB:
                     mini = std::min(std::min(r,g),b);
                     maxi = std::max(std::max(r,g),b);
                     break;
-                case LUMINANCE:
+                case ViewerInstance::LUMINANCE:
                     mini = r = 0.299 * r + 0.587 * g + 0.114 * b;
                     maxi = mini;
                     break;
-                case R:
+                case ViewerInstance::R:
                     mini = r;
                     maxi = mini;
                     break;
-                case G:
+                case ViewerInstance::G:
                     mini = g;
                     maxi = mini;
                     break;
-                case B:
+                case ViewerInstance::B:
                     mini = b;
                     maxi = mini;
                     break;
-                case A:
+                case ViewerInstance::A:
                     mini = a;
                     maxi = mini;
                     break;
@@ -761,93 +911,113 @@ ViewerInstance::findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> 
         }
     }
     
-    QMutexLocker vminVmaxLocker(&_imp->vMinMaxMutex);
-    _imp->vmin = std::min(_imp->vmin, localVmin);
-    _imp->vmax = std::max(_imp->vmax, localVmax);
-    
+    return std::make_pair(localVmin, localVmax);
 }
 
 
 #pragma message WARN("Adjust the 8bits and 32bits functions to take into account the image components.")
 void
-ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> inputImage,
-                                    std::pair<int,int> yRange,
-                                    const TextureRect& texRect,
-                                    int closestPowerOf2,
-                                    int rOffset,
-                                    int gOffset,
-                                    int bOffset,
-                                    bool luminance)
+scaleToTexture8bits(std::pair<int,int> yRange,
+                    const RenderViewerArgs& args,
+                    U32* output)
 {
-    assert(_imp->buffer);
-    
+    assert(output);
+
+    int rOffset, gOffset, bOffset;
+
+    const bool luminance = (args.channels == ViewerInstance::LUMINANCE);
+    switch (args.channels) {
+        case ViewerInstance::RGB:
+        case ViewerInstance::LUMINANCE:
+            rOffset = 0;
+            gOffset = 1;
+            bOffset = 2;
+            break;
+        case ViewerInstance::R:
+            rOffset = 0;
+            gOffset = 0;
+            bOffset = 0;
+            break;
+        case ViewerInstance::G:
+            rOffset = 1;
+            gOffset = 1;
+            bOffset = 1;
+            break;
+        case ViewerInstance::B:
+            rOffset = 2;
+            gOffset = 2;
+            bOffset = 2;
+            break;
+        case ViewerInstance::A:
+            rOffset = 3;
+            gOffset = 3;
+            bOffset = 3;
+            break;
+    }
+
     ///the base output buffer
-    U32* output = reinterpret_cast<U32*>(_imp->buffer);
+    //U32* output = reinterpret_cast<U32*>(_imp->buffer);
 
     ///offset the output buffer at the starting point
-    output += ((yRange.first - texRect.y1) / closestPowerOf2) * texRect.w;
+    output += ((yRange.first - args.texRect.y1) / args.closestPowerOf2) * args.texRect.w;
     
     ///iterating over the scan-lines of the input image
     int dstY = 0;
-    for (int y = yRange.first; y < yRange.second; y+=closestPowerOf2) {
+    for (int y = yRange.first; y < yRange.second; y += args.closestPowerOf2) {
         
-        int start = (int)(rand() % ((texRect.x2 - texRect.x1)/closestPowerOf2));
-        const float* src_pixels = (const float*)inputImage->pixelAt(texRect.x1, y);
+        int start = (int)(rand() % ((args.texRect.x2 - args.texRect.x1)/args.closestPowerOf2));
+        const float* src_pixels = (const float*)args.inputImage->pixelAt(args.texRect.x1, y);
         
-        U32* dst_pixels = output + dstY * texRect.w;
+        U32* dst_pixels = output + dstY * args.texRect.w;
 
         /* go fowards from starting point to end of line: */
         for (int backward = 0;backward < 2; ++backward) {
             
             int dstIndex = backward ? start - 1 : start;
-            int srcIndex = dstIndex * closestPowerOf2; //< offset from src_pixels
-            assert(backward == 1 || (srcIndex >= 0 && srcIndex < (texRect.x2 - texRect.x1)));
+            int srcIndex = dstIndex * args.closestPowerOf2; //< offset from src_pixels
+            assert(backward == 1 || (srcIndex >= 0 && srcIndex < (args.texRect.x2 - args.texRect.x1)));
             
             unsigned error_r = 0x80;
             unsigned error_g = 0x80;
             unsigned error_b = 0x80;
             
-            while(dstIndex < texRect.w && dstIndex >= 0) {
+            while (dstIndex < args.texRect.w && dstIndex >= 0) {
                 
-                if (srcIndex >= ( texRect.x2 - texRect.x1)) {
+                if (srcIndex >= ( args.texRect.x2 - args.texRect.x1)) {
                     break;
                     //dst_pixels[dstIndex] = toBGRA(0,0,0,255);
                 } else {
-                    
-                    double r = src_pixels[srcIndex * 4 + rOffset] * _imp->interThreadInfos.exposure + _imp->interThreadInfos.offset;
-                    double g = src_pixels[srcIndex * 4 + gOffset] * _imp->interThreadInfos.exposure + _imp->interThreadInfos.offset;
-                    double b = src_pixels[srcIndex * 4 + bOffset] * _imp->interThreadInfos.exposure + _imp->interThreadInfos.offset;
-                    if(luminance){
+                    double r = src_pixels[srcIndex * 4 + rOffset] * args.exposure + args.offset;
+                    double g = src_pixels[srcIndex * 4 + gOffset] * args.exposure + args.offset;
+                    double b = src_pixels[srcIndex * 4 + bOffset] * args.exposure + args.offset;
+                    if (luminance) {
                         r = 0.299 * r + 0.587 * g + 0.114 * b;
                         g = r;
                         b = r;
                     }
                     
-                    if (!_imp->colorSpace) {
-                        
+                    if (!args.colorSpace) {
                         dst_pixels[dstIndex] = toBGRA(Color::floatToInt<256>(r),
                                                       Color::floatToInt<256>(g),
                                                       Color::floatToInt<256>(b),
                                                       255);
-                        
                     } else {
-                        error_r = (error_r&0xff) + _imp->colorSpace->toColorSpaceUint8xxFromLinearFloatFast(r);
-                        error_g = (error_g&0xff) + _imp->colorSpace->toColorSpaceUint8xxFromLinearFloatFast(g);
-                        error_b = (error_b&0xff) + _imp->colorSpace->toColorSpaceUint8xxFromLinearFloatFast(b);
+                        error_r = (error_r&0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(r);
+                        error_g = (error_g&0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(g);
+                        error_b = (error_b&0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(b);
                         assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
                         dst_pixels[dstIndex] = toBGRA((U8)(error_r >> 8),
                                                (U8)(error_g >> 8),
                                                (U8)(error_b >> 8),
                                                255);
-                        
                     }
                 }
                 if (backward) {
                     --dstIndex;
-                    srcIndex -= closestPowerOf2;
+                    srcIndex -= args.closestPowerOf2;
                 } else {
                     ++dstIndex;
-                    srcIndex += closestPowerOf2;
+                    srcIndex += args.closestPowerOf2;
                 }
                 
             }
@@ -857,35 +1027,62 @@ ViewerInstance::scaleToTexture8bits(boost::shared_ptr<const Natron::Image> input
 }
 
 void
-ViewerInstance::scaleToTexture32bits(boost::shared_ptr<const Natron::Image> inputImage,
-                                     std::pair<int,int> yRange,
-                                     const TextureRect& texRect,
-                                     int closestPowerOf2,
-                                     int rOffset,
-                                     int gOffset,
-                                     int bOffset,
-                                     bool luminance)
+scaleToTexture32bits(std::pair<int,int> yRange,
+                     const RenderViewerArgs& args,
+                     float *output)
 {
-    assert(_imp->buffer);
-    
+    assert(output);
+
+    int rOffset, gOffset, bOffset;
+
+    const bool luminance = (args.channels == ViewerInstance::LUMINANCE);
+    switch (args.channels) {
+        case ViewerInstance::RGB:
+        case ViewerInstance::LUMINANCE:
+            rOffset = 0;
+            gOffset = 1;
+            bOffset = 2;
+            break;
+        case ViewerInstance::R:
+            rOffset = 0;
+            gOffset = 0;
+            bOffset = 0;
+            break;
+        case ViewerInstance::G:
+            rOffset = 1;
+            gOffset = 1;
+            bOffset = 1;
+            break;
+        case ViewerInstance::B:
+            rOffset = 2;
+            gOffset = 2;
+            bOffset = 2;
+            break;
+        case ViewerInstance::A:
+            rOffset = 3;
+            gOffset = 3;
+            bOffset = 3;
+            break;
+    }
+
     ///the base output buffer
-    float* output = reinterpret_cast<float*>(_imp->buffer);
+    //float* output = reinterpret_cast<float*>(_imp->buffer);
     
     ///the width of the output buffer multiplied by the channels count
-    int dst_width = texRect.w * 4;
+    int dst_width = args.texRect.w * 4;
     
     ///offset the output buffer at the starting point
-    output += ((yRange.first - texRect.y1) / closestPowerOf2) * dst_width;
+    output += ((yRange.first - args.texRect.y1) / args.closestPowerOf2) * dst_width;
     
     ///iterating over the scan-lines of the input image
     int dstY = 0;
-    for (int y = yRange.first; y < yRange.second; y+=closestPowerOf2) {
+    for (int y = yRange.first; y < yRange.second; y += args.closestPowerOf2) {
         
-        const float* src_pixels = (const float*)inputImage->pixelAt(texRect.x1, y);
+        const float* src_pixels = (const float*)args.inputImage->pixelAt(args.texRect.x1, y);
         float* dst_pixels = output + dstY * dst_width;
         
         ///we fill the scan-line with all the pixels of the input image
-        for (int x = texRect.x1; x < texRect.x2; x+=closestPowerOf2) {
+        for (int x = args.texRect.x1; x < args.texRect.x2; x += args.closestPowerOf2) {
             double r = src_pixels[rOffset];
             double g = src_pixels[gOffset];
             double b = src_pixels[bOffset];
@@ -899,28 +1096,22 @@ ViewerInstance::scaleToTexture32bits(boost::shared_ptr<const Natron::Image> inpu
             *dst_pixels++ = b;
             *dst_pixels++ = 1.;
             
-            src_pixels += closestPowerOf2 * 4;
+            src_pixels += args.closestPowerOf2 * 4;
         }
         ++dstY;
     }
     
 }
 
-U32
-ViewerInstance::toBGRA(U32 r,U32 g,U32 b,U32 a)
-{
-    U32 res = 0x0;
-    res |= b;
-    res |= (g << 8);
-    res |= (r << 16);
-    res |= (a << 24);
-    return res;
-}
 
 
+#pragma message WARN("dead code? please explain when this is called and what it does")
 void
 ViewerInstance::wakeUpAnySleepingThread()
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     _imp->usingOpenGL = false;
     _imp->usingOpenGLCond.wakeAll();
 }
@@ -928,10 +1119,15 @@ ViewerInstance::wakeUpAnySleepingThread()
 void
 ViewerInstance::updateViewer()
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     QMutexLocker locker(&_imp->usingOpenGLMutex);
     _imp->uiContext->makeOpenGLcontextCurrent();
     if(!aborted()){
-        _imp->uiContext->transferBufferFromRAMtoGPU(_imp->interThreadInfos.ramBuffer,
+#pragma message WARN("how do you make sure _imp->interThreadInfos.ramBuffer is not freed during this operation?")
+        // how do you make sure _imp->interThreadInfos.ramBuffer is not freed during this operation?
+       _imp->uiContext->transferBufferFromRAMtoGPU(_imp->interThreadInfos.ramBuffer,
                                            _imp->interThreadInfos.bytesCount,
                                            _imp->interThreadInfos.textureRect,
                                            _imp->pboIndex);
@@ -949,12 +1145,18 @@ ViewerInstance::updateViewer()
 bool
 ViewerInstance::isInputOptional(int n) const
 {
-    return n != activeInput();
+#pragma message WARN("should be MT-SAFE: called from main thread and VideoEngine thread")
+    // should be MT-SAFE: called from main thread and VideoEngine thread
+
+    return n != activeInput(); // not MT-SAFE!
 }
 
 void
 ViewerInstance::onExposureChanged(double exp)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     {
         QMutexLocker l(&_imp->renderArgsMutex);
         _imp->exposure = exp;
@@ -971,6 +1173,9 @@ ViewerInstance::onExposureChanged(double exp)
 void
 ViewerInstance::onAutoContrastChanged(bool autoContrast,bool refresh)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     {
         QMutexLocker l(&_imp->autoContrastMutex);
         _imp->autoContrast = autoContrast;
@@ -983,6 +1188,9 @@ ViewerInstance::onAutoContrastChanged(bool autoContrast,bool refresh)
 bool
 ViewerInstance::isAutoContrastEnabled() const
 {
+#pragma message WARN("should be MT-SAFE: called from main thread and VideoEngine thread")
+    // should be MT-SAFE: called from main thread and VideoEngine thread
+
     QMutexLocker l(&_imp->autoContrastMutex);
     return _imp->autoContrast;
 }
@@ -990,6 +1198,9 @@ ViewerInstance::isAutoContrastEnabled() const
 void
 ViewerInstance::onColorSpaceChanged(const QString& colorspaceName)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     QMutexLocker l(&_imp->renderArgsMutex);
     
     if (colorspaceName == "Linear(None)") {
@@ -1025,11 +1236,18 @@ ViewerInstance::onColorSpaceChanged(const QString& colorspaceName)
 void
 ViewerInstance::onViewerCacheFrameAdded()
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     emit addedCachedFrame(getApp()->getTimeLine()->currentFrame());
 }
 
 void
-ViewerInstance::setDisplayChannels(DisplayChannels channels) {
+ViewerInstance::setDisplayChannels(DisplayChannels channels)
+{
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     {
         QMutexLocker l(&_imp->channelsMutex);
         _imp->channels = channels;
@@ -1042,6 +1260,9 @@ ViewerInstance::setDisplayChannels(DisplayChannels channels) {
 void
 ViewerInstance::disconnectViewer()
 {
+    // always running in the VideoEngine thread
+    _imp->assertVideoEngine();
+
     if (getVideoEngine()->isWorking()) {
         getVideoEngine()->abortRendering(false); // aborting current work
     }
@@ -1052,6 +1273,9 @@ ViewerInstance::disconnectViewer()
 bool
 ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear)
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     if (!_imp->lastRenderedImage) {
         return false;
     }
@@ -1081,21 +1305,33 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
     return true;
 }
 
+#pragma message WARN("dead code? please explain when this is called and what it does")
 bool
 ViewerInstance::supportsGLSL() const
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     return _imp->uiContext->supportsGLSL();
 }
 
+#pragma message WARN("dead code? please explain when this is called and what it does")
 void
 ViewerInstance::redrawViewer()
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     emit mustRedraw();
 }
 
+#pragma message WARN("dead code? please explain when this is called and what it does")
 boost::shared_ptr<Natron::Image>
 ViewerInstance::getLastRenderedImage() const
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     if (!getNode()->isActivated()) {
         return boost::shared_ptr<Natron::Image>();
     }
@@ -1105,6 +1341,9 @@ ViewerInstance::getLastRenderedImage() const
 int
 ViewerInstance::getLutType() const
 {
+#pragma message WARN("should be MT-SAFE: called from main thread and Serialization (pooled) thread")
+    // should be MT-SAFE: called from main thread and Serialization (pooled) thread
+
     QMutexLocker l(&_imp->renderArgsMutex);
     return _imp->lut;
 }
@@ -1112,12 +1351,20 @@ ViewerInstance::getLutType() const
 double
 ViewerInstance::getExposure() const
 {
+#pragma message WARN("should be MT-SAFE: called from main thread and Serialization (pooled) thread")
+    // should be MT-SAFE: called from main thread and Serialization (pooled) thread
+
     QMutexLocker l(&_imp->renderArgsMutex);
     return _imp->exposure;
 }
 
+#pragma message WARN("dead code? please explain when this is called and what it does")
 const Natron::Color::Lut*
-ViewerInstance::getLut() const {
+ViewerInstance::getLut() const
+{
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     QMutexLocker l(&_imp->renderArgsMutex);
     return _imp->colorSpace;
 }
@@ -1125,13 +1372,20 @@ ViewerInstance::getLut() const {
 ViewerInstance::DisplayChannels
 ViewerInstance::getChannels() const
 {
+#pragma message WARN("should be MT-SAFE: called from main thread and Serialization (pooled) thread")
+    // should be MT-SAFE: called from main thread and Serialization (pooled) thread
+
     QMutexLocker l(&_imp->channelsMutex);
     return _imp->channels;
 }
 
+#pragma message WARN("dead code? please explain when this is called and what it does")
 double
 ViewerInstance::getOffset() const
 {
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+
     QMutexLocker l(&_imp->renderArgsMutex);
     return _imp->offset;
 }

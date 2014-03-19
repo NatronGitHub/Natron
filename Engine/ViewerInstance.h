@@ -99,11 +99,6 @@ public:
 
     bool supportsGLSL() const WARN_UNUSED_RETURN;
 
-    /**
-     *@brief Actually converting to ARGB... but it is called BGRA by
-     the texture format GL_UNSIGNED_INT_8_8_8_8_REV
-     **/
-    static U32 toBGRA(U32 r,U32 g,U32 b,U32 a) WARN_UNUSED_RETURN;
 
     void setDisplayChannels(DisplayChannels channels) ;
 
@@ -192,33 +187,6 @@ private:
     /*******************************************/
 
     virtual void cloneExtras() OVERRIDE FINAL;
-
-    void renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,
-                       std::pair<int,int> yRange,
-                       const TextureRect& texRect,
-                       int closestPowerOf2);
-
-    void findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
-                                  const RectI& rect);
-
-    void scaleToTexture8bits(boost::shared_ptr<const Natron::Image> inputImage,
-                             std::pair<int,int> yRange,
-                             const TextureRect& texRect,
-                             int closestPowerOf2,
-                             int rOffset,
-                             int gOffset,
-                             int bOffset,
-                             bool luminance);
-
-    void scaleToTexture32bits(boost::shared_ptr<const Natron::Image> inputImage,
-                              std::pair<int,int> yRange,
-                              const TextureRect& texRect,
-                              int closestPowerOf2,
-                              int rOffset,
-                              int gOffset,
-                              int bOffset,
-                              bool luminance);
-
 
 private:
     struct ViewerInstancePrivate;
