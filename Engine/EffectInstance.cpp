@@ -12,6 +12,7 @@
 #include "EffectInstance.h"
 
 #include <QtConcurrentMap>
+#include <QReadWriteLock>
 #include <QCoreApplication>
 
 #include <boost/bind.hpp>
@@ -50,7 +51,8 @@ struct EffectInstance::RenderArgs {
 
 struct EffectInstance::Implementation {
     Implementation()
-    : renderAborted(false)
+    : renderAbortedMutex()
+    , renderAborted(false)
     , hashValue()
     , hashAge(0)
     , inputs()
@@ -62,6 +64,7 @@ struct EffectInstance::Implementation {
     {
     }
 
+    mutable QReadWriteLock renderAbortedMutex;
     bool renderAborted; //< was rendering aborted ?
     Hash64 hashValue;//< The hash value of this effect
     int hashAge;//< to check if the hash has the same age than the project's age
@@ -108,11 +111,13 @@ const EffectInstance::Inputs& EffectInstance::getInputs() const
 
 bool EffectInstance::aborted() const
 {
+    QReadLocker l(&_imp->renderAbortedMutex);
     return _imp->renderAborted;
 }
 
 void EffectInstance::setAborted(bool b)
 {
+    QWriteLocker l(&_imp->renderAbortedMutex);
     _imp->renderAborted = b;
 }
 

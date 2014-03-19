@@ -1625,6 +1625,10 @@ void NodeGraph::cloneNode(NodeGui* node) {
         Natron::warningDialog("Clone", "You cannot clone a node whose already a clone.");
         return;
     }
+    if (node->getNode()->pluginID() == "Viewer") {
+        Natron::warningDialog("Clone", "Cloning a viewer is not a valid operation.");
+        return;
+    }
     
     NodeSerialization internalSerialization;
     node->getNode()->serialize(&internalSerialization);

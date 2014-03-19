@@ -27,6 +27,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EffectInstance.h"
 
+class QReadWriteLock;
 class OfxClipInstance;
 class Button_Knob;
 class OverlaySupport;
@@ -72,6 +73,9 @@ class OfxEffectInstance : public AbstractOfxEffectInstance {
 
     bool _initialized; //true when the image effect instance has been created and populated
     boost::shared_ptr<Button_Knob> _renderButton; //< render button for writers
+    mutable EffectInstance::RenderSafety _renderSafety;
+    mutable bool _wasRenderSafetySet;
+    mutable QReadWriteLock* _renderSafetyLock;
 public:
     
     

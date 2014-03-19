@@ -43,7 +43,6 @@ void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) {
              ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(activeNodes[i]->getNode()->getLiveInstance());
              assert(viewer);
              ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
-#pragma message WARN("crashes here when after cloning a Viewer (during autosave)")
              assert(tab);
              ViewerData viewerData;
              tab->getViewer()->getProjection(&viewerData.zoomLeft, &viewerData.zoomBottom, &viewerData.zoomFactor, &viewerData.zoomPAR);
