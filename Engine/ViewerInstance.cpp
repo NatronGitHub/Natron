@@ -80,26 +80,17 @@ namespace {
         const Natron::Color::Lut* colorSpace;
     };
 
-    struct InterThreadInfos{
+    struct InterThreadInfos
+    {
         InterThreadInfos()
         : ramBuffer(NULL)
         , textureRect()
         , bytesCount(0)
-        , autoContrast(false)
-        , channels(ViewerInstance::RGB)
-        , bitDepth(0)
-        , exposure(0)
-        , offset(0)
         {}
 
         unsigned char* ramBuffer;
         TextureRect textureRect;
         size_t bytesCount;
-        bool autoContrast;
-        ViewerInstance::DisplayChannels channels;
-        int bitDepth; //< corresponds to OpenGLViewerI::BitDepth
-        double exposure;
-        double offset;
     };
 }
 
@@ -118,7 +109,7 @@ struct ViewerInstance::ViewerInstancePrivate {
     , bufferAllocated(0)
     , renderArgsMutex()
     , exposure(1.)
-    , offset(0)
+    , offset(0.)
     , colorSpace(Natron::Color::LutManager::sRGBLut())
     , lut(ViewerInstance::sRGB)
     , channelsMutex()
@@ -330,7 +321,6 @@ ViewerInstance::onNodeNameChanged(const QString& name)
 int
 ViewerInstance::activeInput() const
 {
-    
     //    InspectorNode::activeInput()  is MT-safe
     return dynamic_cast<InspectorNode*>(getNode())->activeInput(); // not MT-SAFE!
 }
@@ -529,33 +519,35 @@ ViewerInstance::renderViewer(SequenceTime time,
 #pragma message WARN("Specify image components here")
     _imp->interThreadInfos.bytesCount = textureRect.w * textureRect.h * 4;
     
-    _imp->interThreadInfos.bitDepth = _imp->uiContext->getBitDepth();
+    OpenGLViewerI::BitDepth bitDepth = _imp->uiContext->getBitDepth();
     
     //half float is not supported yet so it is the same as float
-    if(_imp->interThreadInfos.bitDepth == OpenGLViewerI::FLOAT || _imp->interThreadInfos.bitDepth == OpenGLViewerI::HALF_FLOAT){
+    if (bitDepth == OpenGLViewerI::FLOAT || bitDepth == OpenGLViewerI::HALF_FLOAT) {
         _imp->interThreadInfos.bytesCount *= sizeof(float);
     }
     
     ///make a copy of the auto contrast enabled state, so render threads only refer to that copy
-    _imp->interThreadInfos.autoContrast = isAutoContrastEnabled();
-    
+    bool autoContrast = isAutoContrastEnabled();
+
+    double exposure, offset;
     {
         QMutexLocker expLocker(&_imp->renderArgsMutex);
-        _imp->interThreadInfos.exposure = _imp->exposure;
-        _imp->interThreadInfos.offset = _imp->offset;
+        exposure = _imp->exposure;
+        offset = _imp->offset;
     }
-    
+
+    ViewerInstance::DisplayChannels channels;
     {
         QMutexLocker channelsLocker(&_imp->channelsMutex);
-        _imp->interThreadInfos.channels = _imp->channels;
+        channels = _imp->channels;
     }
     
     FrameKey key(time,
                  hash().value(),
-                 _imp->interThreadInfos.exposure,
+                 exposure,
                  _imp->lut,
-                 (int)_imp->interThreadInfos.bitDepth,
-                 _imp->interThreadInfos.channels,
+                 (int)bitDepth,
+                 channels,
                  view,
                  textureRect);
     
@@ -571,7 +563,7 @@ ViewerInstance::renderViewer(SequenceTime time,
             
             ///we never use the texture cache when the user RoI is enabled, otherwise we would have
             ///zillions of textures in the cache, each a few pixels different.
-            if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !_imp->interThreadInfos.autoContrast) {
+            if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !autoContrast) {
                 isCached = Natron::getTextureFromCache(key,&cachedFrameParams,&cachedFrame);
             }
         } else {
@@ -602,7 +594,7 @@ ViewerInstance::renderViewer(SequenceTime time,
         ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
         ///is very low, we better render again (and let the NodeCache do the work) rather than just
         ///overload the ViewerCache which may become slowe
-        if (byPassCache || _imp->uiContext->isUserRegionOfInterestEnabled() || _imp->interThreadInfos.autoContrast) {
+        if (byPassCache || _imp->uiContext->isUserRegionOfInterestEnabled() || autoContrast) {
             assert(!cachedFrame);
             // don't reallocate if we need less memory (avoid fragmentation)
             if (_imp->bufferAllocated < _imp->interThreadInfos.bytesCount) {
@@ -682,9 +674,9 @@ ViewerInstance::renderViewer(SequenceTime time,
         }
 
         if (singleThreaded) {
-            if (_imp->interThreadInfos.autoContrast) {
+            if (autoContrast) {
                 double vmin, vmax;
-                std::pair<double,double> vMinMax = findAutoContrastVminVmax(_imp->lastRenderedImage, _imp->interThreadInfos.channels, roi);
+                std::pair<double,double> vMinMax = findAutoContrastVminVmax(_imp->lastRenderedImage, channels, roi);
                 vmin = vMinMax.first;
                 vmax = vMinMax.second;
 
@@ -693,20 +685,17 @@ ViewerInstance::renderViewer(SequenceTime time,
                 if (vmin == vmax) {
                     vmin = vmax - 1.;
                 }
-                _imp->interThreadInfos.exposure = 1 / (vmax - vmin);
-                _imp->interThreadInfos.offset =  - vmin / ( vmax - vmin);
-                _imp->exposure = _imp->interThreadInfos.exposure; // ???
-                _imp->offset = _imp->interThreadInfos.offset; // ???
-
+                exposure = 1 / (vmax - vmin);
+                offset = -vmin / ( vmax - vmin);
             }
 
             const RenderViewerArgs args(_imp->lastRenderedImage,
                                         textureRect,
-                                        _imp->interThreadInfos.channels,
+                                        channels,
                                         closestPowerOf2,
-                                        _imp->interThreadInfos.bitDepth,
-                                        _imp->exposure,
-                                        _imp->offset,
+                                        bitDepth,
+                                        exposure,
+                                        offset,
                                         _imp->colorSpace);
 
             renderFunctor(std::make_pair(texRectClipped.y1,texRectClipped.y2),
@@ -726,7 +715,7 @@ ViewerInstance::renderViewer(SequenceTime time,
             }
 
             ///if autocontrast is enabled, find out the vmin/vmax before rendering and mapping against new values
-            if (_imp->interThreadInfos.autoContrast) {
+            if (autoContrast) {
 
                 rowsPerThread = std::ceil((double)(roi.width()) / (double)QThread::idealThreadCount());
                 std::vector<RectI> splitRects;
@@ -741,7 +730,7 @@ ViewerInstance::renderViewer(SequenceTime time,
                 QFuture<std::pair<double,double> > future = QtConcurrent::mapped(splitRects,
                                                                                  boost::bind(findAutoContrastVminVmax,
                                                                                              _imp->lastRenderedImage,
-                                                                                             _imp->interThreadInfos.channels,
+                                                                                             channels,
                                                                                              _1));
                 future.waitForFinished();
                 double vmin = std::numeric_limits<double>::infinity();
@@ -760,22 +749,17 @@ ViewerInstance::renderViewer(SequenceTime time,
                     vmin = vmax - 1.;
                 }
 
-                _imp->interThreadInfos.exposure = 1 / (vmax - vmin);
-                _imp->interThreadInfos.offset =  -vmin / (vmax - vmin);
-                {
-                    QMutexLocker l(&_imp->renderArgsMutex);
-                    _imp->exposure = _imp->interThreadInfos.exposure;
-                    _imp->offset = _imp->interThreadInfos.offset;
-                }
+                exposure = 1 / (vmax - vmin);
+                offset =  -vmin / (vmax - vmin);
             }
 
             const RenderViewerArgs args(_imp->lastRenderedImage,
                                         textureRect,
-                                        _imp->interThreadInfos.channels,
+                                        channels,
                                         closestPowerOf2,
-                                        _imp->interThreadInfos.bitDepth,
-                                        _imp->exposure,
-                                        _imp->offset,
+                                        bitDepth,
+                                        exposure,
+                                        offset,
                                         _imp->colorSpace);
 
             QtConcurrent::map(splitRows,
@@ -812,6 +796,7 @@ ViewerInstance::renderViewer(SequenceTime time,
         }
     }
     return StatOK;
+#pragma message WARN("cachedFrame may be freed here! nothing ensures that ramBuffer is still valid in updateViewer()!")
 }
 
 void
@@ -1103,10 +1088,11 @@ ViewerInstance::updateViewer()
     if(!aborted()){
         // how do you make sure _imp->interThreadInfos.ramBuffer is not freed during this operation?
         ///It is not freed as long as the cachedFrame shared_ptr in renderViewer has a used_count greater than 1.
+#pragma message WARN("how do you make sure that: 'the cachedFrame shared_ptr in renderViewer has a used_count greater than 1.'?")
         ///Since updateViewer() is in the scope of cachedFrame it is guaranteed not to be freed before
         ///the viewer is actually done with it.
         /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-
+#pragma message WARN("how do you make sure _imp->interThreadInfos.ramBuffer is not modified??? no lock? how do you make sure it's always consistent with bytesCount and textureRect????")
        _imp->uiContext->transferBufferFromRAMtoGPU(_imp->interThreadInfos.ramBuffer,
                                            _imp->interThreadInfos.bytesCount,
                                            _imp->interThreadInfos.textureRect,
@@ -1166,7 +1152,6 @@ ViewerInstance::onAutoContrastChanged(bool autoContrast,bool refresh)
 bool
 ViewerInstance::isAutoContrastEnabled() const
 {
-
     // MT-safe
     QMutexLocker l(&_imp->autoContrastMutex);
     return _imp->autoContrast;
