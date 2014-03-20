@@ -707,7 +707,7 @@ ViewerInstance::renderViewer(SequenceTime time,
                                         bitDepth,
                                         gain,
                                         offset,
-                                        lutFromColorspace(_imp->updateViewerParams.lut));
+                                        lutFromColorspace(lut));
 
             renderFunctor(std::make_pair(texRectClipped.y1,texRectClipped.y2),
                           args,
