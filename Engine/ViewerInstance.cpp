@@ -144,6 +144,15 @@ ViewerInstance::~ViewerInstance()
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
+    // If _imp->updateViewerRunning is true, that means that the next updateViewer call was
+    // not yet processed. Since we're in the main thread and it is processed in the main thread,
+    // there is no way to wait for it (locking the mutex would cause a deadlock).
+    // We don't care, after all.
+    //{
+    //    QMutexLocker locker(&_imp->updateViewerMutex);
+    //    assert(!_imp->updateViewerRunning);
+    //}
+
     if (_imp->bufferAllocated) {
         free(_imp->buffer);
         _imp->bufferAllocated = 0;
@@ -683,6 +692,10 @@ ViewerInstance::renderViewer(SequenceTime time,
 
     {
         QMutexLocker locker(&_imp->updateViewerMutex);
+        // wait until previous updateViewer (if any) finishes
+        while (_imp->updateViewerRunning) {
+            _imp->updateViewerCond.wait(&_imp->updateViewerMutex);
+        }
         assert(!_imp->updateViewerRunning);
         _imp->updateViewerRunning = true;
         params->ramBuffer = ramBuffer;
@@ -700,16 +713,10 @@ ViewerInstance::renderViewer(SequenceTime time,
                 assert(!_imp->updateViewerRunning);
             } else {
                 _imp->updateViewerVideoEngine(params);
-                // wait until updateViewer finishes
-                while (_imp->updateViewerRunning) {
-                    _imp->updateViewerCond.wait(&_imp->updateViewerMutex);
-                }
-                assert(!_imp->updateViewerRunning);
             }
         }
-        // cachedFrame may be freed here, since updateViewer() has finished!
     }
-    // end of UpdateUserParams scope
+    // end of boost::shared_ptr<UpdateUserParams> scope... but it still lives inside updateViewer()
     ////////////////////////////////////
     return StatOK;
 }
