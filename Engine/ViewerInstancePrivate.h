@@ -19,6 +19,11 @@
 
 #include "Engine/TextureRect.h"
 
+namespace Natron {
+    class FrameEntry;
+    class FrameParams;
+}
+
 //namespace Natron {
 
 struct RenderViewerArgs {
@@ -51,6 +56,7 @@ struct RenderViewerArgs {
     const Natron::Color::Lut* colorSpace;
 };
 
+/// parameters send from the VideoEngine thread to updateViewer() (which runs in the main thread)
 struct UpdateViewerParams
 {
     UpdateViewerParams()
@@ -143,6 +149,8 @@ public:
     UpdateViewerParams updateViewerParams; // parameters send from the VideoEngine thread to updateViewer() (which runs in the main thread)
     int                updateViewerPboIndex; // always accessed in the main thread: initialized in the constructor, then always accessed and modified by updateViewer()
 
+    /// a private buffer for storing frames that are not in the viewer cache.
+    /// This buffer only grows in size, and is definitely freed in the destructor
     void* buffer;
     size_t bufferAllocated;
 

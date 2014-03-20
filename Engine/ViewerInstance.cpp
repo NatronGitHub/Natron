@@ -371,7 +371,7 @@ ViewerInstance::renderViewer(SequenceTime time,
     emit rodChanged(rod);
 
         
-    if(!_imp->uiContext->isClippingImageToProjectWindow()){
+    if (!_imp->uiContext->isClippingImageToProjectWindow()) {
         dispW.set(rod);
     }
     
@@ -387,7 +387,7 @@ ViewerInstance::renderViewer(SequenceTime time,
     texRect.x2 = std::ceil(((double)roi.x2 / closestPowerOf2) / tileSize) * tileSize;
     texRect.y2 = std::ceil(((double)roi.y2 / closestPowerOf2) / tileSize) * tileSize;
     
-    if(texRect.width() == 0 || texRect.height() == 0){
+    if (texRect.width() == 0 || texRect.height() == 0) {
         return StatOK;
     }
     
@@ -424,7 +424,7 @@ ViewerInstance::renderViewer(SequenceTime time,
     ViewerInstance::ViewerColorSpace lut;
     ViewerInstance::DisplayChannels channels;
     {
-        QMutexLocker expLocker(&_imp->viewerParamsMutex);
+        QMutexLocker locker(&_imp->viewerParamsMutex);
         gain = _imp->viewerParamsGain;
         lut = _imp->viewerParamsLut;
         autoContrast = _imp->viewerParamsAutoContrast;
@@ -440,26 +440,26 @@ ViewerInstance::renderViewer(SequenceTime time,
                  view,
                  textureRect);
 
+    /////////////////////////////////////
+    // start cachedFrame scope
+    //
     boost::shared_ptr<FrameEntry> cachedFrame; //!< this pointer is at least valid until this function exits, the the cache entry cannot be released
     boost::shared_ptr<const FrameParams> cachedFrameParams;
     bool isCached = false;
     
     ///if we want to force a refresh, we by-pass the cache
     bool byPassCache = false;
-    {
-        if (!forceRender) {
-            
-            ///we never use the texture cache when the user RoI is enabled, otherwise we would have
-            ///zillions of textures in the cache, each a few pixels different.
-            if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !autoContrast) {
-                isCached = Natron::getTextureFromCache(key,&cachedFrameParams,&cachedFrame);
-            }
-        } else {
-            byPassCache = true;
+    if (!forceRender) {
+        ///we never use the texture cache when the user RoI is enabled, otherwise we would have
+        ///zillions of textures in the cache, each a few pixels different.
+        if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !autoContrast) {
+            isCached = Natron::getTextureFromCache(key,&cachedFrameParams,&cachedFrame);
         }
+    } else {
+        byPassCache = true;
     }
 
-    unsigned char* ramBuffer;
+    unsigned char* ramBuffer = NULL;
 
     if (isCached) {
         
@@ -480,7 +480,6 @@ ViewerInstance::renderViewer(SequenceTime time,
     } else { // !isCached
         /*We didn't find it in the viewer cache, hence we render
          the frame*/
-        
         ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
         ///is very low, we better render again (and let the NodeCache do the work) rather than just
         ///overload the ViewerCache which may become slowe
@@ -497,6 +496,7 @@ ViewerInstance::renderViewer(SequenceTime time,
                     _imp->bufferAllocated = 0;
                     throw std::bad_alloc();
                 }
+                ramBuffer = (unsigned char*)_imp->buffer;
             }
         } else {
             cachedFrameParams = FrameEntry::makeParams(rod, key.getBitDepth(), textureRect.w, textureRect.h);
@@ -505,21 +505,15 @@ ViewerInstance::renderViewer(SequenceTime time,
             ///are sure that this time the image was not in the cache and we created it because this functino
             ///is not multi-threaded.
             assert(!success);
-            
             assert(cachedFrame);
-            if (_imp->bufferAllocated) {
-                free(_imp->buffer);
-                _imp->bufferAllocated = 0;
-            }
             // how do you make sure cachedFrame->data() is not freed after this line?
             ///It is not freed as long as the cachedFrame shared_ptr has a used_count greater than 1.
             ///Since it is used during the whole function scope it is guaranteed not to be freed before
             ///The viewer is actually done with it.
             /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-            _imp->buffer = cachedFrame->data();
+            ramBuffer = cachedFrame->data();
         }
-
-        ramBuffer = (unsigned char*)_imp->buffer;
+        assert(ramBuffer);
 
         if (!activeInputToRender->supportsTiles()) {
             texRectClipped.intersect(rod, &texRectClipped);
@@ -541,9 +535,9 @@ ViewerInstance::renderViewer(SequenceTime time,
             } else {
                 _imp->lastRenderedImage = activeInputToRender->renderRoI(time, scale,view,texRectClipped,byPassCache,&rod);
             }
-        } catch (const std::exception& e) {
+        } catch (...) {
             _node->notifyInputNIsFinishedRendering(inputIndex);
-            throw e;
+            throw;
         }
 
         _node->notifyInputNIsFinishedRendering(inputIndex);
@@ -590,7 +584,7 @@ ViewerInstance::renderViewer(SequenceTime time,
 
             renderFunctor(std::make_pair(texRectClipped.y1,texRectClipped.y2),
                           args,
-                          _imp->buffer);
+                          ramBuffer);
         } else {
 
             int rowsPerThread = std::ceil((double)(texRectClipped.x2 - texRectClipped.x1) / (double)QThread::idealThreadCount());
@@ -656,7 +650,7 @@ ViewerInstance::renderViewer(SequenceTime time,
                               boost::bind(&renderFunctor,
                                           _1,
                                           args,
-                                          _imp->buffer)).waitForFinished();
+                                          ramBuffer)).waitForFinished();
 
         }
         if (aborted()) {
@@ -710,6 +704,8 @@ ViewerInstance::renderViewer(SequenceTime time,
         _imp->updateViewerParams.textureRect.reset();
         _imp->updateViewerParams.bytesCount = 0;
     }
+    // end of cachedFrame scope
+    ////////////////////////////////////
     return StatOK;
 }
 
@@ -995,6 +991,9 @@ ViewerInstance::wakeUpAnySleepingThread()
 void
 ViewerInstance::ViewerInstancePrivate::updateViewerVideoEngine()
 {
+    // always running in the VideoEngine thread
+    assertVideoEngine();
+
     emit doUpdateViewer();
 }
 
