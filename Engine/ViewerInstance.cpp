@@ -516,8 +516,9 @@ ViewerInstance::renderViewer(SequenceTime time,
                     _imp->bufferAllocated = 0;
                     throw std::bad_alloc();
                 }
-                ramBuffer = (unsigned char*)_imp->buffer;
             }
+            ramBuffer = (unsigned char*)_imp->buffer;
+
         } else {
             boost::shared_ptr<const Natron::FrameParams> cachedFrameParams = FrameEntry::makeParams(rod, key.getBitDepth(), textureRect.w, textureRect.h);
             bool success = Natron::getTextureFromCacheOrCreate(key, cachedFrameParams, &params->cachedFrame);
