@@ -27,6 +27,8 @@ class Lut;
 class OpenGLViewerI;
 struct TextureRect;
 
+//namespace Natron {
+
 class ViewerInstance : public QObject, public Natron::OutputEffectInstance
 {
     Q_OBJECT
@@ -139,12 +141,6 @@ public slots:
     void onGainChanged(double exp);
 
     void onColorSpaceChanged(const QString& colorspaceName);
-    
-    /**
-     * @brief Slot called internally by the renderViewer() function when it wants to refresh the OpenGL viewer.
-     * Do not call this yourself.
-     **/
-    void updateViewer();
 
     void onNodeNameChanged(const QString&);
 
@@ -172,10 +168,6 @@ signals:
     void removedLRUCachedFrame();
 
     void clearedViewerCache();
-    /**
- *@brief Signal emitted when the engine needs to inform the main thread that it should refresh the viewer
- **/
-    void doUpdateViewer();
 
 private:
     /*******************************************
@@ -213,5 +205,5 @@ private:
     struct ViewerInstancePrivate;
     boost::scoped_ptr<ViewerInstancePrivate> _imp;
 };
-
+//} // namespace Natron
 #endif // NATRON_ENGINE_VIEWERNODE_H_

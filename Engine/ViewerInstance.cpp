@@ -9,7 +9,7 @@
  *
  */
 
-#include "ViewerInstance.h"
+#include "ViewerInstancePrivate.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
@@ -48,126 +48,6 @@ using std::make_pair;
 using boost::shared_ptr;
 
 
-namespace {
-
-    struct RenderViewerArgs {
-        RenderViewerArgs(boost::shared_ptr<const Natron::Image> inputImage_,
-                         const TextureRect& texRect_,
-                         ViewerInstance::DisplayChannels channels_,
-                         int closestPowerOf2_,
-                         int bitDepth_,
-                         double gain_,
-                         double offset_,
-                         const Natron::Color::Lut* colorSpace_)
-        : inputImage(inputImage_)
-        , texRect(texRect_)
-        , channels(channels_)
-        , closestPowerOf2(closestPowerOf2_)
-        , bitDepth(bitDepth_)
-        , gain(gain_)
-        , offset(offset_)
-        , colorSpace(colorSpace_)
-        {
-        }
-
-        boost::shared_ptr<const Natron::Image> inputImage;
-        TextureRect texRect;
-        ViewerInstance::DisplayChannels channels;
-        int closestPowerOf2;
-        int bitDepth;
-        double gain;
-        double offset;
-        const Natron::Color::Lut* colorSpace;
-    };
-
-    struct UpdateViewerParams
-    {
-        UpdateViewerParams()
-        : ramBuffer(NULL)
-        , textureRect()
-        , bytesCount(0)
-        , gain(1.)
-        , offset(0.)
-        , lut(ViewerInstance::sRGB)
-        {}
-
-        unsigned char* ramBuffer;
-        TextureRect textureRect;
-        size_t bytesCount;
-        double gain;
-        double offset;
-        ViewerInstance::ViewerColorSpace lut;
-    };
-}
-
-struct ViewerInstance::ViewerInstancePrivate {
-
-    ViewerInstancePrivate()
-    : uiContext(NULL)
-    , forceRenderMutex()
-    , forceRender(false)
-    , updateViewerCond()
-    , updateViewerMutex()
-    , updateViewerRunning(false)
-    , updateViewerParams()
-    , updateViewerPboIndex(0)
-    , buffer(NULL)
-    , bufferAllocated(0)
-    , viewerParamsMutex()
-    , viewerParamsGain(1.)
-    , viewerParamsLut(ViewerInstance::sRGB)
-    , viewerParamsAutoContrast(false)
-    , viewerParamsChannels(ViewerInstance::RGB)
-    , lastRenderedImage()
-    , threadIdMutex()
-    , threadIdVideoEngine(NULL)
-    {
-    }
-
-    void assertVideoEngine()
-    {
-#ifdef NATRON_DEBUG
-        QMutexLocker l(&threadIdMutex);
-        if (threadIdVideoEngine == NULL) {
-            threadIdVideoEngine = QThread::currentThread();
-        }
-        assert(QThread::currentThread() == threadIdVideoEngine);
-#endif
-    }
-
-
-    OpenGLViewerI* uiContext; // written in the main thread before VideoEngine thread creation, accessed from VideoEngine
-
-
-    mutable QMutex forceRenderMutex;
-    bool forceRender;/*!< true when we want to by-pass the cache*/
-
-
-    QWaitCondition     updateViewerCond;
-    mutable QMutex     updateViewerMutex; //!< protects updateViewerRunning, updateViewerParams, updateViewerPboIndex
-    bool               updateViewerRunning; //<! This flag is true when the updateViewer() function is called. That function
-                      //is always called on the main thread, but the thread running renderViewer MUST
-                      //wait the entire time. This flag is here to make the renderViewer() thread wait
-                      //until the texture upload is finished by the main thread.
-    UpdateViewerParams updateViewerParams; // parameters send from the VideoEngine thread to updateViewer() (which runs in the main thread)
-    int                updateViewerPboIndex; // always accessed in the main thread: initialized in the constructor, then always accessed and modified by updateViewer()
-
-    void* buffer;
-    size_t bufferAllocated;
-
-    mutable QMutex   viewerParamsMutex; //< protects viewerParamsGain, viewerParamsLut, viewerParamsAutoContrast, viewerParamsChannels
-    double           viewerParamsGain ;/*!< Current gain setting in the GUI. Not affected by autoContrast. */
-    ViewerColorSpace viewerParamsLut; /*!< a value coding the current color-space used to render.
-                                           0 = sRGB ,  1 = linear , 2 = Rec 709*/
-    bool             viewerParamsAutoContrast;
-    DisplayChannels  viewerParamsChannels;
-
-    boost::shared_ptr<Natron::Image> lastRenderedImage; //< A ptr to the last returned image by renderRoI. @see getLastRenderedImage()
-
-    // store the threadId of the VideoEngine thread - used for debugging purposes
-    mutable QMutex threadIdMutex;
-    QThread *threadIdVideoEngine;
-};
 
 
 static void
@@ -224,6 +104,18 @@ lutFromColorspace(ViewerInstance::ViewerColorSpace cs)
     return lut;
 }
 
+namespace {
+class MetaTypesRegistration
+{
+public:
+    inline MetaTypesRegistration()
+    {
+        qRegisterMetaType<boost::shared_ptr<UpdateViewerParams> >("boost::shared_ptr<UpdateViewerParams>");
+    }
+};
+}
+
+static MetaTypesRegistration registration;
 
 Natron::EffectInstance*
 ViewerInstance::BuildEffect(Natron::Node* n)
@@ -234,15 +126,14 @@ ViewerInstance::BuildEffect(Natron::Node* n)
     return new ViewerInstance(n);
 }
 
-ViewerInstance::ViewerInstance(Node* node):
-Natron::OutputEffectInstance(node)
-, _imp(new ViewerInstancePrivate)
+ViewerInstance::ViewerInstance(Node* node)
+: Natron::OutputEffectInstance(node)
+, _imp(new ViewerInstancePrivate(this))
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
     connectSlotsToViewerCache();
-    connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
     if(node) {
         connect(node,SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
     }
@@ -252,6 +143,15 @@ ViewerInstance::~ViewerInstance()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
+
+    // If _imp->updateViewerRunning is true, that means that the next updateViewer call was
+    // not yet processed. Since we're in the main thread and it is processed in the main thread,
+    // there is no way to wait for it (locking the mutex would cause a deadlock).
+    // We don't care, after all.
+    //{
+    //    QMutexLocker locker(&_imp->updateViewerMutex);
+    //    assert(!_imp->updateViewerRunning);
+    //}
 
     if (_imp->bufferAllocated) {
         free(_imp->buffer);
@@ -492,7 +392,7 @@ ViewerInstance::renderViewer(SequenceTime time,
     emit rodChanged(rod);
 
         
-    if(!_imp->uiContext->isClippingImageToProjectWindow()){
+    if (!_imp->uiContext->isClippingImageToProjectWindow()) {
         dispW.set(rod);
     }
     
@@ -508,7 +408,7 @@ ViewerInstance::renderViewer(SequenceTime time,
     texRect.x2 = std::ceil(((double)roi.x2 / closestPowerOf2) / tileSize) * tileSize;
     texRect.y2 = std::ceil(((double)roi.y2 / closestPowerOf2) / tileSize) * tileSize;
     
-    if(texRect.width() == 0 || texRect.height() == 0){
+    if (texRect.width() == 0 || texRect.height() == 0) {
         return StatOK;
     }
     
@@ -545,7 +445,7 @@ ViewerInstance::renderViewer(SequenceTime time,
     ViewerInstance::ViewerColorSpace lut;
     ViewerInstance::DisplayChannels channels;
     {
-        QMutexLocker expLocker(&_imp->viewerParamsMutex);
+        QMutexLocker locker(&_imp->viewerParamsMutex);
         gain = _imp->viewerParamsGain;
         lut = _imp->viewerParamsLut;
         autoContrast = _imp->viewerParamsAutoContrast;
@@ -561,30 +461,29 @@ ViewerInstance::renderViewer(SequenceTime time,
                  view,
                  textureRect);
 
-    boost::shared_ptr<FrameEntry> cachedFrame; //!< this pointer is at least valid until this function exits, the the cache entry cannot be released
-    boost::shared_ptr<const FrameParams> cachedFrameParams;
+    /////////////////////////////////////
+    // start UpdateViewerParams scope
+    //
+    boost::shared_ptr<UpdateViewerParams> params(new UpdateViewerParams);
     bool isCached = false;
     
     ///if we want to force a refresh, we by-pass the cache
     bool byPassCache = false;
-    {
-        if (!forceRender) {
-            
-            ///we never use the texture cache when the user RoI is enabled, otherwise we would have
-            ///zillions of textures in the cache, each a few pixels different.
-            if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !autoContrast) {
-                isCached = Natron::getTextureFromCache(key,&cachedFrameParams,&cachedFrame);
-            }
-        } else {
-            byPassCache = true;
+    if (!forceRender) {
+        ///we never use the texture cache when the user RoI is enabled, otherwise we would have
+        ///zillions of textures in the cache, each a few pixels different.
+        if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !autoContrast) {
+            boost::shared_ptr<const Natron::FrameParams> cachedFrameParams;
+            isCached = Natron::getTextureFromCache(key, &cachedFrameParams, &params->cachedFrame);
+            assert(!isCached || cachedFrameParams);
         }
+    } else {
+        byPassCache = true;
     }
 
-    unsigned char* ramBuffer;
+    unsigned char* ramBuffer = NULL;
 
     if (isCached) {
-        
-        assert(cachedFrameParams);
         /*Found in viewer cache, we execute the cached engine and leave*/
 
         // how do you make sure cachedFrame->data() is not freed after this line?
@@ -592,7 +491,7 @@ ViewerInstance::renderViewer(SequenceTime time,
         ///Since it is used during the whole function scope it is guaranteed not to be freed before
         ///The viewer is actually done with it.
         /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-        ramBuffer = cachedFrame->data();
+        ramBuffer = params->cachedFrame->data();
 #ifdef NATRON_LOG
         Natron::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
                                    QString::number(key.getHash())).toStdString());
@@ -601,12 +500,11 @@ ViewerInstance::renderViewer(SequenceTime time,
     } else { // !isCached
         /*We didn't find it in the viewer cache, hence we render
          the frame*/
-        
         ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
         ///is very low, we better render again (and let the NodeCache do the work) rather than just
         ///overload the ViewerCache which may become slowe
         if (byPassCache || _imp->uiContext->isUserRegionOfInterestEnabled() || autoContrast) {
-            assert(!cachedFrame);
+            assert(!params->cachedFrame);
             // don't reallocate if we need less memory (avoid fragmentation)
             if (_imp->bufferAllocated < bytesCount) {
                 if (_imp->bufferAllocated > 0) {
@@ -618,29 +516,24 @@ ViewerInstance::renderViewer(SequenceTime time,
                     _imp->bufferAllocated = 0;
                     throw std::bad_alloc();
                 }
+                ramBuffer = (unsigned char*)_imp->buffer;
             }
         } else {
-            cachedFrameParams = FrameEntry::makeParams(rod, key.getBitDepth(), textureRect.w, textureRect.h);
-            bool success = Natron::getTextureFromCacheOrCreate(key, cachedFrameParams, &cachedFrame);
+            boost::shared_ptr<const Natron::FrameParams> cachedFrameParams = FrameEntry::makeParams(rod, key.getBitDepth(), textureRect.w, textureRect.h);
+            bool success = Natron::getTextureFromCacheOrCreate(key, cachedFrameParams, &params->cachedFrame);
             ///note that unlike  getImageFromCacheOrCreate in EffectInstance::renderRoI, we
             ///are sure that this time the image was not in the cache and we created it because this functino
             ///is not multi-threaded.
             assert(!success);
-            
-            assert(cachedFrame);
-            if (_imp->bufferAllocated) {
-                free(_imp->buffer);
-                _imp->bufferAllocated = 0;
-            }
+            assert(params->cachedFrame);
             // how do you make sure cachedFrame->data() is not freed after this line?
             ///It is not freed as long as the cachedFrame shared_ptr has a used_count greater than 1.
             ///Since it is used during the whole function scope it is guaranteed not to be freed before
             ///The viewer is actually done with it.
             /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-            _imp->buffer = cachedFrame->data();
+            ramBuffer = params->cachedFrame->data();
         }
-
-        ramBuffer = (unsigned char*)_imp->buffer;
+        assert(ramBuffer);
 
         if (!activeInputToRender->supportsTiles()) {
             texRectClipped.intersect(rod, &texRectClipped);
@@ -662,9 +555,9 @@ ViewerInstance::renderViewer(SequenceTime time,
             } else {
                 _imp->lastRenderedImage = activeInputToRender->renderRoI(time, scale,view,texRectClipped,byPassCache,&rod);
             }
-        } catch (const std::exception& e) {
+        } catch (...) {
             _node->notifyInputNIsFinishedRendering(inputIndex);
-            throw e;
+            throw;
         }
 
         _node->notifyInputNIsFinishedRendering(inputIndex);
@@ -672,7 +565,7 @@ ViewerInstance::renderViewer(SequenceTime time,
 
         if (!_imp->lastRenderedImage) {
             //if render was aborted, remove the frame from the cache as it contains only garbage
-            appPTR->removeFromViewerCache(cachedFrame);
+            appPTR->removeFromViewerCache(params->cachedFrame);
             return StatFailed;
         }
 
@@ -680,7 +573,7 @@ ViewerInstance::renderViewer(SequenceTime time,
 
         if (aborted()) {
             //if render was aborted, remove the frame from the cache as it contains only garbage
-            appPTR->removeFromViewerCache(cachedFrame);
+            appPTR->removeFromViewerCache(params->cachedFrame);
             return StatOK;
         }
 
@@ -707,11 +600,11 @@ ViewerInstance::renderViewer(SequenceTime time,
                                         bitDepth,
                                         gain,
                                         offset,
-                                        lutFromColorspace(_imp->updateViewerParams.lut));
+                                        lutFromColorspace(lut));
 
             renderFunctor(std::make_pair(texRectClipped.y1,texRectClipped.y2),
                           args,
-                          _imp->buffer);
+                          ramBuffer);
         } else {
 
             int rowsPerThread = std::ceil((double)(texRectClipped.x2 - texRectClipped.x1) / (double)QThread::idealThreadCount());
@@ -777,12 +670,12 @@ ViewerInstance::renderViewer(SequenceTime time,
                               boost::bind(&renderFunctor,
                                           _1,
                                           args,
-                                          _imp->buffer)).waitForFinished();
+                                          ramBuffer)).waitForFinished();
 
         }
         if (aborted()) {
             //if render was aborted, remove the frame from the cache as it contains only garbage
-            appPTR->removeFromViewerCache(cachedFrame);
+            appPTR->removeFromViewerCache(params->cachedFrame);
             return StatOK;
         }
         //we released the input image and force the cache to clear exceeding entries
@@ -799,38 +692,32 @@ ViewerInstance::renderViewer(SequenceTime time,
 
     {
         QMutexLocker locker(&_imp->updateViewerMutex);
+        // wait until previous updateViewer (if any) finishes
+        while (_imp->updateViewerRunning) {
+            _imp->updateViewerCond.wait(&_imp->updateViewerMutex);
+        }
         assert(!_imp->updateViewerRunning);
         _imp->updateViewerRunning = true;
-        assert(_imp->updateViewerParams.ramBuffer == NULL);
-        assert(_imp->updateViewerParams.bytesCount == 0);
-        _imp->updateViewerParams.ramBuffer = ramBuffer;
-        _imp->updateViewerParams.textureRect = textureRect;
-        _imp->updateViewerParams.bytesCount = bytesCount;
-        _imp->updateViewerParams.gain = gain;
-        _imp->updateViewerParams.offset = offset;
-        _imp->updateViewerParams.lut = lut;
+        params->ramBuffer = ramBuffer;
+        params->textureRect = textureRect;
+        params->bytesCount = bytesCount;
+        params->gain = gain;
+        params->offset = offset;
+        params->lut = lut;
 
         if (!aborted()) {
             if (singleThreaded) {
                 locker.unlock();
-                updateViewer();
+                _imp->updateViewer(params);
                 locker.relock();
                 assert(!_imp->updateViewerRunning);
             } else {
-                emit doUpdateViewer();
-                // wait until updateViewer finishes
-                while (_imp->updateViewerRunning) {
-                    _imp->updateViewerCond.wait(&_imp->updateViewerMutex);
-                }
-                assert(!_imp->updateViewerRunning);
+                _imp->updateViewerVideoEngine(params);
             }
         }
-        // cachedFrame may be freed here, since updateViewer() has finished!
-        // invalidate _imp->updateViewerParams
-        _imp->updateViewerParams.ramBuffer = NULL;
-        _imp->updateViewerParams.textureRect.reset();
-        _imp->updateViewerParams.bytesCount = 0;
     }
+    // end of boost::shared_ptr<UpdateUserParams> scope... but it still lives inside updateViewer()
+    ////////////////////////////////////
     return StatOK;
 }
 
@@ -1114,36 +1001,46 @@ ViewerInstance::wakeUpAnySleepingThread()
 }
 
 void
-ViewerInstance::updateViewer()
+ViewerInstance::ViewerInstancePrivate::updateViewerVideoEngine(const boost::shared_ptr<UpdateViewerParams> &params)
+{
+    // always running in the VideoEngine thread
+    assertVideoEngine();
+
+    emit doUpdateViewer(params);
+}
+
+void
+ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateViewerParams> params)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
-    QMutexLocker locker(&_imp->updateViewerMutex);
-    assert(_imp->updateViewerRunning);
-    _imp->uiContext->makeOpenGLcontextCurrent();
-    if(!aborted()){
-        // how do you make sure _imp->updateViewerParams.ramBuffer is not freed during this operation?
-        /// It is not freed as long as the cachedFrame shared_ptr in renderViewer has a used_count greater than 1.
-        /// i.e. until renderViewer exits.
-        /// Since updateViewer() is in the scope of cachedFrame, and renderViewer waits for the completion
-        /// of updateViewer(), it is guaranteed not to be freed before the viewer is actually done with it.
-        /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-        _imp->uiContext->transferBufferFromRAMtoGPU(_imp->updateViewerParams.ramBuffer,
-                                                    _imp->updateViewerParams.bytesCount,
-                                                    _imp->updateViewerParams.textureRect,
-                                                    _imp->updateViewerParams.gain,
-                                                    _imp->updateViewerParams.offset,
-                                                    _imp->updateViewerParams.lut,
-                                                    _imp->updateViewerPboIndex);
-        _imp->updateViewerPboIndex = (_imp->updateViewerPboIndex+1)%2;
+    QMutexLocker locker(&updateViewerMutex);
+    if (updateViewerRunning) { // updateViewerRunning may have been reset, e.g. by wakeUpAnySleepingThread()
+        uiContext->makeOpenGLcontextCurrent();
+        if (!instance->aborted()) {
+            // how do you make sure params->ramBuffer is not freed during this operation?
+            /// It is not freed as long as the cachedFrame shared_ptr in renderViewer has a used_count greater than 1.
+            /// i.e. until renderViewer exits.
+            /// Since updateViewer() is in the scope of cachedFrame, and renderViewer waits for the completion
+            /// of updateViewer(), it is guaranteed not to be freed before the viewer is actually done with it.
+            /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
+            uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
+                                                  params->bytesCount,
+                                                  params->textureRect,
+                                                  params->gain,
+                                                  params->offset,
+                                                  params->lut,
+                                                  updateViewerPboIndex);
+            updateViewerPboIndex = (updateViewerPboIndex+1)%2;
+        }
+
+        uiContext->updateColorPicker();
+        uiContext->redraw();
+        
+        updateViewerRunning = false;
     }
-    
-    _imp->uiContext->updateColorPicker();
-    _imp->uiContext->redraw();
-    
-    _imp->updateViewerRunning = false;
-    _imp->updateViewerCond.wakeOne();
+    updateViewerCond.wakeOne();
 }
 
 
