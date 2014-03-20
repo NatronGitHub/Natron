@@ -282,7 +282,6 @@ namespace Natron {
                          back into the memoryCache.*/
 
                             // remove it from the disk cache
-                            ret.erase(it);
                             _diskCacheSize -= it->_entry->size();
 
                             if(ret.empty()){
@@ -293,9 +292,11 @@ namespace Natron {
                                 it->_entry->reOpenFileMapping();
                             } catch (const std::exception& e) {
                                 qDebug() << "Error while reopening cache file: " << e.what();
+                                ret.erase(it);
                                 return false;
                             } catch (...) {
                                 qDebug() << "Error while reopening cache file";
+                                ret.erase(it);
                                 return false;
                             }
 
@@ -308,6 +309,8 @@ namespace Natron {
                                 _signalEmitter->emitAddedEntry();
                             *returnValue = it->_entry;
                             *params = it->_params;
+                            ret.erase(it);
+
                             return true;
 
                         }
