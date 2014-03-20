@@ -488,9 +488,11 @@ ViewerGL::~ViewerGL()
     }
     delete _imp->blackTex;
     delete _imp->defaultDisplayTexture;
+    glCheckError();
     for(U32 i = 0; i < _imp->pboIds.size();++i){
         glDeleteBuffers(1,&_imp->pboIds[i]);
     }
+    glCheckError();
     glDeleteBuffers(1, &_imp->vboVerticesId);
     glDeleteBuffers(1, &_imp->vboTexturesId);
     glDeleteBuffers(1, &_imp->iboTriangleStripId);
@@ -1017,7 +1019,7 @@ GLuint ViewerGL::getPboID(int index)
 
     if(index >= (int)_imp->pboIds.size()){
         GLuint handle;
-        glGenBuffersARB(1,&handle);
+        glGenBuffers(1,&handle);
         _imp->pboIds.push_back(handle);
         return handle;
     }else{

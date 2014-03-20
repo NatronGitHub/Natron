@@ -145,7 +145,7 @@ void VideoEngine::render(int frameCount,
     _lastRequestedRunArgs._frameRequestIndex = 0;
     _lastRequestedRunArgs._forcePreview = forcePreview;
     
-    if (appPTR->getCurrentSettings()->isMultiThreadingDisabled()) {
+    if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
         runSameThread();
     } else {
         

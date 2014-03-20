@@ -787,8 +787,8 @@ const QString& AppManager::getApplicationBinaryPath() const {
     return _imp->_binaryPath;
 }
 
-void AppManager::setMultiThreadEnabled(bool enabled) {
-    _imp->_settings->setMultiThreadingDisabled(!enabled);
+void AppManager::setNumberOfThreads(int threadsNb) {
+    _imp->_settings->setNumberOfThreads(threadsNb);
 }
 
 bool AppManager::getImage(const Natron::ImageKey& key,boost::shared_ptr<const Natron::ImageParams>* params,

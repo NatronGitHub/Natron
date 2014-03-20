@@ -681,7 +681,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
         ///as it would lead to a deadlock when the project is loading.
         ///Just fall back to Fully_safe
         if (safety == FULLY_SAFE_FRAME) {
-            if (appPTR->getCurrentSettings()->isMultiThreadingDisabled()) {
+            if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
                 safety = FULLY_SAFE;
             } else {
                 if (!getApp()->getProject()->tryLock()) {

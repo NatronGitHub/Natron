@@ -544,7 +544,7 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
     // "nThreads can be more than the value returned by multiThreadNumCPUs, however
     // the threads will be limitted to the number of CPUs returned by multiThreadNumCPUs."
 
-    if (nThreads == 1 || appPTR->getCurrentSettings()->isMultiThreadingDisabled()) {
+    if (nThreads == 1 || appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
         try {
             for (unsigned int i = 0; i < nThreads; ++i) {
                 func(i, nThreads, customArg);
@@ -589,7 +589,7 @@ OfxStatus Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
     if (!nCPUs) {
         return kOfxStatFailed;
     }
-    if (appPTR->getCurrentSettings()->isMultiThreadingDisabled()) {
+    if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
         *nCPUs = 1;
     } else {
         int activeThreadsCount = QThreadPool::globalInstance()->activeThreadCount();
