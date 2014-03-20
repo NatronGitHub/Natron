@@ -87,7 +87,6 @@ public:
     , updateViewerCond()
     , updateViewerMutex()
     , updateViewerRunning(false)
-    , updateViewerParams()
     , updateViewerPboIndex(0)
     , buffer(NULL)
     , bufferAllocated(0)
@@ -100,7 +99,7 @@ public:
     , threadIdMutex()
     , threadIdVideoEngine(NULL)
     {
-        connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
+        connect(this,SIGNAL(doUpdateViewer(UpdateViewerParams)),this,SLOT(updateViewer(UpdateViewerParams)));
     }
 
     void assertVideoEngine()
@@ -115,20 +114,20 @@ public:
     }
 
     /// function that emits the signal to call updateViewer() from the main thread
-    void updateViewerVideoEngine();
+    void updateViewerVideoEngine(const UpdateViewerParams &params);
 
     public slots:
     /**
      * @brief Slot called internally by the renderViewer() function when it wants to refresh the OpenGL viewer.
      * Do not call this yourself.
      **/
-    void updateViewer();
+    void updateViewer(UpdateViewerParams params);
 
 signals:
     /**
      *@brief Signal emitted when the engine needs to inform the main thread that it should refresh the viewer
      **/
-    void doUpdateViewer();
+    void doUpdateViewer(UpdateViewerParams params);
 
 public:
     const ViewerInstance* const instance;
@@ -146,7 +145,6 @@ public:
     //is always called on the main thread, but the thread running renderViewer MUST
     //wait the entire time. This flag is here to make the renderViewer() thread wait
     //until the texture upload is finished by the main thread.
-    UpdateViewerParams updateViewerParams; // parameters send from the VideoEngine thread to updateViewer() (which runs in the main thread)
     int                updateViewerPboIndex; // always accessed in the main thread: initialized in the constructor, then always accessed and modified by updateViewer()
 
     /// a private buffer for storing frames that are not in the viewer cache.

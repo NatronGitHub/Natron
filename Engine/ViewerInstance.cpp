@@ -104,6 +104,18 @@ lutFromColorspace(ViewerInstance::ViewerColorSpace cs)
     return lut;
 }
 
+namespace {
+class MetaTypesRegistration
+{
+public:
+    inline MetaTypesRegistration()
+    {
+        qRegisterMetaType<UpdateViewerParams>("UpdateViewerParams");
+    }
+};
+}
+
+static MetaTypesRegistration registration;
 
 Natron::EffectInstance*
 ViewerInstance::BuildEffect(Natron::Node* n)
@@ -674,23 +686,22 @@ ViewerInstance::renderViewer(SequenceTime time,
         QMutexLocker locker(&_imp->updateViewerMutex);
         assert(!_imp->updateViewerRunning);
         _imp->updateViewerRunning = true;
-        assert(_imp->updateViewerParams.ramBuffer == NULL);
-        assert(_imp->updateViewerParams.bytesCount == 0);
-        _imp->updateViewerParams.ramBuffer = ramBuffer;
-        _imp->updateViewerParams.textureRect = textureRect;
-        _imp->updateViewerParams.bytesCount = bytesCount;
-        _imp->updateViewerParams.gain = gain;
-        _imp->updateViewerParams.offset = offset;
-        _imp->updateViewerParams.lut = lut;
+        UpdateViewerParams params;
+        params.ramBuffer = ramBuffer;
+        params.textureRect = textureRect;
+        params.bytesCount = bytesCount;
+        params.gain = gain;
+        params.offset = offset;
+        params.lut = lut;
 
         if (!aborted()) {
             if (singleThreaded) {
                 locker.unlock();
-                _imp->updateViewer();
+                _imp->updateViewer(params);
                 locker.relock();
                 assert(!_imp->updateViewerRunning);
             } else {
-                _imp->updateViewerVideoEngine();
+                _imp->updateViewerVideoEngine(params);
                 // wait until updateViewer finishes
                 while (_imp->updateViewerRunning) {
                     _imp->updateViewerCond.wait(&_imp->updateViewerMutex);
@@ -699,10 +710,6 @@ ViewerInstance::renderViewer(SequenceTime time,
             }
         }
         // cachedFrame may be freed here, since updateViewer() has finished!
-        // invalidate _imp->updateViewerParams
-        _imp->updateViewerParams.ramBuffer = NULL;
-        _imp->updateViewerParams.textureRect.reset();
-        _imp->updateViewerParams.bytesCount = 0;
     }
     // end of cachedFrame scope
     ////////////////////////////////////
@@ -989,16 +996,16 @@ ViewerInstance::wakeUpAnySleepingThread()
 }
 
 void
-ViewerInstance::ViewerInstancePrivate::updateViewerVideoEngine()
+ViewerInstance::ViewerInstancePrivate::updateViewerVideoEngine(const UpdateViewerParams &params)
 {
     // always running in the VideoEngine thread
     assertVideoEngine();
 
-    emit doUpdateViewer();
+    emit doUpdateViewer(params);
 }
 
 void
-ViewerInstance::ViewerInstancePrivate::updateViewer()
+ViewerInstance::ViewerInstancePrivate::updateViewer(UpdateViewerParams params)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1007,18 +1014,18 @@ ViewerInstance::ViewerInstancePrivate::updateViewer()
     assert(updateViewerRunning);
     uiContext->makeOpenGLcontextCurrent();
     if (!instance->aborted()) {
-        // how do you make sure _imp->updateViewerParams.ramBuffer is not freed during this operation?
+        // how do you make sure params.ramBuffer is not freed during this operation?
         /// It is not freed as long as the cachedFrame shared_ptr in renderViewer has a used_count greater than 1.
         /// i.e. until renderViewer exits.
         /// Since updateViewer() is in the scope of cachedFrame, and renderViewer waits for the completion
         /// of updateViewer(), it is guaranteed not to be freed before the viewer is actually done with it.
         /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-        uiContext->transferBufferFromRAMtoGPU(updateViewerParams.ramBuffer,
-                                              updateViewerParams.bytesCount,
-                                              updateViewerParams.textureRect,
-                                              updateViewerParams.gain,
-                                              updateViewerParams.offset,
-                                              updateViewerParams.lut,
+        uiContext->transferBufferFromRAMtoGPU(params.ramBuffer,
+                                              params.bytesCount,
+                                              params.textureRect,
+                                              params.gain,
+                                              params.offset,
+                                              params.lut,
                                               updateViewerPboIndex);
         updateViewerPboIndex = (updateViewerPboIndex+1)%2;
     }
