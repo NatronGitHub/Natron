@@ -74,8 +74,7 @@ struct UpdateViewerParams
     double gain;
     double offset;
     ViewerInstance::ViewerColorSpace lut;
-    boost::shared_ptr<Natron::FrameEntry> cachedFrame; //!< this pointer is at least valid until this function exits, the the cache entry cannot be released
-    boost::shared_ptr<const Natron::FrameParams> cachedFrameParams; //!< FIXME: do we need to keep this?
+    boost::shared_ptr<Natron::FrameEntry> cachedFrame; //!< put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
 };
 
 struct ViewerInstance::ViewerInstancePrivate : public QObject {
@@ -101,7 +100,7 @@ public:
     , threadIdMutex()
     , threadIdVideoEngine(NULL)
     {
-        connect(this,SIGNAL(doUpdateViewer(UpdateViewerParams)),this,SLOT(updateViewer(UpdateViewerParams)));
+        connect(this,SIGNAL(doUpdateViewer(boost::shared_ptr<UpdateViewerParams>)),this,SLOT(updateViewer(boost::shared_ptr<UpdateViewerParams>)));
     }
 
     void assertVideoEngine()
@@ -116,20 +115,20 @@ public:
     }
 
     /// function that emits the signal to call updateViewer() from the main thread
-    void updateViewerVideoEngine(const UpdateViewerParams &params);
+    void updateViewerVideoEngine(const boost::shared_ptr<UpdateViewerParams> &params);
 
     public slots:
     /**
      * @brief Slot called internally by the renderViewer() function when it wants to refresh the OpenGL viewer.
      * Do not call this yourself.
      **/
-    void updateViewer(UpdateViewerParams params);
+    void updateViewer(boost::shared_ptr<UpdateViewerParams> params);
 
 signals:
     /**
      *@brief Signal emitted when the engine needs to inform the main thread that it should refresh the viewer
      **/
-    void doUpdateViewer(UpdateViewerParams params);
+    void doUpdateViewer(boost::shared_ptr<UpdateViewerParams> params);
 
 public:
     const ViewerInstance* const instance;

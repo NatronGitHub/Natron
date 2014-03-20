@@ -110,7 +110,7 @@ class MetaTypesRegistration
 public:
     inline MetaTypesRegistration()
     {
-        qRegisterMetaType<UpdateViewerParams>("UpdateViewerParams");
+        qRegisterMetaType<boost::shared_ptr<UpdateViewerParams> >("boost::shared_ptr<UpdateViewerParams>");
     }
 };
 }
@@ -455,7 +455,7 @@ ViewerInstance::renderViewer(SequenceTime time,
     /////////////////////////////////////
     // start UpdateViewerParams scope
     //
-    UpdateViewerParams params;
+    boost::shared_ptr<UpdateViewerParams> params(new UpdateViewerParams);
     bool isCached = false;
     
     ///if we want to force a refresh, we by-pass the cache
@@ -464,7 +464,9 @@ ViewerInstance::renderViewer(SequenceTime time,
         ///we never use the texture cache when the user RoI is enabled, otherwise we would have
         ///zillions of textures in the cache, each a few pixels different.
         if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !autoContrast) {
-            isCached = Natron::getTextureFromCache(key, &params.cachedFrameParams, &params.cachedFrame);
+            boost::shared_ptr<const Natron::FrameParams> cachedFrameParams;
+            isCached = Natron::getTextureFromCache(key, &cachedFrameParams, &params->cachedFrame);
+            assert(!isCached || cachedFrameParams);
         }
     } else {
         byPassCache = true;
@@ -473,8 +475,6 @@ ViewerInstance::renderViewer(SequenceTime time,
     unsigned char* ramBuffer = NULL;
 
     if (isCached) {
-        
-        assert(params.cachedFrameParams);
         /*Found in viewer cache, we execute the cached engine and leave*/
 
         // how do you make sure cachedFrame->data() is not freed after this line?
@@ -482,7 +482,7 @@ ViewerInstance::renderViewer(SequenceTime time,
         ///Since it is used during the whole function scope it is guaranteed not to be freed before
         ///The viewer is actually done with it.
         /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-        ramBuffer = params.cachedFrame->data();
+        ramBuffer = params->cachedFrame->data();
 #ifdef NATRON_LOG
         Natron::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
                                    QString::number(key.getHash())).toStdString());
@@ -495,7 +495,7 @@ ViewerInstance::renderViewer(SequenceTime time,
         ///is very low, we better render again (and let the NodeCache do the work) rather than just
         ///overload the ViewerCache which may become slowe
         if (byPassCache || _imp->uiContext->isUserRegionOfInterestEnabled() || autoContrast) {
-            assert(!params.cachedFrame);
+            assert(!params->cachedFrame);
             // don't reallocate if we need less memory (avoid fragmentation)
             if (_imp->bufferAllocated < bytesCount) {
                 if (_imp->bufferAllocated > 0) {
@@ -510,19 +510,19 @@ ViewerInstance::renderViewer(SequenceTime time,
                 ramBuffer = (unsigned char*)_imp->buffer;
             }
         } else {
-            params.cachedFrameParams = FrameEntry::makeParams(rod, key.getBitDepth(), textureRect.w, textureRect.h);
-            bool success = Natron::getTextureFromCacheOrCreate(key, params.cachedFrameParams, &params.cachedFrame);
+            boost::shared_ptr<const Natron::FrameParams> cachedFrameParams = FrameEntry::makeParams(rod, key.getBitDepth(), textureRect.w, textureRect.h);
+            bool success = Natron::getTextureFromCacheOrCreate(key, cachedFrameParams, &params->cachedFrame);
             ///note that unlike  getImageFromCacheOrCreate in EffectInstance::renderRoI, we
             ///are sure that this time the image was not in the cache and we created it because this functino
             ///is not multi-threaded.
             assert(!success);
-            assert(params.cachedFrame);
+            assert(params->cachedFrame);
             // how do you make sure cachedFrame->data() is not freed after this line?
             ///It is not freed as long as the cachedFrame shared_ptr has a used_count greater than 1.
             ///Since it is used during the whole function scope it is guaranteed not to be freed before
             ///The viewer is actually done with it.
             /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-            ramBuffer = params.cachedFrame->data();
+            ramBuffer = params->cachedFrame->data();
         }
         assert(ramBuffer);
 
@@ -556,7 +556,7 @@ ViewerInstance::renderViewer(SequenceTime time,
 
         if (!_imp->lastRenderedImage) {
             //if render was aborted, remove the frame from the cache as it contains only garbage
-            appPTR->removeFromViewerCache(params.cachedFrame);
+            appPTR->removeFromViewerCache(params->cachedFrame);
             return StatFailed;
         }
 
@@ -564,7 +564,7 @@ ViewerInstance::renderViewer(SequenceTime time,
 
         if (aborted()) {
             //if render was aborted, remove the frame from the cache as it contains only garbage
-            appPTR->removeFromViewerCache(params.cachedFrame);
+            appPTR->removeFromViewerCache(params->cachedFrame);
             return StatOK;
         }
 
@@ -666,7 +666,7 @@ ViewerInstance::renderViewer(SequenceTime time,
         }
         if (aborted()) {
             //if render was aborted, remove the frame from the cache as it contains only garbage
-            appPTR->removeFromViewerCache(params.cachedFrame);
+            appPTR->removeFromViewerCache(params->cachedFrame);
             return StatOK;
         }
         //we released the input image and force the cache to clear exceeding entries
@@ -685,12 +685,12 @@ ViewerInstance::renderViewer(SequenceTime time,
         QMutexLocker locker(&_imp->updateViewerMutex);
         assert(!_imp->updateViewerRunning);
         _imp->updateViewerRunning = true;
-        params.ramBuffer = ramBuffer;
-        params.textureRect = textureRect;
-        params.bytesCount = bytesCount;
-        params.gain = gain;
-        params.offset = offset;
-        params.lut = lut;
+        params->ramBuffer = ramBuffer;
+        params->textureRect = textureRect;
+        params->bytesCount = bytesCount;
+        params->gain = gain;
+        params->offset = offset;
+        params->lut = lut;
 
         if (!aborted()) {
             if (singleThreaded) {
@@ -994,7 +994,7 @@ ViewerInstance::wakeUpAnySleepingThread()
 }
 
 void
-ViewerInstance::ViewerInstancePrivate::updateViewerVideoEngine(const UpdateViewerParams &params)
+ViewerInstance::ViewerInstancePrivate::updateViewerVideoEngine(const boost::shared_ptr<UpdateViewerParams> &params)
 {
     // always running in the VideoEngine thread
     assertVideoEngine();
@@ -1003,7 +1003,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewerVideoEngine(const UpdateViewe
 }
 
 void
-ViewerInstance::ViewerInstancePrivate::updateViewer(UpdateViewerParams params)
+ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateViewerParams> params)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1012,18 +1012,18 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(UpdateViewerParams params)
     assert(updateViewerRunning);
     uiContext->makeOpenGLcontextCurrent();
     if (!instance->aborted()) {
-        // how do you make sure params.ramBuffer is not freed during this operation?
+        // how do you make sure params->ramBuffer is not freed during this operation?
         /// It is not freed as long as the cachedFrame shared_ptr in renderViewer has a used_count greater than 1.
         /// i.e. until renderViewer exits.
         /// Since updateViewer() is in the scope of cachedFrame, and renderViewer waits for the completion
         /// of updateViewer(), it is guaranteed not to be freed before the viewer is actually done with it.
         /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-        uiContext->transferBufferFromRAMtoGPU(params.ramBuffer,
-                                              params.bytesCount,
-                                              params.textureRect,
-                                              params.gain,
-                                              params.offset,
-                                              params.lut,
+        uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
+                                              params->bytesCount,
+                                              params->textureRect,
+                                              params->gain,
+                                              params->offset,
+                                              params->lut,
                                               updateViewerPboIndex);
         updateViewerPboIndex = (updateViewerPboIndex+1)%2;
     }
