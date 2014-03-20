@@ -91,6 +91,11 @@ public:
     
     QWidget* getFieldContainer() const;
 
+    /**
+     * @brief Returns the row index of the knob in the layout. 
+     * The knob MUST be in the layout for this function to work,
+     * that is, it must be visible.
+     **/
     int getActualIndexInLayout() const;
     
     bool isOnNewLine() const;
