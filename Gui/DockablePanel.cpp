@@ -381,8 +381,11 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool ma
         
         boost::shared_ptr<Knob> parentKnob = knob->getParentKnob();
         
+        boost::shared_ptr<Tab_Knob> parentIsTab = boost::dynamic_pointer_cast<Tab_Knob>(parentKnob);
+        boost::shared_ptr<Group_Knob> parentIsGroup = boost::dynamic_pointer_cast<Group_Knob>(parentKnob);
+        
         ///if the parent is a tab find it
-        if(parentKnob && parentKnob->typeName() == Tab_Knob::typeNameStatic()){
+        if(parentIsTab){
             //make sure the tab has been created;
             (void)findKnobGuiOrCreate(parentKnob,true,NULL);
             std::map<QString,std::pair<QWidget*,int> >::iterator it = _tabs.find(parentKnob->getDescription().c_str());
@@ -466,7 +469,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool ma
         
         
         /// if this knob is within a group, check that the group is visible, i.e. the toplevel group is unfolded
-        if (parentKnob && parentKnob->typeName() == Group_Knob::typeNameStatic()) {
+        if (parentIsGroup) {
             
             Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob,true,NULL));
             assert(parentGui);
@@ -478,9 +481,9 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool ma
             parentGui->addKnob(ret,parentTab->second.second,offsetColumn);
             
             
-            bool showit = true;
+            bool showit = !ret->getKnob()->getIsSecret();
             // see KnobGui::setSecret() for a very similar code
-            while (showit && parentKnob && parentKnob->typeName() == Group_Knob::typeNameStatic()) {
+            while (showit && parentIsGroup) {
                 assert(parentGui);
                 // check for secretness and visibility of the group
                 if (parentKnob->getIsSecret() || !parentGui->isChecked()) {
@@ -488,6 +491,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool ma
                 }
                 // prepare for next loop iteration
                 parentKnob = parentKnob->getParentKnob();
+                parentIsGroup =  boost::dynamic_pointer_cast<Group_Knob>(parentKnob);
                 if (parentKnob) {
                     parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob,true,NULL));
                 }
