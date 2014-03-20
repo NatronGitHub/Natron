@@ -88,7 +88,8 @@ public:
 
     /*Search an existing knob GUI in the map, otherwise creates
      the gui for the knob.*/
-    KnobGui* findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool makeNewLine,QWidget* lastRowWidget);
+    KnobGui* findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool makeNewLine,QWidget* lastRowWidget,
+                                 const std::vector< boost::shared_ptr< Knob > >& knobsOnSameLine = std::vector< boost::shared_ptr< Knob > >());
     
     QUndoStack* getUndoStack() const { return _undoStack; }
     
@@ -163,6 +164,9 @@ private:
 
     
 private:
+    
+    void initializeKnobVector(const std::vector< boost::shared_ptr< Knob> >& knobs,bool onlyTopLevelKnobs);
+    
     // FIXME: PIMPL
     Gui* _gui;
     

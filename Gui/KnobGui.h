@@ -67,7 +67,8 @@ public:
     
     int getSpacingBetweenItems() const { return _spacingBetweenItems; }
     
-    void createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWidget* label,QHBoxLayout* layout,int row,bool isOnNewLine);
+    void createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWidget* label,QHBoxLayout* layout,int row,bool isOnNewLine,
+                   const std::vector< boost::shared_ptr< Knob > >& knobsOnSameLine);
         
     void pushUndoCommand(QUndoCommand* cmd);
     
@@ -103,6 +104,8 @@ public:
     ////calls setReadOnly and also set the label black
     void setReadOnly_(bool readOnly,int dimension);
  
+    int getKnobsCountOnSameLine() const;
+
 public slots:
     /*Called when the value held by the knob is changed internally.
      This should in turn update the GUI but not emit the valueChanged()
@@ -253,6 +256,7 @@ private:
     
     void setInterpolationForDimensions(const std::vector<int>& dimensions,Natron::KeyframeType interp);
     
+    
 private:
     // FIXME: PIMPL
     boost::shared_ptr<Knob> _knob;
@@ -265,6 +269,9 @@ private:
     QMenu* _copyRightClickMenu;
     QHBoxLayout* _fieldLayout; //< the layout containing the widgets of the knob
     int _row;
+    
+    ////A vector of all other knobs on the same line.
+    std::vector< boost::shared_ptr< Knob > > _knobsOnSameLine;
     
     QFormLayout* _containerLayout;
     QWidget* _field;

@@ -551,7 +551,7 @@ public:
     
     void addKnob(boost::shared_ptr<Knob> k);
     
-    const std::vector< boost::shared_ptr<Knob> >  &getKnobs() const { return _children; }
+    const std::vector< boost::shared_ptr<Knob> >& getChildren() const { return _children; }
     
     static const std::string& typeNameStatic();
     
