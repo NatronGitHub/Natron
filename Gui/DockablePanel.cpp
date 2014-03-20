@@ -313,18 +313,15 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool ma
     boost::shared_ptr<Group_Knob> isGroup = boost::dynamic_pointer_cast<Group_Knob>(knob);
     boost::shared_ptr<Tab_Knob> isTab = boost::dynamic_pointer_cast<Tab_Knob>(knob);
     if (isTab) {
-        bool found = false;
         QString tabName(isTab->getDescription().c_str());
         for (int j = 0 ; j < _tabWidget->count(); ++j) {
             if(_tabWidget->tabText(j) == tabName){
-                found = true;
                 return ret;
             }
         }
-        if (!found) {
-            ///if it doesn't exist, create it
-            addTab(tabName);
-        }
+        ///if it doesn't exist, create it
+        addTab(tabName);
+
     } else {
         for (std::map<boost::shared_ptr<Knob>,KnobGui*>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
             if(it->first == knob){
