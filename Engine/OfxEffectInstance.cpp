@@ -632,8 +632,27 @@ bool OfxEffectInstance::isIdentity(SequenceTime time,RenderScale scale,const Rec
     }
 }
 
+
+void OfxEffectInstance::beginSequenceRender(SequenceTime first,SequenceTime last,
+                                            SequenceTime step,bool interactive,RenderScale scale,
+                                            bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) {
+    OfxStatus stat = effectInstance()->beginRenderAction(first, last, step, interactive, scale,isSequentialRender,isRenderResponseToUserInteraction,view);
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    
+}
+
+void OfxEffectInstance::endSequenceRender(SequenceTime first,SequenceTime last,
+                                          SequenceTime step,bool interactive,RenderScale scale,
+                                          bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) {
+    OfxStatus stat = effectInstance()->endRenderAction(first, last, step, interactive, scale,isSequentialRender,isRenderResponseToUserInteraction,view);
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    
+}
+
 Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
-                                         const RectI& roi,int view,boost::shared_ptr<Natron::Image> /*output*/){
+                                         const RectI& roi,int view,
+                                         bool isSequentialRender,bool isRenderResponseToUserInteraction,
+                                         boost::shared_ptr<Natron::Image> /*output*/){
     if(!_initialized){
         return Natron::StatFailed;
     }
@@ -645,7 +664,7 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     int viewsCount = getApp()->getProject()->getProjectViewsCount();
     OfxStatus stat;
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
-    stat = effect_->renderAction((OfxTime)time, field, ofxRoI, scale, view, viewsCount);
+    stat = effect_->renderAction((OfxTime)time, field, ofxRoI, scale,isSequentialRender,isRenderResponseToUserInteraction,view, viewsCount);
     if (stat != kOfxStatOK) {
         return StatFailed;
     } else {
@@ -997,18 +1016,4 @@ bool OfxEffectInstance::supportsTiles() const {
 
 void OfxEffectInstance::beginEditKnobs() {
     effectInstance()->beginInstanceEditAction();
-}
-
-void OfxEffectInstance::beginSequenceRender(SequenceTime first,SequenceTime last,
-                         SequenceTime step,bool interactive,RenderScale scale) {
-    OfxStatus stat = effectInstance()->beginRenderAction(first, last, step, interactive, scale);
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-
-}
-
-void OfxEffectInstance::endSequenceRender(SequenceTime first,SequenceTime last,
-                               SequenceTime step,bool interactive,RenderScale scale) {
-    OfxStatus stat = effectInstance()->endRenderAction(first, last, step, interactive, scale);
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-
 }

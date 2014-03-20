@@ -414,6 +414,8 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
                             std::map<std::string,std::vector<std::string> >* readersMap,
                             std::map<std::string,std::vector<std::string> >* writersMap) {
     
+    ////Use ReadQt and WriteQt only for debug versions of Natron.
+#ifdef NATRON_DEBUG
     // these  are built-in nodes
     QStringList grouping;
     grouping.push_back("Image"); // Readers, Writers, and Generators are in the "Image" group in Nuke
@@ -475,7 +477,7 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
         
         delete writer;
     }
-
+#endif
     
     {
         EffectInstance* viewer = ViewerInstance::BuildEffect(NULL);

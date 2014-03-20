@@ -644,10 +644,11 @@ void ViewerTab::startPause(bool b){
     abortRendering();
     if(b){
         _imp->_viewerNode->getVideoEngine()->render(-1, /*frame count*/
-                                              true,/*seek timeline ?*/
-                                              true,/*rebuild tree?*/
-                                              true, /*forward ?*/
-                                              false); /*same frame ?*/
+                                                    true,/*seek timeline ?*/
+                                                    true,/*rebuild tree?*/
+                                                    true, /*forward ?*/
+                                                    false,/*same frame ?*/
+                                                    false);/*force preview?*/
     }
 }
 void ViewerTab::abortRendering(){
@@ -657,10 +658,11 @@ void ViewerTab::startBackward(bool b){
     abortRendering();
     if(b){
         _imp->_viewerNode->getVideoEngine()->render(-1, /*frame count*/
-                                              true,/*seek timeline ?*/
-                                              true,/*rebuild tree?*/
-                                              false,/*forward?*/
-                                              false);/*same frame ?*/
+                                                    true,/*seek timeline ?*/
+                                                    true,/*rebuild tree?*/
+                                                    false,/*forward?*/
+                                                    false,/*same frame ?*/
+                                                    false);/*force preview?*/
     }
 }
 void ViewerTab::seek(SequenceTime time){

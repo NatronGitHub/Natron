@@ -47,6 +47,9 @@ struct EffectInstance::RenderArgs {
     SequenceTime _time;
     RenderScale _scale;
     int _view;
+    bool _isSequentialRender;
+    bool _isRenderResponseToUserInteraction;
+    bool _byPassCache;
 };
 
 struct EffectInstance::Implementation {
@@ -261,8 +264,14 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     ///the image if it's missing from the cache.
     RectI roi;
     RectI precomputedRoD;
+    bool isSequentialRender = false;
+    bool isRenderUserInteraction = true;
+    bool byPassCache = false;
     if (_imp->renderArgs.hasLocalData()) {
         roi = _imp->renderArgs.localData()._roi;//if the thread was spawned by us we take the last render args
+        isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
+        isRenderUserInteraction = _imp->renderArgs.localData()._isRenderResponseToUserInteraction;
+        byPassCache = _imp->renderArgs.localData()._byPassCache;
     } else {
         bool isProjectFormat;
         Natron::Status stat = n->getRegionOfDefinition(time, &roi,&isProjectFormat);
@@ -271,7 +280,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
             return boost::shared_ptr<Natron::Image>();
         }
     }
-    boost::shared_ptr<Image > entry = n->renderRoI(time, scale, view,roi, precomputedRoD.isNull() ? NULL : &precomputedRoD);
+    boost::shared_ptr<Image > entry = n->renderRoI(time, scale, view,roi,isSequentialRender,isRenderUserInteraction,false, precomputedRoD.isNull() ? NULL : &precomputedRoD);
 
     return entry;
 }
@@ -352,8 +361,10 @@ void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last)
 }
 
 boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,RenderScale scale,
-                                                                 int view,const RectI& renderWindow,
-                                                                 bool byPassCache,const RectI* preComputedRoD)
+                                                           int view,const RectI& renderWindow,
+                                                           bool isSequentialRender,
+                                                           bool isRenderMadeInResponseToUserInteraction,
+                                                           bool byPassCache,const RectI* preComputedRoD)
 {
 #ifdef NATRON_LOG
     Natron::Log::beginFunction(getName(),"renderRoI");
@@ -517,7 +528,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
 
     ///If we reach here, it can be either because the image is cached or not, either way
     ///the image is NOT an identity, and it may have some content left to render.
-    bool success = renderRoIInternal(time, scale, view, renderWindow, cachedImgParams, image, byPassCache);
+    bool success = renderRoIInternal(time, scale, view, renderWindow, cachedImgParams, image,isSequentialRender,isRenderMadeInResponseToUserInteraction ,byPassCache);
     
     if(aborted() || !success){
         //if render was aborted, remove the frame from the cache as it contains only garbage
@@ -538,18 +549,22 @@ void EffectInstance::renderRoI(SequenceTime time,RenderScale scale,
                                int view,const RectI& renderWindow,
                                const boost::shared_ptr<const ImageParams>& cachedImgParams,
                                const boost::shared_ptr<Image>& image,
+                               bool isSequentialRender,
+                               bool isRenderMadeInResponseToUserInteraction,
                                bool byPassCache) {
-    bool success = renderRoIInternal(time, scale, view, renderWindow, cachedImgParams, image, byPassCache);
+    bool success = renderRoIInternal(time, scale, view, renderWindow, cachedImgParams, image,isSequentialRender,isRenderMadeInResponseToUserInteraction, byPassCache);
     if (!success) {
         throw std::runtime_error("Rendering Failed");
     }
 }
 
 bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
-                       int view,const RectI& renderWindow,
-                       const boost::shared_ptr<const ImageParams>& cachedImgParams,
-                       const boost::shared_ptr<Image>& image,
-                       bool byPassCache) {
+                                       int view,const RectI& renderWindow,
+                                       const boost::shared_ptr<const ImageParams>& cachedImgParams,
+                                       const boost::shared_ptr<Image>& image,
+                                       bool isSequentialRender,
+                                       bool isRenderMadeInResponseToUserInteraction,
+                                       bool byPassCache) {
     _node->addImageBeingRendered(image, time, view);
     
     ///We check what is left to render.
@@ -595,7 +610,10 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
         args._time = time;
         args._view = view;
         args._scale = scale;
+        args._isSequentialRender = isSequentialRender;
+        args._isRenderResponseToUserInteraction = isRenderMadeInResponseToUserInteraction;
         _imp->renderArgs.setLocalData(args);
+        args._byPassCache = byPassCache;
         
         
         ///the getRegionOfInterest call CANNOT be cached because it depends of the render window.
@@ -622,7 +640,8 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
                 
                 for (U32 range = 0; range < it2->second.size(); ++range) {
                     for (U32 f = it2->second[range].min; f < it2->second[range].max; ++f) {
-                        boost::shared_ptr<Natron::Image> inputImg = inputEffect->renderRoI(f, scale,view, foundInputRoI->second,byPassCache);
+                        boost::shared_ptr<Natron::Image> inputImg = inputEffect->renderRoI(f, scale,view, foundInputRoI->second,
+                                                                isSequentialRender,isRenderMadeInResponseToUserInteraction,byPassCache);
                         if (inputImg) {
                             inputImages.push_back(inputImg);
                         }
@@ -651,7 +670,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
             ++_imp->beginEndRenderCount;
         }
         if (callBegin) {
-            beginSequenceRender(time, time, 1, false, scale);
+            beginSequenceRender(time, time, 1, !appPTR->isBackground(), scale,isSequentialRender,isRenderMadeInResponseToUserInteraction,view);
         }
         
         /*depending on the thread-safety of the plug-in we render with a different
@@ -680,7 +699,8 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
                 std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(rectToRender, QThread::idealThreadCount());
                 // the bitmap is checked again at the beginning of EffectInstance::tiledRenderingFunctor()
                 QFuture<Natron::Status> ret = QtConcurrent::mapped(splitRects,
-                                                                   boost::bind(&EffectInstance::tiledRenderingFunctor,this,args,_1,image));
+                                                                   boost::bind(&EffectInstance::tiledRenderingFunctor,
+                                                                               this,args,_1,image));
                 ret.waitForFinished();
                 
                 bool callEndRender = false;
@@ -693,7 +713,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
                     }
                 }
                 if (callEndRender) {
-                    endSequenceRender(time, time, time, false, scale);
+                    endSequenceRender(time, time, time, false, scale,isSequentialRender,isRenderMadeInResponseToUserInteraction,view);
                 }
                 
                 for (QFuture<Natron::Status>::const_iterator it2 = ret.begin(); it2!=ret.end(); ++it2) {
@@ -716,7 +736,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
                 rectToRender = image->getMinimalRect(rectToRender);
                 if (!rectToRender.isNull()) {
-                    Natron::Status st = render(time, scale, rectToRender,view, image);
+                    Natron::Status st = render(time, scale, rectToRender,view,isSequentialRender,isRenderMadeInResponseToUserInteraction, image);
                     
                     bool callEndRender = false;
                     {
@@ -728,7 +748,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
                         }
                     }
                     if (callEndRender) {
-                        endSequenceRender(time, time, time, false, scale);
+                        endSequenceRender(time, time, time, false, scale,isSequentialRender,isRenderMadeInResponseToUserInteraction,view);
                     }
                     
                     if (st != Natron::StatOK) {
@@ -749,7 +769,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
                 rectToRender = image->getMinimalRect(rectToRender);
                 if (!rectToRender.isNull()) {
-                    Natron::Status st = render(time, scale, rectToRender,view, image);
+                    Natron::Status st = render(time, scale, rectToRender,view,isSequentialRender,isRenderMadeInResponseToUserInteraction, image);
                     
                     bool callEndRender = false;
                     {
@@ -761,7 +781,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
                         }
                     }
                     if (callEndRender) {
-                        endSequenceRender(time, time, time, false, scale);
+                        endSequenceRender(time, time, time, false, scale,isSequentialRender,isRenderMadeInResponseToUserInteraction,view);
                     }
                     
                     if (st != Natron::StatOK) {
@@ -781,7 +801,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
                 rectToRender = image->getMinimalRect(rectToRender);
                 if (!rectToRender.isNull()) {
-                    Natron::Status st = render(time, scale, rectToRender,view, image);
+                    Natron::Status st = render(time, scale, rectToRender,view,isSequentialRender,isRenderMadeInResponseToUserInteraction, image);
                     
                     bool callEndRender = false;
                     {
@@ -793,7 +813,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
                         }
                     }
                     if (callEndRender) {
-                        endSequenceRender(time, time, time, false, scale);
+                        endSequenceRender(time, time, time, false, scale,isSequentialRender,isRenderMadeInResponseToUserInteraction,view);
                     }
                     
                     if(st != Natron::StatOK){
@@ -827,14 +847,15 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImageBeingRendered(SequenceT
 }
 
 Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
-                                 const RectI& roi,
-                                 boost::shared_ptr<Natron::Image> output)
+                                                     const RectI& roi,
+                                                     boost::shared_ptr<Natron::Image> output)
 {
     _imp->renderArgs.setLocalData(args);
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
     RectI rectToRender = output->getMinimalRect(roi);
     if (!rectToRender.isNull()) {
-        Natron::Status st = render(args._time, args._scale, rectToRender, args._view, output);
+        Natron::Status st = render(args._time, args._scale, rectToRender, args._view,
+                                   args._isSequentialRender,args._isRenderResponseToUserInteraction, output);
         if(st != StatOK){
             return st;
         }
@@ -1143,6 +1164,7 @@ void OutputEffectInstance::renderFullSequence(BlockingBackgroundRender* renderCo
                              true, //< seek timeline
                              true, //< refresh tree
                              true, //< forward
+                             false,
                              false); //< same frame
     
 }

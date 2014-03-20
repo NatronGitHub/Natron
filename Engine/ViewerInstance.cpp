@@ -282,7 +282,7 @@ ViewerInstance::getFrameRange(SequenceTime *first,
 
 Natron::Status
 ViewerInstance::renderViewer(SequenceTime time,
-                             bool singleThreaded)
+                             bool singleThreaded,bool isSequentialRender)
 {
     // always running in the VideoEngine thread
     _imp->assertVideoEngine();
@@ -552,9 +552,10 @@ ViewerInstance::renderViewer(SequenceTime time,
             if (isInputImgCached) {
                 ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
                 ///cache lookup things because we already did it ourselves.
-                activeInputToRender->renderRoI(time, scale, view, texRectClipped, cachedImgParams, inputImage);
+                activeInputToRender->renderRoI(time, scale, view, texRectClipped, cachedImgParams, inputImage,isSequentialRender,true);
             } else {
-                _imp->lastRenderedImage = activeInputToRender->renderRoI(time, scale,view,texRectClipped,byPassCache,&rod);
+                _imp->lastRenderedImage = activeInputToRender->renderRoI(time, scale,view,texRectClipped,isSequentialRender,true,
+                                                                         byPassCache,&rod);
             }
         } catch (...) {
             _node->notifyInputNIsFinishedRendering(inputIndex);

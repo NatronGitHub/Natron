@@ -62,7 +62,9 @@ public:
     
     void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE;
 
-    virtual Natron::Status render(SequenceTime /*time*/, RenderScale /*scale*/, const RectI& /*roi*/, int /*view*/, boost::shared_ptr<Natron::Image> /*output*/) OVERRIDE;
+    virtual Natron::Status render(SequenceTime /*time*/, RenderScale /*scale*/, const RectI& /*roi*/, int /*view*/,
+                                  bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
+                                  boost::shared_ptr<Natron::Image> /*output*/) OVERRIDE;
 
 
 protected:

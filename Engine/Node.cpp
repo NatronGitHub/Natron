@@ -900,7 +900,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     // Exceptions are caught because the program can run without a preview,
     // but any exception in renderROI is probably fatal.
     try {
-        img = _imp->previewInstance->renderRoI(time, scale, 0,rod);
+        img = _imp->previewInstance->renderRoI(time, scale, 0,rod,false,true);
     } catch (const std::exception& e) {
         qDebug() << "Error: Cannot create preview" << ": " << e.what();
         _imp->computingPreview = false;
