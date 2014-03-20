@@ -171,7 +171,9 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         scale.x = scale.y = 1.;
         Natron::ImageKey key = Natron::Image::makeKey(n->hash().value(), time, scale,0);
         bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
-        if (isCached) {
+        Format f;
+        n->getRenderFormat(&f);
+        if (isCached && cachedImgParams->isRodProjectFormat() && cachedImgParams->getRoD() == dynamic_cast<RectI&>(f)) {
             rod = cachedImgParams->getRoD();
             ret.x1 = rod.left();
             ret.x2 = rod.right();

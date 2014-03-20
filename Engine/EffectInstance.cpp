@@ -681,7 +681,8 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
         ///as it would lead to a deadlock when the project is loading.
         ///Just fall back to Fully_safe
         if (safety == FULLY_SAFE_FRAME) {
-            if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
+            int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
+            if (nbThreads == -1 || nbThreads == 1 || (nbThreads == 0 && QThread::idealThreadCount() == 1)) {
                 safety = FULLY_SAFE;
             } else {
                 if (!getApp()->getProject()->tryLock()) {
