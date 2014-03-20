@@ -76,9 +76,9 @@ public:
     
     bool hasWidgetBeenCreated() const {return _widgetCreated;}
     
-    void setKeyframe(SequenceTime time,int dimension);
+    void setKeyframe(double time,int dimension);
 
-    void removeKeyFrame(SequenceTime time,int dimension);
+    void removeKeyFrame(double time,int dimension);
     
     QString toolTip() const;
     

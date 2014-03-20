@@ -522,7 +522,7 @@ void KnobGui::onHorizontalInterpActionTriggered(){
     setInterpolationForDimensions(dims,Natron::KEYFRAME_HORIZONTAL);
 }
 
-void KnobGui::setKeyframe(SequenceTime time,int dimension){
+void KnobGui::setKeyframe(double time,int dimension){
     emit keyFrameSetByUser(time,dimension);
     emit keyFrameSet();
 }
@@ -542,7 +542,7 @@ void KnobGui::onSetKeyActionTriggered(){
     
 }
 
-void KnobGui::removeKeyFrame(SequenceTime time,int dimension){
+void KnobGui::removeKeyFrame(double time,int dimension){
     emit keyFrameRemovedByUser(time,dimension);
     emit keyFrameRemoved();
     updateGUI(dimension,_knob->getValue(dimension));

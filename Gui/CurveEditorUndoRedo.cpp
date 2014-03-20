@@ -33,16 +33,32 @@ AddKeysCommand::AddKeysCommand(CurveWidget *editor, CurveGui* curve,
 {
 }
 
-void AddKeysCommand::addOrRemoveKeyframe(bool add){
-    _curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
-    for(U32 i = 0; i < _keys.size();++i){
-        if(!add){
-            _curve->getKnob()->removeKeyFrame(_keys[i].getTime(), _curve->getDimension());
+void AddKeysCommand::addOrRemoveKeyframe(bool add) {
+    boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(_curve->getKnob()->getKnob());
+    
+    for(U32 i = 0 ; i < _keys.size();++i){
+        _curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
+        if(add){
+            if (isParametric) {
+                Natron::Status st = isParametric->addControlPoint(_curve->getDimension(), _keys[i].getTime(),_keys[i].getValue());
+                assert(st == Natron::StatOK);
+            }else{
+                _curve->getKnob()->setKeyframe(_keys[i].getTime(), _curve->getDimension());
+            }
         }else{
-            _curve->getKnob()->setKeyframe(_keys[i].getTime(),_curve->getDimension());
+            if (isParametric) {
+                Natron::Status st = isParametric->deleteControlPoint(_curve->getDimension(),
+                                                             _curve->getInternalCurve()->keyFrameIndex(_keys[i].getTime()));
+                assert(st == Natron::StatOK);
+            }else{
+                _curve->getKnob()->removeKeyFrame(_keys[i].getTime(), _curve->getDimension());
+            }
         }
     }
-    _curve->getKnob()->getKnob()->endValueChange();
+    for(U32 i = 0 ; i < _keys.size();++i){
+        _curve->getKnob()->getKnob()->endValueChange();
+    }
+    
     _curveWidget->update();
     
     setText(QObject::tr("Add multiple keyframes"));
