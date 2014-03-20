@@ -1016,29 +1016,30 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     assert(qApp && qApp->thread() == QThread::currentThread());
 
     QMutexLocker locker(&updateViewerMutex);
-    assert(updateViewerRunning);
-    uiContext->makeOpenGLcontextCurrent();
-    if (!instance->aborted()) {
-        // how do you make sure params->ramBuffer is not freed during this operation?
-        /// It is not freed as long as the cachedFrame shared_ptr in renderViewer has a used_count greater than 1.
-        /// i.e. until renderViewer exits.
-        /// Since updateViewer() is in the scope of cachedFrame, and renderViewer waits for the completion
-        /// of updateViewer(), it is guaranteed not to be freed before the viewer is actually done with it.
-        /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-        uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
-                                              params->bytesCount,
-                                              params->textureRect,
-                                              params->gain,
-                                              params->offset,
-                                              params->lut,
-                                              updateViewerPboIndex);
-        updateViewerPboIndex = (updateViewerPboIndex+1)%2;
+    if (updateViewerRunning) { // updateViewerRunning may have been reset, e.g. by wakeUpAnySleepingThread()
+        uiContext->makeOpenGLcontextCurrent();
+        if (!instance->aborted()) {
+            // how do you make sure params->ramBuffer is not freed during this operation?
+            /// It is not freed as long as the cachedFrame shared_ptr in renderViewer has a used_count greater than 1.
+            /// i.e. until renderViewer exits.
+            /// Since updateViewer() is in the scope of cachedFrame, and renderViewer waits for the completion
+            /// of updateViewer(), it is guaranteed not to be freed before the viewer is actually done with it.
+            /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
+            uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
+                                                  params->bytesCount,
+                                                  params->textureRect,
+                                                  params->gain,
+                                                  params->offset,
+                                                  params->lut,
+                                                  updateViewerPboIndex);
+            updateViewerPboIndex = (updateViewerPboIndex+1)%2;
+        }
+
+        uiContext->updateColorPicker();
+        uiContext->redraw();
+        
+        updateViewerRunning = false;
     }
-    
-    uiContext->updateColorPicker();
-    uiContext->redraw();
-    
-    updateViewerRunning = false;
     updateViewerCond.wakeOne();
 }
 

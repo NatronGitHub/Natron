@@ -140,8 +140,9 @@ public:
     bool forceRender;/*!< true when we want to by-pass the cache*/
 
 
+    // updateViewer: stuff for handling the execution of updateViewer() in the main thread, @see UpdateViewerParams
     QWaitCondition     updateViewerCond;
-    mutable QMutex     updateViewerMutex; //!< protects updateViewerRunning, updateViewerParams, updateViewerPboIndex
+    mutable QMutex     updateViewerMutex; //!< protects updateViewerRunning, updateViewerPboIndex
     bool               updateViewerRunning; //<! This flag is true when the updateViewer() function is called. That function
     //is always called on the main thread, but the thread running renderViewer MUST
     //wait the entire time. This flag is here to make the renderViewer() thread wait
@@ -153,6 +154,7 @@ public:
     void* buffer;
     size_t bufferAllocated;
 
+    // viewerParams: The viewer parameters that may be accessed from the GUI
     mutable QMutex   viewerParamsMutex; //< protects viewerParamsGain, viewerParamsLut, viewerParamsAutoContrast, viewerParamsChannels
     double           viewerParamsGain ;/*!< Current gain setting in the GUI. Not affected by autoContrast. */
     ViewerColorSpace viewerParamsLut; /*!< a value coding the current color-space used to render.
