@@ -1776,7 +1776,11 @@ void ViewerGL::fitImageToFormat()
     _imp->oldClick = QPoint(); // reset mouse posn
 
     if (old_zoomFactor != zoomFactor) {
-        emit zoomChanged(zoomFactor * 100);
+        int zoomFactorInt = zoomFactor  * 100;
+        if (zoomFactorInt == 0) {
+            zoomFactorInt = 1;
+        }
+        emit zoomChanged(zoomFactorInt);
     }
 
     _imp->zoomOrPannedSinceLastFit = false;
