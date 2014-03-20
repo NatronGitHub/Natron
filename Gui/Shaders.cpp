@@ -26,11 +26,9 @@ const char* fragRGB =
 "    return (c<0.018) ? (4.500*c) : (1.099*pow(c,0.45) - 0.099);\n"
 "}\n"
 "void main(){\n"
-"    \n"
 "    vec4 color_tmp = texture2D(Tex,gl_TexCoord[0].st);\n"
-"    \n"
-"    color_tmp.rgb = color_tmp.rgb ;\n"
-"   if(lut == 0){ // srgb\n"
+"    color_tmp.rgb = (color_tmp.rgb * gain) + offset;\n"
+"    if(lut == 0){ // srgb\n"
 // << TO SRGB
 "       color_tmp.r = linear_to_srgb(color_tmp.r);"
 "       color_tmp.g = linear_to_srgb(color_tmp.g);"
@@ -41,19 +39,15 @@ const char* fragRGB =
 "       color_tmp.r = linear_to_rec709(color_tmp.r);"
 "       color_tmp.g = linear_to_rec709(color_tmp.g);"
 "       color_tmp.b = linear_to_rec709(color_tmp.b);"
-"\n"
 "   }\n"   // << END TO REC 709
-"   color_tmp.rgb = (color_tmp.rgb * gain) + offset;\n"
 "	gl_FragColor = color_tmp;\n"
 "}\n"
 ;
 
 const char* vertRGB =
-
 "void main()\n"
 "{\n"
-"\n"
-"   gl_TexCoord[0] = gl_MultiTexCoord0;\n"
+"   gl_TexCoord[0] = gl_MultiTexCoord0;"
 "	gl_Position = ftransform();\n"
 "}\n"
 "\n"
