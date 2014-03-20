@@ -74,6 +74,8 @@ struct UpdateViewerParams
     double gain;
     double offset;
     ViewerInstance::ViewerColorSpace lut;
+    boost::shared_ptr<Natron::FrameEntry> cachedFrame; //!< this pointer is at least valid until this function exits, the the cache entry cannot be released
+    boost::shared_ptr<const Natron::FrameParams> cachedFrameParams; //!< FIXME: do we need to keep this?
 };
 
 struct ViewerInstance::ViewerInstancePrivate : public QObject {
