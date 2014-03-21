@@ -435,6 +435,8 @@ public:
 public slots:
 
     void onColorChanged();
+    void onMinMaxChanged(double mini, double maxi, int index);
+    void onDisplayMinMaxChanged(double mini, double maxi, int index);
 
     void showColorDialog();
     

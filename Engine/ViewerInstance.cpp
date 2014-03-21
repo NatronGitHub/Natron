@@ -252,8 +252,9 @@ ViewerInstance::activeInput() const
 int
 ViewerInstance::maximumInputs() const
 {
-    // always running in the VideoEngine thread
-    _imp->assertVideoEngine();
+    // runs in the VideoEngine thread or in the main thread
+    //_imp->assertVideoEngine();
+    // but is it really MT-SAFE?
 
     return getNode()->maximumInputs();
 }

@@ -975,16 +975,22 @@ Color_KnobGui::Color_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *contai
 , _aBox(NULL)
 , _colorLabel(NULL)
 , _colorDialogButton(NULL)
-, _dimension(knob->getDimension()) {}
+, _dimension(knob->getDimension())
+{
+    boost::shared_ptr<Color_Knob> col_knob = boost::dynamic_pointer_cast<Color_Knob>(getKnob());
+    assert(col_knob);
+    QObject::connect(col_knob.get(), SIGNAL(minMaxChanged(double, double, int)), this, SLOT(onMinMaxChanged(double, double, int)));
+    QObject::connect(col_knob.get(), SIGNAL(displayMinMaxChanged(double, double, int)), this, SLOT(onDisplayMinMaxChanged(double, double, int)));
+}
 
 Color_KnobGui::~Color_KnobGui()
 {
     delete mainContainer;
 }
 
-void Color_KnobGui::createWidget(QHBoxLayout* layout)
+void
+Color_KnobGui::createWidget(QHBoxLayout* layout)
 {
-    
     mainContainer = new QWidget(layout->parentWidget());
     mainLayout = new QHBoxLayout(mainContainer);
     mainContainer->setLayout(mainLayout);
@@ -1107,10 +1113,58 @@ void Color_KnobGui::createWidget(QHBoxLayout* layout)
     mainLayout->addWidget(colorContainer);
     
     layout->addWidget(mainContainer);
-    
-    
 }
-void Color_KnobGui::setEnabled()
+
+void
+Color_KnobGui::onMinMaxChanged(double mini, double maxi, int index)
+{
+    assert(index < _dimension);
+    switch (index) {
+        case 0:
+            _rBox->setMinimum(mini);
+            _rBox->setMaximum(maxi);
+            break;
+        case 1:
+            _gBox->setMinimum(mini);
+            _gBox->setMaximum(maxi);
+            break;
+        case 2:
+            _bBox->setMinimum(mini);
+            _bBox->setMaximum(maxi);
+            break;
+        case 3:
+            _aBox->setMinimum(mini);
+            _aBox->setMaximum(maxi);
+            break;
+    }
+}
+
+void
+Color_KnobGui::onDisplayMinMaxChanged(double mini,double maxi,int index )
+{
+    assert(index < _dimension);
+    switch (index) {
+        case 0:
+            _rBox->setMinimum(mini);
+            _rBox->setMaximum(maxi);
+            break;
+        case 1:
+            _gBox->setMinimum(mini);
+            _gBox->setMaximum(maxi);
+            break;
+        case 2:
+            _bBox->setMinimum(mini);
+            _bBox->setMaximum(maxi);
+            break;
+        case 3:
+            _aBox->setMinimum(mini);
+            _aBox->setMaximum(maxi);
+            break;
+    }
+}
+
+void
+Color_KnobGui::setEnabled()
 {
     bool r = getKnob()->isEnabled(0);
     
@@ -1132,7 +1186,8 @@ void Color_KnobGui::setEnabled()
     }
 }
 
-void Color_KnobGui::updateGUI(int dimension, const Variant &variant)
+void
+Color_KnobGui::updateGUI(int dimension, const Variant &variant)
 {
     assert(dimension < _dimension && dimension >= 0 && dimension <= 3);
     switch (dimension) {
@@ -1167,7 +1222,9 @@ void Color_KnobGui::updateGUI(int dimension, const Variant &variant)
     updateLabel(color);
 }
 
-void Color_KnobGui::reflectAnimationLevel(int dimension,Natron::AnimationLevel level) {
+void
+Color_KnobGui::reflectAnimationLevel(int dimension,Natron::AnimationLevel level)
+{
     switch (level) {
         case Natron::NO_ANIMATION:
             switch (dimension) {
@@ -1232,7 +1289,8 @@ void Color_KnobGui::reflectAnimationLevel(int dimension,Natron::AnimationLevel l
     }
 }
 
-void Color_KnobGui::showColorDialog()
+void
+Color_KnobGui::showColorDialog()
 {
     QColorDialog dialog(_rBox->parentWidget());
     if (dialog.exec()) {
@@ -1272,7 +1330,8 @@ void Color_KnobGui::showColorDialog()
     }
 }
 
-void Color_KnobGui::onColorChanged()
+void
+Color_KnobGui::onColorChanged()
 {
     QColor color;
     color.setRedF(_rBox->value());
@@ -1294,12 +1353,14 @@ void Color_KnobGui::onColorChanged()
 }
 
 
-void Color_KnobGui::updateLabel(const QColor &color)
+void
+Color_KnobGui::updateLabel(const QColor &color)
 {
     _colorLabel->setColor(color);
 }
 
-void Color_KnobGui::_hide()
+void
+Color_KnobGui::_hide()
 {
     _rBox->hide();
     _rLabel->hide();
@@ -1318,7 +1379,8 @@ void Color_KnobGui::_hide()
     _colorDialogButton->hide();
 }
 
-void Color_KnobGui::_show()
+void
+Color_KnobGui::_show()
 {
     _rBox->show();
     _rLabel->show();
