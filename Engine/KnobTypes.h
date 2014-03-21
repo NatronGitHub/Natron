@@ -387,6 +387,7 @@ private:
  **/
 class Color_Knob: public Knob
 {
+    Q_OBJECT
 public:
     
     static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
@@ -395,20 +396,49 @@ public:
     
     
     Color_Knob(KnobHolder *holder, const std::string &description, int dimension);
-    
-    virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
-    
+
+    const std::vector<double> &getMinimums() const;
+
+    const std::vector<double> &getMaximums() const;
+
+    const std::vector<double> &getDisplayMinimums() const;
+
+    const std::vector<double> &getDisplayMaximums() const;
+
+    void setMinimum(double mini, int index);
+
+    void setMaximum(double maxi, int index);
+
+    void setDisplayMinimum(double mini, int index);
+
+    void setDisplayMaximum(double maxi, int index);
+
+    std::pair<double,double> getMinMaxForCurve(const Curve* curve) const;
+
+    /*minis & maxis must have the same size*/
+    void setMinimumsAndMaximums(const std::vector<double> &minis, const std::vector<double> &maxis);
+
+    void setDisplayMinimumsAndMaximums(const std::vector<double> &minis, const std::vector<double> &maxis);
+
     static const std::string& typeNameStatic();
     
     virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
 
+signals:
+    void minMaxChanged(double mini, double maxi, int index = 0);
+
+    void displayMinMaxChanged(double mini,double maxi,int index = 0);
+
 private:
     
+    virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
+
     virtual bool canAnimate() const OVERRIDE FINAL;
     
     virtual const std::string& typeName() const OVERRIDE FINAL;
     
 private:
+    std::vector<double> _minimums, _maximums, _displayMins, _displayMaxs;
     static const std::string _typeNameStr;
 };
 
