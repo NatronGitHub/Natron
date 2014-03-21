@@ -164,10 +164,6 @@ public:
     
     void clearNodes();
     
-    void incrementKnobsAge();
-    
-    int getKnobsAge() const;
-    
     void setLastTimelineSeekCaller(Natron::OutputEffectInstance* output);
 
     void beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller);

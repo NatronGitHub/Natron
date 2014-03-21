@@ -33,7 +33,6 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
-#include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
 
 namespace Natron{
@@ -63,7 +62,7 @@ class RenderTree {
     
     
 public:
-    typedef std::vector<std::pair<Natron::Node*,Natron::EffectInstance*> > TreeContainer;
+    typedef std::vector<Natron::Node*> TreeContainer;
     typedef TreeContainer::const_iterator TreeIterator;
     typedef TreeContainer::const_reverse_iterator TreeReverseIterator;
     typedef TreeContainer::const_iterator InputsIterator;
@@ -81,7 +80,7 @@ public:
      *The rest of the tree is fetched recursivly starting from this node.
      *@TODO Throw some exception to detect cycles in the graph
      */
-    void refreshTree(int knobsAge);
+    void refreshTree();
     
     /**
      *@brief Returns an iterator pointing to the first node in the graph in topological order.
@@ -113,8 +112,6 @@ public:
     Natron::EffectInstance* getOutput() const {return _output;}
     
     
-    void getTree(std::vector<std::pair<Natron::Node*,Natron::EffectInstance*> >* tree) const { *tree = _sorted; }
-    
     /**
      *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
      *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
@@ -134,9 +131,9 @@ public:
     bool isOutputAnOpenFXNode() const {return _isOutputOpenFXNode;}
     
     /**
-     *@brief calls preProcessFrame(time) on each node in the graph in topological ordering
+     *@brief Checks whether the render tree can produce a valid result.
      */
-    Natron::Status preProcessFrame(SequenceTime time);
+    Natron::Status preProcessFrame();
     
     SequenceTime firstFrame() const {return _firstFrame;}
     
@@ -144,24 +141,12 @@ public:
     
     void debug() const;
     
-    void refreshKnobsAndHashAndClearPersistentMessage();
-
-    /// FIXME: before removing the assert() (I know you are tempted) please explain (here: document!) if the format rectangle can be empty and in what situation(s)
-    void getRenderFormat(Format *f) const
-    {
-        assert(f);
-        assert(!_renderOutputFormat.isNull());
-        *f = _renderOutputFormat;
-    }
-    
-    int renderViewsCount() const {return _projectViewsCount;}
-    
-    Natron::EffectInstance* getEffectForNode(Natron::Node* node) const;
-    
+    void refreshInputsAndClearMessage();
+        
 private:
     /*called by resetAndSort(...) to fill the structure
      *upstream of the output given in parameter of resetAndSort(...)*/
-    void fillGraph(Natron::EffectInstance* effect);
+    void fillGraph(Natron::Node* effect,std::vector<Natron::Node*>& markedNodes);
     /*clears out the structure*/
     void clearGraph();
     
@@ -170,9 +155,6 @@ private:
     bool _isViewer; /*!< true if the outputNode is a viewer, it avoids many dynamic_casts*/
     bool _isOutputOpenFXNode; /*!< true if the outputNode is an OpenFX node*/
     SequenceTime _firstFrame,_lastFrame;/*!< first frame and last frame of the union range of all inputs*/
-    bool _treeVersionValid;
-    Format _renderOutputFormat;
-    int _projectViewsCount;
 };
 
 /**
@@ -418,7 +400,6 @@ private:
     };
 
     RenderTree _tree; /*!< The internal Tree instance.*/
-    mutable QMutex _treeMutex; /*!< protects the dag*/
 
     bool _threadStarted;
 
@@ -432,8 +413,6 @@ private:
     QWaitCondition _mustQuitCondition;
     mutable QMutex _mustQuitMutex; //!< protects _mustQuit
     bool _mustQuit;/*!< true when we quit the engine (i.e: we delete the OutputNode associated to this engine)*/
-
-    bool _treeVersionValid;/*!< was _lastRequestedRunArgs._treeVersion ever initialized? */
 
     mutable QMutex _loopModeMutex;///protects _loopMode
     bool _loopMode; /*!< on if the player will loop*/

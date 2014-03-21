@@ -42,7 +42,6 @@ class ImageParams;
 class EffectInstance : public KnobHolder
 {
 public:
-    typedef std::vector<EffectInstance*> Inputs;
     
     typedef std::map<EffectInstance*,RectI> RoIMap;
     
@@ -69,33 +68,17 @@ public:
 
     bool isLiveInstance() const WARN_UNUSED_RETURN;
     
-    /**
-     * @brief  Used once for each "render instance". It makes a full clone of the live instance.
-     * This instance will be "read-only": modifying values will have no impact on the GUI.
-     **/
-    void clone();
-    
-    /**
-     * @brief  Used once for each "render instance". It makes a full clone of the other instance.
-     * This instance will be "read-only": modifying values will have no impact on the GUI.
-     **/
-    U64 cloneKnobsAndComputeHashAndClearPersistentMessage(int knobsAge,bool forceHashComputation);
-    
-    const Hash64& hash() const WARN_UNUSED_RETURN;
-            
-    bool isHashValid() const WARN_UNUSED_RETURN;
-    
-    int hashAge() const WARN_UNUSED_RETURN;
+    U64 hash() const WARN_UNUSED_RETURN;
     
     U64 knobsAge() const WARN_UNUSED_RETURN;
     
+    /**
+     * @brief Set the knobs age of this node to be 'age'. Note that this can be called
+     * for 2 reasons:
+     * - loading a project
+     * - If this node is a clone and the master node changed its hash.
+     **/
     void setKnobsAge(U64 age);
-    
-    const Inputs& getInputs() const WARN_UNUSED_RETURN;
-    
-    void setMarkedByTopologicalSort(bool marked) const;
-
-    bool isMarkedByTopologicalSort() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Forwarded to the node's name
@@ -114,14 +97,15 @@ public:
     
     /**
      * @brief Returns input n. It might be NULL if the input is not connected.
+     * Cannot be called by another thread than the application's main thread.
      **/
     EffectInstance* input(int n) const WARN_UNUSED_RETURN;
-    
-    /**
-     * @brief, Given an input effect, returns on what input index it is connected, -1 if it couldn't be found.
-     **/
-    int inputIndex(EffectInstance* input) const WARN_UNUSED_RETURN;
   
+    /**
+     * @brief Returns input n. It might be NULL if the input is not connected.
+     **/
+    EffectInstance* input_other_thread(int n) const WARN_UNUSED_RETURN;
+    
     /**
      * @brief Forwarded to the node holding the effect
      **/
@@ -288,16 +272,6 @@ public:
      */
     boost::shared_ptr<Image> getImage(int inputNb,SequenceTime time,RenderScale scale,int view) WARN_UNUSED_RETURN;
     
-    
-    /**
-     * @brief This is the place to initialise any per frame specific data or flag.
-     * If the return value is StatOK or StatReplyDefault the render will continue, otherwise
-     * the render will stop.
-     * If the status is StatFailed a message should be posted by the plugin.
-     **/
-    virtual Natron::Status preProcessFrame(SequenceTime /*time*/) WARN_UNUSED_RETURN { return Natron::StatReplyDefault; }
-    
-    
     /**
      * @brief Can be derived to get the region that the plugin is capable of filling.
      * This is meaningful for plugins that generate images or transform images.
@@ -434,17 +408,7 @@ public:
      * but this is provided as a way to force things.
      **/
     void requestRender() { evaluate(NULL,true); }
-    
-    /**
-     * @brief Abort any ongoing rendering that uses this effect.
-     **/
-    void abortRendering();
-    
 
-    /**
-     * @brief This function is called by the node holding this effect. Never call this yourself.
-     **/
-    void updateInputs(RenderTree* tree);
     
     /**
      * @brief Use this function to post a transient message to the user. It will be displayed using

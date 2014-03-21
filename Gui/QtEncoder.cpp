@@ -71,7 +71,7 @@ std::vector<std::string> QtWriter::supportedFileFormats() const {
 void QtWriter::getFrameRange(SequenceTime *first,SequenceTime *last){
     int index = _frameRangeChoosal->getValue<int>();
     if(index == 0){
-        EffectInstance* inp = input(0);
+        EffectInstance* inp = input_other_thread(0);
         if(inp){
             inp->getFrameRange(first, last);
         }else{

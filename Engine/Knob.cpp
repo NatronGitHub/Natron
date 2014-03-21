@@ -12,6 +12,8 @@
 
 #include <QtCore/QDataStream>
 #include <QtCore/QByteArray>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QThread>
 #include <QtCore/QReadWriteLock>
 
 #include "Global/GlobalDefines.h"
@@ -113,6 +115,7 @@ struct Knob::KnobPrivate {
 Knob::Knob(KnobHolder* holder,const std::string& description,int dimension)
 :_imp(new KnobPrivate(this,holder,dimension,description))
 {
+    QObject::connect(this, SIGNAL(evaluateValueChangedInMainThread(int,int)), this, SLOT(onEvaluateValueChangedInOtherThread(int,int)));
 }
 
 
@@ -589,12 +592,17 @@ void Knob::endValueChange()
     _imp->_holder->notifyProjectEndKnobsValuesChanged();
 }
 
+void Knob::onEvaluateValueChangedInOtherThread(int dimension, int reason)
+{
+    evaluateValueChange(dimension,(Natron::ValueChangedReason)reason);
+}
+
 
 void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason)
 {
-    ///Always increment the application's knobs age.
-    if (_imp->_EvaluateOnChange) {
-        _imp->_holder->invalidateHash();
+    if (QThread::currentThread() != qApp->thread()) {
+        emit evaluateValueChangedInMainThread(dimension, reason);
+        return;
     }
     
     bool beginCalled = false;
@@ -1100,22 +1108,6 @@ void KnobHolder::initializeKnobsPublic()
     _knobsInitialized = true;
 }
 
-void KnobHolder::invalidateHash()
-{
-    if (_app) {
-        _app->getProject()->incrementKnobsAge();
-    }
-}
-
-int KnobHolder::getAppAge() const
-{
-    if (_app) {
-        return _app->getProject()->getKnobsAge();
-    } else {
-        return -1;
-    }
-}
-
 void KnobHolder::cloneKnobs(const KnobHolder& other)
 {
     assert(_knobs.size() == other._knobs.size());
@@ -1188,6 +1180,12 @@ boost::shared_ptr<Knob> KnobHolder::getKnobByName(const std::string& name) const
     }
     return boost::shared_ptr<Knob>();
 }
+
+const std::vector< boost::shared_ptr<Knob> >& KnobHolder::getKnobs() const {
+    ///MT-safe since it never changes
+    return _knobs;
+}
+
 
 void KnobHolder::slaveAllKnobs(KnobHolder* other) {
     

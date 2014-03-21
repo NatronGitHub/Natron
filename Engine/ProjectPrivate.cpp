@@ -43,8 +43,6 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , autoSetProjectFormat(true)
     , currentNodes()
     , project(project)
-    , _knobsAge(0)
-    , knobsAgeMutex()
     , lastTimelineSeekCaller(NULL)
     , beginEndMutex(QMutex::Recursive)
     , beginEndBracketsCount(0)
@@ -176,10 +174,11 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             thisNode->restoreKnobsLinks(*serializedNodes[i]);
         }
         
-        const std::map<int, std::string>& inputs = serializedNodes[i]->getInputs();
-        for (std::map<int, std::string>::const_iterator input = inputs.begin(); input!=inputs.end(); ++input) {
-            if(!project->getApp()->getProject()->connectNodes(input->first, input->second,thisNode)) {
-                std::string message = std::string("Failed to connect node ") + serializedNodes[i]->getPluginLabel() + " to " + input->second;
+        const std::vector<std::string>& inputs = serializedNodes[i]->getInputs();
+        for (U32 j = 0; j < inputs.size();++j) {
+            
+            if (!inputs[j].empty() && !project->getApp()->getProject()->connectNodes(j, inputs[j],thisNode)) {
+                std::string message = std::string("Failed to connect node ") + serializedNodes[i]->getPluginLabel() + " to " + inputs[j];
                 qDebug() << message.c_str();
                 throw std::runtime_error(message);
             }

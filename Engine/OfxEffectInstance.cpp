@@ -94,6 +94,9 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
      OfxImageEffect BEFORE calling populate().
      */
     
+    ///Only called from the main thread.
+    assert(QThread::currentThread() == qApp->thread());
+    
     if (context == kOfxImageEffectContextWriter) {
         setAsOutputNode();
     }
@@ -588,20 +591,6 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
             }
         }
     }
-}
-
-
-Natron::Status OfxEffectInstance::preProcessFrame(SequenceTime /*time*/){
-    //if(!isGenerator() && !isGeneratorAndFilter()){
-    /*Checking if all mandatory inputs are connected!*/
-    MappedInputV ofxInputs = inputClipsCopyWithoutOutput();
-    for (U32 i = 0; i < ofxInputs.size(); ++i) {
-        if (!ofxInputs[i]->isOptional() && !input(ofxInputs.size()-1-i)) {
-            return StatFailed;
-        }
-    }
-    
-    return StatOK;
 }
 
 bool OfxEffectInstance::isIdentity(SequenceTime time,RenderScale scale,const RectI& roi,

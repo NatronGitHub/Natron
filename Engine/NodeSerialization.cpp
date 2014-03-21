@@ -42,14 +42,7 @@ void NodeSerialization::initialize(Natron::Node* n){
     
     _pluginMinorVersion = n->minorVersion();
     
-    n->setRenderTreeIsUsingInputs(true);
-    const Natron::Node::InputMap& inputs = n->getInputs();
-    for(Natron::Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
-        if(it->second){
-            _inputs.insert(std::make_pair(it->first, it->second->getName()));
-        }
-    }
-    n->setRenderTreeIsUsingInputs(false);
+    _inputs = n->getInputNames();
     
     Natron::Node* masterNode = n->getMasterNode();
     if (masterNode) {

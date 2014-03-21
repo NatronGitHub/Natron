@@ -715,6 +715,7 @@ void ViewerTab::refresh(){
 
 ViewerTab::~ViewerTab()
 {
+    _imp->_viewerNode->invalidateUiContext();
 }
 
 

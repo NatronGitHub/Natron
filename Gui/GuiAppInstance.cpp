@@ -136,6 +136,10 @@ void GuiAppInstance::createNodeGui(Natron::Node *node,bool loadRequest,bool open
 
         }
     }
+    if (!loadRequest) {
+        triggerAutoSave();
+    }
+
 }
 
 Gui* GuiAppInstance::getGui() const { return _imp->_gui; }

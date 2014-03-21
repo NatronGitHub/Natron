@@ -12,7 +12,6 @@
 #ifndef NODESERIALIZATION_H
 #define NODESERIALIZATION_H
 
-#include <map>
 #include <string>
 
 #include "Global/Macros.h"
@@ -21,7 +20,7 @@ CLANG_DIAG_OFF(unused-parameter)
 #include <boost/archive/xml_iarchive.hpp>
 CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
-#include <boost/serialization/map.hpp>
+#include <boost/serialization/vector.hpp>
 #include <boost/serialization/version.hpp>
 
 #include "Engine/KnobSerialization.h"
@@ -48,7 +47,7 @@ public:
     
     const std::string& getPluginID() const {return _pluginID;}
     
-    const std::map<int,std::string>& getInputs() const {return _inputs;}
+    const std::vector<std::string>& getInputs() const {return _inputs;}
     
     int getPluginMajorVersion() const { return _pluginMajorVersion; }
     
@@ -70,7 +69,7 @@ private:
     int _pluginMinorVersion;
     std::string _masterNodeName;
     
-    std::map<int,std::string> _inputs;
+    std::vector<std::string> _inputs;
 
     
     friend class boost::serialization::access;

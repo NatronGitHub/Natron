@@ -14,6 +14,8 @@
 #include <limits>
 
 #include <QtCore/QDebug>
+#include <QtCore/QReadWriteLock>
+#include <QtCore/QCoreApplication>
 
 #include <boost/bind.hpp>
 
@@ -83,10 +85,11 @@ struct Node::Implementation {
     Implementation(AppInstance* app_,LibraryBinary* plugin_)
         : app(app_)
         , outputs()
-        , previewInstance(NULL)
-        , previewRenderTree(NULL)
-        , previewMutex()
-        , inputLabelsMap()
+        , inputsMutex()
+        , inputs()
+        , inputsQueue()
+        , liveInstance(NULL)
+        , inputLabels()
         , name()
         , deactivatedState()
         , activatedMutex()
@@ -95,17 +98,14 @@ struct Node::Implementation {
         , imagesBeingRenderedNotEmpty()
         , imagesBeingRendered()
         , plugin(plugin_)
-        , renderInstances()
         , computingPreview(false)
+        , computingPreviewMutex()
         , computingPreviewCond()
         , pluginInstanceMemoryUsed(0)
         , memoryUsedMutex()
         , mustQuitProcessing(false)
         , mustQuitProcessingMutex()
         , mustQuitProcessingCond()
-        , isUsingInputs(false)
-        , isUsingInputsCond()
-        , renderInstancesSharedMutex()
         , perFrameMutexesLock()
         , renderInstancesFullySafePerFrameMutexes()
         , knobsAge(0)
@@ -114,15 +114,23 @@ struct Node::Implementation {
         , masterNode(NULL)
     {
     }
+    
 
     AppInstance* app; // pointer to the app: needed to access the application's default-project's format
-    std::multimap<int,Node*> outputs; //multiple outputs per slot
-    EffectInstance* previewInstance;//< the instance used only to render a preview image
-    RenderTree* previewRenderTree;//< the render tree used to render the preview
-    mutable QMutex previewMutex;
+    
+    std::list<Node*> outputs; //< unlike the inputs we do not need a copy so the gui can modify it
+                                //in a thread-safe manner because it is never read by the render thread.
+    
+    mutable QMutex inputsMutex; //< protects inputsMutex
+    std::vector<Node*> inputs; //< Written to by the render thread once before rendering a frame.
+    std::vector<Node*> inputsQueue; //< This is written to by the GUI only. Then the render thread copies this queue
+                                    //to the inputs in a thread-safe manner.
+
+    Natron::EffectInstance*  liveInstance; //< the effect hosted by this node
+
 
     mutable QMutex nameMutex;
-    std::map<int, std::string> inputLabelsMap; // inputs name
+    std::vector<std::string> inputLabels; // inputs name
     std::string name; //node name set by the user
 
     DeactivatedState deactivatedState;
@@ -132,12 +140,12 @@ struct Node::Implementation {
     QMutex imageBeingRenderedMutex;
     QWaitCondition imagesBeingRenderedNotEmpty; //to avoid computing preview in parallel of the real rendering
 
-
     ImagesMap imagesBeingRendered; //< a map storing the ongoing render for this node
-    LibraryBinary* plugin;
-    std::map<RenderTree*,EffectInstance*> renderInstances;
+    
+    LibraryBinary* plugin; //< the plugin which stores the function to instantiate the effect
     
     bool computingPreview;
+    mutable QMutex computingPreviewMutex;
     QWaitCondition computingPreviewCond;
     
     size_t pluginInstanceMemoryUsed; //< global count on all EffectInstance's of the memory they use.
@@ -147,9 +155,6 @@ struct Node::Implementation {
     QMutex mustQuitProcessingMutex;
     QWaitCondition mustQuitProcessingCond;
     
-    bool isUsingInputs; //< set when a render tree is actively using the connections informations
-    QWaitCondition isUsingInputsCond;
-    
     QMutex renderInstancesSharedMutex; //< see INSTANCE_SAFE in EffectInstance::renderRoI
                                        //only 1 clone can render at any time
     
@@ -158,10 +163,12 @@ struct Node::Implementation {
                                                                    //only 1 render per frame
     
     U64 knobsAge; //< the age of the knobs in this effect. It gets incremented every times the liveInstance has its evaluate() function called.
-    mutable QMutex knobsAgeMutex;
+    mutable QReadWriteLock knobsAgeMutex; //< protects knobsAge and hash
+    Hash64 hash; //< recomputed everytime knobsAge is changed.
     
     mutable QMutex masterNodeMutex;
     Node* masterNode;
+    
 };
 
 /**
@@ -179,8 +186,6 @@ toBGRA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 
 Node::Node(AppInstance* app,LibraryBinary* plugin)
     : QObject()
-    , _inputs()
-    , _liveInstance(NULL)
     , _imp(new Implementation(app,plugin))
 {
     
@@ -188,34 +193,90 @@ Node::Node(AppInstance* app,LibraryBinary* plugin)
 
 void Node::load(const std::string& pluginID,const NodeSerialization& serialization,bool dontLoadName) {
     
+    ///Called from the main thread. MT-safe
+    assert(QThread::currentThread() == qApp->thread());
+    
+    ///cannot load twice
+    assert(!_imp->liveInstance);
+    
     if (!serialization.isNull() && !dontLoadName) {
         setName(serialization.getPluginLabel());
     }
     
     std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
     if (func.first) {
-        _liveInstance         = func.second(this);
-        _imp->previewInstance = func.second(this);
+        _imp->liveInstance = func.second(this);
         if (!serialization.isNull() && serialization.getPluginID() == pluginID &&
             majorVersion() == serialization.getPluginMajorVersion() && minorVersion() == serialization.getPluginMinorVersion()) {
             loadKnobs(serialization);
         }
     } else { //ofx plugin
-        _liveInstance = appPTR->createOFXEffect(pluginID,this,false,&serialization);
-        _liveInstance->initializeOverlayInteract();
-        _imp->previewInstance = appPTR->createOFXEffect(pluginID,this,true,&serialization);
+        _imp->liveInstance = appPTR->createOFXEffect(pluginID,this,false,&serialization);
+        _imp->liveInstance->initializeOverlayInteract();
     }
-    assert(_liveInstance);
-    assert(_imp->previewInstance);
     
-    _imp->previewInstance->initializeKnobsPublic();
-    _imp->previewRenderTree = new RenderTree(_imp->previewInstance);
-    _imp->renderInstances.insert(std::make_pair(_imp->previewRenderTree,_imp->previewInstance));
+    initializeKnobs();
+    initializeInputs();
+    computeHash();
+    assert(_imp->liveInstance);
+}
+
+U64 Node::getHashValue() const {
+    QReadLocker l(&_imp->knobsAgeMutex);
+    return _imp->hash.value();
+}
+
+void Node::computeHash() {
     
+    ///Always called in the main thread
+    assert(QThread::currentThread() == qApp->thread());
     
+    {
+        QWriteLocker l(&_imp->knobsAgeMutex);
+        
+        ///reset the hash value
+        _imp->hash.reset();
+        
+        ///append the effect's own age
+        _imp->hash.append(_imp->knobsAge);
+        
+        ///append all inputs hash
+        {
+            InspectorNode* isInspector = dynamic_cast<InspectorNode*>(this);
+            QMutexLocker l(&_imp->inputsMutex);
+            for (U32 i = 0; i < _imp->inputs.size();++i) {
+                if (isInspector && isInspector->activeInput() != (int)i) {
+                    continue;
+                }
+                if (_imp->inputs[i]) {
+                    _imp->hash.append(_imp->inputs[i]->getHashValue());
+                }
+            }
+        }
+        
+        ///Also append the effect's label to distinguish 2 instances with the same parameters
+        ::Hash64_appendQString(&_imp->hash, QString(getName().c_str()));
+        
+        
+        ///Also append the project's creation time in the hash because 2 projects openend concurrently
+        ///could reproduce the same (especially simple graphs like Viewer-Reader)
+        _imp->hash.append(getApp()->getProject()->getProjectCreationTime());
+        
+        _imp->hash.computeHash();
+    }
+    
+    ///call it on all the outputs
+    for (std::list<Node*>::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
+        assert(*it);
+        (*it)->computeHash();
+    }
 }
 
 void Node::loadKnobs(const NodeSerialization& serialization) {
+    
+    ///Only called from the main thread
+    assert(QThread::currentThread() == qApp->thread());
+    
     const std::vector< boost::shared_ptr<Knob> >& nodeKnobs = getKnobs();
     const NodeSerialization::KnobValues& knobsValues = serialization.getKnobsValues();
     ///for all knobs of the node
@@ -236,6 +297,11 @@ void Node::loadKnobs(const NodeSerialization& serialization) {
 }
 
 void Node::restoreKnobsLinks(const NodeSerialization& serialization) {
+    
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+
+    
     const std::vector< boost::shared_ptr<Knob> >& nodeKnobs = getKnobs();
     const NodeSerialization::KnobValues& knobsValues = serialization.getKnobsValues();
     for (U32 j = 0; j < nodeKnobs.size();++j) {
@@ -254,31 +320,44 @@ void Node::restoreKnobsLinks(const NodeSerialization& serialization) {
 }
 
 void Node::setKnobsAge(U64 newAge)  {
-    QMutexLocker l(&_imp->knobsAgeMutex);
-    _imp->knobsAge = newAge;
-    emit knobsAgeChanged(_imp->knobsAge);
+    
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    QWriteLocker l(&_imp->knobsAgeMutex);
+    if (_imp->knobsAge != newAge) {
+        _imp->knobsAge = newAge;
+        emit knobsAgeChanged(_imp->knobsAge);
+        l.unlock();
+        computeHash();
+        l.relock();
+    }
 }
 
 void Node::incrementKnobsAge() {
-    QMutexLocker l(&_imp->knobsAgeMutex);
-    ++_imp->knobsAge;
     
-    ///if the age of an effect somehow reaches the maximum age (will never happen)
-    ///handle it by clearing the cache and resetting the age to 0.
-    if (_imp->knobsAge == std::numeric_limits<U64>::max()) {
-        appPTR->clearAllCaches();
-        _imp->knobsAge = 0;
+    {
+        QWriteLocker l(&_imp->knobsAgeMutex);
+        ++_imp->knobsAge;
+        
+        ///if the age of an effect somehow reaches the maximum age (will never happen)
+        ///handle it by clearing the cache and resetting the age to 0.
+        if (_imp->knobsAge == std::numeric_limits<U64>::max()) {
+            appPTR->clearAllCaches();
+            _imp->knobsAge = 0;
+        }
+        emit knobsAgeChanged(_imp->knobsAge);
     }
-    emit knobsAgeChanged(_imp->knobsAge);
+    computeHash();
 }
 
 U64 Node::getKnobsAge() const {
-    QMutexLocker l(&_imp->knobsAgeMutex);
+    QReadLocker l(&_imp->knobsAgeMutex);
     return _imp->knobsAge;
 }
 
 bool Node::isRenderingPreview() const {
-    QMutexLocker l(&_imp->previewMutex);
+    QMutexLocker l(&_imp->computingPreviewMutex);
     return _imp->computingPreview;
 }
 
@@ -302,26 +381,43 @@ void Node::quitAnyProcessing() {
 
 Node::~Node()
 {
-    
-    for (std::map<RenderTree*,EffectInstance*>::iterator it = _imp->renderInstances.begin(); it!=_imp->renderInstances.end(); ++it) {
-        delete it->second;
-    }
-    delete _liveInstance;
-    delete _imp->previewRenderTree;
-    emit deleteWanted(this);
+    delete _imp->liveInstance;
 }
 
-const std::map<int, std::string>& Node::getInputLabels() const
+const std::vector<std::string>& Node::getInputLabels() const
 {
-    return _imp->inputLabelsMap;
+    ///MT-safe as it never changes.
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->inputLabels;
 }
 
-const Node::OutputMap& Node::getOutputs() const
+const std::list<Natron::Node*>& Node::getOutputs() const
 {
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
     return _imp->outputs;
 }
 
+std::vector<std::string> Node::getInputNames() const
+{
+    std::vector<std::string> ret;
+    QMutexLocker l(&_imp->inputsMutex);
+    for (U32 i = 0; i < _imp->inputsQueue.size(); ++i) {
+        if (_imp->inputsQueue[i]) {
+            ret.push_back(_imp->inputsQueue[i]->getName_mt_safe());
+        } else {
+            ret.push_back("");
+        }
+    }
+    return ret;
+}
+
 int Node::getPreferredInputForConnection() const {
+    
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
     if (maximumInputs() == 0) {
         return -1;
     }
@@ -329,21 +425,23 @@ int Node::getPreferredInputForConnection() const {
     ///we return the first non-optional empty input
     int firstNonOptionalEmptyInput = -1;
     int firstOptionalEmptyInput = -1;
-    int index = 0;
-    for (InputMap::const_iterator it = _inputs.begin() ; it!=_inputs.end(); ++it) {
-        if (!it->second) {
-            if (!_liveInstance->isInputOptional(index)) {
-                if (firstNonOptionalEmptyInput == -1) {
-                    firstNonOptionalEmptyInput = index;
-                    break;
-                }
-            } else {
-                if (firstOptionalEmptyInput == -1) {
-                    firstOptionalEmptyInput = index;
+    
+    {
+        QMutexLocker l(&_imp->inputsMutex);
+        for (U32 i = 0; i < _imp->inputs.size() ; ++i) {
+            if (!_imp->inputs[i]) {
+                if (!_imp->liveInstance->isInputOptional(i)) {
+                    if (firstNonOptionalEmptyInput == -1) {
+                        firstNonOptionalEmptyInput = i;
+                        break;
+                    }
+                } else {
+                    if (firstOptionalEmptyInput == -1) {
+                        firstOptionalEmptyInput = i;
+                    }
                 }
             }
         }
-        ++index;
     }
     
     if (firstNonOptionalEmptyInput != -1) {
@@ -356,17 +454,22 @@ int Node::getPreferredInputForConnection() const {
 }
 
 void Node::getOutputsConnectedToThisNode(std::map<Node*,int>* outputs) {
-    for (OutputMap::const_iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it) {
-        if (it->second) {
-            int indexOfThis = it->second->inputIndex(this);
-            assert(indexOfThis != -1);
-            outputs->insert(std::make_pair(it->second, indexOfThis));
-        }
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    for (std::list<Node*>::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
+        assert(*it);
+        int indexOfThis = (*it)->inputIndex(this);
+        assert(indexOfThis != -1);
+        outputs->insert(std::make_pair(*it, indexOfThis));
     }
 }
 
 const std::string& Node::getName() const
 {
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker l(&_imp->nameMutex);
     return _imp->name;
 }
 
@@ -397,70 +500,23 @@ bool Node::isActivated() const
 
 void Node::onGUINameChanged(const QString& str) {
     
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
     QMutexLocker l(&_imp->nameMutex);
     _imp->name = str.toStdString();
 }
 
-void Node::initializeKnobs(){
-    _liveInstance->initializeKnobsPublic();
+void Node::initializeKnobs() {
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    _imp->liveInstance->initializeKnobsPublic();
     emit knobsInitialized();
 }
 
 void Node::beginEditKnobs() {
-    _liveInstance->beginEditKnobs();
-}
-
-EffectInstance* Node::findOrCreateLiveInstanceClone(RenderTree* tree)
-{
-    if (isOutputNode()) {
-        //_liveInstance->updateInputs(tree);
-        return _liveInstance;
-    }
-    EffectInstance* ret = 0;
-    std::map<RenderTree*,EffectInstance*>::const_iterator it = _imp->renderInstances.find(tree);
-    if (it != _imp->renderInstances.end()) {
-        ret =  it->second;
-        ret->clone();
-    } else {
-        ret = createLiveInstanceClone();
-        ///createLiveInstanceClone already cloned the effect
-        _imp->renderInstances.insert(std::make_pair(tree, ret));
-    }
-    
-    assert(ret);
-    //ret->updateInputs(tree);
-    return ret;
-
-}
-
-EffectInstance*  Node::createLiveInstanceClone()
-{
-    EffectInstance* ret = NULL;
-    if (!isOpenFXNode()) {
-        std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
-        assert(func.first);
-        ret =  func.second(this);
-    } else {
-        ret = appPTR->createOFXEffect(_liveInstance->pluginID(),this,true,NULL);
-    }
-    assert(ret);
-    
-    ///will do nothing for OpenFX plugins
-    ret->initializeKnobsPublic();
-    return ret;
-}
-
-EffectInstance* Node::findExistingEffect(RenderTree* tree) const
-{
-    if (isOutputNode()) {
-        return _liveInstance;
-    }
-    std::map<RenderTree*,EffectInstance*>::const_iterator it = _imp->renderInstances.find(tree);
-    if (it!=_imp->renderInstances.end()) {
-        return it->second;
-    } else {
-        return NULL;
-    }
+    _imp->liveInstance->beginEditKnobs();
 }
 
 void Node::createKnobDynamically()
@@ -469,185 +525,267 @@ void Node::createKnobDynamically()
 }
 
 
+void Node::setLiveInstance(Natron::EffectInstance* liveInstance)
+{
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->liveInstance = liveInstance;
+}
+
+Natron::EffectInstance* Node::getLiveInstance() const
+{
+    ///Thread safe as it never changes
+    return _imp->liveInstance;
+}
+
 void Node::hasViewersConnected(std::list<ViewerInstance*>* viewers) const
 {
+    
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
     if(pluginID() == "Viewer") {
-        ViewerInstance* thisViewer = dynamic_cast<ViewerInstance*>(_liveInstance);
+        ViewerInstance* thisViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance);
         assert(thisViewer);
         std::list<ViewerInstance*>::const_iterator alreadyExists = std::find(viewers->begin(), viewers->end(), thisViewer);
         if(alreadyExists == viewers->end()){
             viewers->push_back(thisViewer);
         }
     } else {
-        for (Node::OutputMap::const_iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
-            if(it->second) {
-                it->second->hasViewersConnected(viewers);
-            }
+        for (std::list<Node*>::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
+            assert(*it);
+            (*it)->hasViewersConnected(viewers);
         }
     }
 }
 
-int Node::majorVersion() const{
-    return _liveInstance->majorVersion();
+int Node::majorVersion() const {
+     ///Thread safe as it never changes
+    return _imp->liveInstance->majorVersion();
 }
 
-int Node::minorVersion() const{
-    return _liveInstance->minorVersion();
+int Node::minorVersion() const {
+     ///Thread safe as it never changes
+    return _imp->liveInstance->minorVersion();
 }
 
 void Node::initializeInputs()
 {
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    int oldCount = (int)_imp->inputs.size();
     int inputCount = maximumInputs();
-    for (int i = 0;i < inputCount;++i) {
-        if (_inputs.find(i) == _inputs.end()) {
-            _imp->inputLabelsMap.insert(make_pair(i,_liveInstance->inputLabel(i)));
-            _inputs.insert(make_pair(i,(Node*)NULL));
+    
+    {
+        QMutexLocker l(&_imp->inputsMutex);
+        _imp->inputs.resize(inputCount);
+        _imp->inputsQueue.resize(inputCount);
+        _imp->inputLabels.resize(inputCount);
+        ///if we added inputs, just set to NULL the new inputs, and add their label to the labels map
+        if (inputCount > oldCount) {
+            for (int i = oldCount ; i < inputCount; ++i) {
+                _imp->inputLabels[i] = _imp->liveInstance->inputLabel(i);
+                _imp->inputs[i] = NULL;
+                _imp->inputsQueue[i] = NULL;
+            }
+            
         }
     }
-    _liveInstance->updateInputs(NULL);
     emit inputsInitialized();
 }
 
 Node* Node::input(int index) const
 {
-    InputMap::const_iterator it = _inputs.find(index);
-    if(it == _inputs.end()){
+    
+    ////Only called by the main-thread
+    ////@see input_other_thread for the MT version
+    assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker l(&_imp->inputsMutex);
+    if (index >= (int)_imp->inputsQueue.size() || index < 0) {
         return NULL;
-    }else{
-        return it->second;
     }
+    return _imp->inputsQueue[index];
+    
 }
 
-void Node::outputs(std::vector<Natron::Node*>* outputsV) const{
-    for(OutputMap::const_iterator it = _imp->outputs.begin();it!= _imp->outputs.end();++it){
-        if(it->second){
-            outputsV->push_back(it->second);
-        }
+Node* Node::input_other_thread(int index) const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    if (index >= (int)_imp->inputs.size() || index < 0) {
+        return NULL;
     }
+    return _imp->inputs[index];
+}
+
+void Node::updateRenderInputs()
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    _imp->inputs = _imp->inputsQueue;
+}
+
+const std::vector<Natron::Node*>& Node::getInputs_other_thread() const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    return _imp->inputs;
+}
+
+const std::vector<Natron::Node*>& Node::getInputs_mt_safe() const
+{
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->inputsQueue;
 }
 
 std::string Node::getInputLabel(int inputNb) const
 {
-    std::map<int,std::string>::const_iterator it = _imp->inputLabelsMap.find(inputNb);
-    if (it == _imp->inputLabelsMap.end()) {
-        return "";
-    } else {
-        return it->second;
+    QMutexLocker l(&_imp->inputsMutex);
+    if (inputNb < 0 || inputNb >= (int)_imp->inputLabels.size()) {
+        throw std::invalid_argument("Index out of range");
     }
+    return _imp->inputLabels[inputNb];
 }
 
 
 bool Node::isInputConnected(int inputNb) const
 {
-    
-    InputMap::const_iterator it = _inputs.find(inputNb);
-    if(it != _inputs.end()){
-        return it->second != NULL;
-    }else{
-        return false;
-    }
-    
+    return input(inputNb) != NULL;
 }
 
 bool Node::hasOutputConnected() const
 {
-    std::vector<Natron::Node*> outputsV;
-    outputs(&outputsV);
-    return outputsV.size() > 0;
+    return _imp->outputs.size() > 0;
+}
+
+bool Node::checkIfConnectingInputIsOk(Natron::Node* input) const
+{
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    if (input == this) {
+        return false;
+    }
+    bool found;
+    input->isNodeUpstream(this, &found);
+    return !found;
+}
+
+void Node::isNodeUpstream(const Natron::Node* input,bool* ok) const
+{
+    
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    if (!input) {
+        *ok = false;
+        return;
+    }
+    
+    QMutexLocker l(&_imp->inputsMutex);
+    
+    for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i] == input) {
+            *ok = true;
+            return;
+        }
+    }
+    
+    for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i]) {
+            _imp->inputs[i]->isNodeUpstream(input, ok);
+            if (*ok) {
+                return;
+            }
+        }
+    }
+    
+    
 }
 
 bool Node::connectInput(Node* input,int inputNumber,bool /*autoConnection*/ )
 {
-    
-    QMutexLocker l(&isUsingInputsMutex);
-    waitForRenderTreesToBeDone();
-
-
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
     assert(input);
-    InputMap::iterator it = _inputs.find(inputNumber);
-    if (it == _inputs.end()) {
+    
+    if (!checkIfConnectingInputIsOk(input)) {
         return false;
-    }else{
-        if (it->second == NULL) {
-            _inputs.erase(it);
-            _inputs.insert(make_pair(inputNumber,input));
-            _liveInstance->updateInputs(NULL);
-            emit inputChanged(inputNumber);
-            return true;
-        }else{
+    }
+    
+    {
+        QMutexLocker l(&_imp->inputsMutex);
+        if (inputNumber < 0 || inputNumber > (int)_imp->inputsQueue.size() || _imp->inputsQueue[inputNumber] != NULL) {
             return false;
         }
+        _imp->inputsQueue[inputNumber] = input;
     }
+    emit inputChanged(inputNumber);
+    computeHash();
+    return true;
 }
 
-void Node::connectOutput(Node* output,int outputNumber )
+void Node::connectOutput(Node* output)
 {
-    QMutexLocker l(&isUsingInputsMutex);
-    waitForRenderTreesToBeDone();
-
-
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
     assert(output);
-    _imp->outputs.insert(make_pair(outputNumber,output));
-    _liveInstance->updateInputs(NULL);
+    _imp->outputs.push_back(output);
 }
 
 int Node::disconnectInput(int inputNumber)
 {
     
-    QMutexLocker l(&isUsingInputsMutex);
-    waitForRenderTreesToBeDone();
-
-
-    InputMap::iterator it = _inputs.find(inputNumber);
-    if (it == _inputs.end() || it->second == NULL) {
-        return -1;
-    } else {
-        _inputs.erase(it);
-        _inputs.insert(make_pair(inputNumber, (Node*)NULL));
-        emit inputChanged(inputNumber);
-        _liveInstance->updateInputs(NULL);
-        return inputNumber;
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    {
+        QMutexLocker l(&_imp->inputsMutex);
+        if (inputNumber < 0 || inputNumber > (int)_imp->inputsQueue.size() || _imp->inputsQueue[inputNumber] == NULL) {
+            return -1;
+        }
+        _imp->inputsQueue[inputNumber] = NULL;
     }
+    emit inputChanged(inputNumber);
+    computeHash();
+    return inputNumber;
 }
 
 int Node::disconnectInput(Node* input)
 {
-    QMutexLocker l(&isUsingInputsMutex);
-    waitForRenderTreesToBeDone();
-
-
-    assert(input);
-    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        if (it->second != input) {
-            continue;
-        } else {
-            int inputNumber = it->first;
-            _inputs.erase(it);
-            _inputs.insert(make_pair(inputNumber, (Node*)NULL));
-            emit inputChanged(inputNumber);
-            _liveInstance->updateInputs(NULL);
-            return inputNumber;
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    {
+        
+        QMutexLocker l(&_imp->inputsMutex);
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            if (_imp->inputs[i] == input) {
+                _imp->inputsQueue[i] = NULL;
+                l.unlock();
+                emit inputChanged(i);
+                computeHash();
+                l.relock();
+                return i;
+            }
         }
     }
     return -1;
+    
 }
 
 int Node::disconnectOutput(Node* output)
 {
-    QMutexLocker l(&isUsingInputsMutex);
-    waitForRenderTreesToBeDone();
-
 
     assert(output);
-    for (OutputMap::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
-        if (it->second == output) {
-            int outputNumber = it->first;;
-            _imp->outputs.erase(it);
-            _liveInstance->updateInputs(NULL);
-            return outputNumber;
-        }
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    std::list<Node*>::iterator it = std::find(_imp->outputs.begin(),_imp->outputs.end(),output);
+    if (it != _imp->outputs.end()) {
+        int ret = std::distance(_imp->outputs.begin(), it);
+        _imp->outputs.erase(it);
+        return ret;
+    } else {
+        return -1;
     }
-    return -1;
 }
 
 int Node::inputIndex(Node* n) const {
@@ -656,12 +794,16 @@ int Node::inputIndex(Node* n) const {
         return -1;
     }
     
-    int index = 0;
-    for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        if (n == it->second) {
-            return index;
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    {
+        
+        QMutexLocker l(&_imp->inputsMutex);
+        for (U32 i = 0; i < _imp->inputsQueue.size(); ++i) {
+            if (_imp->inputsQueue[i] == n) {
+                return i;
+            }
         }
-        ++index;
     }
     return -1;
 }
@@ -670,12 +812,10 @@ int Node::inputIndex(Node* n) const {
  but no other node knows this node.*/
 void Node::deactivate()
 {
-    {
-        QMutexLocker l(&isUsingInputsMutex);
-        waitForRenderTreesToBeDone();
-    }
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
     
-    //first tell the gui to clear any persistent message link to this node
+    //first tell the gui to clear any persistent message linked to this node
     clearPersistentMessage();
 
     ///if the node has 1 non-optional input, attempt to connect the outputs to the input of the current node
@@ -684,14 +824,17 @@ void Node::deactivate()
     
     int firstNonOptionalInput = -1;
     bool hasOnlyOneNonOptionalInput = false;
-    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        if (it->second) {
-            if (!_liveInstance->isInputOptional(it->first)) {
-                if (firstNonOptionalInput == -1) {
-                    firstNonOptionalInput = it->first;
-                    hasOnlyOneNonOptionalInput = true;
-                } else {
-                    hasOnlyOneNonOptionalInput = false;
+    {
+        QMutexLocker l(&_imp->inputsMutex);
+        for (U32 i = 0; i < _imp->inputsQueue.size() ; ++i) {
+            if (_imp->inputsQueue[i]) {
+                if (!_imp->liveInstance->isInputOptional(i)) {
+                    if (firstNonOptionalInput == -1) {
+                        firstNonOptionalInput = i;
+                        hasOnlyOneNonOptionalInput = true;
+                    } else {
+                        hasOnlyOneNonOptionalInput = false;
+                    }
                 }
             }
         }
@@ -702,19 +845,22 @@ void Node::deactivate()
     
     /*Removing this node from the output of all inputs*/
     _imp->deactivatedState.inputConnections.clear();
-    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        if (it->second) {
-            int outputNb = it->second->disconnectOutput(this);
-            _imp->deactivatedState.inputConnections.insert(make_pair(it->second, make_pair(outputNb, it->first)));
+    {
+        QMutexLocker l(&_imp->inputsMutex);
+        for (U32 i = 0; i < _imp->inputsQueue.size() ; ++i) {
+            if(_imp->inputsQueue[i]) {
+                int outputNb = _imp->inputsQueue[i]->disconnectOutput(this);
+                _imp->deactivatedState.inputConnections.insert(make_pair(_imp->inputsQueue[i], make_pair(outputNb, i)));
+            }
         }
     }
+    
     _imp->deactivatedState.outputsConnections.clear();
-    for (OutputMap::iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it) {
-        if (!it->second) {
-            continue;
-        }
-        int inputNb = it->second->disconnectInput(this);
-        _imp->deactivatedState.outputsConnections.insert(make_pair(it->second, make_pair(inputNb, it->first)));
+    
+    for (std::list<Node*>::iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it) {
+        assert(*it);
+        int inputNb = (*it)->disconnectInput(this);
+        _imp->deactivatedState.outputsConnections.insert(make_pair(*it, make_pair(inputNb, 0)));
     }
     
     if (inputToConnectTo) {
@@ -737,19 +883,15 @@ void Node::deactivate()
 
 void Node::activate()
 {
-    
-    {
-        QMutexLocker l(&isUsingInputsMutex);
-        waitForRenderTreesToBeDone();
-    }
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
     
     ///for all inputs, reconnect their output to this node
     for (InputConnectionsIterator it = _imp->deactivatedState.inputConnections.begin();
          it!= _imp->deactivatedState.inputConnections.end(); ++it) {
-        it->first->connectOutput(this,it->second.first);
+        it->first->connectOutput(this);
     }
-   
-   
+
 
     for (OutputConnectionsIterator it = _imp->deactivatedState.outputsConnections.begin();
          it!= _imp->deactivatedState.outputsConnections.end(); ++it) {
@@ -773,45 +915,17 @@ void Node::activate()
     emit activated();
 }
 
-void Node::getRenderFormatForEffect(const EffectInstance* effect, Format *f) const
-{
-    assert(f);
-    if (effect != _liveInstance) {
-        for (std::map<RenderTree*,EffectInstance*>::const_iterator it = _imp->renderInstances.begin();
-             it!=_imp->renderInstances.end();++it) {
-            if (it->second == effect) {
-                it->first->getRenderFormat(f);
-                return;
-            }
-        }
-    }
-    getApp()->getProject()->getProjectDefaultFormat(f);
-}
-
-int Node::getRenderViewsCountForEffect( const EffectInstance* effect) const
-{
-    if(effect == _liveInstance) {
-        return getApp()->getProject()->getProjectViewsCount();
-    } else {
-        for (std::map<RenderTree*,EffectInstance*>::const_iterator it = _imp->renderInstances.begin();
-             it!=_imp->renderInstances.end();++it) {
-            if (it->second == effect) {
-                return it->first->renderViewsCount();
-            }
-        }
-    }
-    return getApp()->getProject()->getProjectViewsCount();
-}
-
 
 boost::shared_ptr<Knob> Node::getKnobByName(const std::string& name) const
 {
-    return _liveInstance->getKnobByName(name);
+    ///MT-safe, never changes
+    return _imp->liveInstance->getKnobByName(name);
 }
 
 
 boost::shared_ptr<Image> Node::getImageBeingRendered(SequenceTime time,int view) const
 {
+    QMutexLocker l(&_imp->imageBeingRenderedMutex);
     ImagesMap::const_iterator it = _imp->imagesBeingRendered.find(ImageBeingRenderedKey(time,view));
     if (it!=_imp->imagesBeingRendered.end()) {
         return it->second;
@@ -858,15 +972,12 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
         }
     }
   
-    int knobsAge = _imp->previewInstance->getAppAge();
-
-    QMutexLocker locker(&_imp->previewMutex); /// prevent 2 previews to occur at the same time since there's only 1 preview instance
+    QMutexLocker locker(&_imp->computingPreviewMutex); /// prevent 2 previews to occur at the same time since there's only 1 preview instance
     _imp->computingPreview = true;
     
     RectI rod;
-    _imp->previewRenderTree->refreshTree(knobsAge);
     bool isProjectFormat;
-    Natron::Status stat = _imp->previewInstance->getRegionOfDefinition(time, &rod,&isProjectFormat);
+    Natron::Status stat = _imp->liveInstance->getRegionOfDefinition(time, &rod,&isProjectFormat);
     if (stat == StatFailed) {
         _imp->computingPreview = false;
         _imp->computingPreviewCond.wakeOne();
@@ -882,16 +993,6 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     Log::beginFunction(getName(),"makePreviewImage");
     Log::print(QString("Time "+QString::number(time)).toStdString());
 #endif
-    stat =  _imp->previewRenderTree->preProcessFrame(time);
-    if(stat == StatFailed){
-#ifdef NATRON_LOG
-        Log::print(QString("preProcessFrame returned StatFailed.").toStdString());
-        Log::endFunction(getName(),"makePreviewImage");
-#endif
-        _imp->computingPreview = false;
-        _imp->computingPreviewCond.wakeOne();
-        return;
-    }
 
     RenderScale scale;
     scale.x = scale.y = 1.;
@@ -900,7 +1001,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     // Exceptions are caught because the program can run without a preview,
     // but any exception in renderROI is probably fatal.
     try {
-        img = _imp->previewInstance->renderRoI(time, scale, 0,rod,false,true);
+        img = _imp->liveInstance->renderRoI(time, scale, 0,rod,false,true);
     } catch (const std::exception& e) {
         qDebug() << "Error: Cannot create preview" << ": " << e.what();
         _imp->computingPreview = false;
@@ -943,132 +1044,152 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
 #endif
 }
 
-
-void Node::abortRenderingForEffect(EffectInstance* effect)
-{
-    for (std::map<RenderTree*,EffectInstance*>::iterator it = _imp->renderInstances.begin(); it!=_imp->renderInstances.end(); ++it) {
-        if(it->second == effect){
-            dynamic_cast<OutputEffectInstance*>(it->first->getOutput())->getVideoEngine()->abortRendering(true);
-        }
-    }
-}
-
-
 bool Node::isInputNode() const{
-    return _liveInstance->isGenerator();
+    ///MT-safe, never changes
+    return _imp->liveInstance->isGenerator();
 }
 
 
 bool Node::isOutputNode() const
-{
-    return _liveInstance->isOutput();
+{   ///MT-safe, never changes
+    return _imp->liveInstance->isOutput();
 }
 
 
 bool Node::isInputAndProcessingNode() const
-{
-    return _liveInstance->isGeneratorAndFilter();
+{   ///MT-safe, never changes
+    return _imp->liveInstance->isGeneratorAndFilter();
 }
 
 
 bool Node::isOpenFXNode() const
 {
-    return _liveInstance->isOpenFX();
+    ///MT-safe, never changes
+    return _imp->liveInstance->isOpenFX();
 }
 
 const std::vector< boost::shared_ptr<Knob> >& Node::getKnobs() const
 {
-    return _liveInstance->getKnobs();
+    ///MT-safe from EffectInstance::getKnobs()
+    return _imp->liveInstance->getKnobs();
 }
 
 std::string Node::pluginID() const
 {
-    return _liveInstance->pluginID();
+    ///MT-safe, never changes
+    return _imp->liveInstance->pluginID();
 }
 
 std::string Node::pluginLabel() const
 {
-    return _liveInstance->pluginLabel();
+    ///MT-safe, never changes
+    return _imp->liveInstance->pluginLabel();
 }
 
 std::string Node::description() const
 {
-    return _liveInstance->description();
+    ///MT-safe, never changes
+    return _imp->liveInstance->description();
 }
 
 int Node::maximumInputs() const
 {
-    return _liveInstance->maximumInputs();
+    ///MT-safe, never changes
+    return _imp->liveInstance->maximumInputs();
 }
 
 bool Node::makePreviewByDefault() const
 {
-    return _liveInstance->makePreviewByDefault();
+    ///MT-safe, never changes
+    return _imp->liveInstance->makePreviewByDefault();
 }
 
 void Node::togglePreview()
 {
-    _liveInstance->togglePreview();
+    ///MT-safe from EffectInstance
+    _imp->liveInstance->togglePreview();
 }
 
 bool Node::isPreviewEnabled() const
 {
-    return _liveInstance->isPreviewEnabled();
+     ///MT-safe from EffectInstance
+    return _imp->liveInstance->isPreviewEnabled();
 }
 
 bool Node::aborted() const
 {
-    return _liveInstance->aborted();
+     ///MT-safe from EffectInstance
+    return _imp->liveInstance->aborted();
 }
 
 void Node::setAborted(bool b)
 {
-    _liveInstance->setAborted(b);
+     ///MT-safe from EffectInstance
+    _imp->liveInstance->setAborted(b);
 }
 
 void Node::drawOverlay()
 {
-    _liveInstance->drawOverlay();
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    ///MT-safe
+    _imp->liveInstance->drawOverlay();
 }
 
 bool Node::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos)
 {
-    return _liveInstance->onOverlayPenDown(viewportPos, pos);
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->liveInstance->onOverlayPenDown(viewportPos, pos);
 }
 
 bool Node::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos)
 {
-    return _liveInstance->onOverlayPenMotion(viewportPos, pos);
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->liveInstance->onOverlayPenMotion(viewportPos, pos);
 }
 
 bool Node::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos)
 {
-    return _liveInstance->onOverlayPenUp(viewportPos, pos);
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->liveInstance->onOverlayPenUp(viewportPos, pos);
 }
 
 bool Node::onOverlayKeyDown(Natron::Key key,Natron::KeyboardModifiers modifiers)
 {
-    return _liveInstance->onOverlayKeyDown(key,modifiers);
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->liveInstance->onOverlayKeyDown(key,modifiers);
 }
 
 bool Node::onOverlayKeyUp(Natron::Key key,Natron::KeyboardModifiers modifiers)
 {
-    return _liveInstance->onOverlayKeyUp(key,modifiers);
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->liveInstance->onOverlayKeyUp(key,modifiers);
 }
 
 bool Node::onOverlayKeyRepeat(Natron::Key key,Natron::KeyboardModifiers modifiers)
 {
-    return _liveInstance->onOverlayKeyRepeat(key,modifiers);
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->liveInstance->onOverlayKeyRepeat(key,modifiers);
 }
 
 bool Node::onOverlayFocusGained()
 {
-    return _liveInstance->onOverlayFocusGained();
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->liveInstance->onOverlayFocusGained();
 }
 
 bool Node::onOverlayFocusLost()
 {
-    return _liveInstance->onOverlayFocusLost();
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->liveInstance->onOverlayFocusLost();
 }
 
 
@@ -1122,17 +1243,17 @@ void Node::clearPersistentMessage()
 }
 
 void Node::serialize(NodeSerialization* serializationObject) {
+    
+    ///Mt-safe from NodeSerialization::initialize()
     serializationObject->initialize(this);
 }
 
 
-void Node::purgeAllInstancesCaches(){
-    for(std::map<RenderTree*,EffectInstance*>::iterator it = _imp->renderInstances.begin();
-        it != _imp->renderInstances.end();++it){
-        it->second->purgeCaches();
-    }
-    _imp->previewInstance->purgeCaches();
-    _liveInstance->purgeCaches();
+void Node::purgeAllInstancesCaches() {
+    
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->liveInstance->purgeCaches();
 }
 
 void Node::notifyInputNIsRendering(int inputNb) {
@@ -1153,11 +1274,11 @@ void Node::notifyRenderingEnded() {
 
 
 void Node::setInputFilesForReader(const QStringList& files) {
-    _liveInstance->setInputFilesForReader(files);
+    _imp->liveInstance->setInputFilesForReader(files);
 }
 
 void Node::setOutputFilesForWriter(const QString& pattern) {
-    _liveInstance->setOutputFilesForWriter(pattern);
+    _imp->liveInstance->setOutputFilesForWriter(pattern);
 }
 
 void Node::registerPluginMemory(size_t nBytes) {
@@ -1170,26 +1291,6 @@ void Node::unregisterPluginMemory(size_t nBytes) {
     QMutexLocker l(&_imp->memoryUsedMutex);
     _imp->pluginInstanceMemoryUsed -= nBytes;
     emit pluginMemoryUsageChanged((unsigned long long)_imp->pluginInstanceMemoryUsed);
-}
-
-
-void Node::setRenderTreeIsUsingInputs(bool b) {
-    
-    ///it doesn't matter if 2 RenderTree are using the inputs at the same time (because it's obvious concurrent
-    ///threads are going to use the inputs concurrently after this function) because RenderTree's are just reading
-    ///information, the only writer is the node itself.
-    QMutexLocker l(&isUsingInputsMutex);
-    _imp->isUsingInputs = b;
-    if (!b) {
-        _imp->isUsingInputsCond.wakeAll();
-    }
-}
-
-void Node::waitForRenderTreesToBeDone() {
-    assert(!isUsingInputsMutex.tryLock());
-    while (_imp->isUsingInputs) {
-        _imp->isUsingInputsCond.wait(&isUsingInputsMutex);
-    }
 }
 
 QMutex& Node::getRenderInstancesSharedMutex()
@@ -1212,19 +1313,25 @@ QMutex& Node::getFrameMutex(int time)
 }
 
 void Node::refreshPreviewsRecursively() {
+    
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
     if (isPreviewEnabled()) {
         refreshPreviewImage(getApp()->getTimeLine()->currentFrame());
     }
-    for (OutputMap::iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it) {
-        if (it->second) {
-            it->second->refreshPreviewsRecursively();
-        }
+    for (std::list<Node*>::iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it) {
+        assert(*it);
+        (*it)->refreshPreviewsRecursively();
     }
 }
 
 
 void Node::onSlaveStateChanged(bool isSlave,KnobHolder* master) {
    
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
     if (isSlave) {
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(master);
         assert(effect);
@@ -1251,7 +1358,9 @@ void Node::onSlaveStateChanged(bool isSlave,KnobHolder* master) {
 }
 
 void Node::onMasterNodeDeactivated() {
-    _liveInstance->unslaveAllKnobs();
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->liveInstance->unslaveAllKnobs();
 }
 
 Natron::Node* Node::getMasterNode() const {
@@ -1271,18 +1380,20 @@ InspectorNode::~InspectorNode(){
     
 }
 
-bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection) {
+bool InspectorNode::connectInput(Node* input,int inputNumber,bool /*autoConnection*/) {
     
-    QMutexLocker l(&isUsingInputsMutex);
-    waitForRenderTreesToBeDone();
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
     
     ///cannot connect more than 10 inputs.
     assert(inputNumber <= 10);
     
     assert(input);
-    if(input == this){
+    
+    if (!checkIfConnectingInputIsOk(input)) {
         return false;
     }
+    
     
     /*Adding all empty edges so it creates at least the inputNB'th one.*/
     while (_inputsCount <= inputNumber) {
@@ -1291,68 +1402,44 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
         addEmptyInput();
     }
     
-    InputMap::iterator found = _inputs.find(inputNumber);
-
-    //#1: first case, If the inputNB of the viewer is already connected & this is not
-    // an autoConnection, just refresh it*/
-    InputMap::iterator inputAlreadyConnected = _inputs.end();
-    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        if (it->second == input) {
-            inputAlreadyConnected = it;
-            break;
-        }
-    }
-    
-    if(found!=_inputs.end() && found->second && !autoConnection &&
-            ((inputAlreadyConnected!=_inputs.end()) )){
-        l.unlock();
-        setActiveInputAndRefresh(found->first);
-        l.relock();
-        _liveInstance->updateInputs(NULL);
-        return false;
-    }
-    /*#2:second case: Before connecting the appropriate edge we search for any other edge connected with the
-     selected node, in which case we just refresh the already connected edge.*/
-    for (InputMap::const_iterator i = _inputs.begin(); i!=_inputs.end(); ++i) {
-        if(i->second && i->second == input){
-            l.unlock();
-            setActiveInputAndRefresh(i->first);
-            l.relock();
-            _liveInstance->updateInputs(NULL);
+    ///If the node 'input' is already an input of the inspector, find it.
+    ///If it has the same input number as what we want just return, otherwise
+    ///disconnect it and continue as usual.
+    int inputAlreadyConnected = inputIndex(input);
+    if (inputAlreadyConnected != -1) {
+        if (inputAlreadyConnected == inputNumber) {
             return false;
+        } else {
+            disconnectInput(inputAlreadyConnected);
         }
     }
-    if (found != _inputs.end()) {
-        _inputs.erase(found);
-        _inputs.insert(make_pair(inputNumber,input));
-        
-        {
-            QMutexLocker activeInputLocker(&_activeInputMutex);
-            _activeInput = inputNumber;
-        }
-        emit inputChanged(inputNumber);
-        tryAddEmptyInput();
-        _liveInstance->updateInputs(NULL);
-        return true;
+
+    if (Node::connectInput(input, inputNumber)) {
+        QMutexLocker activeInputLocker(&_activeInputMutex);
+        _activeInput = inputNumber;
     }
-    return false;
+    tryAddEmptyInput();
+    return true;
+    
 }
 
 
 
 bool InspectorNode::tryAddEmptyInput() {
     
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+
+    
     ///if we already reached 10 inputs, just don't do anything
-    if (_inputs.size() <= 10) {
+    if (_inputsCount <= 10) {
         
         
-        if (_inputs.size() > 0) {
-            ///if there are already liviing inputs, look at the last one
+        if (_inputsCount > 0) {
+            ///if there are already living inputs, look at the last one
             ///and if it is not connected, just don't add an input.
             ///Otherwise, add an empty input.
-            InputMap::const_iterator it = _inputs.end();
-            --it;
-            if(it->second != NULL){
+            if(input(_inputsCount - 1) != NULL){
                 addEmptyInput();
                 return true;
             }
@@ -1367,6 +1454,9 @@ bool InspectorNode::tryAddEmptyInput() {
     return false;
 }
 void InspectorNode::addEmptyInput() {
+    
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
     {
         QMutexLocker activeInputLocker(&_activeInputMutex);
         _activeInput = _inputsCount-1;
@@ -1375,71 +1465,57 @@ void InspectorNode::addEmptyInput() {
     initializeInputs();
 }
 
-void InspectorNode::removeEmptyInputs(){
+void InspectorNode::removeEmptyInputs() {
+    
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
     /*While there're NULL inputs at the tail of the map,remove them.
      Stops at the first non-NULL input.*/
-    while (_inputs.size() > 1) {
-        InputMap::iterator it = _inputs.end();
-        --it;
-        if(it->second == NULL){
-            InputMap::iterator it2 = it;
-            --it2;
-            if(it2->second!=NULL)
-                break;
-            //int inputNb = it->first;
-            _inputs.erase(it);
+    while (_inputsCount > 1) {
+        if(input(_inputsCount - 1) == NULL && input(_inputsCount - 2) == NULL){
             --_inputsCount;
-            _liveInstance->updateInputs(NULL);
-            emit inputsInitialized();
-        }else{
-            break;
+            initializeInputs();
+        } else {
+            return;
         }
     }
 }
-int InspectorNode::disconnectInput(int inputNumber){
+int InspectorNode::disconnectInput(int inputNumber) {
+    
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
     int ret = Node::disconnectInput(inputNumber);
  
-    QMutexLocker l(&isUsingInputsMutex);
-    waitForRenderTreesToBeDone();
-
-    
-    if(ret!=-1){
+    if (ret != -1) {
         removeEmptyInputs();
         {
             QMutexLocker activeInputLocker(&_activeInputMutex);
-            _activeInput = _inputs.size()-1;
+            _activeInput = _inputsCount -1;
         }
-        initializeInputs();
     }
     return ret;
 }
 
-int InspectorNode::disconnectInput(Node* input){
-    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        if(it->second == input){
-            return disconnectInput(it->first);
-        }
-    }
-    return -1;
+int InspectorNode::disconnectInput(Node* input) {
+    
+    ///Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    return disconnectInput(inputIndex(input));
 }
 
 void InspectorNode::setActiveInputAndRefresh(int inputNb){
-    bool refresh = false;
-
-    {
-        QMutexLocker l(&isUsingInputsMutex);
-        waitForRenderTreesToBeDone();
-        InputMap::iterator it = _inputs.find(inputNb);
-        if(it!=_inputs.end() && it->second!=NULL) {
-            {
-                QMutexLocker activeInputLocker(&_activeInputMutex);
-                _activeInput = inputNb;
-            }
-            refresh = true;
-            
-        }
+    if (inputNb > (_inputsCount - 1) || inputNb < 0 || input(inputNb) == NULL) {
+        return;
     }
-    if (refresh && isOutputNode()) {
+    computeHash();
+    {
+        QMutexLocker activeInputLocker(&_activeInputMutex);
+        _activeInput = inputNb;
+    }
+    if (isOutputNode()) {
         dynamic_cast<Natron::OutputEffectInstance*>(getLiveInstance())->updateTreeAndRender();
     }
 }

@@ -278,10 +278,10 @@ void NodeGui::updateShape(int width,int height){
 void NodeGui::refreshPosition(double x,double y){
     setPos(x, y);
     refreshEdges();
-    for (Natron::Node::OutputMap::const_iterator it = _internalNode->getOutputs().begin(); it!=_internalNode->getOutputs().end(); ++it) {
-        if(it->second){
-            it->second->doRefreshEdgesGUI();
-        }
+    const std::list<Natron::Node*>& outputs = _internalNode->getOutputs();
+    for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+        assert(*it);
+        (*it)->doRefreshEdgesGUI();
     }
     emit positionChanged();
 }
@@ -293,10 +293,9 @@ void NodeGui::changePosition(double dx,double dy) {
 
 void NodeGui::refreshEdges(){
     for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i!= _inputEdges.end(); ++i){
-        const Natron::Node::InputMap& nodeInputs = _internalNode->getInputs();
-        Natron::Node::InputMap::const_iterator it = nodeInputs.find(i->first);
-        assert(it!=nodeInputs.end());
-        NodeGui *nodeInputGui = _graph->getGui()->getApp()->getNodeGui(it->second);
+        const std::vector<Natron::Node*>& nodeInputs = _internalNode->getInputs_mt_safe();
+        assert(i->first < (int)nodeInputs.size() && i->first >= 0);
+        NodeGui *nodeInputGui = _graph->getGui()->getApp()->getNodeGui(nodeInputs[i->first]);
         i->second->setSource(nodeInputGui);
         i->second->initLine();
     }
@@ -502,12 +501,14 @@ Edge* NodeGui::findConnectedEdge(NodeGui* parent){
     return NULL;
 }
 
-bool NodeGui::connectEdge(int edgeNumber){
-    Natron::Node::InputMap::const_iterator it = _internalNode->getInputs().find(edgeNumber);
-    if(it == _internalNode->getInputs().end()){
+bool NodeGui::connectEdge(int edgeNumber) {
+    
+    const std::vector<Natron::Node*>& inputs = _internalNode->getInputs_mt_safe();
+    if (edgeNumber < 0 || edgeNumber >= (int)inputs.size()) {
         return false;
     }
-    NodeGui* src = _graph->getGui()->getApp()->getNodeGui(it->second);
+   
+    NodeGui* src = _graph->getGui()->getApp()->getNodeGui(inputs[edgeNumber]);
     InputEdgesMap::const_iterator it2 = _inputEdges.find(edgeNumber);
     if(it2 == _inputEdges.end()){
         return false;
@@ -540,10 +541,10 @@ void NodeGui::activate() {
         it->second->setActive(true);
     }
     refreshEdges();
-    for (Natron::Node::OutputMap::const_iterator it = _internalNode->getOutputs().begin(); it!=_internalNode->getOutputs().end(); ++it) {
-        if(it->second){
-            it->second->doRefreshEdgesGUI();
-        }
+    const std::list<Natron::Node*>& outputs = _internalNode->getOutputs();
+    for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+        assert(*it);
+        (*it)->doRefreshEdgesGUI();
     }
     if(_internalNode->pluginID() != "Viewer"){
         if(isSettingsPanelVisible()){
@@ -804,14 +805,14 @@ void NodeGui::moveBelowPositionRecursively(const QRectF& r) {
 
     if (r.intersects(sceneRect)) {
         changePosition(0, r.height() + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
-        const Natron::Node::OutputMap& outputs = getNode()->getOutputs();
-        for (Natron::Node::OutputMap::const_iterator it = outputs.begin(); it!= outputs.end(); ++it) {
-            if (it->second) {
-                NodeGui* output = _graph->getGui()->getApp()->getNodeGui(it->second);
-                assert(output);
-                sceneRect = mapToScene(boundingRect()).boundingRect();
-                output->moveBelowPositionRecursively(sceneRect);
-            }
+        const std::list<Natron::Node*>& outputs = getNode()->getOutputs();
+        for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it!= outputs.end(); ++it) {
+            assert(*it);
+            NodeGui* output = _graph->getGui()->getApp()->getNodeGui(*it);
+            assert(output);
+            sceneRect = mapToScene(boundingRect()).boundingRect();
+            output->moveBelowPositionRecursively(sceneRect);
+            
         }
     }
 }

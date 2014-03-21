@@ -60,6 +60,12 @@ public:
     OpenGLViewerI* getUiContext() const WARN_UNUSED_RETURN;
 
     void setUiContext(OpenGLViewerI* viewer);
+    
+    /**
+     * @brief Set the uiContext pointer to NULL, preventing the gui to be deleted twice when 
+     * the node is deleted.
+     **/
+    void invalidateUiContext();
 
     /**
      * @brief This function renders the image at time 'time' on the viewer.

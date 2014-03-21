@@ -34,6 +34,7 @@
 #include "Engine/OfxMemory.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/Format.h"
 
 using namespace Natron;
 

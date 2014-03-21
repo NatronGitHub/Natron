@@ -404,7 +404,11 @@ public slots:
     
     void onMasterChanged(int);
     
+    void onEvaluateValueChangedInOtherThread(int dimension, int reason);
+    
 signals:
+    
+    void evaluateValueChangedInMainThread(int dimension,int reason);
     
     ///emitted whenever setAnimationLevel is called. It is meant to notify
     ///openfx params whether it is auto-keying or not.
@@ -545,13 +549,11 @@ public:
     void cloneKnobs(const KnobHolder& other);
 
     AppInstance* getApp() const WARN_UNUSED_RETURN {return _app;}
-
-    int getAppAge() const WARN_UNUSED_RETURN;
     
     boost::shared_ptr<Knob> getKnobByName(const std::string& name) const WARN_UNUSED_RETURN;
     
-    const std::vector< boost::shared_ptr<Knob> >& getKnobs() const WARN_UNUSED_RETURN { return _knobs; }
-
+    const std::vector< boost::shared_ptr<Knob> >& getKnobs() const WARN_UNUSED_RETURN;
+    
     void refreshAfterTimeChange(SequenceTime time);
     
     /**
@@ -615,9 +617,7 @@ public:
     /*Removes a knob to the vector. This is called by the
      Knob class. Don't call this*/
     void removeKnob(Knob* k);
-    
-    void invalidateHash();
-    
+        
     void initializeKnobsPublic();
     
     bool isSlave() const ;

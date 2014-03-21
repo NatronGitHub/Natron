@@ -137,8 +137,6 @@ Natron::Node* AppInstance::createNodeInternal(const QString& pluginID,int majorV
         return NULL;
     }
     
-    node->initializeKnobs();
-    node->initializeInputs();
     
     if (!requestedByLoad || dontLoadName) {
         _imp->_currentProject->initNodeCountersAndSetName(node);

@@ -139,8 +139,6 @@ public:
 
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
 
-    virtual Natron::Status preProcessFrame(SequenceTime /*time*/) OVERRIDE FINAL WARN_UNUSED_RETURN;
-
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
 
     virtual void drawOverlay() OVERRIDE FINAL;

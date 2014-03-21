@@ -152,6 +152,9 @@ ViewerInstance::~ViewerInstance()
     //    QMutexLocker locker(&_imp->updateViewerMutex);
     //    assert(!_imp->updateViewerRunning);
     //}
+    if (_imp->uiContext) {
+        _imp->uiContext->removeGUI();
+    }
 
     if (_imp->bufferAllocated) {
         free(_imp->buffer);
@@ -219,6 +222,14 @@ ViewerInstance::setUiContext(OpenGLViewerI* viewer)
 }
 
 void
+ViewerInstance::invalidateUiContext()
+{
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    _imp->uiContext = NULL;
+}
+
+void
 ViewerInstance::onNodeNameChanged(const QString& name)
 {
     // always running in the main thread
@@ -254,7 +265,7 @@ ViewerInstance::getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProje
     _imp->assertVideoEngine();
 
     ///Return the RoD of the active input
-    EffectInstance* n = input(activeInput());
+    EffectInstance* n = input_other_thread(activeInput());
     if (n) {
         return n->getRegionOfDefinition(time,rod,isProjectFormat);
     } else {
@@ -271,7 +282,7 @@ ViewerInstance::getFrameRange(SequenceTime *first,
     assert(qApp && qApp->thread() == QThread::currentThread());
 
     SequenceTime inpFirst = 0,inpLast = 0;
-    EffectInstance* n = input(activeInput());
+    EffectInstance* n = input_other_thread(activeInput());
     if (n) {
         n->getFrameRange(&inpFirst,&inpLast);
     }
@@ -308,7 +319,7 @@ ViewerInstance::renderViewer(SequenceTime time,
     int viewsCount = getRenderViewsCount();
     int view = viewsCount > 0 ? _imp->uiContext->getCurrentView() : 0;
 
-    EffectInstance* activeInputToRender = input(activeInput());
+    EffectInstance* activeInputToRender = input_other_thread(activeInput());
     assert(activeInputToRender);
     
     bool forceRender;
@@ -327,7 +338,7 @@ ViewerInstance::renderViewer(SequenceTime time,
     boost::shared_ptr<const ImageParams> cachedImgParams;
     boost::shared_ptr<Image> inputImage;
     bool isInputImgCached = false;
-    Natron::ImageKey inputImageKey = Natron::Image::makeKey(activeInputToRender->hash().value(), time, scale,view);
+    Natron::ImageKey inputImageKey = Natron::Image::makeKey(activeInputToRender->hash(), time, scale,view);
     RectI rod;
     bool isRodProjectFormat = false;
     int inputIdentityNumber = -1;
@@ -342,9 +353,9 @@ ViewerInstance::renderViewer(SequenceTime time,
     
     ////While the inputs are identity get the RoD of the first non identity input
     while (!forceRender && inputIdentityNumber != -1 && isInputImgCached) {
-        EffectInstance* recursiveInput = activeInputToRender->input(inputIdentityNumber);
+        EffectInstance* recursiveInput = activeInputToRender->input_other_thread(inputIdentityNumber);
         if (recursiveInput) {
-            inputImageKey = Natron::Image::makeKey(recursiveInput->hash().value(), inputIdentityTime, scale,view);
+            inputImageKey = Natron::Image::makeKey(recursiveInput->hash(), inputIdentityTime, scale,view);
             isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
             if (isInputImgCached) {
                 inputIdentityNumber = cachedImgParams->getInputNbIdentity();
@@ -453,7 +464,7 @@ ViewerInstance::renderViewer(SequenceTime time,
     }
 
     FrameKey key(time,
-                 hash().value(),
+                 hash(),
                  gain,
                  lut,
                  (int)bitDepth,

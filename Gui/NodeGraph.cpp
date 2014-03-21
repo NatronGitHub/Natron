@@ -90,8 +90,8 @@ public:
     virtual void redo();
 
 private:
-    std::multimap<int,Natron::Node*> _outputs;
-    std::map<int,Natron::Node*> _inputs;
+    std::list<Natron::Node*> _outputs;
+    std::vector<Natron::Node*> _inputs;
     NodeGui* _node;
     NodeGraph* _graph;
     bool _undoWasCalled;
@@ -105,8 +105,8 @@ public:
     virtual void redo();
 
 private:
-    std::multimap<int,Natron::Node*> _outputs;
-    std::map<int,Natron::Node*> _inputs;
+    std::list<Natron::Node*> _outputs;
+    std::vector<Natron::Node*> _inputs;
     NodeGui* _node;
     NodeGraph* _graph;
 };
@@ -386,10 +386,10 @@ void NodeGraph::moveNodesForIdealPosition(NodeGui* node) {
     ///if behaviour is 1 , just check that we can effectively connect the node to avoid moving them for nothing
     ///otherwise fallback on behaviour 0
     if (behavior == 1) {
-        const Natron::Node::InputMap& inputs = _nodeSelected->getNode()->getInputs();
+        const std::vector<Natron::Node*>& inputs = _nodeSelected->getNode()->getInputs_mt_safe();
         bool oneInputEmpty = false;
-        for (Natron::Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it) {
-            if (!it->second) {
+        for (U32 i = 0; i < inputs.size() ;++i) {
+            if (!inputs[i]) {
                 oneInputEmpty = true;
                 break;
             }
@@ -440,13 +440,13 @@ void NodeGraph::moveNodesForIdealPosition(NodeGui* node) {
         QRectF createdNodeRect(x,y,createdNodeSize.width(),createdNodeSize.height());
         
         ///and move the selected node below recusively
-        const Natron::Node::OutputMap& outputs = _nodeSelected->getNode()->getOutputs();
-        for (Natron::Node::OutputMap::const_iterator it = outputs.begin(); it!= outputs.end(); ++it) {
-            if (it->second) {
-                NodeGui* output = _gui->getApp()->getNodeGui(it->second);
-                assert(output);
-                output->moveBelowPositionRecursively(createdNodeRect);
-            }
+        const std::list<Natron::Node*>& outputs = _nodeSelected->getNode()->getOutputs();
+        for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it!= outputs.end(); ++it) {
+            assert(*it);
+            NodeGui* output = _gui->getApp()->getNodeGui(*it);
+            assert(output);
+            output->moveBelowPositionRecursively(createdNodeRect);
+            
         }
     }
     
@@ -979,7 +979,7 @@ void AddCommand::undo(){
     
     
     
-    _inputs = _node->getNode()->getInputs();
+    _inputs = _node->getNode()->getInputs_mt_safe();
     _outputs = _node->getNode()->getOutputs();
     
     _node->getNode()->deactivate();
@@ -993,10 +993,7 @@ void AddCommand::redo(){
     if(_undoWasCalled){
         ///activate will trigger an autosave
         _node->getNode()->activate();
-    } else {
-        _graph->getGui()->getApp()->triggerAutoSave();
     }
-    
     _graph->scene()->update();
     setText(QObject::tr("Add %1")
             .arg(_node->getNode()->getName().c_str()));
@@ -1019,28 +1016,25 @@ void RemoveCommand::undo() {
     
 }
 void RemoveCommand::redo() {
-    _inputs = _node->getNode()->getInputs();
+    _inputs = _node->getNode()->getInputs_mt_safe();
     _outputs = _node->getNode()->getOutputs();
     
     _node->getNode()->deactivate();
     
-    for (std::multimap<int,Natron::Node*>::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
-        if (it->second) {
-            InspectorNode* inspector = dynamic_cast<InspectorNode*>(it->second);
-            ///if the node is an inspector, when disconnecting the active input just activate another input instead
-            if (inspector) {
-                const Natron::Node::InputMap& inputs = inspector->getInputs();
-                int i = 0;
-                ///set as active input the first non null input
-                for (Natron::Node::InputMap::const_iterator it = inputs.begin(); it != inputs.end() ;++it) {
-                    if (it->second) {
-                        inspector->setActiveInputAndRefresh(i);
-                        break;
-                    }
-                    ++i;
+    
+    for (std::list<Natron::Node*>::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
+        assert(*it);
+        InspectorNode* inspector = dynamic_cast<InspectorNode*>(*it);
+        ///if the node is an inspector, when disconnecting the active input just activate another input instead
+        if (inspector) {
+            const std::vector<Natron::Node*>& inputs = inspector->getInputs_mt_safe();
+            ///set as active input the first non null input
+            for (U32 i = 0; i < inputs.size() ;++i) {
+                if (inputs[i]) {
+                    inspector->setActiveInputAndRefresh(i);
+                    break;
                 }
             }
-
         }
     }
     
@@ -1084,15 +1078,13 @@ void ConnectCommand::undo() {
         
         ///if the node is an inspector, when disconnecting the active input just activate another input instead
         if (inspector) {
-            const Natron::Node::InputMap& inputs = inspector->getInputs();
-            int i = 0;
+            const std::vector<Natron::Node*>& inputs = inspector->getInputs_mt_safe();
             ///set as active input the first non null input
-            for (Natron::Node::InputMap::const_iterator it = inputs.begin(); it != inputs.end() ;++it) {
-                if (it->second) {
+            for (U32 i = 0; i < inputs.size() ;++i) {
+                if (inputs[i]) {
                     inspector->setActiveInputAndRefresh(i);
                     break;
                 }
-                ++i;
             }
         }
     }

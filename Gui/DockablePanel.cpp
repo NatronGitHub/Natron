@@ -235,14 +235,23 @@ void DockablePanel::onLineEditNameEditingFinished() {
     Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_holder);
     if (effect) {
         
+        std::string newName = _nameLineEdit->text().toStdString();
+        if (newName.empty()) {
+            _nameLineEdit->blockSignals(true);
+            Natron::errorDialog("Node name", "A node must have a unique name.");
+            _nameLineEdit->setText(effect->getName().c_str());
+            _nameLineEdit->blockSignals(false);
+            return;
+        }
+        
         ///if the node name hasn't changed return
-        if (effect->getName() == _nameLineEdit->text().toStdString()) {
+        if (effect->getName() == newName) {
             return;
         }
         
         std::vector<Natron::Node*> allNodes = _holder->getApp()->getProject()->getCurrentNodes();
         for (U32 i = 0;  i < allNodes.size(); ++i) {
-            if (allNodes[i]->getName() == _nameLineEdit->text().toStdString()) {
+            if (allNodes[i]->getName() == newName) {
                 _nameLineEdit->blockSignals(true);
                 Natron::errorDialog("Node name", "A node with the same name already exists in the project.");
                 _nameLineEdit->setText(effect->getName().c_str());

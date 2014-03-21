@@ -906,7 +906,6 @@ void AppManager::registerEngineMetaTypes() const {
     qRegisterMetaType<Format>();
     qRegisterMetaType<SequenceTime>("SequenceTime");
     qRegisterMetaType<Knob*>();
-    qRegisterMetaType<Natron::Node*>();
     qRegisterMetaType<Natron::StandardButtons>();
     qRegisterMetaType<RectI>();
     qRegisterMetaType<RectD>();
