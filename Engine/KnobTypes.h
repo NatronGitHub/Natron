@@ -82,6 +82,10 @@ public:
     
     virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
 
+    void setDimensionName(int dim,const std::string& name);
+    
+    virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
+
 signals:
     
     void minMaxChanged(int mini, int maxi, int index = 0);
@@ -92,7 +96,6 @@ signals:
     
 private:
         
-    virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
     
     virtual bool canAnimate() const OVERRIDE FINAL;
     
@@ -100,6 +103,7 @@ private:
     
 private:
     
+    std::vector<std::string> _dimensionNames;
     std::vector<int> _minimums, _maximums, _increments, _displayMins, _displayMaxs;
     bool _disableSlider;
     static const std::string _typeNameStr;
@@ -196,6 +200,10 @@ public:
     
     virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
 
+    void setDimensionName(int dim,const std::string& name);
+    
+    virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
+
 signals:
     void minMaxChanged(double mini, double maxi, int index = 0);
     
@@ -207,7 +215,6 @@ signals:
     
 private:
     
-    virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
     
     virtual bool canAnimate() const OVERRIDE FINAL;
     
@@ -215,6 +222,7 @@ private:
     
 private:
     
+    std::vector<std::string> _dimensionNames;
     std::vector<double> _minimums, _maximums, _increments, _displayMins, _displayMaxs;
     std::vector<int> _decimals;
     bool _disableSlider;
@@ -424,20 +432,35 @@ public:
     
     virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
 
+    void setDimensionName(int dim,const std::string& dimension);
+    
+    virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
+
+    bool areAllDimensionsEnabled() const;
+    
+    void activateAllDimensions() { emit mustActivateAllDimensions(); }
+    
+public slots:
+    
+    void onDimensionSwitchToggled(bool b);
+    
 signals:
     void minMaxChanged(double mini, double maxi, int index = 0);
 
     void displayMinMaxChanged(double mini,double maxi,int index = 0);
 
+    void mustActivateAllDimensions();
+    
 private:
     
-    virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     
     virtual const std::string& typeName() const OVERRIDE FINAL;
     
 private:
+    bool _allDimensionsEnabled;
+    std::vector<std::string> _dimensionNames;
     std::vector<double> _minimums, _maximums, _displayMins, _displayMaxs;
     static const std::string _typeNameStr;
 };

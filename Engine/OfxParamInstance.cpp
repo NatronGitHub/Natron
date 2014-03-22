@@ -190,7 +190,10 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param:
     _knob->setIncrement(1); // kOfxParamPropIncrement only exists for Double
     _knob->setMaximum(max);
     _knob->setDefaultValue<int>(def);
-#pragma message WARN("set the DimensionName from the kOfxParamPropDimensionLabel property,  in OfxIntegerInstance, OfxDoubleInstance, OfxRGBAInstance, OfxRGBInstance, OfxDouble2DInstance, OfxDouble3DInstance, OfxInteger2DInstance, OfxInteger3DInstance")
+    std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,0);
+    if (!dimensionName.empty()) {
+        _knob->setDimensionName(0, dimensionName);
+    }
 }
 
 OfxStatus OfxIntegerInstance::get(int& v) {
@@ -369,7 +372,10 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
     
     valueAccordingToType(true,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&def);
     _knob->setDefaultValue<double>(def);
-//#pragma message WARN("also set the DimensionName from the kOfxParamPropDimensionLabel property")
+    std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,0);
+    if (!dimensionName.empty()) {
+        _knob->setDimensionName(0, dimensionName);
+    }
 }
 
 OfxStatus
@@ -720,11 +726,15 @@ OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descr
         displayMins[i] = properties.getDoubleProperty(kOfxParamPropDisplayMin,i);
         displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax,i);
         maximum[i] = properties.getDoubleProperty(kOfxParamPropMax,i);
+        std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
+        if (!dimensionName.empty()) {
+            _knob->setDimensionName(i, dimensionName);
+        }
     }
 
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
-//#pragma message WARN("also set the DimensionName from the kOfxParamPropDimensionLabel property")
+   
 }
 
 OfxStatus
@@ -896,11 +906,16 @@ OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descr
         displayMins[i] = properties.getDoubleProperty(kOfxParamPropDisplayMin,i);
         displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax,i);
         maximum[i] = properties.getDoubleProperty(kOfxParamPropMax,i);
+        std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
+        if (!dimensionName.empty()) {
+            _knob->setDimensionName(i, dimensionName);
+        }
+
     }
 
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
-//#pragma message WARN("also set the DimensionName from the kOfxParamPropDimensionLabel property")
+
 }
 
 OfxStatus
@@ -1073,6 +1088,12 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
         increment[i] = incr;
         decimals[i] = dig;
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
+        
+        std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
+        if (!dimensionName.empty()) {
+            _knob->setDimensionName(i, dimensionName);
+        }
+
     }
     
     valueAccordingToType(true, doubleType, node, &minimum[0],&minimum[1]);
@@ -1085,7 +1106,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
     _knob->setDecimals(decimals);
     _knob->setDefaultValue<double>(def[0], 0);
     _knob->setDefaultValue<double>(def[1], 1);
-//#pragma message WARN("also set the DimensionName from the kOfxParamPropDimensionLabel property")
+
 }
 
 OfxStatus
@@ -1267,6 +1288,11 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::P
         maximum[i] = properties.getIntProperty(kOfxParamPropMax,i);
         increment[i] = 1; // kOfxParamPropIncrement only exists for Double
         def[i] = properties.getIntProperty(kOfxParamPropDefault,i);
+        std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
+        if (!dimensionName.empty()) {
+            _knob->setDimensionName(i, dimensionName);
+        }
+
     }
     
     _knob->setMinimumsAndMaximums(minimum, maximum);
@@ -1274,7 +1300,7 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::P
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
     _knob->setDefaultValue<int>(def[0], 0);
     _knob->setDefaultValue<int>(def[1], 1);
-//#pragma message WARN("also set the DimensionName from the kOfxParamPropDimensionLabel property")
+
 }
 
 OfxStatus
@@ -1409,6 +1435,11 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Par
         increment[i] = incr;
         decimals[i] = dig;
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
+        std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
+        if (!dimensionName.empty()) {
+            _knob->setDimensionName(i, dimensionName);
+        }
+
     }
     
     _knob->setMinimumsAndMaximums(minimum, maximum);
@@ -1418,7 +1449,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Par
     _knob->setDefaultValue<double>(def[0],0);
     _knob->setDefaultValue<double>(def[1],1);
     _knob->setDefaultValue<double>(def[2],2);
-//#pragma message WARN("also set the DimensionName from the kOfxParamPropDimensionLabel property")
+
 }
 
 OfxStatus
@@ -1577,6 +1608,12 @@ OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::P
         int incr = properties.getIntProperty(kOfxParamPropIncrement,i);
         increment[i] = incr != 0 ?  incr : 1;
         def[i] = properties.getIntProperty(kOfxParamPropDefault,i);
+        
+        std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
+        if (!dimensionName.empty()) {
+            _knob->setDimensionName(i, dimensionName);
+        }
+
     }
     
     _knob->setMinimumsAndMaximums(minimum, maximum);
@@ -1585,7 +1622,7 @@ OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::P
     _knob->setDefaultValue<int>(def[0],0);
     _knob->setDefaultValue<int>(def[1],1);
     _knob->setDefaultValue<int>(def[2],2);
-//#pragma message WARN("also set the DimensionName from the kOfxParamPropDimensionLabel property")
+
 }
 
 OfxStatus

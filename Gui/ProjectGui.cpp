@@ -396,14 +396,22 @@ void ProjectGui::setPickersColor(const QColor& color){
     boost::shared_ptr<Color_Knob> first = _colorPickersEnabled.front();
     first->beginValueChange(Natron::USER_EDITED);
     for(U32 i = 0; i < _colorPickersEnabled.size();++i){
-        _colorPickersEnabled[i]->beginValueChange(Natron::USER_EDITED);
-        _colorPickersEnabled[i]->setValue(color.redF(), 0);
+        _colorPickersEnabled[i]->beginValueChange(Natron::PLUGIN_EDITED);
+        double r,g,b,a;
+        r = color.redF();
+        g = color.greenF();
+        b = color.blueF();
+        a = color.alphaF();
+        if (!_colorPickersEnabled[i]->areAllDimensionsEnabled()) {
+            _colorPickersEnabled[i]->activateAllDimensions();
+        }
+        _colorPickersEnabled[i]->setValue(r, 0);
         if(_colorPickersEnabled[i]->getDimension() >= 3){
-            _colorPickersEnabled[i]->setValue(color.greenF(), 1);
-            _colorPickersEnabled[i]->setValue(color.blueF(), 2);
+            _colorPickersEnabled[i]->setValue(g, 1);
+            _colorPickersEnabled[i]->setValue(b, 2);
         }
         if(_colorPickersEnabled[i]->getDimension() >= 4){
-            _colorPickersEnabled[i]->setValue(color.alphaF(), 3);
+            _colorPickersEnabled[i]->setValue(a, 3);
         }
         _colorPickersEnabled[i]->endValueChange();
     }

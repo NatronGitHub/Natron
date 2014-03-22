@@ -25,6 +25,7 @@ using std::pair;
 /******************************INT_KNOB**************************************/
 Int_Knob::Int_Knob(KnobHolder *holder, const std::string &description, int dimension):
 Knob(holder, description, dimension)
+, _dimensionNames(dimension)
 , _minimums(dimension)
 , _maximums(dimension)
 , _increments(dimension)
@@ -38,6 +39,24 @@ Knob(holder, description, dimension)
         _increments[i] = 1;
         _displayMins[i] = INT_MIN;
         _displayMaxs[i] = INT_MAX;
+        
+        switch (i) {
+            case 0:
+                _dimensionNames[i] = "x";
+                break;
+            case 1:
+                _dimensionNames[i] = "y";
+                break;
+            case 2:
+                _dimensionNames[i] = "z";
+                break;
+            case 3:
+                _dimensionNames[i] = "w";
+                break;
+            default:
+                assert(false); //< unsupported dimension
+                break;
+        }
     }
 }
 
@@ -179,24 +198,18 @@ std::pair<int,int> Int_Knob::getMinMaxForCurve(const Curve* curve) const {
     throw std::logic_error("Int_Knob::getMinMaxForCurve(): curve not found");
 }
 
+void Int_Knob::setDimensionName(int dim,const std::string& name)
+{
+    assert(dim < (int)_dimensionNames.size());
+    _dimensionNames[dim] = name;
+}
 
 
-// FIXME: the plugin may have set kOfxParamPropDimensionLabel - use this!
 std::string
 Int_Knob::getDimensionName(int dimension) const
 {
-    switch (dimension) {
-        case 0:
-            return "x";
-        case 1:
-            return "y";
-        case 2:
-            return "z";
-        case 3:
-            return "w";
-        default:
-            return QString::number(dimension).toStdString();
-    }
+    assert(dimension < (int)_dimensionNames.size());
+    return _dimensionNames[dimension];
 }
 
 bool Int_Knob::canAnimate() const
@@ -271,6 +284,7 @@ bool Bool_Knob::isTypeCompatible(const Knob& other) const {
 
 Double_Knob::Double_Knob(KnobHolder *holder, const std::string &description, int dimension)
 : Knob(holder, description, dimension)
+, _dimensionNames(dimension)
 , _minimums(dimension)
 , _maximums(dimension)
 , _increments(dimension)
@@ -287,25 +301,40 @@ Double_Knob::Double_Knob(KnobHolder *holder, const std::string &description, int
         _displayMins[i] = -DBL_MAX;
         _displayMaxs[i] = DBL_MAX;
         _decimals[i] = 2;
+        
+        switch (i) {
+            case 0:
+                _dimensionNames[i] = "x";
+                break;
+            case 1:
+                _dimensionNames[i] = "y";
+                break;
+            case 2:
+                _dimensionNames[i] = "z";
+                break;
+            case 3:
+                _dimensionNames[i] = "w";
+                break;
+            default:
+                assert(false); //< unsupported dimension
+                break;
+        }
+
     }
 }
 
-// FIXME: the plugin may have set kOfxParamPropDimensionLabel - use this!
+void Double_Knob::setDimensionName(int dim,const std::string& name)
+{
+    assert(dim < (int)_dimensionNames.size());
+    _dimensionNames[dim] = name;
+}
+
+
 std::string
 Double_Knob::getDimensionName(int dimension) const
 {
-    switch (dimension) {
-        case 0:
-            return "x";
-        case 1:
-            return "y";
-        case 2:
-            return "z";
-        case 3:
-            return "w";
-        default:
-            return QString::number(dimension).toStdString();
-    }
+    assert(dimension < (int)_dimensionNames.size());
+    return _dimensionNames[dimension];
 }
 
 void Double_Knob::disableSlider()
@@ -676,6 +705,8 @@ const std::string& Separator_Knob::typeName() const
 
 Color_Knob::Color_Knob(KnobHolder *holder, const std::string &description, int dimension)
 : Knob(holder, description, dimension)
+, _allDimensionsEnabled(true)
+, _dimensionNames(dimension)
 , _minimums(dimension)
 , _maximums(dimension)
 , _displayMins(dimension)
@@ -688,25 +719,50 @@ Color_Knob::Color_Knob(KnobHolder *holder, const std::string &description, int d
         _maximums[i] = 1.;
         _displayMins[i] = 0.;
         _displayMaxs[i] = 1.;
+        
+        switch (i) {
+            case 0:
+                _dimensionNames[i] = "r";
+                break;
+            case 1:
+                _dimensionNames[i] = "g";
+                break;
+            case 2:
+                _dimensionNames[i] = "b";
+                break;
+            case 3:
+                _dimensionNames[i] = "a";
+                break;
+            default:
+                assert(false); //< unsupported dimension
+                break;
+        }
+
     }
+}
+
+void Color_Knob::onDimensionSwitchToggled(bool b)
+{
+    _allDimensionsEnabled = b;
+}
+
+bool Color_Knob::areAllDimensionsEnabled() const
+{
+    return _allDimensionsEnabled;
+}
+
+void Color_Knob::setDimensionName(int dim,const std::string& dimension)
+{
+    assert(dim < (int)_dimensionNames.size());
+    _dimensionNames[dim] = dimension;
 }
 
 // FIXME: the plugin may have set kOfxParamPropDimensionLabel - use this!
 std::string
 Color_Knob::getDimensionName(int dimension) const
 {
-    switch (dimension) {
-        case 0:
-            return "r";
-        case 1:
-            return "g";
-        case 2:
-            return "b";
-        case 3:
-            return "a";
-        default:
-            return QString::number(dimension).toStdString();
-    }
+    assert(dimension < (int)_dimensionNames.size());
+    return _dimensionNames[dimension];
 }
 
 bool

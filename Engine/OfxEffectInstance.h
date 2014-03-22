@@ -63,7 +63,7 @@ public:
                                                     const std::string& grouping) WARN_UNUSED_RETURN;
 };
 
-class OfxEffectInstance : public AbstractOfxEffectInstance, public QObject {
+class OfxEffectInstance : public QObject, public AbstractOfxEffectInstance {
     
     
     Q_OBJECT
