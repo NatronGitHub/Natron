@@ -250,7 +250,8 @@ private:
 
     KeyFrameSet::const_iterator end() const WARN_UNUSED_RETURN;
     
-
+    std::pair<double,double> getCurveYRange_internal() const WARN_UNUSED_RETURN;
+    
     void removeKeyFrame(KeyFrameSet::const_iterator it);
 
     double clampValueToCurveYRange(double v) const WARN_UNUSED_RETURN;

@@ -211,7 +211,7 @@ void Node::load(const std::string& pluginID,const NodeSerialization& serializati
             loadKnobs(serialization);
         }
     } else { //ofx plugin
-        _imp->liveInstance = appPTR->createOFXEffect(pluginID,this,false,&serialization);
+        _imp->liveInstance = appPTR->createOFXEffect(pluginID,this,&serialization);
         _imp->liveInstance->initializeOverlayInteract();
     }
     

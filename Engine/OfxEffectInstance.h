@@ -63,7 +63,10 @@ public:
                                                     const std::string& grouping) WARN_UNUSED_RETURN;
 };
 
-class OfxEffectInstance : public AbstractOfxEffectInstance {
+class OfxEffectInstance : public AbstractOfxEffectInstance, public QObject {
+    
+    
+    Q_OBJECT
     
     Natron::OfxImageEffectInstance* effect_;
     bool _isOutput;//if the OfxNode can output a file somehow
@@ -198,7 +201,19 @@ public:
                                    bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) OVERRIDE FINAL;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
-    
+    /**
+     * @brief Calls syncPrivateDataAction from another thread than the main thread. The actual
+     * call of the action will take place in the main-thread.
+     **/
+    void syncPrivateData_other_thread() { emit syncPrivateDataRequested(); }
+
+public slots:
+
+    void onSyncPrivateDataRequested();
+
+signals:
+
+    void syncPrivateDataRequested();
 
 private:
     

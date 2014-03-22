@@ -764,9 +764,9 @@ Natron::LibraryBinary* AppManager::getPluginBinary(const QString& pluginId,int m
 }
 
 
-Natron::EffectInstance* AppManager::createOFXEffect(const std::string& pluginID,Natron::Node* node,bool isClone,
+Natron::EffectInstance* AppManager::createOFXEffect(const std::string& pluginID,Natron::Node* node,
                                                     const NodeSerialization* serialization ) const {
-    return _imp->ofxHost->createOfxEffect(pluginID, node,isClone,serialization);
+    return _imp->ofxHost->createOfxEffect(pluginID, node,serialization);
 }
 
 void AppManager::removeFromNodeCache(boost::shared_ptr<Natron::Image> image){

@@ -39,7 +39,7 @@ void serialize(Archive & ar,CurvePrivate& c, const unsigned int version)
     QReadLocker l(&c._lock);
     ar & boost::serialization::make_nvp("KeyFrameSet",c.keyFrames);
 }
-
+ 
 
     
 }

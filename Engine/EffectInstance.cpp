@@ -84,13 +84,6 @@ EffectInstance::~EffectInstance()
 {
 }
 
-
-
-bool EffectInstance::isLiveInstance() const
-{
-    return !isClone();
-}
-
 U64 EffectInstance::hash() const
 {
     return getNode()->getHashValue();

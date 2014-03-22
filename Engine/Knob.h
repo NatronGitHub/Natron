@@ -520,7 +520,6 @@ class KnobHolder {
     
     AppInstance* _app;
     std::vector< boost::shared_ptr<Knob> > _knobs;
-    bool _isClone;
     bool _knobsInitialized;
     bool _isSlave;
     
@@ -534,10 +533,6 @@ public:
     KnobHolder(AppInstance* appInstance);
     
     virtual ~KnobHolder();
-    
-    bool isClone() const WARN_UNUSED_RETURN { return _isClone; }
-
-    void setClone() { _isClone = true; }
     
     template<typename K>
     boost::shared_ptr<K> createKnob(const std::string &description, int dimension = 1) const WARN_UNUSED_RETURN;

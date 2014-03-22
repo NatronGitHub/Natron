@@ -81,6 +81,7 @@ OfxEffectInstance::OfxEffectInstance(Natron::Node* node)
     if(node && !node->getLiveInstance()){
         node->setLiveInstance(this);
     }
+    QObject::connect(this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()));
 }
 
 void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
@@ -133,23 +134,16 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         assert(effect_->getPlugin()->getPluginHandle()->getOfxPlugin()->mainEntry);
         
         ///before calling the createInstanceAction
-        if (isClone()) {
-            cloneKnobs(*(getNode()->getLiveInstance()));
-            cloneExtras();
-        } else {
-            if (serialization && !serialization->isNull()) {
-                getNode()->loadKnobs(*serialization);
-            }
+        
+        if (serialization && !serialization->isNull()) {
+            getNode()->loadKnobs(*serialization);
         }
         
         stat = effect_->createInstanceAction();
         if(stat != kOfxStatOK && stat != kOfxStatReplyDefault){
             throw std::runtime_error("Could not create effect instance for plugin");
         }
-        
-        if (isClone()) {
-            effectInstance()->syncPrivateDataAction();
-        }
+
         
         if (!effect_->getClipPreferences()) {
            qDebug() << "The plugin failed in the getClipPreferencesAction.";
@@ -207,14 +201,13 @@ std::string OfxEffectInstance::description() const {
 
 void OfxEffectInstance::tryInitializeOverlayInteracts(){
     /*create overlay instance if any*/
-    if(isLiveInstance()){
-        OfxPluginEntryPoint *overlayEntryPoint = effect_->getOverlayInteractMainEntry();
-        if(overlayEntryPoint){
-            _overlayInteract = new OfxOverlayInteract(*effect_,8,true);
-            _overlayInteract->createInstanceAction();
-            getApp()->redrawAllViewers();
-        }
+    OfxPluginEntryPoint *overlayEntryPoint = effect_->getOverlayInteractMainEntry();
+    if(overlayEntryPoint){
+        _overlayInteract = new OfxOverlayInteract(*effect_,8,true);
+        _overlayInteract->createInstanceAction();
+        getApp()->redrawAllViewers();
     }
+    
 }
 
 bool OfxEffectInstance::isOutput() const {
@@ -973,7 +966,6 @@ void OfxEffectInstance::endKnobsValuesChanged(Natron::ValueChangedReason reason)
             break;
     }
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-    //effectInstance()->syncPrivateDataAction();
 
 }
 
@@ -1005,4 +997,11 @@ bool OfxEffectInstance::supportsTiles() const {
 
 void OfxEffectInstance::beginEditKnobs() {
     effectInstance()->beginInstanceEditAction();
+}
+
+void OfxEffectInstance::onSyncPrivateDataRequested()
+{
+    ///Can only be called in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+    effectInstance()->syncPrivateDataAction();
 }

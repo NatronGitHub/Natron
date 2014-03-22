@@ -65,8 +65,6 @@ public:
      * @brief Returns a pointer to the node holding this effect.
      **/
     Node* getNode() const WARN_UNUSED_RETURN { return _node; }
-
-    bool isLiveInstance() const WARN_UNUSED_RETURN;
     
     U64 hash() const WARN_UNUSED_RETURN;
     

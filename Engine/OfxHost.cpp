@@ -259,7 +259,7 @@ void Natron::OfxHost::getPluginAndContextByID(const std::string& pluginID,  OFX:
     }
 }
 
-AbstractOfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natron::Node* node,bool isClone,
+AbstractOfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natron::Node* node,
                                                             const NodeSerialization* serialization ) {
 
     assert(node);
@@ -269,9 +269,6 @@ AbstractOfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& n
     getPluginAndContextByID(name,&plugin,context);
 
     AbstractOfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
-    if (isClone) {
-        hostSideEffect->setClone();
-    }
     hostSideEffect->createOfxImageEffectInstance(plugin, context,serialization);
     return hostSideEffect;
 }

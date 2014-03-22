@@ -551,7 +551,7 @@ void Knob::evaluateAnimationChange()
             hasEvaluatedOnce = true;
         }
     }
-    if (!hasEvaluatedOnce && !_imp->_holder->isClone()) {
+    if (!hasEvaluatedOnce) {
         evaluateValueChange(0, Natron::PLUGIN_EDITED);
     }
     
@@ -578,7 +578,7 @@ void Knob::endValueChange()
         if (_imp->_betweenBeginEndCount == 0) {
             
             processNewValue(_imp->_beginEndReason);
-            if ((_imp->_beginEndReason != Natron::USER_EDITED) && !_imp->_holder->isClone()) {
+            if ((_imp->_beginEndReason != Natron::USER_EDITED)) {
                 for (U32 i = 0; i < _imp->_dimensionChanged.size(); ++i) {
                     emit valueChanged(_imp->_dimensionChanged[i]);
                 }
@@ -625,9 +625,8 @@ void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason)
     
     ///Basically just call onKnobChange on the plugin
     bool significant = (reason != Natron::TIME_CHANGED) && _imp->_EvaluateOnChange;
-    if (!_imp->_holder->isClone()) {
-        _imp->_holder->notifyProjectEvaluationRequested(reason, this, significant);
-    }
+    _imp->_holder->notifyProjectEvaluationRequested(reason, this, significant);
+
     
     if (beginCalled) {
         endValueChange();
@@ -1089,7 +1088,6 @@ bool Knob::getKeyFrameValueByIndex(int dimension,int index,Variant* value) const
 KnobHolder::KnobHolder(AppInstance* appInstance):
 _app(appInstance)
 , _knobs()
-, _isClone(false)
 , _knobsInitialized(false)
 , _isSlave(false)
 {
