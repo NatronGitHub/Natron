@@ -24,10 +24,10 @@ const int graphicalContainerOffset=10; //number of offset pixels from the arrow 
 
 Edge::Edge(int inputNb_, double angle_, NodeGui *dest_, QGraphicsItem *parent)
 : QGraphicsLineItem(parent)
+, _isOutputEdge(false)
 , inputNb(inputNb_)
 , angle(angle_)
 , label(NULL)
-, has_source(false)
 , arrowHead()
 , dest(dest_)
 , source(NULL)
@@ -37,123 +37,160 @@ Edge::Edge(int inputNb_, double angle_, NodeGui *dest_, QGraphicsItem *parent)
 {
     assert(dest);
     setPen(QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    label = new QGraphicsTextItem(QString(dest->getNode()->getInputLabel(inputNb).c_str()),this);
-    label->setDefaultTextColor(QColor(200,200,200));
+    if (inputNb != -1) {
+        label = new QGraphicsTextItem(QString(dest->getNode()->getInputLabel(inputNb).c_str()),this);
+        label->setDefaultTextColor(QColor(200,200,200));
+    }
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
     setFlag(QGraphicsItem::ItemStacksBehindParent);
     setZValue(0);
 }
 
-Edge::Edge(int inputNb_, NodeGui *src, NodeGui* dest_, QGraphicsItem *parent)
+Edge::Edge(NodeGui *src,QGraphicsItem *parent)
 : QGraphicsLineItem(parent)
-, inputNb(inputNb_)
-, angle(0.)
+, _isOutputEdge(true)
+, inputNb(-1)
+, angle(pi / 2.)
 , label(NULL)
-, has_source(true)
 , arrowHead()
-, dest(dest_)
+, dest(NULL)
 , source(src)
+, _defaultColor(Qt::black)
+, _renderingColor(243,149,0)
+, _useRenderingColor(false)
 {
-    assert(dest_);
     assert(src);
     setPen(QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    label=scene()->addText(QString(dest->getNode()->getInputLabel(inputNb).c_str()));
-    label->setParentItem(this);
-    label->setZValue(zValue());
+    setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
+    setFlag(QGraphicsItem::ItemStacksBehindParent);
+    setZValue(0);
 }
 
-Edge::~Edge(){
-    if(dest){
+Edge::~Edge()
+{
+    if (dest) {
         dest->markInputNull(this);
     }
 }
 
-void Edge::initLine(){
-    QSize dstNodeSize = NodeGui::nodeSize(dest->getNode()->isPreviewEnabled());
+void Edge::initLine()
+{
+    if (!source && !dest) {
+        return;
+    }
     
-    QPointF dst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
-                                           + QPointF(dstNodeSize.width() / 2., dstNodeSize.height() / 2.));
+    QSize dstNodeSize;
+    QSize srcNodeSize;
+    if (dest) {
+        dstNodeSize = NodeGui::nodeSize(dest->getNode()->isPreviewEnabled());
+    }
+    if (source) {
+        srcNodeSize = NodeGui::nodeSize(source->getNode()->isPreviewEnabled());
+    }
+    
+    QPointF dst;
+    
+    if (dest) {
+        dst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
+                          + QPointF(dstNodeSize.width() / 2., dstNodeSize.height() / 2.));
+    } else if (source && !dest) {
+        dst = mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y())
+                          + QPointF(srcNodeSize.width() / 2., srcNodeSize.height() + 10));
+    }
+    
     QPointF srcpt;
-    if(has_source){
-        
-        QSize srcNodeSize = NodeGui::nodeSize(source->getNode()->isPreviewEnabled());
-
-        
-        srcpt= mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y()))
+    if (source && dest) {
+        /////// This is a connected edge, either input or output
+        srcpt = mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y()))
             + QPointF(srcNodeSize.width() / 2.,srcNodeSize.height() / 2.);
-        setLine(dst.x(),dst.y(),srcpt.x(),srcpt.y());
         
-        
-        /*adjusting src and dst to show label at the middle of the line*/
-        QPointF labelSrcpt= mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y()))
-        + QPointF(srcNodeSize.width() / 2.,srcNodeSize.height());
-
-        
-        QPointF labelDst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
-                          + QPointF(dstNodeSize.width() / 2.,0));
-               double norm = sqrt(pow(labelDst.x() - labelSrcpt.x(),2) + pow(labelDst.y() - labelSrcpt.y(),2));
-        if(norm > 20.){
-            label->setPos((labelDst.x()+labelSrcpt.x())/2.-5.,
-                          (labelDst.y()+labelSrcpt.y())/2.-10);
-            label->show();
-        }else{
-            label->hide();
+        /////// Only input edges have a label
+        if (label) {
+            /*adjusting src and dst to show label at the middle of the line*/
+            QPointF labelSrcpt= mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y()))
+            + QPointF(srcNodeSize.width() / 2.,srcNodeSize.height());
+            
+            
+            QPointF labelDst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
+                                           + QPointF(dstNodeSize.width() / 2.,0));
+            double norm = sqrt(pow(labelDst.x() - labelSrcpt.x(),2) + pow(labelDst.y() - labelSrcpt.y(),2));
+            if(norm > 20.){
+                label->setPos((labelDst.x()+labelSrcpt.x())/2.-5.,
+                              (labelDst.y()+labelSrcpt.y())/2.-10);
+                label->show();
+            }else{
+                label->hide();
+            }
         }
+    
+    } else if (!source && dest) {
+        ///// The edge is an input edge which is unconnected
         
-    }else{        
         srcpt = QPointF(dst.x() + (cos(angle)*UNATTACHED_ARROW_LENGTH),
           dst.y() - (sin(angle) * UNATTACHED_ARROW_LENGTH));
         
-		setLine(dst.x(),dst.y(),srcpt.x(),srcpt.y());
-        double cosinus = cos(angle);
-        int yOffset = 0;
-        if(cosinus < 0){
-            yOffset = -40;
-        }else if(cosinus >= -0.01 && cosinus <= 0.01){
+        if (label) {
+            double cosinus = cos(angle);
+            int yOffset = 0;
+            if(cosinus < 0){
+                yOffset = -40;
+            }else if(cosinus >= -0.01 && cosinus <= 0.01){
+                
+                yOffset = +5;
+            }else{
+                
+                yOffset = +10;
+            }
             
-            yOffset = +5;
-        }else{
+            /*adjusting dst to show label at the middle of the line*/
             
-            yOffset = +10;
+            QPointF labelDst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
+                                           + QPointF(dstNodeSize.width() / 2.,0));
+            
+            label->setPos(((labelDst.x()+srcpt.x())/2.)+yOffset,(labelDst.y()+srcpt.y())/2.-20);
         }
+    } else if (source && !dest) {
+        ///// The edge is an output edge which is unconnected
+        srcpt = mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y()))
+        + QPointF(srcNodeSize.width() / 2.,srcNodeSize.height() / 2.);
         
-        /*adjusting dst to show label at the middle of the line*/
-    
-        QPointF labelDst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
-                          + QPointF(dstNodeSize.width() / 2.,0));
-               
-        label->setPos(((labelDst.x()+srcpt.x())/2.)+yOffset,(labelDst.y()+srcpt.y())/2.-20);
-        
+        ///output edges don't have labels
     }
-    QPointF dstPost = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y()));
-    QLineF edges[] = {
-        QLineF(dstPost.x()+dstNodeSize.width(), // right
-                dstPost.y(),
-               dstPost.x()+dstNodeSize.width(),
-               dstPost.y()+dstNodeSize.height()),
-        QLineF(dstPost.x()+dstNodeSize.width(), // bottom
-               dstPost.y()+dstNodeSize.height(),
-               dstPost.x(),
-               dstPost.y()+dstNodeSize.height()),
-        QLineF(dstPost.x(),  // left
-               dstPost.y()+dstNodeSize.height(),
-               dstPost.x(),
-               dstPost.y()),
-        QLineF(dstPost.x(), // top
-               dstPost.y(),
-               dstPost.x()+dstNodeSize.width(),
-               dstPost.y())};
     
-    for (int i = 0; i < 4; ++i) {
-        QPointF intersection;
-        QLineF::IntersectType type = edges[i].intersect(line(), &intersection);
-        if(type == QLineF::BoundedIntersection){
-            setLine(QLineF(intersection,line().p2()));
-            break;
+    setLine(dst.x(),dst.y(),srcpt.x(),srcpt.y());
+
+    if (dest) {
+        QPointF dstPost = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y()));
+        QLineF edges[] = {
+            QLineF(dstPost.x()+dstNodeSize.width(), // right
+                   dstPost.y(),
+                   dstPost.x()+dstNodeSize.width(),
+                   dstPost.y()+dstNodeSize.height()),
+            QLineF(dstPost.x()+dstNodeSize.width(), // bottom
+                   dstPost.y()+dstNodeSize.height(),
+                   dstPost.x(),
+                   dstPost.y()+dstNodeSize.height()),
+            QLineF(dstPost.x(),  // left
+                   dstPost.y()+dstNodeSize.height(),
+                   dstPost.x(),
+                   dstPost.y()),
+            QLineF(dstPost.x(), // top
+                   dstPost.y(),
+                   dstPost.x()+dstNodeSize.width(),
+                   dstPost.y())};
+        
+        for (int i = 0; i < 4; ++i) {
+            QPointF intersection;
+            QLineF::IntersectType type = edges[i].intersect(line(), &intersection);
+            if(type == QLineF::BoundedIntersection){
+                setLine(QLineF(intersection,line().p2()));
+                break;
+            }
         }
     }
+    
     qreal a;
     a = acos(line().dx() / line().length());
     if (line().dy() >= 0)
@@ -201,7 +238,11 @@ bool Edge::contains(const QPointF &point) const{
     double dist = distToSegment(line(), point);
     return  dist <= graphicalContainerOffset;
 }
-void Edge::updatePosition(const QPointF& src){
+void Edge::dragSource(const QPointF& src)
+{
+    
+    setLine(QLineF(line().p1(),src));
+
     double a = acos(line().dx() / line().length());
     if (line().dy() >= 0)
         a = 2*pi - a;
@@ -214,19 +255,34 @@ void Edge::updatePosition(const QPointF& src){
     arrowHead.clear();
 	arrowHead << line().p1() << arrowP1 << arrowP2;
 
-	setLine(QLineF(line().p1(),src));
     
-	label->setPos(QPointF(((line().p1().x()+src.x())/2.)-5,((line().p1().y()+src.y())/2.)-5));
-
-   
-
+    if (label) {
+        label->setPos(QPointF(((line().p1().x()+src.x())/2.)-5,((line().p1().y()+src.y())/2.)-5));
+    }
 }
-void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * options,
-           QWidget * parent)
+
+void Edge::dragDest(const QPointF& dst)
+{
+    setLine(QLineF(dst,line().p2()));
+
+    double a = acos(line().dx() / line().length());
+    if (line().dy() >= 0)
+        a = 2*pi - a;
+    
+    double arrowSize = 5;
+    QPointF arrowP1 = line().p1() + QPointF(sin(a + pi / 3) * arrowSize,
+                                            cos(a + pi / 3) * arrowSize);
+    QPointF arrowP2 = line().p1() + QPointF(sin(a + pi - pi / 3) * arrowSize,
+                                            cos(a + pi - pi / 3) * arrowSize);
+    arrowHead.clear();
+	arrowHead << line().p1() << arrowP1 << arrowP2;
+    
+}
+
+void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * /*options*/,
+           QWidget * /*parent*/)
  {
 
-     (void)parent;
-     (void)options;
      QPen myPen = pen();
      
      if (_useRenderingColor) {
@@ -234,7 +290,7 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * options,
      } else {
          myPen.setColor(_defaultColor);
      }
-     if(dest->getNode()->getLiveInstance()->isInputOptional(inputNb)){
+     if(dest && dest->getNode()->getLiveInstance()->isInputOptional(inputNb)){
          QVector<qreal> dashStyle;
          qreal space = 4;
          dashStyle << 3 << space;

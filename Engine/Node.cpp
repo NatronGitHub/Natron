@@ -729,6 +729,7 @@ void Node::connectOutput(Node* output)
     assert(QThread::currentThread() == qApp->thread());
     assert(output);
     _imp->outputs.push_back(output);
+    emit outputsChanged();
 }
 
 int Node::disconnectInput(int inputNumber)
@@ -756,8 +757,8 @@ int Node::disconnectInput(Node* input)
     {
         
         QMutexLocker l(&_imp->inputsMutex);
-        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-            if (_imp->inputs[i] == input) {
+        for (U32 i = 0; i < _imp->inputsQueue.size(); ++i) {
+            if (_imp->inputsQueue[i] == input) {
                 _imp->inputsQueue[i] = NULL;
                 l.unlock();
                 emit inputChanged(i);
@@ -779,13 +780,13 @@ int Node::disconnectOutput(Node* output)
     assert(QThread::currentThread() == qApp->thread());
     
     std::list<Node*>::iterator it = std::find(_imp->outputs.begin(),_imp->outputs.end(),output);
+    int ret = -1;
     if (it != _imp->outputs.end()) {
-        int ret = std::distance(_imp->outputs.begin(), it);
+        ret = std::distance(_imp->outputs.begin(), it);
         _imp->outputs.erase(it);
-        return ret;
-    } else {
-        return -1;
     }
+    emit outputsChanged();
+    return ret;
 }
 
 int Node::inputIndex(Node* n) const {
@@ -1510,11 +1511,11 @@ void InspectorNode::setActiveInputAndRefresh(int inputNb){
     if (inputNb > (_inputsCount - 1) || inputNb < 0 || input(inputNb) == NULL) {
         return;
     }
-    computeHash();
     {
         QMutexLocker activeInputLocker(&_activeInputMutex);
         _activeInput = inputNb;
     }
+    computeHash();
     if (isOutputNode()) {
         dynamic_cast<Natron::OutputEffectInstance*>(getLiveInstance())->updateTreeAndRender();
     }

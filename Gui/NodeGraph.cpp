@@ -526,8 +526,9 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
     _evtState = DEFAULT;
 
     if (state == ARROW_DRAGGING) {
-        bool foundSrc=false;
-        NodeGui* dst = _arrowSelected->getDest();
+        bool foundSrc = false;
+        NodeGui* nodeHoldingEdge = _arrowSelected->isOutputEdge() ? _arrowSelected->getSource() : _arrowSelected->getDest();
+        assert(nodeHoldingEdge);
         
         std::vector<NodeGui*> nodes = getAllActiveNodes_mt_safe();
         
@@ -537,24 +538,43 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
             QPointF evpt = n->mapFromScene(ep);
             
             if(n->isActive() && n->isNearby(evpt) &&
-                    (n->getNode()->getName()!=_arrowSelected->getDest()->getNode()->getName())){
-                ///can't connect to a viewer
-                if(n->getNode()->pluginID() == "Viewer"){
-                    break;
+                    (n->getNode()->getName() != nodeHoldingEdge->getNode()->getName())){
+               
+                if (!_arrowSelected->isOutputEdge()) {
+                    ///can't connect to a viewer
+                    if(n->getNode()->pluginID() == "Viewer"){
+                        break;
+                    }
+                    _undoStack->setActive();
+                    _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),n));
+                } else {
+                    ///Find the input edge of the node we just released the mouse over,
+                    ///and use that edge to connect to the source of the selected edge.
+                    int preferredInput = n->getNode()->getPreferredInputForConnection();
+                    if (preferredInput != -1) {
+                        const std::map<int,Edge*>& inputEdges = n->getInputsArrows();
+                        std::map<int,Edge*>::const_iterator foundInput = inputEdges.find(preferredInput);
+                        assert(foundInput != inputEdges.end());
+                        _undoStack->setActive();
+                        _undoStack->push(new ConnectCommand(this,foundInput->second,foundInput->second->getSource(),_arrowSelected->getSource()));
+                    
+                    }
                 }
-                _undoStack->setActive();
-                _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),n));
                 foundSrc = true;
                 
                 break;
             }
         }
-        if (!foundSrc) {
+        
+        ///if we disconnected the input edge, use the undo/redo stack.
+        ///Output edges can never be really connected, they're just there
+        ///So the user understands some nodes can have output
+        if (!foundSrc && !_arrowSelected->isOutputEdge()) {
             _undoStack->setActive();
             _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),NULL));
             scene()->update();
         }
-        dst->refreshEdges();
+        nodeHoldingEdge->refreshEdges();
         scene()->update();
     } else if(state == NODE_DRAGGING) {
         if(_nodeSelected) {
@@ -572,7 +592,11 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
     if(_evtState == ARROW_DRAGGING){
         
         QPointF np=_arrowSelected->mapFromScene(newPos);
-        _arrowSelected->updatePosition(np);
+        if (_arrowSelected->isOutputEdge()) {
+            _arrowSelected->dragDest(np);
+        } else {
+            _arrowSelected->dragSource(np);
+        }
 
     }else if(_evtState == NODE_DRAGGING && _nodeSelected){
         
@@ -1072,10 +1096,11 @@ void ConnectCommand::undo() {
     
     if(_oldSrc){
         _graph->getGui()->getApp()->getProject()->connectNodes(_edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode());
+        _oldSrc->refreshOutputEdgeVisibility();
     }
     if(_newSrc){
         _graph->getGui()->getApp()->getProject()->disconnectNodes(_newSrc->getNode(), _edge->getDest()->getNode());
-        
+        _newSrc->refreshOutputEdgeVisibility();
         ///if the node is an inspector, when disconnecting the active input just activate another input instead
         if (inspector) {
             const std::vector<Natron::Node*>& inputs = inspector->getInputs_mt_safe();
@@ -1115,11 +1140,13 @@ void ConnectCommand::redo() {
             if (_oldSrc) {
                 ///we want to connect to nothing, hence disconnect
                 _graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode(),inspector);
+                _oldSrc->refreshOutputEdgeVisibility();
             }
         } else {
             ///disconnect any connection already existing with the _oldSrc
             if (_oldSrc) {
                 _graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode(),inspector);
+                _oldSrc->refreshOutputEdgeVisibility();
             }
             ///also disconnect any current connection between the inspector and the _newSrc
             _graph->getGui()->getApp()->getProject()->disconnectNodes(_newSrc->getNode(),inspector);
@@ -1135,7 +1162,7 @@ void ConnectCommand::redo() {
             
             ///and connect the inspector to the _newSrc
             _graph->getGui()->getApp()->getProject()->connectNodes(_inputNb, _newSrc->getNode(), inspector);
-
+            _newSrc->refreshOutputEdgeVisibility();
         }
        
     } else {
@@ -1145,6 +1172,7 @@ void ConnectCommand::redo() {
                 cout << "Failed to disconnect (input) " << _oldSrc->getNode()->getName()
                      << " to (output) " << _dst->getNode()->getName() << endl;
             }
+            _oldSrc->refreshOutputEdgeVisibility();
         }
         if (_newSrc) {
             if(!_graph->getGui()->getApp()->getProject()->connectNodes(_inputNb, _newSrc->getNode(), _dst->getNode())){
@@ -1152,6 +1180,7 @@ void ConnectCommand::redo() {
                      << " to (output) " << _dst->getNode()->getName() << endl;
 
             }
+            _newSrc->refreshOutputEdgeVisibility();
         }
         
     }

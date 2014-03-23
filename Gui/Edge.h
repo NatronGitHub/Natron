@@ -34,8 +34,12 @@ class Edge: public QGraphicsLineItem
 {
     
 public:
-    Edge(int inputNb,double angle,NodeGui *dest,QGraphicsItem *parent=0);
-    Edge(int inputNb,NodeGui *src, NodeGui *dest,QGraphicsItem *parent=0);
+    
+    ///Used to make an input edge
+    Edge(int inputNb,double angle,NodeGui *dest,QGraphicsItem *parent = 0);
+    
+    ///Used to make an output edge
+    Edge(NodeGui *src,QGraphicsItem *parent = 0);
     
     virtual ~Edge() OVERRIDE;
     
@@ -45,24 +49,22 @@ public:
     
     void setSource(NodeGui* src){
         this->source=src;
-        src ? has_source=true : has_source=false;
         initLine();
-
     }
     
     int getInputNumber() const {return inputNb;}
     
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *options,QWidget *parent = 0);
     
-    void removeSource(){has_source=false; source = NULL; initLine();}
-    
     NodeGui* getDest() const {return dest;}
     
     NodeGui* getSource() const {return source;}
     
-    bool hasSource() const {return has_source;}
+    bool hasSource() const { return this->source != NULL; }
     
-    void updatePosition(const QPointF& src);
+    void dragSource(const QPointF& src);
+    
+    void dragDest(const QPointF& dst);
     
     void initLine();
     
@@ -72,12 +74,14 @@ public:
     
     void turnOffRenderingColor() { _useRenderingColor = false; update(); }
     
+    bool isOutputEdge() const { return _isOutputEdge; }
+    
 private:
 
+    bool _isOutputEdge;
     int inputNb;
     double angle;
     QGraphicsTextItem* label;
-    bool has_source;
     QPolygonF arrowHead;
     NodeGui* dest;
     NodeGui* source;

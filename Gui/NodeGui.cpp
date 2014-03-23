@@ -66,6 +66,7 @@ NodeGui::NodeGui(NodeGraph* dag,
 , _lastPersistentMessageType(0)
 , _stateIndicator(NULL)
 , _inputEdges()
+, _outputEdge(NULL)
 , _panelDisplayed(false)
 , _settingsPanel(0)
 , _selectedGradient(NULL)
@@ -102,7 +103,7 @@ NodeGui::NodeGui(NodeGraph* dag,
     QObject::connect(_internalNode, SIGNAL(inputNIsFinishedRendering(int)), this, SLOT(onInputNRenderingFinished(int)));
 
     QObject::connect(_internalNode, SIGNAL(slavedStateChanged(bool)), this, SLOT(onSlaveStateChanged(bool)));
-
+    QObject::connect(_internalNode, SIGNAL(outputsChanged()),this,SLOT(refreshOutputEdgeVisibility()));
     /*Disabled for now*/
     
     setCacheMode(DeviceCoordinateCache);
@@ -179,6 +180,10 @@ NodeGui::NodeGui(NodeGraph* dag,
     gettimeofday(&_lastInputNRenderStartedSlotCallTime, 0);
     
     onInternalNameChanged(_internalNode->getName().c_str());
+    
+    if (!_internalNode->isOutputNode()) {
+        _outputEdge = new Edge(this,parentItem());
+    }
 }
 
 void NodeGui::beginEditKnobs() {
@@ -291,13 +296,16 @@ void NodeGui::changePosition(double dx,double dy) {
     refreshPosition(p.x() + dx, p.y() + dy);
 }
 
-void NodeGui::refreshEdges(){
+void NodeGui::refreshEdges() {
+    const std::vector<Natron::Node*>& nodeInputs = _internalNode->getInputs_mt_safe();
     for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i!= _inputEdges.end(); ++i){
-        const std::vector<Natron::Node*>& nodeInputs = _internalNode->getInputs_mt_safe();
         assert(i->first < (int)nodeInputs.size() && i->first >= 0);
         NodeGui *nodeInputGui = _graph->getGui()->getApp()->getNodeGui(nodeInputs[i->first]);
         i->second->setSource(nodeInputGui);
         i->second->initLine();
+    }
+    if (_outputEdge) {
+        _outputEdge->initLine();
     }
 }
 
@@ -357,37 +365,55 @@ void NodeGui::computePreviewImage(int time){
         }
     }
 }
-void NodeGui::initializeInputs(){
+void NodeGui::initializeInputs()
+{
+    
+    ///Also refresh the output position
+    if (_outputEdge) {
+        _outputEdge->initLine();
+    }
+    
+    ///The actual numbers of inputs of the internal node
     int inputnb = _internalNode->maximumInputs();
+    
+    ///Delete all un-necessary inputs that may exist (This is true for inspector nodes)
     while ((int)_inputEdges.size() > inputnb) {
         InputEdgesMap::iterator it = _inputEdges.end();
         --it;
         delete it->second;
         _inputEdges.erase(it);
     }
+    
+    ///Make new edge for all non existing inputs
     for(int i = 0; i < inputnb;++i){
         if(_inputEdges.find(i) == _inputEdges.end()){
             Edge* edge = new Edge(i,0.,this,parentItem());
             _inputEdges.insert(make_pair(i,edge));
         }
     }
+    
     int emptyInputsCount = 0;
     for (InputEdgesMap::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
         if(!it->second->hasSource()){
             ++emptyInputsCount;
         }
     }
-    /*if only 1 empty input, display it aside*/
-    if(emptyInputsCount == 1 && _internalNode->maximumInputs() > 1){
-        for (InputEdgesMap::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
-            if(!it->second->hasSource()){
-                it->second->setAngle(pi);
-                it->second->initLine();
-                return;
+    
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(_internalNode);
+    if (isInspector) {
+        ///if the node is an inspector and it has only 1 empty input, display it aside
+        if(emptyInputsCount == 1 && _internalNode->maximumInputs() > 1){
+            for (InputEdgesMap::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
+                if(!it->second->hasSource()){
+                    it->second->setAngle(pi);
+                    it->second->initLine();
+                    return;
+                }
             }
+            
         }
-
     }
+    
     
     double piDividedbyX = (double)(pi/(double)(emptyInputsCount+1));
     double angle = pi-piDividedbyX;
@@ -527,6 +553,9 @@ Edge* NodeGui::hasEdgeNearbyPoint(const QPointF& pt){
             return i->second;
         }
     }
+    if (_outputEdge && _outputEdge->contains(_outputEdge->mapFromScene(pt))) {
+        return _outputEdge;
+    }
     return NULL;
 }
 
@@ -539,6 +568,11 @@ void NodeGui::activate() {
         _graph->scene()->addItem(it->second);
         it->second->setParentItem(parentItem());
         it->second->setActive(true);
+    }
+    if (_outputEdge) {
+        _graph->scene()->addItem(_outputEdge);
+        _outputEdge->setParentItem(parentItem());
+        _outputEdge->setActive(true);
     }
     refreshEdges();
     const std::list<Natron::Node*>& outputs = _internalNode->getOutputs();
@@ -582,7 +616,11 @@ void NodeGui::deactivate() {
         it->second->setActive(false);
         it->second->setSource(NULL);
     }
-   
+    if (_outputEdge) {
+        _graph->scene()->removeItem(_outputEdge);
+        _outputEdge->setActive(false);
+    }
+
     if (_slaveMasterLink) {
         _slaveMasterLink->hide();
     }
@@ -917,4 +955,21 @@ void NodeGui::decloneNode() {
 
 void NodeGui::duplicateNode() {
     _graph->duplicateNode(this);
+}
+
+void NodeGui::refreshOutputEdgeVisibility() {
+    if (_outputEdge) {
+        if (_internalNode->getOutputs().empty()) {
+            if (!_outputEdge->isVisible()) {
+                _outputEdge->setActive(true);
+                _outputEdge->show();
+            }
+            
+        } else {
+            if (_outputEdge->isVisible()) {
+                _outputEdge->setActive(false);
+                _outputEdge->hide();
+            }
+        }
+    }
 }
