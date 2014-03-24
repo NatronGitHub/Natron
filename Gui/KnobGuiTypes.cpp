@@ -1439,25 +1439,44 @@ Color_KnobGui::showColorDialog()
     }
 }
 
+float Clamp(float v, float min, float max)
+{
+    if(v < min) return min;
+    if(v > max) return max;
+    return v;
+}
+
+
 void
 Color_KnobGui::onColorChanged()
 {
-    QColor color;
-    color.setRedF(_rBox->value());
-    color.setGreenF(color.redF());
-    color.setBlueF(color.greenF());
+    //   QColor color;
+//    color.setRedF(Clamp(_rBox->value(),0.f,1.f));
+//    color.setGreenF(color.redF());
+//    color.setBlueF(color.greenF());
     std::vector<Variant> newValues;
-    newValues.push_back(Variant(color.redF()));
-    if (_dimension >= 3) {
-        color.setGreenF(_gBox->value());
-        color.setBlueF(_bBox->value());
-        newValues.push_back( Variant(color.greenF()));
-        newValues.push_back(Variant(color.blueF()));
+    newValues.push_back(Variant(_rBox->value()));
+    if (_dimensionSwitchButton->isChecked()) {
+        if (_dimension >= 3) {
+            //color.setGreenF(Clamp(_gBox->value(),0.f,1.f));
+            //      color.setBlueF(Clamp(_bBox->value(),0.f,1.f));
+            newValues.push_back(Variant(_gBox->value()));
+            newValues.push_back(Variant(_bBox->value()));
+        }
+        if (_dimension >= 4) {
+            //     color.setAlphaF(Clamp(_aBox->value(),0.f,1.f));
+            newValues.push_back(Variant(_aBox->value()));
+        }
+    } else {
+        if (_dimension >= 3) {
+            newValues.push_back(Variant(_rBox->value()));
+            newValues.push_back(Variant(_rBox->value()));
+        }
+        if (_dimension >= 4) {
+            newValues.push_back(Variant(_rBox->value()));
+        }
     }
-    if (_dimension >= 4) {
-        color.setAlphaF(_aBox->value());
-        newValues.push_back(Variant(color.alphaF()));
-    }
+    
     pushUndoCommand(new KnobUndoCommand(this, getKnob()->getValueForEachDimension(), newValues));
 }
 
