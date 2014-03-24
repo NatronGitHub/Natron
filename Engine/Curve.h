@@ -141,9 +141,13 @@ public:
      * @brief An empty curve, held by owner. This is the "normal" constructor.
     **/
     Curve(Knob* owner);
+    
+    Curve(const Curve& other);
 
     ~Curve();
-
+    
+    void operator=(const Curve& other);
+    
     /**
      * @brief Copies all the keyframes held by other, but does not change the pointer to the owner.
     **/

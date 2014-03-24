@@ -133,7 +133,7 @@ public:
     
     void getProjectDefaultFormat(Format *f) const;
     
-    void getProjectFormats(std::vector<Format> *formats) const;
+    void getAdditionalFormats(std::list<Format> *formats) const;
     
     int getProjectViewsCount() const;
     

@@ -206,9 +206,18 @@ Curve::Curve(Knob *owner)
     }
 }
 
+Curve::Curve(const Curve& other)
+: _imp(new CurvePrivate(*other._imp))
+{
+    
+}
 Curve::~Curve()
 {
     clearKeyFrames();
+}
+
+void Curve::operator=(const Curve& other) {
+    *_imp = *other._imp;
 }
 
 void Curve::clearKeyFrames()

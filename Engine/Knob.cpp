@@ -422,35 +422,23 @@ int Knob::getDimension() const
 
 void Knob::restoreSlaveMasterState(const KnobSerialization& serializationObj) {
     ///restore masters
-    const std::vector< std::pair<int,std::string> >& serializedMasters = serializationObj.getMasters();
     
-    for (U32 i = 0 ; i < serializedMasters.size();++i) {
-        ///the serialized master string is as following: effectname.knobdescription
-        
-        std::string splitStr("_SPLIT_");
-        size_t posSplit = serializedMasters[i].second.find(splitStr);
-        if (posSplit == std::string::npos) {
-            Natron::errorDialog("Link slave/master", getDescription() + " failed to restore the following linkage: "
-                                + serializedMasters[i].second + ". Please submit a bug report.");
-            continue;
-        }
-        std::string nodeName = serializedMasters[i].second.substr(0,posSplit);
-        size_t posDescription = posSplit + splitStr.size();
-        std::string knobDesc = serializedMasters[i].second.substr(posDescription);
-        
+    const std::list<ValueSerialization>& serializedValues = serializationObj.getValuesSerialized();
+    int i = 0;
+    for (std::list<ValueSerialization>::const_iterator it = serializedValues.begin();  it != serializedValues.end(); ++it) {
         ///we need to cycle through all the nodes of the project to find the real master
         std::vector<Natron::Node*> allNodes;
         getHolder()->getApp()->getActiveNodes(&allNodes);
         Natron::Node* masterNode = 0;
         for (U32 k = 0; k < allNodes.size(); ++k) {
-            if (allNodes[k]->getName() == nodeName) {
+            if (allNodes[k]->getName() == it->master.masterNodeName) {
                 masterNode = allNodes[k];
                 break;
             }
         }
         if (!masterNode) {
             Natron::errorDialog("Link slave/master", getDescription() + " failed to restore the following linkage: "
-                                + serializedMasters[i].second + ". Please submit a bug report.");
+                                + it->master.masterNodeName + ". Please submit a bug report.");
             continue;
             
         }
@@ -459,9 +447,9 @@ void Knob::restoreSlaveMasterState(const KnobSerialization& serializationObj) {
         const std::vector< boost::shared_ptr<Knob> >& otherKnobs = masterNode->getKnobs();
         bool found = false;
         for (U32 j = 0 ; j < otherKnobs.size();++j) {
-            if (otherKnobs[j]->getName() == knobDesc) {
+            if (otherKnobs[j]->getName() == it->master.masterKnobName) {
                 _imp->_masters[i].second = otherKnobs[j];
-                _imp->_masters[i].first = serializedMasters[i].first;
+                _imp->_masters[i].first = it->master.masterDimension;
                 emit readOnlyChanged(true,_imp->_masters[i].first);
                 found = true;
                 break;
@@ -469,12 +457,12 @@ void Knob::restoreSlaveMasterState(const KnobSerialization& serializationObj) {
         }
         if (!found) {
             Natron::errorDialog("Link slave/master", getDescription() + " failed to restore the following linkage: "
-                                + serializedMasters[i].second + ". Please submit a bug report.");
+                                + it->master.masterKnobName + ". Please submit a bug report.");
             
         }
-    }
-    
 
+        ++i;
+    }
 }
 
 void Knob::load(const KnobSerialization& serializationObj)
@@ -485,24 +473,18 @@ void Knob::load(const KnobSerialization& serializationObj)
         ///bracket value changes
     beginValueChange(Natron::OTHER_REASON);
     
-   
-    
-    const std::vector< boost::shared_ptr<Curve> >& serializedCurves = serializationObj.getCurves();
-    for (U32 i = 0 ; i< serializedCurves.size();++i) {
-        assert(serializedCurves[i]);
-        _imp->_curves[i]->clone(*serializedCurves[i]);
+    const std::list<ValueSerialization>& serializedValues = serializationObj.getValuesSerialized();
+    int i = 0;
+    for (std::list<ValueSerialization>::const_iterator it = serializedValues.begin();  it != serializedValues.end(); ++it) {
+        _imp->_curves[i]->clone(it->curve);
+        setValue(it->value,i,Natron::OTHER_REASON,NULL);
+        ++i;
     }
-    
+        
     const std::string& extraData = serializationObj.getExtraData();
     if (!extraData.empty()) {
         loadExtraData(extraData.c_str());
     }
-    
-    const std::vector<Variant>& serializedValues = serializationObj.getValues();
-    for (U32 i = 0 ; i < serializedValues.size();++i) {
-        setValue(serializedValues[i],i,Natron::OTHER_REASON,NULL);
-    }
-    
     
     ///end bracket
     endValueChange();

@@ -17,45 +17,46 @@
 #include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
 KnobSerialization::KnobSerialization()
-    : _hasAnimation(false)
-    , _values()
-    , _dimension(0)
-    , _curves()
+: _values()
+, _dimension(0)
 {
 
 }
 
 void KnobSerialization::initialize(const Knob* knob) {
     
-    ///All this function is MT-safe
-    
-    _hasAnimation = knob->hasAnimation();
-    _label = knob->getName();
-    _values = knob->getValueForEachDimension_mt_safe();
+    ///this function is MT-safe
+    _name = knob->getName();
     _dimension = knob->getDimension();
-    const std::vector<boost::shared_ptr<Curve> >& curves = knob->getCurves();
-    for(U32 i = 0; i < curves.size();++i){
-            if(curves[i]){
-                _curves.push_back(curves[i]);
-            }
-    }
 
+    const std::vector<Variant>& values = knob->getValueForEachDimension_mt_safe();
+    const std::vector<boost::shared_ptr<Curve> >& curves = knob->getCurves();
     std::vector<std::pair<int,boost::shared_ptr<Knob> > > masters = knob->getMasters_mt_safe();
-    for(U32 i = 0; i < masters.size();++i){
-        if(masters[i].second) {
+    
+    assert(values.size() == curves.size() && values.size() == masters.size() && (int)values.size() == _dimension);
+    
+    for (U32 i = 0; i < values.size(); ++i) {
+        ValueSerialization vs;
+        vs.value = values[i];
+        vs.hasAnimation = curves[i]->isAnimated();
+        vs.curve = Curve(*curves[i]);
+        if (masters[i].second) {
+            vs.hasMaster = true;
+            MasterSerialization master;
+            master.masterDimension = masters[i].first;
             Natron::EffectInstance* effect= dynamic_cast<Natron::EffectInstance*>(masters[i].second->getHolder());
-            
             ///Master/slaves only works for knobs that belong to an effect.
             ///That means all the knobs used for the settings and the project should NEVER EVER
             ///be slaved.
             assert(effect);
             
-            std::string knobName = effect->getNode()->getName_mt_safe();
-            knobName += "_SPLIT_";
-            knobName += masters[i].second->getName();
-            _masters.push_back(std::make_pair(masters[i].first,knobName));
+            master.masterNodeName = effect->getNode()->getName_mt_safe();
+            master.masterKnobName = masters[i].second->getName();
+            vs.master = master;
+        } else {
+            vs.hasMaster = false;
         }
+        _values.push_back(vs);
     }
-
     _extraData = knob->saveExtraData().toStdString();
 }

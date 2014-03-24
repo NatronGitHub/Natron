@@ -30,8 +30,8 @@ void NodeSerialization::initialize(Natron::Node* n){
     
     for (U32 i  = 0; i < knobs.size(); ++i) {
         if(knobs[i]->getIsPersistant()){
-            boost::shared_ptr<KnobSerialization> newKnobSer(new KnobSerialization);
-            knobs[i]->save(newKnobSer.get());
+            KnobSerialization newKnobSer;
+            knobs[i]->save(&newKnobSer);
             _knobsValues.push_back(newKnobSer);
         }
     }

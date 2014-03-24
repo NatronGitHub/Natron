@@ -283,11 +283,11 @@ void Node::loadKnobs(const NodeSerialization& serialization) {
     for (U32 j = 0; j < nodeKnobs.size();++j) {
         
         ///try to find a serialized value for this knob
-        for (U32 k = 0; k < knobsValues.size(); ++k) {
-            if(knobsValues[k]->getLabel() == nodeKnobs[j]->getName()){
+        for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it!=knobsValues.end();++it) {
+            if(it->getName() == nodeKnobs[j]->getName()){
                 // don't load the value if the Knob is not persistant! (it is just the default value in this case)
                 if (nodeKnobs[j]->getIsPersistant()) {
-                    nodeKnobs[j]->load(*knobsValues[k]);
+                    nodeKnobs[j]->load(*it);
                 }
                 break;
             }
@@ -306,11 +306,11 @@ void Node::restoreKnobsLinks(const NodeSerialization& serialization) {
     const NodeSerialization::KnobValues& knobsValues = serialization.getKnobsValues();
     for (U32 j = 0; j < nodeKnobs.size();++j) {
         ///try to find a serialized value for this knob
-        for (U32 k = 0; k < knobsValues.size(); ++k) {
-            if(knobsValues[k]->getLabel() == nodeKnobs[j]->getDescription()){
+        for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it!=knobsValues.end();++it) {
+            if(it->getName() == nodeKnobs[j]->getDescription()){
                 // don't load the value if the Knob is not persistant! (it is just the default value in this case)
                 if (nodeKnobs[j]->getIsPersistant()) {
-                    nodeKnobs[j]->restoreSlaveMasterState(*knobsValues[k]);
+                    nodeKnobs[j]->restoreSlaveMasterState(*it);
                 }
                 break;
             }

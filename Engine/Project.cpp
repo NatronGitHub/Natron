@@ -13,6 +13,7 @@
 #include <fstream>
 #include <QtConcurrentRun>
 #include <QCoreApplication>
+#include <algorithm>
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
@@ -423,7 +424,7 @@ void Project::initializeKnobs(){
             _imp->formatKnob->setDefaultValue<int>(i);
         }
         entries.push_back(formatStr.toStdString());
-        _imp->availableFormats.push_back(*f);
+        _imp->builtinFormats.push_back(*f);
     }
     _imp->formatKnob->turnOffNewLine();
 
@@ -463,9 +464,8 @@ void Project::getProjectDefaultFormat(Format *f) const
     assert(f);
     QMutexLocker l(&_imp->formatMutex);
     int index = _imp->formatKnob->getActiveEntry();
-    const Format& format = _imp->availableFormats[index];
-    assert(!format.isNull());
-    *f = format;
+    bool found = _imp->findFormat(index, f);
+    assert(found);
 }
 
 ///only called on the main thread
@@ -547,25 +547,33 @@ int Project::tryAddProjectFormat(const Format& f){
     if(f.left() >= f.right() || f.bottom() >= f.top()){
         return -1;
     }
-    for (U32 i = 0; i < _imp->availableFormats.size(); ++i) {
-        if(f == _imp->availableFormats[i]){
-            return i;
+    
+    std::list<Format>::iterator foundFormat = std::find(_imp->builtinFormats.begin(), _imp->builtinFormats.end(), f);
+    if (foundFormat != _imp->builtinFormats.end()) {
+        return std::distance(_imp->builtinFormats.begin(),foundFormat);
+    } else {
+        foundFormat = std::find(_imp->additionalFormats.begin(), _imp->additionalFormats.end(), f);
+        if (foundFormat != _imp->additionalFormats.end()) {
+            return std::distance(_imp->additionalFormats.begin(),foundFormat);
         }
     }
-    std::vector<Format> currentFormats = _imp->availableFormats;
-    _imp->availableFormats.clear();
+ 
     std::vector<std::string> entries;
-    for (U32 i = 0; i < currentFormats.size(); ++i) {
-        const Format& f = currentFormats[i];
+    for (std::list<Format>::iterator it = _imp->builtinFormats.begin(); it!=_imp->builtinFormats.end();++it) {
+        const Format& f = *it;
         QString formatStr = generateStringFromFormat(f);
         entries.push_back(formatStr.toStdString());
-        _imp->availableFormats.push_back(f);
+    }
+    for (std::list<Format>::iterator it = _imp->additionalFormats.begin(); it!=_imp->additionalFormats.end();++it) {
+        const Format& f = *it;
+        QString formatStr = generateStringFromFormat(f);
+        entries.push_back(formatStr.toStdString());
     }
     QString formatStr = generateStringFromFormat(f);
     entries.push_back(formatStr.toStdString());
-    _imp->availableFormats.push_back(f);
+    _imp->additionalFormats.push_back(f);
     _imp->formatKnob->populate(entries);
-    return _imp->availableFormats.size() - 1;
+    return _imp->additionalFormats.size() - 1;
 }
 
 void Project::setProjectDefaultFormat(const Format& f) {
@@ -635,11 +643,11 @@ void Project::toggleAutoPreview() {
 boost::shared_ptr<TimeLine> Project::getTimeLine() const  {return _imp->timeline;}
 
 void
-Project::getProjectFormats(std::vector<Format> *formats) const
+Project::getAdditionalFormats(std::list<Format> *formats) const
 {
     assert(formats);
     QMutexLocker l(&_imp->formatMutex);
-    *formats = _imp->availableFormats;
+    *formats = _imp->additionalFormats;
 }
 
 
@@ -855,14 +863,10 @@ void Project::onKnobValueChanged(Knob* knob,Natron::ValueChangedReason /*reason*
         getApp()->setupViewersForViews(viewsCount);
     } else if(knob == _imp->formatKnob.get()) {
         int index = _imp->formatKnob->getActiveEntry();
-        if(index < (int)_imp->availableFormats.size()){
-            const Format& f = _imp->availableFormats[index];
-            for(U32 i = 0 ; i < _imp->currentNodes.size() ; ++i){
-                if (_imp->currentNodes[i]->pluginID() == "Viewer") {
-                    emit formatChanged(f);
-                }
-
-            }
+        Format frmt;
+        bool found = _imp->findFormat(index, &frmt);
+        if (found) {
+            emit formatChanged(frmt);
         }
     } else if(knob == _imp->addFormatKnob.get()) {
         emit mustCreateFormat();

@@ -21,6 +21,7 @@ CLANG_DIAG_OFF(unused-parameter)
 CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/serialization/list.hpp>
 #include <boost/serialization/version.hpp>
 
 #include "Engine/KnobSerialization.h"
@@ -33,7 +34,7 @@ class NodeSerialization {
     
 public:
     
-    typedef std::vector< boost::shared_ptr<KnobSerialization> > KnobValues;
+    typedef std::list< KnobSerialization > KnobValues;
     
     NodeSerialization() : _isNull(true) {}
     

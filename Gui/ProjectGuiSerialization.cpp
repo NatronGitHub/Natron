@@ -35,8 +35,8 @@ void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) {
      std::vector<NodeGui*> activeNodes = projectGui->getVisibleNodes();
      _serializedNodes.clear();
      for (U32 i = 0; i < activeNodes.size(); ++i) {
-         boost::shared_ptr<NodeGuiSerialization> state(new NodeGuiSerialization);
-         activeNodes[i]->serialize(state.get());
+         NodeGuiSerialization state;
+         activeNodes[i]->serialize(&state);
          _serializedNodes.push_back(state);
          
          if (activeNodes[i]->getNode()->pluginID() == "Viewer") {
@@ -128,7 +128,7 @@ void ProjectGuiSerialization::createParenting(std::map<std::string,PaneLayout>::
         //this is a vertical split, find the parent widget and insert this widget as child
         
         ///The goal of the next lines is to erase the split tag string from the name of the tab widget
-        /// to find out the name of the tab widget from whom this tab was sprout
+        /// to find out the name of the tab widget from whom this tab was originated
         nameCpy = nameCpy.remove(index, TabWidget::splitVerticallyTag.size());
         //we now have the name of the parent
         std::map<std::string,PaneLayout>::iterator foundParent = _layout.find(nameCpy.toStdString());

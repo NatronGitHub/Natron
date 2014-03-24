@@ -18,7 +18,7 @@ CLANG_DIAG_OFF(unused-parameter)
 #include <boost/archive/xml_iarchive.hpp>
 CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
-#include <boost/serialization/vector.hpp>
+#include <boost/serialization/list.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/scoped_ptr.hpp>
@@ -32,9 +32,9 @@ CLANG_DIAG_ON(unused-parameter)
 
 class ProjectSerialization{
     
-    std::vector< boost::shared_ptr<NodeSerialization> > _serializedNodes;
-    std::vector<Format> _availableFormats;
-    std::vector< boost::shared_ptr<KnobSerialization> > _projectKnobs;
+    std::list< NodeSerialization > _serializedNodes;
+    std::list<Format> _additionalFormats;
+    std::list< KnobSerialization > _projectKnobs;
     SequenceTime _timelineLeft,_timelineRight,_timelineCurrent;
     qint64 _creationDate;
     std::map<std::string,int> _nodeCounters;
@@ -53,11 +53,11 @@ public:
         
     SequenceTime getRightBoundTime() const { return _timelineRight; }
     
-    const std::vector< boost::shared_ptr<KnobSerialization> >& getProjectKnobsValues() const { return _projectKnobs; }
+    const std::list< KnobSerialization >& getProjectKnobsValues() const { return _projectKnobs; }
     
-    const std::vector<Format>& getProjectFormats() const { return _availableFormats; }
+    const std::list<Format>& getAdditionalFormats() const { return _additionalFormats; }
     
-    const std::vector< boost::shared_ptr<NodeSerialization> >& getNodesSerialization() const { return _serializedNodes; }
+    const std::list< NodeSerialization >& getNodesSerialization() const { return _serializedNodes; }
     
     qint64 getCreationDate() const { return _creationDate; }
     
@@ -70,7 +70,7 @@ public:
         (void)version;
         ar & boost::serialization::make_nvp("Nodes",_serializedNodes);
         ar & boost::serialization::make_nvp("ProjectKnobs",_projectKnobs);
-        ar & boost::serialization::make_nvp("All_formats",_availableFormats);
+        ar & boost::serialization::make_nvp("AdditionalFormats",_additionalFormats);
         ar & boost::serialization::make_nvp("Timeline_current_time",_timelineCurrent);
         ar & boost::serialization::make_nvp("Timeline_left_bound",_timelineLeft);
         ar & boost::serialization::make_nvp("Timeline_right_bound",_timelineRight);
