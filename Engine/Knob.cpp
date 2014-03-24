@@ -35,6 +35,28 @@
 using namespace Natron;
 using std::make_pair; using std::pair;
 
+/***************** KNOBI**********************/
+
+bool KnobI::slaveTo(int dimension,const boost::shared_ptr<Knob>& other,int otherDimension)
+{
+    slaveTo(dimension, other, otherDimension, Natron::PLUGIN_EDITED);
+}
+
+void KnobI::onKnobSlavedTo(int dimension,const boost::shared_ptr<Knob>&  other,int otherDimension)
+{
+    slaveTo(dimension, other, otherDimension, Natron::USER_EDITED);
+}
+
+void KnobI::unSlave(int dimension)
+{
+    unSlave(dimension, Natron::PLUGIN_EDITED);
+}
+
+void KnobI::onKnobUnSlaved(int dimension)
+{
+    unSlave(dimension, Natron::USER_EDITED);
+}
+
 
 /***********************************KNOB BASE******************************************/
 typedef std::vector< std::pair< int,boost::shared_ptr<Knob> > > MastersMap;
@@ -121,7 +143,10 @@ Knob::Knob(KnobHolder* holder,const std::string& description,int dimension)
 
 Knob::~Knob()
 {
-    remove();
+    emit deleted();
+    if (_imp->_holder) {
+        _imp->_holder->removeKnob(this);
+    }
 }
 
 void Knob::populate() {
@@ -131,14 +156,6 @@ void Knob::populate() {
         _imp->_defaultValues[i] = Variant();
         _imp->_curves[i] = boost::shared_ptr<Curve>(new Curve(this));
         _imp->_animationLevel[i] = Natron::NO_ANIMATION;
-    }
-}
-
-void Knob::remove()
-{
-    emit deleted(this);
-    if (_imp->_holder) {
-         _imp->_holder->removeKnob(this);
     }
 }
 

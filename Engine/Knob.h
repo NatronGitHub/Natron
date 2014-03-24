@@ -25,6 +25,385 @@ class AppInstance;
 class KnobSerialization;
 /******************************KNOB_BASE**************************************/
 
+class KnobI
+{
+public:
+    
+    KnobI(){}
+    
+    virtual ~KnobI(){}
+    
+    
+    /**
+     * @brief Do not call this. It is called right away after the constructor by the factory
+     * to initialize curves and values. This is separated from the constructor as we need RTTI
+     * for Curve.
+     **/
+    virtual void populate() = 0;
+    
+    /**
+     * @brief Must return the type name of the knob. This name will be used by the KnobFactory
+     * to create an instance of this knob.
+     **/
+    virtual const std::string& typeName() const = 0;
+    
+    /**
+     * @brief Must return true if this knob can animate (i.e: if we can set different values depending on the time)
+     * Some parameters cannot animate, for example a file selector.
+     **/
+    virtual bool canAnimate() const = 0;
+    
+    /**
+     * @brief If the parameter is multidimensional, this is the label thats the that will be displayed
+     * for a dimension.
+     **/
+    virtual std::string getDimensionName(int dimension) const = 0;
+    
+    /**
+     * @brief Used to bracket calls to setValue. This indicates than a series of calls will be made, and
+     * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
+     * to render.
+     **/
+    virtual void beginValueChange(Natron::ValueChangedReason reason) = 0;
+    
+    /**
+     * @brief Called by setValue to indicate that an evaluation is needed. This could be private.
+     **/
+    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason) = 0;
+    
+    /**
+     * @brief Used to bracket calls to setValue. This indicates than a series of calls will be made, and
+     * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
+     * to render.
+     **/
+    virtual void endValueChange() = 0;
+    
+    /**
+     * @brief Called when a keyframe/derivative is modified, indicating that the curve has changed and we must
+     * evaluate any change (i.e: force a new render)
+     **/
+    virtual void evaluateAnimationChange() = 0;
+    
+    
+    /**
+     * @brief Called on project save.
+     **/
+    virtual void save(KnobSerialization* serializationObj) const = 0;
+    
+    /**
+     * @brief Called on project loading.
+     **/
+    virtual void load(const KnobSerialization& serializationObj) = 0;
+    
+    /**
+     * @brief This cannot be done in load since we need all nodes in the project to be loaded
+     * in order to do this.
+     **/
+    virtual void restoreSlaveMasterState(const KnobSerialization& serializationObj) = 0;
+
+    /**
+     * @brief Removes the keyframe at the given time and dimension if it matches any.
+     **/
+    virtual void deleteValueAtTime(int time,int dimension) = 0;
+    
+    /**
+     * @brief Removes all the keyframes in the given dimension.
+     **/
+    virtual void removeAnimation(int dimension) = 0;
+    
+    /**
+     * @brief Compute the derivative at time as a double
+     **/
+    virtual double getDerivativeAtTime(double time, int dimension = 0) const = 0;
+    
+    /**
+     * @brief Compute the integral of dimension from time1 to time2 as a double
+     **/
+    virtual double getIntegrateFromTimeToTime(double time1, double time2, int dimension = 0) const = 0;
+    
+    /**
+     * @brief Places in time the keyframe time at the given index.
+     * If it exists the function returns true, false otherwise.
+     **/
+    virtual bool getKeyFrameTime(int index,int dimension,double* time) const = 0;
+    
+    /**
+     * @brief Convenience function, does the same as getKeyFrameWithIndex but returns the last
+     * keyframe.
+     **/
+    virtual bool getLastKeyFrameTime(int dimension,double* time) const = 0;
+    
+    /**
+     * @brief Convenience function, does the same as getKeyFrameWithIndex but returns the first
+     * keyframe.
+     **/
+    virtual bool getFirstKeyFrameTime(int dimension,double* time) const = 0;
+    
+    /**
+     * @brief Returns the count of keyframes in the given dimension.
+     **/
+    virtual int getKeyFramesCount(int dimension) const = 0;
+    
+    /**
+     * @brief Returns the nearest keyframe time if it was found.
+     * Returns true if it succeeded, false otherwise.
+     **/
+    virtual bool getNearestKeyFrameTime(int dimension,double time,double* nearestTime) const = 0;
+    
+    /**
+     * @brief Returns the keyframe index if there's any keyframe in the curve
+     * at the given dimension and the given time. -1 otherwise.
+     **/
+    virtual int getKeyFrameIndex(int dimension, double time) const = 0;
+    
+    /**
+     * @brief Returns a pointer to the curve in the given dimension. 
+     * It cannot be a null pointer.
+     **/
+    virtual boost::shared_ptr<Curve> getCurve(int dimension = 0) const = 0;
+    
+    /**
+     * @brief Returns true if the dimension is animated with keyframes.
+     **/
+    virtual bool isAnimated(int dimension) const = 0;
+    
+    /**
+     * @brief Returns true if at least 1 dimension is animated. MT-Safe
+     **/
+    virtual bool hasAnimation() const = 0;
+    
+    /**
+     * @brief Returns a const ref to the curves held by this knob. This is MT-safe as they're
+     * never deleted (except on program exit).
+     **/
+    virtual const std::vector< boost::shared_ptr<Curve>  >& getCurves() const = 0;
+    
+    /**
+     * @brief Activates or deactivates the animation for this parameter. On the GUI side that means
+     * the user can never interact with the animation curves nor can he/she set any keyframe.
+     **/
+    virtual void setAnimationEnabled(bool val) = 0 ;
+    
+    /**
+     * @brief Returns true if the animation is enabled for this knob. A return value of
+     * true doesn't necessarily means that the knob is animated at all.
+     **/
+    virtual bool isAnimationEnabled() const = 0;
+    
+    /**
+     * @brief Get the knob description, that is the label next to the knob on the user interface.
+     * This function is MT-safe as the description NEVER changes throughout the program.
+     **/
+    virtual const std::string& getDescription() const = 0;
+    
+    /**
+     * @brief Returns a pointer to the holder owning the knob.
+     **/
+    virtual KnobHolder* getHolder() const = 0;
+    
+    /**
+     * @brief Called by a render task to copy all the knobs values to another separate instance
+     * to decorellate the values modified by the gui (i.e the user) and the values used to render.
+     * This ensures thread-safety.
+     **/
+    virtual void cloneValue(const Knob& other) = 0;
+    
+    /**
+     * @brief Get the knob dimension. MT-safe as it is static and never changes.
+     **/
+    virtual int getDimension() const = 0;
+    
+    /**
+     * @brief Any GUI representing this parameter should represent the next parameter on the same line as this parameter.
+     **/
+    virtual void turnOffNewLine() = 0;
+    
+    /**
+     * @brief Any GUI representing this parameter should represent the next parameter on the same line as this parameter.
+     **/
+    virtual bool isNewLineTurnedOff() const = 0;
+    
+    /**
+     * @brief GUI-related
+     **/
+    virtual void setSpacingBetweenItems(int spacing) = 0;
+    
+    /**
+     * @brief Enables/disables user interaction with the given dimension.
+     **/
+    virtual void setEnabled(int dimension,bool b) = 0;
+    
+    /**
+     * @brief Is the dimension enabled ?
+     **/
+    virtual bool isEnabled(int dimension) const = 0;
+    
+    /**
+     * @brief Convenience function, same as calling setEnabled(int,bool) for all dimensions.
+     **/
+    virtual void setAllDimensionsEnabled(bool b) = 0;
+    
+    /**
+     * @brief Set the knob visible/invisible on the GUI representing it.
+     **/
+    virtual void setSecret(bool b) = 0;
+    
+    /**
+     * @brief Is the knob visible to the user ?
+     **/
+    virtual bool getIsSecret() const = 0;
+    
+    /**
+     * @brief Call this to change the knob name. The name is not the text label displayed on
+     * the GUI but what Natron uses internally to identify knobs from each other. By default the
+     * name is the same as the description(i.e: the text label).
+     */
+    virtual void setName(const std::string& name) = 0;
+    
+    /**
+     * @brief Returns the knob name. By default the
+     * name is the same as the description(i.e: the text label).
+     */
+    virtual std::string getName() const = 0;
+    
+    /**
+     * @brief Set the given knob as the parent of this knob. 
+     * @param knob It must be a tab or group knob.
+     */
+    virtual void setParentKnob(boost::shared_ptr<KnobI> knob) = 0;
+    
+    /**
+     * @brief Returns a pointer to the parent knob if any.
+     */
+    virtual boost::shared_ptr<KnobI> getParentKnob() const = 0;
+    
+    /**
+     * @brief Returns the hierarchy level of this knob.
+     * By default it is 0, however a knob with a parent will
+     * have a hierarchy level of 1, etc...
+     **/
+    virtual int determineHierarchySize() const = 0;
+
+    /**
+     * @brief If a knob is evaluating on change, that means
+     * everytime a value changes, the knob will call the 
+     * evaluate function on the KnobHolder holding it.
+     * By default this is set to true.
+     **/
+    virtual void setEvaluateOnChange(bool b) = 0;
+    
+    /**
+     * @brief Does the knob evaluates on change ?
+     **/
+    virtual bool getEvaluateOnChange() const = 0;
+
+    
+    /**
+     * @brief Should the knob be saved in the project ? This is MT-safe
+     * because it never changes throughout the object's life-time.
+     **/
+    virtual bool getIsPersistant() const = 0;
+    
+    /**
+     * @brief Should the knob be saved in the project ? 
+     * By default this is set to true.
+     **/
+    virtual void setIsPersistant(bool b) = 0;
+    
+    /**
+     * @brief If set to false, the knob will not be able to use undo/redo actions.
+     * By default this is set to true.
+     **/
+    virtual void setCanUndo(bool val) = 0;
+    
+    /**
+     * @brief Can the knob use undo/redo actions ?
+     **/
+    virtual bool getCanUndo() const = 0;
+    
+    /**
+     * @brief Set the text displayed by the tooltip when
+     * the user hovers the knob with the mouse.
+     **/
+    virtual void setHintToolTip(const std::string& hint) = 0;
+    
+    /**
+     * @brief Get the tooltip text.
+     **/
+    virtual const std::string& getHintToolTip() const = 0;
+    
+protected:
+    
+    /**
+     * @brief Slaves the value for the given dimension to the curve
+     * at the same dimension for the knob 'other'.
+     * In case of success, this function returns true, otherwise false.
+     **/
+    virtual bool slaveTo(int dimension,const boost::shared_ptr<Knob>&  other,int otherDimension,Natron::ValueChangedReason reason) = 0;
+    
+    /**
+     * @brief Unslaves a previously slaved dimension. The implementation should assert that
+     * the dimension was really slaved.
+     **/
+    virtual void unSlave(int dimension,Natron::ValueChangedReason reason) = 0;
+    
+public:
+    
+    /**
+     * @brief Calls slaveTo with a value changed reason of Natron::PLUGIN_EDITED.
+     **/
+    bool slaveTo(int dimension,const boost::shared_ptr<Knob>& other,int otherDimension);
+    
+    /**
+     * @brief Calls slaveTo with a value changed reason of Natron::USER_EDITED.
+     **/
+    void onKnobSlavedTo(int dimension,const boost::shared_ptr<Knob>&  other,int otherDimension);
+    
+    
+    /**
+     * @brief Calls unSlave with a value changed reason of Natron::PLUGIN_EDITED.
+     **/
+    void unSlave(int dimension);
+    
+    /**
+     * @brief Calls unSlave with a value changed reason of Natron::USER_EDITED.
+     **/
+    void onKnobUnSlaved(int dimension);
+    
+    /**
+     * @brief Returns a valid pointer to a knob if the value at
+     * the given dimension is slaved.
+     **/
+    virtual std::pair<int,boost::shared_ptr<Knob> > getMaster(int dimension) const = 0;
+    
+    /**
+     * @brief Returns true if the value at the given dimension is slave to another parameter
+     **/
+    virtual bool isSlave(int dimension) const = 0;
+    
+    /**
+     * @brief Same as getMaster but for all dimensions.
+     **/
+    virtual std::vector<std::pair<int,boost::shared_ptr<Knob> > > getMasters_mt_safe() const = 0;
+    
+    /**
+     * @brief Called by the GUI whenever the animation level changes (due to a time change
+     * or a value changed).
+     **/
+    virtual void setAnimationLevel(int dimension,Natron::AnimationLevel level) = 0;
+    
+    /**
+     * @brief Get the current animation level.
+     **/
+    virtual Natron::AnimationLevel getAnimationLevel(int dimension) const = 0;
+    
+    /**
+     * @brief Restores the default value
+     **/
+    virtual void resetToDefaultValue(int dimension) = 0;
+
+};
+
 class Knob : public QObject
 {
     Q_OBJECT
@@ -49,11 +428,6 @@ public:
      * for Curve.
      **/
     void populate();
-    
-    /**
-     * @brief To be called if you want to remove the knob prematurely from the gui.
-     **/
-    void remove();
 
     /**
      * @brief Must return the type name of the knob. This name will be used by the KnobFactory
@@ -414,7 +788,7 @@ signals:
     ///openfx params whether it is auto-keying or not.
     void animationLevelChanged(int);
     
-    void deleted(Knob*);
+    void deleted();
     
     /*Emitted when the value is changed internally by a call to setValue*/
     void valueChanged(int dimension);
@@ -505,8 +879,6 @@ private:
     struct KnobPrivate;
     boost::scoped_ptr<KnobPrivate> _imp;
 };
-
-Q_DECLARE_METATYPE(Knob*)
 
 /**
  * @brief A Knob holder is a class that stores Knobs and interact with them in some way.

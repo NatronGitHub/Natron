@@ -336,6 +336,7 @@ void Node::setKnobsAge(U64 newAge)  {
 
 void Node::incrementKnobsAge() {
     
+    U32 newAge;
     {
         QWriteLocker l(&_imp->knobsAgeMutex);
         ++_imp->knobsAge;
@@ -346,8 +347,9 @@ void Node::incrementKnobsAge() {
             appPTR->clearAllCaches();
             _imp->knobsAge = 0;
         }
-        emit knobsAgeChanged(_imp->knobsAge);
+        newAge = _imp->knobsAge;
     }
+    emit knobsAgeChanged(newAge);
     computeHash();
 }
 
