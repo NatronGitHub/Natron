@@ -426,41 +426,44 @@ void Knob::restoreSlaveMasterState(const KnobSerialization& serializationObj) {
     const std::list<ValueSerialization>& serializedValues = serializationObj.getValuesSerialized();
     int i = 0;
     for (std::list<ValueSerialization>::const_iterator it = serializedValues.begin();  it != serializedValues.end(); ++it) {
-        ///we need to cycle through all the nodes of the project to find the real master
-        std::vector<Natron::Node*> allNodes;
-        getHolder()->getApp()->getActiveNodes(&allNodes);
-        Natron::Node* masterNode = 0;
-        for (U32 k = 0; k < allNodes.size(); ++k) {
-            if (allNodes[k]->getName() == it->master.masterNodeName) {
-                masterNode = allNodes[k];
-                break;
+        if (it->hasMaster) {
+            ///we need to cycle through all the nodes of the project to find the real master
+            std::vector<Natron::Node*> allNodes;
+            getHolder()->getApp()->getActiveNodes(&allNodes);
+            Natron::Node* masterNode = 0;
+            for (U32 k = 0; k < allNodes.size(); ++k) {
+                if (allNodes[k]->getName() == it->master.masterNodeName) {
+                    masterNode = allNodes[k];
+                    break;
+                }
             }
-        }
-        if (!masterNode) {
-            Natron::errorDialog("Link slave/master", getDescription() + " failed to restore the following linkage: "
-                                + it->master.masterNodeName + ". Please submit a bug report.");
-            continue;
-            
-        }
-        
-        ///now that we have the master node, find the corresponding knob
-        const std::vector< boost::shared_ptr<Knob> >& otherKnobs = masterNode->getKnobs();
-        bool found = false;
-        for (U32 j = 0 ; j < otherKnobs.size();++j) {
-            if (otherKnobs[j]->getName() == it->master.masterKnobName) {
-                _imp->_masters[i].second = otherKnobs[j];
-                _imp->_masters[i].first = it->master.masterDimension;
-                emit readOnlyChanged(true,_imp->_masters[i].first);
-                found = true;
-                break;
+            if (!masterNode) {
+                Natron::errorDialog("Link slave/master", getDescription() + " failed to restore the following linkage: "
+                                    + it->master.masterNodeName + ". Please submit a bug report.");
+                continue;
+                
             }
-        }
-        if (!found) {
-            Natron::errorDialog("Link slave/master", getDescription() + " failed to restore the following linkage: "
-                                + it->master.masterKnobName + ". Please submit a bug report.");
             
-        }
+            ///now that we have the master node, find the corresponding knob
+            const std::vector< boost::shared_ptr<Knob> >& otherKnobs = masterNode->getKnobs();
+            bool found = false;
+            for (U32 j = 0 ; j < otherKnobs.size();++j) {
+                if (otherKnobs[j]->getName() == it->master.masterKnobName) {
+                    _imp->_masters[i].second = otherKnobs[j];
+                    _imp->_masters[i].first = it->master.masterDimension;
+                    emit readOnlyChanged(true,_imp->_masters[i].first);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                Natron::errorDialog("Link slave/master", getDescription() + " failed to restore the following linkage: "
+                                    + it->master.masterKnobName + ". Please submit a bug report.");
+                
+            }
+            
 
+        }
         ++i;
     }
 }

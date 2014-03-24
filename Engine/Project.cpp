@@ -573,7 +573,7 @@ int Project::tryAddProjectFormat(const Format& f){
     entries.push_back(formatStr.toStdString());
     _imp->additionalFormats.push_back(f);
     _imp->formatKnob->populate(entries);
-    return _imp->additionalFormats.size() - 1;
+    return (_imp->builtinFormats.size() + _imp->additionalFormats.size()) - 1;
 }
 
 void Project::setProjectDefaultFormat(const Format& f) {

@@ -67,6 +67,12 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
     /*we must restore the entries in the combobox before restoring the value*/
     std::vector<std::string> entries;
+    
+    for (std::list<Format>::const_iterator it = builtinFormats.begin(); it!=builtinFormats.end();++it) {
+        QString formatStr = Natron::generateStringFromFormat(*it);
+        entries.push_back(formatStr.toStdString());
+    }
+
     const std::list<Format>& objAdditionalFormats = obj.getAdditionalFormats();
     for (std::list<Format>::const_iterator it = objAdditionalFormats.begin(); it!=objAdditionalFormats.end();++it) {
         QString formatStr = Natron::generateStringFromFormat(*it);
