@@ -234,7 +234,8 @@ public:
     
     void deselectAllNodes() const;
     
-    void onProcessHandlerStarter(const QString& sequenceName,int firstFrame,int lastFrame,ProcessHandler* process);
+    void onProcessHandlerStarted(const QString& sequenceName,int firstFrame,int lastFrame,
+                                 ProcessHandler* process);
     
     void onWriterRenderStarted(const QString& sequenceName,int firstFrame,int lastFrame,Natron::OutputEffectInstance* writer);
     

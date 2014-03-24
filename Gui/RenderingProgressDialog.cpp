@@ -21,6 +21,7 @@
 #include <QString>
 
 #include "Gui/Button.h"
+#include "Gui/GuiApplicationManager.h"
 
 struct RenderingProgressDialogPrivate {
     QVBoxLayout* _mainLayout;
@@ -72,7 +73,33 @@ void RenderingProgressDialog::onCurrentFrameProgress(int progress){
 }
 
 void RenderingProgressDialog::onProcessCanceled() {
-    hide();
+    if (isVisible()) {
+        hide();
+        Natron::informationDialog("Render", "Render aborted.");
+    }
+    
+}
+
+void RenderingProgressDialog::onProcessFinished(int retCode) {
+    if (isVisible()) {
+        hide();
+        if (retCode == 0) {
+            Natron::informationDialog("Render", "Render finished.");
+        } else if (retCode == 1) {
+            Natron::errorDialog("Render", "The render ended with a return code of 1, a problem occured.");
+        } else {
+            Natron::errorDialog("Render","The render crashed.");
+        }
+    }
+   
+}
+
+void RenderingProgressDialog::onVideoEngineStopped(int retCode) {
+    if (retCode == 1) {
+        onProcessCanceled();
+    } else {
+        onProcessFinished(0);
+    }
 }
 
 RenderingProgressDialog::RenderingProgressDialog(const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent)

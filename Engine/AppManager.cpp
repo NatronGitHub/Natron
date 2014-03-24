@@ -508,6 +508,9 @@ void AppManager::abortAnyProcessing() {
 
 bool AppManager::writeToOutputPipe(const QString& longMessage,const QString& shortMessage) {
     if(!_imp->_backgroundIPC) {
+        if (_imp->_appType == APP_BACKGROUND_AUTO_RUN) {
+            qDebug() << "Pipe between Gui process and render process is broken, progress report is not functionnal.";
+        }
         qDebug() << longMessage;
         return false;
     }

@@ -235,9 +235,10 @@ signals:
     void engineStarted(bool forward,int frameCount);
     
     /**
-     *@brief emitted when the engine finished rendering for a sequence (which can be only a sequence of 1 frame).
+     *@brief emitted when the engine finished rendering and is going to idle.
+     *@param returnCode Set to 1 if the engine stopped because it was aborted, 0 otherwise.
      **/
-    void engineStopped();
+    void engineStopped(int returnCode);
     
     /**
      *@brief emitted when progress is reported for the current frame.

@@ -2029,14 +2029,17 @@ void Gui::deselectAllNodes() const {
     _imp->_nodeGraphArea->deselect();
 }
 
-void Gui::onProcessHandlerStarter(const QString& sequenceName,int firstFrame,int lastFrame,ProcessHandler* process) {
+void Gui::onProcessHandlerStarted(const QString& sequenceName,int firstFrame,int lastFrame,ProcessHandler* process) {
     ///make the dialog which will show the progress
     RenderingProgressDialog *dialog = new RenderingProgressDialog(sequenceName,firstFrame,lastFrame,this);
     QObject::connect(dialog,SIGNAL(canceled()),process,SLOT(onProcessCanceled()));
     QObject::connect(process,SIGNAL(processCanceled()),dialog,SLOT(onProcessCanceled()));
     QObject::connect(process,SIGNAL(frameRendered(int)),dialog,SLOT(onFrameRendered(int)));
     QObject::connect(process,SIGNAL(frameProgress(int)),dialog,SLOT(onCurrentFrameProgress(int)));
-
+    if (process) {
+        QObject::connect(process,SIGNAL(processFinished(int)),dialog,SLOT(onProcessFinished(int)));
+        
+    }
     dialog->show();
 }
 
@@ -2105,7 +2108,7 @@ void Gui::onWriterRenderStarted(const QString& sequenceName,int firstFrame,int l
     QObject::connect(dialog,SIGNAL(canceled()),ve,SLOT(abortRenderingNonBlocking()));
     QObject::connect(ve,SIGNAL(frameRendered(int)),dialog,SLOT(onFrameRendered(int)));
     QObject::connect(ve,SIGNAL(progressChanged(int)),dialog,SLOT(onCurrentFrameProgress(int)));
-    QObject::connect(ve,SIGNAL(engineStopped()),dialog,SLOT(onProcessCanceled()));
+    QObject::connect(ve,SIGNAL(engineStopped(int)),dialog,SLOT(onVideoEngineStopped(int)));
     dialog->show();
 }
 

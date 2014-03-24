@@ -492,7 +492,8 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
 
-static QThreadStorage<unsigned int> gThreadIndex;
+///Stored as int, because we need -1
+static QThreadStorage<int> gThreadIndex;
 
 namespace {
     
@@ -501,7 +502,7 @@ namespace {
                                            unsigned int threadMax,
                                            void *customArg) {
         assert(threadIndex < threadMax);
-        gThreadIndex.localData() = threadIndex;
+        gThreadIndex.localData() = (int)threadIndex;
         OfxStatus ret = kOfxStatOK;
         try {
             func(threadIndex, threadMax, customArg);
@@ -511,7 +512,7 @@ namespace {
             ret =  kOfxStatFailed;
         }
         ///reset back the index otherwise it could mess up the indexes if the same thread is re-used
-        gThreadIndex.localData() = 0;
+        gThreadIndex.localData() = -1;
         return ret;
 
     }
@@ -556,11 +557,9 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
     }
     
     // check that this thread does not already have an ID
-    //Well that check doesn't make sense as a thread spawned by render could
-    //call getImage which would call this function again.
-//    if (gThreadIndex.hasLocalData()) {
-//        return kOfxStatErrExists;
-//    }
+    if (gThreadIndex.hasLocalData() && (gThreadIndex.localData() != -1)) {
+        return kOfxStatErrExists;
+    }
     
     std::vector<unsigned int> threadIndexes(nThreads);
     for (unsigned int i = 0; i < nThreads; ++i) {
@@ -614,8 +613,15 @@ OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
     if (!threadIndex)
         return kOfxStatFailed;
 
-    *threadIndex = gThreadIndex.hasLocalData() ? gThreadIndex.localData() : 0;
-
+    if (gThreadIndex.hasLocalData()) {
+        if (gThreadIndex.localData() == -1) {
+            *threadIndex = 0;
+        } else {
+            *threadIndex = gThreadIndex.localData();
+        }
+    } else {
+        *threadIndex = 0;
+    }
     return kOfxStatOK;
 }
 

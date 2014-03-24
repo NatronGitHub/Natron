@@ -18,8 +18,8 @@
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h"
 #include "Engine/Knob.h" // for KnobHolder
+#include "Engine/Rect.h"
 
-class RectI;
 class Hash64;
 class RenderTree;
 class VideoEngine;
@@ -46,6 +46,37 @@ public:
     typedef std::map<EffectInstance*,RectI> RoIMap;
     
     typedef std::map<int, std::vector<RangeD> > FramesNeededMap;
+    
+    struct RenderRoIArgs
+    {
+        SequenceTime time;
+        RenderScale scale;
+        int view;
+        RectI roi;
+        bool isSequentialRender;
+        bool isRenderUserInteraction;
+        bool byPassCache;
+        const RectI* preComputedRoD;
+        
+        RenderRoIArgs(SequenceTime time_,
+                      RenderScale scale_,
+                      int view_,
+                      RectI roi_,
+                      bool isSequentialRender_,
+                      bool isRenderUserInteraction_,
+                      bool byPassCache_,
+                      const RectI* preComputedRoD_)
+        : time(time_)
+        , scale(scale_)
+        , view(view_)
+        , roi(roi_)
+        , isSequentialRender(isSequentialRender_)
+        , isRenderUserInteraction(isRenderUserInteraction_)
+        , byPassCache(byPassCache_)
+        , preComputedRoD(preComputedRoD_)
+        {
+        }
+    };
     
 public:
     
@@ -186,15 +217,12 @@ public:
      **/
     virtual std::string description() const WARN_UNUSED_RETURN = 0;
     
+    
     /**
      * @brief Renders the image at the given time,scale and for the given view & render window.
      * Pre-condition: preProcess must have been called.
      **/
-    boost::shared_ptr<Image> renderRoI(SequenceTime time,RenderScale scale,
-                                       int view,const RectI& renderWindow,
-                                       bool isSequentialRender,
-                                       bool isRenderMadeInResponseToUserInteraction,
-                                       bool byPassCache = false,const RectI* preComputedRoD = NULL) WARN_UNUSED_RETURN;
+    boost::shared_ptr<Image> renderRoI(const RenderRoIArgs& args) WARN_UNUSED_RETURN;
     
     /**
      * @brief Same as renderRoI(SequenceTime,RenderScale,int,RectI,bool) but takes in parameter

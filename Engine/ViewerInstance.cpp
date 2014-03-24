@@ -566,8 +566,9 @@ ViewerInstance::renderViewer(SequenceTime time,
                 ///cache lookup things because we already did it ourselves.
                 activeInputToRender->renderRoI(time, scale, view, texRectClipped, cachedImgParams, inputImage,isSequentialRender,true);
             } else {
-                _imp->lastRenderedImage = activeInputToRender->renderRoI(time, scale,view,texRectClipped,isSequentialRender,true,
-                                                                         byPassCache,&rod);
+                _imp->lastRenderedImage = activeInputToRender->renderRoI(
+                            EffectInstance::RenderRoIArgs(time, scale,view,texRectClipped,isSequentialRender,true,
+                                                                         byPassCache,&rod));
             }
         } catch (...) {
             _node->notifyInputNIsFinishedRendering(inputIndex);

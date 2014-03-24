@@ -247,6 +247,8 @@ bool VideoEngine::startEngine(bool singleThreaded) {
 
 }
 bool VideoEngine::stopEngine() {
+    
+    bool wasAborted = false;
     /*reset the abort flag and wake up any thread waiting*/
     {
         // make sure startEngine is not running by locking _abortBeingProcessedMutex
@@ -254,6 +256,9 @@ bool VideoEngine::stopEngine() {
         _abortBeingProcessed = true; //_abortBeingProcessed is a dummy variable: it should be always false when stopeEngine is not running
         {
             QMutexLocker l(&_abortedRequestedMutex);
+            if (_abortRequested > 0) {
+                wasAborted = true;
+            }
             _abortRequested = 0;
             
             /*Refresh preview for all nodes that have preview enabled & set the aborted flag to false.
@@ -279,7 +284,7 @@ bool VideoEngine::stopEngine() {
             _abortedRequestedCondition.wakeOne();
         }
 
-        emit engineStopped();
+        emit engineStopped(wasAborted ? 1 : 0);
         
         _currentRunArgs._frameRequestsCount = 0;
         _restart = true;
@@ -298,6 +303,7 @@ bool VideoEngine::stopEngine() {
     Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
     outputEffect->setDoingFullSequenceRender(false);
     if(appPTR->isBackground()){
+       
         outputEffect->notifyRenderFinished();
     }
 
@@ -634,7 +640,7 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded,bo
                 // Do not catch exceptions: if an exception occurs here it is probably fatal, since
                 // it comes from Natron itself. All exceptions from plugins are already caught
                 // by the HostSupport library.
-                (void)_tree.getOutput()->renderRoI(time, scale,i ,rod,isSequentialRender,false);
+                (void)_tree.getOutput()->renderRoI(EffectInstance::RenderRoIArgs(time, scale,i ,rod,isSequentialRender,false,false,NULL));
             }
         }
         

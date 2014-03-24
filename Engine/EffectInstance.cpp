@@ -14,6 +14,7 @@
 #include <QtConcurrentMap>
 #include <QReadWriteLock>
 #include <QCoreApplication>
+#include <QtConcurrentRun>
 
 #include <boost/bind.hpp>
 
@@ -194,9 +195,16 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
             return boost::shared_ptr<Natron::Image>();
         }
     }
-    boost::shared_ptr<Image > entry = n->renderRoI(time, scale, view,roi,isSequentialRender,isRenderUserInteraction,false, precomputedRoD.isNull() ? NULL : &precomputedRoD);
+    
+    ///Launch in another thread as the current thread might already have been created by the multi-thread suite,
+    ///hence it might have a thread-id.
+    QThreadPool::globalInstance()->reserveThread();
+    QFuture< boost::shared_ptr<Image > > future = QtConcurrent::run(n,&Natron::EffectInstance::renderRoI,
+                RenderRoIArgs(time,scale,view,roi,isSequentialRender,isRenderUserInteraction,false, precomputedRoD.isNull() ? NULL : &precomputedRoD));
+    future.waitForFinished();
+    QThreadPool::globalInstance()->releaseThread();
 
-    return entry;
+    return future.result();
 }
 
 Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProjectFormat) {
@@ -280,12 +288,9 @@ void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last)
     }
 }
 
-boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,RenderScale scale,
-                                                           int view,const RectI& renderWindow,
-                                                           bool isSequentialRender,
-                                                           bool isRenderMadeInResponseToUserInteraction,
-                                                           bool byPassCache,const RectI* preComputedRoD)
+boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& args)
 {
+    bool byPassCache = args.byPassCache;
 #ifdef NATRON_LOG
     Natron::Log::beginFunction(getName(),"renderRoI");
     Natron::Log::print(QString("Time "+QString::number(time)+
@@ -300,10 +305,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
     boost::shared_ptr<const ImageParams> cachedImgParams;
     boost::shared_ptr<Image> image;
     bool isCached = false;
-    Natron::ImageKey key = Natron::Image::makeKey(hash(), time, scale,view);
+    Natron::ImageKey key = Natron::Image::makeKey(hash(), args.time, args.scale,args.view);
     
     ///The effect caching policy might forbid caching (Readers could use this when going out of the original frame range.)
-    if (getCachePolicy(time) == NEVER_CACHE || isWriter()) {
+    if (getCachePolicy(args.time) == NEVER_CACHE || isWriter()) {
         byPassCache = true;
     }
     
@@ -337,11 +342,11 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         RectI rod;
         FramesNeededMap framesNeeded;
         bool isProjectFormat = false;
-        bool identity = isIdentity(time,scale,renderWindow,view,&inputTimeIdentity,&inputNbIdentity);
+        bool identity = isIdentity(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
         if (identity) {
            
             ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
-            image = getImage(inputNbIdentity,inputTimeIdentity,scale,view);
+            image = getImage(inputNbIdentity,inputTimeIdentity,args.scale,args.view);
 
             ///if we bypass the cache, don't cache the result of isIdentity
             if (byPassCache) {
@@ -352,11 +357,11 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
             inputNbIdentity = -1;
             
             ///if the rod is already passed as parameter, just use it and don't call getRegionOfDefinition
-            if (preComputedRoD) {
-                rod = *preComputedRoD;
+            if (args.preComputedRoD) {
+                rod = *args.preComputedRoD;
             } else {
                 ///before allocating it we must fill the RoD of the image we want to render
-                if(getRegionOfDefinition(time, &rod,&isProjectFormat) == StatFailed){
+                if(getRegionOfDefinition(args.time, &rod,&isProjectFormat) == StatFailed){
                     ///if getRoD fails, just return a NULL ptr
                     return boost::shared_ptr<Natron::Image>();
                 }
@@ -372,7 +377,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
                 getApp()->getProject()->setOrAddProjectFormat(frmt);
             }
             
-            framesNeeded = getFramesNeeded(time);
+            framesNeeded = getFramesNeeded(args.time);
           
         }
         
@@ -398,7 +403,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
             ///if we bypass the cache, allocate the image ourselves
             assert(!image);
             assert(!identity);
-            image.reset(new Natron::Image(components,rod,scale,time));
+            image.reset(new Natron::Image(components,rod,args.scale,args.time));
             
         } else {
 
@@ -434,13 +439,13 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
         int inputNbIdentity = cachedImgParams->getInputNbIdentity();
         if (inputNbIdentity != -1) {
             SequenceTime inputTimeIdentity = cachedImgParams->getInputTimeIdentity();
-            return getImage(inputNbIdentity, inputTimeIdentity, scale, view);
+            return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view);
         }
         
 #ifdef NATRON_DEBUG
         ///If the precomputed rod parameter was set, assert that it is the same than the image in cache.
-        if (inputNbIdentity != -1 && preComputedRoD) {
-            assert(*preComputedRoD == cachedImgParams->getRoD());
+        if (inputNbIdentity != -1 && args.preComputedRoD) {
+            assert(*args.preComputedRoD == cachedImgParams->getRoD());
         }
 #endif
 
@@ -448,7 +453,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(SequenceTime time,Ren
 
     ///If we reach here, it can be either because the image is cached or not, either way
     ///the image is NOT an identity, and it may have some content left to render.
-    bool success = renderRoIInternal(time, scale, view, renderWindow, cachedImgParams, image,isSequentialRender,isRenderMadeInResponseToUserInteraction ,byPassCache);
+    bool success = renderRoIInternal(args.time, args.scale, args.view, args.roi, cachedImgParams, image,
+                                     args.isSequentialRender,args.isRenderUserInteraction ,byPassCache);
     
     if(aborted() || !success){
         //if render was aborted, remove the frame from the cache as it contains only garbage
@@ -560,8 +566,8 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
                 
                 for (U32 range = 0; range < it2->second.size(); ++range) {
                     for (U32 f = it2->second[range].min; f < it2->second[range].max; ++f) {
-                        boost::shared_ptr<Natron::Image> inputImg = inputEffect->renderRoI(f, scale,view, foundInputRoI->second,
-                                                                isSequentialRender,isRenderMadeInResponseToUserInteraction,byPassCache);
+                        boost::shared_ptr<Natron::Image> inputImg = inputEffect->renderRoI(
+                                                                                           RenderRoIArgs(f, scale,view, foundInputRoI->second,isSequentialRender,isRenderMadeInResponseToUserInteraction,byPassCache,NULL));
                         if (inputImg) {
                             inputImages.push_back(inputImg);
                         }

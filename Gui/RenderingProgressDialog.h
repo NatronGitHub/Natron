@@ -41,6 +41,9 @@ public slots:
 
     void onProcessCanceled();
 
+    void onProcessFinished(int);
+    
+    void onVideoEngineStopped(int);
 signals:
 
     void canceled();
