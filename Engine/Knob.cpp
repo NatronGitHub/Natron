@@ -39,7 +39,7 @@ using std::make_pair; using std::pair;
 
 bool KnobI::slaveTo(int dimension,const boost::shared_ptr<Knob>& other,int otherDimension)
 {
-    slaveTo(dimension, other, otherDimension, Natron::PLUGIN_EDITED);
+    return slaveTo(dimension, other, otherDimension, Natron::PLUGIN_EDITED);
 }
 
 void KnobI::onKnobSlavedTo(int dimension,const boost::shared_ptr<Knob>&  other,int otherDimension)
