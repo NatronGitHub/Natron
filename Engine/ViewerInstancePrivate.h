@@ -16,7 +16,9 @@
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 #include <QtCore/QThread>
+#include <QtCore/QCoreApplication>
 
+#include "Engine/Settings.h"
 #include "Engine/TextureRect.h"
 
 namespace Natron {
@@ -106,11 +108,16 @@ public:
     void assertVideoEngine()
     {
 #ifdef NATRON_DEBUG
-        QMutexLocker l(&threadIdMutex);
-        if (threadIdVideoEngine == NULL) {
-            threadIdVideoEngine = QThread::currentThread();
+        int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
+        if (nbThreads == -1) {
+            assert(QThread::currentThread() == qApp->thread());
+        } else {
+            QMutexLocker l(&threadIdMutex);
+            if (threadIdVideoEngine == NULL) {
+                threadIdVideoEngine = QThread::currentThread();
+            }
+            assert(QThread::currentThread() == threadIdVideoEngine);
         }
-        assert(QThread::currentThread() == threadIdVideoEngine);
 #endif
     }
 
