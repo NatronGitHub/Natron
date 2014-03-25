@@ -435,11 +435,23 @@ public:
 public slots:
 
     void onColorChanged();
+    void onMinMaxChanged(double mini, double maxi, int index);
+    void onDisplayMinMaxChanged(double mini, double maxi, int index);
 
     void showColorDialog();
     
     void onPickingEnabled(bool enabled);
 
+    void onDimensionSwitchClicked();
+    
+    void onSliderValueChanged(double v);
+    
+    void onMustShowAllDimension();
+    
+signals:
+    
+    void dimensionSwitchToggled(bool b);
+    
 private:
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
@@ -480,6 +492,8 @@ private:
 
     ColorPickerLabel *_colorLabel;
     Button *_colorDialogButton;
+    Button *_dimensionSwitchButton;
+    ScaleSliderQWidget* _slider;
 
     int _dimension;
 };

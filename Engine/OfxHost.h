@@ -106,7 +106,7 @@ public:
     virtual OfxStatus mutexTryLock(const OfxMutexHandle mutex) OVERRIDE;
 #endif
     
-    AbstractOfxEffectInstance* createOfxEffect(const std::string& name,Node* node,bool isClone,const NodeSerialization* serialization );
+    AbstractOfxEffectInstance* createOfxEffect(const std::string& name,Node* node,const NodeSerialization* serialization );
     
     void addPathToLoadOFXPlugins(const std::string path);
 

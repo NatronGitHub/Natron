@@ -34,6 +34,9 @@
 #include "Engine/OfxMemory.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/Format.h"
+#include "Engine/Node.h"
+#include "Global/MemoryInfo.h"
 
 using namespace Natron;
 
@@ -469,11 +472,9 @@ int OfxImageEffectInstance::abort() {
 
 OFX::Host::Memory::Instance* OfxImageEffectInstance::newMemoryInstance(size_t nBytes) {
     OfxMemory* ret = new OfxMemory(_node);
-    bool wasntLocked = ret->alloc(nBytes);
-    assert(wasntLocked);
-    
-    if (!ret->getPtr()) {
-        qDebug() << node()->getName().c_str() << " failed to allocate memory.";
+    bool allocated = ret->alloc(nBytes);
+    if (!ret->getPtr() || !allocated) {
+        Natron::errorDialog("Out of memory", node()->getNode()->getName_mt_safe() + " failed to allocate memory (" + printAsRAM(nBytes).toStdString() + ").");
     }
     return ret;
 }

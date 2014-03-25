@@ -718,40 +718,40 @@ void KnobGui::onPasteAnimationActionTriggered() {
     
     _knob->beginValueChange(Natron::PLUGIN_EDITED);
     
-    const std::vector<Variant>& values =  k.getValues();
-    
-    const Variant& thisValue = _knob->getValue();
-    if (thisValue.type() != values[0].type()) {
-        QString err = QString("Cannot paste values of a %1 parameter to a %2 parameter")
-        .arg(values[0].typeName()).arg(thisValue.typeName());
-        
-        Natron::errorDialog("Paste",err.toStdString());
-        return;
-    }
-    
+    const std::list<ValueSerialization>& values =  k.getValuesSerialized();
     if ((int)values.size() == _knob->getDimension()) {
+        const Variant& thisValue = _knob->getValue();
+        if (thisValue.type() != (*values.begin()).value.type()) {
+            QString err = QString("Cannot paste values of a %1 parameter to a %2 parameter")
+            .arg((*values.begin()).value.typeName()).arg(thisValue.typeName());
+            
+            Natron::errorDialog("Paste",err.toStdString());
+            return;
+        }
+        
+        std::vector<Variant> newValues(values.size());
+        int i = 0;
+        for (std::list<ValueSerialization>::const_iterator it = values.begin(); it!=values.end(); ++it) {
+            newValues[i] = it->value;
+            ++i;
+        }
         if(!copyAnimation) {
-            pushValueChangedCommand(values);
+            pushValueChangedCommand(newValues);
         }else {
-            for (U32 i = 0; i < values.size(); ++i) {
-                _knob->setValue(values[i], i,true);
+            for (U32 i = 0; i < newValues.size(); ++i) {
+                _knob->setValue(newValues[i], i,true);
             }
         }
-    }else{
-        Natron::errorDialog("Paste value", "You cannot copy/paste values from/to parameters with different dimensions.");
-    }
-
-
-    const  std::vector< boost::shared_ptr<Curve> >& curves = k.getCurves();
-    if((int)curves.size() == _knob->getDimension()){
-        for (U32 i = 0; i < curves.size(); ++i) {
-            _knob->getCurve(i)->clone(*curves[i]);
+        
+        i = 0;
+        for (std::list<ValueSerialization>::const_iterator it = values.begin(); it!=values.end(); ++it) {
+            _knob->getCurve(i)->clone(it->curve);
+            ++i;
         }
         emit keyFrameSet();
-    }else{
-        Natron::errorDialog("Paste animation", "You cannot copy/paste animation from/to parameters with different dimensions.");
+    } else {
+        Natron::errorDialog("Paste value", "You cannot copy/paste values from/to parameters with different dimensions.");
     }
-    
     _knob->endValueChange();
 
 
@@ -769,19 +769,25 @@ void KnobGui::pasteValues(int dimension) {
     appPTR->getKnobClipBoard(&k, &copyAnimation,&dimensionToCopyFrom);
     
     
-    const std::vector<Variant>& values =  k.getValues();
+    const std::list<ValueSerialization>& values =  k.getValuesSerialized();
     
-    std::vector<Variant> thisValues = _knob->getValueForEachDimension();
+    std::vector<Variant> thisValues = _knob->getValueForEachDimension_mt_safe();
     assert(!thisValues.empty());
-    if (!values[0].canConvert(thisValues[0].type())) {
+    if ((*values.begin()).value.canConvert(thisValues[0].type())) {
         QString err = QString("Cannot paste values of a %1 parameter to a %2 parameter")
-        .arg(values[0].typeName()).arg(thisValues[0].typeName());
+        .arg((*values.begin()).value.typeName()).arg(thisValues[0].typeName());
         
         Natron::errorDialog("Paste",err.toStdString());
         return;
     }
-    
-    thisValues[dimension] = values[dimensionToCopyFrom];
+    int i = 0;
+    for (std::list<ValueSerialization>::const_iterator it = values.begin(); it!=values.end(); ++it) {
+        if (i == dimensionToCopyFrom) {
+            thisValues[dimension] = it->value;
+            break;
+        }
+        ++i;
+    }
     pushValueChangedCommand(thisValues);
     
 }

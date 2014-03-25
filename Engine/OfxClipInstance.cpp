@@ -121,7 +121,7 @@ bool OfxClipInstance::getConnected() const
     if(_isOutput){
         return _nodeInstance->hasOutputConnected();
     }else{
-        return _nodeInstance->input(getInputNb()) != NULL;
+        return _nodeInstance->input_other_thread(getInputNb()) != NULL;
     }
 }
 
@@ -169,7 +169,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         ///Use a render scale of 1 and the view 0 as we have no means to get them from here
         OfxPointD scale;
         scale.x = scale.y = 1.;
-        Natron::ImageKey key = Natron::Image::makeKey(n->hash().value(), time, scale,0);
+        Natron::ImageKey key = Natron::Image::makeKey(n->hash(), time, scale,0);
         bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
         Format f;
         n->getRenderFormat(&f);
@@ -324,7 +324,7 @@ Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const
     if(_isOutput) {
         return _nodeInstance;
     } else {
-        return _nodeInstance->input(getInputNb());
+        return _nodeInstance->input_other_thread(getInputNb());
     }
 }
 

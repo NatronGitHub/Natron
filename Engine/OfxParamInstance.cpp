@@ -190,7 +190,12 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param:
     _knob->setIncrement(1); // kOfxParamPropIncrement only exists for Double
     _knob->setMaximum(max);
     _knob->setDefaultValue<int>(def);
+    std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,0);
+    if (!dimensionName.empty()) {
+        _knob->setDimensionName(0, dimensionName);
+    }
 }
+
 OfxStatus OfxIntegerInstance::get(int& v) {
     v = _knob->getValue<int>();
     return kOfxStatOK;
@@ -321,7 +326,6 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
 : OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance())
 , _node(node)
 {
-    
     const OFX::Host::Property::Set &properties = getProperties();
 
     const std::string& doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
@@ -368,63 +372,90 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
     
     valueAccordingToType(true,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&def);
     _knob->setDefaultValue<double>(def);
-    
+    std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,0);
+    if (!dimensionName.empty()) {
+        _knob->setDimensionName(0, dimensionName);
+    }
 }
-OfxStatus OfxDoubleInstance::get(double& v){
+
+OfxStatus
+OfxDoubleInstance::get(double& v)
+{
     v = _knob->getValue<double>();
     valueAccordingToType(false,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     return kOfxStatOK;
 }
-OfxStatus OfxDoubleInstance::get(OfxTime time, double& v){
+
+OfxStatus
+OfxDoubleInstance::get(OfxTime time, double& v)
+{
     v = _knob->getValueAtTime<double>(time);
     valueAccordingToType(false,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     return kOfxStatOK;
 }
-OfxStatus OfxDoubleInstance::set(double v) {
+
+OfxStatus
+OfxDoubleInstance::set(double v)
+{
     valueAccordingToType(true,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     _knob->setValue<double>(v);
     return kOfxStatOK;
 }
-OfxStatus OfxDoubleInstance::set(OfxTime time, double v){
+
+OfxStatus
+OfxDoubleInstance::set(OfxTime time, double v)
+{
     valueAccordingToType(true,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     _knob->setValueAtTime<double>(time,v);
     return kOfxStatOK;
 }
 
-void OfxDoubleInstance::onProjectFormatChanged(const Format& /*f*/){
+void
+OfxDoubleInstance::onProjectFormatChanged(const Format& /*f*/)
+{
     double v;
     get(v); //get the current value
     set(v); //refresh using the valueAccordingToType function
     setDisplayRange();
 }
 
-OfxStatus OfxDoubleInstance::derive(OfxTime time, double& v)
+OfxStatus
+OfxDoubleInstance::derive(OfxTime time, double& v)
 {
     v = _knob->getDerivativeAtTime(time);
     return kOfxStatOK;
 }
 
-OfxStatus OfxDoubleInstance::integrate(OfxTime time1, OfxTime time2, double& v)
+OfxStatus
+OfxDoubleInstance::integrate(OfxTime time1, OfxTime time2, double& v)
 {
     v = _knob->getIntegrateFromTimeToTime(time1, time2);
     return kOfxStatOK;
 }
 
 // callback which should set enabled state as appropriate
-void OfxDoubleInstance::setEnabled(){
+void
+OfxDoubleInstance::setEnabled()
+{
     _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
-void OfxDoubleInstance::setSecret() {
+void
+OfxDoubleInstance::setSecret()
+{
     _knob->setSecret(getSecret());
 }
 
-void OfxDoubleInstance::setEvaluateOnChange() {
+void
+OfxDoubleInstance::setEvaluateOnChange()
+{
     _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
-void OfxDoubleInstance::setDisplayRange(){
+void
+OfxDoubleInstance::setDisplayRange()
+{
     const std::string& doubleType = getProperties().getStringProperty(kOfxParamPropDoubleType);
     double displayMin = getProperties().getDoubleProperty(kOfxParamPropDisplayMin);
     double displayMax = getProperties().getDoubleProperty(kOfxParamPropDisplayMax);
@@ -434,31 +465,49 @@ void OfxDoubleInstance::setDisplayRange(){
     _knob->setDisplayMaximum(displayMax);
 }
 
-boost::shared_ptr<Knob> OfxDoubleInstance::getKnob() const{
+boost::shared_ptr<Knob>
+OfxDoubleInstance::getKnob() const
+{
     return _knob;
 }
 
-bool OfxDoubleInstance::isAnimated() const {
+bool
+OfxDoubleInstance::isAnimated() const
+{
     return _knob->isAnimated(0);
 }
 
-OfxStatus OfxDoubleInstance::getNumKeys(unsigned int &nKeys) const {
+OfxStatus
+OfxDoubleInstance::getNumKeys(unsigned int &nKeys) const
+{
     return OfxKeyFrame::getNumKeys(_knob, nKeys);
 }
-OfxStatus OfxDoubleInstance::getKeyTime(int nth, OfxTime& time) const {
+
+OfxStatus
+OfxDoubleInstance::getKeyTime(int nth, OfxTime& time) const
+{
     return OfxKeyFrame::getKeyTime(_knob, nth, time);
 }
-OfxStatus OfxDoubleInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+
+OfxStatus
+OfxDoubleInstance::getKeyIndex(OfxTime time, int direction, int & index) const
+{
     return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
 }
-OfxStatus OfxDoubleInstance::deleteKey(OfxTime time) {
+
+OfxStatus
+OfxDoubleInstance::deleteKey(OfxTime time)
+{
     return OfxKeyFrame::deleteKey(_knob, time);
 }
-OfxStatus OfxDoubleInstance::deleteAllKeys(){
+
+OfxStatus OfxDoubleInstance::deleteAllKeys()
+{
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxDoubleInstance::onKnobAnimationLevelChanged(int lvl)
+void
+OfxDoubleInstance::onKnobAnimationLevelChanged(int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
     assert(l == Natron::NO_ANIMATION || getCanAnimate());
@@ -662,8 +711,35 @@ OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descr
     _knob->setDefaultValue<double>(defG,1);
     _knob->setDefaultValue<double>(defB,2);
     _knob->setDefaultValue<double>(defA,3);
+
+    const int dims = 4;
+    std::vector<double> minimum(dims);
+    std::vector<double> maximum(dims);
+    std::vector<double> displayMins(dims);
+    std::vector<double> displayMaxs(dims);
+
+    // kOfxParamPropIncrement and kOfxParamPropDigits only have one dimension,
+    // @see Descriptor::addNumericParamProps() in ofxhParam.cpp
+    // @see gDoubleParamProps in ofxsPropertyValidation.cpp
+    for (int i = 0; i < dims; ++i) {
+        minimum[i] = properties.getDoubleProperty(kOfxParamPropMin,i);
+        displayMins[i] = properties.getDoubleProperty(kOfxParamPropDisplayMin,i);
+        displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax,i);
+        maximum[i] = properties.getDoubleProperty(kOfxParamPropMax,i);
+        std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
+        if (!dimensionName.empty()) {
+            _knob->setDimensionName(i, dimensionName);
+        }
+    }
+
+    _knob->setMinimumsAndMaximums(minimum, maximum);
+    _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+   
 }
-OfxStatus OfxRGBAInstance::get(double& r, double& g, double& b, double& a) {
+
+OfxStatus
+OfxRGBAInstance::get(double& r, double& g, double& b, double& a)
+{
     
     r = _knob->getValue<double>(0);
     g = _knob->getValue<double>(1);
@@ -671,21 +747,30 @@ OfxStatus OfxRGBAInstance::get(double& r, double& g, double& b, double& a) {
     a = _knob->getValue<double>(3);
     return kOfxStatOK;
 }
-OfxStatus OfxRGBAInstance::get(OfxTime time, double&r ,double& g, double& b, double& a) {
+
+OfxStatus
+OfxRGBAInstance::get(OfxTime time, double&r ,double& g, double& b, double& a)
+{
     r = _knob->getValueAtTime<double>(time,0);
     g = _knob->getValueAtTime<double>(time,1);
     b = _knob->getValueAtTime<double>(time,2);
     a = _knob->getValueAtTime<double>(time,3);
     return kOfxStatOK;
 }
-OfxStatus OfxRGBAInstance::set(double r,double g , double b ,double a){
+
+OfxStatus
+OfxRGBAInstance::set(double r,double g , double b ,double a)
+{
     _knob->setValue<double>(r,0);
     _knob->setValue<double>(g,1);
     _knob->setValue<double>(b,2);
     _knob->setValue<double>(a,3);
     return kOfxStatOK;
 }
-OfxStatus OfxRGBAInstance::set(OfxTime time, double r ,double g,double b,double a){
+
+OfxStatus
+OfxRGBAInstance::set(OfxTime time, double r ,double g,double b,double a)
+{
     _knob->setValueAtTime<double>(time,r,0);
     _knob->setValueAtTime<double>(time,g,1);
     _knob->setValueAtTime<double>(time,b,2);
@@ -693,7 +778,8 @@ OfxStatus OfxRGBAInstance::set(OfxTime time, double r ,double g,double b,double 
     return kOfxStatOK;
 }
 
-OfxStatus OfxRGBAInstance::derive(OfxTime time, double&r ,double& g, double& b, double& a)
+OfxStatus
+OfxRGBAInstance::derive(OfxTime time, double&r ,double& g, double& b, double& a)
 {
     r = _knob->getDerivativeAtTime(time,0);
     g = _knob->getDerivativeAtTime(time,1);
@@ -702,7 +788,8 @@ OfxStatus OfxRGBAInstance::derive(OfxTime time, double&r ,double& g, double& b, 
     return kOfxStatOK;
 }
 
-OfxStatus OfxRGBAInstance::integrate(OfxTime time1, OfxTime time2, double&r ,double& g, double& b, double& a)
+OfxStatus
+OfxRGBAInstance::integrate(OfxTime time1, OfxTime time2, double&r ,double& g, double& b, double& a)
 {
     r = _knob->getIntegrateFromTimeToTime(time1, time2, 0);
     g = _knob->getIntegrateFromTimeToTime(time1, time2, 1);
@@ -712,49 +799,76 @@ OfxStatus OfxRGBAInstance::integrate(OfxTime time1, OfxTime time2, double&r ,dou
 }
 
 // callback which should set enabled state as appropriate
-void OfxRGBAInstance::setEnabled(){
+void
+OfxRGBAInstance::setEnabled()
+{
     _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
-void OfxRGBAInstance::setSecret() {
+void
+OfxRGBAInstance::setSecret()
+{
     _knob->setSecret(getSecret());
 }
 
-void OfxRGBAInstance::setEvaluateOnChange() {
+void
+OfxRGBAInstance::setEvaluateOnChange()
+{
     _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 
-boost::shared_ptr<Knob> OfxRGBAInstance::getKnob() const{
+boost::shared_ptr<Knob>
+OfxRGBAInstance::getKnob() const
+{
     return _knob;
 }
 
-bool OfxRGBAInstance::isAnimated(int dimension) const {
+bool
+OfxRGBAInstance::isAnimated(int dimension) const
+{
     return _knob->isAnimated(dimension);
 }
 
-bool OfxRGBAInstance::isAnimated() const {
+bool
+OfxRGBAInstance::isAnimated() const
+{
     return _knob->isAnimated(0) || _knob->isAnimated(1) || _knob->isAnimated(2) || _knob->isAnimated(3);
 }
 
-OfxStatus OfxRGBAInstance::getNumKeys(unsigned int &nKeys) const {
+OfxStatus
+OfxRGBAInstance::getNumKeys(unsigned int &nKeys) const
+{
     return OfxKeyFrame::getNumKeys(_knob, nKeys);
 }
-OfxStatus OfxRGBAInstance::getKeyTime(int nth, OfxTime& time) const {
+
+OfxStatus
+OfxRGBAInstance::getKeyTime(int nth, OfxTime& time) const
+{
     return OfxKeyFrame::getKeyTime(_knob, nth, time);
 }
-OfxStatus OfxRGBAInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+
+OfxStatus
+OfxRGBAInstance::getKeyIndex(OfxTime time, int direction, int & index) const
+{
     return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
 }
-OfxStatus OfxRGBAInstance::deleteKey(OfxTime time) {
+
+OfxStatus
+OfxRGBAInstance::deleteKey(OfxTime time)
+{
     return OfxKeyFrame::deleteKey(_knob, time);
 }
-OfxStatus OfxRGBAInstance::deleteAllKeys(){
+
+OfxStatus
+OfxRGBAInstance::deleteAllKeys()
+{
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxRGBAInstance::onKnobAnimationLevelChanged(int lvl)
+void
+OfxRGBAInstance::onKnobAnimationLevelChanged(int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
     assert(l == Natron::NO_ANIMATION || getCanAnimate());
@@ -777,34 +891,71 @@ OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descr
     _knob->setDefaultValue<double>(defR, 0);
     _knob->setDefaultValue<double>(defG, 1);
     _knob->setDefaultValue<double>(defB, 2);
-    
+
+    const int dims = 3;
+    std::vector<double> minimum(dims);
+    std::vector<double> maximum(dims);
+    std::vector<double> displayMins(dims);
+    std::vector<double> displayMaxs(dims);
+
+    // kOfxParamPropIncrement and kOfxParamPropDigits only have one dimension,
+    // @see Descriptor::addNumericParamProps() in ofxhParam.cpp
+    // @see gDoubleParamProps in ofxsPropertyValidation.cpp
+    for (int i = 0; i < dims; ++i) {
+        minimum[i] = properties.getDoubleProperty(kOfxParamPropMin,i);
+        displayMins[i] = properties.getDoubleProperty(kOfxParamPropDisplayMin,i);
+        displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax,i);
+        maximum[i] = properties.getDoubleProperty(kOfxParamPropMax,i);
+        std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
+        if (!dimensionName.empty()) {
+            _knob->setDimensionName(i, dimensionName);
+        }
+
+    }
+
+    _knob->setMinimumsAndMaximums(minimum, maximum);
+    _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+
 }
-OfxStatus OfxRGBInstance::get(double& r, double& g, double& b) {
+
+OfxStatus
+OfxRGBInstance::get(double& r, double& g, double& b)
+{
     r = _knob->getValue<double>(0);
     g = _knob->getValue<double>(1);
     b = _knob->getValue<double>(2);
     return kOfxStatOK;
 }
-OfxStatus OfxRGBInstance::get(OfxTime time, double& r, double& g, double& b) {
+
+OfxStatus
+OfxRGBInstance::get(OfxTime time, double& r, double& g, double& b)
+{
     r = _knob->getValueAtTime<double>(time,0);
     g = _knob->getValueAtTime<double>(time,1);
     b = _knob->getValueAtTime<double>(time,2);
     return kOfxStatOK;
 }
-OfxStatus OfxRGBInstance::set(double r,double g,double b){
+
+OfxStatus
+OfxRGBInstance::set(double r,double g,double b)
+{
     _knob->setValue<double>(r,0);
     _knob->setValue<double>(g,1);
     _knob->setValue<double>(b,2);
     return kOfxStatOK;
 }
-OfxStatus OfxRGBInstance::set(OfxTime time, double r,double g,double b){
+
+OfxStatus
+OfxRGBInstance::set(OfxTime time, double r,double g,double b)
+{
     _knob->setValueAtTime<double>(time,r,0);
     _knob->setValueAtTime<double>(time,g,1);
     _knob->setValueAtTime<double>(time,b,2);
     return kOfxStatOK;
 }
 
-OfxStatus OfxRGBInstance::derive(OfxTime time, double& r, double& g, double& b)
+OfxStatus
+OfxRGBInstance::derive(OfxTime time, double& r, double& g, double& b)
 {
     r = _knob->getDerivativeAtTime(time,0);
     g = _knob->getDerivativeAtTime(time,1);
@@ -812,7 +963,8 @@ OfxStatus OfxRGBInstance::derive(OfxTime time, double& r, double& g, double& b)
     return kOfxStatOK;
 }
 
-OfxStatus OfxRGBInstance::integrate(OfxTime time1, OfxTime time2, double&r ,double& g, double& b)
+OfxStatus
+OfxRGBInstance::integrate(OfxTime time1, OfxTime time2, double&r ,double& g, double& b)
 {
     r = _knob->getIntegrateFromTimeToTime(time1, time2, 0);
     g = _knob->getIntegrateFromTimeToTime(time1, time2, 1);
@@ -821,49 +973,65 @@ OfxStatus OfxRGBInstance::integrate(OfxTime time1, OfxTime time2, double&r ,doub
 }
 
 // callback which should set enabled state as appropriate
-void OfxRGBInstance::setEnabled(){
+void
+OfxRGBInstance::setEnabled(){
     _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
-void OfxRGBInstance::setSecret() {
+void
+OfxRGBInstance::setSecret() {
     _knob->setSecret(getSecret());
 }
 
-void OfxRGBInstance::setEvaluateOnChange() {
+void
+OfxRGBInstance::setEvaluateOnChange() {
     _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 
-boost::shared_ptr<Knob> OfxRGBInstance::getKnob() const{
+boost::shared_ptr<Knob>
+OfxRGBInstance::getKnob() const{
     return _knob;
 }
 
-bool OfxRGBInstance::isAnimated(int dimension) const {
+bool
+OfxRGBInstance::isAnimated(int dimension) const {
     return _knob->isAnimated(dimension);
 }
 
-bool OfxRGBInstance::isAnimated() const {
+bool
+OfxRGBInstance::isAnimated() const {
     return _knob->isAnimated(0) || _knob->isAnimated(1) || _knob->isAnimated(2);
 }
 
-OfxStatus OfxRGBInstance::getNumKeys(unsigned int &nKeys) const {
+OfxStatus
+OfxRGBInstance::getNumKeys(unsigned int &nKeys) const {
     return OfxKeyFrame::getNumKeys(_knob, nKeys);
 }
-OfxStatus OfxRGBInstance::getKeyTime(int nth, OfxTime& time) const {
+
+OfxStatus
+OfxRGBInstance::getKeyTime(int nth, OfxTime& time) const {
     return OfxKeyFrame::getKeyTime(_knob, nth, time);
 }
-OfxStatus OfxRGBInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+
+OfxStatus
+OfxRGBInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
     return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
 }
-OfxStatus OfxRGBInstance::deleteKey(OfxTime time) {
+
+OfxStatus
+OfxRGBInstance::deleteKey(OfxTime time) {
     return OfxKeyFrame::deleteKey(_knob, time);
 }
-OfxStatus OfxRGBInstance::deleteAllKeys(){
+
+OfxStatus
+OfxRGBInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxRGBInstance::onKnobAnimationLevelChanged(int lvl)
+void
+OfxRGBInstance::onKnobAnimationLevelChanged(int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
     assert(l == Natron::NO_ANIMATION || getCanAnimate());
@@ -898,8 +1066,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
         
     }
     const int dims = 2;
-    
-    
+
     _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this),dims);
 
     std::vector<double> minimum(dims);
@@ -921,6 +1088,12 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
         increment[i] = incr;
         decimals[i] = dig;
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
+        
+        std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
+        if (!dimensionName.empty()) {
+            _knob->setDimensionName(i, dimensionName);
+        }
+
     }
     
     valueAccordingToType(true, doubleType, node, &minimum[0],&minimum[1]);
@@ -936,42 +1109,52 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
 
 }
 
-OfxStatus OfxDouble2DInstance::get(double& x1, double& x2) {
+OfxStatus
+OfxDouble2DInstance::get(double& x1, double& x2)
+{
     x1 = _knob->getValue<double>(0);
     x2 = _knob->getValue<double>(1);
     valueAccordingToType(false, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
     return kOfxStatOK;
 }
 
-OfxStatus OfxDouble2DInstance::get(OfxTime time, double& x1, double& x2) {
+OfxStatus
+OfxDouble2DInstance::get(OfxTime time, double& x1, double& x2)
+{
     x1 = _knob->getValueAtTime<double>(time,0);
     x2 = _knob->getValueAtTime<double>(time,1);
     valueAccordingToType(false, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
     return kOfxStatOK;
 }
 
-OfxStatus OfxDouble2DInstance::set(double x1,double x2){
+OfxStatus
+OfxDouble2DInstance::set(double x1,double x2)
+{
     valueAccordingToType(true, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
     _knob->setValue<double>(x1,0);
     _knob->setValue<double>(x2,1);
 	return kOfxStatOK;
 }
 
-OfxStatus OfxDouble2DInstance::set(OfxTime time,double x1,double x2){
+OfxStatus
+OfxDouble2DInstance::set(OfxTime time,double x1,double x2)
+{
     valueAccordingToType(true, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
     _knob->setValueAtTime<double>(time,x1,0);
     _knob->setValueAtTime<double>(time,x2,1);
 	return kOfxStatOK;
 }
 
-OfxStatus OfxDouble2DInstance::derive(OfxTime time, double&x1 ,double& x2)
+OfxStatus
+OfxDouble2DInstance::derive(OfxTime time, double&x1 ,double& x2)
 {
     x1 = _knob->getDerivativeAtTime(time,0);
     x2 = _knob->getDerivativeAtTime(time,1);
     return kOfxStatOK;
 }
 
-OfxStatus OfxDouble2DInstance::integrate(OfxTime time1, OfxTime time2, double&x1 ,double& x2)
+OfxStatus
+OfxDouble2DInstance::integrate(OfxTime time1, OfxTime time2, double&x1 ,double& x2)
 {
     x1 = _knob->getIntegrateFromTimeToTime(time1, time2, 0);
     x2 = _knob->getIntegrateFromTimeToTime(time1, time2, 1);
@@ -979,20 +1162,28 @@ OfxStatus OfxDouble2DInstance::integrate(OfxTime time1, OfxTime time2, double&x1
 }
 
 // callback which should set enabled state as appropriate
-void OfxDouble2DInstance::setEnabled(){
+void
+OfxDouble2DInstance::setEnabled()
+{
     _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
-void OfxDouble2DInstance::setSecret() {
+void
+OfxDouble2DInstance::setSecret()
+{
     _knob->setSecret(getSecret());
 }
 
-void OfxDouble2DInstance::setEvaluateOnChange() {
+void
+OfxDouble2DInstance::setEvaluateOnChange()
+{
     _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
-void OfxDouble2DInstance::setDisplayRange() {
+void
+OfxDouble2DInstance::setDisplayRange()
+{
     const std::string& doubleType = getProperties().getStringProperty(kOfxParamPropDoubleType);
     std::vector<double> displayMins(2);
     std::vector<double> displayMaxs(2);
@@ -1005,35 +1196,56 @@ void OfxDouble2DInstance::setDisplayRange() {
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
-boost::shared_ptr<Knob> OfxDouble2DInstance::getKnob() const{
+boost::shared_ptr<Knob>
+OfxDouble2DInstance::getKnob() const
+{
     return _knob;
 }
 
-bool OfxDouble2DInstance::isAnimated(int dimension) const {
+bool
+OfxDouble2DInstance::isAnimated(int dimension) const
+{
     return _knob->isAnimated(dimension);
 }
 
-bool OfxDouble2DInstance::isAnimated() const {
+bool
+OfxDouble2DInstance::isAnimated() const
+{
     return _knob->isAnimated(0) || _knob->isAnimated(1);
 }
 
-OfxStatus OfxDouble2DInstance::getNumKeys(unsigned int &nKeys) const {
+OfxStatus
+OfxDouble2DInstance::getNumKeys(unsigned int &nKeys) const
+{
     return OfxKeyFrame::getNumKeys(_knob, nKeys);
 }
-OfxStatus OfxDouble2DInstance::getKeyTime(int nth, OfxTime& time) const {
+
+OfxStatus
+OfxDouble2DInstance::getKeyTime(int nth, OfxTime& time) const
+{
     return OfxKeyFrame::getKeyTime(_knob, nth, time);
 }
-OfxStatus OfxDouble2DInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+
+OfxStatus
+OfxDouble2DInstance::getKeyIndex(OfxTime time, int direction, int & index) const
+{
     return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
 }
-OfxStatus OfxDouble2DInstance::deleteKey(OfxTime time) {
+
+OfxStatus
+OfxDouble2DInstance::deleteKey(OfxTime time)
+{
     return OfxKeyFrame::deleteKey(_knob, time);
 }
-OfxStatus OfxDouble2DInstance::deleteAllKeys(){
+
+OfxStatus
+OfxDouble2DInstance::deleteAllKeys()
+{
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxDouble2DInstance::onKnobAnimationLevelChanged(int lvl)
+void
+OfxDouble2DInstance::onKnobAnimationLevelChanged(int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
     assert(l == Natron::NO_ANIMATION || getCanAnimate());
@@ -1041,7 +1253,9 @@ void OfxDouble2DInstance::onKnobAnimationLevelChanged(int lvl)
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
 }
 
-void OfxDouble2DInstance::onProjectFormatChanged(const Format& /*f*/){
+void
+OfxDouble2DInstance::onProjectFormatChanged(const Format& /*f*/)
+{
     double v1,v2;
     get(v1,v2); //get the current value
     set(v1,v2); //refresh using the valueAccordingToType function
@@ -1074,6 +1288,11 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::P
         maximum[i] = properties.getIntProperty(kOfxParamPropMax,i);
         increment[i] = 1; // kOfxParamPropIncrement only exists for Double
         def[i] = properties.getIntProperty(kOfxParamPropDefault,i);
+        std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
+        if (!dimensionName.empty()) {
+            _knob->setDimensionName(i, dimensionName);
+        }
+
     }
     
     _knob->setMinimumsAndMaximums(minimum, maximum);
@@ -1084,25 +1303,33 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::P
 
 }
 
-OfxStatus OfxInteger2DInstance::get(int& x1, int& x2) {
+OfxStatus
+OfxInteger2DInstance::get(int& x1, int& x2)
+{
     x1 = _knob->getValue<int>(0);
     x2 = _knob->getValue<int>(1);
     return kOfxStatOK;
 }
 
-OfxStatus OfxInteger2DInstance::get(OfxTime time, int& x1, int& x2) {
+OfxStatus
+OfxInteger2DInstance::get(OfxTime time, int& x1, int& x2)
+{
     x1 = _knob->getValueAtTime<int>(time,0);
     x2 = _knob->getValueAtTime<int>(time,1);
     return kOfxStatOK;
 }
 
-OfxStatus OfxInteger2DInstance::set(int x1,int x2) {
+OfxStatus
+OfxInteger2DInstance::set(int x1,int x2)
+{
     _knob->setValue<int>(x1,0);
     _knob->setValue<int>(x2,1);
 	return kOfxStatOK;
 }
 
-OfxStatus OfxInteger2DInstance::set(OfxTime time, int x1, int x2) {
+OfxStatus
+OfxInteger2DInstance::set(OfxTime time, int x1, int x2)
+{
     _knob->setValueAtTime<int>(time,x1,0);
     _knob->setValueAtTime<int>(time,x2,1);
 	return kOfxStatOK;
@@ -1110,41 +1337,64 @@ OfxStatus OfxInteger2DInstance::set(OfxTime time, int x1, int x2) {
 
 
 // callback which should set enabled state as appropriate
-void OfxInteger2DInstance::setEnabled() {
+void
+OfxInteger2DInstance::setEnabled()
+{
     _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
-void OfxInteger2DInstance::setSecret() {
+void
+OfxInteger2DInstance::setSecret()
+{
     _knob->setSecret(getSecret());
 }
 
-void OfxInteger2DInstance::setEvaluateOnChange() {
+void
+OfxInteger2DInstance::setEvaluateOnChange()
+{
     _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 
-boost::shared_ptr<Knob> OfxInteger2DInstance::getKnob() const {
+boost::shared_ptr<Knob>
+OfxInteger2DInstance::getKnob() const
+{
     return _knob;
 }
 
-OfxStatus OfxInteger2DInstance::getNumKeys(unsigned int &nKeys) const {
+OfxStatus
+OfxInteger2DInstance::getNumKeys(unsigned int &nKeys) const
+{
     return OfxKeyFrame::getNumKeys(_knob, nKeys);
 }
-OfxStatus OfxInteger2DInstance::getKeyTime(int nth, OfxTime& time) const {
+
+OfxStatus
+OfxInteger2DInstance::getKeyTime(int nth, OfxTime& time) const
+{
     return OfxKeyFrame::getKeyTime(_knob, nth, time);
 }
-OfxStatus OfxInteger2DInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+
+OfxStatus
+OfxInteger2DInstance::getKeyIndex(OfxTime time, int direction, int & index) const
+{
     return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
 }
-OfxStatus OfxInteger2DInstance::deleteKey(OfxTime time) {
+
+OfxStatus
+OfxInteger2DInstance::deleteKey(OfxTime time)
+{
     return OfxKeyFrame::deleteKey(_knob, time);
 }
-OfxStatus OfxInteger2DInstance::deleteAllKeys(){
+
+OfxStatus
+OfxInteger2DInstance::deleteAllKeys()
+{
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxInteger2DInstance::onKnobAnimationLevelChanged(int lvl)
+void
+OfxInteger2DInstance::onKnobAnimationLevelChanged(int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
     assert(l == Natron::NO_ANIMATION || getCanAnimate());
@@ -1185,6 +1435,11 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Par
         increment[i] = incr;
         decimals[i] = dig;
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault,i);
+        std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
+        if (!dimensionName.empty()) {
+            _knob->setDimensionName(i, dimensionName);
+        }
+
     }
     
     _knob->setMinimumsAndMaximums(minimum, maximum);
@@ -1194,23 +1449,29 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Par
     _knob->setDefaultValue<double>(def[0],0);
     _knob->setDefaultValue<double>(def[1],1);
     _knob->setDefaultValue<double>(def[2],2);
+
 }
 
-OfxStatus OfxDouble3DInstance::get(double& x1, double& x2, double& x3) {
+OfxStatus
+OfxDouble3DInstance::get(double& x1, double& x2, double& x3)
+{
     x1 = _knob->getValue<double>(0);
     x2 = _knob->getValue<double>(1);
     x3 = _knob->getValue<double>(2);
     return kOfxStatOK;
 }
 
-OfxStatus OfxDouble3DInstance::get(OfxTime time, double& x1, double& x2, double& x3) {
+OfxStatus
+OfxDouble3DInstance::get(OfxTime time, double& x1, double& x2, double& x3)
+{
     x1 = _knob->getValueAtTime<double>(time,0);
     x2 = _knob->getValueAtTime<double>(time,1);
     x3 = _knob->getValueAtTime<double>(time,2);
     return kOfxStatOK;
 }
 
-OfxStatus OfxDouble3DInstance::set(double x1,double x2,double x3)
+OfxStatus
+OfxDouble3DInstance::set(double x1,double x2,double x3)
 {
     _knob->setValue<double>(x1,0);
     _knob->setValue<double>(x2,1);
@@ -1218,7 +1479,8 @@ OfxStatus OfxDouble3DInstance::set(double x1,double x2,double x3)
 	return kOfxStatOK;
 }
 
-OfxStatus OfxDouble3DInstance::set(OfxTime time, double x1, double x2, double x3)
+OfxStatus
+OfxDouble3DInstance::set(OfxTime time, double x1, double x2, double x3)
 {
     _knob->setValueAtTime<double>(time,x1,0);
     _knob->setValueAtTime<double>(time,x2,1);
@@ -1226,7 +1488,8 @@ OfxStatus OfxDouble3DInstance::set(OfxTime time, double x1, double x2, double x3
 	return kOfxStatOK;
 }
 
-OfxStatus OfxDouble3DInstance::derive(OfxTime time, double& x1, double& x2, double& x3)
+OfxStatus
+OfxDouble3DInstance::derive(OfxTime time, double& x1, double& x2, double& x3)
 {
     x1 = _knob->getDerivativeAtTime(time,0);
     x2 = _knob->getDerivativeAtTime(time,1);
@@ -1234,7 +1497,8 @@ OfxStatus OfxDouble3DInstance::derive(OfxTime time, double& x1, double& x2, doub
     return kOfxStatOK;
 }
 
-OfxStatus OfxDouble3DInstance::integrate(OfxTime time1, OfxTime time2, double&x1 ,double& x2,double& x3)
+OfxStatus
+OfxDouble3DInstance::integrate(OfxTime time1, OfxTime time2, double&x1 ,double& x2,double& x3)
 {
     x1 = _knob->getIntegrateFromTimeToTime(time1, time2, 0);
     x2 = _knob->getIntegrateFromTimeToTime(time1, time2, 1);
@@ -1243,48 +1507,73 @@ OfxStatus OfxDouble3DInstance::integrate(OfxTime time1, OfxTime time2, double&x1
 }
 
 // callback which should set enabled state as appropriate
-void OfxDouble3DInstance::setEnabled() {
+void
+OfxDouble3DInstance::setEnabled()
+{
     _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
-void OfxDouble3DInstance::setSecret() {
+void
+OfxDouble3DInstance::setSecret()
+{
     _knob->setSecret(getSecret());
 }
 
-void OfxDouble3DInstance::setEvaluateOnChange() {
+void
+OfxDouble3DInstance::setEvaluateOnChange()
+{
     _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
-boost::shared_ptr<Knob> OfxDouble3DInstance::getKnob() const {
+boost::shared_ptr<Knob>
+OfxDouble3DInstance::getKnob() const
+{
     return _knob;
 }
 
-bool OfxDouble3DInstance::isAnimated(int dimension) const {
+bool
+OfxDouble3DInstance::isAnimated(int dimension) const
+{
     return _knob->isAnimated(dimension);
 }
 
-bool OfxDouble3DInstance::isAnimated() const {
+bool
+OfxDouble3DInstance::isAnimated() const {
     return _knob->isAnimated(0) || _knob->isAnimated(1) || _knob->isAnimated(2);
 }
 
-OfxStatus OfxDouble3DInstance::getNumKeys(unsigned int &nKeys) const {
+OfxStatus
+OfxDouble3DInstance::getNumKeys(unsigned int &nKeys) const
+{
     return OfxKeyFrame::getNumKeys(_knob, nKeys);
 }
-OfxStatus OfxDouble3DInstance::getKeyTime(int nth, OfxTime& time) const {
+
+OfxStatus
+OfxDouble3DInstance::getKeyTime(int nth, OfxTime& time) const
+{
     return OfxKeyFrame::getKeyTime(_knob, nth, time);
 }
-OfxStatus OfxDouble3DInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+
+OfxStatus
+OfxDouble3DInstance::getKeyIndex(OfxTime time, int direction, int & index) const
+{
     return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
 }
-OfxStatus OfxDouble3DInstance::deleteKey(OfxTime time) {
+
+OfxStatus
+OfxDouble3DInstance::deleteKey(OfxTime time)
+{
     return OfxKeyFrame::deleteKey(_knob, time);
 }
-OfxStatus OfxDouble3DInstance::deleteAllKeys(){
+
+OfxStatus OfxDouble3DInstance::deleteAllKeys()
+{
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxDouble3DInstance::onKnobAnimationLevelChanged(int lvl)
+void
+OfxDouble3DInstance::onKnobAnimationLevelChanged(int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
     assert(l == Natron::NO_ANIMATION || getCanAnimate());
@@ -1319,6 +1608,12 @@ OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::P
         int incr = properties.getIntProperty(kOfxParamPropIncrement,i);
         increment[i] = incr != 0 ?  incr : 1;
         def[i] = properties.getIntProperty(kOfxParamPropDefault,i);
+        
+        std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,i);
+        if (!dimensionName.empty()) {
+            _knob->setDimensionName(i, dimensionName);
+        }
+
     }
     
     _knob->setMinimumsAndMaximums(minimum, maximum);
@@ -1327,30 +1622,39 @@ OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::P
     _knob->setDefaultValue<int>(def[0],0);
     _knob->setDefaultValue<int>(def[1],1);
     _knob->setDefaultValue<int>(def[2],2);
+
 }
 
-OfxStatus OfxInteger3DInstance::get(int& x1, int& x2, int& x3) {
+OfxStatus
+OfxInteger3DInstance::get(int& x1, int& x2, int& x3)
+{
     x1 = _knob->getValue<int>(0);
     x2 = _knob->getValue<int>(1);
     x3 = _knob->getValue<int>(2);
     return kOfxStatOK;
 }
 
-OfxStatus OfxInteger3DInstance::get(OfxTime time, int& x1, int& x2, int& x3) {
+OfxStatus
+OfxInteger3DInstance::get(OfxTime time, int& x1, int& x2, int& x3)
+{
     x1 = _knob->getValueAtTime<int>(time,0);
     x2 = _knob->getValueAtTime<int>(time,1);
     x3 = _knob->getValueAtTime<int>(time,2);
     return kOfxStatOK;
 }
 
-OfxStatus OfxInteger3DInstance::set(int x1, int x2, int x3) {
+OfxStatus
+OfxInteger3DInstance::set(int x1, int x2, int x3)
+{
     _knob->setValue<int>(x1,0);
     _knob->setValue<int>(x2,1);
     _knob->setValue<int>(x3,2);
 	return kOfxStatOK;
 }
 
-OfxStatus OfxInteger3DInstance::set(OfxTime time, int x1, int x2, int x3) {
+OfxStatus
+OfxInteger3DInstance::set(OfxTime time, int x1, int x2, int x3)
+{
     _knob->setValueAtTime<int>(time,x1,0);
     _knob->setValueAtTime<int>(time,x2,1);
     _knob->setValueAtTime<int>(time,x3,2);
@@ -1358,40 +1662,63 @@ OfxStatus OfxInteger3DInstance::set(OfxTime time, int x1, int x2, int x3) {
 }
 
 // callback which should set enabled state as appropriate
-void OfxInteger3DInstance::setEnabled() {
+void
+OfxInteger3DInstance::setEnabled()
+{
     _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
-void OfxInteger3DInstance::setSecret() {
+void
+OfxInteger3DInstance::setSecret()
+{
     _knob->setSecret(getSecret());
 }
 
-void OfxInteger3DInstance::setEvaluateOnChange() {
+void
+OfxInteger3DInstance::setEvaluateOnChange()
+{
     _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
-boost::shared_ptr<Knob> OfxInteger3DInstance::getKnob() const {
+boost::shared_ptr<Knob>
+OfxInteger3DInstance::getKnob() const
+{
     return _knob;
 }
 
-OfxStatus OfxInteger3DInstance::getNumKeys(unsigned int &nKeys) const {
+OfxStatus
+OfxInteger3DInstance::getNumKeys(unsigned int &nKeys) const
+{
     return OfxKeyFrame::getNumKeys(_knob, nKeys);
 }
-OfxStatus OfxInteger3DInstance::getKeyTime(int nth, OfxTime& time) const {
+
+OfxStatus
+OfxInteger3DInstance::getKeyTime(int nth, OfxTime& time) const
+{
     return OfxKeyFrame::getKeyTime(_knob, nth, time);
 }
-OfxStatus OfxInteger3DInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+
+OfxStatus
+OfxInteger3DInstance::getKeyIndex(OfxTime time, int direction, int & index) const
+{
     return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
 }
-OfxStatus OfxInteger3DInstance::deleteKey(OfxTime time) {
+
+OfxStatus
+OfxInteger3DInstance::deleteKey(OfxTime time)
+{
     return OfxKeyFrame::deleteKey(_knob, time);
 }
-OfxStatus OfxInteger3DInstance::deleteAllKeys(){
+
+OfxStatus
+OfxInteger3DInstance::deleteAllKeys()
+{
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-void OfxInteger3DInstance::onKnobAnimationLevelChanged(int lvl)
+void
+OfxInteger3DInstance::onKnobAnimationLevelChanged(int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
     assert(l == Natron::NO_ANIMATION || getCanAnimate());

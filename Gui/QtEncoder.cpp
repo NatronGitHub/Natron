@@ -71,7 +71,7 @@ std::vector<std::string> QtWriter::supportedFileFormats() const {
 void QtWriter::getFrameRange(SequenceTime *first,SequenceTime *last){
     int index = _frameRangeChoosal->getValue<int>();
     if(index == 0){
-        EffectInstance* inp = input(0);
+        EffectInstance* inp = input_other_thread(0);
         if(inp){
             inp->getFrameRange(first, last);
         }else{
@@ -90,10 +90,9 @@ void QtWriter::getFrameRange(SequenceTime *first,SequenceTime *last){
 
 void QtWriter::initializeKnobs(){
     
-    if (isLiveInstance()) {
-        Natron::warningDialog(getName(), "This plugin exists only to help the developpers team to test " NATRON_APPLICATION_NAME
-                              ". You cannot use it to render a project.");
-    }
+    Natron::warningDialog(getName(), "This plugin exists only to help the developpers team to test " NATRON_APPLICATION_NAME
+                          ". You cannot use it to render a project.");
+    
     
     _premultKnob = Natron::createKnob<Bool_Knob>(this, "Premultiply by alpha");
     _premultKnob->setAnimationEnabled(false);

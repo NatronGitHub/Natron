@@ -12,6 +12,8 @@
 
 #include <fstream>
 #include <QtConcurrentRun>
+#include <QCoreApplication>
+#include <algorithm>
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
@@ -422,7 +424,7 @@ void Project::initializeKnobs(){
             _imp->formatKnob->setDefaultValue<int>(i);
         }
         entries.push_back(formatStr.toStdString());
-        _imp->availableFormats.push_back(*f);
+        _imp->builtinFormats.push_back(*f);
     }
     _imp->formatKnob->turnOffNewLine();
 
@@ -462,9 +464,8 @@ void Project::getProjectDefaultFormat(Format *f) const
     assert(f);
     QMutexLocker l(&_imp->formatMutex);
     int index = _imp->formatKnob->getActiveEntry();
-    const Format& format = _imp->availableFormats[index];
-    assert(!format.isNull());
-    *f = format;
+    bool found = _imp->findFormat(index, f);
+    assert(found);
 }
 
 ///only called on the main thread
@@ -546,37 +547,41 @@ int Project::tryAddProjectFormat(const Format& f){
     if(f.left() >= f.right() || f.bottom() >= f.top()){
         return -1;
     }
-    for (U32 i = 0; i < _imp->availableFormats.size(); ++i) {
-        if(f == _imp->availableFormats[i]){
-            return i;
+    
+    std::list<Format>::iterator foundFormat = std::find(_imp->builtinFormats.begin(), _imp->builtinFormats.end(), f);
+    if (foundFormat != _imp->builtinFormats.end()) {
+        return std::distance(_imp->builtinFormats.begin(),foundFormat);
+    } else {
+        foundFormat = std::find(_imp->additionalFormats.begin(), _imp->additionalFormats.end(), f);
+        if (foundFormat != _imp->additionalFormats.end()) {
+            return std::distance(_imp->additionalFormats.begin(),foundFormat);
         }
     }
-    std::vector<Format> currentFormats = _imp->availableFormats;
-    _imp->availableFormats.clear();
+ 
     std::vector<std::string> entries;
-    for (U32 i = 0; i < currentFormats.size(); ++i) {
-        const Format& f = currentFormats[i];
+    for (std::list<Format>::iterator it = _imp->builtinFormats.begin(); it!=_imp->builtinFormats.end();++it) {
+        const Format& f = *it;
         QString formatStr = generateStringFromFormat(f);
         entries.push_back(formatStr.toStdString());
-        _imp->availableFormats.push_back(f);
+    }
+    for (std::list<Format>::iterator it = _imp->additionalFormats.begin(); it!=_imp->additionalFormats.end();++it) {
+        const Format& f = *it;
+        QString formatStr = generateStringFromFormat(f);
+        entries.push_back(formatStr.toStdString());
     }
     QString formatStr = generateStringFromFormat(f);
     entries.push_back(formatStr.toStdString());
-    _imp->availableFormats.push_back(f);
+    _imp->additionalFormats.push_back(f);
     _imp->formatKnob->populate(entries);
-    return _imp->availableFormats.size() - 1;
+    return (_imp->builtinFormats.size() + _imp->additionalFormats.size()) - 1;
 }
 
 void Project::setProjectDefaultFormat(const Format& f) {
     assert(!_imp->formatMutex.tryLock());
     int index = tryAddProjectFormat(f);
-    _imp->formatMutex.unlock();
     _imp->formatKnob->setValue(index);
     ///if locked it will trigger a deadlock because some parameters
     ///might respond to this signal by checking the content of the project format.
-    emit formatChanged(f);
-    _imp->formatMutex.lock();
-    getApp()->triggerAutoSave();
 }
 
 
@@ -638,26 +643,13 @@ void Project::toggleAutoPreview() {
 boost::shared_ptr<TimeLine> Project::getTimeLine() const  {return _imp->timeline;}
 
 void
-Project::getProjectFormats(std::vector<Format> *formats) const
+Project::getAdditionalFormats(std::list<Format> *formats) const
 {
     assert(formats);
     QMutexLocker l(&_imp->formatMutex);
-    *formats = _imp->availableFormats;
+    *formats = _imp->additionalFormats;
 }
 
-void Project::incrementKnobsAge() {
-    ///this is called by a setValue() on a knob which
-    QMutexLocker l(&_imp->knobsAgeMutex);
-    if(_imp->_knobsAge < 99999)
-        ++_imp->_knobsAge;
-    else
-        _imp->_knobsAge = 0;
-}
-
-int Project::getKnobsAge() const {
-    QMutexLocker l(&_imp->knobsAgeMutex);
-    return _imp->_knobsAge;
-}
 
 void Project::setLastTimelineSeekCaller(Natron::OutputEffectInstance* output) {
     QMutexLocker l(&_imp->projectLock);
@@ -871,14 +863,10 @@ void Project::onKnobValueChanged(Knob* knob,Natron::ValueChangedReason /*reason*
         getApp()->setupViewersForViews(viewsCount);
     } else if(knob == _imp->formatKnob.get()) {
         int index = _imp->formatKnob->getActiveEntry();
-        if(index < (int)_imp->availableFormats.size()){
-            const Format& f = _imp->availableFormats[index];
-            for(U32 i = 0 ; i < _imp->currentNodes.size() ; ++i){
-                if (_imp->currentNodes[i]->pluginID() == "Viewer") {
-                    emit formatChanged(f);
-                }
-
-            }
+        Format frmt;
+        bool found = _imp->findFormat(index, &frmt);
+        if (found) {
+            emit formatChanged(frmt);
         }
     } else if(knob == _imp->addFormatKnob.get()) {
         emit mustCreateFormat();
@@ -940,26 +928,36 @@ void Project::reset() {
 
 void Project::setOrAddProjectFormat(const Format& frmt,bool skipAdd) {
 
-    QMutexLocker l(&_imp->formatMutex);
-    if(_imp->autoSetProjectFormat){
-        Format dispW;
-        _imp->autoSetProjectFormat = false;
-        dispW = frmt;
-
-        Format* df = appPTR->findExistingFormat(dispW.width(), dispW.height(),dispW.getPixelAspect());
-        if (df) {
-            dispW.setName(df->getName());
-            setProjectDefaultFormat(dispW);
-        } else {
-            setProjectDefaultFormat(dispW);
+    
+    Format dispW;
+    bool formatSet = false;
+    {
+        QMutexLocker l(&_imp->formatMutex);
+        
+        if(_imp->autoSetProjectFormat){
+            _imp->autoSetProjectFormat = false;
+            dispW = frmt;
+            
+            Format* df = appPTR->findExistingFormat(dispW.width(), dispW.height(),dispW.getPixelAspect());
+            if (df) {
+                dispW.setName(df->getName());
+                setProjectDefaultFormat(dispW);
+            } else {
+                setProjectDefaultFormat(dispW);
+            }
+            formatSet = true;
+        } else if(!skipAdd) {
+            dispW = frmt;
+            tryAddProjectFormat(dispW);
+            
         }
-
-    } else if(!skipAdd) {
-        Format dispW;
-        dispW = frmt;
-        tryAddProjectFormat(dispW);
-
     }
+    if (formatSet) {
+        emit formatChanged(dispW);
+        getApp()->triggerAutoSave();
+    }
+
+
 }
 
 ///do not need to lock this function as all calls are thread-safe already
@@ -976,6 +974,9 @@ bool Project::connectNodes(int inputNumber,const std::string& parentName,Node* o
 
 bool Project::connectNodes(int inputNumber,Node* input,Node* output,bool force) {
 
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
     Node* existingInput = output->input(inputNumber);
     if (force && existingInput) {
         bool ok = disconnectNodes(existingInput, output);
@@ -985,8 +986,6 @@ bool Project::connectNodes(int inputNumber,Node* input,Node* output,bool force) 
             assert(ok);
         }
     }
-
-    QMutexLocker l(&_imp->projectLock);
 
     if(!output->connectInput(input, inputNumber)){
         return false;
@@ -998,7 +997,6 @@ bool Project::connectNodes(int inputNumber,Node* input,Node* output,bool force) 
     return true;
 }
 bool Project::disconnectNodes(Node* input,Node* output,bool autoReconnect) {
-    QMutexLocker l(&_imp->projectLock);
 
     Node* inputToReconnectTo = 0;
     int indexOfInput = output->inputIndex(input);

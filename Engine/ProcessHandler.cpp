@@ -156,17 +156,16 @@ void ProcessHandler::onProcessError(QProcess::ProcessError err){
     }
 }
 
-void ProcessHandler::onProcessEnd(int exitCode,QProcess::ExitStatus stat){
+void ProcessHandler::onProcessEnd(int exitCode,QProcess::ExitStatus stat) {
+    int returnCode = 0;
     if (stat == QProcess::CrashExit) {
-        Natron::errorDialog(_writer->getName(),"The render process exited after a crash");
-        // _hasProcessBeenDeleted = true;
-
+        returnCode = 2;
     } else if(exitCode == 1) {
-        Natron::errorDialog(_writer->getName(), "The process ended with a return code of 1, this indicates an undetermined problem occured.");
-    } else {
-        Natron::informationDialog(_writer->getName(),"Render finished!");
+        returnCode = 1;
+        
     }
-    emit processFinished();
+    emit processFinished(returnCode);
+
 }
 
 

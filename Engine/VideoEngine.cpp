@@ -49,7 +49,6 @@ using std::cout; using std::endl;
 VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
     : QThread(parent)
     , _tree(owner)
-    , _treeMutex(QMutex::Recursive)
     , _threadStarted(false)
     , _abortBeingProcessedMutex()
     , _abortBeingProcessed(false)
@@ -59,7 +58,6 @@ VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
     , _mustQuitCondition()
     , _mustQuitMutex()
     , _mustQuit(false)
-    , _treeVersionValid(false)
     , _loopModeMutex()
     , _loopMode(true)
     , _restart(true)
@@ -219,7 +217,7 @@ bool VideoEngine::startEngine(bool singleThreaded) {
     
     bool hasInput = false;
     for (RenderTree::TreeIterator it = _tree.begin() ; it != _tree.end() ; ++it) {
-        if(it->first->isInputNode()){
+        if((*it)->isInputNode()){
             hasInput = true;
             break;
         }
@@ -249,6 +247,8 @@ bool VideoEngine::startEngine(bool singleThreaded) {
 
 }
 bool VideoEngine::stopEngine() {
+    
+    bool wasAborted = false;
     /*reset the abort flag and wake up any thread waiting*/
     {
         // make sure startEngine is not running by locking _abortBeingProcessedMutex
@@ -256,6 +256,9 @@ bool VideoEngine::stopEngine() {
         _abortBeingProcessed = true; //_abortBeingProcessed is a dummy variable: it should be always false when stopeEngine is not running
         {
             QMutexLocker l(&_abortedRequestedMutex);
+            if (_abortRequested > 0) {
+                wasAborted = true;
+            }
             _abortRequested = 0;
             
             /*Refresh preview for all nodes that have preview enabled & set the aborted flag to false.
@@ -264,24 +267,24 @@ bool VideoEngine::stopEngine() {
             bool shouldRefreshPreview = (_tree.getOutput()->getApp()->shouldRefreshPreview() && !_currentRunArgs._sameFrame)
             || _currentRunArgs._forcePreview;
             for (RenderTree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
-                bool previewEnabled = it->second->isPreviewEnabled();
+                bool previewEnabled = (*it)->isPreviewEnabled();
                 if (previewEnabled) {
                     if (_currentRunArgs._forcePreview) {
-                        it->second->getNode()->computePreviewImage(_timeline->currentFrame());
+                        (*it)->computePreviewImage(_timeline->currentFrame());
                     } else {
                         if (shouldRefreshPreview) {
-                            it->second->getNode()->refreshPreviewImage(_timeline->currentFrame());
+                            (*it)->refreshPreviewImage(_timeline->currentFrame());
                         }
                     }
                 }
-                it->second->setAborted(false);
+                (*it)->setAborted(false);
             }
             
             
             _abortedRequestedCondition.wakeOne();
         }
 
-        emit engineStopped();
+        emit engineStopped(wasAborted ? 1 : 0);
         
         _currentRunArgs._frameRequestsCount = 0;
         _restart = true;
@@ -300,6 +303,7 @@ bool VideoEngine::stopEngine() {
     Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
     outputEffect->setDoingFullSequenceRender(false);
     if(appPTR->isBackground()){
+       
         outputEffect->notifyRenderFinished();
     }
 
@@ -425,8 +429,8 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
         assert(output);
         ViewerInstance* viewer = _tree.outputAsViewer();
         
-        /*update the tree hash */
-        _tree.refreshKnobsAndHashAndClearPersistentMessage();
+        /*update the tree inputs */
+        _tree.refreshInputsAndClearMessage();
         
         
         if(viewer){
@@ -596,12 +600,9 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
 }
 
 Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded,bool isSequentialRender) {
-    Status stat;
-    
-  
     /*pre process frame*/
     
-    stat = _tree.preProcessFrame(time);
+    Status stat = _tree.preProcessFrame();
     if (stat == StatFailed) {
         return stat;
         //don't throw an exception here, this is regular behaviour when a mandatory input is not connected.
@@ -639,7 +640,7 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded,bo
                 // Do not catch exceptions: if an exception occurs here it is probably fatal, since
                 // it comes from Natron itself. All exceptions from plugins are already caught
                 // by the HostSupport library.
-                (void)_tree.getOutput()->renderRoI(time, scale,i ,rod,isSequentialRender,false);
+                (void)_tree.getOutput()->renderRoI(EffectInstance::RenderRoIArgs(time, scale,i ,rod,isSequentialRender,false,false,NULL));
             }
         }
         
@@ -674,7 +675,7 @@ void VideoEngine::abortRendering(bool blocking) {
         /*Note that we set the aborted flag in from output to inputs otherwise some aborted images
         might get rendered*/
         for (RenderTree::TreeReverseIterator it = _tree.rbegin(); it != _tree.rend(); ++it) {
-            it->second->setAborted(true);
+            (*it)->setAborted(true);
         }
         if(_tree.isOutputAViewer() && QThread::currentThread() != this)
             _tree.outputAsViewer()->wakeUpAnySleepingThread();
@@ -730,9 +731,6 @@ RenderTree::RenderTree(EffectInstance *output):
   ,_isOutputOpenFXNode(false)
   ,_firstFrame(0)
   ,_lastFrame(0)
-  ,_treeVersionValid(false)
-  ,_renderOutputFormat()
-  ,_projectViewsCount(1)
 {
     assert(output);
 }
@@ -740,84 +738,53 @@ RenderTree::RenderTree(EffectInstance *output):
 
 void RenderTree::clearGraph(){
     for(TreeContainer::const_iterator it = _sorted.begin();it!=_sorted.end();++it) {
-        (*it).second->setMarkedByTopologicalSort(false);
+        (*it)->clearPersistentMessage();
     }
     _sorted.clear();
 }
 
-void RenderTree::refreshTree(int knobsAge){
+void RenderTree::refreshTree(){
     _isViewer = dynamic_cast<ViewerInstance*>(_output) != NULL;
     _isOutputOpenFXNode = _output->isOpenFX();
     
-    
     /*unmark all nodes already present in the graph*/
     clearGraph();
-    fillGraph(_output);
-
-    for(TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
-        
-        ///reset back the marking
-        it->second->setMarkedByTopologicalSort(false);
-        
-        ///update the clone's inputs
-        it->second->updateInputs(this);
- 
-        ///release the lock we acquired in fillGraph
-        it->first->setRenderTreeIsUsingInputs(false);
-    }
-    
-    _output->getApp()->getProject()->getProjectDefaultFormat(&_renderOutputFormat);
-    assert(!_renderOutputFormat.isNull());
-    _projectViewsCount = _output->getApp()->getProject()->getProjectViewsCount();
-
-    ///clone the knobs
-    _output->cloneKnobsAndComputeHashAndClearPersistentMessage(knobsAge,true);
+    std::vector<Natron::Node*> markedNodes;
+    fillGraph(_output->getNode(),markedNodes);
 }
 
 
-void RenderTree::fillGraph(EffectInstance *effect){
+void RenderTree::fillGraph(Natron::Node *node,std::vector<Natron::Node*>& markedNodes){
     
-    ///prevent the effect from using its inputs yet
-    effect->getNode()->setRenderTreeIsUsingInputs(true);
     
     /*call fillGraph recursivly on all the node's inputs*/
-    const Node::InputMap& inputs = effect->getNode()->getInputs();
-    for(Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
-        if(it->second){
+    node->updateRenderInputs();
+    const std::vector<Node*>& inputs = node->getInputs_other_thread();
+    for (U32 i = 0; i < inputs.size(); ++i) {
+        if(inputs[i]){
             /*if the node is an inspector we're interested just by the active input*/
-            const InspectorNode* insp = dynamic_cast<const InspectorNode*>(effect->getNode());
-            if (insp && it->first != insp->activeInput()) {
+            const InspectorNode* insp = dynamic_cast<const InspectorNode*>(node);
+            if (insp && (int)i != insp->activeInput()) {
                 continue;
             }
-            Natron::EffectInstance* inputEffect = it->second->findOrCreateLiveInstanceClone(this);
-            fillGraph(inputEffect);
+            fillGraph(inputs[i],markedNodes);
         }
     }
-    if(!effect->isMarkedByTopologicalSort()){
-        effect->setMarkedByTopologicalSort(true);
-        _sorted.push_back(std::make_pair(effect->getNode(),(EffectInstance*)effect));
+    std::vector<Natron::Node*>::iterator foundNode = std::find(markedNodes.begin(), markedNodes.end(), node);
+    if (foundNode == markedNodes.end()) {
+        markedNodes.push_back(node);
+        _sorted.push_back(node);
     }
 }
 
-void RenderTree::refreshKnobsAndHashAndClearPersistentMessage()
+void RenderTree::refreshInputsAndClearMessage()
 {
-    _output->getApp()->getProject()->getProjectDefaultFormat(&_renderOutputFormat);
-    assert(!_renderOutputFormat.isNull());
-    _projectViewsCount = _output->getApp()->getProject()->getProjectViewsCount();
-    int knobsAge = _output->getAppAge();
-    getOutput()->cloneKnobsAndComputeHashAndClearPersistentMessage(knobsAge,false);
-    _treeVersionValid = true;
-
-}
-
-Natron::EffectInstance* RenderTree::getEffectForNode(Natron::Node* node) const{
-    for(TreeIterator it = _sorted.begin();it!=_sorted.end();++it){
-        if (it->first == node) {
-            return it->second;
-        }
+    for(TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
+        (*it)->updateRenderInputs();
+        (*it)->clearPersistentMessage();
     }
-    return NULL;
 }
+
 
 ViewerInstance* RenderTree::outputAsViewer() const {
     if(_output && _isViewer){
@@ -832,21 +799,17 @@ ViewerInstance* RenderTree::outputAsViewer() const {
 void RenderTree::debug() const{
     cout << "Topological ordering of the Tree is..." << endl;
     for(RenderTree::TreeIterator it = begin(); it != end() ;++it) {
-        cout << it->first->getName() << endl;
+        cout << (*it)->getName() << endl;
     }
 }
 
-Natron::Status RenderTree::preProcessFrame(SequenceTime time){
+Natron::Status RenderTree::preProcessFrame(){
     /*Validating the Tree in topological order*/
     for (TreeIterator it = begin(); it != end(); ++it) {
-        for (int i = 0; i < it->second->maximumInputs(); ++i) {
-            if (!it->second->input(i) && !it->second->isInputOptional(i)) {
+        for (int i = 0; i < (*it)->maximumInputs(); ++i) {
+            if (!(*it)->input_other_thread(i) && !(*it)->getLiveInstance()->isInputOptional(i)) {
                 return StatFailed;
             }
-        }
-        Natron::Status st = it->second->preProcessFrame(time);
-        if(st == Natron::StatFailed){
-            return st;
         }
     }
     return Natron::StatOK;
@@ -896,10 +859,7 @@ bool VideoEngine::mustQuit() const{
 
 void VideoEngine::refreshTree(){
     ///get the knobs age before locking to prevent deadlock
-    int knobsAge = _tree.getOutput()->getAppAge();
-    
-    QMutexLocker l(&_treeMutex);
-    _tree.refreshTree(knobsAge);
+    _tree.refreshTree();
 }
 
 void VideoEngine::getFrameRange() {

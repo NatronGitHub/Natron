@@ -59,7 +59,8 @@ struct ProjectPrivate {
     QDateTime projectCreationTime; //< the project creation time
     
     boost::shared_ptr<Choice_Knob> formatKnob;
-    std::vector<Format> availableFormats;
+    std::list<Format> builtinFormats;
+    std::list<Format> additionalFormats; //< added by the user
     mutable QMutex formatMutex;
     
     boost::shared_ptr<Button_Knob> addFormatKnob;
@@ -81,9 +82,6 @@ struct ProjectPrivate {
     
     
     Natron::Project* project;
-    
-    int _knobsAge; //< the age of the knobs in the app. This is updated on each value changed.
-    mutable QMutex knobsAgeMutex;
     
     Natron::OutputEffectInstance* lastTimelineSeekCaller;
 
@@ -107,6 +105,8 @@ struct ProjectPrivate {
     ProjectPrivate(Natron::Project* project);
     
     void restoreFromSerialization(const ProjectSerialization& obj);
+    
+    bool findFormat(int index,Format* format) const;
         
 };
     

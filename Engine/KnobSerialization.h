@@ -19,23 +19,64 @@ CLANG_DIAG_OFF(unused-parameter)
 #include <boost/archive/xml_iarchive.hpp>
 CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
-#include <boost/serialization/vector.hpp>
+#include <boost/serialization/list.hpp>
 
 #include "Engine/Variant.h"
 #include "Engine/CurveSerialization.h"
 
 
+
+struct MasterSerialization
+{
+    int masterDimension;
+    std::string masterNodeName;
+    std::string masterKnobName;
+    
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        (void)version;
+        ar & boost::serialization::make_nvp("MasterDimension",masterDimension);
+        ar & boost::serialization::make_nvp("MasterNodeName",masterNodeName);
+        ar & boost::serialization::make_nvp("MasterKnobName",masterKnobName);
+    }
+
+};
+
+struct ValueSerialization
+{
+    Variant value;
+    bool hasAnimation;
+    Curve curve;
+    bool hasMaster;
+    MasterSerialization master;
+    
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        (void)version;
+        ar & boost::serialization::make_nvp("Value",value);
+        ar & boost::serialization::make_nvp("HasAnimation",hasAnimation);
+        if (hasAnimation) {
+            ar & boost::serialization::make_nvp("Curve",curve);
+        }
+        ar & boost::serialization::make_nvp("HasMaster",hasMaster);
+        if (hasMaster) {
+            ar & boost::serialization::make_nvp("Master",master);
+        }
+    }
+
+    
+};
+
 class Curve;
 class KnobSerialization
 {
-    bool _hasAnimation;
-    std::string _label;
-    std::vector<Variant> _values;
+    std::string _name;
+    std::list<ValueSerialization> _values;
     int _dimension;
-    /* the keys for a specific dimension*/
-    std::vector< boost::shared_ptr<Curve> > _curves;
-    std::vector< std::pair< int, std::string > > _masters;
-    
     std::string _extraData;
 
     friend class boost::serialization::access;
@@ -43,14 +84,9 @@ class KnobSerialization
     void serialize(Archive & ar, const unsigned int version)
     {
         (void)version;
-        ar & boost::serialization::make_nvp("Label",_label);
+        ar & boost::serialization::make_nvp("Name",_name);
         ar & boost::serialization::make_nvp("Dimension",_dimension);
         ar & boost::serialization::make_nvp("Values",_values);
-        ar & boost::serialization::make_nvp("HasAnimation",_hasAnimation);
-        if (_hasAnimation) {
-            ar & boost::serialization::make_nvp("Curves",_curves);
-        }
-        ar & boost::serialization::make_nvp("Masters",_masters);
         ar & boost::serialization::make_nvp("Extra_datas",_extraData);
     }
 
@@ -61,15 +97,11 @@ public:
 
     void initialize(const Knob* knob);
     
-    const std::string& getLabel() const { return _label; }
-
-    const std::vector<Variant>& getValues() const { return _values; }
+    const std::string& getName() const { return _name; }
 
     int getDimension() const { return _dimension; }
-
-    const  std::vector< boost::shared_ptr<Curve> >& getCurves() const { return _curves; }
-
-    const std::vector< std::pair<int,std::string> > & getMasters() const { return _masters; }
+    
+    const std::list<ValueSerialization>& getValuesSerialized() const { return _values; }
 
     const std::string& getExtraData() const { return _extraData; }
 };

@@ -28,29 +28,12 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/CurvePrivate.h"
 
 
-namespace boost {
-namespace serialization {
-
-
-template<class Archive>
-void serialize(Archive & ar,CurvePrivate& c, const unsigned int version)
-{
-    (void)version;
-    QReadLocker l(&c._lock);
-    ar & boost::serialization::make_nvp("KeyFrameSet",c.keyFrames);
-}
-
-
-    
-}
-}
-
-
 template<class Archive>
 void Curve::serialize(Archive & ar, const unsigned int version)
 {
     (void)version;
-    ar & boost::serialization::make_nvp("PIMPL",_imp);
+    QReadLocker l(&_imp->_lock);
+    ar & boost::serialization::make_nvp("KeyFrameSet",_imp->keyFrames);
 }
 
 

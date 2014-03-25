@@ -74,13 +74,12 @@ Planned features
 
 ### High priority
 
-- Real-time histograms,vectorscope,waveforms [All source code already exists,it's just a matter of hours to implement them]
 - Proxy mode(i.e: downscaling of the input images to render faster)
 
 ### Features planned for next major version
 
 - Dopesheet
-- Rotopainting node
+- Rotopainting/scoping nodes
 - Multi-view (http://imagine.enpc.fr/~moulonp/openMVG/) support.
 - Meta-data support as well as per-plugin meta-data support by the node-graph
 

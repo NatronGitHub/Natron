@@ -66,10 +66,9 @@ std::string QtReader::description() const {
 
 void QtReader::initializeKnobs() {
     
-    if (isLiveInstance()) {
-        Natron::warningDialog(getName(), "This plugin exists only to help the developpers team to test " NATRON_APPLICATION_NAME
-                              ". You cannot use it when rendering a project.");
-    }
+    Natron::warningDialog(getName(), "This plugin exists only to help the developpers team to test " NATRON_APPLICATION_NAME
+                          ". You cannot use it when rendering a project.");
+    
     
     _fileKnob = Natron::createKnob<File_Knob>(this, "File");
     _fileKnob->setAsInputImage();

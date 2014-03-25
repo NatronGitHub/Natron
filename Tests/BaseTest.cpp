@@ -123,21 +123,21 @@ void BaseTest::disconnectNodes(Natron::Node* input,Natron::Node* output,bool exp
         
         ///the input must have in its output the node 'output'
         EXPECT_TRUE(input->hasOutputConnected());
-        const Natron::Node::OutputMap& outputs = input->getOutputs();
+        const std::list<Natron::Node*>& outputs = input->getOutputs();
         bool foundOutput = false;
-        for (Natron::Node::OutputMap::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
-            if (it->second == output) {
+        for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+            if ((*it) == output) {
                 foundOutput = true;
                 break;
             }
         }
         
         ///the output must have in its inputs the node 'input'
-        const Natron::Node::InputMap& inputs = output->getInputs();
+        const std::vector<Natron::Node*>& inputs = output->getInputs_mt_safe();
         int inputIndex = 0;
         bool foundInput = false;
-        for(Natron::Node::InputMap::const_iterator it = inputs.begin(); it!=inputs.end();++it) {
-            if (it->second == input) {
+        for(U32 i = 0; i < inputs.size() ; ++i) {
+            if (inputs[i] == input) {
                 foundInput = true;
                 break;
             }
@@ -157,21 +157,21 @@ void BaseTest::disconnectNodes(Natron::Node* input,Natron::Node* output,bool exp
     if (expectedReturnvalue) {
         ///check that the disconnection went OK
         
-        const Natron::Node::OutputMap& outputs = input->getOutputs();
+        const std::list<Natron::Node*>& outputs = input->getOutputs();
         bool foundOutput = false;
-        for (Natron::Node::OutputMap::const_iterator it = outputs.begin(); it!=outputs.end();++it) {
-            if (it->second == output) {
+        for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it!=outputs.end();++it) {
+            if ((*it) == output) {
                 foundOutput = true;
                 break;
             }
         }
         
         ///the output must have in its inputs the node 'input'
-        const Natron::Node::InputMap& inputs = output->getInputs();
+        const std::vector<Natron::Node*>& inputs = output->getInputs_mt_safe();
         int inputIndex = 0;
         bool foundInput = false;
-        for(Natron::Node::InputMap::const_iterator it = inputs.begin(); it!=inputs.end();++it) {
-            if (it->second == input) {
+        for(U32 i = 0 ; i < inputs.size() ;++i) {
+            if (inputs[i] == input) {
                 foundInput = true;
                 break;
             }

@@ -105,7 +105,7 @@ public:
     
     virtual void hideSplashScreen() {}
     
-    Natron::EffectInstance* createOFXEffect(const std::string& pluginID,Natron::Node* node,bool isClone,
+    Natron::EffectInstance* createOFXEffect(const std::string& pluginID,Natron::Node* node,
                                             const NodeSerialization* serialization ) const;
 
     void registerAppInstance(AppInstance* app);

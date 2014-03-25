@@ -508,6 +508,9 @@ void AppManager::abortAnyProcessing() {
 
 bool AppManager::writeToOutputPipe(const QString& longMessage,const QString& shortMessage) {
     if(!_imp->_backgroundIPC) {
+        if (_imp->_appType == APP_BACKGROUND_AUTO_RUN) {
+            qDebug() << "Pipe between Gui process and render process is broken, progress report is not functionnal.";
+        }
         qDebug() << longMessage;
         return false;
     }
@@ -764,9 +767,9 @@ Natron::LibraryBinary* AppManager::getPluginBinary(const QString& pluginId,int m
 }
 
 
-Natron::EffectInstance* AppManager::createOFXEffect(const std::string& pluginID,Natron::Node* node,bool isClone,
+Natron::EffectInstance* AppManager::createOFXEffect(const std::string& pluginID,Natron::Node* node,
                                                     const NodeSerialization* serialization ) const {
-    return _imp->ofxHost->createOfxEffect(pluginID, node,isClone,serialization);
+    return _imp->ofxHost->createOfxEffect(pluginID, node,serialization);
 }
 
 void AppManager::removeFromNodeCache(boost::shared_ptr<Natron::Image> image){
@@ -905,8 +908,6 @@ void AppManager::registerEngineMetaTypes() const {
     qRegisterMetaType<Natron::ChannelSet>();
     qRegisterMetaType<Format>();
     qRegisterMetaType<SequenceTime>("SequenceTime");
-    qRegisterMetaType<Knob*>();
-    qRegisterMetaType<Natron::Node*>();
     qRegisterMetaType<Natron::StandardButtons>();
     qRegisterMetaType<RectI>();
     qRegisterMetaType<RectD>();

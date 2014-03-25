@@ -259,7 +259,7 @@ void Natron::OfxHost::getPluginAndContextByID(const std::string& pluginID,  OFX:
     }
 }
 
-AbstractOfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natron::Node* node,bool isClone,
+AbstractOfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natron::Node* node,
                                                             const NodeSerialization* serialization ) {
 
     assert(node);
@@ -269,9 +269,6 @@ AbstractOfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& n
     getPluginAndContextByID(name,&plugin,context);
 
     AbstractOfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
-    if (isClone) {
-        hostSideEffect->setClone();
-    }
     hostSideEffect->createOfxImageEffectInstance(plugin, context,serialization);
     return hostSideEffect;
 }
@@ -495,7 +492,8 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
 
-static QThreadStorage<unsigned int> gThreadIndex;
+///Stored as int, because we need -1
+static QThreadStorage<int> gThreadIndex;
 
 namespace {
     
@@ -504,15 +502,18 @@ namespace {
                                            unsigned int threadMax,
                                            void *customArg) {
         assert(threadIndex < threadMax);
-        gThreadIndex.localData() = threadIndex;
+        gThreadIndex.localData() = (int)threadIndex;
+        OfxStatus ret = kOfxStatOK;
         try {
             func(threadIndex, threadMax, customArg);
-            return kOfxStatOK;
         } catch (const std::bad_alloc& ba) {
-            return kOfxStatErrMemory;
+            ret =  kOfxStatErrMemory;
         } catch (...) {
-            return kOfxStatFailed;
+            ret =  kOfxStatFailed;
         }
+        ///reset back the index otherwise it could mess up the indexes if the same thread is re-used
+        gThreadIndex.localData() = -1;
+        return ret;
 
     }
 }
@@ -556,7 +557,7 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
     }
     
     // check that this thread does not already have an ID
-    if (gThreadIndex.hasLocalData()) {
+    if (gThreadIndex.hasLocalData() && (gThreadIndex.localData() != -1)) {
         return kOfxStatErrExists;
     }
     
@@ -612,8 +613,15 @@ OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
     if (!threadIndex)
         return kOfxStatFailed;
 
-    *threadIndex = gThreadIndex.hasLocalData() ? gThreadIndex.localData() : 0;
-
+    if (gThreadIndex.hasLocalData()) {
+        if (gThreadIndex.localData() == -1) {
+            *threadIndex = 0;
+        } else {
+            *threadIndex = gThreadIndex.localData();
+        }
+    } else {
+        *threadIndex = 0;
+    }
     return kOfxStatOK;
 }
 

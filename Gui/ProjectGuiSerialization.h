@@ -17,7 +17,7 @@ CLANG_DIAG_OFF(unused-parameter)
 #include <boost/archive/xml_iarchive.hpp>
 CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
-#include <boost/serialization/vector.hpp>
+#include <boost/serialization/list.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
@@ -65,10 +65,10 @@ struct PaneLayout{
     bool floating;
     int posx,posy;
     bool parentingCreated;
-    std::vector<bool> splits;
+    std::list<bool> splits;
     std::string parentName;
-    std::vector<std::string> splitsNames;
-    std::vector<std::string> tabs;
+    std::list<std::string> splitsNames;
+    std::list<std::string> tabs;
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -85,7 +85,7 @@ struct PaneLayout{
 
 class ProjectGuiSerialization {
     
-    std::vector< boost::shared_ptr<NodeGuiSerialization> > _serializedNodes;
+    std::list< NodeGuiSerialization > _serializedNodes;
     
     
     std::map<std::string,PaneLayout> _layout;
@@ -95,7 +95,7 @@ class ProjectGuiSerialization {
     
     std::map<std::string, ViewerData > _viewersData;
     
-    std::vector<std::string> _histograms;
+    std::list<std::string> _histograms;
 
     bool _arePreviewTurnedOffGlobally;
     
@@ -121,7 +121,7 @@ public:
     
     void initialize(const ProjectGui* projectGui);
     
-    const std::vector< boost::shared_ptr<NodeGuiSerialization> >& getSerializedNodesGui() const { return _serializedNodes; }
+    const std::list< NodeGuiSerialization >& getSerializedNodesGui() const { return _serializedNodes; }
     
     const std::map<std::string,PaneLayout>& getGuiLayout() const { return _layout; }
     
@@ -131,7 +131,7 @@ public:
     
     bool arePreviewsTurnedOffGlobally() const { return _arePreviewTurnedOffGlobally; }
     
-    const std::vector<std::string>& getHistograms() const { return _histograms; }
+    const std::list<std::string>& getHistograms() const { return _histograms; }
     
 private:
     

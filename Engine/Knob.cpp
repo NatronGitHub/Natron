@@ -12,6 +12,8 @@
 
 #include <QtCore/QDataStream>
 #include <QtCore/QByteArray>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QThread>
 #include <QtCore/QReadWriteLock>
 
 #include "Global/GlobalDefines.h"
@@ -32,6 +34,28 @@
 
 using namespace Natron;
 using std::make_pair; using std::pair;
+
+/***************** KNOBI**********************/
+
+bool KnobI::slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int otherDimension)
+{
+    return slaveTo(dimension, other, otherDimension, Natron::PLUGIN_EDITED);
+}
+
+void KnobI::onKnobSlavedTo(int dimension,const boost::shared_ptr<KnobI>&  other,int otherDimension)
+{
+    slaveTo(dimension, other, otherDimension, Natron::USER_EDITED);
+}
+
+void KnobI::unSlave(int dimension)
+{
+    unSlave(dimension, Natron::PLUGIN_EDITED);
+}
+
+void KnobI::onKnobUnSlaved(int dimension)
+{
+    unSlave(dimension, Natron::USER_EDITED);
+}
 
 
 /***********************************KNOB BASE******************************************/
@@ -113,12 +137,16 @@ struct Knob::KnobPrivate {
 Knob::Knob(KnobHolder* holder,const std::string& description,int dimension)
 :_imp(new KnobPrivate(this,holder,dimension,description))
 {
+    QObject::connect(this, SIGNAL(evaluateValueChangedInMainThread(int,int)), this, SLOT(onEvaluateValueChangedInOtherThread(int,int)));
 }
 
 
 Knob::~Knob()
 {
-    remove();
+    emit deleted();
+    if (_imp->_holder) {
+        _imp->_holder->removeKnob(this);
+    }
 }
 
 void Knob::populate() {
@@ -128,14 +156,6 @@ void Knob::populate() {
         _imp->_defaultValues[i] = Variant();
         _imp->_curves[i] = boost::shared_ptr<Curve>(new Curve(this));
         _imp->_animationLevel[i] = Natron::NO_ANIMATION;
-    }
-}
-
-void Knob::remove()
-{
-    emit deleted(this);
-    if (_imp->_holder) {
-         _imp->_holder->removeKnob(this);
     }
 }
 
@@ -419,59 +439,50 @@ int Knob::getDimension() const
 
 void Knob::restoreSlaveMasterState(const KnobSerialization& serializationObj) {
     ///restore masters
-    const std::vector< std::pair<int,std::string> >& serializedMasters = serializationObj.getMasters();
     
-    for (U32 i = 0 ; i < serializedMasters.size();++i) {
-        ///the serialized master string is as following: effectname.knobdescription
-        
-        std::string splitStr("_SPLIT_");
-        size_t posSplit = serializedMasters[i].second.find(splitStr);
-        if (posSplit == std::string::npos) {
-            Natron::errorDialog("Link slave/master", getDescription() + " failed to restore the following linkage: "
-                                + serializedMasters[i].second + ". Please submit a bug report.");
-            continue;
-        }
-        std::string nodeName = serializedMasters[i].second.substr(0,posSplit);
-        size_t posDescription = posSplit + splitStr.size();
-        std::string knobDesc = serializedMasters[i].second.substr(posDescription);
-        
-        ///we need to cycle through all the nodes of the project to find the real master
-        std::vector<Natron::Node*> allNodes;
-        getHolder()->getApp()->getActiveNodes(&allNodes);
-        Natron::Node* masterNode = 0;
-        for (U32 k = 0; k < allNodes.size(); ++k) {
-            if (allNodes[k]->getName() == nodeName) {
-                masterNode = allNodes[k];
-                break;
+    const std::list<ValueSerialization>& serializedValues = serializationObj.getValuesSerialized();
+    int i = 0;
+    for (std::list<ValueSerialization>::const_iterator it = serializedValues.begin();  it != serializedValues.end(); ++it) {
+        if (it->hasMaster) {
+            ///we need to cycle through all the nodes of the project to find the real master
+            std::vector<Natron::Node*> allNodes;
+            getHolder()->getApp()->getActiveNodes(&allNodes);
+            Natron::Node* masterNode = 0;
+            for (U32 k = 0; k < allNodes.size(); ++k) {
+                if (allNodes[k]->getName() == it->master.masterNodeName) {
+                    masterNode = allNodes[k];
+                    break;
+                }
             }
-        }
-        if (!masterNode) {
-            Natron::errorDialog("Link slave/master", getDescription() + " failed to restore the following linkage: "
-                                + serializedMasters[i].second + ". Please submit a bug report.");
-            continue;
-            
-        }
-        
-        ///now that we have the master node, find the corresponding knob
-        const std::vector< boost::shared_ptr<Knob> >& otherKnobs = masterNode->getKnobs();
-        bool found = false;
-        for (U32 j = 0 ; j < otherKnobs.size();++j) {
-            if (otherKnobs[j]->getName() == knobDesc) {
-                _imp->_masters[i].second = otherKnobs[j];
-                _imp->_masters[i].first = serializedMasters[i].first;
-                emit readOnlyChanged(true,_imp->_masters[i].first);
-                found = true;
-                break;
+            if (!masterNode) {
+                Natron::errorDialog("Link slave/master", getDescription() + " failed to restore the following linkage: "
+                                    + it->master.masterNodeName + ". Please submit a bug report.");
+                continue;
+                
             }
-        }
-        if (!found) {
-            Natron::errorDialog("Link slave/master", getDescription() + " failed to restore the following linkage: "
-                                + serializedMasters[i].second + ". Please submit a bug report.");
             
-        }
-    }
-    
+            ///now that we have the master node, find the corresponding knob
+            const std::vector< boost::shared_ptr<Knob> >& otherKnobs = masterNode->getKnobs();
+            bool found = false;
+            for (U32 j = 0 ; j < otherKnobs.size();++j) {
+                if (otherKnobs[j]->getName() == it->master.masterKnobName) {
+                    _imp->_masters[i].second = otherKnobs[j];
+                    _imp->_masters[i].first = it->master.masterDimension;
+                    emit readOnlyChanged(true,_imp->_masters[i].first);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                Natron::errorDialog("Link slave/master", getDescription() + " failed to restore the following linkage: "
+                                    + it->master.masterKnobName + ". Please submit a bug report.");
+                
+            }
+            
 
+        }
+        ++i;
+    }
 }
 
 void Knob::load(const KnobSerialization& serializationObj)
@@ -482,24 +493,18 @@ void Knob::load(const KnobSerialization& serializationObj)
         ///bracket value changes
     beginValueChange(Natron::OTHER_REASON);
     
-   
-    
-    const std::vector< boost::shared_ptr<Curve> >& serializedCurves = serializationObj.getCurves();
-    for (U32 i = 0 ; i< serializedCurves.size();++i) {
-        assert(serializedCurves[i]);
-        _imp->_curves[i]->clone(*serializedCurves[i]);
+    const std::list<ValueSerialization>& serializedValues = serializationObj.getValuesSerialized();
+    int i = 0;
+    for (std::list<ValueSerialization>::const_iterator it = serializedValues.begin();  it != serializedValues.end(); ++it) {
+        _imp->_curves[i]->clone(it->curve);
+        setValue(it->value,i,Natron::OTHER_REASON,NULL);
+        ++i;
     }
-    
+        
     const std::string& extraData = serializationObj.getExtraData();
     if (!extraData.empty()) {
         loadExtraData(extraData.c_str());
     }
-    
-    const std::vector<Variant>& serializedValues = serializationObj.getValues();
-    for (U32 i = 0 ; i < serializedValues.size();++i) {
-        setValue(serializedValues[i],i,Natron::OTHER_REASON,NULL);
-    }
-    
     
     ///end bracket
     endValueChange();
@@ -548,7 +553,7 @@ void Knob::evaluateAnimationChange()
             hasEvaluatedOnce = true;
         }
     }
-    if (!hasEvaluatedOnce && !_imp->_holder->isClone()) {
+    if (!hasEvaluatedOnce) {
         evaluateValueChange(0, Natron::PLUGIN_EDITED);
     }
     
@@ -575,7 +580,7 @@ void Knob::endValueChange()
         if (_imp->_betweenBeginEndCount == 0) {
             
             processNewValue(_imp->_beginEndReason);
-            if ((_imp->_beginEndReason != Natron::USER_EDITED) && !_imp->_holder->isClone()) {
+            if ((_imp->_beginEndReason != Natron::USER_EDITED)) {
                 for (U32 i = 0; i < _imp->_dimensionChanged.size(); ++i) {
                     emit valueChanged(_imp->_dimensionChanged[i]);
                 }
@@ -589,12 +594,17 @@ void Knob::endValueChange()
     _imp->_holder->notifyProjectEndKnobsValuesChanged();
 }
 
+void Knob::onEvaluateValueChangedInOtherThread(int dimension, int reason)
+{
+    evaluateValueChange(dimension,(Natron::ValueChangedReason)reason);
+}
+
 
 void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason)
 {
-    ///Always increment the application's knobs age.
-    if (_imp->_EvaluateOnChange) {
-        _imp->_holder->invalidateHash();
+    if (QThread::currentThread() != qApp->thread()) {
+        emit evaluateValueChangedInMainThread(dimension, reason);
+        return;
     }
     
     bool beginCalled = false;
@@ -617,9 +627,8 @@ void Knob::evaluateValueChange(int dimension,Natron::ValueChangedReason reason)
     
     ///Basically just call onKnobChange on the plugin
     bool significant = (reason != Natron::TIME_CHANGED) && _imp->_EvaluateOnChange;
-    if (!_imp->_holder->isClone()) {
-        _imp->_holder->notifyProjectEvaluationRequested(reason, this, significant);
-    }
+    _imp->_holder->notifyProjectEvaluationRequested(reason, this, significant);
+
     
     if (beginCalled) {
         endValueChange();
@@ -1081,7 +1090,6 @@ bool Knob::getKeyFrameValueByIndex(int dimension,int index,Variant* value) const
 KnobHolder::KnobHolder(AppInstance* appInstance):
 _app(appInstance)
 , _knobs()
-, _isClone(false)
 , _knobsInitialized(false)
 , _isSlave(false)
 {
@@ -1098,22 +1106,6 @@ void KnobHolder::initializeKnobsPublic()
 {
     initializeKnobs();
     _knobsInitialized = true;
-}
-
-void KnobHolder::invalidateHash()
-{
-    if (_app) {
-        _app->getProject()->incrementKnobsAge();
-    }
-}
-
-int KnobHolder::getAppAge() const
-{
-    if (_app) {
-        return _app->getProject()->getKnobsAge();
-    } else {
-        return -1;
-    }
 }
 
 void KnobHolder::cloneKnobs(const KnobHolder& other)
@@ -1188,6 +1180,12 @@ boost::shared_ptr<Knob> KnobHolder::getKnobByName(const std::string& name) const
     }
     return boost::shared_ptr<Knob>();
 }
+
+const std::vector< boost::shared_ptr<Knob> >& KnobHolder::getKnobs() const {
+    ///MT-safe since it never changes
+    return _knobs;
+}
+
 
 void KnobHolder::slaveAllKnobs(KnobHolder* other) {
     

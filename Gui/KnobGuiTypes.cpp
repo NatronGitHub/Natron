@@ -975,15 +975,31 @@ Color_KnobGui::Color_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *contai
 , _aBox(NULL)
 , _colorLabel(NULL)
 , _colorDialogButton(NULL)
-, _dimension(knob->getDimension()) {}
+, _dimensionSwitchButton(NULL)
+, _slider(NULL)
+, _dimension(knob->getDimension())
+{
+    boost::shared_ptr<Color_Knob> col_knob = boost::dynamic_pointer_cast<Color_Knob>(getKnob());
+    assert(col_knob);
+    QObject::connect(col_knob.get(), SIGNAL(minMaxChanged(double, double, int)), this, SLOT(onMinMaxChanged(double, double, int)));
+    QObject::connect(col_knob.get(), SIGNAL(displayMinMaxChanged(double, double, int)), this, SLOT(onDisplayMinMaxChanged(double, double, int)));
+    QObject::connect(this, SIGNAL(dimensionSwitchToggled(bool)), col_knob.get(), SLOT(onDimensionSwitchToggled(bool)));
+    QObject::connect( col_knob.get(), SIGNAL(mustActivateAllDimensions()),this, SLOT(onMustShowAllDimension()));
+
+    
+}
 
 Color_KnobGui::~Color_KnobGui()
 {
     delete mainContainer;
 }
 
-void Color_KnobGui::createWidget(QHBoxLayout* layout)
+void
+Color_KnobGui::createWidget(QHBoxLayout* layout)
 {
+    
+    boost::shared_ptr< Color_Knob> colorKnob = boost::dynamic_pointer_cast<Color_Knob>(getKnob());
+    assert(colorKnob);
     
     mainContainer = new QWidget(layout->parentWidget());
     mainLayout = new QHBoxLayout(mainContainer);
@@ -996,6 +1012,8 @@ void Color_KnobGui::createWidget(QHBoxLayout* layout)
     boxLayout->setContentsMargins(0, 0, 0, 0);
     boxLayout->setSpacing(1);
     
+    const std::vector<double>& minimums = colorKnob->getDisplayMinimums();
+    const std::vector<double>& maximums = colorKnob->getDisplayMaximums();
     
     _rBox = new SpinBox(boxContainers, SpinBox::DOUBLE_SPINBOX);
     QObject::connect(_rBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged()));
@@ -1012,8 +1030,8 @@ void Color_KnobGui::createWidget(QHBoxLayout* layout)
     }
     
     
-    _rBox->setMaximum(1.);
-    _rBox->setMinimum(0.);
+    _rBox->setMaximum(maximums[0]);
+    _rBox->setMinimum(minimums[0]);
     _rBox->setIncrement(0.1);
     
     ///set the copy/link actions in the right click menu
@@ -1022,7 +1040,7 @@ void Color_KnobGui::createWidget(QHBoxLayout* layout)
     if(hasToolTip()) {
         _rBox->setToolTip(toolTip());
     }
-    _rLabel = new QLabel("r:", boxContainers);
+    _rLabel = new QLabel(QString(colorKnob->getDimensionName(0).c_str()).toLower(), boxContainers);
     if(hasToolTip()) {
         _rLabel->setToolTip(toolTip());
     }
@@ -1030,8 +1048,8 @@ void Color_KnobGui::createWidget(QHBoxLayout* layout)
     boxLayout->addWidget(_rBox);
     
     if (_dimension >= 3) {
-        _gBox->setMaximum(1.);
-        _gBox->setMinimum(0.);
+        _gBox->setMaximum(maximums[1]);
+        _gBox->setMinimum(minimums[1]);
         _gBox->setIncrement(0.1);
         
         ///set the copy/link actions in the right click menu
@@ -1040,15 +1058,15 @@ void Color_KnobGui::createWidget(QHBoxLayout* layout)
         if(hasToolTip()) {
             _gBox->setToolTip(toolTip());
         }
-        _gLabel = new QLabel("g:", boxContainers);
+        _gLabel = new QLabel(QString(colorKnob->getDimensionName(1).c_str()).toLower(), boxContainers);
         if(hasToolTip()) {
             _gLabel->setToolTip(toolTip());
         }
         boxLayout->addWidget(_gLabel);
         boxLayout->addWidget(_gBox);
         
-        _bBox->setMaximum(1.);
-        _bBox->setMinimum(0.);
+        _bBox->setMaximum(maximums[2]);
+        _bBox->setMinimum(minimums[2]);
         _bBox->setIncrement(0.1);
         
         ///set the copy/link actions in the right click menu
@@ -1058,7 +1076,7 @@ void Color_KnobGui::createWidget(QHBoxLayout* layout)
         if(hasToolTip()) {
             _bBox->setToolTip(toolTip());
         }
-        _bLabel = new QLabel("b:", boxContainers);
+        _bLabel = new QLabel(QString(colorKnob->getDimensionName(2).c_str()).toLower(), boxContainers);
         if(hasToolTip()) {
             _bLabel->setToolTip(toolTip());
         }
@@ -1066,8 +1084,8 @@ void Color_KnobGui::createWidget(QHBoxLayout* layout)
         boxLayout->addWidget(_bBox);
     }
     if (_dimension >= 4) {
-        _aBox->setMaximum(1.);
-        _aBox->setMinimum(0.);
+        _aBox->setMaximum(maximums[3]);
+        _aBox->setMinimum(minimums[3]);
         _aBox->setIncrement(0.1);
         
         ///set the copy/link actions in the right click menu
@@ -1077,7 +1095,7 @@ void Color_KnobGui::createWidget(QHBoxLayout* layout)
         if(hasToolTip()) {
             _aBox->setToolTip(toolTip());
         }
-        _aLabel = new QLabel("a:", boxContainers);
+        _aLabel = new QLabel(QString(colorKnob->getDimensionName(3).c_str()).toLower(), boxContainers);
         if(hasToolTip()) {
             _aLabel->setToolTip(toolTip());
         }
@@ -1085,6 +1103,11 @@ void Color_KnobGui::createWidget(QHBoxLayout* layout)
         boxLayout->addWidget(_aBox);
     }
     
+    _slider = new ScaleSliderQWidget(minimums[0], maximums[0],
+                           getKnob()->getValue<double>(), Natron::LINEAR_SCALE, boxContainers);
+    boxLayout->addWidget(_slider);
+    QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
+    _slider->hide();
     
     colorContainer = new QWidget(mainContainer);
     colorLayout = new QHBoxLayout(colorContainer);
@@ -1103,19 +1126,148 @@ void Color_KnobGui::createWidget(QHBoxLayout* layout)
     QObject::connect(_colorDialogButton, SIGNAL(clicked()), this, SLOT(showColorDialog()));
     colorLayout->addWidget(_colorDialogButton);
     
+    _dimensionSwitchButton = new Button(QIcon(),QString::number(_dimension),colorContainer);
+    _dimensionSwitchButton->setCheckable(true);
+    _dimensionSwitchButton->setChecked(true);
+    _dimensionSwitchButton->setDown(true);
+    QObject::connect(_dimensionSwitchButton, SIGNAL(clicked()), this, SLOT(onDimensionSwitchClicked()));
+    colorLayout->addWidget(_dimensionSwitchButton);
+    
     mainLayout->addWidget(boxContainers);
     mainLayout->addWidget(colorContainer);
     
     layout->addWidget(mainContainer);
-    
-    
 }
-void Color_KnobGui::setEnabled()
+
+void Color_KnobGui::onMustShowAllDimension()
+{
+    _dimensionSwitchButton->setChecked(true);
+    onDimensionSwitchClicked();
+}
+
+void Color_KnobGui::onSliderValueChanged(double v)
+{
+    
+    _rBox->setValue(v);
+    if (_dimension > 1) {
+        _gBox->setValue(v);
+        _bBox->setValue(v);
+        if (_dimension > 3) {
+            _aBox->setValue(v);
+        }
+    }
+    onColorChanged();
+}
+
+void Color_KnobGui::onDimensionSwitchClicked()
+{
+    if (_dimensionSwitchButton->isChecked()) {
+        ///show all the dimensions
+        _dimensionSwitchButton->setDown(true);
+        _slider->hide();
+        if (_dimension > 1) {
+            _rLabel->show();
+            _gLabel->show();
+            _gBox->show();
+            _bLabel->show();
+            _bBox->show();
+            if (_dimension > 3) {
+                _aLabel->show();
+                _aBox->show();
+            }
+        }
+        
+    } else {
+        ///hide all the dimensions except red
+        _dimensionSwitchButton->setDown(false);
+        _slider->show();
+        if (_dimension > 1) {
+            _rLabel->hide();
+            _gLabel->hide();
+            _gBox->hide();
+            _bLabel->hide();
+            _bBox->hide();
+            if (_dimension > 3) {
+                _aLabel->hide();
+                _aBox->hide();
+            }
+        }
+        if (_dimension > 1) {
+            Variant value(_rBox->value());
+            getKnob()->beginValueChange(Natron::PLUGIN_EDITED);
+            getKnob()->setValue(value, 1);
+            getKnob()->setValue(value, 2);
+            if (_dimension > 3) {
+                getKnob()->setValue(value, 3);
+            }
+            getKnob()->endValueChange();
+        }
+
+    }
+    
+    emit dimensionSwitchToggled(_dimensionSwitchButton->isChecked());
+}
+
+void
+Color_KnobGui::onMinMaxChanged(double mini, double maxi, int index)
+{
+    assert(index < _dimension);
+    switch (index) {
+        case 0:
+            _rBox->setMinimum(mini);
+            _rBox->setMaximum(maxi);
+            break;
+        case 1:
+            _gBox->setMinimum(mini);
+            _gBox->setMaximum(maxi);
+            break;
+        case 2:
+            _bBox->setMinimum(mini);
+            _bBox->setMaximum(maxi);
+            break;
+        case 3:
+            _aBox->setMinimum(mini);
+            _aBox->setMaximum(maxi);
+            break;
+    }
+}
+
+void
+Color_KnobGui::onDisplayMinMaxChanged(double mini,double maxi,int index )
+{
+    assert(index < _dimension);
+    switch (index) {
+        case 0:
+            _rBox->setMinimum(mini);
+            _rBox->setMaximum(maxi);
+            break;
+        case 1:
+            _gBox->setMinimum(mini);
+            _gBox->setMaximum(maxi);
+            break;
+        case 2:
+            _bBox->setMinimum(mini);
+            _bBox->setMaximum(maxi);
+            break;
+        case 3:
+            _aBox->setMinimum(mini);
+            _aBox->setMaximum(maxi);
+            break;
+    }
+}
+
+void
+Color_KnobGui::setEnabled()
 {
     bool r = getKnob()->isEnabled(0);
     
     //_rBox->setEnabled(r);
     _rBox->setReadOnly(!r);
+    
+    if (_slider->isVisible()) {
+        _slider->setReadOnly(!r);
+    }
+    
     if (_dimension >= 3) {
         bool g = getKnob()->isEnabled(1);
         bool b = getKnob()->isEnabled(2);
@@ -1132,21 +1284,25 @@ void Color_KnobGui::setEnabled()
     }
 }
 
-void Color_KnobGui::updateGUI(int dimension, const Variant &variant)
+void
+Color_KnobGui::updateGUI(int dimension, const Variant &variant)
 {
     assert(dimension < _dimension && dimension >= 0 && dimension <= 3);
+    
+    double value = variant.toDouble();
     switch (dimension) {
         case 0:
-            _rBox->setValue(variant.toDouble());
+            _rBox->setValue(value);
+            _slider->seekScalePosition(value);
             break;
         case 1:
-            _gBox->setValue(variant.toDouble());
+            _gBox->setValue(value);
             break;
         case 2:
-            _bBox->setValue(variant.toDouble());
+            _bBox->setValue(value);
             break;
         case 3:
-            _aBox->setValue(variant.toDouble());
+            _aBox->setValue(value);
             break;
         default:
             throw std::logic_error("wrong dimension");
@@ -1167,7 +1323,9 @@ void Color_KnobGui::updateGUI(int dimension, const Variant &variant)
     updateLabel(color);
 }
 
-void Color_KnobGui::reflectAnimationLevel(int dimension,Natron::AnimationLevel level) {
+void
+Color_KnobGui::reflectAnimationLevel(int dimension,Natron::AnimationLevel level)
+{
     switch (level) {
         case Natron::NO_ANIMATION:
             switch (dimension) {
@@ -1232,10 +1390,19 @@ void Color_KnobGui::reflectAnimationLevel(int dimension,Natron::AnimationLevel l
     }
 }
 
-void Color_KnobGui::showColorDialog()
+void
+Color_KnobGui::showColorDialog()
 {
     QColorDialog dialog(_rBox->parentWidget());
     if (dialog.exec()) {
+        
+        ///if only the first dimension is displayed, switch back to all dimensions
+        if (!_dimensionSwitchButton->isChecked()) {
+            _dimensionSwitchButton->setChecked(true);
+            _dimensionSwitchButton->setDown(true);
+            onDimensionSwitchClicked();
+        }
+        
         QColor userColor = dialog.currentColor();
         QColor realColor = userColor;
         realColor.setGreen(userColor.red());
@@ -1272,37 +1439,60 @@ void Color_KnobGui::showColorDialog()
     }
 }
 
-void Color_KnobGui::onColorChanged()
+float Clamp(float v, float min, float max)
 {
-    QColor color;
-    color.setRedF(_rBox->value());
-    color.setGreenF(color.redF());
-    color.setBlueF(color.greenF());
+    if(v < min) return min;
+    if(v > max) return max;
+    return v;
+}
+
+
+void
+Color_KnobGui::onColorChanged()
+{
+    //   QColor color;
+//    color.setRedF(Clamp(_rBox->value(),0.f,1.f));
+//    color.setGreenF(color.redF());
+//    color.setBlueF(color.greenF());
     std::vector<Variant> newValues;
-    newValues.push_back(Variant(color.redF()));
-    if (_dimension >= 3) {
-        color.setGreenF(_gBox->value());
-        color.setBlueF(_bBox->value());
-        newValues.push_back( Variant(color.greenF()));
-        newValues.push_back(Variant(color.blueF()));
+    newValues.push_back(Variant(_rBox->value()));
+    if (_dimensionSwitchButton->isChecked()) {
+        if (_dimension >= 3) {
+            //color.setGreenF(Clamp(_gBox->value(),0.f,1.f));
+            //      color.setBlueF(Clamp(_bBox->value(),0.f,1.f));
+            newValues.push_back(Variant(_gBox->value()));
+            newValues.push_back(Variant(_bBox->value()));
+        }
+        if (_dimension >= 4) {
+            //     color.setAlphaF(Clamp(_aBox->value(),0.f,1.f));
+            newValues.push_back(Variant(_aBox->value()));
+        }
+    } else {
+        if (_dimension >= 3) {
+            newValues.push_back(Variant(_rBox->value()));
+            newValues.push_back(Variant(_rBox->value()));
+        }
+        if (_dimension >= 4) {
+            newValues.push_back(Variant(_rBox->value()));
+        }
     }
-    if (_dimension >= 4) {
-        color.setAlphaF(_aBox->value());
-        newValues.push_back(Variant(color.alphaF()));
-    }
+    
     pushUndoCommand(new KnobUndoCommand(this, getKnob()->getValueForEachDimension(), newValues));
 }
 
 
-void Color_KnobGui::updateLabel(const QColor &color)
+void
+Color_KnobGui::updateLabel(const QColor &color)
 {
     _colorLabel->setColor(color);
 }
 
-void Color_KnobGui::_hide()
+void
+Color_KnobGui::_hide()
 {
     _rBox->hide();
     _rLabel->hide();
+    _slider->hide();
     if (_dimension >= 3) {
         _gBox->hide();
         _gLabel->hide();
@@ -1314,25 +1504,34 @@ void Color_KnobGui::_hide()
         _aLabel->hide();
     }
     
+    _dimensionSwitchButton->hide();
     _colorLabel->hide();
     _colorDialogButton->hide();
 }
 
-void Color_KnobGui::_show()
+void
+Color_KnobGui::_show()
 {
+    bool areAllDimensionShown = _dimensionSwitchButton->isChecked();
+    
     _rBox->show();
-    _rLabel->show();
-    if (_dimension >= 3) {
-        _gBox->show();
-        _gLabel->show();
-        _bBox->show();
-        _bLabel->show();
-    }
-    if (_dimension >= 4) {
-        _aBox->show();
-        _aLabel->show();
+    if (areAllDimensionShown) {
+        _rLabel->show();
+        if (_dimension >= 3) {
+            _gBox->show();
+            _gLabel->show();
+            _bBox->show();
+            _bLabel->show();
+        }
+        if (_dimension >= 4) {
+            _aBox->show();
+            _aLabel->show();
+        }
+    } else {
+        _slider->show();
     }
     
+    _dimensionSwitchButton->show();
     _colorLabel->show();
     _colorDialogButton->show();
     
@@ -1405,7 +1604,7 @@ void ColorPickerLabel::setColor(const QColor& color){
 }
 
 void Color_KnobGui::onPickingEnabled(bool enabled){
-    if(getKnob()->getHolder()->getApp()){
+    if (getKnob()->getHolder()->getApp()) {
         boost::shared_ptr<Color_Knob> colorKnob = boost::dynamic_pointer_cast<Color_Knob>(getKnob());
         if (enabled) {
             getGui()->registerNewColorPicker(colorKnob);

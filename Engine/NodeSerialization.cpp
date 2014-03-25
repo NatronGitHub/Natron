@@ -13,7 +13,7 @@
 
 #include "Engine/Knob.h"
 #include "Engine/Node.h"
-
+#include "Engine/OfxEffectInstance.h"
 void NodeSerialization::initialize(Natron::Node* n){
     
     
@@ -22,12 +22,16 @@ void NodeSerialization::initialize(Natron::Node* n){
     _knobsValues.clear();
     _inputs.clear();
     
+    if (n->isOpenFXNode()) {
+        dynamic_cast<OfxEffectInstance*>(n->getLiveInstance())->syncPrivateData_other_thread();
+    }
+    
     const std::vector< boost::shared_ptr<Knob> >& knobs = n->getKnobs();
     
     for (U32 i  = 0; i < knobs.size(); ++i) {
         if(knobs[i]->getIsPersistant()){
-            boost::shared_ptr<KnobSerialization> newKnobSer(new KnobSerialization);
-            knobs[i]->save(newKnobSer.get());
+            KnobSerialization newKnobSer;
+            knobs[i]->save(&newKnobSer);
             _knobsValues.push_back(newKnobSer);
         }
     }
@@ -42,14 +46,7 @@ void NodeSerialization::initialize(Natron::Node* n){
     
     _pluginMinorVersion = n->minorVersion();
     
-    n->setRenderTreeIsUsingInputs(true);
-    const Natron::Node::InputMap& inputs = n->getInputs();
-    for(Natron::Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
-        if(it->second){
-            _inputs.insert(std::make_pair(it->first, it->second->getName()));
-        }
-    }
-    n->setRenderTreeIsUsingInputs(false);
+    _inputs = n->getInputNames();
     
     Natron::Node* masterNode = n->getMasterNode();
     if (masterNode) {

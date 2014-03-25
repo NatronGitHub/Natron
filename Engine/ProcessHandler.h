@@ -155,7 +155,13 @@ signals:
     
     void processCanceled();
     
-    void processFinished();
+    /**
+     * @brief Emitted when the process terminates. The parameter contains a return code:
+     * 0: Everything went OK
+     * 1: Underminated error
+     * 2: Crash.
+     **/
+    void processFinished(int);
 };
 
 /**

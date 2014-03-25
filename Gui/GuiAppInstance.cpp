@@ -136,6 +136,10 @@ void GuiAppInstance::createNodeGui(Natron::Node *node,bool loadRequest,bool open
 
         }
     }
+    if (!loadRequest) {
+        triggerAutoSave();
+    }
+
 }
 
 Gui* GuiAppInstance::getGui() const { return _imp->_gui; }
@@ -240,7 +244,7 @@ void GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* wr
         try {
             boost::shared_ptr<ProcessHandler> process(new ProcessHandler(this,
                                                                          getProject()->getLastAutoSaveFilePath(),outputFileSequence,firstFrame,lastFrame ,writer));
-            QObject::connect(process.get(), SIGNAL(processFinished()), this, SLOT(onProcessFinished()));
+            QObject::connect(process.get(), SIGNAL(processFinished(int)), this, SLOT(onProcessFinished()));
             {
                 QMutexLocker l(&_imp->_activeBgProcessesMutex);
                 _imp->_activeBgProcesses.push_back(process);
@@ -276,6 +280,6 @@ void GuiAppInstance::onProjectNodesCleared() {
 void GuiAppInstance::notifyRenderProcessHandlerStarted(const QString& sequenceName,
                                        int firstFrame,int lastFrame,
                                        ProcessHandler* process) {
-    _imp->_gui->onProcessHandlerStarter(sequenceName,firstFrame,lastFrame,process);
+    _imp->_gui->onProcessHandlerStarted(sequenceName,firstFrame,lastFrame,process);
 
 }

@@ -141,9 +141,13 @@ public:
      * @brief An empty curve, held by owner. This is the "normal" constructor.
     **/
     Curve(Knob* owner);
+    
+    Curve(const Curve& other);
 
     ~Curve();
-
+    
+    void operator=(const Curve& other);
+    
     /**
      * @brief Copies all the keyframes held by other, but does not change the pointer to the owner.
     **/
@@ -250,7 +254,8 @@ private:
 
     KeyFrameSet::const_iterator end() const WARN_UNUSED_RETURN;
     
-
+    std::pair<double,double> getCurveYRange_internal() const WARN_UNUSED_RETURN;
+    
     void removeKeyFrame(KeyFrameSet::const_iterator it);
 
     double clampValueToCurveYRange(double v) const WARN_UNUSED_RETURN;

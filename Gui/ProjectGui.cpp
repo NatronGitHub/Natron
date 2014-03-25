@@ -237,10 +237,10 @@ void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneL
         
         if((*it)->objectName().toStdString() == layout->first){
             //we found the pane, restore it!
-            for (U32 i = 0; i < layout->second.splits.size(); ++i) {
-                if(layout->second.splits[i]){
+            for (std::list<bool>::const_iterator it2 = layout->second.splits.begin();it2!=layout->second.splits.end();++it2) {
+                if (*it2) {
                     (*it)->splitVertically();
-                }else{
+                } else {
                     (*it)->splitHorizontally();
                 }
             }
@@ -250,16 +250,16 @@ void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneL
             }
             
             ///find all the tabs and move them to this widget
-            for (U32 i = 0; i < layout->second.tabs.size(); ++i) {
-                std::map<std::string,QWidget*>::const_iterator foundTab = registeredTabs.find(layout->second.tabs[i]);
+            for (std::list<std::string>::const_iterator it2 = layout->second.tabs.begin();it2!=layout->second.tabs.end();++it2) {
+                std::map<std::string,QWidget*>::const_iterator foundTab = registeredTabs.find(*it2);
                 assert(foundTab != registeredTabs.end());
                 TabWidget::moveTab(foundTab->second, *it);
             }
             
             ///now call this recursively on the freshly new splits
-            for (U32 i = 0; i < layout->second.splitsNames.size(); ++i) {
+            for (std::list<std::string>::const_iterator it2 = layout->second.splitsNames.begin();it2!=layout->second.splitsNames.end();++it2) {
                 //find in the guiLayout map the PaneLayout corresponding to the split
-                std::map<std::string,PaneLayout>::const_iterator splitIt = guiLayout.find(layout->second.splitsNames[i]);
+                std::map<std::string,PaneLayout>::const_iterator splitIt = guiLayout.find(*it2);
                 assert(splitIt != guiLayout.end());
                 
                 restoreTabWidgetLayoutRecursively(gui, guiLayout, splitIt);
@@ -282,12 +282,12 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     
     const std::map<std::string, ViewerData >& viewersProjections = obj.getViewersProjections();
     
-    const std::vector< boost::shared_ptr<NodeGuiSerialization> >& nodesGuiSerialization = obj.getSerializedNodesGui();
-    for (U32 i = 0; i < nodesGuiSerialization.size(); ++i) {
-        const std::string& name = nodesGuiSerialization[i]->getName();
+    const std::list<NodeGuiSerialization>& nodesGuiSerialization = obj.getSerializedNodesGui();
+    for (std::list<NodeGuiSerialization>::const_iterator it = nodesGuiSerialization.begin();it!=nodesGuiSerialization.end();++it) {
+        const std::string& name = it->getName();
         NodeGui* nGui = _gui->getApp()->getNodeGui(name);
         assert(nGui);
-        nGui->setPos(nodesGuiSerialization[i]->getX(),nodesGuiSerialization[i]->getY());
+        nGui->setPos(it->getX(),it->getY());
         _gui->deselectAllNodes();
         
         if (obj.arePreviewsTurnedOffGlobally()) {
@@ -295,8 +295,8 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
                 nGui->togglePreview();
             }
         } else {
-            if((nodesGuiSerialization[i]->isPreviewEnabled() && !nGui->getNode()->isPreviewEnabled()) ||
-               (!nodesGuiSerialization[i]->isPreviewEnabled() && nGui->getNode()->isPreviewEnabled())){
+            if((it->isPreviewEnabled() && !nGui->getNode()->isPreviewEnabled()) ||
+               (!it->isPreviewEnabled() && nGui->getNode()->isPreviewEnabled())){
                 nGui->togglePreview();
             }
         }
@@ -327,10 +327,10 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     }
     
     ///restore the histograms
-    const std::vector<std::string>& histograms = obj.getHistograms();
-    for (U32 i = 0; i < histograms.size(); ++i) {
+    const std::list<std::string>& histograms = obj.getHistograms();
+    for (std::list<std::string>::const_iterator it = histograms.begin();it!=histograms.end();++it) {
         Histogram* h = _gui->addNewHistogram();
-        h->setObjectName(histograms[i].c_str());
+        h->setObjectName((*it).c_str());
         //move it by default to the workshop pane, before restoring the layout anyway which
         ///will relocate it correctly
         _gui->getWorkshopPane()->appendTab(h);
@@ -396,14 +396,22 @@ void ProjectGui::setPickersColor(const QColor& color){
     boost::shared_ptr<Color_Knob> first = _colorPickersEnabled.front();
     first->beginValueChange(Natron::USER_EDITED);
     for(U32 i = 0; i < _colorPickersEnabled.size();++i){
-        _colorPickersEnabled[i]->beginValueChange(Natron::USER_EDITED);
-        _colorPickersEnabled[i]->setValue(color.redF(), 0);
+        _colorPickersEnabled[i]->beginValueChange(Natron::PLUGIN_EDITED);
+        double r,g,b,a;
+        r = color.redF();
+        g = color.greenF();
+        b = color.blueF();
+        a = color.alphaF();
+        if (!_colorPickersEnabled[i]->areAllDimensionsEnabled()) {
+            _colorPickersEnabled[i]->activateAllDimensions();
+        }
+        _colorPickersEnabled[i]->setValue(r, 0);
         if(_colorPickersEnabled[i]->getDimension() >= 3){
-            _colorPickersEnabled[i]->setValue(color.greenF(), 1);
-            _colorPickersEnabled[i]->setValue(color.blueF(), 2);
+            _colorPickersEnabled[i]->setValue(g, 1);
+            _colorPickersEnabled[i]->setValue(b, 2);
         }
         if(_colorPickersEnabled[i]->getDimension() >= 4){
-            _colorPickersEnabled[i]->setValue(color.alphaF(), 3);
+            _colorPickersEnabled[i]->setValue(a, 3);
         }
         _colorPickersEnabled[i]->endValueChange();
     }

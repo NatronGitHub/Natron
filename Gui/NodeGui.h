@@ -183,6 +183,7 @@ public:
     
     void setPos_mt_safe(const QPointF& pos);
     
+    
 public slots:
   
     void togglePreview();
@@ -258,6 +259,8 @@ public slots:
     
     void duplicateNode();
     
+    void refreshOutputEdgeVisibility();
+
 signals:
     void nameChanged(QString);
     
@@ -295,7 +298,10 @@ private:
     
     /*the graphical input arrows*/
     std::map<int,Edge*> _inputEdges;
-       /*settings panel related*/
+    
+    Edge* _outputEdge;
+    
+    /*settings panel related*/
     bool _panelDisplayed;
     NodeSettingsPanel* _settingsPanel;
     

@@ -212,7 +212,7 @@ DockablePanel::~DockablePanel(){
     ///normally the onKnobDeletion() function should have cleared them
     for(std::map<boost::shared_ptr<Knob>,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it){
         if(it->second){
-            QObject::disconnect(it->first.get(),SIGNAL(deleted(Knob*)),this,SLOT(onKnobDeletion(Knob*)));
+            QObject::disconnect(it->first.get(),SIGNAL(deleted()),this,SLOT(onKnobDeletion()));
             delete it->second;
         }
     }
@@ -235,14 +235,23 @@ void DockablePanel::onLineEditNameEditingFinished() {
     Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_holder);
     if (effect) {
         
+        std::string newName = _nameLineEdit->text().toStdString();
+        if (newName.empty()) {
+            _nameLineEdit->blockSignals(true);
+            Natron::errorDialog("Node name", "A node must have a unique name.");
+            _nameLineEdit->setText(effect->getName().c_str());
+            _nameLineEdit->blockSignals(false);
+            return;
+        }
+        
         ///if the node name hasn't changed return
-        if (effect->getName() == _nameLineEdit->text().toStdString()) {
+        if (effect->getName() == newName) {
             return;
         }
         
         std::vector<Natron::Node*> allNodes = _holder->getApp()->getProject()->getCurrentNodes();
         for (U32 i = 0;  i < allNodes.size(); ++i) {
-            if (allNodes[i]->getName() == _nameLineEdit->text().toStdString()) {
+            if (allNodes[i]->getName() == newName) {
                 _nameLineEdit->blockSignals(true);
                 Natron::errorDialog("Node name", "A node with the same name already exists in the project.");
                 _nameLineEdit->setText(effect->getName().c_str());
@@ -329,7 +338,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool ma
             }
         }
         
-        QObject::connect(knob.get(),SIGNAL(deleted(Knob*)),this,SLOT(onKnobDeletion(Knob*)));
+        QObject::connect(knob.get(),SIGNAL(deleted()),this,SLOT(onKnobDeletion()));
         
         ret =  appPTR->createGuiForKnob(knob,this);
         if (!ret) {
@@ -615,16 +624,21 @@ Button* DockablePanel::insertHeaderButton(int headerPosition){
     return ret;
 }
 
-void DockablePanel::onKnobDeletion(Knob* k){
-    for(std::map<boost::shared_ptr<Knob>,KnobGui*>::iterator it = _knobs.begin();it!=_knobs.end();++it){
-        if (it->first.get() == k) {
-            if(it->second){
-                delete it->second;
+void DockablePanel::onKnobDeletion(){
+    
+    Knob* knob = qobject_cast<Knob*>(sender());
+    if (knob) {
+        for(std::map<boost::shared_ptr<Knob>,KnobGui*>::iterator it = _knobs.begin();it!=_knobs.end();++it){
+            if (it->first.get() == knob) {
+                if(it->second){
+                    delete it->second;
+                }
+                _knobs.erase(it);
+                return;
             }
-            _knobs.erase(it);
-            return;
         }
     }
+    
 }
 
 

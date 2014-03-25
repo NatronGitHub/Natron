@@ -51,9 +51,6 @@ class Node : public QObject
     
 public:
 
-    typedef std::map<int,Node*> InputMap;
-    typedef std::multimap<int,Node*> OutputMap;
-
     Node(AppInstance* app,Natron::LibraryBinary* plugin);
     
     virtual ~Node();
@@ -70,17 +67,17 @@ public:
     /*Quit all processing done by all render instances of this node */
     void quitAnyProcessing();
     
-    /*Never call this yourself.*/
-    void setLiveInstance(Natron::EffectInstance* liveInstance) {_liveInstance = liveInstance;}
+    /*Never call this yourself. This is needed by OfxEffectInstance so the pointer to the live instance
+     *is set earlier.
+     */
+    void setLiveInstance(Natron::EffectInstance* liveInstance);
     
-    Natron::EffectInstance* getLiveInstance() const {return _liveInstance;}
+    Natron::EffectInstance* getLiveInstance() const;
     
     /**
-     * @brief Find or creates a clone of the live instance (i.e all the knobs etc...) for the given tree.
-     * The effect instance returns is guaranteed to reflect exactly the state of the live instance at the
-     * time at which it has been called.
+     * @brief Returns the hash value of the node, or 0 if it has never been computed.
      **/
-    Natron::EffectInstance* findOrCreateLiveInstanceClone(RenderTree* tree);
+    U64 getHashValue() const;
     
     /**
      * @brief Forwarded to the live effect instance
@@ -132,9 +129,6 @@ public:
      **/
     bool isOpenFXNode() const;
     
-    /*Initialises inputs*/
-    void initializeInputs();
-    
     /**
      * @brief Forwarded to the live effect instance
      **/
@@ -145,22 +139,44 @@ public:
      * or NULL if it couldn't find such node.
      **/
     Node* input(int index) const;
+   
+    
+    /**
+     * @brief Same as Node::input(int) but can be called by another thread than the main thread.
+     * Basically it returns a consistent value throughout the rendering of a frame.
+     * The inputs are then updated before the rendering of any frame.
+     **/
+    Node* input_other_thread(int index) const;
+    
+    /**
+     * @brief Look-ups the changes made to the inputs that are queued, and if any it updates
+     * the inputs of the node in a thread-safe manner.
+     **/
+    void updateRenderInputs();
+    
+    /**
+     *@brief Returns the inputs of the node as the Gui just set them.
+     *The vector might be different from what getInputs_other_thread() could return.
+     *This can only be called by the main thread.
+     **/
+    const std::vector<Natron::Node*>& getInputs_mt_safe() const WARN_UNUSED_RETURN;
+    
+    /**
+     *@brief Returns the inputs of the node as the render thread see them.
+     * They are modified only by the render thread when updateRenderInputs() is called.
+     **/
+    const std::vector<Natron::Node*>& getInputs_other_thread() const WARN_UNUSED_RETURN;
+    
+    
     
     /**
      * @brief Returns the input index of the node n if it exists,
      * -1 otherwise.
      **/
     int inputIndex(Node* n) const;
-    
-    void outputs(std::vector<Natron::Node*>* outputsV) const;
-    
-    const std::map<int, std::string>& getInputLabels() const;
-    
-    /**
-     * @brief Called by RenderTree: This external locking allows the render tree not to be corrupted
-     * by another user action. The architecture doesn't allow internal locking.
-     **/
-    void setRenderTreeIsUsingInputs(bool b);
+        
+    const std::vector<std::string>& getInputLabels() const;
+ 
     
     std::string getInputLabel(int inputNb) const;
     
@@ -172,6 +188,8 @@ public:
      * @brief This is used by the auto-connection algorithm.
      * When connecting nodes together this function helps determine
      * on which input it should connect a new node.
+     * It returns the first non optional empty input, or -1
+     * if all inputs are connected.
      **/
     int getPreferredInputForConnection() const;
     
@@ -181,10 +199,15 @@ public:
      * are connected to this node.
      **/
     void getOutputsConnectedToThisNode(std::map<Node*,int>* outputs);
+        
+    const std::list<Natron::Node*>& getOutputs() const;
     
-    const InputMap& getInputs() const {return _inputs;}
-    
-    const OutputMap& getOutputs() const;
+    /**
+     * @brief Each input name is appended to the vector, in the same order
+     * as they are in the internal inputs vector. Disconnected inputs are
+     * represented as empty strings.
+     **/
+    std::vector<std::string> getInputNames() const;
     
     /** @brief Adds the node parent to the input inputNumber of the
      * node. Returns true if it succeeded, false otherwise.
@@ -205,10 +228,10 @@ public:
      -1.*/
     virtual int disconnectInput(Node* input);
     
-    /** @brief Adds the node child to the output outputNumber of the
-     * node.
-     */
-    void connectOutput(Node* output,int outputNumber = 0);
+    /**
+     * @brief Adds an output to this node.
+     **/
+    void connectOutput(Node* output);
     
     /** @brief Removes the node output of the
      * node outputs. Returns the outputNumber if it could remove it,
@@ -261,10 +284,6 @@ public:
      been activated will not do anything.
      */
     void activate();
-    
-    void getRenderFormatForEffect(const Natron::EffectInstance* effect, Format *f) const;
-    
-    int getRenderViewsCountForEffect(const Natron::EffectInstance* effect) const;
     
     /**
      * @brief Forwarded to the live effect instance
@@ -340,11 +359,7 @@ public:
     void addImageBeingRendered(boost::shared_ptr<Natron::Image>,SequenceTime time,int view );
     
     void removeImageBeingRendered(SequenceTime time,int view );
-    
-    void abortRenderingForEffect(Natron::EffectInstance* effect);
-
-    Natron::EffectInstance* findExistingEffect(RenderTree* tree) const;
-    
+        
     /**
      * @brief Use this function to post a transient message to the user. It will be displayed using
      * a dialog. The message can be of 4 types...
@@ -464,6 +479,8 @@ signals:
     void knobsInitialized();
     
     void inputChanged(int);
+    
+    void outputsChanged();
 
     void activated();
     
@@ -475,8 +492,6 @@ signals:
     
     void nameChanged(QString);
     
-    void deleteWanted(Natron::Node*);
-
     void refreshEdgesGUI();
 
     void previewImageChanged(int);
@@ -499,17 +514,28 @@ signals:
     
     
 protected:
+
+    /**
+     * @brief Attempts to detect cycles considering input being an input of this node.
+     * Returns true if it couldn't detect any cycle, false otherwise.
+     **/
+    bool checkIfConnectingInputIsOk(Natron::Node* input) const;
     
-    ///waits for any RenderTree to be done reading
-    ///this function must be called explicitly while isUsingInputsMutex is locked!
-    void waitForRenderTreesToBeDone();
+    /**
+     * @brief Recompute the hash value of this node and notify all the clone effects that the values they store in their
+     * knobs is dirty and that they should refresh it by cloning the live instance.
+     **/
+    void computeHash();
     
-    // FIXME: all data members should be private, use getter/setter instead
-    mutable QMutex isUsingInputsMutex;
-    std::map<int,Node*> _inputs;//only 1 input per slot
-    Natron::EffectInstance*  _liveInstance; //< the instance of the effect interacting with the GUI of this node.
+    /*Initialises inputs*/
+    void initializeInputs();
 
 private:
+    /**
+     * @brief If the node is an input of this node, set ok to true, otherwise
+     * calls this function recursively on all inputs.
+     **/
+    void isNodeUpstream(const Natron::Node* input,bool* ok) const;
     
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp;
@@ -522,7 +548,6 @@ private:
 
 } //namespace Natron
 
-Q_DECLARE_METATYPE(Natron::Node*)
 /**
  * @brief An InspectorNode is a type of node that is able to have a dynamic number of inputs.
  * Only 1 input is considered to be the "active" input of the InspectorNode, but several inputs

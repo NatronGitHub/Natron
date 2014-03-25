@@ -547,9 +547,9 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     QObject::connect(_imp->_viewerNode,SIGNAL(viewerDisconnected()),this,SLOT(disconnectViewer()));
     QObject::connect(_imp->fpsBox, SIGNAL(valueChanged(double)), vengine, SLOT(setDesiredFPS(double)));
     QObject::connect(vengine, SIGNAL(fpsChanged(double,double)), _imp->_infosWidget, SLOT(setFps(double,double)));
-    QObject::connect(vengine,SIGNAL(engineStopped()),_imp->_infosWidget,SLOT(hideFps()));
+    QObject::connect(vengine,SIGNAL(engineStopped(int)),_imp->_infosWidget,SLOT(hideFps()));
     QObject::connect(vengine, SIGNAL(engineStarted(bool,int)), this, SLOT(onEngineStarted(bool,int)));
-    QObject::connect(vengine, SIGNAL(engineStopped()), this, SLOT(onEngineStopped()));
+    QObject::connect(vengine, SIGNAL(engineStopped(int)), this, SLOT(onEngineStopped()));
     
     
     QObject::connect(_imp->_viewerNode, SIGNAL(mustRedraw()), _imp->viewer, SLOT(update()));
@@ -715,6 +715,7 @@ void ViewerTab::refresh(){
 
 ViewerTab::~ViewerTab()
 {
+    _imp->_viewerNode->invalidateUiContext();
 }
 
 

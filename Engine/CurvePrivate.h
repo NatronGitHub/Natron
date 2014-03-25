@@ -58,6 +58,23 @@ struct CurvePrivate{
     , _lock(QReadWriteLock::Recursive)
     {}
     
+    CurvePrivate(const CurvePrivate& other)
+    : _lock(QReadWriteLock::Recursive)
+    {
+        *this = other;
+    }
+    
+    void operator=(const CurvePrivate& other) {
+        keyFrames = other.keyFrames;
+        owner = other.owner;
+        isParametric = other.isParametric;
+        type = other.type;
+        xMin = other.xMin;
+        xMax = other.xMax;
+        yMin = other.yMin;
+        yMax = other.yMax;
+        hasYRange = other.hasYRange;
+    }
 };
 
 

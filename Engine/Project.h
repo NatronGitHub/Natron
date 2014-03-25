@@ -133,7 +133,7 @@ public:
     
     void getProjectDefaultFormat(Format *f) const;
     
-    void getProjectFormats(std::vector<Format> *formats) const;
+    void getAdditionalFormats(std::list<Format> *formats) const;
     
     int getProjectViewsCount() const;
     
@@ -163,10 +163,6 @@ public:
     void addNodeToProject(Node* n);
     
     void clearNodes();
-    
-    void incrementKnobsAge();
-    
-    int getKnobsAge() const;
     
     void setLastTimelineSeekCaller(Natron::OutputEffectInstance* output);
 

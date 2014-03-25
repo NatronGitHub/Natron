@@ -90,8 +90,8 @@ public:
     virtual void redo();
 
 private:
-    std::multimap<int,Natron::Node*> _outputs;
-    std::map<int,Natron::Node*> _inputs;
+    std::list<Natron::Node*> _outputs;
+    std::vector<Natron::Node*> _inputs;
     NodeGui* _node;
     NodeGraph* _graph;
     bool _undoWasCalled;
@@ -105,8 +105,8 @@ public:
     virtual void redo();
 
 private:
-    std::multimap<int,Natron::Node*> _outputs;
-    std::map<int,Natron::Node*> _inputs;
+    std::list<Natron::Node*> _outputs;
+    std::vector<Natron::Node*> _inputs;
     NodeGui* _node;
     NodeGraph* _graph;
 };
@@ -386,10 +386,10 @@ void NodeGraph::moveNodesForIdealPosition(NodeGui* node) {
     ///if behaviour is 1 , just check that we can effectively connect the node to avoid moving them for nothing
     ///otherwise fallback on behaviour 0
     if (behavior == 1) {
-        const Natron::Node::InputMap& inputs = _nodeSelected->getNode()->getInputs();
+        const std::vector<Natron::Node*>& inputs = _nodeSelected->getNode()->getInputs_mt_safe();
         bool oneInputEmpty = false;
-        for (Natron::Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it) {
-            if (!it->second) {
+        for (U32 i = 0; i < inputs.size() ;++i) {
+            if (!inputs[i]) {
                 oneInputEmpty = true;
                 break;
             }
@@ -440,13 +440,13 @@ void NodeGraph::moveNodesForIdealPosition(NodeGui* node) {
         QRectF createdNodeRect(x,y,createdNodeSize.width(),createdNodeSize.height());
         
         ///and move the selected node below recusively
-        const Natron::Node::OutputMap& outputs = _nodeSelected->getNode()->getOutputs();
-        for (Natron::Node::OutputMap::const_iterator it = outputs.begin(); it!= outputs.end(); ++it) {
-            if (it->second) {
-                NodeGui* output = _gui->getApp()->getNodeGui(it->second);
-                assert(output);
-                output->moveBelowPositionRecursively(createdNodeRect);
-            }
+        const std::list<Natron::Node*>& outputs = _nodeSelected->getNode()->getOutputs();
+        for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it!= outputs.end(); ++it) {
+            assert(*it);
+            NodeGui* output = _gui->getApp()->getNodeGui(*it);
+            assert(output);
+            output->moveBelowPositionRecursively(createdNodeRect);
+            
         }
     }
     
@@ -526,8 +526,9 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
     _evtState = DEFAULT;
 
     if (state == ARROW_DRAGGING) {
-        bool foundSrc=false;
-        NodeGui* dst = _arrowSelected->getDest();
+        bool foundSrc = false;
+        NodeGui* nodeHoldingEdge = _arrowSelected->isOutputEdge() ? _arrowSelected->getSource() : _arrowSelected->getDest();
+        assert(nodeHoldingEdge);
         
         std::vector<NodeGui*> nodes = getAllActiveNodes_mt_safe();
         
@@ -537,24 +538,43 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
             QPointF evpt = n->mapFromScene(ep);
             
             if(n->isActive() && n->isNearby(evpt) &&
-                    (n->getNode()->getName()!=_arrowSelected->getDest()->getNode()->getName())){
-                ///can't connect to a viewer
-                if(n->getNode()->pluginID() == "Viewer"){
-                    break;
+                    (n->getNode()->getName() != nodeHoldingEdge->getNode()->getName())){
+               
+                if (!_arrowSelected->isOutputEdge()) {
+                    ///can't connect to a viewer
+                    if(n->getNode()->pluginID() == "Viewer"){
+                        break;
+                    }
+                    _undoStack->setActive();
+                    _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),n));
+                } else {
+                    ///Find the input edge of the node we just released the mouse over,
+                    ///and use that edge to connect to the source of the selected edge.
+                    int preferredInput = n->getNode()->getPreferredInputForConnection();
+                    if (preferredInput != -1) {
+                        const std::map<int,Edge*>& inputEdges = n->getInputsArrows();
+                        std::map<int,Edge*>::const_iterator foundInput = inputEdges.find(preferredInput);
+                        assert(foundInput != inputEdges.end());
+                        _undoStack->setActive();
+                        _undoStack->push(new ConnectCommand(this,foundInput->second,foundInput->second->getSource(),_arrowSelected->getSource()));
+                    
+                    }
                 }
-                _undoStack->setActive();
-                _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),n));
                 foundSrc = true;
                 
                 break;
             }
         }
-        if (!foundSrc) {
+        
+        ///if we disconnected the input edge, use the undo/redo stack.
+        ///Output edges can never be really connected, they're just there
+        ///So the user understands some nodes can have output
+        if (!foundSrc && !_arrowSelected->isOutputEdge()) {
             _undoStack->setActive();
             _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),NULL));
             scene()->update();
         }
-        dst->refreshEdges();
+        nodeHoldingEdge->refreshEdges();
         scene()->update();
     } else if(state == NODE_DRAGGING) {
         if(_nodeSelected) {
@@ -572,7 +592,11 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
     if(_evtState == ARROW_DRAGGING){
         
         QPointF np=_arrowSelected->mapFromScene(newPos);
-        _arrowSelected->updatePosition(np);
+        if (_arrowSelected->isOutputEdge()) {
+            _arrowSelected->dragDest(np);
+        } else {
+            _arrowSelected->dragSource(np);
+        }
 
     }else if(_evtState == NODE_DRAGGING && _nodeSelected){
         
@@ -979,7 +1003,7 @@ void AddCommand::undo(){
     
     
     
-    _inputs = _node->getNode()->getInputs();
+    _inputs = _node->getNode()->getInputs_mt_safe();
     _outputs = _node->getNode()->getOutputs();
     
     _node->getNode()->deactivate();
@@ -993,10 +1017,7 @@ void AddCommand::redo(){
     if(_undoWasCalled){
         ///activate will trigger an autosave
         _node->getNode()->activate();
-    } else {
-        _graph->getGui()->getApp()->triggerAutoSave();
     }
-    
     _graph->scene()->update();
     setText(QObject::tr("Add %1")
             .arg(_node->getNode()->getName().c_str()));
@@ -1019,28 +1040,25 @@ void RemoveCommand::undo() {
     
 }
 void RemoveCommand::redo() {
-    _inputs = _node->getNode()->getInputs();
+    _inputs = _node->getNode()->getInputs_mt_safe();
     _outputs = _node->getNode()->getOutputs();
     
     _node->getNode()->deactivate();
     
-    for (std::multimap<int,Natron::Node*>::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
-        if (it->second) {
-            InspectorNode* inspector = dynamic_cast<InspectorNode*>(it->second);
-            ///if the node is an inspector, when disconnecting the active input just activate another input instead
-            if (inspector) {
-                const Natron::Node::InputMap& inputs = inspector->getInputs();
-                int i = 0;
-                ///set as active input the first non null input
-                for (Natron::Node::InputMap::const_iterator it = inputs.begin(); it != inputs.end() ;++it) {
-                    if (it->second) {
-                        inspector->setActiveInputAndRefresh(i);
-                        break;
-                    }
-                    ++i;
+    
+    for (std::list<Natron::Node*>::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
+        assert(*it);
+        InspectorNode* inspector = dynamic_cast<InspectorNode*>(*it);
+        ///if the node is an inspector, when disconnecting the active input just activate another input instead
+        if (inspector) {
+            const std::vector<Natron::Node*>& inputs = inspector->getInputs_mt_safe();
+            ///set as active input the first non null input
+            for (U32 i = 0; i < inputs.size() ;++i) {
+                if (inputs[i]) {
+                    inspector->setActiveInputAndRefresh(i);
+                    break;
                 }
             }
-
         }
     }
     
@@ -1078,21 +1096,20 @@ void ConnectCommand::undo() {
     
     if(_oldSrc){
         _graph->getGui()->getApp()->getProject()->connectNodes(_edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode());
+        _oldSrc->refreshOutputEdgeVisibility();
     }
     if(_newSrc){
         _graph->getGui()->getApp()->getProject()->disconnectNodes(_newSrc->getNode(), _edge->getDest()->getNode());
-        
+        _newSrc->refreshOutputEdgeVisibility();
         ///if the node is an inspector, when disconnecting the active input just activate another input instead
         if (inspector) {
-            const Natron::Node::InputMap& inputs = inspector->getInputs();
-            int i = 0;
+            const std::vector<Natron::Node*>& inputs = inspector->getInputs_mt_safe();
             ///set as active input the first non null input
-            for (Natron::Node::InputMap::const_iterator it = inputs.begin(); it != inputs.end() ;++it) {
-                if (it->second) {
+            for (U32 i = 0; i < inputs.size() ;++i) {
+                if (inputs[i]) {
                     inspector->setActiveInputAndRefresh(i);
                     break;
                 }
-                ++i;
             }
         }
     }
@@ -1123,11 +1140,13 @@ void ConnectCommand::redo() {
             if (_oldSrc) {
                 ///we want to connect to nothing, hence disconnect
                 _graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode(),inspector);
+                _oldSrc->refreshOutputEdgeVisibility();
             }
         } else {
             ///disconnect any connection already existing with the _oldSrc
             if (_oldSrc) {
                 _graph->getGui()->getApp()->getProject()->disconnectNodes(_oldSrc->getNode(),inspector);
+                _oldSrc->refreshOutputEdgeVisibility();
             }
             ///also disconnect any current connection between the inspector and the _newSrc
             _graph->getGui()->getApp()->getProject()->disconnectNodes(_newSrc->getNode(),inspector);
@@ -1143,7 +1162,7 @@ void ConnectCommand::redo() {
             
             ///and connect the inspector to the _newSrc
             _graph->getGui()->getApp()->getProject()->connectNodes(_inputNb, _newSrc->getNode(), inspector);
-
+            _newSrc->refreshOutputEdgeVisibility();
         }
        
     } else {
@@ -1153,6 +1172,7 @@ void ConnectCommand::redo() {
                 cout << "Failed to disconnect (input) " << _oldSrc->getNode()->getName()
                      << " to (output) " << _dst->getNode()->getName() << endl;
             }
+            _oldSrc->refreshOutputEdgeVisibility();
         }
         if (_newSrc) {
             if(!_graph->getGui()->getApp()->getProject()->connectNodes(_inputNb, _newSrc->getNode(), _dst->getNode())){
@@ -1160,6 +1180,7 @@ void ConnectCommand::redo() {
                      << " to (output) " << _dst->getNode()->getName() << endl;
 
             }
+            _newSrc->refreshOutputEdgeVisibility();
         }
         
     }
