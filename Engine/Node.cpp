@@ -1224,7 +1224,7 @@ void Node::setPersistentMessage(MessageType type,const std::string& content)
             return;
         }
         QString message;
-        message.append(getName().c_str());
+        message.append(getName_mt_safe().c_str());
         if (type == ERROR_MESSAGE) {
             message.append(" error: ");
         } else if(type == WARNING_MESSAGE) {

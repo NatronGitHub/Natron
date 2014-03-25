@@ -902,7 +902,8 @@ void OfxEffectInstance::onKnobValueChanged(Knob* k,Natron::ValueChangedReason re
     }
 
     if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
-        Natron::errorDialog(getName(), "An error occured while changing a parameter.");
+#pragma message WARN("Log in a log buffer, not on stdout!")
+        qDebug() << getNode()->getName_mt_safe().c_str() <<  ": An error occured while changing parameter " << k->getDescription().c_str();
         return;
     }
     
