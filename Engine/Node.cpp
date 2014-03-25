@@ -703,7 +703,7 @@ void Node::isNodeUpstream(const Natron::Node* input,bool* ok) const
     
 }
 
-bool Node::connectInput(Node* input,int inputNumber,bool /*autoConnection*/ )
+bool Node::connectInput(Node* input,int inputNumber)
 {
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1383,7 +1383,7 @@ InspectorNode::~InspectorNode(){
     
 }
 
-bool InspectorNode::connectInput(Node* input,int inputNumber,bool /*autoConnection*/) {
+bool InspectorNode::connectInput(Node* input,int inputNumber) {
     
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1417,9 +1417,16 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool /*autoConnecti
         }
     }
 
-    if (Node::connectInput(input, inputNumber)) {
+    int oldActiveInput;
+    {
         QMutexLocker activeInputLocker(&_activeInputMutex);
+        oldActiveInput = _activeInput;
         _activeInput = inputNumber;
+    }
+    if (!Node::connectInput(input, inputNumber)) {
+        QMutexLocker activeInputLocker(&_activeInputMutex);
+        _activeInput = oldActiveInput;
+        computeHash(); 
     }
     tryAddEmptyInput();
     return true;
