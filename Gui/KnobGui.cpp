@@ -83,6 +83,7 @@ KnobGui::KnobGui(boost::shared_ptr<Knob> knob,DockablePanel* container)
 , _copyRightClickMenu(new QMenu(container))
 , _fieldLayout(NULL)
 , _row(-1)
+, _knobsOnSameLine()
 , _containerLayout(NULL)
 , _field(NULL)
 , _descriptionLabel(NULL)
@@ -123,9 +124,11 @@ void KnobGui::pushUndoCommand(QUndoCommand* cmd){
 }
 
 
-void KnobGui::createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWidget* label,QHBoxLayout* layout,int row,bool isOnNewLine) {
+void KnobGui::createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWidget* label,QHBoxLayout* layout,int row,bool isOnNewLine,
+                        const std::vector< boost::shared_ptr< Knob > >& knobsOnSameLine) {
     _fieldLayout = layout;
     _row = row;
+    _knobsOnSameLine = knobsOnSameLine;
     _containerLayout = containerLayout;
     _field = fieldContainer;
     _descriptionLabel = label;
@@ -141,6 +144,11 @@ void KnobGui::createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWi
         checkAnimationLevel(i);
     }
     setEnabledSlot();
+    
+    if (isOnNewLine) {
+        containerLayout->addRow(label, fieldContainer);
+    }
+    setSecret();
 
 }
 
@@ -514,7 +522,7 @@ void KnobGui::onHorizontalInterpActionTriggered(){
     setInterpolationForDimensions(dims,Natron::KEYFRAME_HORIZONTAL);
 }
 
-void KnobGui::setKeyframe(SequenceTime time,int dimension){
+void KnobGui::setKeyframe(double time,int dimension){
     emit keyFrameSetByUser(time,dimension);
     emit keyFrameSet();
 }
@@ -534,7 +542,7 @@ void KnobGui::onSetKeyActionTriggered(){
     
 }
 
-void KnobGui::removeKeyFrame(SequenceTime time,int dimension){
+void KnobGui::removeKeyFrame(double time,int dimension){
     emit keyFrameRemovedByUser(time,dimension);
     emit keyFrameRemoved();
     updateGUI(dimension,_knob->getValue(dimension));
@@ -563,6 +571,9 @@ void KnobGui::onRemoveKeyActionTriggered(){
                                           toRemove));
 }
 
+int KnobGui::getKnobsCountOnSameLine() const {
+    return _knobsOnSameLine.size();
+}
 
 void KnobGui::hide(){
     _hide();
@@ -573,7 +584,16 @@ void KnobGui::hide(){
        getGui()->getCurveEditor()->hideCurves(this);
     }
     
-    if (_isOnNewLine) {
+    ////In order to remove the row of the layout we have to make sure ALL the knobs on the row
+    ////are hidden.
+    bool shouldRemoveWidget = true;
+    for (U32 i = 0; i < _knobsOnSameLine.size(); ++i) {
+        if (!_knobsOnSameLine[i]->getIsSecret()) {
+            shouldRemoveWidget = false;
+        }
+    }
+    
+    if (shouldRemoveWidget) {
         _containerLayout->removeWidget(_field);
         if (_descriptionLabel) {
             _containerLayout->removeWidget(_descriptionLabel);

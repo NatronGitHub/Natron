@@ -71,7 +71,7 @@ void BaseTest::SetUp()
     manager->load(0,NULL);
     //////WARNING: This test disables multi-threading! if it fails it will never re-enable it
     ////// hence the next time you launch the application multi-threading will be DISABLED.
-    manager->setMultiThreadEnabled(false);
+    manager->setNumberOfThreads(-1);
     _app = manager->getTopLevelInstance();
     
     registerTestPlugins();
@@ -81,7 +81,7 @@ void BaseTest::TearDown()
 {
     _app->quit();
     _app = 0;
-    appPTR->setMultiThreadEnabled(true);
+    appPTR->setNumberOfThreads(0);
     delete appPTR;
 }
 

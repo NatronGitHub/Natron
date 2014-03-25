@@ -1099,10 +1099,13 @@ void CurveWidgetPrivate::keyFramesWithinRect(const QRectF& rect,std::vector< std
     double bottom = rect.topLeft().y();
     double top = rect.bottomRight().y();
     for (Curves::const_iterator it = _curves.begin(); it!=_curves.end(); ++it) {
-        std::vector<KeyFrame> keysInsideRect;
-        (*it)->getInternalCurve()->getKeyFramesWithinRect(left, bottom, right, top, &keysInsideRect);
-        for (U32 i = 0; i < keysInsideRect.size(); ++i) {
-            keys->push_back(std::make_pair(*it,keysInsideRect[i]));
+        if ((*it)->isVisible()) {
+            std::vector<KeyFrame> keysInsideRect;
+            (*it)->getInternalCurve()->getKeyFramesWithinRect(left, bottom, right, top, &keysInsideRect);
+            for (U32 i = 0; i < keysInsideRect.size(); ++i) {
+                keys->push_back(std::make_pair(*it,keysInsideRect[i]));
+            }
+
         }
     }
 }
@@ -1498,12 +1501,11 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement()
             QPointF curveMaxMovement;
             
             double minimumTimeSpanBetween2Keys = 1.;
+            std::pair<double,double> curveXRange = it->curve->getInternalCurve()->getXRange();
             if (!it->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers()) {
-                std::pair<double,double> curveXRange = it->curve->getInternalCurve()->getXRange();
                 minimumTimeSpanBetween2Keys = 1e-4 * std::abs(curveXRange.second - curveXRange.first) * 10;//< be safe
             }
             
-            std::pair<double,double> curveXRange = leftMostSelected->curve->getInternalCurve()->getXRange();
             
             //now get leftMostSelected's previous key to determine the max left movement for this curve
             {

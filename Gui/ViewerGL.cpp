@@ -116,6 +116,9 @@ struct ViewerGL::Implementation {
     , oldClick()
     , blankViewerInfos()
     , displayingImage(false)
+    , displayingImageGain(1.)
+    , displayingImageOffset(0.)
+    , displayingImageLut(ViewerInstance::sRGB)
     , must_initBlackTex(true)
     , ms(UNDEFINED)
     , textRenderingColor(200,200,200,255)
@@ -165,6 +168,9 @@ struct ViewerGL::Implementation {
     ImageInfo blankViewerInfos;/*!< Pointer to the infos used when the viewer is disconnected.*/
 
     bool displayingImage;/*!< True if the viewer is connected and not displaying black.*/
+    double displayingImageGain;
+    double displayingImageOffset;
+    ViewerInstance::ViewerColorSpace displayingImageLut;
     bool must_initBlackTex;
 
     MOUSE_STATE ms;/*!< Holds the mouse state*/
@@ -482,9 +488,11 @@ ViewerGL::~ViewerGL()
     }
     delete _imp->blackTex;
     delete _imp->defaultDisplayTexture;
+    glCheckError();
     for(U32 i = 0; i < _imp->pboIds.size();++i){
         glDeleteBuffers(1,&_imp->pboIds[i]);
     }
+    glCheckError();
     glDeleteBuffers(1, &_imp->vboVerticesId);
     glDeleteBuffers(1, &_imp->vboTexturesId);
     glDeleteBuffers(1, &_imp->iboTriangleStripId);
@@ -1011,7 +1019,7 @@ GLuint ViewerGL::getPboID(int index)
 
     if(index >= (int)_imp->pboIds.size()){
         GLuint handle;
-        glGenBuffersARB(1,&handle);
+        glGenBuffers(1,&handle);
         _imp->pboIds.push_back(handle);
         return handle;
     }else{
@@ -1130,6 +1138,7 @@ void ViewerGL::activateShaderRGB()
     assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
 
+    assert(_imp->displayingImage);
     // we assume that:
     // - 8-bits textures are stored non-linear and must be displayer as is
     // - floating-point textures are linear and must be decompressed according to the given lut
@@ -1144,9 +1153,9 @@ void ViewerGL::activateShaderRGB()
     }
     
     _imp->shaderRGB->setUniformValue("Tex", 0);
-    _imp->shaderRGB->setUniformValue("expMult",  (GLfloat)getInternalNode()->getExposure());
-    _imp->shaderRGB->setUniformValue("offset", (GLfloat)getInternalNode()->getOffset());
-    _imp->shaderRGB->setUniformValue("lut", (GLint)_imp->viewerTab->getInternalNode()->getLutType());
+    _imp->shaderRGB->setUniformValue("gain", (float)_imp->displayingImageGain);
+    _imp->shaderRGB->setUniformValue("offset", (float)_imp->displayingImageOffset);
+    _imp->shaderRGB->setUniformValue("lut", (GLint)_imp->displayingImageLut);
 
     
 }
@@ -1236,7 +1245,7 @@ void ViewerGL::initBlackTex()
 
 
 
-void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region,int pboIndex)
+void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region, double gain, double offset, int lut, int pboIndex)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1270,7 +1279,10 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,0);
     glCheckError();
     _imp->displayingImage = true;
-    
+    _imp->displayingImageGain = gain;
+    _imp->displayingImageOffset = offset;
+    _imp->displayingImageLut = (ViewerInstance::ViewerColorSpace)lut;
+
     emit imageChanged();
 }
 
@@ -1764,7 +1776,11 @@ void ViewerGL::fitImageToFormat()
     _imp->oldClick = QPoint(); // reset mouse posn
 
     if (old_zoomFactor != zoomFactor) {
-        emit zoomChanged(zoomFactor * 100);
+        int zoomFactorInt = zoomFactor  * 100;
+        if (zoomFactorInt == 0) {
+            zoomFactorInt = 1;
+        }
+        emit zoomChanged(zoomFactorInt);
     }
 
     _imp->zoomOrPannedSinceLastFit = false;

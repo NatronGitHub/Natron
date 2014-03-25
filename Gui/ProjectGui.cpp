@@ -309,7 +309,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
                 tab->getViewer()->setProjection(found->second.zoomLeft, found->second.zoomBottom, found->second.zoomFactor, found->second.zoomPAR);
                 tab->setChannels(found->second.channels);
                 tab->setColorSpace(found->second.colorSpace);
-                tab->setExposure(found->second.exposure);
+                tab->setGain(found->second.gain);
                 tab->setUserRoIEnabled(found->second.userRoIenabled);
                 tab->setAutoContrastEnabled(found->second.autoContrastEnabled);
                 tab->setUserRoI(found->second.userRoI);

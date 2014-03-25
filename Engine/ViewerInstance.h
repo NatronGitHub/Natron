@@ -25,7 +25,9 @@ class Lut;
 }
 }
 class OpenGLViewerI;
-class TextureRect;
+struct TextureRect;
+
+//namespace Natron {
 
 class ViewerInstance : public QObject, public Natron::OutputEffectInstance
 {
@@ -69,7 +71,7 @@ public:
      * Otherwise it just calls renderRoi(...) on the active input and
      * and then render to the PBO.
      **/
-    Natron::Status renderViewer(SequenceTime time,bool singleThreaded) WARN_UNUSED_RETURN;
+    Natron::Status renderViewer(SequenceTime time,bool singleThreaded,bool isSequentialRender) WARN_UNUSED_RETURN;
 
 
     /**
@@ -105,14 +107,7 @@ public:
 
     int getLutType() const WARN_UNUSED_RETURN ;
 
-    double getExposure() const WARN_UNUSED_RETURN ;
-
-    /**
-     * @brief Called by the main-thread when it activates the shader to draw the image.
-     * This is used only when 32bits fp textures are used so it can pass to the shader
-     * actually rendering the good offset value.
-     **/
-    double getOffset() const WARN_UNUSED_RETURN;
+    double getGain() const WARN_UNUSED_RETURN ;
 
     DisplayChannels getChannels() const WARN_UNUSED_RETURN;
 
@@ -143,15 +138,9 @@ public slots:
 
     void onViewerCacheFrameAdded();
 
-    void onExposureChanged(double exp);
+    void onGainChanged(double exp);
 
     void onColorSpaceChanged(const QString& colorspaceName);
-    
-    /**
-     * @brief Slot called internally by the renderViewer() function when it wants to refresh the OpenGL viewer.
-     * Do not call this yourself.
-     **/
-    void updateViewer();
 
     void onNodeNameChanged(const QString&);
 
@@ -179,10 +168,6 @@ signals:
     void removedLRUCachedFrame();
 
     void clearedViewerCache();
-    /**
- *@brief Signal emitted when the engine needs to inform the main thread that it should refresh the viewer
- **/
-    void doUpdateViewer();
 
 private:
     /*******************************************
@@ -220,5 +205,5 @@ private:
     struct ViewerInstancePrivate;
     boost::scoped_ptr<ViewerInstancePrivate> _imp;
 };
-
+//} // namespace Natron
 #endif // NATRON_ENGINE_VIEWERNODE_H_

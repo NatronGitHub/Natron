@@ -35,7 +35,7 @@ struct ViewerData {
     RectI userRoI;
     bool isClippedToProject;
     bool autoContrastEnabled;
-    double exposure;
+    double gain;
     std::string colorSpace;
     std::string channels;
     
@@ -52,7 +52,7 @@ struct ViewerData {
         ar & boost::serialization::make_nvp("UserRoI",userRoI);
         ar & boost::serialization::make_nvp("ClippedToProject",isClippedToProject);
         ar & boost::serialization::make_nvp("AutoContrast",autoContrastEnabled);
-        ar & boost::serialization::make_nvp("Exposure",exposure);
+        ar & boost::serialization::make_nvp("Gain",gain);
         ar & boost::serialization::make_nvp("ColorSpace",colorSpace);
         ar & boost::serialization::make_nvp("Channels",channels);
     }

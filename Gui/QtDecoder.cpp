@@ -432,7 +432,9 @@ Natron::Status QtReader::getRegionOfDefinition(SequenceTime time,RectI* rod,bool
 }
 
 Natron::Status QtReader::render(SequenceTime /*time*/,RenderScale /*scale*/,
-                                const RectI& roi,int /*view*/,boost::shared_ptr<Natron::Image> output) {
+                                const RectI& roi,int /*view*/,
+                                bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
+                                boost::shared_ptr<Natron::Image> output) {
     int missingFrameChoice = _missingFrameChoice->getValue<int>();
     if (!_img) {
         if (!_img && missingFrameChoice == 2) { // black image

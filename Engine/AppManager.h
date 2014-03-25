@@ -191,7 +191,7 @@ public:
     /**
     * @brief Toggle on/off multi-threading globally in Natron
     **/
-    void setMultiThreadEnabled(bool enabled);
+    void setNumberOfThreads(int threadsNb);
 
     const QString& getApplicationBinaryPath() const;
 

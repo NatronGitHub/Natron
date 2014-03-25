@@ -145,7 +145,7 @@ void VideoEngine::render(int frameCount,
     _lastRequestedRunArgs._frameRequestIndex = 0;
     _lastRequestedRunArgs._forcePreview = forcePreview;
     
-    if (appPTR->getCurrentSettings()->isMultiThreadingDisabled()) {
+    if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
         runSameThread();
     } else {
         
@@ -546,7 +546,7 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
         // if the output is a writer, _tree.outputAsWriter() returns a valid pointer/
         Status stat;
         try {
-            stat =  renderFrame(currentFrame,singleThreaded);
+            stat =  renderFrame(currentFrame,singleThreaded,_currentRunArgs._frameRequestsCount == -1);
         } catch (const std::exception &e) {
             std::stringstream ss;
             ss << "Error while rendering" << " frame " << currentFrame << ": " << e.what();
@@ -595,7 +595,7 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
     } // end for(;;)
 }
 
-Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded){
+Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded,bool isSequentialRender) {
     Status stat;
     
   
@@ -613,7 +613,7 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded){
     gettimeofday(&_startRenderFrameTime, 0);
     if (_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()) {
         
-        stat = _tree.outputAsViewer()->renderViewer(time,singleThreaded);
+        stat = _tree.outputAsViewer()->renderViewer(time,singleThreaded,isSequentialRender);
         
         if (!_currentRunArgs._sameFrame) {
             QMutexLocker timerLocker(&_timerMutex);
@@ -639,7 +639,7 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded){
                 // Do not catch exceptions: if an exception occurs here it is probably fatal, since
                 // it comes from Natron itself. All exceptions from plugins are already caught
                 // by the HostSupport library.
-                (void)_tree.getOutput()->renderRoI(time, scale,i ,rod);
+                (void)_tree.getOutput()->renderRoI(time, scale,i ,rod,isSequentialRender,false);
             }
         }
         
@@ -676,7 +676,7 @@ void VideoEngine::abortRendering(bool blocking) {
         for (RenderTree::TreeReverseIterator it = _tree.rbegin(); it != _tree.rend(); ++it) {
             it->second->setAborted(true);
         }
-        if(_tree.isOutputAViewer())
+        if(_tree.isOutputAViewer() && QThread::currentThread() != this)
             _tree.outputAsViewer()->wakeUpAnySleepingThread();
         
         ///also wake up the run() thread if it is waiting for getFrameRange

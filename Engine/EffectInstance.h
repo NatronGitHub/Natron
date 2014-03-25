@@ -209,8 +209,10 @@ public:
      * Pre-condition: preProcess must have been called.
      **/
     boost::shared_ptr<Image> renderRoI(SequenceTime time,RenderScale scale,
-                                                     int view,const RectI& renderWindow,
-                                                     bool byPassCache = false,const RectI* preComputedRoD = NULL) WARN_UNUSED_RETURN;
+                                       int view,const RectI& renderWindow,
+                                       bool isSequentialRender,
+                                       bool isRenderMadeInResponseToUserInteraction,
+                                       bool byPassCache = false,const RectI* preComputedRoD = NULL) WARN_UNUSED_RETURN;
     
     /**
      * @brief Same as renderRoI(SequenceTime,RenderScale,int,RectI,bool) but takes in parameter
@@ -221,6 +223,8 @@ public:
                    int view,const RectI& renderWindow,
                    const boost::shared_ptr<const ImageParams>& cachedImgParams,
                    const boost::shared_ptr<Image>& image,
+                   bool isSequentialRender,
+                   bool isRenderMadeInResponseToUserInteraction,
                    bool byPassCache = false);
 
 
@@ -237,7 +241,9 @@ public:
      * Note that this function can be called concurrently for the same output image but with different
      * rois, depending on the threading-affinity of the plug-in.
      **/
-    virtual Natron::Status render(SequenceTime /*time*/, RenderScale /*scale*/, const RectI& /*roi*/, int /*view*/, boost::shared_ptr<Natron::Image> /*output*/) WARN_UNUSED_RETURN { return Natron::StatOK; }
+    virtual Natron::Status render(SequenceTime /*time*/, RenderScale /*scale*/, const RectI& /*roi*/, int /*view*/,
+                                  bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
+                                  boost::shared_ptr<Natron::Image> /*output*/) WARN_UNUSED_RETURN { return Natron::StatOK; }
     
     /**
      * @brief Can be overloaded to indicates whether the effect is an identity, i.e it doesn't produce
@@ -516,10 +522,14 @@ public:
     virtual std::vector<std::string> supportedFileFormats() const { return std::vector<std::string>(); }
     
     virtual void beginSequenceRender(SequenceTime /*first*/,SequenceTime /*last*/,
-                                     SequenceTime /*step*/,bool /*interactive*/,RenderScale /*scale*/) {}
+                                     SequenceTime /*step*/,bool /*interactive*/,RenderScale /*scale*/,
+                                     bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
+                                     int /*view*/) {}
     
     virtual void endSequenceRender(SequenceTime /*first*/,SequenceTime /*last*/,
-                                   SequenceTime /*step*/,bool /*interactive*/,RenderScale /*scale*/) {}
+                                   SequenceTime /*step*/,bool /*interactive*/,RenderScale /*scale*/,
+                                   bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
+                                   int /*view*/) {}
 protected:
     
     /**
@@ -536,24 +546,26 @@ protected:
      **/
     virtual void cloneExtras(){}
     
-    Node* _node; //< the node holding this effect
+    Node* const _node; //< the node holding this effect
 
 private:
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
     
     struct RenderArgs;
-
+    
     /**
      * @brief The internal of renderRoI, mainly it calls render and handles the thread safety of the effect.
      * @returns True if the render call succeeded, false otherwise.
      **/
     bool renderRoIInternal(SequenceTime time,RenderScale scale,
-                   int view,const RectI& renderWindow,
-                   const boost::shared_ptr<const ImageParams>& cachedImgParams,
-                   const boost::shared_ptr<Image>& image,
-                    bool byPassCache);
-
+                           int view,const RectI& renderWindow,
+                           const boost::shared_ptr<const ImageParams>& cachedImgParams,
+                           const boost::shared_ptr<Image>& image,
+                           bool isSequentialRender,
+                           bool isRenderMadeInResponseToUserInteraction,
+                           bool byPassCache);
+    
     /**
      * @brief Must be implemented to evaluate a value change
      * made to a knob(e.g: force a new render).
@@ -567,8 +579,8 @@ private:
     
     
     Natron::Status tiledRenderingFunctor(const RenderArgs& args,
-                               const RectI& roi,
-                               boost::shared_ptr<Natron::Image> output);
+                                         const RectI& roi,
+                                         boost::shared_ptr<Natron::Image> output);
     
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.

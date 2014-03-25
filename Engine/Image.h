@@ -21,7 +21,7 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QHash>
 CLANG_DIAG_ON(deprecated)
-#include <QtCore/QMutex>
+#include <QtCore/QReadWriteLock>
 
 #include "Engine/CacheEntry.h"
 #include "Engine/Rect.h"
@@ -95,7 +95,7 @@ namespace Natron {
         
         ImageComponents _components;
         Bitmap _bitmap;
-        mutable QMutex _lock;
+        mutable QReadWriteLock _lock;
         
     public:
    
@@ -142,17 +142,17 @@ namespace Natron {
          * of image returned may contain already rendered pixels.
          **/
         std::list<RectI> getRestToRender(const RectI& regionOfInterest) const{
-            QMutexLocker locker(&_lock);
+            QReadLocker locker(&_lock);
             return _bitmap.minimalNonMarkedRects(regionOfInterest);
         }
         
         RectI getMinimalRect(const RectI& regionOfInterest) const{
-            QMutexLocker locker(&_lock);
+            QReadLocker locker(&_lock);
             return _bitmap.minimalNonMarkedBbox(regionOfInterest);
         }
 
         void markForRendered(const RectI& roi){
-            QMutexLocker locker(&_lock);
+            QWriteLocker locker(&_lock);
             _bitmap.markForRendered(roi);
         }
         

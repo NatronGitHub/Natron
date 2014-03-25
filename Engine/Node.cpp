@@ -900,7 +900,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     // Exceptions are caught because the program can run without a preview,
     // but any exception in renderROI is probably fatal.
     try {
-        img = _imp->previewInstance->renderRoI(time, scale, 0,rod);
+        img = _imp->previewInstance->renderRoI(time, scale, 0,rod,false,true);
     } catch (const std::exception& e) {
         qDebug() << "Error: Cannot create preview" << ": " << e.what();
         _imp->computingPreview = false;
@@ -1284,18 +1284,15 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
         return false;
     }
     
-    InputMap::iterator found = _inputs.find(inputNumber);
-    //    if(/*input->className() == "Viewer" && */found!=_inputs.end() && !found->second){
-    //        return false;
-    //    }
     /*Adding all empty edges so it creates at least the inputNB'th one.*/
     while (_inputsCount <= inputNumber) {
         
         ///this function might not succeed if we already have 10 inputs OR the last input is already empty
-        if (!tryAddEmptyInput()) {
-            break;
-        }
+        addEmptyInput();
     }
+    
+    InputMap::iterator found = _inputs.find(inputNumber);
+
     //#1: first case, If the inputNB of the viewer is already connected & this is not
     // an autoConnection, just refresh it*/
     InputMap::iterator inputAlreadyConnected = _inputs.end();

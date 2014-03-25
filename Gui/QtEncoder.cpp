@@ -194,7 +194,9 @@ static std::string filenameFromPattern(const std::string& pattern,int frameIndex
     return ret;
 }
 
-Natron::Status QtWriter::render(SequenceTime time, RenderScale scale, const RectI& roi, int view, boost::shared_ptr<Natron::Image> output){
+Natron::Status QtWriter::render(SequenceTime time, RenderScale scale, const RectI& roi, int view,
+                                bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
+                                boost::shared_ptr<Natron::Image> output){
     
     boost::shared_ptr<Natron::Image> src = getImage(0, time, scale, view);
     

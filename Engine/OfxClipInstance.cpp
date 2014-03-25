@@ -162,19 +162,42 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     EffectInstance* n = getAssociatedNode();
     if (n && n != _nodeInstance) {
         bool isProjectFormat;
-        Natron::Status st = n->getRegionOfDefinition(time,&rod,&isProjectFormat);
-        if (st == StatFailed) {
-            //assert(!"cannot compute ROD");
-            ret.x1 = kOfxFlagInfiniteMin;
-            ret.x2 = kOfxFlagInfiniteMax;
-            ret.y1 = kOfxFlagInfiniteMin;
-            ret.y2 = kOfxFlagInfiniteMax;
-        } else {
+        
+        boost::shared_ptr<const ImageParams> cachedImgParams;
+        boost::shared_ptr<Image> image;
+        
+        ///Use a render scale of 1 and the view 0 as we have no means to get them from here
+        OfxPointD scale;
+        scale.x = scale.y = 1.;
+        Natron::ImageKey key = Natron::Image::makeKey(n->hash().value(), time, scale,0);
+        bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
+        Format f;
+        n->getRenderFormat(&f);
+        if (isCached && cachedImgParams->isRodProjectFormat() && cachedImgParams->getRoD() == dynamic_cast<RectI&>(f)) {
+            rod = cachedImgParams->getRoD();
             ret.x1 = rod.left();
             ret.x2 = rod.right();
             ret.y1 = rod.bottom();
             ret.y2 = rod.top();
+
+        } else {
+            
+            Natron::Status st = n->getRegionOfDefinition(time,&rod,&isProjectFormat);
+            if (st == StatFailed) {
+                //assert(!"cannot compute ROD");
+                ret.x1 = kOfxFlagInfiniteMin;
+                ret.x2 = kOfxFlagInfiniteMax;
+                ret.y1 = kOfxFlagInfiniteMin;
+                ret.y2 = kOfxFlagInfiniteMax;
+            } else {
+                ret.x1 = rod.left();
+                ret.x2 = rod.right();
+                ret.y1 = rod.bottom();
+                ret.y2 = rod.top();
+            }
+            
         }
+        
     } else if(_nodeInstance && _nodeInstance->effectInstance()) {
         _nodeInstance->effectInstance()->getProjectOffset(ret.x1, ret.y1);
         _nodeInstance->effectInstance()->getProjectExtent(ret.x2, ret.y2);

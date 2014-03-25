@@ -93,10 +93,9 @@ void Int_KnobGui::createWidget(QHBoxLayout* layout)
     boost::shared_ptr<Int_Knob> intKnob = boost::dynamic_pointer_cast<Int_Knob>(getKnob());
     assert(intKnob);
     
-    if (!isOnNewLine() || intKnob->isNewLineTurnedOff()) {
+    if (getKnobsCountOnSameLine() > 1) {
         intKnob->disableSlider();
     }
-    
     
     //  const std::vector<int> &maximums = intKnob->getMaximums();
     //    const std::vector<int> &minimums = intKnob->getMinimums();
@@ -378,7 +377,7 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
     boost::shared_ptr<Double_Knob> dbl_knob = boost::dynamic_pointer_cast<Double_Knob>(getKnob());
     assert(dbl_knob);
     
-    if (!isOnNewLine() || dbl_knob->isNewLineTurnedOff()) {
+    if (getKnobsCountOnSameLine() > 1) {
         dbl_knob->disableSlider();
     }
     
@@ -1758,12 +1757,15 @@ void Group_KnobGui::setChecked(bool b)
     ///get the current index of the group knob in the layout, and reinsert
     ///the children back with an offset relative to the group.
     int realIndexInLayout = getActualIndexInLayout();
-
+    int startChildIndex = realIndexInLayout + 1;
     for (U32 i = 0 ; i < _children.size() ; ++i) {
         if (!b) {
             _children[i].first->hide();
         } else if (!_children[i].first->getKnob()->getIsSecret()) {
-            _children[i].first->show(realIndexInLayout + i + 1);
+            _children[i].first->show(startChildIndex);
+            if (!_children[i].first->getKnob()->isNewLineTurnedOff()) {
+                ++startChildIndex;
+            }
         }
     }
 }

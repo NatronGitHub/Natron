@@ -27,6 +27,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EffectInstance.h"
 
+class QReadWriteLock;
 class OfxClipInstance;
 class Button_Knob;
 class OverlaySupport;
@@ -72,6 +73,9 @@ class OfxEffectInstance : public AbstractOfxEffectInstance {
 
     bool _initialized; //true when the image effect instance has been created and populated
     boost::shared_ptr<Button_Knob> _renderButton; //< render button for writers
+    mutable EffectInstance::RenderSafety _renderSafety;
+    mutable bool _wasRenderSafetySet;
+    mutable QReadWriteLock* _renderSafetyLock;
 public:
     
     
@@ -168,7 +172,9 @@ public:
     virtual void beginEditKnobs() OVERRIDE;
 
     virtual Natron::Status render(SequenceTime time,RenderScale scale,
-                                   const RectI& roi,int view,boost::shared_ptr<Natron::Image> output) OVERRIDE WARN_UNUSED_RETURN;
+                                   const RectI& roi,int view,
+                                  bool isSequentialRender,bool isRenderResponseToUserInteraction,
+                                  boost::shared_ptr<Natron::Image> output) OVERRIDE WARN_UNUSED_RETURN;
 
     virtual bool isIdentity(SequenceTime time,RenderScale scale,const RectI& roi,
                                 int view,SequenceTime* inputTime,int* inputNb) OVERRIDE;
@@ -186,10 +192,12 @@ public:
     virtual std::vector<std::string> supportedFileFormats() const OVERRIDE FINAL;
     
     virtual void beginSequenceRender(SequenceTime first,SequenceTime last,
-                                     SequenceTime step,bool interactive,RenderScale scale) OVERRIDE FINAL;
+                                     SequenceTime step,bool interactive,RenderScale scale,
+                                     bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) OVERRIDE FINAL;
     
     virtual void endSequenceRender(SequenceTime first,SequenceTime last,
-                                     SequenceTime step,bool interactive,RenderScale scale) OVERRIDE FINAL;
+                                     SequenceTime step,bool interactive,RenderScale scale,
+                                   bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) OVERRIDE FINAL;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
     

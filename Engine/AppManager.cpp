@@ -787,8 +787,8 @@ const QString& AppManager::getApplicationBinaryPath() const {
     return _imp->_binaryPath;
 }
 
-void AppManager::setMultiThreadEnabled(bool enabled) {
-    _imp->_settings->setMultiThreadingDisabled(!enabled);
+void AppManager::setNumberOfThreads(int threadsNb) {
+    _imp->_settings->setNumberOfThreads(threadsNb);
 }
 
 bool AppManager::getImage(const Natron::ImageKey& key,boost::shared_ptr<const Natron::ImageParams>* params,
@@ -848,7 +848,7 @@ bool AppManager::getTexture(const Natron::FrameKey& key,boost::shared_ptr<const 
     return ret;
 #else
     bool ret =  _imp->_viewerCache->get(key, &paramsBase,returnValue);
-    if (ret) {
+    if (ret && params) {
         *params = boost::dynamic_pointer_cast<const Natron::FrameParams>(paramsBase);
     }
     return ret;

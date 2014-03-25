@@ -73,7 +73,9 @@ public:
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE { return false; }
 
     virtual Natron::Status render(SequenceTime time,RenderScale scale,
-                                  const RectI& roi,int view,boost::shared_ptr<Natron::Image> output) OVERRIDE;
+                                  const RectI& roi,int view,
+                                  bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
+                                  boost::shared_ptr<Natron::Image> output) OVERRIDE;
     
 
     virtual void onKnobValueChanged(Knob* k, Natron::ValueChangedReason reason) OVERRIDE;

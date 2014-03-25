@@ -280,12 +280,18 @@ public:
     
     /**
      *@brief Starts the video engine. It can be called from anywhere and at anytime. It starts off at the current
-     *frame indicated on the timeline.
+     *frame indicated on the timeline. This function has a lot of parameters and you might find it more easy to
+     *call refreshAndContinueRender or updateTreeAndContinueRender which just call render() with the good parameters.
      *@param output[in] The output from which we should build the Tree that will serve to render.
      *@param frameCount[in] This is the number of frames you want to execute the engine for. -1 will make the
      *engine run until the end of the sequence is reached. If loop mode is enabled, the engine will never stops
      *until the user explicitly stops it.
-     *@param seekTimeline If frameCount == 1 then if it seekTimeline is false the timeline will not be moved by the playback.
+     *If frameCount is -1 the application will inform the plug-ins that it is doing a sequential render.
+     *If frameCount is -1 and the application is background then the render will be considered to be
+     *"non-interactive", in which sense that it is a hint to plug-ins that they have no interface.
+     *If frameCount is equal to 1 then if the output is a viewer, the render will be considered as
+     *"interactive" in a sense that the render is made in response to user interaction.
+     *@param seekTimeline If seekTimeline is false the timeline will not be moved by the playback.
      *@param refreshTree if true, the engine will rebuild the internal Tree in the startEngine() function.
      *@param fitFrameToViewer[in] If true, it will fit the first frame to the viewport.
      *@param forward[in] If true, the engine runs forwards, otherwise backwards.
@@ -296,9 +302,9 @@ public:
     void render(int frameCount,
                 bool seekTimeline,
                 bool refreshTree,
-                bool forward = true,
-                bool sameFrame = false,
-                bool forcePreview = false);
+                bool forward,
+                bool sameFrame,
+                bool forcePreview);
     
     
     
@@ -377,7 +383,7 @@ private:
      **/
     bool startEngine(bool singleThreaded);
     
-    Natron::Status renderFrame(SequenceTime time,bool singleThreaded);
+    Natron::Status renderFrame(SequenceTime time,bool singleThreaded,bool isSequentialRender);
 
 private:
     // FIXME: PIMPL

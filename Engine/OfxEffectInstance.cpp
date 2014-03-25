@@ -17,6 +17,7 @@
 
 #include <QtCore/QDebug>
 #include <QByteArray>
+#include <QReadWriteLock>
 #include <QPointF>
 
 #include "Global/Macros.h"
@@ -73,6 +74,9 @@ OfxEffectInstance::OfxEffectInstance(Natron::Node* node)
     , _overlayInteract(0)
     , _initialized(false)
     , _renderButton()
+    , _renderSafety(EffectInstance::UNSAFE)
+    , _wasRenderSafetySet(false)
+    , _renderSafetyLock(new QReadWriteLock)
 {
     if(node && !node->getLiveInstance()){
         node->setLiveInstance(this);
@@ -175,7 +179,7 @@ OfxEffectInstance::~OfxEffectInstance(){
     }
     
     delete effect_;
-
+    delete _renderSafetyLock;
 }
 
 
@@ -628,8 +632,27 @@ bool OfxEffectInstance::isIdentity(SequenceTime time,RenderScale scale,const Rec
     }
 }
 
+
+void OfxEffectInstance::beginSequenceRender(SequenceTime first,SequenceTime last,
+                                            SequenceTime step,bool interactive,RenderScale scale,
+                                            bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) {
+    OfxStatus stat = effectInstance()->beginRenderAction(first, last, step, interactive, scale,isSequentialRender,isRenderResponseToUserInteraction,view);
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    
+}
+
+void OfxEffectInstance::endSequenceRender(SequenceTime first,SequenceTime last,
+                                          SequenceTime step,bool interactive,RenderScale scale,
+                                          bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) {
+    OfxStatus stat = effectInstance()->endRenderAction(first, last, step, interactive, scale,isSequentialRender,isRenderResponseToUserInteraction,view);
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    
+}
+
 Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
-                                         const RectI& roi,int view,boost::shared_ptr<Natron::Image> /*output*/){
+                                         const RectI& roi,int view,
+                                         bool isSequentialRender,bool isRenderResponseToUserInteraction,
+                                         boost::shared_ptr<Natron::Image> /*output*/){
     if(!_initialized){
         return Natron::StatFailed;
     }
@@ -641,7 +664,7 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     int viewsCount = getApp()->getProject()->getProjectViewsCount();
     OfxStatus stat;
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
-    stat = effect_->renderAction((OfxTime)time, field, ofxRoI, scale, view, viewsCount);
+    stat = effect_->renderAction((OfxTime)time, field, ofxRoI, scale,isSequentialRender,isRenderResponseToUserInteraction,view, viewsCount);
     if (stat != kOfxStatOK) {
         return StatFailed;
     } else {
@@ -649,22 +672,35 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     }
 }
 
-EffectInstance::RenderSafety OfxEffectInstance::renderThreadSafety() const{
-    const std::string& safety = effect_->getRenderThreadSafety();
-    // TODO: cache this result
-    if (safety == kOfxImageEffectRenderUnsafe) {
-        return EffectInstance::UNSAFE;
-    }else if(safety == kOfxImageEffectRenderInstanceSafe) {
-        return EffectInstance::INSTANCE_SAFE;
-    }else if(safety == kOfxImageEffectRenderFullySafe) {
-        if (effect_->getHostFrameThreading()) {
-            return EffectInstance::FULLY_SAFE_FRAME;
-        } else {
-            return EffectInstance::FULLY_SAFE;
+EffectInstance::RenderSafety OfxEffectInstance::renderThreadSafety() const {
+    
+    {
+        QReadLocker readL(_renderSafetyLock);
+        if (_wasRenderSafetySet) {
+            return _renderSafety;
         }
     }
-    qDebug() << "Unknown thread safety level: " << safety.c_str();
-    return EffectInstance::UNSAFE;
+    {
+        QWriteLocker writeL(_renderSafetyLock);
+        const std::string& safety = effect_->getRenderThreadSafety();
+        if (safety == kOfxImageEffectRenderUnsafe) {
+            _renderSafety =  EffectInstance::UNSAFE;
+        } else if (safety == kOfxImageEffectRenderInstanceSafe) {
+            _renderSafety = EffectInstance::INSTANCE_SAFE;
+        } else if (safety == kOfxImageEffectRenderFullySafe) {
+            if (effect_->getHostFrameThreading()) {
+                _renderSafety =  EffectInstance::FULLY_SAFE_FRAME;
+            } else {
+                _renderSafety =  EffectInstance::FULLY_SAFE;
+            }
+        } else {
+            qDebug() << "Unknown thread safety level: " << safety.c_str();
+            _renderSafety =  EffectInstance::UNSAFE;
+        }
+        _wasRenderSafetySet = true;
+        return _renderSafety;
+    }
+    
 }
 
 bool OfxEffectInstance::makePreviewByDefault() const { return isGenerator();}
@@ -980,18 +1016,4 @@ bool OfxEffectInstance::supportsTiles() const {
 
 void OfxEffectInstance::beginEditKnobs() {
     effectInstance()->beginInstanceEditAction();
-}
-
-void OfxEffectInstance::beginSequenceRender(SequenceTime first,SequenceTime last,
-                         SequenceTime step,bool interactive,RenderScale scale) {
-    OfxStatus stat = effectInstance()->beginRenderAction(first, last, step, interactive, scale);
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-
-}
-
-void OfxEffectInstance::endSequenceRender(SequenceTime first,SequenceTime last,
-                               SequenceTime step,bool interactive,RenderScale scale) {
-    OfxStatus stat = effectInstance()->endRenderAction(first, last, step, interactive, scale);
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-
 }

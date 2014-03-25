@@ -15,7 +15,7 @@
 #include <QDir>
 #include <QSettings>
 #include <QThreadPool>
-
+#include <QThread>
 #include "Global/MemoryInfo.h"
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
@@ -64,10 +64,16 @@ void Settings::initializeKnobs(){
                                    " as the viewer they were picked from.");
     _generalTab->addKnob(_linearPickers);
     
-    _multiThreadedDisabled = Natron::createKnob<Bool_Knob>(this, "Disable multi-threading");
-    _multiThreadedDisabled->setAnimationEnabled(false);
-    _multiThreadedDisabled->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will not spawn any thread to render.");
-    _generalTab->addKnob(_multiThreadedDisabled);
+    _numberOfThreads = Natron::createKnob<Int_Knob>(this, "Number of render threads");
+    _numberOfThreads->setAnimationEnabled(false);
+    QString numberOfThreadsToolTip = QString("Controls how many threads " NATRON_APPLICATION_NAME " should use to render. \n"
+                                             "-1: Disable multi-threading totally (useful for debug) \n"
+                                             "0: Guess from the number of cores. The ideal threads count for your hardware is %1.").arg(QThread::idealThreadCount());
+    _numberOfThreads->setHintToolTip(numberOfThreadsToolTip.toStdString());
+    _numberOfThreads->disableSlider();
+    _numberOfThreads->setMinimum(-1);
+    _numberOfThreads->setDisplayMinimum(-1);
+    _generalTab->addKnob(_numberOfThreads);
     
     _renderInSeparateProcess = Natron::createKnob<Bool_Knob>(this, "Render in a separate process");
     _renderInSeparateProcess->setAnimationEnabled(false);
@@ -213,7 +219,7 @@ void Settings::setDefaultValues() {
     
     beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
     _linearPickers->setDefaultValue<bool>(true);
-    _multiThreadedDisabled->setDefaultValue<bool>(false);
+    _numberOfThreads->setDefaultValue<int>(0);
     _renderInSeparateProcess->setDefaultValue<bool>(true);
     _autoPreviewEnabledForNewProjects->setDefaultValue<bool>(true);
     _extraPluginPaths->setDefaultValue<QString>("");
@@ -252,7 +258,7 @@ void Settings::saveSettings(){
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
     settings.setValue("LinearColorPickers",_linearPickers->getValue<bool>());
-    settings.setValue("MultiThreadingDisabled", _multiThreadedDisabled->getValue<bool>());
+    settings.setValue("Number of threads", _numberOfThreads->getValue<int>());
     settings.setValue("RenderInSeparateProcess", _renderInSeparateProcess->getValue<bool>());
     settings.setValue("AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue<bool>());
     settings.setValue("ExtraPluginsPaths", _extraPluginPaths->getValue<QString>());
@@ -303,8 +309,8 @@ void Settings::restoreSettings(){
     if(settings.contains("LinearColorPickers")){
         _linearPickers->setValue<bool>(settings.value("LinearColorPickers").toBool());
     }
-    if (settings.contains("MultiThreadingDisabled")) {
-        _multiThreadedDisabled->setValue<bool>(settings.value("MultiThreadingDisabled").toBool());
+    if (settings.contains("Number of threads")) {
+        _numberOfThreads->setValue<int>(settings.value("Number of threads").toInt());
     }
     if (settings.contains("RenderInSeparateProcess")) {
         _renderInSeparateProcess->setValue<bool>(settings.value("RenderInSeparateProcess").toBool());
@@ -456,12 +462,15 @@ void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/)
         appPTR->setApplicationsCachesMaximumMemoryPercent(getRamMaximumPercent());
     } else if(k == _maxPlayBackPercent.get()) {
         appPTR->setPlaybackCacheMaximumSize(getRamPlaybackMaximumPercent());
-    } else if(k == _multiThreadedDisabled.get()) {
-        if (isMultiThreadingDisabled()) {
+    } else if(k == _numberOfThreads.get()) {
+        int nbThreads = getNumberOfThreads();
+        if (nbThreads == -1) {
             QThreadPool::globalInstance()->setMaxThreadCount(1);
             appPTR->abortAnyProcessing();
-        } else {
+        } else if (nbThreads == 0) {
             QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
+        } else {
+            QThreadPool::globalInstance()->setMaxThreadCount(nbThreads);
         }
     } else if(k == _ocioConfigKnob.get()) {
         if (_ocioConfigKnob->getActiveEntryText() == std::string(NATRON_CUSTOM_OCIO_CONFIG_NAME)) {
@@ -499,12 +508,12 @@ bool Settings::getColorPickerLinear() const {
     return _linearPickers->getValue<bool>();
 }
 
-bool Settings::isMultiThreadingDisabled() const {
-    return _multiThreadedDisabled->getValue<bool>();
+int Settings::getNumberOfThreads() const {
+    return _numberOfThreads->getValue<int>();
 }
 
-void Settings::setMultiThreadingDisabled(bool disabled) {
-    _multiThreadedDisabled->setValue<bool>(disabled);
+void Settings::setNumberOfThreads(int threadsNb) {
+    _numberOfThreads->setValue<int>(threadsNb);
 }
 
 bool Settings::isAutoPreviewOnForNewProjects() const {

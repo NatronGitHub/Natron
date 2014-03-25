@@ -25,6 +25,8 @@
 #ifdef OFX_SUPPORTS_MULTITHREAD
 #include <QtCore/QThread>
 #include <QtCore/QThreadStorage>
+#include <QtConcurrentMap>
+#include <boost/bind.hpp>
 #endif
 
 //ofx
@@ -496,42 +498,23 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
 static QThreadStorage<unsigned int> gThreadIndex;
 
 namespace {
-class OfxThread : public QThread
-{
-public:
-    OfxThread(OfxThreadFunctionV1 func,
-              unsigned int threadIndex,
-              unsigned int threadMax,
-              void *customArg,
-              OfxStatus *stat)
-    : _func(func)
-    , _threadIndex(threadIndex)
-    , _threadMax(threadMax)
-    , _customArg(customArg)
-    , _stat(stat)
-    {}
-
-    void run() OVERRIDE {
-        assert(!gThreadIndex.hasLocalData());
-        assert(_threadIndex < _threadMax);
-        gThreadIndex.localData() = _threadIndex;
-        assert(*_stat == kOfxStatFailed);
+    
+    static OfxStatus threadFunctionWrapper(OfxThreadFunctionV1 func,
+                                           unsigned int threadIndex,
+                                           unsigned int threadMax,
+                                           void *customArg) {
+        assert(threadIndex < threadMax);
+        gThreadIndex.localData() = threadIndex;
         try {
-            _func(_threadIndex, _threadMax, _customArg);
-            *_stat = kOfxStatOK;
+            func(threadIndex, threadMax, customArg);
+            return kOfxStatOK;
         } catch (const std::bad_alloc& ba) {
-            *_stat = kOfxStatErrMemory;
+            return kOfxStatErrMemory;
         } catch (...) {
+            return kOfxStatFailed;
         }
-    }
 
-private:
-    OfxThreadFunctionV1 *_func;
-    unsigned int _threadIndex;
-    unsigned int _threadMax;
-    void *_customArg;
-    OfxStatus *_stat;
-};
+    }
 }
 
 
@@ -556,37 +539,45 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
     if (st != kOfxStatOK) {
         return st;
     }
-    
-    if (appPTR->getCurrentSettings()->isMultiThreadingDisabled() || maxConcurrentThread == 1) {
-        func(0,1,customArg);
-        return kOfxStatOK;
+
+    // from the documentation:
+    // "nThreads can be more than the value returned by multiThreadNumCPUs, however
+    // the threads will be limitted to the number of CPUs returned by multiThreadNumCPUs."
+
+    if (nThreads == 1 || appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
+        try {
+            for (unsigned int i = 0; i < nThreads; ++i) {
+                func(i, nThreads, customArg);
+            }
+            return kOfxStatOK;
+        } catch (...) {
+            return kOfxStatFailed;
+        }
     }
     
     // check that this thread does not already have an ID
     if (gThreadIndex.hasLocalData()) {
         return kOfxStatErrExists;
     }
-
-    QVector<OfxThread*> threads(nThreads);
-    QVector<OfxStatus> status(nThreads); // vector for the return status of each thread
-    status.fill(kOfxStatFailed); // by default, a thread fails
+    
+    std::vector<unsigned int> threadIndexes(nThreads);
     for (unsigned int i = 0; i < nThreads; ++i) {
-        threads[i] = new OfxThread(func, i, nThreads, customArg, &status[i]);
-        threads[i]->start();
+        threadIndexes[i] = i;
     }
-    for (unsigned int i = 0; i < nThreads; ++i) {
-        threads[i]->wait();
-    }
-    // check the return status of each thread, return the first error found
-    for (unsigned int i = 0; i < nThreads; ++i) {
-        if (status[i] != kOfxStatOK) {
-            return status[i];
+    
+    /// DON'T set the maximum thread count, this is a global application setting, and see the documentation excerpt above
+    //QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
+    QFuture<OfxStatus> future = QtConcurrent::mapped(threadIndexes, boost::bind(::threadFunctionWrapper,func, _1, nThreads, customArg));
+    future.waitForFinished();
+    ///DON'T reset back to the original value the maximum thread count
+    //QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
+    
+    for (QFuture<OfxStatus>::const_iterator it = future.begin() ; it!= future.end(); ++it) {
+        OfxStatus stat = *it;
+        if (stat != kOfxStatOK) {
+            return stat;
         }
     }
-    for (unsigned int i = 0; i < nThreads; ++i) {
-        delete threads[i];
-    }
-
     return kOfxStatOK;
 }
 
@@ -598,20 +589,13 @@ OfxStatus Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
     if (!nCPUs) {
         return kOfxStatFailed;
     }
-    if (appPTR->getCurrentSettings()->isMultiThreadingDisabled()) {
+    if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
         *nCPUs = 1;
     } else {
         int activeThreadsCount = QThreadPool::globalInstance()->activeThreadCount();
-        int idealThreadsCount = QThread::idealThreadCount();
-        if (activeThreadsCount >= idealThreadsCount) {
-            *nCPUs = 1;
-        } else {
-            if ((idealThreadsCount - activeThreadsCount) <= 0) {
-                *nCPUs = 1;
-            } else {
-                *nCPUs = idealThreadsCount - activeThreadsCount;
-            }
-        }
+        // better than QThread::idealThreadCount();, because it can be set by a global preference:
+        int maxThreadsCount = QThreadPool::globalInstance()->maxThreadCount();
+        *nCPUs = std::max(1, maxThreadsCount - activeThreadsCount);
     }
 
     return kOfxStatOK;

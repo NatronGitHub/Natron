@@ -22,7 +22,7 @@ BlockingBackgroundRender::BlockingBackgroundRender(Natron::OutputEffectInstance*
 
 void BlockingBackgroundRender::blockingRender(){
     _writer->renderFullSequence(this);
-    if (!appPTR->getCurrentSettings()->isMultiThreadingDisabled()) {
+    if (appPTR->getCurrentSettings()->getNumberOfThreads() != -1) {
         QMutexLocker locker(&_runningMutex);
         _running = true;
         while (_running) {
