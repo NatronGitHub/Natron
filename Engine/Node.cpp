@@ -690,7 +690,7 @@ void Node::isNodeUpstream(const Natron::Node* input,bool* ok) const
             return;
         }
     }
-    
+    *ok = false;
     for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
         if (_imp->inputs[i]) {
             _imp->inputs[i]->isNodeUpstream(input, ok);
