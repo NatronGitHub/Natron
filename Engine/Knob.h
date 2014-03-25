@@ -339,7 +339,7 @@ protected:
      * at the same dimension for the knob 'other'.
      * In case of success, this function returns true, otherwise false.
      **/
-    virtual bool slaveTo(int dimension,const boost::shared_ptr<Knob>&  other,int otherDimension,Natron::ValueChangedReason reason) = 0;
+    virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI>&  other,int otherDimension,Natron::ValueChangedReason reason) = 0;
     
     /**
      * @brief Unslaves a previously slaved dimension. The implementation should assert that
@@ -352,12 +352,12 @@ public:
     /**
      * @brief Calls slaveTo with a value changed reason of Natron::PLUGIN_EDITED.
      **/
-    bool slaveTo(int dimension,const boost::shared_ptr<Knob>& other,int otherDimension);
+    bool slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int otherDimension);
     
     /**
      * @brief Calls slaveTo with a value changed reason of Natron::USER_EDITED.
      **/
-    void onKnobSlavedTo(int dimension,const boost::shared_ptr<Knob>&  other,int otherDimension);
+    void onKnobSlavedTo(int dimension,const boost::shared_ptr<KnobI>&  other,int otherDimension);
     
     
     /**
@@ -374,7 +374,7 @@ public:
      * @brief Returns a valid pointer to a knob if the value at
      * the given dimension is slaved.
      **/
-    virtual std::pair<int,boost::shared_ptr<Knob> > getMaster(int dimension) const = 0;
+    virtual std::pair<int,boost::shared_ptr<KnobI> > getMaster(int dimension) const = 0;
     
     /**
      * @brief Returns true if the value at the given dimension is slave to another parameter
@@ -384,7 +384,7 @@ public:
     /**
      * @brief Same as getMaster but for all dimensions.
      **/
-    virtual std::vector<std::pair<int,boost::shared_ptr<Knob> > > getMasters_mt_safe() const = 0;
+    virtual std::vector<std::pair<int,boost::shared_ptr<KnobI> > > getMasters_mt_safe() const = 0;
     
     /**
      * @brief Called by the GUI whenever the animation level changes (due to a time change
@@ -404,11 +404,33 @@ public:
 
 };
 
+#if 0
+
+template <typename T>
+class Knob : public QObject
+{
+    friend class KnobHolder;
+    
+public:
+    
+    enum ValueChangedReturnCode {
+        NO_KEYFRAME_ADDED = 0,
+        KEYFRAME_MODIFIED,
+        KEYFRAME_ADDED
+    };
+
+    
+    explicit Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
+};
+
+#endif
+
 class Knob : public QObject
 {
     Q_OBJECT
     
     friend class KnobHolder;
+    
     
 public:
     
