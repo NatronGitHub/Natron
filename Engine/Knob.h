@@ -101,15 +101,47 @@ public:
      **/
     virtual void restoreSlaveMasterState(const KnobSerialization& serializationObj) = 0;
 
-    /**
-     * @brief Removes the keyframe at the given time and dimension if it matches any.
-     **/
-    virtual void deleteValueAtTime(int time,int dimension) = 0;
+    
+protected:
     
     /**
      * @brief Removes all the keyframes in the given dimension.
      **/
-    virtual void removeAnimation(int dimension) = 0;
+    virtual void removeAnimation(int dimension,Natron::ValueChangedReason reason) = 0;
+
+    /**
+     * @brief Removes the keyframe at the given time and dimension if it matches any.
+     **/
+    virtual void deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason reason) = 0;
+    
+public:
+    
+    /**
+     * @brief Calls deleteValueAtTime with a reason of Natron::PLUGIN_EDITED.
+     **/
+    void deleteValueAtTime(int time,int dimension);
+    
+    /**
+     * @brief Calls removeAnimation with a reason of Natron::PLUGIN_EDITED.
+     **/
+    void removeAnimation(int dimension);
+    
+    /**
+     * @brief Calls deleteValueAtTime with a reason of Natron::USER_EDITED
+     **/
+    void onKeyFrameRemoved(SequenceTime time,int dimension);
+    
+    /**
+     * @brief Calls removeAnimation with a reason of Natron::USER_EDITED
+     **/
+    void onAnimationRemoved(int dimension);
+
+    /**
+     * @brief Called when the current time of the timeline changes. 
+     * It must get the value at the given time and notify  the gui it must
+     * update the value displayed.
+     **/
+    virtual void onTimeChanged(SequenceTime time) = 0;
     
     /**
      * @brief Compute the derivative at time as a double
@@ -206,7 +238,7 @@ public:
      * to decorellate the values modified by the gui (i.e the user) and the values used to render.
      * This ensures thread-safety.
      **/
-    virtual void cloneValue(const Knob& other) = 0;
+    virtual void cloneValue(const KnobI& other) = 0;
     
     /**
      * @brief Get the knob dimension. MT-safe as it is static and never changes.
@@ -401,13 +433,24 @@ public:
      * @brief Restores the default value
      **/
     virtual void resetToDefaultValue(int dimension) = 0;
+    
+    /**
+     * @brief Must return true if the other knobs type can convert to this knob's type.
+     **/
+    virtual bool isTypeCompatible(const KnobI& other) const = 0;
 
 };
 
 #if 0
 
+class KnobSignalEmitter : public QObject
+{
+public:
+    
+};
+
 template <typename T>
-class Knob : public QObject
+class Knob
 {
     friend class KnobHolder;
     
@@ -421,6 +464,63 @@ public:
 
     
     explicit Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
+    
+    T getValue(int dimension = 0) const WARN_UNUSED_RETURN;
+    
+    virtual T getValueAtTime(double time, int dimension = 0) const WARN_UNUSED_RETURN;
+
+private:
+    
+    ValueChangedReturnCode setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
+    
+    bool setValueAtTime(int time,const Variant& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
+
+public:
+    
+    void setValue(const T& value,int dimension,bool turnOffAutoKeying = false);
+    
+    ValueChangedReturnCode onValueChanged(int dimension,const T& variant,KeyFrame* newKey);
+    
+    void setValueAtTime(int time,const T& v,int dimension);
+    
+    void onKeyFrameSet(SequenceTime time,int dimension);
+    
+    bool getKeyFrameValueByIndex(int dimension,int index,T* value) const WARN_UNUSED_RETURN;
+
+    const std::vector<T>& getValueForEachDimension() const WARN_UNUSED_RETURN;
+    
+    std::vector<T> getValueForEachDimension_mt_safe() const WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Set the default values for the knob. The vector 'values' must have exactly the same size
+     * as the dimension of the knob.
+     * @see int getDimension()
+     **/
+    void setDefaultValues(const std::vector<T>& values);
+    
+    void setDefaultValue(const T& v,int dimension);
+    
+protected:
+    
+    /**
+     * @brief Called when a keyframe is removed.
+     **/
+    virtual void keyframeRemoved_virtual(int /*dimension*/, double /*time*/) {}
+    
+    /**
+     * @brief Called when all keyframes are removed
+     **/
+    virtual void animationRemoved_virtual(int /*dimension*/) {}
+    
+    /** @brief This function is called right after that the _value has changed
+     * but before any signal notifying that it has changed. It can be useful
+     * to do some processing to create new informations.
+     * e.g: The File_Knob parses the files list to create a mapping of
+     * <time,file> .
+     **/
+    virtual void processNewValue(Natron::ValueChangedReason /*reason*/){}
+
+
 };
 
 #endif

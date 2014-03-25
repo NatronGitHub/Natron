@@ -58,6 +58,26 @@ void KnobI::onKnobUnSlaved(int dimension)
 }
 
 
+void KnobI::deleteValueAtTime(int time,int dimension)
+{
+    deleteValueAtTime(time, dimension, Natron::PLUGIN_EDITED);
+}
+
+void KnobI::removeAnimation(int dimension)
+{
+    removeAnimation(dimension, Natron::PLUGIN_EDITED);
+}
+
+void KnobI::onKeyFrameRemoved(SequenceTime time,int dimension)
+{
+    deleteValueAtTime(time, dimension, Natron::USER_EDITED);
+}
+
+void KnobI::onAnimationRemoved(int dimension)
+{
+    removeAnimation(dimension, Natron::USER_EDITED);
+}
+
 /***********************************KNOB BASE******************************************/
 typedef std::vector< std::pair< int,boost::shared_ptr<Knob> > > MastersMap;
 typedef std::vector< boost::shared_ptr<Curve> > CurvesMap;
