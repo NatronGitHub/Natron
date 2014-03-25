@@ -188,7 +188,8 @@ public:
      * @brief This is used by the auto-connection algorithm.
      * When connecting nodes together this function helps determine
      * on which input it should connect a new node.
-     * It returns the first non optional empty input, or -1
+     * It returns the first non optional empty input or the first optional
+     * empty input if they are all optionals, or -1 if nothing matches the 2 first conditions..
      * if all inputs are connected.
      **/
     int getPreferredInputForConnection() const;

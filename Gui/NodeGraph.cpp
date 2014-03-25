@@ -367,8 +367,8 @@ void NodeGraph::moveNodesForIdealPosition(NodeGui* node) {
                 behavior = 2;
             }
             ///case b)
-            else if (node->getNode()->isInputNode()) {
-                if (_nodeSelected->getNode()->isInputNode()) {
+            else if (node->getNode()->maximumInputs() == 0) {
+                if (_nodeSelected->getNode()->maximumInputs() == 0) {
                     ///case 2-b) just do default we don't know what else to do
                     behavior = 0;
                 } else {

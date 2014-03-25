@@ -68,16 +68,9 @@ struct ImageBeingRenderedKey{
 
 typedef std::multimap<ImageBeingRenderedKey,boost::shared_ptr<Image> > ImagesMap;
 
-typedef std::map<Node*,std::pair<int,int> >::const_iterator OutputConnectionsIterator;
-typedef OutputConnectionsIterator InputConnectionsIterator;
 
-struct DeactivatedState{
-    /*The output node was connected from inputNumber to the outputNumber of this...*/
-    std::map<Node*,std::pair<int,int> > outputsConnections;
-
-    /*The input node was connected from outputNumber to the inputNumber of this...*/
-    std::map<Node*,std::pair<int,int> > inputConnections;
-};
+/*The output node was connected from inputNumber to this...*/
+typedef std::map<Node*,int > DeactivatedState;
 
 }
 
@@ -824,9 +817,9 @@ void Node::deactivate()
     ///if the node has 1 non-optional input, attempt to connect the outputs to the input of the current node
     ///this node is the node the outputs should attempt to connect to
     Node* inputToConnectTo = 0;
-    
+    Node* firstOptionalInput = 0;
     int firstNonOptionalInput = -1;
-    bool hasOnlyOneNonOptionalInput = false;
+    bool hasOnlyOneInputConnected = false;
     {
         QMutexLocker l(&_imp->inputsMutex);
         for (U32 i = 0; i < _imp->inputsQueue.size() ; ++i) {
@@ -834,42 +827,52 @@ void Node::deactivate()
                 if (!_imp->liveInstance->isInputOptional(i)) {
                     if (firstNonOptionalInput == -1) {
                         firstNonOptionalInput = i;
-                        hasOnlyOneNonOptionalInput = true;
+                        hasOnlyOneInputConnected = true;
                     } else {
-                        hasOnlyOneNonOptionalInput = false;
+                        hasOnlyOneInputConnected = false;
+                    }
+                } else if(!firstOptionalInput) {
+                    firstOptionalInput = _imp->inputsQueue[i];
+                    if (hasOnlyOneInputConnected) {
+                        hasOnlyOneInputConnected = false;
+                    } else {
+                        hasOnlyOneInputConnected = true;
                     }
                 }
             }
         }
     }
-    if (hasOnlyOneNonOptionalInput && firstNonOptionalInput != -1) {
-        inputToConnectTo = input(firstNonOptionalInput);
+    if (hasOnlyOneInputConnected) {
+        if (firstNonOptionalInput != -1) {
+            inputToConnectTo = input(firstNonOptionalInput);
+        } else if(firstOptionalInput) {
+            inputToConnectTo = firstOptionalInput;
+        }
     }
     
     /*Removing this node from the output of all inputs*/
-    _imp->deactivatedState.inputConnections.clear();
+    _imp->deactivatedState.clear();
     {
         QMutexLocker l(&_imp->inputsMutex);
         for (U32 i = 0; i < _imp->inputsQueue.size() ; ++i) {
             if(_imp->inputsQueue[i]) {
-                int outputNb = _imp->inputsQueue[i]->disconnectOutput(this);
-                _imp->deactivatedState.inputConnections.insert(make_pair(_imp->inputsQueue[i], make_pair(outputNb, i)));
+                _imp->inputsQueue[i]->disconnectOutput(this);
             }
         }
     }
     
-    _imp->deactivatedState.outputsConnections.clear();
-    
+    ///For each output node we remember that the output node  had its input number inputNb connected
+    ///to this node
     for (std::list<Node*>::iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it) {
         assert(*it);
         int inputNb = (*it)->disconnectInput(this);
-        _imp->deactivatedState.outputsConnections.insert(make_pair(*it, make_pair(inputNb, 0)));
+        _imp->deactivatedState.insert(make_pair(*it, inputNb));
     }
     
     if (inputToConnectTo) {
-        for (OutputConnectionsIterator it = _imp->deactivatedState.outputsConnections.begin();
-             it!=_imp->deactivatedState.outputsConnections.end(); ++it) {
-            getApp()->getProject()->connectNodes(it->second.first, inputToConnectTo, it->first);
+        for (std::map<Node*,int >::iterator it = _imp->deactivatedState.begin();
+             it!=_imp->deactivatedState.end(); ++it) {
+            getApp()->getProject()->connectNodes(it->second, inputToConnectTo, it->first);
         }
     }
     
@@ -889,26 +892,29 @@ void Node::activate()
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    ///for all inputs, reconnect their output to this node
-    for (InputConnectionsIterator it = _imp->deactivatedState.inputConnections.begin();
-         it!= _imp->deactivatedState.inputConnections.end(); ++it) {
-        it->first->connectOutput(this);
+    {
+        QMutexLocker l(&_imp->inputsMutex);
+        ///for all inputs, reconnect their output to this node
+        for (U32 i = 0; i < _imp->inputsQueue.size(); ++i){
+            _imp->inputsQueue[i]->connectOutput(this);
+        }
     }
-
-
-    for (OutputConnectionsIterator it = _imp->deactivatedState.outputsConnections.begin();
-         it!= _imp->deactivatedState.outputsConnections.end(); ++it) {
+    
+    ///Restore all outputs that was connected to this node
+    for (std::map<Node*,int >::iterator it = _imp->deactivatedState.begin();
+         it!= _imp->deactivatedState.end(); ++it) {
         
         ///before connecting the outputs to this node, disconnect any link that has been made
-        ///between the outputs by the user
-        Node* outputHasInput = it->first->input(it->second.first);
+        ///between the outputs by the user. This should normally never happen as the undo/redo
+        ///stack follow always the same order.
+        Node* outputHasInput = it->first->input(it->second);
         if (outputHasInput) {
             bool ok = getApp()->getProject()->disconnectNodes(outputHasInput, it->first);
             assert(ok);
         }
 
         ///and connect the output to this node
-        it->first->connectInput(this, it->second.first);
+        it->first->connectInput(this, it->second);
     }
     
     {
