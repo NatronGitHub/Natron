@@ -1251,7 +1251,9 @@ void Histogram::showEvent(QShowEvent* e)
     assert(qApp && qApp->thread() == QThread::currentThread());
 
     QGLWidget::showEvent(e);
-    computeHistogramAndRefresh(true);
+    if (width() != 0 && height() != 0) {
+        computeHistogramAndRefresh(true);
+    }
 }
 
 void Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)

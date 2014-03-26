@@ -104,3 +104,12 @@ for the missing dll's when launching Natron.
 The vcproj "Natron" might complain of missing includes or linkage errors, if so adjust
 the settings in the Additional include directories and Additional dependencies tab of
 the property page of the project.
+
+If you get the following linker error:
+error LNK2019: unresolved external symbol WinMain referenced in function __tmainCRTStartup
+Open the Natron project property pages. Go to Configuration Properties --> Linker --> Command Line.
+In the Additional Options, add the following: 
+     /ENTRY:"mainCRTStartup" 
+(add a white space after the previous command)
+
+

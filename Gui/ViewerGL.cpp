@@ -549,8 +549,8 @@ void ViewerGL::resizeGL(int width, int height)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    if(height == 0) {// prevent division by 0
-        height = 1;
+    if(height == 0 || width == 0) {// prevent division by 0
+        return;
     }
     glViewport (0, 0, width, height);
     {

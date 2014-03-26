@@ -608,7 +608,8 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
         ///Just fall back to Fully_safe
         if (safety == FULLY_SAFE_FRAME) {
             int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
-            if (nbThreads == -1 || nbThreads == 1 || (nbThreads == 0 && QThread::idealThreadCount() == 1)) {
+            if (nbThreads == -1 || nbThreads == 1 || (nbThreads == 0 && QThread::idealThreadCount() == 1) ||
+                QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount()) {
                 safety = FULLY_SAFE;
             } else {
                 if (!getApp()->getProject()->tryLock()) {

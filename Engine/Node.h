@@ -188,7 +188,8 @@ public:
      * @brief This is used by the auto-connection algorithm.
      * When connecting nodes together this function helps determine
      * on which input it should connect a new node.
-     * It returns the first non optional empty input, or -1
+     * It returns the first non optional empty input or the first optional
+     * empty input if they are all optionals, or -1 if nothing matches the 2 first conditions..
      * if all inputs are connected.
      **/
     int getPreferredInputForConnection() const;
@@ -215,7 +216,7 @@ public:
      * connected for this inputNumber. It should be removed
      * beforehand.
      */
-    virtual bool connectInput(Node* input,int inputNumber,bool autoConnection = false);
+    virtual bool connectInput(Node* input,int inputNumber);
     
     /** @brief Removes the node connected to the input inputNumber of the
      * node. Returns the inputNumber if it could remove it, otherwise returns
@@ -569,7 +570,7 @@ public:
     
     virtual int maximumInputs() const OVERRIDE { return _inputsCount; }
     
-    virtual bool connectInput(Node* input,int inputNumber,bool autoConnection = false) OVERRIDE;
+    virtual bool connectInput(Node* input,int inputNumber) OVERRIDE;
     
     virtual int disconnectInput(int inputNumber) OVERRIDE;
     

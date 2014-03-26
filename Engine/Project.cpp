@@ -981,7 +981,7 @@ bool Project::connectNodes(int inputNumber,Node* input,Node* output,bool force) 
     if (force && existingInput) {
         bool ok = disconnectNodes(existingInput, output);
         assert(ok);
-        if (!input->isInputNode()) {
+        if (input->maximumInputs() > 0) {
             ok = connectNodes(input->getPreferredInputForConnection(), existingInput, input);
             assert(ok);
         }
@@ -1053,7 +1053,7 @@ bool Project::autoConnectNodes(Node* selected,Node* created) {
     bool connectAsInput = false;
 
     ///cannot connect 2 input nodes together: case 2-b)
-    if (selected->isInputNode() && created->isInputNode()) {
+    if (selected->maximumInputs() == 0 && created->maximumInputs() == 0) {
         return false;
     }
     ///cannot connect 2 output nodes together: case 1-a)
@@ -1078,14 +1078,11 @@ bool Project::autoConnectNodes(Node* selected,Node* created) {
             connectAsInput = false;
         }
         ///case b)
-        else if (created->isInputNode()) {
-            if (selected->isInputNode()) {
-                ///assert we're not in 2-b)
-                assert(!created->isInputNode());
-            } else {
-                ///case 3-b): connect the created node as input of the selected node
-                connectAsInput = true;
-            }
+        else if (created->maximumInputs() == 0) {
+            assert(selected->maximumInputs() != 0);
+            ///case 3-b): connect the created node as input of the selected node
+            connectAsInput = true;
+            
         }
         ///case c) connect created as output of the selected node
         else {

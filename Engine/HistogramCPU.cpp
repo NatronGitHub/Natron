@@ -191,7 +191,8 @@ HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
     return true;
 }
 
-namespace {
+///putting these in an anonymous namespace will yield this error on gcc 4.2:
+///"function has not external linkage"
 struct pix_red {
     static float
     val(float *pix)
@@ -231,7 +232,7 @@ struct pix_lum {
         return 0.299 * pix[0] + 0.587 * pix[1] + 0.114 * pix[2];
     }
 };
-}
+
 
 template <float pix_func(float*)>
 void
