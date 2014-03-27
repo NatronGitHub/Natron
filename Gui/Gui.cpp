@@ -501,15 +501,15 @@ void GuiPrivate::retranslateUi(QMainWindow *MainWindow)
     assert(actionFullScreen);
     actionFullScreen->setText(_gui->tr("Toggle Full Screen"));
     assert(actionClearDiskCache);
-    actionClearDiskCache->setText(_gui->tr("Clear Disk Cache"));
+    actionClearDiskCache->setText(_gui->tr("Clear Playback Disk Cache"));
     assert(actionClearPlayBackCache);
-    actionClearPlayBackCache->setText(_gui->tr("Clear Playback Cache"));
+    actionClearPlayBackCache->setText(_gui->tr("Clear Playback Memory Cache"));
     assert(actionClearNodeCache);
-    actionClearNodeCache->setText(_gui->tr("Clear Per-Node Cache"));
-    assert(actionClearPluginsLoadingCache);
-    actionClearPluginsLoadingCache->setText(_gui->tr("Clear plugins loading cache"));
+    actionClearNodeCache->setText(_gui->tr("Clear Per-Node Memory Cache"));
     assert(actionClearAllCaches);
-    actionClearAllCaches->setText(_gui->tr("Clear all caches"));
+    actionClearAllCaches->setText(_gui->tr("Clear All Memory and Disk Caches"));
+    assert(actionClearPluginsLoadingCache);
+    actionClearPluginsLoadingCache->setText(_gui->tr("Clear OpenFX Plugin Cache"));
     assert(actionShowAboutWindow);
     actionShowAboutWindow->setText(_gui->tr("About"));
     
@@ -851,8 +851,9 @@ void Gui::setupUi()
     _imp->cacheMenu->addAction(_imp->actionClearDiskCache);
     _imp->cacheMenu->addAction(_imp->actionClearPlayBackCache);
     _imp->cacheMenu->addAction(_imp->actionClearNodeCache);
-    _imp->cacheMenu->addAction(_imp->actionClearPluginsLoadingCache);
     _imp->cacheMenu->addAction(_imp->actionClearAllCaches);
+    _imp->cacheMenu->addSeparator();
+    _imp->cacheMenu->addAction(_imp->actionClearPluginsLoadingCache);
     _imp->retranslateUi(this);
     
     
