@@ -593,9 +593,12 @@ OfxStatus Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
     if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
         *nCPUs = 1;
     } else {
-        int activeThreadsCount = QThreadPool::globalInstance()->activeThreadCount();
+        // activeThreadCount may be negative (for example if releaseThread() is called)
+        int activeThreadsCount = std::max(0,QThreadPool::globalInstance()->activeThreadCount());
+        assert(activeThreadsCount >= 0);
         // better than QThread::idealThreadCount();, because it can be set by a global preference:
         int maxThreadsCount = QThreadPool::globalInstance()->maxThreadCount();
+        assert(maxThreadsCount >= 0);
         *nCPUs = std::max(1, maxThreadsCount - activeThreadsCount);
     }
 
