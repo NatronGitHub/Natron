@@ -629,7 +629,7 @@ OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThreadIsSpawnedThread
 int Natron::OfxHost::multiThreadIsSpawnedThread() const
 {
-    return gThreadIndex.hasLocalData();
+    return gThreadIndex.hasLocalData() && gThreadIndex.localData() != -1;
 }
 
 // Create a mutex
