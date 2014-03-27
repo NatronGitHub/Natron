@@ -25,6 +25,7 @@
 (add +universal on OSX 10.5 and 10.6)
 
 * special portfiles:
+- graphics/ctl
 - graphics/openimageio
 - graphics/opencolorio
 - aqua/qt4-quick-controls (for ButtleOFX)
@@ -107,7 +108,7 @@ git clone https://github.com/devernay/openfx.git
 git clone https://github.com/devernay/openfx-yadif.git
 git clone https://github.com/devernay/openfx-opencv.git
 git clone https://github.com/MrKepzie/openfx-io.git
-git clone https://github.com/tuttleofx/CTL.git
+#git clone https://github.com/tuttleofx/CTL.git  
 git clone https://github.com/wdas/SeExpr
 #git clone https://github.com/devernay/sconsProject.git
 git clone https://github.com/tuttleofx/TuttleOFX.git
@@ -238,8 +239,8 @@ cd ..
 (cd TuttleOFX;git checkout develop;git pull;git submodule update -i)
 
 cd TuttleOFX;
-(cd 3rdParty; ln -s ../../CTL/CTL ctl)
-(cd 3rdParty/ctl; git pull; autoreconf -i; ./configure --prefix=/opt/local CC=clang  CXX=clang++ && make -j3)
+#(cd 3rdParty; ln -s ../../CTL/CTL ctl)
+#(cd 3rdParty/ctl; git pull; autoreconf -i; ./configure --prefix=/opt/local CC=clang  CXX=clang++ && make -j3) 
 # if there is an error about memset being not defined, add "#include <cstring>" in /opt/local/include/OpenEXR/ImathMatrix.h and relaunch the last line
 (cd 3rdParty; ln -s ../../SeExpr seexpr)
 (cd 3rdParty/seexpr; git pull; mkdir build; cd build && cmake .. && make)
@@ -308,14 +309,17 @@ dir_tiff = macports_base
 dir_turbojpeg = '/opt/libjpeg-turbo'
 dir_xlibs = macports_base
 extern = '#3rdParty'
-dir_ctl = join(extern, 'ctl')
-modules_ctl = ['IlmCtlSimd', 'IlmCtl', 'IlmCtlMath']
-incdir_ctl = [incdir_openexr]+[join(dir_ctl,inc) for inc in modules_ctl]
-libdir_ctl = [join(dir_ctl,inc,'.libs') for inc in modules_ctl]
+dir_ctl = macports_base
+incdir_ctl = join(macports_include, 'CTL')
 dir_seexpr = join(extern, 'seexpr')
 incdir_seexpr = join(dir_seexpr, 'src/SeExpr')
 libdir_seexpr = join(dir_seexpr, 'build/src/SeExpr')
 EOF
+
+#dir_ctl = join(extern, 'ctl')
+#modules_ctl = ['IlmCtlSimd', 'IlmCtl', 'IlmCtlMath']
+#incdir_ctl = [incdir_openexr]+[join(dir_ctl,inc) for inc in modules_ctl]
+#libdir_ctl = [join(dir_ctl,inc,'.libs') for inc in modules_ctl]
 
 scons -k mode=debug CC=clang CXX=clang++ compiler=clang -j3
 rm -rf $ofx/Plugins/TuttleOFX.debug
