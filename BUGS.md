@@ -6,11 +6,7 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
-- TextRenderer should only store white character bitmaps! They can then be drawn in color using glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-
-- the multithread suite should use QtConcurrent::map() to launch threads in the thread pool, and avoid over-numerous threads: if several threads call getNumCPUs before launching threads, they will start more threads than the optimal value.
-
-- The thread count (see QThreadPool::maxThreadCount() ) should be settable in the preferences. A max thread count of 0 means to disable multithreading
+- Some plugins crash using the multi-thread suite (mainly Furnace)
 
 - messages (and persistent messages) should be associated with an instance, not with a viewer. The message should appear in the viewer if and only of the given instance is in the the viewer's parents.
 
@@ -32,8 +28,6 @@ Here is a list of non-blocking bugs / wanted features:
 
 - the nodegraph should have a "f" shortcut to recenter the graph, and scrollbars (or a birds eye view) when the graph is too large.
 
-- Change the Knob Variant based implementation to a templated implementation.
-
 - Progress suite is not implemented (GUI is blocked until the operation has ended)
 
 - a log window with OFX and Natron log messages (see OfxImageEffectInstance::vmessage, OfxHost::vmessage)
@@ -54,45 +48,6 @@ http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#Par
 
 - implement framerate support
   (look for various instances of "temporal coordinates", "framerate" and "frame rate" in the documentation)
-
-- zoomable and accurate histogram
-
-  An infinitely-zoomable and accurate histogram is useful to examine the
-  effects of conversions, sampling, and to find threasholds.
-
-  For example, when you load a 12-bits file, does it really have 12
-  bits, or is it just an upgraded 8-bit file?
-  For examples of 10-bit and 12-bit files, see:
-  http://www.sounddevices.com/products/pix240i/sample-files/
-  http://samples.mplayerhq.hu/V-codecs/R210/
-
-  The histogram must be rebuilt each time the histogram window is panned
-  or zoomed in, and the "bin" size must be equal to 1 pixel in the
-  histogram view.
-
-  Each time the histogram is zoomed or panned:
-  - let vmin and vmax be the minimum and maximum x-values visible in the
-    histogram (in intensity units)
-  - let width be the histogram widget width
-  - we have to build a histogram of the image or the image ROI from vmin
-    to vmax with a bin_size of (vmax-vmin)/width (there's no other
-    solution than scanning the image at each pan/zoom step to build this
-    new histogram)
-  - the bin count (the "y" value on the histogram) has to be normalized,
-    so that it doesn't depend on the image ROI or on the histogram
-    pan/zoom. Just divide the pixel count for a bin by the image ROI size
-    in pixels, and by the bin_size. The result is a probability density
-    function for each value (its integral from -infinity to +infinity is
-    exactly 1).
-
-
-- Autocontrast
-
-  Autocontrast would compute the minimum and maximum values of the image
-  in the intersection of the viewer area and the viewer ROI, and adjust
-  the response curve accordingly. That's great for examining noise,
-  seeing in the shadows, or examining non-intensity values (such as
-  depth or optical flow).
 
 - support more image components:
   - kOfxImageComponentAlpha

@@ -531,13 +531,12 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         assert(nodeHoldingEdge);
         
         std::vector<NodeGui*> nodes = getAllActiveNodes_mt_safe();
-        
+        QPointF ep = mapToScene(event->pos());
+
         for(U32 i = 0; i < nodes.size() ;++i) {
             NodeGui* n = nodes[i];
-            QPointF ep = mapToScene(event->pos());
-            QPointF evpt = n->mapFromScene(ep);
             
-            if(n->isActive() && n->isNearby(evpt) &&
+            if(n->isActive() && n->isNearby(ep) &&
                     (n->getNode()->getName() != nodeHoldingEdge->getNode()->getName())){
                
                 if (!_arrowSelected->isOutputEdge()) {
@@ -1468,7 +1467,7 @@ void NodeGraph::dropEvent(QDropEvent* event){
             errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
         } else {
             Natron::Node* n = getGui()->getApp()->createNode(found->second.c_str(),-1,-1,false);
-            const std::vector<boost::shared_ptr<Knob> >& knobs = n->getKnobs();
+            const std::vector<boost::shared_ptr<KnobI> >& knobs = n->getKnobs();
             for (U32 i = 0; i < knobs.size(); ++i) {
                 if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
                     boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
@@ -1615,26 +1614,20 @@ void NodeGraph::decloneSelectedNode() {
 }
 
 void NodeGraph::copyNode(NodeGui* n) {
-    _nodeClipBoard._internal.reset(new NodeSerialization);
-    n->getNode()->serialize(_nodeClipBoard._internal.get());
-    
+    _nodeClipBoard._internal.reset(new NodeSerialization(n->getNode()));
     _nodeClipBoard._gui.reset(new NodeGuiSerialization);
     n->serialize(_nodeClipBoard._gui.get());
 }
 
 void NodeGraph::cutNode(NodeGui* n) {
-    _nodeClipBoard._internal.reset(new NodeSerialization);
-    n->getNode()->serialize(_nodeClipBoard._internal.get());
-    
+    _nodeClipBoard._internal.reset(new NodeSerialization(n->getNode()));
     _nodeClipBoard._gui.reset(new NodeGuiSerialization);
     n->serialize(_nodeClipBoard._gui.get());
     deleteNode(n);
 }
 
 void NodeGraph::duplicateNode(NodeGui* n) {
-    NodeSerialization internalSerialization;
-    n->getNode()->serialize(&internalSerialization);
-    
+    NodeSerialization internalSerialization(n->getNode());
     NodeGuiSerialization guiSerialization;
     n->serialize(&guiSerialization);
     
@@ -1651,8 +1644,7 @@ void NodeGraph::cloneNode(NodeGui* node) {
         return;
     }
     
-    NodeSerialization internalSerialization;
-    node->getNode()->serialize(&internalSerialization);
+    NodeSerialization internalSerialization(node->getNode());
     
     NodeGuiSerialization guiSerialization;
     node->serialize(&guiSerialization);

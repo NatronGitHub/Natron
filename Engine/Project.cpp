@@ -107,7 +107,7 @@ void Project::loadProjectInternal(const QString& path,const QString& name) {
         boost::archive::xml_iarchive iArchive(ifile);
         bool bgProject;
         iArchive >> boost::serialization::make_nvp("Background_project",bgProject);
-        ProjectSerialization projectSerializationObj;
+        ProjectSerialization projectSerializationObj(getApp());
         iArchive >> boost::serialization::make_nvp("Project",projectSerializationObj);
         load(projectSerializationObj);
         if(!bgProject) {
@@ -260,7 +260,7 @@ void Project::saveProjectInternal(const QString& path,const QString& name,bool a
     boost::archive::xml_oarchive oArchive(ofile);
     bool bgProject = appPTR->isBackground();
     oArchive << boost::serialization::make_nvp("Background_project",bgProject);
-    ProjectSerialization projectSerializationObj;
+    ProjectSerialization projectSerializationObj(getApp());
     save(&projectSerializationObj);
     oArchive << boost::serialization::make_nvp("Project",projectSerializationObj);
     if(!bgProject){
@@ -421,14 +421,14 @@ void Project::initializeKnobs(){
         Format* f = appFormats[i];
         QString formatStr = Natron::generateStringFromFormat(*f);
         if(f->width() == 1920 && f->height() == 1080){
-            _imp->formatKnob->setDefaultValue<int>(i);
+            _imp->formatKnob->setDefaultValue(i,0);
         }
         entries.push_back(formatStr.toStdString());
         _imp->builtinFormats.push_back(*f);
     }
     _imp->formatKnob->turnOffNewLine();
 
-    _imp->formatKnob->populate(entries);
+    _imp->formatKnob->populateChoices(entries);
     _imp->formatKnob->setAnimationEnabled(false);
     _imp->addFormatKnob = Natron::createKnob<Button_Knob>(this,"New format...");
 
@@ -436,7 +436,7 @@ void Project::initializeKnobs(){
     _imp->viewsCount->setAnimationEnabled(false);
     _imp->viewsCount->setMinimum(1);
     _imp->viewsCount->setDisplayMinimum(1);
-    _imp->viewsCount->setDefaultValue<int>(1);
+    _imp->viewsCount->setDefaultValue(1,0);
     _imp->viewsCount->disableSlider();
     
     _imp->previewMode = Natron::createKnob<Bool_Knob>(this, "Auto previews");
@@ -445,14 +445,14 @@ void Project::initializeKnobs(){
                                       "Press P in the node graph to refresh the previews yourself.");
     _imp->previewMode->setAnimationEnabled(false);
     bool autoPreviewEnabled = appPTR->getCurrentSettings()->isAutoPreviewOnForNewProjects();
-    _imp->previewMode->setDefaultValue<bool>(autoPreviewEnabled);
+    _imp->previewMode->setDefaultValue(autoPreviewEnabled,0);
     
     emit knobsInitialized();
     
 }
 
 
-void Project::evaluate(Knob* /*knob*/,bool isSignificant){
+void Project::evaluate(KnobI* /*knob*/,bool isSignificant){
     if(isSignificant){
         getApp()->checkViewersConnection();
     }
@@ -463,7 +463,7 @@ void Project::getProjectDefaultFormat(Format *f) const
 {
     assert(f);
     QMutexLocker l(&_imp->formatMutex);
-    int index = _imp->formatKnob->getActiveEntry();
+    int index = _imp->formatKnob->getValue();
     bool found = _imp->findFormat(index, f);
     assert(found);
 }
@@ -572,14 +572,14 @@ int Project::tryAddProjectFormat(const Format& f){
     QString formatStr = generateStringFromFormat(f);
     entries.push_back(formatStr.toStdString());
     _imp->additionalFormats.push_back(f);
-    _imp->formatKnob->populate(entries);
+    _imp->formatKnob->populateChoices(entries);
     return (_imp->builtinFormats.size() + _imp->additionalFormats.size()) - 1;
 }
 
 void Project::setProjectDefaultFormat(const Format& f) {
     assert(!_imp->formatMutex.tryLock());
     int index = tryAddProjectFormat(f);
-    _imp->formatKnob->setValue(index);
+    _imp->formatKnob->setValue(index,0);
     ///if locked it will trigger a deadlock because some parameters
     ///might respond to this signal by checking the content of the project format.
 }
@@ -588,7 +588,7 @@ void Project::setProjectDefaultFormat(const Format& f) {
 
 int Project::getProjectViewsCount() const {
     QMutexLocker l(&_imp->viewsCountMutex);
-    return _imp->viewsCount->getValue<int>();
+    return _imp->viewsCount->getValue();
 }
 
 std::vector<Node*> Project::getCurrentNodes() const {
@@ -632,12 +632,12 @@ QDateTime Project::getProjectAgeSinceLastAutosave() const {
 
 bool Project::isAutoPreviewEnabled() const {
     QMutexLocker l(&_imp->previewModeMutex);
-    return _imp->previewMode->getValue<bool>();
+    return _imp->previewMode->getValue();
 }
 
 void Project::toggleAutoPreview() {
     QMutexLocker l(&_imp->previewModeMutex);
-    _imp->previewMode->setValue<bool>(!_imp->previewMode->getValue<bool>());
+    _imp->previewMode->setValue(!_imp->previewMode->getValue(),0);
 }
 
 boost::shared_ptr<TimeLine> Project::getTimeLine() const  {return _imp->timeline;}
@@ -739,7 +739,7 @@ void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,Kno
 
 }
 
-void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder* caller,Knob* k,bool isSignificant)
+void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder* caller,KnobI* k,bool isSignificant)
 {
     QMutexLocker l(&_imp->beginEndMutex);
 
@@ -857,12 +857,12 @@ void Project::endKnobsValuesChanged(Natron::ValueChangedReason /*reason*/) {}
 
 
 ///this function is only called on the main thread
-void Project::onKnobValueChanged(Knob* knob,Natron::ValueChangedReason /*reason*/) {
+void Project::onKnobValueChanged(KnobI* knob,Natron::ValueChangedReason /*reason*/) {
     if (knob == _imp->viewsCount.get()) {
-        int viewsCount = _imp->viewsCount->getValue<int>();
+        int viewsCount = _imp->viewsCount->getValue();
         getApp()->setupViewersForViews(viewsCount);
     } else if(knob == _imp->formatKnob.get()) {
-        int index = _imp->formatKnob->getActiveEntry();
+        int index = _imp->formatKnob->getValue();
         Format frmt;
         bool found = _imp->findFormat(index, &frmt);
         if (found) {
@@ -871,7 +871,7 @@ void Project::onKnobValueChanged(Knob* knob,Natron::ValueChangedReason /*reason*
     } else if(knob == _imp->addFormatKnob.get()) {
         emit mustCreateFormat();
     } else if(knob == _imp->previewMode.get()) {
-        emit autoPreviewChanged(_imp->previewMode->getValue<bool>());
+        emit autoPreviewChanged(_imp->previewMode->getValue());
     }
     
 }

@@ -19,17 +19,17 @@
 #include "Engine/Knob.h"
 
 struct StringKeyFrame {
-    QString value;
+    std::string value;
     int time;
 };
 
-struct KeyFrame_compare_time {
+struct StringKeyFrame_compare_time {
     bool operator() (const StringKeyFrame& lhs, const StringKeyFrame& rhs) const {
         return lhs.time < rhs.time;
     }
 };
 
-typedef std::set<StringKeyFrame,KeyFrame_compare_time> Keyframes;
+typedef std::set<StringKeyFrame,StringKeyFrame_compare_time> Keyframes;
 
 
 struct StringAnimationManagerPrivate {
@@ -37,9 +37,9 @@ struct StringAnimationManagerPrivate {
     void* ofxParamHandle;
     mutable QMutex keyframesMutex;
     Keyframes keyframes;
-    const Knob* knob;
+    const KnobI* knob;
     
-    StringAnimationManagerPrivate(const Knob* knob)
+    StringAnimationManagerPrivate(const KnobI* knob)
     : customInterpolation(NULL)
     , ofxParamHandle(NULL)
     , keyframesMutex()
@@ -50,7 +50,7 @@ struct StringAnimationManagerPrivate {
     }
 };
 
-StringAnimationManager::StringAnimationManager(const Knob* knob)
+StringAnimationManager::StringAnimationManager(const KnobI* knob)
 : _imp(new StringAnimationManagerPrivate(knob))
 {
 }
@@ -67,7 +67,7 @@ void StringAnimationManager::setCustomInterpolation(customParamInterpolationV1En
     _imp->ofxParamHandle = ofxParamHandle;
 }
 
-bool StringAnimationManager::customInterpolation(double time,QString* ret) const {
+bool StringAnimationManager::customInterpolation(double time,std::string* ret) const {
     
     QMutexLocker l(&_imp->keyframesMutex);
     assert(_imp->customInterpolation);
@@ -123,8 +123,8 @@ bool StringAnimationManager::customInterpolation(double time,QString* ret) const
     inArgs.setStringProperty(kOfxPropName, _imp->knob->getName());
     inArgs.setDoubleProperty(kOfxPropTime, time);
     
-    inArgs.setStringProperty(kOfxParamPropCustomValue, lower->value.toStdString(),0);
-    inArgs.setStringProperty(kOfxParamPropCustomValue, upper->value.toStdString(),1);
+    inArgs.setStringProperty(kOfxParamPropCustomValue, lower->value,0);
+    inArgs.setStringProperty(kOfxParamPropCustomValue, upper->value,1);
     inArgs.setDoubleProperty(kOfxParamPropInterpolationTime, lower->time,0);
     inArgs.setDoubleProperty(kOfxParamPropInterpolationTime, upper->time,1);
     inArgs.setDoubleProperty(kOfxParamPropInterpolationAmount, (time - lower->time) / (double)(upper->time - lower->time));
@@ -144,7 +144,7 @@ bool StringAnimationManager::customInterpolation(double time,QString* ret) const
     return true;
 }
 
-void StringAnimationManager::insertKeyFrame(int time,const QString& v,double* index) {
+void StringAnimationManager::insertKeyFrame(int time,const std::string& v,double* index) {
     StringKeyFrame k;
     k.time = time;
     k.value = v;
@@ -175,7 +175,7 @@ void StringAnimationManager::clearKeyFrames() {
     _imp->keyframes.clear();
 }
 
-void StringAnimationManager::stringFromInterpolatedIndex(double interpolated,QString* returnValue) const {
+void StringAnimationManager::stringFromInterpolatedIndex(double interpolated,std::string* returnValue) const {
     int index = std::floor(interpolated + 0.5);
     
     QMutexLocker l(&_imp->keyframesMutex);
@@ -207,60 +207,24 @@ void StringAnimationManager::clone(const StringAnimationManager& other) {
     _imp->keyframes = other._imp->keyframes;
 }
 
-static const QString stringSeparatorTag = QString("__SEP__");
-static const QString keyframeSepTag = QString("__,__");
-
-void StringAnimationManager::load(const QString& str) {
+void StringAnimationManager::load(const std::map<int,std::string>& keyframes)
+{
     QMutexLocker l(&_imp->keyframesMutex);
-    if (str.isEmpty()) {
-        return;
-    }
-    int sepIndex = str.indexOf(stringSeparatorTag);
-    
-    int i = 0;
-    while (sepIndex != -1) {
-        
-        int keyFrameSepIndex = str.indexOf(keyframeSepTag,i);
-        assert(keyFrameSepIndex != -1);
-        
-        QString keyframeTime;
-        while (i < keyFrameSepIndex) {
-            keyframeTime.push_back(str.at(i));
-            ++i;
-        }
-        
-        i+= keyframeSepTag.size();
-        
-        QString keyframevalue;
-        while (i < sepIndex) {
-            keyframevalue.push_back(str.at(i));
-            ++i;
-        }
-        
+    assert(_imp->keyframes.empty());
+    for (std::map<int,std::string>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
         StringKeyFrame k;
-        k.time = keyframeTime.toInt();
-        k.value = keyframevalue;
-        _imp->keyframes.insert(k);
-        
-        i+= stringSeparatorTag.size();
-        sepIndex = str.indexOf(stringSeparatorTag,sepIndex + 1);
+        k.time = it->first;
+        k.value = it->second;
+        std::pair<Keyframes::iterator,bool> ret = _imp->keyframes.insert(k);
+        assert(ret.second);
     }
-
 }
 
-QString StringAnimationManager::save() const {
+void StringAnimationManager::save(std::map<int,std::string>* keyframes) const
+{
     QMutexLocker l(&_imp->keyframesMutex);
-    if (_imp->keyframes.empty()) {
-        return "";
+    for (Keyframes::const_iterator it = _imp->keyframes.begin(); it!=_imp->keyframes.end(); ++it) {
+        std::pair<std::map<int,std::string>::iterator, bool> success = keyframes->insert(std::make_pair(it->time, it->value));
+        assert(success.second);
     }
-    QString ret;
-    
-    for (Keyframes::const_iterator it = _imp->keyframes.begin();it!=_imp->keyframes.end();++it) {
-        ret.push_back(QString::number(it->time));
-        ret.push_back(keyframeSepTag);
-        ret.push_back(it->value);
-        ret.push_back(stringSeparatorTag);
-    }
-    return ret;
-
 }

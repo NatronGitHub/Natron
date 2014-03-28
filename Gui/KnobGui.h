@@ -21,6 +21,7 @@ CLANG_DIAG_ON(deprecated)
 #include <boost/shared_ptr.hpp>
 
 #include "Global/GlobalDefines.h"
+#include "Engine/Knob.h"
 
 // Qt
 class QUndoCommand; //used by KnobGui
@@ -31,7 +32,7 @@ class QMenu;
 class QLabel;
 
 // Engine
-class Knob; //used by KnobGui
+class KnobI; //used by KnobGui
 class Variant; //used by KnobGui
 class KeyFrame;
 
@@ -49,32 +50,37 @@ class KnobGui : public QObject
 public:
     
     
-    friend class KnobMultipleUndosCommand;
-    friend class KnobUndoCommand;
-    
-    KnobGui(boost::shared_ptr<Knob> knob,DockablePanel* container);
+    KnobGui(boost::shared_ptr<KnobI> knob,DockablePanel* container);
     
     virtual ~KnobGui() OVERRIDE;
         
-    bool triggerNewLine() const { return _triggerNewLine; }
+   
     
-    void turnOffNewLine() { _triggerNewLine = false; }
+    /**
+     * @brief This function must return a pointer to the internal knob. 
+     * This is virtual as it is easier to hold the knob in the derived class
+     * avoiding many dynamic_cast in the deriving class.
+     **/
+    virtual boost::shared_ptr<KnobI> getKnob() const = 0;
     
-    boost::shared_ptr<Knob> getKnob() const { return _knob; }
+    bool triggerNewLine() const;
+    
+    void turnOffNewLine();
     
     /*Set the spacing between items in the layout*/
-    void setSpacingBetweenItems(int spacing){ _spacingBetweenItems = spacing; }
+    void setSpacingBetweenItems(int spacing);
     
-    int getSpacingBetweenItems() const { return _spacingBetweenItems; }
+    int getSpacingBetweenItems() const ;
+    
+    bool hasWidgetBeenCreated() const ;
     
     void createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWidget* label,QHBoxLayout* layout,int row,bool isOnNewLine,
-                   const std::vector< boost::shared_ptr< Knob > >& knobsOnSameLine);
+                   const std::vector< boost::shared_ptr< KnobI > >& knobsOnSameLine);
         
     void pushUndoCommand(QUndoCommand* cmd);
     
     const QUndoCommand* getLastUndoCommand() const;
     
-    bool hasWidgetBeenCreated() const {return _widgetCreated;}
     
     void setKeyframe(double time,int dimension);
 
@@ -106,10 +112,28 @@ public:
  
     int getKnobsCountOnSameLine() const;
 
+    
+    /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
+     signal/slot sequence can cause an infinite loop.*/
+    template<typename T>
+    int setValue(int dimension,const T& v,KeyFrame* newKey)
+    {
+        Knob<T>* knob = dynamic_cast<Knob<T>*>(getKnob().get());
+        KnobHelper::ValueChangedReturnCode ret = knob->onValueChanged(dimension, v, newKey);
+        if(ret > 0){
+            emit keyFrameSet();
+        }
+        updateGUI(dimension);
+        checkAnimationLevel(dimension);
+        return (int)ret;
+    }
+    
 public slots:
-    /*Called when the value held by the knob is changed internally.
-     This should in turn update the GUI but not emit the valueChanged()
-     signal.*/
+    
+    
+    /**
+     * @brief Called when the internal value held by the knob is changed. It calls updateGUI().
+     **/
     void onInternalValueChanged(int dimension);
     
     void onInternalKeySet(SequenceTime time,int dimension);
@@ -130,9 +154,7 @@ public slots:
     
     ///if index is != -1 then it will reinsert the knob at this index in the layout
     void show(int index = -1);
-    
-    void onRestorationComplete();
-    
+        
     void onSetKeyActionTriggered();
     
     void onRemoveKeyActionTriggered();
@@ -173,9 +195,6 @@ public slots:
     
     void onResetDefaultValuesActionTriggered();
     void resetDefault(int dimension);
-
-    
-    void onReadOnlyChanged(bool b,int d);
     
     void onKnobSlavedChanged(int dimension,bool b);
 
@@ -206,16 +225,22 @@ signals:
     
     ///emitted when the description label is clicked
     void labelClicked(bool);
-    
 
+   
 protected:
     
-    
-    void pushValueChangedCommand(const std::vector<Variant>& newValues);
-    
-    void pushValueChangedCommand(const Variant& v, int dimension = 0);
+    /**
+     * @brief Called when the internal value held by the knob is changed, you must implement
+     * it to update the interface to reflect the new value. You can query the new value
+     * by calling knob->getValue()
+     **/
+    virtual void updateGUI(int dimension) = 0;
     
 private:
+    
+    void copyToClipBoard(int dimension,bool copyAnimation);
+    
+    void pasteClipBoard(int dimension);
 
     virtual void _hide() = 0;
 
@@ -232,11 +257,7 @@ private:
      **/
     virtual void createWidget(QHBoxLayout* layout) = 0;
     
-    
-   
-    /*Called by the onInternalValueChanged slot. This should update
-     the widget to reflect the new internal value held by variant.*/
-    virtual void updateGUI(int dimension,const Variant& variant) = 0;
+ 
     
     /*Called right away after updateGUI(). Depending in the animation level
      the widget for the knob could display its gui a bit differently.
@@ -250,33 +271,15 @@ private:
     
     void createAnimationButton(QHBoxLayout* layout);
     
-    /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
-     signal/slot sequence can cause an infinite loop.*/
-     int setValue(int dimension,const Variant& variant,KeyFrame* newKey);
+ 
     
     void setInterpolationForDimensions(const std::vector<int>& dimensions,Natron::KeyframeType interp);
     
     
 private:
-    // FIXME: PIMPL
-    boost::shared_ptr<Knob> _knob;
-    bool _triggerNewLine;
-    int _spacingBetweenItems;
-    bool _widgetCreated;
-    DockablePanel* const _container;
-    QMenu* _animationMenu;
-    AnimationButton* _animationButton;
-    QMenu* _copyRightClickMenu;
-    QHBoxLayout* _fieldLayout; //< the layout containing the widgets of the knob
-    int _row;
     
-    ////A vector of all other knobs on the same line.
-    std::vector< boost::shared_ptr< Knob > > _knobsOnSameLine;
-    
-    QFormLayout* _containerLayout;
-    QWidget* _field;
-    QWidget* _descriptionLabel;
-    bool _isOnNewLine;
+    struct KnobGuiPrivate;
+    boost::scoped_ptr<KnobGuiPrivate> _imp;
 };
 
 
@@ -289,7 +292,7 @@ public:
     
     virtual ~LinkToKnobDialog() OVERRIDE { _allKnobs.clear(); }
     
-    std::pair<int ,boost::shared_ptr<Knob> > getSelectedKnobs() const;
+    std::pair<int ,boost::shared_ptr<KnobI> > getSelectedKnobs() const;
 
 private:
     // FIXME: PIMPL
@@ -304,7 +307,7 @@ private:
     Button* _okButton;
     QHBoxLayout* _buttonsLayout;
 
-    std::map<QString,std::pair<int,boost::shared_ptr<Knob > > > _allKnobs;
+    std::map<QString,std::pair<int,boost::shared_ptr<KnobI > > > _allKnobs;
 };
 
 #endif // NATRON_GUI_KNOBGUI_H_

@@ -69,7 +69,7 @@ std::vector<std::string> QtWriter::supportedFileFormats() const {
 }
 
 void QtWriter::getFrameRange(SequenceTime *first,SequenceTime *last){
-    int index = _frameRangeChoosal->getValue<int>();
+    int index = _frameRangeChoosal->getValue();
     if(index == 0){
         EffectInstance* inp = input_other_thread(0);
         if(inp){
@@ -82,8 +82,8 @@ void QtWriter::getFrameRange(SequenceTime *first,SequenceTime *last){
         *first = getApp()->getTimeLine()->leftBound();
         *last = getApp()->getTimeLine()->rightBound();
     }else{
-        *first = _firstFrameKnob->getValue<int>();
-        *last = _lastFrameKnob->getValue<int>();
+        *first = _firstFrameKnob->getValue();
+        *last = _lastFrameKnob->getValue();
     }
 }
 
@@ -96,7 +96,7 @@ void QtWriter::initializeKnobs(){
     
     _premultKnob = Natron::createKnob<Bool_Knob>(this, "Premultiply by alpha");
     _premultKnob->setAnimationEnabled(false);
-    _premultKnob->setDefaultValue<bool>(false);
+    _premultKnob->setDefaultValue(false,0);
     
     _fileKnob = Natron::createKnob<OutputFile_Knob>(this, "File");
     _fileKnob->setAsOutputImageFile();
@@ -107,8 +107,8 @@ void QtWriter::initializeKnobs(){
     frameRangeChoosalEntries.push_back("Union of input ranges");
     frameRangeChoosalEntries.push_back("Timeline bounds");
     frameRangeChoosalEntries.push_back("Manual");
-    _frameRangeChoosal->populate(frameRangeChoosalEntries);
-    _frameRangeChoosal->setDefaultValue<int>(1);
+    _frameRangeChoosal->populateChoices(frameRangeChoosalEntries);
+    _frameRangeChoosal->setDefaultValue(1,0);
     
     _firstFrameKnob = Natron::createKnob<Int_Knob>(this, "First frame");
     _firstFrameKnob->setAnimationEnabled(false);
@@ -122,21 +122,21 @@ void QtWriter::initializeKnobs(){
     _renderKnob->setAsRenderButton();
 }
 
-void QtWriter::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
+void QtWriter::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/){
     if(k == _frameRangeChoosal.get()){
-        int index = _frameRangeChoosal->getValue<int>();
+        int index = _frameRangeChoosal->getValue();
         if(index != 2){
             _firstFrameKnob->setSecret(true);
             _lastFrameKnob->setSecret(true);
         }else{
             int first = getApp()->getTimeLine()->firstFrame();
             int last = getApp()->getTimeLine()->lastFrame();
-            _firstFrameKnob->setValue(first);
+            _firstFrameKnob->setValue(first,0);
             _firstFrameKnob->setDisplayMinimum(first);
             _firstFrameKnob->setDisplayMaximum(last);
             _firstFrameKnob->setSecret(false);
             
-            _lastFrameKnob->setValue(last);
+            _lastFrameKnob->setValue(last,0);
             _lastFrameKnob->setDisplayMinimum(first);
             _lastFrameKnob->setDisplayMaximum(last);
             _lastFrameKnob->setSecret(false);
@@ -208,7 +208,7 @@ Natron::Status QtWriter::render(SequenceTime time, RenderScale scale, const Rect
     
     
     QImage::Format type;
-    bool premult = _premultKnob->getValue<bool>();
+    bool premult = _premultKnob->getValue();
     if (premult) {
         type = QImage::Format_ARGB32_Premultiplied;
     }else{
@@ -219,7 +219,7 @@ Natron::Status QtWriter::render(SequenceTime time, RenderScale scale, const Rect
     
     QImage img(buf,roi.width(),roi.height(),type);
     
-    std::string filename = _fileKnob->getValue<QString>().toStdString();
+    std::string filename = _fileKnob->getValue();
     filename = filenameFromPattern(filename,std::floor(time + 0.5));
     
     img.save(filename.c_str());

@@ -80,21 +80,21 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     }
     additionalFormats = objAdditionalFormats;
 
-    formatKnob->populate(entries);
+    formatKnob->populateChoices(entries);
     autoSetProjectFormat = false;
     
-    const std::list< KnobSerialization >& projectSerializedValues = obj.getProjectKnobsValues();
-    const std::vector< boost::shared_ptr<Knob> >& projectKnobs = project->getKnobs();
+    const std::list< boost::shared_ptr<KnobSerialization> >& projectSerializedValues = obj.getProjectKnobsValues();
+    const std::vector< boost::shared_ptr<KnobI> >& projectKnobs = project->getKnobs();
     
     
-    //// restoring values
-    ///
+    /// 1) restore project's knobs.
+    
     for(U32 i = 0 ; i < projectKnobs.size();++i){
         ///try to find a serialized value for this knob
-        for(std::list< KnobSerialization >::const_iterator it = projectSerializedValues.begin(); it!=projectSerializedValues.end();++it) {
-            if(it->getName() == projectKnobs[i]->getDescription()){
+        for(std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = projectSerializedValues.begin(); it!=projectSerializedValues.end();++it) {
+            if((*it)->getName() == projectKnobs[i]->getDescription()) {
                 if (projectKnobs[i]->getIsPersistant()) {
-                    projectKnobs[i]->load(*it);
+                    projectKnobs[i]->clone((*it)->getKnob());
                 }
                 break;
             }
@@ -103,11 +103,11 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
     
     
-    /* 2nd RESTORE TIMELINE */
+    /// 2) restore the timeline
     timeline->setBoundaries(obj.getLeftBoundTime(), obj.getRightBoundTime());
     timeline->seekFrame(obj.getCurrentTime(),NULL);
 
-    /* 3rd RESTORE NODES */
+    /// 3) Restore the nodes
     const std::list< NodeSerialization >& serializedNodes = obj.getNodesSerialization();
     bool hasProjectAWriter = false;
     /*first create all nodes*/
@@ -143,7 +143,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
     }
     
-    /*now that we have all nodes, just connect them*/
+    /// 4) connect the nodes together, and restore the slave/master links for all knobs.
     for(std::list< NodeSerialization >::const_iterator it = serializedNodes.begin(); it!=serializedNodes.end();++it) {
         
         if(appPTR->isBackground() && it->getPluginID() == "Viewer"){

@@ -270,17 +270,17 @@ void Node::loadKnobs(const NodeSerialization& serialization) {
     ///Only called from the main thread
     assert(QThread::currentThread() == qApp->thread());
     
-    const std::vector< boost::shared_ptr<Knob> >& nodeKnobs = getKnobs();
+    const std::vector< boost::shared_ptr<KnobI> >& nodeKnobs = getKnobs();
     const NodeSerialization::KnobValues& knobsValues = serialization.getKnobsValues();
     ///for all knobs of the node
     for (U32 j = 0; j < nodeKnobs.size();++j) {
         
         ///try to find a serialized value for this knob
         for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it!=knobsValues.end();++it) {
-            if(it->getName() == nodeKnobs[j]->getName()){
+            if((*it)->getName() == nodeKnobs[j]->getName()){
                 // don't load the value if the Knob is not persistant! (it is just the default value in this case)
                 if (nodeKnobs[j]->getIsPersistant()) {
-                    nodeKnobs[j]->load(*it);
+                    nodeKnobs[j]->clone((*it)->getKnob());
                 }
                 break;
             }
@@ -293,23 +293,13 @@ void Node::restoreKnobsLinks(const NodeSerialization& serialization) {
     
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
-
     
-    const std::vector< boost::shared_ptr<Knob> >& nodeKnobs = getKnobs();
     const NodeSerialization::KnobValues& knobsValues = serialization.getKnobsValues();
-    for (U32 j = 0; j < nodeKnobs.size();++j) {
-        ///try to find a serialized value for this knob
-        for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it!=knobsValues.end();++it) {
-            if(it->getName() == nodeKnobs[j]->getName()){
-                // don't load the value if the Knob is not persistant! (it is just the default value in this case)
-                if (nodeKnobs[j]->getIsPersistant()) {
-                    nodeKnobs[j]->restoreSlaveMasterState(*it);
-                }
-                break;
-            }
-        }
+    ///try to find a serialized value for this knob
+    for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it!=knobsValues.end();++it) {
+        (*it)->restoreKnobLinks();
     }
-
+    
 }
 
 void Node::setKnobsAge(U64 newAge)  {
@@ -896,7 +886,9 @@ void Node::activate()
         QMutexLocker l(&_imp->inputsMutex);
         ///for all inputs, reconnect their output to this node
         for (U32 i = 0; i < _imp->inputsQueue.size(); ++i){
-            _imp->inputsQueue[i]->connectOutput(this);
+            if (_imp->inputsQueue[i]) {
+                _imp->inputsQueue[i]->connectOutput(this);
+            }
         }
     }
     
@@ -925,7 +917,7 @@ void Node::activate()
 }
 
 
-boost::shared_ptr<Knob> Node::getKnobByName(const std::string& name) const
+boost::shared_ptr<KnobI> Node::getKnobByName(const std::string& name) const
 {
     ///MT-safe, never changes
     return _imp->liveInstance->getKnobByName(name);
@@ -1077,7 +1069,7 @@ bool Node::isOpenFXNode() const
     return _imp->liveInstance->isOpenFX();
 }
 
-const std::vector< boost::shared_ptr<Knob> >& Node::getKnobs() const
+const std::vector< boost::shared_ptr<KnobI> >& Node::getKnobs() const
 {
     ///MT-safe from EffectInstance::getKnobs()
     return _imp->liveInstance->getKnobs();
@@ -1251,11 +1243,6 @@ void Node::clearPersistentMessage()
     }
 }
 
-void Node::serialize(NodeSerialization* serializationObject) {
-    
-    ///Mt-safe from NodeSerialization::initialize()
-    serializationObject->initialize(this);
-}
 
 
 void Node::purgeAllInstancesCaches() {

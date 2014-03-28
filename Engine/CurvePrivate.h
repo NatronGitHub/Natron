@@ -22,7 +22,7 @@
 
 class Curve;
 class KeyFrame;
-class Knob;
+class KnobI;
 
 struct CurvePrivate{
     
@@ -36,7 +36,7 @@ struct CurvePrivate{
 
     KeyFrameSet keyFrames;
 
-    Knob* owner;
+    KnobI* owner;
     bool isParametric;
     CurveType type;
     double xMin, xMax;

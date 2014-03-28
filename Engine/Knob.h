@@ -14,8 +14,9 @@
 
 #include <vector>
 #include <string>
+#include <QtCore/QReadWriteLock>
 
-#include "Engine/Variant.h"
+
 #include "Engine/AppManager.h"
 
 class Curve;
@@ -23,7 +24,7 @@ class KeyFrame;
 class KnobHolder;
 class AppInstance;
 class KnobSerialization;
-/******************************KNOB_BASE**************************************/
+class StringAnimationManager;
 
 class KnobI
 {
@@ -83,24 +84,12 @@ public:
      * evaluate any change (i.e: force a new render)
      **/
     virtual void evaluateAnimationChange() = 0;
-    
-    
-    /**
-     * @brief Called on project save.
-     **/
-    virtual void save(KnobSerialization* serializationObj) const = 0;
-    
-    /**
-     * @brief Called on project loading.
-     **/
-    virtual void load(const KnobSerialization& serializationObj) = 0;
-    
-    /**
-     * @brief This cannot be done in load since we need all nodes in the project to be loaded
-     * in order to do this.
-     **/
-    virtual void restoreSlaveMasterState(const KnobSerialization& serializationObj) = 0;
 
+    /**
+     * @brief Copies all the values, animations and extra data the other knob might have
+     * to this knob. This function calls cloneExtraData.
+     **/
+    virtual void clone(const boost::shared_ptr<KnobI>& other) = 0;
     
 protected:
     
@@ -136,6 +125,11 @@ public:
      **/
     void onAnimationRemoved(int dimension);
 
+    /**
+     * @brief Calls setValueAtTime with a reason of Natron::USER_EDITED.
+     **/
+    virtual void onKeyFrameSet(SequenceTime time,int dimension) = 0;
+    
     /**
      * @brief Called when the current time of the timeline changes. 
      * It must get the value at the given time and notify  the gui it must
@@ -232,13 +226,6 @@ public:
      * @brief Returns a pointer to the holder owning the knob.
      **/
     virtual KnobHolder* getHolder() const = 0;
-    
-    /**
-     * @brief Called by a render task to copy all the knobs values to another separate instance
-     * to decorellate the values modified by the gui (i.e the user) and the values used to render.
-     * This ensures thread-safety.
-     **/
-    virtual void cloneValue(const KnobI& other) = 0;
     
     /**
      * @brief Get the knob dimension. MT-safe as it is static and never changes.
@@ -437,575 +424,503 @@ public:
     /**
      * @brief Must return true if the other knobs type can convert to this knob's type.
      **/
-    virtual bool isTypeCompatible(const KnobI& other) const = 0;
+    virtual bool isTypeCompatible(const boost::shared_ptr<KnobI>& other) const = 0;
 
 };
 
-#if 0
 
-class KnobSignalEmitter : public QObject
+class KnobSignalSlotHandler : public QObject
 {
-public:
     
-};
-
-template <typename T>
-class Knob
-{
-    friend class KnobHolder;
-    
-public:
-    
-    enum ValueChangedReturnCode {
-        NO_KEYFRAME_ADDED = 0,
-        KEYFRAME_MODIFIED,
-        KEYFRAME_ADDED
-    };
-
-    
-    explicit Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
-    
-    T getValue(int dimension = 0) const WARN_UNUSED_RETURN;
-    
-    virtual T getValueAtTime(double time, int dimension = 0) const WARN_UNUSED_RETURN;
-
-private:
-    
-    ValueChangedReturnCode setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
-    
-    bool setValueAtTime(int time,const Variant& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
-
-public:
-    
-    void setValue(const T& value,int dimension,bool turnOffAutoKeying = false);
-    
-    ValueChangedReturnCode onValueChanged(int dimension,const T& variant,KeyFrame* newKey);
-    
-    void setValueAtTime(int time,const T& v,int dimension);
-    
-    void onKeyFrameSet(SequenceTime time,int dimension);
-    
-    bool getKeyFrameValueByIndex(int dimension,int index,T* value) const WARN_UNUSED_RETURN;
-
-    const std::vector<T>& getValueForEachDimension() const WARN_UNUSED_RETURN;
-    
-    std::vector<T> getValueForEachDimension_mt_safe() const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Set the default values for the knob. The vector 'values' must have exactly the same size
-     * as the dimension of the knob.
-     * @see int getDimension()
-     **/
-    void setDefaultValues(const std::vector<T>& values);
-    
-    void setDefaultValue(const T& v,int dimension);
-    
-protected:
-    
-    /**
-     * @brief Called when a keyframe is removed.
-     **/
-    virtual void keyframeRemoved_virtual(int /*dimension*/, double /*time*/) {}
-    
-    /**
-     * @brief Called when all keyframes are removed
-     **/
-    virtual void animationRemoved_virtual(int /*dimension*/) {}
-    
-    /** @brief This function is called right after that the _value has changed
-     * but before any signal notifying that it has changed. It can be useful
-     * to do some processing to create new informations.
-     * e.g: The File_Knob parses the files list to create a mapping of
-     * <time,file> .
-     **/
-    virtual void processNewValue(Natron::ValueChangedReason /*reason*/){}
-
-
-};
-
-#endif
-
-class Knob : public QObject
-{
     Q_OBJECT
     
-    friend class KnobHolder;
-    
+    boost::shared_ptr<KnobI> k;
     
 public:
     
-    enum ValueChangedReturnCode {
-        NO_KEYFRAME_ADDED = 0,
-        KEYFRAME_MODIFIED,
-        KEYFRAME_ADDED
-    };
-
-    explicit Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
+    KnobSignalSlotHandler(boost::shared_ptr<KnobI> knob);
     
-    virtual ~Knob();
+    boost::shared_ptr<KnobI> getKnob() const { return k; }
     
-    /**
-     * @brief Do not call this. It is called right away after the constructor by the factory
-     * to initialize curves and values. This is separated from the constructor as we need RTTI
-     * for Curve.
-     **/
-    void populate();
-
-    /**
-     * @brief Must return the type name of the knob. This name will be used by the KnobFactory
-     * to create an instance of this knob.
-    **/
-    virtual const std::string& typeName() const WARN_UNUSED_RETURN = 0;
-
-    /**
-     * @brief Must return true if this knob can animate (i.e: if we can set different values depending on the time)
-     * Some parameters cannot animate, for example a file selector.
-     **/
-    virtual bool canAnimate() const WARN_UNUSED_RETURN = 0;
-
-    /**
-      * @brief If the parameter is multidimensional, this is the label thats the that will be displayed
-      * for a dimension.
-    **/
-    virtual std::string getDimensionName(int dimension) const WARN_UNUSED_RETURN {(void)dimension; return "";}
-
-    /**
-     * @brief Used to bracket calls to setValue. This indicates than a series of calls will be made, and
-     * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
-     * to render.
-    **/
-    void beginValueChange(Natron::ValueChangedReason reason);
-
-    /**
-     * @brief Called by setValue to indicate that an evaluation is needed. This could be private.
-     **/
-    void evaluateValueChange(int dimension,Natron::ValueChangedReason reason);
-
-    /**
-     * @brief Used to bracket calls to setValue. This indicates than a series of calls will be made, and
-     * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
-     * to render.
-    **/
-    void endValueChange() ;
-
-    /**
-     * @brief Called when a keyframe/derivative is modified, indicating that the curve has changed and we must
-     * evaluate any change (i.e: force a new render)
-    **/
-    void evaluateAnimationChange();
-
-    /**
-     * @brief Called on project loading.
-    **/
-    void load(const KnobSerialization& serializationObj);
-    
-    /**
-     * @brief This cannot be done in load since we need all nodes in the project to be loaded
-     * in order to do this.
-     **/
-    void restoreSlaveMasterState(const KnobSerialization& serializationObj);
-
-    /**
-     * @brief Called by load(const KnobSerialization*&) to deserialize your own extra data.
-     * You must implement the parsing yourself.
-     **/
-    virtual void loadExtraData(const QString& /*str*/) {}
-    
-    /**
-     * @brief Called on project save.
-    **/
-    void save(KnobSerialization* serializationObj) const;
-    
-    /**
-     * @brief Called by save(KnobSerialization*) if you want to serialize more data.
-     * You must return a string with your serialized data
-     **/
-    virtual QString saveExtraData() const WARN_UNUSED_RETURN { return ""; }
-    
-
-    Variant getValue(int dimension = 0) const WARN_UNUSED_RETURN;
-
-    template <typename T>
-    T getValue(int dimension = 0) const WARN_UNUSED_RETURN;
-
-    void setValue(const Variant& value,int dimension,bool turnOffAutoKeying = false);
-
-    template<typename T>
-    void setValue(const T &value,int dimension = 0) {
-        setValue(Variant(value),dimension);
-    }
-
-    template<typename T>
-    void setValue(T variant[],int count){
-        for(int i = 0; i < count; ++i){
-            setValue(Variant(variant[i]),i);
-        }
-    }
-
-    /**
-     * @brief Set the value for a specific dimension at a specific time. By default dimension
-     * is 0. If there's a single dimension, it will set the dimension 0 regardless of the parameter dimension.
-     * Otherwise, it will attempt to set a key for only the dimension 'dimensionIndex'.
-     **/
-    void setValueAtTime(int time,const Variant& v,int dimension);
-
-    template<typename T>
-    void setValueAtTime(int time,const T& value,int dimensionIndex = 0){
-        assert(dimensionIndex < getDimension());
-        setValueAtTime(time,Variant(value),dimensionIndex);
-    }
-
-    template<typename T>
-    void setValueAtTime(int time,T variant[],int count){
-        for(int i = 0; i < count; ++i){
-            setValueAtTime(time,Variant(variant[i]),i);
-        }
-    }
-
-    void deleteValueAtTime(int time,int dimension);
-
-    void removeAnimation(int dimension);
-    
-    /**
-     * @brief Returns the value  in a specific dimension at a specific time. If
-     * there is no key in this dimension it will return the value at the requested dimension
-     **/
-    virtual Variant getValueAtTime(double time, int dimension) const WARN_UNUSED_RETURN;
-
-    template<typename T>
-    T getValueAtTime(double time,int dimension = 0) const WARN_UNUSED_RETURN;
-
-    /// compute the derivative at time as a double
-    double getDerivativeAtTime(double time, int dimension = 0) const WARN_UNUSED_RETURN;
-
-    /// compute the integral of dimension from time1 to time2 as a double
-    double getIntegrateFromTimeToTime(double time1, double time2, int dimension = 0) const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Places in time the keyframe time at the given index.
-     * If it exists the function returns true, false otherwise.
-     **/
-    bool getKeyFrameTime(int index,int dimension,double* time) const WARN_UNUSED_RETURN;
-    
-    /**
-     * @brief Convenience function, does the same as getKeyFrameWithIndex but returns the last
-     * keyframe.
-     **/
-    bool getLastKeyFrameTime(int dimension,double* time) const WARN_UNUSED_RETURN;
-    
-    /**
-     * @brief Convenience function, does the same as getKeyFrameWithIndex but returns the first
-     * keyframe.
-     **/
-    bool getFirstKeyFrameTime(int dimension,double* time) const WARN_UNUSED_RETURN;
-    
-    int getKeyFramesCount(int dimension) const WARN_UNUSED_RETURN;
-    
-    /**
-     * @brief Returns the nearest keyframe time if it was found.
-     * Returns true if it succeeded, false otherwise.
-     **/
-    bool getNearestKeyFrameTime(int dimension,double time,double* nearestTime) const WARN_UNUSED_RETURN;
-    
-    /**
-     * @brief Returns the keyframe index if there's any keyframe in the curve 
-     * at the given dimension and the given time. -1 otherwise.
-     **/
-    int getKeyFrameIndex(int dimension, double time) const WARN_UNUSED_RETURN;
-    
-    bool getKeyFrameValueByIndex(int dimension,int index,Variant* value) const WARN_UNUSED_RETURN;
-
-
-    boost::shared_ptr<Curve> getCurve(int dimension = 0) const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Returns true if the dimension is animated with keyframes.
-     **/
-    bool isAnimated(int dimension) const WARN_UNUSED_RETURN;
-    
-    /**
-     * @brief Returns true if at least 1 dimension is animated. MT-Safe
-     **/
-    bool hasAnimation() const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Returns a const ref to the curves held by this knob. This is MT-safe as they're
-     * never deleted (except on program exit).
-     **/
-    const std::vector< boost::shared_ptr<Curve>  >& getCurves() const WARN_UNUSED_RETURN;
-
-    void setAnimationEnabled(bool val) ;
-
-    /**
-     * @brief Returns true if the animation is enabled for this knob. A return value of
-     * true doesn't necessarily means that the knob is animated at all.
-     **/
-    bool isAnimationEnabled() const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Get the knob description, that is the label next to the knob on the user interface.
-     * This function is MT-safe as the description NEVER changes throughout the program.
-     **/
-    const std::string& getDescription() const WARN_UNUSED_RETURN;
-
-    KnobHolder* getHolder() const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Called by a render task to copy all the knobs values to another separate instance
-     * to decorellate the values modified by the gui (i.e the user) and the values used to render.
-     * This ensures thread-safety.
-    **/
-    void cloneValue(const Knob& other);
-
-    const std::vector<Variant>& getValueForEachDimension() const WARN_UNUSED_RETURN;
-    
-    std::vector<Variant> getValueForEachDimension_mt_safe() const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Get the knob dimension. MT-safe as it is static and never changes.
-     **/
-    int getDimension() const WARN_UNUSED_RETURN;
-
-    void turnOffNewLine();
-    
-    bool isNewLineTurnedOff() const WARN_UNUSED_RETURN;
-    
-    void setSpacingBetweenItems(int spacing);
-    
-    void setEnabled(int dimension,bool b);
-    
-    void setAllDimensionsEnabled(bool b);
-    
-    void setSecret(bool b);
-    
-    /*Call this to change the knob name. The name is not the text label displayed on
-     the GUI but what is passed to the valueChangedByUser signal. By default the
-     name is the same as the description(i.e: the text label).*/
-    void setName(const std::string& name);
-    
-    std::string getName() const WARN_UNUSED_RETURN;
-    
-    void setParentKnob(boost::shared_ptr<Knob> knob);
-    
-    boost::shared_ptr<Knob> getParentKnob() const WARN_UNUSED_RETURN;
-    
-    int determineHierarchySize() const WARN_UNUSED_RETURN;
-    
-    bool getIsSecret() const WARN_UNUSED_RETURN;
-    
-    bool isEnabled(int dimension) const WARN_UNUSED_RETURN;
-    
-    void setEvaluateOnChange(bool b);
-    
-    /**
-     * @brief Should the knob be saved in the project ? This is MT-safe
-     * because it never changes throughout the object's life-time.
-     **/
-    bool getIsPersistant() const WARN_UNUSED_RETURN;
-
-    void setIsPersistant(bool b);
-
-    void setCanUndo(bool val);
-    
-    bool getCanUndo() const WARN_UNUSED_RETURN;
-    
-    bool getEvaluateOnChange() const WARN_UNUSED_RETURN;
-    
-    void setHintToolTip(const std::string& hint);
-    
-    const std::string& getHintToolTip() const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Slaves the value for the given dimension to the curve
-     * at the same dimension for the knob 'other'.
-     * In case of success, this function returns true, otherwise false.
-    **/
-    bool slaveTo(int dimension,const boost::shared_ptr<Knob>& other,int otherDimension);
-
-    ///Meant to be called by the GUI
-    void onKnobSlavedTo(int dimension,const boost::shared_ptr<Knob>&  other,int otherDimension);
-
-    /**
-     * @brief Unslave the value at the given dimension if it was previously
-     * slaved to another knob using the slaveTo function.
-    **/
-    void unSlave(int dimension);
-    
-    ///Meant to be called  by the Gui
-    void onKnobUnSlaved(int dimension);
-
-    /**
-     * @brief Returns a valid pointer to a knob if the value at
-     * the given dimension is slaved.
-    **/
-    std::pair<int,boost::shared_ptr<Knob> > getMaster(int dimension) const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Returns true if the value at the given dimension is slave to another parameter
-     **/
-    bool isSlave(int dimension) const WARN_UNUSED_RETURN;
-    
-
-    std::vector<std::pair<int,boost::shared_ptr<Knob> > > getMasters_mt_safe() const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Called by the GUI whenever the animation level changes (due to a time change
-     * or a value changed).
-     **/
-    void setAnimationLevel(int dimension,Natron::AnimationLevel level);
-    
-    Natron::AnimationLevel getAnimationLevel(int dimension) const WARN_UNUSED_RETURN;
+    void s_evaluateValueChangedInMainThread(int dimension,int reason) { emit evaluateValueChangedInMainThread(dimension,reason); }
+    void s_animationLevelChanged(int level) { emit animationLevelChanged(level); }
+    void s_deleted() { emit deleted(); }
+    void s_valueChanged(int dimension) { emit valueChanged(dimension); }
+    void s_secretChanged() { emit secretChanged(); }
+    void s_enabledChanged() { emit enabledChanged(); }
+    void s_keyFrameSet(SequenceTime time,int dimension) { emit keyFrameSet(time,dimension); }
+    void s_keyFrameRemoved(SequenceTime time ,int dimension) { emit keyFrameRemoved(time,dimension); }
+    void s_animationRemoved(int dimension) { emit animationRemoved(dimension); }
+    void s_updateSlaves(int dimension) { emit updateSlaves(dimension); }
+    void s_knobSlaved(int dim,bool slaved) { emit knobSlaved(dim,slaved); }
 
     
-    /*Set the value of the knob but does NOT emit the valueChanged signal.
-     This is called by the GUI.*/
-    ValueChangedReturnCode onValueChanged(int dimension,const Variant& variant,KeyFrame* newKey);
-    
-    /**
-     * @brief Set the default values for the knob. The vector 'values' must have exactly the same size
-     * as the dimension of the knob. 
-     * @see int getDimension()
-     **/
-    void setDefaultValues(const std::vector<Variant>& values);
-    
-    
-    void setDefaultValue(const Variant& v,int dimension);
-    
-    template <typename T>
-    void setDefaultValue(const T& v,int dimension = 0) {
-        setDefaultValue(Variant(v),dimension);
-    }
-    
-    /**
-     * @brief Restores the default value
-     **/
-    void resetToDefaultValue(int dimension);
-    
-    
-    virtual bool isTypeCompatible(const Knob& other) const WARN_UNUSED_RETURN = 0;
 public slots:
     
-  
-    /*Set a keyframe for the knob but does NOT emit the keyframeSet signal.
-         This is called by the GUI .*/
+    /**
+     * @brief Calls KnobI::onKeyFrameSet
+     **/
     void onKeyFrameSet(SequenceTime time,int dimension);
-
+    
+    /**
+     * @brief Calls KnobI::onKeyFrameRemoved
+     **/
     void onKeyFrameRemoved(SequenceTime time,int dimension);
-
+    
+    /**
+     * @brief Calls KnobI::onTimeChanged
+     **/
     void onTimeChanged(SequenceTime);
     
+    /**
+     * @brief Calls KnobI::onAnimationRemoved
+     **/
     void onAnimationRemoved(int dimension);
-
-    void triggerUpdateSlaves(int dimension) { emit updateSlaves(dimension); }
     
+    /**
+     * @brief Calls KnobI::evaluateValueChange with a reason of Natron::PLUGIN_EDITED
+     **/
     void onMasterChanged(int);
     
+    /**
+     * @brief Calls KnobI::evaluateValueChange and assert that this function is run in the main thread.
+     **/
     void onEvaluateValueChangedInOtherThread(int dimension, int reason);
+
     
 signals:
     
+    ///emitted whenever evaluateValueChanged is called in another thread than the main thread
     void evaluateValueChangedInMainThread(int dimension,int reason);
     
     ///emitted whenever setAnimationLevel is called. It is meant to notify
     ///openfx params whether it is auto-keying or not.
     void animationLevelChanged(int);
     
+    ///emitted when the destructor is entered
     void deleted();
     
-    /*Emitted when the value is changed internally by a call to setValue*/
+    ///Emitted when the value is changed by the plugin by a call to setValue
     void valueChanged(int dimension);
-
+    
+    ///Emitted when the secret state of the knob changed
     void secretChanged();
     
+    ///Emitted when a dimension enabled state changed
     void enabledChanged();
     
-    void restorationComplete();
-
+    ///Emitted whenever a keyframe is set with a reason different of USER_EDITED
     void keyFrameSet(SequenceTime,int);
-
+    
+    ///Emitted whenever a keyframe is removed with a reason different of USER_EDITED
     void keyFrameRemoved(SequenceTime,int);
     
+    ///Emitted whenever all keyframes of a dimension are removed with a reason different of USER_EDITED
     void animationRemoved(int);
     
+    ///Emitted whenever setValueAtTime,setValue or deleteValueAtTime is called. It notifies slaves
+    ///of the changes that occured in this knob, letting them a chance to update their interface.
     void updateSlaves(int dimension);
     
-    void readOnlyChanged(bool,int);
-    
+    ///Emitted whenever a knob is slaved via the slaveTo function with a reason of PLUGIN_EDITED.
     void knobSlaved(int,bool);
+
+    
+};
+
+///Skins the API of KnobI by implementing most of the functions in a non templated manner.
+class KnobHelper : public KnobI
+{
+    friend class KnobHolder;
+    
+public:
+    
+    enum ValueChangedReturnCode {
+        NO_KEYFRAME_ADDED = 0,
+        KEYFRAME_MODIFIED,
+        KEYFRAME_ADDED
+    };
+    
+    KnobHelper(KnobHolder*  holder,const std::string& description,int dimension = 1);
+    
+    virtual ~KnobHelper();
+    
+    /**
+     * @brief Set a shared ptr to the signal slot handler, that will live as long as the knob lives.
+     * It is set by the factory, do not call it yourself.
+     **/
+    void setSignalSlotHandler(const boost::shared_ptr<KnobSignalSlotHandler>& handler);
+    
+    boost::shared_ptr<KnobSignalSlotHandler> getSignalSlotHandler() const { return _signalSlotHandler; }
+    
+    //////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////
+    /////////////////////////////////// Implementation of KnobI
+    //////////////////////////////////////////////////////////////////////
+    
+    ///Populates for each dimension: the enabled state, the curve and the animation level
+    virtual void populate() OVERRIDE;
+    
+    virtual void beginValueChange(Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    
+    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    
+    virtual void endValueChange() OVERRIDE FINAL;
     
 private:
     
-    void unSlave(int dimension,Natron::ValueChangedReason reason);
+    virtual void removeAnimation(int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
     
-    bool slaveTo(int dimension,const boost::shared_ptr<Knob>&  other,int otherDimension,Natron::ValueChangedReason reason);
+    virtual void deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
     
-    //private because it emits a signal
-    ValueChangedReturnCode setValue(const Variant& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
+public:
+    
+    virtual double getDerivativeAtTime(double time, int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-     //private because it emits a signal
-    bool setValueAtTime(int time,const Variant& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey);
+    virtual bool getKeyFrameTime(int index,int dimension,double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool getLastKeyFrameTime(int dimension,double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool getFirstKeyFrameTime(int dimension,double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual int getKeyFramesCount(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool getNearestKeyFrameTime(int dimension,double time,double* nearestTime) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual int getKeyFrameIndex(int dimension, double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual boost::shared_ptr<Curve> getCurve(int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool isAnimated(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual const std::vector< boost::shared_ptr<Curve>  >& getCurves() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-     //private because it emits a signal
-    void deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason reason);
+    virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     
-    void removeAnimation(int dimension,Natron::ValueChangedReason reason);
+    virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    /** @brief This function can be implemented if you want to clone more data than just the value
-     * of the knob. Cloning happens when a render request is made: all knobs values of the GUI
-     * are cloned into small copies in order to be sure they will not be modified further on.
-     * This function is useful if you need to copy for example an extra bit of information.
-     * e.g: the File_Knob has to copy not only the QStringList containing the file names, but
-     * also the sequence it has parsed.
-    **/
-    virtual void cloneExtraData(const Knob& other){(void)other;}
+    virtual const std::string& getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
+    virtual KnobHolder* getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual int getDimension() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void turnOffNewLine() OVERRIDE FINAL;
+    
+    virtual bool isNewLineTurnedOff() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void setSpacingBetweenItems(int spacing) OVERRIDE FINAL;
+    
+    virtual void setEnabled(int dimension,bool b) OVERRIDE FINAL;
+    
+    virtual bool isEnabled(int dimension) const OVERRIDE FINAL;
+    
+    virtual void setAllDimensionsEnabled(bool b) OVERRIDE FINAL;
+    
+    virtual void setSecret(bool b) OVERRIDE FINAL;
+    
+    virtual bool getIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void setName(const std::string& name) OVERRIDE FINAL;
+    
+    virtual std::string getName() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void setParentKnob(boost::shared_ptr<KnobI> knob) OVERRIDE FINAL;
+    
+    virtual boost::shared_ptr<KnobI> getParentKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual int determineHierarchySize() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void setEvaluateOnChange(bool b) OVERRIDE FINAL;
+    
+    virtual bool getEvaluateOnChange() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool getIsPersistant() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void setIsPersistant(bool b) OVERRIDE FINAL;
+    
+    virtual void setCanUndo(bool val) OVERRIDE FINAL;
+    
+    virtual bool getCanUndo() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void setHintToolTip(const std::string& hint) OVERRIDE FINAL;
+    
+    virtual const std::string& getHintToolTip() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+private:
+    
+    virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI>&  other,int otherDimension,Natron::ValueChangedReason reason) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+protected:
+    
+    /**
+     * @brief Protected so the implementation of unSlave can actually use this to reset the master pointer
+     **/
+    void resetMaster(int dimension);
+    
+public:
+    
+    virtual std::pair<int,boost::shared_ptr<KnobI> > getMaster(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool isSlave(int dimension) const ;
+    
+    virtual std::vector<std::pair<int,boost::shared_ptr<KnobI> > > getMasters_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void setAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
+    
+    virtual Natron::AnimationLevel getAnimationLevel(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool isTypeCompatible(const boost::shared_ptr<KnobI>& other) const = 0;
+    
+protected:
+    
+    /**
+     * @brief Called when you must copy any extra data you maintain from the other knob.
+     * The other knob is guaranteed to be of the same type.
+     **/
+    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& /*other*/) {}
     
     /**
      * @brief Called when a keyframe is removed.
+     * Derived knobs can use it to refresh any data structure related to keyframes it may have.
      **/
     virtual void keyframeRemoved_virtual(int /*dimension*/, double /*time*/) {}
     
     /**
      * @brief Called when all keyframes are removed
+     * Derived knobs can use it to refresh any data structure related to keyframes it may have.
      **/
     virtual void animationRemoved_virtual(int /*dimension*/) {}
     
-    /** @brief This function is called right after that the _value has changed
+    /** @brief This function is called right after a value has changed
      * but before any signal notifying that it has changed. It can be useful
-     * to do some processing to create new informations.
-     * e.g: The File_Knob parses the files list to create a mapping of
-     * <time,file> .
-    **/
+     * to mainting some data structure along the values.
+     * e.g: The File_Knob parses the files list to create a pattern for the files list.
+     **/
     virtual void processNewValue(Natron::ValueChangedReason /*reason*/){}
+
+    boost::shared_ptr<KnobSignalSlotHandler> _signalSlotHandler;
+    
+private:
+    
+    struct KnobHelperPrivate;
+    boost::scoped_ptr<KnobHelperPrivate> _imp;
+};
+
+/**
+ * @brief A Knob is a parameter, templated by a data type.
+ * The template parameter is meant to be used with POD types or strings, 
+ * not complex classes or structures.
+ **/
+template <typename T>
+class Knob : public KnobHelper
+{
+    
+public:
+    
+    typedef T DataType;
     
     /**
-     * @brief Override to return the real value to store in a keyframe for the variant passed in parameter.
-     * This function is almost only addressing the problem of animating strings. The string knob just returns
-     * in the return value the index of the string from the variant's current value.
-     * In case you implement this function, make sure to return Natron::StatOk, otherwise this function call 
-     * will get ignored.
+     * @brief Make a knob for the given KnobHolder with the given description (the label displayed on 
+     * its interface) and with the given dimension. The dimension parameter is used for example for the
+     * Color_Knob which has 4 doubles (r,g,b,a), hence 4 dimensions.
      **/
-    virtual Natron::Status variantToKeyFrameValue(int /*time*/,const Variant& /*v*/,double* /*returnValue*/) {
-        return Natron::StatReplyDefault;
-    }
+    Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
+    
+    virtual ~Knob() {}
+    
+public:
     
     /**
-     * @brief Override to return the real value of the variant (which should have the same type as
-     * all other elements in this knob (i.e: String for a string knob).
-     * This function is almost only addressing the problem of animating strings. The string knob just returns
-     * in the return value the string at the given index contained in interpolated.
+     * @brief Get the current value of the knob for the given dimension.
+     * If it is animated, it will return the value at the current time.
      **/
-    virtual void variantFromInterpolatedValue(double interpolated,Variant* returnValue) const;
+    T getValue(int dimension = 0) const WARN_UNUSED_RETURN;
+    
+    /**
+     * @brief Returns the value of the knob at the given time and for the given dimension.
+     * If it is not animated, it will call getValue for that dimension and return the result.
+     *
+     * This function is overloaded by the String_Knob which can have its custom interpolation
+     * but this should be the only knob which should ever need to overload it.
+     **/
+    T getValueAtTime(double time, int dimension = 0) const WARN_UNUSED_RETURN;
 
 private:
-    struct KnobPrivate;
-    boost::scoped_ptr<KnobPrivate> _imp;
+    
+    /**
+     * @brief Set the value of the knob in the given dimension with the given reason. 
+     * @param newKey If not NULL and the animation level of the knob is Natron::INTERPOLATED_VALUE
+     * then a new keyframe will be set at the current time.
+     **/
+    ValueChangedReturnCode setValue(const T& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey) WARN_UNUSED_RETURN;
+    /**
+     * @brief Set the value of the knob at the given time and for the given dimension with the given reason.
+     * @param newKey[out] The keyframe that was added if the return value is true.
+     * @returns True if a keyframe was successfully added, false otherwise.
+     **/
+    bool setValueAtTime(int time,const T& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey) WARN_UNUSED_RETURN;
+    
+    virtual void unSlave(int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    
+public:
+    
+    /**
+     * @brief Calls setValue with a reason of Natron::PLUGIN_EDITED.
+     * @param turnOffAutoKeying If set to true, the underlying call to setValue will
+     * not set a new keyframe.
+     **/
+    void setValue(const T& value,int dimension,bool turnOffAutoKeying = false);
+    
+    /**
+     * @brief Calls setValue with a reason of Natron::USER_EDITED.
+     * @param newKey[out] The keyframe that was added if the return value is true.
+     * @returns A status according to the operation that was made to the keyframe.
+     * @see Natron::ValueChangedReturnCode
+     **/
+    ValueChangedReturnCode onValueChanged(int dimension,const T& v,KeyFrame* newKey);
+    
+    /**
+     * @brief Calls setValueAtTime with a reason of Natron::PLUGIN_EDITED.
+     **/
+    void setValueAtTime(int time,const T& v,int dimension);
+    
+    /**
+     * @brief Unlike getValueAtTime this function doesn't interpolate the values.
+     * Instead the true value of the keyframe at the given index will be returned.
+     * @returns True if a keyframe was found at the given index and for the given dimension,
+     * false otherwise.
+     **/
+    T getKeyFrameValueByIndex(int dimension,int index,bool* ok) const WARN_UNUSED_RETURN;
+    /**
+     * @brief Returns the values of the knob across all dimensions. 
+     * WARNING: This is not MT thread-safe! You should use getValueForEachDimension_mt_safe()
+     * for a MT-safe version. 
+     * This function asserts that the caller is running in the application's main-thread.
+     **/
+    const std::vector<T>& getValueForEachDimension() const WARN_UNUSED_RETURN;
+    
+    /**
+     * @brief Same as getValueForEachDimension() but MT thread-safe.
+     **/
+    std::list<T> getValueForEachDimension_mt_safe() const WARN_UNUSED_RETURN;
+    
+    /**
+     * @brief Set a default value for the particular dimension.
+     **/
+    void setDefaultValue(const T& v,int dimension);
+    
+    
+    //////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////
+    /////////////////////////////////// Implementation of KnobI
+    //////////////////////////////////////////////////////////////////////
+    
+    ///Populates for each dimension: the default value and the value member. The implementation MUST call
+    /// the KnobHelper version.
+    virtual void populate() OVERRIDE FINAL;
+    
+    /// You must implement it
+    virtual const std::string& typeName() const = 0;
+    
+    /// You must implement it
+    virtual bool canAnimate() const = 0;
+    
+    virtual bool isTypeCompatible(const boost::shared_ptr<KnobI>& other) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual std::string getDimensionName(int /*dimension*/) const OVERRIDE WARN_UNUSED_RETURN { return ""; }
+    
+    ///Cannot be overloaded by KnobHelper as it requires setValueAtTime
+    virtual void onKeyFrameSet(SequenceTime time,int dimension) OVERRIDE FINAL;
+    
+    ///Cannot be overloaded by KnobHelper as it requires setValue
+    virtual void onTimeChanged(SequenceTime time) OVERRIDE FINAL;
+    
+    ///Cannot be overloaded by KnobHelper as it requires setValue
+    virtual void evaluateAnimationChange() OVERRIDE FINAL;
+    
+    ///Cannot be overloaded by KnobHelper as it requires the value member
+    virtual double getIntegrateFromTimeToTime(double time1, double time2, int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    ///Cannot be overloaded by KnobHelper as it requires setValue
+    virtual void resetToDefaultValue(int dimension) OVERRIDE FINAL;
+    
+    virtual void clone(const boost::shared_ptr<KnobI>& other) OVERRIDE FINAL;
+    
+private:
+    
+    void cloneValues(const boost::shared_ptr<KnobI>& other);
+    
+    T getValueFromMaster(int dimension);
+    
+    
+    
+    //////////////////////////////////////////////////////////////////////
+    /////////////////////////////////// End implementation of KnobI
+    //////////////////////////////////////////////////////////////////////
+
+    
+    ///Here is all the stuff we couldn't get rid of the template parameter
+    
+    mutable QReadWriteLock _valueMutex; //< protects _values
+    std::vector<T> _values;
+    std::vector<T> _defaultValues;
+
+
 };
+
+
+class AnimatingString_KnobHelper : public Knob<std::string>
+{
+public:
+    
+    AnimatingString_KnobHelper(KnobHolder *holder, const std::string &description, int dimension);
+    
+    virtual ~AnimatingString_KnobHelper();
+    
+    void stringToKeyFrameValue(int time,const std::string& v,double* returnValue);
+    
+    //for integration of openfx custom params
+    typedef OfxStatus (*customParamInterpolationV1Entry_t)(
+                                                           const void*            handleRaw,
+                                                           OfxPropertySetHandle   inArgsRaw,
+                                                           OfxPropertySetHandle   outArgsRaw);
+    
+    
+    const StringAnimationManager& getAnimation() const { return *_animation; }
+    
+    void loadAnimation(const std::map<int,std::string>& keyframes);
+    
+    void saveAnimation(std::map<int,std::string>* keyframes) const;
+    
+    void setCustomInterpolation(customParamInterpolationV1Entry_t func,void* ofxParamHandle);
+    
+    void stringFromInterpolatedValue(double interpolated,std::string* returnValue) const;
+    
+    std::string getStringAtTime(double time, int dimension) const;
+    
+    
+protected:
+    
+    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other) OVERRIDE;
+    
+    virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE ;
+    
+    virtual void animationRemoved_virtual(int dimension) OVERRIDE;
+    
+private:
+    
+    
+    StringAnimationManager* _animation;
+    
+};
+
 
 /**
  * @brief A Knob holder is a class that stores Knobs and interact with them in some way.
  * It serves 2 purpose:
- * 1) It automatically deletes the knobs, you don't have to manually call delete
+ * 1) It is a "factory" for knobs: it creates and destroys them.
  * 2) It calls a set of begin/end valueChanged whenever a knob value changed. It also
  * calls evaluate() which should then trigger an evaluation of the freshly changed value
  * (i.e force a new render).
@@ -1013,7 +928,7 @@ private:
 class KnobHolder {
     
     AppInstance* _app;
-    std::vector< boost::shared_ptr<Knob> > _knobs;
+    std::vector< boost::shared_ptr<KnobI> > _knobs;
     bool _knobsInitialized;
     bool _isSlave;
     
@@ -1031,17 +946,11 @@ public:
     template<typename K>
     boost::shared_ptr<K> createKnob(const std::string &description, int dimension = 1) const WARN_UNUSED_RETURN;
 
-    /**
-     * @brief Clone each knob of "other" into this KnobHolder.
-     * WARNING: other must have exactly the same number of knobs.
-     **/
-    void cloneKnobs(const KnobHolder& other);
-
     AppInstance* getApp() const WARN_UNUSED_RETURN {return _app;}
     
-    boost::shared_ptr<Knob> getKnobByName(const std::string& name) const WARN_UNUSED_RETURN;
+    boost::shared_ptr<KnobI> getKnobByName(const std::string& name) const WARN_UNUSED_RETURN;
     
-    const std::vector< boost::shared_ptr<Knob> >& getKnobs() const WARN_UNUSED_RETURN;
+    const std::vector< boost::shared_ptr<KnobI> >& getKnobs() const WARN_UNUSED_RETURN;
     
     void refreshAfterTimeChange(SequenceTime time);
     
@@ -1056,7 +965,7 @@ public:
      * @brief Called whenever a value changes. It brakcets the call by a begin/end if it was
      * not done already and requests an evaluation (i.e: probably a render).
      **/
-    void notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,Knob* k,bool significant);
+    void notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,KnobI* k,bool significant);
 
     
     /**
@@ -1088,7 +997,7 @@ public:
      * You can overload this to do things when a value is changed. Bear in mind that you can compress
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
-    virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason){(void)k;(void)reason;}
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason){(void)k;(void)reason;}
 
 
     /**
@@ -1096,16 +1005,16 @@ public:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    virtual void evaluate(Knob* knob,bool isSignificant) = 0;
+    virtual void evaluate(KnobI* knob,bool isSignificant) = 0;
     
     /*Add a knob to the vector. This is called by the
      Knob class. Don't call this*/
-    void addKnob(boost::shared_ptr<Knob> k){ _knobs.push_back(k); }
+    void addKnob(boost::shared_ptr<KnobI> k){ _knobs.push_back(k); }
     
     
     /*Removes a knob to the vector. This is called by the
      Knob class. Don't call this*/
-    void removeKnob(Knob* k);
+    void removeKnob(KnobI* k);
         
     void initializeKnobsPublic();
     
@@ -1135,19 +1044,8 @@ private:
     virtual void initializeKnobs() = 0;
 
 
-   };
+};
 
-template <typename T>
-T Knob::getValue(int dimension) const
-{
-    return getValue(dimension).value<T>();
-}
-
-template<typename T>
-T Knob::getValueAtTime(double time,int dimension) const
-{
-    return getValueAtTime(time,dimension).value<T>();
-}
 
 template<typename K>
 boost::shared_ptr<K> KnobHolder::createKnob(const std::string &description, int dimension) const

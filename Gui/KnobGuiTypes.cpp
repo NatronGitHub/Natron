@@ -56,15 +56,15 @@ using std::make_pair;
 
 
 //==========================INT_KNOB_GUI======================================
-Int_KnobGui::Int_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
+Int_KnobGui::Int_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container)
 : KnobGui(knob, container)
 , _slider(0)
 {
-    boost::shared_ptr<Int_Knob> intKnob = boost::dynamic_pointer_cast<Int_Knob>(getKnob());
-    assert(intKnob);
-    QObject::connect(intKnob.get(), SIGNAL(minMaxChanged(int, int, int)), this, SLOT(onMinMaxChanged(int, int, int)));
-    QObject::connect(intKnob.get(), SIGNAL(displayMinMaxChanged(int, int, int)), this, SLOT(onDisplayMinMaxChanged(int, int, int)));
-    QObject::connect(intKnob.get(), SIGNAL(incrementChanged(int, int)), this, SLOT(onIncrementChanged(int, int)));
+    _knob = boost::dynamic_pointer_cast<Int_Knob>(knob);
+    assert(_knob);
+    QObject::connect(_knob.get(), SIGNAL(minMaxChanged(int, int, int)), this, SLOT(onMinMaxChanged(int, int, int)));
+    QObject::connect(_knob.get(), SIGNAL(displayMinMaxChanged(int, int, int)), this, SLOT(onDisplayMinMaxChanged(int, int, int)));
+    QObject::connect(_knob.get(), SIGNAL(incrementChanged(int, int)), this, SLOT(onIncrementChanged(int, int)));
 }
 
 Int_KnobGui::~Int_KnobGui()
@@ -83,25 +83,24 @@ void Int_KnobGui::createWidget(QHBoxLayout* layout)
 {
    
     
-    int dim = getKnob()->getDimension();
+    int dim = _knob->getDimension();
     
     QWidget *container = new QWidget(layout->parentWidget());
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
     container->setLayout(containerLayout);
     containerLayout->setSpacing(3);
     containerLayout->setContentsMargins(0, 0, 0, 0);
-    boost::shared_ptr<Int_Knob> intKnob = boost::dynamic_pointer_cast<Int_Knob>(getKnob());
-    assert(intKnob);
+
     
     if (getKnobsCountOnSameLine() > 1) {
-        intKnob->disableSlider();
+        _knob->disableSlider();
     }
     
     //  const std::vector<int> &maximums = intKnob->getMaximums();
     //    const std::vector<int> &minimums = intKnob->getMinimums();
-    const std::vector<int> &increments = intKnob->getIncrements();
-    const std::vector<int> &displayMins = intKnob->getDisplayMinimums();
-    const std::vector<int> &displayMaxs = intKnob->getDisplayMaximums();
+    const std::vector<int> &increments = _knob->getIncrements();
+    const std::vector<int> &displayMins = _knob->getDisplayMinimums();
+    const std::vector<int> &displayMaxs = _knob->getDisplayMaximums();
     for (int i = 0; i < dim; ++i) {
         QWidget *boxContainer = new QWidget(layout->parentWidget());
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
@@ -111,7 +110,7 @@ void Int_KnobGui::createWidget(QHBoxLayout* layout)
         boxContainerLayout->setSpacing(3);
         QLabel *subDesc = 0;
         if (dim != 1) {
-            subDesc = new QLabel(QString(getKnob()->getDimensionName(i).c_str())+':', boxContainer);
+            subDesc = new QLabel(QString(_knob->getDimensionName(i).c_str())+':', boxContainer);
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::INT_SPINBOX);
@@ -130,11 +129,10 @@ void Int_KnobGui::createWidget(QHBoxLayout* layout)
             box->setToolTip(toolTip());
         }
         boxContainerLayout->addWidget(box);
-        if (getKnob()->getDimension() == 1 && !intKnob->isSliderDisabled()) {
+        if (getKnob()->getDimension() == 1 && !_knob->isSliderDisabled()) {
             
             if ((max - min) < SLIDER_MAX_RANGE && max < INT_MAX && min > INT_MIN) {
-                _slider = new ScaleSliderQWidget(min, max,
-                                          getKnob()->getValue<int>(), Natron::LINEAR_SCALE, layout->parentWidget());
+                _slider = new ScaleSliderQWidget(min, max,_knob->getValue(), Natron::LINEAR_SCALE, layout->parentWidget());
                 if(hasToolTip()) {
                     _slider->setToolTip(toolTip());
                 }
@@ -175,9 +173,9 @@ void Int_KnobGui::onIncrementChanged(int incr, int index)
     _spinBoxes[index].first->setIncrement(incr);
 }
 
-void Int_KnobGui::updateGUI(int dimension, const Variant &variant)
+void Int_KnobGui::updateGUI(int dimension)
 {
-    int v = variant.toInt();
+    int v = _knob->getValue(dimension);
     if (_slider) {
         _slider->seekScalePosition(v);
     }
@@ -202,18 +200,18 @@ void Int_KnobGui::reflectAnimationLevel(int dimension,Natron::AnimationLevel lev
 
 void Int_KnobGui::onSliderValueChanged(double d)
 {
-    assert(getKnob()->getDimension() == 1);
+    assert(_knob->getDimension() == 1);
     _spinBoxes[0].first->setValue(d);
-    pushValueChangedCommand(Variant(d));
+    pushUndoCommand(new KnobUndoCommand<int>(this,_knob->getValue(),(int)d));
 }
 
 void Int_KnobGui::onSpinBoxValueChanged()
 {
-    std::vector<Variant> newValues;
+    std::list<int> newValues;
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
-        newValues.push_back(Variant(_spinBoxes[i].first->value()));
+        newValues.push_back(_spinBoxes[i].first->value());
     }
-    pushValueChangedCommand(newValues);
+    pushUndoCommand(new KnobUndoCommand<int>(this,_knob->getValueForEachDimension_mt_safe(),newValues));
 }
 
 void Int_KnobGui::_hide()
@@ -267,7 +265,15 @@ void Int_KnobGui::setReadOnly(bool readOnly,int dimension) {
     }
 }
 
+boost::shared_ptr<KnobI> Int_KnobGui::getKnob() const { return _knob; }
+
 //==========================BOOL_KNOB_GUI======================================
+
+Bool_KnobGui::Bool_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container)
+: KnobGui(knob, container)
+{
+    _knob = boost::dynamic_pointer_cast<Bool_Knob>(knob);
+}
 
 void Bool_KnobGui::createWidget(QHBoxLayout* layout)
 {
@@ -295,10 +301,9 @@ Bool_KnobGui::~Bool_KnobGui()
 {
     delete _checkBox;
 }
-void Bool_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
+void Bool_KnobGui::updateGUI(int /*dimension*/)
 {
-    bool b = variant.toBool();
-    _checkBox->setChecked(b);
+    _checkBox->setChecked(_knob->getValue());
 }
 
 void Bool_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevel level) {
@@ -320,7 +325,7 @@ void Bool_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLeve
 
 void Bool_KnobGui::onCheckBoxStateChanged(bool b)
 {
-    pushValueChangedCommand(Variant(b));
+    pushUndoCommand(new KnobUndoCommand<bool>(this,_knob->getValue(),b));
 }
 void Bool_KnobGui::_hide()
 {
@@ -342,17 +347,17 @@ void Bool_KnobGui::setReadOnly(bool readOnly,int /*dimension*/) {
     _checkBox->setReadOnly(readOnly);
 }
 
-
+boost::shared_ptr<KnobI> Bool_KnobGui::getKnob() const { return _knob; }
 
 //=============================DOUBLE_KNOB_GUI===================================
-Double_KnobGui::Double_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container), _slider(0)
+Double_KnobGui::Double_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container): KnobGui(knob, container), _slider(0)
 {
-    boost::shared_ptr<Double_Knob> dbl_knob = boost::dynamic_pointer_cast<Double_Knob>(getKnob());
-    assert(dbl_knob);
-    QObject::connect(dbl_knob.get(), SIGNAL(minMaxChanged(double, double, int)), this, SLOT(onMinMaxChanged(double, double, int)));
-    QObject::connect(dbl_knob.get(), SIGNAL(displayMinMaxChanged(double, double, int)), this, SLOT(onDisplayMinMaxChanged(double, double, int)));
-    QObject::connect(dbl_knob.get(), SIGNAL(incrementChanged(double, int)), this, SLOT(onIncrementChanged(double, int)));
-    QObject::connect(dbl_knob.get(), SIGNAL(decimalsChanged(int, int)), this, SLOT(onDecimalsChanged(int, int)));
+    _knob = boost::dynamic_pointer_cast<Double_Knob>(knob);
+    assert(_knob);
+    QObject::connect(_knob.get(), SIGNAL(minMaxChanged(double, double, int)), this, SLOT(onMinMaxChanged(double, double, int)));
+    QObject::connect(_knob.get(), SIGNAL(displayMinMaxChanged(double, double, int)), this, SLOT(onDisplayMinMaxChanged(double, double, int)));
+    QObject::connect(_knob.get(), SIGNAL(incrementChanged(double, int)), this, SLOT(onIncrementChanged(double, int)));
+    QObject::connect(_knob.get(), SIGNAL(decimalsChanged(int, int)), this, SLOT(onDecimalsChanged(int, int)));
 }
 
 Double_KnobGui::~Double_KnobGui()
@@ -374,11 +379,10 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
     container->setLayout(containerLayout);
     containerLayout->setContentsMargins(0, 0, 0, 0);
     containerLayout->setSpacing(3);
-    boost::shared_ptr<Double_Knob> dbl_knob = boost::dynamic_pointer_cast<Double_Knob>(getKnob());
-    assert(dbl_knob);
+
     
     if (getKnobsCountOnSameLine() > 1) {
-        dbl_knob->disableSlider();
+        _knob->disableSlider();
     }
     
     int dim = getKnob()->getDimension();
@@ -386,11 +390,11 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
     
     //  const std::vector<double> &maximums = dbl_knob->getMaximums();
     //    const std::vector<double> &minimums = dbl_knob->getMinimums();
-    const std::vector<double> &increments = dbl_knob->getIncrements();
-    const std::vector<double> &displayMins = dbl_knob->getDisplayMinimums();
-    const std::vector<double> &displayMaxs = dbl_knob->getDisplayMaximums();
+    const std::vector<double> &increments = _knob->getIncrements();
+    const std::vector<double> &displayMins = _knob->getDisplayMinimums();
+    const std::vector<double> &displayMaxs = _knob->getDisplayMaximums();
     
-    const std::vector<int> &decimals = dbl_knob->getDecimals();
+    const std::vector<int> &decimals = _knob->getDecimals();
     for (int i = 0; i < dim; ++i) {
         QWidget *boxContainer = new QWidget(layout->parentWidget());
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
@@ -421,11 +425,10 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
         }
         boxContainerLayout->addWidget(box);
         
-        if (getKnob()->getDimension() == 1 && !dbl_knob->isSliderDisabled()) {
+        if (_knob->getDimension() == 1 && !_knob->isSliderDisabled()) {
 
             if ((max - min) < SLIDER_MAX_RANGE && max < DBL_MAX && min > -DBL_MAX) {
-                _slider = new ScaleSliderQWidget(min, max,
-                                          getKnob()->getValue<double>(), Natron::LINEAR_SCALE, layout->parentWidget());
+                _slider = new ScaleSliderQWidget(min, max,_knob->getValue(), Natron::LINEAR_SCALE, layout->parentWidget());
                 if(hasToolTip()) {
                     _slider->setToolTip(toolTip());
                 }
@@ -467,10 +470,9 @@ void Double_KnobGui::onDecimalsChanged(int deci, int index)
     _spinBoxes[index].first->decimals(deci);
 }
 
-void Double_KnobGui::updateGUI(int dimension, const Variant &variant)
+void Double_KnobGui::updateGUI(int dimension)
 {
-    
-    double v = variant.toDouble();
+    double v = _knob->getValue(dimension);
     if (_slider) {
         _slider->seekScalePosition(v);
     }
@@ -497,15 +499,15 @@ void Double_KnobGui::onSliderValueChanged(double d)
 {
     assert(getKnob()->getDimension() == 1);
     _spinBoxes[0].first->setValue(d);
-    pushValueChangedCommand(Variant(d));
+    pushUndoCommand(new KnobUndoCommand<double>(this,_knob->getValue(),d));
 }
 void Double_KnobGui::onSpinBoxValueChanged()
 {
-    std::vector<Variant> newValues;
+    std::list<double> newValues;
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
-        newValues.push_back(Variant(_spinBoxes[i].first->value()));
+        newValues.push_back(_spinBoxes[i].first->value());
     }
-    pushValueChangedCommand(newValues);
+    pushUndoCommand(new KnobUndoCommand<double>(this,_knob->getValueForEachDimension_mt_safe(),newValues));
 }
 void Double_KnobGui::_hide()
 {
@@ -558,7 +560,15 @@ void Double_KnobGui::setReadOnly(bool readOnly,int dimension) {
     }
 }
 
+boost::shared_ptr<KnobI> Double_KnobGui::getKnob() const { return _knob; }
 //=============================BUTTON_KNOB_GUI===================================
+
+Button_KnobGui::Button_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container)
+: KnobGui(knob, container)
+{
+    _knob = boost::dynamic_pointer_cast<Button_Knob>(knob);
+}
+
 void Button_KnobGui::createWidget(QHBoxLayout* layout)
 {
     _button = new Button(QString(QString(getKnob()->getDescription().c_str())), layout->parentWidget());
@@ -576,7 +586,7 @@ Button_KnobGui::~Button_KnobGui()
 
 void Button_KnobGui::emitValueChanged()
 {
-    getKnob()->onValueChanged(0, Variant(), NULL);
+    dynamic_cast<Button_Knob*>(getKnob().get())->onValueChanged(0,true, NULL);
 }
 void Button_KnobGui::_hide()
 {
@@ -597,12 +607,15 @@ void Button_KnobGui::setReadOnly(bool readOnly,int /*dimension*/) {
     _button->setEnabled(!readOnly);
 }
 
+boost::shared_ptr<KnobI> Button_KnobGui::getKnob() const { return _knob; }
+
 //=============================CHOICE_KNOB_GUI===================================
-Choice_KnobGui::Choice_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container): KnobGui(knob, container)
+Choice_KnobGui::Choice_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container)
+: KnobGui(knob, container)
 {
-    boost::shared_ptr<Choice_Knob> cbKnob = boost::dynamic_pointer_cast<Choice_Knob>(knob);
-    _entries = cbKnob->getEntries();
-    QObject::connect(cbKnob.get(), SIGNAL(populated()), this, SLOT(onEntriesPopulated()));
+    _knob = boost::dynamic_pointer_cast<Choice_Knob>(knob);
+    _entries = _knob->getEntries();
+    QObject::connect(_knob.get(), SIGNAL(populated()), this, SLOT(onEntriesPopulated()));
 }
 
 Choice_KnobGui::~Choice_KnobGui()
@@ -628,7 +641,7 @@ void Choice_KnobGui::createWidget(QHBoxLayout* layout)
 
 void Choice_KnobGui::onCurrentIndexChanged(int i)
 {
-    pushValueChangedCommand(Variant(i));
+    pushUndoCommand(new KnobUndoCommand<int>(this,_knob->getValue(),i));
 }
 
 void Choice_KnobGui::onEntriesPopulated()
@@ -646,14 +659,13 @@ void Choice_KnobGui::onEntriesPopulated()
     _comboBox->setCurrentIndex_no_emit(activeIndex);
 }
 
-void Choice_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
+void Choice_KnobGui::updateGUI(int /*dimension*/)
 {
-    int i = variant.toInt();
     ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
     ///change the internal value of the knob again...
     ///The slot connected to onCurrentIndexChanged is reserved to catch user interaction with the combobox.
     ///This function is called in response to an internal change.
-    _comboBox->setCurrentIndex_no_emit(i);
+    _comboBox->setCurrentIndex_no_emit(_knob->getValue());
 }
 
 void Choice_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevel level) {
@@ -694,6 +706,8 @@ void Choice_KnobGui::setReadOnly(bool readOnly,int /*dimension*/)
 {
     _comboBox->setReadOnly(readOnly);
 }
+
+boost::shared_ptr<KnobI> Choice_KnobGui::getKnob() const { return _knob; }
 //=============================TABLE_KNOB_GUI===================================
 
 //ComboBoxDelegate::ComboBoxDelegate(Table_KnobGui* tableKnob,QObject *parent)
@@ -779,7 +793,7 @@ void Choice_KnobGui::setReadOnly(bool readOnly,int /*dimension*/)
 //}
 
 //
-//Table_KnobGui::Table_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
+//Table_KnobGui::Table_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container)
 //: KnobGui(knob,container)
 ////, _tableComboBoxDelegate(0)
 ////, _table(0)
@@ -919,7 +933,7 @@ void Choice_KnobGui::setReadOnly(bool readOnly,int /*dimension*/)
 //    _container->setEnabled(getKnob()->isEnabled());
 //}
 //
-//void Table_KnobGui::updateGUI(int dimension, const Variant &variant) {
+//void Table_KnobGui::updateGUI(int dimension) {
 //    if(dimension < (int)_choices.size()){
 //        _choices[dimension]->setCurrentText(_choices[dimension]->itemText(variant.toInt()));
 //    }
@@ -927,6 +941,13 @@ void Choice_KnobGui::setReadOnly(bool readOnly,int /*dimension*/)
 
 
 //=============================SEPARATOR_KNOB_GUI===================================
+
+Separator_KnobGui::Separator_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container)
+: KnobGui(knob, container)
+{
+    _knob = boost::dynamic_pointer_cast<Separator_Knob>(knob);
+}
+
 void Separator_KnobGui::createWidget(QHBoxLayout* layout)
 {
 
@@ -954,10 +975,10 @@ void Separator_KnobGui::_show()
 }
 
 
-
+boost::shared_ptr<KnobI> Separator_KnobGui::getKnob() const { return _knob; }
 //=============================RGBA_KNOB_GUI===================================
 
-Color_KnobGui::Color_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
+Color_KnobGui::Color_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container)
 : KnobGui(knob, container)
 , mainContainer(NULL)
 , mainLayout(NULL)
@@ -979,12 +1000,12 @@ Color_KnobGui::Color_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *contai
 , _slider(NULL)
 , _dimension(knob->getDimension())
 {
-    boost::shared_ptr<Color_Knob> col_knob = boost::dynamic_pointer_cast<Color_Knob>(getKnob());
-    assert(col_knob);
-    QObject::connect(col_knob.get(), SIGNAL(minMaxChanged(double, double, int)), this, SLOT(onMinMaxChanged(double, double, int)));
-    QObject::connect(col_knob.get(), SIGNAL(displayMinMaxChanged(double, double, int)), this, SLOT(onDisplayMinMaxChanged(double, double, int)));
-    QObject::connect(this, SIGNAL(dimensionSwitchToggled(bool)), col_knob.get(), SLOT(onDimensionSwitchToggled(bool)));
-    QObject::connect( col_knob.get(), SIGNAL(mustActivateAllDimensions()),this, SLOT(onMustShowAllDimension()));
+    _knob = boost::dynamic_pointer_cast<Color_Knob>(knob);
+    assert(_knob);
+    QObject::connect(_knob.get(), SIGNAL(minMaxChanged(double, double, int)), this, SLOT(onMinMaxChanged(double, double, int)));
+    QObject::connect(_knob.get(), SIGNAL(displayMinMaxChanged(double, double, int)), this, SLOT(onDisplayMinMaxChanged(double, double, int)));
+    QObject::connect(this, SIGNAL(dimensionSwitchToggled(bool)), _knob.get(), SLOT(onDimensionSwitchToggled(bool)));
+    QObject::connect( _knob.get(), SIGNAL(mustActivateAllDimensions()),this, SLOT(onMustShowAllDimension()));
 
     
 }
@@ -998,8 +1019,6 @@ void
 Color_KnobGui::createWidget(QHBoxLayout* layout)
 {
     
-    boost::shared_ptr< Color_Knob> colorKnob = boost::dynamic_pointer_cast<Color_Knob>(getKnob());
-    assert(colorKnob);
     
     mainContainer = new QWidget(layout->parentWidget());
     mainLayout = new QHBoxLayout(mainContainer);
@@ -1012,8 +1031,8 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     boxLayout->setContentsMargins(0, 0, 0, 0);
     boxLayout->setSpacing(1);
     
-    const std::vector<double>& minimums = colorKnob->getDisplayMinimums();
-    const std::vector<double>& maximums = colorKnob->getDisplayMaximums();
+    const std::vector<double>& minimums = _knob->getDisplayMinimums();
+    const std::vector<double>& maximums = _knob->getDisplayMaximums();
     
     _rBox = new SpinBox(boxContainers, SpinBox::DOUBLE_SPINBOX);
     QObject::connect(_rBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged()));
@@ -1040,7 +1059,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     if(hasToolTip()) {
         _rBox->setToolTip(toolTip());
     }
-    _rLabel = new QLabel(QString(colorKnob->getDimensionName(0).c_str()).toLower(), boxContainers);
+    _rLabel = new QLabel(QString(_knob->getDimensionName(0).c_str()).toLower(), boxContainers);
     if(hasToolTip()) {
         _rLabel->setToolTip(toolTip());
     }
@@ -1058,7 +1077,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         if(hasToolTip()) {
             _gBox->setToolTip(toolTip());
         }
-        _gLabel = new QLabel(QString(colorKnob->getDimensionName(1).c_str()).toLower(), boxContainers);
+        _gLabel = new QLabel(QString(_knob->getDimensionName(1).c_str()).toLower(), boxContainers);
         if(hasToolTip()) {
             _gLabel->setToolTip(toolTip());
         }
@@ -1076,7 +1095,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         if(hasToolTip()) {
             _bBox->setToolTip(toolTip());
         }
-        _bLabel = new QLabel(QString(colorKnob->getDimensionName(2).c_str()).toLower(), boxContainers);
+        _bLabel = new QLabel(QString(_knob->getDimensionName(2).c_str()).toLower(), boxContainers);
         if(hasToolTip()) {
             _bLabel->setToolTip(toolTip());
         }
@@ -1095,7 +1114,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         if(hasToolTip()) {
             _aBox->setToolTip(toolTip());
         }
-        _aLabel = new QLabel(QString(colorKnob->getDimensionName(3).c_str()).toLower(), boxContainers);
+        _aLabel = new QLabel(QString(_knob->getDimensionName(3).c_str()).toLower(), boxContainers);
         if(hasToolTip()) {
             _aLabel->setToolTip(toolTip());
         }
@@ -1103,8 +1122,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         boxLayout->addWidget(_aBox);
     }
     
-    _slider = new ScaleSliderQWidget(minimums[0], maximums[0],
-                           getKnob()->getValue<double>(), Natron::LINEAR_SCALE, boxContainers);
+    _slider = new ScaleSliderQWidget(minimums[0], maximums[0],_knob->getValue(), Natron::LINEAR_SCALE, boxContainers);
     boxLayout->addWidget(_slider);
     QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
     _slider->hide();
@@ -1193,14 +1211,15 @@ void Color_KnobGui::onDimensionSwitchClicked()
             }
         }
         if (_dimension > 1) {
-            Variant value(_rBox->value());
-            getKnob()->beginValueChange(Natron::PLUGIN_EDITED);
-            getKnob()->setValue(value, 1);
-            getKnob()->setValue(value, 2);
+            boost::shared_ptr<Color_Knob> k = boost::dynamic_pointer_cast<Color_Knob>(getKnob());
+            double value(_rBox->value());
+            k->beginValueChange(Natron::PLUGIN_EDITED);
+            k->setValue(value, 1);
+            k->setValue(value, 2);
             if (_dimension > 3) {
-                getKnob()->setValue(value, 3);
+                k->setValue(value, 3);
             }
-            getKnob()->endValueChange();
+            k->endValueChange();
         }
 
     }
@@ -1285,11 +1304,10 @@ Color_KnobGui::setEnabled()
 }
 
 void
-Color_KnobGui::updateGUI(int dimension, const Variant &variant)
+Color_KnobGui::updateGUI(int dimension)
 {
     assert(dimension < _dimension && dimension >= 0 && dimension <= 3);
-    
-    double value = variant.toDouble();
+    double value = _knob->getValue(dimension);
     switch (dimension) {
         case 0:
             _rBox->setValue(value);
@@ -1454,30 +1472,30 @@ Color_KnobGui::onColorChanged()
 //    color.setRedF(Clamp(_rBox->value(),0.f,1.f));
 //    color.setGreenF(color.redF());
 //    color.setBlueF(color.greenF());
-    std::vector<Variant> newValues;
-    newValues.push_back(Variant(_rBox->value()));
+    std::list<double> newValues;
+    newValues.push_back(_rBox->value());
     if (_dimensionSwitchButton->isChecked()) {
         if (_dimension >= 3) {
             //color.setGreenF(Clamp(_gBox->value(),0.f,1.f));
             //      color.setBlueF(Clamp(_bBox->value(),0.f,1.f));
-            newValues.push_back(Variant(_gBox->value()));
-            newValues.push_back(Variant(_bBox->value()));
+            newValues.push_back(_gBox->value());
+            newValues.push_back(_bBox->value());
         }
         if (_dimension >= 4) {
             //     color.setAlphaF(Clamp(_aBox->value(),0.f,1.f));
-            newValues.push_back(Variant(_aBox->value()));
+            newValues.push_back(_aBox->value());
         }
     } else {
         if (_dimension >= 3) {
-            newValues.push_back(Variant(_rBox->value()));
-            newValues.push_back(Variant(_rBox->value()));
+            newValues.push_back(_rBox->value());
+            newValues.push_back(_rBox->value());
         }
         if (_dimension >= 4) {
-            newValues.push_back(Variant(_rBox->value()));
+            newValues.push_back(_rBox->value());
         }
     }
     
-    pushUndoCommand(new KnobUndoCommand(this, getKnob()->getValueForEachDimension(), newValues));
+    pushUndoCommand(new KnobUndoCommand<double>(this, _knob->getValueForEachDimension_mt_safe(), newValues));
 }
 
 
@@ -1631,6 +1649,8 @@ void Color_KnobGui::setReadOnly(bool readOnly,int dimension) {
         assert(false); //< dim invalid
     }
 }
+
+boost::shared_ptr<KnobI> Color_KnobGui::getKnob() const { return _knob; }
 //=============================STRING_KNOB_GUI===================================
 
 void AnimatingTextEdit::setAnimation(int v) {
@@ -1676,21 +1696,20 @@ void AnimatingTextEdit::paintEvent(QPaintEvent* e) {
     QTextEdit::paintEvent(e);
 }
 
-String_KnobGui::String_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
+String_KnobGui::String_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container)
 : KnobGui(knob, container)
 , _lineEdit(0)
 , _textEdit(0)
 , _label(0)
 {
+    _knob = boost::dynamic_pointer_cast<String_Knob>(knob);
 }
 
 void String_KnobGui::createWidget(QHBoxLayout* layout)
 {
-    boost::shared_ptr<String_Knob> strKnob = boost::dynamic_pointer_cast<String_Knob>(getKnob());
-    assert(strKnob);
     
 
-    if (strKnob->isMultiLine()) {
+    if (_knob->isMultiLine()) {
         _textEdit = new AnimatingTextEdit(layout->parentWidget());
         if (hasToolTip()) {
             _textEdit->setToolTip(toolTip());
@@ -1703,7 +1722,7 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(_textEdit,0);
 
-    } else if (strKnob->isLabel()) {
+    } else if (_knob->isLabel()) {
         _label = new QLabel(layout->parentWidget());
         if (hasToolTip()) {
             _label->setToolTip(toolTip());
@@ -1720,7 +1739,7 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
         layout->addWidget(_lineEdit);
         QObject::connect(_lineEdit, SIGNAL(editingFinished()), this, SLOT(onLineChanged()));
         
-        if (strKnob->isCustomKnob()) {
+        if (_knob->isCustomKnob()) {
             _lineEdit->setReadOnly(true);
         }
         
@@ -1738,49 +1757,46 @@ String_KnobGui::~String_KnobGui()
 
 void String_KnobGui::onLineChanged()
 {
-    pushValueChangedCommand(Variant(_lineEdit->text()));
+    pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),_lineEdit->text().toStdString()));
 }
 
 void String_KnobGui::onTextChanged()
 {
-    pushValueChangedCommand(Variant(_textEdit->toPlainText()));
+    pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),_textEdit->toPlainText().toStdString()));
 }
 
 
-void String_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
+void String_KnobGui::updateGUI(int /*dimension*/)
 {
-    boost::shared_ptr<String_Knob> strKnob = boost::dynamic_pointer_cast<String_Knob>(getKnob());
-    assert(strKnob);
 
-    if (strKnob->isMultiLine()) {
+    std::string value = _knob->getValue();
+    if (_knob->isMultiLine()) {
         assert(_textEdit);
         QObject::disconnect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
         QTextCursor cursor = _textEdit->textCursor();
         int pos = cursor.position();
         _textEdit->clear();
-        QString txt = variant.toString();
+        QString txt = value.c_str();
         _textEdit->setPlainText(txt);
         cursor.setPosition(pos);
         _textEdit->setTextCursor(cursor);
         QObject::connect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
-    } else if (strKnob->isLabel()) {
+    } else if (_knob->isLabel()) {
         assert(_label);
-        QString txt = variant.toString();
+        QString txt = value.c_str();
         _label->setText(txt);
     } else {
         assert(_lineEdit);
-        _lineEdit->setText(variant.toString());
+        _lineEdit->setText(value.c_str());
     }
 }
 void String_KnobGui::_hide()
 {
-    boost::shared_ptr<String_Knob> strKnob = boost::dynamic_pointer_cast<String_Knob>(getKnob());
-    assert(strKnob);
-
-    if (strKnob->isMultiLine()) {
+   
+    if (_knob->isMultiLine()) {
         assert(_textEdit);
         _textEdit->hide();
-    } else if (strKnob->isLabel()) {
+    } else if (_knob->isLabel()) {
         assert(_label);
         _label->hide();
     } else {
@@ -1792,13 +1808,10 @@ void String_KnobGui::_hide()
 
 void String_KnobGui::_show()
 {
-    boost::shared_ptr<String_Knob> strKnob = boost::dynamic_pointer_cast<String_Knob>(getKnob());
-    assert(strKnob);
-
-    if (strKnob->isMultiLine()) {
+    if (_knob->isMultiLine()) {
         assert(_textEdit);
         _textEdit->show();
-    } else if (strKnob->isLabel()) {
+    } else if (_knob->isLabel()) {
         assert(_label);
         _label->show();
     } else {
@@ -1808,16 +1821,13 @@ void String_KnobGui::_show()
 }
 void String_KnobGui::setEnabled()
 {
-    bool b = getKnob()->isEnabled(0);
-    boost::shared_ptr<String_Knob> strKnob = boost::dynamic_pointer_cast<String_Knob>(getKnob());
-    assert(strKnob);
-
-    if (strKnob->isMultiLine()) {
+    bool b = _knob->isEnabled(0);
+    if (_knob->isMultiLine()) {
         assert(_textEdit);
         //_textEdit->setEnabled(b);
         //_textEdit->setReadOnly(!b);
         _textEdit->setReadOnlyNatron(!b);
-    } else if (strKnob->isLabel()) {
+    } else if (_knob->isLabel()) {
         assert(_label);
         _label->setEnabled(b);
     } else {
@@ -1829,15 +1839,12 @@ void String_KnobGui::setEnabled()
 
 void String_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevel level)
 {
-    boost::shared_ptr<String_Knob> strKnob = boost::dynamic_pointer_cast<String_Knob>(getKnob());
-    assert(strKnob);
-
     switch (level) {
         case Natron::NO_ANIMATION:
-            if (strKnob->isMultiLine()) {
+            if (_knob->isMultiLine()) {
                 assert(_textEdit);
                 _textEdit->setAnimation(0);
-            } else if (strKnob->isLabel()) {
+            } else if (_knob->isLabel()) {
                 assert(_label);
             } else {
                 assert(_lineEdit);
@@ -1845,10 +1852,10 @@ void String_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLe
             }
             break;
         case Natron::INTERPOLATED_VALUE:
-            if (strKnob->isMultiLine()) {
+            if (_knob->isMultiLine()) {
                 assert(_textEdit);
                 _textEdit->setAnimation(1);
-            } else if (strKnob->isLabel()) {
+            } else if (_knob->isLabel()) {
                 assert(_label);
             } else {
                 assert(_lineEdit);
@@ -1856,10 +1863,10 @@ void String_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLe
             }
             break;
         case Natron::ON_KEYFRAME:
-            if (strKnob->isMultiLine()) {
+            if (_knob->isMultiLine()) {
                 assert(_textEdit);
                 _textEdit->setAnimation(2);
-            } else if (strKnob->isLabel()) {
+            } else if (_knob->isLabel()) {
                 assert(_label);
             } else {
                 assert(_lineEdit);
@@ -1881,14 +1888,14 @@ void String_KnobGui::setReadOnly(bool readOnly, int /*dimension*/) {
 }
 
 bool String_KnobGui::showDescriptionLabel() const {
-    boost::shared_ptr<String_Knob> strKnob = boost::dynamic_pointer_cast<String_Knob>(getKnob());
-    assert(strKnob);
-    if (strKnob->isLabel()) {
+    if (_knob->isLabel()) {
         return false;
     } else {
         return true;
     }
 }
+
+boost::shared_ptr<KnobI> String_KnobGui::getKnob() const { return _knob; }
 //=============================GROUP_KNOB_GUI===================================
 GroupBoxLabel::GroupBoxLabel(QWidget *parent):
 QLabel(parent),
@@ -1908,6 +1915,13 @@ void GroupBoxLabel::setChecked(bool b)
         appPTR->getIcon(NATRON_PIXMAP_GROUPBOX_FOLDED, &pix);
     }
     setPixmap(pix);
+}
+
+Group_KnobGui::Group_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container)
+: KnobGui(knob, container)
+, _checked(false) {
+
+    _knob = boost::dynamic_pointer_cast<Group_Knob>(knob);
 }
 
 Group_KnobGui::~Group_KnobGui()
@@ -1978,9 +1992,9 @@ bool Group_KnobGui::eventFilter(QObject */*target*/, QEvent */*event*/) {
 }
 
 
-void Group_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
+void Group_KnobGui::updateGUI(int /*dimension*/)
 {
-    bool b = variant.toBool();
+    bool b = _knob->getValue();
     setChecked(b);
     _button->setChecked(b);
 }
@@ -1997,7 +2011,7 @@ void Group_KnobGui::_hide()
 
 void Group_KnobGui::_show()
 {
-    if (getKnob()->getIsSecret()) {
+    if (_knob->getIsSecret()) {
         return;
     }
     _button->show();
@@ -2011,7 +2025,7 @@ void Group_KnobGui::_show()
 }
 
 void Group_KnobGui::setEnabled() {
-    bool enabled = getKnob()->isEnabled(0);
+    bool enabled = _knob->isEnabled(0);
     _button->setEnabled(enabled);
     if (enabled) {
         for (U32 i = 0; i < _childrenToEnable.size(); ++i) {
@@ -2035,17 +2049,17 @@ void Group_KnobGui::setEnabled() {
     }
 }
 
-
+boost::shared_ptr<KnobI> Group_KnobGui::getKnob() const { return _knob; }
 //=============================Parametric_KnobGui===================================
 
-Parametric_KnobGui::Parametric_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
+Parametric_KnobGui::Parametric_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container)
 : KnobGui(knob, container)
 , _curveWidget(NULL)
 , _tree(NULL)
 , _resetButton(NULL)
 , _curves()
 {
-    
+    _knob = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
 }
 
 Parametric_KnobGui::~Parametric_KnobGui(){
@@ -2055,9 +2069,8 @@ Parametric_KnobGui::~Parametric_KnobGui(){
 
 void Parametric_KnobGui::createWidget(QHBoxLayout* layout) {
     
-    boost::shared_ptr<Parametric_Knob> parametricKnob = boost::dynamic_pointer_cast<Parametric_Knob>(getKnob());
     
-    QObject::connect(parametricKnob.get(), SIGNAL(curveChanged(int)), this, SLOT(onCurveChanged(int)));
+    QObject::connect(_knob.get(), SIGNAL(curveChanged(int)), this, SLOT(onCurveChanged(int)));
     
     layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     QWidget* treeColumn = new QWidget(layout->parentWidget());
@@ -2089,15 +2102,15 @@ void Parametric_KnobGui::createWidget(QHBoxLayout* layout) {
     
     
     std::vector<CurveGui*> visibleCurves;
-    for (int i = 0; i < getKnob()->getDimension(); ++i) {
-        QString curveName = parametricKnob->getDimensionName(i).c_str();
-        CurveGui* curve =  _curveWidget->createCurve(parametricKnob->getParametricCurve(i),
+    for (int i = 0; i < _knob->getDimension(); ++i) {
+        QString curveName = _knob->getDimensionName(i).c_str();
+        CurveGui* curve =  _curveWidget->createCurve(_knob->getParametricCurve(i),
                                                      this,
                                                      i,
                                                      curveName);
         QColor color;
         double r,g,b;
-        parametricKnob->getCurveColor(i, &r, &g, &b);
+        _knob->getCurveColor(i, &r, &g, &b);
         color.setRedF(r);
         color.setGreenF(g);
         color.setBlueF(b);
@@ -2138,7 +2151,7 @@ void Parametric_KnobGui::setEnabled() {
 }
 
 
-void Parametric_KnobGui::updateGUI(int /*dimension*/, const Variant &/*variant*/) {
+void Parametric_KnobGui::updateGUI(int /*dimension*/) {
     _curveWidget->update();
 }
 
@@ -2189,5 +2202,7 @@ void Parametric_KnobGui::resetSelectedCurves(){
             }
         }
     }
-    boost::dynamic_pointer_cast<Parametric_Knob>(getKnob())->resetToDefault(curveIndexes);
+    _knob->resetToDefault(curveIndexes);
 }
+
+boost::shared_ptr<KnobI> Parametric_KnobGui::getKnob() const { return _knob; }

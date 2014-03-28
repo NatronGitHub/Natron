@@ -14,6 +14,7 @@
 #define GUIAPPLICATIONMANAGER_H
 
 #include "Engine/AppManager.h"
+#include "Engine/Variant.h"
 
 #if defined(appPTR)
 #undef appPTR
@@ -26,9 +27,10 @@ class QCursor;
 
 class PluginGroupNode;
 class DockablePanel;
-class Knob;
+class KnobI;
 class KnobGui;
 class KnobSerialization;
+class Curve;
 
 struct GuiApplicationManagerPrivate;
 class GuiApplicationManager : public AppManager
@@ -48,11 +50,21 @@ public:
     
     void getIcon(Natron::PixmapEnum e,QPixmap* pix) const;
     
-    void setKnobClipBoard(const KnobSerialization& s,bool copyAnimation,int dimension);
+    void setKnobClipBoard(bool copyAnimation,int dimension,
+                          const std::list<Variant>& values,
+                          const std::list<boost::shared_ptr<Curve> >& animation,
+                          const std::map<int,std::string>& stringAnimation,
+                          const std::list<boost::shared_ptr<Curve> >& parametricCurves);
+    
+    
+    void getKnobClipBoard(bool* copyAnimation,int* dimension,
+                          std::list<Variant>* values,
+                          std::list<boost::shared_ptr<Curve> >* animation,
+                          std::map<int,std::string>* stringAnimation,
+                          std::list<boost::shared_ptr<Curve> >* parametricCurves) const;
     
     bool isClipBoardEmpty() const;
-    
-    void getKnobClipBoard(KnobSerialization* k,bool* copyAnimation,int* dimension) const;
+
     
     void updateAllRecentFileMenus();
 
@@ -62,7 +74,7 @@ public:
     
     virtual void setLoadingStatus(const QString& str) OVERRIDE FINAL;
     
-    KnobGui* createGuiForKnob(boost::shared_ptr<Knob> knob, DockablePanel *container) const;
+    KnobGui* createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const;
     
 public slots:
     

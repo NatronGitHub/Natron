@@ -45,7 +45,10 @@ CLANG_DIAG_ON(deprecated)
 using namespace Natron;
 
 struct KnobsClipBoard {
-    KnobSerialization k; //< the serialized knob to copy
+    std::list<Variant> values; //< values
+    std::list< boost::shared_ptr<Curve> > curves; //< animation
+    std::list< boost::shared_ptr<Curve> > parametricCurves; //< for parametric knobs
+    std::map<int,std::string> stringAnimation; //< for animating string knobs
     bool isEmpty; //< is the clipboard empty
     bool copyAnimation; //< should we copy all the animation or not
     int dimension;//< -1 if all dims, otherwise the dim index
@@ -377,21 +380,40 @@ void GuiApplicationManager::hideSplashScreen() {
 }
 
 
-void GuiApplicationManager::setKnobClipBoard(const KnobSerialization& s,bool copyAnimation,int dimension) {
-    _imp->_knobsClipBoard->k = s;
-    _imp->_knobsClipBoard->copyAnimation = copyAnimation;
-    _imp->_knobsClipBoard->dimension = dimension;
-    _imp->_knobsClipBoard->isEmpty = false;
-}
-
 bool GuiApplicationManager::isClipBoardEmpty() const{
     return  _imp->_knobsClipBoard->isEmpty;
 }
 
-void GuiApplicationManager::getKnobClipBoard(KnobSerialization* k,bool* copyAnimation,int* dimension) const{
-    *k = _imp->_knobsClipBoard->k;
+
+void GuiApplicationManager::setKnobClipBoard(bool copyAnimation,int dimension,
+                      const std::list<Variant>& values,
+                      const std::list<boost::shared_ptr<Curve> >& animation,
+                      const std::map<int,std::string>& stringAnimation,
+                      const std::list<boost::shared_ptr<Curve> >& parametricCurves)
+{
+    _imp->_knobsClipBoard->copyAnimation = copyAnimation;
+    _imp->_knobsClipBoard->dimension = dimension;
+    _imp->_knobsClipBoard->isEmpty = false;
+    _imp->_knobsClipBoard->values = values;
+    _imp->_knobsClipBoard->curves = animation;
+    _imp->_knobsClipBoard->stringAnimation = stringAnimation;
+    _imp->_knobsClipBoard->parametricCurves = parametricCurves;
+    
+}
+
+void GuiApplicationManager::getKnobClipBoard(bool* copyAnimation,int* dimension,
+                      std::list<Variant>* values,
+                      std::list<boost::shared_ptr<Curve> >* animation,
+                      std::map<int,std::string>* stringAnimation,
+                      std::list<boost::shared_ptr<Curve> >* parametricCurves) const
+{
     *copyAnimation = _imp->_knobsClipBoard->copyAnimation;
     *dimension = _imp->_knobsClipBoard->dimension;
+    *values = _imp->_knobsClipBoard->values;
+    *animation = _imp->_knobsClipBoard->curves;
+    *stringAnimation = _imp->_knobsClipBoard->stringAnimation;
+    *parametricCurves = _imp->_knobsClipBoard->parametricCurves;
+    
 }
 
 void GuiApplicationManager::updateAllRecentFileMenus() {
@@ -500,7 +522,7 @@ AppInstance* GuiApplicationManager::makeNewInstance(int appID) const {
     return new GuiAppInstance(appID);
 }
 
-KnobGui* GuiApplicationManager::createGuiForKnob(boost::shared_ptr<Knob> knob, DockablePanel *container) const {
+KnobGui* GuiApplicationManager::createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const {
     return _imp->_knobGuiFactory->createGuiForKnob(knob,container);
 }
 

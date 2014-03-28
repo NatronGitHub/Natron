@@ -210,18 +210,21 @@ DockablePanel::~DockablePanel(){
     
     ///Delete the knob gui if they weren't before
     ///normally the onKnobDeletion() function should have cleared them
-    for(std::map<boost::shared_ptr<Knob>,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it){
+    for(std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it){
         if(it->second){
-            QObject::disconnect(it->first.get(),SIGNAL(deleted()),this,SLOT(onKnobDeletion()));
+            KnobHelper* helper = dynamic_cast<KnobHelper*>(it->first.get());
+            QObject::disconnect(helper->getSignalSlotHandler().get(),SIGNAL(deleted()),this,SLOT(onKnobDeletion()));
             delete it->second;
         }
     }
 }
 
 void DockablePanel::onRestoreDefaultsButtonClicked() {
-    for(std::map<boost::shared_ptr<Knob>,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it) {
+    for(std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it) {
         for (int i = 0; i < it->first->getDimension(); ++i) {
-            it->first->resetToDefaultValue(i);
+            if (it->first->typeName() != Button_Knob::typeNameStatic()) {
+                it->first->resetToDefaultValue(i);
+            }
         }
     }
 }
@@ -263,7 +266,7 @@ void DockablePanel::onLineEditNameEditingFinished() {
     emit nameChanged(_nameLineEdit->text());
 }
 
-void DockablePanel::initializeKnobVector(const std::vector< boost::shared_ptr< Knob> >& knobs,bool onlyTopLevelKnobs) {
+void DockablePanel::initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> >& knobs,bool onlyTopLevelKnobs) {
     QWidget* lastRowWidget = 0;
     for(U32 i = 0 ; i < knobs.size(); ++i) {
         
@@ -275,7 +278,7 @@ void DockablePanel::initializeKnobVector(const std::vector< boost::shared_ptr< K
             boost::shared_ptr<Tab_Knob> isTab = boost::dynamic_pointer_cast<Tab_Knob>(knobs[i]);
             
             ////The knob  will have a vector of all other knobs on the same line.
-            std::vector< boost::shared_ptr< Knob > > knobsOnSameLine;
+            std::vector< boost::shared_ptr< KnobI > > knobsOnSameLine;
             
             if (!isGroup && !isTab) { //< a knob with children (i.e a group) cannot have children on the same line
                 if (i > 0 && knobs[i-1]->isNewLineTurnedOff()) {
@@ -314,8 +317,8 @@ void DockablePanel::initializeKnobs() {
 }
 
 
-KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool makeNewLine,QWidget* lastRowWidget,
-                                            const std::vector< boost::shared_ptr< Knob > >& knobsOnSameLine) {
+KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<KnobI> knob,bool makeNewLine,QWidget* lastRowWidget,
+                                            const std::vector< boost::shared_ptr< KnobI > >& knobsOnSameLine) {
     
     assert(knob);
     KnobGui* ret = 0;
@@ -332,13 +335,14 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool ma
         addTab(tabName);
 
     } else {
-        for (std::map<boost::shared_ptr<Knob>,KnobGui*>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
+        for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
             if(it->first == knob){
                 return it->second;
             }
         }
         
-        QObject::connect(knob.get(),SIGNAL(deleted()),this,SLOT(onKnobDeletion()));
+        KnobHelper* helper = dynamic_cast<KnobHelper*>(knob.get());
+        QObject::connect(helper->getSignalSlotHandler().get(),SIGNAL(deleted()),this,SLOT(onKnobDeletion()));
         
         ret =  appPTR->createGuiForKnob(knob,this);
         if (!ret) {
@@ -355,8 +359,8 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool ma
             std::map<QString,std::pair<QWidget*,int> >::iterator parentTab = _tabs.end() ;
             
             
-            boost::shared_ptr<Knob> parentKnob = knob->getParentKnob();
-            boost::shared_ptr<Knob> parentKnobTmp = parentKnob;
+            boost::shared_ptr<KnobI> parentKnob = knob->getParentKnob();
+            boost::shared_ptr<KnobI> parentKnobTmp = parentKnob;
             boost::shared_ptr<Tab_Knob> parentIsTab = boost::dynamic_pointer_cast<Tab_Knob>(parentKnob);
             while (parentKnobTmp) {
                 parentKnobTmp = parentKnobTmp->getParentKnob();
@@ -626,10 +630,11 @@ Button* DockablePanel::insertHeaderButton(int headerPosition){
 
 void DockablePanel::onKnobDeletion(){
     
-    Knob* knob = qobject_cast<Knob*>(sender());
-    if (knob) {
-        for(std::map<boost::shared_ptr<Knob>,KnobGui*>::iterator it = _knobs.begin();it!=_knobs.end();++it){
-            if (it->first.get() == knob) {
+    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
+    if (handler) {
+        for(std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _knobs.begin();it!=_knobs.end();++it){
+            KnobHelper* helper = dynamic_cast<KnobHelper*>(it->first.get());
+            if (helper->getSignalSlotHandler().get() == handler) {
                 if(it->second){
                     delete it->second;
                 }

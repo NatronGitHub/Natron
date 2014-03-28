@@ -1448,7 +1448,7 @@ void Gui::createReader(){
             if (!n) {
                 return;
             }
-            const std::vector<boost::shared_ptr<Knob> >& knobs = n->getKnobs();
+            const std::vector<boost::shared_ptr<KnobI> >& knobs = n->getKnobs();
             for (U32 i = 0; i < knobs.size(); ++i) {
                 if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
                     boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
@@ -1492,13 +1492,13 @@ void Gui::createWriter(){
                 return;
             }
 
-            const std::vector<boost::shared_ptr<Knob> >& knobs = n->getKnobs();
+            const std::vector<boost::shared_ptr<KnobI> >& knobs = n->getKnobs();
             for (U32 i = 0; i < knobs.size(); ++i) {
                 if (knobs[i]->typeName() == OutputFile_Knob::typeNameStatic()) {
                     boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
                     assert(fk);
                     if(fk->isOutputImageFile()){
-                        fk->setValue<QString>(file);
+                        fk->setValue(file.toStdString(),0);
                         break;
                     }
                 }

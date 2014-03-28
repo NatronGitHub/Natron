@@ -46,9 +46,9 @@ public:
     
     virtual ~Settings(){}
         
-    virtual void evaluate(Knob* /*knob*/,bool /*isSignificant*/) OVERRIDE FINAL {}
+    virtual void evaluate(KnobI* /*knob*/,bool /*isSignificant*/) OVERRIDE FINAL {}
     
-    virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason) OVERRIDE FINAL;
     
     int getViewersBitDepth() const;
     

@@ -25,8 +25,10 @@ CLANG_DIAG_ON(deprecated)
 class QHBoxLayout;
 
 // Engine
-class Knob;
-class Variant;
+class KnobI;
+class File_Knob;
+class OutputFile_Knob;
+class Path_Knob;
 
 // Gui
 class LineEdit;
@@ -42,14 +44,15 @@ class File_KnobGui: public KnobGui
     friend class File_Knob_UndoCommand;
 public:
 
-    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container) {
         return new File_KnobGui(knob, container);
     }
 
-    File_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
+    File_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container);
 
     virtual ~File_KnobGui() OVERRIDE;
 
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 public slots:
 
     void onReturnPressed();
@@ -69,7 +72,7 @@ private:
     
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
 
-    virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
+    virtual void updateGUI(int dimension) OVERRIDE FINAL;
 
 
 private:
@@ -79,6 +82,7 @@ private:
     LineEdit *_lineEdit;
     Button *_openFileButton;
     QString _lastOpened;
+    boost::shared_ptr<File_Knob> _knob;
 };
 
 
@@ -88,13 +92,15 @@ class OutputFile_KnobGui : public KnobGui
     Q_OBJECT
 public:
 
-    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container) {
         return new OutputFile_KnobGui(knob, container);
     }
 
-    OutputFile_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
+    OutputFile_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container);
 
     virtual ~OutputFile_KnobGui() OVERRIDE;
+    
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
 public slots:
 
@@ -115,7 +121,7 @@ private:
 
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     
-    virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
+    virtual void updateGUI(int dimension) OVERRIDE FINAL;
 
     void updateLastOpened(const QString &str);
 
@@ -123,6 +129,7 @@ private:
     LineEdit *_lineEdit;
     Button *_openFileButton;
     QString _lastOpened;
+    boost::shared_ptr<OutputFile_Knob> _knob;
 };
 
 
@@ -133,14 +140,15 @@ class Path_KnobGui : public KnobGui
     Q_OBJECT
 public:
     
-    static KnobGui *BuildKnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container) {
+    static KnobGui *BuildKnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container) {
         return new Path_KnobGui(knob, container);
     }
     
-    Path_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container);
+    Path_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container);
     
     virtual ~Path_KnobGui() OVERRIDE;
     
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 public slots:
     
     
@@ -163,7 +171,7 @@ private:
     
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     
-    virtual void updateGUI(int dimension, const Variant &variant) OVERRIDE FINAL;
+    virtual void updateGUI(int dimension) OVERRIDE FINAL;
     
     void updateLastOpened(const QString &str);
     
@@ -171,6 +179,7 @@ private:
     LineEdit *_lineEdit;
     Button *_openFileButton;
     QString _lastOpened;
+    boost::shared_ptr<Path_Knob> _knob;
 };
 
 #endif // NATRON_GUI_KNOBGUIFILE_H_

@@ -146,7 +146,7 @@ Curve::Curve()
 {
 }
 
-Curve::Curve(Knob *owner)
+Curve::Curve(KnobI *owner)
 : _imp(new CurvePrivate)
 {
     assert(owner);

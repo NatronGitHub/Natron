@@ -54,7 +54,7 @@ static std::string getParamLabel(OFX::Host::Param::Instance* param){
 /// in a generalized manner
 namespace OfxKeyFrame{
     
-    OfxStatus getNumKeys(boost::shared_ptr<Knob> knob,unsigned int &nKeys)
+    OfxStatus getNumKeys(boost::shared_ptr<KnobI> knob,unsigned int &nKeys)
     {
         int sum = 0;
         for (int i = 0 ; i < knob->getDimension(); ++i) {
@@ -64,7 +64,7 @@ namespace OfxKeyFrame{
         return kOfxStatOK;
     }
 
-    OfxStatus getKeyTime(boost::shared_ptr<Knob> knob,int nth, OfxTime& time)
+    OfxStatus getKeyTime(boost::shared_ptr<KnobI> knob,int nth, OfxTime& time)
     {
         if (nth < 0) {
             return kOfxStatErrBadIndex;
@@ -93,7 +93,7 @@ namespace OfxKeyFrame{
         
         return kOfxStatErrBadIndex;
     }
-    OfxStatus getKeyIndex(boost::shared_ptr<Knob> knob,OfxTime time, int direction, int& index) {
+    OfxStatus getKeyIndex(boost::shared_ptr<KnobI> knob,OfxTime time, int direction, int& index) {
         int c = 0;
         for(int i = 0; i < knob->getDimension();++i){
             KeyFrameSet set = knob->getCurve(i)->getKeyFrames_mt_safe();
@@ -126,13 +126,13 @@ namespace OfxKeyFrame{
         }
         return kOfxStatFailed;
     }
-    OfxStatus deleteKey(boost::shared_ptr<Knob> knob,OfxTime time) {
+    OfxStatus deleteKey(boost::shared_ptr<KnobI> knob,OfxTime time) {
         for(int i = 0; i < knob->getDimension();++i){
             knob->deleteValueAtTime(time, i);
         }
         return kOfxStatOK;
     }
-    OfxStatus deleteAllKeys(boost::shared_ptr<Knob> knob){
+    OfxStatus deleteAllKeys(boost::shared_ptr<KnobI> knob){
         for(int i = 0; i < knob->getDimension();++i){
             knob->removeAnimation(i);
         }
@@ -165,7 +165,7 @@ void OfxPushButtonInstance::setEvaluateOnChange() {
     _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
-boost::shared_ptr<Knob> OfxPushButtonInstance::getKnob() const {
+boost::shared_ptr<KnobI> OfxPushButtonInstance::getKnob() const {
     return _knob;
 }
 
@@ -189,7 +189,7 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param:
     _knob->setMinimum(min);
     _knob->setIncrement(1); // kOfxParamPropIncrement only exists for Double
     _knob->setMaximum(max);
-    _knob->setDefaultValue<int>(def);
+    _knob->setDefaultValue(def,0);
     std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,0);
     if (!dimensionName.empty()) {
         _knob->setDimensionName(0, dimensionName);
@@ -197,19 +197,19 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param:
 }
 
 OfxStatus OfxIntegerInstance::get(int& v) {
-    v = _knob->getValue<int>();
+    v = _knob->getValue();
     return kOfxStatOK;
 }
 OfxStatus OfxIntegerInstance::get(OfxTime time, int& v) {
-    v = _knob->getValueAtTime<int>(time);
+    v = _knob->getValueAtTime(time);
     return kOfxStatOK;
 }
 OfxStatus OfxIntegerInstance::set(int v){
-    _knob->setValue<int>(v);
+    _knob->setValue(v,0);
     return kOfxStatOK;
 }
 OfxStatus OfxIntegerInstance::set(OfxTime time, int v){
-    _knob->setValueAtTime<int>(time,v);
+    _knob->setValueAtTime(time,v,0);
     return kOfxStatOK;
 }
 
@@ -227,7 +227,7 @@ void OfxIntegerInstance::setEvaluateOnChange() {
     _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
-boost::shared_ptr<Knob> OfxIntegerInstance::getKnob() const{
+boost::shared_ptr<KnobI> OfxIntegerInstance::getKnob() const{
     return _knob;
 }
 
@@ -371,7 +371,7 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
     }
     
     valueAccordingToType(true,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&def);
-    _knob->setDefaultValue<double>(def);
+    _knob->setDefaultValue(def,0);
     std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,0);
     if (!dimensionName.empty()) {
         _knob->setDimensionName(0, dimensionName);
@@ -381,7 +381,7 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
 OfxStatus
 OfxDoubleInstance::get(double& v)
 {
-    v = _knob->getValue<double>();
+    v = _knob->getValue();
     valueAccordingToType(false,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     return kOfxStatOK;
 }
@@ -389,7 +389,7 @@ OfxDoubleInstance::get(double& v)
 OfxStatus
 OfxDoubleInstance::get(OfxTime time, double& v)
 {
-    v = _knob->getValueAtTime<double>(time);
+    v = _knob->getValueAtTime(time);
     valueAccordingToType(false,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     return kOfxStatOK;
 }
@@ -398,7 +398,7 @@ OfxStatus
 OfxDoubleInstance::set(double v)
 {
     valueAccordingToType(true,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
-    _knob->setValue<double>(v);
+    _knob->setValue(v,0);
     return kOfxStatOK;
 }
 
@@ -406,7 +406,7 @@ OfxStatus
 OfxDoubleInstance::set(OfxTime time, double v)
 {
     valueAccordingToType(true,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
-    _knob->setValueAtTime<double>(time,v);
+    _knob->setValueAtTime(time,v,0);
     return kOfxStatOK;
 }
 
@@ -465,7 +465,7 @@ OfxDoubleInstance::setDisplayRange()
     _knob->setDisplayMaximum(displayMax);
 }
 
-boost::shared_ptr<Knob>
+boost::shared_ptr<KnobI>
 OfxDoubleInstance::getKnob() const
 {
     return _knob;
@@ -525,28 +525,28 @@ OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param
     
     _knob = Natron::createKnob<Bool_Knob>(node, getParamLabel(this));
     int def = properties.getIntProperty(kOfxParamPropDefault);
-    _knob->setDefaultValue<bool>((bool)def);
+    _knob->setDefaultValue((bool)def,0);
     
 }
 OfxStatus OfxBooleanInstance::get(bool& b){
-    b = _knob->getValue<bool>();
+    b = _knob->getValue();
     return kOfxStatOK;
 }
 
 OfxStatus OfxBooleanInstance::get(OfxTime /*time*/, bool& b) {
     assert(Bool_Knob::canAnimateStatic());
-    b = _knob->getValue<bool>();
+    b = _knob->getValue();
     return kOfxStatOK;
 }
 
 OfxStatus OfxBooleanInstance::set(bool b){
-    _knob->setValue<bool>(b);
+    _knob->setValue(b,0);
     return kOfxStatOK;
 }
 
 OfxStatus OfxBooleanInstance::set(OfxTime /*time*/, bool b){
     assert(Bool_Knob::canAnimateStatic());
-    _knob->setValue<bool>(b);
+    _knob->setValue(b,0);
     return kOfxStatOK;
 }
 
@@ -564,7 +564,7 @@ void OfxBooleanInstance::setEvaluateOnChange() {
     _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
-boost::shared_ptr<Knob> OfxBooleanInstance::getKnob() const{
+boost::shared_ptr<KnobI> OfxBooleanInstance::getKnob() const{
     return _knob;
 }
 
@@ -606,21 +606,21 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::
     setOption(0); // this actually sets all the options
     
     int def = properties.getIntProperty(kOfxParamPropDefault);
-    _knob->setDefaultValue<int>(def);
+    _knob->setDefaultValue(def,0);
 }
 OfxStatus OfxChoiceInstance::get(int& v){
-    v = _knob->getActiveEntry();
+    v = _knob->getValue();
     return kOfxStatOK;
 }
 OfxStatus OfxChoiceInstance::get(OfxTime /*time*/, int& v) {
     assert(Choice_Knob::canAnimateStatic());
-    v = _knob->getActiveEntry();
+    v = _knob->getValue();
     return kOfxStatOK;
 }
 
 OfxStatus OfxChoiceInstance::set(int v){
     if (0 <= v && v < (int)_entries.size()) {
-        _knob->setValue<int>(v);
+        _knob->setValue(v,0);
         return kOfxStatOK;
     } else {
         return kOfxStatErrBadIndex;
@@ -629,7 +629,7 @@ OfxStatus OfxChoiceInstance::set(int v){
 
 OfxStatus OfxChoiceInstance::set(OfxTime time, int v) {
     if (0 <= v && v < (int)_entries.size()) {
-        _knob->setValueAtTime<int>(time,v);
+        _knob->setValueAtTime(time,v,0);
         return kOfxStatOK;
     } else {
         return kOfxStatErrBadIndex;
@@ -663,10 +663,10 @@ void OfxChoiceInstance::setOption(int /*num*/) {
         _entries.push_back(str);
         helpStrings.push_back(help);
     }
-    _knob->populate(_entries, helpStrings);
+    _knob->populateChoices(_entries, helpStrings);
 }
 
-boost::shared_ptr<Knob> OfxChoiceInstance::getKnob() const{
+boost::shared_ptr<KnobI> OfxChoiceInstance::getKnob() const{
     return _knob;
 }
 
@@ -707,10 +707,10 @@ OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descr
     double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
     double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);
     double defA = properties.getDoubleProperty(kOfxParamPropDefault,3);
-    _knob->setDefaultValue<double>(defR,0);
-    _knob->setDefaultValue<double>(defG,1);
-    _knob->setDefaultValue<double>(defB,2);
-    _knob->setDefaultValue<double>(defA,3);
+    _knob->setDefaultValue(defR,0);
+    _knob->setDefaultValue(defG,1);
+    _knob->setDefaultValue(defB,2);
+    _knob->setDefaultValue(defA,3);
 
     const int dims = 4;
     std::vector<double> minimum(dims);
@@ -741,40 +741,40 @@ OfxStatus
 OfxRGBAInstance::get(double& r, double& g, double& b, double& a)
 {
     
-    r = _knob->getValue<double>(0);
-    g = _knob->getValue<double>(1);
-    b = _knob->getValue<double>(2);
-    a = _knob->getValue<double>(3);
+    r = _knob->getValue(0);
+    g = _knob->getValue(1);
+    b = _knob->getValue(2);
+    a = _knob->getValue(3);
     return kOfxStatOK;
 }
 
 OfxStatus
 OfxRGBAInstance::get(OfxTime time, double&r ,double& g, double& b, double& a)
 {
-    r = _knob->getValueAtTime<double>(time,0);
-    g = _knob->getValueAtTime<double>(time,1);
-    b = _knob->getValueAtTime<double>(time,2);
-    a = _knob->getValueAtTime<double>(time,3);
+    r = _knob->getValueAtTime(time,0);
+    g = _knob->getValueAtTime(time,1);
+    b = _knob->getValueAtTime(time,2);
+    a = _knob->getValueAtTime(time,3);
     return kOfxStatOK;
 }
 
 OfxStatus
 OfxRGBAInstance::set(double r,double g , double b ,double a)
 {
-    _knob->setValue<double>(r,0);
-    _knob->setValue<double>(g,1);
-    _knob->setValue<double>(b,2);
-    _knob->setValue<double>(a,3);
+    _knob->setValue(r,0);
+    _knob->setValue(g,1);
+    _knob->setValue(b,2);
+    _knob->setValue(a,3);
     return kOfxStatOK;
 }
 
 OfxStatus
 OfxRGBAInstance::set(OfxTime time, double r ,double g,double b,double a)
 {
-    _knob->setValueAtTime<double>(time,r,0);
-    _knob->setValueAtTime<double>(time,g,1);
-    _knob->setValueAtTime<double>(time,b,2);
-    _knob->setValueAtTime<double>(time,a,3);
+    _knob->setValueAtTime(time,r,0);
+    _knob->setValueAtTime(time,g,1);
+    _knob->setValueAtTime(time,b,2);
+    _knob->setValueAtTime(time,a,3);
     return kOfxStatOK;
 }
 
@@ -819,7 +819,7 @@ OfxRGBAInstance::setEvaluateOnChange()
 }
 
 
-boost::shared_ptr<Knob>
+boost::shared_ptr<KnobI>
 OfxRGBAInstance::getKnob() const
 {
     return _knob;
@@ -888,9 +888,9 @@ OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descr
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
     double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
     double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);
-    _knob->setDefaultValue<double>(defR, 0);
-    _knob->setDefaultValue<double>(defG, 1);
-    _knob->setDefaultValue<double>(defB, 2);
+    _knob->setDefaultValue(defR, 0);
+    _knob->setDefaultValue(defG, 1);
+    _knob->setDefaultValue(defB, 2);
 
     const int dims = 3;
     std::vector<double> minimum(dims);
@@ -921,36 +921,36 @@ OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descr
 OfxStatus
 OfxRGBInstance::get(double& r, double& g, double& b)
 {
-    r = _knob->getValue<double>(0);
-    g = _knob->getValue<double>(1);
-    b = _knob->getValue<double>(2);
+    r = _knob->getValue(0);
+    g = _knob->getValue(1);
+    b = _knob->getValue(2);
     return kOfxStatOK;
 }
 
 OfxStatus
 OfxRGBInstance::get(OfxTime time, double& r, double& g, double& b)
 {
-    r = _knob->getValueAtTime<double>(time,0);
-    g = _knob->getValueAtTime<double>(time,1);
-    b = _knob->getValueAtTime<double>(time,2);
+    r = _knob->getValueAtTime(time,0);
+    g = _knob->getValueAtTime(time,1);
+    b = _knob->getValueAtTime(time,2);
     return kOfxStatOK;
 }
 
 OfxStatus
 OfxRGBInstance::set(double r,double g,double b)
 {
-    _knob->setValue<double>(r,0);
-    _knob->setValue<double>(g,1);
-    _knob->setValue<double>(b,2);
+    _knob->setValue(r,0);
+    _knob->setValue(g,1);
+    _knob->setValue(b,2);
     return kOfxStatOK;
 }
 
 OfxStatus
 OfxRGBInstance::set(OfxTime time, double r,double g,double b)
 {
-    _knob->setValueAtTime<double>(time,r,0);
-    _knob->setValueAtTime<double>(time,g,1);
-    _knob->setValueAtTime<double>(time,b,2);
+    _knob->setValueAtTime(time,r,0);
+    _knob->setValueAtTime(time,g,1);
+    _knob->setValueAtTime(time,b,2);
     return kOfxStatOK;
 }
 
@@ -990,7 +990,7 @@ OfxRGBInstance::setEvaluateOnChange() {
 }
 
 
-boost::shared_ptr<Knob>
+boost::shared_ptr<KnobI>
 OfxRGBInstance::getKnob() const{
     return _knob;
 }
@@ -1104,16 +1104,16 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
     setDisplayRange();
     _knob->setIncrement(increment);
     _knob->setDecimals(decimals);
-    _knob->setDefaultValue<double>(def[0], 0);
-    _knob->setDefaultValue<double>(def[1], 1);
+    _knob->setDefaultValue(def[0], 0);
+    _knob->setDefaultValue(def[1], 1);
 
 }
 
 OfxStatus
 OfxDouble2DInstance::get(double& x1, double& x2)
 {
-    x1 = _knob->getValue<double>(0);
-    x2 = _knob->getValue<double>(1);
+    x1 = _knob->getValue(0);
+    x2 = _knob->getValue(1);
     valueAccordingToType(false, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
     return kOfxStatOK;
 }
@@ -1121,8 +1121,8 @@ OfxDouble2DInstance::get(double& x1, double& x2)
 OfxStatus
 OfxDouble2DInstance::get(OfxTime time, double& x1, double& x2)
 {
-    x1 = _knob->getValueAtTime<double>(time,0);
-    x2 = _knob->getValueAtTime<double>(time,1);
+    x1 = _knob->getValueAtTime(time,0);
+    x2 = _knob->getValueAtTime(time,1);
     valueAccordingToType(false, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
     return kOfxStatOK;
 }
@@ -1131,8 +1131,8 @@ OfxStatus
 OfxDouble2DInstance::set(double x1,double x2)
 {
     valueAccordingToType(true, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
-    _knob->setValue<double>(x1,0);
-    _knob->setValue<double>(x2,1);
+    _knob->setValue(x1,0);
+    _knob->setValue(x2,1);
 	return kOfxStatOK;
 }
 
@@ -1140,8 +1140,8 @@ OfxStatus
 OfxDouble2DInstance::set(OfxTime time,double x1,double x2)
 {
     valueAccordingToType(true, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
-    _knob->setValueAtTime<double>(time,x1,0);
-    _knob->setValueAtTime<double>(time,x2,1);
+    _knob->setValueAtTime(time,x1,0);
+    _knob->setValueAtTime(time,x2,1);
 	return kOfxStatOK;
 }
 
@@ -1196,7 +1196,7 @@ OfxDouble2DInstance::setDisplayRange()
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
-boost::shared_ptr<Knob>
+boost::shared_ptr<KnobI>
 OfxDouble2DInstance::getKnob() const
 {
     return _knob;
@@ -1298,40 +1298,40 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::P
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setIncrement(increment);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
-    _knob->setDefaultValue<int>(def[0], 0);
-    _knob->setDefaultValue<int>(def[1], 1);
+    _knob->setDefaultValue(def[0], 0);
+    _knob->setDefaultValue(def[1], 1);
 
 }
 
 OfxStatus
 OfxInteger2DInstance::get(int& x1, int& x2)
 {
-    x1 = _knob->getValue<int>(0);
-    x2 = _knob->getValue<int>(1);
+    x1 = _knob->getValue(0);
+    x2 = _knob->getValue(1);
     return kOfxStatOK;
 }
 
 OfxStatus
 OfxInteger2DInstance::get(OfxTime time, int& x1, int& x2)
 {
-    x1 = _knob->getValueAtTime<int>(time,0);
-    x2 = _knob->getValueAtTime<int>(time,1);
+    x1 = _knob->getValueAtTime(time,0);
+    x2 = _knob->getValueAtTime(time,1);
     return kOfxStatOK;
 }
 
 OfxStatus
 OfxInteger2DInstance::set(int x1,int x2)
 {
-    _knob->setValue<int>(x1,0);
-    _knob->setValue<int>(x2,1);
+    _knob->setValue(x1,0);
+    _knob->setValue(x2,1);
 	return kOfxStatOK;
 }
 
 OfxStatus
 OfxInteger2DInstance::set(OfxTime time, int x1, int x2)
 {
-    _knob->setValueAtTime<int>(time,x1,0);
-    _knob->setValueAtTime<int>(time,x2,1);
+    _knob->setValueAtTime(time,x1,0);
+    _knob->setValueAtTime(time,x2,1);
 	return kOfxStatOK;
 }
 
@@ -1357,7 +1357,7 @@ OfxInteger2DInstance::setEvaluateOnChange()
 }
 
 
-boost::shared_ptr<Knob>
+boost::shared_ptr<KnobI>
 OfxInteger2DInstance::getKnob() const
 {
     return _knob;
@@ -1446,45 +1446,45 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Par
     _knob->setIncrement(increment);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
     _knob->setDecimals(decimals);
-    _knob->setDefaultValue<double>(def[0],0);
-    _knob->setDefaultValue<double>(def[1],1);
-    _knob->setDefaultValue<double>(def[2],2);
+    _knob->setDefaultValue(def[0],0);
+    _knob->setDefaultValue(def[1],1);
+    _knob->setDefaultValue(def[2],2);
 
 }
 
 OfxStatus
 OfxDouble3DInstance::get(double& x1, double& x2, double& x3)
 {
-    x1 = _knob->getValue<double>(0);
-    x2 = _knob->getValue<double>(1);
-    x3 = _knob->getValue<double>(2);
+    x1 = _knob->getValue(0);
+    x2 = _knob->getValue(1);
+    x3 = _knob->getValue(2);
     return kOfxStatOK;
 }
 
 OfxStatus
 OfxDouble3DInstance::get(OfxTime time, double& x1, double& x2, double& x3)
 {
-    x1 = _knob->getValueAtTime<double>(time,0);
-    x2 = _knob->getValueAtTime<double>(time,1);
-    x3 = _knob->getValueAtTime<double>(time,2);
+    x1 = _knob->getValueAtTime(time,0);
+    x2 = _knob->getValueAtTime(time,1);
+    x3 = _knob->getValueAtTime(time,2);
     return kOfxStatOK;
 }
 
 OfxStatus
 OfxDouble3DInstance::set(double x1,double x2,double x3)
 {
-    _knob->setValue<double>(x1,0);
-    _knob->setValue<double>(x2,1);
-    _knob->setValue<double>(x3,2);
+    _knob->setValue(x1,0);
+    _knob->setValue(x2,1);
+    _knob->setValue(x3,2);
 	return kOfxStatOK;
 }
 
 OfxStatus
 OfxDouble3DInstance::set(OfxTime time, double x1, double x2, double x3)
 {
-    _knob->setValueAtTime<double>(time,x1,0);
-    _knob->setValueAtTime<double>(time,x2,1);
-    _knob->setValueAtTime<double>(time,x3,2);
+    _knob->setValueAtTime(time,x1,0);
+    _knob->setValueAtTime(time,x2,1);
+    _knob->setValueAtTime(time,x3,2);
 	return kOfxStatOK;
 }
 
@@ -1526,7 +1526,7 @@ OfxDouble3DInstance::setEvaluateOnChange()
     _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
-boost::shared_ptr<Knob>
+boost::shared_ptr<KnobI>
 OfxDouble3DInstance::getKnob() const
 {
     return _knob;
@@ -1619,45 +1619,45 @@ OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance *node, OFX::Host::P
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setIncrement(increment);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
-    _knob->setDefaultValue<int>(def[0],0);
-    _knob->setDefaultValue<int>(def[1],1);
-    _knob->setDefaultValue<int>(def[2],2);
+    _knob->setDefaultValue(def[0],0);
+    _knob->setDefaultValue(def[1],1);
+    _knob->setDefaultValue(def[2],2);
 
 }
 
 OfxStatus
 OfxInteger3DInstance::get(int& x1, int& x2, int& x3)
 {
-    x1 = _knob->getValue<int>(0);
-    x2 = _knob->getValue<int>(1);
-    x3 = _knob->getValue<int>(2);
+    x1 = _knob->getValue(0);
+    x2 = _knob->getValue(1);
+    x3 = _knob->getValue(2);
     return kOfxStatOK;
 }
 
 OfxStatus
 OfxInteger3DInstance::get(OfxTime time, int& x1, int& x2, int& x3)
 {
-    x1 = _knob->getValueAtTime<int>(time,0);
-    x2 = _knob->getValueAtTime<int>(time,1);
-    x3 = _knob->getValueAtTime<int>(time,2);
+    x1 = _knob->getValueAtTime(time,0);
+    x2 = _knob->getValueAtTime(time,1);
+    x3 = _knob->getValueAtTime(time,2);
     return kOfxStatOK;
 }
 
 OfxStatus
 OfxInteger3DInstance::set(int x1, int x2, int x3)
 {
-    _knob->setValue<int>(x1,0);
-    _knob->setValue<int>(x2,1);
-    _knob->setValue<int>(x3,2);
+    _knob->setValue(x1,0);
+    _knob->setValue(x2,1);
+    _knob->setValue(x3,2);
 	return kOfxStatOK;
 }
 
 OfxStatus
 OfxInteger3DInstance::set(OfxTime time, int x1, int x2, int x3)
 {
-    _knob->setValueAtTime<int>(time,x1,0);
-    _knob->setValueAtTime<int>(time,x2,1);
-    _knob->setValueAtTime<int>(time,x3,2);
+    _knob->setValueAtTime(time,x1,0);
+    _knob->setValueAtTime(time,x2,1);
+    _knob->setValueAtTime(time,x3,2);
 	return kOfxStatOK;
 }
 
@@ -1681,7 +1681,7 @@ OfxInteger3DInstance::setEvaluateOnChange()
     _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
-boost::shared_ptr<Knob>
+boost::shared_ptr<KnobI>
 OfxInteger3DInstance::getKnob() const
 {
     return _knob;
@@ -1743,12 +1743,12 @@ OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Des
     }else{
         _groupKnob = Natron::createKnob<Group_Knob>(node, getParamLabel(this));
         int opened = properties.getIntProperty(kOfxParamPropGroupOpen);
-        _groupKnob->setDefaultValue<bool>(opened);
+        _groupKnob->setDefaultValue(opened,0);
     }
     
     
 }
-void OfxGroupInstance::addKnob(boost::shared_ptr<Knob> k) {
+void OfxGroupInstance::addKnob(boost::shared_ptr<KnobI> k) {
     if(_groupKnob){
         _groupKnob->addKnob(k);
     }else{
@@ -1756,7 +1756,7 @@ void OfxGroupInstance::addKnob(boost::shared_ptr<Knob> k) {
     }
 }
 
-boost::shared_ptr<Knob> OfxGroupInstance::getKnob() const{
+boost::shared_ptr<KnobI> OfxGroupInstance::getKnob() const{
     if(_groupKnob){
         return _groupKnob;
     }else{
@@ -1831,13 +1831,13 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
     std::string defaultVal = properties.getStringProperty(kOfxParamPropDefault).c_str();
     if (!defaultVal.empty()) {
         if (_fileKnob) {
-            _fileKnob->setDefaultValue<QString>(QString(defaultVal.c_str()));
+            _fileKnob->setDefaultValue(defaultVal,0);
         } else if (_outputFileKnob) {
-            _outputFileKnob->setDefaultValue<QString>(QString(defaultVal.c_str()));
+            _outputFileKnob->setDefaultValue(defaultVal,0);
         } else if (_stringKnob) {
-            _stringKnob->setDefaultValue<QString>(QString(defaultVal.c_str()));
+            _stringKnob->setDefaultValue(defaultVal,0);
         } else if (_pathKnob) {
-            _pathKnob->setDefaultValue<QString>(QString(defaultVal.c_str()));
+            _pathKnob->setDefaultValue(defaultVal,0);
         }
     }
 }
@@ -1852,14 +1852,13 @@ OfxStatus OfxStringInstance::get(std::string &str) {
         currentFrame = (int)_node->effectInstance()->timeLineGetTime();
     }
     if(_fileKnob){
-        QString fileName =  _fileKnob->getRandomFrameName(currentFrame,true);
-        str = fileName.toStdString();
+        str = _fileKnob->getValueAtTimeConditionally(currentFrame,true);
     }else if(_outputFileKnob){
         str = _outputFileKnob->generateFileNameAtTime(currentFrame).toStdString();
     }else if(_stringKnob){
-        str = _stringKnob->getValueAtTime(currentFrame,0).toString().toStdString();
+        str = _stringKnob->getValueAtTime(currentFrame,0);
     }else if(_pathKnob){
-        str = _pathKnob->getValue<QString>().toStdString();
+        str = _pathKnob->getValue();
     }
     return kOfxStatOK;
 }
@@ -1867,29 +1866,29 @@ OfxStatus OfxStringInstance::get(std::string &str) {
 OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
     assert(_node->effectInstance());
     if(_fileKnob){
-        str = _fileKnob->getRandomFrameName(time,true).toStdString();
+        str = _fileKnob->getValueAtTimeConditionally(time,true);
     }else if(_outputFileKnob){
         str = _outputFileKnob->generateFileNameAtTime(time).toStdString();
     }else if(_stringKnob){
-        str = _stringKnob->getValueAtTime(std::floor(time + 0.5), 0).toString().toStdString();
+        str = _stringKnob->getValueAtTime(std::floor(time + 0.5), 0);
     }else if(_pathKnob){
-        str = _pathKnob->getValue<QString>().toStdString();
+        str = _pathKnob->getValue();
     }
     return kOfxStatOK;
 }
 
 OfxStatus OfxStringInstance::set(const char* str) {
     if(_fileKnob){
-        _fileKnob->setValue(str);
+        _fileKnob->setValue(str,0);
     }
     if(_outputFileKnob){
-        _outputFileKnob->setValue(str);
+        _outputFileKnob->setValue(str,0);
     }
     if(_stringKnob){
-        _stringKnob->setValue(str);
+        _stringKnob->setValue(str,0);
     }
     if(_pathKnob){
-        _pathKnob->setValue(str);
+        _pathKnob->setValue(str,0);
     }
     return kOfxStatOK;
 }
@@ -1897,16 +1896,16 @@ OfxStatus OfxStringInstance::set(const char* str) {
 OfxStatus OfxStringInstance::set(OfxTime time, const char* str) {
     assert(!String_Knob::canAnimateStatic());
     if(_fileKnob){
-        _fileKnob->setValueAtTime<QString>(time,QString(str));
+        _fileKnob->setValueAtTime(time,str,0);
     }
     if(_outputFileKnob){
-        _outputFileKnob->setValue(str);
+        _outputFileKnob->setValue(str,0);
     }
     if(_stringKnob){
-        _stringKnob->setValueAtTime((int)time,Variant(QString(str)),0);
+        _stringKnob->setValueAtTime((int)time,str,0);
     }
     if (_pathKnob) {
-        _pathKnob->setValue(str);
+        _pathKnob->setValue(str,0);
     }
     return kOfxStatOK;
 }
@@ -1926,7 +1925,7 @@ OfxStatus OfxStringInstance::getV(OfxTime time, va_list arg){
     return stat;
 }
 
-boost::shared_ptr<Knob> OfxStringInstance::getKnob() const{
+boost::shared_ptr<KnobI> OfxStringInstance::getKnob() const{
     
     if(_fileKnob){
         return _fileKnob;
@@ -1941,7 +1940,7 @@ boost::shared_ptr<Knob> OfxStringInstance::getKnob() const{
         return _pathKnob;
     }
 
-    return boost::shared_ptr<Knob>();
+    return boost::shared_ptr<KnobI>();
 }
 // callback which should set enabled state as appropriate
 void OfxStringInstance::setEnabled(){
@@ -1991,61 +1990,61 @@ void OfxStringInstance::setEvaluateOnChange() {
     }
 }
 
-const QString OfxStringInstance::getRandomFrameName(int f) const{
-    return _fileKnob ? _fileKnob->getRandomFrameName(f,true) : "";
+const std::string OfxStringInstance::getRandomFrameName(int f) const{
+    return _fileKnob ? _fileKnob->getValueAtTimeConditionally(f,true) : "";
 }
 
 
 OfxStatus OfxStringInstance::getNumKeys(unsigned int &nKeys) const {
-    boost::shared_ptr<Knob> knob;
+    boost::shared_ptr<KnobI> knob;
     if(_stringKnob){
-        knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+        knob = boost::dynamic_pointer_cast<KnobI>(_stringKnob);
     } else if (_fileKnob) {
-        knob = boost::dynamic_pointer_cast<Knob>(_fileKnob);
+        knob = boost::dynamic_pointer_cast<KnobI>(_fileKnob);
     } else {
         return nKeys = 0;
     }
     return OfxKeyFrame::getNumKeys(knob, nKeys);
 }
 OfxStatus OfxStringInstance::getKeyTime(int nth, OfxTime& time) const {
-    boost::shared_ptr<Knob> knob;
+    boost::shared_ptr<KnobI> knob;
     if(_stringKnob){
-        knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+        knob = boost::dynamic_pointer_cast<KnobI>(_stringKnob);
     } else if (_fileKnob) {
-        knob = boost::dynamic_pointer_cast<Knob>(_fileKnob);
+        knob = boost::dynamic_pointer_cast<KnobI>(_fileKnob);
     } else {
         return kOfxStatErrBadIndex;
     }
     return OfxKeyFrame::getKeyTime(knob, nth, time);
 }
 OfxStatus OfxStringInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
-    boost::shared_ptr<Knob> knob;
+    boost::shared_ptr<KnobI> knob;
     if(_stringKnob){
-        knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+        knob = boost::dynamic_pointer_cast<KnobI>(_stringKnob);
     } else if (_fileKnob) {
-        knob = boost::dynamic_pointer_cast<Knob>(_fileKnob);
+        knob = boost::dynamic_pointer_cast<KnobI>(_fileKnob);
     } else {
         return kOfxStatFailed;
     }
     return OfxKeyFrame::getKeyIndex(knob, time, direction, index);
 }
 OfxStatus OfxStringInstance::deleteKey(OfxTime time) {
-    boost::shared_ptr<Knob> knob;
+    boost::shared_ptr<KnobI> knob;
     if(_stringKnob){
-        knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+        knob = boost::dynamic_pointer_cast<KnobI>(_stringKnob);
     } else if (_fileKnob) {
-        knob = boost::dynamic_pointer_cast<Knob>(_fileKnob);
+        knob = boost::dynamic_pointer_cast<KnobI>(_fileKnob);
     } else {
         return kOfxStatErrBadIndex;
     }
     return OfxKeyFrame::deleteKey(knob, time);
 }
 OfxStatus OfxStringInstance::deleteAllKeys(){
-    boost::shared_ptr<Knob> knob;
+    boost::shared_ptr<KnobI> knob;
     if(_stringKnob){
-        knob = boost::dynamic_pointer_cast<Knob>(_stringKnob);
+        knob = boost::dynamic_pointer_cast<KnobI>(_stringKnob);
     } else if (_fileKnob) {
-        knob = boost::dynamic_pointer_cast<Knob>(_fileKnob);
+        knob = boost::dynamic_pointer_cast<KnobI>(_fileKnob);
     } else {
         return kOfxStatOK;
     }
@@ -2093,7 +2092,7 @@ OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::D
     _knob = Natron::createKnob<String_Knob>(node, getParamLabel(this));
     _knob->setAsCustom();
     
-    _knob->setDefaultValue<QString>(properties.getStringProperty(kOfxParamPropDefault).c_str());
+    _knob->setDefaultValue(properties.getStringProperty(kOfxParamPropDefault),0);
     
     _customParamInterpolationV1Entry = (customParamInterpolationV1Entry_t)properties.getPointerProperty(kOfxParamPropCustomInterpCallbackV1);
     if (_customParamInterpolationV1Entry) {
@@ -2104,7 +2103,7 @@ OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::D
 OfxStatus OfxCustomInstance::get(std::string &str) {
     assert(_node->effectInstance());
     int currentFrame = (int)_node->effectInstance()->timeLineGetTime();
-    str = _knob->getValueAtTime(currentFrame, 0).toString().toStdString();
+    str = _knob->getValueAtTime(currentFrame, 0);
     return kOfxStatOK;
 }
 
@@ -2112,19 +2111,19 @@ OfxStatus OfxCustomInstance::get(OfxTime time, std::string& str) {
     assert(String_Knob::canAnimateStatic());
     // it should call _customParamInterpolationV1Entry
     assert(_node->effectInstance());
-    str = _knob->getValueAtTime(time, 0).toString().toStdString();
+    str = _knob->getValueAtTime(time, 0);
     return kOfxStatOK;
 }
 
 
 OfxStatus OfxCustomInstance::set(const char* str) {
-    _knob->setValue<QString>(QString(str));
+    _knob->setValue(str,0);
     return kOfxStatOK;
 }
 
 OfxStatus OfxCustomInstance::set(OfxTime time, const char* str) {
     assert(String_Knob::canAnimateStatic());
-    _knob->setValueAtTime(time,Variant(QString(str)),0);
+    _knob->setValueAtTime(time,str,0);
     return kOfxStatOK;
 }
 
@@ -2144,7 +2143,7 @@ OfxStatus OfxCustomInstance::getV(OfxTime time, va_list arg) {
     return stat;
 }
 
-boost::shared_ptr<Knob> OfxCustomInstance::getKnob() const {
+boost::shared_ptr<KnobI> OfxCustomInstance::getKnob() const {
     return _knob;
 }
 
@@ -2246,7 +2245,7 @@ OfxParametricInstance::~OfxParametricInstance(){
 }
 
 
-boost::shared_ptr<Knob> OfxParametricInstance::getKnob() const{
+boost::shared_ptr<KnobI> OfxParametricInstance::getKnob() const{
     return _knob;
 }
 

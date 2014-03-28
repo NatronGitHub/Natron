@@ -121,8 +121,8 @@ void Settings::initializeKnobs(){
         }
     }
     configs.push_back(NATRON_CUSTOM_OCIO_CONFIG_NAME);
-    _ocioConfigKnob->populate(configs);
-    _ocioConfigKnob->setValue<int>(defaultIndex);
+    _ocioConfigKnob->populateChoices(configs);
+    _ocioConfigKnob->setValue(defaultIndex,0);
     _ocioConfigKnob->setHintToolTip("Select the OpenColorIO config you would like to use globally for all "
                                     "operators that use OpenColorIO. Note that changing it will set the OCIO "
                                     "environment variable, hence any change to this parameter will be "
@@ -152,7 +152,7 @@ void Settings::initializeKnobs(){
     textureModes.push_back("32bits floating-point");
     helpStringsTextureModes.push_back("Viewer's post-process like color-space conversion will be done\n"
                                       "by the hardware using GLSL. Cached textures will be larger in the viewer cache.");
-    _texturesMode->populate(textureModes,helpStringsTextureModes);
+    _texturesMode->populateChoices(textureModes,helpStringsTextureModes);
     _texturesMode->setHintToolTip("Bitdepth of the viewer textures used for rendering."
                                   " Hover each option with the mouse for a more detailed comprehension.");
     _viewersTab->addKnob(_texturesMode);
@@ -218,22 +218,22 @@ void Settings::initializeKnobs(){
 void Settings::setDefaultValues() {
     
     beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
-    _linearPickers->setDefaultValue<bool>(true);
-    _numberOfThreads->setDefaultValue<int>(0);
-    _renderInSeparateProcess->setDefaultValue<bool>(true);
-    _autoPreviewEnabledForNewProjects->setDefaultValue<bool>(true);
-    _extraPluginPaths->setDefaultValue<QString>("");
-    _texturesMode->setDefaultValue<int>(0);
-    _powerOf2Tiling->setDefaultValue<int>(8);
-    _maxRAMPercent->setDefaultValue<int>(50);
-    _maxPlayBackPercent->setDefaultValue(25);
-    _maxDiskCacheGB->setDefaultValue<int>(10);
+    _linearPickers->setDefaultValue(true,0);
+    _numberOfThreads->setDefaultValue(0,0);
+    _renderInSeparateProcess->setDefaultValue(true,0);
+    _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
+    _extraPluginPaths->setDefaultValue("",0);
+    _texturesMode->setDefaultValue(0,0);
+    _powerOf2Tiling->setDefaultValue(8,0);
+    _maxRAMPercent->setDefaultValue(50,0);
+    _maxPlayBackPercent->setDefaultValue(25,0);
+    _maxDiskCacheGB->setDefaultValue(10,0);
 
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
         const std::vector<std::string>& entries = _readersMapping[i]->getEntries();
         for (U32 j = 0; j < entries.size(); ++j) {
             if (QString(entries[j].c_str()).contains("ReadOIIOOFX")) {
-                _readersMapping[i]->setDefaultValue<int>(j);
+                _readersMapping[i]->setDefaultValue(j,0);
                 break;
             }
         }
@@ -243,7 +243,7 @@ void Settings::setDefaultValues() {
         const std::vector<std::string>& entries = _writersMapping[i]->getEntries();
         for (U32 j = 0; j < entries.size(); ++j) {
             if (QString(entries[j].c_str()).contains("WriteOIIOOFX")) {
-                _writersMapping[i]->setDefaultValue<int>(j);
+                _writersMapping[i]->setDefaultValue(j,0);
                 break;
             }
         }
@@ -257,43 +257,43 @@ void Settings::saveSettings(){
     
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
-    settings.setValue("LinearColorPickers",_linearPickers->getValue<bool>());
-    settings.setValue("Number of threads", _numberOfThreads->getValue<int>());
-    settings.setValue("RenderInSeparateProcess", _renderInSeparateProcess->getValue<bool>());
-    settings.setValue("AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue<bool>());
-    settings.setValue("ExtraPluginsPaths", _extraPluginPaths->getValue<QString>());
+    settings.setValue("LinearColorPickers",_linearPickers->getValue());
+    settings.setValue("Number of threads", _numberOfThreads->getValue());
+    settings.setValue("RenderInSeparateProcess", _renderInSeparateProcess->getValue());
+    settings.setValue("AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue());
+    settings.setValue("ExtraPluginsPaths", _extraPluginPaths->getValue().c_str());
     settings.endGroup();
     
     settings.beginGroup("OpenColorIO");
-    QStringList configList = _customOcioConfigFile->getValue<QStringList>();
-    if (!configList.isEmpty()) {
-        settings.setValue("OCIOConfigFile", configList.at(0));
+    std::string configList = _customOcioConfigFile->getValue();
+    if (!configList.empty()) {
+        settings.setValue("OCIOConfigFile", configList.c_str());
     }
-    settings.setValue("OCIOConfig", _ocioConfigKnob->getValue<int>());
+    settings.setValue("OCIOConfig", _ocioConfigKnob->getValue());
     settings.endGroup();
     
     settings.beginGroup("Caching");
-    settings.setValue("MaximumRAMUsagePercentage", _maxRAMPercent->getValue<int>());
-    settings.setValue("MaximumPlaybackRAMUsage", _maxPlayBackPercent->getValue<int>());
-    settings.setValue("MaximumDiskSizeUsage", _maxDiskCacheGB->getValue<int>());
+    settings.setValue("MaximumRAMUsagePercentage", _maxRAMPercent->getValue());
+    settings.setValue("MaximumPlaybackRAMUsage", _maxPlayBackPercent->getValue());
+    settings.setValue("MaximumDiskSizeUsage", _maxDiskCacheGB->getValue());
     settings.endGroup();
     
     settings.beginGroup("Viewers");
-    settings.setValue("ByteTextures", _texturesMode->getValue<int>());
-    settings.setValue("TilesPowerOf2", _powerOf2Tiling->getValue<int>());
+    settings.setValue("ByteTextures", _texturesMode->getValue());
+    settings.setValue("TilesPowerOf2", _powerOf2Tiling->getValue());
     settings.endGroup();
     
     settings.beginGroup("Readers");
     
     
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
-        settings.setValue(_readersMapping[i]->getDescription().c_str(),_readersMapping[i]->getValue<int>());
+        settings.setValue(_readersMapping[i]->getDescription().c_str(),_readersMapping[i]->getValue());
     }
     settings.endGroup();
     
     settings.beginGroup("Writers");
     for (U32 i = 0; i < _writersMapping.size(); ++i) {
-        settings.setValue(_writersMapping[i]->getDescription().c_str(),_writersMapping[i]->getValue<int>());
+        settings.setValue(_writersMapping[i]->getDescription().c_str(),_writersMapping[i]->getValue());
     }
     settings.endGroup();
     
@@ -307,52 +307,52 @@ void Settings::restoreSettings(){
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
     if(settings.contains("LinearColorPickers")){
-        _linearPickers->setValue<bool>(settings.value("LinearColorPickers").toBool());
+        _linearPickers->setValue(settings.value("LinearColorPickers").toBool(),0);
     }
     if (settings.contains("Number of threads")) {
-        _numberOfThreads->setValue<int>(settings.value("Number of threads").toInt());
+        _numberOfThreads->setValue(settings.value("Number of threads").toInt(),0);
     }
     if (settings.contains("RenderInSeparateProcess")) {
-        _renderInSeparateProcess->setValue<bool>(settings.value("RenderInSeparateProcess").toBool());
+        _renderInSeparateProcess->setValue(settings.value("RenderInSeparateProcess").toBool(),0);
     }
     if (settings.contains("AutoPreviewDefault")) {
-        _autoPreviewEnabledForNewProjects->setValue<bool>(settings.value("AutoPreviewDefault").toBool());
+        _autoPreviewEnabledForNewProjects->setValue(settings.value("AutoPreviewDefault").toBool(),0);
     }
     if (settings.contains("ExtraPluginsPaths")) {
-        _extraPluginPaths->setValue<QString>(settings.value("ExtraPluginsPaths").toString());
+        _extraPluginPaths->setValue(settings.value("ExtraPluginsPaths").toString().toStdString(),0);
     }
     settings.endGroup();
     
     settings.beginGroup("OpenColorIO");
     if (settings.contains("OCIOConfigFile")) {
-        _customOcioConfigFile->setValue<QStringList>(QStringList(settings.value("OCIOConfigFile").toString()));
+        _customOcioConfigFile->setValue(settings.value("OCIOConfigFile").toString().toStdString(),0);
     }
     if (settings.contains("OCIOConfig")) {
         int activeIndex = settings.value("OCIOConfig").toInt();
         if (activeIndex < (int)_ocioConfigKnob->getEntries().size()) {
-            _ocioConfigKnob->setValue<int>(activeIndex);
+            _ocioConfigKnob->setValue(activeIndex,0);
         }
     }
     settings.endGroup();
     
     settings.beginGroup("Caching");
     if(settings.contains("MaximumRAMUsagePercentage")){
-        _maxRAMPercent->setValue<int>(settings.value("MaximumRAMUsagePercentage").toInt());
+        _maxRAMPercent->setValue(settings.value("MaximumRAMUsagePercentage").toInt(),0);
     }
     if(settings.contains("MaximumPlaybackRAMUsage")){
-        _maxPlayBackPercent->setValue<int>(settings.value("MaximumRAMUsagePercentage").toInt());
+        _maxPlayBackPercent->setValue(settings.value("MaximumRAMUsagePercentage").toInt(),0);
     }
     if(settings.contains("MaximumDiskSizeUsage")){
-        _maxDiskCacheGB->setValue<int>(settings.value("MaximumDiskSizeUsage").toInt());
+        _maxDiskCacheGB->setValue(settings.value("MaximumDiskSizeUsage").toInt(),0);
     }
     settings.endGroup();
     
     settings.beginGroup("Viewers");
     if(settings.contains("ByteTextures")){
-        _texturesMode->setValue<int>(settings.value("ByteTextures").toFloat());
+        _texturesMode->setValue(settings.value("ByteTextures").toInt(),0);
     }
     if (settings.contains("TilesPowerOf2")) {
-        _powerOf2Tiling->setValue<int>(settings.value("TilesPowerOf2").toInt());
+        _powerOf2Tiling->setValue(settings.value("TilesPowerOf2").toInt(),0);
     }
     settings.endGroup();
     
@@ -362,7 +362,7 @@ void Settings::restoreSettings(){
         if(settings.contains(format)){
             int index = settings.value(format).toInt();
             if (index < (int)_readersMapping[i]->getEntries().size()) {
-                _readersMapping[i]->setValue<int>(index);
+                _readersMapping[i]->setValue(index,0);
             }
         }
     }
@@ -374,7 +374,7 @@ void Settings::restoreSettings(){
         if(settings.contains(format)){
             int index = settings.value(format).toInt();
             if (index < (int)_writersMapping[i]->getEntries().size()) {
-                _writersMapping[i]->setValue<int>(index);   
+                _writersMapping[i]->setValue(index,0);
             }
         }
     }
@@ -388,15 +388,15 @@ bool Settings::tryLoadOpenColorIOConfig()
     QString configFile;
     if (_customOcioConfigFile->isEnabled(0)) {
         ///try to load from the file
-        QStringList files = _customOcioConfigFile->getValue<QStringList>();
-        if (files.isEmpty()) {
+        std::string file = _customOcioConfigFile->getValue();
+        if (file.empty()) {
             return false;
         }
-        if (!QFile::exists(files.at(0))) {
-            Natron::errorDialog("OpenColorIO", files.at(0).toStdString() + ": No such file.");
+        if (!QFile::exists(file.c_str())) {
+            Natron::errorDialog("OpenColorIO", file + ": No such file.");
             return false;
         }
-        configFile = files.at(0);
+        configFile = file.c_str();
     } else {
         ///try to load from the combobox
         QString activeEntryText(_ocioConfigKnob->getActiveEntryText().c_str());
@@ -429,7 +429,7 @@ bool Settings::tryLoadOpenColorIOConfig()
     return true;
 }
 
-void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/){
+void Settings::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/){
 
     _wereChangesMadeSinceLastSave = true;
 
@@ -445,10 +445,10 @@ void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/)
                     ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
                     assert(n);
                     if(isFirstViewer){
-                        if(!n->supportsGLSL() && _texturesMode->getValue<int>() != 0){
+                        if(!n->supportsGLSL() && _texturesMode->getValue() != 0){
                             Natron::errorDialog("Viewer", "You need OpenGL GLSL in order to use 32 bit fp texutres.\n"
                                                 "Reverting to 8bits textures.");
-                            _texturesMode->setValue<int>(0);
+                            _texturesMode->setValue(0,0);
                             return;
                         }
                     }
@@ -486,45 +486,45 @@ void Settings::onKnobValueChanged(Knob* k,Natron::ValueChangedReason /*reason*/)
 }
 
 int Settings::getViewersBitDepth() const {
-    return _texturesMode->getValue<int>();
+    return _texturesMode->getValue();
 }
 
 int Settings::getViewerTilesPowerOf2() const {
-    return _powerOf2Tiling->getValue<int>();
+    return _powerOf2Tiling->getValue();
 }
 
 double Settings::getRamMaximumPercent() const {
-    return (double)_maxRAMPercent->getValue<int>() / 100.;
+    return (double)_maxRAMPercent->getValue() / 100.;
 }
 
 double Settings::getRamPlaybackMaximumPercent() const{
-    return (double)_maxPlayBackPercent->getValue<int>() / 100.;
+    return (double)_maxPlayBackPercent->getValue() / 100.;
 }
 
 U64 Settings::getMaximumDiskCacheSize() const {
-    return ((U64)(_maxDiskCacheGB->getValue<int>()) * std::pow(1024.,3.));
+    return ((U64)(_maxDiskCacheGB->getValue()) * std::pow(1024.,3.));
 }
 bool Settings::getColorPickerLinear() const {
-    return _linearPickers->getValue<bool>();
+    return _linearPickers->getValue();
 }
 
 int Settings::getNumberOfThreads() const {
-    return _numberOfThreads->getValue<int>();
+    return _numberOfThreads->getValue();
 }
 
 void Settings::setNumberOfThreads(int threadsNb) {
-    _numberOfThreads->setValue<int>(threadsNb);
+    _numberOfThreads->setValue(threadsNb,0);
 }
 
 bool Settings::isAutoPreviewOnForNewProjects() const {
-    return _autoPreviewEnabledForNewProjects->getValue<bool>();
+    return _autoPreviewEnabledForNewProjects->getValue();
 }
 
 const std::string& Settings::getReaderPluginIDForFileType(const std::string& extension){
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
         if (_readersMapping[i]->getDescription() == extension) {
             const std::vector<std::string>& entries =  _readersMapping[i]->getEntries();
-            int index = _readersMapping[i]->getActiveEntry();
+            int index = _readersMapping[i]->getValue();
             assert(index < (int)entries.size());
             return entries[index];
         }
@@ -536,7 +536,7 @@ const std::string& Settings::getWriterPluginIDForFileType(const std::string& ext
     for (U32 i = 0; i < _writersMapping.size(); ++i) {
         if (_writersMapping[i]->getDescription() == extension) {
             const std::vector<std::string>& entries =  _writersMapping[i]->getEntries();
-            int index = _writersMapping[i]->getActiveEntry();
+            int index = _writersMapping[i]->getValue();
             assert(index < (int)entries.size());
             return entries[index];
         }
@@ -549,11 +549,11 @@ void Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::v
     for (std::map<std::string,std::vector<std::string> >::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
         k->setAnimationEnabled(false);
-        k->populate(it->second);
+        k->populateChoices(it->second);
         for (U32 i = 0; i < it->second.size(); ++i) {
             ///promote ReadOIIO !
             if (QString(it->second[i].c_str()).contains("ReadOIIOOFX")) {
-                k->setValue<int>(i);
+                k->setValue(i,0);
                 break;
             }
         }
@@ -566,11 +566,11 @@ void Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::v
     for (std::map<std::string,std::vector<std::string> >::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
         k->setAnimationEnabled(false);
-        k->populate(it->second);
+        k->populateChoices(it->second);
         for (U32 i = 0; i < it->second.size(); ++i) {
             ///promote WriteOIIOOFX !
             if (QString(it->second[i].c_str()).contains("WriteOIIOOFX")) {
-                k->setValue<int>(i);
+                k->setValue(i,0);
                 break;
             }
         }
@@ -582,7 +582,7 @@ void Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::v
 void Settings::getFileFormatsForReadingAndReader(std::map<std::string,std::string>* formats){
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
         const std::vector<std::string>& entries = _readersMapping[i]->getEntries();
-        int index = _readersMapping[i]->getActiveEntry();
+        int index = _readersMapping[i]->getValue();
         
         assert(index < (int)entries.size());
         
@@ -593,7 +593,7 @@ void Settings::getFileFormatsForReadingAndReader(std::map<std::string,std::strin
 void Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::string>* formats){
     for (U32 i = 0; i < _writersMapping.size(); ++i) {
         const std::vector<std::string>& entries = _writersMapping[i]->getEntries();
-        int index = _writersMapping[i]->getActiveEntry();
+        int index = _writersMapping[i]->getValue();
         
         assert(index < (int)entries.size());
         
@@ -602,7 +602,7 @@ void Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::strin
 }
 
 QStringList Settings::getPluginsExtraSearchPaths() const {
-    QString paths = _extraPluginPaths->getValue<QString>();
+    QString paths = _extraPluginPaths->getValue().c_str();
     return paths.split(QChar(';'));
 }
 
@@ -615,5 +615,5 @@ void Settings::restoreDefault() {
 }
 
 bool Settings::isRenderInSeparatedProcessEnabled() const {
-    return _renderInSeparateProcess->getValue<bool>();
+    return _renderInSeparateProcess->getValue();
 }

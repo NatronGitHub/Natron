@@ -29,8 +29,8 @@ using std::pair;
 
 /*Class inheriting KnobGui, must have a function named BuildKnobGui with the following signature.
  This function should in turn call a specific class-based static function with the appropriate param.*/
-typedef Knob *(*KnobBuilder)(KnobHolder  *holder, const std::string &description, int dimension);
-typedef KnobGui *(*KnobGuiBuilder)(boost::shared_ptr<Knob> knob, DockablePanel* panel);
+typedef KnobHelper *(*KnobBuilder)(KnobHolder  *holder, const std::string &description, int dimension);
+typedef KnobGui *(*KnobGuiBuilder)(boost::shared_ptr<KnobI> knob, DockablePanel* panel);
 
 /***********************************FACTORY******************************************/
 KnobGuiFactory::KnobGuiFactory()
@@ -55,7 +55,7 @@ void KnobGuiFactory::loadKnobPlugins()
         if (plugins[i]->loadFunctions(functions)) {
             std::pair<bool, KnobBuilder> builder = plugins[i]->findFunction<KnobBuilder>("BuildKnob");
             if (builder.first) {
-                Knob *knob = builder.second(NULL, "", 1);
+                KnobHelper *knob = builder.second(NULL, "", 1);
                 _loadedKnobs.insert(make_pair(knob->typeName(), plugins[i]));
                 delete knob;
             }
@@ -71,7 +71,7 @@ static std::pair<std::string,LibraryBinary *>
 knobGuiFactoryEntry()
 {
     std::string stub;
-    boost::scoped_ptr<Knob> knob(K::BuildKnob(NULL, stub, 1));
+    boost::scoped_ptr<KnobHelper> knob(K::BuildKnob(NULL, stub, 1));
 
     std::map<std::string, void *> functions;
     functions.insert(make_pair("BuildKnobGui", (void *)&KG::BuildKnobGui));
@@ -99,7 +99,7 @@ void KnobGuiFactory::loadBultinKnobs()
 }
 
 
-KnobGui *KnobGuiFactory::createGuiForKnob(boost::shared_ptr<Knob> knob, DockablePanel *container) const
+KnobGui *KnobGuiFactory::createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const
 {
     assert(knob);
     std::map<std::string, LibraryBinary *>::const_iterator it = _loadedKnobs.find(knob->typeName());

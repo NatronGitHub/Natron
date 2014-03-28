@@ -75,7 +75,7 @@ void QtReader::initializeKnobs() {
     
     _firstFrame =  Natron::createKnob<Int_Knob>(this, "First frame");
     _firstFrame->setAnimationEnabled(false);
-    _firstFrame->setDefaultValue<int>(0);
+    _firstFrame->setDefaultValue(0,0);
     
     
     _before = Natron::createKnob<Choice_Knob>(this, "Before");
@@ -85,13 +85,13 @@ void QtReader::initializeKnobs() {
     beforeOptions.push_back("bounce");
     beforeOptions.push_back("black");
     beforeOptions.push_back("error");
-    _before->populate(beforeOptions);
+    _before->populateChoices(beforeOptions);
     _before->setAnimationEnabled(false);
-    _before->setDefaultValue<int>(0);
+    _before->setDefaultValue(0,0);
     
     _lastFrame =  Natron::createKnob<Int_Knob>(this, "Last frame");
     _lastFrame->setAnimationEnabled(false);
-    _lastFrame->setDefaultValue<int>(0);
+    _lastFrame->setDefaultValue(0,0);
     
     
     _after = Natron::createKnob<Choice_Knob>(this, "After");
@@ -101,17 +101,17 @@ void QtReader::initializeKnobs() {
     afterOptions.push_back("bounce");
     afterOptions.push_back("black");
     afterOptions.push_back("error");
-    _after->populate(beforeOptions);
+    _after->populateChoices(beforeOptions);
     _after->setAnimationEnabled(false);
-    _after->setDefaultValue<int>(0);
+    _after->setDefaultValue(0,0);
     
     _missingFrameChoice = Natron::createKnob<Choice_Knob>(this, "On missing frame");
     std::vector<std::string> missingFrameOptions;
     missingFrameOptions.push_back("Load nearest");
     missingFrameOptions.push_back("Error");
     missingFrameOptions.push_back("Black image");
-    _missingFrameChoice->populate(missingFrameOptions);
-    _missingFrameChoice->setDefaultValue<int>(0);
+    _missingFrameChoice->populateChoices(missingFrameOptions);
+    _missingFrameChoice->setDefaultValue(0,0);
     _missingFrameChoice->setAnimationEnabled(false);
     
     _frameMode = Natron::createKnob<Choice_Knob>(this, "Frame mode");
@@ -119,41 +119,41 @@ void QtReader::initializeKnobs() {
     std::vector<std::string> frameModeOptions;
     frameModeOptions.push_back("Starting frame");
     frameModeOptions.push_back("Time offset");
-    _frameMode->populate(frameModeOptions);
-    _frameMode->setDefaultValue<int>(0);
+    _frameMode->populateChoices(frameModeOptions);
+    _frameMode->setDefaultValue(0,0);
     
     _startingFrame = Natron::createKnob<Int_Knob>(this, "Starting frame");
     _startingFrame->setAnimationEnabled(false);
-    _startingFrame->setDefaultValue<int>(0);
+    _startingFrame->setDefaultValue(0,0);
     
     _timeOffset = Natron::createKnob<Int_Knob>(this, "Time offset");
     _timeOffset->setAnimationEnabled(false);
-    _timeOffset->setDefaultValue<int>(0);
+    _timeOffset->setDefaultValue(0,0);
     _timeOffset->setSecret(true);
     
 }
 
-void QtReader::onKnobValueChanged(Knob* k, Natron::ValueChangedReason /*reason*/) {
+void QtReader::onKnobValueChanged(KnobI* k, Natron::ValueChangedReason /*reason*/) {
     if (k == _fileKnob.get()) {
         SequenceTime first,last;
         getSequenceTimeDomain(first,last);
         timeDomainFromSequenceTimeDomain(first,last, true);
-        _startingFrame->setValue<int>(first);
+        _startingFrame->setValue(first,0);
     } else if(k == _firstFrame.get() && !_settingFrameRange) {
         
-        int first = _firstFrame->getValue<int>();
+        int first = _firstFrame->getValue();
         _lastFrame->setMinimum(first);
         
-        int offset = _timeOffset->getValue<int>();
+        int offset = _timeOffset->getValue();
         _settingFrameRange = true;
-        _startingFrame->setValue<int>(first +offset);
+        _startingFrame->setValue(first +offset,0);
         _settingFrameRange = false;
     } else if(k == _lastFrame.get()) {
-        int last = _lastFrame->getValue<int>();
+        int last = _lastFrame->getValue();
         _firstFrame->setMaximum(last);
 
     } else if(k == _frameMode.get()) {
-        int mode = _frameMode->getValue<int>();
+        int mode = _frameMode->getValue();
         switch (mode) {
             case 0: //starting frame
                 _startingFrame->setSecret(false);
@@ -171,24 +171,24 @@ void QtReader::onKnobValueChanged(Knob* k, Natron::ValueChangedReason /*reason*/
 
     } else if( k == _startingFrame.get() && !_settingFrameRange) {
         //also update the time offset
-        int startingFrame = _startingFrame->getValue<int>();
-        int firstFrame = _firstFrame->getValue<int>();
+        int startingFrame = _startingFrame->getValue();
+        int firstFrame = _firstFrame->getValue();
         
         
         ///prevent recursive calls of setValue(...)
         _settingFrameRange = true;
-        _timeOffset->setValue(startingFrame - firstFrame);
+        _timeOffset->setValue(startingFrame - firstFrame,0);
         _settingFrameRange = false;
         
     } else if( k == _timeOffset.get() && !_settingFrameRange) {
         //also update the starting frame
-        int offset = _timeOffset->getValue<int>();
-        int first = _firstFrame->getValue<int>();
+        int offset = _timeOffset->getValue();
+        int first = _firstFrame->getValue();
 
         
         ///prevent recursive calls of setValue(...)
         _settingFrameRange = true;
-        _startingFrame->setValue(offset + first);
+        _startingFrame->setValue(offset + first,0);
         _settingFrameRange = false;
         
     }
@@ -214,14 +214,14 @@ void QtReader::timeDomainFromSequenceTimeDomain(SequenceTime& first,SequenceTime
         _lastFrame->setMinimum(first);
         _lastFrame->setMaximum(last);
         
-        _firstFrame->setValue(first);
-        _lastFrame->setValue(last);
+        _firstFrame->setValue(first,0);
+        _lastFrame->setValue(last,0);
         _settingFrameRange = false;
     } else {
         ///these are the value held by the "First frame" and "Last frame" param
-        frameRangeFirst = _firstFrame->getValue<int>();
-        frameRangeLast = _lastFrame->getValue<int>();
-        startingFrame = _startingFrame->getValue<int>();
+        frameRangeFirst = _firstFrame->getValue();
+        frameRangeLast = _lastFrame->getValue();
+        startingFrame = _startingFrame->getValue();
     }
     
     first = startingFrame;
@@ -251,12 +251,12 @@ std::vector<std::string> QtReader::supportedFileFormats() const  {
 SequenceTime QtReader::getSequenceTime(SequenceTime t)
 {
     
-    int timeOffset = _timeOffset->getValue<int>();
+    int timeOffset = _timeOffset->getValue();
 
     
     
-    SequenceTime first = _firstFrame->getValue<int>();
-    SequenceTime last = _lastFrame->getValue<int>();
+    SequenceTime first = _firstFrame->getValue();
+    SequenceTime last = _lastFrame->getValue();
         
     
     ///offset the time wrt the starting time
@@ -267,7 +267,7 @@ SequenceTime QtReader::getSequenceTime(SequenceTime t)
     
     if( sequenceTime < first) {
         /////if we're before the first frame
-        int beforeChoice = _before->getValue<int>();
+        int beforeChoice = _before->getValue();
         switch (beforeChoice) {
             case 0: //hold
                 sequenceTime = first;
@@ -304,7 +304,7 @@ SequenceTime QtReader::getSequenceTime(SequenceTime t)
         
     } else if( sequenceTime > last) {
         /////if we're after the last frame
-        int afterChoice = _after->getValue<int>();
+        int afterChoice = _after->getValue();
         
         switch (afterChoice) {
             case 0: //hold
@@ -351,40 +351,29 @@ void QtReader::getFilenameAtSequenceTime(SequenceTime time, std::string &filenam
 {
    
     
-    int missingChoice = _missingFrameChoice->getValue<int>();
-    QString file = _fileKnob->getRandomFrameName(time, false);
+    int missingChoice = _missingFrameChoice->getValue();
+    filename = _fileKnob->getValueAtTimeConditionally(time, false);
     
     switch (missingChoice) {
         case 0: // Load nearest
                 ///the nearest frame search went out of range and couldn't find a frame.
-            if(file.isEmpty()){
-                file = _fileKnob->getRandomFrameName(time, true);
-                if (file.isEmpty()) {
+            if(filename.empty()){
+                filename = _fileKnob->getValueAtTimeConditionally(time, true);
+                if (filename.empty()) {
                     setPersistentMessage(Natron::ERROR_MESSAGE, "Nearest frame search went out of range");
-                } else {
-                    filename = file.toStdString();
                 }
-            } else {
-                filename = file.toStdString();
             }
             break;
         case 1: // Error
                 /// For images sequences, if the offset is not 0, that means no frame were found at the  originally given
                 /// time, we can safely say this is  a missing frame.
-            if (file.isEmpty()) {
-                filename.clear();
+            if (filename.empty()) {
                 setPersistentMessage(Natron::ERROR_MESSAGE, "Missing frame");
-            } else {
-                filename = file.toStdString();
             }
         case 2: // Black image
                 /// For images sequences, if the offset is not 0, that means no frame were found at the  originally given
                 /// time, we can safely say this is  a missing frame.
-            if (file.isEmpty()) {
-                filename.clear();
-            } else {
-                filename = file.toStdString();
-            }
+          
             break;
     }
     
@@ -434,7 +423,7 @@ Natron::Status QtReader::render(SequenceTime /*time*/,RenderScale /*scale*/,
                                 const RectI& roi,int /*view*/,
                                 bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
                                 boost::shared_ptr<Natron::Image> output) {
-    int missingFrameChoice = _missingFrameChoice->getValue<int>();
+    int missingFrameChoice = _missingFrameChoice->getValue();
     if (!_img) {
         if (!_img && missingFrameChoice == 2) { // black image
             return StatOK;
@@ -493,9 +482,9 @@ Natron::Status QtReader::render(SequenceTime /*time*/,RenderScale /*scale*/,
 Natron::EffectInstance::CachePolicy QtReader::getCachePolicy(SequenceTime time) const{
     //if we're in nearest mode and the frame could not be found do not cache it, otherwise
     //we would cache multiple copies of the same frame
-    if(_missingFrameChoice->getValue<int>() == 0){
-        QString filename = _fileKnob->getRandomFrameName(time,false);
-        if(filename.isEmpty()){
+    if(_missingFrameChoice->getValue() == 0){
+        std::string filename = _fileKnob->getValueAtTimeConditionally(time,false);
+        if(filename.empty()){
             return NEVER_CACHE;
         }
     }

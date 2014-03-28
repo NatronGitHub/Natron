@@ -22,24 +22,23 @@ CLANG_DIAG_ON(deprecated)
 #include <QtCore/QMutex>
 #include <QtCore/QString>
 
-#include "Engine/Knob.h"
+#include "Engine/KnobTypes.h"
 
 #include "Global/Macros.h"
 
-class StringAnimationManager;
 namespace SequenceParsing {
     class SequenceFromFiles;
 }
 /******************************FILE_KNOB**************************************/
 
-class File_Knob : public Knob
+class File_Knob : public QObject, public AnimatingString_KnobHelper
 {
     
     Q_OBJECT
     
 public:
 
-    static Knob *BuildKnob(KnobHolder  *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder  *holder, const std::string &description, int dimension) {
         return new File_Knob(holder, description, dimension);
     }
 
@@ -78,15 +77,11 @@ public:
     /**
      * @brief getRandomFrameName
      * @param f The index of the frame.
+     * @param loadNearestIfNotFound If false, the function will not return the nearest keyframe but an empty string instead.
      * @return The file name associated to the frame index. Returns an empty string if it couldn't find it.
      */
-    QString getRandomFrameName(int f, bool loadNearestIfNotFound) const;
-
-
-    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
+    std::string getValueAtTimeConditionally(int f, bool loadNearestIfNotFound) const;
     
-    const StringAnimationManager& getAnimation() const { return *_animation; }
-
     const QString& getPattern() const { return _pattern; }
     
     ///called by the gui
@@ -99,54 +94,37 @@ signals:
 private:
     
     void setFilesInternal(const SequenceParsing::SequenceFromFiles& fileSequence);
-    
-    virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE FINAL;
-    
+        
     virtual void animationRemoved_virtual(int dimension) OVERRIDE FINAL;
     
     virtual bool canAnimate() const OVERRIDE FINAL;
     
     virtual const std::string& typeName() const OVERRIDE FINAL;
-    
-    virtual void cloneExtraData(const Knob &other) OVERRIDE FINAL;
-    
-    ///called by setValueAtTime
-    virtual Natron::Status variantToKeyFrameValue(int time,const Variant& v,double* returnValue) OVERRIDE FINAL;
-    
-    ///called by getValueAtTime
-    virtual void variantFromInterpolatedValue(double interpolated,Variant* returnValue) const OVERRIDE FINAL;
-    
-    virtual void loadExtraData(const QString& str) OVERRIDE FINAL;
-    
-    virtual QString saveExtraData() const OVERRIDE FINAL;
-    
+        
     virtual void processNewValue(Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    
+    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other) OVERRIDE FINAL;
     
     int frameCount() const;
     
     static const std::string _typeNameStr;
-    StringAnimationManager* _animation;
     int _isInputImage;
     QString _pattern;
 };
 
 /******************************OUTPUT_FILE_KNOB**************************************/
 
-class OutputFile_Knob: public Knob
+class OutputFile_Knob:  public QObject, public Knob<std::string>
 {
     
     Q_OBJECT
 public:
 
-    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
         return new OutputFile_Knob(holder, description, dimension);
     }
 
     OutputFile_Knob(KnobHolder *holder, const std::string &description, int dimension);
-
-    std::string getPattern() const;
-
-    void setFile(const QString& file);
 
     static const std::string& typeNameStatic();
     
@@ -160,8 +138,6 @@ public:
     
     bool isSequencesDialogEnabled() const { return _sequenceDialog; }
     
-    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
-
     QString generateFileNameAtTime(SequenceTime time,int view = 0) const;
     
 signals:
@@ -182,13 +158,13 @@ private:
 
 
 /******************************PATH_KNOB**************************************/
-class Path_Knob: public Knob
+class Path_Knob:  public QObject, public Knob<std::string>
 {
     
     Q_OBJECT
 public:
     
-    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
         return new Path_Knob(holder, description, dimension);
     }
     
@@ -202,8 +178,6 @@ public:
     
     bool isMultiPath() const;
     
-    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
-
 signals:
     
     void openFile();

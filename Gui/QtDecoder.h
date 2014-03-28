@@ -78,7 +78,7 @@ public:
                                   boost::shared_ptr<Natron::Image> output) OVERRIDE;
     
 
-    virtual void onKnobValueChanged(Knob* k, Natron::ValueChangedReason reason) OVERRIDE;
+    virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReason reason) OVERRIDE;
 
     virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Natron::EffectInstance::INSTANCE_SAFE;}
         

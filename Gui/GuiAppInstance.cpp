@@ -229,12 +229,12 @@ void GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* wr
     }
     ///get the output file knob to get the same of the sequence
     QString outputFileSequence;
-    const std::vector< boost::shared_ptr<Knob> >& knobs = writer->getKnobs();
+    const std::vector< boost::shared_ptr<KnobI> >& knobs = writer->getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         if (knobs[i]->typeName() == OutputFile_Knob::typeNameStatic()) {
             boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
             if(fk->isOutputImageFile()){
-                outputFileSequence = fk->getValue().toString();
+                outputFileSequence = fk->getValue().c_str();
             }
         }
     }
