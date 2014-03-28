@@ -150,7 +150,7 @@ public:
             _storageMode = RAM;
             _buffer = new DataType[count];
         }
-        _size = count;
+        _size = count * sizeof(DataType);
     }
     
     void reOpenFileMapping() const {

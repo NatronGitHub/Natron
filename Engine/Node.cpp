@@ -1023,14 +1023,15 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     
     for (int i=0; i < h; ++i) {
         double y = (double)i/yZoomFactor;
-        int nearestY = (int)(y+0.5);
+        int nearestY = std::floor(y+0.5);
 
         U32 *dst_pixels = buf + width*(h-1-i);
         const float* src_pixels = img->pixelAt(0, nearestY);
         
         for(int j = 0;j < w;++j) {
+            
             double x = (double)j/xZoomFactor;
-            int nearestX = (int)(x+0.5);
+            int nearestX = std::floor(x+0.5);
             int r = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4]));
             int g = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4+1]));
             int b = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4+2]));

@@ -1145,7 +1145,7 @@ void ViewerGL::activateShaderRGB()
 
     assert(_imp->supportsGLSL );
     // don't even bind the shader on 8-bits gamma-compressed textures
-    if (!(getBitDepth() != OpenGLViewerI::BYTE)) {
+    if (getBitDepth() == OpenGLViewerI::BYTE) {
         return;
     }
     if (!_imp->shaderRGB->bind()) {
