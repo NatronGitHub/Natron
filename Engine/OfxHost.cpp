@@ -493,7 +493,7 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
 #ifdef OFX_SUPPORTS_MULTITHREAD
 
 // comment out the following to disable the use of QtConcurrent
-#define OFX_MULTITHREAD_USES_QTCONCURRENT
+//#define OFX_MULTITHREAD_USES_QTCONCURRENT
 
 ///Stored as int, because we need -1
 static QThreadStorage<int> gThreadIndex;
@@ -521,7 +521,7 @@ namespace {
         return ret;
     }
 #else
-#pragme message WARN("QtConcurrent disabled in multithread suite")
+#pragma message WARN("QtConcurrent disabled in multithread suite")
 class OfxThread : public QThread
 {
 public:
