@@ -172,7 +172,7 @@ struct KnobHelper::KnobHelperPrivate {
     , _IsSecret(false)
     , _enabled(dimension)
     , _CanUndo(true)
-    , _EvaluateOnChange(false)
+    , _EvaluateOnChange(true)
     , _IsPersistant(true)
     , _tooltipHint()
     , _isAnimationEnabled(true)
@@ -703,6 +703,7 @@ int KnobHelper::getKeyFrameIndex(int dimension, double time) const
     
     boost::shared_ptr<Curve> curve = getCurve(dimension);
     assert(curve);
+    
     return curve->keyFrameIndex(time);
 }
 
