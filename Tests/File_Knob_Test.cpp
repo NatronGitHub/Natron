@@ -519,7 +519,7 @@ TEST(SequenceFromFiles,SimpleTest) {
     FileNameContent file1("/Users/Test/mysequence000.jpg");
     SequenceFromFiles sequence(file1,false);
     EXPECT_EQ(file1.absoluteFileName(), sequence.generateValidSequencePattern());
-    EXPECT_EQ(file1.absoluteFileName(), sequence.generateUserFriendlySequencePattern());
+    EXPECT_EQ(file1.fileName(), sequence.generateUserFriendlySequencePattern());
     EXPECT_EQ("jpg", sequence.fileExtension());
     EXPECT_TRUE(sequence.isSingleFile());
     EXPECT_EQ(INT_MIN, sequence.getFirstFrame());
