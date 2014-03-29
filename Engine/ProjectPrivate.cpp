@@ -178,7 +178,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             }
             thisNode->getLiveInstance()->slaveAllKnobs(masterNode->getLiveInstance());
         } else {
-            thisNode->restoreKnobsLinks(*it);
+            thisNode->restoreKnobsLinks(*it,currentNodes);
         }
         
         const std::vector<std::string>& inputs = it->getInputs();

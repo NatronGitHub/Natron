@@ -289,7 +289,7 @@ void Node::loadKnobs(const NodeSerialization& serialization) {
     setKnobsAge(serialization.getKnobsAge());
 }
 
-void Node::restoreKnobsLinks(const NodeSerialization& serialization) {
+void Node::restoreKnobsLinks(const NodeSerialization& serialization,const std::vector<Natron::Node*>& allNodes) {
     
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -297,7 +297,7 @@ void Node::restoreKnobsLinks(const NodeSerialization& serialization) {
     const NodeSerialization::KnobValues& knobsValues = serialization.getKnobsValues();
     ///try to find a serialized value for this knob
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it!=knobsValues.end();++it) {
-        (*it)->restoreKnobLinks();
+        (*it)->restoreKnobLinks(allNodes);
     }
     
 }

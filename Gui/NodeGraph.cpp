@@ -1569,7 +1569,9 @@ void NodeGraph::pasteNode(const NodeSerialization& internalSerialization,const N
     assert(n);
     const std::string& masterNodeName = internalSerialization.getMasterNodeName();
     if (masterNodeName.empty()) {
-        n->restoreKnobsLinks(internalSerialization);
+        std::vector<Natron::Node*> allNodes;
+        getGui()->getApp()->getActiveNodes(&allNodes);
+        n->restoreKnobsLinks(internalSerialization,allNodes);
     } else {
         Natron::Node* masterNode = _gui->getApp()->getProject()->getNodeByName(masterNodeName);
         

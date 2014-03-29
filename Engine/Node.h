@@ -62,7 +62,7 @@ public:
     
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
-    void restoreKnobsLinks(const NodeSerialization& serialization);
+    void restoreKnobsLinks(const NodeSerialization& serialization,const std::vector<Natron::Node*>& allNodes);
     
     /*Quit all processing done by all render instances of this node */
     void quitAnyProcessing();
