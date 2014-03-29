@@ -1248,7 +1248,7 @@ QString SequenceFromFiles::generateValidSequencePattern() const
     
 QString SequenceFromFiles::generateUserFriendlySequencePattern() const {
     if (isSingleFile()) {
-        return _imp->sequence[0].absoluteFileName();
+        return _imp->sequence[0].fileName();
     }
     QString pattern = generateValidSequencePattern();
     removePath(pattern);
