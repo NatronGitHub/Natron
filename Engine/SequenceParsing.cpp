@@ -1251,6 +1251,7 @@ QString SequenceFromFiles::generateUserFriendlySequencePattern() const {
         return _imp->sequence[0].absoluteFileName();
     }
     QString pattern = generateValidSequencePattern();
+    removePath(pattern);
     
     std::vector< std::pair<int,int> > chunks;
     int first = getFirstFrame();

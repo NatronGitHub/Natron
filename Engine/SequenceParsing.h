@@ -261,7 +261,7 @@ public:
     ////Generates a string from this sequence so the user can have a global
     ////understanding of the content of the sequence.
     ////If the sequence contains only a single file, it will be the exact same name
-    ////as the absolute filename.
+    ////the filename without the path.
     QString generateUserFriendlySequencePattern() const;
     
 private:

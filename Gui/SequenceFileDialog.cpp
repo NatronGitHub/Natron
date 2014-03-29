@@ -976,7 +976,6 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
             painter->fillRect(geom, option.palette.highlight());
         }
         QString nameToPaint = found_item.second;
-        SequenceParsing::removePath(nameToPaint);
         int totalSize = geom.width();
         int iconWidth = option.decorationSize.width();
         int textSize = totalSize - iconWidth;
