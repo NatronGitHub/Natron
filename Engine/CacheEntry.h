@@ -340,7 +340,9 @@ public:
     
     void deallocate() {_data.deallocate();}
     
-    size_t size() const {return _data.size();}
+    virtual size_t size() const { return dataSize(); }
+
+    size_t dataSize() const {return _data.size();}
     
     bool isStoredOnDisk() const {return _data.getStorageMode() == Buffer<DataType>::DISK;}
     
