@@ -523,7 +523,7 @@ void AppManager::registerAppInstance(AppInstance* app){
 }
 
 void AppManager::setApplicationsCachesMaximumMemoryPercent(double p){
-    size_t maxCacheRAM = p * getSystemTotalRAM();
+    size_t maxCacheRAM = p * getSystemTotalRAM_conditionnally();
     U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
     _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
     _imp->_nodeCache->setMaximumInMemorySize(1);
@@ -536,7 +536,7 @@ void AppManager::setApplicationsCachesMaximumMemoryPercent(double p){
 }
 
 void AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size){
-    size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM();
+    size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM_conditionnally();
     U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
     _imp->_viewerCache->setMaximumCacheSize(size);
     _imp->_viewerCache->setMaximumInMemorySize((double)playbackSize / (double)size);
@@ -547,7 +547,7 @@ void AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size){
 }
 
 void AppManager::setPlaybackCacheMaximumSize(double p){
-    size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM();
+    size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM_conditionnally();
     U64 playbackSize = maxCacheRAM * p;
     _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
     _imp->_nodeCache->setMaximumInMemorySize(1);

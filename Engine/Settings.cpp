@@ -182,6 +182,11 @@ void Settings::initializeKnobs(){
                         " Your system has ");
     ramHint.append(printAsRAM(getSystemTotalRAM()).toStdString());
     ramHint.append(" of RAM.");
+    if (isApplication32Bits()) {
+        ramHint.append("\n The version of " NATRON_APPLICATION_NAME " you are running is 32 bits, that means the system's total RAM "
+                       "will be limited to 4Gib. In this case the percentage of RAM allowed will be min(4Gib,SystemtotalRAM) * MaxRamPercent.");
+    }
+    
     _maxRAMPercent->setHintToolTip(ramHint);
     _cachingTab->addKnob(_maxRAMPercent);
     
@@ -340,7 +345,7 @@ void Settings::restoreSettings(){
         _maxRAMPercent->setValue(settings.value("MaximumRAMUsagePercentage").toInt(),0);
     }
     if(settings.contains("MaximumPlaybackRAMUsage")){
-        _maxPlayBackPercent->setValue(settings.value("MaximumRAMUsagePercentage").toInt(),0);
+        _maxPlayBackPercent->setValue(settings.value("MaximumPlaybackRAMUsage").toInt(),0);
     }
     if(settings.contains("MaximumDiskSizeUsage")){
         _maxDiskCacheGB->setValue(settings.value("MaximumDiskSizeUsage").toInt(),0);
