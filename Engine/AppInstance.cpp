@@ -138,9 +138,6 @@ Natron::Node* AppInstance::createNodeInternal(const QString& pluginID,int majorV
     }
     
     
-    if (!requestedByLoad || dontLoadName) {
-        _imp->_currentProject->initNodeCountersAndSetName(node);
-    }
     _imp->_currentProject->addNodeToProject(node);
     
     createNodeGui(node,requestedByLoad,openImageFileDialog);

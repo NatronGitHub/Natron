@@ -195,7 +195,6 @@ void Node::load(const std::string& pluginID,const NodeSerialization& serializati
     if (!serialization.isNull() && !dontLoadName) {
         setName(serialization.getPluginLabel());
     }
-    
     std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
     if (func.first) {
         _imp->liveInstance = func.second(this);
@@ -210,7 +209,13 @@ void Node::load(const std::string& pluginID,const NodeSerialization& serializati
     
     initializeKnobs();
     initializeInputs();
-    computeHash();
+    
+    
+    if (!dontLoadName || serialization.isNull()) {
+        getApp()->getProject()->initNodeCountersAndSetName(this);
+    }
+    
+    computeHash(); 
     assert(_imp->liveInstance);
 }
 
@@ -237,12 +242,12 @@ void Node::computeHash() {
         {
             InspectorNode* isInspector = dynamic_cast<InspectorNode*>(this);
             QMutexLocker l(&_imp->inputsMutex);
-            for (U32 i = 0; i < _imp->inputs.size();++i) {
+            for (U32 i = 0; i < _imp->inputsQueue.size();++i) {
                 if (isInspector && isInspector->activeInput() != (int)i) {
                     continue;
                 }
-                if (_imp->inputs[i]) {
-                    _imp->hash.append(_imp->inputs[i]->getHashValue());
+                if (_imp->inputsQueue[i]) {
+                    _imp->hash.append(_imp->inputsQueue[i]->getHashValue());
                 }
             }
         }
@@ -469,6 +474,7 @@ void Node::setName(const std::string& name)
         QMutexLocker l(&_imp->nameMutex);
         _imp->name = name;
     }
+
     emit nameChanged(name.c_str());
 }
 
