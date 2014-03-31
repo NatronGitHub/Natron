@@ -1429,6 +1429,12 @@ void NodeGraph::dropEvent(QDropEvent* event){
     for(int i = 0; i < urls.size() ; ++i){
         const QUrl& rl = urls.at(i);
         QString path = rl.path();
+
+#ifdef __NATRON_WIN32__
+		if (!path.isEmpty() && path.at(0) == QChar('/') || path.at(0) == QChar('\\')) {
+			path = path.remove(0,1);
+		}	
+#endif
         QDir dir(path);
         
         //if the path dropped is not a directory append it
