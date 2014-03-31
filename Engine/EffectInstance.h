@@ -413,7 +413,7 @@ public:
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void onKnobValueChanged(Knob* /*k*/, Natron::ValueChangedReason /*reason*/) OVERRIDE {}
+    virtual void onKnobValueChanged(KnobI* /*k*/, Natron::ValueChangedReason /*reason*/) OVERRIDE {}
     
     /**
      * @brief Can be overloaded to clear any cache the plugin might be
@@ -561,7 +561,7 @@ private:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    void evaluate(Knob* knob,bool isSignificant) OVERRIDE;
+    void evaluate(KnobI* knob,bool isSignificant) OVERRIDE;
 
     
     virtual void onSlaveStateChanged(bool isSlave,KnobHolder* master) OVERRIDE FINAL;

@@ -12,51 +12,105 @@
 
 #include "KnobSerialization.h"
 
+#include <QDebug>
+
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"
 #include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
-KnobSerialization::KnobSerialization()
-: _values()
-, _dimension(0)
+#include "Engine/AppInstance.h"
+#include "Engine/KnobTypes.h"
+
+
+ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI>& knob,int dimension,bool save)
+: _knob(knob)
+, _dimension(dimension)
+
 {
-
-}
-
-void KnobSerialization::initialize(const Knob* knob) {
-    
-    ///this function is MT-safe
-    _name = knob->getName();
-    _dimension = knob->getDimension();
-
-    const std::vector<Variant>& values = knob->getValueForEachDimension_mt_safe();
-    const std::vector<boost::shared_ptr<Curve> >& curves = knob->getCurves();
-    std::vector<std::pair<int,boost::shared_ptr<Knob> > > masters = knob->getMasters_mt_safe();
-    
-    assert(values.size() == curves.size() && values.size() == masters.size() && (int)values.size() == _dimension);
-    
-    for (U32 i = 0; i < values.size(); ++i) {
-        ValueSerialization vs;
-        vs.value = values[i];
-        vs.hasAnimation = curves[i]->isAnimated();
-        vs.curve = Curve(*curves[i]);
-        if (masters[i].second) {
-            vs.hasMaster = true;
-            MasterSerialization master;
-            master.masterDimension = masters[i].first;
-            Natron::EffectInstance* effect= dynamic_cast<Natron::EffectInstance*>(masters[i].second->getHolder());
-            ///Master/slaves only works for knobs that belong to an effect.
-            ///That means all the knobs used for the settings and the project should NEVER EVER
-            ///be slaved.
-            assert(effect);
-            
-            master.masterNodeName = effect->getNode()->getName_mt_safe();
-            master.masterKnobName = masters[i].second->getName();
-            vs.master = master;
+    if (save) {
+        std::pair< int, boost::shared_ptr<KnobI> > m = knob->getMaster(dimension);
+        if (m.second) {
+            _master.masterDimension = m.first;
+            Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(m.second->getHolder());
+            assert(holder);
+            _master.masterNodeName = holder->getNode()->getName_mt_safe();
+            _master.masterKnobName = m.second->getName();
         } else {
-            vs.hasMaster = false;
+            _master.masterDimension = -1;
         }
-        _values.push_back(vs);
+        
     }
-    _extraData = knob->saveExtraData().toStdString();
 }
+
+bool KnobSerialization::createKnob(const std::string& typeName,int dimension)
+{
+    if (typeName == Int_Knob::typeNameStatic()) {
+        _knob.reset(new Int_Knob(NULL,"",dimension));
+    } else if (typeName == Bool_Knob::typeNameStatic()) {
+        _knob.reset(new Bool_Knob(NULL,"",dimension));
+    } else if (typeName == Double_Knob::typeNameStatic()) {
+        _knob.reset(new Double_Knob(NULL,"",dimension));
+    } else if (typeName == Choice_Knob::typeNameStatic()) {
+        _knob.reset(new Choice_Knob(NULL,"",dimension));
+    } else if (typeName == String_Knob::typeNameStatic()) {
+        _knob.reset(new String_Knob(NULL,"",dimension));
+    } else if (typeName == Parametric_Knob::typeNameStatic()) {
+        _knob.reset(new Parametric_Knob(NULL,"",dimension));
+    } else if (typeName == Color_Knob::typeNameStatic()) {
+        _knob.reset(new Color_Knob(NULL,"",dimension));
+    } else if (typeName == Path_Knob::typeNameStatic()) {
+        _knob.reset(new Path_Knob(NULL,"",dimension));
+    } else if (typeName == File_Knob::typeNameStatic()) {
+        _knob.reset(new File_Knob(NULL,"",dimension));
+    } else if (typeName == OutputFile_Knob::typeNameStatic()) {
+        _knob.reset(new OutputFile_Knob(NULL,"",dimension));
+    }
+    if (_knob) {
+        _knob->populate();
+        return true;
+    }
+    return false;
+
+}
+
+void KnobSerialization::restoreKnobLinks(const std::vector<Natron::Node*>& allNodes)
+{
+    int i = 0;
+    for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it) {
+        if (it->masterDimension != -1) {
+            ///we need to cycle through all the nodes of the project to find the real master
+            Natron::Node* masterNode = 0;
+            for (U32 k = 0; k < allNodes.size(); ++k) {
+                if (allNodes[k]->getName() == it->masterNodeName) {
+                    masterNode = allNodes[k];
+                    break;
+                }
+            }
+            if (!masterNode) {
+                qDebug() << "Link slave/master for "<< _knob->getName().c_str() <<   " failed to restore the following linkage: " << it->masterNodeName.c_str();
+                ++i;
+                continue;
+                
+            }
+            
+            ///now that we have the master node, find the corresponding knob
+            const std::vector< boost::shared_ptr<KnobI> >& otherKnobs = masterNode->getKnobs();
+            bool found = false;
+            for (U32 j = 0 ; j < otherKnobs.size();++j) {
+                if (otherKnobs[j]->getName() == it->masterKnobName && otherKnobs[j]->getIsPersistant()) {
+                    _knob->slaveTo(i, otherKnobs[j], it->masterDimension);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                qDebug() << "Link slave/master for "<< _knob->getName().c_str() <<   " failed to restore the following linkage: " << it->masterNodeName.c_str();
+            }
+            
+            
+        }
+        ++i;
+        
+    }
+}
+

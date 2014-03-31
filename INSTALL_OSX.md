@@ -1,4 +1,4 @@
-Developer installation on mac osx (updated on 15th of july ,2013)
+Developer installation on mac osx
 =================================
 
 This file is supposed to guide you step by step to have working (compiling) version of Natron on mac osx ( >= 10.6 ). 

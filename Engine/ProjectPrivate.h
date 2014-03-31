@@ -94,7 +94,7 @@ struct ProjectPrivate {
     KnobsValueChangedMap holdersWhoseBeginWasCalled;
     
     bool isSignificantChange;
-    Knob* lastKnobChanged;
+    KnobI* lastKnobChanged;
     
     mutable QMutex isLoadingProjectMutex;
     bool isLoadingProject; //< true when the project is loading

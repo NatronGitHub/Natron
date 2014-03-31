@@ -27,14 +27,12 @@ using std::pair;
 /***********************************FILE_KNOB*****************************************/
 
 File_Knob::File_Knob(KnobHolder *holder, const std::string &description, int dimension)
-: Knob(holder, description, dimension)
-, _animation(new StringAnimationManager(this))
+: AnimatingString_KnobHelper(holder, description, dimension)
 , _isInputImage(false)
 {
 }
 
 File_Knob::~File_Knob() {
-    delete _animation;
 }
 
 bool File_Knob::canAnimate() const {
@@ -54,40 +52,6 @@ const std::string& File_Knob::typeName() const
 }
 
 
-Natron::Status File_Knob::variantToKeyFrameValue(int time,const Variant& v,double* returnValue) {
-    _animation->insertKeyFrame(time, v.toString(), returnValue);
-    return StatOK;
-}
-
-void File_Knob::variantFromInterpolatedValue(double interpolated,Variant* returnValue) const {
-    QString str;
-    _animation->stringFromInterpolatedIndex(interpolated, &str);
-    returnValue->setValue<QString>(str);
-}
-
-void File_Knob::cloneExtraData(const Knob& other) {
-    if (other.typeName() == String_Knob::typeNameStatic()) {
-        const String_Knob& o = dynamic_cast<const String_Knob&>(other);
-        _animation->clone(o.getAnimation());
-    } else if(other.typeName() == File_Knob::typeNameStatic()) {
-        const File_Knob& o = dynamic_cast<const File_Knob&>(other);
-        _animation->clone(o.getAnimation());
-    }
-}
-
-
-void File_Knob::loadExtraData(const QString& str) {
-    _animation->load(str);
-    SequenceParsing::SequenceFromFiles sequence(false);
-    getFiles(&sequence);
-    _pattern = sequence.generateValidSequencePattern();
-}
-
-QString File_Knob::saveExtraData() const {
-    return _animation->save();
-}
-
-
 void File_Knob::setFiles(const QStringList& files) {
 
     SequenceParsing::SequenceFromFiles sequence(false);
@@ -98,18 +62,18 @@ void File_Knob::setFiles(const QStringList& files) {
 }
 
 void File_Knob::setFilesInternal(const SequenceParsing::SequenceFromFiles& fileSequence) {
-    removeAnimation(0);
+    KnobI::removeAnimation(0);
     if (!fileSequence.empty()) {
         if (isAnimationEnabled()) {
             const std::map<int, QString>& filesMap  = fileSequence.getFrameIndexes();
             if (!filesMap.empty()) {
                 for (std::map<int, QString>::const_iterator it = filesMap.begin(); it!=filesMap.end(); ++it) {
-                    setValueAtTime<QString>(it->first, it->second);
+                    setValueAtTime(it->first, it->second.toStdString(),0);
                 }
             } else {
                 ///the sequence has no indexes,if it has one file set a keyframe at time 0 for the single file
                 if (fileSequence.isSingleFile()) {
-                    setValueAtTime<QString>(0, fileSequence.getFilesList().at(0));
+                    setValueAtTime(0, fileSequence.getFilesList().at(0).toStdString(),0);
                 }
             }
             
@@ -126,7 +90,7 @@ void File_Knob::setFiles(const SequenceParsing::SequenceFromFiles& fileSequence)
     _pattern = fileSequence.generateValidSequencePattern();
     
     ///necessary for the changedParam call!
-    setValue(Variant(_pattern),0,true);
+    setValue(_pattern.toStdString(),0,true);
     endValueChange();
 }
 
@@ -134,14 +98,26 @@ void File_Knob::setFiles(const SequenceParsing::SequenceFromFiles& fileSequence)
 void File_Knob::processNewValue(Natron::ValueChangedReason reason) {
     if (reason != Natron::TIME_CHANGED) {
         if (isSlave(0)) {
-            std::pair<int,boost::shared_ptr<Knob> > master = getMaster(0);
+            std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(0);
             assert(master.second);
-            _pattern = master.second->getValueForEachDimension()[master.first].toString();
+            boost::shared_ptr< Knob<std::string> > isString = boost::dynamic_pointer_cast<Knob<std::string > >(master.second);
+            assert(isString);
+            
+            _pattern = isString->getValueForEachDimension()[master.first].c_str();
         } else {
-            _pattern = getValueForEachDimension()[0].toString();
+            _pattern = dynamic_cast< Knob<std::string>* >(this)->getValueForEachDimension()[0].c_str();
         }
  
     }    
+}
+
+void File_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other)
+{
+    File_Knob* isFile = dynamic_cast<File_Knob*>(other.get());
+    if (isFile) {
+        _pattern = isFile->getPattern();
+    }
+    AnimatingString_KnobHelper::cloneExtraData(other);
 }
 
 int File_Knob::firstFrame() const
@@ -163,10 +139,10 @@ int File_Knob::frameCount() const {
     return getKeyFramesCount(0);
 }
 
-QString File_Knob::getRandomFrameName(int f, bool loadNearestIfNotFound) const
+std::string File_Knob::getValueAtTimeConditionally(int f, bool loadNearestIfNotFound) const
 {
     if (!isAnimationEnabled()) {
-        return getValue().toString();
+        return getValue();
     } else {
         
         if (!loadNearestIfNotFound) {
@@ -178,7 +154,7 @@ QString File_Knob::getRandomFrameName(int f, bool loadNearestIfNotFound) const
         if (getKeyFramesCount(0) == 0) {
             return "";
         } else {
-            return getValueAtTime(f, 0).toString();
+            return getValueAtTime(f, 0);
         }
     }
 }
@@ -188,31 +164,16 @@ QString File_Knob::getRandomFrameName(int f, bool loadNearestIfNotFound) const
 void File_Knob::getFiles(SequenceParsing::SequenceFromFiles* files) {
     int kfCount = getKeyFramesCount(0);
     for (int i = 0; i < kfCount; ++i) {
-        Variant v;
-        bool success = getKeyFrameValueByIndex(0, i, &v);
+        bool success;
+        std::string v = getKeyFrameValueByIndex(0, i, &success);
         assert(success);
-        files->tryInsertFile(SequenceParsing::FileNameContent(v.toString()));
+        files->tryInsertFile(SequenceParsing::FileNameContent(v.c_str()));
     }
 }
 
-void File_Knob::animationRemoved_virtual(int /*dimension*/) {
-    _animation->clearKeyFrames();
+void File_Knob::animationRemoved_virtual(int dimension) {
+    AnimatingString_KnobHelper::animationRemoved_virtual(dimension);
     _pattern.clear();
-}
-
-void File_Knob::keyframeRemoved_virtual(int /*dimension*/, double time) {
-    _animation->removeKeyFrame(time);
-}
-
-bool File_Knob::isTypeCompatible(const Knob& other) const {
-    if (other.typeName() == String_Knob::typeNameStatic() ||
-        other.typeName() == OutputFile_Knob::typeNameStatic() ||
-        other.typeName() == Path_Knob::typeNameStatic() ||
-        other.typeName() == File_Knob::typeNameStatic()) {
-        return true;
-    } else {
-        return false;
-    }
 }
 
 /***********************************OUTPUT_FILE_KNOB*****************************************/
@@ -224,14 +185,6 @@ OutputFile_Knob::OutputFile_Knob(KnobHolder *holder, const std::string &descript
 {
 }
 
-std::string OutputFile_Knob::getPattern() const
-{
-    return  getValue<QString>().toStdString();
-}
-
-void OutputFile_Knob::setFile(const QString& file){
-    setValue(Variant(file), 0);
-}
 
 bool OutputFile_Knob::canAnimate() const {
     return false;
@@ -249,19 +202,8 @@ const std::string& OutputFile_Knob::typeName() const
     return typeNameStatic();
 }
 
-bool OutputFile_Knob::isTypeCompatible(const Knob& other) const {
-    if (other.typeName() == String_Knob::typeNameStatic() ||
-        other.typeName() == OutputFile_Knob::typeNameStatic() ||
-        other.typeName() == Path_Knob::typeNameStatic() ||
-        other.typeName() == File_Knob::typeNameStatic()) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 QString OutputFile_Knob::generateFileNameAtTime(SequenceTime time,int view) const {
-    return SequenceParsing::generateFileNameFromPattern(getValue<QString>(), time, view);
+    return SequenceParsing::generateFileNameFromPattern(getValue(0).c_str(), time, view);
 }
 
 /***********************************PATH_KNOB*****************************************/
@@ -294,17 +236,4 @@ void Path_Knob::setMultiPath(bool b) {
 bool Path_Knob::isMultiPath() const {
     return _isMultiPath;
 }
-
-bool Path_Knob::isTypeCompatible(const Knob& other) const {
-    if (other.typeName() == String_Knob::typeNameStatic() ||
-        other.typeName() == OutputFile_Knob::typeNameStatic() ||
-        other.typeName() == Path_Knob::typeNameStatic() ||
-        other.typeName() == File_Knob::typeNameStatic()) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-
 

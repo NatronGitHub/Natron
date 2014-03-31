@@ -16,7 +16,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QtGlobal>
-#include <QtConcurrentMap>
+#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt<<(
 #include <QtCore/QFutureWatcher>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>

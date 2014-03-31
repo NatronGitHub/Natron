@@ -21,6 +21,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
 #include <QVector>
+#include <QMutex>
 
 #include "Engine/Knob.h"
 
@@ -31,14 +32,14 @@ class OverlaySupport;
 class StringAnimationManager;
 /******************************INT_KNOB**************************************/
 
-class Int_Knob: public Knob
+class Int_Knob: public QObject, public Knob<int>
 {
     
     Q_OBJECT
     
 public:
     
-    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
         return new Int_Knob(holder, description, dimension);
     }
     
@@ -80,8 +81,6 @@ public:
     
     std::pair<int,int> getMinMaxForCurve(const Curve* curve) const;
     
-    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
-
     void setDimensionName(int dim,const std::string& name);
     
     virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
@@ -111,12 +110,12 @@ private:
 
 /******************************BOOL_KNOB**************************************/
 
-class Bool_Knob: public Knob
+class Bool_Knob:  public Knob<bool>
 {
     
 public:
     
-    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
         return new Bool_Knob(holder, description, dimension);
     }
     
@@ -129,8 +128,6 @@ public:
     
     static const std::string& typeNameStatic();
     
-    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
-
 private:
     
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -143,13 +140,13 @@ private:
 
 /******************************DOUBLE_KNOB**************************************/
 
-class Double_Knob: public Knob
+class Double_Knob:  public QObject,public Knob<double>
 {
     Q_OBJECT
     
 public:
     
-    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
         return new Double_Knob(holder, description, dimension);
     }
     
@@ -198,8 +195,6 @@ public:
     
     static const std::string& typeNameStatic();
     
-    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
-
     void setDimensionName(int dim,const std::string& name);
     
     virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
@@ -232,12 +227,12 @@ private:
 
 /******************************BUTTON_KNOB**************************************/
 
-class Button_Knob: public Knob
+class Button_Knob: public Knob<bool>
 {
     
 public:
     
-    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
         return new Button_Knob(holder, description, dimension);
     }
     
@@ -249,8 +244,6 @@ public:
     
     bool isRenderButton() const { return _renderButton; }
     
-    virtual bool isTypeCompatible(const Knob& /*other*/) const { return false; }
-
 private:
     
     
@@ -265,25 +258,23 @@ private:
 
 /******************************CHOICE_KNOB**************************************/
 
-class Choice_Knob: public Knob
+class Choice_Knob: public QObject,public Knob<int>
 {
     Q_OBJECT
 public:
     
-    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
         return new Choice_Knob(holder, description, dimension);
     }
     
     Choice_Knob(KnobHolder *holder, const std::string &description, int dimension);
     
     /*Must be called right away after the constructor.*/
-    void populate(const std::vector<std::string> &entries, const std::vector<std::string> &entriesHelp = std::vector<std::string>());
+    void populateChoices(const std::vector<std::string> &entries, const std::vector<std::string> &entriesHelp = std::vector<std::string>());
     
     const std::vector<std::string> &getEntries() const;
     
     const std::vector<std::string> &getEntriesHelp() const;
-    
-    int getActiveEntry() const;
     
     const std::string &getActiveEntryText() const;
     
@@ -294,8 +285,6 @@ public:
     
     static const std::string& typeNameStatic();
     
-    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
-
 signals:
     
     void populated();
@@ -360,12 +349,12 @@ private:
 
 /******************************SEPARATOR_KNOB**************************************/
 
-class Separator_Knob: public Knob
+class Separator_Knob: public Knob<bool>
 {
     
 public:
     
-    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
         return new Separator_Knob(holder, description, dimension);
     }
     
@@ -373,8 +362,6 @@ public:
     
     static const std::string& typeNameStatic();
     
-    virtual bool isTypeCompatible(const Knob& /*other*/) const { return false; }
-
 private:
     
     
@@ -393,12 +380,12 @@ private:
  * In dimension 3 the knob will have 3 channel R,G,B
  * In dimension 4 the knob will have R,G,B and A channels.
  **/
-class Color_Knob: public Knob
+class Color_Knob:  public QObject, public Knob<double>
 {
     Q_OBJECT
 public:
     
-    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
         return new Color_Knob(holder, description, dimension);
     }
     
@@ -430,8 +417,6 @@ public:
 
     static const std::string& typeNameStatic();
     
-    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
-
     void setDimensionName(int dim,const std::string& dimension);
     
     virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
@@ -466,23 +451,15 @@ private:
 };
 
 /******************************STRING_KNOB**************************************/
-class String_Knob: public Knob
+
+
+
+class String_Knob: public AnimatingString_KnobHelper
 {
 public:
-    struct StringKeyFrame {
-        QString value;
-        int time;
-    };
     
-    struct KeyFrame_compare_time {
-        bool operator() (const StringKeyFrame& lhs, const StringKeyFrame& rhs) const {
-            return lhs.time < rhs.time;
-        }
-    };
     
-    typedef std::set<StringKeyFrame,KeyFrame_compare_time> Keyframes;
-    
-    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
         return new String_Knob(holder, description, dimension);
     }
     
@@ -513,38 +490,11 @@ public:
     
     bool isCustomKnob() const { return _isCustom; }
         
-    ///for integration of openfx custom params
-    typedef OfxStatus (*customParamInterpolationV1Entry_t)(
-                                                          const void*            handleRaw,
-                                                          OfxPropertySetHandle   inArgsRaw,
-                                                          OfxPropertySetHandle   outArgsRaw);
-    
-    void setCustomInterpolation(customParamInterpolationV1Entry_t func,void* ofxParamHandle);
-    
-    virtual Variant getValueAtTime(double time, int dimension) const OVERRIDE FINAL;
-    
-    virtual bool isTypeCompatible(const Knob& other) const OVERRIDE FINAL;
-
-    const StringAnimationManager& getAnimation() const { return *_animation; }
-private:
+    private:
     
     virtual bool canAnimate() const OVERRIDE FINAL;
     
     virtual const std::string& typeName() const OVERRIDE FINAL;
-    
-    virtual Natron::Status variantToKeyFrameValue(int time,const Variant& v,double* returnValue) OVERRIDE FINAL;
-    
-    virtual void variantFromInterpolatedValue(double interpolated,Variant* returnValue) const OVERRIDE FINAL;
-    
-    virtual void cloneExtraData(const Knob& other) OVERRIDE FINAL;
-    
-    virtual void loadExtraData(const QString& str) OVERRIDE FINAL;
-    
-    virtual QString saveExtraData() const OVERRIDE FINAL;
-    
-    virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE FINAL;
-    
-    virtual void animationRemoved_virtual(int dimension) OVERRIDE FINAL;
     
 private:
     static const std::string _typeNameStr;
@@ -552,33 +502,30 @@ private:
     bool _multiLine;
     bool _isLabel;
     bool _isCustom;
-    StringAnimationManager* _animation;
 
 
 };
 
 /******************************GROUP_KNOB**************************************/
-class Group_Knob: public Knob
+class Group_Knob:  public QObject, public Knob<bool>
 {
     Q_OBJECT
     
-    std::vector< boost::shared_ptr<Knob> > _children;
+    std::vector< boost::shared_ptr<KnobI> > _children;
 public:
     
-    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
         return new Group_Knob(holder, description, dimension);
     }
     
     Group_Knob(KnobHolder *holder, const std::string &description, int dimension);
     
-    void addKnob(boost::shared_ptr<Knob> k);
+    void addKnob(boost::shared_ptr<KnobI> k);
     
-    const std::vector< boost::shared_ptr<Knob> > &getChildren() const;
+    const std::vector< boost::shared_ptr<KnobI> > &getChildren() const;
     
     static const std::string& typeNameStatic();
     
-    virtual bool isTypeCompatible(const Knob& /*other*/) const { return false; }
-
 private:
     
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -591,25 +538,23 @@ private:
 
 /******************************TAB_KNOB**************************************/
 
-class Tab_Knob : public Knob
+class Tab_Knob :  public QObject,public Knob<bool>
 {
     Q_OBJECT
 public:
     
-    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
         return new Tab_Knob(holder, description, dimension);
     }
     
     Tab_Knob(KnobHolder *holder, const std::string &description, int dimension);
     
-    void addKnob(boost::shared_ptr<Knob> k);
+    void addKnob(boost::shared_ptr<KnobI> k);
     
-    const std::vector< boost::shared_ptr<Knob> >& getChildren() const { return _children; }
+    const std::vector< boost::shared_ptr<KnobI> >& getChildren() const { return _children; }
     
     static const std::string& typeNameStatic();
     
-    virtual bool isTypeCompatible(const Knob& /*other*/) const { return false; }
-
 private:
     virtual bool canAnimate() const OVERRIDE FINAL;
     
@@ -617,7 +562,7 @@ private:
     
 private:
     
-    std::vector< boost::shared_ptr<Knob> > _children;
+    std::vector< boost::shared_ptr<KnobI> > _children;
     
     static const std::string _typeNameStr;
 };
@@ -625,17 +570,19 @@ private:
 
 /******************************Parametric_Knob**************************************/
 
-class Parametric_Knob : public Knob{
+class Parametric_Knob :  public QObject, public Knob<double>
+{
     
     Q_OBJECT
     
+    mutable QMutex _curvesMutex;
     std::vector< boost::shared_ptr<Curve> > _curves;
     std::vector<RGBAColourF> _curvesColor;
     std::vector<std::string> _curveLabels;
     
 public:
     
-    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
         return new Parametric_Knob(holder, description, dimension);
     }
     
@@ -680,8 +627,10 @@ public:
     
     static const std::string& typeNameStatic() WARN_UNUSED_RETURN;
     
-    virtual bool isTypeCompatible(const Knob& /*other*/) const { return false; }
-
+    void saveParametricCurves(std::list< Curve >* curves) const;
+    
+    void loadParametricCurves(const std::list< Curve >& curves);
+    
 public slots:
     
     virtual void drawCustomBackground(){
@@ -717,11 +666,7 @@ private:
     
     virtual const std::string& typeName() const OVERRIDE FINAL;
     
-    virtual void cloneExtraData(const Knob& other) OVERRIDE FINAL;
-    
-    virtual void loadExtraData(const QString& str) OVERRIDE FINAL;
-    
-    virtual QString saveExtraData() const OVERRIDE FINAL;
+    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other) OVERRIDE FINAL;
     
     static const std::string _typeNameStr;
 };

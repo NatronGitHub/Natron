@@ -51,7 +51,7 @@ class RichText_Knob;
 class Parametric_Knob;
 class OfxEffectInstance;
 class OverlaySupport;
-class Knob;
+class KnobI;
 class Format;
 
 namespace Natron{
@@ -64,7 +64,7 @@ public:
     
     OfxParamToKnob(){}
     
-    virtual boost::shared_ptr<Knob> getKnob() const = 0;
+    virtual boost::shared_ptr<KnobI> getKnob() const = 0;
 
 };
 
@@ -82,7 +82,7 @@ public:
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
 private:
     boost::shared_ptr<Button_Knob> _knob;
@@ -121,7 +121,7 @@ public:
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
 public slots:
     
@@ -163,7 +163,7 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
     bool isAnimated() const;
     
@@ -208,7 +208,7 @@ public:
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
 
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
     
 public slots:
     
@@ -248,7 +248,7 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
 
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
     
 public slots:
     
@@ -289,7 +289,7 @@ public:
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
 
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
@@ -333,7 +333,7 @@ public:
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
 
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
@@ -378,7 +378,7 @@ public:
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
 
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
@@ -422,7 +422,7 @@ public:
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
 
 
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
     
 public slots:
     
@@ -461,7 +461,7 @@ public:
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     
 
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
@@ -500,7 +500,7 @@ public:
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
 
 
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
 public slots:
     
@@ -514,9 +514,9 @@ public:
 
     OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
 
-    void addKnob(boost::shared_ptr<Knob> k);
+    void addKnob(boost::shared_ptr<KnobI> k);
 
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
     virtual ~OfxGroupInstance(){}
     
@@ -570,7 +570,7 @@ public:
      * @param f The index of the frame.
      * @return The file name associated to the frame index. Returns an empty string if it couldn't find it.
      */
-    const QString getRandomFrameName(int f) const;
+    const std::string getRandomFrameName(int f) const;
     
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
@@ -580,7 +580,7 @@ public:
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
 
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
     
     virtual ~OfxStringInstance(){}
     
@@ -628,7 +628,7 @@ public:
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
 
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
     virtual ~OfxCustomInstance(){}
     
@@ -716,7 +716,7 @@ public:
     
     virtual OfxStatus  deleteAllControlPoints(int curveIndex) OVERRIDE FINAL;
     
-    virtual boost::shared_ptr<Knob> getKnob() const OVERRIDE FINAL;
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
     
 public slots:
     

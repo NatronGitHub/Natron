@@ -29,17 +29,15 @@ void ProjectSerialization::initialize(const Natron::Project* project) {
     
     _serializedNodes.clear();
     for (U32 i = 0; i < activeNodes.size(); ++i) {
-        NodeSerialization state;
-        activeNodes[i]->serialize(&state);
+        NodeSerialization state(activeNodes[i]);
         _serializedNodes.push_back(state);
     }
     project->getAdditionalFormats(&_additionalFormats);
     
-    const std::vector< boost::shared_ptr<Knob> >& knobs = project->getKnobs();
+    const std::vector< boost::shared_ptr<KnobI> >& knobs = project->getKnobs();
     for(U32 i = 0; i < knobs.size();++i){
         if(knobs[i]->getIsPersistant()){
-            KnobSerialization newKnobSer;
-            knobs[i]->save(&newKnobSer);
+            boost::shared_ptr<KnobSerialization> newKnobSer(new KnobSerialization(knobs[i]));
             _projectKnobs.push_back(newKnobSer);
         }
     }

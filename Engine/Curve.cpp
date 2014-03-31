@@ -146,7 +146,7 @@ Curve::Curve()
 {
 }
 
-Curve::Curve(Knob *owner)
+Curve::Curve(KnobI *owner)
 : _imp(new CurvePrivate)
 {
     assert(owner);
@@ -1092,7 +1092,7 @@ int Curve::keyFrameIndex(double time) const
             return i;
         }
     }
-    throw std::out_of_range("Curve::keyFrameIndex: There's no keyframe at such time");
+    return -1;
 
 }
 

@@ -24,7 +24,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Global/GlobalDefines.h"
 
 class LineEdit;
-class Knob;
+class KnobI;
 class KnobGui;
 class KnobHolder;
 class NodeGui;
@@ -73,7 +73,7 @@ public:
     /*inserts a new tab to the dockable panel.*/
     void addTab(const QString& name);
 
-    const std::map<boost::shared_ptr<Knob>,KnobGui*>& getKnobs() const { return _knobs; }
+    const std::map<boost::shared_ptr<KnobI>,KnobGui*>& getKnobs() const { return _knobs; }
     
     /*Creates a new button and inserts it in the header
      at position headerPosition. You can then take
@@ -88,8 +88,8 @@ public:
 
     /*Search an existing knob GUI in the map, otherwise creates
      the gui for the knob.*/
-    KnobGui* findKnobGuiOrCreate(boost::shared_ptr<Knob> knob,bool makeNewLine,QWidget* lastRowWidget,
-                                 const std::vector< boost::shared_ptr< Knob > >& knobsOnSameLine = std::vector< boost::shared_ptr< Knob > >());
+    KnobGui* findKnobGuiOrCreate(boost::shared_ptr<KnobI> knob,bool makeNewLine,QWidget* lastRowWidget,
+                                 const std::vector< boost::shared_ptr< KnobI > >& knobsOnSameLine = std::vector< boost::shared_ptr< KnobI > >());
     
     QUndoStack* getUndoStack() const { return _undoStack; }
     
@@ -165,7 +165,7 @@ private:
     
 private:
     
-    void initializeKnobVector(const std::vector< boost::shared_ptr< Knob> >& knobs,bool onlyTopLevelKnobs);
+    void initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> >& knobs,bool onlyTopLevelKnobs);
     
     // FIXME: PIMPL
     Gui* _gui;
@@ -201,7 +201,7 @@ private:
     FloatingWidget* _floatingWidget;
 
     /*a map storing for each knob a pointer to their GUI.*/
-    std::map<boost::shared_ptr<Knob>,KnobGui*> _knobs;
+    std::map<boost::shared_ptr<KnobI>,KnobGui*> _knobs;
     KnobHolder* _holder;
 
     /* map<tab name, pair<tab , row count> >*/

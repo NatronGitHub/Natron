@@ -16,7 +16,7 @@
 #include <map>
 #include <boost/shared_ptr.hpp>
 
-class Knob;
+class KnobI;
 class DockablePanel;
 
 namespace Natron
@@ -40,7 +40,7 @@ public:
     ~KnobGuiFactory();
 
 
-    KnobGui *createGuiForKnob(boost::shared_ptr<Knob> knob, DockablePanel *container) const;
+    KnobGui *createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const;
 
 private:
     const std::map<std::string, Natron::LibraryBinary *> &getLoadedKnobs() const {

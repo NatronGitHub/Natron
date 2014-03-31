@@ -872,7 +872,6 @@ bool ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& 
         return false;
     }
     
-    bool ret = false;
     std::vector<Natron::Node*> nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -882,10 +881,13 @@ bool ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& 
         effect->setCurrentViewportForOverlays(_imp->viewer);
         bool didSmthing = effect->onOverlayPenDown(viewportPos, pos);
         if (didSmthing) {
-            ret = true;
+            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+            // to any other interactive object it may own that shares the same view.
+            return true;
         }
     }
-    return ret;
+    return false;
 }
 
 bool ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos){
@@ -893,7 +895,6 @@ bool ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF
     if (_imp->_gui->isClosing()) {
         return false;
     }
-    bool ret = false;
     std::vector<Natron::Node*> nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -902,10 +903,13 @@ bool ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF
         effect->setCurrentViewportForOverlays(_imp->viewer);
         bool didSmthing = effect->onOverlayPenMotion(viewportPos, pos);
         if (didSmthing) {
-            ret = true;
+            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+            // to any other interactive object it may own that shares the same view.
+            return true;
         }
     }
-    return ret;
+    return false;
 }
 
 bool ViewerTab::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos){
@@ -914,7 +918,6 @@ bool ViewerTab::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& po
         return false;
     }
     
-    bool ret = false;
     std::vector<Natron::Node*> nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -923,10 +926,13 @@ bool ViewerTab::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& po
         effect->setCurrentViewportForOverlays(_imp->viewer);
         bool didSmthing = effect->onOverlayPenUp(viewportPos, pos);
         if (didSmthing) {
-            ret = true;
+            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+            // to any other interactive object it may own that shares the same view.
+            return true;
         }
     }
-    return ret;
+    return false;
 }
 
 bool ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
@@ -935,7 +941,6 @@ bool ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
         return false;
     }
     
-    bool ret = false;
     std::vector<Natron::Node*> nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -944,10 +949,13 @@ bool ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
         effect->setCurrentViewportForOverlays(_imp->viewer);
         bool didSmthing = effect->onOverlayKeyDown(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
         if (didSmthing) {
-            ret = true;
+            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+            // to any other interactive object it may own that shares the same view.
+            return true;
         }
     }
-    return ret;
+    return false;
 }
 
 bool ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
@@ -956,7 +964,6 @@ bool ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
         return false;
     }
     
-    bool ret = false;
     std::vector<Natron::Node*> nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -966,10 +973,13 @@ bool ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
         effect->setCurrentViewportForOverlays(_imp->viewer);
         bool didSmthing = effect->onOverlayKeyUp(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
         if (didSmthing) {
-            ret = true;
+            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+            // to any other interactive object it may own that shares the same view.
+            return true;
         }
     }
-    return ret;
+    return false;
 }
 
 bool ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
@@ -977,7 +987,6 @@ bool ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
     if (_imp->_gui->isClosing()) {
         return false;
     }
-    bool ret = false;
     std::vector<Natron::Node*> nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -987,10 +996,13 @@ bool ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
         effect->setCurrentViewportForOverlays(_imp->viewer);
         bool didSmthing = effect->onOverlayKeyRepeat(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
         if (didSmthing) {
-            ret = true;
+            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+            // to any other interactive object it may own that shares the same view.
+            return true;
         }
     }
-    return ret;
+    return false;
 }
 
 bool ViewerTab::notifyOverlaysFocusGained(){

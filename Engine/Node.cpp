@@ -195,7 +195,6 @@ void Node::load(const std::string& pluginID,const NodeSerialization& serializati
     if (!serialization.isNull() && !dontLoadName) {
         setName(serialization.getPluginLabel());
     }
-    
     std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
     if (func.first) {
         _imp->liveInstance = func.second(this);
@@ -210,7 +209,13 @@ void Node::load(const std::string& pluginID,const NodeSerialization& serializati
     
     initializeKnobs();
     initializeInputs();
-    computeHash();
+    
+    
+    if (!dontLoadName || serialization.isNull()) {
+        getApp()->getProject()->initNodeCountersAndSetName(this);
+    }
+    
+    computeHash(); 
     assert(_imp->liveInstance);
 }
 
@@ -237,12 +242,12 @@ void Node::computeHash() {
         {
             InspectorNode* isInspector = dynamic_cast<InspectorNode*>(this);
             QMutexLocker l(&_imp->inputsMutex);
-            for (U32 i = 0; i < _imp->inputs.size();++i) {
+            for (U32 i = 0; i < _imp->inputsQueue.size();++i) {
                 if (isInspector && isInspector->activeInput() != (int)i) {
                     continue;
                 }
-                if (_imp->inputs[i]) {
-                    _imp->hash.append(_imp->inputs[i]->getHashValue());
+                if (_imp->inputsQueue[i]) {
+                    _imp->hash.append(_imp->inputsQueue[i]->getHashValue());
                 }
             }
         }
@@ -270,17 +275,17 @@ void Node::loadKnobs(const NodeSerialization& serialization) {
     ///Only called from the main thread
     assert(QThread::currentThread() == qApp->thread());
     
-    const std::vector< boost::shared_ptr<Knob> >& nodeKnobs = getKnobs();
+    const std::vector< boost::shared_ptr<KnobI> >& nodeKnobs = getKnobs();
     const NodeSerialization::KnobValues& knobsValues = serialization.getKnobsValues();
     ///for all knobs of the node
     for (U32 j = 0; j < nodeKnobs.size();++j) {
         
         ///try to find a serialized value for this knob
         for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it!=knobsValues.end();++it) {
-            if(it->getName() == nodeKnobs[j]->getName()){
+            if((*it)->getName() == nodeKnobs[j]->getName()){
                 // don't load the value if the Knob is not persistant! (it is just the default value in this case)
                 if (nodeKnobs[j]->getIsPersistant()) {
-                    nodeKnobs[j]->load(*it);
+                    nodeKnobs[j]->clone((*it)->getKnob());
                 }
                 break;
             }
@@ -289,27 +294,17 @@ void Node::loadKnobs(const NodeSerialization& serialization) {
     setKnobsAge(serialization.getKnobsAge());
 }
 
-void Node::restoreKnobsLinks(const NodeSerialization& serialization) {
+void Node::restoreKnobsLinks(const NodeSerialization& serialization,const std::vector<Natron::Node*>& allNodes) {
     
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
-
     
-    const std::vector< boost::shared_ptr<Knob> >& nodeKnobs = getKnobs();
     const NodeSerialization::KnobValues& knobsValues = serialization.getKnobsValues();
-    for (U32 j = 0; j < nodeKnobs.size();++j) {
-        ///try to find a serialized value for this knob
-        for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it!=knobsValues.end();++it) {
-            if(it->getName() == nodeKnobs[j]->getName()){
-                // don't load the value if the Knob is not persistant! (it is just the default value in this case)
-                if (nodeKnobs[j]->getIsPersistant()) {
-                    nodeKnobs[j]->restoreSlaveMasterState(*it);
-                }
-                break;
-            }
-        }
+    ///try to find a serialized value for this knob
+    for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it!=knobsValues.end();++it) {
+        (*it)->restoreKnobLinks(allNodes);
     }
-
+    
 }
 
 void Node::setKnobsAge(U64 newAge)  {
@@ -479,6 +474,7 @@ void Node::setName(const std::string& name)
         QMutexLocker l(&_imp->nameMutex);
         _imp->name = name;
     }
+
     emit nameChanged(name.c_str());
 }
 
@@ -896,7 +892,9 @@ void Node::activate()
         QMutexLocker l(&_imp->inputsMutex);
         ///for all inputs, reconnect their output to this node
         for (U32 i = 0; i < _imp->inputsQueue.size(); ++i){
-            _imp->inputsQueue[i]->connectOutput(this);
+            if (_imp->inputsQueue[i]) {
+                _imp->inputsQueue[i]->connectOutput(this);
+            }
         }
     }
     
@@ -925,7 +923,7 @@ void Node::activate()
 }
 
 
-boost::shared_ptr<Knob> Node::getKnobByName(const std::string& name) const
+boost::shared_ptr<KnobI> Node::getKnobByName(const std::string& name) const
 {
     ///MT-safe, never changes
     return _imp->liveInstance->getKnobByName(name);
@@ -1031,14 +1029,15 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     
     for (int i=0; i < h; ++i) {
         double y = (double)i/yZoomFactor;
-        int nearestY = (int)(y+0.5);
+        int nearestY = std::floor(y+0.5);
 
         U32 *dst_pixels = buf + width*(h-1-i);
         const float* src_pixels = img->pixelAt(0, nearestY);
         
         for(int j = 0;j < w;++j) {
+            
             double x = (double)j/xZoomFactor;
-            int nearestX = (int)(x+0.5);
+            int nearestX = std::floor(x+0.5);
             int r = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4]));
             int g = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4+1]));
             int b = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4+2]));
@@ -1077,7 +1076,7 @@ bool Node::isOpenFXNode() const
     return _imp->liveInstance->isOpenFX();
 }
 
-const std::vector< boost::shared_ptr<Knob> >& Node::getKnobs() const
+const std::vector< boost::shared_ptr<KnobI> >& Node::getKnobs() const
 {
     ///MT-safe from EffectInstance::getKnobs()
     return _imp->liveInstance->getKnobs();
@@ -1251,11 +1250,6 @@ void Node::clearPersistentMessage()
     }
 }
 
-void Node::serialize(NodeSerialization* serializationObject) {
-    
-    ///Mt-safe from NodeSerialization::initialize()
-    serializationObject->initialize(this);
-}
 
 
 void Node::purgeAllInstancesCaches() {

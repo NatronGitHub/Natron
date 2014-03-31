@@ -767,25 +767,42 @@ bool FileNameContent::matchesPattern(const FileNameContent& other,std::vector<in
                 /// For example 10000 couldve been produced with ## only and is valid, and 01 would also produce be ##.
                 /// On the other hand 010000 could never have been produced with ## hence it is not valid.
                 
-                QString longest = _imp->orderedElements[i].data.size() > otherElements[i].data.size() ?
-                            _imp->orderedElements[i].data : otherElements[i].data;
-                int k = 0;
-                bool notValid = false;
-                while (k < longest.size() && k < std::abs(_imp->orderedElements[i].data.size() - otherElements[i].data.size())) {
-                    if (longest.at(k) == QChar('0')) {
-                        notValid = true;
-                        break;
+                bool valid = true;
+                ///if they have different sizes, if one of them starts with a 0 its over.
+                if (_imp->orderedElements[i].data.size() != otherElements[i].data.size()) {
+                    
+                    if (_imp->orderedElements[i].data.size() > otherElements[i].data.size()) {
+                        if (otherElements[i].data.at(0) == QChar('0') && otherElements[i].data.size() > 1) {
+                            valid = false;
+                        } else {
+                            int k = 0;
+                            int diff = std::abs(_imp->orderedElements[i].data.size()  - otherElements[i].data.size());
+                            while (k < _imp->orderedElements[i].data.size() && k < diff) {
+                                if (_imp->orderedElements[i].data.at(k) == QChar('0')) {
+                                    valid = false;
+                                }
+                                break;
+                                ++k;
+                            }
+                        }
+                    } else {
+                        if (_imp->orderedElements[i].data.at(0) == QChar('0') && _imp->orderedElements[i].data.size() > 1) {
+                            valid = false;
+                        } else {
+                            int k = 0;
+                            int diff = std::abs(_imp->orderedElements[i].data.size()  - otherElements[i].data.size());
+                            while (k < otherElements[i].data.size() && k < diff) {
+                                if (otherElements[i].data.at(k) == QChar('0')) {
+                                    valid = false;
+                                }
+                                break;
+                                ++k;
+                            }
+                        }
                     }
-                    ++k;
+                    
                 }
-                
-                ///if the number string of this element is shorter than the pattern that we're trying to match
-                ///and it starts with 0's then it does not match the pattern.
-                if (_imp->orderedElements[i].data.size() < otherElements[i].data.size() && _imp->orderedElements[i].data.at(0) == QChar('0')) {
-                    notValid = true;
-                }
-                
-                if (!notValid) {
+                if (valid) {
                     potentialFrameNumbers.push_back(std::make_pair(numbersCount,
                                                                    std::make_pair(_imp->orderedElements[i].data, otherElements[i].data)));
                 }
@@ -1248,9 +1265,10 @@ QString SequenceFromFiles::generateValidSequencePattern() const
     
 QString SequenceFromFiles::generateUserFriendlySequencePattern() const {
     if (isSingleFile()) {
-        return _imp->sequence[0].absoluteFileName();
+        return _imp->sequence[0].fileName();
     }
     QString pattern = generateValidSequencePattern();
+    removePath(pattern);
     
     std::vector< std::pair<int,int> > chunks;
     int first = getFirstFrame();

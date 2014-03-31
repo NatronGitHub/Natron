@@ -871,7 +871,7 @@ bool OfxEffectInstance::onOverlayFocusLost(){
 }
 
 
-void OfxEffectInstance::onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason){
+void OfxEffectInstance::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason){
     if(!_initialized){
         return;
     }

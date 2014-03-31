@@ -14,12 +14,10 @@
 #define STRINGANIMATIONMANAGER_H
 
 #include <boost/scoped_ptr.hpp>
-
-#include <QString>
-
+#include <string>
 #include "Global/GlobalDefines.h"
 
-class Knob;
+class KnobI;
 struct StringAnimationManagerPrivate;
 
 
@@ -27,7 +25,7 @@ struct StringAnimationManagerPrivate;
 class StringAnimationManager
 {
 public:
-    StringAnimationManager(const Knob* knob);
+    StringAnimationManager(const KnobI* knob);
     
     ~StringAnimationManager();
     
@@ -40,21 +38,21 @@ public:
     
     void setCustomInterpolation(customParamInterpolationV1Entry_t func,void* ofxParamHandle);
     
-    bool customInterpolation(double time,QString* ret) const;
+    bool customInterpolation(double time,std::string* ret) const;
     
-    void insertKeyFrame(int time,const QString& v,double* index);
+    void insertKeyFrame(int time,const std::string& v,double* index);
     
     void removeKeyFrame(int time);
     
     void clearKeyFrames();
     
-    void stringFromInterpolatedIndex(double interpolated,QString* returnValue) const;
+    void stringFromInterpolatedIndex(double interpolated,std::string* returnValue) const;
     
     void clone(const StringAnimationManager& other);
     
-    void load(const QString& str);
+    void load(const std::map<int,std::string>& keyframes);
     
-    QString save() const;
+    void save(std::map<int,std::string>* keyframes) const;
 
     
 private:

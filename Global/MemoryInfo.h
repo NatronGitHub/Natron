@@ -21,6 +21,7 @@
  */
 #include <vector>
 #include <iostream>
+#include <cmath>
 #if defined(_WIN32)
 #  include <windows.h>
 #  include <psapi.h>
@@ -51,7 +52,7 @@
 //#include <QFileSystemModel>
 //CLANG_DIAG_ON(deprecated)
 
-inline size_t getSystemTotalRAM(){
+inline size_t getSystemTotalRAM() {
 #if defined(__APPLE__)
     int mib [] = { CTL_HW, HW_MEMSIZE };
     int64_t value = 0;
@@ -78,6 +79,19 @@ inline size_t getSystemTotalRAM(){
 #endif
     
 }
+
+inline bool isApplication32Bits() {
+    return sizeof(void*) == 4;
+}
+
+inline size_t getSystemTotalRAM_conditionnally() {
+    if (isApplication32Bits()) {
+        return std::min((size_t)0xFFFFFFFF,getSystemTotalRAM());
+    } else {
+        return getSystemTotalRAM();
+    }
+}
+
 // prints RAM value as KB, MB or GB
 inline QString printAsRAM(U64 bytes){
     

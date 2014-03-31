@@ -168,7 +168,7 @@ public:
 
     void beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller);
 
-    void stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHolder* caller, Knob *k, bool isSignificant);
+    void stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHolder* caller, KnobI *k, bool isSignificant);
 
     void endProjectWideValueChanges(KnobHolder* caller);
 
@@ -248,7 +248,7 @@ private:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    virtual void evaluate(Knob* knob,bool isSignificant) OVERRIDE FINAL;
+    virtual void evaluate(KnobI* knob,bool isSignificant) OVERRIDE FINAL;
     
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
@@ -269,7 +269,7 @@ private:
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void onKnobValueChanged(Knob* k,Natron::ValueChangedReason reason)  OVERRIDE FINAL;
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason)  OVERRIDE FINAL;
 
     void save(ProjectSerialization* serializationObject) const;
     

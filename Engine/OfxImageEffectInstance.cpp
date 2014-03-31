@@ -210,72 +210,83 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
 {
     // note: the order for parameter types is the same as in ofxParam.h
     OFX::Host::Param::Instance* instance = NULL;
-    boost::shared_ptr<Knob> knob;
+    boost::shared_ptr<KnobI> knob;
 
     if (descriptor.getType() == kOfxParamTypeInteger) {
         OfxIntegerInstance *ret = new OfxIntegerInstance(node(), descriptor);
         knob = ret->getKnob();
-        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
+        boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
+        QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeDouble) {
         OfxDoubleInstance  *ret = new OfxDoubleInstance(node(), descriptor);
         knob = ret->getKnob();
-        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
+        boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
+        QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeBoolean) {
         OfxBooleanInstance *ret = new OfxBooleanInstance(node(), descriptor);
         knob = ret->getKnob();
-        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
+        boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
+        QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeChoice) {
         OfxChoiceInstance *ret = new OfxChoiceInstance(node(), descriptor);
         knob = ret->getKnob();
-        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
+        boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
+        QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeRGBA) {
         OfxRGBAInstance *ret = new OfxRGBAInstance(node(), descriptor);
         knob = ret->getKnob();
-        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
+        boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
+        QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeRGB) {
         OfxRGBInstance *ret = new OfxRGBInstance(node(), descriptor);
         knob = ret->getKnob();
-        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
+        boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
+        QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeDouble2D) {
         OfxDouble2DInstance *ret = new OfxDouble2DInstance(node(), descriptor);
         knob = ret->getKnob();
-        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
+        boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
+        QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeInteger2D) {
         OfxInteger2DInstance *ret = new OfxInteger2DInstance(node(), descriptor);
         knob = ret->getKnob();
-        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
+        boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
+        QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeDouble3D) {
         OfxDouble3DInstance *ret = new OfxDouble3DInstance(node(), descriptor);
         knob = ret->getKnob();
-        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
+        boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
+        QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeInteger3D) {
         OfxInteger3DInstance *ret = new OfxInteger3DInstance(node(), descriptor);
         knob = ret->getKnob();
-        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
+        boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
+        QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeString) {
         OfxStringInstance *ret = new OfxStringInstance(node(), descriptor);
         knob = ret->getKnob();
-        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
+        boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
+        QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeCustom) {
@@ -296,7 +307,8 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
         //throw std::runtime_error(std::string("Parameter ") + paramName + std::string(" has unsupported OFX type ") + descriptor.getType());
         OfxCustomInstance *ret = new OfxCustomInstance(node(), descriptor);
         knob = ret->getKnob();
-        QObject::connect(knob.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
+        boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
+        QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeGroup) {
@@ -323,6 +335,7 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
         knob = ret->getKnob();
         instance = ret;
     }
+    
 
     if (!instance) {
         throw std::runtime_error(std::string("Parameter ") + paramName + std::string(" has unknown OFX type ") + descriptor.getType());

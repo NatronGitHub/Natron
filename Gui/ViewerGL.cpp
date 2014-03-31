@@ -1145,7 +1145,7 @@ void ViewerGL::activateShaderRGB()
 
     assert(_imp->supportsGLSL );
     // don't even bind the shader on 8-bits gamma-compressed textures
-    if (!(getBitDepth() != OpenGLViewerI::BYTE)) {
+    if (getBitDepth() == OpenGLViewerI::BYTE) {
         return;
     }
     if (!_imp->shaderRGB->bind()) {
@@ -1362,7 +1362,8 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         _imp->ms = DRAGGING_ROI_BOTTOM_LEFT;
     }  else if(event->button() == Qt::LeftButton && isNearByUserRoIBottomRight(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
         _imp->ms = DRAGGING_ROI_BOTTOM_RIGHT;
-    }  else if (event->button() == Qt::LeftButton && !event->modifiers().testFlag(Qt::ControlModifier)) {
+    }
+    if (event->button() == Qt::LeftButton && _imp->ms == UNDEFINED) {
         if (_imp->viewerTab->notifyOverlaysPenDown(QMouseEventLocalPos(event),zoomPos)) {
             updateGL();
         }

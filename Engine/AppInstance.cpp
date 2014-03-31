@@ -138,9 +138,6 @@ Natron::Node* AppInstance::createNodeInternal(const QString& pluginID,int majorV
     }
     
     
-    if (!requestedByLoad || dontLoadName) {
-        _imp->_currentProject->initNodeCountersAndSetName(node);
-    }
     _imp->_currentProject->addNodeToProject(node);
     
     createNodeGui(node,requestedByLoad,openImageFileDialog);
@@ -149,7 +146,7 @@ Natron::Node* AppInstance::createNodeInternal(const QString& pluginID,int majorV
 }
 
 Natron::Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVersion,bool openImageFileDialog) {
-    return createNodeInternal(name, majorVersion, minorVersion, false, openImageFileDialog, NodeSerialization(),false);
+    return createNodeInternal(name, majorVersion, minorVersion, false, openImageFileDialog, NodeSerialization((Natron::Node*)NULL),false);
 }
 
 Natron::Node* AppInstance::loadNode(const QString& name,int majorVersion,int minorVersion,const NodeSerialization& serialization,

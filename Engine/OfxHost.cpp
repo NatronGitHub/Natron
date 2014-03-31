@@ -492,15 +492,20 @@ void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
 
+// comment out the following to disable the use of QtConcurrent
+//#define OFX_MULTITHREAD_USES_QTCONCURRENT
+
 ///Stored as int, because we need -1
 static QThreadStorage<int> gThreadIndex;
 
 namespace {
-    
+#ifdef OFX_MULTITHREAD_USES_QTCONCURRENT
     static OfxStatus threadFunctionWrapper(OfxThreadFunctionV1 func,
                                            unsigned int threadIndex,
                                            unsigned int threadMax,
-                                           void *customArg) {
+                                           void *customArg)
+    {
+        assert(!gThreadIndex.hasLocalData() || gThreadIndex.localData() == -1);
         assert(threadIndex < threadMax);
         gThreadIndex.localData() = (int)threadIndex;
         OfxStatus ret = kOfxStatOK;
@@ -514,8 +519,48 @@ namespace {
         ///reset back the index otherwise it could mess up the indexes if the same thread is re-used
         gThreadIndex.localData() = -1;
         return ret;
-
     }
+#else
+#pragma message WARN("QtConcurrent disabled in multithread suite")
+class OfxThread : public QThread
+{
+public:
+    OfxThread(OfxThreadFunctionV1 func,
+              unsigned int threadIndex,
+              unsigned int threadMax,
+              void *customArg,
+              OfxStatus *stat)
+    : _func(func)
+    , _threadIndex(threadIndex)
+    , _threadMax(threadMax)
+    , _customArg(customArg)
+    , _stat(stat)
+    {}
+
+    void run() OVERRIDE {
+        assert(!gThreadIndex.hasLocalData() || gThreadIndex.localData() == -1);
+        assert(_threadIndex < _threadMax);
+        gThreadIndex.localData() = _threadIndex;
+        assert(*_stat == kOfxStatFailed);
+        try {
+            _func(_threadIndex, _threadMax, _customArg);
+            *_stat = kOfxStatOK;
+        } catch (const std::bad_alloc& ba) {
+            *_stat = kOfxStatErrMemory;
+        } catch (...) {
+        }
+        ///reset back the index otherwise it could mess up the indexes if the same thread is re-used
+        gThreadIndex.localData() = -1;
+    }
+
+private:
+    OfxThreadFunctionV1 *_func;
+    unsigned int _threadIndex;
+    unsigned int _threadMax;
+    void *_customArg;
+    OfxStatus *_stat;
+};
+#endif
 }
 
 
@@ -560,7 +605,8 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
     if (gThreadIndex.hasLocalData() && (gThreadIndex.localData() != -1)) {
         return kOfxStatErrExists;
     }
-    
+
+#ifdef OFX_MULTITHREAD_USES_QTCONCURRENT
     std::vector<unsigned int> threadIndexes(nThreads);
     for (unsigned int i = 0; i < nThreads; ++i) {
         threadIndexes[i] = i;
@@ -573,12 +619,35 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
     ///DON'T reset back to the original value the maximum thread count
     //QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
     
-    for (QFuture<OfxStatus>::const_iterator it = future.begin() ; it!= future.end(); ++it) {
+    for (QFuture<OfxStatus>::const_iterator it = future.begin() ; it != future.end(); ++it) {
         OfxStatus stat = *it;
         if (stat != kOfxStatOK) {
             return stat;
         }
     }
+#else
+    QVector<OfxStatus> status(nThreads); // vector for the return status of each thread
+    status.fill(kOfxStatFailed); // by default, a thread fails
+    {
+        QVector<OfxThread*> threads(nThreads);
+        for (unsigned int i = 0; i < nThreads; ++i) {
+            threads[i] = new OfxThread(func, i, nThreads, customArg, &status[i]);
+            threads[i]->start();
+        }
+        for (unsigned int i = 0; i < nThreads; ++i) {
+            threads[i]->wait();
+            delete threads[i];
+        }
+    }
+    // check the return status of each thread, return the first error found
+    for (QVector<OfxStatus>::const_iterator it = status.begin(); it != status.end(); ++it) {
+        OfxStatus stat = *it;
+        if (stat != kOfxStatOK) {
+            return stat;
+        }
+    }
+#endif
+
     return kOfxStatOK;
 }
 
@@ -593,9 +662,12 @@ OfxStatus Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
     if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
         *nCPUs = 1;
     } else {
-        int activeThreadsCount = QThreadPool::globalInstance()->activeThreadCount();
+        // activeThreadCount may be negative (for example if releaseThread() is called)
+        int activeThreadsCount = std::max(0,QThreadPool::globalInstance()->activeThreadCount());
+        assert(activeThreadsCount >= 0);
         // better than QThread::idealThreadCount();, because it can be set by a global preference:
         int maxThreadsCount = QThreadPool::globalInstance()->maxThreadCount();
+        assert(maxThreadsCount >= 0);
         *nCPUs = std::max(1, maxThreadsCount - activeThreadsCount);
     }
 
@@ -610,18 +682,16 @@ OfxStatus Natron::OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
 // (use multiThreadIsSpawnedThread() to check if it's a spawned thread)
 OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
 {
-    if (!threadIndex)
+    if (!threadIndex) {
         return kOfxStatFailed;
-
-    if (gThreadIndex.hasLocalData()) {
-        if (gThreadIndex.localData() == -1) {
-            *threadIndex = 0;
-        } else {
-            *threadIndex = gThreadIndex.localData();
-        }
-    } else {
-        *threadIndex = 0;
     }
+
+    if (!multiThreadIsSpawnedThread()) {
+        *threadIndex = 0;
+    } else {
+        *threadIndex = gThreadIndex.localData();
+    }
+
     return kOfxStatOK;
 }
 
@@ -629,7 +699,7 @@ OfxStatus Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThreadIsSpawnedThread
 int Natron::OfxHost::multiThreadIsSpawnedThread() const
 {
-    return gThreadIndex.hasLocalData();
+    return gThreadIndex.hasLocalData() && gThreadIndex.localData() != -1;
 }
 
 // Create a mutex

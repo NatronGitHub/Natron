@@ -32,7 +32,7 @@ CLANG_DIAG_ON(deprecated)
 
 class AppInstance;
 class NodeSettingsPanel;
-class Knob;
+class KnobI;
 class ViewerInstance;
 class RenderTree;
 class Format;
@@ -62,7 +62,7 @@ public:
     
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
-    void restoreKnobsLinks(const NodeSerialization& serialization);
+    void restoreKnobsLinks(const NodeSerialization& serialization,const std::vector<Natron::Node*>& allNodes);
     
     /*Quit all processing done by all render instances of this node */
     void quitAnyProcessing();
@@ -92,7 +92,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    const std::vector< boost::shared_ptr<Knob> >& getKnobs() const;
+    const std::vector< boost::shared_ptr<KnobI> >& getKnobs() const;
 
     /*Returns in viewers the list of all the viewers connected to this node*/
     void hasViewersConnected(std::list<ViewerInstance*>* viewers) const;
@@ -289,7 +289,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    boost::shared_ptr<Knob> getKnobByName(const std::string& name) const;
+    boost::shared_ptr<KnobI> getKnobByName(const std::string& name) const;
     
     /*@brief The derived class should query this to abort any long process
      in the engine function.*/
@@ -388,11 +388,6 @@ public:
      * @brief Clears any message posted previously by setPersistentMessage.
      **/
     void clearPersistentMessage();
-
-    /**
-     * @brief Fills the serializationObject with the current state of the Node.
-     **/
-    void serialize(NodeSerialization* serializationObject);
     
     void purgeAllInstancesCaches();
     

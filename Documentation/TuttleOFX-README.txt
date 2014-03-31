@@ -3,7 +3,7 @@
 * Setting up MacPorts
 
     Download and install Xcode tools (latest versions are 3.1.4 for Leopard, 3.2.6 for Snow Leopard, and 4.3.2 for Lion). 3.1.4 and 3.2.6 are available from the Mac Dev Center at developer.apple.com, whereas version 4 is available from the App Store. Don't forget to also install the UNIX command-line utilities (this is an install option in Xcode 3, and must be installed from the "Downloads" pane of the Xcode Preferences in Xcode 4.3 and later)
- 
+
    Download and install the MacPorts installer that corresponds to your Mac OS X version.
 
     Download the local portfiles archive
@@ -25,6 +25,7 @@
 (add +universal on OSX 10.5 and 10.6)
 
 * special portfiles:
+- graphics/ctl
 - graphics/openimageio
 - graphics/opencolorio
 - aqua/qt4-quick-controls (for ButtleOFX)
@@ -107,7 +108,7 @@ git clone https://github.com/devernay/openfx.git
 git clone https://github.com/devernay/openfx-yadif.git
 git clone https://github.com/devernay/openfx-opencv.git
 git clone https://github.com/MrKepzie/openfx-io.git
-git clone https://github.com/tuttleofx/CTL.git
+#git clone https://github.com/tuttleofx/CTL.git
 git clone https://github.com/wdas/SeExpr
 #git clone https://github.com/devernay/sconsProject.git
 git clone https://github.com/tuttleofx/TuttleOFX.git
@@ -234,12 +235,12 @@ cd ..
 
 - compile TuttleOFX
 
-#(cd TuttleOFX;git checkout develop;git remote add upstream https://github.com/tuttleofx/TuttleOFX.git;git fetch upstream;git submodule update -i) 
+#(cd TuttleOFX;git checkout develop;git remote add upstream https://github.com/tuttleofx/TuttleOFX.git;git fetch upstream;git submodule update -i)
 (cd TuttleOFX;git checkout develop;git pull;git submodule update -i)
 
 cd TuttleOFX;
-(cd 3rdParty; ln -s ../../CTL/CTL ctl)
-(cd 3rdParty/ctl; git pull; autoreconf -i; ./configure --prefix=/opt/local CC=clang  CXX=clang++ && make -j3)
+#(cd 3rdParty; ln -s ../../CTL/CTL ctl)
+#(cd 3rdParty/ctl; git pull; autoreconf -i; ./configure --prefix=/opt/local CC=clang  CXX=clang++ && make -j3)
 # if there is an error about memset being not defined, add "#include <cstring>" in /opt/local/include/OpenEXR/ImathMatrix.h and relaunch the last line
 (cd 3rdParty; ln -s ../../SeExpr seexpr)
 (cd 3rdParty/seexpr; git pull; mkdir build; cd build && cmake .. && make)
@@ -302,20 +303,23 @@ incdir_python = os.path.join(macports_base,
 lib_python = "python2.7"
 dir_python_numpy = os.path.join(macports_base,
                          'Library/Frameworks/Python.framework/Versions',
-                         '2.7/lib/python2.7/site-packages/numpy/core')  
+                         '2.7/lib/python2.7/site-packages/numpy/core')
 dir_raw = macports_base
 dir_tiff = macports_base
 dir_turbojpeg = '/opt/libjpeg-turbo'
 dir_xlibs = macports_base
 extern = '#3rdParty'
-dir_ctl = join(extern, 'ctl')
-modules_ctl = ['IlmCtlSimd', 'IlmCtl', 'IlmCtlMath']
-incdir_ctl = [incdir_openexr]+[join(dir_ctl,inc) for inc in modules_ctl]
-libdir_ctl = [join(dir_ctl,inc,'.libs') for inc in modules_ctl]
+dir_ctl = macports_base
+incdir_ctl = join(macports_include, 'CTL')
 dir_seexpr = join(extern, 'seexpr')
 incdir_seexpr = join(dir_seexpr, 'src/SeExpr')
 libdir_seexpr = join(dir_seexpr, 'build/src/SeExpr')
 EOF
+
+#dir_ctl = join(extern, 'ctl')
+#modules_ctl = ['IlmCtlSimd', 'IlmCtl', 'IlmCtlMath']
+#incdir_ctl = [incdir_openexr]+[join(dir_ctl,inc) for inc in modules_ctl]
+#libdir_ctl = [join(dir_ctl,inc,'.libs') for inc in modules_ctl]
 
 scons -k mode=debug CC=clang CXX=clang++ compiler=clang -j3
 rm -rf $ofx/Plugins/TuttleOFX.debug
@@ -477,11 +481,11 @@ opencv-devel ftgl-devel eigen2-devel
 git clone https://github.com/devernay/openfx.git
 git clone https://github.com/devernay/openfx-yadif.git
 git clone https://github.com/devernay/openfx-opencv.git
-git clone https://github.com/tuttleofx/CTL.git 
-git clone https://github.com/wdas/SeExpr 
+git clone https://github.com/tuttleofx/CTL.git
+git clone https://github.com/wdas/SeExpr
 #git clone https://github.com/devernay/sconsProject.git
-#git clone https://github.com/devernay/TuttleOFX.git  
-git clone https://github.com/tuttleofx/TuttleOFX.git  
+#git clone https://github.com/devernay/TuttleOFX.git
+git clone https://github.com/tuttleofx/TuttleOFX.git
 git clone https://github.com/MrKepzie/Natron.git
 # grab the latest openfx source
 for i in openfx* Natron; do (echo $i;cd $i; git submodule foreach git pull origin master); done
@@ -502,7 +506,7 @@ mkdir -p $ofx/Plugins/Examples.debug
 mv */*-${bits}-debug/*.ofx.bundle $ofx/Plugins/Examples.debug
 rm */*.o
 make BITS=$bits DEBUGFLAG=-O3
-rm -rf $ofx/Plugins.disabled/Examples  
+rm -rf $ofx/Plugins.disabled/Examples
 mkdir -p $ofx/Plugins.disabled/Examples
 mv */*-${bits}-release/*.ofx.bundle $ofx/Plugins.disabled/Examples
 rm -rf */*-${bits}-release */*-${bits}-debug
@@ -525,7 +529,7 @@ cd ../PropTester
 rm -rf *-${bits}-release *-${bits}-debug
 rm *.o
 make BITS=$bits
-rm -rf $ofx/Plugins/PropTester.debug 
+rm -rf $ofx/Plugins/PropTester.debug
 mkdir -p $ofx/Plugins/PropTester.debug
 mv *-${bits}-debug/*.ofx.bundle $ofx/Plugins/PropTester.debug
 rm *.o
@@ -561,13 +565,13 @@ cd opencv2fx
 rm -rf */*-${bits}-release */*-${bits}-debug
 rm */*.o
 make BITS=$bits
-rm -rf $ofx/Plugins/opencv2fx.debug  
-mkdir -p $ofx/Plugins/opencv2fx.debug  
+rm -rf $ofx/Plugins/opencv2fx.debug
+mkdir -p $ofx/Plugins/opencv2fx.debug
 mv */*-${bits}-debug/*.ofx.bundle $ofx/Plugins/opencv2fx.debug
 rm */*.o
 make BITS=$bits DEBUGFLAG=-O3
-rm -rf $ofx/Plugins.disabled/opencv2fx  
-mkdir -p $ofx/Plugins.disabled/opencv2fx  
+rm -rf $ofx/Plugins.disabled/opencv2fx
+mkdir -p $ofx/Plugins.disabled/opencv2fx
 mv */*-${bits}-release/*.ofx.bundle $ofx/Plugins.disabled/opencv2fx
 rm -rf */*-${bits}-release */*-${bits}-debug
  cd ../..
@@ -589,14 +593,14 @@ cd ..
 
 - compile TuttleOFX
 
-#(cd TuttleOFX;git checkout develop;git remote add upstream https://github.com/tuttleofx/TuttleOFX.git;git fetch upstream;git submodule update -i) 
+#(cd TuttleOFX;git checkout develop;git remote add upstream https://github.com/tuttleofx/TuttleOFX.git;git fetch upstream;git submodule update -i)
 (cd TuttleOFX;git checkout develop;git pull;git submodule update -i)
 
 cd TuttleOFX;
 (cd 3rdParty; ln -s ../../CTL/CTL ctl)
-(cd 3rdParty/ctl; git pull; autoreconf -i; ./configure && make)
-(cd 3rdParty; ln -s ../../SeExpr seexpr) 
-(cd 3rdParty/seexpr; git pull; mkdir build; cd build && cmake .. && make) 
+(cd 3rdParty/ctl; git checkout afcff9748a81526ff9a85f6f85a4e9aabd8ae851; mkdir build; cd build && cmake .. && make)
+(cd 3rdParty; ln -s ../../SeExpr seexpr)
+(cd 3rdParty/seexpr; git pull; mkdir build; cd build && cmake .. && make)
 
 
 rm host.sconf; cat > host.sconf << EOF
@@ -609,8 +613,8 @@ incdir_python = '/usr/include/python2.7'
 extern = '#3rdParty'
 dir_ctl = join(extern, 'ctl')
 modules_ctl = ['IlmCtlSimd', 'IlmCtl', 'IlmCtlMath']
-incdir_ctl = [incdir_openexr]+[join(dir_ctl,inc) for inc in modules_ctl]
-libdir_ctl = [join(dir_ctl,inc,'.libs') for inc in modules_ctl]
+incdir_ctl = [incdir_openexr]+[join(dir_ctl,'lib',inc) for inc in modules_ctl]
+libdir_ctl = [join(dir_ctl,'build/lib',inc) for inc in modules_ctl]
 dir_boost = '/opt/boost'
 incdir_ffmpeg = '/usr/include/ffmpeg'
 incdir_avutil = incdir_ffmpeg
@@ -628,8 +632,8 @@ mkdir -p $ofx/Plugins/TuttleOFX.debug
 mv dist/*/*/debug/plugin/*.ofx.bundle $ofx/Plugins/TuttleOFX.debug
 
 scons -k -j3
-rm -rf $ofx/Plugins.disabled/TuttleOFX  
-mkdir -p $ofx/Plugins.disabled/TuttleOFX  
+rm -rf $ofx/Plugins.disabled/TuttleOFX
+mkdir -p $ofx/Plugins.disabled/TuttleOFX
 mv dist/*/*/production/plugin/*.ofx.bundle $ofx/Plugins.disabled/TuttleOFX
 
 
@@ -654,7 +658,7 @@ we alse require
 
 #we don't want the following cutting-edge repositories
 sudo add-apt-repository -r irie/ocio-static
-sudo add-apt-repository -r irie/openimageio 
+sudo add-apt-repository -r irie/openimageio
 sudo add-apt-repository -r irie/boost
 
 # kubuntu-ppa backports provides opencv, (opencolorio and openimageio are broken)
@@ -738,20 +742,20 @@ see fedora install (above)
 
 see fedora install (above)
 
-- install recent ffmpeg 
+- install recent ffmpeg
 
 
 - compile TuttleOFX
 
-#(cd TuttleOFX;git checkout develop;git remote add upstream https://github.com/tuttleofx/TuttleOFX.git;git fetch upstream;git submodule update -i) 
+#(cd TuttleOFX;git checkout develop;git remote add upstream https://github.com/tuttleofx/TuttleOFX.git;git fetch upstream;git submodule update -i)
 (cd TuttleOFX;git checkout develop;git pull;git submodule update -i)
 
 cd TuttleOFX;
-(cd 3rdParty; ln -s ../../CTL/CTL ctl)
-(cd 3rdParty/ctl; git pull; autoreconf -i; ./configure && make)
+(cd 3rdParty; ln -s ../../CTL ctl)
+(cd 3rdParty/ctl; git checkout afcff9748a81526ff9a85f6f85a4e9aabd8ae851;  mkdir build; cd build && cmake .. && make)
 (cd 3rdParty;python init.py opencolorio)
-(cd 3rdParty; ln -s ../../SeExpr seexpr)  
- (cd 3rdParty/seexpr; git pull; mkdir build; cd build && cmake .. && make)  
+(cd 3rdParty; ln -s ../../SeExpr seexpr)
+ (cd 3rdParty/seexpr; git pull; mkdir build; cd build && cmake .. && make)
  (cd 3rdParty/opencolorio;mkdir build;cd build && cmake .. -DOCIO_BUILD_APPS=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_PYGLUE=OFF  && make)
 (cd 3rdParty; rm -rf ffmpeg; wget http://ffmpeg.org/releases/ffmpeg-2.1.1.tar.bz2 && tar jxvf ffmpeg-2.1.1.tar.bz2 && mv ffmpeg-2.1.1 ffmpeg)
 (cd 3rdParty/ffmpeg; ./configure --prefix=/opt/ffmpeg --enable-shared --enable-gpl \
@@ -789,8 +793,8 @@ incdir_python = join('/usr/include',lib_python)
 extern = '#3rdParty'
 dir_ctl = join(extern, 'ctl')
 modules_ctl = ['IlmCtlSimd', 'IlmCtl', 'IlmCtlMath']
-incdir_ctl = [incdir_openexr]+[join(dir_ctl,inc) for inc in modules_ctl]
-libdir_ctl = [join(dir_ctl,inc,'.libs') for inc in modules_ctl]
+incdir_ctl = [incdir_openexr]+[join(dir_ctl,'lib',inc) for inc in modules_ctl]
+libdir_ctl = [join(dir_ctl,'build/lib',inc) for inc in modules_ctl]
 dir_boost = '/opt/boost'
 dir_opencolorio = join(extern, 'opencolorio')
 incdir_opencolorio = [join(dir_opencolorio, 'export'),

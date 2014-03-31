@@ -120,6 +120,8 @@ namespace Natron {
         
         const RectI& getRoD() const {return _bitmap.getRoD();}
         
+        virtual size_t size() const OVERRIDE FINAL { return dataSize() + _bitmap.getRoD().area(); }
+        
         RenderScale getRenderScale() const {return this->_key._renderScale;}
         
         SequenceTime getTime() const {return this->_key._time;}

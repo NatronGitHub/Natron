@@ -28,19 +28,22 @@ CLANG_DIAG_ON(unused-parameter)
 namespace Natron {
     class Node;
 }
+class AppInstance;
 
 class NodeSerialization {
     
     
 public:
     
-    typedef std::list< KnobSerialization > KnobValues;
+    typedef std::list< boost::shared_ptr<KnobSerialization> > KnobValues;
     
-    NodeSerialization() : _isNull(true) {}
+    ///Used to serialize
+    NodeSerialization(Natron::Node* n);
+    
+    ////Used to deserialize
+    NodeSerialization(AppInstance* app) : _isNull(true) , _node(NULL), _app(app) {}
     
     ~NodeSerialization(){ _knobsValues.clear(); _inputs.clear(); }
-    
-    void initialize(Natron::Node* n);
     
     const KnobValues& getKnobsValues() const {return _knobsValues;}
     
@@ -60,8 +63,9 @@ public:
     
     const std::string& getMasterNodeName() const { return _masterNodeName; }
 private:
-    
+
     bool _isNull;
+    int _nbKnobs;
     KnobValues _knobsValues;
     U64 _knobsAge;
     std::string _pluginLabel;
@@ -71,18 +75,23 @@ private:
     std::string _masterNodeName;
     
     std::vector<std::string> _inputs;
+    
+    Natron::Node* _node;
+    AppInstance* _app;
 
     
     friend class boost::serialization::access;
     template<class Archive>
-    void save(Archive & ar, const unsigned int version) const
+    void save(Archive & ar, const unsigned int /*version*/) const
     {
-        (void)version;
         ar & boost::serialization::make_nvp("Plugin_label",_pluginLabel);
         ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
         ar & boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
         ar & boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);
-        ar & boost::serialization::make_nvp("Knobs_values_map", _knobsValues);
+        ar & boost::serialization::make_nvp("KnobsCount", _nbKnobs);
+        for (KnobValues::const_iterator it = _knobsValues.begin(); it != _knobsValues.end(); ++it) {
+            ar & boost::serialization::make_nvp("item",*(*it));
+        }
         ar & boost::serialization::make_nvp("Inputs_map",_inputs);
         ar & boost::serialization::make_nvp("KnobsAge",_knobsAge);
         ar & boost::serialization::make_nvp("MasterNode",_masterNodeName);
@@ -90,14 +99,19 @@ private:
     }
     
     template<class Archive>
-    void load(Archive & ar, const unsigned int version)
+    void load(Archive & ar, const unsigned int /*version*/)
     {
-        (void)version;
+        assert(_app);
         ar & boost::serialization::make_nvp("Plugin_label",_pluginLabel);
         ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
         ar & boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
-        ar & boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);
-        ar & boost::serialization::make_nvp("Knobs_values_map", _knobsValues);
+        ar & boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);     
+        ar & boost::serialization::make_nvp("KnobsCount", _nbKnobs);
+        for (int i = 0; i < _nbKnobs; ++i) {
+            boost::shared_ptr<KnobSerialization> ks(new KnobSerialization(_app));
+            ar & boost::serialization::make_nvp("item",*ks);
+            _knobsValues.push_back(ks);
+        }
         ar & boost::serialization::make_nvp("Inputs_map",_inputs);
         ar & boost::serialization::make_nvp("KnobsAge",_knobsAge);
         ar & boost::serialization::make_nvp("MasterNode",_masterNodeName);

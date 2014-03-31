@@ -42,6 +42,8 @@
 
 #define NATRON_STATE_INDICATOR_OFFSET 5
 
+#define NATRON_EDGE_DROP_TOLERANCE 15
+
 using namespace Natron;
 
 using std::make_pair;
@@ -451,8 +453,10 @@ QRectF NodeGui::boundingRectWithEdges() const{
 }
 
 bool NodeGui::isNearby(QPointF &point){
-    QRectF r(_boundingBox->rect().x()-10,_boundingBox->rect().y()-10,_boundingBox->rect().width()+10,_boundingBox->rect().height()+10);
-    return r.contains(point);
+    QPointF p = mapFromScene(point);
+    QRectF r(_boundingBox->rect().x()-NATRON_EDGE_DROP_TOLERANCE,_boundingBox->rect().y()-NATRON_EDGE_DROP_TOLERANCE,
+             _boundingBox->rect().width()+NATRON_EDGE_DROP_TOLERANCE,_boundingBox->rect().height()+NATRON_EDGE_DROP_TOLERANCE);
+    return r.contains(p);
 }
 
 void NodeGui::setName(const QString& name_){
@@ -640,7 +644,11 @@ void NodeGui::deactivate() {
     }
     
     getNode()->getApp()->triggerAutoSave();
-    getNode()->getApp()->checkViewersConnection();
+    std::list<ViewerInstance*> viewers;
+    getNode()->hasViewersConnected(&viewers);
+    for (std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it) {
+            (*it)->updateTreeAndRender();
+    }
 }
 
 void NodeGui::initializeKnobs(){
@@ -768,7 +776,7 @@ void NodeGui::populateMenu(){
     _menu->addAction(deleteAction);
 
 }
-const std::map<boost::shared_ptr<Knob> ,KnobGui*>& NodeGui::getKnobs() const{
+const std::map<boost::shared_ptr<KnobI> ,KnobGui*>& NodeGui::getKnobs() const{
     return _settingsPanel->getKnobs();
 }
 

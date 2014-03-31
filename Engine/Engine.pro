@@ -110,6 +110,7 @@ HEADERS += \
     ImageParamsSerialization.h \
     Interpolation.h \
     Knob.h \
+    KnobImpl.h \
     KnobSerialization.h \
     KnobFactory.h \
     KnobFile.h \

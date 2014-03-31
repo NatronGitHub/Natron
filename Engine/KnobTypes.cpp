@@ -13,10 +13,11 @@
 #include <cfloat>
 
 #include <QDebug>
+#include <QThread>
+#include <QCoreApplication>
 
 #include "Engine/Curve.h"
 #include "Engine/KnobFile.h"
-#include "Engine/StringAnimationManager.h"
 
 using namespace Natron;
 using std::make_pair;
@@ -228,21 +229,6 @@ const std::string& Int_Knob::typeName() const
 {
     return typeNameStatic();
 }
-
-
-bool Int_Knob::isTypeCompatible(const Knob& other) const {
-    if (other.typeName() == Double_Knob::typeNameStatic() ||
-        other.typeName() == Color_Knob::typeNameStatic() ||
-        other.typeName() == Int_Knob::typeNameStatic() ||
-        other.typeName() == Bool_Knob::typeNameStatic() ||
-        other.typeName() == Choice_Knob::typeNameStatic()) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-
 /******************************BOOL_KNOB**************************************/
 
 Bool_Knob::Bool_Knob(KnobHolder *holder, const std::string &description, int dimension):
@@ -265,19 +251,6 @@ const std::string& Bool_Knob::typeName() const
 {
     return typeNameStatic();
 }
-
-bool Bool_Knob::isTypeCompatible(const Knob& other) const {
-    if (other.typeName() == Double_Knob::typeNameStatic() ||
-        other.typeName() == Color_Knob::typeNameStatic() ||
-        other.typeName() == Int_Knob::typeNameStatic() ||
-        other.typeName() == Bool_Knob::typeNameStatic() ||
-        other.typeName() == Choice_Knob::typeNameStatic()) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 
 /******************************DOUBLE_KNOB**************************************/
 
@@ -509,19 +482,6 @@ void Double_Knob::setDecimals(const std::vector<int> &decis)
     }
 }
 
-bool Double_Knob::isTypeCompatible(const Knob& other) const {
-    if (other.typeName() == Double_Knob::typeNameStatic() ||
-        other.typeName() == Color_Knob::typeNameStatic() ||
-        other.typeName() == Int_Knob::typeNameStatic() ||
-        other.typeName() == Bool_Knob::typeNameStatic() ||
-        other.typeName() == Choice_Knob::typeNameStatic()) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-
 /******************************BUTTON_KNOB**************************************/
 
 Button_Knob::Button_Knob(KnobHolder  *holder, const std::string &description, int dimension):
@@ -575,7 +535,7 @@ const std::string& Choice_Knob::typeName() const
 }
 
 /*Must be called right away after the constructor.*/
-void Choice_Knob::populate(const std::vector<std::string> &entries, const std::vector<std::string> &entriesHelp)
+void Choice_Knob::populateChoices(const std::vector<std::string> &entries, const std::vector<std::string> &entriesHelp)
 {
     assert(entriesHelp.empty() || entriesHelp.size() == entries.size());
     _entriesHelp = entriesHelp;
@@ -593,28 +553,11 @@ const std::vector<std::string> &Choice_Knob::getEntriesHelp() const
     return _entriesHelp;
 }
 
-int Choice_Knob::getActiveEntry() const
-{
-    return getValue<int>();
-}
-
 const std::string &Choice_Knob::getActiveEntryText() const
 {
-    int activeIndex = getActiveEntry();
+    int activeIndex = getValue();
     assert(activeIndex < (int)_entries.size());
     return _entries[activeIndex];
-}
-
-bool Choice_Knob::isTypeCompatible(const Knob& other) const {
-    if (other.typeName() == Double_Knob::typeNameStatic() ||
-        other.typeName() == Color_Knob::typeNameStatic() ||
-        other.typeName() == Int_Knob::typeNameStatic() ||
-        other.typeName() == Bool_Knob::typeNameStatic() ||
-        other.typeName() == Choice_Knob::typeNameStatic()) {
-        return true;
-    } else {
-        return false;
-    }
 }
 
 /******************************TABLE_KNOB**************************************/
@@ -891,39 +834,19 @@ Color_Knob::setDisplayMinimumsAndMaximums(const std::vector<double> &minis, cons
     }
 }
 
-bool Color_Knob::isTypeCompatible(const Knob& other) const {
-    if (other.typeName() == Double_Knob::typeNameStatic() ||
-        other.typeName() == Color_Knob::typeNameStatic() ||
-        other.typeName() == Int_Knob::typeNameStatic() ||
-        other.typeName() == Bool_Knob::typeNameStatic() ||
-        other.typeName() == Choice_Knob::typeNameStatic()) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-
 /******************************STRING_KNOB**************************************/
 
+
 String_Knob::String_Knob(KnobHolder *holder, const std::string &description, int dimension):
-Knob(holder, description, dimension)
+AnimatingString_KnobHelper(holder, description, dimension)
 , _multiLine(false)
 , _isLabel(false)
 , _isCustom(false)
-, _animation(new StringAnimationManager(this))
 {
     
 }
 
-String_Knob::~String_Knob() {
-    delete _animation;
-}
-
-void String_Knob::setCustomInterpolation(customParamInterpolationV1Entry_t func,void* ofxParamHandle) {
-    _animation->setCustomInterpolation(func, ofxParamHandle);
-}
-
+String_Knob::~String_Knob() {}
 
 bool String_Knob::canAnimate() const
 {
@@ -942,69 +865,6 @@ const std::string& String_Knob::typeName() const
     return typeNameStatic();
 }
 
-Natron::Status String_Knob::variantToKeyFrameValue(int time,const Variant& v,double* returnValue) {
-    _animation->insertKeyFrame(time, v.toString(), returnValue);
-    return StatOK;
-}
-
-void String_Knob::variantFromInterpolatedValue(double interpolated,Variant* returnValue) const {
-    QString str;
-    _animation->stringFromInterpolatedIndex(interpolated, &str);
-    returnValue->setValue<QString>(str);
-}
-
-Variant String_Knob::getValueAtTime(double time, int dimension) const {
-    if (_animation->hasCustomInterp()) {
-        QString ret;
-        bool succeeded = _animation->customInterpolation(time, &ret);
-        if (!succeeded) {
-            return getValue();
-        } else {
-            return Variant(ret);
-        }
-    
-    } else {
-        return Knob::getValueAtTime(time, dimension);
-    }
-}
-
-void String_Knob::cloneExtraData(const Knob& other) {
-    if (other.typeName() == String_Knob::typeNameStatic()) {
-        const String_Knob& o = dynamic_cast<const String_Knob&>(other);
-        _animation->clone(*(o._animation));
-    } else if(other.typeName() == File_Knob::typeNameStatic()) {
-        const File_Knob& o = dynamic_cast<const File_Knob&>(other);
-        _animation->clone(o.getAnimation());
-    }
-}
-
-
-void String_Knob::loadExtraData(const QString& str) {
-    _animation->load(str);
-}
-
-QString String_Knob::saveExtraData() const {
-    return _animation->save();
-}
-
-bool String_Knob::isTypeCompatible(const Knob& other) const {
-    if (other.typeName() == String_Knob::typeNameStatic() ||
-        other.typeName() == OutputFile_Knob::typeNameStatic() ||
-        other.typeName() == Path_Knob::typeNameStatic() ||
-        other.typeName() == File_Knob::typeNameStatic()) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-void String_Knob::animationRemoved_virtual(int /*dimension*/) {
-    _animation->clearKeyFrames();
-}
-
-void String_Knob::keyframeRemoved_virtual(int /*dimension*/, double time) {
-    _animation->removeKeyFrame(time);
-}
 
 
 
@@ -1033,19 +893,19 @@ const std::string& Group_Knob::typeName() const
     return typeNameStatic();
 }
 
-void Group_Knob::addKnob(boost::shared_ptr<Knob> k)
+void Group_Knob::addKnob(boost::shared_ptr<KnobI> k)
 {
-    std::vector<boost::shared_ptr<Knob> >::iterator found = std::find(_children.begin(), _children.end(), k);
+    std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
     if(found == _children.end()){
         _children.push_back(k);
-        boost::shared_ptr<Knob> thisSharedPtr = getHolder()->getKnobByName(getName());
+        boost::shared_ptr<KnobI> thisSharedPtr = getHolder()->getKnobByName(getName());
         assert(thisSharedPtr);
         k->setParentKnob(thisSharedPtr);
     }
     
 }
 
-const std::vector< boost::shared_ptr<Knob> > &Group_Knob::getChildren() const
+const std::vector< boost::shared_ptr<KnobI> > &Group_Knob::getChildren() const
 {
     return _children;
 }
@@ -1077,9 +937,9 @@ const std::string& Tab_Knob::typeName() const
 
 
 
-void Tab_Knob::addKnob(boost::shared_ptr<Knob> k)
+void Tab_Knob::addKnob(boost::shared_ptr<KnobI> k)
 {
-    std::vector<boost::shared_ptr<Knob> >::iterator found = std::find(_children.begin(), _children.end(), k);
+    std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
     if(found == _children.end()){
         _children.push_back(k);
         k->setParentKnob(getHolder()->getKnobByName(getName()));
@@ -1092,6 +952,7 @@ void Tab_Knob::addKnob(boost::shared_ptr<Knob> k)
 
 Parametric_Knob::Parametric_Knob(KnobHolder *holder, const std::string &description, int dimension)
 : Knob(holder,description,dimension)
+, _curvesMutex()
 , _curves(dimension)
 , _curvesColor(dimension)
 , _curveLabels(dimension)
@@ -1120,6 +981,11 @@ const std::string& Parametric_Knob::typeName() const {
 }
 
 void Parametric_Knob::setCurveColor(int dimension,double r,double g,double b){
+    
+    ///only called in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+    ///Mt-safe as it never changes
+    
     assert(dimension < (int)_curvesColor.size());
     _curvesColor[dimension].r = r;
     _curvesColor[dimension].g = g;
@@ -1127,6 +993,9 @@ void Parametric_Knob::setCurveColor(int dimension,double r,double g,double b){
 }
 
 void Parametric_Knob::getCurveColor(int dimension,double* r,double* g,double* b){
+    
+    ///Mt-safe as it never changes
+
     assert(dimension < (int)_curvesColor.size());
     *r = _curvesColor[dimension].r ;
     *g = _curvesColor[dimension].g ;
@@ -1134,16 +1003,29 @@ void Parametric_Knob::getCurveColor(int dimension,double* r,double* g,double* b)
 }
 
 void Parametric_Knob::setCurveLabel(int dimension,const std::string& str){
+    
+    ///only called in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+    ///Mt-safe as it never changes
+
     assert(dimension < (int)_curveLabels.size());
     _curveLabels[dimension] = str;
 }
 
 const std::string& Parametric_Knob::getCurveLabel(int dimension) const{
+    
+    ///Mt-safe as it never changes
+
     assert(dimension < (int)_curveLabels.size());
     return _curveLabels[dimension];
 }
 
 void Parametric_Knob::setParametricRange(double min,double max){
+    
+    ///only called in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+    ///Mt-safe as it never changes
+
     for (U32 i = 0; i < _curves.size(); ++i) {
         _curves[i]->setXRange(min, max);
     }
@@ -1151,30 +1033,37 @@ void Parametric_Knob::setParametricRange(double min,double max){
 
 std::pair<double,double> Parametric_Knob::getParametricRange() const
 {
+    ///Mt-safe as it never changes
+
     assert(!_curves.empty());
     return _curves.front()->getXRange();
 }
 
-std::string Parametric_Knob::getDimensionName(int dimension) const{
+std::string Parametric_Knob::getDimensionName(int dimension) const {
+    ///Mt-safe as it never changes
     return getCurveLabel(dimension);
 }
 
 boost::shared_ptr<Curve> Parametric_Knob::getParametricCurve(int dimension) const{
+    ///Mt-safe as Curve is MT-safe and the pointer is never deleted
+
     assert(dimension < (int)_curves.size());
     return _curves[dimension];
 }
 
 Natron::Status Parametric_Knob::addControlPoint(int dimension,double key,double value){
+    ///Mt-safe as Curve is MT-safe
     if(dimension >= (int)_curves.size()){
         return StatFailed;
     }
-
+    
     _curves[dimension]->addKeyFrame(KeyFrame(key,value));
     emit curveChanged(dimension);
     return StatOK;
 }
 
 Natron::Status Parametric_Knob::getValue(int dimension,double parametricPosition,double *returnValue){
+    ///Mt-safe as Curve is MT-safe
     if(dimension >= (int)_curves.size()){
         return StatFailed;
     }
@@ -1188,6 +1077,7 @@ Natron::Status Parametric_Knob::getValue(int dimension,double parametricPosition
 
 Natron::Status Parametric_Knob::getNControlPoints(int dimension,int *returnValue)
 {
+    ///Mt-safe as Curve is MT-safe
     if (dimension >= (int)_curves.size()) {
         return StatFailed;
     }
@@ -1199,6 +1089,7 @@ Natron::Status Parametric_Knob::getNthControlPoint(int dimension,
                                   int    nthCtl,
                                   double *key,
                                   double *value){
+    ///Mt-safe as Curve is MT-safe
     if(dimension >= (int)_curves.size()){
         return StatFailed;
     }
@@ -1217,6 +1108,7 @@ Natron::Status Parametric_Knob::setNthControlPoint(int   dimension,
                                   double key,
                                   double value)
 {
+    ///Mt-safe as Curve is MT-safe
     if(dimension >= (int)_curves.size()){
         return StatFailed;
     }
@@ -1227,6 +1119,8 @@ Natron::Status Parametric_Knob::setNthControlPoint(int   dimension,
 }
 
 Natron::Status  Parametric_Knob::deleteControlPoint(int   dimension,int   nthCtl){
+    
+    ///Mt-safe as Curve is MT-safe
     if(dimension >= (int)_curves.size()){
         return StatFailed;
     }
@@ -1237,6 +1131,7 @@ Natron::Status  Parametric_Knob::deleteControlPoint(int   dimension,int   nthCtl
 }
 
 Natron::Status  Parametric_Knob::deleteAllControlPoints(int   dimension){
+    ///Mt-safe as Curve is MT-safe
     if(dimension >= (int)_curves.size()){
         return StatFailed;
     }
@@ -1246,107 +1141,29 @@ Natron::Status  Parametric_Knob::deleteAllControlPoints(int   dimension){
 }
 
 
-
-void Parametric_Knob::cloneExtraData(const Knob& other){
-    assert(other.typeName() == typeNameStatic() && other.getDimension() == getDimension());
-    const Parametric_Knob& paramKnob = dynamic_cast<const Parametric_Knob&>(other);
-    for (int i = 0; i < getDimension(); ++i) {
-        _curves[i]->clone(*(paramKnob.getParametricCurve(i)));
+void Parametric_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other){
+    ///Mt-safe as Curve is MT-safe
+    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other.get());
+    if (isParametric && isParametric->getDimension() == getDimension()) {
+        for (int i = 0; i < getDimension(); ++i) {
+            _curves[i]->clone(*isParametric->getParametricCurve(i));
+        }
     }
 }
 
-static const QString kCurveTag = QString("__C__");
-static const QString kControlPointTag  = QString("__CP__");
-static const QString kEndControlPointTag = QString("__END_CP__");
-static const QString kValueSeparator  = QString("_,_");
-
-void Parametric_Knob::loadExtraData(const QString& str) {
-    
-    
-    if(str.isEmpty()){
-        return;
-    }
-    int curveCursor = str.indexOf(kCurveTag);
-    while(curveCursor != -1){
-        
-        int cpCursor = str.indexOf(kControlPointTag,curveCursor);
-
-        ///i is the index at which the first digit of the dimension of the curve is
-        int i = curveCursor + kCurveTag.size();
-        assert(str.at(i).isDigit());
-        QString curveIndexStr;
-        
-        while( i < cpCursor ){
-            assert(i < str.size());
-            curveIndexStr.push_back(str.at(i));
-            ++i;
-        }
-        int curveIndex = curveIndexStr.toUInt();
-        
-        Natron::Status st = deleteAllControlPoints(curveIndex);
-        assert(st == StatOK);
-        
-        while(cpCursor != -1){
-            
-            QString key;
-            
-            ///i is the index at which the first digit of the key is
-            i = cpCursor + kControlPointTag.size();
-            assert(str.at(i).isDigit());
-            
-            ///find the value separator
-            int valueSep = str.indexOf(kValueSeparator,i);
-            assert(valueSep != -1);
-            
-            while( i < valueSep){
-                assert(i < str.size());
-                key.append(str.at(i));
-                ++i;
-            }
-            
-            ///we now have the key
-            
-            ///position i at the first digit of the value
-            i = valueSep + kValueSeparator.size();
-            assert(str.at(i).isDigit());
-            
-            int endCp = str.indexOf(kEndControlPointTag,valueSep);
-            assert(endCp != -1);
-            
-            QString value ;
-            while( i < endCp ){
-                assert(i < str.size());
-                value.push_back(str.at(i));
-                ++i;
-            }
-            
-            _curves[curveIndex]->addKeyFrame(KeyFrame(key.toDouble(), value.toDouble()));
-            cpCursor = str.indexOf(kControlPointTag,cpCursor+1);
-            int nextCurveIndex = str.indexOf(kCurveTag,curveCursor+1);
-            if(cpCursor > nextCurveIndex && nextCurveIndex != -1){
-                break;
-            }
-        }
-        emit curveChanged(curveIndex);
-
-        curveCursor = str.indexOf(kCurveTag,curveCursor+1);
-    }
-}
-
-QString Parametric_Knob::saveExtraData() const {
-    QString ret;
+void Parametric_Knob::saveParametricCurves(std::list< Curve >* curves) const
+{
     for (U32 i = 0; i < _curves.size(); ++i) {
-        ret.append(kCurveTag);
-        ret.append(QString::number(i));
-        KeyFrameSet kfs = _curves[i]->getKeyFrames_mt_safe();
-        for (KeyFrameSet::const_iterator it = kfs.begin(); it!= kfs.end(); ++it) {
-            ret.append(kControlPointTag);
-            ret.append(QString::number(it->getTime()));
-            ret.append(kValueSeparator);
-            ret.append(QString::number(it->getValue()));
-            ret.append(kEndControlPointTag);
-        }
+        curves->push_back(*_curves[i]);
     }
-    return ret;
 }
 
+void Parametric_Knob::loadParametricCurves(const std::list< Curve >& curves)
+{ 
+    assert(!_curves.empty());
+    int i = 0;
+    for (std::list< Curve >::const_iterator it = curves.begin(); it!=curves.end(); ++it) {
+        _curves[i]->clone(*it);
+        ++i;
+    }
+}

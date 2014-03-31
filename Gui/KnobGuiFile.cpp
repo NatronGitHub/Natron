@@ -33,12 +33,12 @@
 using namespace Natron;
 
 //===========================FILE_KNOB_GUI=====================================
-File_KnobGui::File_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
+File_KnobGui::File_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container)
 : KnobGui(knob, container)
 {
-    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knob);
-    assert(fk);
-    QObject::connect(fk.get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)));
+    _knob = boost::dynamic_pointer_cast<File_Knob>(knob);
+    assert(_knob);
+    QObject::connect(_knob.get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)));
 }
 
 File_KnobGui::~File_KnobGui()
@@ -85,9 +85,7 @@ void File_KnobGui::createWidget(QHBoxLayout* layout)
 }
 
 void File_KnobGui::onButtonClicked() {
-    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
-    assert(fk);
-    open_file(fk->isAnimationEnabled());
+    open_file(_knob->isAnimationEnabled());
 }
 
 class File_Knob_UndoCommand : public QUndoCommand {
@@ -132,17 +130,16 @@ void File_KnobGui::open_file(bool openSequence)
     
     std::vector<std::string> filters;
     
-    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
-    if (!fk->isInputImageFile()) {
+    if (!_knob->isInputImageFile()) {
         filters.push_back("*");
     } else {
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(getKnob()->getHolder());
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_knob->getHolder());
         if (effect) {
             filters = effect->supportedFileFormats();
         }
     }
     SequenceParsing::SequenceFromFiles currentFiles(false);
-    fk->getFiles(&currentFiles);
+    _knob->getFiles(&currentFiles);
     QString pathWhereToOpen;
     if (currentFiles.empty()) {
         pathWhereToOpen = _lastOpened;
@@ -168,7 +165,7 @@ void File_KnobGui::updateLastOpened(const QString &str)
 
 }
 
-void File_KnobGui::updateGUI(int /*dimension*/, const Variant &/*variant*/)
+void File_KnobGui::updateGUI(int /*dimension*/)
 {
     boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
     _lineEdit->setText(fk->getPattern());
@@ -231,13 +228,15 @@ void File_KnobGui::setReadOnly(bool readOnly,int /*dimension*/) {
     _lineEdit->setReadOnly(readOnly);
 }
 
+boost::shared_ptr<KnobI> File_KnobGui::getKnob() const { return _knob; }
+
 //============================OUTPUT_FILE_KNOB_GUI====================================
-OutputFile_KnobGui::OutputFile_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
+OutputFile_KnobGui::OutputFile_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container)
 : KnobGui(knob, container)
 {
-    boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knob);
-    assert(fk);
-    QObject::connect(fk.get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)));
+    _knob = boost::dynamic_pointer_cast<OutputFile_Knob>(knob);
+    assert(_knob);
+    QObject::connect(_knob.get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)));
 }
 
 OutputFile_KnobGui::~OutputFile_KnobGui()
@@ -284,9 +283,7 @@ void OutputFile_KnobGui::createWidget(QHBoxLayout* layout)
 }
 
 void OutputFile_KnobGui::onButtonClicked() {
-    boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(getKnob());
-    assert(fk);
-    open_file(fk->isSequencesDialogEnabled());
+    open_file(_knob->isSequencesDialogEnabled());
 }
 
 void OutputFile_KnobGui::open_file(bool openSequence)
@@ -294,8 +291,7 @@ void OutputFile_KnobGui::open_file(bool openSequence)
     
     std::vector<std::string> filters;
     
-    boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(getKnob());
-    if (!fk->isOutputImageFile()) {
+    if (!_knob->isOutputImageFile()) {
         filters.push_back("*");
     } else {
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(getKnob()->getHolder());
@@ -310,7 +306,7 @@ void OutputFile_KnobGui::open_file(bool openSequence)
         QString newPattern = dialog.filesToSave();
         updateLastOpened(SequenceParsing::removePath(oldPattern));
         
-        pushValueChangedCommand(Variant(newPattern));
+        pushUndoCommand(new KnobUndoCommand<std::string>(this,oldPattern.toStdString(),newPattern.toStdString()));
     }
 }
 
@@ -322,9 +318,9 @@ void OutputFile_KnobGui::updateLastOpened(const QString &str)
 
 }
 
-void OutputFile_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
+void OutputFile_KnobGui::updateGUI(int /*dimension*/)
 {
-    _lineEdit->setText(variant.toString());
+    _lineEdit->setText(_knob->getValue().c_str());
 }
 
 
@@ -333,7 +329,7 @@ void OutputFile_KnobGui::onReturnPressed()
 {
     QString newPattern = _lineEdit->text();
 
-    pushValueChangedCommand(Variant(newPattern));
+    pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),newPattern.toStdString()));
 }
 
 
@@ -360,13 +356,15 @@ void OutputFile_KnobGui::setReadOnly(bool readOnly,int /*dimension*/) {
     _openFileButton->setEnabled(!readOnly);
     _lineEdit->setReadOnly(readOnly);
 }
+
+boost::shared_ptr<KnobI> OutputFile_KnobGui::getKnob() const { return _knob; }
 //============================PATH_KNOB_GUI====================================
-Path_KnobGui::Path_KnobGui(boost::shared_ptr<Knob> knob, DockablePanel *container)
+Path_KnobGui::Path_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container)
 : KnobGui(knob, container)
 {
-    boost::shared_ptr<Path_Knob> fk = boost::dynamic_pointer_cast<Path_Knob>(knob);
-    assert(fk);
-    QObject::connect(fk.get(), SIGNAL(openFile()), this, SLOT(open_file()));
+    _knob = boost::dynamic_pointer_cast<Path_Knob>(knob);
+    assert(_knob);
+    QObject::connect(_knob.get(), SIGNAL(openFile()), this, SLOT(open_file()));
 }
 
 Path_KnobGui::~Path_KnobGui()
@@ -410,8 +408,6 @@ void Path_KnobGui::createWidget(QHBoxLayout* layout)
 }
 
 void Path_KnobGui::onButtonClicked() {
-    boost::shared_ptr<Path_Knob> fk = boost::dynamic_pointer_cast<Path_Knob>(getKnob());
-    assert(fk);
     open_file();
 }
 
@@ -424,17 +420,16 @@ void Path_KnobGui::open_file()
     if (dialog.exec()) {
         QString dirPath = dialog.currentDirectory().absolutePath();
         updateLastOpened(dirPath);
-        boost::shared_ptr<Path_Knob> fk = boost::dynamic_pointer_cast<Path_Knob>(getKnob());
 
-        if (fk->isMultiPath()) {
-            QString existingPath = fk->getValue<QString>();
-            if (!existingPath.isEmpty()) {
-                existingPath.append(QChar(';'));
-                dirPath.prepend(existingPath);
+        if (_knob->isMultiPath()) {
+            std::string existingPath = _knob->getValue();
+            if (!existingPath.empty()) {
+                existingPath += ';';
+                dirPath.prepend(existingPath.c_str());
             }
             
         }
-        pushValueChangedCommand(Variant(dirPath));
+        pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),dirPath.toStdString()));
     }
 }
 
@@ -444,9 +439,9 @@ void Path_KnobGui::updateLastOpened(const QString &str)
     _lastOpened = SequenceParsing::removePath(withoutPath);
 }
 
-void Path_KnobGui::updateGUI(int /*dimension*/, const Variant &variant)
+void Path_KnobGui::updateGUI(int /*dimension*/)
 {
-    _lineEdit->setText(variant.toString());
+    _lineEdit->setText(_knob->getValue().c_str());
 }
 
 
@@ -469,13 +464,14 @@ void Path_KnobGui::onReturnPressed()
     boost::shared_ptr<Path_Knob> fk = boost::dynamic_pointer_cast<Path_Knob>(getKnob());
     
     if (fk->isMultiPath()) {
-        QString existingPath = fk->getValue<QString>();
-        if (!existingPath.isEmpty() && !dirPath.isEmpty()) {
-            existingPath.append(QChar(';'));
-            dirPath.prepend(existingPath);
+        std::string existingPath = fk->getValue();
+        if (!existingPath.empty() && !dirPath.isEmpty()) {
+            existingPath += ';';
+            dirPath.prepend(existingPath.c_str());
         }
     }
-    pushValueChangedCommand(Variant(dirPath));
+    pushUndoCommand(new KnobUndoCommand<std::string>(this,fk->getValue(),dirPath.toStdString()));
+
 }
 
 
@@ -490,3 +486,5 @@ void Path_KnobGui::setReadOnly(bool readOnly,int /*dimension*/) {
     _openFileButton->setEnabled(!readOnly);
     _lineEdit->setReadOnly(readOnly);
 }
+
+boost::shared_ptr<KnobI> Path_KnobGui::getKnob() const { return _knob; }

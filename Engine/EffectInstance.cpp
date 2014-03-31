@@ -200,7 +200,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     ///hence it might have a thread-id.
     QThreadPool::globalInstance()->reserveThread();
     QFuture< boost::shared_ptr<Image > > future = QtConcurrent::run(n,&Natron::EffectInstance::renderRoI,
-                RenderRoIArgs(time,scale,view,roi,isSequentialRender,isRenderUserInteraction,false, precomputedRoD.isNull() ? NULL : &precomputedRoD));
+                RenderRoIArgs(time,scale,view,roi,isSequentialRender,isRenderUserInteraction,byPassCache, precomputedRoD.isNull() ? NULL : &precomputedRoD));
     future.waitForFinished();
     QThreadPool::globalInstance()->releaseThread();
 
@@ -795,14 +795,14 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
 }
 
 void EffectInstance::openImageFileKnob() {
-    const std::vector< boost::shared_ptr<Knob> >& knobs = getKnobs();
+    const std::vector< boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
             boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
             assert(fk);
             if (fk->isInputImageFile()) {
-                QString file = fk->getValue<QString>();
-                if (file.isEmpty()) {
+                std::string file = fk->getValue();
+                if (file.empty()) {
                     fk->open_file();
                 }
                 break;
@@ -811,8 +811,8 @@ void EffectInstance::openImageFileKnob() {
             boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
             assert(fk);
             if (fk->isOutputImageFile()) {
-                QString file = fk->getValue<QString>();
-                if(file.isEmpty()){
+                std::string file = fk->getValue();
+                if(file.empty()){
                     fk->open_file();
                 }
                 break;
@@ -827,7 +827,7 @@ void EffectInstance::createKnobDynamically(){
     _node->createKnobDynamically();
 }
 
-void EffectInstance::evaluate(Knob* knob, bool isSignificant)
+void EffectInstance::evaluate(KnobI* knob, bool isSignificant)
 {
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -906,7 +906,7 @@ void EffectInstance::setInputFilesForReader(const QStringList& files) {
         return;
     }
     
-    const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
             boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
@@ -928,13 +928,13 @@ void EffectInstance::setOutputFilesForWriter(const QString& pattern) {
         return;
     }
     
-    const std::vector<boost::shared_ptr<Knob> >& knobs = getKnobs();
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         if (knobs[i]->typeName() == OutputFile_Knob::typeNameStatic()) {
             boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
             assert(fk);
             if (fk->isOutputImageFile()) {
-                fk->setValue<QString>(pattern);
+                fk->setValue(pattern.toStdString(),0);
                 break;
             }
         }
