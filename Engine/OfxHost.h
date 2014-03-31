@@ -84,7 +84,7 @@ public:
     virtual bool pluginSupported(OFX::Host::ImageEffect::ImageEffectPlugin *plugin, std::string &reason) const OVERRIDE;
 
     ///fetch the parametric parameters suite or returns the base class version
-    virtual void* fetchSuite(const char *suiteName, int suiteVersion) OVERRIDE;
+    virtual const void* fetchSuite(const char *suiteName, int suiteVersion) OVERRIDE;
     
 #ifdef OFX_SUPPORTS_MULTITHREAD
     virtual OfxStatus multiThread(OfxThreadFunctionV1 func,unsigned int nThreads, void *customArg) OVERRIDE;
