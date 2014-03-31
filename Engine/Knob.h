@@ -932,6 +932,53 @@ class KnobHolder {
     bool _knobsInitialized;
     bool _isSlave;
     
+protected:
+    
+    ///Use to count the recursion in the function calls; doesn't need to be locked as it is run on the main-thread.
+    ///Protected so EffectInstance can use it for overlay interacts as well
+    /* The image effect actions which may trigger a recursive action call on a single instance are...
+     
+     kOfxActionBeginInstanceChanged
+     kOfxActionInstanceChanged
+     kOfxActionEndInstanceChanged
+     The interact actions which may trigger a recursive action to be called on the associated plugin instance are...
+     
+     kOfxInteractActionGainFocus
+     kOfxInteractActionKeyDown
+     kOfxInteractActionKeyRepeat
+     kOfxInteractActionKeyUp
+     kOfxInteractActionLoseFocus
+     kOfxInteractActionPenDown
+     kOfxInteractActionPenMotion
+     kOfxInteractActionPenUp
+     
+     The image effect actions which may be called recursively are...
+     
+     kOfxActionBeginInstanceChanged
+     kOfxActionInstanceChanged
+     kOfxActionEndInstanceChanged
+     kOfxImageEffectActionGetClipPreferences
+     The interact actions which may be called recursively are...
+     
+     kOfxInteractActionDraw
+     
+     */
+    int actionsRecursionLevel;
+    
+    ///If true, when the actionsRecursionLevel hit 0, it will trigger an evaluation.
+    struct EvaluationRequest {
+        KnobI* requester; //< the last requester
+        bool isSignificant; //< is it a significant evaluation ?
+        
+        EvaluationRequest()
+        : requester(0) , isSignificant(false)
+        {
+            
+        }
+    };
+    
+    EvaluationRequest evaluateQueue;
+    
 public:
     
     /**
@@ -981,15 +1028,15 @@ public:
      * You should NEVER CALL THIS YOURSELF as it would break the bracketing system.
      * You can overload this to prepare yourself to a lot of value changes.
      **/
-    virtual void beginKnobsValuesChanged(Natron::ValueChangedReason reason){(void)reason;}
-
+    void beginKnobsValuesChanged_public(Natron::ValueChangedReason reason);
+    
     /**
      * @brief The virtual portion of notifyProjectEndKnobsValuesChanged(). This is called by the project
      * You should NEVER CALL THIS YOURSELF as it would break the bracketing system.
      * You can overload this to finish a serie of value changes, thus limiting the amount of changes to do.
      **/
-    virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason){(void)reason;}
-
+    void endKnobsValuesChanged_public(Natron::ValueChangedReason reason);
+    
     
     /**
      * @brief The virtual portion of notifyProjectEvaluationRequested(). This is called by the project
@@ -997,7 +1044,7 @@ public:
      * You can overload this to do things when a value is changed. Bear in mind that you can compress
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason){(void)k;(void)reason;}
+    void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason);
 
 
     /**
@@ -1005,7 +1052,15 @@ public:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    virtual void evaluate(KnobI* knob,bool isSignificant) = 0;
+    void evaluate_public(KnobI* knob,bool isSignificant);
+    
+    /**
+     * @brief To be called after each function that modifies actionsRecursionLevel that is not
+     * onKnobChanged or begin/endKnobValueChange.
+     * If actionsRecursionLevel drops to 0 and there was some evaluate requested, it
+     * will call evaluate_public
+     **/
+    void checkIfRenderNeeded();
     
     /*Add a knob to the vector. This is called by the
      Knob class. Don't call this*/
@@ -1026,7 +1081,38 @@ public:
     void unslaveAllKnobs();
     
 protected:
+    
+    
+    /**
+     * @brief The virtual portion of notifyProjectBeginValuesChanged(). This is called by the project
+     * You should NEVER CALL THIS YOURSELF as it would break the bracketing system.
+     * You can overload this to prepare yourself to a lot of value changes.
+     **/
+    virtual void beginKnobsValuesChanged(Natron::ValueChangedReason reason){(void)reason;}
+    
+    /**
+     * @brief The virtual portion of notifyProjectEndKnobsValuesChanged(). This is called by the project
+     * You should NEVER CALL THIS YOURSELF as it would break the bracketing system.
+     * You can overload this to finish a serie of value changes, thus limiting the amount of changes to do.
+     **/
+    virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason){(void)reason;}
+    
+    
+    /**
+     * @brief The virtual portion of notifyProjectEvaluationRequested(). This is called by the project
+     * You should NEVER CALL THIS YOURSELF as it would break the bracketing system.
+     * You can overload this to do things when a value is changed. Bear in mind that you can compress
+     * the change by using the begin/end[ValueChanges] to optimize the changes.
+     **/
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason){(void)k;(void)reason;}
 
+    /**
+     * @brief Must be implemented to evaluate a value change
+     * made to a knob(e.g: force a new render).
+     * @param knob[in] The knob whose value changed.
+     **/
+    virtual void evaluate(KnobI* knob,bool isSignificant) = 0;
+    
     /**
      * @brief Called when the knobHolder is made slave or unslaved.
      * @param master The master knobHolder. When isSlave is false, master

@@ -716,6 +716,8 @@ _app(appInstance)
 , _knobs()
 , _knobsInitialized(false)
 , _isSlave(false)
+, actionsRecursionLevel(0)
+, evaluateQueue()
 {
 }
 
@@ -849,7 +851,54 @@ void KnobHolder::unslaveAllKnobs() {
     onSlaveStateChanged(false,NULL);
 }
 
+void KnobHolder::beginKnobsValuesChanged_public(Natron::ValueChangedReason reason)
+{
+    ///cannot run in another thread.
+    assert(QThread::currentThread() == qApp->thread());
+    ++actionsRecursionLevel;
+    beginKnobsValuesChanged(reason);
+    --actionsRecursionLevel;
+}
 
+void KnobHolder::endKnobsValuesChanged_public(Natron::ValueChangedReason reason)
+{
+    ///cannot run in another thread.
+    assert(QThread::currentThread() == qApp->thread());
+    ++actionsRecursionLevel;
+    endKnobsValuesChanged(reason);
+    --actionsRecursionLevel;
+}
+
+
+void KnobHolder::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason)
+{
+    ///cannot run in another thread.
+    assert(QThread::currentThread() == qApp->thread());
+    ++actionsRecursionLevel;
+    onKnobValueChanged(k, reason);
+    --actionsRecursionLevel;
+}
+
+void KnobHolder::evaluate_public(KnobI* knob,bool isSignificant)
+{
+    ///cannot run in another thread.
+    assert(QThread::currentThread() == qApp->thread());
+    evaluateQueue.isSignificant |= isSignificant;
+    evaluateQueue.requester = knob;
+    if (actionsRecursionLevel == 0) {
+        evaluate(knob, evaluateQueue.isSignificant);
+        evaluateQueue.requester = NULL;
+    }
+}
+
+void KnobHolder::checkIfRenderNeeded()
+{
+    ///cannot run in another thread.
+    assert(QThread::currentThread() == qApp->thread());
+    if (actionsRecursionLevel == 0 && evaluateQueue.requester != NULL) {
+        evaluate(evaluateQueue.requester, evaluateQueue.isSignificant);
+    }
+}
 
 /***************************STRING ANIMATION******************************************/
 void AnimatingString_KnobHelper::cloneExtraData(const boost::shared_ptr<KnobI>& other) {

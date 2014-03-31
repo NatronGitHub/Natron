@@ -101,6 +101,8 @@ void Int_KnobGui::createWidget(QHBoxLayout* layout)
     const std::vector<int> &increments = _knob->getIncrements();
     const std::vector<int> &displayMins = _knob->getDisplayMinimums();
     const std::vector<int> &displayMaxs = _knob->getDisplayMaximums();
+    const std::vector<int > &mins = _knob->getMinimums();
+    const std::vector<int > &maxs = _knob->getMaximums();
     for (int i = 0; i < dim; ++i) {
         QWidget *boxContainer = new QWidget(layout->parentWidget());
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
@@ -119,8 +121,8 @@ void Int_KnobGui::createWidget(QHBoxLayout* layout)
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(box,i);
         
-        int min = displayMins[i];
-        int max = displayMaxs[i];
+        int min = std::max(displayMins[i],mins[i]);
+        int max = std::min(displayMaxs[i],maxs[i]);
         
         box->setMaximum(max);
         box->setMinimum(min);
@@ -393,7 +395,8 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
     const std::vector<double> &increments = _knob->getIncrements();
     const std::vector<double> &displayMins = _knob->getDisplayMinimums();
     const std::vector<double> &displayMaxs = _knob->getDisplayMaximums();
-    
+    const std::vector<double >& mins = _knob->getMinimums();
+    const std::vector<double >& maxs = _knob->getMaximums();
     const std::vector<int> &decimals = _knob->getDecimals();
     for (int i = 0; i < dim; ++i) {
         QWidget *boxContainer = new QWidget(layout->parentWidget());
@@ -413,8 +416,8 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
         enableRightClickMenu(box,i);
 
         
-        double min = displayMins[i];
-        double max = displayMaxs[i];
+        double min = std::max(displayMins[i],mins[i]);
+        double max = std::min(displayMaxs[i],maxs[i]);
         
         box->setMaximum(max);
         box->setMinimum(min);

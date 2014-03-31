@@ -85,7 +85,6 @@ struct ProjectPrivate {
     
     Natron::OutputEffectInstance* lastTimelineSeekCaller;
 
-    mutable QMutex beginEndMutex; //< protects begin/stack/end value change
     int beginEndBracketsCount;
     int evaluationsCount;
     

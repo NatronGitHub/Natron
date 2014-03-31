@@ -336,31 +336,7 @@ public:
      **/
     virtual void initializeOverlayInteract(){}
     
-    /* @brief Overlay support:
-     * Just overload this function in your operator.
-     * No need to include any OpenGL related header.
-     * The coordinate space is  defined by the displayWindow
-     * (i.e: (0,0) = bottomLeft and  width() and height() being
-     * respectivly the width and height of the frame.)
-     */
-    virtual void drawOverlay(){}
-    
-    virtual bool onOverlayPenDown(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) WARN_UNUSED_RETURN { return false; }
-    
-    virtual bool onOverlayPenMotion(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) WARN_UNUSED_RETURN { return false; }
-    
-    virtual bool onOverlayPenUp(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) WARN_UNUSED_RETURN { return false; }
-    
-    virtual bool onOverlayKeyDown(Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN { return false; }
-    
-    virtual bool onOverlayKeyUp(Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN { return false; }
-    
-    virtual bool onOverlayKeyRepeat(Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN { return false; }
-    
-    virtual bool onOverlayFocusGained() WARN_UNUSED_RETURN { return false; }
-    
-    virtual bool onOverlayFocusLost() WARN_UNUSED_RETURN { return false; }
-    
+   
     virtual void setCurrentViewportForOverlays(OverlaySupport* /*viewport*/) {}
 
     /**
@@ -520,6 +496,26 @@ public:
                                    SequenceTime /*step*/,bool /*interactive*/,RenderScale /*scale*/,
                                    bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
                                    int /*view*/) {}
+    
+    
+    void drawOverlay_public();
+    
+    bool onOverlayPenDown_public(const QPointF& viewportPos, const QPointF& pos) WARN_UNUSED_RETURN;
+    
+    bool onOverlayPenMotion_public(const QPointF& viewportPos, const QPointF& pos) WARN_UNUSED_RETURN ;
+    
+    bool onOverlayPenUp_public(const QPointF& viewportPos, const QPointF& pos) WARN_UNUSED_RETURN;
+    
+    bool onOverlayKeyDown_public(Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN ;
+    
+    bool onOverlayKeyUp_public(Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    
+    bool onOverlayKeyRepeat_public(Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    
+    bool onOverlayFocusGained_public() WARN_UNUSED_RETURN;
+    
+    bool onOverlayFocusLost_public() WARN_UNUSED_RETURN;
+    
 protected:
     
     /**
@@ -535,6 +531,32 @@ protected:
      * to the render clones.
      **/
     virtual void cloneExtras(){}
+    
+    /* @brief Overlay support:
+     * Just overload this function in your operator.
+     * No need to include any OpenGL related header.
+     * The coordinate space is  defined by the displayWindow
+     * (i.e: (0,0) = bottomLeft and  width() and height() being
+     * respectivly the width and height of the frame.)
+     */
+    virtual void drawOverlay(){}
+    
+    virtual bool onOverlayPenDown(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) WARN_UNUSED_RETURN { return false; }
+    
+    virtual bool onOverlayPenMotion(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) WARN_UNUSED_RETURN { return false; }
+    
+    virtual bool onOverlayPenUp(const QPointF& /*viewportPos*/, const QPointF& /*pos*/) WARN_UNUSED_RETURN { return false; }
+    
+    virtual bool onOverlayKeyDown(Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN { return false; }
+    
+    virtual bool onOverlayKeyUp(Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN { return false; }
+    
+    virtual bool onOverlayKeyRepeat(Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN { return false; }
+    
+    virtual bool onOverlayFocusGained() WARN_UNUSED_RETURN { return false; }
+    
+    virtual bool onOverlayFocusLost() WARN_UNUSED_RETURN { return false; }
+
     
     Node* const _node; //< the node holding this effect
 

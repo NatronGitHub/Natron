@@ -862,7 +862,7 @@ void ViewerTab::drawOverlays() const{
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        effect->drawOverlay();
+        effect->drawOverlay_public();
     }
 }
 
@@ -879,7 +879,7 @@ bool ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& 
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenDown(viewportPos, pos);
+        bool didSmthing = effect->onOverlayPenDown_public(viewportPos, pos);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -901,7 +901,7 @@ bool ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenMotion(viewportPos, pos);
+        bool didSmthing = effect->onOverlayPenMotion_public(viewportPos, pos);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -924,7 +924,7 @@ bool ViewerTab::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& po
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenUp(viewportPos, pos);
+        bool didSmthing = effect->onOverlayPenUp_public(viewportPos, pos);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -947,7 +947,7 @@ bool ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyDown(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
+        bool didSmthing = effect->onOverlayKeyDown_public(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -971,7 +971,7 @@ bool ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyUp(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
+        bool didSmthing = effect->onOverlayKeyUp_public(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -994,7 +994,7 @@ bool ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyRepeat(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
+        bool didSmthing = effect->onOverlayKeyRepeat_public(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -1018,7 +1018,7 @@ bool ViewerTab::notifyOverlaysFocusGained(){
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayFocusGained();
+        bool didSmthing = effect->onOverlayFocusGained_public();
         if (didSmthing) {
             ret = true;
         }
@@ -1040,7 +1040,7 @@ bool ViewerTab::notifyOverlaysFocusLost(){
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayFocusLost();
+        bool didSmthing = effect->onOverlayFocusLost_public();
         if (didSmthing) {
             ret = true;
         }

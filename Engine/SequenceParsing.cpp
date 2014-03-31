@@ -273,7 +273,7 @@ static bool matchesPattern(const QString& filename,const QStringList& commonPart
         ///couldn't find a common part
         if (pos == -1) {
             return false;
-        }
+        } 
 
         //the common parts order is not the same.
         if (pos <= lastPartPos) {

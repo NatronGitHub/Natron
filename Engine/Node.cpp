@@ -1141,63 +1141,63 @@ void Node::drawOverlay()
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     ///MT-safe
-    _imp->liveInstance->drawOverlay();
+    _imp->liveInstance->drawOverlay_public();
 }
 
 bool Node::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos)
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    return _imp->liveInstance->onOverlayPenDown(viewportPos, pos);
+    return _imp->liveInstance->onOverlayPenDown_public(viewportPos, pos);
 }
 
 bool Node::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos)
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    return _imp->liveInstance->onOverlayPenMotion(viewportPos, pos);
+    return _imp->liveInstance->onOverlayPenMotion_public(viewportPos, pos);
 }
 
 bool Node::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos)
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    return _imp->liveInstance->onOverlayPenUp(viewportPos, pos);
+    return _imp->liveInstance->onOverlayPenUp_public(viewportPos, pos);
 }
 
 bool Node::onOverlayKeyDown(Natron::Key key,Natron::KeyboardModifiers modifiers)
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    return _imp->liveInstance->onOverlayKeyDown(key,modifiers);
+    return _imp->liveInstance->onOverlayKeyDown_public(key,modifiers);
 }
 
 bool Node::onOverlayKeyUp(Natron::Key key,Natron::KeyboardModifiers modifiers)
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    return _imp->liveInstance->onOverlayKeyUp(key,modifiers);
+    return _imp->liveInstance->onOverlayKeyUp_public(key,modifiers);
 }
 
 bool Node::onOverlayKeyRepeat(Natron::Key key,Natron::KeyboardModifiers modifiers)
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    return _imp->liveInstance->onOverlayKeyRepeat(key,modifiers);
+    return _imp->liveInstance->onOverlayKeyRepeat_public(key,modifiers);
 }
 
 bool Node::onOverlayFocusGained()
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    return _imp->liveInstance->onOverlayFocusGained();
+    return _imp->liveInstance->onOverlayFocusGained_public();
 }
 
 bool Node::onOverlayFocusLost()
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    return _imp->liveInstance->onOverlayFocusLost();
+    return _imp->liveInstance->onOverlayFocusLost_public();
 }
 
 

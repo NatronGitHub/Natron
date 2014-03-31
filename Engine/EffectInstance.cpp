@@ -72,6 +72,7 @@ struct EffectInstance::Implementation {
     bool previewEnabled;
     QMutex beginEndRenderMutex;
     int beginEndRenderCount;
+
 };
 
 EffectInstance::EffectInstance(Node* node)
@@ -829,8 +830,6 @@ void EffectInstance::createKnobDynamically(){
 
 void EffectInstance::evaluate(KnobI* knob, bool isSignificant)
 {
-    ////Only called by the main-thread
-    assert(QThread::currentThread() == qApp->thread());
     
     assert(_node);
     
@@ -959,6 +958,108 @@ void EffectInstance::unregisterPluginMemory(size_t nBytes) {
 
 void EffectInstance::onSlaveStateChanged(bool isSlave,KnobHolder* master) {
     _node->onSlaveStateChanged(isSlave,master);
+}
+
+
+void EffectInstance::drawOverlay_public()
+{
+    ///cannot be run in another thread
+    assert(QThread::currentThread() == qApp->thread());
+    ++actionsRecursionLevel;
+    drawOverlay();
+    --actionsRecursionLevel;
+}
+
+bool EffectInstance::onOverlayPenDown_public(const QPointF& viewportPos, const QPointF& pos)
+{
+    ///cannot be run in another thread
+    assert(QThread::currentThread() == qApp->thread());
+    ++actionsRecursionLevel;
+    bool ret = onOverlayPenDown(viewportPos, pos);
+    --actionsRecursionLevel;
+    checkIfRenderNeeded();
+    return ret;
+}
+
+bool EffectInstance::onOverlayPenMotion_public(const QPointF& viewportPos, const QPointF& pos)
+{
+    ///cannot be run in another thread
+    assert(QThread::currentThread() == qApp->thread());
+    ++actionsRecursionLevel;
+    bool ret = onOverlayPenMotion(viewportPos, pos);
+    --actionsRecursionLevel;
+    checkIfRenderNeeded();
+    return ret;
+}
+
+bool EffectInstance::onOverlayPenUp_public(const QPointF& viewportPos, const QPointF& pos)
+{
+    ///cannot be run in another thread
+    assert(QThread::currentThread() == qApp->thread());
+    ++actionsRecursionLevel;
+    bool ret = onOverlayPenUp(viewportPos, pos);
+    --actionsRecursionLevel;
+    checkIfRenderNeeded();
+    return ret;
+}
+
+bool EffectInstance::onOverlayKeyDown_public(Natron::Key key,Natron::KeyboardModifiers modifiers)
+{
+    ///cannot be run in another thread
+    assert(QThread::currentThread() == qApp->thread());
+    ++actionsRecursionLevel;
+    bool ret = onOverlayKeyDown(key, modifiers);
+    --actionsRecursionLevel;
+    checkIfRenderNeeded();
+    return ret;
+}
+
+bool EffectInstance::onOverlayKeyUp_public(Natron::Key key,Natron::KeyboardModifiers modifiers)
+{
+    ///cannot be run in another thread
+    assert(QThread::currentThread() == qApp->thread());
+    ++actionsRecursionLevel;
+    bool ret = onOverlayKeyUp(key, modifiers);
+    --actionsRecursionLevel;
+    checkIfRenderNeeded();
+    return ret;
+
+}
+
+bool EffectInstance::onOverlayKeyRepeat_public(Natron::Key key,Natron::KeyboardModifiers modifiers)
+{
+    ///cannot be run in another thread
+    assert(QThread::currentThread() == qApp->thread());
+    ++actionsRecursionLevel;
+    bool ret = onOverlayKeyRepeat(key, modifiers);
+    --actionsRecursionLevel;
+    checkIfRenderNeeded();
+    return ret;
+
+}
+
+bool EffectInstance::onOverlayFocusGained_public()
+{
+    ///cannot be run in another thread
+    assert(QThread::currentThread() == qApp->thread());
+    ++actionsRecursionLevel;
+    bool ret = onOverlayFocusGained();
+    --actionsRecursionLevel;
+    checkIfRenderNeeded();
+    return ret;
+
+}
+
+bool EffectInstance::onOverlayFocusLost_public()
+{
+    ///cannot be run in another thread
+    assert(QThread::currentThread() == qApp->thread());
+    ++actionsRecursionLevel;
+    bool ret = onOverlayFocusLost();
+    --actionsRecursionLevel;
+    checkIfRenderNeeded();
+    return ret;
+
 }
 
 OutputEffectInstance::OutputEffectInstance(Node* node)

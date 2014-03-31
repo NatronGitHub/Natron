@@ -376,10 +376,10 @@ bool OfxEffectInstance::isInputOptional(int inputNb) const {
 }
 
 void ofxRectDToRectI(const OfxRectD& ofxrect,RectI* box){
-    int xmin = (int)std::floor(ofxrect.x1);
-    int ymin = (int)std::floor(ofxrect.y1);
-    int xmax = (int)std::ceil(ofxrect.x2);
-    int ymax = (int)std::ceil(ofxrect.y2);
+    int xmin = (int)std::ceil(ofxrect.x1);
+    int ymin = (int)std::ceil(ofxrect.y1);
+    int xmax = (int)std::floor(ofxrect.x2);
+    int ymax = (int)std::floor(ofxrect.y2);
     box->set_left(xmin);
     box->set_right(xmax);
     box->set_bottom(ymin);
@@ -486,7 +486,7 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
     OfxStatus stat = effect_->getRegionOfInterestAction((OfxTime)time, scale, rectToOfxRect2D(renderWindow), inputRois);
     
     if(stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
-        Natron::errorDialog(getName(), "Failed to specify the region of interest from inputs.");
+        Natron::errorDialog(getNode()->getName_mt_safe(), "Failed to specify the region of interest from inputs.");
     }
     if (stat != kOfxStatReplyDefault) {
         for(std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin();it!= inputRois.end();++it){

@@ -713,7 +713,7 @@ void Project::load(const ProjectSerialization& obj)
 
 void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller)
 {
-    QMutexLocker l(&_imp->beginEndMutex);
+    assert(QThread::currentThread() == qApp->thread());
     
     ///increase the begin calls count
     ++_imp->beginEndBracketsCount;
@@ -725,7 +725,7 @@ void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,Kno
     if(found == _imp->holdersWhoseBeginWasCalled.end()){
         
         //getApp()->unlockProject();
-        caller->beginKnobsValuesChanged(reason);
+        caller->beginKnobsValuesChanged_public(reason);
         //getApp()->lockProject();
         
         ///insert the caller in the map
@@ -741,7 +741,7 @@ void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,Kno
 
 void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder* caller,KnobI* k,bool isSignificant)
 {
-    QMutexLocker l(&_imp->beginEndMutex);
+    assert(QThread::currentThread() == qApp->thread());
 
     ///This function may be called outside of a begin/end bracket call, in which case we call them ourselves.
     
@@ -775,7 +775,7 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
     /// ...
     /// endValueChange()
     if (reason != Natron::OTHER_REASON) {
-        caller->onKnobValueChanged(k,reason);
+        caller->onKnobValueChanged_public(k,reason);
     }
     
     ////if begin was not call prior to calling this function, call the end bracket oruselves
@@ -785,8 +785,8 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
 }
 
 void Project::endProjectWideValueChanges(KnobHolder* caller){
-    QMutexLocker l(&_imp->beginEndMutex);
 
+    assert(QThread::currentThread() == qApp->thread());
     
     ///decrease the beginEndBracket count
     --_imp->beginEndBracketsCount;
@@ -806,7 +806,7 @@ void Project::endProjectWideValueChanges(KnobHolder* caller){
         ///remove the caller from the holdersWhoseBeginWasCalled map
         _imp->holdersWhoseBeginWasCalled.erase(found);
         
-        caller->endKnobsValuesChanged(outerMostReason);
+        caller->endKnobsValuesChanged_public(outerMostReason);
 
         
     }else{
@@ -836,7 +836,7 @@ void Project::endProjectWideValueChanges(KnobHolder* caller){
         ///the significant param recorded in the stackEvaluateRequest function.
         if(outerMostReason != Natron::OTHER_REASON && outerMostReason != Natron::TIME_CHANGED){
             
-            caller->evaluate(_imp->lastKnobChanged,_imp->isSignificantChange);
+            caller->evaluate_public(_imp->lastKnobChanged,_imp->isSignificantChange);
             
         }
     }
