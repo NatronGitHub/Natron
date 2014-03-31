@@ -477,7 +477,7 @@ bool Natron::OfxHost::pluginSupported(OFX::Host::ImageEffect::ImageEffectPlugin 
     return true;
 }
 
-void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
+const void* Natron::OfxHost::fetchSuite(const char *suiteName, int suiteVersion) {
     if (strcmp(suiteName, kOfxParametricParameterSuite)==0  && suiteVersion == 1) {
         return OFX::Host::ParametricParam::GetSuite(suiteVersion);
     }else{

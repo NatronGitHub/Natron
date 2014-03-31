@@ -105,7 +105,7 @@ public:
         int knobsCount;
         ar & boost::serialization::make_nvp("ProjectKnobsCount",knobsCount);
         for (int i = 0; i < knobsCount; ++i) {
-            boost::shared_ptr<KnobSerialization> ks(new KnobSerialization(_app));
+            boost::shared_ptr<KnobSerialization> ks(new KnobSerialization);
             ar & boost::serialization::make_nvp("item",*ks);
             _projectKnobs.push_back(ks);
         }
