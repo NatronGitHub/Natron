@@ -29,8 +29,6 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/CurveSerialization.h"
 #include "Engine/StringAnimationManager.h"
 
-class AppInstance;
-
 struct MasterSerialization
 {
     int masterDimension;
@@ -221,8 +219,7 @@ class KnobSerialization
     int _dimension;
     std::list<MasterSerialization> _masters; //< used when deserializating, we can't restore it before all knobs have been restored.
     std::list< Curve > parametricCurves;
-    AppInstance* _app;
-    
+
     friend class boost::serialization::access;
     template<class Archive>
     void save(Archive & ar, const unsigned int /*version*/) const
@@ -305,12 +302,12 @@ class KnobSerialization
 public:
     
     ///Constructor used to serialize
+    explicit
     KnobSerialization(const boost::shared_ptr<KnobI>& knob)
     : _knob(knob)
     , _typeName(knob->typeName())
     , _dimension(knob->getDimension())
     , _masters()
-    , _app(NULL)
     {
         
     }
@@ -318,9 +315,8 @@ public:
     ///Constructor used to deserialize: It will try to deserialize the next knob in the archive
     ///into a knob of the holder. If it couldn't find a knob with the same name as it was serialized
     ///this the deserialization will not succeed.
-    KnobSerialization(AppInstance* app)
+    KnobSerialization()
     : _knob()
-    , _app(app)
     {
     }
     
