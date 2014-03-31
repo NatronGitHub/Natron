@@ -346,6 +346,16 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         bool identity = isIdentity(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
         if (identity) {
            
+            RenderArgs localData;
+            localData._roi = args.roi;
+            localData._time = args.time;
+            localData._view = args.view;
+            localData._scale = args.scale;
+            localData._isSequentialRender = args.isSequentialRender;
+            localData._isRenderResponseToUserInteraction = args.isRenderUserInteraction;
+            localData._byPassCache = byPassCache;
+            _imp->renderArgs.setLocalData(localData);
+            
             ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
             image = getImage(inputNbIdentity,inputTimeIdentity,args.scale,args.view);
 
@@ -440,6 +450,17 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         int inputNbIdentity = cachedImgParams->getInputNbIdentity();
         if (inputNbIdentity != -1) {
             SequenceTime inputTimeIdentity = cachedImgParams->getInputTimeIdentity();
+            
+            RenderArgs localData;
+            localData._roi = args.roi;
+            localData._time = args.time;
+            localData._view = args.view;
+            localData._scale = args.scale;
+            localData._isSequentialRender = args.isSequentialRender;
+            localData._isRenderResponseToUserInteraction = args.isRenderUserInteraction;
+            localData._byPassCache = byPassCache;
+            _imp->renderArgs.setLocalData(localData);
+            
             return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view);
         }
         
@@ -539,8 +560,8 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
         args._scale = scale;
         args._isSequentialRender = isSequentialRender;
         args._isRenderResponseToUserInteraction = isRenderMadeInResponseToUserInteraction;
-        _imp->renderArgs.setLocalData(args);
         args._byPassCache = byPassCache;
+        _imp->renderArgs.setLocalData(args);
         
         
         ///the getRegionOfInterest call CANNOT be cached because it depends of the render window.
