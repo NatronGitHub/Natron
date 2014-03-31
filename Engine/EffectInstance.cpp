@@ -988,7 +988,8 @@ bool EffectInstance::onOverlayPenMotion_public(const QPointF& viewportPos, const
     ++actionsRecursionLevel;
     bool ret = onOverlayPenMotion(viewportPos, pos);
     --actionsRecursionLevel;
-    checkIfRenderNeeded();
+    //Don't chek if render is needed on pen motion, wait for the pen up
+    //checkIfRenderNeeded();
     return ret;
 }
 

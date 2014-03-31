@@ -134,6 +134,10 @@ addresssanitizer {
   QMAKE_CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
   QMAKE_CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
   QMAKE_LFLAGS += -fsanitize=address -g
+
+#  QMAKE_LFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
+#  QMAKE_CXXFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
+#  QMAKE_CFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
 }
 
 # see http://clang.llvm.org/docs/ThreadSanitizer.html
