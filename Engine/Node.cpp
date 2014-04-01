@@ -192,9 +192,12 @@ void Node::load(const std::string& pluginID,const NodeSerialization& serializati
     ///cannot load twice
     assert(!_imp->liveInstance);
     
+    bool nameSet = false;
     if (!serialization.isNull() && !dontLoadName) {
         setName(serialization.getPluginLabel());
+        nameSet = true;
     }
+    
     std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
     if (func.first) {
         _imp->liveInstance = func.second(this);
@@ -209,10 +212,9 @@ void Node::load(const std::string& pluginID,const NodeSerialization& serializati
     
     initializeKnobs();
     initializeInputs();
-    
-    
-    if (!dontLoadName && serialization.isNull()) {
-        getApp()->getProject()->initNodeCountersAndSetName(this);
+
+    if (!nameSet) {
+         getApp()->getProject()->initNodeCountersAndSetName(this);
     }
     
     computeHash(); 
