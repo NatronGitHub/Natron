@@ -211,7 +211,7 @@ void Node::load(const std::string& pluginID,const NodeSerialization& serializati
     initializeInputs();
     
     
-    if (!dontLoadName || serialization.isNull()) {
+    if (!dontLoadName && serialization.isNull()) {
         getApp()->getProject()->initNodeCountersAndSetName(this);
     }
     
