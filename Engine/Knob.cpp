@@ -897,6 +897,7 @@ void KnobHolder::checkIfRenderNeeded()
     assert(QThread::currentThread() == qApp->thread());
     if (actionsRecursionLevel == 0 && evaluateQueue.requester != NULL) {
         evaluate(evaluateQueue.requester, evaluateQueue.isSignificant);
+        evaluateQueue.requester = NULL;
     }
 }
 
