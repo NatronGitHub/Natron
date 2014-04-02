@@ -1149,8 +1149,28 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     
     _dimensionSwitchButton = new Button(QIcon(),QString::number(_dimension),colorContainer);
     _dimensionSwitchButton->setCheckable(true);
-    _dimensionSwitchButton->setChecked(true);
-    _dimensionSwitchButton->setDown(true);
+    
+    bool enableAllDimensions = false;
+    double firstDimensionValue = _knob->getValue(0);
+    if (_dimension > 1) {
+        if (_knob->getValue(1) != firstDimensionValue) {
+            enableAllDimensions = true;
+        }
+        if (_knob->getValue(2) != firstDimensionValue) {
+            enableAllDimensions = true;
+        }
+    }
+    if (_dimension > 3) {
+        if (_knob->getValue(3) != firstDimensionValue) {
+            enableAllDimensions = true;
+        }
+    }
+    
+    _dimensionSwitchButton->setChecked(enableAllDimensions);
+    if (!enableAllDimensions) {
+        _rBox->setValue(_knob->getValue(0));
+    }
+    onDimensionSwitchClicked();
     QObject::connect(_dimensionSwitchButton, SIGNAL(clicked()), this, SLOT(onDimensionSwitchClicked()));
     colorLayout->addWidget(_dimensionSwitchButton);
     
