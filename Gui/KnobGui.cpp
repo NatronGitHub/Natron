@@ -127,6 +127,8 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,DockablePanel* container)
     QObject::connect(handler,SIGNAL(secretChanged()),this,SLOT(setSecret()));
     QObject::connect(handler,SIGNAL(enabledChanged()),this,SLOT(setEnabledSlot()));
     QObject::connect(handler,SIGNAL(knobSlaved(int,bool)),this,SLOT(onKnobSlavedChanged(int,bool)));
+    QObject::connect(handler,SIGNAL(animationRemoved(int)),this,SIGNAL(keyFrameRemoved()));
+
 }
 
 KnobGui::~KnobGui(){
