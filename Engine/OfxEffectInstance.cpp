@@ -375,15 +375,26 @@ bool OfxEffectInstance::isInputOptional(int inputNb) const {
     return inputs[inputs.size()-1-inputNb]->isOptional();
 }
 
-void ofxRectDToRectI(const OfxRectD& ofxrect,RectI* box){
-    int xmin = (int)std::ceil(ofxrect.x1);
-    int ymin = (int)std::ceil(ofxrect.y1);
-    int xmax = (int)std::floor(ofxrect.x2);
-    int ymax = (int)std::floor(ofxrect.y2);
-    box->set_left(xmin);
-    box->set_right(xmax);
-    box->set_bottom(ymin);
-    box->set_top(ymax);
+/// the smallest RectI enclosing the given RectD
+static void ofxRectDToEnclosingRectI(const OfxRectD& ofxrect,RectI* box)
+{
+    // safely convert to OfxRectI, avoiding overflows
+    int xmin = (int)std::max((double)kOfxFlagInfiniteMin, std::floor(ofxrect.x1));
+    int ymin = (int)std::max((double)kOfxFlagInfiniteMin, std::floor(ofxrect.y1));
+    int xmax = (int)std::min((double)kOfxFlagInfiniteMax, std::ceil(ofxrect.x2));
+    int ymax = (int)std::min((double)kOfxFlagInfiniteMax, std::ceil(ofxrect.y2));
+    box->set(xmin, ymin, xmax, ymax);
+}
+
+/// the largest RectI enclosed in the given RectD
+static void ofxRectDToEnclosedRectI(const OfxRectD& ofxrect,RectI* box)
+{
+    // safely convert to OfxRectI, avoiding overflows
+    int xmin = (int)std::max((double)kOfxFlagInfiniteMin, std::ceil(ofxrect.x1));
+    int ymin = (int)std::max((double)kOfxFlagInfiniteMin, std::ceil(ofxrect.y1));
+    int xmax = (int)std::min((double)kOfxFlagInfiniteMax, std::floor(ofxrect.x2));
+    int ymax = (int)std::min((double)kOfxFlagInfiniteMax, std::floor(ofxrect.y2));
+    box->set(xmin, ymin, xmax, ymax);
 }
 
 bool OfxEffectInstance::ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const{
@@ -458,7 +469,7 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI*
         return StatFailed;
     }
     *isProjectFormat = ifInfiniteclipRectToProjectDefault(&ofxRod);
-    ofxRectDToRectI(ofxRod,rod);
+    ofxRectDToEnclosedRectI(ofxRod,rod);
     return StatOK;
     
     // OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
@@ -493,7 +504,7 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
             EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
             if (inputNode && inputNode != this) {
                 RectI inputRoi;
-                ofxRectDToRectI(it->second, &inputRoi);
+                ofxRectDToEnclosingRectI(it->second, &inputRoi);
                 ret.insert(std::make_pair(inputNode,inputRoi));
             }
         }
