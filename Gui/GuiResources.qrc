@@ -83,5 +83,7 @@
         <file>Resources/Images/restoreDefaults.png</file>
         <file>Resources/Images/checkbox_checked_readonly.png</file>
         <file>Resources/Images/checkbox_unchecked_readonly.png</file>
+        <file>Resources/Images/readImage.png</file>
+        <file>Resources/Images/writeImage.png</file>
     </qresource>
 </RCC>

@@ -178,10 +178,6 @@ public:
     
     QString popSaveFileDialog(bool sequenceDialog,const std::vector<std::string>& initialfilters,const std::string& initialDir);
     
-    void createReader();
-    
-    void createWriter();
-    
     void setUserScrubbingTimeline(bool b);
     
     bool isUserScrubbingTimeline() const;
@@ -342,7 +338,11 @@ public slots:
     void onNodeNameChanged(const QString& name);
     
     void onViewerImageChanged();
+        
+    void createReader();
     
+    void createWriter();
+
 private:
 
     void setupUi();

@@ -1299,6 +1299,8 @@ ToolButton* Gui::findOrCreateToolButton(PluginGroupNode* plugin){
         }
     }
     ToolButton* pluginsToolButton = new ToolButton(_imp->_appInstance,plugin,plugin->getID(),plugin->getLabel(),icon);
+    
+    
     if(isLeaf){
         assert(parentToolButton);
         QAction* action = new QAction(this);
@@ -1312,6 +1314,33 @@ ToolButton* Gui::findOrCreateToolButton(PluginGroupNode* plugin){
         pluginsToolButton->setMenu(menu);
         pluginsToolButton->setAction(menu->menuAction());
     }
+    
+    if (pluginsToolButton->getLabel() == PLUGIN_GROUP_IMAGE) {
+        ///create 2 special actions to create a reader and a writer so the user doesn't have to guess what
+        ///plugin to choose for reading/writing images, let Natron deal with it. THe user can still change
+        ///the behavior of Natron via the Preferences Readers/Writers tabs.
+        QMenu* imageMenu = pluginsToolButton->getMenu();
+        assert(imageMenu);
+        QAction* createReaderAction = new QAction(imageMenu);
+        QObject::connect(createReaderAction,SIGNAL(triggered()),this,SLOT(createReader()));
+        createReaderAction->setText(tr("Read"));
+        QPixmap readImagePix;
+        appPTR->getIcon(Natron::NATRON_PIXMAP_READ_IMAGE, &readImagePix);
+        createReaderAction->setIcon(QIcon(readImagePix));
+        createReaderAction->setShortcut(QKeySequence(Qt::Key_R));
+        imageMenu->addAction(createReaderAction);
+        
+        QAction* createWriterAction = new QAction(imageMenu);
+        QObject::connect(createWriterAction,SIGNAL(triggered()),this,SLOT(createWriter()));
+        createWriterAction->setText(tr("Write"));
+        QPixmap writeImagePix;
+        appPTR->getIcon(Natron::NATRON_PIXMAP_WRITE_IMAGE, &writeImagePix);
+        createWriterAction->setIcon(QIcon(writeImagePix));
+        createWriterAction->setShortcut(QKeySequence(Qt::Key_W));
+        imageMenu->addAction(createWriterAction);
+    }
+
+    
     //if it has a parent, add the new tool button as a child
     if(parentToolButton){
         parentToolButton->tryAddChild(pluginsToolButton);
@@ -1321,6 +1350,7 @@ ToolButton* Gui::findOrCreateToolButton(PluginGroupNode* plugin){
 }
 
 void Gui::addToolButttonsToToolBar(){
+    
     for (U32 i = 0; i < _imp->_toolButtons.size(); ++i) {
         
         //if the toolbutton is a root (no parent), add it in the toolbox
@@ -1331,6 +1361,7 @@ void Gui::addToolButttonsToToolBar(){
             button->setPopupMode(QToolButton::InstantPopup);
             button->setToolTip(Qt::convertFromPlainText(_imp->_toolButtons[i]->getLabel(), Qt::WhiteSpaceNormal));
             _imp->_toolBox->addWidget(button);
+            
         }
     }
 }

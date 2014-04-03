@@ -279,6 +279,15 @@ void GuiApplicationManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
                 img.load(NATRON_IMAGES_PATH"pressed_combobox.png");
                 *pix = QPixmap::fromImage(img).scaled(10, 10);
                 break;
+            case NATRON_PIXMAP_READ_IMAGE:
+                img.load(NATRON_IMAGES_PATH"readImage.png");
+                *pix = QPixmap::fromImage(img).scaled(32, 32);
+                break;
+            case NATRON_PIXMAP_WRITE_IMAGE:
+                img.load(NATRON_IMAGES_PATH"writeImage.png");
+                *pix = QPixmap::fromImage(img).scaled(32,32);
+                break;
+
             case NATRON_PIXMAP_APP_ICON:
                 img.load(NATRON_APPLICATION_ICON_PATH);
                 *pix = QPixmap::fromImage(img);
