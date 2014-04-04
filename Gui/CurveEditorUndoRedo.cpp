@@ -4,12 +4,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
 #include "CurveEditorUndoRedo.h"
+
+#include <QDebug>
 
 #include "Global/GlobalDefines.h"
 
@@ -24,12 +26,12 @@
 
 //////////////////////////////ADD MULTIPLE KEYS COMMAND//////////////////////////////////////////////
 AddKeysCommand::AddKeysCommand(CurveWidget *editor, CurveGui* curve,
-                                   const std::vector< KeyFrame >& keys,
-                                   QUndoCommand *parent)
-    : QUndoCommand(parent)
-    , _curve(curve)
-    , _keys(keys)
-    , _curveWidget(editor)
+                               const std::vector< KeyFrame >& keys,
+                               QUndoCommand *parent)
+: QUndoCommand(parent)
+, _curve(curve)
+, _keys(keys)
+, _curveWidget(editor)
 {
 }
 
@@ -48,7 +50,7 @@ void AddKeysCommand::addOrRemoveKeyframe(bool add) {
         }else{
             if (isParametric) {
                 Natron::Status st = isParametric->deleteControlPoint(_curve->getDimension(),
-                                                             _curve->getInternalCurve()->keyFrameIndex(_keys[i].getTime()));
+                                                                     _curve->getInternalCurve()->keyFrameIndex(_keys[i].getTime()));
                 assert(st == Natron::StatOK);
             }else{
                 _curve->getKnob()->removeKeyFrame(_keys[i].getTime(), _curve->getDimension());
@@ -74,9 +76,9 @@ void AddKeysCommand::redo(){
 
 //////////////////////////////REMOVE  MULTIPLE KEYS COMMAND//////////////////////////////////////////////
 RemoveKeysCommand::RemoveKeysCommand(CurveWidget* editor,const std::vector<std::pair<CurveGui*,KeyFrame> >& keys,QUndoCommand *parent )
-    : QUndoCommand(parent)
-    , _keys(keys)
-    , _curveWidget(editor)
+: QUndoCommand(parent)
+, _keys(keys)
+, _curveWidget(editor)
 {
 }
 
@@ -98,7 +100,7 @@ void RemoveKeysCommand::addOrRemoveKeyframe(bool add){
             if (_keys[i].first->getKnob()->getKnob()->typeName() == Parametric_Knob::typeNameStatic()) {
                 boost::shared_ptr<Parametric_Knob> knob = boost::dynamic_pointer_cast<Parametric_Knob>(_keys[i].first->getKnob()->getKnob());
                 Natron::Status st = knob->deleteControlPoint(_keys[i].first->getDimension(),
-                                         _keys[i].first->getInternalCurve()->keyFrameIndex(_keys[i].second.getTime()));
+                                                             _keys[i].first->getInternalCurve()->keyFrameIndex(_keys[i].second.getTime()));
                 assert(st == Natron::StatOK);
             }else{
                 _keys[i].first->getKnob()->removeKeyFrame(_keys[i].second.getTime(), _keys[i].first->getDimension());
@@ -122,13 +124,13 @@ void RemoveKeysCommand::redo(){
 
 //////////////////////////////MOVE MULTIPLE KEYS COMMAND//////////////////////////////////////////////
 MoveKeysCommand::MoveKeysCommand(CurveWidget* editor, const KeyMoveV &keys, double dt, double dv,
-                                                 QUndoCommand *parent )
-    : QUndoCommand(parent)
-    , _merge(!keys.empty())
-    , _dt(dt)
-    , _dv(dv)
-    , _keys(keys)
-    , _curveWidget(editor)
+                                 QUndoCommand *parent )
+: QUndoCommand(parent)
+, _merge(!keys.empty())
+, _dt(dt)
+, _dv(dv)
+, _keys(keys)
+, _curveWidget(editor)
 {
 }
 
@@ -136,20 +138,21 @@ static void
 moveKey(const KeyMove&k, double dt, double dv, bool isundo, std::vector<int>& newKeyIndexes)
 {
     k.curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
-
+    
     std::pair<double,double> curveYRange = k.curve->getInternalCurve()->getCurveYRange();
-
+    
     double newX = k.key.getTime() + dt;
     double newY = k.key.getValue() + dv;
-
+    
     if (newY > curveYRange.second) {
         newY = k.key.getValue();
     } else if (newY < curveYRange.first) {
         newY = k.key.getValue();
     }
-
+    
     int keyframeIndex = k.curve->getInternalCurve()->keyFrameIndex(isundo ? newX : k.key.getTime());
     int newIndex;
+    
     k.curve->getInternalCurve()->setKeyFrameValueAndTime(isundo ? k.key.getTime() : newX,
                                                          isundo ? k.key.getValue() : newY,
                                                          keyframeIndex, &newIndex);
@@ -160,17 +163,23 @@ void MoveKeysCommand::move(double dt, double dv, bool isundo)
 {
     SelectedKeys newSelectedKeys;
     std::vector<int> newKeyIndexes;
-
-    if(dt < 0) {
-        for (KeyMoveV::iterator it = _keys.begin(); it!= _keys.end(); ++it) {
-            moveKey(*it, dt, dv, isundo, newKeyIndexes);
+    try {
+        if(dt < 0) {
+            for (KeyMoveV::iterator it = _keys.begin(); it!= _keys.end(); ++it) {
+                moveKey(*it, dt, dv, isundo, newKeyIndexes);
+            }
+        } else {
+            for(KeyMoveV::reverse_iterator it = _keys.rbegin(); it!= _keys.rend(); ++it){
+                moveKey(*it, dt, dv, isundo, newKeyIndexes);
+            }
         }
-    } else {
-        for(KeyMoveV::reverse_iterator it = _keys.rbegin(); it!= _keys.rend(); ++it){
-            moveKey(*it, dt, dv, isundo, newKeyIndexes);
-        }
+    } catch (const std::exception& e) {
+        qDebug() << "The keyframe set has changed since this action. This is probably because another user interaction is not "
+        "linked to undo/redo stack.";
+        return;
     }
-
+    
+    
     //copy back the modified keyframes to the selectd keys
     assert(newKeyIndexes.size() == _keys.size());
     int i = 0;
@@ -199,7 +208,7 @@ void MoveKeysCommand::redo()
 {
     move(_dt,_dv,false);
     setText(QObject::tr("Move multiple keys"));
-
+    
 }
 
 bool MoveKeysCommand::mergeWith(const QUndoCommand * command)
@@ -217,7 +226,7 @@ bool MoveKeysCommand::mergeWith(const QUndoCommand * command)
             _merge = false;
             //notify that we don't want to merge after this
         }
-
+        
         _dt += cmd->_dt;
         _dv += cmd->_dv;
         return true;
@@ -234,10 +243,10 @@ int  MoveKeysCommand::id() const
 
 //////////////////////////////SET MULTIPLE KEYS INTERPOLATION COMMAND//////////////////////////////////////////////
 SetKeysInterpolationCommand::SetKeysInterpolationCommand(CurveWidget* editor,const std::vector< KeyInterpolationChange >& keys,
-                                                                         QUndoCommand *parent)
-    : QUndoCommand(parent)
-    , _oldInterp(keys)
-    , _curveWidget(editor)
+                                                         QUndoCommand *parent)
+: QUndoCommand(parent)
+, _oldInterp(keys)
+, _curveWidget(editor)
 {
 }
 

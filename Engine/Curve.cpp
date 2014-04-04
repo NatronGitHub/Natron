@@ -790,7 +790,10 @@ KeyFrame Curve::setKeyFrameValueAndTime(double time,double value,int index,int* 
     {
         QWriteLocker l(&_imp->_lock);
         KeyFrameSet::iterator it = atIndex(index);
-        assert(it != _imp->keyFrames.end());
+        if (it == _imp->keyFrames.end()) {
+            QString err = QString("No such keyframe at index %1").arg(index);
+            throw std::invalid_argument(err.toStdString());
+        }
         
         bool setTime = (time != it->getTime());
         bool setValue = (value != it->getValue());
