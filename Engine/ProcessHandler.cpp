@@ -41,11 +41,16 @@ ProcessHandler::ProcessHandler(AppInstance* app,
     ///setup the server used to listen the output of the background process
     _ipcServer = new QLocalServer();
     QObject::connect(_ipcServer,SIGNAL(newConnection()),this,SLOT(onNewConnectionPending()));
-    QString serverName(NATRON_APPLICATION_NAME "_OUTPUT_PIPE_" + QString::number(qApp->applicationPid()));
+    QString serverName;
+    {
+        QTemporaryFile tmpf(NATRON_APPLICATION_NAME "_OUTPUT_PIPE_" + QString::number(_process->pid()));
+        tmpf.open();
+        serverName = tmpf.fileName();
+    }
     _ipcServer->listen(serverName);
-
-
- 
+    
+    
+    
     QStringList processArgs;
     processArgs << projectPath << "-b" << "-w" << writer->getName().c_str();
     processArgs << "--IPCpipe" << (_ipcServer->fullServerName());

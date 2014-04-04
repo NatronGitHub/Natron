@@ -339,9 +339,13 @@ public slots:
     
     void onViewerImageChanged();
         
-    void createReader();
+    Natron::Node* createReader();
     
-    void createWriter();
+    Natron::Node* createWriter();
+    
+    void renderAllWriters();
+        
+    void renderSelectedNode();
 
 private:
 

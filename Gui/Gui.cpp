@@ -135,6 +135,8 @@ struct GuiPrivate {
     QAction *actionClearAllCaches;
     QAction *actionShowAboutWindow;
     QAction *actionsOpenRecentFile[NATRON_MAX_RECENT_FILES];
+    QAction *renderAllWriters;
+    QAction *renderSelectedNode;
     
     QAction* actionConnectInput1;
     QAction* actionConnectInput2;
@@ -221,6 +223,7 @@ struct GuiPrivate {
     QMenu *menuEdit;
     QMenu *menuDisplay;
     QMenu *menuOptions;
+    QMenu *menuRender;
 	QMenu *viewersMenu;
     QMenu *viewerInputsMenu;
     QMenu *viewersViewMenu;
@@ -283,6 +286,8 @@ struct GuiPrivate {
     , actionClearAllCaches(0)
     , actionShowAboutWindow(0)
     , actionsOpenRecentFile()
+    , renderAllWriters(0)
+    , renderSelectedNode(0)
     , actionConnectInput1(0)
     , actionConnectInput2(0)
     , actionConnectInput3(0)
@@ -324,6 +329,7 @@ struct GuiPrivate {
     , menuEdit(0)
     , menuDisplay(0)
     , menuOptions(0)
+    , menuRender(0)
     , viewersMenu(0)
     , viewerInputsMenu(0)
     , cacheMenu(0)
@@ -512,6 +518,10 @@ void GuiPrivate::retranslateUi(QMainWindow *MainWindow)
     actionClearPluginsLoadingCache->setText(_gui->tr("Clear OpenFX Plugin Cache"));
     assert(actionShowAboutWindow);
     actionShowAboutWindow->setText(_gui->tr("About"));
+    assert(renderAllWriters);
+    renderAllWriters->setText(_gui->tr("Render all writers"));
+    assert(renderSelectedNode);
+    renderSelectedNode->setText(_gui->tr("Render selected node"));
     
     assert(actionConnectInput1);
     actionConnectInput1->setText(_gui->tr("Connect to input 1"));
@@ -545,6 +555,8 @@ void GuiPrivate::retranslateUi(QMainWindow *MainWindow)
     menuDisplay->setTitle(_gui->tr("Display"));
     assert(menuOptions);
     menuOptions->setTitle(_gui->tr("Options"));
+    assert(menuRender);
+    menuRender->setTitle(_gui->tr("Render"));
     assert(viewersMenu);
     viewersMenu->setTitle(_gui->tr("Viewer(s)"));
     assert(cacheMenu);
@@ -580,6 +592,7 @@ void Gui::setupUi()
     _imp->menuEdit = new QMenu(_imp->menubar);
     _imp->menuDisplay = new QMenu(_imp->menubar);
     _imp->menuOptions = new QMenu(_imp->menubar);
+    _imp->menuRender = new QMenu(_imp->menubar);
     _imp->viewersMenu= new QMenu(_imp->menuDisplay);
     _imp->viewerInputsMenu = new QMenu(_imp->viewersMenu);
     _imp->viewersViewMenu = new QMenu(_imp->viewersMenu);
@@ -641,6 +654,14 @@ void Gui::setupUi()
     _imp->actionShowAboutWindow = new QAction(this);
     _imp->actionShowAboutWindow->setObjectName(QString::fromUtf8("actionShowAboutWindow"));
     _imp->actionShowAboutWindow->setCheckable(false);
+    
+    _imp->renderAllWriters = new QAction(this);
+    _imp->renderAllWriters->setCheckable(false);
+    _imp->renderAllWriters->setShortcut(QKeySequence(Qt::Key_F5));
+    _imp->renderSelectedNode = new QAction(this);
+    _imp->renderSelectedNode->setCheckable(false);
+    _imp->renderSelectedNode->setShortcut(QKeySequence(Qt::Key_F7));
+    
     for (int c = 0; c < NATRON_MAX_RECENT_FILES; ++c) {
         _imp->actionsOpenRecentFile[c] = new QAction(this);
         _imp->actionsOpenRecentFile[c]->setVisible(false);
@@ -814,6 +835,7 @@ void Gui::setupUi()
     _imp->menubar->addAction(_imp->menuEdit->menuAction());
     _imp->menubar->addAction(_imp->menuDisplay->menuAction());
     _imp->menubar->addAction(_imp->menuOptions->menuAction());
+    _imp->menubar->addAction(_imp->menuRender->menuAction());
     _imp->menubar->addAction(_imp->cacheMenu->menuAction());
     _imp->menuFile->addAction(_imp->actionShowAboutWindow);
     _imp->menuFile->addAction(_imp->actionNew_project);
@@ -848,6 +870,9 @@ void Gui::setupUi()
     _imp->menuDisplay->addSeparator();
     _imp->menuDisplay->addAction(_imp->actionFullScreen);
     
+    _imp->menuRender->addAction(_imp->renderAllWriters);
+    _imp->menuRender->addAction(_imp->renderSelectedNode);
+    
     _imp->cacheMenu->addAction(_imp->actionClearDiskCache);
     _imp->cacheMenu->addAction(_imp->actionClearPlayBackCache);
     _imp->cacheMenu->addAction(_imp->actionClearNodeCache);
@@ -856,7 +881,8 @@ void Gui::setupUi()
     _imp->cacheMenu->addAction(_imp->actionClearPluginsLoadingCache);
     _imp->retranslateUi(this);
     
-    
+    QObject::connect(_imp->renderAllWriters,SIGNAL(triggered()),this,SLOT(renderAllWriters()));
+    QObject::connect(_imp->renderSelectedNode,SIGNAL(triggered()),this,SLOT(renderSelectedNode()));
     QObject::connect(_imp->actionShowAboutWindow,SIGNAL(triggered()),this,SLOT(showAbout()));
     QObject::connect(_imp->actionFullScreen, SIGNAL(triggered()),this,SLOT(toggleFullScreen()));
     QObject::connect(_imp->actionClearDiskCache, SIGNAL(triggered()),appPTR,SLOT(clearDiskCache()));
@@ -1459,7 +1485,8 @@ bool Gui::saveProjectAs(){
     return false;
 }
 
-void Gui::createReader(){
+Natron::Node* Gui::createReader(){
+    Natron::Node* ret = 0;
     std::map<std::string,std::string> readersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
     std::vector<std::string> filters;
@@ -1475,12 +1502,12 @@ void Gui::createReader(){
         if (found == readersForFormat.end()) {
             errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
         } else {
-            Node* n = _imp->_appInstance->createNode(found->second.c_str(),-1,-1,false);
+            ret = _imp->_appInstance->createNode(found->second.c_str(),-1,-1,false);
             
-            if (!n) {
-                return;
+            if (!ret) {
+                return ret;
             }
-            const std::vector<boost::shared_ptr<KnobI> >& knobs = n->getKnobs();
+            const std::vector<boost::shared_ptr<KnobI> >& knobs = ret->getKnobs();
             for (U32 i = 0; i < knobs.size(); ++i) {
                 if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
                     boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
@@ -1492,8 +1519,8 @@ void Gui::createReader(){
                     } else {
                         fk->setFiles(files);
                         
-                        if (n->isPreviewEnabled()) {
-                            n->computePreviewImage(_imp->_appInstance->getTimeLine()->currentFrame());
+                        if (ret->isPreviewEnabled()) {
+                            ret->computePreviewImage(_imp->_appInstance->getTimeLine()->currentFrame());
                         }
                         
                         break;
@@ -1503,9 +1530,11 @@ void Gui::createReader(){
             }
         }
     }
+    return ret;
 }
 
-void Gui::createWriter(){
+Natron::Node* Gui::createWriter(){
+    Natron::Node* ret = 0;
     std::map<std::string,std::string> writersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
     std::vector<std::string> filters;
@@ -1519,12 +1548,12 @@ void Gui::createWriter(){
         
         std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
         if(found != writersForFormat.end()){
-            Node* n = _imp->_appInstance->createNode(found->second.c_str(),-1,-1,false);
-            if (!n) {
-                return;
+            ret = _imp->_appInstance->createNode(found->second.c_str(),-1,-1,false);
+            if (!ret) {
+                return ret;
             }
 
-            const std::vector<boost::shared_ptr<KnobI> >& knobs = n->getKnobs();
+            const std::vector<boost::shared_ptr<KnobI> >& knobs = ret->getKnobs();
             for (U32 i = 0; i < knobs.size(); ++i) {
                 if (knobs[i]->typeName() == OutputFile_Knob::typeNameStatic()) {
                     boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
@@ -1540,6 +1569,7 @@ void Gui::createWriter(){
         }
         
     }
+    return ret;
 }
 
 QStringList Gui::popOpenFileDialog(bool sequenceDialog,const std::vector<std::string>& initialfilters,const std::string& initialDir) {
@@ -2178,5 +2208,30 @@ void Gui::onNodeNameChanged(const QString& /*name*/) {
     NodeGui* node = qobject_cast<NodeGui*>(sender());
     if (node && node->getNode()->pluginID() == "Viewer") {
         emit viewersChanged();
+    }
+}
+
+void Gui::renderAllWriters()
+{
+    _imp->_appInstance->startWritersRendering(QStringList());
+}
+
+void Gui::renderSelectedNode()
+{
+    NodeGui* selectedNode = _imp->_nodeGraphArea->getSelectedNode();
+    if (selectedNode) {
+        if (selectedNode->getNode()->getLiveInstance()->isWriter()) {
+            ///if the node is a writer, just use it to render!
+            _imp->_appInstance->startWritersRendering(QStringList(selectedNode->getNode()->getName().c_str()));
+        } else {
+            ///create a node and connect it to the node and use it to render
+            Natron::Node* writer = createWriter();
+            if (writer) {
+                _imp->_appInstance->startWritersRendering(QStringList(writer->getName().c_str()));
+            }
+
+        }
+    } else {
+        Natron::warningDialog("Render", "You must select a node to render first!");
     }
 }
