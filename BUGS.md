@@ -6,9 +6,6 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
-- Support OpenFX >= 1.2 double parameter types (normalized types are deprecated but can be supported):
-  http://openeffects.org/dokuwiki/doku.php?id=standards:draft:ofx_image_processing_api_2:minor:non_normalised_spatial_parameters
-
 - Some plugins crash using the multi-thread suite (mainly Furnace)
 
 - messages (and persistent messages) should be associated with an instance, not with a viewer. The message should appear in the viewer if and only of the given instance is in the the viewer's parents.

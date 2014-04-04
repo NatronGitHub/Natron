@@ -393,8 +393,8 @@ OfxStatus
 OfxDoubleInstance::get(double& v)
 {
     v = _knob->getValue();
-    const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    valueAccordingToType(false,coordSystem,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
+    //const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
+    //valueAccordingToType(false,coordSystem,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     return kOfxStatOK;
 }
 
@@ -402,8 +402,8 @@ OfxStatus
 OfxDoubleInstance::get(OfxTime time, double& v)
 {
     v = _knob->getValueAtTime(time);
-    const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    valueAccordingToType(false,coordSystem,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
+    //const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
+    //valueAccordingToType(false,coordSystem,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     return kOfxStatOK;
 }
 
@@ -430,7 +430,7 @@ OfxDoubleInstance::onProjectFormatChanged(const Format& /*f*/)
 {
     double v;
     get(v); //get the current value
-    set(v); //refresh using the valueAccordingToType function
+    _knob->setValue(v, 0);
     setDisplayRange();
 }
 
@@ -1130,8 +1130,8 @@ OfxDouble2DInstance::get(double& x1, double& x2)
 {
     x1 = _knob->getValue(0);
     x2 = _knob->getValue(1);
-    const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    valueAccordingToType(false,coordSystem, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
+    //const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
+    //valueAccordingToType(false,coordSystem, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
     return kOfxStatOK;
 }
 
@@ -1140,8 +1140,8 @@ OfxDouble2DInstance::get(OfxTime time, double& x1, double& x2)
 {
     x1 = _knob->getValueAtTime(time,0);
     x2 = _knob->getValueAtTime(time,1);
-    const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    valueAccordingToType(false,coordSystem, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
+    //const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
+    //valueAccordingToType(false,coordSystem, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
     return kOfxStatOK;
 }
 
@@ -1279,7 +1279,8 @@ OfxDouble2DInstance::onProjectFormatChanged(const Format& /*f*/)
 {
     double v1,v2;
     get(v1,v2); //get the current value
-    set(v1,v2); //refresh using the valueAccordingToType function
+    _knob->setValue(v1,0);
+    _knob->setValue(v2,1);
     setDisplayRange();
 }
 
