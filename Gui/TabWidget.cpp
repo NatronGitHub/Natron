@@ -80,7 +80,7 @@ void FloatingWidget::removeWidget() {
     }
     _layout->removeWidget(_embeddedWidget);
     _embeddedWidget->setParent(NULL);
-    _embeddedWidget->setVisible(false);
+    // _embeddedWidget->setVisible(false);
     hide();
 }
 
