@@ -3,10 +3,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
 #include "TabWidget.h"
 
@@ -64,6 +64,7 @@ void FloatingWidget::setWidget(const QSize& widgetSize,QWidget* w)
     if (_embeddedWidget) {
         return;
     }
+    _embeddedWidget = w;
     w->setParent(this);
     assert(_layout);
     _layout->addWidget(w);
@@ -85,25 +86,29 @@ void FloatingWidget::removeWidget() {
 
 void FloatingWidget::closeEvent(QCloseEvent* e) {
     emit closed();
+    TabWidget* w = dynamic_cast<TabWidget*>(_embeddedWidget);
+    if (w) {
+        w->closePane();
+    }
     QWidget::closeEvent(e);
 }
 
 TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent):
-    QFrame(parent),
-    _gui(gui),
-    _header(0),
-    _headerLayout(0),
-    _tabBar(0),
-    _leftCornerButton(0),
-    _floatButton(0),
-    _closeButton(0),
-    _currentWidget(0),
-    _decorations(decorations),
-    _isFloating(false),
-    _drawDropRect(false),
-    _fullScreen(false),
-    _userSplits(),
-    _tabWidgetStateMutex()
+QFrame(parent),
+_gui(gui),
+_header(0),
+_headerLayout(0),
+_tabBar(0),
+_leftCornerButton(0),
+_floatButton(0),
+_closeButton(0),
+_currentWidget(0),
+_decorations(decorations),
+_isFloating(false),
+_drawDropRect(false),
+_fullScreen(false),
+_userSplits(),
+_tabWidgetStateMutex()
 {
     
     if(decorations!=NONE){
@@ -128,7 +133,7 @@ TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent
     appPTR->getIcon(NATRON_PIXMAP_CLOSE_WIDGET,&pixC);
     appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET,&pixM);
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON,&pixL);
-
+    
     if(decorations != NONE){
         
         _leftCornerButton = new Button(QIcon(pixL),"",_header);
@@ -224,7 +229,7 @@ void TabWidget::createMenu(){
     if(_tabBar->count() == 0 || _isFloating){
         floatAction->setEnabled(false);
     }
-
+    
     QAction* closeAction = new QAction(QIcon(pixC),tr("Close pane"), this);
     if (_decorations == NOT_CLOSABLE) {
         closeAction->setEnabled(false);
@@ -241,9 +246,11 @@ void TabWidget::createMenu(){
 }
 
 void TabWidget::closeFloatingPane(){
-    QMutexLocker l(&_tabWidgetStateMutex);
-    if (!_isFloating) {
-        return;
+    {
+        QMutexLocker l(&_tabWidgetStateMutex);
+        if (!_isFloating) {
+            return;
+        }
     }
     QWidget* p = parentWidget();
     p->close();
@@ -290,7 +297,7 @@ void TabWidget::closePane(){
     }
     assert(other);
     other->removeSplit(this);
-
+    
     /*Removing "what" from the container and delete it*/
     setVisible(false);
     //move all its tabs to the other TabWidget
@@ -334,7 +341,7 @@ void TabWidget::floatPane(QPoint* position){
     if (position) {
         floatingW->move(*position);
     }
-
+    
 }
 
 void TabWidget::addNewViewer(){
@@ -433,7 +440,7 @@ void TabWidget::movePropertiesBinHere(){
 }
 
 void TabWidget::splitHorizontally(){
-
+    
     QMutexLocker l(&_tabWidgetStateMutex);
     Splitter* container = dynamic_cast<Splitter*>(parentWidget());
     if(!container){
@@ -476,7 +483,7 @@ void TabWidget::splitHorizontally(){
 void TabWidget::splitVertically(){
     
     QMutexLocker l(&_tabWidgetStateMutex);
-
+    
     Splitter* container = dynamic_cast<Splitter*>(parentWidget());
     if(!container) return;
     
@@ -492,7 +499,7 @@ void TabWidget::splitVertically(){
     newSplitter->addWidget(this);
     setVisible(true);
     _gui->registerSplitter(newSplitter);
-
+    
     
     /*Adding now a new tab*/
     TabWidget* newTab = new TabWidget(_gui,TabWidget::CLOSABLE,newSplitter);
@@ -506,7 +513,7 @@ void TabWidget::splitVertically(){
     newSplitter->setSizes(sizes);
     /*Inserting back the new splitter at the original index*/
     container->insertWidget(oldIndex,newSplitter);
-
+    
     _userSplits.insert(std::make_pair(newTab,true));
     
     _gui->getApp()->triggerAutoSave();
@@ -514,7 +521,7 @@ void TabWidget::splitVertically(){
 
 
 bool TabWidget::appendTab(QWidget* widget) {
-   return appendTab(QIcon(),widget);
+    return appendTab(QIcon(),widget);
 }
 bool TabWidget::appendTab(const QIcon& icon,QWidget* widget){
     {
@@ -637,7 +644,7 @@ void TabWidget::makeCurrentTab(int index){
     _tabBar->blockSignals(true);
     _tabBar->setCurrentIndex(index);
     _tabBar->blockSignals(false);
-
+    
 }
 
 
@@ -706,26 +713,26 @@ void TabBar::mouseMoveEvent(QMouseEvent* event){
         QTabBar::mouseMoveEvent(event);
         return;
     }
-       int selectedTabIndex = tabAt(event->pos());
+    int selectedTabIndex = tabAt(event->pos());
     if(selectedTabIndex != -1){
         
         QPixmap pixmap = makePixmapForDrag(selectedTabIndex);
         
         _tabWidget->startDragTab(selectedTabIndex);
-    
+        
         _dragPix = new DragPixmap(pixmap,event->pos());
         _dragPix->update(event->globalPos());
         _dragPix->show();
         grabMouse();
-
         
-//#if QT_VERSION < 0x050000
-//        QPixmap pix = QPixmap::grabWidget(_tabWidget);
-//#else
-//        QPixmap pix = _tabWidget->grab();
-//#endif
-//        drag->setPixmap(pix);
-//        drag->exec();
+        
+        //#if QT_VERSION < 0x050000
+        //        QPixmap pix = QPixmap::grabWidget(_tabWidget);
+        //#else
+        //        QPixmap pix = _tabWidget->grab();
+        //#endif
+        //        drag->setPixmap(pix);
+        //        drag->exec();
     }
     QTabBar::mouseMoveEvent(event);
     
@@ -802,10 +809,10 @@ void TabBar::mouseReleaseEvent(QMouseEvent* event) {
         for (std::list<TabWidget*>::const_iterator it = panes.begin(); it!=panes.end(); ++it) {
             (*it)->setDrawDropRect(false);
         }
-
+        
     }
     QTabBar::mouseReleaseEvent(event);
-
+    
 }
 
 void TabWidget::stopDragTab(const QPoint& globalPos) {
@@ -847,7 +854,7 @@ void TabWidget::startDragTab(int index){
     selectedTab->setParent(this);
     
     _gui->startDragPanel(selectedTab);
-
+    
     removeTab(selectedTab);
     selectedTab->hide();
     
