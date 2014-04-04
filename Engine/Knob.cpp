@@ -888,6 +888,7 @@ void KnobHolder::evaluate_public(KnobI* knob,bool isSignificant)
     if (actionsRecursionLevel == 0) {
         evaluate(knob, evaluateQueue.isSignificant);
         evaluateQueue.requester = NULL;
+        evaluateQueue.isSignificant = false;
     }
 }
 
@@ -898,6 +899,7 @@ void KnobHolder::checkIfRenderNeeded()
     if (actionsRecursionLevel == 0 && evaluateQueue.requester != NULL) {
         evaluate(evaluateQueue.requester, evaluateQueue.isSignificant);
         evaluateQueue.requester = NULL;
+        evaluateQueue.isSignificant = false;
     }
 }
 
