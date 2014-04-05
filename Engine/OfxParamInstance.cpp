@@ -267,6 +267,24 @@ void OfxIntegerInstance::setDisplayRange(){
 
 ////////////////////////// OfxDoubleInstance /////////////////////////////////////////////////
 
+/*
+ FROM THE OFX SPEC:
+
+ * kOfxParamCoordinatesNormalised is OFX > 1.2 and is used ONLY for setting defaults
+
+ These new parameter types can set their defaults in one of two coordinate systems, the property kOfxParamPropDefaultCoordinateSystem. Specifies the coordinate system the default value is being specified in.
+
+ * kOfxParamDoubleTypeNormalized* is OFX < 1.2 and is used ONLY for displaying the value: get/set should always return the normalized value:
+
+ To flag to the host that a parameter as normalised, we use the kOfxParamPropDoubleType property. Parameters that are so flagged have values set and retrieved by an effect in normalized coordinates. However a host can choose to represent them to the user in whatever space it chooses.
+
+ Noth properties can be easily supported:
+ - the first one is used ONLY when setting the *DEFAULT* value
+ - the second is used ONLY by the GUI
+ */
+
+#if 0
+#warning "BUGGY!!! please read the spec."
 static void valueAccordingToType(bool toType,const std::string& coordinateSystem,const std::string& doubleType,OfxEffectInstance* effect,
                                  double* inOut1stDim,double* inOutS2ndDim = NULL){
     bool normalized = coordinateSystem == kOfxParamCoordinatesNormalised;
@@ -331,6 +349,7 @@ static void valueAccordingToType(bool toType,const std::string& coordinateSystem
     
     
 }
+#endif
 
 OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance())
@@ -368,20 +387,25 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
     double def = properties.getDoubleProperty(kOfxParamPropDefault);
     int decimals = properties.getIntProperty(kOfxParamPropDigits);
 
-    valueAccordingToType(true,coordSystem,doubleType, node, &min);
-    valueAccordingToType(true,coordSystem,doubleType, node, &max);
+    //valueAccordingToType(true,coordSystem,doubleType, node, &min);
+    //valueAccordingToType(true,coordSystem,doubleType, node, &max);
     _knob->setMinimum(min);
     _knob->setMaximum(max);
     setDisplayRange();
     if(incr > 0) {
-        valueAccordingToType(true,coordSystem,doubleType, node, &incr);
+        //valueAccordingToType(true,coordSystem,doubleType, node, &incr);
         _knob->setIncrement(incr);
     }
     if(decimals > 0) {
         _knob->setDecimals(decimals);
     }
     
-    valueAccordingToType(true,coordSystem,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&def);
+    if (coordSystem == kOfxParamCoordinatesNormalised) {
+        //valueAccordingToType(true,coordSystem,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&def);
+        Format projectFormat;
+        _node->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
+        def *= (double)projectFormat.width();
+    }
     _knob->setDefaultValue(def,0);
     std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,0);
     if (!dimensionName.empty()) {
@@ -410,8 +434,8 @@ OfxDoubleInstance::get(OfxTime time, double& v)
 OfxStatus
 OfxDoubleInstance::set(double v)
 {
-    const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    valueAccordingToType(true,coordSystem,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
+    //const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
+    //valueAccordingToType(true,coordSystem,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     _knob->setValue(v,0);
     return kOfxStatOK;
 }
@@ -419,8 +443,8 @@ OfxDoubleInstance::set(double v)
 OfxStatus
 OfxDoubleInstance::set(OfxTime time, double v)
 {
-    const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    valueAccordingToType(true,coordSystem,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
+    //const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
+    //valueAccordingToType(true,coordSystem,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     _knob->setValueAtTime(time,v,0);
     return kOfxStatOK;
 }
@@ -475,8 +499,8 @@ OfxDoubleInstance::setDisplayRange()
     double displayMin = getProperties().getDoubleProperty(kOfxParamPropDisplayMin);
     double displayMax = getProperties().getDoubleProperty(kOfxParamPropDisplayMax);
     const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    valueAccordingToType(true,coordSystem,doubleType, _node, &displayMin);
-    valueAccordingToType(true,coordSystem,doubleType, _node, &displayMax);
+    //valueAccordingToType(true,coordSystem,doubleType, _node, &displayMin);
+    //valueAccordingToType(true,coordSystem,doubleType, _node, &displayMax);
     _knob->setDisplayMinimum(displayMin);
     _knob->setDisplayMaximum(displayMax);
 }
@@ -1112,10 +1136,17 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
 
     }
     
-    valueAccordingToType(true,coordSystem, doubleType, node, &minimum[0],&minimum[1]);
-    valueAccordingToType(true,coordSystem, doubleType, node, &maximum[0],&maximum[1]);
-    valueAccordingToType(true,coordSystem, doubleType, node, &def[0],&def[1]);
-    
+    //valueAccordingToType(true,coordSystem, doubleType, node, &minimum[0],&minimum[1]);
+    //valueAccordingToType(true,coordSystem, doubleType, node, &maximum[0],&maximum[1]);
+    //valueAccordingToType(true,coordSystem, doubleType, node, &def[0],&def[1]);
+
+    if (coordSystem == kOfxParamCoordinatesNormalised) {
+        Format projectFormat;
+        _node->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
+        def[0] *= (double)projectFormat.width();
+        def[1] *= (double)projectFormat.height();
+    }
+
     _knob->setMinimumsAndMaximums(minimum, maximum);
     setDisplayRange();
     _knob->setIncrement(increment);
@@ -1148,8 +1179,8 @@ OfxDouble2DInstance::get(OfxTime time, double& x1, double& x2)
 OfxStatus
 OfxDouble2DInstance::set(double x1,double x2)
 {
-    const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    valueAccordingToType(true,coordSystem, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
+    //const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
+    //valueAccordingToType(true,coordSystem, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
     _knob->setValue(x1,0);
     _knob->setValue(x2,1);
 	return kOfxStatOK;
@@ -1158,8 +1189,8 @@ OfxDouble2DInstance::set(double x1,double x2)
 OfxStatus
 OfxDouble2DInstance::set(OfxTime time,double x1,double x2)
 {
-    const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    valueAccordingToType(true,coordSystem, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
+    //const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
+    //valueAccordingToType(true,coordSystem, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
     _knob->setValueAtTime(time,x1,0);
     _knob->setValueAtTime(time,x2,1);
 	return kOfxStatOK;
@@ -1212,8 +1243,8 @@ OfxDouble2DInstance::setDisplayRange()
     displayMins[1] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin,1);
     displayMaxs[0] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax,0);
     displayMaxs[1] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax,1);
-    valueAccordingToType(true,coordSystem,doubleType, _node, &displayMins[0],&displayMins[1]);
-    valueAccordingToType(true,coordSystem,doubleType, _node, &displayMaxs[0],&displayMaxs[1]);
+    //valueAccordingToType(true,coordSystem,doubleType, _node, &displayMins[0],&displayMins[1]);
+    //valueAccordingToType(true,coordSystem,doubleType, _node, &displayMaxs[0],&displayMaxs[1]);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
