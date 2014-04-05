@@ -225,7 +225,7 @@ public:
     /**
      * @brief Returns a pointer to the holder owning the knob.
      **/
-    virtual KnobHolder* getHolder() const = 0;
+    virtual boost::shared_ptr<KnobHolder> getHolder() const = 0;
     
     /**
      * @brief Get the knob dimension. MT-safe as it is static and never changes.
@@ -541,7 +541,7 @@ public:
         KEYFRAME_ADDED
     };
     
-    KnobHelper(KnobHolder*  holder,const std::string& description,int dimension = 1);
+    KnobHelper(const boost::shared_ptr<KnobHolder>&  holder,const std::string& description,int dimension = 1);
     
     virtual ~KnobHelper();
     
@@ -603,7 +603,7 @@ public:
     
     virtual const std::string& getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual KnobHolder* getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual boost::shared_ptr<KnobHolder> getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual int getDimension() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
@@ -726,7 +726,7 @@ public:
      * its interface) and with the given dimension. The dimension parameter is used for example for the
      * Color_Knob which has 4 doubles (r,g,b,a), hence 4 dimensions.
      **/
-    Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
+    Knob(const boost::shared_ptr<KnobHolder>&  holder,const std::string& description,int dimension = 1);
     
     virtual ~Knob() {}
     
@@ -875,7 +875,7 @@ class AnimatingString_KnobHelper : public Knob<std::string>
 {
 public:
     
-    AnimatingString_KnobHelper(KnobHolder *holder, const std::string &description, int dimension);
+    AnimatingString_KnobHelper(const boost::shared_ptr<KnobHolder>& holder, const std::string &description, int dimension);
     
     virtual ~AnimatingString_KnobHelper();
     
@@ -1076,7 +1076,7 @@ public:
     bool isSlave() const ;
     
     ///Slave all the knobs of this holder to the other holder.
-    void slaveAllKnobs(KnobHolder* other);
+    void slaveAllKnobs(const boost::shared_ptr<KnobHolder>& other);
     
     void unslaveAllKnobs();
     
@@ -1118,7 +1118,7 @@ protected:
      * @param master The master knobHolder. When isSlave is false, master
      * will be set to NULL.
      **/
-    virtual void onSlaveStateChanged(bool /*isSlave*/,KnobHolder* /*master*/) {}
+    virtual void onSlaveStateChanged(bool /*isSlave*/,const boost::shared_ptr<KnobHolder>& /*master*/) {}
     
 private:
 

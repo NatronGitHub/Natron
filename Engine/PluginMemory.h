@@ -13,7 +13,7 @@
 #define PLUGINMEMORY_H
 
 #include <cstddef>
-
+#include <boost/shared_ptr.hpp>
 namespace Natron {
 class EffectInstance;
 }
@@ -25,11 +25,11 @@ class PluginMemory
     int     _locked;
     size_t _nBytes;
     QMutex* _mutex;
-    Natron::EffectInstance* _effect;
+    boost::shared_ptr<Natron::EffectInstance> _effect;
     
 public:
     
-    PluginMemory(Natron::EffectInstance* effect);
+    PluginMemory(const boost::shared_ptr<Natron::EffectInstance>& effect);
     
     ~PluginMemory();
     

@@ -71,7 +71,7 @@ public:
 class OfxPushButtonInstance : public OFX::Host::Param::PushbuttonInstance, public OfxParamToKnob {
     
 public:
-    OfxPushButtonInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
+    OfxPushButtonInstance(const boost::shared_ptr<OfxEffectInstance>& node, OFX::Host::Param::Descriptor& descriptor);
 
     // callback which should set enabled state as appropriate
     virtual void setEnabled() OVERRIDE FINAL;
@@ -96,7 +96,7 @@ class OfxIntegerInstance :  public QObject, public OFX::Host::Param::IntegerInst
     
 public:
     
-    OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
+    OfxIntegerInstance(const boost::shared_ptr<OfxEffectInstance>& node,OFX::Host::Param::Descriptor& descriptor);
     virtual OfxStatus get(int&) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, int&) OVERRIDE FINAL;
     virtual OfxStatus set(int) OVERRIDE FINAL;
@@ -136,7 +136,7 @@ class OfxDoubleInstance :  public QObject,  public OFX::Host::Param::DoubleInsta
     Q_OBJECT
     
 public:
-    OfxDoubleInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
+    OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>& node,OFX::Host::Param::Descriptor& descriptor);
     virtual OfxStatus get(double&) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, double&) OVERRIDE FINAL;
     virtual OfxStatus set(double) OVERRIDE FINAL;
@@ -175,7 +175,7 @@ public slots:
     
 private:
     boost::shared_ptr<Double_Knob> _knob;
-    OfxEffectInstance* _node;
+    boost::shared_ptr<OfxEffectInstance> _node;
 };
 
 class OfxBooleanInstance :  public QObject,  public OFX::Host::Param::BooleanInstance , public OfxParamToKnob {
@@ -183,7 +183,7 @@ class OfxBooleanInstance :  public QObject,  public OFX::Host::Param::BooleanIns
     Q_OBJECT
     
 public:
-    OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
+    OfxBooleanInstance(const boost::shared_ptr<OfxEffectInstance>& node, OFX::Host::Param::Descriptor& descriptor);
     virtual OfxStatus get(bool&) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, bool&) OVERRIDE FINAL;
     virtual OfxStatus set(bool) OVERRIDE FINAL;
@@ -223,7 +223,7 @@ class OfxChoiceInstance : public QObject, public OFX::Host::Param::ChoiceInstanc
     Q_OBJECT
     
 public:
-    OfxChoiceInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor);
+    OfxChoiceInstance(const boost::shared_ptr<OfxEffectInstance>& node,  OFX::Host::Param::Descriptor& descriptor);
     virtual OfxStatus get(int&) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, int&) OVERRIDE FINAL;
     virtual OfxStatus set(int) OVERRIDE FINAL;
@@ -264,7 +264,7 @@ class OfxRGBAInstance :  public QObject, public OFX::Host::Param::RGBAInstance ,
     Q_OBJECT
     
 public:
-    OfxRGBAInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
+    OfxRGBAInstance(const boost::shared_ptr<OfxEffectInstance>& node, OFX::Host::Param::Descriptor& descriptor);
     virtual OfxStatus get(double&,double&,double&,double&) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, double&,double&,double&,double&) OVERRIDE FINAL;
     virtual OfxStatus set(double,double,double,double) OVERRIDE FINAL;
@@ -308,7 +308,7 @@ class OfxRGBInstance :  public QObject,  public OFX::Host::Param::RGBInstance, p
     Q_OBJECT
     
 public:
-    OfxRGBInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
+    OfxRGBInstance(const boost::shared_ptr<OfxEffectInstance>& node, OFX::Host::Param::Descriptor& descriptor);
     virtual OfxStatus get(double&,double&,double&) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, double&,double&,double&) OVERRIDE FINAL;
     virtual OfxStatus set(double,double,double) OVERRIDE FINAL;
@@ -351,7 +351,7 @@ class OfxDouble2DInstance :  public QObject, public OFX::Host::Param::Double2DIn
     Q_OBJECT
     
 public:
-    OfxDouble2DInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
+    OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstance>& node,OFX::Host::Param::Descriptor& descriptor);
     virtual OfxStatus get(double&,double&) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time,double&,double&) OVERRIDE FINAL;
     virtual OfxStatus set(double,double) OVERRIDE FINAL;
@@ -390,7 +390,7 @@ public slots:
     void onProjectFormatChanged(const Format& f);
     
 private:
-    OfxEffectInstance* _node;
+    boost::shared_ptr<OfxEffectInstance> _node;
     boost::shared_ptr<Double_Knob> _knob;
 };
 
@@ -399,7 +399,7 @@ class OfxInteger2DInstance :  public QObject, public OFX::Host::Param::Integer2D
     Q_OBJECT
     
 public:
-    OfxInteger2DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
+    OfxInteger2DInstance(const boost::shared_ptr<OfxEffectInstance>& node, OFX::Host::Param::Descriptor& descriptor);
     virtual OfxStatus get(int&,int&) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time,int&,int&) OVERRIDE FINAL;
     virtual OfxStatus set(int,int) OVERRIDE FINAL;
@@ -436,7 +436,7 @@ class OfxDouble3DInstance :  public QObject, public OFX::Host::Param::Double3DIn
     Q_OBJECT
     
 public:
-    OfxDouble3DInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
+    OfxDouble3DInstance(const boost::shared_ptr<OfxEffectInstance>& node,OFX::Host::Param::Descriptor& descriptor);
     virtual OfxStatus get(double&,double&,double&) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time,double&,double&,double&) OVERRIDE FINAL;
     virtual OfxStatus set(double,double,double) OVERRIDE FINAL;
@@ -477,7 +477,7 @@ class OfxInteger3DInstance :  public QObject, public OFX::Host::Param::Integer3D
     Q_OBJECT
     
 public:
-    OfxInteger3DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
+    OfxInteger3DInstance(const boost::shared_ptr<OfxEffectInstance>& node, OFX::Host::Param::Descriptor& descriptor);
     virtual OfxStatus get(int&,int&,int&) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time,int&,int&,int&) OVERRIDE FINAL;
     virtual OfxStatus set(int,int,int) OVERRIDE FINAL;
@@ -512,7 +512,7 @@ private:
 class OfxGroupInstance : public OFX::Host::Param::GroupInstance, public OfxParamToKnob {
 public:
 
-    OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
+    OfxGroupInstance(const boost::shared_ptr<OfxEffectInstance>& node,OFX::Host::Param::Descriptor& descriptor);
 
     void addKnob(boost::shared_ptr<KnobI> k);
 
@@ -536,7 +536,7 @@ class OfxStringInstance : public QObject, public OFX::Host::Param::StringInstanc
     Q_OBJECT
 
 public:
-    OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
+    OfxStringInstance(const boost::shared_ptr<OfxEffectInstance>& node,OFX::Host::Param::Descriptor& descriptor);
     
     virtual OfxStatus get(std::string&) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, std::string&) OVERRIDE FINAL;
@@ -589,7 +589,7 @@ public slots:
     void onKnobAnimationLevelChanged(int lvl);
     
 private:
-    OfxEffectInstance* _node;
+    boost::shared_ptr<OfxEffectInstance> _node;
     boost::shared_ptr<File_Knob> _fileKnob;
     boost::shared_ptr<OutputFile_Knob> _outputFileKnob;
     boost::shared_ptr<String_Knob> _stringKnob;
@@ -601,7 +601,7 @@ private:
 class OfxCustomInstance : public QObject, public OFX::Host::Param::CustomInstance , public OfxParamToKnob{
 Q_OBJECT
 public:
-    OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
+    OfxCustomInstance(const boost::shared_ptr<OfxEffectInstance>& node,OFX::Host::Param::Descriptor& descriptor);
 
     virtual OfxStatus get(std::string&) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, std::string&) OVERRIDE FINAL;
@@ -653,7 +653,7 @@ private:
                                                            OfxPropertySetHandle   inArgsRaw,
                                                            OfxPropertySetHandle   outArgsRaw);
 
-    OfxEffectInstance* _node;
+    boost::shared_ptr<OfxEffectInstance> _node;
     boost::shared_ptr<String_Knob> _knob;
     customParamInterpolationV1Entry_t _customParamInterpolationV1Entry;
     Natron::ThreadStorage<std::string> _localString;
@@ -667,7 +667,7 @@ class OfxParametricInstance : public QObject, public OFX::Host::ParametricParam:
 
 public:
     
-    explicit OfxParametricInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor);
+    explicit OfxParametricInstance(const boost::shared_ptr<OfxEffectInstance>& node, OFX::Host::Param::Descriptor& descriptor);
     
     virtual ~OfxParametricInstance();
     
@@ -730,7 +730,7 @@ private:
     
     OFX::Host::Param::Descriptor& _descriptor;
     Natron::OfxOverlayInteract* _overlayInteract;
-    OfxEffectInstance* _effect;
+    const boost::shared_ptr<OfxEffectInstance>& _effect;
     boost::shared_ptr<Parametric_Knob> _knob;
 };
 

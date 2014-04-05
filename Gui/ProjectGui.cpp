@@ -55,7 +55,7 @@ ProjectGui::ProjectGui(Gui* gui)
 }
 
 ProjectGui::~ProjectGui(){
-    const std::vector<Natron::Node*>& nodes = _project->getCurrentNodes();
+    const std::vector<boost::shared_ptr<Natron::Node> >& nodes = _project->getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {
         nodes[i]->quitAnyProcessing();
     }
@@ -121,7 +121,7 @@ _project(project)
     _fromViewerLine->setLayout(_fromViewerLineLayout);
     
     _copyFromViewerCombo = new ComboBox(_fromViewerLine);
-    const std::vector<Natron::Node*>& nodes = project->getCurrentNodes();
+    const std::vector<boost::shared_ptr<Natron::Node> >& nodes = project->getCurrentNodes();
     
     for(U32 i = 0 ; i < nodes.size(); ++i){
         if(nodes[i]->pluginID() == "Viewer"){
@@ -197,12 +197,12 @@ _project(project)
 }
 
 void AddFormatDialog::onCopyFromViewer(){
-    const std::vector<Natron::Node*>& nodes = _project->getCurrentNodes();
+    const std::vector<boost::shared_ptr<Natron::Node> >& nodes = _project->getCurrentNodes();
     
     QString activeText = _copyFromViewerCombo->itemText(_copyFromViewerCombo->activeIndex());
     for(U32 i = 0 ; i < nodes.size(); ++i){
         if(nodes[i]->getName() == activeText.toStdString()){
-            ViewerInstance* v = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
+            boost::shared_ptr<ViewerInstance> v = boost::dynamic_pointer_cast<ViewerInstance>(nodes[i]->getLiveInstance());
             ViewerTab* tab = _gui->getViewerTabForInstance(v);
             RectI f = tab->getViewer()->getRoD();
             Format format = tab->getViewer()->getDisplayWindow();
@@ -285,7 +285,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     const std::list<NodeGuiSerialization>& nodesGuiSerialization = obj.getSerializedNodesGui();
     for (std::list<NodeGuiSerialization>::const_iterator it = nodesGuiSerialization.begin();it!=nodesGuiSerialization.end();++it) {
         const std::string& name = it->getName();
-        NodeGui* nGui = _gui->getApp()->getNodeGui(name);
+        boost::shared_ptr<NodeGui> nGui = _gui->getApp()->getNodeGui(name);
         assert(nGui);
         nGui->setPos(it->getX(),it->getY());
         _gui->deselectAllNodes();
@@ -304,7 +304,8 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
         if (nGui->getNode()->pluginID() == "Viewer") {
             std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
             if (found != viewersProjections.end()) {
-                ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(nGui->getNode()->getLiveInstance());
+                boost::shared_ptr<ViewerInstance> viewer = boost::dynamic_pointer_cast<ViewerInstance>(
+                                                                                    nGui->getNode()->getLiveInstance());
                 ViewerTab* tab = _gui->getApp()->getGui()->getViewerTabForInstance(viewer);
                 tab->getViewer()->setProjection(found->second.zoomLeft, found->second.zoomBottom, found->second.zoomFactor, found->second.zoomPAR);
                 tab->setChannels(found->second.channels);
@@ -320,7 +321,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     }
     
     
-    const std::vector<NodeGui*> nodesGui = getVisibleNodes();
+    const std::vector<boost::shared_ptr<NodeGui> > nodesGui = getVisibleNodes();
     for(U32 i = 0 ; i < nodesGui.size();++i){
         nodesGui[i]->refreshEdges();
         nodesGui[i]->refreshSlaveMasterLinkPosition();
@@ -372,7 +373,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
    
 }
 
-std::vector<NodeGui*> ProjectGui::getVisibleNodes() const {
+std::vector<boost::shared_ptr<NodeGui> > ProjectGui::getVisibleNodes() const {
     return _gui->getVisibleNodes_mt_safe();
 }
 

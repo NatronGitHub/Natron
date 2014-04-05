@@ -105,7 +105,7 @@ public:
     
     virtual void hideSplashScreen() {}
     
-    Natron::EffectInstance* createOFXEffect(const std::string& pluginID,Natron::Node* node,
+    boost::shared_ptr<Natron::EffectInstance> createOFXEffect(const std::string& pluginID,boost::shared_ptr<Natron::Node> node,
                                             const NodeSerialization* serialization ) const;
 
     void registerAppInstance(AppInstance* app);
@@ -281,7 +281,7 @@ Natron::StandardButton questionDialog(const std::string& title,const std::string
                                       Natron::StandardButton defaultButton = Natron::NoButton);
 
 template <class K>
-boost::shared_ptr<K> createKnob(KnobHolder  *holder, const std::string &description, int dimension = 1){
+    boost::shared_ptr<K> createKnob(const boost::shared_ptr<KnobHolder>&  holder, const std::string &description, int dimension = 1){
     return appPTR->getKnobFactory().createKnob<K>(holder,description,dimension);
 }
     

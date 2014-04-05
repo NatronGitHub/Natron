@@ -74,11 +74,11 @@ public:
     
     void createGui();
     
-    NodeGui* createNodeGUI(Natron::Node *node,bool requestedByLoad);
+    boost::shared_ptr<NodeGui> createNodeGUI(boost::shared_ptr<Natron::Node> node,bool requestedByLoad);
 
-    void addNodeGuiToCurveEditor(NodeGui *node);
+    void addNodeGuiToCurveEditor(boost::shared_ptr<NodeGui> node);
         
-    NodeGui* getSelectedNode() const;
+    boost::shared_ptr<NodeGui> getSelectedNode() const;
     
     void setLastSelectedViewer(ViewerTab* tab);
     
@@ -86,11 +86,11 @@ public:
     
     bool eventFilter(QObject *target, QEvent *event);
 
-    void createViewerGui(Natron::Node* viewer);
+    void createViewerGui(boost::shared_ptr<Natron::Node> viewer);
     
     /*Called internally by the viewer node. It adds
      a new Viewer tab GUI and returns a pointer to it.*/
-    ViewerTab* addNewViewerTab(ViewerInstance* node,TabWidget* where);
+    ViewerTab* addNewViewerTab(boost::shared_ptr<ViewerInstance> node,TabWidget* where);
     
     void addViewerTab(ViewerTab* tab,TabWidget* where);
     
@@ -140,7 +140,7 @@ public:
                                            Natron::StandardButtons(Natron::Yes | Natron::No),
                                            Natron::StandardButton defaultButton = Natron::NoButton);
     
-    void selectNode(NodeGui* node);
+    void selectNode(boost::shared_ptr<NodeGui> node);
     
     GuiAppInstance* getApp() const;
         
@@ -222,18 +222,19 @@ public:
     
     void deactivateViewerTab(ViewerInstance* viewer);
     
-    ViewerTab* getViewerTabForInstance(ViewerInstance* node) const;
+    ViewerTab* getViewerTabForInstance(const boost::shared_ptr<ViewerInstance>& node) const;
     
-    const std::vector<NodeGui*>& getVisibleNodes() const;
+    const std::vector<boost::shared_ptr<NodeGui> >& getVisibleNodes() const;
     
-    std::vector<NodeGui*> getVisibleNodes_mt_safe() const;
+    std::vector<boost::shared_ptr<NodeGui> > getVisibleNodes_mt_safe() const;
     
     void deselectAllNodes() const;
     
     void onProcessHandlerStarted(const QString& sequenceName,int firstFrame,int lastFrame,
                                  ProcessHandler* process);
     
-    void onWriterRenderStarted(const QString& sequenceName,int firstFrame,int lastFrame,Natron::OutputEffectInstance* writer);
+    void onWriterRenderStarted(const QString& sequenceName,int firstFrame,int lastFrame,
+                               boost::shared_ptr<Natron::OutputEffectInstance> writer);
     
     NodeGraph* getNodeGraph() const;
     
@@ -339,9 +340,9 @@ public slots:
     
     void onViewerImageChanged();
         
-    Natron::Node* createReader();
+    boost::shared_ptr<Natron::Node> createReader();
     
-    Natron::Node* createWriter();
+    boost::shared_ptr<Natron::Node> createWriter();
     
     void renderAllWriters();
         

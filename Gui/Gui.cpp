@@ -430,33 +430,33 @@ void Gui::closeEvent(QCloseEvent *e) {
 }
 
 
-NodeGui* Gui::createNodeGUI( Node* node,bool requestedByLoad){
+boost::shared_ptr<NodeGui> Gui::createNodeGUI( boost::shared_ptr<Node> node,bool requestedByLoad){
     assert(_imp->_nodeGraphArea);
-    NodeGui* nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad);
-    QObject::connect(nodeGui,SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
+    boost::shared_ptr<NodeGui> nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad);
+    QObject::connect(nodeGui.get(),SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
     assert(nodeGui);
     return nodeGui;
 }
 
-void Gui::addNodeGuiToCurveEditor(NodeGui* node){
+void Gui::addNodeGuiToCurveEditor(boost::shared_ptr<NodeGui> node){
     _imp->_curveEditor->addNode(node);
 }
 
-void Gui::createViewerGui(Node* viewer){
+void Gui::createViewerGui(boost::shared_ptr<Node> viewer){
     TabWidget* where = _imp->_nextViewerTabPlace;
     if(!where){
         where = _imp->_viewersPane;
     }else{
         _imp->_nextViewerTabPlace = NULL; // < reseting anchor to default
     }
-    ViewerInstance* v = dynamic_cast<ViewerInstance*>(viewer->getLiveInstance());
+    boost::shared_ptr<ViewerInstance> v = boost::dynamic_pointer_cast<ViewerInstance>(viewer->getLiveInstance());
     assert(v);
     _imp->_lastSelectedViewer = addNewViewerTab(v, where);
     v->setUiContext(_imp->_lastSelectedViewer->getViewer());
 }
 
 
-NodeGui* Gui::getSelectedNode() const {
+boost::shared_ptr<NodeGui> Gui::getSelectedNode() const {
     assert(_imp->_nodeGraphArea);
     return _imp->_nodeGraphArea->getSelectedNode();
 }
@@ -1099,7 +1099,7 @@ void Gui::minimize(){
 }
 
 
-ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
+ViewerTab* Gui::addNewViewerTab(boost::shared_ptr<ViewerInstance> viewer,TabWidget* where){
     ViewerTab* tab = new ViewerTab(this,viewer,_imp->_viewersPane);
     QObject::connect(tab->getViewer(),SIGNAL(imageChanged()),this,SLOT(onViewerImageChanged()));
     {
@@ -1485,8 +1485,8 @@ bool Gui::saveProjectAs(){
     return false;
 }
 
-Natron::Node* Gui::createReader(){
-    Natron::Node* ret = 0;
+boost::shared_ptr<Natron::Node> Gui::createReader(){
+    boost::shared_ptr<Natron::Node> ret;
     std::map<std::string,std::string> readersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
     std::vector<std::string> filters;
@@ -1533,8 +1533,8 @@ Natron::Node* Gui::createReader(){
     return ret;
 }
 
-Natron::Node* Gui::createWriter(){
-    Natron::Node* ret = 0;
+boost::shared_ptr<Natron::Node> Gui::createWriter(){
+    boost::shared_ptr<Natron::Node> ret;
     std::map<std::string,std::string> writersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
     std::vector<std::string> filters;
@@ -1714,7 +1714,7 @@ Natron::StandardButton Gui::questionDialog(const std::string& title,const std::s
 }
 
 
-void Gui::selectNode(NodeGui* node){
+void Gui::selectNode(boost::shared_ptr<NodeGui> node){
     _imp->_nodeGraphArea->selectNode(node);
 }
 
@@ -1906,7 +1906,7 @@ void Gui::onCurrentUndoStackChanged(QUndoStack* stack){
 
 void Gui::refreshAllPreviews() {
     int time = _imp->_appInstance->getTimeLine()->currentFrame();
-    std::vector<Natron::Node*> nodes;
+    std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_appInstance->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
         if (nodes[i]->isPreviewEnabled()) {
@@ -1917,7 +1917,7 @@ void Gui::refreshAllPreviews() {
 
 void Gui::forceRefreshAllPreviews() {
     int time = _imp->_appInstance->getTimeLine()->currentFrame();
-    std::vector<Natron::Node*> nodes;
+    std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_appInstance->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
         if (nodes[i]->isPreviewEnabled()) {
@@ -2067,7 +2067,7 @@ void Gui::deactivateViewerTab(ViewerInstance* viewer) {
     }
 }
 
-ViewerTab* Gui::getViewerTabForInstance(ViewerInstance* node) const {
+ViewerTab* Gui::getViewerTabForInstance(const boost::shared_ptr<ViewerInstance>& node) const {
     QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin();it!=_imp->_viewerTabs.end();++it) {
         if ((*it)->getInternalNode() == node) {
@@ -2077,12 +2077,12 @@ ViewerTab* Gui::getViewerTabForInstance(ViewerInstance* node) const {
     return NULL;
 }
 
-const std::vector<NodeGui*>& Gui::getVisibleNodes() const {
+const std::vector<boost::shared_ptr<NodeGui> >& Gui::getVisibleNodes() const {
     return  _imp->_nodeGraphArea->getAllActiveNodes();
     
 }
 
-std::vector<NodeGui*> Gui::getVisibleNodes_mt_safe() const {
+std::vector<boost::shared_ptr<NodeGui> > Gui::getVisibleNodes_mt_safe() const {
     return _imp->_nodeGraphArea->getAllActiveNodes_mt_safe();
 }
 
@@ -2164,7 +2164,8 @@ void Gui::updateLastSequenceSavedPath(const QString& path) {
     _imp->_lastSaveSequenceOpenedDir = path;
 }
 
-void Gui::onWriterRenderStarted(const QString& sequenceName,int firstFrame,int lastFrame,Natron::OutputEffectInstance* writer) {
+void Gui::onWriterRenderStarted(const QString& sequenceName,int firstFrame,int lastFrame,
+                                boost::shared_ptr<Natron::OutputEffectInstance> writer) {
     RenderingProgressDialog *dialog = new RenderingProgressDialog(sequenceName,firstFrame,lastFrame,this);
     VideoEngine* ve = writer->getVideoEngine().get();
     QObject::connect(dialog,SIGNAL(canceled()),ve,SLOT(abortRenderingNonBlocking()));
@@ -2218,14 +2219,14 @@ void Gui::renderAllWriters()
 
 void Gui::renderSelectedNode()
 {
-    NodeGui* selectedNode = _imp->_nodeGraphArea->getSelectedNode();
+    boost::shared_ptr<NodeGui> selectedNode = _imp->_nodeGraphArea->getSelectedNode();
     if (selectedNode) {
         if (selectedNode->getNode()->getLiveInstance()->isWriter()) {
             ///if the node is a writer, just use it to render!
             _imp->_appInstance->startWritersRendering(QStringList(selectedNode->getNode()->getName().c_str()));
         } else {
             ///create a node and connect it to the node and use it to render
-            Natron::Node* writer = createWriter();
+            boost::shared_ptr<Natron::Node> writer = createWriter();
             if (writer) {
                 _imp->_appInstance->startWritersRendering(QStringList(writer->getName().c_str()));
             }

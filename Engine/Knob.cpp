@@ -127,7 +127,7 @@ typedef std::vector< boost::shared_ptr<Curve> > CurvesMap;
 
 struct KnobHelper::KnobHelperPrivate {
     KnobHelper* _publicInterface;
-    KnobHolder*  _holder;
+    boost::shared_ptr<KnobHolder>  _holder;
     std::string _description;//< the text label that will be displayed  on the GUI
     std::string _name;//< the knob can have a name different than the label displayed on GUI.
                   //By default this is the same as _description but can be set by calling setName().
@@ -161,7 +161,7 @@ struct KnobHelper::KnobHelperPrivate {
     std::vector<int> _dimensionChanged; //< all the dimension changed during the begin end
     
     
-    KnobHelperPrivate(KnobHelper* publicInterface,KnobHolder*  holder,int dimension,const std::string& description)
+    KnobHelperPrivate(KnobHelper* publicInterface,const boost::shared_ptr<KnobHolder>&  holder,int dimension,const std::string& description)
     : _publicInterface(publicInterface)
     , _holder(holder)
     , _description(description)
@@ -190,7 +190,7 @@ struct KnobHelper::KnobHelperPrivate {
     
 };
 
-KnobHelper::KnobHelper(KnobHolder* holder,const std::string& description,int dimension)
+KnobHelper::KnobHelper(const boost::shared_ptr<KnobHolder>& holder,const std::string& description,int dimension)
 : _signalSlotHandler()
 , _imp(new KnobHelperPrivate(this,holder,dimension,description))
 {
@@ -458,7 +458,7 @@ bool KnobHelper::hasAnimation() const
     return false;
 }
 
-KnobHolder*  KnobHelper::getHolder() const
+boost::shared_ptr<KnobHolder>  KnobHelper::getHolder() const
 {
     return _imp->_holder;
 }
@@ -725,7 +725,7 @@ KnobHolder::~KnobHolder()
 {
     for (U32 i = 0; i < _knobs.size(); ++i) {
         KnobHelper* helper = dynamic_cast<KnobHelper*>(_knobs[i].get());
-        helper->_imp->_holder = NULL;
+        helper->_imp->_holder.reset();
     }
 }
 
@@ -806,7 +806,7 @@ const std::vector< boost::shared_ptr<KnobI> >& KnobHolder::getKnobs() const {
 }
 
 
-void KnobHolder::slaveAllKnobs(KnobHolder* other) {
+void KnobHolder::slaveAllKnobs(const boost::shared_ptr<KnobHolder>& other) {
     
     if (_isSlave) {
         return;
@@ -848,7 +848,7 @@ void KnobHolder::unslaveAllKnobs() {
         }
     }
     _isSlave = false;
-    onSlaveStateChanged(false,NULL);
+    onSlaveStateChanged(false,boost::shared_ptr<KnobHolder>());
 }
 
 void KnobHolder::beginKnobsValuesChanged_public(Natron::ValueChangedReason reason)
@@ -910,7 +910,8 @@ void AnimatingString_KnobHelper::cloneExtraData(const boost::shared_ptr<KnobI>& 
         _animation->clone(isAnimatedString->getAnimation());
     }
 }
-AnimatingString_KnobHelper::AnimatingString_KnobHelper(KnobHolder *holder, const std::string &description, int dimension)
+AnimatingString_KnobHelper::AnimatingString_KnobHelper(const boost::shared_ptr<KnobHolder>& holder,
+                                                       const std::string &description, int dimension)
 : Knob<std::string>(holder,description,dimension)
 , _animation(new StringAnimationManager(this))
 {

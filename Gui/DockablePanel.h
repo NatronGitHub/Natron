@@ -221,7 +221,7 @@ class NodeSettingsPanel : public DockablePanel
     Q_PROPERTY( bool _selected READ isSelected WRITE setSelected)
     
     /*Pointer to the node GUI*/
-    NodeGui* _nodeGUI;
+    boost::shared_ptr<NodeGui> _nodeGUI;
     
     bool _selected;
     
@@ -229,7 +229,7 @@ class NodeSettingsPanel : public DockablePanel
 
 public:
 
-    explicit NodeSettingsPanel(Gui* gui,NodeGui* NodeUi,QVBoxLayout* container, QWidget *parent = 0);
+    explicit NodeSettingsPanel(Gui* gui,boost::shared_ptr<NodeGui> NodeUi,QVBoxLayout* container, QWidget *parent = 0);
     
     virtual ~NodeSettingsPanel();
     

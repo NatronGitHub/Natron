@@ -56,12 +56,14 @@ public:
 
     typedef std::map<int,Edge*> InputEdgesMap;
     
-    NodeGui(NodeGraph* dag,
-            QVBoxLayout *dockContainer,
-            Natron::Node *_internalNode,
-            bool requestedByLoad,
-            QGraphicsItem *parent=0);
+    NodeGui(QGraphicsItem *parent=0);
 
+    void initialize(NodeGraph* dag,
+                    const boost::shared_ptr<NodeGui>& thisAsShared,
+                    QVBoxLayout *dockContainer,
+                    const boost::shared_ptr<Natron::Node>& internalNode,
+                    bool requestedByLoad);
+    
     ~NodeGui() OVERRIDE;
     
     /**
@@ -73,7 +75,7 @@ public:
     void copyFrom(const NodeGuiSerialization& obj);
 
     
-    Natron::Node* getNode() const {return _internalNode;}
+    boost::shared_ptr<Natron::Node> getNode() const {return _internalNode;}
     
     /*Returns a pointer to the dag gui*/
     NodeGraph* getDagGui(){return _graph;}
@@ -275,7 +277,7 @@ private:
     NodeGraph* _graph;
     
     /*pointer to the internal node*/
-    Natron::Node* _internalNode;
+    boost::shared_ptr<Natron::Node> _internalNode;
     
     /*true if the node is selected by the user*/
     bool _selected;
@@ -320,7 +322,7 @@ private:
     mutable QMutex positionMutex;
     
     QGraphicsLineItem* _slaveMasterLink;
-    NodeGui* _masterNodeGui;
+    boost::shared_ptr<NodeGui> _masterNodeGui;
 };
 
 #endif // NATRON_GUI_NODEGUI_H_

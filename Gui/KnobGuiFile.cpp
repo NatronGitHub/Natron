@@ -133,7 +133,7 @@ void File_KnobGui::open_file(bool openSequence)
     if (!_knob->isInputImageFile()) {
         filters.push_back("*");
     } else {
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_knob->getHolder());
+        boost::shared_ptr<Natron::EffectInstance> effect = boost::dynamic_pointer_cast<Natron::EffectInstance>(_knob->getHolder());
         if (effect) {
             filters = effect->supportedFileFormats();
         }
@@ -294,7 +294,7 @@ void OutputFile_KnobGui::open_file(bool openSequence)
     if (!_knob->isOutputImageFile()) {
         filters.push_back("*");
     } else {
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(getKnob()->getHolder());
+        boost::shared_ptr<Natron::EffectInstance> effect = boost::dynamic_pointer_cast<Natron::EffectInstance>(getKnob()->getHolder());
         if (effect) {
             filters = effect->supportedFileFormats();
         }

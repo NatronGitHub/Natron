@@ -53,6 +53,7 @@
 #include "Engine/Plugin.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/Settings.h"
+#include "Engine/Node.h"
 
 using namespace Natron;
 
@@ -259,7 +260,7 @@ void Natron::OfxHost::getPluginAndContextByID(const std::string& pluginID,  OFX:
     }
 }
 
-AbstractOfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natron::Node* node,
+boost::shared_ptr<AbstractOfxEffectInstance> Natron::OfxHost::createOfxEffect(const std::string& name,boost::shared_ptr<Natron::Node> node,
                                                             const NodeSerialization* serialization ) {
 
     assert(node);
@@ -268,8 +269,13 @@ AbstractOfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& n
 
     getPluginAndContextByID(name,&plugin,context);
 
-    AbstractOfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
-    hostSideEffect->createOfxImageEffectInstance(plugin, context,serialization);
+    boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect(new OfxEffectInstance(node));
+    hostSideEffect->initialize(hostSideEffect);
+    if(node && !node->getLiveInstance()){
+        node->setLiveInstance(hostSideEffect);
+    }
+
+    hostSideEffect->createOfxImageEffectInstance(plugin,hostSideEffect, context,serialization);
     return hostSideEffect;
 }
 

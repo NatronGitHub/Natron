@@ -17,7 +17,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QWidget>
 CLANG_DIAG_ON(deprecated)
 #include <boost/scoped_ptr.hpp>
-
+#include <boost/shared_ptr.hpp>
 #include "Global/GlobalDefines.h"
 
 class ViewerGL;
@@ -32,12 +32,12 @@ class ViewerTab: public QWidget
     Q_OBJECT
     
 public:
-    explicit ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent=0);
+    explicit ViewerTab(Gui* gui,boost::shared_ptr<ViewerInstance> node,QWidget* parent=0);
     
 	virtual ~ViewerTab() OVERRIDE;
     
     
-    ViewerInstance* getInternalNode() const;
+    boost::shared_ptr<ViewerInstance> getInternalNode() const;
 
     Gui* getGui() const;
     

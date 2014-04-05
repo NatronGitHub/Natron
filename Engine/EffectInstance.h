@@ -43,7 +43,7 @@ class EffectInstance : public KnobHolder
 {
 public:
     
-    typedef std::map<EffectInstance*,RectI> RoIMap;
+    typedef std::map<boost::shared_ptr<EffectInstance>,RectI> RoIMap;
     
     typedef std::map<int, std::vector<RangeD> > FramesNeededMap;
     
@@ -88,14 +88,19 @@ public:
      * called just to be able to call a few virtuals fonctions.
      * The constructor is always called by the main thread of the application.
      **/
-    explicit EffectInstance(Node* node);
+    explicit EffectInstance(boost::shared_ptr<Node> node);
+    
+    /**
+     * @brief Initialize any extra data after the constructor
+     **/
+    virtual void initialize(const boost::shared_ptr<EffectInstance>& /*thisShared*/) {};
     
     virtual ~EffectInstance();
     
     /**
      * @brief Returns a pointer to the node holding this effect.
      **/
-    Node* getNode() const WARN_UNUSED_RETURN { return _node; }
+    boost::shared_ptr<Node> getNode() const WARN_UNUSED_RETURN { return _node; }
     
     U64 hash() const WARN_UNUSED_RETURN;
     
@@ -128,12 +133,12 @@ public:
      * @brief Returns input n. It might be NULL if the input is not connected.
      * Cannot be called by another thread than the application's main thread.
      **/
-    EffectInstance* input(int n) const WARN_UNUSED_RETURN;
+    boost::shared_ptr<EffectInstance> input(int n) const WARN_UNUSED_RETURN;
   
     /**
      * @brief Returns input n. It might be NULL if the input is not connected.
      **/
-    EffectInstance* input_other_thread(int n) const WARN_UNUSED_RETURN;
+    boost::shared_ptr<EffectInstance> input_other_thread(int n) const WARN_UNUSED_RETURN;
     
     /**
      * @brief Forwarded to the node holding the effect
@@ -558,7 +563,7 @@ protected:
     virtual bool onOverlayFocusLost() WARN_UNUSED_RETURN { return false; }
 
     
-    Node* const _node; //< the node holding this effect
+    boost::shared_ptr<Node> _node; //< the node holding this effect
 
 private:
     struct Implementation;
@@ -586,7 +591,7 @@ private:
     void evaluate(KnobI* knob,bool isSignificant) OVERRIDE;
 
     
-    virtual void onSlaveStateChanged(bool isSlave,KnobHolder* master) OVERRIDE FINAL;
+    virtual void onSlaveStateChanged(bool isSlave,const boost::shared_ptr<KnobHolder>& master) OVERRIDE FINAL;
 
     
     
@@ -597,7 +602,7 @@ private:
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.
      **/
-    int getInputNumber(Natron::EffectInstance* inputEffect) const;
+    int getInputNumber(boost::shared_ptr<Natron::EffectInstance> inputEffect) const;
     
 };
 
@@ -605,7 +610,7 @@ private:
  * @typedef Any plug-in should have a static function called BuildEffect with the following signature.
  * It is used to build a new instance of an effect. Basically it should just call the constructor.
  **/
-typedef Natron::EffectInstance* (*EffectBuilder)(Natron::Node*);
+    typedef Natron::EffectInstance* (*EffectBuilder)(boost::shared_ptr<Node>);
 
 
 class OutputEffectInstance : public Natron::EffectInstance {
@@ -623,7 +628,9 @@ class OutputEffectInstance : public Natron::EffectInstance {
     BlockingBackgroundRender* _renderController; //< pointer to a blocking renderer
 public:
 
-    OutputEffectInstance(Node* node);
+    OutputEffectInstance(boost::shared_ptr<Node> node);
+    
+    virtual void initialize(const boost::shared_ptr<EffectInstance>& thisShared) OVERRIDE;
 
     virtual ~OutputEffectInstance();
 

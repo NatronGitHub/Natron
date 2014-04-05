@@ -55,16 +55,19 @@ static QString getDefaultOcioConfigPath() {
 }
 
 void Settings::initializeKnobs(){
-    _generalTab = Natron::createKnob<Tab_Knob>(this, "General");
     
-    _linearPickers = Natron::createKnob<Bool_Knob>(this, "Linear color pickers");
+    boost::shared_ptr<Settings> thisShared = appPTR->getCurrentSettings();
+    
+    _generalTab = Natron::createKnob<Tab_Knob>(thisShared, "General");
+    
+    _linearPickers = Natron::createKnob<Bool_Knob>(thisShared, "Linear color pickers");
     _linearPickers->setAnimationEnabled(false);
     _linearPickers->setHintToolTip("When activated, all colors picked from the color parameters will be converted"
                                    " to linear before being fetched. Otherwise they will be in the same color-space "
                                    " as the viewer they were picked from.");
     _generalTab->addKnob(_linearPickers);
     
-    _numberOfThreads = Natron::createKnob<Int_Knob>(this, "Number of render threads");
+    _numberOfThreads = Natron::createKnob<Int_Knob>(thisShared, "Number of render threads");
     _numberOfThreads->setAnimationEnabled(false);
     QString numberOfThreadsToolTip = QString("Controls how many threads " NATRON_APPLICATION_NAME " should use to render. \n"
                                              "-1: Disable multi-threading totally (useful for debug) \n"
@@ -75,21 +78,21 @@ void Settings::initializeKnobs(){
     _numberOfThreads->setDisplayMinimum(-1);
     _generalTab->addKnob(_numberOfThreads);
     
-    _renderInSeparateProcess = Natron::createKnob<Bool_Knob>(this, "Render in a separate process");
+    _renderInSeparateProcess = Natron::createKnob<Bool_Knob>(thisShared, "Render in a separate process");
     _renderInSeparateProcess->setAnimationEnabled(false);
     _renderInSeparateProcess->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will render (using the write nodes) in "
                                              "a separate process. Disabling it is most helpful for the dev team.");
     _generalTab->addKnob(_renderInSeparateProcess);
     
-    _autoPreviewEnabledForNewProjects = Natron::createKnob<Bool_Knob>(this, "Auto-preview enabled by default for new projects");
+    _autoPreviewEnabledForNewProjects = Natron::createKnob<Bool_Knob>(thisShared, "Auto-preview enabled by default for new projects");
     _autoPreviewEnabledForNewProjects->setAnimationEnabled(false);
     _autoPreviewEnabledForNewProjects->setHintToolTip("If checked then when creating a new project, the Auto-preview option"
                                                       " will be enabled.");
     _generalTab->addKnob(_autoPreviewEnabledForNewProjects);
     
-    _generalTab->addKnob(Natron::createKnob<Separator_Knob>(this, "OpenFX Plugins"));
+    _generalTab->addKnob(Natron::createKnob<Separator_Knob>(thisShared, "OpenFX Plugins"));
     
-    _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "Extra plugins search paths");
+    _extraPluginPaths = Natron::createKnob<Path_Knob>(thisShared, "Extra plugins search paths");
     _extraPluginPaths->setHintToolTip("All paths in this variable are separated by ';' and indicate"
                                       " extra search paths where " NATRON_APPLICATION_NAME " should scan for plug-ins. "
                                       NATRON_APPLICATION_NAME " already searchs for plug-ins at these locations:\n "
@@ -101,10 +104,10 @@ void Settings::initializeKnobs(){
     _extraPluginPaths->setMultiPath(true);
     _generalTab->addKnob(_extraPluginPaths);
     
-    boost::shared_ptr<Tab_Knob> ocioTab = Natron::createKnob<Tab_Knob>(this, "OpenColorIO");
+    boost::shared_ptr<Tab_Knob> ocioTab = Natron::createKnob<Tab_Knob>(thisShared, "OpenColorIO");
     
     
-    _ocioConfigKnob = Natron::createKnob<Choice_Knob>(this, "OpenColorIO config");
+    _ocioConfigKnob = Natron::createKnob<Choice_Knob>(thisShared, "OpenColorIO config");
     _ocioConfigKnob->setAnimationEnabled(false);
     
     QString defaultOcioConfigsPath = getDefaultOcioConfigPath();
@@ -132,15 +135,15 @@ void Settings::initializeKnobs(){
     
     ocioTab->addKnob(_ocioConfigKnob);
     
-    _customOcioConfigFile = Natron::createKnob<File_Knob>(this, "Custom OpenColorIO config file");
+    _customOcioConfigFile = Natron::createKnob<File_Knob>(thisShared, "Custom OpenColorIO config file");
     _customOcioConfigFile->setAllDimensionsEnabled(false);
     _customOcioConfigFile->setHintToolTip("To use this, set the OpenColorIO config to custom config a point "
                                           "to a custom OpenColorIO config file (.ocio).");
     ocioTab->addKnob(_customOcioConfigFile);
     
-    _viewersTab = Natron::createKnob<Tab_Knob>(this, "Viewers");
+    _viewersTab = Natron::createKnob<Tab_Knob>(thisShared, "Viewers");
     
-    _texturesMode = Natron::createKnob<Choice_Knob>(this, "Viewer textures bit depth");
+    _texturesMode = Natron::createKnob<Choice_Knob>(thisShared, "Viewer textures bit depth");
     _texturesMode->setAnimationEnabled(false);
     std::vector<std::string> textureModes;
     std::vector<std::string> helpStringsTextureModes;
@@ -157,7 +160,7 @@ void Settings::initializeKnobs(){
                                   " Hover each option with the mouse for a more detailed comprehension.");
     _viewersTab->addKnob(_texturesMode);
     
-    _powerOf2Tiling = Natron::createKnob<Int_Knob>(this, "Viewer tile size is 2 to the power of...");
+    _powerOf2Tiling = Natron::createKnob<Int_Knob>(thisShared, "Viewer tile size is 2 to the power of...");
     _powerOf2Tiling->setHintToolTip("The power of 2 of the tiles size used by the Viewer to render."
                                     " A high value means that the viewer will usually render big tiles, which means"
                                     " you have good chances when panning/zooming to find an already rendered texture in the cache."
@@ -171,9 +174,9 @@ void Settings::initializeKnobs(){
     _powerOf2Tiling->setAnimationEnabled(false);
     _viewersTab->addKnob(_powerOf2Tiling);
     
-    _cachingTab = Natron::createKnob<Tab_Knob>(this, "Caching");
+    _cachingTab = Natron::createKnob<Tab_Knob>(thisShared, "Caching");
     
-    _maxRAMPercent = Natron::createKnob<Int_Knob>(this, "Maximum system's RAM for caching");
+    _maxRAMPercent = Natron::createKnob<Int_Knob>(thisShared, "Maximum system's RAM for caching");
     _maxRAMPercent->setAnimationEnabled(false);
     _maxRAMPercent->setMinimum(0);
     _maxRAMPercent->setMaximum(100);
@@ -190,7 +193,7 @@ void Settings::initializeKnobs(){
     _maxRAMPercent->setHintToolTip(ramHint);
     _cachingTab->addKnob(_maxRAMPercent);
     
-    _maxPlayBackPercent = Natron::createKnob<Int_Knob>(this, "Playback cache RAM percentage");
+    _maxPlayBackPercent = Natron::createKnob<Int_Knob>(thisShared, "Playback cache RAM percentage");
     _maxPlayBackPercent->setAnimationEnabled(false);
     _maxPlayBackPercent->setMinimum(0);
     _maxPlayBackPercent->setMaximum(100);
@@ -200,7 +203,7 @@ void Settings::initializeKnobs(){
                                         " this is made possible for convenience.");
     _cachingTab->addKnob(_maxPlayBackPercent);
     
-    _maxDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum disk cache size");
+    _maxDiskCacheGB = Natron::createKnob<Int_Knob>(thisShared, "Maximum disk cache size");
     _maxDiskCacheGB->setAnimationEnabled(false);
     _maxDiskCacheGB->setMinimum(0);
     _maxDiskCacheGB->setMaximum(100);
@@ -211,9 +214,9 @@ void Settings::initializeKnobs(){
     ///readers & writers settings are created in a postponed manner because we don't know
     ///their dimension yet. See populateReaderPluginsAndFormats & populateWriterPluginsAndFormats
     
-    _readersTab = Natron::createKnob<Tab_Knob>(this, "Readers");
+    _readersTab = Natron::createKnob<Tab_Knob>(thisShared, "Readers");
 
-    _writersTab = Natron::createKnob<Tab_Knob>(this, "Writers");
+    _writersTab = Natron::createKnob<Tab_Knob>(thisShared, "Writers");
     
     
     setDefaultValues();
@@ -443,11 +446,11 @@ void Settings::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/
         std::map<int,AppInstance*> apps = appPTR->getAppInstances();
         bool isFirstViewer = true;
         for(std::map<int,AppInstance*>::iterator it = apps.begin();it!=apps.end();++it){
-            const std::vector<Node*> nodes = it->second->getProject()->getCurrentNodes();
+            const std::vector<boost::shared_ptr<Node> > nodes = it->second->getProject()->getCurrentNodes();
             for (U32 i = 0; i < nodes.size(); ++i) {
                 assert(nodes[i]);
                 if (nodes[i]->pluginID() == "Viewer") {
-                    ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
+                    ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance().get());
                     assert(n);
                     if(isFirstViewer){
                         if(!n->supportsGLSL() && _texturesMode->getValue() != 0){
@@ -552,7 +555,7 @@ const std::string& Settings::getWriterPluginIDForFileType(const std::string& ext
 void Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::vector<std::string> >& rows){
     
     for (std::map<std::string,std::vector<std::string> >::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
-        boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
+        boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(appPTR->getCurrentSettings(), it->first);
         k->setAnimationEnabled(false);
         k->populateChoices(it->second);
         for (U32 i = 0; i < it->second.size(); ++i) {
@@ -569,7 +572,7 @@ void Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::v
 
 void Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector<std::string> >& rows){
     for (std::map<std::string,std::vector<std::string> >::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
-        boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
+        boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(appPTR->getCurrentSettings(), it->first);
         k->setAnimationEnabled(false);
         k->populateChoices(it->second);
         for (U32 i = 0; i < it->second.size(); ++i) {

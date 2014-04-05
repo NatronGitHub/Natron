@@ -118,7 +118,7 @@ public:
 static MetaTypesRegistration registration;
 
 Natron::EffectInstance*
-ViewerInstance::BuildEffect(Natron::Node* n)
+ViewerInstance::BuildEffect(boost::shared_ptr<Natron::Node> n)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -126,7 +126,7 @@ ViewerInstance::BuildEffect(Natron::Node* n)
     return new ViewerInstance(n);
 }
 
-ViewerInstance::ViewerInstance(Node* node)
+ViewerInstance::ViewerInstance(boost::shared_ptr<Node> node)
 : Natron::OutputEffectInstance(node)
 , _imp(new ViewerInstancePrivate(this))
 {
@@ -135,7 +135,7 @@ ViewerInstance::ViewerInstance(Node* node)
 
     connectSlotsToViewerCache();
     if(node) {
-        connect(node,SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
+        connect(node.get(),SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
     }
 }
 
@@ -246,7 +246,7 @@ int
 ViewerInstance::activeInput() const
 {
     //    InspectorNode::activeInput()  is MT-safe
-    return dynamic_cast<InspectorNode*>(getNode())->activeInput(); // not MT-SAFE!
+    return dynamic_cast<InspectorNode*>(getNode().get())->activeInput(); // not MT-SAFE!
 }
 
 int
@@ -266,7 +266,7 @@ ViewerInstance::getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProje
     _imp->assertVideoEngine();
 
     ///Return the RoD of the active input
-    EffectInstance* n = input_other_thread(activeInput());
+    boost::shared_ptr<EffectInstance> n = input_other_thread(activeInput());
     if (n) {
         return n->getRegionOfDefinition(time,rod,isProjectFormat);
     } else {
@@ -283,7 +283,7 @@ ViewerInstance::getFrameRange(SequenceTime *first,
     assert(qApp && qApp->thread() == QThread::currentThread());
 
     SequenceTime inpFirst = 0,inpLast = 0;
-    EffectInstance* n = input_other_thread(activeInput());
+    boost::shared_ptr<EffectInstance> n = input_other_thread(activeInput());
     if (n) {
         n->getFrameRange(&inpFirst,&inpLast);
     }
@@ -320,7 +320,7 @@ ViewerInstance::renderViewer(SequenceTime time,
     int viewsCount = getRenderViewsCount();
     int view = viewsCount > 0 ? _imp->uiContext->getCurrentView() : 0;
 
-    EffectInstance* activeInputToRender = input_other_thread(activeInput());
+    boost::shared_ptr<EffectInstance> activeInputToRender = input_other_thread(activeInput());
     assert(activeInputToRender);
     
     bool forceRender;
@@ -354,7 +354,7 @@ ViewerInstance::renderViewer(SequenceTime time,
     
     ////While the inputs are identity get the RoD of the first non identity input
     while (!forceRender && inputIdentityNumber != -1 && isInputImgCached) {
-        EffectInstance* recursiveInput = activeInputToRender->input_other_thread(inputIdentityNumber);
+        boost::shared_ptr<EffectInstance> recursiveInput = activeInputToRender->input_other_thread(inputIdentityNumber);
         if (recursiveInput) {
             inputImageKey = Natron::Image::makeKey(recursiveInput->hash(), inputIdentityTime, scale,view);
             isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
@@ -1125,7 +1125,7 @@ ViewerInstance::onColorSpaceChanged(const QString& colorspaceName)
     }
 
     if ((_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_imp->uiContext->supportsGLSL())
-       && input(activeInput()) != NULL) {
+       && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
         refreshAndContinueRender(false);
     } else {
         emit mustRedraw();

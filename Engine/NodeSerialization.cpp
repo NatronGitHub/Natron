@@ -15,9 +15,9 @@
 #include "Engine/Knob.h"
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
-NodeSerialization::NodeSerialization(Natron::Node* n)
+NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node>& n)
 : _isNull(true)
-, _node(NULL)
+, _node()
 , _app(NULL)
 {
     
@@ -31,7 +31,7 @@ NodeSerialization::NodeSerialization(Natron::Node* n)
         _inputs.clear();
         
         if (n->isOpenFXNode()) {
-            dynamic_cast<OfxEffectInstance*>(n->getLiveInstance())->syncPrivateData_other_thread();
+            dynamic_cast<OfxEffectInstance*>(n->getLiveInstance().get())->syncPrivateData_other_thread();
         }
         
         const std::vector< boost::shared_ptr<KnobI> >& knobs = n->getKnobs();
@@ -56,7 +56,7 @@ NodeSerialization::NodeSerialization(Natron::Node* n)
         
         _inputs = n->getInputNames();
         
-        Natron::Node* masterNode = n->getMasterNode();
+        boost::shared_ptr<Natron::Node> masterNode = n->getMasterNode();
         if (masterNode) {
             _masterNodeName = masterNode->getName_mt_safe();
         }

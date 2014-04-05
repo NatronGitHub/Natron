@@ -14,6 +14,8 @@
 #include <ofxhImageEffect.h>
 #include <ofxhMemory.h>
 
+#include <boost/shared_ptr.hpp>
+
 #include "Global/Macros.h"
 
 namespace Natron {
@@ -27,7 +29,7 @@ class OfxMemory : public OFX::Host::Memory::Instance
     
 public:
     
-    OfxMemory(Natron::EffectInstance* effect);
+    OfxMemory(const boost::shared_ptr<Natron::EffectInstance>& effect);
     
     virtual ~OfxMemory();
     

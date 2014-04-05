@@ -2,7 +2,7 @@
 #License, v. 2.0. If a copy of the MPL was not distributed with this
 #file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-CONFIG += warn_on
+CONFIG += warn_on trace_ofx_actions trace_ofx_params trace_ofx_properties
 DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SUPPORTS_PARAMETRIC OFX_EXTENSIONS_TUTTLE
 DEFINES += OFX_SUPPORTS_MULTITHREAD
 

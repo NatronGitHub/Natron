@@ -465,7 +465,7 @@ double OfxImageEffectInstance::timeLineGetTime() {
 /// set the timeline to a specific time
 void OfxImageEffectInstance::timeLineGotoTime(double t) {
     
-    _node->getApp()->getTimeLine()->seekFrame((int)t,NULL);
+    _node->getApp()->getTimeLine()->seekFrame((int)t,boost::shared_ptr<OutputEffectInstance>());
     
 }
 

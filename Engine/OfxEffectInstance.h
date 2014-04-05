@@ -41,7 +41,7 @@ class OfxOverlayInteract;
 class AbstractOfxEffectInstance : public Natron::OutputEffectInstance {
 public:
     
-    AbstractOfxEffectInstance(Natron::Node* node)
+    AbstractOfxEffectInstance(boost::shared_ptr<Natron::Node> node)
     : Natron::OutputEffectInstance(node)
     {
     }
@@ -49,6 +49,7 @@ public:
     virtual ~AbstractOfxEffectInstance(){}
     
     virtual void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                              const boost::shared_ptr<AbstractOfxEffectInstance>& thisAsShared,
                                               const std::string& context,const NodeSerialization* serialization) = 0;
     
     static QStringList getPluginGrouping(const std::string& pluginLabel,const std::string& grouping) WARN_UNUSED_RETURN;
@@ -82,11 +83,12 @@ class OfxEffectInstance : public QObject, public AbstractOfxEffectInstance {
 public:
     
     
-    OfxEffectInstance(Natron::Node* node);
+    OfxEffectInstance(boost::shared_ptr<Natron::Node> node);
     
     virtual ~OfxEffectInstance();
     
     void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                      const boost::shared_ptr<AbstractOfxEffectInstance>& thisAsShared,
                                       const std::string& context,const NodeSerialization* serialization) OVERRIDE FINAL;
     
     Natron::OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN { return effect_; }

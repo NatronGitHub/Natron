@@ -78,12 +78,12 @@ struct ProjectPrivate {
     mutable QMutex nodesLock; //< protects nodeCounters & currentNodes
     std::map<std::string,int> nodeCounters; //< basic counters to instantiate nodes with an index in the node graph
     bool autoSetProjectFormat; 
-    std::vector<Natron::Node*> currentNodes;
+    std::vector< boost::shared_ptr<Natron::Node> > currentNodes;
     
     
     Natron::Project* project;
     
-    Natron::OutputEffectInstance* lastTimelineSeekCaller;
+    boost::shared_ptr<Natron::OutputEffectInstance> lastTimelineSeekCaller;
 
     int beginEndBracketsCount;
     int evaluationsCount;

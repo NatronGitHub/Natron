@@ -66,7 +66,7 @@ ChannelSet ofxComponentsToNatronChannels(const std::string& comp) {
 }
 #endif
 
-OfxEffectInstance::OfxEffectInstance(Natron::Node* node)
+OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
     : AbstractOfxEffectInstance(node)
     , effect_()
     , _isOutput(false)
@@ -78,13 +78,11 @@ OfxEffectInstance::OfxEffectInstance(Natron::Node* node)
     , _wasRenderSafetySet(false)
     , _renderSafetyLock(new QReadWriteLock)
 {
-    if(node && !node->getLiveInstance()){
-        node->setLiveInstance(this);
-    }
     QObject::connect(this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()));
 }
 
 void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                                     const boost::shared_ptr<AbstractOfxEffectInstance>& thisAsShared,
                                                      const std::string& context,const NodeSerialization* serialization){
     /*Replicate of the code in OFX::Host::ImageEffect::ImageEffectPlugin::createInstance.
      We need to pass more parameters to the constructor . That means we cannot
@@ -116,7 +114,7 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
     try {
         effect_ = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
         assert(effect_);
-        effect_->setOfxEffectInstancePointer(this);
+        effect_->setOfxEffectInstancePointer(boost::dynamic_pointer_cast<OfxEffectInstance>(thisAsShared));
         notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
         OfxStatus stat = effect_->populate();
         
@@ -184,7 +182,7 @@ OfxEffectInstance::~OfxEffectInstance(){
 void OfxEffectInstance::initializeContextDependentParams() {
     
     if (isWriter()) {
-        _renderButton = Natron::createKnob<Button_Knob>(this, "Render");
+        _renderButton = Natron::createKnob<Button_Knob>(getNode()->getLiveInstance(), "Render");
         _renderButton->setHintToolTip("Starts rendering the specified frame range.");
         _renderButton->setAsRenderButton();
     }
@@ -501,8 +499,8 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
     }
     if (stat != kOfxStatReplyDefault) {
         for(std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin();it!= inputRois.end();++it){
-            EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
-            if (inputNode && inputNode != this) {
+            boost::shared_ptr<EffectInstance> inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
+            if (inputNode && inputNode.get() != this) {
                 RectI inputRoi;
                 ofxRectDToEnclosingRectI(it->second, &inputRoi);
                 ret.insert(std::make_pair(inputNode,inputRoi));
@@ -510,8 +508,9 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
         }
     } else if (stat == kOfxStatReplyDefault) {
         for (int i = 0; i < effectInstance()->getNClips(); ++i) {
-            EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(effectInstance()->getNthClip(i))->getAssociatedNode();
-            if (inputNode && inputNode != this) {
+            boost::shared_ptr<EffectInstance> inputNode = dynamic_cast<OfxClipInstance*>(
+                                                                                    effectInstance()->getNthClip(i))->getAssociatedNode();
+            if (inputNode && inputNode.get() != this) {
                 ret.insert(std::make_pair(inputNode, renderWindow));
             }
         }

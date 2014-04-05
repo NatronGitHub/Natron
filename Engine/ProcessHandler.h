@@ -16,7 +16,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QProcess>
 #include <QThread>
 CLANG_DIAG_ON(deprecated)
-
+#include <boost/shared_ptr.hpp>
 #include "Global/GlobalDefines.h"
 
 //natron
@@ -76,7 +76,7 @@ class ProcessHandler : public QObject {
 
     AppInstance* _app;//< pointer to the app executing this process
     QProcess* _process; //< the process executing the render
-    Natron::OutputEffectInstance* _writer;//< pointer to the writer that will render in the bg process
+    boost::shared_ptr<Natron::OutputEffectInstance> _writer;//< pointer to the writer that will render in the bg process
     QLocalServer* _ipcServer; //< the server for IPC with the background process
     QLocalSocket* _bgProcessOutputSocket; //< the socket where data is output by the process
     
@@ -97,7 +97,7 @@ public:
                    const QString& projectPath,
                    const QString& outputFileSequence,
                    int firstFrame,int lastFrame,
-                   Natron::OutputEffectInstance* writer);
+                   boost::shared_ptr<Natron::OutputEffectInstance> writer);
 
     virtual ~ProcessHandler();
 

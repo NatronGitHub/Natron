@@ -252,7 +252,7 @@ void DockablePanel::onLineEditNameEditingFinished() {
             return;
         }
         
-        std::vector<Natron::Node*> allNodes = _holder->getApp()->getProject()->getCurrentNodes();
+        std::vector<boost::shared_ptr<Natron::Node> > allNodes = _holder->getApp()->getProject()->getCurrentNodes();
         for (U32 i = 0;  i < allNodes.size(); ++i) {
             if (allNodes[i]->getName() == newName) {
                 _nameLineEdit->blockSignals(true);
@@ -667,8 +667,8 @@ QWidget* DockablePanel::getHeaderWidget() const {
     return _headerWidget;
 }
 
-NodeSettingsPanel::NodeSettingsPanel(Gui* gui,NodeGui* NodeUi ,QVBoxLayout* container,QWidget *parent)
-:DockablePanel(gui,NodeUi->getNode()->getLiveInstance(),
+NodeSettingsPanel::NodeSettingsPanel(Gui* gui,boost::shared_ptr<NodeGui> NodeUi ,QVBoxLayout* container,QWidget *parent)
+:DockablePanel(gui,NodeUi->getNode()->getLiveInstance().get(),
                container,
                DockablePanel::FULLY_FEATURED,
                false,

@@ -46,7 +46,7 @@ using std::make_pair;
 using std::cout; using std::endl;
 
 
-VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
+VideoEngine::VideoEngine(const boost::shared_ptr<Natron::OutputEffectInstance>& owner,QObject* parent)
     : QThread(parent)
     , _tree(owner)
     , _threadStarted(false)
@@ -204,7 +204,7 @@ bool VideoEngine::startEngine(bool singleThreaded) {
             getFrameRange();
         }
         
-        Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
+        Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput().get());
         output->setFirstFrame(_firstFrame);
         output->setLastFrame(_lastFrame);
         output->setDoingFullSequenceRender(true);
@@ -213,7 +213,7 @@ bool VideoEngine::startEngine(bool singleThreaded) {
     
     
     
-    ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_tree.getOutput()); /*viewer might be NULL if the output is smthing else*/
+    boost::shared_ptr<ViewerInstance> viewer = _tree.outputAsViewer(); /*viewer might be NULL if the output is smthing else*/
     
     bool hasInput = false;
     for (RenderTree::TreeIterator it = _tree.begin() ; it != _tree.end() ; ++it) {
@@ -300,7 +300,8 @@ bool VideoEngine::stopEngine() {
 
     }
     
-    Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
+    boost::shared_ptr<Natron::OutputEffectInstance> outputEffect =
+    boost::dynamic_pointer_cast<Natron::OutputEffectInstance>(_tree.getOutput());
     outputEffect->setDoingFullSequenceRender(false);
     if(appPTR->isBackground()){
        
@@ -331,7 +332,7 @@ void VideoEngine::run(){
             QMutexLocker locker(&_mustQuitMutex);
             if(_mustQuit) {
                 _mustQuit = false;
-                Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
+                Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput().get());
                 if(appPTR->isBackground()){
                     outputEffect->notifyRenderFinished();
                 }
@@ -425,9 +426,10 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
             }
         }
         
-        Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
+        boost::shared_ptr<Natron::OutputEffectInstance> output =
+        boost::dynamic_pointer_cast<Natron::OutputEffectInstance>(_tree.getOutput());
         assert(output);
-        ViewerInstance* viewer = _tree.outputAsViewer();
+        boost::shared_ptr<ViewerInstance> viewer = _tree.outputAsViewer();
         
         /*update the tree inputs */
         _tree.refreshInputsAndClearMessage();
@@ -724,7 +726,7 @@ void VideoEngine::updateTreeAndContinueRender(){
 }
 
 
-RenderTree::RenderTree(EffectInstance *output):
+RenderTree::RenderTree(const boost::shared_ptr<EffectInstance>& output):
     _output(output)
   ,_sorted()
   ,_isViewer(false)
@@ -744,33 +746,34 @@ void RenderTree::clearGraph(){
 }
 
 void RenderTree::refreshTree(){
-    _isViewer = dynamic_cast<ViewerInstance*>(_output) != NULL;
+    _isViewer = dynamic_cast<ViewerInstance*>(_output.get()) != NULL;
     _isOutputOpenFXNode = _output->isOpenFX();
     
     /*unmark all nodes already present in the graph*/
     clearGraph();
-    std::vector<Natron::Node*> markedNodes;
+    std::vector<boost::shared_ptr<Natron::Node> > markedNodes;
     fillGraph(_output->getNode(),markedNodes);
 }
 
 
-void RenderTree::fillGraph(Natron::Node *node,std::vector<Natron::Node*>& markedNodes){
+void RenderTree::fillGraph(const boost::shared_ptr<Natron::Node>& node,std::vector<boost::shared_ptr<Natron::Node> >& markedNodes){
     
     
     /*call fillGraph recursivly on all the node's inputs*/
     node->updateRenderInputs();
-    const std::vector<Node*>& inputs = node->getInputs_other_thread();
+    const std::vector<boost::shared_ptr<Node> >& inputs = node->getInputs_other_thread();
+    const InspectorNode* insp = dynamic_cast<const InspectorNode*>(node.get());
     for (U32 i = 0; i < inputs.size(); ++i) {
         if(inputs[i]){
             /*if the node is an inspector we're interested just by the active input*/
-            const InspectorNode* insp = dynamic_cast<const InspectorNode*>(node);
+            
             if (insp && (int)i != insp->activeInput()) {
                 continue;
             }
             fillGraph(inputs[i],markedNodes);
         }
     }
-    std::vector<Natron::Node*>::iterator foundNode = std::find(markedNodes.begin(), markedNodes.end(), node);
+    std::vector<boost::shared_ptr<Natron::Node> >::iterator foundNode = std::find(markedNodes.begin(), markedNodes.end(), node);
     if (foundNode == markedNodes.end()) {
         markedNodes.push_back(node);
         _sorted.push_back(node);
@@ -786,11 +789,11 @@ void RenderTree::refreshInputsAndClearMessage()
 }
 
 
-ViewerInstance* RenderTree::outputAsViewer() const {
+boost::shared_ptr<ViewerInstance> RenderTree::outputAsViewer() const {
     if(_output && _isViewer){
-        return dynamic_cast<ViewerInstance*>(_output);
+        return boost::dynamic_pointer_cast<ViewerInstance>(_output);
     }else{
-        return NULL;
+        return boost::shared_ptr<ViewerInstance>();
     }
 }
 

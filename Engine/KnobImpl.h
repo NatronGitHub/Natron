@@ -23,7 +23,7 @@
 ///template specializations
 
 template <typename T>
-Knob<T>::Knob(KnobHolder*  holder,const std::string& description,int dimension )
+Knob<T>::Knob(const boost::shared_ptr<KnobHolder>&  holder,const std::string& description,int dimension )
     : KnobHelper(holder,description,dimension)
     , _valueMutex(QReadWriteLock::Recursive)
     , _values(dimension)

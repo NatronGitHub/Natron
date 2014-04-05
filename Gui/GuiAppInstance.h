@@ -35,11 +35,11 @@ public:
     Gui* getGui() const WARN_UNUSED_RETURN;
     
     //////////
-    NodeGui* getNodeGui(Natron::Node* n) const WARN_UNUSED_RETURN;
+    boost::shared_ptr<NodeGui> getNodeGui(boost::shared_ptr<Natron::Node> n) const WARN_UNUSED_RETURN;
     
-    NodeGui* getNodeGui(const std::string& nodeName) const WARN_UNUSED_RETURN;
+    boost::shared_ptr<NodeGui> getNodeGui(const std::string& nodeName) const WARN_UNUSED_RETURN;
     
-    Natron::Node* getNode(NodeGui* n) const WARN_UNUSED_RETURN;
+    boost::shared_ptr<Natron::Node> getNode(boost::shared_ptr<NodeGui> n) const WARN_UNUSED_RETURN;
     //////////
     
     virtual bool shouldRefreshPreview() const OVERRIDE FINAL;
@@ -74,9 +74,9 @@ public slots:
     
 private:
     
-    virtual void createNodeGui(Natron::Node* node,bool loadRequest,bool openImageFileDialog) OVERRIDE FINAL;
+    virtual void createNodeGui(boost::shared_ptr<Natron::Node> node,bool loadRequest,bool openImageFileDialog) OVERRIDE FINAL;
     
-    virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer) OVERRIDE FINAL;
+    virtual void startRenderingFullSequence(boost::shared_ptr<Natron::OutputEffectInstance> writer) OVERRIDE FINAL;
     
     boost::scoped_ptr<GuiAppInstancePrivate> _imp;
     

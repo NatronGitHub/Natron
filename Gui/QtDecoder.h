@@ -35,12 +35,12 @@ class QtReader : public Natron::EffectInstance {
 
 
 public:
-    static Natron::EffectInstance* BuildEffect(Natron::Node* n){
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n){
         return new QtReader(n);
     }
     
     
-    QtReader(Natron::Node* node);
+    QtReader(boost::shared_ptr<Natron::Node> node);
     
     virtual ~QtReader();
     

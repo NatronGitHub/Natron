@@ -28,7 +28,7 @@
 
 using namespace Natron;
 
-OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance
+OfxClipInstance::OfxClipInstance(boost::shared_ptr<OfxEffectInstance> nodeInstance
                                  ,Natron::OfxImageEffectInstance* effect
                                  ,int /*index*/
                                  , OFX::Host::ImageEffect::ClipDescriptor* desc)
@@ -90,7 +90,7 @@ void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
 {
     assert(_nodeInstance);
     SequenceTime first,last;
-    EffectInstance* n = getAssociatedNode();
+    boost::shared_ptr<EffectInstance> n = getAssociatedNode();
     if(n) {
        n->getFrameRange(&first, &last);
     } else {
@@ -159,7 +159,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 {
     OfxRectD ret;
     RectI rod;
-    EffectInstance* n = getAssociatedNode();
+    boost::shared_ptr<EffectInstance> n = getAssociatedNode();
     if (n && n != _nodeInstance) {
         bool isProjectFormat;
         
@@ -319,7 +319,7 @@ int OfxClipInstance::getInputNb() const{
     return inputs.size()-1-index;
 }
 
-Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const
+boost::shared_ptr<Natron::EffectInstance> OfxClipInstance::getAssociatedNode() const
 {
     if(_isOutput) {
         return _nodeInstance;

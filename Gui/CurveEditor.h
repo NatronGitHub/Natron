@@ -87,11 +87,11 @@ public:
 
     typedef std::vector< NodeCurveEditorElement* > Elements;
 
-    NodeCurveEditorContext(QTreeWidget *tree,CurveWidget* curveWidget,NodeGui* node);
+    NodeCurveEditorContext(QTreeWidget *tree,CurveWidget* curveWidget,boost::shared_ptr<NodeGui> node);
 
     virtual ~NodeCurveEditorContext() OVERRIDE;
 
-    NodeGui* getNode() const WARN_UNUSED_RETURN { return _node; }
+    boost::shared_ptr<NodeGui> getNode() const WARN_UNUSED_RETURN { return _node; }
 
     const Elements& getElements() const WARN_UNUSED_RETURN {return _nodeElements; }
 
@@ -108,7 +108,7 @@ public slots:
     
 private:
     // FIXME: PIMPL
-    NodeGui* _node;
+    boost::shared_ptr<NodeGui> _node;
     Elements _nodeElements;
     QTreeWidgetItem* _nameItem;
 
@@ -125,9 +125,9 @@ public:
 
     virtual ~CurveEditor() OVERRIDE;
 
-    void addNode(NodeGui *node);
+    void addNode(boost::shared_ptr<NodeGui> node);
 
-    void removeNode(NodeGui* node);
+    void removeNode(boost::shared_ptr<NodeGui> node);
     
     void centerOn(const std::vector<boost::shared_ptr<Curve> >& curves);
     

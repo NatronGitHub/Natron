@@ -19,7 +19,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #include "Engine/EffectInstance.h"
 
-PluginMemory::PluginMemory(Natron::EffectInstance* effect)
+PluginMemory::PluginMemory(const boost::shared_ptr<Natron::EffectInstance>& effect)
 : _ptr(0)
 , _locked(0)
 , _nBytes(0)

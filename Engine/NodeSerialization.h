@@ -38,10 +38,10 @@ public:
     typedef std::list< boost::shared_ptr<KnobSerialization> > KnobValues;
     
     ///Used to serialize
-    NodeSerialization(Natron::Node* n);
+    NodeSerialization(const boost::shared_ptr<Natron::Node>& n);
     
     ////Used to deserialize
-    NodeSerialization(AppInstance* app) : _isNull(true) , _node(NULL), _app(app) {}
+    NodeSerialization(AppInstance* app) : _isNull(true) , _node(), _app(app) {}
     
     ~NodeSerialization(){ _knobsValues.clear(); _inputs.clear(); }
     
@@ -76,7 +76,7 @@ private:
     
     std::vector<std::string> _inputs;
     
-    Natron::Node* _node;
+    boost::shared_ptr<Natron::Node> _node;
     AppInstance* _app;
 
     

@@ -276,7 +276,7 @@ void KnobGui::showRightClickMenuForDimension(const QPoint&,int dimension) {
         std::string nodeName("Linked to: ");
         
         assert(getKnob()->getHolder()->getApp());
-        const std::vector<Natron::Node*> allNodes = knob->getHolder()->getApp()->getProject()->getCurrentNodes();
+        const std::vector<boost::shared_ptr<Natron::Node> > allNodes = knob->getHolder()->getApp()->getProject()->getCurrentNodes();
         for (U32 i = 0; i < allNodes.size(); ++i) {
             const std::vector< boost::shared_ptr<KnobI> >& knobs = allNodes[i]->getKnobs();
             bool shouldStop = false;
@@ -984,7 +984,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
     _selectionCombo = new ComboBox(_firstLine);
     _firstLineLayout->addWidget(_selectionCombo);
     
-    std::vector<Natron::Node*> allActiveNodes;
+    std::vector<boost::shared_ptr<Natron::Node> > allActiveNodes;
     
     assert(from->getKnob()->getHolder()->getApp());
     

@@ -16,7 +16,7 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QGraphicsLineItem>
 CLANG_DIAG_ON(deprecated)
-
+#include <boost/shared_ptr.hpp>
 #include "Global/Macros.h"
 
 class QGraphicsPolygonItem;
@@ -36,10 +36,10 @@ class Edge: public QGraphicsLineItem
 public:
     
     ///Used to make an input edge
-    Edge(int inputNb,double angle,NodeGui *dest,QGraphicsItem *parent = 0);
+    Edge(int inputNb,double angle,const boost::shared_ptr<NodeGui>& dest,QGraphicsItem *parent = 0);
     
     ///Used to make an output edge
-    Edge(NodeGui *src,QGraphicsItem *parent = 0);
+    Edge(const boost::shared_ptr<NodeGui>& src,QGraphicsItem *parent = 0);
     
     virtual ~Edge() OVERRIDE;
     
@@ -47,7 +47,7 @@ public:
     
     bool contains(const QPointF &point) const;
     
-    void setSource(NodeGui* src){
+    void setSource(const boost::shared_ptr<NodeGui>& src){
         this->source=src;
         initLine();
     }
@@ -56,9 +56,9 @@ public:
     
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *options,QWidget *parent = 0);
     
-    NodeGui* getDest() const {return dest;}
+    boost::shared_ptr<NodeGui> getDest() const {return dest;}
     
-    NodeGui* getSource() const {return source;}
+    boost::shared_ptr<NodeGui> getSource() const {return source;}
     
     bool hasSource() const { return this->source != NULL; }
     
@@ -83,8 +83,8 @@ private:
     double angle;
     QGraphicsTextItem* label;
     QPolygonF arrowHead;
-    NodeGui* dest;
-    NodeGui* source;
+    boost::shared_ptr<NodeGui> dest;
+    boost::shared_ptr<NodeGui> source;
     QColor _defaultColor;
     QColor _renderingColor;
     bool _useRenderingColor;

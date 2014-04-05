@@ -62,7 +62,7 @@ class RenderTree {
     
     
 public:
-    typedef std::vector<Natron::Node*> TreeContainer;
+    typedef std::vector<boost::shared_ptr<Natron::Node> > TreeContainer;
     typedef TreeContainer::const_iterator TreeIterator;
     typedef TreeContainer::const_reverse_iterator TreeReverseIterator;
     typedef TreeContainer::const_iterator InputsIterator;
@@ -73,7 +73,7 @@ public:
      *Once filled up, you can access the nodes in topological order with the iterators.
      *The reverse iterator will give you the opposite of the topological order.
      */
-    RenderTree(Natron::EffectInstance* output);
+    RenderTree(const boost::shared_ptr<Natron::EffectInstance>& output);
     
     /**
      *@brief Clears the structure and fill it with a new tree, represented by the OutputNode.
@@ -109,14 +109,14 @@ public:
     /**
      *@brief Returns a pointer to the output node of the graph.
      */
-    Natron::EffectInstance* getOutput() const {return _output;}
+    boost::shared_ptr<Natron::EffectInstance> getOutput() const {return _output;}
     
     
     /**
      *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
      *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
      */
-    ViewerInstance* outputAsViewer() const;
+    boost::shared_ptr<ViewerInstance> outputAsViewer() const;
 
     
     /**
@@ -146,11 +146,11 @@ public:
 private:
     /*called by resetAndSort(...) to fill the structure
      *upstream of the output given in parameter of resetAndSort(...)*/
-    void fillGraph(Natron::Node* effect,std::vector<Natron::Node*>& markedNodes);
+    void fillGraph(const boost::shared_ptr<Natron::Node>& effect,std::vector<boost::shared_ptr<Natron::Node> >& markedNodes);
     /*clears out the structure*/
     void clearGraph();
     
-    Natron::EffectInstance* _output; /*!<the output of the Tree*/
+    boost::shared_ptr<Natron::EffectInstance> _output; /*!<the output of the Tree*/
     TreeContainer _sorted; /*!<the sorted Tree*/
     bool _isViewer; /*!< true if the outputNode is a viewer, it avoids many dynamic_casts*/
     bool _isOutputOpenFXNode; /*!< true if the outputNode is an OpenFX node*/
@@ -256,7 +256,7 @@ signals:
 public:
    
     
-    VideoEngine(Natron::OutputEffectInstance* owner, QObject* parent = NULL);
+    VideoEngine(const boost::shared_ptr<Natron::OutputEffectInstance>& owner, QObject* parent = NULL);
     
     virtual ~VideoEngine();
     

@@ -18,7 +18,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/PluginMemory.h"
 
-OfxMemory::OfxMemory(Natron::EffectInstance* effect)
+OfxMemory::OfxMemory(const boost::shared_ptr<Natron::EffectInstance>& effect)
 : OFX::Host::Memory::Instance()
 , _memory(new PluginMemory(effect))
 {

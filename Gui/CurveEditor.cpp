@@ -121,7 +121,7 @@ std::pair<QAction*,QAction*> CurveEditor::getUndoRedoActions() const {
 }
 
 
-void CurveEditor::addNode(NodeGui* node){
+void CurveEditor::addNode(boost::shared_ptr<NodeGui> node){
 
     const std::vector<boost::shared_ptr<KnobI> >& knobs = node->getNode()->getKnobs();
     if(knobs.empty()){
@@ -143,7 +143,7 @@ void CurveEditor::addNode(NodeGui* node){
 
 }
 
-void CurveEditor::removeNode(NodeGui *node){
+void CurveEditor::removeNode(boost::shared_ptr<NodeGui> node){
     for(std::list<NodeCurveEditorContext*>::iterator it = _nodes.begin();it!=_nodes.end();++it){
         if((*it)->getNode() == node){
             delete (*it);
@@ -155,7 +155,7 @@ void CurveEditor::removeNode(NodeGui *node){
 }
 
 
-NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* curveWidget,NodeGui *node)
+NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* curveWidget,boost::shared_ptr<NodeGui> node)
     : _node(node)
     , _nodeElements()
     , _nameItem()
@@ -164,7 +164,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,CurveWidget* cu
     QTreeWidgetItem* nameItem = new QTreeWidgetItem(tree);
     nameItem->setText(0,_node->getNode()->getName().c_str());
 
-    QObject::connect(node,SIGNAL(nameChanged(QString)),this,SLOT(onNameChanged(QString)));
+    QObject::connect(node.get(),SIGNAL(nameChanged(QString)),this,SLOT(onNameChanged(QString)));
     const std::map<boost::shared_ptr<KnobI>,KnobGui*>& knobs = node->getKnobs();
 
     bool hasAtLeast1KnobWithACurve = false;

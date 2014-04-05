@@ -30,11 +30,11 @@ class Bool_Knob;
 class QtWriter :public Natron::OutputEffectInstance{
     
 public:
-    static Natron::EffectInstance* BuildEffect(Natron::Node* n){
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n){
         return new QtWriter(n);
     }
     
-    QtWriter(Natron::Node* node);
+    QtWriter(boost::shared_ptr<Natron::Node> node);
     
     virtual ~QtWriter();
     

@@ -138,11 +138,11 @@ void Project::refreshViewersAndPreviews() {
 
     /*Refresh all viewers as it was*/
     if (!appPTR->isBackground()) {
-        const std::vector<Node*>& nodes = getCurrentNodes();
+        const std::vector<boost::shared_ptr<Natron::Node> >& nodes = getCurrentNodes();
         for (U32 i = 0; i < nodes.size(); ++i) {
             assert(nodes[i]);
             if (nodes[i]->pluginID() == "Viewer") {
-                ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
+                boost::shared_ptr<ViewerInstance> n = boost::dynamic_pointer_cast<ViewerInstance>(nodes[i]->getLiveInstance());
                 assert(n);
                 n->getVideoEngine()->render(1,//< frame count
                                             true, //<seek timeline
@@ -414,7 +414,8 @@ bool Project::findAndTryLoadAutoSave() {
 
 void Project::initializeKnobs(){
     
-    _imp->formatKnob = Natron::createKnob<Choice_Knob>(this, "Output Format");
+    boost::shared_ptr<Project> thisShared = getApp()->getProject();
+    _imp->formatKnob = Natron::createKnob<Choice_Knob>(thisShared, "Output Format");
     const std::vector<Format*>& appFormats = appPTR->getFormats();
     std::vector<std::string> entries;
     for (U32 i = 0; i < appFormats.size(); ++i) {
@@ -430,16 +431,16 @@ void Project::initializeKnobs(){
 
     _imp->formatKnob->populateChoices(entries);
     _imp->formatKnob->setAnimationEnabled(false);
-    _imp->addFormatKnob = Natron::createKnob<Button_Knob>(this,"New format...");
+    _imp->addFormatKnob = Natron::createKnob<Button_Knob>(thisShared,"New format...");
 
-    _imp->viewsCount = Natron::createKnob<Int_Knob>(this,"Number of views");
+    _imp->viewsCount = Natron::createKnob<Int_Knob>(thisShared,"Number of views");
     _imp->viewsCount->setAnimationEnabled(false);
     _imp->viewsCount->setMinimum(1);
     _imp->viewsCount->setDisplayMinimum(1);
     _imp->viewsCount->setDefaultValue(1,0);
     _imp->viewsCount->disableSlider();
     
-    _imp->previewMode = Natron::createKnob<Bool_Knob>(this, "Auto previews");
+    _imp->previewMode = Natron::createKnob<Bool_Knob>(thisShared, "Auto previews");
     _imp->previewMode->setHintToolTip("When true, preview images on the node graph will be"
                                       "refreshed automatically. You can uncheck this option to improve performances."
                                       "Press P in the node graph to refresh the previews yourself.");
@@ -487,13 +488,13 @@ void Project::getNodeCounters(std::map<std::string,int>* counters) const {
     *counters = _imp->nodeCounters;
 }
 
-void Project::addNodeToProject(Node* n) {
+void Project::addNodeToProject(boost::shared_ptr<Natron::Node> n) {
     QMutexLocker l(&_imp->nodesLock);
     _imp->currentNodes.push_back(n);
 }
     
 void Project::clearNodes() {
-    std::vector<Natron::Node*> nodesToDelete;
+    std::vector<boost::shared_ptr<Natron::Node> > nodesToDelete;
     {
         QMutexLocker l(&_imp->nodesLock);
         nodesToDelete = _imp->currentNodes;
@@ -502,11 +503,11 @@ void Project::clearNodes() {
     for (U32 i = 0; i < nodesToDelete.size(); ++i) {
         nodesToDelete[i]->quitAnyProcessing();
     }
+    nodesToDelete.clear();
     
-    
-    for (U32 i = 0; i < nodesToDelete.size(); ++i) {
-        delete nodesToDelete[i];
-    }
+//    for (U32 i = 0; i < nodesToDelete.size(); ++i) {
+//        delete nodesToDelete[i];
+//    }
     
     emit nodesCleared();
 }
@@ -591,7 +592,7 @@ int Project::getProjectViewsCount() const {
     return _imp->viewsCount->getValue();
 }
 
-std::vector<Node*> Project::getCurrentNodes() const {
+std::vector<boost::shared_ptr<Natron::Node> > Project::getCurrentNodes() const {
     QMutexLocker l(&_imp->nodesLock);
     return _imp->currentNodes;
 }
@@ -651,7 +652,7 @@ Project::getAdditionalFormats(std::list<Format> *formats) const
 }
 
 
-void Project::setLastTimelineSeekCaller(Natron::OutputEffectInstance* output) {
+void Project::setLastTimelineSeekCaller(boost::shared_ptr<Natron::OutputEffectInstance> output) {
     QMutexLocker l(&_imp->projectLock);
     _imp->lastTimelineSeekCaller = output;
 }
@@ -663,7 +664,7 @@ bool Project::isSaveUpToDate() const{
 
 ///this function is only called in the main thread
 void Project::onTimeChanged(SequenceTime time,int reason) {
-    std::vector<ViewerInstance*> viewers;
+    std::vector<boost::shared_ptr<ViewerInstance> > viewers;
     
     beginProjectWideValueChanges(Natron::TIME_CHANGED,this);
     
@@ -674,7 +675,7 @@ void Project::onTimeChanged(SequenceTime time,int reason) {
             continue;
         }
         if(_imp->currentNodes[i]->pluginID() == "Viewer"){
-            viewers.push_back(dynamic_cast<ViewerInstance*>(_imp->currentNodes[i]->getLiveInstance()));
+            viewers.push_back(boost::dynamic_pointer_cast<ViewerInstance>(_imp->currentNodes[i]->getLiveInstance()));
         }
         _imp->currentNodes[i]->getLiveInstance()->refreshAfterTimeChange(time);
 
@@ -693,7 +694,7 @@ void Project::onTimeChanged(SequenceTime time,int reason) {
                                                  false); //< force preview
         }
     }
-    _imp->lastTimelineSeekCaller = 0;
+    _imp->lastTimelineSeekCaller.reset();
 
 }
 
@@ -961,8 +962,8 @@ void Project::setOrAddProjectFormat(const Format& frmt,bool skipAdd) {
 }
 
 ///do not need to lock this function as all calls are thread-safe already
-bool Project::connectNodes(int inputNumber,const std::string& parentName,Node* output){
-    const std::vector<Node*> nodes = getCurrentNodes();
+bool Project::connectNodes(int inputNumber,const std::string& parentName,boost::shared_ptr<Node> output){
+    const std::vector<boost::shared_ptr<Node> > nodes = getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
         if (nodes[i]->getName() == parentName) {
@@ -972,12 +973,12 @@ bool Project::connectNodes(int inputNumber,const std::string& parentName,Node* o
     return false;
 }
 
-bool Project::connectNodes(int inputNumber,Node* input,Node* output,bool force) {
+bool Project::connectNodes(int inputNumber,boost::shared_ptr<Node> input,boost::shared_ptr<Node> output,bool force) {
 
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    Node* existingInput = output->input(inputNumber);
+    boost::shared_ptr<Node> existingInput = output->input(inputNumber);
     if (force && existingInput) {
         bool ok = disconnectNodes(existingInput, output);
         assert(ok);
@@ -996,10 +997,10 @@ bool Project::connectNodes(int inputNumber,Node* input,Node* output,bool force) 
     input->connectOutput(output);
     return true;
 }
-bool Project::disconnectNodes(Node* input,Node* output,bool autoReconnect) {
+bool Project::disconnectNodes(boost::shared_ptr<Node> input,boost::shared_ptr<Node> output,bool autoReconnect) {
 
-    Node* inputToReconnectTo = 0;
-    int indexOfInput = output->inputIndex(input);
+    boost::shared_ptr<Node> inputToReconnectTo;
+    int indexOfInput = output->inputIndex(input.get());
     if (indexOfInput == -1) {
         return false;
     }
@@ -1033,7 +1034,7 @@ void Project::unlock() const {
     _imp->projectLock.unlock();
 }
 
-bool Project::autoConnectNodes(Node* selected,Node* created) {
+bool Project::autoConnectNodes(boost::shared_ptr<Node> selected,boost::shared_ptr<Node> created) {
     ///We follow this rule:
     //        1) selected is output
     //          a) created is output --> fail
@@ -1093,7 +1094,7 @@ bool Project::autoConnectNodes(Node* selected,Node* created) {
     bool ret = false;
     if (connectAsInput) {
         ///if the selected node is and inspector, we want to connect the created node on the active input
-        InspectorNode* inspector = dynamic_cast<InspectorNode*>(selected);
+        boost::shared_ptr<InspectorNode> inspector = boost::dynamic_pointer_cast<InspectorNode>(selected);
         if (inspector) {
             int activeInputIndex = inspector->activeInput();
             bool ok = connectNodes(activeInputIndex, created, selected,true);
@@ -1115,9 +1116,10 @@ bool Project::autoConnectNodes(Node* selected,Node* created) {
         if (!created->isOutputNode()) {
             ///we find all the nodes that were previously connected to the selected node,
             ///and connect them to the created node instead.
-            std::map<Node*,int> outputsConnectedToSelectedNode;
+            std::map<boost::shared_ptr<Node>,int> outputsConnectedToSelectedNode;
             selected->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
-            for (std::map<Node*,int>::iterator it = outputsConnectedToSelectedNode.begin(); it!=outputsConnectedToSelectedNode.end(); ++it) {
+            for (std::map<boost::shared_ptr<Node>,int>::iterator it = outputsConnectedToSelectedNode.begin();
+                 it!=outputsConnectedToSelectedNode.end(); ++it) {
                 bool ok = disconnectNodes(selected, it->first);
                 assert(ok);
 
@@ -1138,9 +1140,9 @@ bool Project::autoConnectNodes(Node* selected,Node* created) {
     }
 
     ///update the render trees
-    std::list<ViewerInstance*> viewers;
+    std::list<boost::shared_ptr<ViewerInstance> > viewers;
     created->hasViewersConnected(&viewers);
-    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
+    for(std::list<boost::shared_ptr<ViewerInstance> >::iterator it = viewers.begin();it!=viewers.end();++it){
         (*it)->updateTreeAndRender();
     }
     return ret;
@@ -1152,14 +1154,25 @@ qint64 Project::getProjectCreationTime() const {
     return _imp->projectCreationTime.toMSecsSinceEpoch();
 }
     
-Natron::Node* Project::getNodeByName(const std::string& name) const {
+boost::shared_ptr<Natron::Node> Project::getNodeByName(const std::string& name) const {
     QMutexLocker l(&_imp->nodesLock);
     for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
         if (_imp->currentNodes[i]->isActivated() && _imp->currentNodes[i]->getName() == name) {
             return _imp->currentNodes[i];
         }
     }
-    return NULL;
+    return boost::shared_ptr<Natron::Node>();
+}
+    
+boost::shared_ptr<Natron::Node> Project::getNodePointer(Natron::Node* n) const
+{
+    QMutexLocker l(&_imp->nodesLock);
+    for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
+        if (_imp->currentNodes[i].get() == n) {
+            return _imp->currentNodes[i];
+        }
+    }
+    return boost::shared_ptr<Natron::Node>();
 }
     
 } //namespace Natron
