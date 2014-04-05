@@ -357,10 +357,11 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    const std::string& doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
+    //const std::string& doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
     
     const std::string& coordSystem = properties.getStringProperty(kOfxParamPropDefaultCoordinateSystem);
- 
+
+#if 0
     if(doubleType == kOfxParamDoubleTypeX ||
        doubleType == kOfxParamDoubleTypeXAbsolute ||
        doubleType == kOfxParamDoubleTypeNormalisedX ||
@@ -377,7 +378,7 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
         QObject::connect(node->getApp()->getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(onProjectFormatChanged(Format)));
         
     }
-    
+#endif
     
     _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this));
     
@@ -449,6 +450,7 @@ OfxDoubleInstance::set(OfxTime time, double v)
     return kOfxStatOK;
 }
 
+#if 0
 void
 OfxDoubleInstance::onProjectFormatChanged(const Format& /*f*/)
 {
@@ -457,6 +459,7 @@ OfxDoubleInstance::onProjectFormatChanged(const Format& /*f*/)
     _knob->setValue(v, 0);
     setDisplayRange();
 }
+#endif
 
 OfxStatus
 OfxDoubleInstance::derive(OfxTime time, double& v)
@@ -495,10 +498,10 @@ OfxDoubleInstance::setEvaluateOnChange()
 void
 OfxDoubleInstance::setDisplayRange()
 {
-    const std::string& doubleType = getProperties().getStringProperty(kOfxParamPropDoubleType);
+    //const std::string& doubleType = getProperties().getStringProperty(kOfxParamPropDoubleType);
     double displayMin = getProperties().getDoubleProperty(kOfxParamPropDisplayMin);
     double displayMax = getProperties().getDoubleProperty(kOfxParamPropDisplayMax);
-    const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
+    //const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
     //valueAccordingToType(true,coordSystem,doubleType, _node, &displayMin);
     //valueAccordingToType(true,coordSystem,doubleType, _node, &displayMax);
     _knob->setDisplayMinimum(displayMin);
@@ -1087,8 +1090,9 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
 , _node(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
-    const std::string& doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
+    //const std::string& doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
     const std::string& coordSystem = properties.getStringProperty(kOfxParamPropDefaultCoordinateSystem);
+#if 0
     if(doubleType == kOfxParamDoubleTypeX ||
        doubleType == kOfxParamDoubleTypeXAbsolute ||
        doubleType == kOfxParamDoubleTypeNormalisedX ||
@@ -1103,8 +1107,8 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
        doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute){
         ///connect to this slot ONLY if the double is spatial double
         QObject::connect(node->getApp()->getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(onProjectFormatChanged(Format)));
-        
     }
+#endif
     const int dims = 2;
 
     _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this),dims);
@@ -1235,8 +1239,8 @@ OfxDouble2DInstance::setEvaluateOnChange()
 void
 OfxDouble2DInstance::setDisplayRange()
 {
-    const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    const std::string& doubleType = getProperties().getStringProperty(kOfxParamPropDoubleType);
+    //const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
+    //const std::string& doubleType = getProperties().getStringProperty(kOfxParamPropDoubleType);
     std::vector<double> displayMins(2);
     std::vector<double> displayMaxs(2);
     displayMins[0] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin,0);
@@ -1305,6 +1309,7 @@ OfxDouble2DInstance::onKnobAnimationLevelChanged(int lvl)
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
 }
 
+#if 0
 void
 OfxDouble2DInstance::onProjectFormatChanged(const Format& /*f*/)
 {
@@ -1314,7 +1319,7 @@ OfxDouble2DInstance::onProjectFormatChanged(const Format& /*f*/)
     _knob->setValue(v2,1);
     setDisplayRange();
 }
-
+#endif
 
 ////////////////////////// OfxInteger2DInstance /////////////////////////////////////////////////
 

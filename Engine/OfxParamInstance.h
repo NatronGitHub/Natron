@@ -169,8 +169,8 @@ public:
     
 public slots:
     
-    void onProjectFormatChanged(const Format& f);
-    
+    //void onProjectFormatChanged(const Format& f);
+
     void onKnobAnimationLevelChanged(int lvl);
     
 private:
@@ -387,7 +387,7 @@ public slots:
     
     void onKnobAnimationLevelChanged(int lvl);
     
-    void onProjectFormatChanged(const Format& f);
+    //void onProjectFormatChanged(const Format& f);
     
 private:
     OfxEffectInstance* _node;
