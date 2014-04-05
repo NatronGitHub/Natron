@@ -6,6 +6,8 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
+- kOfxParamDoubleTypeNormalised* parameters (which still have to be supported, although they have been deprecated since OFX 1.2) have to be denormalized when presented in the GUI (internally, they still have to be stored as normalized values), and normalized when set by the user.
+
 - Some plugins crash using the multi-thread suite (mainly Furnace)
 
 - messages (and persistent messages) should be associated with an instance, not with a viewer. The message should appear in the viewer if and only of the given instance is in the the viewer's parents.
