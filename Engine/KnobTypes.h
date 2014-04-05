@@ -146,6 +146,12 @@ class Double_Knob:  public QObject,public Knob<double>
     
 public:
     
+    enum NormalizedState {
+        NORMALIZATION_NONE = 0, ///< indicating that the dimension holds a  non-normalized value.
+        NORMALIZATION_X, ///< indicating that the dimension holds a value normalized against the X dimension of the project format
+        NORMALIZATION_Y ///< indicating that the dimension holds a value normalized against the Y dimension of the project format
+    };
+    
     static KnobHelper *BuildKnob(const boost::shared_ptr<KnobHolder>& holder, const std::string &description, int dimension) {
         return new Double_Knob(holder, description, dimension);
     }
@@ -198,7 +204,27 @@ public:
     void setDimensionName(int dim,const std::string& name);
     
     virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
-
+    
+    NormalizedState getNormalizedState(int dimension) const
+    {
+        assert(dimension < 2 && dimension >= 0);
+        if (dimension == 0) {
+            return _normalizationXY.first;
+        } else {
+            return _normalizationXY.second;
+        }
+        
+    }
+    
+    void setNormalizedState(int dimension,NormalizedState state) {
+        assert(dimension < 2 && dimension >= 0);
+        if (dimension == 0) {
+            _normalizationXY.first = state;
+        } else {
+            _normalizationXY.second = state;
+        }
+    }
+    
 signals:
     void minMaxChanged(double mini, double maxi, int index = 0);
     
@@ -221,6 +247,13 @@ private:
     std::vector<double> _minimums, _maximums, _increments, _displayMins, _displayMaxs;
     std::vector<int> _decimals;
     bool _disableSlider;
+    
+    
+    /// to support ofx deprecated normalizd params:
+    /// the first and second dimensions of the double param( hence a pair ) have a normalized state.
+    /// BY default they have NORMALIZATION_NONE
+    std::pair<NormalizedState, NormalizedState> _normalizationXY;
+    
     static const std::string _typeNameStr;
     
 };

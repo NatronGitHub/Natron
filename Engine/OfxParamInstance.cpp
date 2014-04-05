@@ -267,70 +267,6 @@ void OfxIntegerInstance::setDisplayRange(){
 
 ////////////////////////// OfxDoubleInstance /////////////////////////////////////////////////
 
-static void valueAccordingToType(bool toType,const std::string& coordinateSystem,const std::string& doubleType,const boost::shared_ptr<OfxEffectInstance>& effect,
-                                 double* inOut1stDim,double* inOutS2ndDim = NULL){
-    bool normalized = coordinateSystem == kOfxParamCoordinatesNormalised;
-    if (doubleType == kOfxParamDoubleTypePlain ||
-       doubleType == kOfxParamDoubleTypeAngle ||
-       doubleType == kOfxParamDoubleTypeScale ||
-       doubleType == kOfxParamDoubleTypeTime ||
-       doubleType == kOfxParamDoubleTypeAbsoluteTime) {
-        //types not handled
-        return;
-    } else if (doubleType == kOfxParamDoubleTypeX ||
-             doubleType == kOfxParamDoubleTypeXAbsolute ||
-             doubleType == kOfxParamDoubleTypeNormalisedX ||
-            doubleType == kOfxParamDoubleTypeNormalisedXAbsolute){ //< treat absolute as non-absolute...
-        
-        if (normalized) {
-            Format projectFormat;
-            effect->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
-            if(toType){
-                *inOut1stDim *= (double)projectFormat.width();
-            } else {
-                *inOut1stDim /= (double)projectFormat.width();
-            }
-        }
-        return;
-    } else if (doubleType == kOfxParamDoubleTypeY ||
-             doubleType == kOfxParamDoubleTypeYAbsolute ||
-             doubleType == kOfxParamDoubleTypeNormalisedY ||
-             doubleType == kOfxParamDoubleTypeNormalisedYAbsolute){ //< treat absolute as non-absolute...
-        
-        if (normalized) {
-            Format projectFormat;
-            effect->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
-            if(toType){
-                
-                *inOut1stDim *= (double)projectFormat.height();
-            } else {
-                *inOut1stDim /= (double)projectFormat.height();
-            }
-        }
-        return;
-    } else if (doubleType == kOfxParamDoubleTypeXY ||
-               doubleType == kOfxParamDoubleTypeXYAbsolute ||
-             doubleType == kOfxParamDoubleTypeNormalisedXY ||
-             doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) {
-        assert(inOutS2ndDim);
-        
-        if (normalized) {
-            Format projectFormat;
-            effect->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
-            if(toType){
-                
-                *inOut1stDim *= (double)projectFormat.width();
-                *inOutS2ndDim *= (double)projectFormat.height();
-            } else {
-                *inOut1stDim /= (double)projectFormat.width();
-                *inOutS2ndDim /= (double)projectFormat.height();
-            }
-
-        }
-    }
-    
-    
-}
 
 OfxDoubleInstance::OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>& node,  OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance())
@@ -338,29 +274,19 @@ OfxDoubleInstance::OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>&
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    const std::string& doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
-    
+
     const std::string& coordSystem = properties.getStringProperty(kOfxParamPropDefaultCoordinateSystem);
- 
-    if(doubleType == kOfxParamDoubleTypeX ||
-       doubleType == kOfxParamDoubleTypeXAbsolute ||
-       doubleType == kOfxParamDoubleTypeNormalisedX ||
-       doubleType == kOfxParamDoubleTypeNormalisedXAbsolute ||
-       doubleType == kOfxParamDoubleTypeY ||
-       doubleType == kOfxParamDoubleTypeYAbsolute ||
-       doubleType == kOfxParamDoubleTypeNormalisedY ||
-       doubleType == kOfxParamDoubleTypeNormalisedYAbsolute ||
-       doubleType == kOfxParamDoubleTypeXY ||
-       doubleType == kOfxParamDoubleTypeXYAbsolute ||
-       doubleType == kOfxParamDoubleTypeNormalisedXY ||
-       doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute){
-        ///connect to this slot ONLY if the double is spatial double
-        QObject::connect(node->getApp()->getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(onProjectFormatChanged(Format)));
-        
-    }
-    
     
     _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this));
+    
+    const std::string& doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
+    if (doubleType == kOfxParamDoubleTypeNormalisedX ||
+        doubleType == kOfxParamDoubleTypeNormalisedXAbsolute) {
+        _knob->setNormalizedState(0, Double_Knob::NORMALIZATION_X);
+    } else if (doubleType == kOfxParamDoubleTypeNormalisedY ||
+               doubleType == kOfxParamDoubleTypeNormalisedYAbsolute) {
+        _knob->setNormalizedState(0, Double_Knob::NORMALIZATION_Y);
+    }
     
     double min = properties.getDoubleProperty(kOfxParamPropMin);
     double max = properties.getDoubleProperty(kOfxParamPropMax);
@@ -368,20 +294,22 @@ OfxDoubleInstance::OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>&
     double def = properties.getDoubleProperty(kOfxParamPropDefault);
     int decimals = properties.getIntProperty(kOfxParamPropDigits);
 
-    valueAccordingToType(true,coordSystem,doubleType, node, &min);
-    valueAccordingToType(true,coordSystem,doubleType, node, &max);
+
     _knob->setMinimum(min);
     _knob->setMaximum(max);
     setDisplayRange();
     if(incr > 0) {
-        valueAccordingToType(true,coordSystem,doubleType, node, &incr);
         _knob->setIncrement(incr);
     }
     if(decimals > 0) {
         _knob->setDecimals(decimals);
     }
     
-    valueAccordingToType(true,coordSystem,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&def);
+    if (coordSystem == kOfxParamCoordinatesNormalised) {
+        Format projectFormat;
+        _node->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
+        def *= (double)projectFormat.width();
+    }
     _knob->setDefaultValue(def,0);
     std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,0);
     if (!dimensionName.empty()) {
@@ -393,8 +321,6 @@ OfxStatus
 OfxDoubleInstance::get(double& v)
 {
     v = _knob->getValue();
-    //const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    //valueAccordingToType(false,coordSystem,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     return kOfxStatOK;
 }
 
@@ -402,16 +328,12 @@ OfxStatus
 OfxDoubleInstance::get(OfxTime time, double& v)
 {
     v = _knob->getValueAtTime(time);
-    //const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    //valueAccordingToType(false,coordSystem,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     return kOfxStatOK;
 }
 
 OfxStatus
 OfxDoubleInstance::set(double v)
 {
-    const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    valueAccordingToType(true,coordSystem,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     _knob->setValue(v,0);
     return kOfxStatOK;
 }
@@ -419,20 +341,10 @@ OfxDoubleInstance::set(double v)
 OfxStatus
 OfxDoubleInstance::set(OfxTime time, double v)
 {
-    const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    valueAccordingToType(true,coordSystem,getProperties().getStringProperty(kOfxParamPropDoubleType),_node,&v);
     _knob->setValueAtTime(time,v,0);
     return kOfxStatOK;
 }
 
-void
-OfxDoubleInstance::onProjectFormatChanged(const Format& /*f*/)
-{
-    double v;
-    get(v); //get the current value
-    _knob->setValue(v, 0);
-    setDisplayRange();
-}
 
 OfxStatus
 OfxDoubleInstance::derive(OfxTime time, double& v)
@@ -471,12 +383,8 @@ OfxDoubleInstance::setEvaluateOnChange()
 void
 OfxDoubleInstance::setDisplayRange()
 {
-    const std::string& doubleType = getProperties().getStringProperty(kOfxParamPropDoubleType);
     double displayMin = getProperties().getDoubleProperty(kOfxParamPropDisplayMin);
     double displayMax = getProperties().getDoubleProperty(kOfxParamPropDisplayMax);
-    const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    valueAccordingToType(true,coordSystem,doubleType, _node, &displayMin);
-    valueAccordingToType(true,coordSystem,doubleType, _node, &displayMax);
     _knob->setDisplayMinimum(displayMin);
     _knob->setDisplayMaximum(displayMax);
 }
@@ -1063,28 +971,21 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
 , _node(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
-    const std::string& doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
+    
     const std::string& coordSystem = properties.getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    if(doubleType == kOfxParamDoubleTypeX ||
-       doubleType == kOfxParamDoubleTypeXAbsolute ||
-       doubleType == kOfxParamDoubleTypeNormalisedX ||
-       doubleType == kOfxParamDoubleTypeNormalisedXAbsolute ||
-       doubleType == kOfxParamDoubleTypeY ||
-       doubleType == kOfxParamDoubleTypeYAbsolute ||
-       doubleType == kOfxParamDoubleTypeNormalisedY ||
-       doubleType == kOfxParamDoubleTypeNormalisedYAbsolute ||
-       doubleType == kOfxParamDoubleTypeXY ||
-       doubleType == kOfxParamDoubleTypeXYAbsolute ||
-       doubleType == kOfxParamDoubleTypeNormalisedXY ||
-       doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute){
-        ///connect to this slot ONLY if the double is spatial double
-        QObject::connect(node->getApp()->getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(onProjectFormatChanged(Format)));
-        
-    }
+
     const int dims = 2;
 
     _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this),dims);
 
+    const std::string& doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
+    if (doubleType == kOfxParamDoubleTypeNormalisedXY ||
+        doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) {
+        _knob->setNormalizedState(0, Double_Knob::NORMALIZATION_X);
+        _knob->setNormalizedState(1, Double_Knob::NORMALIZATION_Y);
+        
+    }
+    
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);
     std::vector<double> increment(dims);
@@ -1112,10 +1013,13 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
 
     }
     
-    valueAccordingToType(true,coordSystem, doubleType, node, &minimum[0],&minimum[1]);
-    valueAccordingToType(true,coordSystem, doubleType, node, &maximum[0],&maximum[1]);
-    valueAccordingToType(true,coordSystem, doubleType, node, &def[0],&def[1]);
-    
+    if (coordSystem == kOfxParamCoordinatesNormalised) {
+        Format projectFormat;
+        _node->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
+        def[0] *= (double)projectFormat.width();
+        def[1] *= (double)projectFormat.height();
+    }
+
     _knob->setMinimumsAndMaximums(minimum, maximum);
     setDisplayRange();
     _knob->setIncrement(increment);
@@ -1144,8 +1048,7 @@ OfxDouble2DInstance::get(OfxTime time, double& x1, double& x2)
 OfxStatus
 OfxDouble2DInstance::set(double x1,double x2)
 {
-    const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    valueAccordingToType(true,coordSystem, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
+
     _knob->setValue(x1,0);
     _knob->setValue(x2,1);
 	return kOfxStatOK;
@@ -1154,8 +1057,6 @@ OfxDouble2DInstance::set(double x1,double x2)
 OfxStatus
 OfxDouble2DInstance::set(OfxTime time,double x1,double x2)
 {
-    const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    valueAccordingToType(true,coordSystem, getProperties().getStringProperty(kOfxParamPropDoubleType), _node, &x1,&x2);
     _knob->setValueAtTime(time,x1,0);
     _knob->setValueAtTime(time,x2,1);
 	return kOfxStatOK;
@@ -1200,16 +1101,12 @@ OfxDouble2DInstance::setEvaluateOnChange()
 void
 OfxDouble2DInstance::setDisplayRange()
 {
-    const std::string& coordSystem = getProperties().getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    const std::string& doubleType = getProperties().getStringProperty(kOfxParamPropDoubleType);
     std::vector<double> displayMins(2);
     std::vector<double> displayMaxs(2);
     displayMins[0] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin,0);
     displayMins[1] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin,1);
     displayMaxs[0] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax,0);
     displayMaxs[1] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax,1);
-    valueAccordingToType(true,coordSystem,doubleType, _node, &displayMins[0],&displayMins[1]);
-    valueAccordingToType(true,coordSystem,doubleType, _node, &displayMaxs[0],&displayMaxs[1]);
     _knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
@@ -1269,17 +1166,6 @@ OfxDouble2DInstance::onKnobAnimationLevelChanged(int lvl)
     getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
 }
-
-void
-OfxDouble2DInstance::onProjectFormatChanged(const Format& /*f*/)
-{
-    double v1,v2;
-    get(v1,v2); //get the current value
-    _knob->setValue(v1,0);
-    _knob->setValue(v2,1);
-    setDisplayRange();
-}
-
 
 ////////////////////////// OfxInteger2DInstance /////////////////////////////////////////////////
 

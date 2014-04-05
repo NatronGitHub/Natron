@@ -265,8 +265,12 @@ Double_Knob::Double_Knob(const boost::shared_ptr<KnobHolder>& holder, const std:
 , _displayMaxs(dimension)
 , _decimals(dimension)
 , _disableSlider(false)
+, _normalizationXY()
 
 {
+    _normalizationXY.first = NORMALIZATION_NONE;
+    _normalizationXY.second = NORMALIZATION_NONE;
+    
     for (int i = 0; i < dimension; ++i) {
         _minimums[i] = -DBL_MAX;
         _maximums[i] = DBL_MAX;
